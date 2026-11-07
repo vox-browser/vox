@@ -490,7 +490,7 @@ the Russian advertising disclosure matched by a procedural filter, and a
 sidebar removed procedurally. In full Brave + uBO, all five slots were hidden
 or removed and both controls remained visible, recorded in
 `Build/comparisons/adblock-pikabu-slots.json`. Vox passes the same five-slot,
-two-control fixture in `main_adblock_pikabu_test.v`, including actual JSON-prune
+two-control fixture in `sites/main_adblock_pikabu_test.v`, including actual JSON-prune
 and `Ya` property-abort scriptlet effects. The HTML and probe hashes match the
 full-uBO report. All 34 focused native regression functions passed together,
 covering existing sites, scoped queries, live computed styles, procedural error

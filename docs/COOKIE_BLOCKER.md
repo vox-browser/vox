@@ -1,6 +1,6 @@
 # Cookie warning blocker
 
-`cookie_blocker.v` hides cookie warnings by default. The policy runs during the
+`blocking/cookie_blocker.v` hides cookie warnings by default. The policy runs during the
 initial page installation and after cosmetic-filter mutation replay, before
 subsequent layout and paint updates. This also covers delayed widgets when the
 adblocker is disabled.
@@ -35,9 +35,9 @@ and negative fixtures when extending recognition.
 
 ## Focused verification
 
-`cookie_blocker_test.v` covers detection, localized roots, policy-content
+`blocking/cookie_blocker_test.v` covers detection, localized roots, policy-content
 exclusions, CSS preservation, dynamic insertion, repair/idempotency, and the
-environment override. `main_adblock_cookie_blocker_test.v` covers the refresh
+environment override. `blocking/main_adblock_cookie_blocker_test.v` covers the refresh
 integration with adblock disabled, preserved user CSS, and the override.
 
 With the normal Vox build dependencies installed, run the selected tests using

@@ -160,7 +160,7 @@ Physical LOC does not measure parity. The ledger remains 32 fixed / 25 partial /
 
 Implementation: [media lifecycle](../../html/html_media_element.v).
 Tests: [model task](../../html/media_pause_task_owner_test.v),
-[native page](../../main_media_pause_task_owner_test.v).
+[native page](../../media/main_media_pause_task_owner_test.v).
 [Prior native pause caller](NATIVE_MEDIA_PAUSE_OWNER.md) retains its earlier
 snapshot, baseline, production diagnostics and inventory.
 

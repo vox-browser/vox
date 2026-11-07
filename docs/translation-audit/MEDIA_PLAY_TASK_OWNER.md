@@ -165,7 +165,7 @@ not establish completion of the V LibJS runtime.
 
 Implementation: [media lifecycle](../../html/html_media_element.v).
 Tests: [model tasks](../../html/media_play_task_owner_test.v),
-[native page](../../main_media_play_task_owner_test.v).
+[native page](../../media/main_media_play_task_owner_test.v).
 [Prior pause-task evidence](MEDIA_PAUSE_TASK_OWNER.md) retains its earlier snapshot.
 
 The subsequent [started-audio slice](MEDIA_STARTED_AUDIO_OWNER.md) translates

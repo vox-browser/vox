@@ -10,7 +10,7 @@ All figures are measured on this Mac. The production builds use the normal optim
 
 The initial Vox binary is recorded in `before-source.json`: source HEAD `5e617ea2`, binary SHA-256 `669a2b7c83c590317c452a316e30ceb9110ac849b8770a0c4fb58db3f57569a7`. Its three runs used identical fresh copies of a frozen warm resource cache (`40fbc472c4bbf9fbfd537fa35abb645d35c17d14fe06b280641aa5e861754b25`). That original first frame lacked localized text, the globe, and SVG artwork, so it is not a content-equivalent baseline for a fully rendered final page.
 
-Vox's counters in `main_paint_timing.v` begin at native navigation or document installation and stop at the first submitted document frame. They do not wait for background refresh or screenshot capture and do not measure web FCP.
+Vox's counters in `paint/main_paint_timing.v` begin at native navigation or document installation and stop at the first submitted document frame. They do not wait for background refresh or screenshot capture and do not measure web FCP.
 
 | Vox workload and endpoint | Before | Measured Vox |
 | --- | ---: | ---: |

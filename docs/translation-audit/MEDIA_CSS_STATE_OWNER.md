@@ -224,7 +224,7 @@ Implementation: [media caller](../../html/html_media_element.v),
 [selector matching](../../css/selectors.v),
 [typed invalidation](../../css/computed_interpolation.v).
 Tests: [model](../../html/media_css_state_owner_test.v),
-[page](../../main_media_css_state_owner_test.v),
-[tag-qualified ancestor regression](../../main_media_css_has_state_owner_test.v),
+[page](../../media/main_media_css_state_owner_test.v),
+[tag-qualified ancestor regression](../../media/main_media_css_has_state_owner_test.v),
 [style pass](../../css/style_computer.v).
 [Prior Page mute evidence](MEDIA_PAGE_MUTE_OWNER.md) retains its snapshot.

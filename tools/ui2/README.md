@@ -3,8 +3,8 @@ Vox-owned UI is declared in shared V/UI2 components under the
 [migration audit](../../docs/UI2_MIGRATION_AUDIT.md) maps the former Cocoa and GG
 owners to their replacements and explains the retained native boundaries.
 
-`main_browser_chrome.v`, `main_browser_tabs_ui.v`, `bookmarkui/`,
-`main_browser_settings.v`, and `browserui/` supply controls, layout, styling,
+`browserapp/main_browser_chrome.v`, `browserapp/main_browser_tabs_ui.v`, `bookmarkui/`,
+`browserapp/main_browser_settings.v`, and `browserui/` supply controls, layout, styling,
 actions, accessibility labels, popup state and shortcut decisions. Enter submits
 the address. Cmd+L focuses/selects it. Cmd+Shift+D toggles diagnostics;
 Cmd+Shift+B toggles bookmarks; Cmd+D saves the committed page. Windows/Linux use
@@ -53,11 +53,11 @@ python3 tools/run_memory_bounded.py --limit-gib 3 --lock Build/ui2-address-run.l
 ```
 
 The same runner accepts `VOX_CHROME_TEST_FILE` for
-`main_browser_tabs_test.v`, `main_browser_tab_favicon_test.v`,
-`main_browser_tabs_portable_test.v`, `main_browser_bookmarks_test.v`,
-`main_browser_settings_test.v`, `main_link_context_menu_test.v`,
-`main_select_picker_test.v`, `main_memory_status_test.v`,
-`main_browser_window_state_test.v`, and `main_history_swipe_test.v`.
+`browserapp/main_browser_tabs_test.v`, `browserapp/main_browser_tab_favicon_test.v`,
+`browserapp/main_browser_tabs_portable_test.v`, `browserapp/main_browser_bookmarks_test.v`,
+`browserapp/main_browser_settings_test.v`, `browserapp/main_link_context_menu_test.v`,
+`browserapp/main_select_picker_test.v`, `memorymgmt/main_memory_status_test.v`,
+`browserapp/main_browser_window_state_test.v`, and `browserapp/main_history_swipe_test.v`.
 Sources are linked from the canonical checkout, including for the settings test.
 
 Small component checks avoid compiling the document engine. Stage UI2 first with

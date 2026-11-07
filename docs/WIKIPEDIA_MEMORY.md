@@ -193,7 +193,7 @@ new CPU-instruction or timing claim. Evidence, logs, binaries and captures are
 under `Build/wikipedia-ram-fix/`; `comparison.json` also verifies that the installed
 executable matches the tested binary.
 
-`main_document_memory_test.v` crosses the old threshold with hidden elements
+`document/main_document_memory_test.v` crosses the old threshold with hidden elements
 and exercises actual page installation, visible painting and document retention
 after collection. It fails on the old code's exact 4 GiB heap size and passes
 after removal, both with Boehm and with GC disabled. The rebuilt bundle passes

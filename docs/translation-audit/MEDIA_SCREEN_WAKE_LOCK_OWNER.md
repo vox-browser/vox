@@ -174,7 +174,7 @@ Implementation: [media](../../html/html_media_element.v),
 [retained handle](../../page/screen_wake_lock_handle.v).
 Tests: [model](../../html/media_screen_wake_lock_owner_test.v),
 [finalization](../../html/html_media_element_test.v),
-[native page](../../main_media_screen_wake_lock_owner_test.v).
+[native page](../../media/main_media_screen_wake_lock_owner_test.v).
 [Prior started-audio evidence](MEDIA_STARTED_AUDIO_OWNER.md) retains its snapshot.
 
 Follow-up: [Page mute and actual media ownership](MEDIA_PAGE_MUTE_OWNER.md)

@@ -726,7 +726,7 @@ The next experiment (`b07a30c89`, extended in `7ba24c2ce`) constructs raster-til
 
 The [checkpoint](benchmark-results/vlang-scroll-20261102-native-cache-and-pictures.json) and [raw records](benchmark-results/vlang-scroll-20261102-native-cache-and-pictures-raw.json.gz) preserve the complete staging cohort, native geometry diagnostic, native-cache experiments, the rejected private-loader attempt, explicit-candidate measurements and failed complete-picture diagnostic. Executables, libraries, runtime assets, tools, actual input/frame records, content audits, host conditions and actual exits remain pinned in the records.
 
-Live Wikipedia, HN and Vlang select the same Chromium font/rendering policy in `main_font_rendering.v`; explicit layout-test-font mode is the exception. Their content exercises different reuse paths. Ordinary static text and solid backgrounds fit the viewport raster reuse policy. Vlang's measured author CSS contains layered gradients, shadows and rounded/translucent decorations. Its large decorative backgrounds are static after settling; the continuing CSS animation is the small blinking cursor. The engine currently rejects gradients/effects in the viewport raster cache, and complete compositor pictures require paint metadata for gradients and interleaved layers. Repeated separate leaf painting, transfers and CPU image preparation are the structural cost. This explains the profiling evidence; no new Wikipedia/HN cache-hit or FPS comparison is claimed here.
+Live Wikipedia, HN and Vlang select the same Chromium font/rendering policy in `fonts/main_font_rendering.v`; explicit layout-test-font mode is the exception. Their content exercises different reuse paths. Ordinary static text and solid backgrounds fit the viewport raster reuse policy. Vlang's measured author CSS contains layered gradients, shadows and rounded/translucent decorations. Its large decorative backgrounds are static after settling; the continuing CSS animation is the small blinking cursor. The engine currently rejects gradients/effects in the viewport raster cache, and complete compositor pictures require paint metadata for gradients and interleaved layers. Repeated separate leaf painting, transfers and CPU image preparation are the structural cost. This explains the profiling evidence; no new Wikipedia/HN cache-hit or FPS comparison is claimed here.
 
 The staging path is used during input: 1,529 calls avoid 1,523,055,840 bytes of complete result copying. Both matched pairs do not improve, so `efe7ad7d1` removes the experiment and its unexecuted tests.
 
@@ -923,7 +923,7 @@ sample are in `Build/vlang-fps-20261103/` (`rE-*`, `rF-*`, `mini/*-H2-*`).
 dirty shared builds. Each frame records a scroll-normalized key per paint
 command; the retained and current frames are diffed, and only the exposed strip
 plus the old and new ink of changed commands is repainted. Its focused checks
-pass: `main_scroll_raster_test.v` (after correcting five stale calls to the
+pass: `scroll/main_scroll_raster_test.v` (after correcting five stale calls to the
 five-argument key function), `layout/scroll_raster_eligibility_storage_test.v`
 and the native `tools/test_scroll_raster_darwin.m`.
 
@@ -951,8 +951,8 @@ pixels by one level; no screenshot reference uses this path. Checks:
   strip-clipped replay.
 - The existing region test: 160 scenes exact.
 - The existing backdrop test (legacy path pinned): 48 comparisons exact.
-- `main_chromium_gradient_blur_test.v` and the new key test in
-  `main_scroll_raster_test.v`.
+- `chromium/main_chromium_gradient_blur_test.v` and the new key test in
+  `scroll/main_scroll_raster_test.v`.
 
 On bundle `b6e4b222…` (receipt `20261104-014100-e011d913`), the diagnostic run
 reused 70 of 93 input frames; 16 fell back with `too-many-changes`. It logged 87
@@ -994,7 +994,7 @@ correct only because they kept pixels painted at earlier offsets.
 commands whose transforms already include it, shifting the deferred decoration
 region up. `VOX_DISABLE_DEFERRED_DECORATIONS=1` avoided it. `7ec7e1ec6` computes
 the region from the transform alone, like ordinary replay, and adds a focused
-bounds test (`main_chromium_inset_decorations_test.v` passes). Its end-to-end
+bounds test (`chromium/main_chromium_inset_decorations_test.v` passes). Its end-to-end
 fixture check passes on bundle `9ebd66e2…` (built from `7ec7e1ec6`). Full
 repaints at offsets 0, 100 and 240 now keep the card background (22,36,59)
 inside every card. The stepped reuse-versus-full-repaint gate is exact for the
@@ -1533,7 +1533,7 @@ change damaged the whole viewport, although only offscreen rows differ.
   stops covering the viewport still damage it.
   `VOX_DISABLE_VIEWPORT_FILL_EXTENT_REUSE=1` restores the geometry key.
 
-`main_scroll_raster_test.v` and `main_scroll_raster_damage_budget_test.v` pass
+`scroll/main_scroll_raster_test.v` and `scroll/main_scroll_raster_damage_budget_test.v` pass
 with the production compiler, including new cases for invisible clipped text,
 the straddling sliver and the background's offscreen extent.
 

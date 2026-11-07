@@ -1179,7 +1179,7 @@ frame is identical to the preceding successful retry while its Brave frame
 changes at 66 pixels. Those reference changes receive no native improvement or
 regression credit. Lobsters' live-to-frozen difference remains 44, so it still
 cannot count as an accepted live match. Concurrent changes to `main.v` and
-`main_frame_paint.v` after the checked build are excluded from this feature's
+`paint/main_frame_paint.v` after the checked build are excluded from this feature's
 validation claims and commit.
 
 Evidence is under `Build/forum-news-nested-svg-isolation-20261030/`, especially

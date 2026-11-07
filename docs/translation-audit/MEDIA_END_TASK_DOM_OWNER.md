@@ -117,7 +117,7 @@ Implementation: [media lifecycle](../../html/html_media_element.v).
 Focused tests: [DOM target](../../html/media_event_target_owner_test.v),
 [native target](../../browserjs/media_event_target_owner_test.v),
 [completion task](../../html/media_end_task_owner_test.v) and
-[native page](../../main_media_end_task_owner_test.v).
+[native page](../../media/main_media_end_task_owner_test.v).
 [Step-1 cache evidence](MEDIA_ENDED_STEP_ONE_OWNER.md) records the prerequisite.
 
 The forward has-ended predicate still uses V's duration/position check; Source

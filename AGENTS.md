@@ -28,6 +28,18 @@
   out the release commit there and builds it with its own `Build/`, so releases
   contain only committed code. Do not edit, build, or test in that checkout.
 
+## Source layout
+
+- The browser's `module main` is `main.v` plus the directories listed in
+  `v.mod`'s `subdirs` (`browserapp/`, `compact/`, `scroll/`, ...). V compiles
+  them as one module. Put new `module main` files and their tests in the
+  matching directory, not in the repository root. A new directory's name must
+  not match any module or submodule name (such as `ui`, `gg`, or the `memory`
+  of `sokol.memory`): the repository root is first on `-path`.
+- From those directories, reach root files through `@VMODROOT`
+  (`#include "@VMODROOT/native_x.h"`, `$embed_file('@VMODROOT/Tests/...')`);
+  `@DIR` and relative includes resolve against the subdirectory.
+
 ## Commits
 
 - Commit every completed feature and fix after running the relevant checks.

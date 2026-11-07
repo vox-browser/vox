@@ -7,16 +7,16 @@ The [repository UI rule](../AGENTS.md#ui-implementation) applies to future work.
 
 | Audited surface | Shared owner now | Removed implementation |
 | --- | --- | --- |
-| Tabs, close/new buttons, window buttons, drag/reorder/detach preview | [browserui/tabs.v](../browserui/tabs.v), [main_browser_tabs_ui.v](../main_browser_tabs_ui.v), existing V tab controller | `native_browser_tabs_darwin.{m,h}`, separate GG tab painter |
-| Toolbar skin, navigation controls, address field, status labels | [main_browser_chrome.v](../main_browser_chrome.v) | Cocoa toolbar background/icon painting and native styling overrides, separate GG toolbar |
-| Link context menu | [main_link_context_menu.v](../main_link_context_menu.v), [browserui/popup.v](../browserui/popup.v) | `native_link_context_menu_darwin.{m,h}` |
-| HTML select popup | [main_select_picker.v](../main_select_picker.v), shared UI2 popup | `native_select_picker_darwin.{m,h}` and its JSON-to-NSMenu layer |
-| Settings, validation, enabled states, Apply/Cancel | [main_browser_settings.v](../main_browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
-| Browser shortcut policy | [browserui/shortcuts.v](../browserui/shortcuts.v), [main_browser_ui.v](../main_browser_ui.v) | `native_address_bar_darwin.{m,h}` shortcut table |
-| RAM formatting, sampling schedule, worker accounting and label updates | [main_memory_status.v](../main_memory_status.v), [processmetrics](../processmetrics) | `native_browser_chrome_darwin.{m,h}`, `native_memory_status_darwin.m` and its separate painted layer |
-| History gesture classification, capture generations, cancellation and commit thresholds | [browserui/swipe.v](../browserui/swipe.v), [main_history_swipe.v](../main_history_swipe.v) | Native gesture policy fields and decisions |
-| Saved-window schema, validation, display clamping and fullscreen transitions | [browserui/window.v](../browserui/window.v), [main_browser_window_state.v](../main_browser_window_state.v) | Native saved-state/geometry policy |
-| Detached-window placement | [browserui/window.v](../browserui/window.v), [main_browser_tab_detach_darwin.v](../main_browser_tab_detach_darwin.v) | Native application placement calculations |
+| Tabs, close/new buttons, window buttons, drag/reorder/detach preview | [browserui/tabs.v](../browserui/tabs.v), [main_browser_tabs_ui.v](../browserapp/main_browser_tabs_ui.v), existing V tab controller | `native_browser_tabs_darwin.{m,h}`, separate GG tab painter |
+| Toolbar skin, navigation controls, address field, status labels | [main_browser_chrome.v](../browserapp/main_browser_chrome.v) | Cocoa toolbar background/icon painting and native styling overrides, separate GG toolbar |
+| Link context menu | [main_link_context_menu.v](../browserapp/main_link_context_menu.v), [browserui/popup.v](../browserui/popup.v) | `native_link_context_menu_darwin.{m,h}` |
+| HTML select popup | [main_select_picker.v](../browserapp/main_select_picker.v), shared UI2 popup | `native_select_picker_darwin.{m,h}` and its JSON-to-NSMenu layer |
+| Settings, validation, enabled states, Apply/Cancel | [main_browser_settings.v](../browserapp/main_browser_settings.v) | `native_browser_settings_darwin.{m,h}` and platform-only V form owner |
+| Browser shortcut policy | [browserui/shortcuts.v](../browserui/shortcuts.v), [main_browser_ui.v](../browserapp/main_browser_ui.v) | `native_address_bar_darwin.{m,h}` shortcut table |
+| RAM formatting, sampling schedule, worker accounting and label updates | [main_memory_status.v](../memorymgmt/main_memory_status.v), [processmetrics](../processmetrics) | `native_browser_chrome_darwin.{m,h}`, `native_memory_status_darwin.m` and its separate painted layer |
+| History gesture classification, capture generations, cancellation and commit thresholds | [browserui/swipe.v](../browserui/swipe.v), [main_history_swipe.v](../browserapp/main_history_swipe.v) | Native gesture policy fields and decisions |
+| Saved-window schema, validation, display clamping and fullscreen transitions | [browserui/window.v](../browserui/window.v), [main_browser_window_state.v](../browserapp/main_browser_window_state.v) | Native saved-state/geometry policy |
+| Detached-window placement | [browserui/window.v](../browserui/window.v), [main_browser_tab_detach_darwin.v](../browserapp/main_browser_tab_detach_darwin.v) | Native application placement calculations |
 | Compatibility chrome/bookmarks | Shared UI2 tree with [custom embedding](../tools/ui2/embedded_elements_custom.c.v) | Handwritten GG controls and hit testing |
 
 Popups are asynchronous UI2 lists. They retain groups, disabled options,

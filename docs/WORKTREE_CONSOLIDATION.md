@@ -41,7 +41,7 @@ legacy compiler. Normal builds leave the teardown experiments disabled.
 `VOX_PREALLOC_PROBE=1` enables the two `layout/prealloc_frame_*_probe_test.v`
 files. `VOX_PREALLOC_PROBE_DIR` selects their output directory (default:
 `Build/prealloc-memory`). Run these with current V, `-enable-globals -prealloc
--gc none`. `main_svg_recording_export_probe_test.v` exports one SVG when
+-gc none`. `paint/main_svg_recording_export_probe_test.v` exports one SVG when
 `VOX_SVG_RECORDING_INPUT` is set; `VOX_SVG_RECORDING_WIDTH` defaults to 80 and
 `VOX_SVG_RECORDING_OUTPUT` defaults to `Build/svg-recording.json`.
 

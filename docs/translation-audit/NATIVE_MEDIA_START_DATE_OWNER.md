@@ -141,4 +141,4 @@ Implementation: [model](../../html/html_media_element.v),
 [compact bridge](../../main.v).
 Tests: [rounding](../../html/media_start_date_rounding_test.v),
 [native](../../browserjs/media_element_start_date_host_test.v),
-[public page](../../main_media_start_date_owner_test.v).
+[public page](../../media/main_media_start_date_owner_test.v).
