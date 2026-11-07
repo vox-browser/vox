@@ -1932,6 +1932,7 @@ fn javascript_bootstrap() string {
 		// detached elements created by script.
 		'Object.defineProperty(Element.prototype,"cloneNode",{value:function cloneNode(subtree){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");return __queryElements(s.bridgeKey,"cloneNode",subtree?"deep":"shallow");},writable:true,enumerable:true,configurable:true});',
 		'Object.defineProperty(Element.prototype,"getAttributeNames",{value:{getAttributeNames(){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");return __compactAttributes.names(s);}}.getAttributeNames,writable:true,enumerable:true,configurable:true});',
+		compact_named_node_map_bootstrap(),
 		'const __readElementContent=globalThis.__ladybirdReadElementContent; function __elementContent(s,name){if(name==="innerHTML"&&__compactIsTemplateState(s)&&!s.innerHTMLDirty)return __compactTemplateInnerHTML(s);if(Object.prototype.hasOwnProperty.call(s,name))return s[name];return s.created&&!s.nativeContent?"":__readElementContent(String(s.bridgeKey)+":"+name);}',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
 		'function __styleName(name) { const result=String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); return result.indexOf("webkit-")===0?"-"+result:result; }',
