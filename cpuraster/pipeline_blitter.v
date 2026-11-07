@@ -132,6 +132,34 @@ fn canvas_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mo
 	return new_pipeline_blitter(mut pixels, row_bytes, rgb, a, mode)
 }
 
+// canvas_paint_blitter is SkBlitter::Choose() for the canvas paint: its
+// solid SkColor, or the shader its gradient made. A shader keeps the
+// raster pipeline blitter, since gradients have no legacy shader context.
+fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode) ?Blitter {
+	s := shader or { return canvas_blitter(mut pixels, row_bytes, color, alpha, mode) }
+	match s.kind {
+		.null_ {
+			return canvas_blitter(mut pixels, row_bytes, 0xff000000, alpha, mode)
+		}
+		.empty {
+			return none
+		}
+		else {}
+	}
+	// CheckFastPath() with a shader: only Dst draws nothing, and Clear drops
+	// the shader.
+	if mode == .dst {
+		return none
+	}
+	if mode == .clear {
+		return canvas_blitter(mut pixels, row_bytes, 0, 0, .clear)
+	}
+	if s.kind == .color {
+		return new_color_shader_blitter(mut pixels, row_bytes, s.color, alpha, mode)
+	}
+	return new_gradient_blitter(mut pixels, row_bytes, s.gradient, alpha, mode)
+}
+
 pub struct PipelineBlitter {
 	mode      BlendMode
 	lowp      bool
@@ -150,6 +178,12 @@ pub struct PipelineBlitter {
 	fg f32
 	fb f32
 	fa f32
+	// A gradient source instead of the constant color, and the paint
+	// alpha's scale_1_float after it.
+	shaded bool
+	shader GradientShader
+	scaled bool
+	scale  f32
 mut:
 	pixels []u8
 }
@@ -157,22 +191,46 @@ mut:
 // new_pipeline_blitter is SkRasterPipelineBlitter::Create() for an
 // unpremultiplied paint color (SkColor channels, float alpha) and mode.
 fn new_pipeline_blitter(mut pixels []u8, row_bytes int, rgb u32, alpha f32, mode BlendMode) PipelineBlitter {
-	// appendConstantColor() of SkColor4f::premul(); the constant pipeline
-	// then runs clamp_01 and store_f32 once in highp and appends the result.
+	// appendConstantColor() of SkColor4f::premul().
 	mut c := [f32((rgb >> 16) & 0xff) * inv_255, f32((rgb >> 8) & 0xff) * inv_255,
 		f32(rgb & 0xff) * inv_255, alpha]!
 	for i in 0 .. 3 {
 		c[i] = c[i] * alpha
 	}
+	return new_constant_blitter(mut pixels, row_bytes, c, 1, mode)
+}
+
+// new_color_shader_blitter is Create() for SkShaders::Color(): its
+// premultiplied color, then scale_1_float by the paint alpha.
+fn new_color_shader_blitter(mut pixels []u8, row_bytes int, color [4]f32, alpha f32, mode BlendMode) PipelineBlitter {
+	mut c := color
+	for i in 0 .. 3 {
+		c[i] = c[i] * c[3]
+	}
+	return new_constant_blitter(mut pixels, row_bytes, c, alpha, mode)
+}
+
+// new_constant_blitter: the constant pipeline (the premultiplied color,
+// scale_1_float when alpha is not 1, clamp_01 and store_f32) runs once in
+// highp and its result becomes the constant; an opaque result turns
+// source-over into Src.
+fn new_constant_blitter(mut pixels []u8, row_bytes int, premul [4]f32, alpha f32, mode_in BlendMode) PipelineBlitter {
+	mut c := premul
 	black := c[0] == 0 && c[1] == 0 && c[2] == 0 && c[3] == 1
 	white := c[0] == 1 && c[1] == 1 && c[2] == 1 && c[3] == 1
 	if black || white {
 		v := if white { f32(1) } else { f32(0) }
 		c = [v, v, v, f32(1)]!
 	}
+	if alpha != 1 {
+		for i in 0 .. 4 {
+			c[i] = c[i] * alpha
+		}
+	}
 	for i in 0 .. 4 {
 		c[i] = neon_min(neon_max(0, c[i]), 1)
 	}
+	mode := if mode_in == .src_over && c[3] == 1 { BlendMode.src } else { mode_in }
 	mut lanes := [u32(0), 0, 0, 0]!
 	if c[0] == 0 && c[1] == 0 && c[2] == 0 && c[3] == 1 {
 		lanes = [u32(0), 0, 0, 255]!
@@ -209,6 +267,28 @@ fn new_pipeline_blitter(mut pixels []u8, row_bytes int, rgb u32, alpha f32, mode
 	}
 }
 
+// new_gradient_blitter is Create() for a gradient shader at paint alpha
+// alpha: lowp unless the blend mode or a conical stage needs floats, and
+// source-over becomes Src for an opaque gradient at full alpha.
+fn new_gradient_blitter(mut pixels []u8, row_bytes int, shader GradientShader, alpha f32, mode_in BlendMode) PipelineBlitter {
+	mode := if mode_in == .src_over && shader.opaque && alpha == 1 {
+		BlendMode.src
+	} else {
+		mode_in
+	}
+	return PipelineBlitter{
+		mode:      mode
+		lowp:      blend_has_lowp(mode) && !shader.needs_highp()
+		prescale:  blend_prescales_coverage(mode)
+		row_bytes: row_bytes
+		shaded:    true
+		shader:    shader
+		scaled:    alpha != 1
+		scale:     alpha
+		pixels:    pixels
+	}
+}
+
 @[inline]
 fn (b &PipelineBlitter) offset(x int, y int) int {
 	return y * b.row_bytes + x * 4
@@ -223,14 +303,15 @@ enum CoverageKind {
 	mask
 }
 
-// blit runs the pipeline over count pixels from offset.
-fn (mut b PipelineBlitter) blit(offset int, count int, kind CoverageKind, coverage u8) {
+// blit runs the pipeline over count pixels from (x, y).
+fn (mut b PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
+	offset := b.offset(x, y)
 	for i in 0 .. count {
 		o := offset + i * 4
 		if b.lowp {
-			b.blit_lowp(o, kind, coverage)
+			b.blit_lowp(x + i, y, o, kind, coverage)
 		} else {
-			b.blit_highp(o, kind, coverage)
+			b.blit_highp(x + i, y, o, kind, coverage)
 		}
 	}
 }
@@ -247,7 +328,7 @@ fn (mut b PipelineBlitter) blit_rect(x int, y int, width int, height int) {
 				store32(mut b.pixels, offset + i * 4, b.memset_color)
 			}
 		} else {
-			b.blit(offset, width, .none, 0)
+			b.blit(x, y + row, width, .none, 0)
 		}
 	}
 }
@@ -266,7 +347,7 @@ fn (mut b PipelineBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut runs []
 				b.blit_rect(x, y, run, 1)
 			}
 			else {
-				b.blit(b.offset(x, y), run, .float, aa[i])
+				b.blit(x, y, run, .float, aa[i])
 			}
 		}
 		x += run
@@ -277,20 +358,18 @@ fn (mut b PipelineBlitter) blit_anti_h(x_in int, y int, mut aa []u8, mut runs []
 // blitV(), blitAntiH2() and blitAntiV2() blit A8 masks.
 fn (mut b PipelineBlitter) blit_v(x int, y int, height int, alpha u8) {
 	for row in 0 .. height {
-		b.blit(b.offset(x, y + row), 1, .mask, alpha)
+		b.blit(x, y + row, 1, .mask, alpha)
 	}
 }
 
 fn (mut b PipelineBlitter) blit_anti_h2(x int, y int, a0 u8, a1 u8) {
-	o := b.offset(x, y)
-	b.blit(o, 1, .mask, a0)
-	b.blit(o + 4, 1, .mask, a1)
+	b.blit(x, y, 1, .mask, a0)
+	b.blit(x + 1, y, 1, .mask, a1)
 }
 
 fn (mut b PipelineBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {
-	o := b.offset(x, y)
-	b.blit(o, 1, .mask, a0)
-	b.blit(o + b.row_bytes, 1, .mask, a1)
+	b.blit(x, y, 1, .mask, a0)
+	b.blit(x, y + 1, 1, .mask, a1)
 }
 
 fn (mut b PipelineBlitter) blit_anti_rect(x int, y int, width int, height int, left_alpha u8, right_alpha u8) {
@@ -299,10 +378,9 @@ fn (mut b PipelineBlitter) blit_anti_rect(x int, y int, width int, height int, l
 
 fn (mut b PipelineBlitter) blit_mask(mask &Mask, clip IRect) {
 	for row in 0 .. clip.height() {
-		offset := b.offset(clip.left, clip.top + row)
 		src := mask.index(clip.left, clip.top + row)
 		for i in 0 .. clip.width() {
-			b.blit(offset + i * 4, 1, .mask, mask.image[src + i])
+			b.blit(clip.left + i, clip.top + row, 1, .mask, mask.image[src + i])
 		}
 	}
 }
@@ -434,12 +512,19 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
 }
 
-fn (mut b PipelineBlitter) blit_lowp(o int, kind CoverageKind, coverage u8) {
-	// The color and clamp_01: min(v, 255).
-	mut r := lowp_min(b.lr, 255)
-	mut g := lowp_min(b.lg, 255)
-	mut bl := lowp_min(b.lb, 255)
-	mut a := lowp_min(b.la, 255)
+fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
+	// The color or shader, scale_1_float, and clamp_01: min(v, 255).
+	mut src := if b.shaded { b.shader.shade_lowp(px, py) } else { [b.lr, b.lg, b.lb, b.la]! }
+	if b.scaled {
+		alpha := lowp_from_float(b.scale)
+		for i in 0 .. 4 {
+			src[i] = lowp_div255(u16w(src[i] * alpha))
+		}
+	}
+	mut r := lowp_min(src[0], 255)
+	mut g := lowp_min(src[1], 255)
+	mut bl := lowp_min(src[2], 255)
+	mut a := lowp_min(src[3], 255)
 	c := match kind {
 		.none { u32(0) }
 		.float { lowp_from_float(f32(coverage) * inv_255) }
@@ -692,12 +777,117 @@ fn clip_color(mut c [3]f32, a f32) {
 	}
 }
 
-fn (mut b PipelineBlitter) blit_highp(o int, kind CoverageKind, coverage u8) {
-	// The color and clamp_01.
-	r := neon_min(neon_max(0, b.fr), 1)
-	g := neon_min(neon_max(0, b.fg), 1)
-	bl := neon_min(neon_max(0, b.fb), 1)
-	a := neon_min(neon_max(0, b.fa), 1)
+// The separable highp blend modes for one channel; products sit in their own
+// statements so that only the explicit mad()/nmad() calls fuse.
+fn highp_channel(mode BlendMode, s f32, d f32, sa f32, da f32) f32 {
+	match mode {
+		.src_atop {
+			t := d * highp_inv(sa)
+			return mad(s, da, t)
+		}
+		.dst_atop {
+			t := s * highp_inv(da)
+			return mad(d, sa, t)
+		}
+		.src_in {
+			return s * da
+		}
+		.dst_in {
+			return d * sa
+		}
+		.src_out {
+			return s * highp_inv(da)
+		}
+		.dst_out {
+			return d * highp_inv(sa)
+		}
+		.src_over {
+			return mad(d, highp_inv(sa), s)
+		}
+		.dst_over {
+			return mad(s, highp_inv(da), d)
+		}
+		.modulate {
+			return s * d
+		}
+		.multiply {
+			t := d * highp_inv(sa)
+			return mad(s, d, mad(s, highp_inv(da), t))
+		}
+		.plus {
+			sum := s + d
+			return neon_min(sum, 1)
+		}
+		.screen {
+			sum := s + d
+			return nmad(s, d, sum)
+		}
+		.xor {
+			t := d * highp_inv(sa)
+			return mad(s, highp_inv(da), t)
+		}
+		.darken, .lighten, .difference {
+			sum := s + d
+			sda := s * da
+			dsa := d * sa
+			if mode == .darken {
+				return sum - neon_max(sda, dsa)
+			}
+			m := neon_min(sda, dsa)
+			if mode == .lighten {
+				return sum - m
+			}
+			twice := m + m
+			return sum - twice
+		}
+		.exclusion {
+			sum := s + d
+			sd := s * d
+			twice := sd + sd
+			return sum - twice
+		}
+		.hard_light, .overlay {
+			a1 := s * highp_inv(da)
+			a2 := d * highp_inv(sa)
+			base := a1 + a2
+			dark := if mode == .hard_light { s + s <= sa } else { d + d <= da }
+			mut term := f32(0)
+			if dark {
+				sd := s * d
+				term = sd + sd
+			} else {
+				sada := sa * da
+				q := (da - d) * (sa - s)
+				term = sada - (q + q)
+			}
+			return base + term
+		}
+		else {
+			return 0
+		}
+	}
+}
+
+fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, coverage u8) {
+	// The color or shader, scale_1_float, and clamp_01.
+	mut src := if b.shaded { b.shader.shade_highp(px, py) } else { [b.fr, b.fg, b.fb, b.fa]! }
+	if b.scaled {
+		for i in 0 .. 4 {
+			src[i] = src[i] * b.scale
+		}
+	}
+	mut r := neon_min(neon_max(0, src[0]), 1)
+	mut g := neon_min(neon_max(0, src[1]), 1)
+	mut bl := neon_min(neon_max(0, src[2]), 1)
+	mut a := neon_min(neon_max(0, src[3]), 1)
+	// Coverage prescaled before the blend: scale_1_float or scale_u8.
+	t := f32(coverage) * inv_255
+	if kind != .none && b.prescale {
+		r = r * t
+		g = g * t
+		bl = bl * t
+		a = a * t
+	}
 	// load_8888_dst.
 	dr := f32(b.pixels[o]) * inv_255
 	dg := f32(b.pixels[o + 1]) * inv_255
@@ -705,20 +895,22 @@ fn (mut b PipelineBlitter) blit_highp(o int, kind CoverageKind, coverage u8) {
 	da := f32(b.pixels[o + 3]) * inv_255
 	mut out := [f32(0), 0, 0, 0]!
 	match b.mode {
+		.src {
+			out = [r, g, bl, a]!
+		}
 		.color_burn, .color_dodge, .soft_light {
-			src := [r, g, bl]!
-			dst := [dr, dg, db]!
+			sc := [r, g, bl]!
+			dc := [dr, dg, db]!
 			for i in 0 .. 3 {
 				out[i] = match b.mode {
-					.color_burn { highp_color_burn(src[i], dst[i], a, da) }
-					.color_dodge { highp_color_dodge(src[i], dst[i], a, da) }
-					else { highp_soft_light(src[i], dst[i], a, da) }
+					.color_burn { highp_color_burn(sc[i], dc[i], a, da) }
+					.color_dodge { highp_color_dodge(sc[i], dc[i], a, da) }
+					else { highp_soft_light(sc[i], dc[i], a, da) }
 				}
 			}
 			out[3] = mad(da, highp_inv(a), a)
 		}
-		else {
-			// hue, saturation, color and luminosity.
+		.hue, .saturation, .color, .luminosity {
 			mut c := match b.mode {
 				.hue { [r * a, g * a, bl * a]! }
 				.color { [r * da, g * da, bl * da]! }
@@ -746,10 +938,21 @@ fn (mut b PipelineBlitter) blit_highp(o int, kind CoverageKind, coverage u8) {
 			out[2] = mad(bl, highp_inv(da), mad(db, highp_inv(a), c[2]))
 			out[3] = a + nmad(a, da, da)
 		}
+		else {
+			src_c := [r, g, bl]!
+			dst_c := [dr, dg, db]!
+			for i in 0 .. 3 {
+				out[i] = highp_channel(b.mode, src_c[i], dst_c[i], a, da)
+			}
+			out[3] = if lowp_alpha_is_srcover(b.mode) {
+				mad(da, highp_inv(a), a)
+			} else {
+				highp_channel(b.mode, a, da, a, da)
+			}
+		}
 	}
-	if kind != .none {
+	if kind != .none && !b.prescale {
 		// lerp_1_float or lerp_u8: mad(to - from, t, from).
-		t := f32(coverage) * inv_255
 		dst := [dr, dg, db, da]!
 		for i in 0 .. 4 {
 			out[i] = mad(out[i] - dst[i], t, dst[i])

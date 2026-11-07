@@ -51,7 +51,7 @@ const blur_test_identity = [f32(1), 0, 0, 1, 0, 0]!
 
 fn blur_fill_hash(segments []f32, transform [6]f32, color u32, mode BlendMode, blur f32, clips []Path) string {
 	mut px := blur_test_background(64, 56)
-	assert fill_canvas_path(mut px, 64, 56, 256, 2, canvas_path(segments, false), transform, color,
+	assert fill_canvas_path(mut px, 64, 56, 256, 2, canvas_path(segments, false), transform, color, none,
 		1, mode, blur, clips)
 	return sha256.sum(px).hex()[..16]
 }
@@ -59,7 +59,7 @@ fn blur_fill_hash(segments []f32, transform [6]f32, color u32, mode BlendMode, b
 fn blur_stroke_hash(segments []f32, transform [6]f32, line_width f32, cap StrokeCap, blur f32) string {
 	mut px := blur_test_background(64, 56)
 	assert stroke_canvas_path(mut px, 64, 56, 256, 2, canvas_path(segments, false), transform,
-		0xc0306090, 1, .src_over, blur, line_width, cap, .miter, 10, [], 0, [])
+		0xc0306090, none, 1, .src_over, blur, line_width, cap, .miter, 10, [], 0, [])
 	return sha256.sum(px).hex()[..16]
 }
 
@@ -102,7 +102,7 @@ fn test_oversized_ring_declines_untouched() {
 	before := blur_test_background(64, 56)
 	mut px := before.clone()
 	assert !fill_canvas_path(mut px, 64, 56, 256, 1, canvas_path(s, false), blur_test_identity,
-		0xff000000, 1, .src_over, 20, [])
+		0xff000000, none, 1, .src_over, 20, [])
 	assert px == before
 }
 

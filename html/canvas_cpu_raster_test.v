@@ -406,3 +406,67 @@ fn test_blurred_canvas_shadows_match_skia() {
 	}
 	assert expected.any(it != 0 && it != 255)
 }
+
+// Linear, radial and conic gradient fills and strokes take the Skia-free
+// gradient shader; they must match skia.draw_path() with the same style.
+fn test_gradient_canvas_draws_match_skia() {
+	mut linear := CanvasGradient.create_linear(20, 10, 260, 130)
+	linear.add_color_stop(0, 'rgb(220, 40, 60)') or { panic(err) }
+	linear.add_color_stop(0.45, 'rgba(30, 200, 90, 0.4)') or { panic(err) }
+	linear.add_color_stop(1, 'rgb(20, 60, 230)') or { panic(err) }
+	mut radial := CanvasGradient.create_radial(120, 70, 8, 160, 90, 90) or { panic(err) }
+	radial.add_color_stop(0, 'white') or { panic(err) }
+	radial.add_color_stop(0.6, 'rgba(250, 180, 20, 0.7)') or { panic(err) }
+	radial.add_color_stop(1, 'rgb(90, 20, 140)') or { panic(err) }
+	mut conic := CanvasGradient.create_conic(0.8, 150, 80)
+	conic.add_color_stop(0, 'red') or { panic(err) }
+	conic.add_color_stop(0.5, 'rgba(0, 0, 255, 0.5)') or { panic(err) }
+	conic.add_color_stop(1, 'red') or { panic(err) }
+	gradients := [linear, radial, conic, radial]
+	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over, .color_dodge]
+	mut context := cpu_raster_test_context()
+	mut expected := []u8{}
+	mut expected_alpha_type := 0
+	for i, gradient in gradients {
+		stroke := i == 3
+		style := FillOrStrokeStyle.from_gradient(gradient)
+		if stroke {
+			context.drawing_state.stroke_style = style
+		} else {
+			context.drawing_state.fill_style = style
+		}
+		context.drawing_state.transform = CanvasAffineTransform{0.98, 0.08, -0.1, 1, 3, -1}
+		context.drawing_state.global_alpha = if i == 2 { 0.75 } else { 1 }
+		context.drawing_state.line_width = if stroke { 9 } else { 1 }
+		context.drawing_state.current_compositing_and_blending_operator = operations[i]
+		cpu_raster_test_path(mut context, i % 3)
+		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
+		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		state := context.drawing_state
+		command := skia.Command{
+			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
+			style:        canvas_skia_style(style.to_gfx_paint_style())
+			transform:    canvas_skia_transform(state.transform)
+			stroke:       stroke
+			cap:          int(state.line_cap)
+			join:         int(state.line_join)
+			composite:    int(operations[i])
+			width:        f32(state.line_width)
+			miter:        f32(state.miter_limit)
+			global_alpha: f32(state.global_alpha)
+		}
+		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+			command)
+		expected = pixels.clone()
+		expected_alpha_type = 2
+		if stroke {
+			context.stroke()
+		} else {
+			context.fill('nonzero')
+		}
+		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+		assert after.data == expected, 'gradient draw ${i} differs from Skia'
+	}
+	assert expected.any(it != 0 && it != 255)
+}

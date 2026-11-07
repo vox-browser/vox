@@ -67,7 +67,7 @@ fn test_fill_inside_a_circle_and_a_fractional_rect() {
 	path << clip_test_segment(5, [])
 	mut pixels := clip_test_background(64, 60)
 	assert fill_canvas_path(mut pixels, 64, 60, 256, 2, canvas_path(path, false), [f32(1), 0, 0,
-		1, 0, 0]!, 0xff3070c0, 0.9, .src_over, 0, [
+		1, 0, 0]!, 0xff3070c0, none, 0.9, .src_over, 0, [
 		clip_test_circle(30, 28, 24.5),
 		canvas_path(clip_test_rect_segments(8.25, 10.5, 55.75, 49.25), false),
 	])
@@ -77,7 +77,7 @@ fn test_fill_inside_a_circle_and_a_fractional_rect() {
 fn clipped_stroke_hash(path []f32, transform [6]f32, line_width f32, cap StrokeCap, join StrokeJoin, dashes []f32, dash_offset f32, clips []Path) string {
 	mut pixels := clip_test_background(64, 60)
 	assert stroke_canvas_path(mut pixels, 64, 60, 256, 2, canvas_path(path, false), transform,
-		0xe0c04020, 0.85, .src_over, 0, line_width, cap, join, 10, dashes, dash_offset, clips)
+		0xe0c04020, none, 0.85, .src_over, 0, line_width, cap, join, 10, dashes, dash_offset, clips)
 	return sha256.sum(pixels).hex()[..16]
 }
 
