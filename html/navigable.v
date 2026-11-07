@@ -1352,9 +1352,18 @@ fn parse_navigated_xml_document(document &dom.Document, source string) {
 	// A malformed document keeps what was built before the error, as no
 	// error document is translated for this path yet.
 	parse_xml_document_source(document, source) or {}
+	// The end steps of the HTML parser, which the XML parser has no state for.
 	owner.update_readiness(.interactive)
 	owner.update_readiness(.complete)
+	owner.set_page_showing(true)
 	owner.completely_finish_loading()
+	owner.set_ready_for_post_load_tasks(true)
+	if host := document.navigable() {
+		if navigable := navigable_model_for_host(host) {
+			mut mutable_navigable := unsafe { &NavigableModel(navigable) }
+			mutable_navigable.clear_navigation_load_event_guard()
+		}
+	}
 }
 
 fn urls_differ_only_by_fragment(a dom.URL, b dom.URL) bool {

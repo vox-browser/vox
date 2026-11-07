@@ -469,4 +469,6 @@ fn test_browser_child_host_parses_an_xml_response_as_an_xml_document() {
 	assert root.local_name() == 'foo'
 	assert root.as_node().text_content()? == 'Dummy XML document'
 	assert document.as_node().children.len == 1
+	assert document.document_ready_for_post_load_tasks()
+	assert !host.children[0].navigable.delays_the_load_event_of_its_container()
 }
