@@ -280,7 +280,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	} else {
 		binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 	}
-	if action in ['createHTMLDocument', 'documentNode', 'documentValue', 'documentCurrentScript', 'setDocumentTitle',
+	if action in ['createHTMLDocument', 'parseFromString', 'createDocument', 'constructDocument', 'createDocumentType',
+		'createProcessingInstruction', 'createCDATASection', 'documentNode', 'documentValue', 'documentCurrentScript', 'setDocumentTitle',
 		'documentCreateElement', 'documentCreateElementNS', 'documentElementById', 'ownerDocument', 'elementURL'] {
 		return binding.document_query(root, action, selector)
 	}
@@ -289,6 +290,16 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nodeConnected' { return json2.encode(root.is_connected()) }
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'characterData' { return binding.character_data_query(root, selector) }
+	if action == 'doctypeValue' {
+		if !root.is_document_type() { return error('TypeError: Illegal DocumentType receiver') }
+		doctype := unsafe { &dom.DocumentType(root) }
+		return json2.encode(match selector {
+			'name' { doctype.name() }
+			'publicId' { doctype.public_id() }
+			'systemId' { doctype.system_id() }
+			else { return error('Invalid DocumentType property') }
+		})
+	}
 	if action == 'childNodeMutation' { return binding.child_node_query(root, selector) }
 	if action == 'parentNodeMutation' { return binding.parent_node_query(root, selector) }
 	if action == 'dataset' { return compact_dataset_query(root, selector) }

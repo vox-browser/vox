@@ -99,6 +99,67 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 		binding.documents[key] = created
 		return binding.encode_document_state(created)
 	}
+	if action in ['createDocument', 'constructDocument'] {
+		request := json2.decode[map[string]json2.Any](value)!
+		mut created := &dom.Document(unsafe { nil })
+		if action == 'constructDocument' {
+			// https://dom.spec.whatwg.org/#dom-document-document
+			created = dom.Document.construct_impl()
+			created.set_content_type('application/xml')
+			created.set_document_type(.xml)
+			created.set_origin(document.origin())
+		} else {
+			mut doctype := ?&dom.DocumentType(none)
+			if doctype_key := json_string_property(request, 'doctype') {
+				node := binding.node_for_key(doctype_key) or { return error('TypeError: Invalid DocumentType') }
+				if !node.is_document_type() { return error('TypeError: Invalid DocumentType') }
+				doctype = unsafe { &dom.DocumentType(node) }
+			}
+			namespace_ := request['namespace'] or { json2.Any(json2.Null{}) }
+			xml_document := document.implementation().create_document(if namespace_ is string { ?string(namespace_) } else { none },
+				json_string_property(request, 'qualifiedName') or { '' }, doctype)!
+			created = xml_document.as_document()
+		}
+		html.install_document_fragment_parsing_hook(created)
+		css.install_document_selector_query_hook(created)
+		key := '__document_${created.as_node().unique_id()}'
+		binding.documents[key] = created
+		return binding.encode_document_state(created)
+	}
+	if action == 'createDocumentType' {
+		request := json2.decode[map[string]json2.Any](value)!
+		doctype := document.implementation().create_document_type(json_string_property(request, 'name') or { '' },
+			json_string_property(request, 'publicId') or { '' }, json_string_property(request, 'systemId') or { '' })!
+		return binding.encode_node_state(doctype.as_node())
+	}
+	if action == 'createProcessingInstruction' {
+		request := json2.decode[map[string]json2.Any](value)!
+		instruction := document.create_processing_instruction(json_string_property(request, 'target') or { '' },
+			json_string_property(request, 'data') or { '' })!
+		return binding.encode_node_state(unsafe { &dom.Node(instruction) })
+	}
+	if action == 'createCDATASection' {
+		section := document.create_cdata_section(value)!
+		return binding.encode_node_state(unsafe { &dom.Node(section) })
+	}
+	if action == 'parseFromString' {
+		request := json2.decode[map[string]json2.Any](value)!
+		kind := json_string_property(request, 'type') or { '' }
+		supported := match kind {
+			'text/html' { html.DOMParserSupportedType.text_html }
+			'text/xml' { html.DOMParserSupportedType.text_xml }
+			'application/xml' { html.DOMParserSupportedType.application_xml }
+			'application/xhtml+xml' { html.DOMParserSupportedType.application_xhtml_xml }
+			'image/svg+xml' { html.DOMParserSupportedType.image_svg_xml }
+			else { return error('TypeError: Invalid DOMParser type') }
+		}
+		parser := html.DOMParser.create(document)
+		created := parser.parse_from_string(json_string_property(request, 'input') or { '' }, supported)!
+		css.install_document_selector_query_hook(created)
+		key := '__document_${created.as_node().unique_id()}'
+		binding.documents[key] = created
+		return binding.encode_document_state(created)
+	}
 	if action == 'documentValue' {
 		if value == 'hidden' { return json2.encode(document.hidden()) }
 		if value == 'hasFocus' { return json2.encode(document.has_focus_for_bindings()) }
@@ -163,10 +224,17 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 fn compact_document_bootstrap() string {
 	return r'
 const __compactDocuments=new WeakMap(),__compactImplementations=new WeakMap(),__compactImplementationOwners=new WeakMap();
-function Document(){throw new TypeError("Illegal Document constructor");}
+function Document(){
+ if(!new.target)throw new TypeError("Document constructor requires new");
+ const created=__queryElements("","constructDocument","{}"),prototype=new.target.prototype;
+ Object.setPrototypeOf(created,prototype!==null&&(typeof prototype==="object"||typeof prototype==="function")?prototype:Document.prototype);
+ return created;
+}
 function HTMLDocument(){throw new TypeError("Illegal HTMLDocument constructor");}
+function XMLDocument(){throw new TypeError("Illegal XMLDocument constructor");}
 function DOMImplementation(){throw new TypeError("Illegal DOMImplementation constructor");}
-for(const [constructor,parent,name] of [[Document,Node,"Document"],[HTMLDocument,Document,"HTMLDocument"],[DOMImplementation,Object,"DOMImplementation"]]){
+function DocumentType(){throw new TypeError("Illegal DocumentType constructor");}
+for(const [constructor,parent,name] of [[Document,Node,"Document"],[HTMLDocument,Document,"HTMLDocument"],[XMLDocument,Document,"XMLDocument"],[DOMImplementation,Object,"DOMImplementation"],[DocumentType,Node,"DocumentType"]]){
  Object.setPrototypeOf(constructor,parent);Object.setPrototypeOf(constructor.prototype,parent.prototype);
  Object.defineProperty(constructor,"prototype",{writable:false});
  Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
@@ -184,6 +252,49 @@ Object.defineProperty(DOMImplementation.prototype,"createHTMLDocument",{value:fu
  const title=arguments[0],request={};if(arguments.length&&title!==undefined)request.title=__compactDocumentString(title);
  return __queryElements(__compactDocumentState(owner).bridgeKey,"createHTMLDocument",JSON.stringify(request));
 },writable:true,enumerable:true,configurable:true});
+function DOMParser(){if(!new.target)throw new TypeError("DOMParser constructor requires new");}
+Object.defineProperty(DOMParser,"prototype",{writable:false});
+Object.defineProperty(DOMParser.prototype,Symbol.toStringTag,{value:"DOMParser",configurable:true});
+const __compactDOMParserTypes=["text/html","text/xml","application/xml","application/xhtml+xml","image/svg+xml"];
+Object.defineProperty(DOMParser.prototype,"parseFromString",{value:function parseFromString(string,type){
+ if(!(this instanceof DOMParser))throw new TypeError("Illegal DOMParser receiver");
+ if(arguments.length<2)throw new TypeError("parseFromString requires a string and a type");
+ const input=__compactDocumentString(string),kind=__compactDocumentString(type);
+ if(!__compactDOMParserTypes.includes(kind))throw new TypeError("The provided value is not a valid DOMParserSupportedType");
+ return __queryElements("","parseFromString",JSON.stringify({input,type:kind}));
+},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(globalThis,"DOMParser",{value:DOMParser,writable:true,configurable:true});
+const __compactNullableString=value=>value===null||value===undefined?null:__compactDocumentString(value);
+function __compactDocumentRequest(receiver,action,request){
+ try{return __queryElements(__compactDocumentState(receiver).bridgeKey,action,typeof request==="string"?request:JSON.stringify(request));}
+ catch(error){const match=/^(InvalidCharacterError|NamespaceError|NotSupportedError|HierarchyRequestError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}
+}
+Object.defineProperty(DOMImplementation.prototype,"createDocument",{value:function createDocument(namespace,qualifiedName){
+ const owner=__elementApply(__compactNodeGet,__compactImplementationOwners,[this]);if(!owner)throw new TypeError("Illegal DOMImplementation receiver");
+ if(arguments.length<2)throw new TypeError("createDocument requires a namespace and a qualified name");
+ const doctype=arguments.length>2?arguments[2]:null,request={namespace:__compactNullableString(namespace),qualifiedName:qualifiedName===null?"":__compactDocumentString(qualifiedName)};
+ if(doctype!==null&&doctype!==undefined){if(!(doctype instanceof DocumentType))throw new TypeError("createDocument requires a DocumentType or null");request.doctype=__compactNodeState(doctype).bridgeKey;}
+ const created=__compactDocumentRequest(owner,"createDocument",request);
+ Object.setPrototypeOf(created,XMLDocument.prototype);return created;
+},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(DOMImplementation.prototype,"createDocumentType",{value:function createDocumentType(name,publicId,systemId){
+ const owner=__elementApply(__compactNodeGet,__compactImplementationOwners,[this]);if(!owner)throw new TypeError("Illegal DOMImplementation receiver");
+ if(arguments.length<3)throw new TypeError("createDocumentType requires a name, public id and system id");
+ return __compactDocumentRequest(owner,"createDocumentType",{name:__compactDocumentString(name),publicId:__compactDocumentString(publicId),systemId:__compactDocumentString(systemId)});
+},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(DOMImplementation.prototype,"hasFeature",{value:function hasFeature(){return true;},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Document.prototype,"createProcessingInstruction",{value:function createProcessingInstruction(target,data){
+ if(arguments.length<2)throw new TypeError("createProcessingInstruction requires a target and data");
+ return __compactDocumentRequest(this,"createProcessingInstruction",{target:__compactDocumentString(target),data:__compactDocumentString(data)});
+},writable:true,enumerable:true,configurable:true});
+Object.defineProperty(Document.prototype,"createCDATASection",{value:function createCDATASection(data){
+ if(arguments.length<1)throw new TypeError("createCDATASection requires data");
+ return __compactDocumentRequest(this,"createCDATASection",__compactDocumentString(data));
+},writable:true,enumerable:true,configurable:true});
+for(const name of ["name","publicId","systemId"])Object.defineProperty(DocumentType.prototype,name,{get:function(){
+ const state=__elementApply(__compactNodeGet,__compactNodeRecords,[this]);if(!state||state.nodeType!==10)throw new TypeError("Illegal DocumentType receiver");
+ return __queryElements(state.bridgeKey,"doctypeValue",name,true);
+},enumerable:true,configurable:true});
 function __compactDocumentWrapper(state){
  if(state.bridgeKey==="")return document;if(state.__object)return state.__object;
  const object=Object.create(HTMLDocument.prototype);

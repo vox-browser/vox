@@ -113,5 +113,20 @@ Object.defineProperty(Element.prototype,"childNodes",{get:function(){return __co
 Object.defineProperty(document,"childNodes",{get:function(){if(this!==document)throw new TypeError("Illegal Document receiver");return __compactChildNodes(this,{bridgeKey:""});},enumerable:true,configurable:true});
 document.createDocumentFragment=function createDocumentFragment(){return __queryElements("","createFragment","");};
 document.createTextNode=function createTextNode(data){if(arguments.length===0)throw new TypeError("createTextNode requires data");if(typeof data==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements("","createText",String(data));};
+// Elements and other node wrappers install their own tree methods. These keep
+// documents, including created XML documents, on the same native operations.
+for(const [name,value] of Object.entries({
+ appendChild(child){if(arguments.length<1)throw new TypeError("appendChild requires a Node");return __compactInsertNode(this,child,null,false);},
+ insertBefore(child,reference){if(arguments.length<2)throw new TypeError("insertBefore requires two arguments");return __compactInsertNode(this,child,reference,true);},
+ removeChild(child){
+  const own=__compactNodeState(this),target=__compactNodeState(child);
+  try{__queryElements(own.bridgeKey,"removeChild",target.bridgeKey);}
+  catch(error){const message=String(error.message);if(message.indexOf("NotFoundError:")===0)throw new DOMException(message.slice(14).trim(),"NotFoundError");throw error;}
+  if(target.tagName&&target.tagName!=="#node"){target.parentKey="";target.removed=true;}
+  return child;
+ },
+ cloneNode(deep){return __queryElements(__compactNodeState(this).bridgeKey,"cloneNode",deep?"deep":"shallow");},
+ hasChildNodes(){__compactNodeState(this);return this.firstChild!==null;}
+}))if(!Object.prototype.hasOwnProperty.call(Node.prototype,name))Object.defineProperty(Node.prototype,name,{value,writable:true,enumerable:true,configurable:true});
 ' + compact_child_node_bootstrap() + compact_fragment_elements_bootstrap() + compact_create_comment_bootstrap() + compact_parent_node_bootstrap() + compact_shadow_root_bootstrap()
 }

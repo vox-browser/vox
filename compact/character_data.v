@@ -62,7 +62,7 @@ for(const [constructor,base] of [[CharacterData,Node],[Text,CharacterData],[Comm
  Object.defineProperty(constructor,"prototype",{writable:false});Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:constructor.name,configurable:true});
  Object.defineProperty(globalThis,constructor.name,{value:constructor,writable:true,configurable:true});
 }
-function __compactCharacterPrototype(type){return type===3?Text.prototype:type===4?CDATASection.prototype:type===7?ProcessingInstruction.prototype:type===8?Comment.prototype:null;}
+function __compactCharacterPrototype(type){return type===3?Text.prototype:type===4?CDATASection.prototype:type===7?ProcessingInstruction.prototype:type===8?Comment.prototype:type===10&&typeof DocumentType==="function"?DocumentType.prototype:null;}
 function __compactCharacterState(receiver,text){const state=__compactNodeState(receiver);if(!(text?[3,4]:[3,4,7,8]).includes(state.nodeType))throw new TypeError(text?"Illegal Text receiver":"Illegal CharacterData receiver");return state;}
 function __compactCharacterString(value){if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return String(value);}
 function __compactCharacterOperation(state,request){
