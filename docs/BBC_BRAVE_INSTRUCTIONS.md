@@ -6026,7 +6026,12 @@ The original sealed replay and fixed pixel references are still missing; the
 
 ### Preserve exact inputs before launch (2026-11-03)
 
-The BBC runner now accepts an optional preservation destination:
+**Removed 2026-11-07.** `--preserve-inputs` and `tools/browser_input_evidence.py`
+wrote input tarballs outside `Build/`, which put evidence archives into the
+source tree and git history. Keep raw inputs and outputs under `Build/`; commit
+only reports and manifests. The original description follows.
+
+The BBC runner accepted an optional preservation destination:
 
 ```sh
 --preserve-inputs docs/performance/raw/bbc-inputs-MANIFEST_SHA.tar.gz

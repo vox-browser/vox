@@ -25,7 +25,6 @@ import hacker_news_browser_instructions as browser
 from measure_sealed_github_instructions import FixtureHTML, text_content
 from page_archive import Replay, load_archive
 from stackoverflow_browser_instructions import local_only_font_sources
-from browser_input_evidence import preserve_replay_inputs, verify_preservation_identity
 
 REPO = Path(__file__).resolve().parents[1]
 URL = 'https://www.bbc.com/'
@@ -681,8 +680,6 @@ def parse_args(argv=None):
     parser.add_argument('--diff-tool', type=Path, default=REPO / 'Build/hn-home-instructions-20261031/pixel_diff')
     parser.add_argument('--expected-vox', type=Path)
     parser.add_argument('--expected-brave', type=Path)
-    parser.add_argument('--preserve-inputs', type=Path,
-                        help='Verify and preserve sealed replay bytes and supplied references in a tar.gz outside Build before launching')
     parser.add_argument('--capture-reference', action='store_true')
     parser.add_argument('--reference-engine', choices=['vox', 'brave', 'both'], default='both')
     parser.add_argument('--repeat', type=int, default=7)
@@ -728,12 +725,6 @@ def parse_args(argv=None):
     for key, value in vars(args).items():
         if isinstance(value, Path):
             setattr(args, key, value.resolve())
-    if args.preserve_inputs and (args.preserve_inputs == REPO / 'Build'
-                                or REPO / 'Build' in args.preserve_inputs.parents):
-        parser.error('Preserved inputs must be outside Build so build cleanup cannot remove them')
-    if args.preserve_inputs and (args.preserve_inputs == args.output
-                                or args.output in args.preserve_inputs.parents):
-        parser.error('Preserved inputs must be outside the trial output directory')
     return args
 
 
@@ -889,13 +880,6 @@ def preserve_production_compilation(output, apps, pinned):
 def main():
     args = parse_args()
     expected = fixture_expectations(args.archive)
-    preserved = None
-    if args.preserve_inputs:
-        preserved = preserve_replay_inputs(args.archive,
-            {engine: path for engine, path in [('vox', args.expected_vox), ('brave', args.expected_brave)]
-             if path}, args.preserve_inputs)
-        browser.require(preserved['replay_manifest_sha256'] == expected['manifest_sha256'],
-                        'Replay manifest changed after fixture validation')
     args.output.mkdir(parents=True, exist_ok=False)
     args.audit_config = args.output / 'audit-config.json'
     browser.write_json(args.audit_config, dict(selectors=SELECTORS))
@@ -931,22 +915,16 @@ def main():
         'capture_brave_reference.py', 'process_instruction_counts.py', 'run_memory_bounded.py',
         'check_pixel_equality.py', 'pikabu_browser_instructions.py'))
     paths.add(REPO / 'tools/stackoverflow_browser_instructions.py')
-    paths.add(REPO / 'tools/browser_input_evidence.py')
     paths.update(path for path in (args.expected_vox, args.expected_brave) if path)
     paths.update((args.diff_tool, args.audit_config))
-    if args.preserve_inputs:
-        paths.add(args.preserve_inputs)
     pinned = browser.fingerprint(paths)
     compilation_paths = preserve_production_compilation(args.output, apps, pinned)
     browser.require(browser.fingerprint(paths) == pinned,
                     'Pinned inputs changed during compiler evidence preservation')
     paths.update(compilation_paths)
     pinned.update(browser.fingerprint(compilation_paths))
-    if preserved:
-        verify_preservation_identity(preserved, pinned)
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
         production_compilation_evidence=str(args.output / 'production-compilation.json'),
-        preserved_input_archive=preserved,
         font_generation_diagnostic_policy='Per-cache-hit tracing is rejected outside reference diagnostics; counting alone must not enable it',
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,

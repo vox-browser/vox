@@ -1045,22 +1045,6 @@ class BBCInstructionTests(unittest.TestCase):
                 run_trial('control', 'same-app', 'control', args)
         self.assertIs(args.vox_environment, environment)
 
-    def test_input_preservation_is_optional_and_requires_independent_storage(self):
-        argv = ['--archive', 'archive', '--output', 'Build/result',
-                '--memory-guard-registry', 'pids.json', '--capture-reference']
-        self.assertIsNone(parse_args(argv).preserve_inputs)
-        path = Path('docs/performance/raw/bbc-inputs.tar.gz').resolve()
-        self.assertEqual(parse_args(argv + ['--preserve-inputs', str(path)]).preserve_inputs, path)
-        for destination in ['Build/inputs.tar.gz', 'Build', 'Build/result/inputs.tar.gz']:
-            with self.subTest(destination=destination), self.assertRaises(SystemExit):
-                parse_args(argv + ['--preserve-inputs', destination])
-        with TemporaryDirectory() as directory:
-            output = str(Path(directory) / 'trial')
-            external = ['--archive', 'archive', '--output', output,
-                        '--memory-guard-registry', 'pids.json', '--capture-reference']
-            with self.assertRaises(SystemExit):
-                parse_args(external + ['--preserve-inputs', output + '/inputs.tar.gz'])
-
     def test_verified_identity_survives_a_later_shared_bundle_replacement(self):
         with TemporaryDirectory() as directory:
             root = Path(directory)
