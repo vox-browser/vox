@@ -3,7 +3,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from prepare_prealloc_runtime import patch_allocator, prepare, validate_allocator
+from prepare_prealloc_runtime import (CAPTURE_DECLARATIONS, declare_capture_helpers,
+                                      patch_allocator, prepare, validate_allocator)
 
 
 UNBOUNDED = """module builtin
@@ -107,6 +108,35 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
                 allocator.write_text(allocator.read_text() + '\n// changed\n')
                 with self.assertRaisesRegex(RuntimeError, 'modified staged V runtime'):
                     prepare(compiler, base / 'output')
+
+    def test_staged_builtin_declares_the_os_capture_helpers(self):
+        compat = 'module builtin\n\n$if !v3_c_extern_declarations ? {\n\t#include <poll.h>\n}\n'
+        declared = declare_capture_helpers(compat)
+        self.assertTrue(declared.startswith(compat.rstrip('\n')))
+        self.assertEqual(declared.count(CAPTURE_DECLARATIONS), 1)
+        self.assertEqual(declare_capture_helpers(declared), declared)
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            vlib = base / 'v-source/vlib'
+            closure = vlib / 'builtin/closure'
+            closure.mkdir(parents=True)
+            (vlib / 'builtin/allocation.c.v').write_text(UNBOUNDED)
+            (vlib / 'builtin/prealloc.c.v').write_text(PREALLOC)
+            (vlib / 'builtin/c_headers_compat_nix.c.v').write_text(compat)
+            (closure / 'closure.c.v').write_text('module closure\nfn closure_init_body() {\n}\n')
+            compiler = base / 'v-source/v'
+            compiler.write_bytes(b'compiler identity')
+            with patch('prepare_prealloc_runtime.compiler_vlib', return_value=vlib):
+                # Without vlib's declaration header there is nothing to include.
+                staged = prepare(compiler, base / 'output')
+                self.assertTrue((staged / 'builtin/c_headers_compat_nix.c.v').is_symlink())
+                (vlib / 'os').mkdir()
+                (vlib / 'os/execute_capture_legacy.h').write_text('int v_os_exec_capture_start(char **, int *, int *);\n')
+                staged = prepare(compiler, base / 'output')
+                staged_compat = staged / 'builtin/c_headers_compat_nix.c.v'
+                self.assertFalse(staged_compat.is_symlink())
+                self.assertIn(CAPTURE_DECLARATIONS, staged_compat.read_text())
+                self.assertEqual((vlib / 'builtin/c_headers_compat_nix.c.v').read_text(), compat)
 
     def test_the_same_compiler_installed_at_another_path_reuses_its_runtime(self):
         with tempfile.TemporaryDirectory() as directory:

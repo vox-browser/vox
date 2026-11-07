@@ -57,6 +57,25 @@ def wrap_function(source, signature, before="", after=""):
     return result
 
 
+CAPTURE_DECLARATIONS = '#include "@VEXEROOT/vlib/os/execute_capture_legacy.h"'
+
+
+def declare_capture_helpers(compat):
+    """Declare os's native process-capture helpers in the staged runtime.
+
+    The staged library links each module to V's checkout, so V resolves those
+    sources outside the staged compiler root. It then does not recognize os as
+    part of its own library and omits the helpers' prototypes, leaving their
+    calls as implicit declarations. vlib keeps a header with the same signatures
+    for compilers that do not emit them; include it unconditionally here.
+    """
+    if CAPTURE_DECLARATIONS in compat:
+        return compat
+    return (compat.rstrip("\n") + "\n\n// Staged by tools/prepare_prealloc_runtime.py: os sources resolve outside\n"
+            "// this compiler root, so V does not declare their native capture helpers.\n"
+            + CAPTURE_DECLARATIONS + "\n")
+
+
 def prepare(compiler, output_root=None):
     repo = Path(__file__).resolve().parents[1]
     compiler = Path(shutil.which(str(compiler)) or compiler).resolve()
@@ -78,6 +97,9 @@ def prepare(compiler, output_root=None):
     owned = {"builtin/allocation.c.v": allocation.encode(),
              "builtin/prealloc.c.v": prealloc.encode(),
              "builtin/closure/" + helper.name: helper.read_bytes()}
+    compat = builtin / "c_headers_compat_nix.c.v"
+    if compat.is_file() and (vlib / "os/execute_capture_legacy.h").is_file():
+        owned["builtin/" + compat.name] = declare_capture_helpers(compat.read_text()).encode()
     for name, data in list(inputs.items()):
         if name.startswith("builtin/closure/"):
             if name.endswith("/closure.c.v"):
