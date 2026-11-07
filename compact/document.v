@@ -234,6 +234,14 @@ fn (mut binding CompactElementQueryBinding) document_query(root &dom.Node, actio
 	if action == 'documentCreateElement' {
 		return binding.encode_element_state(document.create_element(value)!)
 	}
+	// createElement(localName, {is}) creates a customized built-in element.
+	if action == 'documentCreateElementWithOptions' {
+		request := json2.decode[map[string]json2.Any](value)!
+		name := json_string_property(request, 'name') or { return error('Missing local name') }
+		return binding.encode_element_state(document.create_element_with_options(name, dom.ElementCreationOptions{
+			is_: json_string_property(request, 'is')
+		})!)
+	}
 	if action == 'documentCreateElementNS' {
 		request := json2.decode[map[string]json2.Any](value)!
 		name := json_string_property(request, 'name') or { return error('Missing qualified name') }
@@ -375,7 +383,9 @@ for(const [name,value] of [["nodeType",9],["nodeName","#document"],["ownerDocume
 Object.defineProperty(Document.prototype,"childNodes",{get:function(){return __compactChildNodes(this,__compactDocumentState(this));},enumerable:true,configurable:true});
 for(const name of ["firstChild","lastChild"])Object.defineProperty(Document.prototype,name,{get:function(){return __queryElements(__compactDocumentState(this).bridgeKey,name,"");},enumerable:true,configurable:true});
 for(const name of ["querySelector","querySelectorAll","getElementById","getElementsByTagName","getElementsByClassName"]){Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(!arguments.length)throw new TypeError(name+" requires an argument");value=__compactDocumentString(value);return name==="getElementsByTagName"?__tagCollection(state.bridgeKey,value):__queryElements(state.bridgeKey,name==="getElementById"?"documentElementById":name,value);},writable:true,enumerable:true,configurable:true});}
-for(const [name,action] of [["createElement","documentCreateElement"],["createTextNode","createText"],["createDocumentFragment","createFragment"]])Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(name!=="createDocumentFragment"&&!arguments.length)throw new TypeError(name+" requires an argument");return __queryElements(state.bridgeKey,action,name==="createDocumentFragment"?"":__compactDocumentString(value));},writable:true,enumerable:true,configurable:true});
+for(const [name,action] of [["createElement","documentCreateElement"],["createTextNode","createText"],["createDocumentFragment","createFragment"]])Object.defineProperty(Document.prototype,name,{value:function(value){const state=__compactDocumentState(this);if(name!=="createDocumentFragment"&&!arguments.length)throw new TypeError(name+" requires an argument");
+ if(name==="createElement"&&arguments.length>1){const options=arguments[1];if(options!==null&&typeof options==="object"&&options.is!==undefined)return __queryElements(state.bridgeKey,"documentCreateElementWithOptions",JSON.stringify({name:__compactDocumentString(value),is:__compactDocumentString(options.is)}));}
+ return __queryElements(state.bridgeKey,action,name==="createDocumentFragment"?"":__compactDocumentString(value));},writable:true,enumerable:true,configurable:true});
 Object.defineProperty(Document.prototype,"createElementNS",{value:function createElementNS(namespace,name){const state=__compactDocumentState(this);if(arguments.length<2)throw new TypeError("createElementNS requires two arguments");namespace=namespace==null?null:__compactDocumentString(namespace);name=__compactDocumentString(name);const element=__queryElements(state.bridgeKey,"documentCreateElementNS",JSON.stringify({namespace:namespace,name:name}));__compactNodeState(element).tagName=name;return element;},writable:true,enumerable:true,configurable:true});
 function __compactDocumentElementBindings(object,state){
  __compactHrefTextBindings(object,state);

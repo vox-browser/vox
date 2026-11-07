@@ -306,7 +306,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	if action in ['createHTMLDocument', 'parseFromString', 'createDocument', 'constructDocument', 'createDocumentType',
 		'createProcessingInstruction', 'createCDATASection', 'documentNode', 'documentValue', 'documentCurrentScript', 'setDocumentTitle',
-		'documentCreateElement', 'documentCreateElementNS', 'documentElementById', 'ownerDocument', 'elementURL'] {
+		'documentCreateElement', 'documentCreateElementWithOptions', 'documentCreateElementNS', 'documentElementById', 'ownerDocument', 'elementURL'] {
 		return binding.document_query(root, action, selector)
 	}
 	if action == 'removeChild' { return binding.remove_child_query(root, selector) }
@@ -473,6 +473,10 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		// key, so later attribute writes, queries and insertion reach it.
 		working_copy := root.clone_node_binding(selector == 'deep')!
 		copy_compact_script_started_state(root, working_copy)
+		// cloneNode() is [CEReactions]: a customized built-in copy is upgraded
+		// before it is returned.
+		mut clone_document := unsafe { &dom.Document(working_copy.document()) }
+		clone_document.invoke_custom_element_reactions()
 		return binding.encode_node_state(working_copy)
 	}
 	if action == 'getElementById' {
