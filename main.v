@@ -469,6 +469,7 @@ mut:
 	adblock_tokens                      BrowserAdblockTokenCache
 	history                             []HistoryEntry
 	history_index                       int = -1
+	history_scroll_restoration          ?HistoryScrollRestoration
 	hovered_link                        string
 	navigation_results                  chan NavigationResult
 	navigation_generation               int
@@ -587,7 +588,7 @@ struct HistoryEntry {
 	url    string
 	markup string
 	content_type string = 'text/html'
-	// Saved when a same-document (fragment) navigation leaves this entry.
+	// Saved when navigation leaves this entry; back, forward and reload restore it.
 	scroll_y ?f64
 }
 
@@ -3616,7 +3617,7 @@ fn (mut app BrowserApp) adopt_current_document_geometry() {
 	app.root_box = result.paint_tree
 	layout.release_paint_tree(previous_storage)
 	app.content_height = app.document_content_height(app.viewport_height)
-	app.set_scroll_y(app.scroll_y, app.viewport_height + app.chrome_height())
+	app.set_scroll_y(app.history_restored_scroll_y(), app.viewport_height + app.chrome_height())
 }
 
 // EventHandler updates layout before hit testing chrome, sends captured input
@@ -3807,7 +3808,7 @@ fn (mut app BrowserApp) relayout(window_width int, window_height int) {
 	app.content_height = app.document_content_height(viewport_height)
 	app.viewport_width = viewport_width
 	app.viewport_height = viewport_height
-	app.set_scroll_y(app.scroll_y, window_height)
+	app.set_scroll_y(app.history_restored_scroll_y(), window_height)
 	app.paint_commands_pending = true
 	if app.frame_preparation_depth == 0 {
 		app.record_document_paint_commands()
@@ -3848,6 +3849,7 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
 	defer { load_instruction_stage.finish() }
+	if add_history { app.save_history_scroll_position() }
 	app.dismiss_browser_popup()
 	loaded := if is_browser_history_url(input_loaded.url) {
 		LoadedPage{...input_loaded, url: browser_history_url, markup: app.browser_history_markup(), content_type: 'text/html'}
@@ -4225,6 +4227,7 @@ fn (mut app BrowserApp) history_go(delta int) {
 	if target < 0 || target >= app.history.len {
 		return
 	}
+	app.save_history_scroll_position()
 	from_index := app.history_index
 	app.history_index = target
 	app.navigation_generation++
@@ -4233,6 +4236,7 @@ fn (mut app BrowserApp) history_go(delta int) {
 	entry := app.history[target]
 	app.page_model.traverse_the_history_by_delta(delta)
 	if app.traverse_to_a_fragment(from_index, target) { return }
+	app.start_history_scroll_restoration(voidptr(app.document))
 	app.install_loaded_page(LoadedPage{
 		url: entry.url
 		markup: entry.markup
@@ -4245,7 +4249,10 @@ fn (mut app BrowserApp) reload() {
 	if app.history_index < 0 || app.history_index >= app.history.len {
 		return
 	}
+	replaced := voidptr(app.document)
+	app.save_history_scroll_position()
 	app.navigate(app.history[app.history_index].url, false)
+	app.start_history_scroll_restoration(replaced)
 }
 
 fn (app &BrowserApp) maximum_scroll(window_height int) f64 {
@@ -4261,6 +4268,8 @@ fn (app &BrowserApp) maximum_scroll(window_height int) f64 {
 }
 
 fn (mut app BrowserApp) scroll_by(delta f64, window_height int) {
+	// Horizontal gestures such as a history swipe reach here with no delta.
+	if delta != 0 { app.cancel_history_scroll_restoration() }
 	app.set_scroll_y(app.scroll_y + delta, window_height)
 }
 
@@ -7577,6 +7586,7 @@ fn (mut app BrowserApp) draw() {
 	app.advance_document_animations(window.width, content_viewport_height)
 	app.scroll_profile_mark('animations')
 	app.apply_screenshot_scroll_if_ready(window.height)
+	app.finish_history_scroll_restoration(window.height)
 	app.finish_frame_preparation()
 	app.scroll_profile_mark('prepare')
 	// Preparation can replace a scripted or absent document with an HTML/CSS
@@ -8351,9 +8361,11 @@ fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
 		.page_down { app.scroll_by(f64(height) * 0.8, height) }
 		.space { app.scroll_page_with_space(modifier, height) }
 		.home {
+			app.cancel_history_scroll_restoration()
 			app.set_scroll_y(0.0, height)
 		}
 		.end {
+			app.cancel_history_scroll_restoration()
 			app.set_scroll_y(app.maximum_scroll(height), height)
 		}
 		.escape { app.ctx.quit() }
