@@ -92,9 +92,11 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	// and SkStroke outlines for wider ones, inside the anti-aliased clip, with
 	// any composite operation, including the runtime-effect plus-darker and
 	// plus-lighter blenders. A blurred shadow takes Skia's blur mask filter,
-	// which replaces the canvas filters; other filtered draws stay on Skia.
+	// which replaces the canvas filters; filter lists of color matrices
+	// become the paint's color filter, and other filtered draws stay on Skia.
 	solid := native_style.kind == 0
-	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || filters.len == 0) {
+	color_only, color_filter := canvas_cpu_color_filter(filters)
+	if native_style.kind <= 4 && ((solid && f32(blur) > 0) || color_only) {
 		cpu_style := canvas_cpu_style(native_style)
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_path := cpuraster.canvas_path(native_path.segments, native_path.even_odd)
@@ -104,11 +106,11 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
 					cpu_style, f32(alpha), mode, f32(blur), f32(state.line_width), cpu_stroke_cap(state.line_cap), cpu_stroke_join(state.line_join),
 					f32(state.miter_limit), state.dash_list.map(f32(it)), f32(state.line_dash_offset),
-					cpu_clips)
+					cpu_clips, color_filter)
 			} else {
 				cpuraster.fill_canvas_path(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 					bitmap.pitch, int(bitmap.alpha_type), cpu_path, native_transform, native_style.color,
-					cpu_style, f32(alpha), mode, f32(blur), cpu_clips)
+					cpu_style, f32(alpha), mode, f32(blur), cpu_clips, color_filter)
 			}
 			if painted {
 				mutable_bitmap.alpha_type = 2
@@ -139,6 +141,24 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_path(path Canvas
 	assert painted
 	mutable_bitmap.alpha_type = 2
 	mutable_bitmap.native_rows_are_top_down = true
+}
+
+// canvas_cpu_color_filter reports whether make_filter() reduces the filters
+// to color matrices: kinds 2 and 4 (opacity, outside Chromium's table)
+// with their clamp flags, composed in order. The filter is none for an
+// empty list or when every matrix is dropped as non-finite.
+fn canvas_cpu_color_filter(filters []skia.Filter) (bool, ?cpuraster.ColorFilter) {
+	mut matrices := []cpuraster.MatrixColorFilter{}
+	for filter in filters {
+		if filter.kind != 2 && filter.kind != 4 {
+			return false, none
+		}
+		matrices << cpuraster.MatrixColorFilter{
+			matrix: filter.matrix
+			clamp:  filter.clamp
+		}
+	}
+	return true, cpuraster.new_color_filter(matrices)
 }
 
 // The cpuraster style for a native style of kind 0 to 4: none for the solid
@@ -220,9 +240,11 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 	// does, with its quarter-pixel positions and mask gamma, and the masks
 	// blit with the paint inside the anti-aliased clip. Glyphs over 256
 	// pixels per em fill their 64-point outlines instead, and color glyphs
-	// are CoreText's premultiplied images drawn as sprites. Filtered draws
+	// are CoreText's premultiplied images drawn as sprites. Filter lists of
+	// color matrices become the paint's color filter; other filtered draws
 	// stay on Skia.
-	if native_style.kind <= 4 && filters.len == 0 {
+	color_only, color_filter := canvas_cpu_color_filter(filters)
+	if native_style.kind <= 4 && color_only {
 		if mode := cpuraster.canvas_blend_mode(int(state.current_compositing_and_blending_operator)) {
 			cpu_run := cpuraster.CanvasGlyphRun{
 				font_path:   glyphs.font_path
@@ -235,7 +257,7 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 			if cpuraster.fill_canvas_glyphs(mut mutable_bitmap.data, bitmap.width, bitmap.height,
 				bitmap.pitch, int(bitmap.alpha_type), cpu_run, native_transform, native_style.color,
 				canvas_cpu_style(native_style), f32(state.global_alpha), mode, clips.map(cpuraster.canvas_path(it.segments,
-				it.even_odd))) {
+				it.even_odd)), color_filter) {
 				mutable_bitmap.alpha_type = 2
 				mutable_bitmap.native_rows_are_top_down = true
 				return true
