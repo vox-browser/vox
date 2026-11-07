@@ -16,7 +16,10 @@ const media_element_event_handler_names = ['abort', 'canplay', 'canplaythrough',
 pub type MediaElementReplayHook = fn (&Runtime) !
 
 // The native shell can configure its platform inputs before the first replay
-// of attributes on a newly created, still-disconnected media owner.
+// of attributes on a newly created, still-disconnected media owner. It also
+// runs once for script-reachable owners that a native factory created before
+// this host bound them (Document.createElement, fragment parsing), so it must
+// be idempotent.
 pub type MediaElementCreatedHook = fn (&dom.Element)
 
 @[heap]
@@ -90,7 +93,16 @@ pub fn (host &MediaElementHost) media_element_for_binding(wrapper voidptr) !&htm
 
 fn (mut host MediaElementHost) element_for_binding(key string, tag string) !&dom.Element {
 	if element := host.runtime.canvas_element_for_binding(key) {
+		configure := key !in host.elements && element.is_html_element()
+			&& element.local_name() in ['audio', 'video'] && element.local_name() == tag
 		host.elements[key] = element
+		// Document.createElement() now builds the owner in the native document
+		// factory, so it reaches this host already registered by another provider.
+		// Configure it like an owner created here; otherwise its src never gets
+		// a platform decoder (old Reddit's script-created HLS <video>).
+		if configure {
+			if hook := host.created_element_hook { hook(element) }
+		}
 	}
 	if element := host.elements[key] {
 		if element.is_html_element() && element.local_name() in ['audio', 'video']
