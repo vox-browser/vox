@@ -1667,7 +1667,7 @@ fn check_composite_draws(oracle Oracle, count int) !(int, int) {
 		height := rand.intn(100) or { 0 } + 1
 		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
 		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
-		composite := rand.intn(26) or { 0 }
+		composite := rand.intn(28) or { 0 }
 		clips := if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
 		initial := random_composite_bitmap(width, height, pitch, alpha_type)
 		color := random_composite_color()
@@ -1845,7 +1845,7 @@ fn check_shadow_draws(oracle Oracle, count int) !(int, int, int) {
 		height := rand.intn(100) or { 0 } + 1
 		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
 		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
-		composite := if rand.intn(3) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+		composite := if rand.intn(3) or { 0 } == 0 { rand.intn(28) or { 0 } } else { 0 }
 		clips := if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
 		initial := random_composite_bitmap(width, height, pitch, alpha_type)
 		blur := random_shadow_blur()
@@ -2064,7 +2064,7 @@ fn check_style_draws(oracle Oracle, count int, label string, make_style fn (int,
 		height := rand.intn(90) or { 0 } + 1
 		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
 		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
-		composite := if rand.intn(2) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+		composite := if rand.intn(2) or { 0 } == 0 { rand.intn(28) or { 0 } } else { 0 }
 		clips := if rand.intn(5) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
 		initial := random_composite_bitmap(width, height, pitch, alpha_type)
 		style := ?cpuraster.CanvasPaintStyle(make_style(width, height))
@@ -2335,7 +2335,7 @@ fn check_clear_draws(oracle Oracle, count int) !(int, int) {
 			transform:    transform
 			global_alpha: random_composite_alpha()
 			clips:        if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
-			composite:    rand.intn(26) or { 0 }
+			composite:    rand.intn(28) or { 0 }
 			color:        if rand.intn(3) or { 0 } == 0 { u32(0xff000000) } else { 0 }
 			destination:  random_bitmap_rect(width, height)
 		}
@@ -2433,7 +2433,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			transform:    transform
 			global_alpha: random_composite_alpha()
 			clips:        if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
-			composite:    if rand.intn(2) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+			composite:    if rand.intn(2) or { 0 } == 0 { rand.intn(28) or { 0 } } else { 0 }
 			destination:  destination
 			source:       source
 			image:        image
