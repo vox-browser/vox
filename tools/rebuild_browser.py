@@ -29,6 +29,14 @@ set -eu
 repo=$(git rev-parse --show-toplevel)
 exec python3 "$repo/tools/rebuild_browser.py" --request
 '''
+PRE_COMMIT_HOOK = '''#!/bin/sh
+# Vox staged-file check; managed by tools/rebuild_browser.py.
+set -eu
+repo=$(git rev-parse --show-toplevel)
+# Worktrees of older branches share these hooks but may predate the check.
+[ -f "$repo/tools/pre_commit_check.py" ] || exit 0
+exec python3 "$repo/tools/pre_commit_check.py"
+'''
 
 
 def git(root, *args):
@@ -348,11 +356,14 @@ def install_hook(root):
     if not hooks.resolve().is_relative_to(root.resolve()):
         raise RuntimeError('Shared external hooks directory retained; install the Vox request manually')
     hooks.mkdir(parents=True, exist_ok=True)
-    if path.exists() and path.read_text() != HOOK:
-        raise RuntimeError('Existing post-commit hook retained; install the Vox request manually')
-    path.write_text(HOOK)
-    path.chmod(0o755)
-    print('Installed canonical master rebuild hook: ' + str(path))
+    installs = [(path, HOOK, 'post-commit'), (hooks / 'pre-commit', PRE_COMMIT_HOOK, 'pre-commit')]
+    for hook, content, name in installs:
+        if hook.exists() and hook.read_text() != content:
+            raise RuntimeError(f'Existing {name} hook retained; install the Vox hook manually')
+    for hook, content, name in installs:
+        hook.write_text(content)
+        hook.chmod(0o755)
+    print('Installed canonical master rebuild and staged-file hooks in ' + str(hooks))
 
 
 def main():

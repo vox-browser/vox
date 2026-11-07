@@ -424,12 +424,20 @@ class ProductionBuildTests(unittest.TestCase):
                 build.install_hook(root)
                 build.install_hook(root)
                 hook = root / '.git/hooks/post-commit'
+                check = root / '.git/hooks/pre-commit'
                 self.assertEqual(hook.read_text(), build.HOOK)
+                self.assertEqual(check.read_text(), build.PRE_COMMIT_HOOK)
                 self.assertTrue(hook.stat().st_mode & 0o111)
+                self.assertTrue(check.stat().st_mode & 0o111)
                 hook.write_text('custom hook\n')
                 with self.assertRaisesRegex(RuntimeError, 'Existing post-commit hook retained'):
                     build.install_hook(root)
                 self.assertEqual(hook.read_text(), 'custom hook\n')
+                hook.write_text(build.HOOK)
+                check.write_text('custom check\n')
+                with self.assertRaisesRegex(RuntimeError, 'Existing pre-commit hook retained'):
+                    build.install_hook(root)
+                self.assertEqual(check.read_text(), 'custom check\n')
 
     def test_build_and_fresh_smoke_run_through_separate_memory_guards(self):
         with tempfile.TemporaryDirectory() as directory:
