@@ -56,6 +56,11 @@ function __compactHyperlinkBindings(object,state){
   }});
  if(!__hrefTextHasOwn.call(object,"toString"))__hrefTextDefine(object,"toString",{configurable:true,enumerable:true,writable:true,value:function toString(){return this.href;}});
 }
+let __compactDocumentEncodingIsLegacy;
+function __compactLegacyEncodedDocument(){
+ if(__compactDocumentEncodingIsLegacy===undefined){const name=String(document.characterSet||"UTF-8").toUpperCase();__compactDocumentEncodingIsLegacy=name!=="UTF-8";}
+ return __compactDocumentEncodingIsLegacy;
+}
 function __compactHrefTextBindings(object,state){
  __compactHyperlinkBindings(object,state);
  if(typeof __hrefTextNative!=="function"||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||!["a","area","link","base"].includes(state.tagName))return;
@@ -63,7 +68,9 @@ function __compactHrefTextBindings(object,state){
  __hrefTextDefine(object,"href",{configurable:original.configurable,enumerable:original.enumerable,set:original.set,get:function(){
   if(!Object.prototype.hasOwnProperty.call(state.attributes,"href"))return "";
   const value=String(state.attributes.href);
-  if(__compactOwnerDocument(object)!==document)return __queryElements(state.bridgeKey,"elementURL","href");
+  // A document in a legacy encoding encodes the query with it; only the
+  // native URL parser knows that encoding.
+  if(__compactOwnerDocument(object)!==document||__compactLegacyEncodedDocument())return __queryElements(state.bridgeKey,"elementURL","href");
   try{
    const constructor=globalThis.URL,base=__state.location;
    if(constructor===__hrefTextConstructor&&constructor.prototype===__hrefTextPrototype&&typeof base==="string"){
