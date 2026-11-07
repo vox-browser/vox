@@ -7,8 +7,16 @@
 - Do not create or use feature branches, detached checkouts, or Git worktrees
   for development. Serialize edits and commits in the canonical checkout.
 - Build and test from the canonical checkout; do not copy or clone the source
-  tree into `Build/` for individual sessions. Keep build identities, receipts,
-  logs, and generated outputs there without duplicating the source tree.
+  tree into `Build/` for individual sessions.
+- `Build/` is scratch and must not grow. It keeps the shared bundle and its
+  libraries (`Build/v`), native dependencies (`Build/deps`), the production
+  build state and `Build/pixel-tools/pixel_diff`; everything else is per-job
+  output. Never copy V sources, tools, generated C or app bundles into it: try
+  candidate changes in the canonical checkout, then commit or revert them.
+  Delete a job's directory, lock and guard report when the job finishes.
+  `tools/prune_build.py` runs after each production build and removes entries
+  idle for 12 hours; production receipts keep generated C only for the
+  published and newest builds.
 - Do not copy browser app bundles or snapshot repository tools into session or
   benchmark directories under `Build/`. Reference `Build/v/Vox.app`, installed
   comparison browsers, and the canonical tools directly. Verify input hashes
@@ -31,7 +39,12 @@
   they are independently reviewable.
 - Never commit evidence or measurement archives (`.tar.gz`, `.zip`, `.gz`) or
   force-add ignored files under `docs/`; keep archives local and commit the
-  report or manifest that describes them.
+  report or manifest that describes them. The pre-commit hook
+  (`tools/pre_commit_check.py`, installed by
+  `python3 tools/rebuild_browser.py --install-hook`) rejects archives outside
+  `adblock/`, `tools/adblock/fixtures/` and `Tests/Browser/Brave/candidates/`,
+  anything under `Build/`, and files over 32 MiB. Do not bypass it with
+  `--no-verify`.
 
 ## UI implementation
 
@@ -229,9 +242,10 @@
   windowed browser processes, so pass the same private PID registry to the guard
   as `--adopt-pids-from PATH` and to the Hacker News driver as
   `--memory-guard-registry PATH`; verify that adoption and browser RSS accounting
-  succeeded. Keep raw commands, logs, counters, PNGs, PID identities, host CPU
-  count/load/timestamps, summaries and actual browser/benchmark/guard exits in
-  a unique `Build/` directory, with durable evidence linked from the site report.
+  succeeded. Write raw commands, logs, counters, PNGs, PID identities, host CPU
+  count/load/timestamps and actual browser/benchmark/guard exits to a unique
+  `Build/` directory while the cohort runs; record the counts, identities and
+  exits the claim needs in the site report, then delete the directory.
 - Keep `v -profile` and other instrumentation in separate diagnostic runs.
   Record the selected JavaScript backend and separately verify whether the
   page-script runtime initializes and executes code. `--enable-javascript` or
@@ -359,8 +373,9 @@ completed production bundle by default, following the shared-build rules above.
   Do not infer raster reuse from integer steps; inspect the recorded reuse
   counters. The historical Pikabu 61.7/68.7 figures used this workload and did
   not establish the 60 fps goal; see `docs/PIKABU_SCROLLING.md`.
-- Preserve raw logs, commands, summaries, and actual browser/guard exit codes
-  under a unique `Build/` directory. Missing publications, stationary input,
+- Record commands, summaries, and actual browser/guard exit codes in the report;
+  keep raw logs in a unique `Build/` directory only while the work is in
+  progress. Missing publications, stationary input,
   crashes, timeouts, or changed build identities invalidate an acceptance run.
   A compile-only check does not execute tests. Keep pixel correctness and the
   existing focused/broad verification cadence while optimizing.
