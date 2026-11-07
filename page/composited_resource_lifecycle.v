@@ -9,7 +9,14 @@ module page
 import dom
 
 pub fn (p &Page) has_media_element_playing_audio(document &dom.Document) bool {
+	document_id := document.unique_id()
 	for id, state in p.media_elements {
+		// Registrations outlive the documents that made them; only the queried
+		// document's own media can be playing in it, and only those owners are
+		// known to be alive.
+		if state.document_id != document_id {
+			continue
+		}
 		if callbacks := p.media_element_callbacks_[id] {
 			if callbacks.is_playing_audio != unsafe { nil } && callbacks.is_playing_audio(callbacks.target, document) {
 				return true
@@ -18,8 +25,7 @@ pub fn (p &Page) has_media_element_playing_audio(document &dom.Document) bool {
 		}
 		// Preserve the explicit state-record adapter for owners without a concrete
 		// HTML callback; actual media above queries its current Document and state.
-		if p.page_mute_state() != .muted && state.document_id == document.unique_id()
-			&& state.playing_audio && !state.muted {
+		if p.page_mute_state() != .muted && state.playing_audio && !state.muted {
 			return true
 		}
 	}
