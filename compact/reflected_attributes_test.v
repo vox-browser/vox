@@ -10,8 +10,8 @@ fn test_aria_and_html_element_attributes_reflect_their_content_attributes() {
 	defer { runtime.close() }
 	mut messages := []string{}
 	run_document_javascript(document, 'about:blank', [
-		'console.log(box.role,box.ariaLabel,String(box.ariaHidden),box.dir,box.tabIndex,link.tabIndex,inner.tabIndex,inner.translate,link.draggable,inner.draggable,String(box.popover),box.contentEditable);box.ariaHidden="true";box.ariaLabel=null;box.popover="";box.inert=true;console.log(box.getAttribute("aria-hidden"),box.hasAttribute("aria-label"),box.popover,box.hasAttribute("inert"));try{box.contentEditable="maybe"}catch(e){console.log(e.name)}box.contentEditable="PLAINTEXT-ONLY";console.log(box.getAttribute("contenteditable"),box.contentEditable,inner.slot,box.enterKeyHint);',
+		'console.log(box.role,box.ariaLabel,String(box.ariaHidden),box.dir,box.tabIndex,link.tabIndex,inner.tabIndex,inner.translate,link.draggable,inner.draggable,String(box.popover),box.contentEditable);box.ariaHidden="true";box.ariaLabel=null;box.popover="";box.inert=true;console.log(box.getAttribute("aria-hidden"),box.hasAttribute("aria-label"),box.popover,box.hasAttribute("inert"));try{box.contentEditable="maybe"}catch(e){console.log(e.name)}box.contentEditable="PLAINTEXT-ONLY";console.log(box.getAttribute("contenteditable"),box.contentEditable,inner.slot,box.enterKeyHint);const made=document.createElement("p");made.className="x y";console.log(Object.prototype.toString.call(made.classList),made.classList instanceof DOMTokenList,Object.prototype.toString.call(document.body.classList));',
 	], runtime, mut messages)
 	assert messages == ['button Go null rtl 7 0 -1 false true false null inherit',
-		'true false auto true', 'SyntaxError', 'plaintext-only plaintext-only  ']
+		'true false auto true', 'SyntaxError', 'plaintext-only plaintext-only  ', '[object DOMTokenList] true [object DOMTokenList]']
 }
