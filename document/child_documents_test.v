@@ -476,3 +476,57 @@ fn test_browser_child_host_parses_an_xml_response_as_an_xml_document() {
 	assert document.document_ready_for_post_load_tasks()
 	assert !host.children[0].navigable.delays_the_load_event_of_its_container()
 }
+
+fn test_initial_about_blank_load_skips_listeners_of_a_later_navigation() {
+	$if !darwin {
+		return
+	}
+	mut host, mut document := child_browser_fixture('<!doctype html><body></body>', 'https://parent.example/')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		host.close()
+		runtime.close()
+		document.destroy_a_document_and_its_descendants()
+		document.finalize()
+		document.release_native_storage()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [
+		r'globalThis.frame=document.createElement("iframe");document.body.appendChild(frame);',
+	], runtime, mut messages)
+	// Polls queue the initial about:blank load before script runs again.
+	for _ in 0 .. 4 {
+		host.poll(mut messages)
+	}
+	assert host.children.len == 1, messages.join('\n')
+	service := host.children[0].service or { panic('no service: ${messages.join('\n')}') }
+	assert service.load_fired, messages.join('\n')
+	runtime.evaluate_host(r'globalThis.loads=[];frame.addEventListener("load",()=>loads.push(frame.contentDocument.URL+" "+frame.contentDocument.body.textContent));frame.srcdoc="<p>next</p>";document.readyState')!
+	// Tasks queued before the srcdoc navigation starts run first, as they do
+	// when a page's timer sets the attribute between two host polls.
+	mut loop := html.main_thread_event_loop()
+	checks := &ChildBrowserMessages{}
+	loop.spin_until(fn [checks] () bool {
+		mut count := unsafe { &ChildBrowserMessages(checks) }
+		count.values << ''
+		return count.values.len > 4
+	})
+	// Poll until the srcdoc document loads, then a little longer so a late
+	// event for either document would still arrive.
+	deadline := time.sys_mono_now() + 5 * time.second
+	loop.spin_until(fn [host, runtime, deadline] () bool {
+		mut owner := unsafe { &BrowserChildDocumentHost(host) }
+		mut log := []string{}
+		owner.poll(mut log)
+		return (runtime.evaluate_host('loads.length') or { '0' }) != '0' || time.sys_mono_now() >= deadline
+	})
+	settle := time.sys_mono_now() + 300 * time.millisecond
+	loop.spin_until(fn [host, settle] () bool {
+		mut owner := unsafe { &BrowserChildDocumentHost(host) }
+		mut log := []string{}
+		owner.poll(mut log)
+		return time.sys_mono_now() >= settle
+	})
+	loads := runtime.evaluate_host('loads.join("|")')!
+	assert loads == 'about:srcdoc next', '${loads} ${messages.join('\n')}'
+}

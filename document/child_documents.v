@@ -429,10 +429,19 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 			}
 			if service.initialized && !service.load_fired && !active.anything_is_delaying_the_load_event() {
 				service.load_fired = true
-				html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), child.element.document(), fn [child, active] () {
+				src := child.src.clone()
+				srcdoc := child.srcdoc
+				html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), child.element.document(), fn [child, active, src, srcdoc] () {
 					mut owner := unsafe { &BrowserChildDocument(child) }
 					defer { owner.release_load_delay() }
 					if child.closed || !child.navigable.host_navigable().active_document_is(active) {
+						return
+					}
+					// The event belongs to the document these attributes loaded. Once
+					// script replaces them, a browser would already have fired it, so
+					// it must not reach handlers installed for the next navigation.
+					if child.element.get_attribute_value('src') != src
+						|| !optional_strings_equal(child.element.get_attribute('srcdoc'), srcdoc) {
 						return
 					}
 					child.element.as_node().dispatch_event(dom.Event.create('load', dom.EventInit{}))
@@ -442,6 +451,14 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 		}
 	}
 	return changed
+}
+
+fn optional_strings_equal(a ?string, b ?string) bool {
+	if left := a {
+		right := b or { return false }
+		return left == right
+	}
+	return b == none
 }
 
 // Navigation, initialization and the load event of a child advance only in
