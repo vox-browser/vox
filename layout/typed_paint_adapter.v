@@ -4650,7 +4650,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 				bold: computed.font_weight() >= 600
 				italic: computed.font_slope() != 0
 				mono: computed_font_is_monospace(computed)
-				font_smoothing: computed.font_smoothing()
+				font_smoothing: chromium_glyph_font_smoothing(fragment.layout_node_, computed)
 				text_run_id: text_run_identity(fragment.layout_node_)
 				shape_as_run: resolved_text_spacing_for_shaping(fragment.layout_node_, .letter_spacing) == 0 && resolved_text_spacing_for_shaping(fragment.layout_node_, .word_spacing) == 0
 				inline_node_id: inline_node_id
