@@ -294,7 +294,7 @@ fn test_curl_connection_queues_bursts_without_losing_completions() {
 	}
 	peak := server.wait()
 	assert peak > 1
-	assert peak <= 32
+	assert peak <= curl_max_host_connections
 }
 
 fn test_source_stop_fetch_removes_the_real_curl_request_from_multi() {

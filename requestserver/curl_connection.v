@@ -15,6 +15,11 @@ import time
 // duplicates under LaunchServices' 256-descriptor soft limit. libcurl queues
 // excess transfers and still multiplexes streams on established connections.
 const curl_max_total_connections = 32
+// Chromium's HTTP/1.x socket pools open at most six connections per host
+// (max_sockets_per_group); libcurl queues further transfers to that host.
+// Without the cap, a catalog's dozens of thumbnail requests exceeded a small
+// server's listen backlog and the refused images painted as broken.
+const curl_max_host_connections = 6
 
 // Fetch's "obtain a connection" reuses a connection whose network partition key
 // and credentials match. A document's XHR, Fetch and module hosts, its iframes'
@@ -116,6 +121,8 @@ fn (mut connection CurlConnection) ensure_multi() ! {
 	connection.multi_ = multi
 	check_curl_result(C.vox_curl_multi_setopt_long(multi, C.CURLMOPT_MAX_TOTAL_CONNECTIONS,
 		curl_max_total_connections), C.CURLM_OK)
+	check_curl_result(C.vox_curl_multi_setopt_long(multi, C.CURLMOPT_MAX_HOST_CONNECTIONS,
+		curl_max_host_connections), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_socket(multi, curl_socket_callback), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_pointer(multi, C.CURLMOPT_SOCKETDATA, &connection), C.CURLM_OK)
 	check_curl_result(C.vox_curl_multi_setopt_timer(multi, curl_timeout_callback), C.CURLM_OK)
