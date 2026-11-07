@@ -15,7 +15,6 @@ import json
 import os
 import re
 from pathlib import Path
-import shutil
 import subprocess
 import threading
 import time
@@ -759,124 +758,6 @@ def replay_vox_environment(args, ready):
     return environment
 
 
-def preserve_parallel_compilation_receipt(output, binary, receipt, published, selected,
-                                         manifest, preserved):
-    """Retain verified split-build provenance without claiming sealed C exists."""
-    mode = receipt.get('c_compile', {})
-    before = receipt.get('inputs', {}).get('build_inputs_sha256')
-    after = receipt.get('verified_inputs', {}).get('build_inputs_sha256')
-    browser.require(mode.get('mode') == 'parallel' and before and before == after
-                    and not receipt.get('superseded'),
-                    'Parallel production receipt lacks unchanged verified build inputs')
-    expected = receipt['executable_sha256']
-    candidates = []
-    for path in (REPO / 'Build/production-build/receipts').glob('*/result.json'):
-        if path.read_bytes() == published:
-            candidates.append(path)
-    browser.require(len(candidates) == 1, 'Parallel publication lacks a unique matching receipt')
-    result_path = candidates[0]
-    c_mode_path = result_path.parent / 'c-compile.json'
-    before_path = result_path.parent / 'inputs-before.json'
-    c_mode_bytes = c_mode_path.read_bytes()
-    before_bytes = before_path.read_bytes()
-    browser.require(json.loads(c_mode_bytes) == mode
-                    and json.loads(before_bytes) == receipt['inputs'],
-                    'Parallel compilation metadata differs from the published receipt')
-    compiler = Path(mode['compiler'])
-    runtime_path = compiler.parent.parent / 'manifest.json'
-    runtime_bytes = runtime_path.read_bytes()
-    runtime = json.loads(runtime_bytes)
-    browser.require(hashlib.sha256(compiler.read_bytes()).hexdigest() == runtime['compiler_sha256'],
-                    'Parallel compiler no longer matches its staged runtime identity')
-    folder = output / 'production-compilation' / expected
-    folder.mkdir(parents=True, exist_ok=False)
-    for name, source, data in [('published-receipt.json', REPO / 'Build/production-build/latest.json', published),
-                               ('result.json', result_path, published),
-                               ('c-compile.json', c_mode_path, c_mode_bytes),
-                               ('inputs-before.json', before_path, before_bytes),
-                               ('compiler-runtime.json', runtime_path, runtime_bytes)]:
-        target = folder / name
-        target.write_bytes(data)
-        browser.require(source.read_bytes() == data, f'Parallel receipt changed: {source}')
-        preserved.add(target)
-        manifest['files'][str(target)] = dict(source=str(source),
-            sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
-    browser.require((REPO / 'Build/production-build/latest.json').read_bytes() == published
-                    and browser.fingerprint({binary})[str(binary)]['sha256'] == expected,
-                    'Production browser or receipt changed during preservation')
-    for engine in selected:
-        manifest['engines'][engine] = dict(executable_sha256=expected,
-            evidence_directory=str(folder), c_compile=mode,
-            compiler_sha256=runtime['compiler_sha256'], generated_c_preserved=False,
-            source_evidence='Equal complete production build-input fingerprints before/after compilation; '
-                            'no sealed generated C is provided by the parallel build receipt')
-
-
-def preserve_production_compilation(output, apps, pinned):
-    """Archive generated compiler evidence before shared receipts can retire."""
-    canonical = (REPO / 'Build/v/Vox.app').resolve()
-    manifest_path = output / 'production-compilation.json'
-    manifest = dict(passed=False, scope='Compiler receipts and preprocessed outputs only; '
-                    'browser bundles, native libraries and repository tools remain in place.',
-                    engines={}, files={})
-    preserved = {manifest_path}
-    try:
-        selected = [engine for engine in ('vox', 'control')
-                    if engine in apps and apps[engine].resolve() == canonical]
-        if selected:
-            binary = canonical / 'Contents/MacOS/Vox'
-            expected = pinned[str(binary)]['sha256']
-            published_path = REPO / 'Build/production-build/latest.json'
-            published = published_path.read_bytes()
-            receipt = json.loads(published)
-            browser.require(receipt.get('exit') == 0 and
-                            Path(receipt['executable']).resolve() == binary and
-                            receipt['executable_sha256'] == expected,
-                            'Production receipt does not match the pinned executable')
-            if not receipt.get('frozen_compilation'):
-                preserve_parallel_compilation_receipt(output, binary, receipt, published,
-                    selected, manifest, preserved)
-                manifest['passed'] = True
-                return preserved
-            meta_path = Path(receipt['frozen_compilation'])
-            metadata = meta_path.read_bytes()
-            frozen = json.loads(metadata)
-            sources = [(Path(path), digest) for path, digest in frozen['sealed_inputs'].items()
-                       if Path(path).name.endswith('.i')]
-            browser.require(any(path.name == '0-Vox.c.i' for path, _ in sources),
-                            'Production receipt lacks preprocessed browser C')
-            folder = output / 'production-compilation' / expected
-            folder.mkdir(parents=True, exist_ok=False)
-            for name, origin, data in [('published-receipt.json', published_path, published),
-                                       ('frozen-compile.json', meta_path, metadata)]:
-                target = folder / name
-                target.write_bytes(data)
-                preserved.add(target)
-                manifest['files'][str(target)] = dict(source=str(origin),
-                    sha256=hashlib.sha256(data).hexdigest(), bytes=len(data))
-            for index, (source, digest) in enumerate(sorted(sources)):
-                target = folder / f'{index}-{source.name}'
-                shutil.copyfile(source, target)
-                actual = browser.fingerprint({target})[str(target)]
-                browser.require(actual['sha256'] == digest,
-                                f'Compiler artifact changed while preserving it: {source}')
-                preserved.add(target)
-                manifest['files'][str(target)] = dict(source=str(source), **actual)
-            browser.require(published_path.read_bytes() == published and
-                            browser.fingerprint({binary})[str(binary)]['sha256'] == expected,
-                            'Production browser or receipt changed during preservation')
-            for engine in selected:
-                manifest['engines'][engine] = dict(executable_sha256=expected,
-                    evidence_directory=str(folder))
-        manifest['passed'] = True
-    except Exception as error:
-        manifest['error'] = str(error)
-        raise
-    finally:
-        browser.write_json(manifest_path, manifest)
-    return preserved
-
-
 def main():
     args = parse_args()
     expected = fixture_expectations(args.archive)
@@ -918,13 +799,7 @@ def main():
     paths.update(path for path in (args.expected_vox, args.expected_brave) if path)
     paths.update((args.diff_tool, args.audit_config))
     pinned = browser.fingerprint(paths)
-    compilation_paths = preserve_production_compilation(args.output, apps, pinned)
-    browser.require(browser.fingerprint(paths) == pinned,
-                    'Pinned inputs changed during compiler evidence preservation')
-    paths.update(compilation_paths)
-    pinned.update(browser.fingerprint(compilation_paths))
     browser.write_json(args.output / 'inputs.json', dict(files=pinned, scope=SCOPE,
-        production_compilation_evidence=str(args.output / 'production-compilation.json'),
         font_generation_diagnostic_policy='Per-cache-hit tracing is rejected outside reference diagnostics; counting alone must not enable it',
         fixture=expected, original_scripts_retained=True, author_javascript_enabled=True,
         viewport=[1024, 768], scale=args.scale, settle_seconds=args.settle_seconds,
