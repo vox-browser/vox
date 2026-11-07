@@ -42,18 +42,22 @@ pub enum BlendMode {
 	saturation
 	color
 	luminosity
+	// make_blender()'s runtime-effect blenders, after the SkBlendModes:
+	// plus-darker's Safari rule and plus-lighter's saturate(src + dst).
+	plus_darker
+	plus_lighter
 }
 
 // skia/canvas_raster.cpp's make_blender() table: Canvas2D's composite
 // operations in their encoding. Operations 26 (plus-darker) and 27
-// (plus-lighter) are runtime-effect blenders, which this port does not draw.
+// (plus-lighter) are runtime-effect blenders.
 const canvas_blend_modes = [BlendMode.src_over, .src_in, .src_out, .src_atop, .dst_over, .dst_in,
 	.dst_out, .dst_atop, .plus, .src, .xor, .multiply, .screen, .overlay, .darken, .lighten,
 	.color_dodge, .color_burn, .hard_light, .soft_light, .difference, .exclusion, .hue, .saturation,
-	.color, .luminosity]
+	.color, .luminosity, .plus_darker, .plus_lighter]
 
-// canvas_blend_mode returns the SkBlendMode make_blender() selects for a
-// Canvas2D composite operation, or none for the runtime-effect blenders.
+// canvas_blend_mode returns the blend make_blender() selects for a Canvas2D
+// composite operation, or none for an operation outside its table.
 pub fn canvas_blend_mode(operation int) ?BlendMode {
 	if operation >= 0 && operation < canvas_blend_modes.len {
 		return canvas_blend_modes[operation]
@@ -67,7 +71,8 @@ fn blend_prescales_coverage(mode BlendMode) bool {
 	return mode in [.dst, .dst_over, .plus, .dst_out, .src_atop, .src_over, .xor]
 }
 
-// SkPaint::nothingToDraw() for a paint without filters.
+// SkPaint::nothingToDraw() for a paint without filters: a runtime blender
+// always draws.
 fn blend_draws_nothing(mode BlendMode, alpha_byte int) bool {
 	return match mode {
 		.src_over, .src_atop, .dst_out, .dst_over, .plus { alpha_byte == 0 }
@@ -76,9 +81,11 @@ fn blend_draws_nothing(mode BlendMode, alpha_byte int) bool {
 	}
 }
 
-// The blend modes with a lowp stage.
+// The blend modes with a lowp stage; SkSL's raster pipeline programs run
+// in highp.
 fn blend_has_lowp(mode BlendMode) bool {
-	return mode !in [.color_burn, .color_dodge, .soft_light, .hue, .saturation, .color, .luminosity]
+	return mode !in [.color_burn, .color_dodge, .soft_light, .hue, .saturation, .color, .luminosity,
+		.plus_darker, .plus_lighter]
 }
 
 // paint_color_bytes is SkPaint::getColor() for SkColor channels with alpha
@@ -908,6 +915,12 @@ fn highp_channel(mode BlendMode, s f32, d f32, sa f32, da f32) f32 {
 	}
 }
 
+// SkSL's saturate(): clamp(x, 0, 1) as min(max(x, 0), 1).
+@[inline]
+fn sksl_saturate(x f32) f32 {
+	return neon_min(neon_max(x, 0), 1)
+}
+
 fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01.
 	mut src := if b.imaged {
@@ -955,6 +968,28 @@ fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, 
 				}
 			}
 			out[3] = mad(da, highp_inv(a), a)
+		}
+		.plus_lighter {
+			// saturate(source + destination), saturate as SkSL's
+			// min(max(x, 0), 1).
+			src_c := [r, g, bl, a]!
+			dst_c := [dr, dg, db, da]!
+			for i in 0 .. 4 {
+				out[i] = sksl_saturate(src_c[i] + dst_c[i])
+			}
+		}
+		.plus_darker {
+			// saturate(saturate(da + sa) - saturate(da - destination) -
+			// saturate(sa - source)).
+			alphas := sksl_saturate(da + a)
+			src_c := [r, g, bl, a]!
+			dst_c := [dr, dg, db, da]!
+			for i in 0 .. 4 {
+				dst_term := sksl_saturate(da - dst_c[i])
+				src_term := sksl_saturate(a - src_c[i])
+				partial := alphas - dst_term
+				out[i] = sksl_saturate(partial - src_term)
+			}
 		}
 		.hue, .saturation, .color, .luminosity {
 			mut c := match b.mode {

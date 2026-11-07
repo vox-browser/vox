@@ -69,8 +69,9 @@ fn test_canvas_composite_operations_map_to_skia_blend_modes() {
 	assert canvas_blend_mode(16) or { BlendMode.clear } == .color_dodge
 	assert canvas_blend_mode(25) or { BlendMode.clear } == .luminosity
 	// plus-darker and plus-lighter are runtime-effect blenders.
-	assert canvas_blend_mode(26) == none
-	assert canvas_blend_mode(27) == none
+	assert canvas_blend_mode(26) or { BlendMode.clear } == .plus_darker
+	assert canvas_blend_mode(27) or { BlendMode.clear } == .plus_lighter
+	assert canvas_blend_mode(28) == none
 	assert canvas_blend_mode(-1) == none
 }
 
@@ -168,4 +169,13 @@ fn test_composite_strokes_match_skia() {
 	assert composite_stroke_hash(.saturation, 0xff20e060, 0.8, 5, [], [
 		canvas_path(circle, false),
 	]) == '19b71184289724e7'
+}
+
+// make_blender()'s runtime-effect blenders for plus-darker and plus-lighter:
+// their SkSL programs in highp, coverage lerped after the blend, and thin or
+// transparent draws never skipped.
+fn test_runtime_blenders_match_skia() {
+	assert composite_fill_hash(.plus_darker, 0xc0e04010, 0.8) == '8b7ef172936f2536'
+	assert composite_fill_hash(.plus_lighter, 0x8030a0f0, 1) == 'c126b81ef4162997'
+	assert composite_stroke_hash(.plus_darker, 0xff3070c0, 0.6, 3.5, [], []) == 'b8c5a5fc1972a227'
 }
