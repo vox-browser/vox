@@ -123,6 +123,49 @@ static void draw_text_mask_leaves(CGContextRef context, bool canvas)
     }
 }
 
+// At scale 1 the ordinary root leaf replays an SVG gradient in each Chromium
+// raster tile's own coordinates, keeping Blink's ordered-dither phase. The
+// canvas's eight-pixel-aligned surfaces would shift that phase when the
+// document starts below a 60px browser toolbar, as for 2ch.su's gradient logo,
+// so the canvas declines the leaf. Returns the frame and its declined count.
+static std::vector<uint8_t> render_scale1_root_gradient(bool canvas, unsigned& declined)
+{
+    constexpr int w = 400, h = 300;
+    std::vector<uint8_t> pixels(size_t(w) * h * 4);
+    for (size_t at = 0; at < pixels.size(); at += 4) { pixels[at] = pixels[at + 1] = pixels[at + 2] = 238; pixels[at + 3] = 255; }
+    auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+    auto context = CGBitmapContextCreate(pixels.data(), w, h, 8, w * 4, color,
+        static_cast<CGBitmapInfo>(kCGImageAlphaPremultipliedLast) | static_cast<CGBitmapInfo>(kCGBitmapByteOrder32Big));
+    CGColorSpaceRelease(color);
+    assert(context);
+    ladybird_v_skia_set_chromium_painting(1);
+    if (canvas) { int rect[] {0, 50, w, 150}; assert(ladybird_v_skia_gpu_canvas_begin(context, rect, 1)); }
+    // The logo's bolt: viewBox 509.9 wide at 240px, a userSpaceOnUse gradient.
+    float const points[][2] {{123.8f, 61.8f}, {75.7f, 61.8f}, {107.3f, .6f}, {45.3f, .6f},
+        {.2f, 97.3f}, {49.8f, 97.3f}, {25.9f, 188.5f}};
+    float segments[8 * 12] {};
+    for (int index = 0; index < 7; ++index) {
+        segments[index * 12] = index ? 1 : 0;
+        segments[index * 12 + 1] = points[index][0];
+        segments[index * 12 + 2] = points[index][1];
+    }
+    segments[7 * 12] = 5;
+    float const stops[] {1, .663f, .039f, 1, 0, 1, .627f, .051f, 1, .2518f,
+        .996f, .525f, .086f, 1, .6689f, .996f, .431f, .122f, 1, .9944f};
+    float const scale = 240 / 509.9f;
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_svg_path", 13, 0) == 1);
+    assert(ladybird_v_skia_draw_svg_linear_gradient_path(context, segments, 8, 0,
+        scale, 0, 0, scale, 0, 20, 0, 60, 0, w, h, 0, 0, 0, 0, 4,
+        48.9124f, 235.6292f, 72.3371f, 23.9901f, 1, 0, 0, -1, 0, 196.6667f, 0, 0,
+        stops, 4, 1, 1));
+    declined = canvas ? s_gpu_canvas->declined : 0;
+    if (canvas) ladybird_v_skia_gpu_canvas_end();
+    ladybird_v_skia_set_chromium_painting(0);
+    CGContextFlush(context);
+    CGContextRelease(context);
+    return pixels;
+}
+
 static unsigned s_first_uploads, s_first_cpu_leaves;
 static bool s_first_begun;
 
@@ -1288,6 +1331,21 @@ int main(int argc, char** argv)
         }
         std::cout << "Retained GPU publication: " << cases
             << " exact full/strip/shared/CPU-barrier frames; no final CPU readback\n";
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "--scale1-root-gradient")) {
+        unsigned declined = 0, unused = 0;
+        auto reference = render_scale1_root_gradient(false, unused);
+        auto candidate = render_scale1_root_gradient(true, declined);
+        size_t different = 0, painted = 0;
+        for (size_t at = 0; at < reference.size(); ++at) {
+            different += reference[at] != candidate[at];
+            painted += reference[at] != 238 && at % 4 != 3;
+        }
+        assert(painted > 1000);
+        if (different) { std::cerr << "Scale-1 root gradient differs in " << different << " bytes\n"; return 1; }
+        assert(declined == 1);
+        std::cout << "Scale-1 root gradient: declined by the canvas, per-tile dither phase exact\n";
         return 0;
     }
     if (argc == 2 && !std::strcmp(argv[1], "--text-mask")) {

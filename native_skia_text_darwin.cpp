@@ -6980,7 +6980,13 @@ static int draw_svg_gradient_path(CGContextRef destination, float const* data,
             std::vector<VoxGraphiteCanvasClip> clips;
             GpuCanvasFrame* frame = nullptr;
             static bool const patterns = !std::getenv("VOX_GPU_CANVAS_DISABLE_GRADIENT_TILES");
-            if (picture_pattern && !(patterns && gpu_canvas_api()->draw_picture))
+            // The ordinary leaf replays this gradient in each Chromium raster
+            // tile's own coordinates, whose ordered-dither phase the canvas's
+            // eight-pixel-aligned surfaces do not share at scale 1.
+            bool chromium_tiles = !picture_pattern && chromium_root_gradient_tiles_eligible(
+                destination_scale, page_x, page_y, opaque_backdrop != 0,
+                static_cast<int>(std::ceil(canvas_width)), region);
+            if ((picture_pattern && !(patterns && gpu_canvas_api()->draw_picture)) || chromium_tiles)
                 gpu_canvas_decline(destination);
             else frame = gpu_canvas_for_leaf(destination, clips);
             if (frame && picture_pattern) {
