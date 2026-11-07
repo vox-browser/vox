@@ -72,6 +72,8 @@ function __compactChildMutation(receiver,method,values){
  for(const state of [own,...nodes.filter(value=>typeof value!=="string")]){
   const parent=__queryElements(state.bridgeKey,"nodeParent","");
   state.parentKey=parent?__compactNodeState(parent).bridgeKey:"";
+  // A reinserted node can be removed again.
+  state.removed=!parent;
   state.nativeParent=true;
   if(parent)__compactInvalidateContent(__compactNodeState(parent));
  }

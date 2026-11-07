@@ -69,6 +69,7 @@ function __compactParentMutation(receiver,method,values){
  for(const state of touched){
   const parent=__queryElements(state.bridgeKey,"nodeParent","");
   state.parentKey=parent?__compactNodeState(parent).bridgeKey:"";
+  state.removed=!parent;
   state.nativeParent=true;
   if(parent)__compactInvalidateContent(__compactNodeState(parent));
  }

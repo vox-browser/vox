@@ -42,7 +42,7 @@ Object.defineProperty(Node.prototype,"replaceChild",{value:{replaceChild(node,ch
  for(const state of touched){__compactInvalidateContent(state);const parent=__state.elements[state.parentKey];if(parent)__compactInvalidateContent(parent);}
  try{__queryElements(own.bridgeKey,"replaceChild",JSON.stringify({own,replacement,child:old}));}
  catch(error){const match=/^(HierarchyRequestError|NotFoundError|NotSupportedError):\s*(.*)/.exec(String(error.message));if(match)throw new DOMException(match[2],match[1]);throw error;}
- for(const state of touched){const parent=__queryElements(state.bridgeKey,"nodeParent","");state.parentKey=parent?__compactEqualityState(parent).bridgeKey:"";state.nativeParent=true;if(parent)__compactInvalidateContent(__compactEqualityState(parent));}
+ for(const state of touched){const parent=__queryElements(state.bridgeKey,"nodeParent","");state.parentKey=parent?__compactEqualityState(parent).bridgeKey:"";state.removed=!parent;state.nativeParent=true;if(parent)__compactInvalidateContent(__compactEqualityState(parent));}
  return child;
 }}.replaceChild,writable:true,enumerable:true,configurable:true});
 '
