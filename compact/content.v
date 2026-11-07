@@ -610,7 +610,9 @@ Object.defineProperty(Element.prototype,"hasChildNodes",{value:function hasChild
  if(!state)throw new TypeError("Illegal Element receiver");
  if(state.innerHTMLDirty)return state.innerHTML!=="";
  if(state.textContentDirty)return state.textContent!=="";
- return !!state.hasChildren;
+ // Markup and other native writes change children without updating the
+ // cached flag; a script-created element not yet in the tree keeps it.
+ try{return __queryElements(state.bridgeKey,"firstChild","")!==null;}catch(error){return !!state.hasChildren;}
 },writable:true,enumerable:true,configurable:true});
 // Document.forms: the form elements of the document, named by id or name.
 // The images, embeds/plugins, links and scripts collections are the same kind

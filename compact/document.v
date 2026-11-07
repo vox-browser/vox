@@ -35,6 +35,19 @@ fn install_compact_document_binding(binding &CompactElementQueryBinding, mut run
 		}
 		return if version <= u64(9007199254740991) { f64(version) } else { -1.0 }
 	})!
+	// Cached element markup and text stay valid while no tree, character data
+	// or attribute change has happened in any document of this realm.
+	runtime.define_number_host_function('__ladybirdDOMContentVersion', fn [binding] () f64 {
+		mut version := binding.document.dom_tree_version() + binding.document.character_data_version() +
+			binding.document.attribute_version()
+		for _, document in binding.documents {
+			version += document.dom_tree_version() + document.character_data_version() + document.attribute_version()
+		}
+		for _, document in binding.template_documents {
+			version += document.dom_tree_version() + document.character_data_version() + document.attribute_version()
+		}
+		return f64(version % u64(9007199254740991))
+	})!
 	runtime.add_close_handler(fn [binding] () {
 		for _, document in binding.documents {
 			mut owner := unsafe { &dom.Document(document) }
