@@ -1711,6 +1711,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		}
 		_ = visual_line_index
 	}
+	chromium_align_text_control_placeholder(mut state, container)
 	set_flex_abspos_static_positions(mut state, container, container_state, direction)
 	result := FormattingContextResult{
 		automatic_content_width: automatic_width

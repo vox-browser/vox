@@ -47,3 +47,31 @@ fn test_libweb_unthemed_input_keeps_the_generic_display_box() {
 	bridge := element.as_node().layout_node()?
 	assert !unsafe { &Node(bridge.layout_handle) }.is_text_input_box()
 }
+
+// Brave 156: GitHub's "Go to file" input (20px line, 28px content box from flex
+// stretch) puts the editor at 4px and the placeholder's 17px line at 5px, so
+// both share the editor's baseline rather than centering independently (5.5px).
+fn test_chromium_text_control_placeholder_shares_the_editor_baseline() {
+	$if !macos {
+		return
+	}
+	for case_ in [['', '4', '5'], ['height:30px;', '4', '5'], ['height:32px;', '5', '6']] {
+		mut document := html.parse_document('<!doctype html><style>
+		body{margin:0}#w{display:flex;min-height:32px;font:14px/20px system-ui;border:1px solid #ccc;width:204px;box-sizing:border-box}
+		input{appearance:none;font-family:inherit;font-size:inherit;line-height:inherit;border:0;width:100%;padding:1px 0;outline:0;box-sizing:border-box;${case_[0]}}
+		</style><span id="w"><input id="in" placeholder="Go to file"></span>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		result := run_document_layout(document, 400, 300) or { panic('layout') }
+		element := document.get_element_by_id('in') or { panic('element') }
+		bridge := element.as_node().layout_node() or { panic('bridge') }
+		input := unsafe { &Node(bridge.layout_handle) }
+		container := input.first_child() or { panic('container') }
+		editor := container.children()[0]
+		placeholder := container.children()[1]
+		editor_used := result.used_values_for(editor.as_node_with_style() or { panic('editor style') }) or { panic('editor used') }
+		placeholder_used := result.used_values_for(placeholder.as_node_with_style() or { panic('placeholder style') }) or { panic('placeholder used') }
+		assert editor_used.offset.y().to_double() == case_[1].f64(), case_[0]
+		assert placeholder_used.offset.y().to_double() == case_[2].f64(), case_[0]
+	}
+}
