@@ -81,6 +81,15 @@ fn (runtime &Runtime) same_agent_window_global(window &html.WindowModel) ?voidpt
 	return none
 }
 
+// The global of a same-origin frame's realm. A WindowProxy handed out before
+// its frame had a realm creates the initial one through the frame's container.
+fn (mut runtime Runtime) window_proxy_realm_global(binding &WindowProxyBinding, window &html.WindowModel) ?voidptr {
+	if global := runtime.same_agent_window_global(window) { return global }
+	wrapper := runtime.window_container_wrapper(window) or { return none }
+	binding.frame(wrapper, true) or { return none }
+	return runtime.same_agent_window_global(window)
+}
+
 fn (mut runtime Runtime) window_container_wrapper(window &html.WindowModel) ?voidptr {
 	navigable := window.associated_document().navigable() or { return none }
 	container := navigable.container() or { return none }
@@ -162,19 +171,22 @@ fn (mut runtime Runtime) window_proxy_operation(binding &WindowProxyBinding, arg
 		'get' {
 			if !same_origin { return runtime.window_proxy_security_error() }
 			if args.len < 3 { return C.vox_jsc_JSValueMakeUndefined(runtime.context) }
-			mut global := runtime.same_agent_window_global(window)
-			if global == none {
-				// A WindowProxy read before its frame had a realm: create the
-				// initial one through the frame's container element.
-				if wrapper := runtime.window_container_wrapper(window) {
-					binding.frame(wrapper, true) or {}
-					global = runtime.same_agent_window_global(window)
-				}
-			}
-			if value := global {
+			if value := runtime.window_proxy_realm_global(binding, window) {
 				return runtime.binding_property(value, runtime.binding_dom_string(args[2])!)
 			}
 			return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+		}
+		'set' {
+			if !same_origin || args.len < 4 { return runtime.window_proxy_security_error() }
+			global := runtime.window_proxy_realm_global(binding, window) or {
+				return runtime.window_proxy_security_error()
+			}
+			name := js_source_string(runtime.binding_dom_string(args[2])!)
+			defer { C.JSStringRelease(name) }
+			mut exception := unsafe { nil }
+			C.vox_jsc_JSObjectSetProperty(runtime.context, global, name, args[3], 0, &exception)
+			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context, true)
 		}
 		'write' { return runtime.window_proxy_security_error() }
 		else { return error('Unknown Window operation') }

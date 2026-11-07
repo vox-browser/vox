@@ -53,7 +53,7 @@ fn window_proxy_binding_factory() string {
     if(/^(0|[1-9][0-9]*)$/.test(key))return operate("index",proxy,key);
     return operate("get",proxy,key);
    },
-   set(){return operate("write",proxy)},
+   set(target,key,value){return typeof key==="string"?operate("set",proxy,key,value):operate("write",proxy)},
    defineProperty(){return operate("write",proxy)},
    deleteProperty(){return operate("write",proxy)},
    getPrototypeOf(){return operate("sameOrigin",proxy)?WindowPrototype:null},
