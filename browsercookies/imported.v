@@ -1,13 +1,14 @@
-module browsernet
+module browsercookies
 
-import net.http
 import os
 import strconv
-import time
 import url
 
 // Imported Netscape jars are read-only. They lack SameSite and partition keys,
 // so use them only in a same-site context, never for third-party requests.
+// request_header() merges them into every HTTP request path (navigation,
+// subresources, WebSocket and Fetch/XHR) so script requests carry the same
+// session as the document that issued them.
 struct ImportedCookie {
 	domain     string
 	subdomains bool
@@ -107,12 +108,9 @@ fn imported_cookie_header(contents string, resource_url string, source_url strin
 	return matches.map(it.name + '=' + it.value).join('; ')
 }
 
-fn imported_cookie_headers(resource_url string, source_url string) http.Header {
-	mut headers := http.new_header()
+fn imported_request_header(resource_url string, source_url string, now i64) string {
 	path := imported_cookie_file()
-	if path == '' || os.file_size(path) > 1024 * 1024 { return headers }
-	contents := os.read_file(path) or { return headers }
-	value := imported_cookie_header(contents, resource_url, source_url, time.now().unix())
-	if value != '' { headers.add(.cookie, value) }
-	return headers
+	if path == '' || os.file_size(path) > 1024 * 1024 { return '' }
+	contents := os.read_file(path) or { return '' }
+	return imported_cookie_header(contents, resource_url, source_url, now)
 }

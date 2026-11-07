@@ -266,9 +266,7 @@ fn (connection &WebSocketConnection) handshake(mut stream WebSocketStream, targe
 	if connection.protocols.len > 0 {
 		request.write_string('Sec-WebSocket-Protocol: ${connection.protocols.join(', ')}\r\n')
 	}
-	mut cookies := imported_cookie_headers(target.http_url, connection.source_url).get(.cookie) or { '' }
-	stored := browsercookies.request_header(target.http_url, connection.source_url, false, 'GET')
-	if stored != '' { cookies = if cookies == '' { stored } else { stored + '; ' + cookies } }
+	cookies := browsercookies.request_header(target.http_url, connection.source_url, false, 'GET')
 	if cookies != '' { request.write_string('Cookie: ${cookies}\r\n') }
 	request.write_string('\r\n')
 	stream.write_all(request.str().bytes())!

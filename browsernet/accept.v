@@ -24,12 +24,9 @@ pub fn request_accept_header(request_type string) string {
 }
 
 fn resource_request_headers(resource_url string, source_url string, request_type string) http.Header {
-	mut headers := imported_cookie_headers(resource_url, source_url)
+	mut headers := http.new_header()
 	cookie := browsercookies.request_header(resource_url, source_url, request_type == 'main_frame', 'GET')
-	if cookie != '' {
-		imported := headers.get(.cookie) or { '' }
-		headers.set(.cookie, if imported == '' { cookie } else { cookie + '; ' + imported })
-	}
+	if cookie != '' { headers.add(.cookie, cookie) }
 	headers.add(.accept, request_accept_header(request_type))
 	// net.http decodes these content codings on both its HTTP/1 and HTTP/2
 	// paths. Without negotiation, scripts and HTML arrive uncompressed.

@@ -70,9 +70,18 @@ pub fn store_response_cookies(resource_url string, source_url string, top_level 
 	}
 }
 
+// The Cookie header for an HTTP request: session cookies first, then the
+// same-site cookies imported from another browser.
 pub fn request_header(resource_url string, source_url string, top_level bool, method string) string {
 	record := url.parse(resource_url) or { return '' }
-	return cookie_string(&record, .http, request_context(&record, source_url, top_level, method))
+	now := time.now().unix()
+	mut jar := unsafe { &Jar(session_jar) }
+	stored := jar.cookie_string_at(&record, .http, request_context(&record, source_url, top_level,
+		method), now)
+	imported := imported_request_header(resource_url, source_url, now)
+	if stored == '' { return imported }
+	if imported == '' { return stored }
+	return stored + '; ' + imported
 }
 
 fn domain_matches(host string, domain string) bool {

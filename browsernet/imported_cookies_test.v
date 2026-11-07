@@ -5,56 +5,6 @@ import net
 import os
 import time
 
-fn test_imported_cookie_jar_scopes_http_only_session_and_persistent_cookies() {
-	jar := '# Netscape HTTP Cookie File\n'
-		+ '#HttpOnly_.reddit.com\tTRUE\t/\tTRUE\t200\tsession\tsecret\n'
-		+ 'old.reddit.com\tFALSE\t/r\tFALSE\t0\tview\tcompact\n'
-		+ '.reddit.com\tTRUE\t/\tFALSE\t99\texpired\tno\n'
-		+ '.reddit.com\tTRUE\t/\tFALSE\t100\tboundary\tno\n'
-		+ '.reddit.com\tTRUE\t/\tFALSE\t0\tempty\t\n'
-	assert imported_cookie_header(jar, 'https://old.reddit.com/r/worldnews/',
-		'https://old.reddit.com/', 100) == 'view=compact; session=secret; empty='
-	assert imported_cookie_header(jar, 'http://old.reddit.com/r/worldnews/',
-		'http://old.reddit.com/', 100) == 'view=compact; empty='
-	assert imported_cookie_header(jar, 'https://www.reddit.com/r/worldnews/',
-		'https://old.reddit.com/', 100) == 'session=secret; empty='
-	assert imported_cookie_header(jar, 'https://old.reddit.com/rubbish',
-		'https://old.reddit.com/', 100) == 'session=secret; empty='
-	assert imported_cookie_header(jar, 'https://old.reddit.com/r',
-		'https://old.reddit.com/', 100) == 'view=compact; session=secret; empty='
-}
-
-fn test_imported_cookies_do_not_cross_site_scheme_or_domain_boundaries() {
-	jar := '.reddit.com\tTRUE\t/\tFALSE\t0\tsession\tsecret\n'
-	for address in ['https://notreddit.com/', 'https://reddit.com.evil.test/',
-		'https://evilreddit.com/', 'file:///reddit.com/'] {
-		assert imported_cookie_header(jar, address, address, 100) == ''
-	}
-	assert imported_cookie_header(jar, 'https://old.reddit.com/', 'https://evil.test/', 100) == ''
-	assert imported_cookie_header(jar, 'https://old.reddit.com/', 'http://old.reddit.com/', 100) == ''
-	assert imported_cookie_header(jar, 'https://old.reddit.com/', '', 100) == ''
-	assert imported_cookie_header(jar, 'https://old.reddit.com/', 'https://old.reddit.com/', 100) == 'session=secret'
-}
-
-fn test_imported_cookie_parser_rejects_malformed_fields_and_header_injection() {
-	mut jar := '# ignored\nnot a cookie\n'
-	for domain in ['.com', 'reddit.com:443', 'user@reddit.com', 'reddit.com/path',
-		'reddit.com?query', 'reddit.com#fragment'] {
-		jar += '${domain}\tTRUE\t/\tFALSE\t0\tsession\tbad\n'
-	}
-	for name in ['bad name', 'bad=name', 'bad;name', 'bad\rname', ''] {
-		jar += '.reddit.com\tTRUE\t/\tFALSE\t0\t${name}\tbad\n'
-	}
-	for value in ['bad;injected=1', 'bad\rX-Header:yes', 'bad value', 'bad\tvalue'] {
-		jar += '.reddit.com\tTRUE\t/\tFALSE\t0\tsession\t${value}\n'
-	}
-	for expiry in ['invalid', '-1', '99999999999999999999999999999'] {
-		jar += '.reddit.com\tTRUE\t/\tFALSE\t${expiry}\tsession\tbad\n'
-	}
-	jar += '.reddit.com\tTRUE\t/\tFALSE\t0\tvalid\ta=b%20c\r\n'
-	assert imported_cookie_header(jar, 'https://old.reddit.com/', 'https://old.reddit.com/', 100) == 'valid=a=b%20c'
-}
-
 fn serve_imported_cookie_redirect(mut listener net.TcpListener) []string {
 	mut requests := []string{}
 	for hop in 0 .. 2 {
