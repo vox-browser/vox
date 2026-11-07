@@ -952,12 +952,15 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 		root_node: initial_root_placeholder
 	})
 	mut state := LayoutState.new()
+	mut previous_backoff := unsafe { &RetainedBlockBackoffTable(nil) }
 	if previous := document_layout_result(document) {
 		unsafe {
 			state.previous_inline_layouts_ = previous.state.inline_layouts_
 			state.previous_block_layouts_ = previous.state.block_layouts_
 		}
+		previous_backoff = previous.state.block_layout_backoff_
 	}
+	state.begin_retained_block_backoff_pass(previous_backoff)
 	state.enable_measurement_chunk_pool()
 	$if prealloc {
 		state.measurement_chunk_pool_.scratch_enabled_ = document.native_storage() != unsafe { nil }

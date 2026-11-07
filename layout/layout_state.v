@@ -1311,6 +1311,7 @@ mut:
 	block_layouts_ map[u64]&RetainedBlockLayout
 	previous_block_layouts_ map[u64]&RetainedBlockLayout
 	block_layout_rejections_ map[u64]bool
+	block_layout_backoff_ &RetainedBlockBackoffTable = unsafe { nil }
 	block_paint_owners_ map[u64]&RetainedBlockLayout
 	inline_layouts_ map[u64]&RetainedInlineLayout
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout

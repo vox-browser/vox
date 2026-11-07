@@ -144,6 +144,111 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 	return true
 }
 
+// Backoff after consecutive snapshot misses grows to 2^5 - 1 layout passes.
+const retained_block_max_misses = u8(6)
+
+struct RetainedBlockBackoff {
+mut:
+	misses        u8
+	skips         u8
+	last_skip     u32
+	last_miss     u32
+	pending       bool
+	recorded_pass u32
+}
+
+// Per-document history of retained independent layouts, keyed by DOM node.
+// A tree rebuild replaces the layout nodes on the path to each change, so
+// their snapshots, keyed by layout node, can never be reused. Recording one
+// costs a copy of the whole subtree; ancestors of content that keeps changing
+// would pay it on every pass. After a snapshot misses, or is never reused
+// before its element's next layout, twice in a row, each further miss doubles
+// the number of passes that run without recording one. Nested contexts keep
+// their own caches meanwhile.
+@[heap]
+struct RetainedBlockBackoffTable {
+mut:
+	pass    u32
+	entries map[i64]RetainedBlockBackoff
+}
+
+fn (mut state LayoutState) begin_retained_block_backoff_pass(previous &RetainedBlockBackoffTable) {
+	mut table := unsafe { &RetainedBlockBackoffTable(previous) }
+	if table == unsafe { nil } {
+		table = &RetainedBlockBackoffTable{}
+	}
+	table.pass++
+	state.block_layout_backoff_ = table
+}
+
+fn retained_block_backoff_key(box &Node) ?i64 {
+	if box.is_generated_for_pseudo_element() { return none }
+	owner := box.dom_node() or { return none }
+	return owner.unique_id().value()
+}
+
+fn (mut table RetainedBlockBackoffTable) escalate(key i64) {
+	// The table outlives this pass's geometry workspace.
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	mut record := table.entries[key] or { RetainedBlockBackoff{} }
+	// A box laid out several times in one pass counts one miss.
+	if record.last_miss == table.pass && record.misses > 0 {
+		record.pending = false
+		table.entries[key] = record
+		return
+	}
+	record.last_miss = table.pass
+	record.misses = if record.misses < retained_block_max_misses { record.misses + 1 } else { retained_block_max_misses }
+	// A single miss (one change, or one full rebuild) records again at once.
+	record.skips = u8((1 << (record.misses - 1)) - 1)
+	record.last_skip = table.pass
+	record.pending = false
+	table.entries[key] = record
+}
+
+fn (mut table RetainedBlockBackoffTable) note_reuse(key i64) {
+	// The table outlives this pass's geometry workspace.
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	if record := table.entries[key] {
+		if record.misses != 0 || record.pending {
+			table.entries[key] = RetainedBlockBackoff{ skips: record.skips, last_skip: record.last_skip, last_miss: record.last_miss }
+		}
+	}
+}
+
+// Whether a box without a reusable snapshot should record a new one.
+fn (mut table RetainedBlockBackoffTable) allows_recording(key i64) bool {
+	// The table outlives this pass's geometry workspace.
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	mut record := table.entries[key] or { return true }
+	if record.pending && record.recorded_pass != table.pass {
+		table.escalate(key)
+		record = table.entries[key] or { return true }
+	}
+	if record.skips > 0 {
+		if record.last_skip != table.pass {
+			record.skips--
+			record.last_skip = table.pass
+			table.entries[key] = record
+		}
+		return false
+	}
+	return true
+}
+
+fn (mut table RetainedBlockBackoffTable) note_recorded(key i64) {
+	// The table outlives this pass's geometry workspace.
+	mut retained := retain_geometry_allocations()
+	defer { retained.finish() }
+	mut record := table.entries[key] or { RetainedBlockBackoff{} }
+	record.pending = true
+	record.recorded_pass = table.pass
+	table.entries[key] = record
+}
+
 fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node,
 	mut used UsedValues, mode LayoutMode, space AvailableSpace) FormattingContextResult {
 	mut geometry_scratch := begin_nested_geometry_scratch(box.document(), mode)
@@ -163,6 +268,8 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 	}
 	key := u64(voidptr(box))
 	font_generation := css.css_style_computer_for(box.document()).font_computer().environment_generation()
+	mut backoff := state.block_layout_backoff_
+	backoff_key := if backoff != unsafe { nil } { retained_block_backoff_key(box) } else { none }
 	if cached := state.previous_block_layouts_[key] {
 		if cached.space == space && cached.width == used.content_width()
 			&& cached.height == used.content_height()
@@ -212,7 +319,18 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 				}
 			}
 			state.block_layouts_[key] = cached
+			if reused_key := backoff_key { backoff.note_reuse(reused_key) }
 			return cached.result
+		}
+		if missed_key := backoff_key {
+			backoff.escalate(missed_key)
+			if !backoff.allows_recording(missed_key) {
+				return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
+			}
+		}
+	} else if new_key := backoff_key {
+		if !backoff.allows_recording(new_key) {
+			return layout_uncached_independent_formatting_context(mut state, box, mut used, mode, space)
 		}
 	}
 	mut inputs := []RetainedInlineInput{}
@@ -236,6 +354,7 @@ fn run_retaining_independent_formatting_context(mut state LayoutState, box &Node
 			append_retained_block_snapshot(mut snapshots, child, values)
 		}
 	}
+	if recorded_key := backoff_key { backoff.note_recorded(recorded_key) }
 	state.block_layouts_[key] = &RetainedBlockLayout{
 		inputs: inputs.clone()
 		values: snapshots
