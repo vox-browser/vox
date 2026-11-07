@@ -509,6 +509,8 @@ fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point S
 			if p.stop_parsing { break }
 			continue
 		}
+		// The tokenizer reads a CDATA section only in foreign content.
+		p.tokenizer.parser_in_foreign_content = p.adjusted_current_node_is_foreign()
 		mut token := p.next_parser_token(stop_at_insertion_point) or { break }
 
 		if p.next_line_feed_can_be_ignored {
@@ -971,6 +973,13 @@ fn (p &HTMLParser) current_node() ?&dom.Element {
 		return none
 	}
 	return p.stack_of_open_elements.current_node()
+}
+
+// https://html.spec.whatwg.org/multipage/parsing.html#markup-declaration-open-state
+// "the adjusted current node ... is not an element in the HTML namespace".
+fn (p &HTMLParser) adjusted_current_node_is_foreign() bool {
+	node := p.adjusted_current_node() or { return false }
+	return !node.is_html_element()
 }
 
 fn (p &HTMLParser) adjusted_current_node() ?&dom.Element {

@@ -611,3 +611,17 @@ fn test_html_fragment_serialization_node_kinds_and_raw_text() {
 
 	assert (div.outer_html() or { panic('${err}') }) == '<div title="a&amp;&quot;b"><!--marker--><script>if (a < b && c > d) {}</script></div>'
 }
+
+fn test_cdata_sections_are_text_only_in_foreign_content() {
+	document := parse_document('<svg><![CDATA[foo]]></svg><math><![CDATA[a<b]]></math><div><![CDATA[x]]></div>')
+	body := document.body() or { panic('missing body') }
+	children := body.as_node().children
+	svg_text := children[0].first_child() or { panic('missing svg child') }
+	assert svg_text.is_text()
+	assert svg_text.text_content() or { '' } == 'foo'
+	math_text := children[1].first_child() or { panic('missing math child') }
+	assert math_text.is_text()
+	assert math_text.text_content() or { '' } == 'a<b'
+	comment := children[2].first_child() or { panic('missing div child') }
+	assert comment.is_comment()
+}
