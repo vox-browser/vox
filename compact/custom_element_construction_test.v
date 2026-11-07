@@ -117,3 +117,23 @@ fn test_compact_synchronous_custom_element_failures_report_and_return_failed_nat
 		runtime.release_javascript_value(wrapper)
 	}
 }
+
+// Console output queued earlier in the task is not a replay failure. GitHub
+// logs during module evaluation and then creates <turbo-frame> synchronously.
+fn test_compact_custom_element_construction_keeps_pending_console_output() {
+	mut document := custom_constructor_document()
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close(); document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+ console.log("before definition");
+ class Frame extends HTMLElement{constructor(){super();console.log("constructing");this.delegate={element:this};}}
+ customElements.define("turbo-frame",Frame);
+ console.warn("before creation");
+ const frame=document.createElement("turbo-frame");
+ if(!(frame instanceof Frame)||frame.delegate.element!==frame)throw Error("constructor did not run");
+ container.appendChild(frame);
+ console.log("created",document.querySelector("turbo-frame")===frame);
+ '], runtime, mut messages)
+	assert messages == ['before definition', 'before creation', 'constructing', 'created true'], messages.str()
+}

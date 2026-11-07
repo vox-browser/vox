@@ -1988,7 +1988,9 @@ fn javascript_bootstrap() string {
 		'window.__ladybirdSnapshot = function () { if(typeof __nativeElementQuery==="function"){const states=JSON.parse(__nativeElementQuery(JSON.stringify({key:"",action:"snapshotStates",selector:""})));for(const state of states)if(!__state.elements[state.bridgeKey])__state.elements[state.bridgeKey]=state;} return JSON.stringify(__state); };',
 		// Canvas hosts draw into the exact DOM owners retained by the registry.
 		// Replay their pending DOM edits without copying each native bitmap through JSON.
-		'window.__ladybirdFinalize = function () { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)})); __state.operations=[]; __clearPendingElementEdits(); return snapshot; };',
+		// Replays inside a script call omit console output; it stays queued for the
+		// task's own consumer and is not a DOM replay failure.
+		'window.__ladybirdFinalize = function (withoutLogs) { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)},withoutLogs===true?{logs:[]}:{})); __state.operations=[]; __clearPendingElementEdits(); return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; __clearPendingElementEdits(); };',
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
