@@ -3481,17 +3481,36 @@ fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
 }
 
 fn viewport_hit_test(target voidptr, x f64, y f64, type_ dom.HitTestType) ?dom.HitTestResult {
+	return viewport_hit_test_with_culling(target, x, y, type_, !disable_hit_test_culling)
+}
+
+fn viewport_hit_test_with_culling(target voidptr, x f64, y f64, type_ dom.HitTestType,
+	allow_culling bool) ?dom.HitTestResult {
 	mut result := viewport_layout_result(target)
 	viewport_build_hit_test_display_list(target)
 	snapshot := result.scroll_state_snapshot
 	metrics := painting.new_chrome_metrics(1.0) or { return none }
 	mut hit_test_state := CompatibilityHitTestState{}
 	mut memo := new_compatibility_hit_point_memo(&result.visual_context_tree, snapshot, x, y)
+	// Exact queries skip runs and steps whose cached bounds miss the mapped
+	// point; those steps cannot produce a candidate (see hit_test_step_bounds).
+	culling := type_ == .exact && allow_culling && refresh_hit_test_culling(mut result)
+	last := result.hit_test_steps.len - 1
 	// StackingContext paints chrome in the overlay phase, fragments in the
 	// foreground phase, and the box itself behind its descendants. Reversing
 	// that retained source-shaped plan preserves the recursive hit-test order
 	// without rebuilding or resorting the tree for every pointer event.
-	for index := result.hit_test_steps.len - 1; index >= 0; index-- {
+	for index := last; index >= 0; index-- {
+		if culling {
+			if index == last || index % hit_test_culling_block == hit_test_culling_block - 1 {
+				block := index / hit_test_culling_block
+				if !result.hit_test_culling.block_may_hit(block, mut memo) {
+					index = block * hit_test_culling_block
+					continue
+				}
+			}
+			if !result.hit_test_culling.step_may_hit(index, mut memo) { continue }
+		}
 		step := result.hit_test_steps[index]
 		box := step.box
 		match step.phase {
