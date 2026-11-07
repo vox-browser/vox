@@ -332,6 +332,36 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cachedParent' { return binding.cached_parent_query(root) }
 	if action == 'geometry' { return compact_element_geometry_query(root, selector) }
 	if action == 'setScroll' { return compact_element_set_scroll(root, selector, binding.runtime) }
+	if action == 'scrollIntoView' {
+		mut element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+		scroll_request := json2.decode[map[string]json2.Any](selector)!
+		position := fn (value string, fallback dom.ScrollLogicalPosition) dom.ScrollLogicalPosition {
+			return match value {
+				'start' { dom.ScrollLogicalPosition.start }
+				'center' { dom.ScrollLogicalPosition.center }
+				'end' { dom.ScrollLogicalPosition.end_ }
+				'nearest' { dom.ScrollLogicalPosition.nearest }
+				else { fallback }
+			}
+		}
+		mut options := dom.ScrollIntoViewOptions{}
+		options.block = position(json_string_property(scroll_request, 'block') or { '' }, .start)
+		options.inline_ = position(json_string_property(scroll_request, 'inline') or { '' }, .nearest)
+		options.behavior = match json_string_property(scroll_request, 'behavior') or { 'auto' } {
+			'smooth' { dom.ScrollBehavior.smooth }
+			'instant' { dom.ScrollBehavior.instant }
+			else { dom.ScrollBehavior.auto_ }
+		}
+		if (json_string_property(scroll_request, 'container') or { 'all' }) == 'nearest' { options.container = .nearest }
+		promise := element.scroll_into_view_with_options(options)
+		mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
+		runtime.mark_document_state_dirty()
+		runtime.mark_document_replay_effects()
+		promise_key := 'scroll:${binding.next_scroll_promise}'
+		binding.next_scroll_promise++
+		binding.scroll_promises[promise_key] = promise
+		return json2.encode(promise_key)
+	}
 	if action in ['windowScroll', 'elementScroll'] {
 		promise := compact_scroll_method(root, selector, action == 'windowScroll', binding.runtime)!
 		promise_key := 'scroll:${binding.next_scroll_promise}'

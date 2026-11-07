@@ -83,6 +83,20 @@ fn compact_scroll_methods_bootstrap() string {
   }}[name];
   Object.defineProperty(viewport?global:Element.prototype,name,{value:method,writable:true,enumerable:true,configurable:true});
  }
+ // https://drafts.csswg.org/cssom-view/#dom-element-scrollintoview
+ Object.defineProperty(Element.prototype,"scrollIntoView",{value:function scrollIntoView(arg){
+  try{
+   const record=apply(get,__elementRecords,[this]);if(!record)throw new TypeError("Illegal Element receiver");
+   const value={};
+   if(arg===false)value.block="end";
+   else if(arg!==undefined&&arg!==null&&arg!==true&&typeof arg==="object"){
+    for(const name of ["behavior","block","container","inline"])if(arg[name]!==undefined)value[name]=string(arg[name]);
+    if(value.behavior!==undefined&&!["auto","instant","smooth"].includes(value.behavior))throw new TypeError("Invalid scroll behavior");
+    for(const name of ["block","inline"])if(value[name]!==undefined&&!["start","center","end","nearest"].includes(value[name]))throw new TypeError("Invalid scroll position");
+   }
+   return __ladybirdScrollPromise(__queryElements(record.bridgeKey,"scrollIntoView",JSON.stringify(value),true));
+  }catch(error){return __ladybirdScrollPromise("",error);}
+ },writable:true,enumerable:true,configurable:true});
 })();'
 }
 
