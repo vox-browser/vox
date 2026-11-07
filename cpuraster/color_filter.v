@@ -143,14 +143,6 @@ fn paint_draws_nothing(mode BlendMode, alpha_byte int, filter ?ColorFilter) bool
 	return blend_draws_nothing(mode, alpha_byte)
 }
 
-// Whether ImageToColorFilter() moves the filter into the paint: any filter
-// that keeps transparent black transparent. Others are drawn through an
-// image filter layer, which is not ported.
-fn color_filter_moves_into_paint(filter ?ColorFilter) bool {
-	f := filter or { return true }
-	return !f.affects_transparent_black()
-}
-
 // SkBlitter::Choose() for the canvas paint with or without a color filter.
 fn canvas_draw_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, filter ?ColorFilter) ?Blitter {
 	f := filter or {

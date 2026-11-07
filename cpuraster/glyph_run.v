@@ -32,14 +32,19 @@ pub:
 // without changing pixels for a draw it does not cover: devices Skia would
 // tile, faces Skia cannot open, color glyphs too wide for SkGlyph, and
 // non-finite glyph positions.
-pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter ?ColorFilter) bool {
+pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
 	if run.glyphs.len == 0 {
 		return true
 	}
 	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style)
-		|| run.positions.len < run.glyphs.len * 2 || !color_filter_moves_into_paint(filter) {
+		|| run.positions.len < run.glyphs.len * 2 {
 		return false
 	}
+	plan := plan_canvas_filter(filter_in)
+	if plan.declined {
+		return false
+	}
+	filter := plan.color
 	for v in run.positions[..run.glyphs.len * 2] {
 		if !is_finite_f32(v) {
 			return false
@@ -52,6 +57,26 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	face := open_glyph_face(run.font_path) or { return false }
 	defer {
 		face.release()
+	}
+	if plan.blur >= 0 {
+		// The blob's conservative bounds at its origin are the layer
+		// content; fonts without typeface bounds would need the glyphs'
+		// tight bounds.
+		font_bounds := face.font_bounds(run.font_size) or { return false }
+		if !is_finite_f32(run.translation[0]) || !is_finite_f32(run.translation[1]) {
+			return false
+		}
+		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
+		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
+			font_bounds.right, bounds.bottom + font_bounds.bottom}
+		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom { bounds } else { Rect{} }
+		content := Rect{blob.left + run.translation[0], blob.top + run.translation[1], blob.right +
+			run.translation[0], blob.bottom + run.translation[1]}
+		return draw_blur_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
+			content, plan.blur, mode, fn [run, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
+			return fill_canvas_glyphs(mut layer, w, h, w * 4, 2, run, t, color, style, global_alpha,
+				.src_over, layer_clips, none)
+		})
 	}
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}

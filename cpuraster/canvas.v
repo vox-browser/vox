@@ -48,16 +48,28 @@ const max_untiled_dimension = 8191
 // order (canvas_raster_clip()). filter is the canvas filter list when it
 // reduces to color matrices (color_filter.v); filters that would need an
 // image filter layer decline.
-pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, clips []Path, filter_in ?ColorFilter) bool {
+pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, clips []Path, filter_in ?CanvasFilter) bool {
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch)
-		|| !canvas_style_installs(style) || !color_filter_moves_into_paint(filter_in) {
+		|| !canvas_style_installs(style) {
 		return false
 	}
-	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	paint_color, blur := canvas_paint_source(color, style, blur_in)
-	alpha := canvas_paint_alpha(paint_color, if blur > 0 { f32(1) } else { global_alpha })
 	// A blurred shadow's mask filter replaces the canvas filters.
-	filter := if blur > 0 { ?ColorFilter(none) } else { filter_in }
+	filter_plan := if blur > 0 { FilterPlan{} } else { plan_canvas_filter(filter_in) }
+	if filter_plan.declined {
+		return false
+	}
+	if filter_plan.blur >= 0 {
+		// SkCanvas::onDrawPath(): the path's bounds are the layer content.
+		return draw_blur_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
+			path.bounds() or { Rect{} }, filter_plan.blur, mode, fn [path, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
+			return fill_canvas_path(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
+				.src_over, 0, layer_clips, none)
+		})
+	}
+	filter := filter_plan.color
+	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
+	alpha := canvas_paint_alpha(paint_color, if blur > 0 { f32(1) } else { global_alpha })
 	if paint_draws_nothing(mode, paint_alpha_byte(alpha), filter) {
 		return target.ready()
 	}
@@ -158,11 +170,16 @@ pub enum StrokeJoin {
 // blur is a shadow's blur, as for fill_canvas_path(); the blur mask filter
 // draws hairlines into its mask with butt caps.
 // Returns false without changing pixels for devices Skia would tile.
-pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path, filter_in ?ColorFilter) bool {
-	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style)
-		|| !color_filter_moves_into_paint(filter_in) {
+pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path, filter_in ?CanvasFilter) bool {
+	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style) {
 		return false
 	}
+	paint_source_color, paint_source_blur := canvas_paint_source(color, style, blur_in)
+	filter_plan := if paint_source_blur > 0 { FilterPlan{} } else { plan_canvas_filter(filter_in) }
+	if filter_plan.declined {
+		return false
+	}
+	_ = paint_source_color
 	for v in transform {
 		if !is_finite_f32(v) {
 			return false
@@ -198,7 +215,19 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 	shader := canvas_paint_shader(style, matrix)
 	alpha := paint_alpha_byte(paint_alpha)
 	sigma := canvas_shadow_sigma(blur)
-	filter := if blur > 0 { ?ColorFilter(none) } else { filter_in }
+	filter := filter_plan.color
+	if filter_plan.blur >= 0 && line_width > 0 {
+		// The stroke's fast bounds are the layer content.
+		stroke_radius := inflation_radius(stroke_width, cap, join, miter_limit)
+		pb := path.bounds() or { Rect{} }
+		content := Rect{pb.left - stroke_radius, pb.top - stroke_radius, pb.right + stroke_radius, pb.bottom +
+			stroke_radius}
+		return draw_blur_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
+			content, filter_plan.blur, mode, fn [path, color, style, global_alpha, line_width, cap, join, miter, dashes, dash_offset] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
+			return stroke_canvas_path(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
+				.src_over, 0, line_width, cap, join, miter, dashes, dash_offset, layer_clips, none)
+		})
+	}
 	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
 	// internalQuickReject().
 	bounds := path.bounds() or { return target.ready() }
