@@ -300,3 +300,71 @@ fn test_coalesced_queued_wheels_scroll_by_their_combined_delta() {
 	assert app.deferred_page_input.len == 0
 	assert app.scroll_y == 3 * 42
 }
+
+fn test_page_wheels_wait_for_the_next_native_frame_and_keep_input_order() {
+	$if macos {
+		mut owner := page.Page.create(1)!
+		mut app := &BrowserApp{ page_model: owner, viewport_width: 320, viewport_height: 200 }
+		app.install_loaded_page(LoadedPage{ url: 'https://news.ycombinator.com/item?id=2', markup: '<!doctype html><body style="margin:0">' + '<p style="height:40px;margin:0">comment</p>'.repeat(100), content_type: 'text/html' }, false)
+		mut document := app.document
+		defer { document.finalize() }
+		app.ctx = &gg.Context{ native_rendering: true }
+		y := f32(app.page_top() + 50)
+		// Wheels between frames are held and merged, not scrolled one by one.
+		for _ in 0 .. 3 {
+			app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: y })
+		}
+		assert app.scroll_y == 0
+		held := app.frame_aligned_wheel or { panic('missing held wheel') }
+		assert held.event.scroll_y == -3
+		assert app.deferred_page_input.len == 0
+		// The next frame replays it before any input deferred during engine work.
+		app.queue_frame_aligned_wheel_for_replay()
+		assert app.frame_aligned_wheel == none
+		assert app.deferred_page_input.len == 1
+		app.ctx = unsafe { nil }
+		app.poll_deferred_page_input()
+		assert app.scroll_y == 3 * 42
+		// Other input dispatches a held wheel first, preserving their order.
+		app.ctx = &gg.Context{ native_rendering: true }
+		app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: y })
+		assert app.scroll_y == 3 * 42
+		app.handle_event(&gg.Event{ typ: .mouse_move, mouse_x: 21, mouse_y: y })
+		assert app.frame_aligned_wheel == none
+		assert app.scroll_y == 4 * 42
+		// Wheels over browser chrome are not held.
+		app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: 1 })
+		assert app.frame_aligned_wheel == none
+		// A wheel held for a replaced document is dropped with its coordinates.
+		app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: y })
+		app.navigation_generation++
+		app.queue_frame_aligned_wheel_for_replay()
+		app.ctx = unsafe { nil }
+		app.poll_deferred_page_input()
+		assert app.scroll_y == 4 * 42
+	}
+}
+
+fn test_held_wheel_joins_input_deferred_by_engine_work_in_order() {
+	$if macos {
+		mut owner := page.Page.create(1)!
+		mut app := &BrowserApp{ page_model: owner, viewport_width: 320, viewport_height: 200 }
+		app.install_loaded_page(LoadedPage{ url: 'https://news.ycombinator.com/item?id=3', markup: '<!doctype html><body style="margin:0">' + '<p style="height:40px;margin:0">comment</p>'.repeat(100), content_type: 'text/html' }, false)
+		mut document := app.document
+		defer { document.finalize() }
+		app.ctx = &gg.Context{ native_rendering: true }
+		y := f32(app.page_top() + 50)
+		app.handle_event(&gg.Event{ typ: .mouse_scroll, scroll_y: -1, mouse_x: 20, mouse_y: y })
+		mut scope := app.begin_navigation_work()
+		// Engine work defers later input; the earlier held wheel goes first.
+		app.handle_event(&gg.Event{ typ: .mouse_move, mouse_x: 22, mouse_y: y })
+		assert app.frame_aligned_wheel == none
+		assert app.deferred_page_input.len == 2
+		assert app.deferred_page_input[0].event.typ == .mouse_scroll
+		assert app.deferred_page_input[1].event.typ == .mouse_move
+		scope.finish()
+		app.ctx = unsafe { nil }
+		app.poll_deferred_page_input()
+		assert app.scroll_y == 42
+	}
+}

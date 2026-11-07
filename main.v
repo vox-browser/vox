@@ -485,6 +485,8 @@ mut:
 	deferred_navigation_input           ?DeferredNavigationInput
 	deferred_page_input                 []DeferredPageInput
 	replaying_deferred_page_input       bool
+	frame_aligned_wheel                 ?DeferredPageInput
+	dispatching_frame_aligned_wheel     bool
 	background_image_ids                map[string]int
 	// Image ids by URL for the current document and adblock setting; every
 	// frame's lookups use it without building the full cache key.
@@ -7557,6 +7559,7 @@ fn (mut app BrowserApp) draw() {
 	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
+	app.queue_frame_aligned_wheel_for_replay()
 	app.poll_deferred_page_input()
 	app.poll_browser_history_page()
 	app.poll_browser_new_tab_page()
@@ -8116,6 +8119,7 @@ fn browser_pointer_button_mask(button int) u32 {
 }
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
+	if app.align_wheel_to_frame(event) { return }
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	$if !vox_ui2 ? {
 		if app.handle_portable_bookmark_event(event) { return }

@@ -9,6 +9,7 @@ import os
 const disable_wheel_hit_reuse = os.getenv('VOX_DISABLE_WHEEL_HIT_REUSE') != ''
 const wheel_hit_reuse_diagnostics = os.getenv('VOX_WHEEL_HIT_REUSE_DIAGNOSTICS') != ''
 const disable_deferred_wheel_coalescing = os.getenv('VOX_DISABLE_WHEEL_COALESCING') != ''
+const disable_frame_aligned_wheels = os.getenv('VOX_DISABLE_FRAME_ALIGNED_WHEELS') != ''
 
 fn wheel_input_target(hit dom.HitTestResult) ?page.InputTarget {
 	node := if hit.node != unsafe { nil } {

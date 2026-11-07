@@ -129,15 +129,7 @@ fn (mut app BrowserApp) defer_page_input(event &gg.Event) {
 		// wheel queued behind a busy frame merges into the preceding one: the
 		// latest event supplies position and state, the deltas accumulate.
 		// Each replayed wheel otherwise hit-tests the document again.
-		previous := app.deferred_page_input[last].event
-		mut merged := *event
-		merged.scroll_x += previous.scroll_x
-		merged.scroll_y += previous.scroll_y
-		app.deferred_page_input[last] = DeferredPageInput{
-			event:      merged
-			document:   input.document
-			generation: input.generation
-		}
+		app.deferred_page_input[last] = merge_deferred_wheel_inputs(app.deferred_page_input[last], input)
 	} else {
 		app.deferred_page_input << input
 	}
@@ -181,6 +173,88 @@ fn (mut app BrowserApp) poll_deferred_navigation_input() {
 		app.history_go(input.history_delta)
 	} else {
 		app.navigate(address, input.add_history)
+	}
+}
+
+fn merge_deferred_wheel_inputs(previous DeferredPageInput, next DeferredPageInput) DeferredPageInput {
+	mut merged := next.event
+	merged.scroll_x += previous.event.scroll_x
+	merged.scroll_y += previous.event.scroll_y
+	return DeferredPageInput{
+		event:      merged
+		document:   next.document
+		generation: next.generation
+	}
+}
+
+// Chromium's main-thread queue dispatches continuous input aligned to the next
+// animation frame and coalesces it there. A page wheel handled on arrival
+// hit-tests and scrolls once per event: once frames are short, a 120 Hz
+// trackpad delivers its wheels between frames, so every one ran a full hit
+// test outside the frame. Hold the wheel for the next native frame instead,
+// merging later wheels into it. Any other input dispatches it first, keeping
+// order; the busy-frame deferral above still owns input during engine work.
+fn (mut app BrowserApp) align_wheel_to_frame(event &gg.Event) bool {
+	if app.dispatching_frame_aligned_wheel { return false }
+	if !app.frame_aligned_wheel_eligible(event) {
+		app.flush_frame_aligned_wheel()
+		return false
+	}
+	input := DeferredPageInput{ event: *event, document: voidptr(app.document), generation: app.navigation_generation }
+	if pending := app.frame_aligned_wheel {
+		if deferred_wheel_inputs_coalesce(pending, input) {
+			app.frame_aligned_wheel = merge_deferred_wheel_inputs(pending, input)
+			return true
+		}
+		app.flush_frame_aligned_wheel()
+	}
+	app.frame_aligned_wheel = input
+	$if macos {
+		C.native_wake_browser()
+	}
+	return true
+}
+
+fn (app &BrowserApp) frame_aligned_wheel_eligible(event &gg.Event) bool {
+	$if macos {
+		return !disable_frame_aligned_wheels && event.typ == .mouse_scroll
+			&& app.ctx != unsafe { nil } && app.ctx.native_rendering
+			&& app.document != unsafe { nil } && event.mouse_y >= app.page_top()
+			&& !app.replaying_deferred_page_input && !app.should_defer_page_input()
+	}
+	return false
+}
+
+// Dispatch a held wheel now, or append it behind input already deferred by
+// engine work, which arrived after it.
+fn (mut app BrowserApp) flush_frame_aligned_wheel() {
+	input := app.frame_aligned_wheel or { return }
+	app.frame_aligned_wheel = none
+	if app.should_defer_page_input() {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		app.deferred_page_input << input
+		return
+	}
+	if input.document != voidptr(app.document) || input.generation != app.navigation_generation {
+		return
+	}
+	app.dispatching_frame_aligned_wheel = true
+	defer { app.dispatching_frame_aligned_wheel = false }
+	app.handle_event(&input.event)
+}
+
+// The frame replays a held wheel ahead of input deferred during engine work.
+fn (mut app BrowserApp) queue_frame_aligned_wheel_for_replay() {
+	input := app.frame_aligned_wheel or { return }
+	app.frame_aligned_wheel = none
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	if app.deferred_page_input.len > 0
+		&& deferred_wheel_inputs_coalesce(input, app.deferred_page_input[0]) {
+		app.deferred_page_input[0] = merge_deferred_wheel_inputs(input, app.deferred_page_input[0])
+	} else {
+		app.deferred_page_input.insert(0, input)
 	}
 }
 
