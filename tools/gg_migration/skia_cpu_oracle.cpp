@@ -289,3 +289,38 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     oracle_style(command.style, a + 11 + a[9] * 2, f + 11 + a[4] * 12 + a[8] + oracle_clip_floats(a + 9));
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
+
+// A bitmap command. arguments: width, height, pitch, alpha type, operation,
+// smoothing, the clips, the composite operation, the style's SkColor, then
+// the image's width (0 for none), height, pitch, alpha type and color space.
+// floats: the transform, global alpha, destination and source rects, then
+// the clip segments. The image's pixels come from oracle_pattern().
+ORACLE int oracle_canvas_bitmap(uint8_t* pixels, int const* a, float const* f)
+{
+    VoxCanvasCommand command {};
+    command.operation = a[4];
+    command.smoothing = a[5];
+    auto clips = oracle_clips(a + 6, f + 15);
+    command.clips = clips.data();
+    command.clip_count = int(clips.size());
+    int const* rest = a + 7 + a[6] * 2;
+    command.composite = rest[0];
+    command.style.color = uint32_t(rest[1]);
+    if (rest[2] > 0) {
+        command.style.kind = 4;
+        command.style.pattern = oracle_pattern_pixels;
+        command.style.pattern_width = rest[2];
+        command.style.pattern_height = rest[3];
+        command.style.pattern_pitch = rest[4];
+        command.style.pattern_alpha = rest[5];
+        command.style.pattern_color_space = rest[6];
+    }
+    for (int i = 0; i < 6; ++i)
+        command.transform[i] = f[i];
+    command.global_alpha = f[6];
+    for (int i = 0; i < 4; ++i) {
+        command.destination[i] = f[7 + i];
+        command.source[i] = f[11 + i];
+    }
+    return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
+}

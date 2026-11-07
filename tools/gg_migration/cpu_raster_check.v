@@ -25,6 +25,8 @@ type OracleCanvasStroke = fn (pixels &u8, values &i32, floats &f32) i32
 
 type OraclePattern = fn (pixels &u8)
 
+type OracleCanvasBitmap = fn (pixels &u8, values &i32, floats &f32) i32
+
 struct Oracle {
 	read_pixels            OracleReadPixels          = unsafe { nil }
 	font_typeface_is_valid OracleFontTypefaceIsValid = unsafe { nil }
@@ -33,6 +35,7 @@ struct Oracle {
 	canvas_fill            OracleCanvasFill          = unsafe { nil }
 	canvas_stroke          OracleCanvasStroke        = unsafe { nil }
 	pattern                OraclePattern             = unsafe { nil }
+	canvas_bitmap          OracleCanvasBitmap        = unsafe { nil }
 }
 
 fn load_oracle(path string) Oracle {
@@ -55,6 +58,9 @@ fn load_oracle(path string) Oracle {
 			OracleCanvasStroke(oracle_symbol(library, 'oracle_canvas_stroke'))
 		}
 		pattern:                unsafe { OraclePattern(oracle_symbol(library, 'oracle_pattern')) }
+		canvas_bitmap:          unsafe {
+			OracleCanvasBitmap(oracle_symbol(library, 'oracle_canvas_bitmap'))
+		}
 	}
 }
 
@@ -1327,6 +1333,14 @@ fn main() {
 		check_pattern_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'clears' {
+		check_clear_cases(oracle, count)
+		return
+	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'images' {
+		check_image_cases(oracle, count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -1366,6 +1380,8 @@ fn main() {
 	check_shadow_cases(oracle, count / 2)
 	check_gradient_cases(oracle, count / 2)
 	check_pattern_cases(oracle, count / 2)
+	check_clear_cases(oracle, count / 2)
+	check_image_cases(oracle, count / 2)
 }
 
 fn random_dashes() []f32 {
@@ -2154,4 +2170,249 @@ fn check_pattern_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('pattern canvas draws: ${patterns} exact (${pattern_strokes} strokes)')
+}
+
+// A bitmap command: operation 1 (clearRect) or 2 (drawImage).
+struct BitmapCase {
+	width        int
+	height       int
+	pitch        int
+	alpha_type   int
+	operation    int
+	smoothing    bool
+	transform    [6]f32
+	global_alpha f32
+	clips        []ClipCase
+	composite    int
+	color        u32
+	destination  [4]f32
+	source       [4]f32
+	image        ?cpuraster.CanvasPattern
+}
+
+// Runs one bitmap command through vox_skia_canvas_path() and cpuraster and
+// compares every byte. Returns true when cpuraster declined, which must
+// leave the pixels untouched.
+fn compare_canvas_bitmap(oracle Oracle, initial []u8, c BitmapCase, label string) !bool {
+	mut expected := initial.clone()
+	mut floats := c.transform[..].clone()
+	floats << c.global_alpha
+	floats << c.destination[..]
+	floats << c.source[..]
+	mut values := [i32(c.width), c.height, c.pitch, c.alpha_type, c.operation, int(c.smoothing)]
+	clip_values, clip_floats := clip_arguments(c.clips)
+	values << clip_values
+	floats << clip_floats
+	values << [i32(c.composite), i32(c.color)]
+	if image := c.image {
+		oracle.pattern(image.pixels.data)
+		values << [i32(image.width), image.height, image.pitch, if image.premultiplied { 2 } else { 1 },
+			int(image.display_p3)]
+	} else {
+		values << [i32(0), 0, 0, 0, 0]
+	}
+	if oracle.canvas_bitmap(expected.data, values.data, floats.data) == 0 {
+		return error('${label}: the Skia bitmap command failed')
+	}
+	mut actual := initial.clone()
+	drawn := if c.operation == 1 {
+		cpuraster.clear_canvas_rect(mut actual, c.width, c.height, c.pitch, c.alpha_type, c.transform,
+			c.destination, c.color, clip_paths(c.clips))
+	} else {
+		image := c.image or { panic('drawImage without an image') }
+		cpuraster.draw_canvas_image(mut actual, c.width, c.height, c.pitch, c.alpha_type,
+			c.transform, cpuraster.CanvasBitmap{
+			pixels:        image.pixels
+			width:         image.width
+			height:        image.height
+			pitch:         image.pitch
+			premultiplied: image.premultiplied
+			display_p3:    image.display_p3
+		}, c.source, c.destination, c.smoothing, c.global_alpha, canvas_mode(c.composite),
+			clip_paths(c.clips))
+	}
+	if !drawn {
+		if actual != initial {
+			return error('${label}: cpuraster declined after changing pixels')
+		}
+		return true
+	}
+	for j in 0 .. expected.len {
+		if expected[j] != actual[j] {
+			p := j - j % 4
+			save_failure(initial, expected, actual, '${c}')
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]}, from ${initial[p..p + 4]} (${c})')
+		}
+	}
+	return false
+}
+
+// A destination or source rect: integral or fractional, inside or past the
+// device, negative sizes, empty, huge and occasionally not finite.
+fn random_bitmap_rect(width int, height int) [4]f32 {
+	x := f32(rand.f64() * f64(width) * 1.4 - f64(width) * 0.2)
+	y := f32(rand.f64() * f64(height) * 1.4 - f64(height) * 0.2)
+	w := f32(rand.f64() * f64(width) * 1.2 - f64(width) * 0.1)
+	h := f32(rand.f64() * f64(height) * 1.2 - f64(height) * 0.1)
+	return match rand.intn(12) or { 0 } {
+		0, 1, 2 { [f32(int(x)), f32(int(y)), f32(int(w)), f32(int(h))]! }
+		3 { [f32(0), 0, f32(width), f32(height)]! }
+		4 { [x, y, 0, h]! }
+		5 { [f32(-1.0e9), -1.0e9, 3.0e9, 3.0e9]! }
+		6 { if rand.intn(4) or { 0 } == 0 { [f32(math.nan()), y, w, h]! } else { [x, y, -w, -h]! } }
+		else { [x, y, w, h]! }
+	}
+}
+
+// Canvas2D clearRect() calls through vox_skia_canvas_path()'s operation 1:
+// transparent and opaque black (alpha: false) clears under clips and
+// integral, fractional, scaled, flipped and rotated transforms. Returns the
+// comparisons and how many cpuraster declined.
+fn check_clear_draws(oracle Oracle, count int) !(int, int) {
+	mut declined := 0
+	for i in 0 .. count {
+		width := rand.intn(90) or { 0 } + 1
+		height := rand.intn(90) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		transform := match rand.intn(8) or { 0 } {
+			0, 1, 2 {
+				[f32(1), 0, 0, 1, 0, 0]!
+			}
+			3 {
+				[f32(1), 0, 0, 1, f32(rand.intn(41) or { 0 } - 20), f32(rand.f64() * 10 - 5)]!
+			}
+			4, 5 {
+				[f32(rand.f64() * 3 - 1.5), 0, 0, f32(rand.f64() * 3 - 1.5), f32(rand.f64() * 20), f32(rand.f64() * 20)]!
+			}
+			else {
+				random_stroke_matrix()
+			}
+		}
+		c := BitmapCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			operation:    1
+			transform:    transform
+			global_alpha: random_composite_alpha()
+			clips:        if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+			composite:    rand.intn(26) or { 0 }
+			color:        if rand.intn(3) or { 0 } == 0 { u32(0xff000000) } else { 0 }
+			destination:  random_bitmap_rect(width, height)
+		}
+		if compare_canvas_bitmap(oracle, initial, c, 'clear ${i}')! {
+			declined++
+		}
+	}
+	return count, declined
+}
+
+fn check_clear_cases(oracle Oracle, count int) {
+	clears, declined := check_clear_draws(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('canvas clears: ${clears - declined} exact, ${declined} declined')
+}
+
+// drawImage() source rects as the canvas rounds them: the whole image,
+// subsets at and away from its origin, and rects past its edges.
+fn random_image_source(width int, height int) [4]f32 {
+	return match rand.intn(4) or { 0 } {
+		0 {
+			[f32(0), 0, f32(width), f32(height)]!
+		}
+		1 {
+			[f32(0), 0, f32(rand.intn(width) or { 0 } + 1), f32(rand.intn(height) or { 0 } + 1)]!
+		}
+		else {
+			x := rand.intn(width + 4) or { 0 } - 2
+			y := rand.intn(height + 4) or { 0 } - 2
+			[f32(x), f32(y), f32(rand.intn(width + 3) or { 0 } - 1), f32(rand.intn(height + 3) or {
+				0
+			} - 1)]!
+		}
+	}
+}
+
+// Canvas2D drawImage() calls through vox_skia_canvas_path()'s operation 2:
+// random images, premultiplied or not and in sRGB or Display P3, drawn
+// with and without smoothing from whole and partial source rects into
+// unscaled (sprite), nearly unscaled, scaled, flipped and quarter-turned
+// destinations, under every composite operation, global alphas and clips.
+fn check_image_draws(oracle Oracle, count int) !(int, int) {
+	mut declined := 0
+	for i in 0 .. count {
+		width := rand.intn(90) or { 0 } + 1
+		height := rand.intn(90) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		initial := random_composite_bitmap(width, height, pitch, alpha_type)
+		image := random_pattern(width, height)
+		source := random_image_source(image.width, image.height)
+		mut destination := random_bitmap_rect(width, height)
+		match rand.intn(4) or { 0 } {
+			// The source's size: a sprite under a translation.
+			0 {
+				destination = [f32(rand.intn(width) or { 0 } - 4), f32(rand.intn(height) or { 0 } - 4),
+					source[2], source[3]]!
+			}
+			// Within a rounding of it.
+			1 {
+				destination = [f32(rand.f64() * f64(width)), f32(rand.f64() * f64(height)),
+					source[2] + f32(rand.f64() * 0.02 - 0.01), source[3]]!
+			}
+			else {}
+		}
+		transform := match rand.intn(10) or { 0 } {
+			0, 1, 2 {
+				[f32(1), 0, 0, 1, 0, 0]!
+			}
+			3 {
+				[f32(1), 0, 0, 1, f32(rand.intn(41) or { 0 } - 20), f32(rand.intn(41) or { 0 } - 20)]!
+			}
+			4 {
+				[f32(1), 0, 0, 1, f32(rand.f64() * 20 - 10), f32(rand.f64() * 20 - 10)]!
+			}
+			5 {
+				[f32(rand.f64() * 3 - 1.5), 0, 0, f32(rand.f64() * 3 - 1.5), f32(rand.f64() * 40), f32(rand.f64() * 40)]!
+			}
+			6 {
+				[f32(0), 1, -1, 0, f32(width), 0]!
+			}
+			else {
+				random_stroke_matrix()
+			}
+		}
+		c := BitmapCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			operation:    2
+			smoothing:    rand.intn(2) or { 0 } == 0
+			transform:    transform
+			global_alpha: random_composite_alpha()
+			clips:        if rand.intn(4) or { 0 } == 0 { random_clips(width, height) } else { []ClipCase{} }
+			composite:    if rand.intn(2) or { 0 } == 0 { rand.intn(26) or { 0 } } else { 0 }
+			destination:  destination
+			source:       source
+			image:        image
+		}
+		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
+			declined++
+		}
+	}
+	return count, declined
+}
+
+fn check_image_cases(oracle Oracle, count int) {
+	images, declined := check_image_draws(oracle, count) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('canvas images: ${images - declined} exact, ${declined} declined')
 }
