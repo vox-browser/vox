@@ -142,6 +142,12 @@ fn compact_document_write_bootstrap() string {
   Object.defineProperty(Document.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
   if(Object.prototype.hasOwnProperty.call(document,name))delete document[name];
  }
+ // A document without an <html> root (an XML document, say) starts with
+ // placeholder objects for these; the Document getters read the real tree.
+ for(const name of ["documentElement","head","body"]){
+  const own=Object.getOwnPropertyDescriptor(document,name);
+  if(own&&("value" in own)&&own.value!==null&&!(own.value instanceof Node))delete document[name];
+ }
 })();
 '
 }
