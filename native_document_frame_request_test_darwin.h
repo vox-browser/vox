@@ -1,6 +1,6 @@
 #pragma once
 #include "native_layer_presentation_darwin.h"
-// Exported by navigation/main_navigation_work.v.
+// Exported by navigation/work.v.
 int32_t vox_service_navigation_ui(void);
 
 static uint64_t vox_test_document_preparation_begin(void) {

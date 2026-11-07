@@ -7,7 +7,7 @@ $if vox_document_retention_diagnostics ? {
 import os
 import page
 
-#include "@DIR/main_document_release_probe_test.h"
+#include "@DIR/release_probe_test.h"
 
 $if gcboehm ? {
 	fn C.vox_document_release_run_worker(work fn (voidptr), context voidptr)

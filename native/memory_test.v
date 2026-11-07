@@ -6,7 +6,7 @@ import gg
 import platform
 import time
 
-#include "main_native_memory_test.h"
+#include "@DIR/memory_test.h"
 
 fn C.native_memory_test_reset()
 fn C.native_memory_test_deliver(owner voidptr) int

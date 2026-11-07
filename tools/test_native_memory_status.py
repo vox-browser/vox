@@ -20,14 +20,14 @@ def main():
     binary = output / "tests"
     command = ["sh", "tools/test_address_bar.sh", "-memory-limit", "10G",
                "-skip-running", "-o", str(binary)]
-    sources = [root / name for name in ["memorymgmt/main_memory_status.v", "memorymgmt/main_memory_status_test.v",
+    sources = [root / name for name in ["memorymgmt/memory_status.v", "memorymgmt/memory_status_test.v",
                                       "tools/ui2/embedded_browser_darwin.v"]]
     result = {"compile_command": command, "started_unix": time.time(),
               "source_sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
                                 for path in sources}}
     with (output / "compile.log").open("w") as log:
         result["actual_compiler_exit_code"] = subprocess.run(
-            command, cwd=root, env=dict(os.environ, VOX_CHROME_TEST_FILE="memorymgmt/main_memory_status_test.v"), stdout=log, stderr=subprocess.STDOUT).returncode
+            command, cwd=root, env=dict(os.environ, VOX_CHROME_TEST_FILE="memorymgmt/memory_status_test.v"), stdout=log, stderr=subprocess.STDOUT).returncode
     if result["actual_compiler_exit_code"] == 0:
         with (output / "run.log").open("w") as log:
             try:

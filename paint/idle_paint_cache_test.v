@@ -6,7 +6,7 @@ import gg
 import layout
 import time
 
-#include "main_idle_paint_cache_test.h"
+#include "@DIR/idle_paint_cache_test.h"
 
 fn C.vox_main_idle_paint_phase_capacity(list voidptr) int
 $if native_memory_cleanup_stub ? {
