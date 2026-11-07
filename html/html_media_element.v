@@ -1108,6 +1108,46 @@ pub fn (mut element HTMLMediaElement) select_resource() ! {
 	element.select_resource_for_current_load()!
 }
 
+// HTMLMediaElement::inserted(): a connected owner whose networkState is still
+// NETWORK_EMPTY invokes resource selection. Parser- and fragment-created
+// owners are materialized after their src and <source> children were set, so
+// neither the attribute change nor the insertion could run it. Queue it as a
+// media element task: selection fires events, which must not run inside the
+// DOM mutation, and inline scripts can attach listeners first.
+pub fn (mut element HTMLMediaElement) queue_resource_selection_if_connected_and_empty() {
+	if element.network_state_ != .empty || !element.connected_to_document() {
+		return
+	}
+	element_pointer := voidptr(element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		media.select_resource_if_connected_and_empty()
+	})
+}
+
+fn (element &HTMLMediaElement) connected_to_document() bool {
+	html_element := element.associated_element_ or { return false }
+	return unsafe { &dom.Element(html_element) }.as_node().is_connected()
+}
+
+fn (mut element HTMLMediaElement) select_resource_if_connected_and_empty() {
+	if element.network_state_ != .empty || !element.connected_to_document() {
+		return
+	}
+	if element.assigned_media_provider_ == none {
+		html_element := element.associated_element_ or { return }
+		dom_element := unsafe { &dom.Element(html_element) }
+		element.source_ = dom_element.get_attribute('src')
+		element.source_candidates_ = media_source_candidates_from_dom(dom_element)
+		// Without a src attribute or <source> child, selection only resets an
+		// already empty state; skip its load-event delay bookkeeping.
+		if (element.source_ or { '' }).trim_space() == '' && element.source_candidates_.len == 0 {
+			return
+		}
+	}
+	element.select_resource() or {}
+}
+
 fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {
 	if html_element := element.associated_element_ {
 		document := unsafe { &dom.Element(html_element) }.document()

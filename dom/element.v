@@ -6470,6 +6470,13 @@ pub fn (mut e Element) inserted() {
 	if mut style_element_base := e.style_element_base() {
 		style_element_base.update_a_style_block_for_dynamic_change()
 	}
+	// HTMLMediaElement::inserted(): parsed and fragment-parsed owners have no
+	// media model yet, so the embedding shell materializes and configures it.
+	if e.is_connected() && e.is_html_element() && e.local_name() in ['audio', 'video'] {
+		if hook := e.document().media_element_inserted_hook_ {
+			hook(e)
+		}
+	}
 }
 
 pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {

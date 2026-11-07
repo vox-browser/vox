@@ -19,6 +19,10 @@ pub type MediaElementSourceAttributeChangedHook = fn (&Element, ?string)
 
 pub type MediaElementControlsAttributeChangedHook = fn (&Element, ?string)
 
+// Media insertion steps. The embedding shell configures the owner's platform
+// player here; the owner then runs resource selection if it is still empty.
+pub type MediaElementInsertedHook = fn (&Element)
+
 pub fn (mut document Document) set_media_element_state_query(query MediaElementStateQuery) {
 	document.media_element_state_query_ = query
 }
@@ -33,6 +37,10 @@ pub fn (mut document Document) set_media_element_source_attribute_changed_hook(h
 
 pub fn (mut document Document) set_media_element_controls_attribute_changed_hook(hook MediaElementControlsAttributeChangedHook) {
 	document.media_element_controls_attribute_changed_hook_ = hook
+}
+
+pub fn (mut document Document) set_media_element_inserted_hook(hook MediaElementInsertedHook) {
+	document.media_element_inserted_hook_ = hook
 }
 
 // HTML installs a query which resolves the concrete owner on first use. No

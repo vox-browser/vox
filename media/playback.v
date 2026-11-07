@@ -157,6 +157,16 @@ fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
 	$if macos {
 		if !element.is_html_element() || element.local_name() !in ['audio', 'video'] { return }
 		mut media := html.html_media_element_for_dom_element(element) or { return }
+		app.install_native_media_player(element)
+		// Parsed and fragment-parsed owners only now have a media model, after
+		// their src attribute and insertion; run the skipped selection.
+		media.queue_resource_selection_if_connected_and_empty()
+	}
+}
+
+fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
+	$if macos {
+		mut media := html.html_media_element_for_dom_element(element) or { return }
 		for player in app.media_players {
 			if voidptr(player.media) == voidptr(media) { return }
 		}
@@ -201,6 +211,21 @@ fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
 }
 
 fn (mut app BrowserApp) install_document_media_playback() {
+	// Media inserted after load (innerHTML, script-moved parsed fragments) may
+	// never get a script wrapper, so configure it from its insertion steps.
+	mut document := app.document
+	document.set_media_element_inserted_hook(fn [app] (element &dom.Element) {
+		// Materializing the owner can build its controls shadow tree, so do not
+		// mutate the tree from inside the insertion steps.
+		html.queue_an_element_task(element, .dom_manipulation, fn [app, element] () {
+			mut owner := unsafe { &BrowserApp(app) }
+			if voidptr(element.document()) != voidptr(owner.document)
+				|| !element.as_node().is_connected() {
+				return
+			}
+			owner.install_media_playback(element)
+		})
+	})
 	root := unsafe { &dom.ParentNode(app.document) }
 	list := root.query_selector_all('audio,video') or { return }
 	for index in 0 .. list.length() {
