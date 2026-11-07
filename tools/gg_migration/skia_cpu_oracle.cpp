@@ -172,8 +172,23 @@ ORACLE void oracle_fill_path(uint8_t* pixels, int const* a, float const* f)
 // The production Canvas2D raster path (skia/canvas_raster.cpp).
 #include "../../skia/canvas_raster.cpp"
 
+#include <vector>
+
+// Device-space clip paths: ints hold the clip count, then a segment count and
+// even-odd flag per clip; floats hold their segments back to back.
+static std::vector<VoxCanvasPath> oracle_clips(int const* a, float const* f)
+{
+    std::vector<VoxCanvasPath> clips;
+    for (int i = 0; i < a[0]; ++i) {
+        clips.push_back({ f, a[1 + i * 2], a[2 + i * 2] });
+        f += a[1 + i * 2] * 12;
+    }
+    return clips;
+}
+
 // arguments: width, height, pitch, alpha type, even-odd, segment count,
-// SkColor. floats: the transform, global alpha, then 12 floats per segment.
+// SkColor, then the clips. floats: the transform, global alpha, 12 floats per
+// segment, then the clip segments.
 ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -184,12 +199,16 @@ ORACLE int oracle_canvas_fill(uint8_t* pixels, int const* a, float const* f)
     for (int i = 0; i < 6; ++i)
         command.transform[i] = f[i];
     command.global_alpha = f[6];
+    auto clips = oracle_clips(a + 7, f + 7 + a[5] * 12);
+    command.clips = clips.data();
+    command.clip_count = int(clips.size());
     return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
 }
 
 // arguments: width, height, pitch, alpha type, segment count, SkColor, cap,
-// join, dash count. floats: the transform, global alpha, line width, miter
-// limit, 12 floats per segment, then the dash offset and intervals.
+// join, dash count, then the clips. floats: the transform, global alpha, line
+// width, miter limit, 12 floats per segment, the dash offset and intervals,
+// then the clip segments.
 ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 {
     VoxCanvasCommand command {};
@@ -198,6 +217,9 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
     command.dash_offset = f[9 + a[4] * 12];
     command.dashes = f + 10 + a[4] * 12;
     command.dash_count = a[8];
+    auto clips = oracle_clips(a + 9, f + 10 + a[4] * 12 + a[8]);
+    command.clips = clips.data();
+    command.clip_count = int(clips.size());
     command.style.kind = 0;
     command.style.color = uint32_t(a[5]);
     for (int i = 0; i < 6; ++i)

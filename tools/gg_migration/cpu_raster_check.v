@@ -709,7 +709,7 @@ fn check_canvas_strokes(oracle Oracle, count int) !(int, int) {
 		miter := if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 12) }
 		cap := rand.intn(3) or { 0 }
 		join := rand.intn(3) or { 0 }
-		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0},
+		compare_canvas_stroke(oracle, initial, StrokeCase{width, height, pitch, alpha_type, segments, transform, color, global_alpha, line_width, miter, cap, join, []f32{}, 0, []ClipCase{}},
 			'stroke ${i}')!
 		if is_hairline(transform, line_width) {
 			hairlines++
@@ -733,6 +733,104 @@ struct StrokeCase {
 	join         int
 	dashes       []f32
 	dash_offset  f32
+	clips        []ClipCase
+}
+
+// A device-space clip path in skia.Path's segment encoding.
+struct ClipCase {
+	segments []f32
+	even_odd bool
+}
+
+// The oracle's clip arguments: the count, a segment count and even-odd flag
+// per clip, and their segments.
+fn clip_arguments(clips []ClipCase) ([]i32, []f32) {
+	mut values := [i32(clips.len)]
+	mut floats := []f32{}
+	for clip in clips {
+		values << i32(clip.segments.len / 12)
+		values << i32(int(clip.even_odd))
+		floats << clip.segments
+	}
+	return values, floats
+}
+
+fn clip_paths(clips []ClipCase) []cpuraster.Path {
+	return clips.map(cpuraster.canvas_path(it.segments, it.even_odd))
+}
+
+// Device-space clips as Canvas2D captures them: rects (pixel aligned or not,
+// either direction, open or with redundant points), rects past the device,
+// empty rects, circles, ellipses, random curved paths with either fill rule
+// and thin slivers.
+fn random_clips(width int, height int) []ClipCase {
+	mut clips := []ClipCase{}
+	for _ in 0 .. rand.intn(3) or { 0 } + 1 {
+		mut s := []f32{}
+		x0 := f32(rand.f64() * f64(width) * 1.2 - f64(width) * 0.1)
+		y0 := f32(rand.f64() * f64(height) * 1.2 - f64(height) * 0.1)
+		x1 := f32(rand.f64() * f64(width) * 1.2 - f64(width) * 0.1)
+		y1 := f32(rand.f64() * f64(height) * 1.2 - f64(height) * 0.1)
+		match rand.intn(9) or { 0 } {
+			0, 1 {
+				// An integral rect, which stays a hard-edged clip.
+				l := f32(int(x0))
+				t := f32(int(y0))
+				r := f32(int(x1))
+				b := f32(int(y1))
+				s << segment(0, [l, t])
+				s << segment(1, [r, t])
+				s << segment(1, [r, b])
+				s << segment(1, [l, b])
+				s << segment(5, [])
+			}
+			2, 3 {
+				// A fractional rect, sometimes open or with an extra point.
+				s << segment(0, [x0, y0])
+				if rand.intn(3) or { 0 } == 0 {
+					s << segment(1, [(x0 + x1) / 2, y0])
+				}
+				s << segment(1, [x1, y0])
+				s << segment(1, [x1, y1])
+				s << segment(1, [x0, y1])
+				if rand.intn(4) or { 0 } != 0 {
+					s << segment(5, [])
+				}
+			}
+			4 {
+				// An empty rect.
+				s << segment(0, [x0, y0])
+				s << segment(1, [x0, y0])
+				s << segment(1, [x0, y1])
+				s << segment(1, [x0, y0])
+				s << segment(5, [])
+			}
+			5 {
+				// A circle or an ellipse from SVG arcs.
+				rx := f32(rand.f64() * f64(width) / 2 + 0.5)
+				ry := if rand.intn(2) or { 0 } == 0 { rx } else { f32(rand.f64() * f64(height) / 2 + 0.5) }
+				rotation := f32(rand.f64() * 3)
+				s << segment(0, [x0 + rx, y0])
+				s << [f32(4), x0 - rx, y0, 0, 0, 0, 0, rx, ry, rotation, 0, 1]
+				s << [f32(4), x0 + rx, y0, 0, 0, 0, 0, rx, ry, rotation, 0, 1]
+				s << segment(5, [])
+			}
+			6 {
+				// A thin diagonal sliver.
+				w := f32(rand.f64() * 2)
+				s << segment(0, [x0, y0])
+				s << segment(1, [x1, y1])
+				s << segment(1, [x1 + w, y1 + w])
+				s << segment(1, [x0 + w, y0 + w])
+				s << segment(5, [])
+			}
+			else {
+				s << random_canvas_segments(width, height)
+			}
+		}
+		clips << ClipCase{s, rand.intn(2) or { 0 } == 0}
+	}
+	return clips
 }
 
 // SkDraw's DrawTreatAsHairline() test for a positive width.
@@ -761,8 +859,11 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	floats << c.segments
 	floats << c.dash_offset
 	floats << c.dashes
-	values := [i32(c.width), c.height, c.pitch, c.alpha_type, c.segments.len / 12, i32(c.color),
+	mut values := [i32(c.width), c.height, c.pitch, c.alpha_type, c.segments.len / 12, i32(c.color),
 		c.cap, c.join, c.dashes.len]
+	clip_values, clip_floats := clip_arguments(c.clips)
+	values << clip_values
+	floats << clip_floats
 	if oracle.canvas_stroke(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia canvas path failed')
 	}
@@ -770,7 +871,7 @@ fn compare_canvas_stroke(oracle Oracle, initial []u8, c StrokeCase, label string
 	path := cpuraster.canvas_path(c.segments, false)
 	if !cpuraster.stroke_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type,
 		path, c.transform, c.color, c.global_alpha, c.line_width, unsafe { cpuraster.StrokeCap(c.cap) }, unsafe { cpuraster.StrokeJoin(c.join) },
-		c.miter, c.dashes, c.dash_offset) {
+		c.miter, c.dashes, c.dash_offset, clip_paths(c.clips)) {
 		return error('${label}: cpuraster declined')
 	}
 	for j in 0 .. expected.len {
@@ -1057,28 +1158,102 @@ fn check_canvas_fills(oracle Oracle, count int) !int {
 		transform := [m.a, m.b, m.c, m.d, m.e, m.f]!
 		color := random_color()
 		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
-		mut expected := initial.clone()
 		global_alpha := random_global_alpha()
-		mut floats := transform[..].clone()
-		floats << global_alpha
-		floats << segments
-		values := [i32(width), height, pitch, alpha_type, int(even_odd), segments.len / 12, i32(color)]
-		if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
-			return error('canvas ${i}: the Skia canvas path failed')
-		}
-		mut actual := initial.clone()
-		path := cpuraster.canvas_path(segments, even_odd)
-		if !cpuraster.fill_canvas_path(mut actual, width, height, pitch, alpha_type, path,
-			transform, cpuraster.canvas_fill_color(color, global_alpha)) {
-			return error('canvas ${i}: cpuraster declined')
-		}
-		for j in 0 .. expected.len {
-			if expected[j] != actual[j] {
-				return error('canvas ${i}: byte ${j} is ${actual[j]}, Skia wrote ${expected[j]} (${width}x${height} pitch ${pitch} alpha ${alpha_type})')
-			}
-		}
+		compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, segments, even_odd, transform, color, global_alpha, []ClipCase{}},
+			'canvas ${i}')!
 	}
 	return count
+}
+
+struct FillCase {
+	width        int
+	height       int
+	pitch        int
+	alpha_type   int
+	segments     []f32
+	even_odd     bool
+	transform    [6]f32
+	color        u32
+	global_alpha f32
+	clips        []ClipCase
+}
+
+fn compare_canvas_fill(oracle Oracle, initial []u8, c FillCase, label string) ! {
+	mut expected := initial.clone()
+	mut floats := c.transform[..].clone()
+	floats << c.global_alpha
+	floats << c.segments
+	mut values := [i32(c.width), c.height, c.pitch, c.alpha_type, int(c.even_odd), c.segments.len / 12,
+		i32(c.color)]
+	clip_values, clip_floats := clip_arguments(c.clips)
+	values << clip_values
+	floats << clip_floats
+	if oracle.canvas_fill(expected.data, values.data, floats.data) == 0 {
+		return error('${label}: the Skia canvas path failed')
+	}
+	mut actual := initial.clone()
+	path := cpuraster.canvas_path(c.segments, c.even_odd)
+	if !cpuraster.fill_canvas_path(mut actual, c.width, c.height, c.pitch, c.alpha_type, path,
+		c.transform, cpuraster.canvas_fill_color(c.color, c.global_alpha), clip_paths(c.clips)) {
+		return error('${label}: cpuraster declined')
+	}
+	for j in 0 .. expected.len {
+		if expected[j] != actual[j] {
+			return error('${label}: pixel (${j % c.pitch / 4}, ${j / c.pitch}) channel ${j % 4} is ${actual[j]}, Skia wrote ${expected[j]} (${c})')
+		}
+	}
+}
+
+// Fills, hairlines, wide and dashed strokes inside anti-aliased and
+// hard-edged clips.
+fn check_clipped_draws(oracle Oracle, count int) !(int, int) {
+	mut strokes := 0
+	for i in 0 .. count {
+		width := rand.intn(120) or { 0 } + 1
+		height := rand.intn(120) or { 0 } + 1
+		pitch := width * 4 + 4 * (rand.intn(3) or { 0 })
+		alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+		clips := random_clips(width, height)
+		initial := random_canvas_bitmap(width, height, pitch, alpha_type)
+		if rand.intn(2) or { 0 } == 0 {
+			m := random_matrix()
+			compare_canvas_fill(oracle, initial, FillCase{width, height, pitch, alpha_type, random_canvas_segments(width, height), rand.intn(2) or {
+				0
+			} == 0, [m.a, m.b, m.c, m.d, m.e, m.f]!, random_color(), random_global_alpha(), clips},
+				'clipped fill ${i}')!
+			continue
+		}
+		segments := if rand.intn(2) or { 0 } == 0 {
+			random_stroke_shape(width, height)
+		} else {
+			random_canvas_segments(width, height)
+		}
+		line_width := match rand.intn(3) or { 0 } {
+			0 { f32(1) }
+			1 { f32(rand.f64()) }
+			else { random_wide_line_width() }
+		}
+		c := StrokeCase{
+			width:        width
+			height:       height
+			pitch:        pitch
+			alpha_type:   alpha_type
+			segments:     segments
+			transform:    random_stroke_matrix()
+			color:        random_color()
+			global_alpha: random_global_alpha()
+			line_width:   line_width
+			miter:        if rand.intn(2) or { 0 } == 0 { f32(10) } else { f32(rand.f64() * 4) }
+			cap:          rand.intn(3) or { 0 }
+			join:         rand.intn(3) or { 0 }
+			dashes:       if rand.intn(3) or { 0 } == 0 { random_dashes() } else { []f32{} }
+			dash_offset:  random_dash_offset()
+			clips:        clips
+		}
+		compare_canvas_stroke(oracle, initial, c, 'clipped stroke ${i}')!
+		strokes++
+	}
+	return count, strokes
 }
 
 fn main() {
@@ -1294,4 +1469,9 @@ fn check_stroke_cases(oracle Oracle, count int) {
 		exit(1)
 	}
 	println('dashed canvas strokes: ${dashed} exact (${dashed_hairlines} hairlines)')
+	clipped, clipped_strokes := check_clipped_draws(oracle, count / 2) or {
+		eprintln(err.msg())
+		exit(1)
+	}
+	println('clipped canvas draws: ${clipped} exact (${clipped_strokes} strokes)')
 }
