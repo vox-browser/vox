@@ -1204,7 +1204,7 @@ fn resolve_font_dependent_length_for_node(node &Node, length css.Length) CSSPixe
 }
 
 fn resolved_text_spacing_for_node(node &Node, property_id css.PropertyID) CSSPixels {
-	return resolve_font_dependent_length_for_node(node, node.computed_values().length(property_id))
+	return resolve_font_dependent_length_for_node(node, computed_text_spacing_length(node.computed_values(), property_id))
 }
 
 fn font_baseline_for_line_height(font_metrics platform.FontPixelMetrics, line_height CSSPixels) CSSPixels {

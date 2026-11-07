@@ -5,12 +5,19 @@ import css
 // Blink retains floating CSS spacing in its font description and applies it
 // at text-run precision. Rounding each letter to a 26.6 box-layout unit moves
 // later glyphs across the rasterizer's subpixel positions.
+// letter-spacing and word-spacing percentages, which transitions between
+// lengths and percentages produce, are relative to the font size.
+fn computed_text_spacing_length(computed &css.ComputedProperties, property_id css.PropertyID) css.Length {
+	value := computed.property(property_id, .yes) or { return css.Length.make_px(0) }
+	return css.Length.from_style_value(value, css.Length.make_px(computed.resolved_font_size_px()))
+}
+
 fn resolved_text_spacing_for_shaping(node &Node, property_id css.PropertyID) f64 {
 	if node.document().font_rendering_policy() != .chromium {
 		return resolved_text_spacing_for_node(node, property_id).to_double()
 	}
 	computed := node.computed_values()
-	length := computed.length(property_id)
+	length := computed_text_spacing_length(computed, property_id)
 	if length.is_absolute() {
 		return length.absolute_length_to_px_without_rounding()
 	}

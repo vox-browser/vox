@@ -29,3 +29,32 @@ fn test_chromium_fractional_spacing_reaches_retained_glyphs_without_box_rounding
 		assert checked >= 2
 	}
 }
+
+fn text_spacing_test_width(declarations string, chromium bool) f64 {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}span{font:30px/40px Arial;' +
+		declarations + '}</style><span>Ultra fast</span>')
+	defer { document.finalize() }
+	if chromium {
+		document.set_font_rendering_policy(.chromium)
+	}
+	root := layout_document_typed_in_viewport(document, 400, 240)
+	mut right := 0.0
+	for command in root.paint_commands() {
+		if command.kind != 'draw_text' || command.text.len == 0 { continue }
+		run := command.glyph_run or { continue }
+		glyphs := run.glyphs()
+		right = math.max(right, f64(glyphs[glyphs.len - 1].position.x))
+	}
+	return right
+}
+
+// Percentages, which transitions between lengths and percentages produce, are
+// relative to the font size.
+fn test_text_spacing_percentages_resolve_against_the_font_size() {
+	for chromium in [false, true] {
+		percentage := text_spacing_test_width('letter-spacing:10%;word-spacing:20%', chromium)
+		length := text_spacing_test_width('letter-spacing:3px;word-spacing:6px', chromium)
+		assert math.abs(percentage - length) < .01, '${chromium} ${percentage} ${length}'
+		assert percentage > text_spacing_test_width('', chromium)
+	}
+}
