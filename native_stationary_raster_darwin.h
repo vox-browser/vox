@@ -23,6 +23,8 @@ typedef struct {
     CGContextRef context;
     CGImageRef image;
     int valid, active, independent, allow_snapshot;
+    // This frame's scroll differs from the previous frame's: see end.
+    int moving;
 } VoxStationaryRaster;
 static VoxStationaryRaster native_stationary_raster;
 
@@ -87,6 +89,10 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
         && cache->width == width && cache->height == height && cache->pitch == pitch
         && cache->allow_snapshot == snapshot
         && CGAffineTransformEqualToTransform(cache->transform, transform);
+    // A scrolled frame is not repeated: the next frame has moved again or,
+    // once scrolling stops, is itself the frame worth keeping.
+    int moving = !reuse && cache->key.owner == owner && cache->key.scroll != scroll
+        && !getenv("VOX_SNAPSHOT_MOVING_STATIONARY_FRAMES");
     if (!reuse && cache->image) {
         CGImageRelease(cache->image);
         cache->image = NULL;
@@ -113,6 +119,7 @@ static int native_begin_stationary_raster_snapshot(uint64_t owner, uint64_t revi
     cache->independent = 0;
     cache->valid = reuse;
     cache->allow_snapshot = snapshot;
+    cache->moving = moving;
     if (reuse) {
         if (cache->allow_snapshot && cache->image
             && vox_frame_snapshot_select(context, cache->image)) {
@@ -146,7 +153,12 @@ static void native_end_stationary_raster(void) {
     CGContextRef context = cache->context;
     if (cache->image) CGImageRelease(cache->image);
     cache->image = NULL;
-    if (!cache->independent && context == NSGraphicsContext.currentContext.CGContext) {
+    // Retaining a moving frame copied the whole bitmap (a protected snapshot
+    // or a byte copy) only for the next frame to discard it. While scrolling
+    // that was a full-frame copy and release per frame.
+    if (cache->moving) {
+        cache->valid = 0;
+    } else if (!cache->independent && context == NSGraphicsContext.currentContext.CGContext) {
         CGContextFlush(context);
         uint8_t *pixels = CGBitmapContextGetData(context);
         if (pixels) {

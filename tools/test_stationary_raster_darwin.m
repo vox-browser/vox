@@ -142,6 +142,46 @@ static void test_snapshot_copy_mode_transitions(void) {
     native_discard_stationary_raster(); free(expected);
     NSGraphicsContext.currentContext = nil; CGContextRelease(context);
 }
+// A scrolled frame is never retained: the next frame has moved again and
+// would discard it. Once scrolling stops, a repeated offset is drawn once,
+// retained and then reused.
+static void test_moving_frames_are_not_retained(int scale) {
+    native_discard_stationary_raster();
+    CGContextRef context = bitmap(32, 24, scale);
+    NSGraphicsContext.currentContext = [NSGraphicsContext graphicsContextWithCGContext:context flipped:NO];
+    size_t bytes = CGBitmapContextGetBytesPerRow(context) * CGBitmapContextGetHeight(context);
+    // The first frame of a document has no previous offset to move from.
+    assert(!native_begin_stationary_raster_snapshot(5, 1, 1, 0, 7, 1, .4, 1, 1));
+    fill(context, 3);
+    native_end_stationary_raster();
+    assert(native_stationary_raster.valid);
+    for (int frame = 1; frame <= 3; ++frame) {
+        assert(!native_begin_stationary_raster_snapshot(5, 1, 1, frame * 2.5, 7, 1, .4, 1, 1));
+        fill(context, frame);
+        native_end_stationary_raster();
+        assert(!native_stationary_raster.valid && !native_stationary_raster.image);
+    }
+    assert(!native_begin_stationary_raster_snapshot(5, 1, 1, 7.5, 7, 1, .4, 1, 1));
+    fill(context, 9);
+    uint8_t *expected = malloc(bytes);
+    memcpy(expected, CGBitmapContextGetData(context), bytes);
+    native_end_stationary_raster();
+    assert(native_stationary_raster.valid);
+    fill(context, 0);
+    assert(native_begin_stationary_raster_snapshot(5, 1, 1, 7.5, 7, 1, .4, 1, 1));
+    assert(!memcmp(expected, CGBitmapContextGetData(context), bytes));
+    native_end_stationary_raster();
+    // Same-binary control: retain every moving frame as before.
+    setenv("VOX_SNAPSHOT_MOVING_STATIONARY_FRAMES", "1", 1);
+    assert(!native_begin_stationary_raster_snapshot(5, 1, 1, 10, 7, 1, .4, 1, 1));
+    native_end_stationary_raster();
+    assert(native_stationary_raster.valid);
+    unsetenv("VOX_SNAPSHOT_MOVING_STATIONARY_FRAMES");
+    native_discard_stationary_raster();
+    free(expected);
+    NSGraphicsContext.currentContext = nil;
+    CGContextRelease(context);
+}
 // Before a document has pixels, UI2 frames are one white fill keyed by a
 // reserved owner. Later same-size blank frames present the retained frame and
 // never touch their own fresh bitmap; a document key replaces the cache.
@@ -276,11 +316,13 @@ int main(void) {
         bitmap_padding = 0;
         BOOL copied = getenv("VOX_COPY_STATIONARY_RASTER_PIXELS") != NULL;
         test_snapshot_copy_mode_transitions();
+        test_moving_frames_are_not_retained(1);
+        test_moving_frames_are_not_retained(2);
         if (copied) setenv("VOX_COPY_STATIONARY_RASTER_PIXELS", "1", 1);
         test_blank_frames(1);
         test_blank_frames(2);
         native_discard_stationary_raster();
     }
-    puts("stationary raster: exact copies, all input invalidations, dynamic content, clip guards and blank frames passed");
+    puts("stationary raster: exact copies, all input invalidations, dynamic content, clip guards, moving frames and blank frames passed");
     return 0;
 }
