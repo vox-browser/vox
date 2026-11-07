@@ -1725,18 +1725,29 @@ fn viewport_invalidate_fixed_background_paint_caches(mut result DocumentLayoutRe
 	if !result.paint_phase_cache_valid || result.paint_phase_entry_valid.len != result.paint_order.len {
 		return
 	}
+	if !disable_viewport_entry_candidates {
+		candidates := viewport_entry_candidates(mut result)
+		for index in candidates.fixed_backgrounds {
+			viewport_invalidate_fixed_background_entry(mut result, index)
+		}
+		return
+	}
 	for index, entry in result.paint_order {
-		if !entry.box.decorations().background_images.any(it.attachment == 'fixed')
-			|| !result.paint_phase_entry_valid[index] {
+		if !entry.box.decorations().background_images.any(it.attachment == 'fixed') {
 			continue
 		}
-		for phase in 0 .. compatibility_paint_phase_count {
-			bucket := index * compatibility_paint_phase_count + phase
-			result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
-			result.paint_phase_commands[bucket].clear()
-		}
-		result.paint_phase_entry_valid[index] = false
+		viewport_invalidate_fixed_background_entry(mut result, index)
 	}
+}
+
+fn viewport_invalidate_fixed_background_entry(mut result DocumentLayoutResult, index int) {
+	if !result.paint_phase_entry_valid[index] { return }
+	for phase in 0 .. compatibility_paint_phase_count {
+		bucket := index * compatibility_paint_phase_count + phase
+		result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
+		result.paint_phase_commands[bucket].clear()
+	}
+	result.paint_phase_entry_valid[index] = false
 }
 
 fn viewport_invalidate_box_paint_cache(mut result DocumentLayoutResult, box &BlockBox) {

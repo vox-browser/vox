@@ -519,7 +519,7 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	plan.has_picture_clip_metadata = false
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	result := document_layout_result(document) or {
+	mut result := document_layout_result(document) or {
 		chromium_root_raster_plan_into(commands.len, mut plan)
 		return
 	}
@@ -533,10 +533,15 @@ fn update_chromium_raster_layer_plan_with_cull(document &dom.Document, commands 
 	scratch.compositor_bounds.clear()
 	scratch.compositor_fixed_raster_owners.clear()
 	scratch.compositor_unbounded_animations.clear()
-	for entry in result.paint_order {
+	candidates := if disable_viewport_entry_candidates {
+		[]int{len: result.paint_order.len, init: index}
+	} else {
+		viewport_entry_candidates(mut result).raster_layers
+	}
+	for candidate in candidates {
 		// Use the box pointer itself: reading its transform through the loop's
 		// entry copy makes current V move every copy to the heap.
-		box := entry.box
+		box := result.paint_order[candidate].box
 		if box.chromium_compositor_surface && box.own_effects_visual_context_idx > 0 {
 			// The compositor owns the complete container, including empty space.
 			// Tightening its raster extent to a painted descendant changes tile

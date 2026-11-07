@@ -554,6 +554,8 @@ mut:
 	hit_test_order      []&BlockBox
 	// Conservative per-step and per-block bounds for exact hit queries.
 	hit_test_culling HitTestCullingCache
+	// Rare boxes that per-frame passes act on (viewport_entry_candidates.v).
+	entry_candidates ViewportEntryCandidates
 	chrome_widget_boxes map[u64]voidptr
 	// PaintableBox owns an active ResizeHandle whose ElementResizeAction survives the
 	// layout/style invalidations caused by each drag step. Compatibility paint
