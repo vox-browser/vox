@@ -5720,7 +5720,7 @@ fn (mut app BrowserApp) add_native_svg_filter_graph(filter painting.GfxFilter, t
 		if kind < 0 {
 			continue
 		}
-		parameters := native_svg_filter_parameters(node)
+		parameters := native_svg_filter_parameters_in_user_space(node, matrix)
 		mode := if node.kind == 'turbulence' {
 			if node.string_parameters['type'] or { 'turbulence' } == 'fractal-noise' { 1 } else { 0 }
 		} else {
