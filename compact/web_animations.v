@@ -3,7 +3,6 @@ module main
 import animations
 import css
 import dom
-import strconv
 import x.json2
 
 // https://drafts.csswg.org/web-animations-1/
@@ -162,6 +161,10 @@ fn compact_web_animation_refresh(mut animation animations.Animation, document &d
 	owner.update_animated_style_if_needed()
 }
 
+fn compact_css_animation_key(handle voidptr) string {
+	return '__css_${u64(handle):x}'
+}
+
 fn (mut binding CompactElementQueryBinding) web_animation_query(key string, source string) !string {
 	request := json2.decode[map[string]json2.Any](source)!
 	op := json_string_property(request, 'op') or { return error('Invalid animation operation') }
@@ -188,7 +191,7 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 			items << json2.Any({
 				'css':           json2.Any(true)
 				'transition':    json2.Any(record.is_transition)
-				'key':           json2.Any('__css_${u64(record.handle):x}')
+				'key':           json2.Any(compact_css_animation_key(record.handle))
 				'name':          json2.Any(record.name)
 				'pseudoElement': json2.Any(record.pseudo_element)
 				'playState':     json2.Any(record.play_state)
@@ -205,9 +208,13 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 	}
 	if op == 'cssCurrentTime' {
 		css_key := json_string_property(request, 'animation') or { return error('TypeError: Illegal Animation receiver') }
-		handle := voidptr(usize(strconv.parse_uint(css_key.all_after('__css_'), 16, 64) or {
-			return error('TypeError: Illegal Animation receiver')
-		}))
+		mut handle := unsafe { nil }
+		for record in css.document_css_animations(binding.document) {
+			if compact_css_animation_key(record.handle) == css_key { handle = record.handle }
+		}
+		if handle == unsafe { nil } {
+			return json2.encode({ 'value': json2.Any(json2.Null{}) })
+		}
 		if value := request['value'] {
 			if time := compact_web_animation_number(value) {
 				if css.document_css_animation_set_current_time(binding.document, handle, time) {
