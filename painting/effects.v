@@ -183,6 +183,82 @@ pub fn (filter ResolvedCSSFilter) svg_filter_bounds() ?Rect {
 	return filter.svg_filter_data.bounds
 }
 
+// SVG graphics paint their user space already mapped to the page, while their
+// filter region and primitive lengths stay in that user space. Map both so a
+// stdDeviation of 16 inside scale(.1) blurs by 1.6px over the scaled region.
+pub fn (filter ResolvedCSSFilter) mapped_from_user_space(transform Affine) ResolvedCSSFilter {
+	if isnil(filter.svg_filter_data) || transform == Affine{} {
+		return filter
+	}
+	snapshot := filter.svg_filter_data
+	mapped_bounds := if bounds := snapshot.bounds {
+		?Rect(affine_mapped_bounds(transform, bounds))
+	} else {
+		?Rect(none)
+	}
+	mut mapped_filter := ?GfxFilter(none)
+	if svg := snapshot.filter {
+		mapped_filter = GfxFilter{
+			...svg
+			nodes: svg.nodes.map(svg_filter_node_from_user_space(it, transform))
+			bounds: if bounds := svg.bounds { ?Rect(affine_mapped_bounds(transform, bounds)) } else { ?Rect(none) }
+		}
+	}
+	return ResolvedCSSFilter{
+		operations: filter.operations
+		svg_filter_data: &ResolvedSVGFilterSnapshot{
+			filter: mapped_filter
+			bounds: mapped_bounds
+		}
+	}
+}
+
+fn affine_mapped_bounds(transform Affine, rect Rect) Rect {
+	xs := [rect.x, rect.x + rect.width]
+	ys := [rect.y, rect.y + rect.height]
+	mut left := math.inf(1)
+	mut top := math.inf(1)
+	mut right := math.inf(-1)
+	mut bottom := math.inf(-1)
+	for x in xs {
+		for y in ys {
+			mapped_x := transform.a * x + transform.c * y + transform.e
+			mapped_y := transform.b * x + transform.d * y + transform.f
+			left = math.min(left, mapped_x)
+			top = math.min(top, mapped_y)
+			right = math.max(right, mapped_x)
+			bottom = math.max(bottom, mapped_y)
+		}
+	}
+	return Rect{left, top, right - left, bottom - top}
+}
+
+fn svg_filter_node_from_user_space(node GfxFilterNode, transform Affine) GfxFilterNode {
+	mut parameters := node.parameters.clone()
+	match node.kind {
+		'blur', 'erode', 'dilate' {
+			parameters['radius_x'] = (node.parameters['radius_x'] or { 0.0 }) * math.hypot(transform.a, transform.b)
+			parameters['radius_y'] = (node.parameters['radius_y'] or { 0.0 }) * math.hypot(transform.c, transform.d)
+		}
+		'offset' {
+			dx := node.parameters['dx'] or { 0.0 }
+			dy := node.parameters['dy'] or { 0.0 }
+			parameters['dx'] = transform.a * dx + transform.c * dy
+			parameters['dy'] = transform.b * dx + transform.d * dy
+		}
+		'displacement-map' {
+			parameters['scale'] = (node.parameters['scale'] or { 0.0 }) * math.sqrt(math.abs(transform.a * transform.d - transform.b * transform.c))
+		}
+		else {
+			return node
+		}
+	}
+	return GfxFilterNode{
+		...node
+		parameters: parameters
+	}
+}
+
 pub fn (filter ResolvedCSSFilter) has_filters() bool {
 	return filter.operations.len > 0 || filter.has_svg_filters()
 }

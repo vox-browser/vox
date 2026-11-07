@@ -3718,7 +3718,12 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		width: used.border_box_width().to_double()
 		height: used.border_box_height().to_double()
 	}
-	filter := resolved_css_filter_for_element(computed, color_context, paint_element, border_box_bounds)
+	mut filter := resolved_css_filter_for_element(computed, color_context, paint_element, border_box_bounds)
+	if filter.has_svg_filters() && node.is_svg_graphics_box() && !node.is_svg_svg_box() {
+		to_page := svg_path_transform_to_page(node, state)
+		filter = filter.mapped_from_user_space(painting.Affine{to_page.a, to_page.b, to_page.c,
+			to_page.d, to_page.e, to_page.f})
+	}
 	backdrop_filter := resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
 	if styled_element := paint_element {
 		text_color = computed.color()
