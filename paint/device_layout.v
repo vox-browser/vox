@@ -1,5 +1,6 @@
 module main
 
+import css
 import dom
 import html
 
@@ -19,7 +20,8 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 				// cosmetic filtering of an ad frame must not reduce the precision
 				// of text elsewhere in the document. Resolve current ancestor styles
 				// just as the preload planner does, including live display changes.
-				if !preload_element_has_no_display_box(element, mut hidden_by_element) {
+				if !preload_element_has_no_display_box(element, mut hidden_by_element)
+					&& !invisible_replaced_embedding(element) {
 					if retain_css_layout_for_svg && element.is_svg_element() {
 						report_archived_svg_layout(document)
 					}
@@ -30,6 +32,19 @@ fn browser_document_supports_device_layout(document &dom.Document) bool {
 		current = node.next_in_pre_order(root)
 	}
 	return true
+}
+
+// A replaced embedding whose own used visibility is hidden paints neither its
+// box nor its content and takes no pointer input; nothing it would draw needs
+// CSS-pixel coordinates. Cloudflare's JavaScript Detections add such a 1x1
+// iframe to 4chan for up to ten seconds, which otherwise dropped the whole
+// catalog to CSS-pixel layout on a Retina display.
+fn invisible_replaced_embedding(element &dom.Element) bool {
+	if !element.is_html_element()
+		|| element.local_name() !in ['iframe', 'object', 'embed', 'canvas', 'video', 'audio'] {
+		return false
+	}
+	return css.up_to_date_computed_properties_for_element(element).visibility() != .visible
 }
 
 // Display density is also the screenshot's requested raster scale (1 by

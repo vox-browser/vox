@@ -44,9 +44,31 @@ fn test_native_device_layout_ignores_only_unboxed_embedded_user_spaces() {
 		assert browser_document_supports_device_layout(document), markup
 		document.finalize()
 	}
-	for display in ['visibility:hidden', 'opacity:0', 'display:contents'] {
+	for display in ['opacity:0', 'display:contents'] {
 		mut document := html.parse_document('<!doctype html><div style="${display}"><iframe></iframe></div>')
 		assert !browser_document_supports_device_layout(document), display
+		document.finalize()
+	}
+}
+
+// An embedding whose used visibility is hidden paints nothing, like the 1x1
+// frame Cloudflare's JavaScript Detections add to 4chan with an inline
+// visibility:hidden. A visible embedding inside a hidden ancestor, or hidden
+// SVG and MathML user spaces whose descendants may become visible again, keep
+// CSS-pixel layout.
+fn test_native_device_layout_ignores_invisible_replaced_embeddings() {
+	for markup in ['<iframe style="visibility:hidden"></iframe>',
+		'<canvas style="visibility:hidden"></canvas>',
+		'<object style="visibility:collapse"></object><embed style="visibility:hidden"><video style="visibility:hidden"></video><audio style="visibility:hidden"></audio>'] {
+		mut document := html.parse_document('<!doctype html>${markup}')
+		assert browser_document_supports_device_layout(document), markup
+		document.finalize()
+	}
+	for markup in ['<div style="visibility:hidden"><iframe style="visibility:visible"></iframe></div>',
+		'<div style="visibility:hidden"><math><mi>x</mi></math></div>',
+		'<div style="visibility:hidden"><svg><foreignObject><div>embedded</div></foreignObject></svg></div>'] {
+		mut document := html.parse_document('<!doctype html>${markup}')
+		assert !browser_document_supports_device_layout(document), markup
 		document.finalize()
 	}
 }

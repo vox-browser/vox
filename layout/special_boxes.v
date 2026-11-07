@@ -130,14 +130,17 @@ pub fn (box &NavigableContainerViewport) natural_size() css.SizeWithAspectRatio 
 // The C++ paintable calls this hook after copying committed content geometry.
 // V lowers directly from UsedValues, so update the hosted document at that
 // same boundary in the typed paint adapter.
+// A container laid out in device coordinates still gives its hosted document a
+// viewport in CSS pixels.
 pub fn (box &NavigableContainerViewport) did_set_content_size(size css.CSSPixelSize) {
 	mut document := unsafe { &dom.Document(box.content_document() or { return }) }
 	old_rect := document.viewport_rect()
+	scale := unsafe { &Node(box) }.document().layout_coordinate_scale()
 	document.set_viewport_rect(dom.Rect{
 		x: old_rect.x
 		y: old_rect.y
-		width: size.width().to_double()
-		height: size.height().to_double()
+		width: size.width().to_double() / scale
+		height: size.height().to_double() / scale
 	})
 }
 
