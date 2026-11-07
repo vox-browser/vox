@@ -7659,6 +7659,10 @@ fn (mut app BrowserApp) draw() {
 					&& !browsersettings.current().disable_gpu_canvas
 					&& scroll_damage.gpu_canvas_permitted(app.page_zoom) {
 					gpu_canvas = C.native_gpu_canvas_begin() != 0
+					if gpu_canvas {
+						C.native_gpu_canvas_fractional_geometry(i32(app.page_zoom != 1
+							&& !disable_fractional_gpu_canvas))
+					}
 				}
 			}
 			page_y := app.page_top()

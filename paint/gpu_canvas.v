@@ -5,6 +5,9 @@ import browsersettings
 import os
 
 const gpu_scrollbar_batch_enabled = os.getenv('VOX_DISABLE_GPU_SCROLLBAR_BATCH') == ''
+// Same-binary control: zoomed frames read the canvas back for fractional
+// rectangles and background images, as unzoomed frames do.
+const disable_fractional_gpu_canvas = os.getenv('VOX_DISABLE_FRACTIONAL_GPU_CANVAS') != ''
 const gpu_video_upload_keys_enabled = os.getenv('VOX_GPU_VIDEO_UPLOAD_KEYS') != ''
 const gpu_text_layer_composites_enabled = os.getenv('VOX_GPU_TEXT_LAYER_COMPOSITES') != ''
 	|| os.getenv('VOX_GPU_CANVAS_NESTED_LAYERS') != ''
@@ -12,6 +15,7 @@ const gpu_text_layer_composites_enabled = os.getenv('VOX_GPU_TEXT_LAYER_COMPOSIT
 $if macos {
 	fn C.native_set_video_frame_resource(source u64, revision u64, generation u64)
 	fn C.native_gpu_canvas_begin() int
+	fn C.native_gpu_canvas_fractional_geometry(enabled i32)
 	fn C.native_gpu_canvas_begin_rects(rects &f32, count i32) int
 	fn C.native_gpu_canvas_cpu_access()
 	fn C.native_gpu_canvas_can_defer_layers() int
@@ -47,7 +51,24 @@ fn gpu_canvas_command_flags(command &layout.PaintCommand) int {
 	if command.disable_antialias { flags |= 256 }
 	// Polygon outlines draw as CPU lines rather than through the native shape.
 	if command.points.len >= 4 { flags |= 512 }
+	if command.kind == 'draw_background_image' && !gpu_canvas_background_image_supported(command) {
+		flags |= 1024
+	}
 	return flags
+}
+
+// SVG backgrounds render through their own CPU document replay, and a blend
+// mode applies through the Quartz context; neither reaches the canvas leaf.
+fn gpu_canvas_background_image_supported(command &layout.PaintCommand) bool {
+	data := command.image_data
+	if data == unsafe { nil } || data.background_svg_document != none
+		|| data.background_static_svg_resource != none || data.background_blend_mode != .normal {
+		return false
+	}
+	if layer := data.background_layer_data {
+		if layer.layer.blend_mode != .normal { return false }
+	}
+	return true
 }
 
 // Whether this command's leaf draws on the active GPU canvas. Otherwise the

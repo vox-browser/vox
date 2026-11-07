@@ -43,6 +43,10 @@ struct GpuCanvasFrame {
     // The command being replayed was approved for the GPU canvas. Leaves of
     // other commands use the CPU canvas so their own CPU drawing stays ordered.
     bool in_gpu_command = false;
+    // Page zoom projects CSS boxes onto fractional device pixels. Such a frame
+    // draws fractional rectangle edges and raster background images on the
+    // canvas instead of reading it back for their CPU rasters.
+    bool fractional_geometry = false;
     bool complete_viewport = false;
     bool native_grid = false;
     int document_top = -1;
@@ -551,13 +555,19 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
         return false;
     // Flags from V: 1 outer_shadow, 2 caret, 4 scrollbar, 8 radius, 16 antialiased,
     // 32 clip_outs, 64 rotated/sheared, 128 underlays_next, 256 no antialias,
-    // 512 polygon points.
+    // 512 polygon points, 1024 background image the canvas cannot draw (SVG
+    // or blended).
+    bool fractional = s_gpu_canvas && s_gpu_canvas->fractional_geometry;
+    // Raster backgrounds draw through the same image leaf as replaced images;
+    // SVG and blended backgrounds keep their CPU command barrier.
+    static bool const fractional_images = !std::getenv("VOX_DISABLE_FRACTIONAL_GPU_CANVAS_IMAGES");
+    if (kind == "draw_background_image") return fractional && fractional_images && !(flags & (64 | 1024));
     if (kind == "paint_outer_box_shadow" || kind == "fill_rounded_rect"
         || kind == "paint_uniform_border" || kind == "paint_partial_rounded_border"
         || kind == "paint_rounded_border_top" || kind == "paint_rounded_border_right"
         || kind == "paint_rounded_border_bottom" || kind == "paint_rounded_border_left")
         return true;
-    if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64));
+    if (kind == "fill_rect") return !(flags & (1 | 2 | 4 | 64)) && !(fractional && (flags & 256));
     // Outlines and ellipses are rounded rectangles of the same native shape.
     static bool const outlines = !std::getenv("VOX_GPU_CANVAS_DISABLE_OUTLINES");
     if (kind == "stroke_rounded_rect") return outlines && !(flags & 512);
@@ -597,10 +607,12 @@ int gpu_canvas_defer_rect(CGContextRef destination, float x, float y, float widt
     float canvas_height = CGBitmapContextGetHeight(destination) / canvas->scale;
     float top = canvas_height - y - height;
     // Quartz's antialiasing state for this fill is not observable; only whole
-    // device pixels are covered identically with or without it.
+    // device pixels are covered identically with or without it. A zoomed
+    // frame's edges are fractional throughout; antialias them on the canvas
+    // like the default Quartz fill rather than reading the canvas back.
     for (float edge : {x, top, x + width, top + height}) {
         float device = edge * canvas->scale;
-        if (std::abs(device - std::round(device)) > 0.001f) {
+        if (!canvas->fractional_geometry && std::abs(device - std::round(device)) > 0.001f) {
             gpu_canvas_decline(destination);
             return 0;
         }
@@ -1196,6 +1208,11 @@ extern "C" void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int enabled)
         // Version two also synchronizes the final Quartz image fallback.
         s_gpu_canvas->video_cpu_fallback_synchronized = enabled >= 2;
     }
+}
+
+extern "C" void ladybird_v_skia_gpu_canvas_fractional_geometry(int enabled)
+{
+    if (s_gpu_canvas) s_gpu_canvas->fractional_geometry = enabled != 0;
 }
 
 extern "C" void ladybird_v_skia_gpu_canvas_document_top(int top)

@@ -186,6 +186,31 @@ static void draw_cpu_leaves(CGContextRef context, bool canvas)
     native_fill(context, 120, css_height - 150, 80, 30, 200, 40, 40, canvas);
 }
 
+// Page zoom puts fill edges on fractional device pixels. A frame flagged
+// with fractional geometry antialiases them on the canvas instead of reading
+// it back, and accepts raster background images; an unflagged frame keeps
+// declining such fills.
+static bool s_fractional_geometry;
+static int s_fractional_background_approval = -1;
+static void draw_fractional_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) {
+        ladybird_v_skia_gpu_canvas_fractional_geometry(s_fractional_geometry);
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    }
+    assert(ladybird_v_skia_draw_rounded_rect(context, 40, 80, 300, 120, 12, 12, 12, 12, 12, 12, 12, 12,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 230, 240, 250, 255, 1, 0, 1, 1));
+    native_fill(context, 120.3f, css_height - 150.6f, 80.45f, 30.2f, 200, 40, 40, canvas);
+    if (canvas) {
+        // SVG or blended backgrounds (1024) and rotated ones (64) never join.
+        s_fractional_background_approval = ladybird_v_skia_gpu_canvas_command("draw_background_image", 21, 0);
+        assert(ladybird_v_skia_gpu_canvas_command("draw_background_image", 21, 1024) == 0);
+        assert(ladybird_v_skia_gpu_canvas_command("draw_background_image", 21, 64) == 0);
+        // A fill that must not be antialiased stays on the CPU canvas.
+        assert(ladybird_v_skia_gpu_canvas_command("fill_rect", 9, 256) == int(!s_fractional_geometry));
+    }
+}
+
 // Inset box shadows join the canvas as pictures of their leaf: vlang.io's
 // unblurred 1px highlight, and a blurred shadow over a translucent fill.
 static void draw_inset_leaves(CGContextRef context, bool canvas)
@@ -1835,6 +1860,31 @@ int main(int argc, char** argv)
         || cpu_candidate[below] != 230) {
         std::cerr << "CPU-leaf frame differs by " << cpu_error << " or lost paint order\n";
         return 1;
+    }
+    for (bool fractional : {false, true}) {
+        s_fractional_geometry = fractional;
+        auto reference = render(false, false, draw_fractional_leaves);
+        auto candidate = render(true, false, draw_fractional_leaves);
+        // The fill covers device columns 240.6-401.5 and rows 240.8-301.2.
+        // Skia and Quartz quantize partial edge coverage differently, so only
+        // those partly covered pixels may differ by more than rounding.
+        int error = 0, edge_error = 0;
+        for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
+            bool edge = ((x == 240 || x == 401) && y >= 240 && y <= 301)
+                || ((y == 240 || y == 301) && x >= 240 && x <= 401);
+            for (int c = 0; c < 4; ++c) {
+                size_t at = (size_t(y) * width + x) * 4 + c;
+                int difference = std::abs(int(candidate[at]) - int(reference[at]));
+                (edge ? edge_error : error) = std::max(edge ? edge_error : error, difference);
+            }
+        }
+        if (error > 3 || edge_error > 24 || s_declined != unsigned(!fractional)
+            || s_fractional_background_approval != int(fractional)) {
+            std::cerr << "Fractional fill (geometry=" << fractional << ") differs by " << error
+                << " (edges " << edge_error << ") declined=" << s_declined
+                << " background approval=" << s_fractional_background_approval << '\n';
+            return 1;
+        }
     }
     // Both inset shadows and the fill between them draw in the frame's one
     // GPU pass, read back once when it ends.

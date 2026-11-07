@@ -40,6 +40,7 @@ extern int ladybird_v_skia_bitmap_pixels_are_current(CGContextRef) __attribute__
 extern void ladybird_v_skia_gpu_canvas_video_backdrop_callbacks(int) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_frame_surface(void *) __attribute__((weak_import));
 extern void ladybird_v_skia_gpu_canvas_document_top(int) __attribute__((weak_import));
+extern void ladybird_v_skia_gpu_canvas_fractional_geometry(int) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_filters(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_cached_blurs(void) __attribute__((weak_import));
 extern int ladybird_v_skia_gpu_canvas_defer_layers(void) __attribute__((weak_import));
@@ -3096,6 +3097,15 @@ int native_gpu_canvas_begin(void) {
 	return begun;
 #else
 	return 0;
+#endif
+}
+
+// Called after a successful begin; a frame drawn at page zoom has fractional
+// device geometry (see GpuCanvasFrame::fractional_geometry).
+void native_gpu_canvas_fractional_geometry(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	if (ladybird_v_skia_gpu_canvas_fractional_geometry)
+		ladybird_v_skia_gpu_canvas_fractional_geometry(enabled);
 #endif
 }
 
