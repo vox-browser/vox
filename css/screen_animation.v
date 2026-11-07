@@ -1465,7 +1465,15 @@ fn combined_transition_duration(transition_attributes TransitionTimingAttributes
 	return math.max(transition_attributes.duration, 0) + transition_attributes.delay
 }
 
-fn collect_transition_into_computed_properties(abstract_element dom.AbstractElement, transition &CSSTransition, mut computed_properties ComputedProperties) {
+fn collect_transition_into_computed_properties(abstract_element dom.AbstractElement, transition &CSSTransition, style_change_event_time f64, mut computed_properties ComputedProperties) {
+	// The transition starts at the style change event, so its current value
+	// already reflects a negative transition-delay and its timing function.
+	style_computer := css_style_computer_for(abstract_element.document())
+	mut started := unsafe { &CSSTransition(transition) }
+	if started.sample_at(style_change_event_time) != none {
+		style_computer.collect_animation_into(abstract_element, voidptr(started.keyframe_effect_), mut computed_properties)
+		return
+	}
 	start := transition.transition_start_value()
 	end := transition.transition_end_value()
 	value := interpolate_property(abstract_element.element(), transition.transition_property_, start, end, 0.0, .yes) or { start }
@@ -1594,7 +1602,8 @@ fn start_transition_for_storage(abstract_element dom.AbstractElement, property_i
 	transition := CSSTransition.start_a_transition_for_storage(mut storage, abstract_element, property_id, transition_generation, transition_attributes, delay, start_time, end_time, style_computer.copy_sampled_style_value(property_id, start_value), style_computer.copy_sampled_style_value(property_id, end_value), style_computer.copy_sampled_style_value(property_id, reversing_adjusted_start_value), reversing_shortening_factor)
 
 	// Immediately set the property's value to the transition's current value, to prevent single-frame jumps.
-	collect_transition_into_computed_properties(abstract_element, transition, mut new_style)
+	collect_transition_into_computed_properties(abstract_element, transition, start_time, mut
+		new_style)
 	return transition
 }
 

@@ -86,3 +86,26 @@ console.log("css transitions listed");
 '], runtime, mut messages)
 	assert messages == ['css transitions listed']
 }
+
+fn test_compact_new_transition_applies_its_current_value_immediately() {
+	$if !darwin {
+		return
+	}
+	mut document := parse_browser_navigation_document('<!doctype html><div id="target" style="width:10px"></div>',
+		dom.URL{ value: 'https://example.test/' }, none)
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const target=document.getElementById("target");
+getComputedStyle(target).width;
+target.style.transition="width 100s linear -50s";
+target.style.width="20px";
+console.log("width "+getComputedStyle(target).width);
+'], runtime, mut messages)
+	// Half of the transition elapsed before it started.
+	assert messages == ['width 15px']
+}
