@@ -2855,6 +2855,11 @@ pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) strin
 	if s := style_value.serialize_font(mode) {
 		return s
 	}
+	// Longhand values the font shorthand cannot express serialize as the
+	// empty string rather than as a list of the longhands.
+	if style_value.shorthand_ == .font && style_value.values_.len == 12 {
+		return ''
+	}
 	if s := style_value.serialize_coordinating_list(mode) {
 		return s
 	}
@@ -3350,7 +3355,20 @@ fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?str
 			return none
 		}
 	}
-	// <font-width-css3> keyword only (percentages only appear in computed values).
+	// <font-width-css3> is a keyword. A computed width is a percentage, which
+	// the shorthand can express only when it is one of the keyword widths.
+	ser[2] = match ser[2] {
+		'50%' { 'ultra-condensed' }
+		'62.5%' { 'extra-condensed' }
+		'75%' { 'condensed' }
+		'87.5%' { 'semi-condensed' }
+		'100%' { 'normal' }
+		'112.5%' { 'semi-expanded' }
+		'125%' { 'expanded' }
+		'150%' { 'extra-expanded' }
+		'200%' { 'ultra-expanded' }
+		else { ser[2] }
+	}
 	if ser[2] !in ['normal', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
 		'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded'] {
 		return none
