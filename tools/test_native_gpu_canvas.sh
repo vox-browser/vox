@@ -108,6 +108,7 @@ done
 "$output_dir/native_gpu_canvas_test" --filter-image
 "$output_dir/native_gpu_canvas_test" --layer-pixels
 "$output_dir/native_gpu_canvas_test" --text-layer-composite
+"$output_dir/native_gpu_canvas_test" --text-mask
 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 VOX_GPU_CANVAS_DIRECT_NONAA_SHAPES=1 VOX_GPU_CANVAS_DISABLE_DIRECT_LAYER_SHAPES=1 "$output_dir/native_gpu_canvas_test" --overlay-batch
 "$output_dir/native_gpu_canvas_test" --overlay-batch

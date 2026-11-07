@@ -1567,6 +1567,16 @@ namespace {
 // still needs the ordinary path, and 0 when the ordinary path must draw.
 int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster);
+// As above for transparent rasters of `prepare_layers()` layers, composited in
+// order; -1 when the leaf has no usable layers.
+int gpu_canvas_draw_cpu_raster_layers(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, std::function<int()> const& prepare_layers,
+    std::function<bool(uint32_t*, int)> const& raster);
+// As above for layers of one-byte glyph coverage blended in order with
+// `color` on the GPU; -1 when the backend cannot draw coverage masks.
+int gpu_canvas_draw_cpu_mask(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, SkColor4f const& color,
+    std::function<int()> const& prepare_layers, std::function<bool(uint8_t*, int)> const& raster);
 void gpu_canvas_decline(CGContextRef destination);
 void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa);
 // Whether a root-layer leaf's region overlaps a Chromium MSAA raster tile.
@@ -1575,6 +1585,74 @@ bool gpu_canvas_root_msaa_overlap(CGContextRef destination, RasterRegion const& 
 int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
     VoxGraphiteImage const& descriptor, SkRect device_bounds, RasterRegion const& region,
     float page_x, float page_y, float scroll_y, bool rounded_mask);
+}
+
+// The CPU blitter blends a run's glyphs one after another, rounding the
+// destination between glyphs whose antialiased pixels overlap; Blink's GPU
+// glyph quads do the same. Give each glyph the layer after the last earlier
+// glyph its device box overlaps: glyphs of one layer never overlap, and
+// blending the layers' coverage in order repeats every rounding. Returns one
+// blob per layer, or none for a run this cannot represent.
+// Color glyph tables (bitmap or layered emoji, SVG): their glyphs carry color,
+// which a one-byte coverage mask cannot. Cached per face; listing the tags
+// does not copy table data.
+static bool typeface_has_color_glyphs(SkTypeface const& typeface)
+{
+    static std::unordered_map<SkTypefaceID, bool> known;
+    auto found = known.find(typeface.uniqueID());
+    if (found != known.end()) return found->second;
+    int count = typeface.countTables();
+    std::vector<SkFontTableTag> tags(size_t(std::max(count, 0)));
+    bool color = count < 0 || typeface.readTableTags(SkSpan<SkFontTableTag>(tags)) != count;
+    for (auto tag : tags)
+        color = color || tag == SkSetFourByteTag('s', 'b', 'i', 'x') || tag == SkSetFourByteTag('C', 'O', 'L', 'R')
+            || tag == SkSetFourByteTag('C', 'B', 'D', 'T') || tag == SkSetFourByteTag('S', 'V', 'G', ' ');
+    if (known.size() > 256) known.clear();
+    known.emplace(typeface.uniqueID(), color);
+    return color;
+}
+
+static std::vector<sk_sp<SkTextBlob>> glyph_coverage_layers(SkTextBlob const& blob,
+    SkMatrix const& matrix, float x, float y)
+{
+    SkTextBlob::Iter iter(blob);
+    SkTextBlob::Iter::ExperimentalRun run;
+    if (!iter.experimentalNext(&run) || iter.experimentalNext(nullptr) || run.count <= 0
+        || run.count > 4096 || !run.glyphs || !run.positions)
+        return {};
+    std::vector<SkRect> bounds(size_t(run.count));
+    run.font.getBounds(SkSpan<SkGlyphID const>(run.glyphs, size_t(run.count)), SkSpan<SkRect>(bounds), nullptr);
+    std::vector<SkIRect> boxes(size_t(run.count));
+    std::vector<int> layer(size_t(run.count), 0);
+    int layers = 1;
+    for (int index = 0; index < run.count; ++index) {
+        if (bounds[index].isEmpty()) continue;
+        auto device = matrix.mapRect(bounds[index].makeOffset(run.positions[index].fX + x,
+            run.positions[index].fY + y));
+        if (!device.isFinite()) return {};
+        boxes[index] = device.makeOutset(1, 1).roundOut();
+        for (int earlier = 0; earlier < index; ++earlier)
+            if (SkIRect::Intersects(boxes[index], boxes[earlier]))
+                layer[index] = std::max(layer[index], layer[earlier] + 1);
+        layers = std::max(layers, layer[index] + 1);
+    }
+    if (layers > 64) return {};
+    std::vector<sk_sp<SkTextBlob>> result;
+    for (int current = 0; current < layers; ++current) {
+        int count = int(std::count(layer.begin(), layer.end(), current));
+        if (!count) { result.push_back(nullptr); continue; }
+        SkTextBlobBuilder builder;
+        auto const& output = builder.allocRunPos(run.font, count);
+        int at = 0;
+        for (int index = 0; index < run.count; ++index) {
+            if (layer[index] != current) continue;
+            output.glyphs[at] = run.glyphs[index];
+            output.points()[at] = run.positions[index];
+            ++at;
+        }
+        result.push_back(builder.make());
+    }
+    return result;
 }
 
 static int draw_retained_glyph_run(CGContextRef destination,
@@ -1687,21 +1765,56 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     size_t pixel_count = static_cast<size_t>(raster_width) * raster_height;
     if (!emoji_face && blur == 0 && !has_float_color) {
-        int canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
-            region.left, region.top, "text", [&](uint32_t* text_pixels) {
-                auto info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
-                    kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
-                SkSurfaceProps coverage(0, kUnknown_SkPixelGeometry, 0.0f,
-                    (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
-                auto surface = SkSurfaces::WrapPixels(info, text_pixels,
-                    size_t(raster_width) * 4, chromium ? &coverage : nullptr);
-                if (!surface) return false;
-                auto* text_canvas = surface->getCanvas();
-                text_canvas->clear(SK_ColorTRANSPARENT);
-                text_canvas->setMatrix(raster_matrix(matrix, region, raster_scale_x, raster_scale_y));
-                text_canvas->drawTextBlob(blob, blob_x, blob_y, paint);
-                return true;
-            });
+        // The ordinary leaf below blends each glyph over the backdrop it reads
+        // (font_smoothing & 32), like Blink's GPU raster. Opaque coverage
+        // blends with the unquantized color on the GPU; a transparent CPU
+        // raster would round the foreground first. The CPU blitter quantizes
+        // a translucent color before coverage, which that raster reproduces.
+        // Color glyphs keep that raster. Both take one layer per set of
+        // non-overlapping glyphs, in order.
+        bool const backdrop_blend = chromium && (font_smoothing & 32);
+        auto text_matrix = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
+        std::vector<sk_sp<SkTextBlob>> layers;
+        auto prepare_layers = [&] {
+            layers = glyph_coverage_layers(*blob, text_matrix, blob_x, blob_y);
+            return layers.empty() ? -1 : int(layers.size());
+        };
+        auto text_raster = [&](uint32_t* text_pixels, SkTextBlob const* text) {
+            auto info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
+                kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
+            SkSurfaceProps coverage(0, kUnknown_SkPixelGeometry, 0.0f,
+                (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+            auto surface = SkSurfaces::WrapPixels(info, text_pixels,
+                size_t(raster_width) * 4, chromium ? &coverage : nullptr);
+            if (!surface) return false;
+            auto* text_canvas = surface->getCanvas();
+            text_canvas->clear(SK_ColorTRANSPARENT);
+            text_canvas->setMatrix(text_matrix);
+            if (text) text_canvas->drawTextBlob(text, blob_x, blob_y, paint);
+            return true;
+        };
+        int canvas_result = -1;
+        if (backdrop_blend && alpha == 255 && !typeface_has_color_glyphs(*typeface))
+            canvas_result = gpu_canvas_draw_cpu_mask(destination, raster_width, raster_height,
+                region.left, region.top, "text-mask", paint.getColor4f(), prepare_layers,
+                [&](uint8_t* coverage, int layer) {
+                    auto info = SkImageInfo::MakeA8(raster_width, raster_height);
+                    SkSurfaceProps properties(0, kUnknown_SkPixelGeometry, 0.0f,
+                        (font_smoothing & 15) == 2 ? 1.0f : 0.0f);
+                    auto surface = SkSurfaces::WrapPixels(info, coverage, size_t(raster_width), &properties);
+                    if (!surface) return false;
+                    auto* mask_canvas = surface->getCanvas();
+                    mask_canvas->clear(SK_ColorTRANSPARENT);
+                    mask_canvas->setMatrix(text_matrix);
+                    if (layers[layer]) mask_canvas->drawTextBlob(layers[layer], blob_x, blob_y, paint);
+                    return true;
+                });
+        else if (backdrop_blend)
+            canvas_result = gpu_canvas_draw_cpu_raster_layers(destination, raster_width, raster_height,
+                region.left, region.top, "text-layers", prepare_layers,
+                [&](uint32_t* text_pixels, int layer) { return text_raster(text_pixels, layers[layer].get()); });
+        if (canvas_result < 0) canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
+            region.left, region.top, "text", [&](uint32_t* text_pixels) { return text_raster(text_pixels, blob.get()); });
         if (canvas_result == 2) return 1;
     } else gpu_canvas_decline(destination);
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit

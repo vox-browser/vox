@@ -87,6 +87,7 @@ struct GpuCanvasApi {
     decltype(&vox_graphite_canvas_draw_pixels) draw_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_cached_pixels) draw_cached_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_layer_pixels) draw_layer_pixels = nullptr;
+    decltype(&vox_graphite_canvas_draw_mask) draw_mask = nullptr;
     decltype(&vox_graphite_canvas_copy_pixels) copy_pixels = nullptr;
     decltype(&vox_graphite_canvas_draw_path) draw_path = nullptr;
     decltype(&vox_graphite_canvas_draw_image) draw_image = nullptr;
@@ -123,6 +124,7 @@ GpuCanvasApi const* gpu_canvas_api()
         value.draw_pixels = reinterpret_cast<decltype(value.draw_pixels)>(dlsym(library, "vox_graphite_canvas_draw_pixels"));
         value.draw_cached_pixels = reinterpret_cast<decltype(value.draw_cached_pixels)>(dlsym(library, "vox_graphite_canvas_draw_cached_pixels"));
         value.draw_layer_pixels = reinterpret_cast<decltype(value.draw_layer_pixels)>(dlsym(library, "vox_graphite_canvas_draw_layer_pixels"));
+        value.draw_mask = reinterpret_cast<decltype(value.draw_mask)>(dlsym(library, "vox_graphite_canvas_draw_mask"));
         value.copy_pixels = reinterpret_cast<decltype(value.copy_pixels)>(dlsym(library, "vox_graphite_canvas_copy_pixels"));
         value.draw_path = reinterpret_cast<decltype(value.draw_path)>(dlsym(library, "vox_graphite_canvas_draw_path"));
         value.draw_image = reinterpret_cast<decltype(value.draw_image)>(dlsym(library, "vox_graphite_canvas_draw_image"));
@@ -717,19 +719,74 @@ int gpu_canvas_draw_image(CGContextRef destination, SkMatrix const& matrix,
     return gpu_canvas_verify() ? 1 : 2;
 }
 
-int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
-    int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster)
+// Composites `layers` transparent CPU rasters of a leaf in order; prepare
+// returns that count once the leaf has joined the canvas (-1 lets the caller
+// take its single-raster path instead).
+int gpu_canvas_draw_cpu_raster_layers(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, std::function<int()> const& prepare_layers,
+    std::function<bool(uint32_t*, int)> const& raster)
 {
     if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
     if (gpu_canvas_cpu_leaf_stays_on_cpu(destination)) return 0;
     std::vector<VoxGraphiteCanvasClip> clips;
     auto* frame = gpu_canvas_for_leaf(destination, clips);
     if (!frame) return 0;
-    std::vector<uint32_t> pixels(size_t(width) * height);
+    int layers = prepare_layers();
+    if (layers <= 0) return -1;
+    size_t plane = size_t(width) * height;
+    std::vector<uint32_t> pixels(plane * size_t(layers));
     int device_x = int(std::lround(region_left * frame->scale));
     int device_y = int(std::lround(region_top * frame->scale));
-    if (!raster(pixels.data()) || !gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels.data()),
-            width, height, width * 4, device_x, device_y, clips.data(), int(clips.size()))) {
+    for (int layer = 0; layer < layers; ++layer)
+        if (!raster(pixels.data() + plane * layer, layer)) { gpu_canvas_flush(); return 0; }
+    // Every draw records into the same canvas pass, in order; only argument
+    // validation can reject one, which then rejects the first as well.
+    for (int layer = 0; layer < layers; ++layer)
+        if (!gpu_canvas_api()->draw_pixels(reinterpret_cast<uint8_t const*>(pixels.data() + plane * layer),
+                width, height, width * 4, device_x, device_y, clips.data(), int(clips.size()))) {
+            gpu_canvas_flush();
+            return 0;
+        }
+    gpu_canvas_name_leaf(*frame, name, SkRect::MakeXYWH(device_x, device_y, width, height), 0, clips.size());
+    frame->cpu_stale = true;
+    ++frame->draws;
+    return gpu_canvas_verify() ? 1 : 2;
+}
+
+int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, std::function<bool(uint32_t*)> const& raster)
+{
+    return std::max(0, gpu_canvas_draw_cpu_raster_layers(destination, width, height, region_left,
+        region_top, name, [] { return 1; }, [&](uint32_t* pixels, int) { return raster(pixels); }));
+}
+
+// Text whose ordinary leaf blends glyph coverage over its backdrop: blend the
+// same coverage with the unquantized color on the GPU (see draw_mask), one
+// raster per layer in order. Returns -1 when the backend has no mask draw or
+// the leaf has no usable layers, otherwise as gpu_canvas_draw_cpu_raster.
+int gpu_canvas_draw_cpu_mask(CGContextRef destination, int width, int height,
+    int region_left, int region_top, char const* name, SkColor4f const& color,
+    std::function<int()> const& prepare_layers, std::function<bool(uint8_t*, int)> const& raster)
+{
+    if (!s_gpu_canvas || s_gpu_canvas->destination != destination) return 0;
+    if (!gpu_canvas_api()->draw_mask || std::getenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK")) return -1;
+    if (gpu_canvas_cpu_leaf_stays_on_cpu(destination)) return 0;
+    std::vector<VoxGraphiteCanvasClip> clips;
+    auto* frame = gpu_canvas_for_leaf(destination, clips);
+    if (!frame) return 0;
+    // Only a leaf that joins the canvas pays for its layer assignment.
+    int layers = prepare_layers();
+    if (layers <= 0) return -1;
+    size_t plane = size_t(width) * height;
+    std::vector<uint8_t> coverage(plane * size_t(std::max(layers, 0)));
+    int device_x = int(std::lround(region_left * frame->scale));
+    int device_y = int(std::lround(region_top * frame->scale));
+    float components[] {color.fR, color.fG, color.fB, color.fA};
+    bool rastered = layers > 0;
+    for (int layer = 0; rastered && layer < layers; ++layer)
+        rastered = raster(coverage.data() + plane * layer, layer);
+    if (!rastered || !gpu_canvas_api()->draw_mask(coverage.data(), width, height, width, layers,
+            device_x, device_y, components, clips.data(), int(clips.size()))) {
         gpu_canvas_flush();
         return 0;
     }

@@ -618,6 +618,43 @@ int vox_graphite_canvas_draw_pixels(uint8_t const* bgra, int width, int height, 
         clips, clip_count, 1, 0);
 }
 
+// Glyph coverage blended with the text color on the GPU, as Blink's Graphite
+// text atlas draws it. Compositing a premultiplied 8-bit text raster instead
+// rounds every partially covered pixel before the blend, one level away from
+// the CPU leaf that blends coverage over its backdrop. Each of `layers`
+// stacked coverage planes blends in order, rounding the destination between
+// them as successive overlapping glyphs do.
+extern "C" __attribute__((visibility("default")))
+int vox_graphite_canvas_draw_mask(uint8_t const* coverage, int width, int height, int pitch,
+    int layers, int device_x, int device_y, float const* color,
+    VoxGraphiteCanvasClip const* clips, int clip_count)
+{
+    if (!coverage || !color || width <= 0 || height <= 0 || width > 16384 || height > 16384
+        || pitch < width || layers <= 0 || layers > 64 || size_t(height) * layers > 16384
+        || size_t(width) * height * layers > 32 * 1024 * 1024
+        || device_x < -16777216 || device_x > 16777216
+        || device_y < -16777216 || device_y > 16777216) return 0;
+    for (int index = 0; index < 4; ++index)
+        if (!std::isfinite(color[index]) || color[index] < 0 || color[index] > 1) return 0;
+    std::lock_guard lock(gpu_mutex);
+    if (!canvas_recorder) return 0;
+    auto raster = SkImages::RasterFromPixmapCopy(
+        SkPixmap(SkImageInfo::MakeA8(width, height * layers), coverage, size_t(pitch)));
+    auto image = raster ? SkImages::TextureFromImage(canvas_recorder.get(), raster, {}) : nullptr;
+    if (!image) return 0;
+    // An alpha-only image draws the paint color modulated by its coverage.
+    SkPaint paint;
+    paint.setColor4f({color[0], color[1], color[2], color[3]}, SkColorSpace::MakeSRGB().get());
+    float bounds[] {float(device_x), float(device_y), float(device_x + width), float(device_y + height)};
+    return canvas_draw(bounds, clips, clip_count, [&](SkCanvas* canvas, CanvasTile const& tile) {
+        canvas->setMatrix(SkMatrix::Translate(device_x - tile.x, device_y - tile.y));
+        for (int layer = 0; layer < layers; ++layer)
+            canvas->drawImageRect(image, SkRect::MakeXYWH(0, float(layer) * height, width, height),
+                SkRect::MakeWH(width, height), SkSamplingOptions(SkFilterMode::kNearest), &paint,
+                SkCanvas::kStrict_SrcRectConstraint);
+    });
+}
+
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_canvas_draw_cached_pixels(uint64_t key, uint8_t const* bgra,
     int width, int height, int pitch, int device_x, int device_y,

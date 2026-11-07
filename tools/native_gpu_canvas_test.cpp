@@ -79,6 +79,50 @@ static void native_fill(CGContextRef context, float x, float y, float w, float h
     CGContextFillRect(context, CGRectMake(x, y, w, h));
 }
 
+// Text joining the canvas after a GPU leaf, as on 2ch.su's catalog cards (a
+// rounded #DDD card, then #333 text). Its ordinary leaf blends glyph coverage
+// over the backdrop it reads; the canvas must blend the same coverage with the
+// unquantized color on the GPU, as Blink's raster tile does. Compositing a
+// premultiplied 8-bit text raster rounded covered pixels one level apart.
+static int s_text_mask_alpha = 255;
+static void draw_text_mask_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect", 17, 0) == 1);
+    assert(ladybird_v_skia_draw_rounded_rect(context, 20, 80, 360, 140, 4, 4, 4, 4, 4, 4, 4, 4,
+        1, 0, 0, 1, 0, 0, 0, 0, 0, css_width, css_height, 221, 221, 221, 255, 1, 0, 1, 1));
+    // The last run's glyphs overlap their neighbours' antialiased pixels.
+    struct Run { char const* path; char const* text; float size; int weight; float x, y;
+        uint8_t r, g, b; float spacing; };
+    static Run const runs[] {
+        {"/System/Library/Fonts/Supplemental/Verdana.ttf", "\xD0\x9D\xD0\xB5\xD0\xBA\xD1\x80\xD0\xBE\xD0\xBB\xD0\xBE\xD0\xB3\xD0\xB8 news catalog", 12.6f, 400, 31.25f, 118, 51, 51, 51, 1},
+        {"/System/Library/Fonts/Supplemental/Verdana Bold.ttf", "Official /news/ thread 0123", 14, 700, 40, 146.5f, 255, 102, 0, 1},
+        {"/System/Library/Fonts/HelveticaNeue.ttc", "Overlapping coverage AVAW wmw", 17, 400, 36.75f, 172, 93, 93, 93, .82f},
+        // A fallback color face selected without the emoji flag (a catalog
+        // comment's exclamation marks): its glyphs keep their own colors.
+        {"/System/Library/Fonts/Apple Color Emoji.ttc", "\xE2\x9D\x97\xE2\x80\xBC\xE2\x9D\x97", 16, 400, 300, 140, 51, 51, 51, .9f},
+    };
+    for (auto const& run : runs) {
+        auto* face = select_typeface(run.path, 0, run.weight, 0);
+        assert(face);
+        SkFont font(sk_ref_sp(face), run.size);
+        size_t length = std::strlen(run.text);
+        int count = font.countText(run.text, length, SkTextEncoding::kUTF8);
+        std::vector<uint16_t> glyphs(count);
+        assert(font.textToGlyphs(run.text, length, SkTextEncoding::kUTF8,
+            SkSpan<SkGlyphID>(glyphs.data(), count)) == count);
+        std::vector<float> widths(count);
+        font.getWidths(SkSpan<SkGlyphID const>(glyphs.data(), count), widths);
+        std::vector<double> positions(size_t(count) * 2);
+        double advance = 0;
+        for (int i = 0; i < count; ++i) { positions[size_t(i) * 2] = advance; advance += widths[i] * run.spacing; }
+        if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_text", 9, 0) == 1);
+        assert(ladybird_v_skia_draw_glyph_run(context, run.path, 0, glyphs.data(), positions.data(),
+            count, run.size, run.weight, 0, run.x, run.y, 1, 0, 0, 1, 0, 0, 0, 0, 0,
+            css_width, css_height, run.r, run.g, run.b, uint8_t(s_text_mask_alpha),
+            16 | 32 | 2 | VOX_GLYPH_PRIVATE_BITMAP));
+    }
+}
+
 static unsigned s_first_uploads, s_first_cpu_leaves;
 static bool s_first_begun;
 
@@ -1244,6 +1288,41 @@ int main(int argc, char** argv)
         }
         std::cout << "Retained GPU publication: " << cases
             << " exact full/strip/shared/CPU-barrier frames; no final CPU readback\n";
+        return 0;
+    }
+    if (argc == 2 && !std::strcmp(argv[1], "--text-mask")) {
+        auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
+        assert(api && api->draw_mask && api->read);
+        s_backend_read = api->read; api->read = counted_read;
+        int legacy_error = 0; unsigned cases = 0;
+        for (int alpha : {255, 153}) {
+            s_text_mask_alpha = alpha;
+            auto reference = render(false, false, draw_text_mask_leaves);
+            auto candidate = render(true, false, draw_text_mask_leaves);
+            // The card and all four runs drew on the canvas, with no readback.
+            assert(s_draws == 5 && !s_declined && !s_flushes && !s_cpu_leaves);
+            setenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK", "1", 1);
+            auto legacy = render(true, false, draw_text_mask_leaves);
+            unsetenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK");
+            size_t different = 0, legacy_different = 0;
+            for (size_t at = 0; at < reference.size(); ++at) {
+                different += reference[at] != candidate[at];
+                legacy_different += reference[at] != legacy[at];
+                legacy_error = std::max(legacy_error, std::abs(int(reference[at]) - int(legacy[at])));
+            }
+            if (different) {
+                std::cerr << "GPU canvas text (alpha " << alpha << ") differs in " << different << " bytes\n";
+                return 1;
+            }
+            // Opaque text takes the coverage mask; a premultiplied raster of it
+            // rounds covered pixels. Translucent text keeps that raster, which
+            // reproduces the CPU blitter's quantized color.
+            assert(alpha == 255 ? legacy_different > 0 : legacy_different == 0);
+            ++cases;
+        }
+        assert(legacy_error <= 3);
+        std::cout << "GPU canvas text mask: " << cases << " opaque/translucent scenes exact; "
+            "opaque premultiplied text raster max error " << legacy_error << '\n';
         return 0;
     }
     if (argc == 2 && !std::strcmp(argv[1], "--text-layer-composite")) {

@@ -274,6 +274,11 @@ int vox_graphite_canvas_draw_cached_pixels(uint64_t key, const uint8_t *bgra,
     const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_draw_layer_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y, const VoxGraphiteCanvasClip *clips, int clip_count, float opacity, int blend_mode);
+// `layers` stacked planes of one-byte coverage rows (each `height` rows), drawn
+// in order with an unpremultiplied sRGB color (RGBA, 0-1).
+int vox_graphite_canvas_draw_mask(const uint8_t *coverage, int width, int height, int pitch,
+    int layers, int device_x, int device_y, const float *color,
+    const VoxGraphiteCanvasClip *clips, int clip_count);
 int vox_graphite_canvas_copy_pixels(const uint8_t *bgra, int width, int height, int pitch,
     int device_x, int device_y);
 // A serialized picture of one leaf in device coordinates, without images or
