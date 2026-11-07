@@ -1226,12 +1226,17 @@ extern "C" void ladybird_v_skia_set_chromium_painting(int active)
         // Keep the Context/pipelines and reusable pixels, but retire Metal's
         // completed command queue before the next native frame. Looking up a
         // backend here must not load it on a page that never used GPU raster.
-        if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
-            auto finish = reinterpret_cast<decltype(&vox_graphite_finish_frame)>(
-                dlsym(library, "vox_graphite_finish_frame"));
-            if (finish) finish();
-            dlclose(library);
+        // Once it is loaded, keep its reference and entry point: resolving
+        // them through dyld on every frame showed up in scrolled frames.
+        static decltype(&vox_graphite_finish_frame) finish_frame;
+        if (!finish_frame) {
+            if (void* library = dlopen("@rpath/libVoxGraphite.dylib", RTLD_LAZY | RTLD_LOCAL | RTLD_NOLOAD)) {
+                finish_frame = reinterpret_cast<decltype(&vox_graphite_finish_frame)>(
+                    dlsym(library, "vox_graphite_finish_frame"));
+                if (!finish_frame) dlclose(library);
+            }
         }
+        if (finish_frame) finish_frame();
     }
     s_chromium_painting = active != 0;
     if (!active && pthread_main_np() && s_frame_autorelease_pool) {
