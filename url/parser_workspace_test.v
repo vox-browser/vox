@@ -3,12 +3,12 @@ module url
 import platform
 
 fn test_url_workspace_preserves_parser_results_after_temporary_storage_reuse() {
-	base := basic_parse_in_workspace('https://user:pass@[2001:db8::1]:8443/a/b?old#before', none)?
+	base := basic_parse_in_workspace('https://user:pass@[2001:db8::1]:8443/a/b?old#before', none, none)?
 	for input in ['../c?q=hello world#end', '//faß.de:443/a/../b', '?next', '#fragment',
 		'https://name:pass@example.test:8443/測試/😀?q=日本語#é', 'http://0x7f.1/',
 		'file:///C|/a/../b', 'mailto:user@example.test?a=b c', 'data:text/plain,hello world',
 		'http://[2001:db8::2]/', 'http://[not-an-address]/', 'http://example.test:65536/'] {
-		expected := basic_parse_in_workspace(input, &base)
+		expected := basic_parse_in_workspace(input, &base, none)
 		actual := basic_parse(input, &base)
 		mut reuse := platform.begin_thread_scratch('reuse URL parser workspace')
 		_ = []u8{len: 64 * 1024, init: 0xa5}

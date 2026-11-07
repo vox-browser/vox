@@ -161,12 +161,9 @@ pub fn (u URL) serialize() string {
 }
 
 pub fn dom_url_parse(url string, base_url URL, encoding string) ?URL {
-	// LibURL accepts an encoding for query parsing. The translated parser is
-	// UTF-8 based, which is the forced encoding for non-special URLs and ws/wss;
-	// callers currently pass UTF-8 for browser navigation.
-	_ = encoding
+	// The encoding applies to the query of special non-ws URLs.
 	base := base_url.parsed() or { return none }
-	mut parsed := liburl.parse_with_base(url, base) or { return none }
+	mut parsed := liburl.parse_with_base_and_encoding(url, base, encoding) or { return none }
 	if parsed.scheme == 'blob' && dom_url_finish_parsing_hook != unsafe { nil } {
 		parsed = dom_url_finish_parsing_hook(parsed)
 	}

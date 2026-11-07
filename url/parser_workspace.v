@@ -5,9 +5,9 @@ import platform
 // A parsed URL keeps its component strings and path vector. Input runes,
 // normalization buffers, host probes and growing component strings are local
 // to parsing, including when a DOM URL cache asks for a persistent result.
-fn parse_url_in_workspace(input string, base ?&URL) ?URL {
+fn parse_url_in_workspace(input string, base ?&URL, encoder ?QueryEncoder) ?URL {
 	mut scratch := platform.begin_thread_scratch('URL parser')
-	parsed := basic_parse_in_workspace(input, base) or {
+	parsed := basic_parse_in_workspace(input, base, encoder) or {
 		scratch.finish()
 		return none
 	}

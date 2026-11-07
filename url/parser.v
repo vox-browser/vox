@@ -238,11 +238,17 @@ fn parser_parse_authority(mut record URL, authority string) bool {
 
 // Parse a URL string against an optional base URL.
 pub fn basic_parse(input string, base ?&URL) ?URL {
-	$if prealloc { return parse_url_in_workspace(input, base) }
-	return basic_parse_in_workspace(input, base)
+	return basic_parse_with_encoder(input, base, none)
 }
 
-fn basic_parse_in_workspace(input string, base ?&URL) ?URL {
+// The query of a special URL other than ws/wss is encoded with `encoder`
+// (the URL parser's encoding); none means UTF-8.
+fn basic_parse_with_encoder(input string, base ?&URL, encoder ?QueryEncoder) ?URL {
+	$if prealloc { return parse_url_in_workspace(input, base, encoder) }
+	return basic_parse_in_workspace(input, base, encoder)
+}
+
+fn basic_parse_in_workspace(input string, base ?&URL, encoder ?QueryEncoder) ?URL {
 	code_points := parser_processed_input(input)
 	mut record := URL{}
 	mut state := ParserState.scheme_start
@@ -557,11 +563,17 @@ fn basic_parse_in_workspace(input string, base ?&URL) ?URL {
 			}
 			.query {
 				if code_point == `#` || code_point == parser_eof {
-					record.query = percent_encode(buffer, if record.is_special() {
+					query_set := if record.is_special() {
 						PercentEncodeSet.special_query
 					} else {
 						PercentEncodeSet.query
-					}, false)
+					}
+					legacy := if record.is_special() && record.scheme !in ['ws', 'wss'] { encoder } else { none }
+					record.query = if query_encoder := legacy {
+						percent_encode_after_encoding(buffer, query_encoder, query_set)
+					} else {
+						percent_encode(buffer, query_set, false)
+					}
 					buffer = ''
 					if code_point == `#` {
 						record.fragment = ''
@@ -595,6 +607,12 @@ pub fn parse(input string) ?URL {
 
 pub fn parse_with_base(input string, base &URL) ?URL {
 	return basic_parse(input, base)
+}
+
+// The URL parser with an encoding (an Encoding Standard name such as
+// "gb18030"); encodings without a registered encoder use UTF-8.
+pub fn parse_with_base_and_encoding(input string, base &URL, encoding string) ?URL {
+	return basic_parse_with_encoder(input, base, query_encoder_for(encoding))
 }
 
 pub fn (record &URL) with_scheme(input string) URL {
