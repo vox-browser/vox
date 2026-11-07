@@ -92,6 +92,8 @@ mut:
 	value_function_metadata_intrinsic_ voidptr
 	webidl_promise_bridges_    map[voidptr]&WebIDLJavaScriptPromiseBridge
 	canvas_element_providers_ []CanvasElementBindingProvider
+	// Union of the providers' wrappers; see merge_canvas_elements_into().
+	canvas_element_registry_ &CanvasElementRegistry = unsafe { nil }
 	media_element_hosts_ []&MediaElementHost
 	close_handlers_ []fn ()
 	// Closures, besides function and close-handler callbacks, that this
@@ -432,6 +434,7 @@ pub fn (mut runtime Runtime) close() {
 		platform.release_closure(voidptr(provider.snapshot))
 		platform.release_closure(voidptr(provider.lookup))
 		platform.release_closure(voidptr(provider.identity))
+		platform.release_closure(voidptr(provider.merge))
 	}
 	runtime.owned_closures_ = []
 	runtime.host_functions_ = []
@@ -439,6 +442,7 @@ pub fn (mut runtime Runtime) close() {
 	runtime.native_stream_wrapper_records_ = {}
 	runtime.webidl_promise_bridges_ = {}
 	runtime.canvas_element_providers_ = []
+	runtime.canvas_element_registry_ = unsafe { nil }
 	runtime.media_element_hosts_ = []
 	if settings := runtime.scripting_settings_ {
 		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }

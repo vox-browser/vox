@@ -331,7 +331,7 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	host.video_prototype = runtime.retain_javascript_value(runtime.binding_property(prototypes, 'video')!)!
 	host.install_media_tracks()!
 	host.install_track_elements()!
-	runtime.add_canvas_element_provider_with_identity_lookup(fn [handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_merge(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &MediaElementHost(handle) }
 		return host.elements_for_binding()
 	}, fn [handle] (key string) ?&dom.Element {
@@ -341,6 +341,9 @@ pub fn (mut host MediaElementHost) install(mut runtime Runtime) ! {
 	}, fn [handle] (element &dom.Element) []string {
 		host := unsafe { &MediaElementHost(handle) }
 		return native_canvas_element_identity_keys(host.elements, element)
+	}, fn [handle] (registry &CanvasElementRegistry) {
+		host := unsafe { &MediaElementHost(handle) }
+		for key, element in host.elements { registry.set(key, element) }
 	})
 	runtime.add_close_handler(fn [handle] () {
 		mut host := unsafe { &MediaElementHost(handle) }

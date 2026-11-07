@@ -44,9 +44,12 @@ pub fn (host &ElementWheelHost) elements_for_binding() map[string]&dom.Element {
 }
 
 fn (mut host ElementWheelHost) refresh_elements() {
-	for key, element in host.runtime.canvas_elements_for_binding() {
-		host.elements[key] = element
-	}
+	host.runtime.merge_canvas_elements_into(mut host.elements)
+}
+
+fn event_target_is_element(target &dom.EventTarget) bool {
+	if target.data.kind != .node { return false }
+	return unsafe { &dom.Node(target) }.is_element()
 }
 
 fn (mut host ElementWheelHost) element_for_wheel_binding(key string, tag string, namespace string) !&dom.Element {

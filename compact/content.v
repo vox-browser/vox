@@ -62,13 +62,15 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 			return owner.encode_node_state(node)
 		})!
 	}
-	runtime.add_canvas_element_provider_with_identity_lookup(fn [binding] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_merge(fn [binding] () map[string]&dom.Element {
 		return binding.elements.clone()
 	}, fn [binding] (key string) ?&dom.Element {
 		return binding.elements[key] or { return none }
 	}, fn [binding] (element &dom.Element) []string {
 		if key := binding.keys[voidptr(element)] { return [key] }
 		return []string{}
+	}, fn [binding] (registry &browserjs.CanvasElementRegistry) {
+		for key, element in binding.elements { registry.set(key, element) }
 	})
 	runtime.define_host_function('__ladybirdReadElementContent', fn [elements, binding] (input string) !string {
 		parts := input.split(':')

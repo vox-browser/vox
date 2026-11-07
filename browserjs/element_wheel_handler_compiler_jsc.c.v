@@ -68,6 +68,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 }
 
 fn (mut host ElementWheelHost) raw_wheel_handler_element(target &dom.EventTarget) ?&dom.Element {
+	if !event_target_is_element(target) { return none }
 	host.refresh_elements()
 	for _, element in host.elements {
 		if voidptr(element) != voidptr(target) { continue }

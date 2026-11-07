@@ -53,16 +53,18 @@ pub fn (host &CanvasWebGLHost) elements_for_binding() map[string]&dom.Element {
 
 pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdWebGL', fn [mut host, mut runtime] (input string) !string {
-		for key, element in runtime.canvas_elements_for_binding() { host.elements[key] = element }
+		runtime.merge_canvas_elements_into(mut host.elements)
 		return host.call(input)
 	})!
-	runtime.add_canvas_element_provider_with_identity_lookup(fn [mut host] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_merge(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
 	}, fn [mut host] (key string) ?&dom.Element {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
 	}, fn [host] (element &dom.Element) []string {
 		return native_canvas_element_identity_keys(host.elements, element)
+	}, fn [mut host] (registry &CanvasElementRegistry) {
+		for key, element in host.elements { registry.set(key, element) }
 	})
 	$if darwin || linux {
 		host.install_xr(mut runtime)!

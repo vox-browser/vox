@@ -44,7 +44,7 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		get_scrollend,
 		set_scrollend,
 	])!
-	runtime.add_canvas_element_provider_with_identity_lookup(fn [handle] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_merge(fn [handle] () map[string]&dom.Element {
 		host := unsafe { &ElementWheelHost(handle) }
 		return host.elements_for_binding()
 	}, fn [handle] (key string) ?&dom.Element {
@@ -54,6 +54,9 @@ pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 	}, fn [handle] (element &dom.Element) []string {
 		host := unsafe { &ElementWheelHost(handle) }
 		return native_canvas_element_identity_keys(host.elements, element)
+	}, fn [handle] (registry &CanvasElementRegistry) {
+		host := unsafe { &ElementWheelHost(handle) }
+		for key, element in host.elements { registry.set(key, element) }
 	})
 	runtime.install_event_target_wrapper_provider(EventTargetWrapperProvider{
 		owner:  handle
@@ -173,6 +176,9 @@ fn (mut host ElementWheelHost) set_wheel_element_resolver(args []voidptr) !voidp
 
 fn (mut host ElementWheelHost) resolve_wheel_element_wrapper(target &dom.EventTarget) !voidptr {
 	if host.closed || host.resolver == unsafe { nil } { return unsafe { nil } }
+	// Only elements have wrapper keys; windows, documents and other nodes
+	// never match, so do not refresh the registry for them.
+	if !event_target_is_element(target) { return unsafe { nil } }
 	host.refresh_elements()
 	for key, element in host.elements {
 		if voidptr(element) != voidptr(target) { continue

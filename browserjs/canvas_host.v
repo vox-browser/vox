@@ -49,18 +49,18 @@ pub fn (mut host CanvasHost) install(mut runtime Runtime) ! {
 			'fillText', 'strokeText', 'measureText', 'createPattern'] {
 			if hook := host.before_draw { hook(runtime)! }
 		}
-		for key, element in runtime.canvas_elements_for_binding() {
-			host.elements[key] = element
-		}
+		runtime.merge_canvas_elements_into(mut host.elements)
 		return host.call_request(request)
 	})!
-	runtime.add_canvas_element_provider_with_identity_lookup(fn [mut host] () map[string]&dom.Element {
+	runtime.add_canvas_element_provider_with_merge(fn [mut host] () map[string]&dom.Element {
 		return host.elements_for_binding()
 	}, fn [mut host] (key string) ?&dom.Element {
 		if key !in host.elements { return none }
 		return unsafe { host.elements[key] }
 	}, fn [host] (element &dom.Element) []string {
 		return native_canvas_element_identity_keys(host.elements, element)
+	}, fn [mut host] (registry &CanvasElementRegistry) {
+		for key, element in host.elements { registry.set(key, element) }
 	})
 }
 
