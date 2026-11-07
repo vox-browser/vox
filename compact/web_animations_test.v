@@ -108,7 +108,13 @@ getComputedStyle(target).width;
 target.style.transition="width 100s linear -50s";
 target.style.width="20px";
 console.log("width "+getComputedStyle(target).width);
+const delayed=document.createElement("div");delayed.style.width="10px";document.body.appendChild(delayed);
+getComputedStyle(delayed).width;
+delayed.style.transition="width 0s 5000ms";
+delayed.style.width="20px";
+console.log("delayed "+getComputedStyle(delayed).width);
 '], runtime, mut messages)
-	// Half of the transition elapsed before it started.
-	assert messages == ['width 15px']
+	// Half of the transition elapsed before it started; a zero-duration
+	// transition keeps its start value through its delay.
+	assert messages == ['width 15px', 'delayed 10px']
 }

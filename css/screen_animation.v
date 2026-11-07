@@ -1874,12 +1874,14 @@ pub fn (mut transition CSSTransition) sample_at(timeline_time f64) ?f64 {
 		return none
 	}
 	mut progress := 0.0
-	if transition.end_time_ <= transition.start_time_ {
-		progress = 1.0
-		transition.current_phase_ = .after
-	} else if timeline_time < transition.start_time_ {
+	// The start time includes transition-delay, so even a zero-duration
+	// transition keeps its start value until the delay has elapsed.
+	if timeline_time < transition.start_time_ {
 		progress = 0.0
 		transition.current_phase_ = .before
+	} else if transition.end_time_ <= transition.start_time_ {
+		progress = 1.0
+		transition.current_phase_ = .after
 	} else if timeline_time >= transition.end_time_ {
 		progress = 1.0
 		transition.play_state_ = .finished
