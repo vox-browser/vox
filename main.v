@@ -520,6 +520,7 @@ mut:
 	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
+	capture_readiness_last_reason       string
 	screenshot_viewport_height          int
 	screenshot_scroll_y                 int
 	screenshot_scroll_applied           bool
@@ -7951,6 +7952,7 @@ fn (mut app BrowserApp) draw() {
 	// presented this first frame. This keeps TLS/framework initialization from
 	// delaying the window.
 	app.start_pending_navigation()
+	if app.screenshot_path != '' && !app.screenshot_scheduled { app.trace_capture_readiness(paint_document) }
 	if app.screenshot_path != '' && !app.scroll_profile.enabled && !app.screenshot_scheduled && app.document != unsafe { nil } && !app.load_status.starts_with('Loading ') && app.background_resource_pending.len == 0 {
 		app.note_screenshot_initial_viewport(paint_document)
 		if !paint_document || app.screenshot_initial_viewport_pending()
