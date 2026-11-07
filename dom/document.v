@@ -5346,6 +5346,9 @@ pub mut:
 	layout_stabilization_count_tree_version_        u64
 	query_containers_needing_container_query_evaluation_after_layout []&Element
 	needs_animated_style_update                    bool
+	// A CSS animation uses a scroll() timeline, whose progress depends on
+	// committed layout (update_layout()).
+	has_scroll_driven_animations                   bool
 	needs_accumulated_visual_contexts_update       bool
 	needs_compositor_visual_contexts_update        bool
 	needs_invalidation_of_elements_affected_by_has bool
@@ -7667,6 +7670,14 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 		}
 
 		d.invalidate_pending_size_query_dependents()
+		// A scroll() timeline can become active, inactive or move once its
+		// source has committed geometry. Chromium validates timelines after
+		// layout and runs style and layout again within the same frame; sample
+		// them now, so the change shares the next pass (with any size-query
+		// restyle) instead of forcing another full layout in the next frame.
+		if d.has_scroll_driven_animations && !disable_scroll_timeline_layout_validation {
+			d.needs_animated_style_update = true
+		}
 		if d.needs_style_update_after_layout() {
 			continue
 		}
@@ -9496,6 +9507,10 @@ pub fn (d &Document) needs_full_layout_tree_update() bool {
 
 pub fn (mut d Document) set_needs_full_layout_tree_update(b bool) {
 	d.needs_full_layout_tree_update = b
+}
+
+pub fn (mut d Document) note_scroll_driven_animation() {
+	d.has_scroll_driven_animations = true
 }
 
 pub fn (mut d Document) set_needs_animated_style_update() {

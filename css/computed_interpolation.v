@@ -5144,6 +5144,8 @@ fn computed_interpolation_animation_timeline_from_style_value(value &dom.StyleVa
 				return none
 			}
 		}
+		mut document := unsafe { &dom.Document(abstract_element.document()) }
+		document.note_scroll_driven_animation()
 		return &AnimationTimeline{
 			kind: .scroll
 			anonymous_source: '${voidptr(abstract_element.element())}:${scroller_to_string(scroller)}'
