@@ -48,6 +48,12 @@ fn install_compact_document_binding(binding &CompactElementQueryBinding, mut run
 		}
 		return f64(version % u64(9007199254740991))
 	})!
+	// A node wrapper from another realm of this agent maps to this realm's
+	// wrapper of the same native node.
+	runtime.install_foreign_node_lookup(fn [binding] (node &dom.Node) string {
+		mut owner := unsafe { &CompactElementQueryBinding(binding) }
+		return json2.encode(owner.node_state(node))
+	})!
 	runtime.add_close_handler(fn [binding] () {
 		for _, document in binding.documents {
 			mut owner := unsafe { &dom.Document(document) }

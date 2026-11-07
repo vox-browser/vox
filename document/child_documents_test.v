@@ -380,6 +380,13 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
  globalThis.written=frame.contentDocument.getElementById("written").textContent;
  globalThis.tree=frame.contentDocument.documentElement.outerHTML;
  globalThis.rewritten=(child.open(),child.write("<b>second</b>"),child.close(),child.body.innerHTML);
+ // Nodes of the frame realm passed to DOM methods of this realm.
+ const reference=document.implementation.createHTMLDocument("");
+ reference.removeChild(reference.documentElement);
+ reference.appendChild(child.documentElement.cloneNode(true));
+ globalThis.adopted=reference.documentElement.outerHTML;
+ const italic=child.createElement("i");italic.textContent="moved";document.body.appendChild(italic);
+ globalThis.moved=document.body.lastChild.outerHTML+" "+(document.body.lastChild.ownerDocument===document);
 '], runtime, mut messages)
 	assert runtime.evaluate_host('initial')! == 'true', messages.join('\n')
 	assert runtime.evaluate_host('typeof written')! == 'string', messages.join('\n')
@@ -388,6 +395,10 @@ fn test_initial_about_blank_frame_is_writable_before_the_host_poll() {
 	assert tree == '<html><head></head><body><p id="written">hi</p></body></html>', tree
 	rewritten := runtime.evaluate_host('rewritten')!
 	assert rewritten == '<b>second</b>', rewritten
+	adopted := runtime.evaluate_host('adopted')!
+	assert adopted == '<html><head></head><body><b>second</b></body></html>', adopted
+	moved := runtime.evaluate_host('moved')!
+	assert moved == '<i>moved</i> true', moved
 	mut loop := html.main_thread_event_loop()
 	deadline := time.sys_mono_now() + 5 * time.second
 	loop.spin_until(fn [runtime, deadline] () bool {
