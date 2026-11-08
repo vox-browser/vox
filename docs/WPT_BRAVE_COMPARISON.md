@@ -1,5 +1,10 @@
 # WPT: Vox vs Brave
 
+This is the historical 2026-11-06 comparison. Its 47.5% figure is not the
+current Vox result. See the [WPT follow-up](WPT_CONFORMANCE_PROGRESS.md) for
+r13, the complete r14 run, focused fixes, and remaining failures. The browser
+percentages below use different reported-subtest denominators.
+
 Conformance and per-test timing on Ladybird's imported web-platform-tests,
 run with `tools/wpt_compare.py`. Manifest:
 [performance/wpt-brave-20261106.json](performance/wpt-brave-20261106.json);

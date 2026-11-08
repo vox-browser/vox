@@ -1,0 +1,1761 @@
+{
+  "scope": "Focused source checks and WPT diagnostics; this is not a full-suite pass claim.",
+  "jobs": [
+    {
+      "job": "wpt-font-20261108a",
+      "guard": {
+        "command": [
+          "v",
+          "-memory-limit",
+          "10G",
+          "test",
+          "css/font_shorthand_parsing_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1523646464,
+        "elapsed_seconds": 68.063691542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-font-20261108b",
+      "guard": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "test",
+          "css/font_shorthand_parsing_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3339567104,
+        "elapsed_seconds": 128.71477283299998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-writing-20261108a",
+      "guard": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "test",
+          "compact/writing_suggestions_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5374148608,
+        "elapsed_seconds": 177.987515333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-writing-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-writing-20261108b/writing_suggestions_test",
+          "compact/writing_suggestions_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5935661056,
+        "elapsed_seconds": 148.809517666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-writing-20261108b/writing_suggestions_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 34553856,
+        "elapsed_seconds": 0.759915,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-family-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-family-20261108a/font_family_serialization_test",
+          "css/font_family_serialization_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2043609088,
+        "elapsed_seconds": 37.96413,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-family-20261108a/font_family_serialization_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 7290880,
+        "elapsed_seconds": 0.355138666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-family-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-family-20261108b/font_family_serialization_test",
+          "css/font_family_serialization_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2049245184,
+        "elapsed_seconds": 35.417007875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-family-20261108b/font_family_serialization_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 6356992,
+        "elapsed_seconds": 0.372878,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-family-20261108c",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-family-20261108c/font_family_serialization_test",
+          "css/font_family_serialization_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1480523776,
+        "elapsed_seconds": 22.794580625000002,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-family-20261108d",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-family-20261108d/font_family_serialization_test",
+          "css/font_family_serialization_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2043314176,
+        "elapsed_seconds": 39.42657175,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-family-20261108d/font_family_serialization_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.563006334,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-family-prealloc-20261108",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-family-prealloc-20261108/font_family_serialization_test",
+          "css/font_family_serialization_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2054832128,
+        "elapsed_seconds": 43.786184958,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-family-prealloc-20261108/font_family_serialization_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 5373952,
+        "elapsed_seconds": 0.441476666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-svg-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-svg-20261108a/svg_gradient_lengths_test",
+          "compact/svg_gradient_lengths_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5936201728,
+        "elapsed_seconds": 120.983545042,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-svg-20261108a/svg_gradient_lengths_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 8814592,
+        "elapsed_seconds": 1.213368833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animation-owner-control-20261108",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animation-owner-control-20261108/document_timeline_owner_test",
+          "animations/document_timeline_owner_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3082993664,
+        "elapsed_seconds": 64.517278792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animation-owner-control-20261108/document_timeline_owner_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 638976,
+        "elapsed_seconds": 0.41090208300000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animation-owner-fixed-20261108",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animation-owner-fixed-20261108/document_timeline_owner_test",
+          "animations/document_timeline_owner_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3445014528,
+        "elapsed_seconds": 62.603974292000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animation-owner-fixed-20261108/document_timeline_owner_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.5577442920000001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animatable-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animatable-20261108a/animatable_test",
+          "animations/animatable_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3440525312,
+        "elapsed_seconds": 68.47843658299999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animatable-20261108a/animatable_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1277952,
+        "elapsed_seconds": 0.405416167,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animatable-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animatable-20261108b/animatable_test",
+          "animations/animatable_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3434086400,
+        "elapsed_seconds": 71.677831458,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animatable-20261108b/animatable_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.57835825,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animatable-20261108c",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animatable-20261108c/animatable_test",
+          "animations/animatable_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3429695488,
+        "elapsed_seconds": 113.105944292,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animatable-20261108c/animatable_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.539221333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-targets-20261108a",
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "html/editing/editing-0/writing-suggestions/writingsuggestions",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "css/css-fonts/parsing/font-invalid",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1963786240,
+        "elapsed_seconds": 7.674839875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "summary": {
+        "tests": 4,
+        "browsers": {
+          "vox": {
+            "tests": 4,
+            "outcomes": {
+              "COMPLETE": 3,
+              "NO_HARNESS": 1
+            },
+            "harness": {
+              "OK": 3
+            },
+            "subtests": {
+              "PASS": 158,
+              "FAIL": 253
+            },
+            "subtest_total": 411,
+            "subtest_pass_rate": 0.3844,
+            "tests_all_pass": 1
+          }
+        },
+        "wall_seconds": {
+          "vox": 6.6
+        },
+        "launches": {
+          "vox": 2
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "identity": {
+        "started": "2026-11-08T04:00:05+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "html/editing/editing-0/writing-suggestions/writingsuggestions",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "css/css-fonts/parsing/font-invalid",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          14.02,
+          16.55,
+          15.14
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "ba43e25f625fea2f4d8fceb582b33c2723260db004a4fd2de1e310e5c59085c4",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-033428-1c0ac27b/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "a41d6a7540f9efacfbfed062c2ff8a4cdb88a38b87959257d0af3e9ceb4a94af",
+            "dirty": true,
+            "head": "63b5bf85ba1e5e99eecb2fcd797df1ead06a59e9",
+            "repository_sha256": "af9dae47372fde140d960bdb5cddca6745de6de5e0d900d219a83a706f725132"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "cc97585f80d91daa934caab5ca099cb57105e3a8623e0dcf8fd0ea210747b72e",
+            "dirty": true,
+            "head": "f809f03e1da70e3001a2f86149716633c1d7578c",
+            "repository_sha256": "193e1f3ae1657f9c23b2ba201c2e10a7b7828fc2e340f2856bb30484709356f0"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "63b5bf85ba1e5e99eecb2fcd797df1ead06a59e9",
+            "id": "d4069af211f64aac8976e2ef6d610c80",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "a41d6a7540f9efacfbfed062c2ff8a4cdb88a38b87959257d0af3e9ceb4a94af",
+            "dirty": true,
+            "head": "f809f03e1da70e3001a2f86149716633c1d7578c",
+            "repository_sha256": "af9dae47372fde140d960bdb5cddca6745de6de5e0d900d219a83a706f725132"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "ba43e25f625fea2f4d8fceb582b33c2723260db004a4fd2de1e310e5c59085c4",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "db350ae94f80dbc4ab81726abeb3b8cd54fcc7873b63c4f7a3eace8575877cae",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d94eab3b8f95fd8e89602d9963c5c8352503af4aee0256929a9e8f4c9214fa9f",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ab6e040f9bf7ff237c52a81a9c4b4954a9ae4eba144323216822aa5405ec9720",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "9c1c61a670ea8c95d266de2076b5b60d58ae041f70ebaa3eb033d23aafbb1845",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:61076",
+        "load_end": [
+          13.5,
+          16.35,
+          15.09
+        ],
+        "finished": "2026-11-08T04:00:12+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      }
+    },
+    {
+      "job": "wpt-targets-20261108b",
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-targets-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "html/editing/editing-0/writing-suggestions/writingsuggestions",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "css/css-fonts/parsing/font-invalid",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "svg/idlharness.window",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1562345472,
+        "elapsed_seconds": 8.829045333000002,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "summary": {
+        "tests": 6,
+        "browsers": {
+          "vox": {
+            "tests": 6,
+            "outcomes": {
+              "COMPLETE": 5,
+              "NO_HARNESS": 1
+            },
+            "harness": {
+              "OK": 5
+            },
+            "subtests": {
+              "PASS": 1518,
+              "FAIL": 803
+            },
+            "subtest_total": 2321,
+            "subtest_pass_rate": 0.654,
+            "tests_all_pass": 2
+          }
+        },
+        "wall_seconds": {
+          "vox": 7.6
+        },
+        "launches": {
+          "vox": 2
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "identity": {
+        "started": "2026-11-08T04:10:20+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-targets-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "html/editing/editing-0/writing-suggestions/writingsuggestions",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "css/css-fonts/parsing/font-invalid",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "svg/idlharness.window",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          11.46,
+          13.46,
+          14.59
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-040315-4aba4e3c/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "repository_sha256": "bf6e02a849d471c8f06c30ff0dec1211d5c9cd424a3aad72cb5e6f0ebd06fbd5"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "283c1a06d48357086b991829ff581a4cf092811a9086ac7558dffadfb050dda0",
+            "dirty": true,
+            "head": "dcb2b5f478ac4aa01cfde871d90ccca3205e6f3e",
+            "repository_sha256": "d140796dd96a8a41b216063d556e089c0870f763c8b7e44f9f1347a74970b828"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "id": "08a1bcee8d2446fdb5b14acbddef545b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "51ee83080c5671ac5cacea3ce287ef53e93930c3",
+            "repository_sha256": "3d1a2c8ea6dc9f87502562a249495e8e56d5e2b33d8cc98b91c514fe85838ce6"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "52c27c2ad7fb993c3c8479c865cc1ccf948e098dc3680b973f34d4994f8ce119",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "c32ecdeefff1f7b32bd711d7f645a1c3c899662e9fa699618f77f6aebb0989c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ab6e040f9bf7ff237c52a81a9c4b4954a9ae4eba144323216822aa5405ec9720",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "9c1c61a670ea8c95d266de2076b5b60d58ae041f70ebaa3eb033d23aafbb1845",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:63315",
+        "load_end": [
+          12.19,
+          13.54,
+          14.61
+        ],
+        "finished": "2026-11-08T04:10:28+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      }
+    },
+    {
+      "job": "wpt-range-diagnostic-20261108a",
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-diagnostic-20261108a",
+          "--browsers",
+          "vox",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--harness-start-seconds",
+          "30",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2222325760,
+        "elapsed_seconds": 7.725556125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "summary": {
+        "tests": 1,
+        "browsers": {
+          "vox": {
+            "tests": 1,
+            "outcomes": {
+              "MEMORY_LIMIT": 1
+            },
+            "harness": {},
+            "subtests": {},
+            "subtest_total": 0,
+            "subtest_pass_rate": null,
+            "tests_all_pass": 0
+          }
+        },
+        "wall_seconds": {
+          "vox": 6.8
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "identity": {
+        "started": "2026-11-08T04:11:13+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-diagnostic-20261108a",
+          "--browsers",
+          "vox",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--harness-start-seconds",
+          "30",
+          "--browser-memory-gib",
+          "2"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          13.09,
+          13.52,
+          14.54
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-040315-4aba4e3c/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "repository_sha256": "bf6e02a849d471c8f06c30ff0dec1211d5c9cd424a3aad72cb5e6f0ebd06fbd5"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "283c1a06d48357086b991829ff581a4cf092811a9086ac7558dffadfb050dda0",
+            "dirty": true,
+            "head": "dcb2b5f478ac4aa01cfde871d90ccca3205e6f3e",
+            "repository_sha256": "d140796dd96a8a41b216063d556e089c0870f763c8b7e44f9f1347a74970b828"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "id": "08a1bcee8d2446fdb5b14acbddef545b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "51ee83080c5671ac5cacea3ce287ef53e93930c3",
+            "repository_sha256": "3d1a2c8ea6dc9f87502562a249495e8e56d5e2b33d8cc98b91c514fe85838ce6"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "52c27c2ad7fb993c3c8479c865cc1ccf948e098dc3680b973f34d4994f8ce119",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "c32ecdeefff1f7b32bd711d7f645a1c3c899662e9fa699618f77f6aebb0989c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ab6e040f9bf7ff237c52a81a9c4b4954a9ae4eba144323216822aa5405ec9720",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "9c1c61a670ea8c95d266de2076b5b60d58ae041f70ebaa3eb033d23aafbb1845",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 250,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 30.0,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:63547",
+        "load_end": [
+          13.08,
+          13.52,
+          14.53
+        ],
+        "finished": "2026-11-08T04:11:20+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      }
+    },
+    {
+      "job": "wpt-range-pairs-20261108a",
+      "guard": {
+        "command": [
+          "python3",
+          "-"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 622116864,
+        "elapsed_seconds": 4.314104125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "summary": {
+        "tests": 12,
+        "browsers": {
+          "vox": {
+            "tests": 12,
+            "outcomes": {
+              "COMPLETE": 12
+            },
+            "harness": {
+              "OK": 12
+            },
+            "subtests": {
+              "PASS": 24
+            },
+            "subtest_total": 24,
+            "subtest_pass_rate": 1.0,
+            "tests_all_pass": 12
+          }
+        },
+        "wall_seconds": {
+          "vox": 3.2
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "identity": {
+        "started": "2026-11-08T04:13:14+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-pairs-20261108a",
+          "--browsers",
+          "vox",
+          "--browser-memory-gib",
+          "2",
+          "--chunk-size",
+          "20"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          10.6,
+          12.26,
+          13.89
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-040315-4aba4e3c/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "repository_sha256": "bf6e02a849d471c8f06c30ff0dec1211d5c9cd424a3aad72cb5e6f0ebd06fbd5"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "283c1a06d48357086b991829ff581a4cf092811a9086ac7558dffadfb050dda0",
+            "dirty": true,
+            "head": "dcb2b5f478ac4aa01cfde871d90ccca3205e6f3e",
+            "repository_sha256": "d140796dd96a8a41b216063d556e089c0870f763c8b7e44f9f1347a74970b828"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "id": "08a1bcee8d2446fdb5b14acbddef545b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "51ee83080c5671ac5cacea3ce287ef53e93930c3",
+            "repository_sha256": "3d1a2c8ea6dc9f87502562a249495e8e56d5e2b33d8cc98b91c514fe85838ce6"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "52c27c2ad7fb993c3c8479c865cc1ccf948e098dc3680b973f34d4994f8ce119",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "c32ecdeefff1f7b32bd711d7f645a1c3c899662e9fa699618f77f6aebb0989c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ab6e040f9bf7ff237c52a81a9c4b4954a9ae4eba144323216822aa5405ec9720",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "9c1c61a670ea8c95d266de2076b5b60d58ae041f70ebaa3eb033d23aafbb1845",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:63970",
+        "load_end": [
+          10.48,
+          12.2,
+          13.86
+        ],
+        "finished": "2026-11-08T04:13:18+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      }
+    },
+    {
+      "job": "wpt-range-isolated-20261108",
+      "guard": {
+        "command": [
+          "python3",
+          "-"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1508114432,
+        "elapsed_seconds": 260.777086833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "summary": {
+        "tests": 920,
+        "browsers": {
+          "vox": {
+            "tests": 920,
+            "outcomes": {
+              "COMPLETE": 920
+            },
+            "harness": {
+              "OK": 920
+            },
+            "subtests": {
+              "PASS": 1840
+            },
+            "subtest_total": 1840,
+            "subtest_pass_rate": 1.0,
+            "tests_all_pass": 920
+          }
+        },
+        "wall_seconds": {
+          "vox": 258.9
+        },
+        "launches": {
+          "vox": 19
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "identity": {
+        "started": "2026-11-08T04:26:24+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-isolated-20261108",
+          "--browsers",
+          "vox",
+          "--browser-memory-gib",
+          "2",
+          "--chunk-size",
+          "50"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          16.8,
+          15.96,
+          15.07
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-040315-4aba4e3c/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "repository_sha256": "bf6e02a849d471c8f06c30ff0dec1211d5c9cd424a3aad72cb5e6f0ebd06fbd5"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "283c1a06d48357086b991829ff581a4cf092811a9086ac7558dffadfb050dda0",
+            "dirty": true,
+            "head": "dcb2b5f478ac4aa01cfde871d90ccca3205e6f3e",
+            "repository_sha256": "d140796dd96a8a41b216063d556e089c0870f763c8b7e44f9f1347a74970b828"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "a440e507b082bdff46b98ecec6ab714428d40b4f",
+            "id": "08a1bcee8d2446fdb5b14acbddef545b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "676de9e4d0eb17c7e68985955c387d84a9327530fc23f07fdb9b39cd9caec597",
+            "dirty": true,
+            "head": "51ee83080c5671ac5cacea3ce287ef53e93930c3",
+            "repository_sha256": "3d1a2c8ea6dc9f87502562a249495e8e56d5e2b33d8cc98b91c514fe85838ce6"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "52c27c2ad7fb993c3c8479c865cc1ccf948e098dc3680b973f34d4994f8ce119",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "c32ecdeefff1f7b32bd711d7f645a1c3c899662e9fa699618f77f6aebb0989c6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "ab6e040f9bf7ff237c52a81a9c4b4954a9ae4eba144323216822aa5405ec9720",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "9c1c61a670ea8c95d266de2076b5b60d58ae041f70ebaa3eb033d23aafbb1845",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 50,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:52576",
+        "load_end": [
+          51.62,
+          31.19,
+          21.64
+        ],
+        "finished": "2026-11-08T04:30:44+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      }
+    },
+    {
+      "job": "wpt-animatable-20261108d",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animatable-20261108d/animatable_test",
+          "animations/animatable_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3435216896,
+        "elapsed_seconds": 62.962744707999995,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animatable-20261108d/animatable_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.604412834,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-animatable-20261108e",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-animatable-20261108e/animatable_test",
+          "animations/animatable_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3444359168,
+        "elapsed_seconds": 59.67027375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-animatable-20261108e/animatable_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 835584,
+        "elapsed_seconds": 0.691972083,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-font-focused-final-20261108",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-font-focused-final-20261108/font_shorthand_parsing_test",
+          "css/font_shorthand_parsing_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2045558784,
+        "elapsed_seconds": 63.949589542000005,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-font-focused-final-20261108/font_shorthand_parsing_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.54083825,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "compile_log": "css/conditional_style_sheet_invalidation.v:3:8: warning: module 'dom' is imported but never used. Use `import dom as _`, to silence this warning, or just remove the unused import line\n    1 | module css\n    2 | \n    3 | import dom\n      |        ~~~\n    4 | import os\n    5 |\nadblock/worker_transport_other.c.v:3:8: warning: module 'os' is imported but never used. Use `import os as _`, to silence this warning, or just remove the unused import line\n    1 | module adblock\n    2 | \n    3 | import os\n      |        ~~\n    4 | \n    5 | $if !macos {\n{\"command\": [\"/Users/alex/code/v/v\", \"-w\", \"-n\", \"-cc\", \"clang\", \"-memory-limit\", \"10G\", \"-enable-globals\", \"-d\", \"vox_sparse_ttf\", \"-d\", \"vox_ui2\", \"-exclude\", \"@vlib/time/zoneinfo.native.v\", \"-path\", \"/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib\", \"-skip-running\", \"-o\", \"Build/wpt-font-focused-final-20261108/font_shorthand_parsing_test\", \"css/font_shorthand_parsing_test.v\"], \"reason\": \"completed\", \"child_exit_code\": 0, \"adopted_processes\": {}, \"adoption_error\": null, \"limit_bytes\": 12884901888, \"observed_peak_rss_bytes\": 2045558784, \"elapsed_seconds\": 63.949589542000005, \"metric\": \"sampled sum of process-tree RSS; shared pages may be counted twice\"}\n"
+    }
+  ],
+  "evidence_archives": [
+    {
+      "path": "/Users/alex/.cache/vox/wpt/20261108-0435-focused.tar.gz",
+      "sha256": "9479e337278bd5b345cfb6b27f4e8b29ecdc351da29922eb7bd2ce5115f89917"
+    },
+    {
+      "path": "/Users/alex/.cache/vox/wpt/20261108-0437-animation-tests.tar.gz",
+      "sha256": "1268bc8b15a0eb7b95acd8275f4fdc6e60a93ca269f049925ac3882622491212"
+    }
+  ],
+  "completed_source_fixes": [
+    {
+      "commit": "a440e507b",
+      "change": "Accept /normal line heights and oblique without an angle."
+    },
+    {
+      "commit": "ae4779e64",
+      "change": "Reflect and inherit writingSuggestions."
+    },
+    {
+      "commit": "ab26c1688",
+      "change": "Preserve font-family identifier token boundaries."
+    },
+    {
+      "commit": "3c283dbe9",
+      "change": "Include identifier token boundaries in equality and invalidation."
+    },
+    {
+      "commit": "0d1e9ea79",
+      "change": "Preserve identifier token boundaries in computed-style reuse."
+    },
+    {
+      "commit": "da726f979",
+      "change": "Preserve zero percentage defaults in SVG gradient lengths."
+    },
+    {
+      "commit": "dd1cf9253",
+      "change": "Keep the default animation timeline cache in its owning document."
+    },
+    {
+      "commit": "3b20d2001",
+      "change": "Create an active navigable in the animation replacement test."
+    }
+  ],
+  "notes": [
+    "No conformance expectations, fixture assertions, or tolerances were weakened.",
+    "Full r14 uses bundle c6b62c77913a, which contains the first two source fixes and earlier shared fixes. Later font-family, gradient-default and animation-cache fixes are source-tested separately.",
+    "The original combined Range page still does not report in the standard runner. The separate 920-query run reports all 1840 subtests passing with a 2 GiB browser limit and a 3 GiB process-tree guard; it does not replace the full-page result.",
+    "The animation diagnostic identified an inactive unit-test fixture (active=false, timeline unresolved, pending=true). A speculative sampling change was reverted. The corrected fixture retains the replacement assertion and adds explicit finished-state assertions."
+  ],
+  "final_required_checks": [
+    {
+      "job": "wpt-font-focused-final-20261108",
+      "passed": true
+    },
+    {
+      "job": "wpt-writing-20261108b",
+      "passed": true
+    },
+    {
+      "job": "wpt-family-20261108d",
+      "passed": true
+    },
+    {
+      "job": "wpt-family-prealloc-20261108",
+      "passed": true
+    },
+    {
+      "job": "wpt-svg-20261108a",
+      "passed": true
+    },
+    {
+      "job": "wpt-animation-owner-fixed-20261108",
+      "passed": true
+    },
+    {
+      "job": "wpt-animatable-20261108e",
+      "passed": true
+    }
+  ],
+  "production_build_observation": {
+    "observed_local": "2026-11-08T05:02:20+0300",
+    "latest_completed_executable_sha256": "c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95",
+    "latest_attempt": "20261108-044551-a71d878d",
+    "latest_attempt_complete": false,
+    "latest_attempt_has_frozen_inputs": true,
+    "recent_failed_attempts": [
+      {
+        "receipt": "20261108-044333-aaf77ec2",
+        "exit": 1,
+        "inputs": {
+          "build_inputs_sha256": "6cca2d0b23915752f283c1e317bb27de1f3717547a4830f1d1ca91f66c65525b",
+          "dirty": true,
+          "head": "6cee2ab4b8279d8e8324eed31197baf09e9c0354",
+          "repository_sha256": "51e37b435f6e584b23a9dc7356db5b1f39013038fdaea5b635c06e5d91cef30c"
+        },
+        "errors": [
+          "RuntimeError: Repository inputs changed before C preprocessing"
+        ]
+      },
+      {
+        "receipt": "20261108-044057-65b310a5",
+        "exit": 1,
+        "inputs": {
+          "build_inputs_sha256": "76b2a2bc943e633b5171b7118f0da87e4a7b6d77839b2e44b544d51f20b3ca9d",
+          "dirty": true,
+          "head": "6cee2ab4b8279d8e8324eed31197baf09e9c0354",
+          "repository_sha256": "1a70fdedeecbe34c7e7e782d53860fa559c7279ed05097b3177bbc5adda006cc"
+        },
+        "errors": [
+          "RuntimeError: Repository inputs changed before C preprocessing"
+        ]
+      },
+      {
+        "receipt": "20261108-043714-ca386678",
+        "exit": 1,
+        "inputs": {
+          "build_inputs_sha256": "a843dd929d5c4fe9c52d3674d57da339c9d622ea1894d01a6a2e4315d66a91d7",
+          "dirty": true,
+          "head": "dd4820a92222df8cdc0b50e467a55e72f847a65a",
+          "repository_sha256": "f14025c4737ae2f0b6b75e553cb37bb3a7c083738179b23cbef010019613edc1"
+        },
+        "errors": [
+          "RuntimeError: Repository inputs changed before C preprocessing"
+        ]
+      }
+    ]
+  }
+}
