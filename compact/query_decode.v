@@ -12,7 +12,7 @@ fn compact_decode_query[T](source string) !T {
 			stdatomic.store_u64(&metadata_ready, 1)
 		}
 	}
-	return json2.decode[T](source)!
+	return json2.decode[T](compact_replay_json_text(source))!
 }
 
 fn initialize_compact_query_metadata[T]() {

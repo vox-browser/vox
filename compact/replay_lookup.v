@@ -35,7 +35,7 @@ fn compact_query_replay_snapshot(document &dom.Document, encoded string,
 	$if prealloc {
 		if document.native_storage() != unsafe { nil } {
 			work := platform.begin_thread_scratch('compact query replay snapshot')
-			value := json2.decode[json2.Any](encoded) or {
+			value := json2.decode[json2.Any](compact_replay_json_text(encoded)) or {
 				work.leave()
 				messages << 'JavaScript bridge result: ${err.msg()}'
 				work.finish()
@@ -55,7 +55,7 @@ fn compact_query_replay_snapshot(document &dom.Document, encoded string,
 }
 
 fn javascript_replay_state(encoded string, mut messages []string) ?map[string]json2.Any {
-	value := json2.decode[json2.Any](encoded) or {
+	value := json2.decode[json2.Any](compact_replay_json_text(encoded)) or {
 		messages << 'JavaScript bridge result: ${err.msg()}'
 		return none
 	}

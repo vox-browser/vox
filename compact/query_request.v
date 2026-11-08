@@ -37,7 +37,7 @@ fn decode_compact_element_query_request(input string) !CompactElementQueryReques
 		}
 	}
 	mut work := platform.begin_thread_scratch('compact query request')
-	request := json2.decode[map[string]json2.Any](input) or {
+	request := json2.decode[map[string]json2.Any](compact_replay_json_text(input)) or {
 		work.leave()
 		message := err.msg().clone()
 		work.finish()
