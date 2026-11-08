@@ -45,6 +45,8 @@ fn new_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode
 		}
 	}
 	if level == 0 { return image_shader_with_inverse(bitmap, tile_x, tile_y, linear, inverse) }
+	// SkMipmapAccessor uses getLevel(), whose missing upper level reloads
+	// the base image. extractLevel() clamps, but is not this CPU shader path.
 	image := build_image_mipmap(bitmap, level) or { return image_shader_with_inverse(bitmap, tile_x, tile_y, linear, inverse) }
 	mapped := post_scale(inverse, f32(image.width)/f32(bitmap.width), f32(image.height)/f32(bitmap.height))
 	return image_shader_with_inverse(image, tile_x, tile_y, linear, mapped)
@@ -67,6 +69,8 @@ fn new_linear_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y T
 		}
 	}
 	index := float_saturate2int(floor_f32(level))
+	// Keep the accessor's base fallback when the upper level is missing;
+	// when only the lower level is missing, keep this upper without a lerp.
 	upper := build_image_mipmap(bitmap, index) or { bitmap }
 	mapped := post_scale(inverse, f32(upper.width)/f32(bitmap.width), f32(upper.height)/f32(bitmap.height))
 	base := image_shader_with_inverse(upper, tile_x, tile_y, true, mapped)
