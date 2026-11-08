@@ -1013,3 +1013,21 @@ seconds with 4.75 GB sampled peak RSS. See the
 The browser still links Skia; the type check does not establish a Skia-free
 compile, link or run. Rotated linear restores, source clipping, direct image
 blur/drop-shadow, mixed filters and native browser bridges remain open.
+
+
+### Filtered source-image clipping (2026-11-08)
+
+`e0cd3675f` clips source rectangles to the image before mapping the smaller
+source into the destination. Empty clipped sources restore through the
+composite operation; the original draw's quick reject and empty-rectangle
+handling still precede that restore. Five native fixtures match on both
+platforms.
+
+At seed 20261106, 9,055 of 20,000 comparisons match on macOS and Linux,
+with 10,945 declines; production seed 20261108 matches 9,161 with 10,839
+declines. Counts include no-ops and both CPU policies. Focused image tests
+pass on macOS and in Linux production mode; the FMA audit reports zero
+contracted operations. See the
+[source-clipping receipt](gg-migration/image-source-clipping-20261108.json).
+The remaining source-image, filter-layer and native bridge work still retains
+Skia dependencies in the browser.
