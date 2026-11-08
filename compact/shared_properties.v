@@ -31,7 +31,6 @@ const __compactCommonProperties={
  checked:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.checked;},set:function(value){const s=__compactCommonPropertyState(this);s.checked=!!value;s.checkedDirty=true;}},
  indeterminate:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.indeterminate;},set:function(value){const s=__compactCommonPropertyState(this);s.indeterminate=!!value;s.indeterminateDirty=true;}},
  complete:{get:function(){const s=__compactCommonPropertyState(this);return s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"?__nativeImageGet(this,"complete"):!!s.complete;}},
- data:{get:function(){return __compactCommonPropertyState(this).attributes.data||"";},set:function(value){__setElementData(__compactCommonPropertyState(this),value);}},
  sheet:{get:function(){const s=__compactCommonPropertyState(this);return s.tagName==="style"||s.tagName==="link"?__linkStyleSheet(s):null;}}
 };
 // Configurable, so accessors of a custom element class (such as GitHub
@@ -43,5 +42,17 @@ function __compactElementCommonProperties(object,state){
  if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
  __compactDefineCommonProperties(object,state&&state.namespaceURI==="http://www.w3.org/2000/svg"?__compactSVGCommonProperties:__compactCommonProperties);
 }
+// data is a URL-reflecting member of HTMLObjectElement, rather than Element.
+const __compactObjectString=String,__compactObjectWellFormed=String.prototype.toWellFormed;
+function __compactObjectPropertyState(receiver){
+ const state=__compactCommonElementGet(receiver);
+ if(!state||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||String(state.tagName).split(":").pop()!=="object")throw new TypeError("Illegal HTMLObjectElement receiver");
+ return state;
+}
+function __compactInstallObjectData(){Object.defineProperty(HTMLObjectElement.prototype,"data",{
+ get:Object.getOwnPropertyDescriptor({get data(){const state=__compactObjectPropertyState(this);return __queryElements(state.bridgeKey,"elementURL","data");}},"data").get,
+ set:Object.getOwnPropertyDescriptor({set data(value){const state=__compactObjectPropertyState(this);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__setElementData(state,__elementApply(__compactObjectWellFormed,__compactObjectString(value),[]));}},"data").set,
+ enumerable:true,configurable:true
+});}
 '
 }

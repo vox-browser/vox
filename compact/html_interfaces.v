@@ -47,6 +47,7 @@ for(const [name,tags] of [["HTMLAnchorElement","a"],["HTMLAreaElement","area"],[
  Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
  for(const tag of tags.split(" "))__compactHTMLInterfaces[tag]=constructor;
 }
+__compactInstallObjectData();
 function __compactElementPrototype(state){
  if(state.namespaceURI==="http://www.w3.org/2000/svg"){
   const name=String(state.tagName),constructor=__compactSVGInterfaces[name.slice(name.indexOf(":")+1)];

@@ -34,13 +34,18 @@ fn test_compact_common_accessors_share_functions_and_preserve_own_descriptors() 
 	run_document_javascript(document, document.url.serialize(), [r'
 const originals=[first,second,drawing],wrappers=originals.slice();
 for(let i=0;i<256;i++)wrappers.push(document.createElement(i%2?"span":"div"));
-for(const name of ["id","firstChild","parentNode","parentElement","textContent","innerHTML","className","name","hidden","disabled","checked","indeterminate","complete","data","sheet"]){
+for(const name of ["id","firstChild","parentNode","parentElement","textContent","innerHTML","className","name","hidden","disabled","checked","indeterminate","complete","sheet"]){
  const getter=Object.getOwnPropertyDescriptor(first,name).get,setter=Object.getOwnPropertyDescriptor(first,name).set;
  for(const object of wrappers){
   const descriptor=Object.getOwnPropertyDescriptor(object,name);
+  if(object===drawing&&name==="className"){
+   if(descriptor||!(object.className instanceof SVGAnimatedString))throw new Error("SVG className interface");
+   continue;
+  }
   if(!descriptor||descriptor.get!==getter||descriptor.set!==setter||descriptor.enumerable||!descriptor.configurable)throw new Error("unshared descriptor "+name);
  }
 }
+
 first.id="renamed";second.className="changed";drawing.id="svg-renamed";
 if(first.id!=="renamed"||second.className!=="changed"||drawing.id!=="svg-renamed")throw new Error("receiver state");
 globalThis.sharedPropertyResult=wrappers.length;
@@ -140,4 +145,36 @@ globalThis.sharedFragmentResult="ok";
 '], runtime, mut messages)
 	assert messages == []string{}
 	assert runtime.evaluate_host('sharedFragmentResult')! == 'ok'
+}
+
+fn test_data_is_limited_to_character_nodes_and_html_object_url_reflection() {
+	mut document := shared_properties_document('<!doctype html><base href="https://assets.example/base/"><div id="plain"></div><object id="embedded" data="../image.svg"></object><svg id="drawing"></svg>')!
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		retire_shared_properties_document(mut document)
+	}
+	mut messages := []string{}
+	run_document_javascript(document, document.url.serialize(), [r'
+const check=(actual,expected)=>{if(actual!==expected)throw new Error(String(actual)+" != "+String(expected));};
+const xml=document.implementation.createDocument(null,"root");
+for(const node of [plain,drawing,document.createElement("span"),document.createElement("data"),document.createElementNS("urn:other","object"),document.createDocumentFragment(),document.doctype]){
+ check(node.data,undefined);check("data" in node,false);
+}
+for(const node of [new Text("text"),new Comment("comment"),xml.createCDATASection("cdata"),document.createProcessingInstruction("target","instruction")]){
+ check(node.data,node.nodeValue);check(node.length,node.data.length);node.data="changed";check(node.nodeValue,"changed");
+}
+check(embedded.data,"https://assets.example/image.svg");
+const descriptor=Object.getOwnPropertyDescriptor(HTMLObjectElement.prototype,"data");
+check(descriptor.enumerable,true);check(descriptor.configurable,true);check(Object.hasOwn(embedded,"data"),false);
+embedded.data={[Symbol.toPrimitive](hint){check(hint,"string");return "other.svg";}};check(embedded.getAttribute("data"),"other.svg");check(embedded.data,"https://assets.example/base/other.svg");
+embedded.data="\ud800";check(embedded.getAttribute("data"),"\ufffd");
+embedded.removeAttribute("data");check(embedded.data,"");
+let rejected=0;
+for(const action of [()=>descriptor.get.call(plain),()=>descriptor.set.call(drawing,"x"),()=>{embedded.data=Symbol();}])try{action();}catch(error){if(error instanceof TypeError)rejected++;}
+check(rejected,3);check(embedded.hasAttribute("data"),false);
+plain.data="expando";check(plain.data,"expando");check(plain.hasAttribute("data"),false);
+console.log("data interface placement passed");
+'], runtime, mut messages)
+	assert messages == ['data interface placement passed'], messages.join('\n')
 }

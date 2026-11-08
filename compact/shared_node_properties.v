@@ -37,9 +37,9 @@ function __compactInstallNodeProperties(node,state){
   appendChild:{value:function appendChild(child){record(this);return __compactInsertNode(this,child,null,false);}},
   insertBefore:{value:function insertBefore(child,reference){record(this);return __compactInsertNode(this,child,reference,true);}},
   removeChild:{value:function removeChild(child){const own=record(this),target=__compactNodeState(child);__queryElements(own.bridgeKey,"removeChild",target.bridgeKey);return child;}},
-  data:{get:read,set(value){write(this,value,false);}},length:{get(){return __elementApply(read,this,[]).length;}},
   cloneNode:{value:function cloneNode(deep){return __queryElements(record(this).bridgeKey,"cloneNode",deep?"deep":"shallow");}}
  });
+ if([3,4,7,8].includes(state.nodeType))Object.defineProperties(node,{data:{get:read,set(value){write(this,value,false);}},length:{get(){return __elementApply(read,this,[]).length;}}});
 }
 '
 	}
@@ -47,6 +47,9 @@ function __compactInstallNodeProperties(node,state){
 const __compactSharedNodeRead=function read(){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"nodeValue","");};
 const __compactSharedNodeWrite=function write(receiver,value,nullable){const own=__compactSharedNodeRecord(receiver);if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");__queryElements(own.bridgeKey,"setNodeValue",nullable&&value===null?"":String(value));__compactInvalidateContent(own);};
 let __compactNodePropertyDescriptors;
+const __compactCharacterPropertyDescriptors={
+ data:{get:__compactSharedNodeRead,set(value){__compactSharedNodeWrite(this,value,false);}},length:{get(){return __elementApply(__compactSharedNodeRead,this,[]).length;}}
+};
 function __compactInstallNodeProperties(node,state){
  if(!__compactNodePropertyDescriptors)__compactNodePropertyDescriptors={
   ownerDocument:{get:function(){__compactSharedNodeRecord(this);return __compactOwnerDocument(this);}},
@@ -65,11 +68,11 @@ function __compactInstallNodeProperties(node,state){
   appendChild:{value:function appendChild(child){__compactSharedNodeRecord(this);return __compactInsertNode(this,child,null,false);}},
   insertBefore:{value:function insertBefore(child,reference){__compactSharedNodeRecord(this);return __compactInsertNode(this,child,reference,true);}},
   removeChild:{value:function removeChild(child){const own=__compactSharedNodeRecord(this),target=__compactNodeState(child);__queryElements(own.bridgeKey,"removeChild",target.bridgeKey);return child;}},
-  data:{get:__compactSharedNodeRead,set(value){__compactSharedNodeWrite(this,value,false);}},length:{get(){return __elementApply(__compactSharedNodeRead,this,[]).length;}},
   cloneNode:{value:function cloneNode(deep){return __queryElements(__compactSharedNodeRecord(this).bridgeKey,"cloneNode",deep?"deep":"shallow");}}
  };
  Object.defineProperties(node,{__state:{value:state},nodeType:{value:state.nodeType},nodeName:{value:state.nodeName}});
  Object.defineProperties(node,__compactNodePropertyDescriptors);
+ if([3,4,7,8].includes(state.nodeType))Object.defineProperties(node,__compactCharacterPropertyDescriptors);
 }
 
 '
