@@ -40,13 +40,21 @@ fn measurement_height_compare(mut source LayoutState, container &BlockContainer,
 
 fn test_inline_measurement_ignores_unused_indefinite_height_across_retired_probes() {
 	mut document := dom.Document.create(dom.url_about_blank())
-	defer { document.finalize() }
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
 	document.set_font_rendering_policy(.chromium)
 	container := measurement_inline_fixture(document, '')
 	mut source := LayoutState.new()
 	source.enable_measurement_chunk_pool()
 	defer { source.release_measurement_chunk_pool() }
 	for mode in [LayoutMode.normal, .intrinsic_sizing] {
+		// Exercise each mode with an empty cache; cross-mode reuse has its own oracle below.
+		if mode == .intrinsic_sizing {
+			source.release_measurement_chunk_pool()
+			source.enable_measurement_chunk_pool()
+			source.measurement_chunk_pool_.scratch_enabled_ = true
+		}
 		for width in [AvailableSize.make_definite(CSSPixels.new(180)),
 			AvailableSize.make_min_content(), AvailableSize.make_max_content()] {
 			space := AvailableSpace.new(width, AvailableSize.make_indefinite())
@@ -58,7 +66,9 @@ fn test_inline_measurement_ignores_unused_indefinite_height_across_retired_probe
 
 fn test_inline_measurement_keeps_definite_height_and_basis_transitions_in_the_key() {
 	mut document := dom.Document.create(dom.url_about_blank())
-	defer { document.finalize() }
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
 	container := measurement_inline_fixture(document, '')
 	mut source := LayoutState.new()
 	source.enable_measurement_chunk_pool()

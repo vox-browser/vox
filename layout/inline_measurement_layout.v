@@ -124,7 +124,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		return run_uncached_inline_formatting_context_for_width(mut state, containing_block,
 			mut used, mode, space, context, width_only)
 	}
-	key := inline_measurement_key(used, mode, space, width_only)
+	key := closed_inline_measurement_key(used, mode, space, width_only)
 	node_key := u64(voidptr(root))
 	font_generation := css.css_style_computer_for(root.document()).font_computer().environment_generation()
 	mut previous := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }

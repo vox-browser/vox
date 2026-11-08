@@ -78,6 +78,12 @@ fn test_inline_measurement_reuses_owned_lines_after_producer_scratch_retires() {
 	source.enable_measurement_chunk_pool()
 	source.measurement_chunk_pool_.scratch_enabled_ = true
 	for mode in [LayoutMode.normal, .intrinsic_sizing] {
+		// Exercise each mode with an empty cache; cross-mode reuse has its own oracle below.
+		if mode == .intrinsic_sizing {
+			source.release_measurement_chunk_pool()
+			source.enable_measurement_chunk_pool()
+			source.measurement_chunk_pool_.scratch_enabled_ = true
+		}
 		for width in [AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_min_content(),
 			AvailableSize.make_max_content()] {
 			space := AvailableSpace.new(width, AvailableSize.make_indefinite())
@@ -357,5 +363,31 @@ fn test_committed_inline_revalidates_measured_inputs_and_exact_geometry_question
 		assert measurement_inline_lines(expected.line_boxes) == lines
 		assert expected.inline_end_static_position_rect() == end
 		state.release_measurement_chunk_pool()
+	}
+}
+
+fn test_closed_inline_measurement_reuses_modes_and_unused_available_height() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_font_rendering_policy(.chromium)
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer { owner.finish(); document.finalize(); document.release_native_storage() }
+	container := measurement_inline_fixture(document, '')
+	mut source := LayoutState.new()
+	source.enable_measurement_chunk_pool()
+	source.measurement_chunk_pool_.scratch_enabled_ = true
+	defer { source.release_measurement_chunk_pool() }
+	for width in [AvailableSize.make_definite(CSSPixels.new(180)), AvailableSize.make_min_content(),
+		AvailableSize.make_max_content()] {
+		// No available-height or mode dependency can cross a closed text workspace.
+		for mode in [LayoutMode.normal, .intrinsic_sizing] {
+			for height_index, height in [AvailableSize.make_indefinite(), AvailableSize.make_definite(CSSPixels.new(37)),
+				AvailableSize.make_min_content(), AvailableSize.make_max_content()] {
+				space := AvailableSpace.new(width, height)
+				reused := measurement_inline_compare(mut source, container, space, mode, !width.is_definite())
+				assert reused == (!disable_inline_measurement_reuse && !disable_closed_inline_measurement_question_reuse
+					&& (mode == .intrinsic_sizing || height_index > 0))
+			}
+		}
 	}
 }
