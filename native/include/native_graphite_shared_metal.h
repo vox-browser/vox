@@ -31,6 +31,10 @@ static sk_sp<SkSurface> vox_shared_surface(skgpu::graphite::Recorder* recorder,
         width:info.width() height:info.height() mipmapped:NO];
     desc.storageMode = MTLStorageModeShared;
     desc.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+    // These targets synchronously return CPU pixels. Metal's default render
+    // target compression makes getBytes decompress them on the main thread.
+    // Keep their contents CPU-readable without changing the render geometry.
+    desc.allowGPUOptimizedContents = std::getenv("VOX_GPU_OPTIMIZED_READBACK_TEXTURES") != nullptr;
     id<MTLTexture> texture = nil;
     if (linear) {
         NSUInteger alignment = [device minimumLinearTextureAlignmentForPixelFormat:desc.pixelFormat];

@@ -331,8 +331,9 @@ static int canvas_upload_impl(int index, uint8_t const* bgra, int pitch, bool qu
     if (pitch < tile.width * 4) return 0;
     if (std::getenv("VOX_GPU_CANVAS_LINEAR_DIAGNOSTICS")) {
         auto texture = vox_shared_metal_texture(tile.surface.get());
-        std::fprintf(stderr, "Vox GPU canvas texture: linear=%d size=%dx%d\n",
-            int(texture && texture.buffer), tile.width, tile.height);
+        std::fprintf(stderr, "Vox GPU canvas texture: linear=%d size=%dx%d optimized=%d\n",
+            int(texture && texture.buffer), tile.width, tile.height,
+            texture ? int(texture.allowGPUOptimizedContents) : -1);
     }
     auto pixels = SkPixmap(canvas_info(tile.width, tile.height), bgra, pitch);
     if (queued || std::getenv("VOX_GPU_CANVAS_STAGED_UPLOAD")) {
