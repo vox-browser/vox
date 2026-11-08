@@ -14,13 +14,10 @@ fn chromium_svg_solid_path_supported(command &layout.PaintCommand) bool {
 // Whole compositor recordings retain each native rounded clip. Scalar SVG
 // batches carry only their intersected rectangular viewport.
 fn chromium_svg_compositor_path_supported(command &layout.PaintCommand) bool {
-	// Packed ellipses retain Skia's native oval identity. A whole picture can
-	// record their strokes; the compact scalar batch keeps its line-only bounds.
-	data := command.svg_data
-	ellipse := data != unsafe { nil } && data.path_data.len == layout.compatibility_clip_path_segment_stride
-		&& data.path_data[0] == 6
+	// Whole pictures retain Skia's complete stroked-path bounds, including
+	// curves, round caps and joins. Only the scalar batch needs line-only bounds.
 	return chromium_shared_recording_clips_supported(command)
-		&& chromium_svg_simple_path_supported(command, true, ellipse)
+		&& chromium_svg_simple_path_supported(command, true, true)
 }
 
 fn chromium_svg_solid_path_supported_with_clips(command &layout.PaintCommand,
