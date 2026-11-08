@@ -1,0 +1,58 @@
+{
+  "result": "PASS: 4 focused ChildNode/Element.remove regressions",
+  "source_inputs": {
+    "compact/child_node.v": "dd0724626cd0a1369275ff686da82616e10d4e893ac8d77900eecd2f695a9776",
+    "compact/child_node_test.v": "6bdef5c32f0b827a1616ec5b7059fb304501549f307b9011aeb6130f5191b3c2"
+  },
+  "compile_guard": {
+    "command": [
+      "/Users/alex/code/v/v",
+      "-w",
+      "-n",
+      "-cc",
+      "clang",
+      "-memory-limit",
+      "10G",
+      "-prealloc",
+      "-gc",
+      "none",
+      "-enable-globals",
+      "-d",
+      "vox_sparse_ttf",
+      "-d",
+      "vox_ui2",
+      "-exclude",
+      "@vlib/time/zoneinfo.native.v",
+      "-path",
+      "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+      "-skip-running",
+      "-o",
+      "Build/wpt-child-remove-20261108/tests",
+      "compact/child_node_test.v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 6068158464,
+    "elapsed_seconds": 143.221396542,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "runtime_guard": {
+    "command": [
+      "Build/wpt-child-remove-20261108/tests"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 39387136,
+    "elapsed_seconds": 1.230953041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-element-remove-focused.tar.gz",
+  "archive_sha256": "394943f8e6f6bd7f8438fabff8de93ce4c68d07520a37bee6d78d7384809fbdd",
+  "failed_attempts": "Pinned older compiler failed on an in-progress concurrent WebCrypto signature change; preserved compile.log and compile-guard.json."
+}

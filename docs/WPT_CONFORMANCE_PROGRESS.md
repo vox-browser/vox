@@ -348,3 +348,32 @@ hidden inherited paint-server style changes, SVG/HTML ID collisions, gradient
 stop offset/moveBefore changes, and pattern attribute updates. These use fresh
 processes and the same pinned completed bundle under the publication lease.
 Later beforeinput/StaticRange source changes still require their own validation.
+
+## Native keyboard and input-event range follow-up
+
+The imported driver's `internals.sendText()` now enters the actual Page keyboard
+path. Follow-up source fixes dispatch cancellable native `beforeinput` before
+text insertion, deletion and Return; keyup uses current focus and drops inactive
+or repeated releases. Home/End navigation canonicalizes element-boundary
+contenteditable carets. Native StaticRange snapshots and InputEvent target-range
+sequences preserve node identity, immutable offsets, receiver checks and iterator
+closing. These changes are committed as `e73e02f1b` and `70be0a1c7`.
+
+The [native evidence](performance/wpt-native-keyboard-ranges-20261108.json)
+records **20 passing production-allocation regressions before the final shared
+AbstractRange getter change**. That last getter change and its added prototype
+assertion remain unexecuted: subsequent compiles fail in generated-C optional
+function-pointer declarations, including an uncached attempt. A compiler matched
+to the shared current V checkout also encounters in-progress CSS/IndexedDB
+errors. The standalone three-test InputEvent file did not compile. Two Page
+compilations reached the unchanged 12 GiB cap; none of these failed attempts are
+counted as passing. All attempts and the exact source-hash difference after the
+passing snapshot are retained in the evidence.
+
+[Element.remove's four focused regressions](performance/wpt-element-remove-20261108.json)
+pass against unchanged source. Newer production WPT and pixel validation for the
+keyboard/range changes remain pending on a bundle that contains them. The
+completed larger cohort's 76.87% remains a baseline for its older executable.
+The DataTransfer FileList identity failure, other browser gaps, full-upstream
+runner integration and the final compiler blockers remain open; this work does
+not establish 100% for either the imported cohort or full upstream WPT.
