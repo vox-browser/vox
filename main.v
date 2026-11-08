@@ -2042,6 +2042,7 @@ fn javascript_bootstrap() string {
 		compact_computed_style_bootstrap(),
 		compact_accessibility_internals_bootstrap(),
 		compact_keyboard_internals_bootstrap(),
+		compact_testdriver_click_bootstrap(),
 		'__ladybirdElementWheelSetResolver(function(key){const s=__resolveElementState(key);return s?__element(s):null;});',
 		compact_named_elements_bootstrap(),
 		'window.__ladybirdSnapshot = function () { if(typeof __nativeElementQuery==="function"){const states=JSON.parse(__nativeElementQuery(JSON.stringify({key:"",action:"snapshotStates",selector:""})));for(const state of states)if(!__state.elements[state.bridgeKey])__state.elements[state.bridgeKey]=state;} return JSON.stringify(__state); };',
