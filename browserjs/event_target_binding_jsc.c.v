@@ -52,6 +52,7 @@ mut:
 	pointer_event_sequence_converter voidptr
 	wheel_event_prototype voidptr
 	drag_event_prototype voidptr
+	clipboard_event_prototype voidptr
 	track_event_prototype voidptr
 	hash_change_event_prototype voidptr
 	page_transition_event_prototype voidptr
@@ -113,6 +114,9 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		if binding.drag_event_prototype == unsafe { nil } && binding.mouse_event_prototype != unsafe { nil } {
 			runtime.install_drag_event_binding()!
 		}
+		if binding.clipboard_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
+			runtime.install_clipboard_event_binding()!
+		}
 		if binding.track_event_prototype == unsafe { nil } && binding.ui_event_prototype != unsafe { nil } {
 			runtime.install_track_event_binding()!
 		}
@@ -160,6 +164,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			runtime.install_pointer_event_binding()!
 			runtime.install_wheel_event_binding()!
 			runtime.install_drag_event_binding()!
+			runtime.install_clipboard_event_binding()!
 			runtime.install_track_event_binding()!
 			runtime.install_hash_change_event_binding()!
 			runtime.install_page_transition_event_binding()!
@@ -313,6 +318,8 @@ pub fn (mut runtime Runtime) javascript_event(event &dom.Event) !voidptr {
 		prototype = binding.wheel_event_prototype
 	} else if binding.drag_event_prototype != unsafe { nil } && event.interface_ == .drag_event {
 		prototype = binding.drag_event_prototype
+	} else if binding.clipboard_event_prototype != unsafe { nil } && event.interface_ == .clipboard_event {
+		prototype = binding.clipboard_event_prototype
 	} else if binding.track_event_prototype != unsafe { nil } && event.interface_ == .track_event {
 		prototype = binding.track_event_prototype
 	} else if binding.hash_change_event_prototype != unsafe { nil } && event.interface_ == .hash_change_event {
