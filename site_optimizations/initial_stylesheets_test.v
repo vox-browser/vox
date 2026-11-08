@@ -5,7 +5,7 @@ import dom
 
 fn site_initial_sheet_fixture(address string, attributes string) &dom.Document {
 	media := if attributes.starts_with('media=') { '' } else { 'media="all"' }
-	return parse_browser_navigation_document('<!doctype html><head><link rel="stylesheet" media="all" href="${github_primer_stylesheet_url}"><style>@layer between{#target{color:blue!important;background-color:blue}}</style><link rel="stylesheet" ${media} href="${github_primer_stylesheet_url}" ${attributes}></head><body><div id="target">text</div></body>', dom.URL{ value: address }, none)
+	return parse_browser_navigation_document('<!doctype html><head><link rel="stylesheet" media="all" href="${github_primer_stylesheet_url}"><style>@layer between{#target{color:blue!important;background-color:blue}}</style></head><body><section><link rel="stylesheet" ${media} href="${github_primer_stylesheet_url}" ${attributes}></section><div id="target">text</div></body>', dom.URL{ value: address }, none)
 }
 
 fn test_initial_github_stylesheet_dedup_preserves_normal_and_important_layer_order() {

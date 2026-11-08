@@ -12,15 +12,16 @@ const github_initial_stylesheet_diagnostics = os.getenv('VOX_GITHUB_INITIAL_STYL
 // The last identical sheet dominates the earlier copies; the marker preserves
 // their first layer declarations, including important-layer precedence.
 fn prepare_site_document_stylesheets(document &dom.Document) int {
-	if disable_github_initial_stylesheet_dedup || !document.as_node().is_scripting_enabled()
+	if disable_github_initial_stylesheet_dedup || !document.is_scripting_enabled_by_embedder()
 		|| !site_batches_image_completion_layout(document.url.serialize()) {
 		return 0
 	}
-	head := document.head() or { return 0 }
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
 	mut copies := []&dom.Element{}
-	mut current := head.as_node().first_child()
-	for current != none {
-		node := current or { break }
+	mut pending := [document.as_node()]
+	for pending.len > 0 {
+		node := pending.pop()
 		if element := node.as_element() {
 			if element.is_html_element() && element.local_name() == 'link'
 				&& element.get_attribute_value('rel').to_lower() == 'stylesheet'
@@ -33,7 +34,12 @@ fn prepare_site_document_stylesheets(document &dom.Document) int {
 				copies << element
 			}
 		}
-		current = node.next_sibling()
+		// GitHub emits component entry sheets beside body-mounted React roots.
+		// Traverse the ordinary DOM in tree order, excluding inert template and
+		// shadow contents, before creating the replacement layer marker.
+		for index := node.children.len - 1; index >= 0; index-- {
+			pending << node.children[index]
+		}
 	}
 	if copies.len < 2 { return 0 }
 	mut marker := document.create_element('style') or { return 0 }
