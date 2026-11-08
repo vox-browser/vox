@@ -1537,3 +1537,41 @@ still links Skia; a complete Skia-free browser compile/link/run is unverified.
 Direct source-image mixed graphs, rotated layers, SVG graphs, boolean shadow
 intersections, large-sigma rescaling, tiling and native/GPU bridges remain.
 See the [checks, native fixtures and retained failures](gg-migration/spatial-filter-chains-20261109.json).
+
+
+### Mixed spatial graphs on source images (2026-11-09)
+
+`0554d9a4d` extends the branching evaluator to source images. Pixel-aligned
+sources keep their raw alpha type, color space and paint alpha until each
+consumer resolves them. Fractional source rectangles use MakeFromImage's AA
+surface. The graph evaluates in the original image-filter coordinate system,
+retains the correct known/unknown pixel boundary and applies global shadow
+offsets. Fourteen new native cases cover interleaved matrices, repeated shadows,
+P3/unpremultiplied input, source clipping, empty sources and zero-alpha clears.
+All 128 native source-image fixtures verify on macOS and Linux.
+
+| Platform/build | Sources | Seed | Attempts | Exact | Declined |
+| --- | --- | --- | ---: | ---: | ---: |
+| macOS and Linux, each | Aligned | 20261111 | 10,000 | 8,824 | 1,176 |
+| macOS and Linux, each | Fractional | 20261111 | 10,000 | 8,853 | 1,147 |
+| macOS, `-prod -gc none` | Aligned | 20261112 | 5,000 | 4,381 | 619 |
+| macOS, `-prod -gc none` | Fractional | 20261112 | 5,000 | 4,431 | 569 |
+
+Every cohort ends with unchanged input pins; exact counts include no-ops.
+C and FastC image tests, all 27 raster test files, and HTML canvas image
+integration pass. A fresh FMA audit reports zero contracted operations (175
+explicit). The full Linux browser typecheck passes with Skia development
+files available. The first attempt saw a temporarily incomplete shared
+`main.v`; the successful retry pins its unchanged before/after identity.
+
+A separate Linux production/no-GC image test binary runs all 35 registered
+tests with Skia unavailable to pkg-config. Its direct dependencies are
+FreeType, libm and libc, with no direct or transitive Skia linkage. This is
+component evidence; the full browser still needs Skia. The existing production
+bundle predates this change and cannot validate it.
+
+General resampled integer-source mixed graphs still decline, along with the
+remaining crops, rotations, SVG graphs, boolean shadows, large-sigma/tiling
+paths and native/GPU bridges. The requested Skia-free full-browser Linux
+compile/link/run remains unverified. See the
+[source-image graph checks and native fixtures](gg-migration/source-spatial-chains-20261109.json).
