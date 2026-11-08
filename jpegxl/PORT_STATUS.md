@@ -165,8 +165,24 @@ meaning. Default and no-GC focused checks pass under separate 3 GiB guards,
 including unavailable Rust compiler paths. Applying these transforms to pixels
 is still pending.
 
+All fourteen modular predictors now run in V, with source border-neighbor
+substitutions, interior-row updates, signed division and selection tie behavior.
+The weighted predictor retains its four adaptive error estimates, two-row
+buffers, error property, integer reciprocal weights and source row persistence.
+Signed 32-bit extremes preserve the release source's wrapped intermediate
+product. Invalid coordinates, coefficients and widths above 1,048,576 return
+errors; this is a bounded V API rather than unrestricted source API parity.
+
+The predictor corpus adds 4,934 source cases: 4,112 inputs exercise all fourteen
+predictors, 702 compare neighbor gathering/updates, and 120 weighted transcripts
+compare 11,520 prediction/error steps, 360 saved row buffers and 240 restores.
+The exact, archive-verified source file was included unchanged in a temporary
+migration oracle; it is not a new runtime or developer-tool dependency.
+Default and no-GC focused checks pass, including unavailable Rust compiler paths.
+These are predictor comparisons, not complete modular image decoding.
+
 Remaining work includes modular
-prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
+trees/channel decoding and transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
 remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
 `tools/check_translation_corpora.v --suite jpegxl`, with unavailable Rust compiler
