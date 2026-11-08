@@ -19,7 +19,7 @@ fn calculated_export_fixture() CalculatedStyleValue {
 	]})
 	return CalculatedStyleValue{
 		serialization: root.serialize_top()
-		numeric_type_: NumericType.with_type(.length, 1)
+		numeric_type_: calculated_numeric_type_storage(NumericType.with_type(.length, 1))
 		calculation_context: CalculationContext{
 			percentages_resolve_as: .length
 			resolve_numbers_as_integers: true
@@ -69,7 +69,7 @@ fn test_calculated_export_owns_all_numeric_tree_payloads_strings_and_context_map
 	_ = []u8{len: 256 * 1024, init: u8(0xa5)}
 	churn.finish()
 	assert owned.node == expected.node
-	assert owned.numeric_type_ == expected.numeric_type_
+	assert owned.numeric_type() == expected.numeric_type()
 	assert owned.calculation_context == expected.calculation_context
 	assert owned.serialize(.normal) == expected.serialize(.normal)
 	assert owned.serialize(.resolved_value) == expected.serialize(.resolved_value)
@@ -89,7 +89,7 @@ fn test_calculated_export_keeps_numeric_bits_and_every_unit_kind() {
 			work := platform.begin_thread_scratch('calculated numeric input')
 			value := CalculatedStyleValue{
 				serialization: 'calc(0px)'.clone()
-				numeric_type_: calc_numeric_kind_type(kind)
+				numeric_type_: calculated_numeric_type_storage(calc_numeric_kind_type(kind))
 				node: [calculated_export_numeric(kind, number, calc_numeric_canonical_unit(kind))]
 			}
 			assert calculated_property_value_can_export(value)
@@ -123,7 +123,7 @@ fn test_calculated_export_parser_matches_reparse_in_lists_ratios_and_value_conte
 		assert actual.serialize(.resolved_value) == expected.serialize(.resolved_value)
 		if actual is CalculatedStyleValue && expected is CalculatedStyleValue {
 			assert actual.node == expected.node
-			assert actual.numeric_type_ == expected.numeric_type_
+			assert actual.numeric_type() == expected.numeric_type()
 			assert actual.calculation_context == expected.calculation_context
 		}
 	}

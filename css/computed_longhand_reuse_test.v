@@ -558,8 +558,10 @@ fn test_longhand_reuse_semantic_lists_keep_nested_payload_and_type_guards() {
 }
 
 fn test_longhand_reuse_scalar_snapshots_freeze_every_supported_payload() {
-	// The saved record must remain much smaller than the full style-value union.
-	assert sizeof(ComputedLonghandReuseValue) < sizeof(StyleValue)
+	// Calculation metadata now brings StyleValue down to the snapshot's size.
+	// Bound actual bytes: a relative comparison would also accept both growing.
+	assert sizeof(ComputedLonghandReuseValue) <= 208
+	assert sizeof(StyleValue) <= 208
 	values := [StyleValue(KeywordStyleValue.create(.auto)),
 		StyleValue(LengthStyleValue.create(Length.new(3, .cm))),
 		StyleValue(ColorStyleValue.create(Color.rgba(1, 2, 3, 4))),

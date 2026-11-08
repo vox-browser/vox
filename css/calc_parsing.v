@@ -140,7 +140,7 @@ fn (mut parser Parser) parse_calculated_value_with_context(mut tokens ComponentV
 	tokens = transaction
 	return StyleValue(CalculatedStyleValue{
 		serialization: node.serialize_top()
-		numeric_type_: numeric_type
+		numeric_type_: calculated_numeric_type_storage(numeric_type)
 		node: [node]
 		calculation_context: context
 	})

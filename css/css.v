@@ -2733,7 +2733,7 @@ pub fn CalculationResolutionContext.from_computation_context(computation_context
 pub struct CalculatedStyleValue {
 pub mut:
 	serialization       string = 'calc(0px)'
-	numeric_type_       ?NumericType
+	numeric_type_       ?&CalculatedNumericType
 	calculation_context CalculationContext
 	// The typed calculation tree (0 or 1 element for compatibility with V's
 	// recursive sum-type representation).
@@ -2744,18 +2744,19 @@ pub fn CalculatedStyleValue.create(node CalculationNode, numeric_type NumericTyp
 	serialization := if node.serialization.len == 0 { 'calc(0px)' } else { node.serialization }
 	return CalculatedStyleValue{
 		serialization: serialization
-		numeric_type_: numeric_type
+		numeric_type_: calculated_numeric_type_storage(numeric_type)
 		node: node.node.clone()
 		calculation_context: context
 	}
 }
 
 pub fn (c CalculatedStyleValue) numeric_type() ?NumericType {
-	return c.numeric_type_
+	if type_ := c.numeric_type_ { return type_.value }
+	return none
 }
 
 pub fn (c CalculatedStyleValue) contains_percentage() bool {
-	if numeric_type := c.numeric_type_ {
+	if numeric_type := c.numeric_type() {
 		if exponent := numeric_type.exponent(.percent) {
 			if exponent != 0 {
 				return true
@@ -2817,7 +2818,7 @@ pub fn (c CalculatedStyleValue) absolutized(computation_context ComputationConte
 
 	return StyleValue(CalculatedStyleValue{
 		serialization: simplified.serialize_top()
-		numeric_type_: c.numeric_type_
+		numeric_type_: calculated_numeric_type_storage(c.numeric_type())
 		node: [simplified]
 		calculation_context: c.calculation_context
 	})
