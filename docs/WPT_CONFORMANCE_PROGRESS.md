@@ -1414,3 +1414,76 @@ Supervisor:
 SHA-256 `5ebfc77637f077b1a1ffaceb9b79b63568dbbf39657c73e6b2cb067afe170b44`.
 Other WPT types and unsupported services retain their documented limits.
 **There is no completed full-WPT result or 100% claim.**
+
+## Native FileReader exposure and aborted-read isolation (2026-11-09)
+
+`2d4952bab` exposes FileReaderSync in actual classic/module dedicated and shared
+worker realms. `777d4ad8e` exposes asynchronous FileReader in Window and those
+worker globals. Both use native Blob/File branding and the existing typed
+decoding owners. Binary results are genuine caller-realm ArrayBuffers;
+asynchronous results preserve object identity until a new read or abort. Text
+and binary-string results use the owned UTF-16 record. The async binding uses
+the creation global's actual Blob stream, Promise reactions, FileReading tasks
+and EventTarget, including handler identity, conversion ordering, DOMExceptions
+and cancellation before runtime closure. FileReaderSync stays absent in Window.
+
+The first async check reports **112/115 original WPT assertions passing**.
+Both multiple-read variants expose the upstream shared abort flag bug: starting
+a new read in an abort handler before loadstart lets the old read publish
+events and a result. `68eefee70` captures a read generation in Promise reactions
+and affiliated event/completion tasks. The owner regression now requires only
+the replacement operation's events. Initial Blob/setup tasks remain unaffiliated
+as before; resetting the shared abort flag no longer revives an older read.
+
+The third failure is the worker-shutdown case, whose Blob worker times out
+before reporting success. `8c9a70441` preserves the entry URL's copied Blob
+bytes, type and creator origin in dedicated/shared startup IPC. The original
+URL and opaque-origin nonce survive reconstruction, without installing a fake
+process-local Blob URL entry. The worker runtime retains that owned snapshot
+through its native Fetch path. Existing string-only startup frames remain
+unchanged, and a cross-origin Blob entry still fails Fetch origin checks.
+
+The completed focused result is **30/30 original official FileReaderSync,
+FileReader and reading-data-section Window/Worker variants, 115/115 assertions**,
+in **both normal and preallocated GC-none native Page builds**. Every original
+page has harness OK, its exact expected count, strict guard/browser-test exits
+0 and unchanged pinned inputs. The initial failed 112/115 attempt and its two
+failing integration checks remain retained. The earlier isolated Sync check
+also passes all ten expected assertions in both modes.
+
+**15 focused integration checks and seven typed native owner checks pass per
+memory mode.** Coverage includes all four read formats, BOM/MIME charset rules,
+fresh Sync and stable async ArrayBuffers, detachment and replacement reads,
+IDL metadata and illegal receivers, callback exception identity, empty and
+in-progress aborts, reentrant abort/load behavior, actual classic/module/shared
+worker loops, runtime shutdown, Blob startup frame truncations, scratch-storage
+ownership, opaque origin identity and cross-origin rejection. Compiles retain
+the 12 GiB guard and V's 10 GiB limit; focused runtimes use 3 GiB. The broader
+collection runs concurrently; these are correctness results, not timing claims.
+
+Evidence: `/Users/alex/.cache/vox/wpt/20261109-file-readers-native-raw.tar.gz`,
+SHA-256 `94661c383478187a51c0325f804904c6f12b9502d4cd1190b4a1ba1bae801ff1`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-file-readers-native-summary.json`,
+SHA-256 `65be36be95481ed5686f0426ddf576ee37d586fb081c2c7a40d78a6c9801141c`.
+The premature preallocated launch that failed before its executable existed is
+retained too; final checks run after successful compilation. Generated C,
+binaries and private profiles are excluded from the archive. The completed
+job, temporary combined tests and owned locks are removed.
+
+The current production executable `23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`
+predates these bindings. Production validation remains pending a completed
+shared build with seven required source hashes. The observer selects the
+latest matching completed canonical image or its original completed staging
+artifact under a shared read lease; no bundle copy or private build is used.
+It retains all 30 original variants and exact 115 expected assertions, with
+the existing deadlines and strict exits. Status:
+`/Users/alex/.cache/vox/wpt/20261109-file-reader-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261109-file-reader-production-followup.py`.
+
+The corrected **40,139-variant official testharness collection continues** on
+its original production image, with unchanged input hashes. Its partial count
+is recorded in the status file linked above; it cannot measure these new
+bindings or establish an overall rate. Other WPT types and unsupported services
+remain outside the runner's coverage. Typed FileReader error-setting FIXMEs,
+full ProgressEvent coverage and physical weak wrapper/world GC remain open.
+**The focused slice passes; full WPT and 100% remain unfinished.**
