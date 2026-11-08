@@ -168,10 +168,10 @@ fn import_mldsa_jwk(name string, jwk JsonWebKey, usages []KeyUsage, extractable 
 	}
 	if (jwk.kty or { '' }) != 'AKP' { return error('DataError: Invalid key type') }
 	if (jwk.alg or { '' }) != name { return error('DataError: Invalid algorithm') }
-	// Preserve the current upstream equality test, which rejects use="sig".
+	// A signing JWK may declare use="sig"; reject other declared uses.
 	if usages.len != 0 {
 		if use := jwk.use {
-			if use == 'sig' { return error('DataError: Invalid usage type') }
+			if use != 'sig' { return error('DataError: Invalid usage type') }
 		}
 	}
 	validate_jwk_key_ops(jwk, usages)!

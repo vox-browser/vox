@@ -77,7 +77,6 @@ fn test_mldsa_generation_and_source_errors_and_jwk_conditions() {
 		assert pair.public_key.extractable && !pair.private_key.extractable
 		assert pair.public_key.usages == [KeyUsage.verify] && pair.private_key.usages == [
 			KeyUsage.sign,
-			.sign,
 		]
 		assert subtle.verify(name, pair.public_key, subtle.sign(name, pair.private_key, [])!, [])!
 		if _ := subtle.generate_key(AlgorithmParams{ name: name }, true, [.verify]) {
@@ -125,13 +124,12 @@ fn test_mldsa_generation_and_source_errors_and_jwk_conditions() {
 	} else {
 		assert err.msg() == 'DataError: JsonWebKey public key does not match'
 	}
-	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, use: 'sig' }, fixture.name, true, [.sign], '') {
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, use: 'enc', key_ops: none }, fixture.name, true, [.sign], '') {
 		assert false
 	} else {
 		assert err.msg() == 'DataError: Invalid usage type'
 	}
-	// Current source tests equality rather than inequality for JWK use.
-	assert subtle.import_jwk(JsonWebKey{ ...jwk, use: 'enc', key_ops: none }, fixture.name, true, [.sign], '')!.type_ == .private_key
+	assert subtle.import_jwk(JsonWebKey{ ...jwk, use: 'sig' }, fixture.name, true, [.sign], '')!.type_ == .private_key
 	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, ext: false }, fixture.name, true, [.sign], '') {
 		assert false
 	} else {

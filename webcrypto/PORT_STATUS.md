@@ -70,8 +70,8 @@ primitive expandedKey encodings. DER diagnostics use the V parser's messages.
 ML-DSA-44/65/87 now perform native generation, context-aware message signing,
 verification, and raw-public/raw-seed/SPKI/PKCS8/JWK operations. Fixed upstream
 WPT signatures and seed-derived public keys pass for every parameter set.
-Its key-format bodies preserve source quirks: the JWK use equality test rejects
-`sig`; raw/JWK metadata is
+Its JWK imports accept the signing use `sig` and reject unrelated declared uses,
+following `2919bf87a5e5`. Raw/JWK metadata is
 set by the SubtleCrypto import boundary; DER scope behavior matches ML-KEM.
 Native failures in source MUST-wrapped raw-seed/JWK generation become explicit
 OperationErrors rather than terminating the process.
