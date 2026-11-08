@@ -101,8 +101,7 @@ fn test_blur_filtered_draws_match_skia() {
 	}
 }
 
-// An invalid blur drops the filters before it; blenders that change
-// transparent black and rotations still decline.
+// An invalid blur drops the filters before it; rotations still decline.
 fn test_blur_filter_lists() {
 	f := new_canvas_filter([CanvasFilterStep{
 		kind:   .matrix
@@ -116,14 +115,6 @@ fn test_blur_filter_lists() {
 	assert f == none
 	mut px := filter_layer_test_background()
 	before := px.clone()
-	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [
-		f32(1),
-		0,
-		0,
-		1,
-		0,
-		0,
-	]!, 0xff000000, none, 1, .src_in, 0, [], blur_filter(2))
 	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [
 		f32(0.9),
 		0.4,
@@ -198,9 +189,6 @@ fn test_unsupported_drop_shadow_layers_preserve_destination() {
 	mut px := filter_layer_test_background()
 	before := px.clone()
 	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
-		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_in, 0, [], new_canvas_filter([step]))
-	assert px == before
-	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
 		[f32(0.9), 0.4, -0.4, 0.9, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([step]))
 	assert px == before
 	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
@@ -209,4 +197,69 @@ fn test_unsupported_drop_shadow_layers_preserve_destination() {
 			step,
 		]))
 	assert px == before
+}
+
+fn test_filter_restore_composites_fill_outside_the_image() {
+	modes := [BlendMode.src, .src_in, .dst_in, .src_out, .dst_atop, .plus_darker, .plus_lighter]
+	// Native captures on both macOS and Linux, using the existing path,
+	// background and AA clip. Each row is blur, then drop-shadow.
+	hashes := ['13bb3b584aee40e2', '748ca7b57f80635f', '4f0ee529c81e4fd3', '45a5a637b91461d2',
+		'0c46b8e6b9a52d2d', 'ca3d395770f5b586', 'c88197ff69a30d4e',
+		'170e032dd570db45', '6d8fdab2a4ac85e6', 'c7ad9747a1106525', '6a55f13257d139e2',
+		'393c80694ec2d278', '48fd6085c641f383', '94e6409b2bc10137']
+	for row in 0 .. 2 {
+		filter := new_canvas_filter([CanvasFilterStep{
+			kind: if row == 0 { CanvasFilterKind.blur } else { .drop_shadow }
+			sigma: 2.5
+			offset_x: 5.25
+			offset_y: -3.75
+			color: 0x805030e0
+		}])
+		for i, mode in modes {
+			mut pixels := filter_layer_test_background()
+			assert fill_canvas_path(mut pixels, 48, 40, 192, 2, filter_layer_test_path(),
+				[f32(1), 0, 0, 1, 0, 0]!, 0xc0e04010, none, .7, mode, 0,
+				filter_layer_test_clip(), filter)
+			assert sha256.sum(pixels).hex()[..16] == hashes[row * modes.len + i]
+		}
+	}
+}
+
+fn test_empty_filter_input_restores_only_after_the_draw_quick_reject() {
+	mut pixels := []u8{cap: 8 * 8 * 4}
+	for _ in 0 .. 64 { pixels << [u8(40), 80, 120, 160] }
+	before := pixels.clone()
+	filter := blur_filter(.0014)
+	identity := [f32(1), 0, 0, 1, 0, 0]!
+	// Within the quick-reject margin, but no layer input intersects the
+	// viewport: the null-source restore still clears the clip.
+	assert fill_canvas_path(mut pixels, 8, 8, 32, 2, rect_path(Rect{3, 8.25, 6, 8.75}),
+		identity, 0xff000000, none, 1, .src, 0, [], filter)
+	assert pixels.all(it == 0)
+	// Further away, quick reject avoids creating/restoring any layer.
+	pixels = before.clone()
+	assert fill_canvas_path(mut pixels, 8, 8, 32, 2, rect_path(Rect{3, 10.25, 6, 10.75}),
+		identity, 0xff000000, none, 1, .src, 0, [], filter)
+	assert pixels == before
+}
+
+fn test_drop_shadow_fast_bounds_ignore_empty_original_bounds() {
+	mut pixels := []u8{cap: 36 * 10 * 4}
+	for _ in 0 .. 360 { pixels << [u8(40), 80, 120, 160] }
+	before := pixels.clone()
+	mut path := PathBuilder{}
+	path.move_to(20.652514, 2.3456857)
+	path.close()
+	filter := new_canvas_filter([CanvasFilterStep{
+		kind: .drop_shadow
+		sigma: .573897
+		offset_x: 7.4242115
+		offset_y: -12
+		color: 0xfff56b7f
+	}])
+	// The shadow's fast bounds are outside the clip. Joining the empty
+	// source point would incorrectly prevent quick reject and clear it.
+	assert fill_canvas_path(mut pixels, 36, 10, 144, 2, path.detach(),
+		[f32(1), 0, 0, 1, -8, 5]!, 0xff000000, none, 1, .src_out, 0, [], filter)
+	assert pixels == before
 }

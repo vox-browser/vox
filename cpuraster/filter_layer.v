@@ -123,8 +123,8 @@ fn skif_round_out(r Rect) IRect {
 // draw_filter_layer draws content through a blur or drop-shadow
 // layer: content_bounds are the draw's local fast bounds. Returns false,
 // before touching the pixels, for what is not ported: transforms that
-// are not a scale and translation, blenders that affect transparent
-// black, sigmas above the raster blur's 135, layers past the maximum
+// are not a scale and translation, sigmas above the raster blur's 135,
+// layers past the maximum
 // dimension and content the inner draw declines.
 // DropShadow is Blur -> SrcIn color filter -> offset, merged under the source.
 // The color filter stays deferred until sampling, just as in FilterResult.
@@ -139,7 +139,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	// by new_canvas_filter().
 	sigma := if step.sigma >= 0 && is_finite_f32(step.sigma) { step.sigma } else { f32(0) }
 	ctm := canvas_affine(transform)
-	if ctm.kx != 0 || ctm.ky != 0 || blend_affects_transparent_black(mode) {
+	if ctm.kx != 0 || ctm.ky != 0 {
 		return false
 	}
 	drop := step.kind == .drop_shadow
@@ -162,6 +162,26 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
+	if bounds := content_bounds {
+		// The draw's quick reject precedes aboutToDraw()/saveLayer(). Its
+		// fast bounds use the parameter-space filter radius, even when the
+		// mapped blur later becomes an identity.
+		pad := f32(3) * sigma
+		mut fast := Rect{bounds.left - pad, bounds.top - pad, bounds.right + pad, bounds.bottom + pad}
+		if drop {
+			fast = Rect{fast.left + step.offset_x, fast.top + step.offset_y,
+				fast.right + step.offset_x, fast.bottom + step.offset_y}
+			// Merge's computeFastBounds uses SkRect::join(), which ignores
+			// the empty original bounds of move-only/degenerate paths.
+			if !rect_is_empty(bounds) {
+				fast = if rect_is_empty(fast) { bounds } else {
+					Rect{fmin_std(bounds.left, fast.left), fmin_std(bounds.top, fast.top),
+						fmax_std(bounds.right, fast.right), fmax_std(bounds.bottom, fast.bottom)}
+				}
+			}
+		}
+		if canvas_quick_reject(fast, affine_to_matrix(ctm), &rc) { return target.ready() }
+	}
 	// internalSaveLayer(): nothing in an empty clip, and a non-invertible
 	// matrix aborts the layer.
 	if rc.is_empty || ctm.sx == 0 || ctm.sy == 0 || !affine_is_finite(ctm) {
@@ -184,8 +204,11 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		needed = union_filter_bounds(foreground_input, shadow_input)
 	}
 	layer := needed.intersect(content_device) or {
-		// An empty layer filters an empty source: nothing to draw.
-		return target.ready()
+		// An empty source still restores through a transparency-affecting
+		// blender (internalSaveLayer's null-source filter evaluation).
+		target.ready()
+		draw_empty_filter_result(mut pixels, pitch, &rc, mode)
+		return true
 	}
 	max_dim := math_max_int(2 * math_max_int(output.width(), output.height()), 2048)
 	if layer.width() > max_dim || layer.height() > max_dim {
@@ -233,7 +256,10 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		} else {
 			source.layer_bounds
 		}
-		merged_bounds = merged_bounds.intersect(desired) or { return true }
+		merged_bounds = merged_bounds.intersect(desired) or {
+			draw_empty_filter_result(mut pixels, pitch, &rc, mode)
+			return true
+		}
 		// Builder::merge() uses a transparent one-pixel boundary. Its device
 		// origin includes that padding before the offset matrix is inverted.
 		// Sampling in an unpadded device changes rounding for residual scales
@@ -256,6 +282,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	}
 	result := blur_filter_result(source, desired, sx, sy) or { return true }
 	if !result.has_image || desired.is_empty() {
+		draw_empty_filter_result(mut pixels, pitch, &rc, mode)
 		return true
 	}
 	if color := tint {
@@ -270,6 +297,13 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	iy := padded.top + result.origin_y
 	draw_filter_sprite(mut pixels, pitch, image, ix, iy, &rc, mode)
 	return true
+}
+
+fn draw_empty_filter_result(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode) {
+	if blend_affects_transparent_black(mode) {
+		mut blitter := canvas_blitter(mut pixels, pitch, 0, 0, mode) or { return }
+		fill_irect(rc.bounds(), rc, mut blitter)
+	}
 }
 
 fn union_filter_bounds(a IRect, b IRect) IRect {
@@ -335,7 +369,8 @@ fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, ma
 // otherwise its rect filled with the nearest clamped image shader.
 fn draw_filter_sprite(mut pixels []u8, pitch int, image BlurImage, x int, y int, rc &RasterClip, mode BlendMode) {
 	bounds := IRect{x, y, x + image.width, y + image.height}
-	if !irect_intersects(rc.bounds(), bounds) {
+	unbounded := blend_affects_transparent_black(mode)
+	if !unbounded && !irect_intersects(rc.bounds(), bounds) {
 		return
 	}
 	bitmap := CanvasBitmap{
@@ -344,6 +379,17 @@ fn draw_filter_sprite(mut pixels []u8, pitch int, image BlurImage, x int, y int,
 		height:        image.height
 		pitch:         image.width * 4
 		premultiplied: true
+	}
+	if unbounded && !bounds.contains(rc.bounds()) {
+		// FilterResult::draw() fills the device with a decal image shader
+		// when the restore blender changes transparent black. In particular,
+		// copy/source-in also update pixels outside the filtered image.
+		shader := new_image_shader(bitmap, .decal, .decal, false, affine_translate(f32(x), f32(y)))
+		dev := rc.bounds()
+		mut blitter := canvas_paint_blitter(mut pixels, pitch, 0xff000000, shader, 1, mode,
+			Rect{f32(dev.left), f32(dev.top), f32(dev.right), f32(dev.bottom)}) or { return }
+		fill_irect(dev, rc, mut blitter)
+		return
 	}
 	if rc.is_bw || rc.aa.quick_contains(bounds.left, bounds.top, bounds.right, bounds.bottom) {
 		if mut sprite := choose_sprite(mut pixels, pitch, bitmap, x, y, 255, 1, mode) {
