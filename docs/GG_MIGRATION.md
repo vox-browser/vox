@@ -1204,3 +1204,26 @@ pass; the FMA audit reports zero contracted operations. See the
 [source color-state receipt](gg-migration/source-image-color-state-20261108.json).
 Nonintegral mappings, source-image paint alpha, remaining spatial chains,
 rotated layers, SVG graphs, tiling and native bridges retain Skia dependencies.
+
+
+### Fractional source-image filter surfaces (2026-11-08)
+
+Fractional in-bounds source rectangles now draw into an antialiased source
+surface before filtering under scale/translation, including flips. Color-only
+filters use the same surface policy. Source-image filter evaluation keeps its
+original layer coordinates. Six native fixtures cover color conversion,
+clearing composites, blur chains, fractional shadows and flipped sources.
+
+At seed 20261106, 18,821 supported comparisons match out of 20,000 on both
+platforms. Production runs match 4,698 of 5,000 at seed 20261108 and 4,694
+of 5,000 at seed 20261109. All 27 CPU raster files, focused Linux production
+tests and canvas integration tests pass; the FMA audit reports zero contracted
+operations. HTML continues to round source rectangles; the integration test
+checks its existing output and the direct fractional service separately.
+
+The full current Linux browser typecheck passes in 50.18 seconds with 4.72 GB
+sampled peak RSS after refreshing the VM UI2 dependency. Skia libraries were
+available during that check. See the
+[fractional-image receipt](gg-migration/fractional-image-layers-20261108.json).
+Source-image paint alpha, integer-source resampling, rotations, remaining
+spatial chains, SVG graphs, tiling and native bridges retain Skia dependencies.
