@@ -36,12 +36,20 @@ class UpstreamWPTServer:
         self.stack = contextlib.ExitStack()
         self.servers = []
         self.checkout, config, handlers, logger, router, server, stash = load_wptserve(checkout)
-        http1, http2, https1, https2, ws, wss = free_ports(6)
+        # Match upstream serve's origin groups. Shared helpers substitute even
+        # the local/public and currently unserved protocol ports eagerly.
+        counts = {'http': 2, 'http-local': 1, 'http-public': 1,
+                  'https': 2, 'https-local': 1, 'https-public': 1,
+                  'h2': 1, 'ws': 1, 'wss': 1, 'webtransport-h3': 1, 'dns': 1}
+        available = iter(free_ports(sum(counts.values())))
+        ports = {name: [next(available) for _ in range(count)] for name, count in counts.items()}
+        http_origins = {name: values for name, values in ports.items()
+                        if name.startswith(('http', 'https'))}
         builder = config.ConfigBuilder(
             logger.get_logger(), browser_host='localhost', server_host='127.0.0.1',
             alternate_hosts={'alt': 'not.localhost'}, subdomains={'www', 'www1', 'www2'},
             doc_root=str(Path(root).resolve()),
-            ports={'http': [http1, http2], 'https': [https1, https2], 'ws': [ws], 'wss': [wss]},
+            ports=ports,
             check_subdomains=False, logging={'level': 'warning'})
         builder.ssl = {'type': 'openssl', 'openssl': {'base_path': str(Path(certificates).resolve())}}
         try:
@@ -107,23 +115,25 @@ class UpstreamWPTServer:
                         finally:
                             connection.close()
 
-            for port, secure in [(http1, False), (http2, False), (https1, True), (https2, True)]:
-                options = dict(host='127.0.0.1', port=port, doc_root=str(Path(root).resolve()),
-                               router_cls=RecordingRouter, handler_cls=GracefulTLSHandler, config=actual)
-                if secure:
-                    options.update(use_ssl=True, key_file=actual.ssl_config['key_path'],
-                                   certificate=actual.ssl_config['cert_path'])
-                httpd = server.WebTestHttpd(**options)
-                self.servers.append(httpd)
-                httpd.start()
-            self.server_address = ('localhost', http1)
-            self.base_url = f'http://localhost:{http1}'
+            for name, origin_ports in http_origins.items():
+                for port in origin_ports:
+                    options = dict(host='127.0.0.1', port=port, doc_root=str(Path(root).resolve()),
+                                   router_cls=RecordingRouter, handler_cls=GracefulTLSHandler, config=actual)
+                    if name.startswith('https'):
+                        options.update(use_ssl=True, key_file=actual.ssl_config['key_path'],
+                                       certificate=actual.ssl_config['cert_path'])
+                    httpd = server.WebTestHttpd(**options)
+                    self.servers.append(httpd)
+                    httpd.start()
+            self.server_address = ('localhost', ports['http'][0])
+            self.base_url = f'http://localhost:{ports["http"][0]}'
             self.identity = dict(
                 kind='upstream-wptserve', checkout=str(self.checkout),
                 revision=subprocess.check_output(['git', '-C', str(self.checkout), 'rev-parse', 'HEAD'],
                                                  text=True).strip(),
-                host='localhost', http_ports=[http1, http2], https_ports=[https1, https2],
-                unserved_protocols={'ws': [ws], 'wss': [wss]},
+                host='localhost', http_ports=ports['http'], https_ports=ports['https'],
+                http_origin_ports=http_origins,
+                unserved_protocols={name: values for name, values in ports.items() if name not in http_origins},
                 ca_certificate=actual.ssl_config['ca_cert_path'],
                 ca_sha256=hashlib.sha256(Path(actual.ssl_config['ca_cert_path']).read_bytes()).hexdigest(),
                 tls_close_notify=True, tls_shutdown_timeout_seconds=1,

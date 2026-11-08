@@ -53,6 +53,8 @@ def main(request, response):
         (cls.root / 'template.sub.js').write_text('{{host}}|{{ports[http][0]}}|{{ports[http][1]}}|{{ports[https][0]}}')
         (cls.root / 'template.sub.js.headers').write_text('X-Upstream: real-handler\n')
         (cls.root / 'shared.sub.js').write_text('{{ports[ws][0]}}|{{ports[wss][0]}}')
+        (cls.root / 'host-info.sub.js').write_bytes((CHECKOUT / 'common/get-host-info.sub.js').read_bytes())
+        (cls.root / 'unserved.sub.js').write_text('{{ports[h2][0]}}|{{ports[webtransport-h3][0]}}|{{ports[dns][0]}}')
         cls.stream_body = b'self.streamed = true;\n' * 8192
         (cls.root / 'streamed.js').write_bytes(cls.stream_body)
         (cls.root / 'truncated.py').write_text('''
@@ -134,6 +136,24 @@ def main(request, response):
         with self.client.open(f'https://localhost:{port}/truncated.py', timeout=3) as response:
             with self.assertRaises(IncompleteRead):
                 response.read()
+
+    def test_stock_host_info_renders_and_all_http_origin_groups_are_served(self):
+        # Exercise the complete stock helper: a missing port used to turn this
+        # shared dependency into a 500 before any browser assertions could run.
+        with self.client.open(self.server.base_url + '/host-info.sub.js', timeout=3) as response:
+            source = response.read()
+        groups = self.server.identity['http_origin_ports']
+        expected = f"var HTTPS_PUBLIC_PORT = '{groups['https-public'][0]}';".encode()
+        self.assertIn(expected, source)
+        self.assertNotIn(b'{{', source)
+        for group, ports in groups.items():
+            scheme = 'https' if group.startswith('https') else 'http'
+            for port in ports:
+                with self.client.open(f'{scheme}://localhost:{port}/host-info.sub.js', timeout=3) as response:
+                    self.assertEqual(response.read(), source)
+        unserved = self.server.identity['unserved_protocols']
+        with self.client.open(self.server.base_url + '/unserved.sub.js', timeout=3) as response:
+            self.assertEqual(response.read(), '|'.join(str(unserved[k][0]) for k in ['h2', 'webtransport-h3', 'dns']).encode())
 
 
 if __name__ == '__main__':
