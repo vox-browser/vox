@@ -141,8 +141,7 @@ and test-serialization errors were corrected without changing source records.
 Permutation and TOC parsing now translate entropy-coded Lehmer ranks, skipped
 prefixes, composition, byte alignment, entry-size coders and incremental read
 state. A bounded order-statistics tree replaces naive removal. The V entry cap
-is 16,777,216, above the counts needed by the browser's supported image limits;
-invalid API sizes, ranks and indices return errors. Section views remain bounded
+is 16,777,216; invalid API sizes, ranks and indices return errors. Section views remain bounded
 and use local cursors, while the parent advances through the physical payloads;
 logical section order follows the source permutation.
 
@@ -190,8 +189,22 @@ checks pass in both GC modes. The independent oracle used unchanged arithmetic
 and permutation functions extracted from the archive-verified source with its
 scalar SIMD descriptor. There is no SIMD or performance parity claim.
 
+Modular decision trees now parse split/leaf nodes, predictor IDs, offsets,
+multipliers and the output entropy histograms. Source breadth-first child and
+leaf numbering, inclusive size limits, property-range validation and the
+2,048-edge depth limit are preserved. Iterative validation keeps only the
+current path's ranges. Tree walking handles threshold ties and rejects invalid
+indices, absent properties and cycles. The V reader bounds the caller's size
+limit at 131,070 so the resulting entropy map fits its 65,536-context limit.
+
+The 747 frozen tree records compare every node, histogram metadata, eight output
+symbols, validity and consumed bits; 488 parse successfully. Predictor/multiplier
+errors, empty ranges and caller size limits are included. Separate checks cover
+both sides of the depth bound. Default and no-GC checks pass. Computing pixel
+properties and reconstructing channel samples remain pending.
+
 Remaining work includes modular
-trees/channel decoding and transforms, VarDCT, filtering, pixel color conversion, oriented output
+pixel properties/channel decoding, palettes and squeeze transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
 remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
 `tools/check_translation_corpora.v --suite jpegxl`, with unavailable Rust compiler
