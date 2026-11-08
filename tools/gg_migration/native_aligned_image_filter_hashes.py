@@ -136,6 +136,22 @@ cases.append(dict(name='near-integer-shadow-nearest-sampling', iw=2, ih=1, width
     pixels=[0, 0, 0, 255, 0, 0, 0, 1], pixel_pitch=8, p3=True, empty=True,
     source=[0, 0, 2, 1], destination=[4, 6, 2, 1], alpha=127/255,
     filters=[shadow(0, 10.00099, 4, 0xff000000)]))
+cases += [
+    dict(name='scaled-source-identity-color-chain', source=[0, 0, 7, 6], destination=[4.5, 6.25, 22, 16],
+         filters=[contrast, blur(0), opacity], mode='overlay'),
+    dict(name='scaled-p3-identity-color-chain', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.65, filters=[contrast, blur(.001), opacity, blur(0), contrast],
+         mode='src_in', clip=True),
+    dict(name='downscaled-source-identity-mipmap', source=[1, 1, 5, 4], destination=[10.25, 12.5, 2, 3],
+         p3=True, alpha=.7, filters=[blur(0), opacity, blur(.001), contrast], mode='plus_lighter', clip=True),
+    dict(name='flipped-source-identity-color', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], filters=[contrast, blur(.001)], mode='multiply', clip=True),
+    dict(name='identity-filter-retains-fast-bounds', destination=[-8.002, 5, 7, 6],
+         filters=[contrast, blur(.001)], mode='src_in'),
+    dict(name='clipped-source-identity-color-chain', source=[-2, -1, 10, 8], destination=[4.25, 6.5, 25, 18],
+         p3=True, premul=False, alpha=.7, filters=[contrast, blur(0), opacity, blur(.001)],
+         mode='src_in', clip=True),
+]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -173,6 +189,8 @@ expected += ['52a21c2bac4d4259', 'e9b398034919dbd9', 'a3b2ddfab2f04556', '8dbc99
 expected += ['c6e6def672ae03e9', '1856d090e74e592c', 'da2274221967646b', '5fa502d06913b702',
              '62b1b888837ad40a', 'f00be8e39ec6bc7f', '62b1b888837ad40a', '98407a88886b2f75']
 expected += ['d8f9957149e13dae']
+expected += ['66ea4382a30ae423', 'faf646ac30327c3f', 'e10325f572b4dc14',
+             'e12c13dca8162f9f', 'f6e28ad1753237d4', 'c1ada75f25f9bac0']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
