@@ -14267,6 +14267,10 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 		if !did_match_any_pseudo_element_rules && !has_implicit_style {
 			return none
 		}
+		if pseudo_element in [.before, .after]
+			&& generated_pseudo_has_no_content_declaration(matching_rule_set) {
+			return none
+		}
 	}
 
 	old_custom_property_data := abstract_element.custom_property_data()

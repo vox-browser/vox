@@ -174,6 +174,7 @@ mut:
 	// Ordered subset for the preliminary writing-mode/direction cascade. Valid
 	// only with typed_properties_cache_, and rebuilt from that same declaration.
 	typed_flow_context_properties_ []StyleProperty
+	typed_may_set_content_ bool
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {

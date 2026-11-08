@@ -665,6 +665,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	mut flow_context_properties := []StyleProperty{}
 	mut importance_mask := u8(0)
 	mut may_have_logical_aliases := false
+	mut may_set_content := false
 	for property in declaration.properties {
 		property_id := property_id_from_string(property.name) or { continue }
 		mut value := &dom.StyleValue(unsafe { nil })
@@ -680,6 +681,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 			important: if property.important { Important.yes } else { Important.no }
 		}
 		result << typed_property
+		may_set_content = may_set_content || property_id in [.content, .all]
 		if property_id in [.writing_mode, .direction, .all] {
 			flow_context_properties << typed_property
 		}
@@ -693,6 +695,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	mutable_declaration.typed_importance_mask_ = importance_mask
 	mutable_declaration.typed_may_have_logical_aliases_ = may_have_logical_aliases
 	mutable_declaration.typed_flow_context_properties_ = flow_context_properties
+	mutable_declaration.typed_may_set_content_ = may_set_content
 	return result
 }
 
@@ -2171,6 +2174,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	saved_typed_importance_mask := element_inline_style.typed_importance_mask_
 	saved_typed_logical_aliases := element_inline_style.typed_may_have_logical_aliases_
 	saved_typed_flow_context := element_inline_style.typed_flow_context_properties_
+	saved_typed_content := element_inline_style.typed_may_set_content_
 	saved_custom_property_data := abstract_element.custom_property_data()
 
 	mut mutable_inline_style := unsafe { &CSSStyleProperties(element_inline_style) }
@@ -2186,6 +2190,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	mutable_inline_style.typed_importance_mask_ = saved_typed_importance_mask
 	mutable_inline_style.typed_may_have_logical_aliases_ = saved_typed_logical_aliases
 	mutable_inline_style.typed_flow_context_properties_ = saved_typed_flow_context
+	mutable_inline_style.typed_may_set_content_ = saved_typed_content
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_custom_property_data(saved_custom_property_data)
 
