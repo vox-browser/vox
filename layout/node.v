@@ -2004,10 +2004,6 @@ mut:
 	svg_image_documents_ map[string]SVGImageDocumentCacheEntry
 	static_svg_backgrounds_ map[string]&StaticSVGBackgroundResource
 	paint_svg_sources_ &PaintSVGSourceSession = unsafe { nil }
-	// Text DOM boundaries resolve caret projections only when requested. The
-	// viewport owns the committed state, so providers need no per-node closure
-	// or back edge to a superseded document layout result and paint arena.
-	committed_geometry_state_ &LayoutState = unsafe { nil }
 }
 
 // Viewport(DOM::Document&, ComputedProperties) — its DOM node is the document, per Viewport.cpp.

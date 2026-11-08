@@ -75,10 +75,10 @@ mut:
 	calls int
 }
 
-fn materialize_cold_visual_lines(handle voidptr) []VisualLine {
-	mut provider := unsafe { &ColdVisualLinesProvider(handle) }
+fn materialize_cold_visual_lines(_ voidptr, context voidptr) []VisualLine {
+	mut provider := unsafe { &ColdVisualLinesProvider(context) }
 	provider.calls++
-	assert provider.node.visual_lines_callback == unsafe { nil }
+	assert provider.node.visual_lines_provider_ == unsafe { nil }
 	assert provider.node.visual_lines()[0].start_offset == 1
 	return [VisualLine{ start_offset: 4, end_offset: 8 }]
 }
@@ -88,8 +88,7 @@ fn test_layout_node_lazy_visual_lines_publish_after_reentrant_provider() {
 	node.set_visual_lines([VisualLine{ start_offset: 1, end_offset: 2 }])
 	old := *node
 	mut provider := ColdVisualLinesProvider{ node: node }
-	node.layout_handle = voidptr(&provider)
-	node.visual_lines_callback = materialize_cold_visual_lines
+	node.visual_lines_provider_ = LayoutVisualLinesProvider.new(voidptr(&provider), materialize_cold_visual_lines)
 	assert node.visual_lines()[0].start_offset == 4
 	assert node.visual_lines()[0].end_offset == 8
 	assert provider.calls == 1
@@ -108,12 +107,16 @@ fn test_layout_node_cold_headers_survive_entered_workspace_reset() {
 	node.set_rendered_text_chunks(chunks)
 	node.set_visual_lines(lines)
 	node.set_rare_data(LayoutNodeRareData{ continuation_of_node: first })
+	node.visual_lines_provider_ = LayoutVisualLinesProvider.new(unsafe { nil }, fn (_ voidptr, _ voidptr) []VisualLine {
+		return [VisualLine{ start_offset: 10, end_offset: 12 }]
+	})
 	scratch.leave(entry)
 	scratch.reset()
 	gc_collect()
 	assert node.rendered_text_chunks() == ['retained']
 	assert node.cached_visual_lines()[0].end_offset == 7
 	assert voidptr(node.continuation_of_node() or { panic('lost continuation') }) == voidptr(first)
+	assert node.visual_lines()[0].end_offset == 12
 	scratch.release()
 	entered.finish()
 	owner.release()

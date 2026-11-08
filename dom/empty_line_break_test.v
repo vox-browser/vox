@@ -25,9 +25,9 @@ fn test_empty_line_break_stops_at_its_containing_block() {
 	mut text_node := text.as_node()
 	text_node.set_layout_node(&LayoutNode{
 		is_text_node_: true
-		visual_lines_callback: fn (_ voidptr) []VisualLine {
+		visual_lines_provider_: LayoutVisualLinesProvider.new(unsafe { nil }, fn (_ voidptr, _ voidptr) []VisualLine {
 			return [VisualLine{ has_fragments: true }]
-		}
+		})
 	})
 	host_node.append_child(text_node) or { panic(err) }
 	second := document.create_element_ns('http://www.w3.org/1999/xhtml', 'br') or { panic(err) }
