@@ -104,3 +104,62 @@ onconnect=event=>{
 	}
 	assert parent.evaluate_host('sharedFile.file&&sharedFile.blob&&sharedFile.name==="shared.txt"&&sharedFile.lastModified===7&&sharedFile.list==="function"')! == 'true'
 }
+
+fn test_shared_worker_port_clones_native_file_into_the_receiver_context() {
+	mut parent, mut document := worker_file_parent()
+	defer { parent.close(); document.finalize() }
+	parent.install_message_channel_binding()!
+	mut agent := worker_file_agent(r'
+onconnect=event=>event.ports[0].postMessage(new File(["shared bytes"],"shared.txt",{type:"TEXT/PLAIN",lastModified:7}));
+', false, true)!
+	defer { agent.close() }
+	agent.load_entry()!
+	bridge := browserjs.ArrayBufferTransferBridge.create(parent)!
+	mut ports := browserjs.WorkerPortRouter.create(parent, true)!
+	defer { ports.close() }
+	parent.evaluate_host('globalThis.fileChannel=new MessageChannel();globalThis.sharedFile=null;fileChannel.port1.onmessage=event=>sharedFile=event.data;')!
+	record := bridge.serialize_for_worker(parent.evaluate_host_value('null')!, [parent.evaluate_host_value('fileChannel.port2')!], ports)!
+	agent.queue_message(browserjs.encode_worker_message(record)!)!
+	mut loop := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }.responsible_event_loop()
+	deadline := time.sys_mono_now() + 5 * time.second
+	for parent.evaluate_host('sharedFile===null')! == 'true' && time.sys_mono_now() < deadline {
+		agent.process()
+		for bytes in agent.take_outgoing_port_messages()! { ports.queue_incoming(bytes)! }
+		loop.process()
+	}
+	assert parent.evaluate_host('sharedFile instanceof File&&sharedFile instanceof Blob&&sharedFile.name==="shared.txt"&&sharedFile.lastModified===7&&sharedFile.type==="text/plain"')! == 'true'
+	file := parent.native_file(parent.evaluate_host_value('sharedFile')!)!
+	agent.close()
+	assert file.raw_bytes() == 'shared bytes'.bytes()
+}
+
+fn test_shared_worker_port_keeps_array_buffer_transfers_and_view_aliases() {
+	mut parent, mut document := worker_file_parent()
+	defer { parent.close(); document.finalize() }
+	parent.install_message_channel_binding()!
+	mut agent := worker_file_agent(r'
+onconnect=event=>{const port=event.ports[0];port.onmessage=event=>{
+ const data=event.data;if(data.view.buffer!==data.buffer||data.view[1]!==42)throw Error("received buffer aliases");
+ port.postMessage(data,[data.buffer]);if(data.buffer.byteLength!==0)throw Error("worker source not detached");
+};};
+', false, true)!
+	defer { agent.close() }
+	agent.load_entry()!
+	bridge := browserjs.ArrayBufferTransferBridge.create(parent)!
+	mut ports := browserjs.WorkerPortRouter.create(parent, true)!
+	defer { ports.close() }
+	parent.evaluate_host('globalThis.bufferChannel=new MessageChannel();globalThis.bufferReply=null;bufferChannel.port1.onmessage=event=>bufferReply=event.data;')!
+	record := bridge.serialize_for_worker(parent.evaluate_host_value('null')!, [parent.evaluate_host_value('bufferChannel.port2')!], ports)!
+	agent.queue_message(browserjs.encode_worker_message(record)!)!
+	agent.process()
+	assert parent.evaluate_host('globalThis.sentBuffer=new ArrayBuffer(4);new Uint8Array(sentBuffer)[1]=42;bufferChannel.port1.postMessage({buffer:sentBuffer,view:new Uint8Array(sentBuffer)},[sentBuffer]);sentBuffer.byteLength===0')! == 'true'
+	for bytes in ports.take_outgoing()! { agent.queue_port_message(bytes)! }
+	mut loop := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }.responsible_event_loop()
+	deadline := time.sys_mono_now() + 5 * time.second
+	for parent.evaluate_host('bufferReply===null')! == 'true' && time.sys_mono_now() < deadline {
+		agent.process()
+		for bytes in agent.take_outgoing_port_messages()! { ports.queue_incoming(bytes)! }
+		loop.process()
+	}
+	assert parent.evaluate_host('bufferReply!==null&&bufferReply.view.buffer===bufferReply.buffer&&bufferReply.buffer.byteLength===4&&bufferReply.view[1]===42')! == 'true'
+}

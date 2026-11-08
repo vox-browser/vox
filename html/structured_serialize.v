@@ -34,6 +34,7 @@ pub enum StructuredObjectKind {
 	array_buffer_view
 	shared_array_buffer
 	serializable_object
+	message_port
 }
 
 pub enum AllowSharedArrayBuffers {
@@ -106,6 +107,7 @@ pub mut:
 	blob_               ?&fileapi.Blob
 	file_               ?&fileapi.File
 	file_list_          ?&fileapi.FileList
+	message_port_       ?&MessagePort
 }
 
 pub fn StructuredObject.create(kind StructuredObjectKind) &StructuredObject {
@@ -549,6 +551,7 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 	}
 
 	match object.kind {
+		.message_port { return error('DataCloneError: MessagePort must be transferred') }
 		.boolean_object {
 			serializer.write_tag(.boolean_object)
 			serializer.write_u8(if object.boolean_data { u8(1) } else { u8(0) })

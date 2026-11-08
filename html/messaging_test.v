@@ -120,7 +120,9 @@ fn test_message_port_exact_registry_and_transport_helpers() {
 	target.enable()
 	record := structured_serialize_with_transfer(dom.js_string('direct'), [])!
 	source.send_message_on_transport(record)!
-	assert target.pending_messages_.len == 0
+	assert target.pending_incoming_message_count() == 1
+	drain_messaging_tasks()
+	assert target.pending_incoming_message_count() == 0
 	source.post_port_message(structured_serialize_with_transfer(dom.js_string('queued'), [])!)
 	target.read_from_transport()
 }

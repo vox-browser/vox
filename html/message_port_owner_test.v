@@ -136,3 +136,47 @@ fn test_worker_port_cancellation_and_clone_error_survive_scratch_resets() {
 	drain_port_owner_loop(settings.responsible_event_loop())
 	assert recorder.values.len == 2
 }
+
+fn test_port_transfer_moves_scheduled_tasks_and_keeps_the_peer_live_in_transit() {
+	sender := message_port_owner_fixture('scheduled-sender')
+	receiver := message_port_owner_fixture('scheduled-receiver')
+	channel := MessageChannel.create_for_settings(sender)
+	mut old_recorder := &PortOwnerRecorder{}
+	mut new_recorder := &PortOwnerRecorder{}
+	channel.port1().set_onmessage(port_owner_callback(mut old_recorder))
+	channel.port2().post_message_without_transfer(dom.js_string('scheduled'))!
+	record := structured_serialize_with_transfer(dom.js_null(), [StructuredTransfer(MessagePortTransfer{value: channel.port1()})])!
+	assert channel.port2().is_entangled()
+	channel.port2().post_message_without_transfer(dom.js_string('in transit'))!
+	drain_port_owner_loop(sender.responsible_event_loop())
+	assert old_recorder.values.len == 0
+	data := structured_deserialize_with_transfer_in_realm(record, receiver.realm())!
+	mut received := data.transferred_ports[0]
+	assert voidptr(received.settings_?) == voidptr(receiver)
+	assert received.pending_incoming_message_count() == 2
+	received.set_onmessage(port_owner_callback(mut new_recorder))
+	drain_port_owner_loop(receiver.responsible_event_loop())
+	assert new_recorder.values == ['scheduled', 'in transit']
+	assert received.pending_incoming_message_count() == 0
+}
+
+fn test_transferring_both_ends_keeps_the_received_endpoints_entangled() {
+	settings := message_port_owner_fixture('both-ends')
+	channel := MessageChannel.create_for_settings(settings)
+	channel.port1().post_message_without_transfer(dom.js_string('before'))!
+	record := structured_serialize_with_transfer(dom.js_null(), [
+		StructuredTransfer(MessagePortTransfer{value: channel.port1()}),
+		StructuredTransfer(MessagePortTransfer{value: channel.port2()}),
+	])!
+	data := structured_deserialize_with_transfer_in_realm(record, settings.realm())!
+	assert data.transferred_ports.len == 2
+	first := data.transferred_ports[0]
+	second := data.transferred_ports[1]
+	assert voidptr(first.entangled_port()?) == voidptr(second)
+	assert voidptr(second.entangled_port()?) == voidptr(first)
+	mut recorder := &PortOwnerRecorder{}
+	second.set_onmessage(port_owner_callback(mut recorder))
+	first.post_message_without_transfer(dom.js_string('after'))!
+	drain_port_owner_loop(settings.responsible_event_loop())
+	assert recorder.values == ['before', 'after']
+}
