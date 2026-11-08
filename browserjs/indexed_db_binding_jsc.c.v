@@ -179,8 +179,8 @@ fn (mut runtime Runtime) indexed_db_request(mut binding IndexedDBBinding, reques
 		mut runtime := unsafe { &Runtime(owner) }
 		entry.result = unsafe { nil }
 		if !isnil(entry.request.cursor) {
-			if wrapper := binding.wrappers[voidptr(entry.request.cursor)] {
-				if mut cursor_entry := binding.entries[wrapper] {
+			if cursor_wrapper := binding.wrappers[voidptr(entry.request.cursor)] {
+				if mut cursor_entry := binding.entries[cursor_wrapper] {
 					cursor_entry.key_value = unsafe { nil }
 					cursor_entry.primary_key_value = unsafe { nil }
 					cursor_entry.cursor_value = unsafe { nil }

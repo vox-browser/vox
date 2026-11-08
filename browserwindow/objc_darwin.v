@@ -23,7 +23,7 @@ fn C.method_setImplementation()
 fn C.method_getTypeEncoding()
 fn C.objc_storeWeak()
 fn C.objc_loadWeak()
-fn C.dispatch_async_f()
+fn C.dispatch_async_f(queue voidptr, context voidptr, work voidptr)
 fn C.dlsym(handle voidptr, name &char) voidptr
 fn C.CFRunLoopRunInMode(mode voidptr, seconds f64, return_after_source_handled bool) i32
 
