@@ -30,7 +30,7 @@ The graphics/text rendering is handled completely by V's builtin libraries, and 
 
 With the V language which focuses on simple and maintainable code with fast compilation time, developing a browser will be a much easier task.  
 
-Initially we started with an implementation from scratch, but decided to use Ladybird as the foundation. We forked an old C++ Ladybird codebase in 2026.03 and heavily modified it since.
+Initially we started with an implementation from scratch, but decided to use [Ladybird](https://ladybird.org/) as the foundation. In March 2026, we adopted an older version of Ladybird's C++ codebase, translated it into V, and have heavily modified and extended it since.
 
 
 ### Existing features
@@ -44,4 +44,16 @@ Initially we started with an implementation from scratch, but decided to use Lad
 - Optional Vim-like keyboard control for working without mouse (similar to Chrome's Vimium plugin).
 - Vertical tabs option (similar to Firefox's old Tree Style Tab extension).
 - Mouse gestures (like in Opera).
+
+### Acknowledgements
+
+Vox builds on the work of Andreas Kling and the Ladybird and SerenityOS contributors. We thank them for the browser engine and libraries that made this translation possible.
+
+Ladybird-derived code retains its BSD 2-Clause license and original copyright notices. See [third-party notices](THIRD_PARTY_NOTICES.md) for the full Ladybird license and notices for other bundled components.
+
+### License
+
+Copyright (c) 2026 Alexander Medvednikov.
+
+Except where otherwise noted, Vox is licensed under the [GNU General Public License, version 2 or any later version](LICENSE) (`GPL-2.0-or-later`). The bundled uBlock Origin integration requires GPL version 3 or later for the combined distribution; see [third-party notices](THIRD_PARTY_NOTICES.md).
 
