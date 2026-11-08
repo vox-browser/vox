@@ -120,7 +120,8 @@ pub fn new_request(target url.URL) Request {
 
 pub fn (request &Request) destination_is_script_like() bool {
 	if destination := request.destination {
-		return destination in [.script, .xslt, .audio_worklet, .paint_worklet]
+		return destination in [.script, .xslt, .audio_worklet, .paint_worklet,
+			.service_worker, .shared_worker, .worker]
 	}
 	return false
 }

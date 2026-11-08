@@ -136,6 +136,14 @@ fn (mut host SharedWorkerHost) construct(args []voidptr) ! {
 	}
 	runtime.bind_event_target(args[1], connection.target)!
 	host.connections[args[1]] = connection
+	if !html.worker_constructor_csp_allows(host.settings, url, true) {
+		mut inside := channel.port2()
+		mut outside := channel.port1()
+		inside.close()
+		outside.close()
+		host.queue_failure(connection)
+		return
+	}
 	remote.owners << connection
 	if remote.options.type_ != options.type_ || remote.options.credentials != options.credentials {
 		host.queue_failure(connection)

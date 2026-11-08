@@ -129,6 +129,10 @@ fn (mut host WorkerHost) construct(receiver voidptr, args []voidptr) !voidptr {
 	mut remote := &RemoteWorker{worker: worker, ports: WorkerPortRouter.create(runtime, true)!}
 	runtime.bind_event_target(receiver, worker.this_event_target())!
 	host.workers[receiver] = remote
+	if !html.worker_constructor_csp_allows(host.settings, url, false) {
+		host.queue_failure(remote)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	}
 	// Fetch/startup failures are asynchronous events on the constructed Worker.
 	bytes := encode_worker_startup(WorkerStartup{
 		url: url
