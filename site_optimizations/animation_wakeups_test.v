@@ -18,7 +18,7 @@ fn test_github_offscreen_skeleton_keeps_timeline_and_resumes_visible_wakeups() {
 	defer { document.finalize() }
 	assert css.document_has_running_css_animations(document)
 	backdrop := BrowserApp{ document: document, paint_commands_have_backdrop_filter: true }
-	assert backdrop.site_animation_wakeup_delay_for_frame() == 16
+	assert backdrop.site_animation_wakeup_delay_for_frame() == if disable_github_animation_wakeup_throttling { 16 } else { -1 }
 	assert site_animation_wakeup_delay(document) == if disable_github_animation_wakeup_throttling {
 		16
 	} else {
@@ -120,4 +120,30 @@ fn test_github_empty_animation_target_registry_keeps_relevant_effects_conservati
 		}
 	})
 	assert site_animation_wakeup_delay(document) == 16
+}
+
+fn test_github_backdrop_dependencies_keep_only_interacting_effects_awake() {
+	for extra in ['body::before{content:"";position:fixed;left:0;top:0;width:100px;height:20px;backdrop-filter:blur(5px)}',
+		'body::before{content:"";position:fixed;left:0;top:0;width:100px;height:20px;backdrop-filter:blur(5px);transform:scale(2)}',
+		'body::before{content:"";position:fixed;inset:0;backdrop-filter:blur(500px);opacity:0}',
+		'body::before{content:"";position:fixed;inset:0;backdrop-filter:blur(500px);visibility:hidden}'] {
+		mut document := site_wakeup_fixture(extra)
+		app := BrowserApp{document: document, paint_commands_have_backdrop_filter: true}
+		assert app.site_animation_wakeup_delay_for_frame() == if disable_github_animation_wakeup_throttling {16} else {-1}, extra
+		document.finalize()
+	}
+	for extra in ['body{backdrop-filter:blur(500px)}',
+		'body::before{content:"";position:fixed;left:0;bottom:0;width:100px;height:20px;backdrop-filter:blur(100px)}',
+		'body::before{content:"";position:fixed;left:0;top:0;width:100px;height:20px;backdrop-filter:blur(5px);transform:rotate(15deg)}',
+		'body::before{content:"";position:fixed;left:0;top:0;width:100px;height:20px;backdrop-filter:drop-shadow(0 0 1px black)}'] {
+		mut document := site_wakeup_fixture(extra)
+		app := BrowserApp{document: document, paint_commands_have_backdrop_filter: true}
+		assert app.site_animation_wakeup_delay_for_frame() == 16, extra
+		document.finalize()
+	}
+	mut fresh := site_wakeup_fixture('body{backdrop-filter:blur(500px)}')
+	defer { fresh.finalize() }
+	// The app has not adopted the new filter's display list yet.
+	app := BrowserApp{document: fresh, paint_commands_have_backdrop_filter: false}
+	assert app.site_animation_wakeup_delay_for_frame() == 16
 }

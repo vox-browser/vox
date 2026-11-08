@@ -2,6 +2,7 @@ module main
 
 import css
 import dom
+import layout
 import math
 import os
 import platform
@@ -11,7 +12,6 @@ const github_animation_wakeup_diagnostics = os.getenv('VOX_GITHUB_ANIMATION_WAKE
 
 fn (app &BrowserApp) site_animation_wakeup_delay_for_frame() int {
 	if app.document == unsafe { nil } { return 16 }
-	if app.paint_commands_have_backdrop_filter { return site_animation_wakeup_fallback('backdrop filter') }
 	return site_animation_wakeup_delay(app.document)
 }
 
@@ -26,6 +26,12 @@ fn site_animation_wakeup_fallback(reason string) int {
 // Input, script tasks, screenshots and scrolling still grant normal rendering
 // opportunities, at which every effect samples the current document timeline.
 fn site_animation_wakeup_delay(document &dom.Document) int {
+	// The adopted paint vector can precede this frame's script/style changes.
+	// Inspect current layout dependencies even before that vector is replaced.
+	return site_animation_wakeup_delay_with_backdrops(document, true)
+}
+
+fn site_animation_wakeup_delay_with_backdrops(document &dom.Document, has_backdrops bool) int {
 	if disable_github_animation_wakeup_throttling
 		|| !site_batches_image_completion_layout(document.url.serialize()) {
 		return 16
@@ -57,6 +63,8 @@ fn site_animation_wakeup_delay(document &dom.Document) int {
 	workspace.leave()
 	defer { workspace.finish() }
 	mut delay := -1
+	mut checked_backdrops := false
+	mut backdrop_regions := []layout.LayoutRect{}
 	for record in records {
 		if record.play_state != 'running' { continue }
 		if record.is_transition { return site_animation_wakeup_fallback('CSS transition') }
@@ -74,6 +82,21 @@ fn site_animation_wakeup_delay(document &dom.Document) int {
 			&& math.is_finite(animation.effect_.iteration_count) { continue }
 		if !site_offscreen_skeleton_animation(document, record, animation) {
 			return site_animation_wakeup_fallback('unreviewed CSS effect: ${record.name}')
+		}
+		if has_backdrops {
+			if !checked_backdrops {
+				backdrop_regions = layout.document_backdrop_filter_read_regions(document) or {
+					return site_animation_wakeup_fallback('unsupported backdrop dependency')
+				}
+				checked_backdrops = true
+			}
+			rect := record.element.client_rects_assuming_layout_clean()[0]
+			for region in backdrop_regions {
+				if rect.x_ < region.x + region.width && rect.x_ + rect.width_ > region.x
+					&& rect.y_ < region.y + region.height && rect.y_ + rect.height_ > region.y {
+					return site_animation_wakeup_fallback('backdrop reads animated pixels')
+				}
+			}
 		}
 		mut observed := false
 		for event_name in ['animationiteration', 'webkitAnimationIteration'] {
