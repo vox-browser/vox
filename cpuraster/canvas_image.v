@@ -266,7 +266,7 @@ fn choose_sprite_for_surface(mut pixels []u8, row_bytes int, source CanvasBitmap
 	if !source.premultiplied {
 		return none
 	}
-	if !source.display_p3 && legacy {
+	if !source.display_p3 && source.native_n32 && legacy {
 		if mode == .src && alpha_byte == 255 {
 			return SpriteBlitter{
 				source:    source
@@ -317,6 +317,12 @@ pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alph
 // Bitmap-space filters match Chromium's composited image draws: the source
 // is transformed into a saved bitmap layer before the filter is evaluated.
 // Other canvas draws evaluate filter parameters in the drawing transform.
+struct CanvasImageFilterGeometry {
+	source      [4]f32
+	destination [4]f32
+	transform   [6]f32
+}
+
 pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, bitmap_filter bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() { return false }
 	plan := plan_canvas_filter(filter_in)
@@ -329,12 +335,13 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 			// sampling. Drawing into a canvas layer first is not equivalent.
 			return false
 		}
+		geometry := CanvasImageFilterGeometry{source, destination, transform}
 		return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 			[f32(1), 0, 0, 1, 0, 0]!, clips, none, step, mode,
-			fn [rgba, source, destination, smoothing, global_alpha, transform] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
-				m := post_translate(canvas_affine(transform), t[4], t[5])
+			fn [rgba, geometry, smoothing, global_alpha] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
+				m := post_translate(canvas_affine(geometry.transform), t[4], t[5])
 				return draw_canvas_image_sampled(mut layer, w, h, w * 4, 2,
-					[m.sx, m.ky, m.kx, m.sy, m.tx, m.ty]!, rgba, source, destination,
+					[m.sx, m.ky, m.kx, m.sy, m.tx, m.ty]!, rgba, geometry.source, geometry.destination,
 					smoothing, global_alpha, .src_over, inner_clips, false, true)
 			}, none)
 	}

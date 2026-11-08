@@ -1,6 +1,7 @@
 module html
 
 import dom
+import cpuraster
 import geometry
 import math
 import skia
@@ -566,6 +567,14 @@ fn test_pattern_canvas_draws_match_skia() {
 // legacy, pipeline and sprite image draws and a clear must match Skia's
 // drawImageRect() and clear().
 fn test_bitmap_commands_match_skia() {
+	check_bitmap_commands_match_skia(false)
+}
+
+fn test_color_filtered_bitmap_commands_match_skia() {
+	check_bitmap_commands_match_skia(true)
+}
+
+fn check_bitmap_commands_match_skia(filtered bool) {
 	mut pixels := []u8{len: 6 * 4 * 4}
 	for i in 0 .. 24 {
 		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
@@ -602,6 +611,7 @@ fn test_bitmap_commands_match_skia() {
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
+		context.set_filter(if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut target := if i == 0 { bitmap.data.clone() } else { expected }
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
@@ -645,9 +655,25 @@ fn test_bitmap_commands_match_skia() {
 			transform:    canvas_skia_transform(state.transform)
 			composite:    int(state.current_compositing_and_blending_operator)
 			global_alpha: f32(state.global_alpha)
+			filters:      context.canvas_skia_filters()
 		}
+		mut direct := target.clone()
 		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
 			command)
+		if filtered && i == 1 {
+			supported, filter := canvas_cpu_filter(command.filters)
+			assert supported
+			assert cpuraster.draw_canvas_image_filtered(mut direct, bitmap.width, bitmap.height,
+				bitmap.pitch, alpha_type, command.transform, cpuraster.CanvasBitmap{
+					pixels: style.pattern
+					width: style.pattern_width
+					height: style.pattern_height
+					pitch: style.pattern_pitch
+					premultiplied: style.pattern_alpha == 2
+				}, command.source, command.destination, command.smoothing, command.global_alpha,
+				cpuraster.canvas_blend_mode(command.composite) or { panic('blend mode') }, [], filter, false)
+			assert direct == target
+		}
 		expected = target.clone()
 		expected_alpha_type = 2
 		if i < 3 {

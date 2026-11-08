@@ -90,6 +90,93 @@ fn image_test_hash(c ImageTestCase) string {
 	return sha256.sum(px).hex()[..16]
 }
 
+fn image_filter_test_hash(c ImageTestCase, step CanvasFilterStep, bitmap_space bool) string {
+	mut pixels := image_test_background()
+	transform := if c.transform == [6]f32{} { image_test_identity } else { c.transform }
+	source := if c.source == [4]f32{} { [f32(0), 0, 7, 6]! } else { c.source }
+	assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+		image_test_bitmap(7, 6, c.premultiplied, c.display_p3), source, c.destination,
+		c.smoothing, c.alpha, c.mode, image_test_clips(c.clip), new_canvas_filter([step]), bitmap_space)
+	return sha256.sum(pixels).hex()[..16]
+}
+
+fn test_color_filtered_image_subsets_match_native_source_images() {
+	step := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!
+	}}
+	cases := [
+		ImageTestCase{destination: [f32(10), 12, 7, 6]!, alpha: .7},
+		ImageTestCase{premultiplied: false, display_p3: true, source: [f32(1), 1, 5, 4]!,
+			destination: [f32(4), 6, 5, 4]!, alpha: .65, mode: .src_in, clip: true},
+		ImageTestCase{premultiplied: false, destination: [f32(12), 10, 7, 6]!, alpha: .35,
+			mode: .color_dodge, clip: true, smoothing: true},
+		ImageTestCase{source: [f32(2), 1, 4, 4]!, destination: [f32(8), 10, 4, 4]!,
+			mode: .plus_lighter, clip: true},
+	]
+	// Captured from the native image-filter entry point, which defers image
+	// pixels through the alpha/filter stages until the restore blend.
+	hashes := ['fcdf07f1784c94ae', 'cdff66946d64f415', '79f27b4c61142d18', 'e3441259be4b7ca6']
+	for i, c in cases { assert image_filter_test_hash(c, step, false) == hashes[i] }
+}
+
+fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
+	assert image_filter_test_hash(ImageTestCase{
+		destination: [f32(4.25), 5.5, 30, 25]!
+		transform: [f32(1.25), 0, 0, .75, 2, 4]!
+		alpha: .7
+		mode: .src_in
+		clip: true
+		smoothing: true
+	}, CanvasFilterStep{kind: .blur, sigma: 2.5}, true) == $if linux {
+		'f4d9427bb86e8fe8'
+	} $else { 'b04f05f0f7807d28' }
+	assert image_filter_test_hash(ImageTestCase{
+		premultiplied: false
+		destination: [f32(3), 8, 7, 6]!
+		transform: [f32(.9), .4, -.4, .9, 5, 2]!
+		alpha: .35
+	}, CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: -7.25,
+		offset_y: 4.5, color: 0x805030e0}, true) == '742faaa5a08e2c8d'
+}
+
+fn test_bitmap_space_shadow_requests_all_unbounded_source_pixels() {
+	mut pixels := []u8{len: 10 * 20 * 4}
+	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .85911834,
+		offset_x: -8.656294, offset_y: -15, color: 0xffffffff}])
+	assert draw_canvas_image_filtered(mut pixels, 10, 20, 40, 2, image_test_identity,
+		image_test_bitmap(21, 22, false, false), [f32(0), 0, 21, 22]!, [f32(3), 8, 21, 22]!,
+		true, .27487868, .color_dodge, [], filter, true)
+	assert sha256.sum(pixels).hex()[..16] == '7a9e4b5a7ebf291f'
+}
+
+fn test_unsupported_image_filters_preserve_the_destination() {
+	mut pixels := image_test_background()
+	before := pixels.clone()
+	filter := new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: 2.5}])
+	assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, image_test_identity,
+		image_test_bitmap(7, 6, true, false), [f32(0), 0, 7, 6]!, [f32(4), 5, 30, 25]!,
+		true, 1, .src_over, [], filter, false)
+	assert pixels == before
+}
+
+fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
+	mut pixels := []u8{len: 65 * 44 * 4}
+	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,
+		offset_x: -4, offset_y: -17.134123, color: 0x928e150c}])
+	assert draw_canvas_image_filtered(mut pixels, 65, 44, 260, 2,
+		[f32(1), 0, 0, 1, -8, -15]!, image_test_bitmap(2, 13, true, false),
+		[f32(0), 0, 2, 3]!, [f32(49), 39, 2, 3]!, true, .43391985, .soft_light, [], filter, true)
+	// RGBA source into Linux BGRA N32 uses the pipeline sprite; RGBA into
+	// macOS RGBA N32 uses the legacy sprite, with different alpha rounding.
+	$if linux {
+		assert pixels[(25 * 65 + 41) * 4] == 3
+		assert sha256.sum(pixels).hex() == 'db8e82ac8377bd19932b34383e9272bad68455ad9cc09ca08a32f4ddf9a53f31'
+	} $else {
+		assert pixels[(25 * 65 + 41) * 4] == 2
+		assert sha256.sum(pixels).hex() == '6dd8c713245e52c2e26c67ae0ee0836ddc25e3f8113b860dcb6c47dbe046cef9'
+	}
+}
+
 // Hashes of vox_skia_canvas_path()'s bitmap commands with LibWeb Skia for
 // the same cases (test_cpu_raster.sh compares random ones).
 fn test_clears_match_skia() {
