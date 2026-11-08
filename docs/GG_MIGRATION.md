@@ -1148,3 +1148,20 @@ The browser still retains Skia dependencies; no Skia-free link or run is claimed
 Portable inner shadows now accept strictly nested rounded contours when bounding-box corners or concentric corner ellipses prove containment. Six native fixtures cover curved outer bounds, scales, rotations, antialiased overlap and concentric insets. The 20,000-attempt corpora match on macOS (5,134 painted), production macOS (5,167 painted) and Linux (5,155 painted). All 27 CPU raster test files pass; the FMA audit reports zero contracted operations. Intersections and shared edges still require the native fallback.
 See the [verification receipt](gg-migration/rounded-inner-shadows-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Color matrices within repeated blur chains (2026-11-08)
+
+Repeated blur layers now retain color matrices between passes. Identity blurs
+keep the matrices deferred; real blurs resolve them into N32 pixels before
+sampling. Eight native fixtures cover clearing composites, patterns, scaled
+layers, unpremultiplied targets and dashed strokes. Canvas integration tests
+exercise fills, strokes and text.
+
+Of 20,000 attempts, 16,044 supported comparisons match on macOS at seed
+20261106, 16,079 in production mode at seed 20261108, and 16,985 on Linux
+at seed 20261106. All 27 CPU raster test files and focused Linux production
+tests pass. The FMA audit reports zero contracted operations. See the
+[blur/color-chain receipt](gg-migration/blur-color-chains-20261108.json).
+Drop-shadow chains, general rotated layers, SVG graphs, image-space spatial
+filters and native bridges still retain browser Skia dependencies.
