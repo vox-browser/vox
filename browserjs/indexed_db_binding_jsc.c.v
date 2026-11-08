@@ -34,6 +34,7 @@ mut:
 	source      voidptr
 	result      voidptr
 	error_value voidptr
+	key_path_value voidptr
 }
 
 @[heap]
@@ -520,7 +521,12 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		.object_store {
 			mut store := entry.store
 			if method == 'name' { return runtime.binding_string(store.name()) }
-			if method == 'keyPath' { return runtime.indexed_db_output(store.key_path_value()) }
+			if method == 'keyPath' {
+				if entry.key_path_value == unsafe { nil } {
+					entry.key_path_value = runtime.indexed_db_output(store.key_path_value())!
+				}
+				return entry.key_path_value
+			}
 			if method == 'autoIncrement' {
 				return C.vox_jsc_JSValueMakeBoolean(runtime.context, store.auto_increment())
 			}
@@ -564,7 +570,12 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return undefined
 			}
 			if method == 'objectStore' { return entry.source }
-			if method == 'keyPath' { return runtime.indexed_db_output(index.key_path_value()!) }
+			if method == 'keyPath' {
+				if entry.key_path_value == unsafe { nil } {
+					entry.key_path_value = runtime.indexed_db_output(index.key_path_value()!)!
+				}
+				return entry.key_path_value
+			}
 			if method == 'multiEntry' {
 				return C.vox_jsc_JSValueMakeBoolean(runtime.context, index.multi_entry())
 			}

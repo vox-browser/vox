@@ -45,7 +45,7 @@ fn test_index_creation_uses_native_schema_metadata_and_live_names() {
   index.name="renamed";
   checks.push(index.name==="renamed",names[0]==="renamed",names.contains("renamed"),!names.contains("expiry"));
   const compound=store.createIndex("compound",["a","b"]),path=compound.keyPath;path[0]="changed";
-  checks.push(JSON.stringify(compound.keyPath)===JSON.stringify(["a","b"]),compound.unique===false,compound.multiEntry===false);
+  checks.push(compound.keyPath===path&&JSON.stringify(compound.keyPath)===JSON.stringify(["changed","b"]),compound.unique===false,compound.multiEntry===false);
   const tags=store.createIndex("tags","tags",{multiEntry:true});checks.push(tags.multiEntry===true);
  };
  opening.onsuccess=()=>{checks.push(opening.result.objectStoreNames.contains("items"));opening.result.close();};true
