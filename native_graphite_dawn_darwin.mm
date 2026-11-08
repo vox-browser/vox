@@ -38,10 +38,12 @@ std::unique_ptr<skgpu::graphite::Context> gpu_context;
 std::unique_ptr<skgpu::graphite::Recorder> regional_recorder;
 std::unique_ptr<VoxDawnSharedSurface> regional_surface;
 bool gpu_context_attempted = false;
+bool gpu_context_idle = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
 {
     gpu_context_last_use = std::chrono::steady_clock::now();
+    gpu_context_idle = false;
     if (!gpu_context_attempted) {
         // Retire the peer backend only after it is idle, not on every switch.
         // Interleaved shadow/picture drawing within one frame would otherwise
@@ -468,6 +470,7 @@ int vox_graphite_draw_picture_regions_with_backdrop_pixels(VoxGraphitePictureReg
 
 static int retire_graphics_context_locked()
 {
+    gpu_context_idle = false;
     regional_surface.reset();
     regional_recorder.reset();
     if (!gpu_context) return 0;
@@ -491,9 +494,20 @@ int vox_graphite_picture_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
     std::lock_guard lock(gpu_mutex);
-    if (!gpu_context) return 0;
+    if (!gpu_context || gpu_context_idle) return 0;
     if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
-    return retire_graphics_context_locked();
+    if (std::getenv("VOX_DISABLE_IDLE_DAWN_RETENTION")) return retire_graphics_context_locked();
+    // This backend can be idle while the Metal canvas scrolls continuously.
+    // Destroying Dawn's device here joins its asynchronous worker pool on the
+    // main thread. Drop the large raster allocations, retaining the device
+    // and bounded pipeline caches until explicit full retirement.
+    gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    gpu_context->checkAsyncWorkCompletion();
+    regional_surface.reset();
+    regional_recorder.reset();
+    gpu_context->freeGpuResources();
+    gpu_context_idle = true;
+    return 1;
 }
 
 extern "C" __attribute__((visibility("default")))
