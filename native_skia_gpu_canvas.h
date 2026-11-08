@@ -926,7 +926,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_begin(CGContextRef destination, int co
 {
     s_gpu_canvas.reset();
     auto* api = gpu_canvas_api();
-    if (!gpu_canvas_enabled() || !api || !destination || !rects || count <= 0 || count > 8
+    if (!gpu_canvas_enabled() || !api || !destination || !rects || count <= 0 || count > VOX_GPU_CANVAS_MAX_RECTS
         || !CGBitmapContextGetData(destination)
         || CGBitmapContextGetBitsPerPixel(destination) != 32
         || CGBitmapContextGetBitmapInfo(destination)
@@ -965,7 +965,7 @@ extern "C" int ladybird_v_skia_gpu_canvas_push_layer(CGContextRef context)
 {
     auto* parent=s_gpu_canvas.get();
     if (!parent || !context || !gpu_canvas_nested_layers_enabled() || s_gpu_canvas_layers.size()>=8
-        || parent->rects.size()>8 || context==parent->destination
+        || parent->rects.size()>VOX_GPU_CANVAS_MAX_RECTS || context==parent->destination
         || CGBitmapContextGetWidth(context)!=CGBitmapContextGetWidth(parent->destination)
         || CGBitmapContextGetHeight(context)!=CGBitmapContextGetHeight(parent->destination)
         || raster_scale_for_context(context)!=parent->scale || !gpu_canvas_upload(*parent)) return 0;

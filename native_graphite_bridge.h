@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "native_image_color_profile.h"
+#include "native_gpu_canvas_limits.h"
 
 enum {
     VOX_GRAPHITE_IMAGE_FORCE_MSAA = 32,

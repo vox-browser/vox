@@ -3,6 +3,7 @@
 #include "native_snapshot_png_darwin.h"
 #include "native_allocator_policy_darwin.h"
 #include "native_glyph_flags.h"
+#include "native_gpu_canvas_limits.h"
 #include "native_test_window_darwin.h"
 #include "native_media_preferences_darwin.h"
 #include "native_writing_tools_darwin.h"
@@ -3031,10 +3032,10 @@ void native_set_video_frame_resource(uint64_t source, uint64_t revision, uint64_
 int native_gpu_canvas_begin_rects(const float *rects, int count) {
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    if (!context || !rects || count <= 0 || count > 8) return 0;
+    if (!context || !rects || count <= 0 || count > VOX_GPU_CANVAS_MAX_RECTS) return 0;
     CGFloat scale = native_svg_mask_backing_scale();
     if (!isfinite(scale) || scale <= 0) return 0;
-    int device[8*4];
+    int device[VOX_GPU_CANVAS_MAX_RECTS*4];
     for (int index=0; index<count; ++index) {
         const float *rect=rects+index*4;
         double left=floor(rect[0]*scale),top=floor(rect[1]*scale);
@@ -3080,8 +3081,9 @@ int native_gpu_canvas_begin(void) {
 			fprintf(stderr, "VOX_GPU_CANVAS_FULL_FRAME width=%zu height=%zu\n", cache->width, cache->height);
 		return begun;
 	}
-	if (native_scroll_repainted_count <= 0 || native_scroll_repainted_count > 8) return 0;
-	int rects[8 * 4];
+	int limit=getenv("VOX_DISABLE_LARGE_GPU_CANVAS") ? 8 : VOX_GPU_CANVAS_MAX_RECTS;
+	if (native_scroll_repainted_count <= 0 || native_scroll_repainted_count > limit) return 0;
+	int rects[VOX_GPU_CANVAS_MAX_RECTS * 4];
 	int count = 0;
 	for (int index = 0; index < native_scroll_repainted_count; ++index) {
 		const long *rect = native_scroll_repainted[index];

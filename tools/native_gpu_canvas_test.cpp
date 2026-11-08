@@ -490,7 +490,7 @@ static void direct_read_regions(GpuCanvasApi const* api)
 static bool s_compositor, s_present_tiles, s_capture_wrapper;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
-    void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false)
+    void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false, int regions = 1)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -504,13 +504,29 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
     CGContextClipToRect(context, full ? CGRectMake(0, 0, css_width, css_height)
         : CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
             css_width, strip_height / float(scale)));
+    std::vector<CGRect> clips;
+    for (int index=0; regions>1 && index<regions; ++index)
+        clips.push_back(CGRectMake(0,css_height-(strip_top+index*2+1)/float(scale),css_width,1.f/scale));
+    if (!clips.empty()) CGContextClipToRects(context,clips.data(),clips.size());
     ladybird_v_skia_set_chromium_painting(1);
     // Root raster layer: a frame-wide shared recording.
     ladybird_v_skia_set_shared_recording(shared, css_width, css_height);
     auto previous_cache = native_scroll_raster;
+    int previous_repainted_count=native_scroll_repainted_count;
     if (canvas) {
         int rect[] {0, full ? 0 : strip_top, width, full ? height : strip_height};
-        if (s_capture_wrapper) {
+        if (regions>1) {
+            native_scroll_raster = {.width=width, .height=height, .canvas_width=width,
+                .canvas_height=height, .scale=scale, .owner=7, .active=1, .damage_optimized=1,
+                .reused=1, .context=context};
+            native_scroll_repainted_count=regions;
+            for (int index=0; index<regions; ++index) {
+                long damage[]={0,strip_top+index*2,width,strip_top+index*2+1};
+                std::copy_n(damage,4,native_scroll_repainted[index]);
+            }
+            assert(native_gpu_canvas_begin());
+            assert(s_gpu_canvas && s_gpu_canvas->rects.size()==size_t(regions));
+        } else if (s_capture_wrapper) {
             assert(full);
             native_scroll_raster = {.width=width, .height=height, .canvas_width=width,
                 .canvas_height=height, .scale=scale, .owner=7, .active=1, .damage_optimized=1,
@@ -552,7 +568,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
             assert(ladybird_v_skia_gpu_canvas_present(context,&region,1,&completion)==1 && completion);
             CFRelease(previous);
         }
-        if (s_capture_wrapper) native_gpu_canvas_end();
+        if (s_capture_wrapper || regions>1) native_gpu_canvas_end();
         else ladybird_v_skia_gpu_canvas_end();
         assert(!s_gpu_canvas);
         assert(ladybird_v_skia_bitmap_pixels_are_current(context));
@@ -570,6 +586,7 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         }
     }
     native_scroll_raster=previous_cache;
+    native_scroll_repainted_count=previous_repainted_count;
     ladybird_v_skia_set_chromium_painting(0);
     CGContextFlush(context);
     CGContextRelease(context);
@@ -1311,6 +1328,36 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--many-damage-rects")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
+        s_backend_read=api->read;api->read=counted_read;
+        int invalid[8]={};
+        assert(!api->begin(invalid,VOX_GPU_CANVAS_MAX_RECTS+1));
+        int oversized[17*8]={};
+        for(int index=0;index<17;++index) {
+            oversized[index*8+2]=oversized[index*8+6]=8192;
+            oversized[index*8+3]=oversized[index*8+7]=8192;
+        }
+        assert(!api->begin(oversized,17)); // Reject the byte budget before allocating targets.
+        auto draw=[](CGContextRef context,bool canvas) {
+            if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+            assert(ladybird_v_skia_draw_rounded_rect(context,0,70,400,180,0,0,0,0,0,0,0,0,
+                1,0,0,1,0,0,0,0,0,css_width,css_height,40,80,120,255,1,0,0,0));
+            if (canvas) assert(!ladybird_v_skia_gpu_canvas_command("unapproved",10,0));
+            CGContextSetRGBFillColor(context,1,0,0,1);
+            CGContextFillRect(context,CGRectMake(73,css_height-180,117,70));
+            if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+            assert(ladybird_v_skia_draw_rounded_rect(context,91,125,140,75,0,0,0,0,0,0,0,0,
+                1,0,0,1,0,0,0,0,0,css_width,css_height,70,90,110,255,1,0,0,0));
+        };
+        for (int regions : {9,16,36,49}) {
+            auto expected=render(false,false,draw,false,regions);
+            auto actual=render(true,false,draw,false,regions);
+            assert(actual==expected);
+        }
+        puts("9/16/36/49 disjoint damage rectangles: exact pixels, untouched gaps and CPU/GPU order passed");
+        return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--capture-full-frame")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
         s_backend_read=api->read;api->read=counted_read;

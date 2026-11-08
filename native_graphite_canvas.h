@@ -178,14 +178,14 @@ static int canvas_begin_impl(int const* rects, int count, bool native_grid)
 {
     // Eight values per rectangle: the surface x, y, width, height and the
     // repainted device rectangle drawn inside it, both in canvas device pixels.
-    if (!rects || count <= 0 || count > (native_grid?64:16)) return 0;
+    if (!rects || count <= 0 || count > VOX_GPU_CANVAS_MAX_RECTS) return 0;
     size_t requested=0;
     for(int index=0;index<count;++index) {
         int width=rects[index*8+2],height=rects[index*8+3];
         if(width<=0 || height<=0 || width>16384 || height>16384) return 0;
         requested+=size_t(native_grid?width:canvas_rounded_size(width,256))
             *(native_grid?height:canvas_rounded_size(height,128))*4;
-        if(native_grid && requested>canvas_pool_byte_limit) return 0;
+        if((native_grid || count>16) && requested>canvas_pool_byte_limit) return 0;
     }
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
