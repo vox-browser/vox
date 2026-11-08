@@ -1,0 +1,201 @@
+{
+  "recorded_at": "2026-11-08T09:41:37.209394+00:00",
+  "status": "COLLECTION COMPLETE; ALL-PASS GATE FAILS; AGGREGATE SUPERVISION INCOMPLETE",
+  "all_selected_tests_pass": false,
+  "selected_cases": 6828,
+  "unique_case_records": 6828,
+  "summary": {
+    "suite_scope": {
+      "name": "ladybird-imported-testharness",
+      "full_upstream_wpt": false,
+      "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+      "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+      "excluded_types": [
+        "reftest",
+        "print-reftest",
+        "crashtest",
+        "wdspec",
+        "test262",
+        "aamtest",
+        "manual",
+        "visual"
+      ],
+      "denominator": "reported runtime subtests in selected imported files only"
+    },
+    "tests": 6828,
+    "browsers": {
+      "vox": {
+        "tests": 6828,
+        "outcomes": {
+          "COMPLETE": 6717,
+          "NO_HARNESS": 65,
+          "HARD_TIMEOUT": 9,
+          "CRASH": 30,
+          "MEMORY_LIMIT": 4,
+          "NO_DOCUMENT": 3
+        },
+        "harness": {
+          "OK": 6124,
+          "TIMEOUT": 510,
+          "ERROR": 83
+        },
+        "subtests": {
+          "PASS": 239015,
+          "FAIL": 70623,
+          "TIMEOUT": 316,
+          "NOTRUN": 971,
+          "PRECONDITION_FAILED": 10
+        },
+        "subtest_total": 310935,
+        "subtest_pass_rate": 0.7687,
+        "tests_all_pass": 2141
+      }
+    },
+    "wall_seconds": {
+      "vox": 10158.6
+    },
+    "launches": {
+      "vox": 246
+    },
+    "both_clean": {
+      "tests": 0
+    },
+    "identical_results": {
+      "tests": 0
+    },
+    "directories": {},
+    "slowest_ratio": [],
+    "largest_difference": []
+  },
+  "identity": {
+    "suite_scope": {
+      "name": "ladybird-imported-testharness",
+      "full_upstream_wpt": false,
+      "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+      "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+      "excluded_types": [
+        "reftest",
+        "print-reftest",
+        "crashtest",
+        "wdspec",
+        "test262",
+        "aamtest",
+        "manual",
+        "visual"
+      ],
+      "denominator": "reported runtime subtests in selected imported files only"
+    },
+    "started": "2026-11-08T09:40:18+0300",
+    "argv": [
+      "tools/wpt_compare.py",
+      "--output",
+      "Build/wpt-larger-r15-20261108",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "50",
+      "--require-all-pass"
+    ],
+    "ladybird_head": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "wpt_root": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/Tests/LibWeb/Text/input/wpt-import",
+    "host_cpus": 18,
+    "load_start": [
+      25.99,
+      36.18,
+      49.32
+    ],
+    "brave_version": null,
+    "vox_receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-091839-e5dbdb92/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "a66e1ce8e5ed3336ed6274a9d2cf776801ed4051b7491fb97558224547524cdc",
+        "dirty": true,
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "repository_sha256": "012e7c3414e73d0a26537e3b031772ccf6d15b616414447f25f24faaad7ebf98"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "0d4446e7e2a932ac4373f49007e527f5e3cfdb7acc7ad9a6a9ba8d9db329505d",
+        "dirty": true,
+        "head": "ca348b2df7a269ea1c5f995b29b579360f57f444",
+        "repository_sha256": "cd37310a8496548fd73c667a1a4d49f3c17b05d43a2c4f515811b53b70436265"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "id": "935663dfd904486eaf6aa135fe6a69ad",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "8b3032dc4af4bc82f5b10127c265081bc75cfbda172723dd866026d2509ed355",
+        "dirty": true,
+        "head": "74fd88caa86ae779e3d34816549d2675c0c96857",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "pinned": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "37ae6bc438c1c740e6f32e3e4897553690f78d2921fc025e7831663aac0e72ff",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "008f691fa394e24c24f2d2708d089f574ac055a9c8b037bdcfac2f000b4e3ed6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+    },
+    "width": 1024,
+    "height": 768,
+    "chunk_size": 50,
+    "limits": {
+      "startup": 30,
+      "navigation": 10,
+      "harness_start": 5,
+      "grace": 10,
+      "browser_memory_gib": 4
+    },
+    "base_url": "http://127.0.0.1:50392",
+    "load_end": [
+      7.71,
+      10.01,
+      13.13
+    ],
+    "finished": "2026-11-08T12:34:45+0300",
+    "changed_inputs": [],
+    "unexpected_posts": 0,
+    "aborted": null
+  },
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-r15-0940-b8c5285a.tar.gz",
+  "archive_sha256": "58ff39eb0a775a392af8a4393bf5ac66a95bd111a2f04730b6d0e2f56d415dcf",
+  "results_sha256": "3378cff638a3d2f73748b5c3b620956b36f784e309f421e649d225bee8421ae9",
+  "identity_sha256": "f0492c5b1a7aa478e3872187fda336065be741b2f04bd54fde46b64b1e1bf8cb",
+  "selection_sha256": "29a7d7cc0d12cf9b7069457c04558ba5cd96d789b45d0e7986ac1eaa827461ac",
+  "fixture_manifest_sha256": "74485a3af3d07f0da4a46fa031bfca3067ea58667a0193f8258d29357530fcb3",
+  "runner_exit": null,
+  "aggregate_guard_exit": null,
+  "supervision": "Original aggregate guard and completion observer disappeared before collection ended; both original and replacement guard receipts are empty. Runner was observed reparented to PID 1. A replacement adoption guard was started but its process also ended without a receipt. Exact interruption times and exits are unknown. Final per-browser capped records remain archived; this is diagnostic evidence, not a fully supervised acceptance run.",
+  "cleanup": "Verified archive result hash before removing completed Build scratch."
+}

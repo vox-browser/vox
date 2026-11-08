@@ -272,32 +272,38 @@ Raw full-run data and baseline records are preserved in `/Users/alex/.cache/vox/
 (SHA-256 `4da67d256f14cd6c19b3e7034f916f4a9f02013d9eabd2c5d4b50c4e7baaf374`); focused archives are listed in their manifest. Archives stay local;
 completed job directories are removed from `Build/`.
 
-## November 8 imported cohort: 6,828 cases, run still active
+## November 8 imported cohort: 6,828 cases, collection complete
 
-**100% has not been reached.** The [larger-cohort progress snapshot](performance/wpt-larger-r15-progress-20261108.json)
-records an active Vox-only run against all 6,828 cases selected from Ladybird
-`2919bf87a5e5dfc49a210a70bda079afa411c6c5`. At that snapshot, 3,250 durable case
-records contain 100,173 PASS, 35,048 FAIL, 20 TIMEOUT, 71 NOTRUN, and three
-PRECONDITION_FAILED subtests. Four recorded cases crashed and one reached the
-browser memory cap. These are partial counts, not a new full-cohort percentage.
+**100% has not been reached.** The [final r15 record](performance/wpt-larger-r15-final-20261108.json)
+covers all 6,828 cases selected from Ladybird
+`2919bf87a5e5dfc49a210a70bda079afa411c6c5`. It reports **239,015 / 310,935
+subtests passing (76.87%)**: 70,623 FAIL, 316 TIMEOUT, 971 NOTRUN, and ten
+PRECONDITION_FAILED. Only 2,141 cases have every subtest passing. There are
+30 crashes, four browser-memory-limit outcomes, nine hard timeouts, 65 missing
+harnesses, and three documents never requested. Of 6,717 completed reports,
+6,124 have harness OK, 510 TIMEOUT and 83 ERROR. The all-pass gate fails.
 
-The runner now accepts `--ladybird-ref` and exports only the requested revision's
-imported inputs and expectations into the external WPT cache. It leaves the
-upstream translation-reference checkout unchanged. All 15,399 fixture files are
-hashed and checked before each chunk and after collection. The
-`--require-all-pass` gate rejects incomplete or duplicate coverage, empty
-reports, harness failures, and every non-PASS subtest; all 18 tooling tests pass.
+The executable was the shared `b8c5285a1947…` bundle, which predates the source
+fixes below. Fresh processes ran 50-case chunks with unchanged deadlines and a
+4 GiB per-browser cap. Input verification reports no changed executable,
+native libraries or fixture files. The [earlier snapshot](performance/wpt-larger-r15-progress-20261108.json)
+is retained as historical partial evidence; its running status is superseded here.
 
-The active run uses the shared executable `b8c5285a1947…`, fresh processes,
-50-case chunks, the unchanged harness deadlines, a 4 GiB browser cap, and the
-default 12 GiB aggregate guard. Its live results are under
-`Build/wpt-larger-r15-20261108`, with the driver log beside that directory. The
-runner writes final identity, summary, and report files when collection ends.
-The snapshot preserves process identities and the exact command for follow-up.
-An observer archives the raw results and logs after the guarded run exits,
-verifies the archive, and removes the completed `Build/` job. Its final local
-receipt will be `/Users/alex/.cache/vox/wpt/20261108-r15-completed.json`; the
-snapshot records the archive destination and observer identity.
+Aggregate supervision is incomplete: the original 12 GiB guard and completion
+observer disappeared before collection ended. A replacement adoption guard
+also left no final receipt. Exact interruption times and runner/guard exit codes
+are unknown. The final rows and identities remain useful diagnostic evidence;
+this is not a fully supervised acceptance run. No unobserved exit is reported
+as passing. Raw results, logs and empty supervision receipts are archived at
+`/Users/alex/.cache/vox/wpt/20261108-r15-0940-b8c5285a.tar.gz`
+(SHA-256 `58ff39eb0a775a392af8a4393bf5ac66a95bd111a2f04730b6d0e2f56d415dcf`).
+The results hash was checked after archiving, and completed Build scratch was removed.
+
+This remains the imported testharness subset. Static HTTP lacks Python handlers,
+real HTTPS and WPT's multi-origin setup; it is not full upstream WPT or directly
+comparable with r13/r14's smaller denominator. The fixture cache contains 15,399
+hashed files. The `--require-all-pass` gate rejects missing or duplicate cases,
+empty reports, harness failures and any non-PASS subtest.
 
 | Source fix | Commit | Focused validation |
 |---|---|---|
@@ -316,11 +322,10 @@ Final normal-allocation compilation remains pending: one attempt failed to
 link `_v_brotli_unpoison_noop`; a pinned compiler attempt found an undefined
 `visual_changed` in the shared UI2 dependency. Neither attempt counts as passing.
 
-The active baseline executable predates these fixes. Their production WPT
-validation needs a newer shared bundle; the existing build worker has the latest
-request, and no duplicate build was queued. The static imported runner still
-lacks Python handlers, real HTTPS and WPT's multi-origin setup. Browser gaps and
-runner limitations remain open alongside the failed assertions. This run covers
-the larger imported subset, not full upstream WPT.
-The existing SVG paint-server and same-size image-mutation pixel checks likewise
-remain pending on a bundle containing these source changes.
+The older baseline cannot validate these source changes. Focused production
+WPT and the SVG paint-server/same-size image-mutation pixel checks require a
+newer completed shared bundle; no duplicate production build was queued.
+The next large failure group under investigation is the imported test driver's
+missing `internals.sendText()` call (9,340 failed subtests in this baseline).
+Providing it enables native keyboard execution; it does not establish that all
+those subtests will pass.
