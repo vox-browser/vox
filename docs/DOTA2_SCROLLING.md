@@ -802,3 +802,118 @@ still open.** Mean throughput above 60 does not excuse these stalls. The native
 candidate is explicitly injected for these checks; default native publication
 is pending the shared production worker. No separate production build was queued
 and no bundle was copied or replaced for the investigation.
+
+## November 8: timestamp reuse, policy reads and idle device teardown
+
+The next investigation fixes three more blocking paths on the same thread.
+Reddit periodically replaces its live timestamp Text nodes. The native
+equal-text layout shortcut rejected those updates because an unrelated table's
+copied computed-property store had no tracked revision. Commit `933a78eb5`
+gives each copied table store its own mutation token. Equal replacements keep
+fresh DOM Text identities and mutation behavior while reusing geometry; real
+text and style changes still invalidate it.
+
+When layout did rebuild, it forked glyph-run records whose allocation addresses
+formed the raster keys. One diagnostic marked 611 unchanged commands dirty and
+produced 36 damage rectangles. Commit `5f12d69e2` keys published, clean glyph
+runs by their exact replay contents and conservative font ownership. Dirty or
+malformed runs retain pointer keys. Commit `0bc9a628d` admits bounded batches of
+up to 64 rectangles, and `c27521c32` stages large readbacks together within a
+64 MiB limit. The early isolated batch/readback cohorts retain regressions and
+mixed results; they earn no throughput improvement credit.
+
+Sampling only view callbacks missed another pause between frames. Commit
+`04881ebe4` extends the bounded diagnostic sampler to late native input timers.
+The long diagnostic records three delayed-input episodes, with maximum timer
+lateness of 107.545 ms. Their sampled stacks destroy Dawn's device and join its
+worker pool during ordinary idle cleanup, even while the Metal canvas backend
+is scrolling. Commit `34314a33e` releases regional raster and purgeable GPU
+resources while retaining the device and bounded pipeline caches. Explicit
+retirement still destroys the context. The diagnostic marker in `f55a7ebc2`
+confirms idle release leaves zero purgeable bytes.
+
+Separate 56–60 ms callbacks wait in the adblock engine mutex. A cached
+`BrowserApp.background_image` lookup still queried the enabled flag through
+that mutex, which can be held during worker/filter operations. Commit
+`5b588f5a8` makes this scalar read atomic; engine operations and changes retain
+their existing mutex. Its regression verifies reads while the outer engine
+lock remains owned. Commit `3c677fb5d` makes the old recursive-lock behavior
+fail promptly instead of hanging the test.
+
+The completed production executable is
+`843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2`.
+Receipt `20261108-072002-e3db71fa` records single-C-unit compilation with
+`-O2 -flto`, the default JavaScriptCore backend and GG adapters. The sealed
+input metadata and compiled scalar getter confirm these fixes are present.
+No additional production build was queued. All checks launch fresh processes;
+an existing Vox process continues to use its older mapped executable.
+
+The final installed-bundle diagnostic completes 5,400 precise wheel events. It
+executes timestamp geometry reuse and two Dawn idle raster releases during
+input, with zero delayed-input gap samples. Its seven slow-callback snapshots
+show GPU completion, pixel readback/decompression, SVG raster and buffer work;
+none shows the earlier adblock mutex or Dawn worker-pool destruction. This is
+diagnostic path evidence, not unprofiled timing acceptance.
+
+Four long unprofiled runs use that installed bundle with no candidate renderer
+override or diagnostic environment. The workload remains a title-checked
+12-second settle, 1400×900 document viewport, 2× backing scale, 125% saved zoom,
+automatic scripts, and nominal 120 Hz native precise wheel input with delta 3,
+reversing every 300 events. Each launch gets an empty private profile/cache;
+OS caches remain. Live runs use the existing SOCKS5h route. Frozen runs replay
+the same 152 original-origin responses and deny external network access.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval, ms | Over 16.67 ms | Inputs / all publications / counted scroll changes |
+| --- | ---: | --- | ---: | --- |
+| Final live 1 | 118.549 | 8.339 / 9.871 / 24.094 | 0.0927% | 5400 / 5401 / 5393 |
+| Final frozen 1 | 117.665 | 8.335 / 10.438 / 22.507 | 0.8568% | 5400 / 5411 / 5369 |
+| Final live 2 | 118.455 | 8.328 / 10.035 / 26.614 | 0.5585% | 5400 / 5404 / 5372 |
+| Final frozen 2* | 118.306 | 8.333 / 10.008 / 43.965 | 0.3530% | 5400 / 5407 / 5382 |
+
+| Trial | Actual input Hz | Entire input window, s | Leading / trailing counted-scroll gap, ms |
+| --- | ---: | ---: | --- |
+| Final live 1 | 118.681 | 45.492 | 32.443 / 0.159 |
+| Final frozen 1 | 118.322 | 45.630 | 31.115 / 0.173 |
+| Final live 2 | 119.050 | 45.351 | 25.903 / 4.208 |
+| Final frozen 2* | 118.680 | 45.492 | 29.195 / 4.094 |
+
+*The second frozen run overlaps a later readback diagnostic for 19.294 seconds
+because that diagnostic was started before its controller finished. Both runs
+completed before interruption was attempted; no signal was sent. Both results
+are retained and neither supplies timing-gain acceptance. Separate clean
+alternating cohorts follow. These final live/frozen checks validate the combined
+production code; they do not isolate a gain from each individual change or from
+unrelated shared-checkout changes.
+
+The remaining GPU samples motivated two existing transport switches, tested
+without changing defaults. In two clean alternating frozen pairs, forcing blit
+readback for small regions regresses both candidate throughput results
+(118.037 versus 119.050, then 114.071 versus 119.469 publications/s), with more
+deadline misses. Linear textures give mixed results with widely varying
+controls; host load reaches 121 on this 18-CPU host. Neither experiment earns
+optimization credit, and both remain opt-in. The report retains all earlier
+cohorts, failed attempts, timings and host loads.
+
+**Steady 60 Hz remains open.** The reproduced long blocking paths no longer
+appear in the final diagnostic, but occasional GPU/readback intervals still
+exceed 16.67 ms, including the leading publication gaps. Native publication is
+not physical display scanout, and mean throughput does not establish a
+zero-stall guarantee. No retired-instruction saving or Brave comparison is
+claimed; the existing instruction-saving broad-check cadence is unchanged.
+
+Focused glyph and table-revision/native-layout tests execute successfully.
+Native damage-batch, readback-ordering/allocation-fallback and Dawn
+idle-retention tests pass optimized and ASan/UBSan checks. The 54 precise-scroll
+and native sampler checks pass, as do the adblock snapshot/engine checks and
+fresh production headless smoke. The two full frozen 1400×900 document captures,
+at scroll offsets 0 and 850, remain pixel-exact against the unchanged earlier
+controls: zero differing pixels and zero maximum channel error. The previously
+reported four unchanged legacy wheel assertions remain outside this passing
+focused set; the complete wheel suite is not claimed to pass.
+
+The [follow-up receipt](performance/reddit-boots-stalls-next-20261108.json)
+records all 24 unprofiled trials and 14 diagnostics, actual commands and exits,
+build/resource identities, interval and boundary statistics, contention,
+correctness checks, rejected attempts and the private raw archive identity.
+The per-job `Build/reddit-stalls-next-20261108/` directory is removed after
+archiving; raw authenticated page responses remain private and outside Git.
