@@ -179,3 +179,70 @@ fn test_viewport_entry_blocks_select_exactly_the_per_entry_entries() {
 	}
 	assert culled_by_blocks > 0
 }
+
+// The selected pass must preserve layer transitions, clips, command ordering
+// and the complete-list path while the published scene remains live.
+fn test_masked_recording_matches_filtered_steps_across_scene_reuse() {
+	mut rows := ''
+	for index in 0 .. 50 {
+		rows += '<div class="row">row ${index}</div>'
+	}
+	mut document := html.parse_document('<!doctype html><style>html,body{margin:0}.row{height:30px}</style>${rows}<div style="position:fixed;top:0;opacity:.6;filter:blur(1px);transform:translateX(2px);overflow:hidden;width:50px;height:20px">fixed effect</div>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 100)
+	initial := document.record_viewport_display_list()?
+	scene := retain_display_list_scene(initial)
+	defer { release_display_list_scene(scene) }
+	initial_commands := display_list_commands(initial)
+	initial_dump := initial_commands.map('${it.kind}:${it.color}:${it.text}:${it.transform}')
+	for offset in [0, 90, 600, 1200, 300, 0, 900, 60] {
+		document.set_viewport_rect(dom.Rect{0, f64(offset), 320, 100})
+		_ = document.record_viewport_display_list()?
+		mut result := document_layout_result(document)?
+		selected := viewport_visible_paint_entries(mut result)
+		assert selected.any(it) && selected.any(!it)
+		filtered := result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
+		expected := record_cached_paint_commands_with_visual_context(filtered,
+			result.paint_phase_commands, result.paint_phase_command_count, result.visual_context_tree,
+			result.scroll_state_snapshot, false)
+		mut scratch := CompatibilityRecordScratch{}
+		actual := record_cached_paint_commands_with_visual_context_into(result.paint_steps,
+			selected, result.paint_phase_commands, result.paint_phase_command_count,
+			&result.visual_context_tree, result.scroll_state_snapshot, false, mut scratch)
+		assert actual.len == expected.len
+		for index in 0 .. actual.len {
+			a, b := &actual[index], &expected[index]
+			assert a.kind == b.kind && a.text == b.text && a.color == b.color
+			assert [a.x, a.y, a.width, a.height] == [b.x, b.y, b.width, b.height]
+			assert a.transform == b.transform && a.fixed_to_viewport == b.fixed_to_viewport
+			assert a.has_clip == b.has_clip
+			assert [a.clip_x, a.clip_y, a.clip_width, a.clip_height] == [b.clip_x, b.clip_y, b.clip_width, b.clip_height]
+			assert a.opacity == b.opacity && a.group_opacity == b.group_opacity
+			if layer := a.visual_layer_data {
+				other := b.visual_layer_data or { panic('missing reference layer') }
+				assert layer.kind == other.kind && layer.scope_id == other.scope_id
+			} else {
+				assert b.visual_layer_data == none
+			}
+		}
+		assert initial_commands.map('${it.kind}:${it.color}:${it.text}:${it.transform}') == initial_dump
+	}
+}
+
+fn test_viewport_scene_storage_tracks_visible_output_instead_of_document_steps() {
+	$if prealloc {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}p{height:30px;margin:0}</style>' + '<p>comment text</p>'.repeat(1500))
+		defer { document.finalize() }
+		_ = layout_document_typed_in_viewport(document, 320, 100)
+		for offset in [0, 300, 900, 1500, 0, 600] {
+			document.set_viewport_rect(dom.Rect{0, f64(offset), 320, 100})
+			_ = document.record_viewport_display_list()?
+			result := document_layout_result(document)?
+			assert result.scene != unsafe { nil }
+			assert result.display_list_commands.len < 40
+			step_bytes := i64(result.paint_steps.len) * i64(sizeof(CompatibilityPaintStep))
+			used := result.scene.arena.usage().used
+			assert used < step_bytes, 'scene used ${used} bytes for ${result.display_list_commands.len} commands; full step vector would use ${step_bytes}'
+		}
+	}
+}

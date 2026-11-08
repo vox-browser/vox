@@ -10,6 +10,9 @@ import painting
 import platform
 import strings
 
+// Same-binary control for the former scene-local step selection allocation.
+const filter_viewport_paint_steps = os.getenv('VOX_FILTER_VIEWPORT_PAINT_STEPS') != ''
+
 // The concrete painting state owned by a committed DocumentLayoutResult is
 // exposed to DOM through ViewportPaintable callbacks. This mirrors the
 // upstream DOM -> Painting ownership boundary without making DOM import the
@@ -2710,12 +2713,12 @@ $if test {
 		phase_commands [][]PaintCommand, command_count int, tree painting.AccumulatedVisualContextTree,
 		snapshot painting.ScrollStateSnapshot, show_line_box_borders bool) []PaintCommand {
 		mut scratch := CompatibilityRecordScratch{}
-		return record_cached_paint_commands_with_visual_context_into(steps, phase_commands,
+		return record_cached_paint_commands_with_visual_context_into(steps, []bool{}, phase_commands,
 			command_count, &tree, snapshot, show_line_box_borders, mut scratch)
 	}
 }
 
-fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep,
+fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPaintStep, selected []bool,
 	phase_commands [][]PaintCommand, command_count int, tree &painting.AccumulatedVisualContextTree,
 	snapshot painting.ScrollStateSnapshot, show_line_box_borders bool, mut scratch CompatibilityRecordScratch) []PaintCommand {
 	mut contexts := new_compatibility_visual_context_memo_with_scratch(tree, snapshot, mut
@@ -2730,6 +2733,7 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	}
 	for step in steps {
 		if step.entry_index < 0 { continue }
+		if selected.len > 0 && !selected[step.entry_index] { continue }
 		default_context_index := if step.phase == .foreground && step.box.paintable_with_lines {
 			step.box.accumulated_visual_context_for_descendants_idx
 		} else {
@@ -3010,10 +3014,14 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		if scene.paint_tree_storage != unsafe { nil } { scene.paint_tree_storage.retain() }
 		scene_entry = scene.arena.enter()
 	}
-	steps := if selected.len > 0 {
+	// Read the visibility mask while walking the retained plan. Filtering first
+	// allocated capacity for every step in the document inside each scene, even
+	// when only a few hundred commands were visible. No temporary step vector or
+	// scratch pointer into a reset scene is needed.
+	steps := if filter_viewport_paint_steps && selected.len > 0 {
 		result.paint_steps.filter(it.entry_index < 0 || selected[it.entry_index])
 	} else { unsafe { result.paint_steps } }
-	mut commands := record_cached_paint_commands_with_visual_context_into(steps,
+	mut commands := record_cached_paint_commands_with_visual_context_into(steps, selected,
 		result.paint_phase_commands, result.paint_phase_command_count, &result.visual_context_tree,
 		snapshot, show_line_box_borders, mut result.record_scratch)
 	commands << result.paint_tree.paint_inspector_overlay(result.document, result.visual_context_tree,
