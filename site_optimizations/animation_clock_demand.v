@@ -2,12 +2,14 @@ module main
 
 import css
 import dom
+import html
 import platform
 
 fn configure_site_animation_clock_demand(document &dom.Document) {
 	if disable_github_animation_wakeup_throttling
 		|| !site_batches_image_completion_layout(document.url.serialize()) { return }
 	css.set_document_animation_clock_demand_filter(document, site_animation_clock_demands_style)
+	css.set_document_animation_clock_reader(document, html.document_animation_clock_now)
 }
 
 fn site_animation_clock_demands_style(document &dom.Document, time_ms f64) bool {

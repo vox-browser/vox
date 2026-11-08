@@ -7,6 +7,24 @@ import math
 // The timeline update and animation event processing still run normally.
 pub type AnimationClockDemandFilter = fn (&dom.Document, f64) bool
 
+// An embedding document clock can advance while rendering is idle. Reading an
+// animation's time must not depend on receiving another display callback.
+pub type AnimationClockReader = fn (&dom.Document) ?f64
+
+pub fn set_document_animation_clock_reader(document &dom.Document, callback AnimationClockReader) {
+	mut allocations := document.enter_native_storage()
+	defer { allocations.finish() }
+	mut computer := css_style_computer_for(document)
+	computer.animation_clock_reader_ = callback
+}
+
+fn (computer &StyleComputer) animation_clock_now(document &dom.Document) f64 {
+	if computer.animation_clock_reader_ != unsafe { nil } {
+		if current := computer.animation_clock_reader_(document) { return current }
+	}
+	return computer.animation_time_ms_
+}
+
 pub fn set_document_animation_clock_demand_filter(document &dom.Document, callback AnimationClockDemandFilter) {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }

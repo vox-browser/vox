@@ -1244,7 +1244,7 @@ pub fn document_css_animation_current_time(document &dom.Document, handle voidpt
 	dom_style_computer := document.style_computer
 	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } { return none }
 	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
-	now := style_computer.animation_time_ms_
+	now := style_computer.animation_clock_now(document)
 	if transition := document_css_transition_for_handle(style_computer, handle) {
 		if transition.play_state_ == .idle { return none }
 		delay := if transition.keyframe_effect_ != unsafe { nil } { transition.keyframe_effect_.specified_start_delay } else { 0.0 }
@@ -1260,7 +1260,7 @@ pub fn document_css_animation_set_current_time(document &dom.Document, handle vo
 	dom_style_computer := document.style_computer
 	if dom_style_computer == unsafe { nil } || dom_style_computer.css_handle == unsafe { nil } { return false }
 	style_computer := unsafe { &StyleComputer(dom_style_computer.css_handle) }
-	now := style_computer.animation_time_ms_
+	now := style_computer.animation_clock_now(document)
 	if found := document_css_transition_for_handle(style_computer, handle) {
 		mut transition := unsafe { &CSSTransition(found) }
 		if transition.play_state_ == .idle { return false }

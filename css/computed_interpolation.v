@@ -10962,6 +10962,7 @@ pub mut:
 	font_face_set_                                       &FontFaceSet = unsafe { nil }
 	animation_time_ms_                                   f64
 	animation_clock_demand_filter_                       AnimationClockDemandFilter = unsafe { nil }
+	animation_clock_reader_                              AnimationClockReader = unsafe { nil }
 	transition_generation_                               int
 	// Arenas for animation samples (css/animation_samples.v), used while the
 	// animated-style update samples targets.

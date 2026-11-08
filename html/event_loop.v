@@ -949,6 +949,13 @@ fn relative_frame_timestamp_for(document &dom.Document, timestamp f64) f64 {
 		}))
 }
 
+// Use the same origin and precision as rendering timestamps, including when
+// an idle document has not received a recent display callback.
+pub fn document_animation_clock_now(document &dom.Document) ?f64 {
+	if document.relevant_settings_object() == unsafe { nil } { return none }
+	return relative_frame_timestamp_for(document, unsafe_shared_current_time_ms())
+}
+
 pub fn (event_loop &EventLoop) rendering_scheduler_counters() RenderingSchedulerCounters {
 	return event_loop.rendering_scheduler_counters_
 }

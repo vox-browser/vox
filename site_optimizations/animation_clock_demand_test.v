@@ -3,10 +3,34 @@ module main
 import css
 import dom
 
+fn site_test_animation_clock(document &dom.Document) ?f64 {
+	return 1250
+}
+
+fn site_test_unavailable_animation_clock(document &dom.Document) ?f64 {
+	return none
+}
+
+fn test_css_animation_clock_reads_and_seeks_without_a_display_tick() {
+	mut document := site_wakeup_fixture('.prc-Skeleton-SkeletonBox-e93nW{animation-duration:0s;animation-iteration-count:1}')
+	defer { document.finalize() }
+	mut computer := css.css_style_computer_for(document)
+	computer.set_animation_time_ms(1000)
+	css.set_document_animation_clock_reader(document, site_test_animation_clock)
+	record := css.document_css_animations(document)[0]
+	document.needs_animated_style_update = false
+	assert css.document_css_animation_current_time(document, record.handle)? == 1250
+	assert css.document_css_animation_set_current_time(document, record.handle, 250)
+	assert css.document_css_animation_current_time(document, record.handle)? == 250
+	assert computer.animation_time_ms_ == 1000
+	assert !document.needs_animated_style_update
+}
+
 fn test_github_completed_clock_tick_keeps_current_time_without_requesting_style() {
 	mut document := site_wakeup_fixture('.prc-Skeleton-SkeletonBox-e93nW{animation-duration:0s;animation-iteration-count:1}')
 	defer { document.finalize() }
 	configure_site_animation_clock_demand(document)
+	css.set_document_animation_clock_reader(document, site_test_unavailable_animation_clock)
 	mut computer := css.css_style_computer_for(document)
 	record := css.document_css_animations(document)[0]
 	document.needs_animated_style_update = false
