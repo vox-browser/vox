@@ -1185,3 +1185,22 @@ See the [aligned-image receipt](gg-migration/aligned-image-layers-20261108.json)
 General source-image transforms, fractional subsets, paint alpha and color
 conversion still require work, as do the remaining filter graphs and native
 bridges. The browser retains Skia dependencies.
+
+
+### Deferred source-image color state (2026-11-08)
+
+Pixel-aligned source filters now retain unpremultiplied sRGB and Display P3
+storage until the native filter graph converts it. Color matrices, identity
+passes and shadow foregrounds keep that conversion deferred. Image shadow
+merges also retain the original layer coordinates, preserving fractional
+offset rounding. Twelve new native fixtures cover these branches; the
+canvas integration test now exercises an unpremultiplied filtered image.
+
+Of 20,000 attempts, 18,792 supported comparisons match on both platforms at
+seed 20261106, and 18,771 match in production mode at seed 20261108. The
+existing Linux image-filter corpus matches 13,330 supported draws. All 27
+CPU raster files, canvas integration tests and focused Linux production tests
+pass; the FMA audit reports zero contracted operations. See the
+[source color-state receipt](gg-migration/source-image-color-state-20261108.json).
+Nonintegral mappings, source-image paint alpha, remaining spatial chains,
+rotated layers, SVG graphs, tiling and native bridges retain Skia dependencies.
