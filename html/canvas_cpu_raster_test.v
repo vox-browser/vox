@@ -610,6 +610,10 @@ fn test_nearest_source_image_shadows_resolve_fractional_offsets() {
 	check_bitmap_commands_match_skia(false, true, false, .resolved_shadow)
 }
 
+fn test_mixed_source_image_filter_chains_match_skia() {
+ check_bitmap_commands_match_skia(false, true, true, .spatial_chain)
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
@@ -619,6 +623,7 @@ enum CpuImageIdentityTestMode {
 	near_shadow
 	identity_shadow
 	resolved_shadow
+	spatial_chain
 }
 
 fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
@@ -651,7 +656,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 		sources << image
 	}
 	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
-	if spatial { destinations[1] = [f64(100.25), 30.5, 24, 18] }
+	if spatial && identity_mode != .spatial_chain { destinations[1] = [f64(100.25), 30.5, 24, 18] }
 	if fractional || identity_mode != .none { destinations[2] = [f64(140.25), 70.5, 28, 24] }
 	if identity_mode in [.near, .near_shadow] { destinations[2] = [f64(150.0004), 70.0006, 6.0006, 3.9996] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
@@ -661,7 +666,9 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if identity_mode == .resolved_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 0px #805030e0) opacity(65%)' }
+		context.set_filter(if identity_mode == .spatial_chain && i == 1 { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) blur(.8px) opacity(65%)' }
+		else if identity_mode == .spatial_chain && i == 2 { 'drop-shadow(5px -4px 0px blue) contrast(130%) blur(.01px) drop-shadow(-7px 4px 2.5px #805030e0)' }
+		else if identity_mode == .resolved_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 0px #805030e0) opacity(65%)' }
 		else if identity_mode == .identity_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5px -4px 0px #805030e0) opacity(65%)' }
 		else if identity_mode in [.shadow, .near_shadow] && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%)' }
 		else if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }

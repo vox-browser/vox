@@ -985,3 +985,66 @@ fn test_thin_nearest_shadow_resolve_preserves_native_coverage() {
 		assert sha256.sum(pixels).hex()[..16] == expected[i]
 	}
 }
+
+// Captured independently by native_aligned_image_filter_hashes.py. Raw
+// pixel-aligned sources retain alpha/color effects; fractional sources draw
+// into MakeFromImage's AA surface before entering the mixed filter graph.
+fn test_source_image_mixed_spatial_graphs_match_native() {
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+  offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ identity := CanvasFilterStep{...shadow, sigma: 0}
+ shadow2 := CanvasFilterStep{...shadow, sigma: .8, offset_x: -7.25, offset_y: 4.5}
+ small := CanvasFilterStep{...shadow, sigma: .8}
+ sequences := [
+  [gaussian, shadow], [shadow, gaussian], [shadow, shadow2],
+  [contrast, identity, opacity, tiny, small], [contrast, shadow, gaussian, opacity],
+  [opacity, identity, contrast, CanvasFilterStep{...shadow, sigma: .01}],
+  [gaussian, shadow], [shadow, gaussian], [shadow, shadow2],
+  [shadow, contrast, gaussian, small], [contrast, identity, opacity, tiny, small],
+  [shadow, gaussian], [shadow, gaussian], [shadow, gaussian],
+ ]
+ hashes := $if linux { ['a6eff4e4d6d0b525', '9736c314d18243e4', '21edf031b5cad9bf', '4f87fbb4a116f74d', '0a4d5b84834e14f6', '3413bb7c9b0e9950', '206ed0f93c797611', '7d91d1dd5fc4ea7d', 'd1881a087ec36965', 'c22b2b4fdcb9c1c8', 'a72cc96950afdcd1', 'f68b7870dc82135b', '62b1b888837ad40a', '62b1b888837ad40a'] } $else { ['a6eff4e4d6d0b525', '9736c314d18243e4', '21edf031b5cad9bf', '4f87fbb4a116f74d', '0a4d5b84834e14f6', '3413bb7c9b0e9950', '9aae5da5398fe1e4', '7d91d1dd5fc4ea7d', 'd1881a087ec36965', 'ff49a0bb8b31af28', 'a72cc96950afdcd1', 'f68b7870dc82135b', '62b1b888837ad40a', '62b1b888837ad40a'] }
+ for i, steps in sequences {
+  mut pixels := image_test_background()
+  source := match i {
+   1 { [f32(1), 1, 5, 4]! }
+   6, 10 { [f32(.25), .5, 6.25, 5]! }
+   7, 8, 9 { [f32(1.25), 1.5, 4.5, 3.75]! }
+   11 { [f32(-2), -1, 7, 6]! }
+   12 { [f32(10), 10, 7, 6]! }
+   else { [f32(0), 0, 7, 6]! }
+  }
+  destination := match i {
+   1 { [f32(4), 6, 5, 4]! }
+   6, 10 { [f32(10.25), 12.5, 28, 18]! }
+   7, 8, 9 { [f32(4.5), 6.25, 22, 16]! }
+   11, 12 { [f32(4), 6, 7, 6]! }
+   else { [f32(10), 12, 7, 6]! }
+  }
+  transform := match i {
+   1 { [f32(1), 0, 0, 1, 3, -2]! }
+   6, 10 { [f32(1.25), 0, 0, .75, 2, 4]! }
+   9 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+   else { image_test_identity }
+  }
+  mode := match i {
+   1, 6, 11, 12, 13 { BlendMode.src_in }
+   2, 7 { .overlay }
+   5, 8 { .multiply }
+   4, 9 { .src_out }
+   10 { .plus_lighter }
+   else { .src_over }
+  }
+  alpha := match i { 1, 4, 8 { f32(.65) } 2, 10 { f32(.7) } 13 { f32(0) } else { f32(1) } }
+  assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, if i == 4 { 1 } else { 2 },
+   transform, image_test_bitmap(7, 6, i !in [1, 2, 5, 7, 8, 10], i in [1, 3, 7, 10]),
+   source, destination, true, alpha, mode, image_test_clips(i in [1, 4, 5, 6, 8, 10, 11, 12, 13]),
+   new_canvas_filter(steps), false), 'source chain ${i} declined'
+  assert sha256.sum(pixels).hex()[..16] == hashes[i], 'source chain ${i}'
+ }
+}

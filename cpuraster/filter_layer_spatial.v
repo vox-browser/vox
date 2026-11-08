@@ -2,9 +2,7 @@ module cpuraster
 
 // Mixed blur and shadow nodes share the saved source device. Request bounds
 // propagate backwards; each shadow merge and real blur retains its own pixels.
-fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, mode BlendMode, content LayerContent) bool {
-	// Direct source-image graphs also carry deferred transforms and sampling.
-	if source_image { return false }
+fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
 	// Bound both backwards requests and evaluation of the branching graph.
 	mut work := 1
 	for stage in stages {
@@ -72,14 +70,17 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	inner_clip := rect_path(Rect{1, 1, f32(lw - 1), f32(lh - 1)})
 	if !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) { return false }
 	mut result := FilterResult{...new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh},
-		IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer(), color_info: source_info}
+		IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer(), color_info: source_info,
+		transparent_boundary: !source_image || source_padding}
 	local := canvas_affine(layer_transform)
 	local_inverse := affine_invert(local) or { return false }
 	for i, stage in stages {
-		offsets[i] = sk_concat(local, post_translate(local_inverse, stage.offset_x, stage.offset_y))
+		if !source_image { offsets[i] = sk_concat(local, post_translate(local_inverse, stage.offset_x, stage.offset_y)) }
 	}
-	desired := IRect{output.left - padded.left, output.top - padded.top,
-		output.right - padded.left, output.bottom - padded.top}
+	base_x, base_y := if source_image { 0 } else { padded.left }, if source_image { 0 } else { padded.top }
+	if source_image { result = result.translated(padded.left, padded.top) }
+	desired := if source_image { output } else { IRect{output.left - padded.left, output.top - padded.top,
+		output.right - padded.left, output.bottom - padded.top} }
 	graph := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
 		source: result, max_dim: max_dim}
 	value := graph.evaluate(stages.len - 1, desired) or { return false }
@@ -93,7 +94,7 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	}
 	pending << post_color
 	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()),
-		padded.left + result.origin_x, padded.top + result.origin_y, &rc, mode, pending, result.color_info.alpha)
+		base_x + result.origin_x, base_y + result.origin_y, &rc, mode, pending, result.color_info.alpha)
 	return true
 }
 
