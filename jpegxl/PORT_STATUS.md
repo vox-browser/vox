@@ -64,8 +64,18 @@ invalid-configuration and truncated-input checks. Ten translated source/license
 files were verified against the checksummed crate archive. The corpus runner
 checks all completed module tests using V alone.
 
-Remaining work includes streaming/checkpoints, metadata/color headers, ANS
-entropy decoding and context maps, modular prediction/transforms, VarDCT,
+ANS entropy decoding now covers single/two-symbol, uniform and complex
+histograms, repeated/omitted probabilities, alias maps, state renormalization,
+context tables and final-state checks. Frozen comparisons contain 4,096
+header/symbol/state cases (2,559 accepted by the source) and 49,152 one-step
+transitions spanning every alias position for twelve histograms. Values,
+consumed bits and states match exactly; parse error messages are normalized.
+Known single/two-symbol examples, truncation and checksum failures also pass.
+These focused tests run in both GC modes under separate 3 GiB guards, including
+unavailable Rust compiler paths. No source records were changed to obtain a pass.
+
+Remaining work includes streaming/checkpoints, metadata/color headers,
+context maps and the combined symbol/LZ77 reader, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
 integration. The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
