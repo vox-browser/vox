@@ -15,17 +15,30 @@ Source records, clone payloads and Blob URL owners reviewed: 2026-10-05
 | `FileReaderSync.cpp` | `file_reader.v`, `../browserjs/file_reader_sync_array_buffer_darwin.c.v` |
 
 The existing typed package covers immutable owned Blob bytes, blob parts and
-line endings, MIME normalization, slicing, byte streams, BOM-aware decoding, File
+line endings, printable-ASCII type normalization, slicing, byte streams, BOM-aware decoding, File
 state, FileList ordering, blob URL partition checks and environment cleanup,
 and reader state transitions. Standalone FileReader read generations protect
 its compatibility abort/replacement adapter at loadstart and progress. Actual
 Window/Worker readers preserve Source's shared abort Boolean instead. This inventory does not
 establish full source runtime or generated WebIDL binding parity.
 
-Blob/File public constructor MIME parsing now retains the source basic-Latin
-gate, including non-ASCII quoted parameters, tab and DEL rejection. Internal
+Blob/File public constructors now follow File API's printable-ASCII gate and
+ASCII lowercase conversion, including parameter values and non-MIME strings.
+This intentionally differs from the upstream constructor's MIME parsing:
+`"NonParsable"` becomes `"nonparsable"`, and spaces/parameter formatting remain
+intact. Non-ASCII quoted parameters, tab, NUL and DEL are rejected. Internal
 ByteBuffer/Utf16String constructors and deserialization preserve arbitrary raw
 UTF-16 type/name units, immutable storage flags and independently owned bytes.
+See [Blob construction](https://w3c.github.io/FileAPI/#constructorBlob) and
+[File construction](https://w3c.github.io/FileAPI/#file-constructor).
+
+Worker agent startup installs the existing native File and FileList owners
+after Blob, for classic, module and shared workers. File serialization from
+dedicated workers preserves bytes and metadata in the receiving realm.
+Shared-worker constructor exposure is checked through its real connect port;
+shared-port File cloning remains outside that passing check. Public FileReader
+and FileReaderSync bindings, and local MessagePort transfer-list support,
+remain open.
 Compatibility serialization DTO updates check stale raw metadata before reuse.
 
 HTML IPC/LBSC serialization now implements the exact primary Blob/File/FileList

@@ -1155,3 +1155,70 @@ The completed focused production directory and its locks have been removed.
 The official-manifest run remains pinned to its earlier executable and has
 500 records at this checkpoint, with no changed inputs. This focused passing
 cohort does not establish full imported or upstream conformance.
+
+## Worker File/FileList exposure and constructor type normalization
+
+| Commit | Change |
+| --- | --- |
+| `0e81006f3` | Install the existing native File and FileList bindings after Blob in classic, module and shared worker startup. Preserve native Blob inheritance, relevant-realm ownership and dedicated-worker File serialization. |
+| `fd72dbd57` | Follow File API's printable-ASCII gate and ASCII lowercase conversion for Blob/File constructor types, including parameter values and non-MIME strings. Internal native constructors/deserialization keep their raw slots. |
+
+The previous MIME parsing follows the upstream implementation but conflicts
+with the [Blob](https://w3c.github.io/FileAPI/#constructorBlob) and
+[File](https://w3c.github.io/FileAPI/#file-constructor) constructor algorithms.
+The local typed regression expectations are corrected accordingly; original
+WPT files and assertions are unchanged. Both constructors now preserve
+`nonparsable` and formatting while lowercasing the entire printable string.
+NUL, tab, DEL and non-ASCII input still yield an empty type.
+
+**25 distinct focused checks pass in both normal and preallocated-memory
+modes**: 23 typed Blob/File checks and two public worker integration checks.
+The worker checks exercise classic/module constructors, native byte reads,
+serialization into the receiving File owner, survival after worker shutdown,
+and shared-worker constructor exposure through its actual connect port.
+They retain the 10 GiB V limit, 12 GiB compile guards and 3 GiB runtime guards.
+An earlier shared-port File-cloning fixture fails and remains in evidence;
+that transport behavior is not covered by the passing shared-constructor
+check. A duplicate test-function name in the combined owner fixture is corrected
+without dropping any tests. A first native driver attempt lacks the required
+multiprocessing main guard, exits 1 before running WPT, and is retained.
+
+Six unchanged original official File/Blob window/worker variants report
+**544 PASS of 546 assertions** in native Page navigation. Both Blob-slice pages
+pass all 150 assertions; File-constructor passes 51 in Window and 49 in Worker.
+Each Blob-constructor page passes 72 of 73. Their sole remaining assertion
+requires a local MessagePort transfer list and fails with
+`MessagePort transfer requires a worker transport`. Both harnesses finish OK;
+strict native process/outer exits remain 1 for that six-page collection.
+This is a focused partial result, not production or full-suite conformance.
+
+The old pinned broad collection reports only 448 assertions in those same six
+variants, with 310 PASS. The newly exposed worker File constructor allows 98
+additional tests to register: Blob-slice grows from 93 to 150, and File-constructor
+from eight to 49. Passing assertions increase by 234. The first focused collector
+mistakenly expects the old Blob-slice count; its raw result and exit 1 remain
+retained. The derived summary authenticates the unchanged complete 150/150
+payload and successful process exit against the corrected count, without
+recapturing passing pages or changing WPT assertions. A raw rate comparison
+would mix those denominators.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261108-worker-files-fd72dbd57-raw.tar.gz`,
+SHA-256 `ee1fae21e77ded65e4be04b59b5b0fa3330a2aae4f68fa42f8eb343aeb787c5d`.
+Derived summary: `/Users/alex/.cache/vox/wpt/20261108-worker-files-summary.json`,
+SHA-256 `db8ebb441cbcbe7542c891883bb490278ba0a589f532cc280b27622f4cb7af97`.
+Generated C and private profiles are excluded. Completed job output,
+temporary canonical combined tests and their locks are removed after archiving.
+
+A production follow-up waits for a completed image containing all eight
+required binding/implementation hashes from `fd72dbd57`, then checks all six
+official variants with exact expected counts, unchanged harness deadlines and
+strict exits. It retains the two known MessagePort failures instead of reducing
+the selection. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-worker-files-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-worker-files-production-followup.py`,
+SHA-256 `d427f198dfa5eea5adbd4cb1672bdcc16c86c97f93e6e961c2d4842539d5b83f`.
+The shared C-backend build is in progress; no duplicate private production
+bundle is made. The unfiltered 40,139-variant official testharness collection
+continues serially on its original pinned image, with 900 case records and
+unchanged inputs at this checkpoint. FileReader exposure and local MessagePort
+transfer support remain open. **Full WPT coverage and 100% remain unfinished.**
