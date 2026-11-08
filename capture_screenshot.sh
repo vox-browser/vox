@@ -45,7 +45,7 @@ if [ ! -x "$browser" ] \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \
     -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' -o -name '*.h' -o -name '*.rs' -o -name 'Cargo.toml' -o -name 'Cargo.lock' \) ! -name '*_test.v' \
     ! -path "$repo_dir/tools/*" -newer "$browser" -print -quit | grep -q .; then
-    "$repo_dir/build_ladybird.sh"
+    "$repo_dir/build-prod-browser.sh"
 fi
 fi
 if [ ! -x "$browser" ]; then

@@ -19,7 +19,7 @@ have **not** been translated to V; the separate LibJS runtime RegExp objects and
 its partial V regex VM remain unfinished.
 
 Build the offline dependency with `python3 tools/build_regex_backend.py` before
-running V tests in a fresh checkout. `build_ladybird.sh` performs this step
+running V tests in a fresh checkout. `build-prod-browser.sh` performs this step
 automatically. It requires Rust edition 2024 support; `RUSTC` selects the
 compiler. Archives are built under `Build/libregex/{darwin,linux,windows}/` so
 concurrent hosts keep separate link inputs, without reading or linking the
