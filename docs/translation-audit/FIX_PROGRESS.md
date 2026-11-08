@@ -1,6 +1,6 @@
 # Audit fix progress
 
-Tracks implementation against the historical [audit](../../TRANSLATION_AUDIT.md), upstream `963d46a829f3e1b79f44dba9d02afb70654300fa`. Each completed translation slice receives a focused implementation-and-test commit. Findings stay open until all their stated omissions are addressed; a supporting slice does not close a broad finding.
+Tracks implementation against the historical audit of 2026-10-02, upstream `963d46a829f3e1b79f44dba9d02afb70654300fa`. Each completed translation slice receives a focused implementation-and-test commit. Findings stay open until all their stated omissions are addressed; a supporting slice does not close a broad finding.
 
 Current ledger: **32 fixed, 25 partial, 9 open** across 61 core findings and five source boundaries. “Fixed” refers to the stated model or binding scope in the evidence column; it does not certify whole-browser source equivalence. Finding counts are not a percentage of remaining implementation effort.
 

@@ -3,7 +3,6 @@
 Audited 2026-10-02 against Ladybird commit
 `963d46a829f3e1b79f44dba9d02afb70654300fa`. Upstream paths below are relative
 to `/Users/alex/code/3rd/ladybird`; V paths are relative to this repository.
-See [the audit overview](../../TRANSLATION_AUDIT.md) for scope and terminology.
 
 ## Result
 

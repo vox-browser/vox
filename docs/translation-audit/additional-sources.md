@@ -1,6 +1,8 @@
 # Additional large Ladybird sources and translation boundaries
 
-Snapshot and size rule are defined in [the audit overview](../../TRANSLATION_AUDIT.md).
+Audited 2026-10-02 against Ladybird commit
+`963d46a829f3e1b79f44dba9d02afb70654300fa`. The inventory covers tracked
+`.cpp` files containing at least 1,000 physical lines at that snapshot.
 This report inventories **41 production/utility C++ sources outside LibWeb and
 LibJS** and the **17 excluded test/harness sources**. Upstream paths are relative
 to `/Users/alex/code/3rd/ladybird`; V paths are relative to this repository.
