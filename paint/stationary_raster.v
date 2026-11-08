@@ -111,16 +111,24 @@ fn (app &BrowserApp) begin_stationary_document_raster() bool {
 			stationary_document_raster_viewport_eligible(app.paint_commands, app.page_top(),
 				app.ctx.width, app.ctx.height)
 		} else { stationary_document_raster_eligible(app.paint_commands) }
+		mut revision := app.stationary_document_revision()
+		mut generation := app.paint_generation
+		if eligible {
+			if inputs := app.site_stationary_raster_inputs() {
+				revision = inputs[0]
+				generation = inputs[1]
+			}
+		}
 		$if vox_ui2 ? {
 			// UI2 updates separate native views after document replay. Nothing
 			// else draws into this bitmap, so an immutable frame can supply it.
 			return C.native_begin_stationary_raster_snapshot(u64(app.document.unique_id().value()),
-				app.stationary_document_revision(), app.paint_generation, app.scroll_y,
+				revision, generation, app.scroll_y,
 				f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,
 				i32(eligible), 1) != 0
 		}
 		return C.native_begin_stationary_raster(u64(app.document.unique_id().value()),
-			app.stationary_document_revision(), app.paint_generation, app.scroll_y,
+			revision, generation, app.scroll_y,
 			f64(app.page_top()), app.page_zoom, app.overlay_scrollbars.paint_opacity,
 			i32(eligible)) != 0
 	}
