@@ -164,6 +164,7 @@ std::unique_ptr<skgpu::graphite::Context> gpu_context;
 VoxFrameMetalQueue* gpu_frame_queue;
 bool gpu_context_attempted = false;
 bool gpu_context_idle = false;
+bool gpu_scroll_pipelines_prepared = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
 {
@@ -269,6 +270,7 @@ static int retire_graphics_context_locked()
     gpu_context->checkAsyncWorkCompletion();
     clear_region_targets();
     gpu_context.reset();
+    gpu_scroll_pipelines_prepared = false;
     gpu_frame_queue = nil;
     gpu_context_attempted = false;
     return 1;

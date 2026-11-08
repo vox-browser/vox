@@ -129,9 +129,7 @@ void canvas_local_matrix(float const* device, float* local, CanvasTile const& ti
 // them in an interactive scroll. No warm-up pixels enter a document surface.
 void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
 {
-    static bool prepared = false;
-    if (prepared || std::getenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP")) return;
-    prepared = true;
+    if (gpu_scroll_pipelines_prepared || std::getenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP")) return;
     skgpu::graphite::RecorderOptions options;
     options.fGpuBudgetInBytes = 1024 * 1024;
     auto recorder = gpu->makeRecorder(options);
@@ -145,7 +143,9 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
         auto image = source ? SkImages::TextureFromImage(recorder.get(), source, {}) : nullptr;
         if (!image) return;
         for (bool subset : {false, true}) for (int clip = 0; clip < 4; ++clip)
-            for (bool covering : {false, true}) for (bool rotated : {false, true}) {
+            for (bool covering : {false, true}) for (bool rotated : {false, true})
+                for (float opacity : {1.f, .4f}) {
+                if (opacity < 1 && (mask || std::getenv("VOX_DISABLE_SCROLL_OPACITY_PIPELINE_WARMUP"))) continue;
                 auto target = vox_shared_surface(recorder.get(), canvas_info(32, 32));
                 if (!target) return;
                 auto* canvas = target->getCanvas();
@@ -158,7 +158,10 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
                 // draw geometry; warm that analytic-clip pipeline as well.
                 if (rotated) canvas->rotate(17, 16, 16);
                 SkPaint paint;
-                paint.setColor4f({.25f, .5f, .75f, 1}, SkColorSpace::MakeSRGB().get());
+                // Layer opacity selects a different color-image shader from
+                // the A8 mask and opaque-image variants. Covering rounded
+                // clips first expose that variant when a layer scrolls away.
+                paint.setColor4f({.25f, .5f, .75f, opacity}, SkColorSpace::MakeSRGB().get());
                 canvas->drawImageRect(image, subset ? SkRect::MakeXYWH(1, 1, 6, 6) : SkRect::MakeWH(8, 8),
                     covering ? SkRect::MakeLTRB(-16, -16, 48, 48) : SkRect::MakeXYWH(1, 1, 12, 12),
                     SkSamplingOptions(SkFilterMode::kNearest), &paint, SkCanvas::kStrict_SrcRectConstraint);
@@ -170,7 +173,8 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
     skgpu::graphite::InsertRecordingInfo insertion;
     insertion.fRecording = recording.get();
     if (gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess)
-        gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+        gpu_scroll_pipelines_prepared = gpu->submit(
+            skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
 }
 }
 
