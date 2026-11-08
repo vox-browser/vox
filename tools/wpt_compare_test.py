@@ -10,7 +10,7 @@ from urllib.request import ProxyHandler, Request, build_opener
 
 from wpt_compare import (REPORT_SCRIPT, WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
                          group_rss, make_handler, signal_process_group, substitute, summarize,
-                         upstream_testharness)
+                         upstream_testharness, format_report)
 
 HARNESS = ('var settings = { output: !(globalThis.internals && globalThis.internals.headless),\n'
            'harness_timeout:{ "normal":150000, "long":300000 } };\n'
@@ -140,6 +140,10 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(summary['browsers']['vox']['outcomes'], dict(COMPLETE=3, NO_HARNESS=1))
         self.assertEqual(summary['browsers']['brave']['subtest_pass_rate'], 1.0)
         self.assertEqual(summary['launches'], dict(vox=2, brave=1))
+        self.assertFalse(summary['suite_scope']['full_upstream_wpt'])
+        report = format_report(summary, dict(pinned={}, started='now', ladybird_head='abc',
+                                            host_cpus=1, load_start=[], load_end=[]))
+        self.assertIn('not full upstream WPT', report)
 
 
 class ReporterTests(unittest.TestCase):

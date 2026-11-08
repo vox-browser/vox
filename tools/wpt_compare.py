@@ -57,6 +57,13 @@ DOCUMENT_EXTENSIONS = ('.html', '.htm', '.xhtml', '.xht', '.svg')
 HARNESS_STATUSES = ('OK', 'ERROR', 'TIMEOUT', 'PRECONDITION_FAILED')
 SUBTEST_STATUSES = ('PASS', 'FAIL', 'TIMEOUT', 'NOTRUN', 'PRECONDITION_FAILED')
 MESSAGE_LIMIT = 300
+SUITE_SCOPE = dict(
+    name='ladybird-imported-testharness', full_upstream_wpt=False,
+    selection='Ladybird Tests/LibWeb/Text/expected/wpt-import expectations',
+    server='static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration',
+    excluded_types=['reftest', 'print-reftest', 'crashtest', 'wdspec', 'test262',
+                    'aamtest', 'manual', 'visual'],
+    denominator='reported runtime subtests in selected imported files only')
 CONTENT_TYPES = {
     '.html': 'text/html', '.htm': 'text/html', '.xhtml': 'application/xhtml+xml',
     '.xht': 'application/xhtml+xml', '.svg': 'image/svg+xml', '.js': 'text/javascript',
@@ -669,6 +676,7 @@ def summarize(tests, records, chunks):
     largest = sorted(identical, key=lambda pair: pair[1]['document_ms'] - pair[2]['document_ms'],
                      reverse=True)[:25]
     return dict(
+        suite_scope=SUITE_SCOPE,
         tests=len(tests),
         browsers={name: browser_summary(list(results.values())) for name, results in by_browser.items()},
         wall_seconds={name: round(sum(chunk['seconds'] for chunk in chunks if chunk['browser'] == name), 1)
@@ -688,7 +696,10 @@ def format_report(summary, identity):
     vox_digest = next((digest for path, digest in identity['pinned'].items()
                        if path.endswith('/Contents/MacOS/Vox')), None)
     receipt = identity.get('vox_receipt') or {}
-    lines = ['# WPT: Vox vs Brave', '',
+    lines = ['# Imported WPT subset: Vox vs Brave', '',
+             '**Scope: Ladybird-imported testharness subset, not full upstream WPT.** '
+             'The static HTTP server lacks Python handlers, HTTPS, and WPT multi-origin setup. '
+             'Reported subtest percentages apply only to this selected cohort.', '',
              f"Started {identity['started']}, {summary['tests']} tests from Ladybird "
              f"`{identity['ladybird_head'][:12]}` wpt-import; host {identity['host_cpus']} CPUs, "
              f"load {identity['load_start']} → {identity['load_end']}.", '',
@@ -810,6 +821,7 @@ def run(args, tests, browsers, executables):
         pinned[str(executables['brave'])] = sha256(executables['brave'])
     report_root = TEXT_TESTS / 'input' / 'wpt-import'
     identity = dict(
+        suite_scope=SUITE_SCOPE,
         started=time.strftime('%Y-%m-%dT%H:%M:%S%z'), argv=sys.argv,
         ladybird_head=subprocess.run(['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'],
                                      capture_output=True, text=True).stdout.strip(),
