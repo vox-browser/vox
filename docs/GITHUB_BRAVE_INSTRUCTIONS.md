@@ -1,11 +1,10 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **The latest c34 build gives
-19.3602% fewer and misses the conservative gate by 68,738,225 instructions.
-The earlier c26 pass does not establish acceptance for this build.**
+**20% fewer observed instructions** than Brave. **The c35 cohort passes at 20.5406% fewer observed instructions.
+Native checks and the deferred CSS/layout regression batches pass.**
 Acceptance requires seven complete alternating pairs and
-`10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
+`10 * max(Vox) <= 8 * min(Brave)`. Deferred tests start only after a complete passing gate, as requested.
 
 The earlier 10% goal was **met for the pinned c12 frozen-page workload.** Seven
 complete alternating pairs give a conservative maximum-Vox/minimum-Brave ratio
@@ -373,6 +372,88 @@ eligibility diagnostic accidentally launches the older canonical c33 image;
 its absent path messages cannot establish whether c34 executed the shortcut.
 The earlier interrupted readback build has no retained final exit, executable
 or browser samples and is not counted as a completed attempt.
+
+C35 passes the numerical goal on seven complete alternating pairs, including
+the first launch, with fourteen exact per-engine references, complete content
+audits and normal browser exits. Maximum Vox **8,516,462,391** / minimum Brave
+**10,718,007,194** gives ratio **0.79459383** (**20.5406% fewer**).
+The exact integer gate is `85,164,623,910 <= 85,744,057,552`.
+Medians are 8,496,500,426 / 10,775,180,100. Both engines retain the documented
+observed process-tree lower-bound scope; this is a frozen, script-free page
+result, not a live-site or JavaScript-engine result.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,516,462,391 | 10,845,518,580 |
+| 2 | 8,492,779,206 | 10,718,007,194 |
+| 3 | 8,494,282,526 | 10,785,112,055 |
+| 4 | 8,496,500,426 | 10,763,185,089 |
+| 5 | 8,494,839,749 | 10,769,320,187 |
+| 6 | 8,502,605,980 | 10,786,216,055 |
+| 7 | 8,502,140,509 | 10,775,180,100 |
+
+Executable `f30a1422ea5f2c1e8ead9cd46cef0f80c653d2fd7c6c92da2ccf3cdab4fb2d9b`,
+receipt `20261108-201049-3f8c6d33`, uses the same single-C-unit O3/1500
+policy. Build guard exits 0, peak RSS 12,225,347,584 bytes; benchmark/guard
+exits 0, peak RSS 1,203,404,800 bytes. Its completed staging image was pinned
+through acceptance and native validation. A held canonical reader lease and
+newer request subsequently superseded the unpublished staging app; the shared
+bundle remains c33. The result is scoped to this pinned c35 executable.
+Local raw evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c35.json`.
+
+C35 pins Brave Chrome **157.0.8103.39**, V8 **15.7.112.23**, executable
+`4772b8898cc23f044c134b75a494ddc9053f58d5ea8cd1acb6f60762292df513`.
+Its replay-cache fingerprint is
+`10f7ec6b9e40c926ea81afc1447e07f1c8382fadd64339db159b6cc33055e73e`;
+HTML and both reference hashes remain unchanged from the earlier restored input.
+Fresh private profiles/page caches are used; OS filesystem/shader caches remain
+retained. The hardware counter is `proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions`
+for both observed process trees. Exact ownership omissions, host load/timestamps,
+native-library identities and commands remain in the local receipt.
+
+A separate matched ABBA comparison disables only exact component-source copies
+and borrowed declaration-span scanning. Controls use 8,633,509,790 and
+8,680,375,806 instructions; candidates use 8,509,999,884 and 8,500,668,622.
+Pair savings are **123,509,906** and **179,707,184** (median **151,608,545**),
+with four exact captures, complete content audits, normal exits and unchanged
+pinned inputs. These two pairs attribute a native saving to the combined paths;
+they do not replace the seven-pair acceptance cohort. Separate diagnostic
+messages confirm execution of both paths, all extended inline-root kinds,
+stable marker text, bulk CSS probes and boxed calculation metadata.
+
+The gate receipt is written at `2026-11-08T17:25:43.096294+00:00` before
+deferred checks start. The 50 build-tool checks pass (two skips), as do the
+native headless smoke, worker self-check and eleven screenshot cases under
+existing bounds. The first focused CSS build catches a missing optional unwrap
+in a new assertion; that test is corrected without changing engine code.
+The final assertion-enabled batches pass in both Boehm and preallocation/no-GC
+modes: **246 focused CSS cases across 48 files**, **231 broader CSS cases
+across 47 files**, and **89 layout cases across 20 files**. These batches overlap;
+the counts are not a sum of distinct tests. Counts come from the executed
+binaries' test symbols, with source-component and assembled-batch hashes
+recorded before compilation. No standalone parsed test-source manifest is claimed.
+
+Further test-only corrections replace an obsolete relative-size assertion with
+independent 208-byte ceilings, amortize GC allocation bookkeeping over 256
+constructors with the same 16-byte per-constructor allowance, and fix new layout
+fixture syntax, integer construction and inside-marker sizing assumptions.
+Every failure is retained locally. The fourteen candidate engine files still
+match c35's parsed-buffer manifest after these test-only corrections.
+The ordinary production builder's
+required startup smoke precedes its ready marker and is distinct from these
+deferred suites.
+
+The completed changes are committed on master: bulk input probes
+`5f3fcfa91`, calculation metadata `d94508120`, source copying/declaration scanning
+`dd3323bb7` / `8532570f3`, disposable inline roots `d46c95bda`, stable marker
+text `484840b35`, build-input filtering `a902b0d4e`, and allocation-check
+stabilization `2b3ad9f6c`. Replay HTML, response bodies and unchanged reference
+PNGs are retained locally under
+`docs/benchmark-results/github-vlang-20pct-inputs-20261108`; no browser bundles,
+repository tools or generated C are copied there. The scratch job, temporary
+probe sources and per-job guard files have been removed; structured receipts
+remain local under `docs/performance/github-vlang-20pct-local-records-20261108`.
 
 ## Workload and scope
 
