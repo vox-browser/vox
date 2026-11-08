@@ -971,3 +971,78 @@ request uses the C backend because the fastc attempt fails on a missing legacy
 OS header. r17 remains on its original pinned image and has collected 5,400 of
 6,828 cases at this checkpoint, with no changed runner/bundle inputs.
 **Neither the larger imported cohort nor full upstream WPT is at 100%.**
+
+## MathML interfaces, native clipboard events, and the partial r17 collection
+
+The next slices are committed independently:
+
+| Commit | Change |
+| --- | --- |
+| `4821b88b6` | Expose MathMLElement and shared element event-handler descriptors; compile SVG/MathML handler attributes into native slots. Preserve namespace and receiver brands, dataset identity, signed 32-bit tabIndex conversion and native default indices. |
+| `a538e472a` | Make native DragEvent regression assertions compare ownership by pointer identity instead of recursively comparing complete owner graphs. |
+| `491fe78fa` | Expose Window-only ClipboardEvent through the native event binding, with the existing native ClipboardEvent record and DataTransfer identity registry. Preserve dictionary conversion order, author exceptions, subclassing and native dispatch. |
+
+**40 distinct focused checks pass in both normal and preallocated-memory
+modes**: 37 application/native-binding checks and three DOM checks. The final
+combined application test compilation peaks at 6,109,872,128 bytes normally
+and 6,113,001,472 bytes with preallocation, below the unchanged 12 GiB guard.
+V retains its 10 GiB compiler limit; focused execution retains 3 GiB.
+Earlier browserjs-module compilation attempts exceed those existing limits;
+they are failures, retained with their diagnostics. Profiling identifies the
+module-wide generic-body checking pass. Exercising these public native APIs
+from the application test module avoids that expansion, without disabling
+compiler checks or selecting a compatibility compiler. The pointer assertion
+correction alone does not resolve the compilation memory failure.
+
+The four unchanged original MathML pages now pass **672 / 672 assertions**:
+global handlers 375, clipboard handlers nine, and tabIndex cases 64 and 224.
+Before ClipboardEvent is exposed, the clipboard page passes only six of nine;
+that failed collection is retained. The final collection also repeats the
+nine SVG/accessibility pages above: all **13 original pages pass
+9,880 / 9,880 assertions**, with exact expected counts, harness OK, strict
+driver/outer exits 0 and unchanged pinned inputs. Its native Page executable
+is SHA-256 `49789acc2388f96cf6a52b4cf665c69bea53e1bccda88c7f6aa7e57c0eb5ea29`.
+This is focused native Page evidence, not a production or full-suite result.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261108-mathml-clipboard-491fe78fa-raw.tar.gz`,
+SHA-256 `2ea81eda6ec3a80eb84b35ed1f4f41aa05570c451948f8c70340e3f35f4ef6b5`.
+Summary: `/Users/alex/.cache/vox/wpt/20261108-mathml-clipboard-summary.json`,
+SHA-256 `1308163fa2eb031c4f5f9d6f023e2de8de5314339a0cc22bcd65783825052c3a`.
+Generated C is excluded; completed job output, temporary canonical combined
+tests and locks have been removed after archiving.
+
+r17 has stopped after **6,452 of 6,828 cases**. Its runner aborts because
+`vox-064-005` cannot complete the warm-up (`NO_DOCUMENT`), with strict
+runner/outer exits 1. The partial records contain **244,380 PASS of 299,872
+reported subtests**, alongside 54,511 FAIL, 239 TIMEOUT, 732 NOTRUN and ten
+PRECONDITION_FAILED. There are 11 memory-limited cases, 31 crashes, six hard
+timeouts, 65 cases without a harness and three without a document. No changed
+runner/bundle inputs or unexpected POSTs are observed. These counts describe
+an incomplete diagnostic collection and cannot establish a full-suite rate
+or a regression relative to another run's denominator. r17 uses executable
+`8fe20c9aaaa506da42672d47f1f1ffc087fce78f44290e68f14e62d00a1b90de`,
+which lacks the latest XML, MathML and clipboard changes.
+Its archived raw evidence is `/Users/alex/.cache/vox/wpt/20261108-r17-raw.tar.gz`,
+SHA-256 `efbe3f633080a1ec73bd7d3ddf74cbe4b6c7171484b5a9500ebfb60ee18b76dd`;
+the completed Build directory is removed.
+
+Production validation waits for a completed image containing the committed
+implementation hashes. In addition to the existing nine-page SVG/XML check,
+the new observer requires all four MathML pages and 11 original SVG
+source-switch/paint-server mutation reftests, with unchanged references and
+exact zero-pixel tolerance. It checks the completed bundle in place under a
+read lease and launches fresh processes. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-mathml-clipboard-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-mathml-clipboard-production-followup.py`,
+SHA-256 `1d21ab4f2cb0b2aadddd0d56c28742d37d02cfc7b75d56b8e46679344becb597`.
+
+r18 is prepared to collect all 6,828 imported cases serially after both strict
+production gates pass and a matching published image is available. It retains
+the existing 4 GiB browser/12 GiB outer budgets and unchanged harness deadlines.
+Status/completion: `/Users/alex/.cache/vox/wpt/20261108-r18-{status,completion}.json`.
+Supervisor: `/Users/alex/.cache/vox/wpt/20261108-r18-supervisor.py`, SHA-256
+`04511d82dd96c8e5232821076ee91b04a7f707ed62497f64a4350761518f8beb`.
+At this checkpoint production and pixel validation are pending, and r18 has
+not begun collection. The official full upstream checkout remains available;
+its complete manifest is not yet integrated into execution. **Neither the
+larger imported set nor full upstream WPT has reached 100%.**
