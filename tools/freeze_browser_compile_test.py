@@ -172,6 +172,38 @@ class FrozenCompilerExecutionTests(unittest.TestCase):
                     freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt', output,
                                    run=preprocess, source_manifest=sources, source_inventory=inventory)
 
+    def test_verified_parsed_buffers_survive_edits_through_native_sealing_and_publication(self):
+        import production_source_manifest as manifest
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage, receipt, before, data, output = self.fixture(root)
+            shutil.rmtree(receipt / 'frozen-compiler-inputs')
+            subprocess.run(['git', 'init', '-q', '-b', 'master', str(root)], check=True)
+            (root / '.gitignore').write_text('/stage/\n/receipt/\n')
+            engine = root / 'engine.v'
+            engine.write_text('module main\n')
+            inventory = manifest.begin(root)
+            component = receipt / 'browser-sources'
+            component.mkdir()
+            (component / 'v_sources').write_bytes(str(engine).encode())
+            (component / 'v_source_digests').write_bytes(freeze.digest(engine).encode())
+            build.write_json(component / 'parsed-verified.json', dict(protocol='verified-parsed-buffers-v1',
+                             sources={str(engine): freeze.digest(engine)}))
+            engine.write_text('edited after compiler parsed immutable buffers')
+            sources = manifest.combine(root, inventory, [component], parsed=True)
+            with patch.object(build, 'repository_state', return_value=dict(head='later', build_inputs_sha256='later')):
+                data = freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt', output,
+                                      source_manifest=sources, source_inventory=inventory, source_components=[component])
+            self.assertEqual(data['source_inputs'], before)
+            self.assertEqual(data['source_inputs_at_sealing']['source_kind'],
+                             'verified parsed buffers and sealed native inputs')
+            self.assertNotEqual(data['source_inputs_at_sealing']['build_inputs_sha256'], 'later')
+            self.finish(receipt, before, data)
+            self.assertEqual(subprocess.check_output([str(output)], text=True).strip(), '12')
+            (component / 'parsed-verified.json').write_text('mutated proof')
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                freeze.validate(receipt, before)
+
     def test_mutated_generated_input_packaging_tool_or_resource_rejects_the_result(self):
         for target in ['preprocessed', 'tool', 'resource', 'entitlements']:
             with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:

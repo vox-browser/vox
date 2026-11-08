@@ -190,16 +190,23 @@ def seal_object(source, destination):
 
 
 def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', run=subprocess.run,
-            source_manifest=None, source_inventory=None):
+            source_manifest=None, source_inventory=None, source_components=None):
     from rebuild_browser import repository_state, same_build_inputs, write_json
     root, stage, receipt = map(lambda value: Path(value).resolve(), (root, stage, receipt))
     source, flags_path, output = map(lambda value: Path(value).resolve(), (source, flags_path, output))
     before = json.loads((receipt / 'inputs-before.json').read_text())
+    def check_sources():
+        if source_components:
+            from production_source_manifest import combine
+            if combine(root, source_inventory, source_components, parsed=True) != source_manifest:
+                raise RuntimeError('Parsed source proof does not match compiler inputs')
+        else:
+            check_fingerprints(source_manifest)
     if source_inventory is not None:
         from production_source_manifest import validate_inventory
-        validate_inventory(root, source_inventory)
+        validate_inventory(root, source_inventory, parsed=bool(source_components))
     if source_manifest is not None:
-        check_fingerprints(source_manifest)
+        check_sources()
     elif not same_build_inputs(before, repository_state(root)):
         raise RuntimeError('Repository inputs changed before C preprocessing')
     cwd = Path.cwd()
@@ -233,11 +240,14 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
                                    root / 'tools/localize_bundle_rpaths.py', compiler_path]
     live_inputs = fingerprint(late + [Path(name) for name in libraries.values()])
     sealed_inputs = fingerprint([source, flags_path] + list(frozen.iterdir()))
+    if source_components:
+        sealed_inputs.update(fingerprint([directory / name for directory in source_components
+                                          for name in ['v_sources', 'v_source_digests', 'parsed-verified.json']]))
     after = repository_state(root)
     if source_inventory is not None:
-        validate_inventory(root, source_inventory)
+        validate_inventory(root, source_inventory, parsed=bool(source_components))
     if source_manifest is not None:
-        check_fingerprints(source_manifest)
+        check_sources()
     elif not same_build_inputs(before, after):
         raise RuntimeError('Repository inputs changed while sealing compiler inputs')
     command = [str(compiler_path), '-x', preprocessed[str(source)][1], preprocessed[str(source)][0], '-x', 'none']
@@ -262,6 +272,14 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
     if source_manifest is not None:
         result['exact_source_manifest'] = source_manifest
         result['source_inputs_at_sealing'] = after
+        if source_components:
+            # This identity describes the consumed buffers, which may precede
+            # later checkout edits. Never call the later checkout the compiled
+            # source. Its ordinary repository receipt remains informational.
+            result['repository_at_sealing'] = after
+            result['source_inputs_at_sealing'] = dict(head=after['head'], dirty=True,
+                source_kind='verified parsed buffers and sealed native inputs',
+                build_inputs_sha256=hashlib.sha256(json.dumps(source_manifest, sort_keys=True).encode()).hexdigest())
     if source_inventory is not None:
         result['source_inventory'] = source_inventory
     write_json(receipt / 'frozen-compile.json', result)
@@ -296,12 +314,16 @@ def main():
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--source-manifest', type=Path)
     parser.add_argument('--source-inventory', type=Path)
+    parser.add_argument('--parsed-component', action='append', type=Path)
     args = parser.parse_args()
     if bool(args.source_manifest) != bool(args.source_inventory):
         parser.error('source manifest and source inventory must be supplied together')
+    if args.parsed_component and not args.source_manifest:
+        parser.error('parsed components require source manifest and inventory')
     data = prepare(args.root, args.stage, args.receipt, args.source, args.flags, args.output,
                    source_manifest=json.loads(args.source_manifest.read_text()) if args.source_manifest else None,
-                   source_inventory=json.loads(args.source_inventory.read_text()) if args.source_inventory else None)
+                   source_inventory=json.loads(args.source_inventory.read_text()) if args.source_inventory else None,
+                   source_components=args.parsed_component)
     validate(args.receipt, data['source_inputs'], require_complete=False)
     result = subprocess.run(data['compiler_command'], cwd=data['cwd'])
     data.update(compiler_exit=result.returncode, complete=result.returncode == 0)

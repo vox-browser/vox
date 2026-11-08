@@ -432,7 +432,10 @@ if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 # helper symbols. Do not initialize their unused native libraries at startup.
 export V_MACOS_V3_SOURCE_MANIFEST=1
 export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
-"$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
+python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+    --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+    --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
+    --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
@@ -475,12 +478,17 @@ if [ ! -f "$compile_dir/Vox" ]; then
     mkdir -p "$generated_dir"
     export V_MACOS_V3_SOURCE_MANIFEST=1
     export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
+    compile_browser_v() {
+        python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+            --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+            --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@"
+    }
     if [ -n "$extra_ldflags" ]; then
-        "$v_compiler" "$@" \
+        compile_browser_v "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
             -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
     else
-        "$v_compiler" "$@" \
+        compile_browser_v "$@" \
             -cflags "$extra_cflags" \
             -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
     fi
@@ -490,13 +498,15 @@ if [ ! -f "$compile_dir/Vox" ]; then
        [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
         # A compiler without manifest support retains the whole-tree check.
         # Partial manifests fail in combine rather than weakening verification.
-        python3 "$repo_dir/tools/production_source_manifest.py" combine --root "$repo_dir" \
+        python3 "$repo_dir/tools/production_source_manifest.py" combine --parsed --root "$repo_dir" \
             --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
             --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
             --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
             --output "$VOX_BUILD_RECEIPT_DIR/source-manifest.json"
         set -- "$@" --source-manifest "$VOX_BUILD_RECEIPT_DIR/source-manifest.json" \
-            --source-inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json"
+            --source-inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+            --parsed-component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
+            --parsed-component "$VOX_BUILD_RECEIPT_DIR/browser-sources"
     fi
     python3 "$repo_dir/tools/freeze_browser_compile.py" "$@"
 fi
