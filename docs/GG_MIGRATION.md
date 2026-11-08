@@ -1312,3 +1312,25 @@ declines. See the [identity-blur receipt](gg-migration/identity-image-blurs-2026
 Identity lists without color matrices, nearly integer deferred mappings,
 scaled shadow foregrounds and the previously listed graph/native work remain
 open. The browser still links Skia.
+
+
+### Source-image identity blurs without color matrices (2026-11-08)
+
+Integer source images now also restore all-identity blur lists when no color
+matrix remains. Paint alpha stays in the raster pipeline, while unfiltered
+full-alpha draws retain the native legacy eligibility. Linear mipmap sampling
+correctly declines the legacy bitmap context and uses the raster pipeline.
+Six new native fixtures cover these routes, including downsampling, P3,
+unpremultiplied pixels, flips, clearing blends and fractional translations.
+
+All 20,000 attempts are supported and exact on both macOS and Linux at seed
+20261108, and in production mode at seed 20261109. The original Linux
+filtered-image corpus matches 15,427 supported draws. All 27 CPU raster files,
+canvas integration and focused Linux production tests pass; the FMA audit
+reports zero contracted operations. The full canonical Linux typecheck also
+passes with Skia available. Counts include no-ops. See the
+[identity-sampling receipt](gg-migration/identity-image-sampling-20261108.json).
+
+Nearly integer deferred mappings, scaled shadow foregrounds and the previously
+listed graph/native work remain open. The browser still links Skia; a full
+Skia-free browser compile/link/run remains unverified.
