@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 180
     env:
       V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
       UI2_REVISION: 846659299558061cf0de063f029a9f9b941ff9a1
@@ -39,6 +39,8 @@ jobs:
         run: |
           python3 tools/build_linux_browser_test.py
           python3 tools/rebuild_browser_test.py
+          python3 tools/prepare_ui2_test.py
+          python3 tools/prepare_linux_modules_test.py
 
       - name: Install Linux dependencies
         run: |
@@ -118,6 +120,31 @@ jobs:
           sh build-prod-browser.sh
           test -x Build/linux/vox
 
+      - name: Check parser script lifecycles
+        timeout-minutes: 60
+        run: |
+          # Compile each focused case under the build budget. The runner gives
+          # each executable its own 3 GiB runtime guard and preserves its log.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-parser-tests.lock" \
+            --report "$RUNNER_TEMP/vox-parser-tests.json" --timeout 3000 -- \
+            python3 tools/test_linux_native.py \
+              html/parser_script_lifecycle_test.v \
+              script/parser_lifecycle_test.v \
+              document/child_parser_lifecycle_test.v \
+              resources/parser_script_requests_test.v \
+              resources/tokenized_preloads_test.v \
+              resources/external_scripts_test.v \
+              compact/document_write_test.v \
+              compact/named_elements_test.v
+          # Parser resumption can run inside a temporary frame arena. Exercise
+          # its retained document storage with the production allocator too.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-parser-storage-tests.lock" \
+            --report "$RUNNER_TEMP/vox-parser-storage-tests.json" --timeout 480 -- \
+            python3 tools/test_linux_native.py --gc prealloc \
+              html/native_scripted_tokenizer_storage_test.v
+
       - name: Show build and smoke receipts
         if: always()
         run: |
@@ -127,8 +154,10 @@ jobs:
 
           temporary = Path(os.environ['RUNNER_TEMP'])
           paths = [temporary / name for name in ('vox-v-build.json', 'vox-skia-build.json',
-                                                    'vox-native-build.json', 'vox-skia-test.json')]
+                                                    'vox-native-build.json', 'vox-skia-test.json',
+                                                    'vox-parser-tests.json', 'vox-parser-storage-tests.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
+          paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/production-build/receipts').glob('*'))
           for receipt in receipts[-1:]:
               paths.extend(receipt / name for name in (
