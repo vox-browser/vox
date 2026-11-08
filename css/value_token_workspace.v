@@ -36,55 +36,52 @@ fn own_value_components(components []ComponentValue) []ComponentValue {
 }
 
 fn own_value_component(component ComponentValue) ComponentValue {
-	match component.value {
-		&Token {
-			token := component.token()
-			return ComponentValue{
-				value: ComponentValuePayload(&Token{
-					...token
-					value: token.value.clone()
-					// Typed values never retain whitespace. Unresolved values
-					// separately own their entire component tree.
-					original_source_text_: if token.is(.whitespace) {
-						token.original_source_text_
-					} else { token.original_source_text_.clone() }
-				})
-				attr_tainted: component.attr_tainted
-			}
+	if component.value is &Token {
+		token := component.token()
+		return ComponentValue{
+			value: ComponentValuePayload(&Token{
+				...token
+				value: token.value.clone()
+				// Typed values never retain whitespace. Unresolved values
+				// separately own their entire component tree.
+				original_source_text_: if token.is(.whitespace) {
+					token.original_source_text_
+				} else { token.original_source_text_.clone() }
+			})
+			attr_tainted: component.attr_tainted
 		}
-		&Function {
-			function := component.function()
-			children := own_value_components(function.value)
-			return ComponentValue{
-				value: ComponentValuePayload(&Function{
-					...function
-					name: function.name.clone()
-					name_token: own_stylesheet_token(function.name_token)
-					end_token: own_stylesheet_token(function.end_token)
-					value: children
-				})
-				attr_tainted: component.attr_tainted
-			}
+	} else if component.value is &Function {
+		function := component.function()
+		children := own_value_components(function.value)
+		return ComponentValue{
+			value: ComponentValuePayload(&Function{
+				...function
+				name: function.name.clone()
+				name_token: own_stylesheet_token(function.name_token)
+				end_token: own_stylesheet_token(function.end_token)
+				value: children
+			})
+			attr_tainted: component.attr_tainted
 		}
-		&SimpleBlock {
-			block := component.block()
-			children := own_value_components(block.value)
-			return ComponentValue{
-				value: ComponentValuePayload(&SimpleBlock{
-					...block
-					token: own_stylesheet_token(block.token)
-					end_token: own_stylesheet_token(block.end_token)
-					value: children
-				})
-				attr_tainted: component.attr_tainted
-			}
+	} else if component.value is &SimpleBlock {
+		block := component.block()
+		children := own_value_components(block.value)
+		return ComponentValue{
+			value: ComponentValuePayload(&SimpleBlock{
+				...block
+				token: own_stylesheet_token(block.token)
+				end_token: own_stylesheet_token(block.end_token)
+				value: children
+			})
+			attr_tainted: component.attr_tainted
 		}
-		RawComponentValue {
-			return ComponentValue{
-				value: ComponentValuePayload(RawComponentValue{text: component.value.text.clone()})
-				attr_tainted: component.attr_tainted
-			}
+	} else if component.value is RawComponentValue {
+		return ComponentValue{
+			value: ComponentValuePayload(RawComponentValue{text: component.value.text.clone()})
+			attr_tainted: component.attr_tainted
 		}
-		GuaranteedInvalidValue { return component }
+	} else if component.value is GuaranteedInvalidValue {
+		return component
 	}
+	panic('invalid CSS component payload')
 }

@@ -18,13 +18,13 @@ mut:
 	closed     bool
 }
 
-__global native_font_fetch_transport_ ?&NativeFontFetchTransport
+__global native_font_fetch_transport_ ?&NativeFontFetchTransport = none
 
 // The browser owns its persistent resource cache. Fetch still owns request
 // filtering, CORS checks and completion on the document's task destination.
 pub type NativeFontResponseCacheProvider = fn (&fetch.Request) ?&fetch.Response
 
-__global native_font_response_cache_provider_ ?NativeFontResponseCacheProvider
+__global native_font_response_cache_provider_ ?NativeFontResponseCacheProvider = none
 
 pub fn install_native_font_response_cache_provider(provider ?NativeFontResponseCacheProvider) {
 	native_font_response_cache_provider_ = provider

@@ -28,16 +28,18 @@ fn (host &CryptoHost) supports_normalize(operation string, algorithm voidptr) !w
   'sign','verify' { host.normalize_signature(algorithm, object, operation)! }
   'digest' { host.normalize_digest(algorithm, object)! }
   'deriveBits' { host.normalize_derivation(algorithm, object)! }
-  else {
+  else { host.supports_named_algorithm(operation, algorithm, object)! }
+ }
+}
+
+fn (host &CryptoHost) supports_named_algorithm(operation string, algorithm voidptr, object bool) !webidl.Value {
    dictionary := host.algorithm_dictionary(algorithm, object)!
    host.runtime.retain_javascript_value(dictionary)!
    defer { host.runtime.release_javascript_value(dictionary) }
    initial := host.runtime.binding_property(dictionary, 'name')!
    if C.JSValueIsUndefined(host.runtime.context, initial) { return error('TypeError: Missing algorithm name') }
    name := webcrypto.normalize_an_algorithm(host.algorithm_string(initial)!, operation)!
-   webcrypto.create_algorithm_dictionary(name)
-  }
- }
+   return webcrypto.create_algorithm_dictionary(name)
 }
 
 fn (host &CryptoHost) check_crypto_support(operation string, algorithm voidptr, length ?u32) bool {

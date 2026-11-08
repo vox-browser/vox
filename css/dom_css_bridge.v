@@ -526,7 +526,7 @@ pub:
 // URL instead of flattening their text into the importing sheet.
 pub type RemoteStyleSheetLoader = fn (&dom.Document, string) ?ImportedStyleSheetSource
 
-__global remote_style_sheet_loader_ ?RemoteStyleSheetLoader
+__global remote_style_sheet_loader_ ?RemoteStyleSheetLoader = none
 
 pub fn install_remote_style_sheet_loader(loader ?RemoteStyleSheetLoader) {
 	remote_style_sheet_loader_ = loader
@@ -1188,7 +1188,11 @@ pub fn document_css_animations(document &dom.Document) []DocumentCSSAnimation {
 			}
 		}
 	}
-	transitions.sort(a.global_animation_list_order_ < b.global_animation_list_order_)
+	transitions.sort_with_compare(fn (a &&CSSTransition, b &&CSSTransition) int {
+		if a.global_animation_list_order_ < b.global_animation_list_order_ { return -1 }
+		if a.global_animation_list_order_ > b.global_animation_list_order_ { return 1 }
+		return 0
+	})
 	mut result := []DocumentCSSAnimation{cap: transitions.len}
 	for transition in transitions {
 		target := transition_targets[voidptr(transition)] or { continue }

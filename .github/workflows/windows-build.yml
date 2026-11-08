@@ -4,12 +4,12 @@ name: Windows build (scaffolding)
 # Windows checkout is still blocked by pixel_tests fixture names that are
 # illegal on Windows (see issue #8), so this runs on Linux: it verifies the
 # pinned sources, syntax-checks the touched helper, and exercises the
-# x.imp build script end to end through `v run build.v --help`.
+# x.imp build script end to end through `v run build_browser.vsh --help`.
 on:
   push:
     branches: [master]
     paths:
-      - build.v
+      - build_browser.vsh
       - .github/workflows/windows-build.yml
       - tools/build_regex_backend.py
       - packaging/version.txt
@@ -17,7 +17,7 @@ on:
       - docs/WINDOWS.md
   pull_request:
     paths:
-      - build.v
+      - build_browser.vsh
       - .github/workflows/windows-build.yml
       - tools/build_regex_backend.py
       - packaging/version.txt
@@ -53,4 +53,4 @@ jobs:
           "$RUNNER_TEMP/v/v" version
 
       - name: Show x.imp build flows
-        run: '"$RUNNER_TEMP/v/v" run build.v --help'
+        run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'

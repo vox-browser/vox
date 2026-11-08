@@ -52,7 +52,8 @@ fn retain_chromium_border_color(mut commands []PaintCommand, start int, handle v
 	widths BoxEdges, colors BoxColors, styles BoxBorderStyles, radii BoxRadii) {
 	if start >= commands.len { return }
 	retain_chromium_dashed_border_color(mut commands, start, handle, widths, colors, styles)
-	partial := commands[start..].any(it.kind == 'paint_partial_rounded_border')
+	remaining := commands[start..]
+	partial := remaining.any(it.kind == 'paint_partial_rounded_border')
 	color := chromium_border_srgb_color_with_alpha(handle, widths, colors, styles, partial)
 	if color == unsafe { nil } { return }
 	for index in start .. commands.len {

@@ -91,8 +91,8 @@ fn (mut app BrowserApp) prepare_overlay_scrollbars() {
 		&& app.overlay_scrollbars.active {
 		$if macos {
 			if app.ctx != unsafe { nil } && app.ctx.native_rendering {
-				app.schedule_overlay_scrollbar_wake(now, app.overlay_scrollbars.last_activity_ns
-					+ overlay_scrollbar_hold_ns - now)
+				delay := app.overlay_scrollbars.last_activity_ns + overlay_scrollbar_hold_ns - now
+				app.schedule_overlay_scrollbar_wake(now, delay)
 			}
 		}
 	}

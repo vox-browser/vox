@@ -107,19 +107,19 @@ const contact_autofill_fields = ['tel', 'tel-country-code', 'tel-national', 'tel
 fn determine_a_field_category(field string) CategoryAndMaximumTokens {
 	lowercase_field := ascii_lowercase_string(field)
 	if lowercase_field == 'off' {
-		return CategoryAndMaximumTokens{.off, uint(1)}
+		return CategoryAndMaximumTokens{category: AutofillCategory.off, maximum_tokens: uint(1)}
 	}
 	if lowercase_field == 'on' {
-		return CategoryAndMaximumTokens{.automatic, uint(1)}
+		return CategoryAndMaximumTokens{category: AutofillCategory.automatic, maximum_tokens: uint(1)}
 	}
 	if lowercase_field in normal_autofill_fields {
-		return CategoryAndMaximumTokens{.normal, uint(3)}
+		return CategoryAndMaximumTokens{category: AutofillCategory.normal, maximum_tokens: uint(3)}
 	}
 	if lowercase_field in contact_autofill_fields {
-		return CategoryAndMaximumTokens{.contact, uint(4)}
+		return CategoryAndMaximumTokens{category: AutofillCategory.contact, maximum_tokens: uint(4)}
 	}
 	if lowercase_field == 'webauthn' {
-		return CategoryAndMaximumTokens{.credential, uint(5)}
+		return CategoryAndMaximumTokens{category: AutofillCategory.credential, maximum_tokens: uint(5)}
 	}
 	return CategoryAndMaximumTokens{}
 }

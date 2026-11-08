@@ -2,7 +2,7 @@
 
 // Unified Vox build entrypoint.
 //
-// `v run build.v` builds the browser for the current host through x.imp
+// `v run build_browser.vsh` builds the browser for the current host through x.imp
 // flows. macOS and Linux delegate to their existing shell builders; the
 // Windows `browser` flow reports that the native build is not supported
 // yet. See docs/WINDOWS.md for the release plan.

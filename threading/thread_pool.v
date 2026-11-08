@@ -16,7 +16,7 @@ fn C.vox_thread_pool_signal(state voidptr)
 fn C.vox_thread_pool_set_name(name &char)
 
 __global (
-	thread_pool_                      ?&ThreadPool
+	thread_pool_                      ?&ThreadPool = none
 	thread_pool_initialization_mutex_ = sync.new_mutex()
 )
 

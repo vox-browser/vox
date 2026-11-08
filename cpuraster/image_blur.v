@@ -113,12 +113,16 @@ fn store_pixel(mut px []u8, index int, value u32) {
 
 // GaussianPass: a ring of the window's source pixels as floats, convolved
 // with Compute1DBlurKernel()'s normalized kernel.
+type BlurFloatPixel = [4]f32
+
+type BlurUintPixel = [4]u32
+
 struct GaussianBlurPass {
 	border int
 	window int
 	kernel []f32
 mut:
-	ring [][4]f32
+	ring []BlurFloatPixel
 	base int
 }
 
@@ -129,7 +133,7 @@ fn new_gaussian_blur_pass(sigma f32) GaussianBlurPass {
 		border: radius
 		window: width
 		kernel: blur_kernel_1d(sigma, radius)
-		ring:   [][4]f32{len: width}
+		ring:   []BlurFloatPixel{len: width}
 	}
 }
 
@@ -233,10 +237,10 @@ struct ThreeBoxBlurPass {
 	b2  int
 	end int
 mut:
-	buffer [][4]u32
-	sum0   [4]u32
-	sum1   [4]u32
-	sum2   [4]u32
+	buffer []BlurUintPixel
+	sum0   BlurUintPixel
+	sum1   BlurUintPixel
+	sum2   BlurUintPixel
 	c0     int
 	c1     int
 	c2     int
@@ -258,15 +262,17 @@ fn new_three_box_blur_pass(window int) ThreeBoxBlurPass {
 		b1:      b1
 		b2:      b2
 		end:     end
-		buffer:  [][4]u32{len: end}
+		buffer:  []BlurUintPixel{len: end}
 	}
 }
 
 fn (mut p ThreeBoxBlurPass) start() {
-	p.sum0 = [u32(0), 0, 0, 0]!
-	p.sum1 = [u32(0), 0, 0, 0]!
 	h := p.divider.half
-	p.sum2 = [h, h, h, h]!
+	for c in 0 .. 4 {
+		p.sum0[c] = 0
+		p.sum1[c] = 0
+		p.sum2[c] = h
+	}
 	for i in 0 .. p.buffer.len {
 		p.buffer[i] = [u32(0), 0, 0, 0]!
 	}

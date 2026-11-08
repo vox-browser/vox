@@ -74,10 +74,13 @@ fn (mut binding CompactElementQueryBinding) text_selection_query(key string, sou
 	}
 	start := text.selection_start_binding()
 	end := text.selection_end_binding()
+	start_value := if index := start { json2.Any(i64(index)) } else { json2.Any(json2.Null{}) }
+	end_value := if index := end { json2.Any(i64(index)) } else { json2.Any(json2.Null{}) }
+	direction_value := if current := text.selection_direction() { json2.Any(current) } else { json2.Any(json2.Null{}) }
 	return json2.encode({
-		'start':     if index := start { json2.Any(i64(index)) } else { json2.Any(json2.Null{}) }
-		'end':       if index := end { json2.Any(i64(index)) } else { json2.Any(json2.Null{}) }
-		'direction': if current := text.selection_direction() { json2.Any(current) } else { json2.Any(json2.Null{}) }
+		'start':     start_value
+		'end':       end_value
+		'direction': direction_value
 	})
 }
 

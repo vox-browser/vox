@@ -4,28 +4,27 @@ import dom
 
 fn assert_stylesheet_components_equal(left ComponentValue, right ComponentValue) {
 	assert left.attr_tainted == right.attr_tainted
-	match left.value {
-		&Token { assert left.token() == right.token() }
-		&SimpleBlock {
-			assert right.is_block()
-			one := left.block()
-			two := right.block()
-			assert one.token == two.token
-			assert one.end_token == two.end_token
-			assert one.value.len == two.value.len
-			for index, value in one.value { assert_stylesheet_components_equal(value, two.value[index]) }
-		}
-		&Function {
-			assert right.is_function()
-			one := left.function()
-			two := right.function()
-			assert one.name == two.name
-			assert one.name_token == two.name_token
-			assert one.end_token == two.end_token
-			assert one.value.len == two.value.len
-			for index, value in one.value { assert_stylesheet_components_equal(value, two.value[index]) }
-		}
-		else { assert false, 'unexpected tokenizer payload' }
+	if left.value is &Token {
+		assert left.token() == right.token()
+	} else if left.value is &SimpleBlock {
+		assert right.is_block()
+		one := left.block()
+		two := right.block()
+		assert one.token == two.token
+		assert one.end_token == two.end_token
+		assert one.value.len == two.value.len
+		for index, value in one.value { assert_stylesheet_components_equal(value, two.value[index]) }
+	} else if left.value is &Function {
+		assert right.is_function()
+		one := left.function()
+		two := right.function()
+		assert one.name == two.name
+		assert one.name_token == two.name_token
+		assert one.end_token == two.end_token
+		assert one.value.len == two.value.len
+		for index, value in one.value { assert_stylesheet_components_equal(value, two.value[index]) }
+	} else {
+		assert false, 'unexpected tokenizer payload'
 	}
 }
 
@@ -34,7 +33,7 @@ fn test_stylesheet_direct_token_source_matches_array_tokenization_recursively() 
 		'@namespace svg url("urn:svg"); @media (width > 1px) {svg|a { width: calc(1px + 2%) }}',
 		'a{content:"unterminated', 'a{ x:f([', 'a{ x:f()', 'f([a]) ] } )',
 		'<!--a{color:red!important}-->', 'a{ x:url(bad"url);y:url(a\\ b);z:1e+2px }',
-		'/*comment*/', 'a\u0000{--x:\r\nb}']
+		'/*comment*/', 'a' + u8(0).ascii_str() + '{--x:\r\nb}']
 	for input in inputs {
 		for encoding in ['utf-8', 'windows-1252'] {
 			expected := ParserTokenStream.from_tokens(Tokenizer.tokenize(input, encoding))

@@ -2,6 +2,7 @@
 """Stage UI2 with Vox's embedding adapter, without modifying the UI2 checkout."""
 
 import os
+import re
 from pathlib import Path
 import shutil
 import sys
@@ -18,6 +19,51 @@ def link_to(path, source):
             return
         path.unlink()
     path.symlink_to(source, target_is_directory=source.is_dir())
+
+
+def prepare_gg_gradient(modules, vlib):
+    """Keep FastC's map-string arithmetic separate from its method receiver."""
+    source = vlib / 'gg'
+    gradient = source / 'canvas/gpu_gradient.v'
+    if not gradient.is_file():
+        return
+    original = "(snippets['bodies_tile'] + snippets['body_colorize_${stops}']).replace('_skTemp',"
+    text = gradient.read_text()
+    if original in text:
+        text = text.replace('bodies_tile := ' + original,
+                            "tile_source := snippets['bodies_tile'] + snippets['body_colorize_${stops}']\n"
+                            "\tbodies_tile := tile_source.replace('_skTemp',")
+    target = modules / 'gg'
+    target.mkdir(exist_ok=True)
+    for entry in source.iterdir():
+        if entry.name != 'canvas':
+            link_to(target / entry.name, entry)
+    canvas = target / 'canvas'
+    canvas.mkdir(exist_ok=True)
+    for entry in (source / 'canvas').iterdir():
+        if entry.name == gradient.name:
+            if (canvas / entry.name).is_symlink():
+                (canvas / entry.name).unlink()
+            write_if_changed(canvas / entry.name, text)
+        elif entry.is_file() and entry.suffix == '.v' and 'fn C.' in entry.read_text():
+            # Native canvas helpers must be exported by FastC's native bridge.
+            # Keep Apple's headers and paired sin/cos in that native owner.
+            if (canvas / entry.name).is_symlink():
+                (canvas / entry.name).unlink()
+            def native_include(match):
+                name = match[1]
+                if 'darwin' not in name and name != 'path_math.h':
+                    return match[0]
+                wrapper = 'vox_' + Path(name).stem + '.m'
+                header = (source / 'canvas' / name).resolve()
+                if not header.is_file():
+                    raise RuntimeError('Missing GG native helper: ' + str(header))
+                write_if_changed(canvas / wrapper, '#include "' + str(header) + '"\n')
+                return '#include "@DIR/' + wrapper + '"'
+            context = re.sub(r'#include "@DIR/([^"\n]+\.h)"', native_include, entry.read_text())
+            write_if_changed(canvas / entry.name, context)
+        else:
+            link_to(canvas / entry.name, entry)
 
 
 def main():
@@ -245,6 +291,7 @@ def main():
         "V_BIN", shutil.which("v") or str(Path.home() / "code/v/v")
     )
     compiler = Path(compiler_name).resolve()
+    prepare_gg_gradient(target.parent, compiler.parent / 'vlib')
     macos_source = compiler.parent / "vlib/macos"
     if sys.platform == "darwin" and not (macos_source / "objc_bridge.h").is_file():
         raise SystemExit("UI2 requires a current V checkout with vlib/macos.")

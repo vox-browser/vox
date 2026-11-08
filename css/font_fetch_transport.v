@@ -7,7 +7,7 @@ import fetch
 
 pub type FontFetchHostProvider = fn (&dom.Document) ?&fetch.FetchHost
 
-__global font_fetch_host_provider_ ?FontFetchHostProvider
+__global font_fetch_host_provider_ ?FontFetchHostProvider = none
 
 pub fn install_font_fetch_host_provider(provider FontFetchHostProvider) {
 	font_fetch_host_provider_ = provider

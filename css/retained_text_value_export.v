@@ -14,15 +14,15 @@ fn export_retained_text_value(value StyleValue) StyleValue {
 		retained_text_value_export_reported = true
 		eprintln('Vox property export: retained validated text graph without reparsing')
 	}
-	return match value {
+	match value {
 		UnresolvedStyleValue {
-			StyleValue(UnresolvedStyleValue.create_with_presence(
+			return StyleValue(UnresolvedStyleValue.create_with_presence(
 				own_stylesheet_components(value.tokens), value.substitution_functions_presence,
 				if text := value.original_source_text { ?string(text.clone()) } else { none }))
 		}
-		StringStyleValue { StyleValue(StringStyleValue.create(value.string_value_.clone())) }
+		StringStyleValue { return StyleValue(StringStyleValue.create(value.string_value_.clone())) }
 		CustomIdentStyleValue {
-			StyleValue(CustomIdentStyleValue{
+			return StyleValue(CustomIdentStyleValue{
 				custom_ident_: value.custom_ident_.clone()
 				family_identifiers_: value.family_identifiers_.map(it.clone())
 			})

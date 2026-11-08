@@ -69,7 +69,7 @@ pub type BroadcastChannelMessageForwarder = fn (BroadcastChannelMessage)
 
 __global (
 	html_broadcast_channel_repository   &BroadcastChannelRepository
-	broadcast_channel_message_forwarder ?BroadcastChannelMessageForwarder
+	broadcast_channel_message_forwarder ?BroadcastChannelMessageForwarder = none
 )
 
 @[heap]

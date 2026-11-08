@@ -11,6 +11,10 @@ module browserjs
 // properties absent from this source-created dictionary.
 fn (host &CryptoHost) algorithm_dictionary(value voidptr, is_object bool) !voidptr {
 	if is_object { return value }
+	return host.named_algorithm_dictionary(value)
+}
+
+fn (host &CryptoHost) named_algorithm_dictionary(value voidptr) !voidptr {
 	mut runtime := unsafe { &Runtime(host.runtime) }
 	dictionary := C.JSObjectMake(runtime.context, unsafe { nil }, unsafe { nil })
 	runtime.retain_javascript_value(dictionary)!

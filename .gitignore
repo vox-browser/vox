@@ -27,9 +27,10 @@
 /uk.html
 /pikabu_compositor*_production_snapshot.sh
 
-# x.imp build state and the compiled build.v launcher
+# x.imp build state and the compiled build_browser.vsh launcher
 /.imp/
 /build.exe
+/build_browser
 
 # Temporary and local files to ignore
 **/__pycache__/

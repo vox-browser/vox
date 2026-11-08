@@ -33,38 +33,33 @@ fn own_stylesheet_token(token Token) Token {
 // Export each payload and its text recursively into the retained owner.
 // Explicit branch returns avoid constructing an unused default sum variant.
 fn own_stylesheet_component(component &ComponentValue) ComponentValue {
-	match component.value {
-		&Token {
-			return ComponentValue{value:ComponentValuePayload(&Token{...own_stylesheet_token(*component.value)}), attr_tainted:component.attr_tainted}
+	if component.value is &Token {
+		return ComponentValue{value:ComponentValuePayload(&Token{...own_stylesheet_token(*component.value)}), attr_tainted:component.attr_tainted}
+	} else if component.value is &SimpleBlock {
+		return ComponentValue{
+			value:ComponentValuePayload(&SimpleBlock{
+				token:own_stylesheet_token(component.value.token)
+				end_token:own_stylesheet_token(component.value.end_token)
+				value:own_stylesheet_components(component.value.value)
+			})
+			attr_tainted:component.attr_tainted
 		}
-		&SimpleBlock {
-			return ComponentValue{
-				value:ComponentValuePayload(&SimpleBlock{
-					token:own_stylesheet_token(component.value.token)
-					end_token:own_stylesheet_token(component.value.end_token)
-					value:own_stylesheet_components(component.value.value)
-				})
-				attr_tainted:component.attr_tainted
-			}
+	} else if component.value is &Function {
+		return ComponentValue{
+			value:ComponentValuePayload(&Function{
+				name:component.value.name.clone()
+				name_token:own_stylesheet_token(component.value.name_token)
+				end_token:own_stylesheet_token(component.value.end_token)
+				value:own_stylesheet_components(component.value.value)
+			})
+			attr_tainted:component.attr_tainted
 		}
-		&Function {
-			return ComponentValue{
-				value:ComponentValuePayload(&Function{
-					name:component.value.name.clone()
-					name_token:own_stylesheet_token(component.value.name_token)
-					end_token:own_stylesheet_token(component.value.end_token)
-					value:own_stylesheet_components(component.value.value)
-				})
-				attr_tainted:component.attr_tainted
-			}
-		}
-		RawComponentValue {
-			return ComponentValue{value:ComponentValuePayload(RawComponentValue{text:component.value.text.clone()}), attr_tainted:component.attr_tainted}
-		}
-		GuaranteedInvalidValue {
-			return ComponentValue{value:ComponentValuePayload(GuaranteedInvalidValue{}), attr_tainted:component.attr_tainted}
-		}
+	} else if component.value is RawComponentValue {
+		return ComponentValue{value:ComponentValuePayload(RawComponentValue{text:component.value.text.clone()}), attr_tainted:component.attr_tainted}
+	} else if component.value is GuaranteedInvalidValue {
+		return ComponentValue{value:ComponentValuePayload(GuaranteedInvalidValue{}), attr_tainted:component.attr_tainted}
 	}
+	panic('invalid CSS component payload')
 }
 
 fn own_stylesheet_components(values []ComponentValue) []ComponentValue {

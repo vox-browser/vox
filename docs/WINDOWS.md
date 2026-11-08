@@ -9,7 +9,7 @@ Sokol installations do not need changes.
 The V graphics adapter also supplies shaders that consume GG's column-major
 projection and texture matrices correctly in HLSL, including the font atlas.
 
-The native `build.v`/`x.imp` browser flow and portable ZIP packaging remain
+The native `build_browser.vsh`/`x.imp` browser flow and portable ZIP packaging remain
 release scaffolding. Use the dedicated helper below for this compilation path.
 There is no Windows installer or update feed yet; the shared release version
 remains in `packaging/version.txt`.
@@ -192,7 +192,7 @@ also executed on macOS. The modified Skia bridges passed macOS C++ syntax
 checks. Those initial checks did not execute the Windows binaries.
 
 The existing build scaffolding's help and the pinned Rust source audit remain
-available with `v run build.v --help` and
+available with `v run build_browser.vsh --help` and
 `python3 tools/build_regex_backend.py --verify-only`.
 
 ## Windows VM verification on 2026-11-08

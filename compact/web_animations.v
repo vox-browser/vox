@@ -351,9 +351,8 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 				}
 			}
 		}
-		return json2.encode({
-			'value': if time := css.document_css_animation_current_time(binding.document, handle) { json2.Any(time) } else { json2.Any(json2.Null{}) }
-		})
+		current_time := if time := css.document_css_animation_current_time(binding.document, handle) { json2.Any(time) } else { json2.Any(json2.Null{}) }
+		return json2.encode({'value': current_time})
 	}
 	if op == 'list' {
 		node := binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }

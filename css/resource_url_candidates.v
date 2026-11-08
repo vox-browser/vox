@@ -42,22 +42,17 @@ pub fn (properties &CSSStyleProperties) resource_url_candidates(fallback_base st
 fn append_component_resource_urls(values []ComponentValue, base_url string,
 	mut candidates []ResourceURLCandidate) {
 	for component in values {
-		match component.value {
-			&Token {
-				if component.value.is(.url) || component.value.is(.string) {
-					candidates << ResourceURLCandidate{url: component.value.value, base_url: base_url}
-				}
+		if component.value is &Token {
+			if component.value.is(.url) || component.value.is(.string) {
+				candidates << ResourceURLCandidate{url: component.value.value, base_url: base_url}
 			}
-			&Function {
-				append_component_resource_urls(component.value.value, base_url, mut candidates)
-			}
-			&SimpleBlock {
-				append_component_resource_urls(component.value.value, base_url, mut candidates)
-			}
-			RawComponentValue {
-				append_text_resource_urls(component.value.text, base_url, mut candidates)
-			}
-			GuaranteedInvalidValue {}
+		} else if component.value is &Function {
+			append_component_resource_urls(component.value.value, base_url, mut candidates)
+		} else if component.value is &SimpleBlock {
+			append_component_resource_urls(component.value.value, base_url, mut candidates)
+		} else if component.value is RawComponentValue {
+			append_text_resource_urls(component.value.text, base_url, mut candidates)
+		} else if component.value is GuaranteedInvalidValue {
 		}
 	}
 }

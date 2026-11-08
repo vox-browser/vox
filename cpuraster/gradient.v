@@ -70,10 +70,12 @@ enum FillKind {
 
 // The gradient's fill stage context: per-gap factors and biases so that
 // color = factor * t + bias.
+type GradientChannel = []f32
+
 struct GradientFill {
 	kind       FillKind
-	factors    [4][]f32
-	biases     [4][]f32
+	factors    [4]GradientChannel
+	biases     [4]GradientChannel
 	ts         []f32
 	stop_count int
 }
@@ -573,8 +575,8 @@ fn colors_equal(a [4]f32, b [4]f32) bool {
 fn gradient_fill(colors [][4]f32, positions []f32) GradientFill {
 	count := colors.len
 	if count == 2 && positions.len == 0 {
-		mut factors := [4][]f32{}
-		mut biases := [4][]f32{}
+		mut factors := [4]GradientChannel{}
+		mut biases := [4]GradientChannel{}
 		for c in 0 .. 4 {
 			factors[c] = [colors[1][c] - colors[0][c]]
 			biases[c] = [colors[0][c]]
@@ -585,8 +587,8 @@ fn gradient_fill(colors [][4]f32, positions []f32) GradientFill {
 			biases:  biases
 		}
 	}
-	mut factors := [4][]f32{}
-	mut biases := [4][]f32{}
+	mut factors := [4]GradientChannel{}
+	mut biases := [4]GradientChannel{}
 	for c in 0 .. 4 {
 		factors[c] = []f32{}
 		biases[c] = []f32{}

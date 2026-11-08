@@ -2341,93 +2341,73 @@ pub fn (component_value &ComponentValue) is_guaranteed_invalid() bool {
 }
 
 pub fn (component_value &ComponentValue) contains_guaranteed_invalid_value() bool {
-	match component_value.value {
-		&Token {
-			return false
-		}
-		RawComponentValue {
-			return false
-		}
-		&SimpleBlock {
-			for item in component_value.value.value {
-				if item.contains_guaranteed_invalid_value() {
-					return true
-				}
+	if component_value.value is &Token {
+		return false
+	} else if component_value.value is RawComponentValue {
+		return false
+	} else if component_value.value is &SimpleBlock {
+		for item in component_value.value.value {
+			if item.contains_guaranteed_invalid_value() {
+				return true
 			}
-			return false
 		}
-		&Function {
-			for item in component_value.value.value {
-				if item.contains_guaranteed_invalid_value() {
-					return true
-				}
+		return false
+	} else if component_value.value is &Function {
+		for item in component_value.value.value {
+			if item.contains_guaranteed_invalid_value() {
+				return true
 			}
-			return false
 		}
-		GuaranteedInvalidValue {
-			return true
-		}
+		return false
+	} else if component_value.value is GuaranteedInvalidValue {
+		return true
 	}
+	panic('invalid CSS component payload')
 }
 
 pub fn (component_value &ComponentValue) to_string() string {
-	match component_value.value {
-		&Token {
-			return component_value.value.to_string()
-		}
-		RawComponentValue {
-			return component_value.value.text
-		}
-		&SimpleBlock {
-			return component_value.value.to_string()
-		}
-		&Function {
-			return component_value.value.to_string()
-		}
-		GuaranteedInvalidValue {
-			return component_value.value.to_string()
-		}
+	if component_value.value is &Token {
+		return component_value.value.to_string()
+	} else if component_value.value is RawComponentValue {
+		return component_value.value.text
+	} else if component_value.value is &SimpleBlock {
+		return component_value.value.to_string()
+	} else if component_value.value is &Function {
+		return component_value.value.to_string()
+	} else if component_value.value is GuaranteedInvalidValue {
+		return component_value.value.to_string()
 	}
+	panic('invalid CSS component payload')
 }
 
 pub fn (component_value &ComponentValue) to_debug_string() string {
-	match component_value.value {
-		&Token {
-			return 'Token: ${component_value.value.to_debug_string()}'
-		}
-		RawComponentValue {
-			return 'Raw: ${component_value.value.text}'
-		}
-		&SimpleBlock {
-			return 'Block: ${component_value.value.to_string()}'
-		}
-		&Function {
-			return 'Function: ${component_value.value.to_string()}'
-		}
-		GuaranteedInvalidValue {
-			return 'Guaranteed-invalid value'
-		}
+	if component_value.value is &Token {
+		return 'Token: ${component_value.value.to_debug_string()}'
+	} else if component_value.value is RawComponentValue {
+		return 'Raw: ${component_value.value.text}'
+	} else if component_value.value is &SimpleBlock {
+		return 'Block: ${component_value.value.to_string()}'
+	} else if component_value.value is &Function {
+		return 'Function: ${component_value.value.to_string()}'
+	} else if component_value.value is GuaranteedInvalidValue {
+		return 'Guaranteed-invalid value'
 	}
+	panic('invalid CSS component payload')
 }
 
 pub fn (component_value &ComponentValue) original_source_text() string {
-	match component_value.value {
-		&Token {
-			return component_value.value.original_source_text()
-		}
-		RawComponentValue {
-			return component_value.value.text
-		}
-		&SimpleBlock {
-			return component_value.value.original_source_text()
-		}
-		&Function {
-			return component_value.value.original_source_text()
-		}
-		GuaranteedInvalidValue {
-			return component_value.value.original_source_text()
-		}
+	if component_value.value is &Token {
+		return component_value.value.original_source_text()
+	} else if component_value.value is RawComponentValue {
+		return component_value.value.text
+	} else if component_value.value is &SimpleBlock {
+		return component_value.value.original_source_text()
+	} else if component_value.value is &Function {
+		return component_value.value.original_source_text()
+	} else if component_value.value is GuaranteedInvalidValue {
+		return component_value.value.original_source_text()
 	}
+	panic('invalid CSS component payload')
 }
 
 // https://drafts.csswg.org/css-syntax/#simple-block

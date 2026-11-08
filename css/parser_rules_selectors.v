@@ -3234,38 +3234,33 @@ fn parser_selector_prelude_to_string(values []ComponentValue) string {
 
 
 fn parser_append_selector_prelude_component(mut builder strings.Builder, value ComponentValue) {
-	match value.value {
-		&Token {
-			token := value.token()
-			if token.type_ in [TokenType.number, .percentage, .dimension] {
-				original := token.original_source_text()
-				if original.len > 0 {
-					builder.write_string(original)
-					return
-				}
+	if value.value is &Token {
+		token := value.token()
+		if token.type_ in [TokenType.number, .percentage, .dimension] {
+			original := token.original_source_text()
+			if original.len > 0 {
+				builder.write_string(original)
+				return
 			}
-			builder.write_string(token.to_string())
 		}
-		&SimpleBlock {
-			block := value.block()
-			builder.write_string(block.token.bracket_string())
-			for item in block.value {
-				parser_append_selector_prelude_component(mut builder, item)
-			}
-			builder.write_string(block.token.bracket_mirror_string())
+		builder.write_string(token.to_string())
+	} else if value.value is &SimpleBlock {
+		block := value.block()
+		builder.write_string(block.token.bracket_string())
+		for item in block.value {
+			parser_append_selector_prelude_component(mut builder, item)
 		}
-		&Function {
-			function := value.function()
-			builder.write_string(serialize_an_identifier(function.name))
-			builder.write_u8(`(`)
-			for item in function.value {
-				parser_append_selector_prelude_component(mut builder, item)
-			}
-			builder.write_u8(`)`)
+		builder.write_string(block.token.bracket_mirror_string())
+	} else if value.value is &Function {
+		function := value.function()
+		builder.write_string(serialize_an_identifier(function.name))
+		builder.write_u8(`(`)
+		for item in function.value {
+			parser_append_selector_prelude_component(mut builder, item)
 		}
-		else {
-			builder.write_string(value.to_string())
-		}
+		builder.write_u8(`)`)
+	} else {
+		builder.write_string(value.to_string())
 	}
 }
 
@@ -3309,24 +3304,23 @@ fn assemble_component_values_original_text(values []ComponentValue) string {
 }
 
 fn append_component_original_text(mut builder strings.Builder, component &ComponentValue) {
-	match component.value {
-		&Token { builder.write_string(component.value.original_source_text()) }
-		&Function {
-			builder.write_string(component.value.name_token.original_source_text())
-			for index in 0 .. component.value.value.len {
-				append_component_original_text(mut builder, unsafe { &component.value.value[index] })
-			}
-			builder.write_string(component.value.end_token.original_source_text())
+	if component.value is &Token {
+		builder.write_string(component.value.original_source_text())
+	} else if component.value is &Function {
+		builder.write_string(component.value.name_token.original_source_text())
+		for index in 0 .. component.value.value.len {
+			append_component_original_text(mut builder, unsafe { &component.value.value[index] })
 		}
-		&SimpleBlock {
-			builder.write_string(component.value.token.original_source_text())
-			for index in 0 .. component.value.value.len {
-				append_component_original_text(mut builder, unsafe { &component.value.value[index] })
-			}
-			builder.write_string(component.value.end_token.original_source_text())
+		builder.write_string(component.value.end_token.original_source_text())
+	} else if component.value is &SimpleBlock {
+		builder.write_string(component.value.token.original_source_text())
+		for index in 0 .. component.value.value.len {
+			append_component_original_text(mut builder, unsafe { &component.value.value[index] })
 		}
-		RawComponentValue { builder.write_string(component.value.text) }
-		GuaranteedInvalidValue {}
+		builder.write_string(component.value.end_token.original_source_text())
+	} else if component.value is RawComponentValue {
+		builder.write_string(component.value.text)
+	} else if component.value is GuaranteedInvalidValue {
 	}
 }
 

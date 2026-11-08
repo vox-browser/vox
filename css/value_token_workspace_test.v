@@ -127,10 +127,13 @@ fn test_component_export_preserves_shared_syntax_headers_and_vectors() {
 }
 
 fn component_export_payload_address(component ComponentValue) voidptr {
-	match component.value {
-		&Token { return voidptr(component.value) }
-		&Function { return voidptr(component.value) }
-		&SimpleBlock { return voidptr(component.value) }
-		else { return unsafe { nil } }
+	if component.value is &Token {
+		return voidptr(component.value)
+	} else if component.value is &Function {
+		return voidptr(component.value)
+	} else if component.value is &SimpleBlock {
+		return voidptr(component.value)
+	} else {
+		return unsafe { nil }
 	}
 }

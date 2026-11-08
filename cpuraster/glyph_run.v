@@ -57,11 +57,13 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			return false
 		}
 	}
+	$if !linux && !cpuraster_freetype ? {
+		// SkTypeface_Mac::MakeFromStream() only opens the first face.
+		if run.face_index != 0 { return false }
+	}
 	face := $if linux || cpuraster_freetype ? {
 		open_freetype_face(run.font_path, run.face_index) or { return false }
 	} $else {
-		// SkTypeface_Mac::MakeFromStream() only opens the first face.
-		if run.face_index != 0 { return false }
 		open_glyph_face(run.font_path) or { return false }
 	}
 	defer {
