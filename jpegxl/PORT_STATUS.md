@@ -44,7 +44,20 @@ container error/state parity and the source's streaming API are not claimed.
 The complete three-file module suite passes in both GC modes, including a
 no-GC run with unavailable Rust compiler paths.
 
-Remaining work includes streaming/checkpoints, metadata/color headers, prefix/ANS
+Huffman prefix decoding is now translated, including selected simple trees,
+complex code-length trees, repetitions, varint alphabet sizes, multiple context
+tables and single-symbol queries. An eight-bit primary lookup plus a bounded
+binary tail replaces the source's two-level lookup representation. The 4,096
+frozen source cases compare decoded symbols, errors and consumed bits exactly;
+1,049 succeed (456 single-symbol alphabets, 529 simple trees and 64 complex
+trees). Separate checks decode the source's known byte histogram, exercise
+15-bit codes and reject malformed/incomplete/oversubscribed trees. All four
+module test files pass in both GC modes; the no-GC run also passes through the
+V corpus checker with unavailable Rust compiler paths. Error strings remain
+normalized in the fixtures. This establishes recorded behavior, not decoder
+conformance or performance parity.
+
+Remaining work includes streaming/checkpoints, metadata/color headers, ANS
 entropy decoding and context maps, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
 integration. The V package is not connected to the production image path until
