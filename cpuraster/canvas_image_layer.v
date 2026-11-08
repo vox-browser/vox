@@ -46,7 +46,7 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 	if ctm.type_mask() > affine_translate_mask || !int_cast_preserves(ctm.tx) || !int_cast_preserves(ctm.ty)
 		|| !sample_destination[..].all(int_cast_preserves(it)) || sample_source[2] != sample_destination[2]
 		|| sample_source[3] != sample_destination[3] {
-		return draw_resampled_image_blur(mut pixels, width, height, pitch, alpha_type,
+		return draw_resampled_image_filter(mut pixels, width, height, pitch, alpha_type,
 			transform, image, src, dst, smoothing, global_alpha, mode, clips, prepared)
 	}
 	raw := CanvasBitmap{...image, premultiplied: true, display_p3: false}

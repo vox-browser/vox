@@ -594,11 +594,16 @@ fn test_nearly_integer_source_image_filters_match_skia() {
 	check_bitmap_commands_match_skia(false, true, false, .near)
 }
 
+fn test_scaled_source_image_shadows_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .shadow)
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
 	plain
 	near
+	shadow
 }
 
 fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
@@ -641,7 +646,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
+		context.set_filter(if identity_mode == .shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%)' }
+		else if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
 		else if identity_mode == .color && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
 		else if identity_mode == .plain && i == 2 { 'blur(.001px) blur(0px)' }
 		else if identity_mode == .near && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(1.2px)' }

@@ -23,6 +23,7 @@ pub struct CanvasFilterStep {
 	source_padding bool
 	source_color_info FilterImageInfo
 	source_draw_bounds ?Rect
+	source_foreground ?FilterImageView
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
 pub:
@@ -267,7 +268,12 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		shadow_input := if content_bounds == none { shadow_needed } else {
 			shadow_needed.intersect(content_device) or { IRect{} }
 		}
-		needed = union_filter_bounds(foreground_input, shadow_input)
+		// A deferred source-image foreground draws from the original image
+		// during merge. Its extent must not widen the blur's resampling ROI:
+		// that could change the native clamp/decal decision for the shadow.
+		needed = if step.source_foreground != none && !shadow_input.is_empty() {
+			shadow_input
+		} else { union_filter_bounds(foreground_input, shadow_input) }
 	}
 	layer := if content_bounds == none { needed } else { needed.intersect(content_device) or {
 		// An empty source still restores through a transparency-affecting
@@ -350,10 +356,11 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 			sk_concat(local, post_translate(local_inverse, step.offset_x, step.offset_y)) }
 		shadow_desired := skif_outset(map_filter_bounds(desired, affine_invert(local_offset) or { return true }), 1, 1)
 		shadow := blur_filter_result(source, shadow_desired, sx, sy) or { return true }
+		foreground_bounds := if view := step.source_foreground { view.layer_bounds } else { foreground.layer_bounds }
 		mut merged_bounds := if shadow.has_image {
-			union_filter_bounds(foreground.layer_bounds, map_filter_bounds(shadow.layer_bounds, local_offset))
+			union_filter_bounds(foreground_bounds, map_filter_bounds(shadow.layer_bounds, local_offset))
 		} else {
-			foreground.layer_bounds
+			foreground_bounds
 		}
 		merged_bounds = merged_bounds.intersect(desired) or {
 			draw_empty_filter_result(mut pixels, pitch, &rc, mode)
@@ -373,8 +380,16 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 			draw_tinted_filter_result_with_color(mut merged, mw * 4, shadow, local_offset,
 				merge_padded.left, merge_padded.top, &merge_clip, step.color, shadow_matrices)
 		}
-		draw_color_filtered_bitmap(mut merged, mw * 4, foreground.color_info.bitmap(foreground.image.bitmap()), foreground.origin_x - merge_padded.left,
-			foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color, foreground.color_info.alpha)
+		if view := step.source_foreground {
+			mut foreground_target := new_canvas_target(mut merged, mw, mh, mw * 4, 2)
+			// Prepared source views are finite and axis-aligned. Source-over
+			// cannot enter the renderer's unsupported rotated clearing path.
+			draw_filter_image_view(mut merged, mw * 4, &merge_clip, .src_over, view,
+				merge_padded.left, merge_padded.top, mut foreground_target)
+		} else {
+			draw_color_filtered_bitmap(mut merged, mw * 4, foreground.color_info.bitmap(foreground.image.bitmap()), foreground.origin_x - merge_padded.left,
+				foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color, foreground.color_info.alpha)
+		}
 		draw_color_filtered_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, base_x + merge_padded.left,
 			base_y + merge_padded.top, &rc, mode, restore_matrices)
 		return true
@@ -430,7 +445,12 @@ fn map_filter_bounds(bounds IRect, m SkAffine) IRect {
 	t := t0 + m.ty
 	b := b0 + m.ty
 	e := f64(image_filter_round_epsilon)
-	return IRect{int(math.floor(l + e)), int(math.floor(t + e)), int(math.ceil(r - e)), int(math.ceil(b - e))}
+	// Source-image transforms can reverse either axis. Layer offsets used
+	// here previously only had positive scales.
+	return IRect{int(math.floor((if l < r { l } else { r }) + e)),
+		int(math.floor((if t < b { t } else { b }) + e)),
+		int(math.ceil((if l > r { l } else { r }) - e)),
+		int(math.ceil((if t > b { t } else { b }) - e))}
 }
 
 fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, mapped SkAffine, origin_x int, origin_y int, rc &RasterClip, color u32) {

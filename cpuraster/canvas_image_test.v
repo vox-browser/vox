@@ -805,3 +805,37 @@ fn test_rotated_commands_match_skia() {
 	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0, false) == fixture_hash('38711e4839a270f0')
 	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0xff000000, true) == fixture_hash('4524d50a45b3d820')
 }
+
+fn test_scaled_integer_source_shadow_preserves_deferred_foreground() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	hashes := ['2bb81f3c940efdd1', if canvas_rgba_uses_legacy() { '1f1f586daef2c8bf' } else { '9d9fa7c17fc9bf77' }, '5e5361d693406941', 'a314c86fea2dc72a', 'b0cf78ae45b5d34a', 'b0b37ca26e9ec933', 'ecb21cc6ee1cdc4e', '5fe5ede2432aa2cc']
+	for i in 0 .. hashes.len {
+		mut pixels := image_test_background()
+		source := if i in [1, 2, 4, 7] { [f32(1), 1, 5, 4]! } else { [f32(0), 0, 7, 6]! }
+		destination := match i {
+			0 { [f32(4), 5, 30, 25]! }
+			1 { [f32(4.25), 6.5, 25, 18]! }
+			3 { [f32(10.25), 12.5, 28, 18]! }
+			5 { [f32(10.25), 12.5, 2, 3]! }
+			6 { [f32(10), 12, 7, 6]! }
+			else { [f32(4.5), 6.25, 22, 16]! }
+		}
+		transform := if i == 4 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+			else if i == 6 { [f32(1), 0, 0, 1, .25, .75]! } else { image_test_identity }
+		mode := match i { 0, 6 { BlendMode.src_over } 2 { .overlay } 3 { .multiply }
+			5 { .plus_lighter } else { .src_in } }
+		alpha := if i == 2 { f32(.65) } else if i in [5, 7] { f32(.7) } else { f32(1) }
+		sigma := if i in [1, 2] { f32(.8) } else if i in [3, 5] { f32(1.2) } else { f32(2.5) }
+		mut steps := []CanvasFilterStep{}
+		if i in [2, 4, 7] { steps << contrast }
+		steps << CanvasFilterStep{kind: .drop_shadow, sigma: sigma,
+			offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+		if i in [2, 7] { steps << opacity }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i !in [2, 3, 7], i in [2, 5]), source, destination,
+			i != 1, alpha, mode, image_test_clips(i in [1, 3, 5, 7]), new_canvas_filter(steps), false), 'scaled shadow fixture ${i} declined'
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'scaled shadow fixture ${i}'
+	}
+}

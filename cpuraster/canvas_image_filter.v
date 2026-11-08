@@ -1,5 +1,17 @@
 module cpuraster
 
+// A source image whose sampling and color effects remain deferred until a
+// filter restore. Its transform and bounds are in the original layer space.
+struct FilterImageView {
+	bitmap CanvasBitmap
+	transform SkAffine
+	layer_bounds IRect
+	default_sampling bool
+	smoothing bool
+	alpha f32 = 1
+	filter ?ColorFilter
+}
+
 // MakeFromImage retains an integer-aligned source subset and defers its
 // transform, paint alpha and color filters until the final image draw.
 fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ColorFilter) bool {
@@ -37,14 +49,7 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 	// MakeFromImage concatenates SkM44 matrices before storing an SkMatrix;
 	// its column dot products associate from the right in float precision.
 	mapped := m44_image_concat(ctm, local)
-	mut total := sk_concat(mapped, affine_translate(src.left, src.top))
-	// applyTransform() replaces the requested sampling with its default
-	// bilinear mode when the incoming transform is nearly integer. draw()
-	// further reduces that default to nearest when the final origin is, too.
-	default_sampling := filter_nearly_integer_translation(mapped)
-	sample_linear := if default_sampling { !filter_nearly_integer_translation(total) } else { smoothing }
-	pixel_aligned := total.type_mask() <= affine_translate_mask
-		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
+	total := sk_concat(mapped, affine_translate(src.left, src.top))
 	left := int(src.left)
 	top := int(src.top)
 	bitmap := CanvasBitmap{
@@ -53,6 +58,22 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 		width: int(src.right - src.left)
 		height: int(src.bottom - src.top)
 	}
+	view := FilterImageView{bitmap: bitmap, transform: total,
+		default_sampling: filter_nearly_integer_translation(mapped), smoothing: smoothing,
+		alpha: f32(u8(global_alpha * f32(255))) * inv_255, filter: filter}
+	return draw_filter_image_view(mut pixels, pitch, &rc, mode, view, 0, 0, mut target)
+}
+
+fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget) bool {
+	mut total := if origin_x == 0 && origin_y == 0 { view.transform } else {
+		sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), view.transform) }
+	// The default-sampling decision belongs to applyTransform(), before the
+	// destination surface's integer origin is concatenated for this draw.
+	default_sampling := view.default_sampling
+	sample_linear := if default_sampling { !filter_nearly_integer_translation(view.transform) } else { view.smoothing }
+	pixel_aligned := total.type_mask() <= affine_translate_mask
+		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
+	bitmap := view.bitmap
 	ix := int(saturate_to_i32(floor_f32(total.tx + f32(.5))))
 	iy := int(saturate_to_i32(floor_f32(total.ty + f32(.5))))
 	unbounded := blend_affects_transparent_black(mode)
@@ -103,21 +124,21 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true,
 			decal_bounds: decal_bounds, decal_matrix: decal_inverse}}
 	}
-	alpha := f32(u8(global_alpha * f32(255))) * inv_255
+	alpha := view.alpha
 	mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, alpha, mode,
-		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, filter,
+		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, view.filter,
 		canvas_rgba_uses_legacy() && alpha == 1) or { return target.ready() }
 	target.ready()
 	if unbounded || sprite {
-		fill_irect(if unbounded { rc.bounds() } else { bounds }, &rc, mut blitter)
+		fill_irect(if unbounded { rc.bounds() } else { bounds }, rc, mut blitter)
 		return true
 	}
 	if rect_stays_rect(total) {
-		anti_fill_rect(dev, &rc, mut blitter)
+		anti_fill_rect(dev, rc, mut blitter)
 		return true
 	}
 	device := rect_path(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)}).transform(affine_to_matrix(total))
-	return anti_fill_path_clip(device, false, &rc, mut blitter)
+	return anti_fill_path_clip(device, false, rc, mut blitter)
 }
 
 // SkMatrix::getMinMaxScales(): singular values of the affine 2x2 matrix.

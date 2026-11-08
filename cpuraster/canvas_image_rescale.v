@@ -3,14 +3,18 @@ module cpuraster
 // A real blur resolves MakeFromImage's deferred sampling, source conversion,
 // paint alpha and preceding color filters together into its input surface.
 // Identity blurs preserve these effects until the first non-identity blur.
-fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, src Rect, dst Rect, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
+// Drop shadows resolve the blur input while retaining the foreground until merge.
+fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, src Rect, dst Rect, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
 	ctm := canvas_affine(transform)
-	if ctm.kx != 0 || ctm.ky != 0 || step.kind != .blur
+	if ctm.kx != 0 || ctm.ky != 0 || step.kind !in [.blur, .drop_shadow]
 		|| math_abs32(ctm.tx) > 1 << 20 || math_abs32(ctm.ty) > 1 << 20 { return false }
+	drop := step.kind == .drop_shadow
+	if drop && (step.sigma < 0 || !is_finite_f32(step.sigma)) { return false }
 	local := rect_to_rect(src, dst) or { return false }
 	mapped := m44_image_concat(ctm, local)
 	total := sk_concat(mapped, affine_translate(src.left, src.top))
 	default_sampling := filter_nearly_integer_translation(mapped)
+	if drop && (!affine_is_finite(total) || filter_nearly_integer_translation(total)) { return false }
 	mut before := step.pre_color.clone()
 	mut stages := step.blur_stages.clone()
 	mut real_blur := false
@@ -28,6 +32,7 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 			}
 		}
 	}
+	if drop && !real_blur { return false }
 	if !real_blur {
 		before << step.post_color
 		filter := new_color_filter(before)
@@ -47,12 +52,17 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 	filter := new_color_filter(before)
 	bitmap := CanvasBitmap{...image, pixels: image.pixels[int(src.top) * image.pitch + int(src.left) * 4..],
 		width: int(src.right - src.left), height: int(src.bottom - src.top)}
+	foreground := FilterImageView{bitmap: bitmap, transform: total,
+		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
+		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
+	if drop && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
 	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
 		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
 			transform, bitmap, src, dst, mapped, total, mode, clips, step)
 	}
 	prepared := CanvasFilterStep{...step, blur_stages: stages, pre_color: []MatrixColorFilter{},
-		source_image: true, source_padding: true, source_color_info: FilterImageInfo{}}
+		source_image: true, source_padding: true, source_color_info: FilterImageInfo{},
+		source_foreground: if drop { ?FilterImageView(foreground) } else { none }}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 		transform, clips, dst, prepared, mode,
 		fn [bitmap, image, src, ctm, total, smoothing, default_sampling, alpha, filter] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
