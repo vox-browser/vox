@@ -1,6 +1,11 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    # Ladybird 2919bf87: position-try shorthand, absent from the older working snapshot.
+    'position-try': {
+        'initial': 'normal none',
+        'longhands': ['position-try-order', 'position-try-fallbacks'],
+    },
     'animation-range': {
         'affects-layout': False,
         'initial': 'normal',
@@ -63,7 +68,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both']
+KEYWORDS = ['manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):
@@ -94,6 +99,10 @@ def extend_shorthand_tables(tables):
         if longhands:
             for table in ['longhands_for_shorthand', 'expanded_longhands_for_shorthand']:
                 tables[table].append((identifier, [value.replace('-', '_') for value in longhands]))
+            for longhand in longhands:
+                for property_name, shorthands in tables['shorthands_for_longhand']:
+                    if property_name == longhand.replace('-', '_') and identifier not in shorthands:
+                        shorthands.insert(0, identifier)
             continue
         for table in ['longhands_for_shorthand', 'expanded_longhands_for_shorthand']:
             for shorthand, values in tables[table]:

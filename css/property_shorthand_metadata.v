@@ -4,6 +4,7 @@ module css
 
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.position_try { [.position_try_order,.position_try_fallbacks] }
 		.animation_range {
 			[.animation_range_start, .animation_range_end]
 		}
@@ -367,6 +368,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.position_try { [.position_try_order,.position_try_fallbacks] }
 		.animation_range {
 			[.animation_range_start, .animation_range_end]
 		}
@@ -1140,7 +1142,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.all]
 		}
 		.position_try_fallbacks {
-			[.all]
+			[.position_try,.all]
 		}
 		.width {
 			[.all]
@@ -1755,7 +1757,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.all]
 		}
 		.position_try_order {
-			[.all]
+			[.position_try,.all]
 		}
 		.margin_block_end {
 			[.all, .margin_block]

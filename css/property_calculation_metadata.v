@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'position-try' { return .position_try }
 	if name == 'animation-range' { return .animation_range }
 	if name == 'animation-range-end' { return .animation_range_end }
 	if name == 'animation-range-start' { return .animation_range_start }
@@ -3533,6 +3534,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.place_content { 'place-content' }
 		.place_items { 'place-items' }
 		.place_self { 'place-self' }
+		.position_try { 'position-try' }
 		.pointer_events { 'pointer-events' }
 		.position { 'position' }
 		.position_anchor { 'position-anchor' }
@@ -4028,6 +4030,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.place_content { 'normal' }
 		.place_items { 'normal' }
 		.place_self { 'normal' }
+		.position_try { 'normal none' }
 		.pointer_events { 'auto' }
 		.position { 'static' }
 		.position_anchor { 'normal' }

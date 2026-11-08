@@ -1106,6 +1106,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.position_try_order {
 			return parser.parse_position_try_order_value(mut tokens)
 		}
+		.position_try {
+			return parser.parse_position_try_shorthand(mut tokens)
+		}
 		.position_visibility {
 			return parser.parse_position_visibility_value(mut tokens)
 		}
@@ -8869,43 +8872,17 @@ fn (mut parser Parser) parse_position_area_value(mut tokens ComponentValueStream
 
 fn (mut parser Parser) parse_try_tactic_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	// <try-tactic> = flip-block || flip-inline || flip-start
 	mut transaction := tokens.clone()
 	mut values := []StyleValue{}
-	mut has_flip_block := false
-	mut has_flip_inline := false
-	mut has_flip_start := false
+	mut seen := map[string]bool{}
 	transaction.consume_whitespace()
 	for transaction.has_more_tokens() {
 		mut keyword_transaction := transaction.clone()
-		value := parse_keyword_from_set_for_value_logic(mut keyword_transaction, [
-			'flip-block',
-			'flip-inline',
-			'flip-start',
-		]) or { break }
-		match value.as_keyword().keyword() {
-			.flip_block {
-				if has_flip_block {
-					return none
-				}
-				has_flip_block = true
-			}
-			.flip_inline {
-				if has_flip_inline {
-					return none
-				}
-				has_flip_inline = true
-			}
-			.flip_start {
-				if has_flip_start {
-					return none
-				}
-				has_flip_start = true
-			}
-			else {
-				return none
-			}
-		}
+		value := parse_keyword_from_set_for_value_logic(mut keyword_transaction,
+			['flip-block','flip-inline','flip-start','flip-x','flip-y']) or { break }
+		word := value.serialize(.normal)
+		if word in seen { return none }
+		seen[word] = true
 		values << value
 		transaction = keyword_transaction
 		transaction.consume_whitespace()

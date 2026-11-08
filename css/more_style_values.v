@@ -2807,6 +2807,11 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if style_value.shorthand_ == .position_try {
+		order := style_value.values_[0].serialize(mode)
+		fallbacks := style_value.values_[1].serialize(mode)
+		return if order == 'normal' { fallbacks } else { order+' '+fallbacks }
+	}
 	if range := style_value.serialize_animation_range(mode) { return range }
 	if synthesis := style_value.serialize_font_synthesis(mode) { return synthesis }
 	if s := style_value.serialize_page_break_legacy_shorthand(mode) {

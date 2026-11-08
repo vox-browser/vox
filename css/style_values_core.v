@@ -2149,6 +2149,8 @@ pub enum Keyword {
 	anchor_center
 	flow_start
 	flow_end
+	flip_x
+	flip_y
 	bounding_box
 	visible_painted
 	visible_fill
@@ -3065,6 +3067,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.anchor_center { 'anchor-center' }
 		.flow_start { 'flow-start' }
 		.flow_end { 'flow-end' }
+		.flip_x { 'flip-x' }
+		.flip_y { 'flip-y' }
 		.bounding_box { 'bounding-box' }
 		.visible_painted { 'visiblepainted' }
 		.visible_fill { 'visiblefill' }
@@ -3086,6 +3090,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'anchor-center' { return .anchor_center }
 	if name == 'flow-start' { return .flow_start }
 	if name == 'flow-end' { return .flow_end }
+	if name == 'flip-x' { return .flip_x }
+	if name == 'flip-y' { return .flip_y }
 	if name == 'bounding-box' { return .bounding_box }
 	if name == 'visiblepainted' { return .visible_painted }
 	if name == 'visiblefill' { return .visible_fill }
