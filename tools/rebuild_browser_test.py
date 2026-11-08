@@ -149,6 +149,30 @@ class ProductionBuildTests(unittest.TestCase):
             self.assertEqual(receipt['repository_after_build'], after)
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_exact_source_manifest_records_the_repository_at_sealing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.app(root / 'Build/v', b'old')
+            state = build.production_state_dir(root)
+            build.write_json(state / 'request.json', dict(id='one'))
+            before = dict(head='queued', build_inputs_sha256='queued')
+            sealed = dict(head='parsed', build_inputs_sha256='parsed')
+            after = dict(head='later', build_inputs_sha256='later')
+            def compile(repo, stage, receipt, environment):
+                self.app(stage, b'exact sources')
+                build.write_json(receipt / 'frozen-compile.json', {})
+                return 0
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', side_effect=[before, after]), \
+                    patch('freeze_browser_compile.validate', return_value=dict(
+                        source_inputs=before, source_inputs_at_sealing=sealed)):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            result = json.loads((state / 'latest.json').read_text())
+            self.assertEqual(result['inputs'], before)
+            self.assertEqual(result['verified_inputs'], sealed)
+            self.assertEqual(result['repository_after_build'], after)
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_new_request_during_frozen_compilation_is_not_lost_after_publication(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

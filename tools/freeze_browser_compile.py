@@ -190,11 +190,14 @@ def seal_object(source, destination):
 
 
 def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', run=subprocess.run,
-            source_manifest=None):
+            source_manifest=None, source_inventory=None):
     from rebuild_browser import repository_state, same_build_inputs, write_json
     root, stage, receipt = map(lambda value: Path(value).resolve(), (root, stage, receipt))
     source, flags_path, output = map(lambda value: Path(value).resolve(), (source, flags_path, output))
     before = json.loads((receipt / 'inputs-before.json').read_text())
+    if source_inventory is not None:
+        from production_source_manifest import validate_inventory
+        validate_inventory(root, source_inventory)
     if source_manifest is not None:
         check_fingerprints(source_manifest)
     elif not same_build_inputs(before, repository_state(root)):
@@ -231,6 +234,8 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
     live_inputs = fingerprint(late + [Path(name) for name in libraries.values()])
     sealed_inputs = fingerprint([source, flags_path] + list(frozen.iterdir()))
     after = repository_state(root)
+    if source_inventory is not None:
+        validate_inventory(root, source_inventory)
     if source_manifest is not None:
         check_fingerprints(source_manifest)
     elif not same_build_inputs(before, after):
@@ -256,6 +261,9 @@ def prepare(root, stage, receipt, source, flags_path, output, compiler='clang', 
                   original_objects=original_objects, complete=False)
     if source_manifest is not None:
         result['exact_source_manifest'] = source_manifest
+        result['source_inputs_at_sealing'] = after
+    if source_inventory is not None:
+        result['source_inventory'] = source_inventory
     write_json(receipt / 'frozen-compile.json', result)
     return result
 
@@ -286,8 +294,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('root', 'stage', 'receipt', 'source', 'flags', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--source-manifest', type=Path)
+    parser.add_argument('--source-inventory', type=Path)
     args = parser.parse_args()
-    data = prepare(args.root, args.stage, args.receipt, args.source, args.flags, args.output)
+    if bool(args.source_manifest) != bool(args.source_inventory):
+        parser.error('source manifest and source inventory must be supplied together')
+    data = prepare(args.root, args.stage, args.receipt, args.source, args.flags, args.output,
+                   source_manifest=json.loads(args.source_manifest.read_text()) if args.source_manifest else None,
+                   source_inventory=json.loads(args.source_inventory.read_text()) if args.source_inventory else None)
     validate(args.receipt, data['source_inputs'], require_complete=False)
     result = subprocess.run(data['compiler_command'], cwd=data['cwd'])
     data.update(compiler_exit=result.returncode, complete=result.returncode == 0)

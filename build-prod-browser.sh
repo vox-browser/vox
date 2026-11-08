@@ -78,11 +78,13 @@ export MACOSX_DEPLOYMENT_TARGET
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v4 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v5 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
 : "${VOX_BUILD_RECEIPT_DIR:?production build receipt directory is required}"
+python3 "$repo_dir/tools/production_source_manifest.py" begin --root "$repo_dir" \
+    --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json"
 
 c_mode=${VOX_BUILD_C_MODE:-parallel}
 if [ -n "$single_c_unit_flag" ]; then
@@ -428,6 +430,8 @@ fi
 if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 # Imported font/runtime modules may contribute link flags without any live
 # helper symbols. Do not initialize their unused native libraries at startup.
+export V_MACOS_V3_SOURCE_MANIFEST=1
+export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
 "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
     -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
 chmod 755 "$helper_tmp"
@@ -469,6 +473,8 @@ fi
 if [ ! -f "$compile_dir/Vox" ]; then
     generated_dir="$VOX_BUILD_RECEIPT_DIR/generated"
     mkdir -p "$generated_dir"
+    export V_MACOS_V3_SOURCE_MANIFEST=1
+    export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
     if [ -n "$extra_ldflags" ]; then
         "$v_compiler" "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" \
@@ -478,9 +484,16 @@ if [ ! -f "$compile_dir/Vox" ]; then
             -cflags "$extra_cflags" \
             -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
     fi
+    python3 "$repo_dir/tools/production_source_manifest.py" combine --root "$repo_dir" \
+        --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+        --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
+        --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
+        --output "$VOX_BUILD_RECEIPT_DIR/source-manifest.json"
     python3 "$repo_dir/tools/freeze_browser_compile.py" \
         --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
         --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" \
+        --source-manifest "$VOX_BUILD_RECEIPT_DIR/source-manifest.json" \
+        --source-inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
         --output "$compile_dir/Vox"
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"

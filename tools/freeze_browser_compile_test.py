@@ -154,6 +154,24 @@ class FrozenCompilerExecutionTests(unittest.TestCase):
                     freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt', output)
             self.assertFalse(output.exists())
 
+    def test_exact_inventory_rechecks_package_membership_after_preprocessing(self):
+        import production_source_manifest as manifest
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stage, receipt, before, data, output = self.fixture(root)
+            shutil.rmtree(receipt / 'frozen-compiler-inputs')
+            inventory = dict(protocol='production-source-inventory-v1', names=['engine.v'], early_inputs={})
+            sources = freeze.fingerprint([root / 'header.h', root / 'extra.c'])
+            def preprocess(*args, **kwargs):
+                result = subprocess.run(*args, **kwargs)
+                inventory['names'] = ['new.v']
+                return result
+            with patch.object(manifest, 'input_names', return_value=['engine.v']), \
+                    patch.object(build, 'repository_state', return_value=dict(build_inputs_sha256='other')):
+                with self.assertRaisesRegex(RuntimeError, 'membership changed'):
+                    freeze.prepare(root, stage, receipt, receipt / 'main.c', receipt / 'flags.txt', output,
+                                   run=preprocess, source_manifest=sources, source_inventory=inventory)
+
     def test_mutated_generated_input_packaging_tool_or_resource_rejects_the_result(self):
         for target in ['preprocessed', 'tool', 'resource', 'entitlements']:
             with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:

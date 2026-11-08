@@ -22,8 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v4'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v4.lock'
+BUILD_PROTOCOL = 'bundle-lease-v5'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v5.lock'
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -313,7 +313,7 @@ def build_pending(root, runner=run_build, foreground=False):
                             return 1
                     record['frozen_compilation'] = str(frozen_path)
                     record['repository_after_build'] = after
-                    record['verified_inputs'] = frozen['source_inputs']
+                    record['verified_inputs'] = frozen.get('source_inputs_at_sealing', frozen['source_inputs'])
                 if frozen is None and not same_build_inputs(before, after):
                     record['superseded'] = True
                     write_json(receipt / 'result.json', record)
