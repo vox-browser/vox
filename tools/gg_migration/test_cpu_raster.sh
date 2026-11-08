@@ -82,7 +82,7 @@ if [ "${CPU_RASTER_TEST_PROD:-0}" = 1 ]; then set -- -prod -gc none; fi
 if [ "${CPU_RASTER_FREETYPE:-0}" = 1 ]; then set -- "$@" -d cpuraster_freetype; fi
 # Keep the differential baseline on the C backend independently of the
 # browser manifest's selected backend. FastC has separate focused checks.
-"$v_compiler" -b c -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
+"$v_compiler" -enable-globals -b c -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
     -o "$output_dir/cpu_raster_check" "$repo_dir/tools/gg_migration/cpu_raster_check.v"
 python3 - "$output_dir/inputs.json" "$output_dir/cpu_raster_check" "$output_dir/$oracle_name" <<'PY'
 import hashlib,json,sys
