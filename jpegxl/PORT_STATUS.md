@@ -156,6 +156,15 @@ this behavior is retained, rather than claimed as full bitstream validation.
 A separate regression preserves source EOF consumption after section splitting
 fails. The sections are located and checked, not decoded into pixels yet.
 
+Modular group headers now parse global-tree selection, weighted-predictor
+coefficients, reversible color transforms, palettes and explicit/automatic
+squeeze parameters. The 8,289 frozen reference records compare every field,
+validation result and consumed bit count, including all RCT selectors and
+palette predictor IDs. Empty squeeze lists retain their automatic-transform
+meaning. Default and no-GC focused checks pass under separate 3 GiB guards,
+including unavailable Rust compiler paths. Applying these transforms to pixels
+is still pending.
+
 Remaining work includes modular
 prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
