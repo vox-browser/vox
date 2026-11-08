@@ -1498,3 +1498,42 @@ intersecting boolean shadows, large-sigma rescaling, tiling and native/GPU
 bridges remain. The [resolve-surface receipt](gg-migration/resolved-source-image-shadows-20261109.json)
 retains source and binary identities, native hashes, the Linux dependency
 inspection and initial failures without full-cohort pass credit.
+
+
+### Mixed blur and drop-shadow graphs (2026-11-09)
+
+`cda95382d` moves mixed blur/drop-shadow lists off the canvas Skia fallback
+for axis-aligned saved layers: fills, strokes, glyph runs and bitmap-space
+image layers. Color matrices remain deferred through identity passes, resolve
+before real blurs and run before each shadow tint/foreground merge. Each
+shadow evaluates its preceding graph separately for the foreground and blur
+requests. Source bounds are intersected at each graph leaf before request
+unions. Both details have frozen native regression fixtures. Evaluation above
+256 graph visits declines before changing destination pixels.
+
+Native captures supply 21 new fixtures on both macOS and Linux (40 mixed
+filter fixtures total), including repeated shadows, scaled strokes, P3
+patterns, identity passes and clearing composite modes. Random comparisons:
+
+| Platform/build | Seed | Attempts | Exact | Declined |
+| --- | --- | ---: | ---: | ---: |
+| macOS, default | 20261109 | 5,000 | 3,896 | 1,104 |
+| macOS, `-prod -gc none` | 20261110 | 5,000 | 3,811 | 1,189 |
+| Linux ARM64, default | 20261109 | 5,000 | 4,141 | 859 |
+
+All runs finish with unchanged input pins. The two earlier failing prototypes
+are retained in the receipt and covered by regressions. All 27 CPU raster
+test files, focused C/FastC filter-layer tests, and HTML canvas integration
+pass. The FMA audit reports zero contracted operations (175 explicit FMAs).
+The full Linux browser typecheck passes **with Skia available**.
+
+A separate Linux `-prod -gc none` filter-layer binary compiles with Skia
+unavailable to pkg-config and runs all 14 registered test functions, including
+the three new tests. Its only direct dynamic dependencies are FreeType, libm
+and libc; the transitive library list also contains no Skia. This is a
+component proof. The existing production browser predates these changes and
+still links Skia; a complete Skia-free browser compile/link/run is unverified.
+
+Direct source-image mixed graphs, rotated layers, SVG graphs, boolean shadow
+intersections, large-sigma rescaling, tiling and native/GPU bridges remain.
+See the [checks, native fixtures and retained failures](gg-migration/spatial-filter-chains-20261109.json).
