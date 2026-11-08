@@ -47,6 +47,8 @@ fn report_retained_block_image_reuse(inputs []RetainedInlineInput) {
 // Optional image inputs are rare among the text nodes retained by measurement
 // caches. Keep their large payload out of every ordinary inline input record.
 fn retained_block_image_snapshot(node &Node) ?&RetainedBlockImageInput {
+	mut allocations := retain_geometry_allocations()
+	defer { allocations.finish() }
 	value := retained_block_image_input(node) or { return none }
-	return &RetainedBlockImageInput{ ...value }
+	return &RetainedBlockImageInput{ ...value, source: value.source.clone() }
 }

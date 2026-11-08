@@ -2,6 +2,7 @@ module layout
 
 import dom
 import html
+import platform
 
 fn retained_image_handle(document &dom.Document, id string) &Node {
  element := document.get_element_by_id(id) or { panic('missing '+id) }
@@ -107,5 +108,24 @@ fn test_unavailable_images_and_other_replaced_elements_reject_block_retention() 
 		_ = layout_document_typed_in_viewport(document, 400, 400)
 		root := retained_image_handle(document, 'stable')
 		assert u64(voidptr(root)) !in (document_layout_result(document) or { panic('missing layout') }).state.block_layouts_
+	}
+}
+
+fn test_retained_image_snapshot_owns_its_record_and_source_outside_geometry_scratch() {
+	$if prealloc {
+		mut document, image := retained_image_fixture()
+		defer { document.finalize() }
+		document.enable_native_storage()
+		mut storage := document.enter_native_storage()
+		defer { storage.finish() }
+		owner := platform.current_retained_arena()
+		node := retained_image_handle(document, 'photo')
+		expected := image.current_src().clone()
+		mut geometry := begin_document_geometry_scratch(document)
+		snapshot := retained_block_image_snapshot(node)?
+		assert owner.arena.contains(voidptr(snapshot))
+		assert owner.arena.contains(snapshot.source.str)
+		geometry.finish()
+		assert snapshot.source == expected
 	}
 }
