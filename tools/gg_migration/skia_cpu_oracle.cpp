@@ -20,6 +20,22 @@
 #include "include/core/SkPaint.h"
 #include "include/core/SkPixmap.h"
 #include "include/core/SkSamplingOptions.h"
+#include "include/core/SkShader.h"
+
+ORACLE void oracle_mipmap_shader(uint8_t const* source, uint8_t* pixels, int const* v, float const* t) {
+    auto info = SkImageInfo::Make(v[0], v[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info, source, v[2]));
+    auto output = SkImageInfo::Make(v[3], v[4], kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    auto surface = SkSurfaces::Raster(output);
+    auto matrix = SkMatrix::MakeAll(t[0], t[2], t[4], t[1], t[3], t[5], 0, 0, 1);
+    auto mipmap = v[5] == 1 ? SkMipmapMode::kNearest : SkMipmapMode::kLinear;
+    SkPaint paint;
+    paint.setBlendMode(SkBlendMode::kSrc);
+    paint.setShader(image->makeShader(SkTileMode::kClamp, SkTileMode::kClamp,
+        SkSamplingOptions(SkFilterMode::kLinear, mipmap), &matrix));
+    surface->getCanvas()->drawPaint(paint);
+    surface->readPixels(output, pixels, v[3] * 4, 0, 0);
+}
 
 ORACLE void oracle_mipmap(uint8_t const* source, uint8_t* pixels, int const* v) {
     auto info = SkImageInfo::Make(v[0], v[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType);
