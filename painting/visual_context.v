@@ -109,10 +109,9 @@ pub:
 }
 
 // SVGMaskable paints a referenced <clipPath> into an alpha mask around the
-// target stacking context. Unlike a CSS basic-shape clip this deliberately is
-// not consulted by hit testing, matching StackingContext::hit_test(). Each
-// resource geometry keeps its own clip-rule and SVG transform; painting unions
-// the components in the alpha mask instead of intersecting their paths.
+// target stacking context. Hit testing uses its geometric boundary, while SVG
+// masks remain paint-only. Components retain their own clip-rule and transform
+// and combine as a union rather than an intersection.
 pub struct SVGClipPathComponent {
 pub:
 	path      ClipPathVisualData
@@ -125,6 +124,20 @@ pub:
 	components    []SVGClipPathComponent
 	cache_key     u64
 	scope_id      u64
+}
+
+pub fn (clip SVGClipVisualData) contains(point Point) bool {
+	for component in clip.components {
+		inverse := component.transform.inverse() or { continue }
+		local := inverse.map_point(point)
+		// Resource paths retain contours without the CSS basic-shape bounds.
+		if component.path.polygons.len > 0 {
+			if polygons_contain_with_rule(component.path.polygons, local, component.path.fill_rule) { return true }
+		} else if polygon_contains_with_rule(component.path.polygon, local, component.path.fill_rule) {
+			return true
+		}
+	}
+	return false
 }
 
 pub enum SVGMaskPaintOperationKind {
@@ -613,10 +626,12 @@ fn (tree &AccumulatedVisualContextTree) transform_point_for_hit_test_through_nod
 			point
 		}
 
-		// URL-referenced SVG masks/clips are paint-time masks in
-		// StackingContext::paint, not accumulated geometric clips. Upstream hit
-		// testing therefore does not reject points outside their painted alpha.
-		SVGClipVisualData, SVGMaskVisualData, EffectsVisualData {
+		SVGClipVisualData {
+			if !node.data.contains(point) { return none }
+			point
+		}
+		// Alpha masks, filters and opacity do not change pointer hit regions.
+		SVGMaskVisualData, EffectsVisualData {
 			point
 		}
 	}
