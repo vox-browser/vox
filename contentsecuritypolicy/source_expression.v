@@ -211,7 +211,7 @@ pub fn parse_source_expression(production Production, input string) ?SourceExpre
 			parse_host_source(input)
 		}
 		.keyword_source {
-			if input in [keyword_self, unsafe_inline, unsafe_eval, strict_dynamic, unsafe_hashes,
+			if input.to_lower() in [keyword_self, unsafe_inline, unsafe_eval, trusted_types_eval, strict_dynamic, unsafe_hashes,
 				report_sample, unsafe_allow_redirects, wasm_unsafe_eval] {
 				SourceExpressionParseResult{
 					keyword_source: input

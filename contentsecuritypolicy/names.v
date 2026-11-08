@@ -31,6 +31,7 @@ pub const worker_src = 'worker-src'
 pub const keyword_self = "'self'"
 pub const unsafe_inline = "'unsafe-inline'"
 pub const unsafe_eval = "'unsafe-eval'"
+pub const trusted_types_eval = "'trusted-types-eval'"
 pub const strict_dynamic = "'strict-dynamic'"
 pub const unsafe_hashes = "'unsafe-hashes'"
 pub const report_sample = "'report-sample'"

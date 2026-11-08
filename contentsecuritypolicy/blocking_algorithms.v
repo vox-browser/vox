@@ -255,8 +255,16 @@ pub fn ensure_csp_does_not_block_string_compilation(mut global GlobalContext, in
 		return
 	}
 	mut blocked := false
+	mut trusted_types_required := false
+	for policy in global.policy_list.policies {
+		if policy.disposition() != .enforce { continue }
+		if directive := policy.get_directive_by_name(require_trusted_types_for) {
+			if "'script'" in directive.value() { trusted_types_required = true }
+		}
+	}
 	for policy in global.policy_list.policies {
 		if source_list := script_source_list(policy) {
+			if trusted_types_required && contains_ascii_case_insensitive(source_list, trusted_types_eval) { continue }
 			if !contains_ascii_case_insensitive(source_list, unsafe_eval) {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, script_src)
