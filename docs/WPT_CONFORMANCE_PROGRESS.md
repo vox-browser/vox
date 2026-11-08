@@ -588,3 +588,89 @@ durable status/completion paths are recorded in the manifest. Production
 validation is pending at this recording. Missing batch retrieval APIs, storage
 clone types and the other larger-suite failures remain open; **100% has not
 been reached**.
+
+
+## IndexedDB batch retrieval and fixed typed-array storage
+
+`6a385d1c7` exposes queued `getAll()`, `getAllKeys()` and `getAllRecords()` on
+object stores and indexes, including native `IDBRecord` snapshots, count and
+direction options, request identity and explicit commit ordering. Window and
+Worker bindings share the implementation. `0a4708c60` adds fixed typed-array
+and DataView storage: constructor, complete backing bytes, offset and length
+survive retrieval, while author metadata getters are ignored and snapshots
+remain independent of later mutations. Shared/cyclic records and resizable
+view backing buffers remain unsupported.
+
+The [local focused manifest](/Users/alex/.cache/vox/wpt/20261108-idb-batch-values-summary.json)
+records **ten original WPT pages, 174 / 174 assertions PASS**, every harness OK,
+in fresh direct native Page processes with upstream wptserve. Large-value,
+options, index request-source and query-exception-order cases all pass. Several
+older pages stopped at the missing key-range constructor and reported fewer
+assertions; the new checks require the full original expectation counts.
+Fixtures, assertions and harness deadlines are unchanged. This remains a
+native Page result, not a production browser or full-cohort percentage.
+
+All **55 distinct focused regressions pass in both normal and production
+allocation**: 39 binding and 16 typed model functions. The source, executable,
+fixture and server hashes remain stable during the passing checks. Failed
+compiler attempts and two premature runtime launches that executed no tests
+are retained in the external archive. Heavy shared host load is also recorded;
+no performance improvement is inferred from these runs. Completed owned job
+scratch and temporary canonical test files are removed after archive verification.
+
+The earlier eight-page production observer executed no tests: its completed
+candidate had already been superseded before it could pin the artifact. Its
+failure record and archive are preserved. A replacement observer searches the
+latest published bundle and completed build receipts, validates all 13 required
+source hashes, and checks the original artifact in place under its read lease.
+It selects **18 pages with 227 expected assertions**, covering both the earlier
+key/range fixes and this batch, and records actual guard/runner exits. Its
+status/completion paths are in the manifest; production validation remains
+pending at this recording. r16 continues on its original pinned earlier build,
+which lacks these newer fixes. **100% for the larger set and full upstream WPT
+has not been reached.**
+
+
+The complete selected-page counts are retained here because new performance
+JSON dumps remain local under the repository ignore policy:
+
+| Original imported WPT page | Native Page PASS / reported |
+| --- | ---: |
+| `IndexedDB/idbindex-query-exception-order.any` | 12 / 12 |
+| `IndexedDB/idbindex-request-source.any` | 7 / 7 |
+| `IndexedDB/idbindex_getAll.any` | 19 / 19 |
+| `IndexedDB/idbindex_getAllKeys.any` | 18 / 18 |
+| `IndexedDB/idbindex_getAllRecords.any` | 25 / 25 |
+| `IndexedDB/idbobjectstore-query-exception-order.any` | 12 / 12 |
+| `IndexedDB/idbobjectstore_getAll-options.any` | 24 / 24 |
+| `IndexedDB/idbobjectstore_getAll.any` | 18 / 18 |
+| `IndexedDB/idbobjectstore_getAllKeys-options.any` | 23 / 23 |
+| `IndexedDB/idbobjectstore_getAllKeys.any` | 16 / 16 |
+
+Raw focused evidence archive:
+`/Users/alex/.cache/vox/wpt/20261108-idb-batch-values-6a385d1c7.tar.gz`
+SHA-256: `3f139d69f25b3683fc553f6aeb41c054a04480572a0de6a3b4a0b073e5406216`.
+The local machine-readable summary is
+`/Users/alex/.cache/vox/wpt/20261108-idb-batch-values-summary.json`, SHA-256
+`820d2dadf71ff1f7062b9ba5bd87f91ba683fd7e9e5f28ac35dcaf8367ba8e40`.
+The compiler is `V 0.5.2 395d574`, C backend; V invocations retain the
+10 GiB compiler limit, compile guards retain 12 GiB, and native runtime guards
+retain 3 GiB. All final runner/guard exits are 0. The final native Page binary
+is SHA-256 `0870810cc25bf281133e6090b60e5beebc35d634c21371cef32b65806ad828bf`.
+These records describe functional checks; sampled guard RSS is not an exact
+peak measurement.
+
+A serial **r17** observer is also prepared to run all **6,828 imported cases**
+without path filters after r16 actually finishes and the new 18-page production
+gate passes. It then uses the latest published bundle containing the verified
+source, pins its executable and native libraries, and records the actual runner
+and 12 GiB guard exits with the original harness deadlines and 4 GiB browser cap.
+It does not run a second broad cohort concurrently. Status is at
+`/Users/alex/.cache/vox/wpt/20261108-r17-status.json`; completion and its raw
+archive will be recorded at
+`/Users/alex/.cache/vox/wpt/20261108-r17-completion.json`.
+The one-run supervisor is
+`/Users/alex/.cache/vox/wpt/20261108-r17-supervisor.py`, SHA-256
+`10ebea87809d50238d79879865e54dc8dca286525f79874f1d16c1410694219c`.
+It remains pending until those prerequisites succeed; this is a schedule,
+not a completed r17 result or a full-upstream result.
