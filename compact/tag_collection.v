@@ -45,7 +45,7 @@ const __tagTreeVersion=globalThis.__ladybirdDOMTreeVersion;
 function __tagCollection(key,name){
  let version="",owner="",numericVersion=-1,elements=[];
  return __classCollection(key,"",()=>{
-  if(version!==""&&numericVersion>=0&&__state.operations.length===0&&__dirtyElementStates.size===0&&__tagTreeVersion()===numericVersion)return elements;
+  if(version!==""&&numericVersion>=0&&!__compactHasPendingDOMState()&&__tagTreeVersion()===numericVersion)return elements;
   const snapshot=__queryElements(key,"getElementsByTagName",JSON.stringify({name,version,owner}));
   if(snapshot.elements!==null){elements=snapshot.elements.map(__queryElement);version=snapshot.version;owner=snapshot.owner;}
   numericVersion=__tagTreeVersion();

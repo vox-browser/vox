@@ -158,6 +158,21 @@ jobs:
                 layout/visual_context_memo_test.v
           done
 
+      - name: Check native DOM authority and projections
+        timeout-minutes: 45
+        run: |
+          export VOX_ARENA_POISON=1
+          for gc in boehm prealloc; do
+            python3 tools/run_memory_bounded.py \
+              --lock "$RUNNER_TEMP/vox-dom-authority-$gc.lock" \
+              --report "$RUNNER_TEMP/vox-dom-authority-$gc.json" --timeout 1200 -- \
+              python3 tools/test_linux_native.py --gc "$gc" \
+                compact/native_attributes_test.v \
+                compact/mutation_boundary_test.v \
+                dom/native_attribute_identity_test.v \
+                layout/lazy_dom_visual_lines_test.v
+          done
+
       - name: Check parser script lifecycles
         timeout-minutes: 60
         run: |
@@ -195,7 +210,8 @@ jobs:
                                                     'vox-native-build.json', 'vox-skia-test.json',
                                                     'vox-ownership-tests.json',
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json',
-                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json')]
+                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json',
+                                                    'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))

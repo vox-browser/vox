@@ -1,7 +1,6 @@
 module main
 
 import dom
-import html
 import platform
 import trustedtypes
 import x.json2
@@ -14,7 +13,11 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 	if storage != unsafe { nil } { allocation = storage.enter_nested() }
 	defer { allocation.finish() }
 	owned_key := key.clone()
-	state := if encoded_state == '' { json2.Any(json2.Null{}) } else { json2.decode[json2.Any](encoded_state)! }
+	state := if encoded_state == '' {
+		json2.Any(json2.Null{})
+	} else {
+		json2.decode[json2.Any](encoded_state)!
+	}
 	mut node := binding.equality_node(owned_key, state)!
 	mut element := node.as_element() or { return error('TypeError: Illegal Element receiver') }
 	mut target_allocation := platform.RetainedArenaScope{}
@@ -25,9 +28,15 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 	owned_name := name.clone()
 	owned_input := match input {
 		string { trustedtypes.TrustedTypeOrString(input.clone()) }
-		trustedtypes.TrustedHTML { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedHTML{data: input.data.clone()}) }
-		trustedtypes.TrustedScript { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScript{data: input.data.clone()}) }
-		trustedtypes.TrustedScriptURL { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScriptURL{data: input.data.clone()}) }
+		trustedtypes.TrustedHTML {
+			trustedtypes.TrustedTypeOrString(trustedtypes.TrustedHTML{ data: input.data.clone() })
+		}
+		trustedtypes.TrustedScript {
+			trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScript{ data: input.data.clone() })
+		}
+		trustedtypes.TrustedScriptURL {
+			trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScriptURL{ data: input.data.clone() })
+		}
 	}
 	mut hook_name := owned_name
 	mut hook_namespace := ?string(none)
@@ -44,18 +53,14 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 			hook_name = attribute.local_name()
 		}
 	}
-	old_value := element.get_attribute_ns(hook_namespace, hook_name)
-	// Preserve the old control state before the DOM writes a new type. The
-	// generic DOM attribute operation cannot invoke HTML's concrete model hook.
-	mut input_model := unsafe { &html.HTMLInputElementModel(nil) }
-	if hook_namespace == none && element.is_html_element() && element.local_name() == 'input' {
-		input_model = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+	change := compact_native_attribute_change(element, hook_name, hook_namespace)
+	if namespaced {
+		element.set_attribute_ns_for_bindings(owned_namespace, owned_name, owned_input)!
+	} else {
+		element.set_attribute_for_bindings(owned_name, owned_input)!
 	}
-	if namespaced { element.set_attribute_ns_for_bindings(owned_namespace, owned_name, owned_input)! }
-	else { element.set_attribute_for_bindings(owned_name, owned_input)! }
-	if input_model != unsafe { nil } {
-		input_model.form_associated_element_attribute_changed(hook_name, old_value,
-			element.get_attribute_ns(hook_namespace, hook_name), none)
-	}
-	return json2.encode({'refresh': binding.element_attribute_refresh(element)})
+	change.finish(element)
+	return json2.encode({
+		'refresh': binding.element_attribute_refresh(element)
+	})
 }

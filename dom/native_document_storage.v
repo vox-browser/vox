@@ -39,7 +39,13 @@ pub fn (d &Document) enter_native_storage() platform.RetainedArenaScope {
 // whole arena lifetimes also preserves nodes previously adopted from a third
 // document, without creating reference cycles on reciprocal adoption.
 fn (mut d Document) share_adopted_native_storage(source &Document) {
-	storage := source.native_storage_
+	d.share_native_storage_lifetime(source.native_storage_)
+}
+
+// Retained native identities can outlive their source Document's storage
+// field. Their allocation owner remains a live group member while another
+// document or reader holds a lease, so it can be shared directly on adoption.
+pub fn (mut d Document) share_native_storage_lifetime(storage &platform.RetainedArena) {
 	if storage == unsafe { nil } || voidptr(storage) == voidptr(d.native_storage_)
 		|| storage.arena.contains(voidptr(&d)) {
 		return

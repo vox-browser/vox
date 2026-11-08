@@ -856,36 +856,55 @@ pub fn (mut n NamedNodeMap) remove_named_item_ns(namespace_ ?string, local_name 
 	return attribute
 }
 
-// https://dom.spec.whatwg.org/#concept-element-attributes-set
+pub struct AttributeSetResult {
+pub:
+	previous ?&Attr_
+}
+
+// Preserve the translated nonnullable API for existing native callers. The
+// binding uses the precise result below, where append has no previous Attr.
 pub fn (mut n NamedNodeMap) set_attribute(attribute &Attr_) !&Attr_ {
+	result := n.set_attribute_with_result(attribute)!
+	return result.previous or { attribute }
+}
+
+// https://dom.spec.whatwg.org/#concept-element-attributes-set
+pub fn (mut n NamedNodeMap) set_attribute_with_result(attribute &Attr_) !AttributeSetResult {
 	// 1. Obtain the Trusted Types-compliant value for this attribute mutation.
+	mut verified_value := attribute.value_
 	if n.element != unsafe { nil } {
-		verified_value := n.element.document().trusted_types_compliant_attribute_value(n.element, attribute.local_name_, attribute.namespace_uri_, attribute.value_)!
-		mut mutable_attribute := unsafe { &Attr_(attribute) }
-		mutable_attribute.value_ = verified_value
+		verified_value = n.element.document().trusted_types_compliant_attribute_value(n.element, attribute.local_name_, attribute.namespace_uri_, attribute.value_)!
 	}
 	// 2. If attr's element is neither null nor element, throw an "InUseAttributeError" DOMException.
 	if owner := attribute.owner_element() {
-		if n.element != unsafe { nil } && owner != n.element {
+		if n.element != unsafe { nil } && voidptr(owner) != voidptr(n.element) {
 			return error('InUseAttributeError: Attribute must not already be in use')
 		}
 	}
+	if n.element != unsafe { nil } {
+		mut destination := unsafe { &Document(n.element.document()) }
+		destination.share_native_storage_lifetime(attribute.storage_owner())
+	}
+	// A failed in-use check must not replace the source attribute's value
+	// with text owned by an unrelated destination allocation lifetime.
+	mut mutable_attribute := unsafe { &Attr_(attribute) }
+	mutable_attribute.value_ = verified_value
 	// 3. Let oldAttr be the result of getting an attribute given attr's namespace, attr's local name, and element.
 	for index, old_attribute in n.attrs {
 		if option_string_equal(old_attribute.namespace_uri_, attribute.namespace_uri_) && old_attribute.local_name_ == attribute.local_name_ {
 			// 4. If oldAttr is attr, return attr.
-			if old_attribute == attribute {
-				return attribute
+			if voidptr(old_attribute) == voidptr(attribute) {
+				return AttributeSetResult{previous: attribute}
 			}
 			// 6. If oldAttr is non-null, then replace oldAttr with attr.
 			n.replace_attribute(old_attribute, attribute, index)
 			// 8. Return oldAttr.
-			return old_attribute
+			return AttributeSetResult{previous: old_attribute}
 		}
 	}
 	// 7. Otherwise, append attr to element.
 	n.append_attribute(attribute)
-	return attribute
+	return AttributeSetResult{}
 }
 
 // https://dom.spec.whatwg.org/#concept-element-attributes-replace
@@ -895,9 +914,9 @@ pub fn (mut n NamedNodeMap) replace_attribute(old_attribute &Attr_, new_attribut
 	}
 	n.attrs[old_attribute_index] = new_attribute
 	mut mutable_new_attribute := unsafe { &Attr_(new_attribute) }
-	mutable_new_attribute.owner_element_ = n.element
+	mutable_new_attribute.set_owner_element(n.element)
 	mut mutable_old_attribute := unsafe { &Attr_(old_attribute) }
-	mutable_old_attribute.owner_element_ = none
+	mutable_old_attribute.set_owner_element(none)
 	if n.element != unsafe { nil } {
 		old_attribute.handle_attribute_changes(n.element, old_attribute.value_, new_attribute.value_)
 	}
@@ -913,7 +932,7 @@ pub fn (mut n NamedNodeMap) remove_attribute_at_index(attribute_index int) ?&Att
 	mut mutable_attribute := unsafe { &Attr_(attribute) }
 	old_value := attribute.value_
 	element := attribute.owner_element()
-	mutable_attribute.owner_element_ = none
+	mutable_attribute.set_owner_element(none)
 	if owner := element {
 		attribute.handle_attribute_changes(owner, old_value, none)
 	}
@@ -944,7 +963,7 @@ pub fn (n &NamedNodeMap) named_item_value(name string) ?&Attr_ {
 pub fn (mut n NamedNodeMap) remove_attribute_node_checked(attr &Attr_) !&Attr_ {
 	// 1. If this's attribute list does not contain attr, then throw a "NotFoundError" DOMException.
 	for index, attribute in n.attrs {
-		if attribute == attr {
+		if voidptr(attribute) == voidptr(attr) {
 			// 2. Remove attr.
 			n.remove_attribute_at_index(index)
 			// 3. Return attr.

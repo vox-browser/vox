@@ -73,7 +73,7 @@ var __compactMutationObserverCount=0,__compactMutationFlushing=false;
 function __compactMutationFlush(force){
  if((!force&&!__compactMutationObserverCount)||__compactMutationFlushing)return;
  __compactMutationFlushing=true;
- try{__queryElements("","documentValue","readyState");}finally{__compactMutationFlushing=false;}
+ try{__compactFlushDOMMutations();}finally{__compactMutationFlushing=false;}
 }
 const __mutationOperate=globalThis.__ladybirdMutationObserver,__mutationParse=JSON.parse,__mutationStringify=JSON.stringify;
 delete globalThis.__ladybirdMutationObserver;

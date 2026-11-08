@@ -224,9 +224,8 @@ fn (mut app BrowserApp) run_devtools_console(source string) {
 		''
 	}
 	mut navigation := ?string(none)
-	if state := runtime.evaluate_host('__ladybirdFinalize()') {
-		navigation = apply_javascript_runtime_state(app.document, state, runtime, mut app.js_messages)
-		runtime.evaluate_host('__ladybirdClearLogs()') or {}
+	if commit := commit_compact_dom_task(app.document, runtime, mut app.js_messages) {
+		navigation = commit.navigation
 	}
 	app.synchronize_javascript_task_paint(runtime.take_document_replay_effects())
 	app.sync_devtools()

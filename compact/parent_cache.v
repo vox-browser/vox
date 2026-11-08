@@ -9,7 +9,7 @@ const __nativeParentOwners=new WeakMap(),__parentCacheDelete=WeakMap.prototype.d
 function __compactNativeParent(state){
  if(typeof __parentTreeVersion!=="function")return __queryElements(state.bridgeKey,"nodeParent","");
  const version=__parentTreeVersion();
- if(!__state.operations.length&&!__dirtyElementStates.size&&typeof version==="number"&&version>=0){
+ if(!__compactHasPendingDOMState()&&typeof version==="number"&&version>=0){
   const cached=__elementApply(__elementRecordGet,__nativeParentOwners,[state]);
   if(cached&&cached.version===version)return cached.parent;
  }
