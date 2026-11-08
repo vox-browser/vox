@@ -200,10 +200,10 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 			}
 			.start, .end_ {
 				is_start := side.to_keyword() == .start
+				low := absolute_axis_starts_low(containing_box, is_horizontal_axis) == is_start
 				if is_horizontal_axis {
-					use_left := (containing_box.computed_values().direction() == .ltr) == is_start
-					if use_left { rect.left() } else { rect.right() }
-				} else if is_start {
+					if low { rect.left() } else { rect.right() }
+				} else if low {
 					rect.top()
 				} else {
 					rect.bottom()
@@ -211,10 +211,10 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 			}
 			.self_start, .self_end {
 				is_start := side.to_keyword() == .self_start
+				low := absolute_axis_starts_low(box, is_horizontal_axis) == is_start
 				if is_horizontal_axis {
-					use_left := (box.computed_values().direction() == .ltr) == is_start
-					if use_left { rect.left() } else { rect.right() }
-				} else if is_start {
+					if low { rect.left() } else { rect.right() }
+				} else if low {
 					rect.top()
 				} else {
 					rect.bottom()
@@ -235,13 +235,15 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 	}
 	if side.is_percentage() {
 		percentage := side.as_percentage().percentage().as_fraction()
+		low := absolute_axis_starts_low(containing_box, is_horizontal_axis)
 		if is_horizontal_axis {
-			if containing_box.computed_values().direction() == .ltr {
+			if low {
 				return rect.left().plus(rect.width.times_float(percentage))
 			}
 			return rect.right().minus(rect.width.times_float(percentage))
 		}
-		return rect.top().plus(rect.height.times_float(percentage))
+		return if low { rect.top().plus(rect.height.times_float(percentage)) }
+			else { rect.bottom().minus(rect.height.times_float(percentage)) }
 	}
 	return none
 }

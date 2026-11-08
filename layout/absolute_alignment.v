@@ -33,9 +33,10 @@ fn absolute_axis_starts_low(node &Node, horizontal bool) bool {
 	computed := node.computed_values()
 	if horizontal {
 		return if computed.writing_mode() == .horizontal_tb { computed.direction() == .ltr }
-			else { computed.writing_mode() != .vertical_rl }
+			else { computed.writing_mode() !in [.vertical_rl, .sideways_rl] }
 	}
-	return computed.writing_mode() == .horizontal_tb || computed.direction() == .ltr
+	return if computed.writing_mode() == .horizontal_tb { true }
+		else { (computed.direction() == .ltr) != (computed.writing_mode() == .sideways_lr) }
 }
 
 fn absolute_aligned_axis_offset(alignment AbsoluteSelfAlignment, box &Node, containing &Node,
