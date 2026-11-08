@@ -84,6 +84,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	previous_storage := result.paint_tree_storage
 	defer { release_paint_tree(voidptr(previous_storage)) }
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	result.has_renderer_snapshot = true
 	result.invalidate_boxes_by_layout_cache()
 	result.drop_display_list_scene()
 	result.needs_repaint = true
