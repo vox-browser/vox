@@ -397,6 +397,50 @@ fn test_identity_shadow_preserves_unknown_source_image_boundary() {
 	assert sha256.sum(pixels).hex()[..16] == 'c109c5a5d05dfb86'
 }
 
+fn test_source_image_alpha_type_and_color_space_remain_deferred() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	zero := CanvasFilterStep{kind: .blur}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+	gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+	box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+		offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+	sequences := [[box], [gaussian], [gaussian, contrast, box], [tiny, box, contrast],
+		[box], [box, contrast, zero], [contrast, shadow],
+		[opacity, CanvasFilterStep{...shadow, sigma: .01}, contrast], [contrast, shadow],
+		[contrast, zero, opacity, tiny, contrast]]
+	hashes := ['b6afd442846f1fe7', 'e9153669efc21a36', 'ec04ff3914c40623', 'fbe1dc130b1bbe80',
+		'b584f633e3fc82cf', 'a902cd538e64aca3', 'c62cadba69cd7310', '7f699b125a13e896',
+		'a1a9893f167e696e', '001b2763877bb22c']
+	for i, steps in sequences {
+		mut pixels := image_test_background()
+		premul := i in [0, 2, 6, 9]
+		p3 := i !in [4, 5, 8]
+		mode := match i { 1, 8 { BlendMode.multiply } 2, 5, 7 { .src_in }
+			3 { .plus_lighter } 9 { .darken } else { .src_over } }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, image_test_identity,
+			image_test_bitmap(7, 6, premul, p3), [f32(0), 0, 7, 6]!, [f32(10), 12, 7, 6]!,
+			true, 1, mode, image_test_clips(i in [1, 3, 5, 7, 8, 9]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'source color info fixture ${i}'
+	}
+}
+
+fn test_image_shadow_offsets_keep_the_original_layer_origin() {
+	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: 3.3989284,
+		offset_x: 19, offset_y: 11.136544, color: 4287222027}])
+	for p3 in [true, false] {
+		mut pixels := []u8{len: 50 * 73 * 4}
+		image := CanvasBitmap{width: 19, height: 14, pitch: 84, premultiplied: true,
+			display_p3: p3, pixels: $embed_file('testdata/image-shadow-offset.rgba').to_bytes()}
+		assert draw_canvas_image_filtered(mut pixels, 50, 73, 200, 2,
+			[f32(1), 0, 0, 1, 9, -9]!, image, [f32(1), 2, 15, 9]!, [f32(15), -3, 15, 9]!,
+			false, 1, .src_over, [], filter, false)
+		assert sha256.sum(pixels).hex()[..16] == 'f2a7f0ed22c87bab'
+	}
+}
+
 fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
 	mut pixels := []u8{len: 65 * 44 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,

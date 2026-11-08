@@ -3,7 +3,7 @@ module cpuraster
 // A sequence of raster blurs shares one source layer. Each filter requests
 // its input bounds from the preceding filter and retains its own quantized
 // intermediate image, as the native image-filter graph does.
-fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, stages []BlurFilterStage, post_color []MatrixColorFilter, mode BlendMode, content LayerContent) bool {
+fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, stages []BlurFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, mode BlendMode, content LayerContent) bool {
 	ctm := canvas_affine(transform)
 	if ctm.kx != 0 || ctm.ky != 0 { return false }
 	sigmas := stages.map(it.sigma)
@@ -64,16 +64,19 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		zero_y + ctm.sy, shift_x + ctm.tx, shift_y + ctm.ty]!
 	inner_clip := rect_path(Rect{1, 1, f32(lw - 1), f32(lh - 1)})
 	if !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) { return false }
-	mut result := new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh}, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	saved := new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh}, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	mut result := FilterResult{...saved, color_info: source_info}
 	mut pending := []MatrixColorFilter{}
 	for i, desired_global in requested {
 		pending << stages[i].pre_color
 		if result.has_image && (sx[i] != 0 || sy[i] != 0) {
-			if color := new_color_filter(pending) {
+			incoming_color := new_color_filter(pending)
+			if incoming_color != none || result.color_info.display_p3 {
 				// A real blur resolves its child's deferred color filter into
 				// N32 pixels. Identity passes preserve it without quantization.
 				result = FilterResult{...result, image: SpecialImage{
-					filter_layer_image(result.image.backing, color), result.image.subset}}
+					filter_layer_source_image(result.image.backing, result.color_info, incoming_color), result.image.subset},
+					color_info: FilterImageInfo{}}
 			}
 			pending.clear()
 		}
@@ -87,7 +90,7 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		return true
 	}
 	pending << post_color
-	draw_color_filtered_sprite(mut pixels, pitch, result.image.bitmap(), padded.left + result.origin_x,
+	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()), padded.left + result.origin_x,
 		padded.top + result.origin_y, &rc, mode, pending)
 	return true
 }

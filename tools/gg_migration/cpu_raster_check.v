@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2458,7 +2458,8 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
-	aligned := os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
+	converted := os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
 	mut image_space := 0
@@ -2532,19 +2533,21 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			sw := rand.intn(image.width - left) or { 0 } + 1
 			sh := rand.intn(image.height - top) or { 0 } + 1
 			c = BitmapCase{...c,
-				image: cpuraster.CanvasPattern{...image, pixels: random_premultiplied(image.width * image.height),
-					pitch: image.width * 4, premultiplied: true, display_p3: false}
+				image: if converted { cpuraster.CanvasPattern{...image,
+					display_p3: i % 3 != 0} } else {
+					cpuraster.CanvasPattern{...image, pixels: random_premultiplied(image.width * image.height),
+						pitch: image.width * 4, premultiplied: true, display_p3: false} }
 				source: [f32(left), top, sw, sh]!
 				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
 				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
 				global_alpha: 1
 				chromium: false
-				filters: match i % 4 {
+				filters: if converted { random_converted_image_blurs() } else { match i % 4 {
 					0 { random_layer_filters() }
 					1 { random_shadow_filters() }
 					2 { random_color_blur_chain() }
 					else { random_color_shadow_filters() }
-				}
+				} }
 			}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
@@ -2557,6 +2560,26 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 		println('filtered image policies: ${image_space} image-space, ${bitmap_space} bitmap-space comparisons exact (includes no-ops)')
 	}
 	return count, declined
+}
+
+fn random_converted_image_blurs() []cpuraster.CanvasFilterStep {
+	match rand.intn(4) or { 0 } {
+		0 { return random_color_shadow_filters() }
+		1 { return random_shadow_filters() }
+		else {}
+	}
+	mut filters := [random_blur_step()]
+	if rand.intn(2) or { 0 } == 0 {
+		mut before := random_color_filters()
+		before << filters
+		filters = before.clone()
+	}
+	for _ in 0 .. rand.intn(3) or { 0 } {
+		if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+		filters << random_blur_step()
+	}
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
 }
 
 fn check_image_cases(oracle Oracle, count int) {

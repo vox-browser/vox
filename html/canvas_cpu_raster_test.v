@@ -615,7 +615,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if spatial && i == 2 {
+		context.set_filter(if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
+		else if spatial && i == 2 {
 			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
 		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
@@ -629,7 +630,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 				f: -2
 			}
 		}
-		context.drawing_state.global_alpha = if i == 1 { 0.6 } else { 1 }
+		context.drawing_state.global_alpha = if i == 1 && !spatial { 0.6 } else { 1 }
 		context.drawing_state.image_smoothing_enabled = i == 0
 		context.drawing_state.current_compositing_and_blending_operator = if i < 3 {
 			operations[i]
@@ -666,7 +667,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 		mut direct := target.clone()
 		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
 			command)
-		if (filtered && i == 1) || (spatial && i == 2) {
+		if (filtered && i == 1) || (spatial && i in [1, 2]) {
 			supported, filter := canvas_cpu_filter(command.filters)
 			assert supported
 			assert cpuraster.draw_canvas_image_filtered(mut direct, bitmap.width, bitmap.height,
