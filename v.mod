@@ -3,5 +3,5 @@ Module {
 	description: 'Vox web browser'
 	version: '0.0.0'
 	dependencies: []
-	subdirs: ['blocking', 'browserapp', 'capture', 'chromium', 'compact', 'document', 'fonts', 'images', 'initial', 'media', 'memorymgmt', 'native', 'navigation', 'paint', 'resources', 'script', 'scroll', 'sites', 'webapi']
+	subdirs: ['blocking', 'browserapp', 'capture', 'chromium', 'compact', 'document', 'fonts', 'images', 'initial', 'media', 'memorymgmt', 'native', 'navigation', 'paint', 'resources', 'script', 'scroll', 'sites', 'site_optimizations', 'webapi']
 }

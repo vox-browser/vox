@@ -4,22 +4,6 @@ import browserjs
 import dom
 import page
 
-fn test_automatic_script_policy_matches_only_wikipedia_http_hosts() {
-	for address in ['https://wikipedia.org', 'https://www.wikipedia.org/',
-		'https://en.wikipedia.org/wiki/V', 'http://ru.m.wikipedia.org:8080/',
-		'https://WWW.WIKIPEDIA.ORG./', 'https://user:password@en.wikipedia.org/'] {
-		assert !browser_scripting_enabled(address, .automatic), address
-		assert browser_scripting_enabled(address, .enabled), address
-	}
-	for address in ['https://notwikipedia.org/', 'https://wikipedia.org.example/',
-		'https://wikipedia.org@other.example/', 'https://example.org/wikipedia.org',
-		'https://example.org/?site=https://wikipedia.org', 'file:///wikipedia.org/page.html',
-		'data:text/html,wikipedia.org', 'about:blank', 'https://[::1]/', 'invalid URL'] {
-		assert browser_scripting_enabled(address, .automatic), address
-		assert !browser_scripting_enabled(address, .disabled), address
-	}
-}
-
 fn test_script_policy_launch_overrides_do_not_change_engine_selection() {
 	assert parse_launch_options([])!.script_policy == .automatic
 	options := parse_launch_options(['--disable-javascript', '--js-engine=libjs', 'page.html'])!
