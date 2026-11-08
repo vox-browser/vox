@@ -125,6 +125,14 @@ __attribute__((visibility("default"))) double vox_precise_scroll_diagnostic_time
     return active ? (CACurrentMediaTime() - started) * 1e6 : -1;
 }
 
+#include "precise_scroll_stalls.h"
+static IMP stall_original_update;
+static void stall_update(id self, SEL selector) {
+    StallScope scope = active && self == page_view ? stall_frame_begin(inputs) : (StallScope){0};
+    @try { ((void (*)(id,SEL))stall_original_update)(self,selector); }
+    @finally { stall_frame_end(scope); }
+}
+
 static void reset_v_profile_if_requested(void) {
     const char *requested = getenv("VOX_PRECISE_RESET_V_PROFILE");
     if (!requested || !*requested) return;
@@ -199,6 +207,7 @@ static void published(id self, SEL selector) {
 
 static void finish(int status) {
     active = NO;
+    stall_monitor_finish(started);
     double finished = CACurrentMediaTime();
     if (count_instructions && status==0 && !counter_complete.present) {
         fprintf(stderr,"SCROLL_ERROR missing complete instruction boundary\n");status=2;
@@ -369,7 +378,21 @@ static void begin(void) {
         ((void (*)(id,SEL,void (*)(void*,uint64_t,double),void (*)(void*,uint64_t)))objc_msgSend)(
             publication,observe,prepared_frame,completed_frame);
         fprintf(stderr,"SCROLL_ENDPOINT completed_frame_v%u source=rendered_input\n",version);
+        const char *threshold = getenv("VOX_PRECISE_STALL_MS");
+        if (threshold && *threshold) {
+            double milliseconds = strtod(threshold,NULL);
+            if (!isfinite(milliseconds) || milliseconds <= 0 || milliseconds > 1000) {
+                fprintf(stderr,"SCROLL_ERROR invalid stall sampling threshold\n");exit(2);
+            }
+            stall_monitor_start(milliseconds);
+            Method method=class_getInstanceMethod(page_view.class,@selector(updateLayer));
+            if (!method) { fprintf(stderr,"SCROLL_ERROR no stall sampling hook\n");exit(2); }
+            stall_original_update=method_setImplementation(method,(IMP)stall_update);
+        }
     } else {
+        if (getenv("VOX_PRECISE_STALL_MS")) {
+            fprintf(stderr,"SCROLL_ERROR stall sampling requires the completed-frame observer\n");exit(2);
+        }
         Method method = class_getInstanceMethod(page_view.class, @selector(updateLayer));
         if (!method) { fprintf(stderr, "SCROLL_ERROR no publication hook\n"); exit(2); }
         update = method_setImplementation(method, (IMP)published);

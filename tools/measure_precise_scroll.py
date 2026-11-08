@@ -309,6 +309,8 @@ def main():
                         help="Diagnostic only: record first-fault registers and bounded readable memory")
     parser.add_argument("--instructions", action="store_true",
                         help="Separate counter cohort: main-process hardware instructions and CPU ms over the input/publication pipeline")
+    parser.add_argument("--sample-stalls-ms", type=float,
+                        help="Diagnostic only: sample main-thread stacks in display callbacks longer than this threshold")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])
@@ -335,6 +337,9 @@ def main():
                         default="enabled", help="Use automatic to match ordinary browser navigation")
     parser.add_argument("--timeout", type=float, default=120)
     args = parser.parse_args()
+    if args.sample_stalls_ms is not None and not (
+            math.isfinite(args.sample_stalls_ms) and 0 < args.sample_stalls_ms <= 1000):
+        parser.error("--sample-stalls-ms must be finite and between 0 and 1000")
     if sys.platform != "darwin":
         parser.error("This native publication probe requires macOS")
     if not (10 <= args.inputs <= 100000 and args.width > 0 and args.height > 0
@@ -352,7 +357,8 @@ def main():
     probe = output / "precise-scroll.dylib"
     source = REPO / "tools/measure_precise_scroll_darwin.m"
     fault_header = source.with_name("precise_scroll_faults.h")
-    compile_inputs = {path: sha256(path) for path in [source, fault_header]}
+    stall_header = source.with_name("precise_scroll_stalls.h")
+    compile_inputs = {path: sha256(path) for path in [source, fault_header, stall_header]}
     compile_command = ["clang", "-O2", "-Wall", "-Wextra", "-Werror",
                        "-dynamiclib", "-fobjc-arc", str(source),
                        "-framework", "Cocoa", "-framework", "QuartzCore",
@@ -439,8 +445,11 @@ def main():
                VOX_PRECISE_INSTRUCTIONS="1" if args.instructions else "",
                VOX_PRECISE_FAILURE_CAPTURE=str(output / "navigation-error.png"),
                VOX_PRECISE_REQUIRED_TITLE=args.require_title)
+    env.pop('VOX_PRECISE_STALL_MS', None)
+    if args.sample_stalls_ms is not None:
+        env['VOX_PRECISE_STALL_MS'] = str(args.sample_stalls_ms)
     pinned = [binary, *sorted(binary.parent.glob("*.dylib")),
-              Path(__file__).resolve(), source, fault_header, probe, *libraries]
+              Path(__file__).resolve(), source, fault_header, stall_header, probe, *libraries]
     runtime_paths = runtime_input_paths(binary, env)
     pinned.extend(runtime_paths)
     # A private replay certificate changes the accepted network responses.
@@ -457,7 +466,9 @@ def main():
                "--window-height", str(args.height + args.chrome_height), args.url]
     evidence = dict(command=command, compile_command=compile_command,
                     diagnostic_only=bool(args.v_profile_reset or args.capture_faults or args.instructions
+                                         or args.sample_stalls_ms is not None
                                          or native_diagnostic_environment(env)),
+                    stall_sampling_ms=args.sample_stalls_ms,
                     native_diagnostic_environment=native_diagnostic_environment(env),
                     source_and_binary_sha256=hashes, cache_sha256=digest.hexdigest(),
                     runtime_input_sha256={str(path): hashes[str(path)] for path in runtime_paths},
@@ -502,6 +513,15 @@ def main():
                 or file_identities != {str(path): input_file_identity(path) for path in pinned}):
             raise RuntimeError("Build, runtime asset or probe identity changed during measurement")
         browser_log = (output / "browser.log").read_text(errors="replace")
+        if args.sample_stalls_ms is not None:
+            stall = re.search(r'^SCROLL_STALL_DIAGNOSTIC threshold_ms=([\d.]+) samples=(\d+) frames=(\d+) dropped=(\d+) failures=(\d+)$',
+                              browser_log, re.MULTILINE)
+            if not stall or not math.isclose(float(stall[1]), args.sample_stalls_ms, rel_tol=1e-5):
+                raise ValueError('Missing requested slow-frame diagnostic')
+            evidence['stall_sampling'] = dict(zip(
+                ['samples', 'frames', 'dropped', 'failures'], map(int, stall.groups()[1:])))
+            if int(stall[4]) or int(stall[5]):
+                raise ValueError('Slow-frame diagnostic overflow or thread snapshot failure')
         evidence['native_fault_recorded'] = bool(re.search(
             r'^SCROLL_FAULT_FIRST(?:\s|$)', browser_log, re.MULTILINE))
         evidence['native_images'] = verify_native_images(browser_log, binary, native_bridge, picture_bridge, image_bridge)

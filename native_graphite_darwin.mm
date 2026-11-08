@@ -183,6 +183,14 @@ skgpu::graphite::Context* context()
         backend.fQueue.reset((CFTypeRef)queue);
         skgpu::graphite::ContextOptions options;
         options.fGpuBudgetInBytes = 64 * 1024 * 1024;
+        if (std::getenv("VOX_GRAPHICS_PIPELINE_DIAGNOSTICS"))
+            options.fPipelineCachingCallback = [](void*, skgpu::graphite::ContextOptions::PipelineCacheOp op,
+                std::string const& label, uint32_t hash, bool precompiled, sk_sp<SkData>) {
+                if (op == skgpu::graphite::ContextOptions::PipelineCacheOp::kAddingPipeline)
+                    std::fprintf(stderr,"VOX_GRAPHICS_PIPELINE time=%.6f hash=%u precompiled=%d label=%s\n",
+                        std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count(),
+                        hash, precompiled, label.c_str());
+            };
         auto result = skgpu::graphite::ContextFactory::MakeMetal(backend, options);
         if (result) gpu_frame_queue = queue;
         return result;

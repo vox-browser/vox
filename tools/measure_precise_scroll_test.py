@@ -115,6 +115,9 @@ class PreciseScrollTests(unittest.TestCase):
     def test_fault_capture_is_explicitly_marked_as_diagnostic(self):
         self.check_isolated_launch(False, capture_faults=True)
 
+    def test_stall_sampling_is_explicit_and_marked_as_diagnostic(self):
+        self.check_isolated_launch(False, sample_stalls_ms=25)
+
     def test_native_pixel_checks_and_logging_are_marked_as_diagnostic(self):
         for name in ['VOX_GPU_CANVAS_VERIFY', 'VOX_GPU_CANVAS_PRESENT_VERIFY',
                      'VOX_GPU_CANVAS_COMMAND_TIMES', 'VOX_IMAGE_UPLOAD_DIAGNOSTICS']:
@@ -159,7 +162,7 @@ class PreciseScrollTests(unittest.TestCase):
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
                               capture_faults=False, mutate_worker=False, mutate_packaged=False,
                               image_bridge=False, mutate_image=False, disable_gpu_canvas=False,
-                              diagnostic_environment=None, zoom=None):
+                              diagnostic_environment=None, zoom=None, sample_stalls_ms=None):
         seeded = {}
         if allow_fixture_navigation:
             seeded["allow_any_site"] = True
@@ -218,7 +221,11 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(env["VOX_PRECISE_REQUIRED_TITLE"], "fixture")
                 self.assertEqual(env["VOX_PRECISE_RESET_V_PROFILE"], "1" if v_profile_reset else "")
                 self.assertEqual(env["VOX_PRECISE_CAPTURE_FAULTS"], "1" if capture_faults else "")
+                self.assertEqual(env.get('VOX_PRECISE_STALL_MS'),
+                                 str(float(sample_stalls_ms)) if sample_stalls_ms is not None else None)
                 kwargs["stdout"].write(log_for())
+                if sample_stalls_ms is not None:
+                    kwargs['stdout'].write(f'SCROLL_STALL_DIAGNOSTIC threshold_ms={sample_stalls_ms} samples=0 frames=0 dropped=0 failures=0\n')
                 kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
                                        + os.fsencode(renderer).hex() + '\n')
                 if image_bridge:
@@ -250,6 +257,8 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--v-profile-reset")
             if capture_faults:
                 arguments.append("--capture-faults")
+            if sample_stalls_ms is not None:
+                arguments.extend(['--sample-stalls-ms', str(sample_stalls_ms)])
             if image_bridge:
                 arguments.extend(['--image-renderer-bridge', str(image_renderer)])
             for name,value in (diagnostic_environment or {}).items():
@@ -261,6 +270,7 @@ class PreciseScrollTests(unittest.TestCase):
                                     DYLD_LIBRARY_PATH="/unrelated/native/libraries",
                                     VOX_PRECISE_RESET_V_PROFILE="ambient-must-not-enable-profiling",
                                     VOX_PRECISE_CAPTURE_FAULTS="1",
+                                    VOX_PRECISE_STALL_MS="ambient-must-not-enable-profiling",
                                     SSL_CERT_FILE=str(certificate),
                                     VOX_PROXY="" if seeded else "http://127.0.0.1:9"), \
                     mock.patch.object(measure_precise_scroll.subprocess, "run", compile_probe), \
@@ -287,7 +297,8 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertEqual(evidence['image_renderer_bridge'], str(image_renderer))
                 self.assertEqual(evidence['source_and_binary_sha256'][str(image_renderer)],
                                  hashlib.sha256(b'fixture image renderer').hexdigest())
-            self.assertEqual(evidence["diagnostic_only"], bool(v_profile_reset or capture_faults or diagnostic_environment))
+            self.assertEqual(evidence["diagnostic_only"], bool(v_profile_reset or capture_faults
+                             or diagnostic_environment or sample_stalls_ms is not None))
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
             self.assertEqual(evidence["source_and_binary_sha256"][str(header)],
                              hashlib.sha256(header.read_bytes()).hexdigest())
