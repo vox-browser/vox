@@ -4,6 +4,7 @@ import adblock
 import browserjs
 import dom
 import html
+import layout
 import os
 import page
 import platform
@@ -31,6 +32,8 @@ fn test_upstream_testharness_in_native_document() {
 	mut document := parse_loaded_browser_navigation_document(loaded, url, none, none, unsafe { &dom.Page(owner) }, true)
 	owner.set_local_root_navigable(document.navigable() or { panic('missing root navigable') })!
 	assert document.is_fully_active()
+	document.update_the_visibility_state(.visible)
+	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
 	mut service := &BrowserHostedDocument{document: document}
 	mut manager := browser_child_document_host(document, .javascriptcore)
 	defer { manager.close(); service.close(); document.finalize() }
@@ -44,10 +47,14 @@ fn test_upstream_testharness_in_native_document() {
 		assert time.now() < deadline, 'initial resources did not finish'
 		time.sleep(time.millisecond)
 	}
+	// Native Page checks need the same initial rendering opportunity as a
+	// windowed navigation, including layout-dependent FontFaceSet.ready.
+	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
 	for {
 		service.poll(mut messages)
 		manager.poll(mut messages)
 		html.main_thread_event_loop().process()
+		html.main_thread_event_loop().update_the_rendering()
 		platform.pump_native_events(0.001)
 		if service.runtime != unsafe { nil } {
 			if service.runtime.evaluate_host('typeof nativeWptResult!=="undefined"&&nativeWptResult!==null')! == 'true' { break }
