@@ -14,7 +14,7 @@ import macos
 fn C.objc_msgSend()
 fn C.objc_lookUpClass()
 fn C.class_getInstanceMethod()
-fn C.class_getSuperclass()
+fn C.class_getSuperclass(cls voidptr) voidptr
 fn C.class_getMethodImplementation()
 fn C.class_addMethod()
 fn C.class_replaceMethod()
