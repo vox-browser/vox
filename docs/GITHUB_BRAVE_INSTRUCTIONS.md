@@ -121,6 +121,21 @@ proving that equality caused it. C22 remains the best complete result at
 17.8990% fewer. [Full c23 evidence](performance/github-vlang-instructions-20261108-20pct-c23.json)
 retains every observation and build receipt. Regression tests remain deferred.
 
+C24, with recursive slot and parser-payload value equality restored, also
+fails the conservative gate. Its first Vox launch uses **10,351,680,022**
+instructions; the remaining six use 8,849,933,327–8,878,174,575. All seven
+observations remain included. Minimum Brave is **11,003,128,307**, producing
+ratio **0.94079427** (5.9206% fewer), despite median paired savings of 21.0418%.
+All fourteen captures retain exact per-engine references, complete content and
+normal browser exits. The first launch performs an additional paint-command
+checkpoint with roughly 899M instructions; its cause remains unresolved.
+Executable `5837924433ab3217d0db412cb9da680d6fc8a94ca222b503dcfed0c8174d0ffa`
+uses canonical sources with the same single-C-unit O3/1500 policy. Build guard
+exits 0, while benchmark/guard exit 1 records the failed gate. C22 remains the
+best conservative result. [Full c24 evidence](performance/github-vlang-instructions-20261108-20pct-c24.json)
+retains the first-launch outlier and all other attempts. Regression tests remain
+deferred.
+
 ## Workload and scope
 
 - Input: Brave's serialized DOM of the hydrated repository page, with every
