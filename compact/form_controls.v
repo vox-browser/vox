@@ -112,7 +112,10 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 				'input' { html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(submitter_element) }).control }
 				else { return error('TypeError: the submitter is not a submit button') }
 			}
-			if control.form() == none { control.reset_form_owner() }
+			// Native queries can assign a retained key to a created control.
+			// Resolve explicit associations from the live attribute, independent
+			// of that key's spelling. Preserve parser-established implicit owners.
+			if control.form() == none || submitter_element.has_attribute('form') { control.reset_form_owner() }
 			submitter = control
 		}
 		owns_hook := !form.has_submission_hook()
