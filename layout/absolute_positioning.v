@@ -351,6 +351,9 @@ fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &No
 	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
 		return resolved_inset(box, property_id, basis)
 	}
+	if value is css.AnchorSizeStyleValue {
+		return resolve_anchor_size_value(state, box, containing_state, value, basis, is_horizontal_axis)
+	}
 	if value is css.AnchorStyleValue {
 		return resolve_anchor_for_inset(state, box, containing_box, containing_state,
 			containing_start, basis, value, is_from_end, is_horizontal_axis)
@@ -418,10 +421,11 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		if left == none { left = CSSPixels.new(0) }; if right == none { right = CSSPixels.new(0) }
 		if top == none { top = CSSPixels.new(0) }; if bottom == none { bottom = CSSPixels.new(0) }
 	}
-	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
+	mut forced_width := resolve_absolute_content_size(state, box, containing_state, .width,
 		containing_width, box_state, true)
-	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),
+	mut forced_height := resolve_absolute_content_size(state, box, containing_state, .height,
 		containing_height, box_state, false)
+	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 	preferred_width := computed.size_value(.width)
 	preferred_height := computed.size_value(.height)
 	// FormattingContext::compute_width_for_absolutely_positioned_element() and
@@ -497,6 +501,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		mut containing_state, containing_width, containing_height, forced_width, forced_height,
 		computed_height_establishes_definite_containing_block_height(preferred_height))
 
+	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 
 	// CSS 2.2 10.3.7: with both insets specified and a definite width,
 	// auto margins absorb the remaining space (equally when both are auto).
