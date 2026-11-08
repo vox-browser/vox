@@ -1017,3 +1017,127 @@ The [GPU follow-up receipt](performance/reddit-boots-gpu-stalls-20261108.json)
 retains all eight unprofiled trials, four diagnostics, source/library identities,
 commands and actual exits, failures, contention and the private raw archive
 identity. Per-job outputs are removed after archiving.
+
+
+## 2026-11-08: published tile startup, line batching and further shader warmup
+
+The production-build blocker described above is resolved for the earlier tile
+startup fix. Executable `b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a`
+contains the CPU-seeded tile transition and SVG cache ownership guard. Its sealed
+C is checked before fresh-process measurements. This build uses a single C unit,
+C `-O3` and V `-prod=false`; it is not a matched build against the former
+`843893a4…` C `-O2`/LTO bundle. No cross-build gain is claimed.
+
+The installed-bundle live diagnostic exercises GPU tile publication throughout
+the input window. It catches a 198.032 ms callback compiling a Metal graphics
+pipeline at `Recorder::snap`, plus thousands of line-decoration readback barriers.
+The pause concerns a Graphite graphics pipeline, rather than the canvas copy
+compute pipeline. Subsequent diagnostics also expose missing initialized-MSAA
+variants. These are separate diagnostic runs, with their sampling and native
+logging recorded; their cadence cannot supply unprofiled optimization credit.
+
+Three fixes are committed on master:
+
+- `481c6e6e4` keeps the existing CPU line raster and composites its premultiplied
+  pixels through a pending GPU batch. Unsupported transforms and worker-thread
+  calls retain their CPU path. All 72 solid/dotted/dashed scenes remain exact in
+  optimized and ASan/UBSan checks, with fewer readbacks. The live diagnostic
+  records 3,320 GPU line leaves and no `draw_line` flush reasons during input.
+- `96257f481` prepares clipped translucent-image pipelines and tracks preparation
+  per graphics context. Full context replacement now warms its own cache.
+- `5157ce5a9` also prepares image and stroke variants after initializing their
+  targets, exercising the MSAA load-pass keys. The focused fixture prepares 108
+  pipelines, preserves exact pixels and adds none for its scrolling mask,
+  opacity and SVG-stroke scenes, including idle reuse and full replacement.
+  Disabling the new phase reproduces first-use compilation. This does not cover
+  every possible future pipeline: some variants still appear in the live trace.
+
+The final fixes run through explicitly pinned unpublished primary and Metal
+bridges on the same completed executable. They have not yet been validated as a
+new installed production bundle. The shared build worker is already active;
+this work queues no duplicate build and copies no app bundle or source tree.
+
+All following rows retain 1400×900 document view pixels, 2× backing, 125% zoom,
+5,400 precise 3-pixel native wheel inputs at nominal 120 Hz, reversals every 300
+inputs and a 12-second settle after the required title. Each launch has an empty
+private profile and fresh cache; OS caches are retained. Automatic script policy
+does not establish that author scripts execute. The title check identifies the
+page without claiming network idle. The frozen cohort uses the unchanged
+152-response, 43-comment original-origin replay and tested external-network
+denial. Live cohorts use the existing SOCKS route and do not assert byte-identical
+responses across trials.
+
+`line-frozen` compares the line disable control with line batching while the
+three experimental GPU tile/layer/readiness options are enabled. `default-live`
+compares that same line control with batching in the normal presentation path,
+using the 50-pipeline bridge in both arms. `msaa-live` keeps line batching enabled
+in both arms and compares the new warmup's disable control against its default,
+using the same 108-pipeline bridge. Each cohort has two alternating unprofiled
+control/candidate pairs with verified executable and native-library identities.
+
+| Trial | Scroll-changing publications/s | Median / p95 / maximum interval, ms | Over 16.67 ms |
+| --- | ---: | --- | ---: |
+| line-frozen 1 (control) | 110.810 | 8.439 / 20.103 / 34.980 | 10.236% |
+| line-frozen 2 (candidate) | 109.990 | 8.442 / 19.587 / 36.591 | 10.469% |
+| line-frozen 3 (control) | 99.634 | 8.809 / 23.077 / 299.487 | 14.763% |
+| line-frozen 4 (candidate) | 105.331 | 8.591 / 21.133 / 39.845 | 12.137% |
+| default-live 1 (control) | 107.464 | 8.651 / 14.250 / 30.142 | 2.328% |
+| default-live 2 (candidate) | 110.106 | 8.520 / 13.810 / 32.461 | 1.932% |
+| default-live 3 (control) | 104.430 | 8.766 / 15.162 / 30.759 | 2.483% |
+| default-live 4 (candidate) | 117.663 | 8.352 / 10.139 / 23.998 | 0.260% |
+| msaa-live 1 (control) | 118.112 | 8.345 / 10.248 / 56.501 | 0.427% |
+| msaa-live 2 (candidate) | 116.106 | 8.365 / 11.325 / 22.262 | 0.894% |
+| msaa-live 3 (control) | 115.262 | 8.383 / 11.816 / 34.701 | 0.894% |
+| msaa-live 4 (candidate) | 117.643 | 8.358 / 10.536 / 52.053 | 0.223% |
+
+Throughput uses the whole first-to-last input window. The receipt retains actual
+input cadence, completed input/publication counts, leading/trailing gaps, host
+load and commands/exits for every attempt. The line frozen cohort is variable
+and includes a small regression. Its first control overlaps our 5.95-second
+native fixture compile and negative runtime. The live cohorts also retain
+regressions: the final MSAA candidate's maximum rises to 52.053 ms in pair two.
+The host has 18 CPUs, with substantial changing load. These results do not earn
+an isolated FPS-gain acceptance or a stall-free-60-Hz claim.
+
+Pixel guards reject the experimental presentation/layer options. The combined
+GPU options differ from the unchanged reference at offset 850; isolated nested,
+GPU tile and CPU-offscreen-layer options also differ, up to 17 channel levels.
+They remain opt-in. `TEXT_LAYER_COMPOSITES` alone matches pixels but cannot enter
+its native path without another layer capability, so its timing cohort supplies
+no credit. Cancelling that cohort terminates its guard, while the child still
+finishes 5,400 inputs and exits zero; the empty guard receipt and parent exit -15
+are retained without bounded acceptance. No reference or tolerance is changed.
+`pixel_diff` exits zero for mismatches, so exactness is assessed from its decoded
+metrics, never that exit alone.
+
+The line change with normal presentation remains pixel-exact against both old
+references at offsets 0 and 850. The final primary/Metal pair also retains exact
+references at both offsets. GPU line eligibility is independently visible in the
+capture diagnostics. Precise final captures end at slightly different scroll
+positions and are not used for pixel equality. The fixed-pose captures disable
+scripts explicitly and are correctness evidence, not timing trials.
+
+The initial opacity warmup exceeds its pipeline bound when applied to translucent
+A8 masks as well as color images; restricting the new opacity variants to color
+images fixes that attempt. An intermediate line sanitizer controller detects a
+changed broad source pin; its whole-job credit is withheld and the stable-source
+sanitizer recovery passes. All original failures and corrected attempts remain
+in the private archive.
+
+**The no-stalls target remains open.** Final candidate p95 intervals are under
+16.67 ms, but deadlines are still missed and the maximum remains 52.053 ms.
+Native frame installation does not establish physical display scanout. Remaining
+sampled work includes synchronous GG/Metal shape readback, Dawn text/picture
+readback, Quartz scrollbar strokes and timer registration from
+`finish_frame_memory_activity`. No retired-instruction saving or broad-check
+cadence reset is claimed.
+
+The [full receipt](performance/reddit-boots-gpu-tiles-20261108.json) preserves all
+19 completed observations, including the ineligible child run, 54 guard receipts,
+source/library identities, 15 pixel comparisons, failures and limitations. Raw
+commands, input timestamps, samples, frames, replay resources and native test
+outputs are retained in a private mode-0600 archive outside Git: SHA256
+`9dbb672917447068ba4788016b4654737e930bf6d3ec37f4128b9b7040ff4ff6`,
+143,925,122 bytes. All 6,644 archived evidence files are read back and checked.
+The per-job Build directory and its archived temporary drivers/harnesses are
+removed after verification.
