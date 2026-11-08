@@ -1684,6 +1684,7 @@ pub mut:
 	root_line_height_px_                          f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
 	subject_element_                              ?&dom.Element
+	position_try_reference_scope_ ?&dom.Node
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -11816,6 +11817,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	properties.subject_element_ = abstract_element.element()
+	properties.position_try_reference_scope_ = position_try_reference_scope(abstract_element,cascaded_properties)
 	mut recascaded_font_size_depends_on_viewport_metrics := false
 	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties, &recascaded_font_size_depends_on_viewport_metrics)
 	// Only unchanged, context-independent specified values can keep their style
