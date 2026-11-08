@@ -341,6 +341,44 @@ cases += [
     dict(name='zero-alpha-source-chain', alpha=0, filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
 ]
 
+# A real blur resolves scaled source sampling before later shadow branches.
+cases += [
+    dict(name='resampled-chain-blur-shadow', destination=[4, 5, 30, 25],
+         filters=[blur(.8), shadow(2.5)]),
+    dict(name='resampled-chain-nearest-p3', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         p3=True, premul=False, alpha=.65, smoothing=False,
+         filters=[contrast, blur(.8), shadow(2.5), opacity], mode='src_in', clip=True),
+    dict(name='resampled-chain-flipped', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], alpha=.7,
+         filters=[blur(2.5), contrast, shadow(.8)], mode='src_out'),
+    dict(name='resampled-chain-nearly-integer', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         filters=[blur(.8), shadow(1.2)]),
+    dict(name='resampled-chain-identity-prefix-minified', destination=[10.25, 12.5, 2, 3],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], p3=True, premul=False, alpha=.7,
+         filters=[contrast, blur(.01), blur(.8), opacity, shadow(2.5)], mode='multiply', clip=True),
+    dict(name='resampled-chain-two-shadows', destination=[4.5, 6.25, 22, 16],
+         premul=False, alpha=.7, filters=[blur(.8), shadow(2.5), shadow(.8, -7.25, 4.5)], mode='src_atop'),
+    dict(name='resampled-chain-copy', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         filters=[blur(2.5), contrast, shadow(.8)], mode='src', clip=True),
+    dict(name='resampled-chain-clipped-source', source=[-2, -1, 7, 6], destination=[4.25, 6.5, 25, 18],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75],
+         filters=[blur(.8), shadow(2.5)], mode='src_in', clip=True),
+]
+
+fixture_root = Path(__file__).resolve().parents[2] / 'cpuraster/testdata'
+for tag in ['prod', 'default']:
+    name = 'resampled-request-' + tag
+    f = json.loads((fixture_root / (name + '.json')).read_text())
+    cases.append(dict(name=name, width=f['width'], height=f['height'], pitch=f['pitch'],
+        alpha_type=f['alpha_type'], iw=f['image_width'], ih=f['image_height'],
+        pixel_pitch=f['image_pitch'], premul=f['image_premultiplied'], p3=f['image_display_p3'],
+        pixels=list((fixture_root / (name + '-source.rgba')).read_bytes()),
+        initial=list((fixture_root / (name + '-background.rgba')).read_bytes()),
+        transform=f['transform'], source=f['source'], destination=f['destination'],
+        alpha=f['global_alpha'], mode=list(m.MODES)[f['composite']], clips=f['clips'],
+        filters=[(x['kind'], x['color'], x['sigma'], x['offset_x'], x['offset_y'], x['matrix'], int(x['clamp']))
+                 for x in f['filters']]))
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -351,7 +389,8 @@ for case in cases:
     r.library.oracle_pattern(storage)
     r.pattern_sha256 = hashlib.sha256(image).hexdigest()
     r.filters(case['filters'])
-    clips = [(triangle, False)] if case.get('clip') else []
+    clips = ([(c['segments'], c['even_odd']) for c in case['clips']] if 'clips' in case
+             else [(triangle, False)] if case.get('clip') else [])
     if 'clip_rect' in case:
         x, y, cw, ch = case['clip_rect']
         clips = [(m.segment(0, x, y) + m.segment(1, x+cw, y) + m.segment(1, x+cw, y+ch)
@@ -414,6 +453,11 @@ if platform.system() == 'Linux':
  '0a4d5b84834e14f6', '3413bb7c9b0e9950', '206ed0f93c797611', '7d91d1dd5fc4ea7d',
  'd1881a087ec36965', 'c22b2b4fdcb9c1c8', 'a72cc96950afdcd1', 'f68b7870dc82135b',
  '62b1b888837ad40a', '62b1b888837ad40a']
+expected += ['96377cc5e9c1be3b', '5a943a8884b2705e', 'd6368e170d652582', '7376c5a0cf4a2011',
+ '75dc62f04fca90f3', '48ff3cff3719f678', 'e16b6f85b42e091e', '846b048d1a7a0879']
+expected += ['647ddc0897133c6d', 'f893a84730298ea1']
+if platform.system() == 'Linux':
+    expected[-2:] = ['647ddc0897133c6d', '9e770877597b62d4']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
