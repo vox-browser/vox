@@ -6,6 +6,7 @@
 module indexeddb
 
 import math
+import libjs
 
 pub enum ValueType {
 	undefined
@@ -216,9 +217,25 @@ pub type KeyPath = []string | string
 
 pub fn is_valid_key_path(path KeyPath) bool {
 	return match path {
-		string { true }
-		[]string { path.len > 0 }
+		string { is_valid_string_key_path(path) }
+		[]string { path.len > 0 && path.all(is_valid_string_key_path(it)) }
 	}
+}
+
+fn is_valid_string_key_path(path string) bool {
+	if path == '' { return true }
+	for component in path.split('.') {
+		if component == '' { return false }
+		for i, point in component.runes() {
+			if point == `$` || point == `_` { continue }
+			if i == 0 {
+				if !libjs.regex_has_identifier_start_property(u32(point)) { return false }
+			} else if point !in [rune(0x200c), rune(0x200d)] && !libjs.regex_has_identifier_continue_property(u32(point)) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 fn evaluate_string_key_path(value Value, path string) ?Value {

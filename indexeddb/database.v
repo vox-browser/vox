@@ -123,9 +123,6 @@ pub:
 
 pub fn (mut database IDBDatabase) create_object_store(mut transaction IDBTransaction, name string, parameters IDBObjectStoreParameters) !IDBObjectStore {
 	transaction.require_versionchange_active()!
-	if database.state != .open {
-		return error('InvalidStateError: database connection is closing')
-	}
 	if path := parameters.key_path {
 		if !is_valid_key_path(path) {
 			return error('SyntaxError: invalid object store key path')
