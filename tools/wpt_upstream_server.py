@@ -35,11 +35,12 @@ class UpstreamWPTServer:
         self.stack = contextlib.ExitStack()
         self.servers = []
         self.checkout, config, handlers, logger, router, server, stash = load_wptserve(checkout)
-        http1, http2, https1, https2 = free_ports(4)
+        http1, http2, https1, https2, ws, wss = free_ports(6)
         builder = config.ConfigBuilder(
             logger.get_logger(), browser_host='localhost', server_host='127.0.0.1',
             alternate_hosts={'alt': 'not.localhost'}, subdomains={'www', 'www1', 'www2'},
-            doc_root=str(Path(root).resolve()), ports={'http': [http1, http2], 'https': [https1, https2]},
+            doc_root=str(Path(root).resolve()),
+            ports={'http': [http1, http2], 'https': [https1, https2], 'ws': [ws], 'wss': [wss]},
             check_subdomains=False, logging={'level': 'warning'})
         builder.ssl = {'type': 'openssl', 'openssl': {'base_path': str(Path(certificates).resolve())}}
         try:
@@ -80,8 +81,8 @@ class UpstreamWPTServer:
                     def handle(request, response):
                         try:
                             result = original(request, response)
-                        except Exception:
-                            runner.log_request(request.method, target, 500)
+                        except Exception as error:
+                            runner.log_request(request.method, target, getattr(error, 'code', 500))
                             raise
                         status = result[0] if isinstance(result, tuple) and len(result) == 3 \
                             and isinstance(result[0], int) else response.status[0]
@@ -105,6 +106,7 @@ class UpstreamWPTServer:
                 revision=subprocess.check_output(['git', '-C', str(self.checkout), 'rev-parse', 'HEAD'],
                                                  text=True).strip(),
                 host='localhost', http_ports=[http1, http2], https_ports=[https1, https2],
+                unserved_protocols={'ws': [ws], 'wss': [wss]},
                 ca_certificate=actual.ssl_config['ca_cert_path'],
                 ca_sha256=hashlib.sha256(Path(actual.ssl_config['ca_cert_path']).read_bytes()).hexdigest(),
                 source_files=self.source_hashes())

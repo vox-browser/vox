@@ -50,6 +50,7 @@ def main(request, response):
 ''')
         (cls.root / 'template.sub.js').write_text('{{host}}|{{ports[http][0]}}|{{ports[http][1]}}|{{ports[https][0]}}')
         (cls.root / 'template.sub.js.headers').write_text('X-Upstream: real-handler\n')
+        (cls.root / 'shared.sub.js').write_text('{{ports[ws][0]}}|{{ports[wss][0]}}')
         cls.observer = Observer()
         cls.server = UpstreamWPTServer(CHECKOUT, cls.root, cls.observer,
                                       {'/resources/testharnessreport.js': (b'collector', 'text/javascript')},
@@ -81,6 +82,11 @@ def main(request, response):
                 self.assertEqual(response.read(), expected)
                 self.assertEqual(response.headers['X-Upstream'], 'real-handler')
         self.assertEqual(self.server.changed_inputs(), [])
+        # Security-feature helpers expand these placeholders even for HTTP
+        # tests. Advertising the unserved protocols must be explicit.
+        ports = identity['unserved_protocols']
+        with self.client.open(self.server.base_url + '/shared.sub.js', timeout=10) as response:
+            self.assertEqual(response.read(), f"{ports['ws'][0]}|{ports['wss'][0]}".encode())
 
     def test_result_collection_and_harness_resources_coexist_with_upstream_routes(self):
         base = self.server.base_url
