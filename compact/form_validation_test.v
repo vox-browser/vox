@@ -27,3 +27,15 @@ fn test_autocomplete_reads_the_autofill_field_and_form_state() {
 	], runtime, mut messages)
 	assert messages == ['off|on||on|name|section-foo shipping work tel webauthn||on|']
 }
+
+fn test_show_picker_requires_a_mutable_input_and_user_activation() {
+	$if !darwin { return }
+	document := html.parse_document('<!doctype html><input id="disabled" disabled><input id="readonly" readonly><input id="plain">')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [
+		'const names=[];for(const input of [disabled,readonly,plain]){try{input.showPicker();names.push("none");}catch(error){names.push((error instanceof DOMException)+" "+error.name);}}console.log(names.join("|"));',
+	], runtime, mut messages)
+	assert messages == ['true InvalidStateError|true InvalidStateError|true NotAllowedError']
+}

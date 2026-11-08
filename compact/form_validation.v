@@ -58,6 +58,13 @@ fn (mut binding CompactElementQueryBinding) form_validation_query(key string, so
 		if !element.is_html_element() { return error('TypeError: Illegal receiver') }
 		return json2.encode(html.AutocompleteElement.create(unsafe { &dom.HTMLElement(element) }).autocomplete())
 	}
+	// https://html.spec.whatwg.org/multipage/input.html#dom-input-showpicker
+	if op == 'showPicker' {
+		if !element.is_html_element() || element.local_name() != 'input' { return error('TypeError: Illegal receiver') }
+		mut model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		model.show_picker()!
+		return 'null'
+	}
 	if element.is_html_element() && element.local_name() == 'form' {
 		// The form validates every listed element it owns; their controls
 		// join it once their models exist.
@@ -130,6 +137,10 @@ fn compact_form_validation_bootstrap() string {
  // The autofill field of a control, and the enumerated autocomplete of a form.
  const own=(prototype,name)=>Object.prototype.hasOwnProperty.call(prototype,name);
  for(const name of ["HTMLInputElement","HTMLTextAreaElement","HTMLSelectElement"])if(typeof globalThis[name]==="function"&&!own(globalThis[name].prototype,"autocomplete"))Object.defineProperty(globalThis[name].prototype,"autocomplete",{get:function(){return call(this,"autocomplete");},set:function(value){this.setAttribute("autocomplete",String(value));},enumerable:true,configurable:true});
+ if(typeof globalThis.HTMLInputElement==="function"&&!own(HTMLInputElement.prototype,"showPicker"))Object.defineProperty(HTMLInputElement.prototype,"showPicker",{value:function showPicker(){
+  try{call(this,"showPicker");}
+  catch(error){const match=/^([A-Za-z]+Error):\s*(.*)/.exec(String(error&&error.message));if(match&&match[1]!=="TypeError")throw new DOMException(match[2],match[1]);throw error;}
+ },writable:true,enumerable:true,configurable:true});
  if(typeof globalThis.HTMLFormElement==="function"&&!own(HTMLFormElement.prototype,"autocomplete"))Object.defineProperty(HTMLFormElement.prototype,"autocomplete",{get:function(){const value=this.getAttribute("autocomplete");return value!==null&&value.toLowerCase()==="off"?"off":"on";},set:function(value){this.setAttribute("autocomplete",String(value));},enumerable:true,configurable:true});
 })();
 '
