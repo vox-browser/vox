@@ -10,6 +10,8 @@ Ladybird's Tests/LibWeb/Text/expected/wpt-import (`name@query.txt` names the
 serves Tests/LibWeb/Text/input/wpt-import as the WPT root with `.headers` files,
 a small `.sub.` substitution subset and `Cache-Control: no-store`; Python
 handlers are absent, so tests needing them fail in both browsers alike.
+Use --wpt-server-root with an existing upstream WPT checkout to run its Python
+handlers, substitutions, stash, two HTTP origins and two HTTPS origins instead.
 testharness.js is served with Ladybird's CI modifications reverted (see
 HARNESS_PATCHES) so neither browser takes its `internals` shortcuts.
 
@@ -724,7 +726,7 @@ def format_report(summary, identity):
     receipt = identity.get('vox_receipt') or {}
     lines = ['# Imported WPT subset: Vox vs Brave', '',
              '**Scope: Ladybird-imported testharness subset, not full upstream WPT.** '
-             'The static HTTP server lacks Python handlers, HTTPS, and WPT multi-origin setup. '
+             f"Server: {summary['suite_scope']['server']}. "
              'Reported subtest percentages apply only to this selected cohort.', '',
              f"Started {identity['started']}, {summary['tests']} tests from Ladybird "
              f"`{identity['ladybird_head'][:12]}` wpt-import; host {identity['host_cpus']} CPUs, "
@@ -801,6 +803,8 @@ def main():
     parser.add_argument('--ladybird-ref', help='Read imported fixtures at this Git revision without changing the upstream checkout')
     parser.add_argument('--new-since', help='With --ladybird-ref, select only IDs absent from this pinned Ladybird revision, before --limit')
     parser.add_argument('--fixture-cache', type=Path, default=Path.home() / '.cache/vox/wpt')
+    parser.add_argument('--wpt-server-root', type=Path,
+                        help='Existing upstream WPT checkout supplying wptserve and its vendored dependencies')
     parser.add_argument('--require-all-pass', action='store_true',
                         help='Exit nonzero unless every selected case and subtest passes in every requested browser')
     parser.add_argument('--browsers', default='vox,brave')
@@ -872,8 +876,11 @@ def run(args, tests, browsers, executables):
     if 'brave' in browsers:
         pinned[str(executables['brave'])] = sha256(executables['brave'])
     report_root = args.text_root / 'input' / 'wpt-import'
+    suite_scope = dict(SUITE_SCOPE)
+    if args.wpt_server_root:
+        suite_scope['server'] = 'upstream wptserve; Python handlers, stash, substitutions, localhost aliases, two HTTP and two HTTPS ports (private CA)'
     identity = dict(
-        suite_scope=SUITE_SCOPE,
+        suite_scope=suite_scope,
         started=time.strftime('%Y-%m-%dT%H:%M:%S%z'), argv=sys.argv,
         ladybird_head=args.fixture_manifest['revision'] if args.fixture_manifest else subprocess.run(
             ['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip(),
@@ -894,12 +901,26 @@ def run(args, tests, browsers, executables):
 
     request_log = open(args.output / 'requests.log', 'w', buffering=1)
     runner = Runner(request_log)
-    host = '127.0.0.1'
-    port_holder = [0]
-    server = Server((host, 0), make_handler(runner, report_root, host, port_holder))
-    port_holder[0] = server.server_address[1]
-    threading.Thread(target=server.serve_forever, daemon=True).start()
-    base_url = f'http://{host}:{port_holder[0]}'
+    if args.wpt_server_root:
+        from wpt_upstream_server import UpstreamWPTServer
+        resources = {
+            '/resources/testharnessreport.js': (REPORT_SCRIPT.encode(), 'text/javascript'),
+            '/resources/testharness.js': (upstream_testharness(
+                (report_root / 'resources/testharness.js').read_text()).encode(), 'text/javascript'),
+            WARMUP['url']: (WARMUP_PAGE, 'text/html'),
+        }
+        server = UpstreamWPTServer(args.wpt_server_root, report_root, runner, resources,
+                                   RUNNER_PREFIX + 'alive', RUNNER_PREFIX + 'result',
+                                   args.output / 'certificates')
+        base_url = server.base_url
+        identity['server'] = server.identity
+    else:
+        host = '127.0.0.1'
+        port_holder = [0]
+        server = Server((host, 0), make_handler(runner, report_root, host, port_holder))
+        port_holder[0] = server.server_address[1]
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        base_url = f'http://{host}:{port_holder[0]}'
     identity['base_url'] = base_url
 
     records = []
@@ -909,6 +930,8 @@ def run(args, tests, browsers, executables):
     aborted = None
     try:
         for chunk_index, chunk in enumerate(chunks_of(tests, args.chunk_size)):
+            if args.wpt_server_root and server.changed_inputs():
+                raise RunAborted('upstream WPT server inputs changed')
             if args.fixture_manifest:
                 verify_fixture_tree(args.fixture_root, args.fixture_manifest)
             order = browsers if chunk_index % 2 == 0 else list(reversed(browsers))
@@ -939,12 +962,15 @@ def run(args, tests, browsers, executables):
         except ValueError as error:
             aborted = str(error)
     changed = [path for path, digest in pinned.items() if not Path(path).is_file() or sha256(path) != digest]
+    if args.wpt_server_root:
+        changed.extend(server.changed_inputs())
     identity['load_end'] = [round(value, 2) for value in os.getloadavg()]
     identity['finished'] = time.strftime('%Y-%m-%dT%H:%M:%S%z')
     identity['changed_inputs'] = changed
     identity['unexpected_posts'] = runner.unexpected_posts
     identity['aborted'] = aborted
     summary = summarize(tests, records, chunk_results)
+    summary['suite_scope'] = suite_scope
     (args.output / 'identity.json').write_text(json.dumps(identity, indent=1) + '\n')
     (args.output / 'chunks.json').write_text(json.dumps(chunk_results, indent=1) + '\n')
     (args.output / 'summary.json').write_text(json.dumps(summary, indent=1) + '\n')
