@@ -307,6 +307,31 @@ fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
 		offset_y: 4.5, color: 0x805030e0}, true) == '742faaa5a08e2c8d'
 }
 
+fn test_bitmap_space_color_filters_quantize_the_source_before_restoring() {
+	assert image_filter_test_hash(ImageTestCase{
+		destination: [f32(10), 12, 7, 6]!
+		alpha: .7
+	}, image_test_contrast_filter(), true) == $if linux { '7a582a0ca4741ede' }
+		$else { '26a3b278f9abcba9' }
+	assert image_filter_test_hash(ImageTestCase{
+		premultiplied: false
+		display_p3: true
+		source: [f32(1), 1, 5, 4]!
+		destination: [f32(4), 6, 35, 24]!
+		transform: [f32(.9), .4, -.4, .9, 5, 2]!
+		alpha: .65
+		mode: .multiply
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), true) == '64abfa4e28e7d1c5'
+	mut pixels := image_test_background()
+	assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, image_test_identity,
+		image_test_bitmap(31, 25, true, false), [f32(1), 2, 28, 21]!, [f32(6.25), 5.75, 8, 7]!,
+		true, .85, .src_in, image_test_clips(true), new_canvas_filter([image_test_contrast_filter()]), true)
+	assert sha256.sum(pixels).hex()[..16] == $if linux { '6d9974a54e33f8bb' }
+		$else { 'b5c557eb9dd295df' }
+}
+
 fn test_bitmap_space_shadow_requests_all_unbounded_source_pixels() {
 	mut pixels := []u8{len: 10 * 20 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .85911834,

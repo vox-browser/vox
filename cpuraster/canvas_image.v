@@ -325,8 +325,15 @@ struct CanvasImageFilterGeometry {
 
 pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, bitmap_filter bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() { return false }
-	plan := plan_canvas_filter(filter_in)
+	mut plan := plan_canvas_filter(filter_in)
 	if plan.declined { return false }
+	if bitmap_filter {
+		if color := plan.color {
+			// An explicit bitmap-space saveLayer keeps a color-only image
+			// filter on its restore. Rasterize the source into N32 first.
+			plan = FilterPlan{layer: CanvasFilterStep{kind: .blur, post_color: color.filters}}
+		}
+	}
 	rgba := CanvasBitmap{...image, native_n32: canvas_rgba_uses_legacy()}
 	if step := plan.layer {
 		if !bitmap_filter {
@@ -345,9 +352,6 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 					smoothing, global_alpha, .src_over, inner_clips, false, true)
 			}, none)
 	}
-	// A bitmap-space color-filter restore acts on the rasterized source,
-	// rather than the source image shader. Keep its existing fallback.
-	if bitmap_filter && plan.color != none { return false }
 	if color_filter := plan.color {
 		return draw_color_filtered_image(mut pixels, width, height, pitch, alpha_type,
 			transform, rgba, source, destination, smoothing, global_alpha, mode, clips, color_filter)
