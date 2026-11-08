@@ -6,6 +6,7 @@ import os
 import platform
 
 const disable_inline_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_MEASUREMENT_REUSE') != ''
+const disable_inline_element_measurement_reuse = os.getenv('VOX_DISABLE_INLINE_ELEMENT_MEASUREMENT_REUSE') != ''
 const inline_measurement_diagnostics = os.getenv('VOX_INLINE_MEASUREMENT_DIAGNOSTICS') != ''
 
 __global inline_measurement_reuse_reported bool
@@ -34,6 +35,8 @@ struct InlineMeasurementLayout {
 	initial_height CSSPixels
 	lines []LineBox
 	inline_end ?StaticPositionRect
+	// Resolved box-model edges and offsets of the root's inline boxes.
+	values []RetainedInlineValues
 	result InlineFormattingResult
 }
 
@@ -59,8 +62,14 @@ fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContex
 	if root.child_count() == 0 || !inline_layout_workspace_is_closed(root, true) {
 		return false
 	}
-	for child in root.children() {
-		if !child.is_text_node() { return false }
+	// A closed workspace holds only text and inline boxes. A cached answer
+	// restores the inline boxes' used values with the lines, so links, code
+	// spans and emphasis no longer force a nested probe to lay the same lines
+	// out again at every ancestor flex or grid level.
+	if disable_inline_element_measurement_reuse {
+		for child in root.children() {
+			if !child.is_text_node() { return false }
+		}
 	}
 	if bfc := context {
 		if bfc.floating_boxes.len != 0 || bfc.has_line_clamp()
@@ -131,13 +140,20 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 			if !width_only {
 				if position := cached.inline_end { used.set_inline_end_static_position_rect(position) }
 			}
+			if cached.values.len > 0 {
+				containing_values := state.get(unsafe { &NodeWithStyle(containing_block) })
+				for index in 0 .. cached.values.len {
+					entry := unsafe { &cached.values[index] }
+					_ = state.restore_retained_values(entry.node, &entry.values, containing_values)
+				}
+			}
 			if mut bfc := context {
 				delta := bfc.commit_pending_margin_before_inline_content()
 				assert delta.raw_value() == 0
 			}
 			if inline_measurement_diagnostics && !inline_measurement_reuse_reported {
 				inline_measurement_reuse_reported = true
-				eprintln('Vox inline measurement: reused closed text layout within pass')
+				eprintln('Vox inline measurement: reused closed inline layout within pass')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
 			pool.note_measurement(root, true, true)
@@ -166,8 +182,14 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	if !collect_retained_inline_inputs(root, true, mut inputs)
 		|| !retained_inline_text_fonts_are_current(inputs) { return result }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
-	for input in inputs {
+	mut values := []RetainedInlineValues{}
+	for index, input in inputs {
 		owned_inputs << RetainedInlineInput{ ...input, text: input.text.clone() }
+		if index == 0 { continue }
+		styled := input.node.as_node_with_style() or { continue }
+		if snapshot := state.try_get(styled) {
+			append_retained_inline_snapshot(mut values, styled, snapshot)
+		}
 	}
 	cached := &InlineMeasurementLayout{
 		key: key
@@ -178,6 +200,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		initial_height: used.content_height()
 		lines: own_inline_layout_lines(used.line_boxes)
 		inline_end: used.inline_end_static_position_rect()
+		values: values
 		result: result
 	}
 	mut entries := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }
