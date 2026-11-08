@@ -51,3 +51,46 @@ fn test_capture_the_image_returns_a_decoded_frame() {
 	assert frame.height() == 1
 	assert frame.color_space() == .srgb
 }
+
+__global deferred_bitmap_decodes int
+
+fn test_deferred_bitmap_reports_its_size_and_decodes_once_on_first_pixel_read() {
+	deferred_bitmap_decodes = 0
+	bitmap := Bitmap_.create_deferred(3, 2, fn (mut target Bitmap_) {
+		deferred_bitmap_decodes++
+		target.data = []u8{len: target.pitch * target.height, init: u8(index)}
+	})
+	frame := DecodedImageFrame_.create(bitmap)
+	assert frame.width() == 3 && frame.height() == 2
+	assert frame.deferred_bitmap() == bitmap
+	assert !bitmap.has_pixels()
+	assert bitmap.pitch == 12
+	assert bitmap.pixel_byte_size() == 24
+	assert deferred_bitmap_decodes == 0
+	pixels := frame.bitmap()
+	assert pixels == bitmap
+	assert bitmap.has_pixels()
+	assert deferred_bitmap_decodes == 1
+	assert pixels.data.len == 24 && pixels.data[5] == 5
+	_ = frame.bitmap()
+	bitmap.ensure_pixels()
+	assert deferred_bitmap_decodes == 1
+	assert bitmap.pixel_byte_size() == 24
+}
+
+fn test_cloning_or_converting_a_deferred_bitmap_decodes_its_pixels() {
+	deferred_bitmap_decodes = 0
+	decoder := fn (mut target Bitmap_) {
+		deferred_bitmap_decodes++
+		target.data = []u8{len: target.pitch * target.height, init: 7}
+	}
+	first := Bitmap_.create_deferred(1, 1, decoder)
+	copy := first.clone()
+	assert first.has_pixels() && copy.has_pixels()
+	assert copy.data == [u8(7), 7, 7, 7]
+	second := Bitmap_.create_deferred(1, 1, decoder)
+	converted := DecodedImageFrame_.create_with_alpha_type(second, 2, .srgb)
+	assert converted.bitmap().data == [u8(7), 7, 7, 7]
+	assert converted.bitmap().alpha_type == 2
+	assert deferred_bitmap_decodes == 2
+}

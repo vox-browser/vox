@@ -2039,6 +2039,7 @@ pub fn (style_value ImageStyleValue) current_frame() ?&dom.DecodedImageFrame_ {
 
 pub fn (style_value ImageStyleValue) color_if_single_pixel_bitmap() ?Color {
 	frame := style_value.current_frame() or { return none }
+	if frame.width() != 1 || frame.height() != 1 { return none }
 	bitmap := frame.bitmap()
 	if bitmap.width == 1 && bitmap.height == 1 && bitmap.data.len >= 4 {
 		return Color.rgba(bitmap.data[0], bitmap.data[1], bitmap.data[2], bitmap.data[3])

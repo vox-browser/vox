@@ -126,7 +126,7 @@ fn (mut app BrowserApp) draw_chromium_rounded_image_pair(start int, page_y f32, 
 		end := chromium_rounded_image_pair_end(app.paint_commands, app.chromium_raster_plan.command_layers, start)
 		if end == start { return start }
 		image := unsafe { &app.paint_commands[start + 1] }
-		if bitmap := replaced_image_bitmap_for_renderer(image, true) {
+		if bitmap := replaced_image_pixels_for_renderer(image, true) {
 			if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
 				|| bitmap.data.len < bitmap.pitch * bitmap.height {
 				return start

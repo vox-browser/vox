@@ -1711,6 +1711,11 @@ fn browser_decoded_image_data_for_type(resource_url dom.URL, bytes []u8, mime_es
 	if mime_essence == 'image/svg+xml' || browser_image_resource_is_svg(resource_url) {
 		return browser_decode_svg_image(resource_url, bytes)
 	}
+	if deferred := browser_deferred_png_bitmap(bytes) {
+		decoded := html.BitmapDecodedImageData.create([html.BitmapDecodedImageFrame{frame: dom.DecodedImageFrame_.create(deferred)}], 0, false)
+		decoded.set_is_cors_cross_origin(resource_url.scheme() in ['http', 'https'])
+		return decoded
+	}
 	mut bitmap := browser_decode_raster_image_bytes(bytes)!
 	bitmap.native_resource_replay_compatible = browser_raster_can_share_native_pixels(bytes)
 	$if macos {
@@ -5856,6 +5861,13 @@ fn replaced_image_bitmap_for_renderer(command &layout.PaintCommand, native_rende
 	return bitmap
 }
 
+// The shared request bitmap of an image being drawn, with its pixels decoded.
+fn replaced_image_pixels_for_renderer(command &layout.PaintCommand, native_rendering bool) ?&dom.Bitmap_ {
+	bitmap := replaced_image_bitmap_for_renderer(command, native_rendering) or { return none }
+	bitmap.ensure_pixels()
+	return bitmap
+}
+
 fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x f32, page_y f32, window_height int) {
 	leaf_instructions := paint_leaf_instruction_stage(source_command.kind)
 	defer { leaf_instructions.finish() }
@@ -6742,7 +6754,7 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		'draw_replaced_image' {
 			image_data := command.image()
 			mut image := &gg.Image{}
-			replay_bitmap := replaced_image_bitmap_for_renderer(command, app.ctx.native_rendering)
+			replay_bitmap := replaced_image_pixels_for_renderer(command, app.ctx.native_rendering)
 			if bitmap := replay_bitmap {
 				if bitmap.width <= 0 || bitmap.height <= 0 || bitmap.pitch != bitmap.width * 4
 					|| bitmap.data.len < bitmap.pitch * bitmap.height {

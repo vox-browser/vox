@@ -1163,9 +1163,50 @@ pub mut:
 	// additional format or color-profile handling. Retained image commands may
 	// then share the request's bitmap instead of decoding the resource again.
 	native_resource_replay_compatible bool
+	// Set while the pixels are still encoded. The bitmap's size and format are
+	// final; ensure_pixels() fills `data` once, when something reads it.
+	pixel_decoder_ BitmapPixelDecoder = unsafe { nil }
+}
+
+// Fills `bitmap.data` (pitch × height bytes) from retained encoded pixels.
+pub type BitmapPixelDecoder = fn (mut bitmap Bitmap_)
+
+// A response's natural size is known from its header. Layout, recording and
+// cache accounting need only that size, so the decoder runs when pixels are
+// first read: by a draw, a canvas, or a clone.
+pub fn Bitmap_.create_deferred(width int, height int, decoder BitmapPixelDecoder) &Bitmap_ {
+	return &Bitmap_{
+		width:          width
+		height:         height
+		pitch:          width * 4
+		pixel_decoder_: decoder
+	}
+}
+
+pub fn (bitmap &Bitmap_) has_pixels() bool {
+	return bitmap.pixel_decoder_ == unsafe { nil }
+}
+
+pub fn (bitmap &Bitmap_) ensure_pixels() {
+	if bitmap.pixel_decoder_ == unsafe { nil } {
+		return
+	}
+	mut mutable_bitmap := unsafe { &Bitmap_(bitmap) }
+	decoder := bitmap.pixel_decoder_
+	mutable_bitmap.pixel_decoder_ = unsafe { nil }
+	decoder(mut mutable_bitmap)
+}
+
+// The byte size of the decoded pixels, without decoding deferred ones.
+pub fn (bitmap &Bitmap_) pixel_byte_size() int {
+	if bitmap.pixel_decoder_ != unsafe { nil } {
+		return bitmap.pitch * bitmap.height
+	}
+	return bitmap.data.len
 }
 
 pub fn (bitmap &Bitmap_) clone() &Bitmap_ {
+	bitmap.ensure_pixels()
 	return &Bitmap_{
 		width:      bitmap.width
 		height:     bitmap.height
@@ -1212,6 +1253,7 @@ pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &Bitmap_, alpha_type u8,
 	if bitmap.alpha_type == alpha_type {
 		return DecodedImageFrame_.create_with_color_space(bitmap, color_space)
 	}
+	bitmap.ensure_pixels()
 	converted := &Bitmap_{
 		width:      bitmap.width
 		height:     bitmap.height
@@ -1226,6 +1268,15 @@ pub fn DecodedImageFrame_.create_with_alpha_type(bitmap &Bitmap_, alpha_type u8,
 }
 
 pub fn (frame &DecodedImageFrame_) bitmap() &Bitmap_ {
+	if frame.bitmap_ != unsafe { nil } {
+		frame.bitmap_.ensure_pixels()
+	}
+	return frame.bitmap_
+}
+
+// The frame's bitmap, whose pixels may still be encoded. Callers that read
+// `data` call ensure_pixels() first.
+pub fn (frame &DecodedImageFrame_) deferred_bitmap() &Bitmap_ {
 	return frame.bitmap_
 }
 

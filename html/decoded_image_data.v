@@ -73,7 +73,7 @@ pub fn (data &BitmapDecodedImageData) external_memory_size() uint {
 	mut size := uint(0)
 	for retained_frame in data.frames_ {
 		frame := retained_frame.frame or { continue }
-		frame_size := uint(frame.bitmap().data.len)
+		frame_size := uint(frame.deferred_bitmap().pixel_byte_size())
 		if uint(-1) - size < frame_size {
 			return uint(-1)
 		}

@@ -924,7 +924,9 @@ fn (box &ImageBox) replaced_image_bitmap() ?&dom.Bitmap_ {
 	if !node.is_html_image_element() { return none }
 	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
 	frame := model.current_image_frame() or { return none }
-	bitmap := frame.bitmap()
+	// Recording shares the request's bitmap without its pixels; replay decodes
+	// them only for an image it actually draws.
+	bitmap := frame.deferred_bitmap()
 	if !bitmap.native_resource_replay_compatible { return none }
 	return bitmap
 }

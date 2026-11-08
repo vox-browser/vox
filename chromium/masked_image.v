@@ -135,7 +135,7 @@ fn (mut app BrowserApp) draw_chromium_masked_image(start int, page_x f32, page_y
 		command := unsafe { &app.paint_commands[start + 2] }
 		image_data := command.image()
 		mut image := &gg.Image{}
-		bitmap := replaced_image_bitmap_for_renderer(command, true)
+		bitmap := replaced_image_pixels_for_renderer(command, true)
 		if decoded := bitmap {
 			if decoded.width <= 0 || decoded.height <= 0 || decoded.pitch != decoded.width * 4
 				|| decoded.data.len < decoded.pitch * decoded.height { return start }
