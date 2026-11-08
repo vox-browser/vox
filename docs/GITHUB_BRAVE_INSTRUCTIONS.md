@@ -1,8 +1,9 @@
-# github.com/vlang/v: Vox versus Brave instructions, 2026-11-07
+# github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Goal (user): load `https://github.com/vlang/v` with at least 10% fewer retired
-instructions than Brave. **Not met.** The current Vox median is 11.9% *above*
-Brave's (down from about 24% above at the start of this work).
+instructions than Brave. **Not met.** The current Vox median is 10,319,156,939
+versus Brave's 11,160,582,445. The conservative observed-count ratio is
+0.94051244; the required maximum is 0.90.
 
 ## Workload and scope
 
@@ -29,7 +30,53 @@ Brave's (down from about 24% above at the start of this work).
 - Driver: `tools/github_browser_instructions.py` (`61917182c`), run under the
   memory guard; JavaScript enabled in both, no page scripts remain.
 
-## Cohort (seven alternating pairs, no retries or exclusions)
+## Current cohort: 2026-11-08 (seven alternating pairs)
+
+The shared single-C-unit production executable is SHA-256
+`c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95`,
+built with V `-prod`, preallocation and JavaScriptCore. Its frozen compilation
+receipt is `20261108-040315-4aba4e3c`. It contains the CoreText match cache
+(`9f92e7888`), deferred PNG decoding (`72dabae0e`), inline element measurement
+reuse (`a856c1160`), borrowed CSS syntax accessors (`56b74e474`), and the
+pending closed-inline question normalization. Other concurrent canonical
+changes are included; this cohort establishes the combined build result.
+
+Each trial launched a fresh process. A shared publication lease held the bundle
+fixed throughout all seven pairs. All fourteen captures were pixel-exact against
+the unchanged per-engine references, and the identity, readiness, viewport and
+33-row audits passed. No samples were retried or excluded. Profiles/caches were
+fresh; OS filesystem and shader caches were retained. Host load and process
+identities, counter coverage and exact exits are in the
+[durable cohort receipt](performance/github-vlang-brave-instructions-20261108-c6.json).
+Both engines use the same process-tree polling counter; their counts remain
+observed lower bounds. This is a frozen script-free rendering workload, not a
+live GitHub JavaScript-performance result.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 10,346,246,925 | 11,219,964,913 |
+| 2 | 10,331,029,004 | 11,196,977,886 |
+| 3 | 10,319,156,939 | 11,164,294,445 |
+| 4 | 10,285,961,644 | 11,160,582,445 |
+| 5 | 10,288,987,068 | 11,000,648,629 |
+| 6 | 10,335,736,124 | 11,083,115,023 |
+| 7 | 10,317,367,064 | 11,013,385,790 |
+| **Median** | **10,319,156,939** | **11,160,582,445** |
+
+`10 * max(Vox) = 103,462,469,250` exceeds
+`9 * min(Brave) = 99,005,837,661`. The conservative ratio is
+0.94051244. The largest Vox count must fall by at least
+445,663,159 instructions against this Brave minimum.
+The benchmark and memory guard both exit 1 because the instruction gate fails;
+individual browser observations complete successfully. The guard's peak is
+1,471,004,672 bytes, below its 12 GiB cap.
+
+Regression tests are deferred until the instruction gate passes, as requested
+by the user. Earlier completed checks remain historical evidence; this does not
+claim that pending changes have passed the final verification batch.
+
+## Historical cohort: 2026-11-07 (seven pairs)
+
 
 Vox: private single-C-unit build of the canonical tree including
 `376272155`, executable SHA-256 prefix `8e63a3693630a02f`. Brave
@@ -50,7 +97,7 @@ against their references, all 33 rows present in order.
 Worst Vox over best Brave: 1.136. The 10% gate requires
 `10 × max(Vox) ≤ 9 × min(Brave)`, i.e. Vox at or below about 9.79B here.
 
-## Change in this round
+## Earlier scroll-timeline change
 
 `376272155` samples scroll-driven animations after each layout pass inside
 `Document.update_layout()`. GitHub's repository tabs reveal their More
@@ -60,7 +107,7 @@ first paint. Same binary, three runs each: 12.40B with the change versus
 13.62B with `VOX_DISABLE_SCROLL_TIMELINE_LAYOUT_VALIDATION=1` (−1.22B), with
 identical captures.
 
-## Where Vox's ~12.3B goes (phase deltas, one run)
+## Historical ~12.3B phase breakdown
 
 | Phase | Instructions |
 | --- | ---: |
@@ -74,7 +121,7 @@ identical captures.
 | Startup, parsing, paint recording, capture | ~0.7B |
 | Adblock worker process | 0.26B |
 
-## Remaining work, largest first
+## Earlier remaining-work assessment
 
 1. **Second layout pass (~1.5B).** GitHub hides tab icons with
    `@container (width<48rem)`; the second tab strip is 604 px wide, which is
