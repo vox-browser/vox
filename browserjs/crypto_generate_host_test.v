@@ -72,7 +72,8 @@ fn test_native_generate_key_source_argument_conversion_parameter_order_and_defer
 	assert queue.is_empty()
 	assert runtime.evaluate_host('generatedKey===null')! == 'true'
 	generation_host_jobs(owner)
-	assert runtime.evaluate_host('generatedKey instanceof CryptoKey&&generatedKey.type==="secret"&&generatedKey.extractable===true&&generatedKey.algorithm.name==="AES-GCM"&&generatedKey.algorithm.length===128&&generatedKey.usages.join(",")==="decrypt,encrypt"')! == 'true'
+	// Upstream normalized_key_usages sorts in KeyUsage enum order.
+	assert runtime.evaluate_host('generatedKey instanceof CryptoKey&&generatedKey.type==="secret"&&generatedKey.extractable===true&&generatedKey.algorithm.name==="AES-GCM"&&generatedKey.algorithm.length===128&&generatedKey.usages.join(",")==="encrypt,decrypt"')! == 'true'
 	actual := runtime.evaluate_host_value('generatedKey')!
 	assert runtime.native_crypto_key(actual)!.algorithm_name() == 'AES-GCM'
 }
