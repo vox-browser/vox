@@ -1290,7 +1290,11 @@ int vox_graphite_canvas_read(VoxGraphitePixelRegion const* views, int count)
             || view.height > tile.height || view.y > tile.height - view.height
             || view.width > INT_MAX / 4 || view.pitch < view.width * 4) return 0;
     }
-    if (std::getenv("VOX_GPU_CANVAS_BLIT_READBACK") && canvas_read_blit(views, count)) return 1;
+    // Large damage batches must not wait for a separate GPU readback for each
+    // rectangle. Submit their bounded staging copies together and wait once.
+    bool large_batch = count > 8 && !std::getenv("VOX_DISABLE_LARGE_CANVAS_BLIT");
+    if ((large_batch || std::getenv("VOX_GPU_CANVAS_BLIT_READBACK"))
+        && canvas_read_blit(views, count)) return 1;
     auto recording = canvas_recorder->snap();
     if (recording) {
         skgpu::graphite::InsertRecordingInfo insertion;
