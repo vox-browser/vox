@@ -615,10 +615,10 @@ differences matter: macOS LibWeb Skia uses the `SkPathRef` path backend
 (trailing moves keep their bounds) and RGBA as kN32 (legacy blitters for RGBA
 canvases), while the Linux build defines `SK_HIDE_PATH_EDIT_METHODS`
 (`SkPathData`, which trims trailing moves) and `SK_R32_SHIFT=16` (BGRA kN32, so
-RGBA canvases use the raster pipeline blitter); the Linux behavior is not ported
-yet. The pipeline stages follow the arm64 (NEON) build; x86 Skia's lowp
+RGBA canvases use the raster pipeline blitter). The native Linux behavior is
+now ported and verified in the Linux RGBA section below. The pipeline stages follow the arm64 (NEON) build; x86 Skia's lowp
 `div255` and its `rcp_fast` differ. Next prerequisite: the rest of the image filter
-layers (scaled drop shadows, mixed lists, rotations, SVG graphs).
+layers (mixed lists, rotations, SVG graphs).
 
 ### Drop-shadow canvas layers (2026-11-08)
 
@@ -887,3 +887,27 @@ and [Linux fixture inputs](gg-migration/linux-native-raster-fixtures-20261108.js
 These are module checks. The browser still links Skia; bitmap export sampling,
 remaining filters, tiled draws, boolean shadows and native browser bridges
 still require work.
+
+
+### Linux bitmap export and scaled drop shadows (2026-11-08)
+
+`478d7dcab` selects the native Linux raster-pipeline sampler for RGBA WebGL
+bitmap exports. All 448 exhaustive configurations and 20,016 random exports
+match in both normal and production builds. A native boundary fixture retains
+the differing Linux and macOS row selection. See the
+[bitmap export receipt](gg-migration/linux-bitmap-export-20261108.json).
+
+`f58b137ad` enables single drop-shadow layers under scales and translations.
+Saved layers have transparent borders; blur output has initialized borders
+that require anti-aliased image edges when transformed. The distinction
+resolves the original one-pixel mismatch, and merge surfaces now retain their
+one-pixel padding too. Of 20,000 attempts per mode, 15,330 supported macOS
+draws match in both normal and production builds; on Linux 16,298 match.
+Unsupported draws preserve the destination. Focused platform and production
+checks pass, and the arithmetic audit reports zero contracted operations.
+See the [scaled-shadow receipt](gg-migration/scaled-drop-shadow-20261108.json),
+including native fixture inputs and the failed intermediate experiments.
+
+The full Linux browser type check also passes. This does not establish a
+Skia-free browser link or run: remaining filter, shadow and native bridge
+fallbacks still link Skia.
