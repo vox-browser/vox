@@ -4720,7 +4720,7 @@
     "The clip-aware raster cache prototype passed focused pixels but showed few page hits; removed and receives no optimization credit.",
     "First native region build rejected by the broad input hash guard after an unrelated native media header changed; dependency output proves that header is outside the bridge inputs. Rebuilt and revalidated.",
     "The first pixel tool invocation passed decoded pixels but exited 2 because --result is unsupported; corrected runs use its unchanged strict comparison.",
-    "matched and matched-2 selected the native control in both arms because an empty environment value still has getenv presence. Retained without candidate credit; matched-3 omits the candidate switch.",
+    "matched stopped after its first control because the replay audit rejected unrelated favicon CONNECTs. In matched-2, both arms selected the native control because an empty environment value still has getenv presence. Retained without candidate credit; matched-3 omits the candidate switch.",
     "The first replay audit rejected unrelated bookmark favicon CONNECTs. Subsequent cohorts explicitly deny those in both arms while requiring all document-origin resources to be archived."
   ],
   "instruction_count_credit": "None collected; no retired-instruction reduction or Brave comparison is claimed, and the broad instruction-saving cadence is unchanged.",
