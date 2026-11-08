@@ -108,7 +108,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=exports`, `strokes`, `composites`, `shadows`,
   `gradients`, `patterns`, `clears`, `images`, `imagefilters`, `image-space-layers`,
-  `converted-image-layers`, `fractional-image-layers`, `bwfills`, `glyphs`,
+  `converted-image-layers`, `fractional-image-layers`, `image-layer-alpha`, `bwfills`, `glyphs`,
   `colorfilters`, `filterlayers`, `dropshadows`, `mixedshadows`, `mixedblurs`,
   `portable-shadows`, `inner-shadows`, `rounded-inner-shadows`, `text-shadows`,
   `rrects`, `mipmaps` or `imageblur` to run only those
