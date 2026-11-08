@@ -130,7 +130,7 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 	computed := box.computed_values()
 	// Non-normal block content alignment contains margins and floats, even
 	// when its positional fallback leaves the contents at block-start.
-	if display.is_flow_inside() && computed.align_content() != .normal {
+	if display.is_flow_inside() && block_content_alignment_text(node) != 'normal' {
 		return true
 	}
 	overflow_x := computed.overflow_x()

@@ -43,6 +43,22 @@ fn test_block_content_alignment_uses_single_subject_fallbacks_and_safe_overflow(
 	assert block_alignment_values(document, result, 'child').offset.y().to_double() == 0
 }
 
+fn test_block_content_alignment_keeps_qualifiers_and_last_baseline_fallback() {
+	for height in [20,80] {
+		for align in ['safe center','unsafe center','safe end','unsafe end','last baseline'] {
+			mut document := html.parse_document('<!doctype html><style>*{margin:0;padding:0}
+				#outer{height:50px;align-content:${align}}#child{height:${height}px}</style>
+				<div id="outer"><div id="child"></div></div>')
+			defer { document.finalize() }
+			result := run_document_layout(document,400,300) or { panic('layout') }
+			free := 50.0-height
+			expected := if free < 0 && !align.starts_with('unsafe ') { 0.0 }
+				else if align.ends_with('center') { free/2 } else { free }
+			assert block_alignment_values(document,result,'child').offset.y().to_double() == expected
+		}
+	}
+}
+
 fn test_block_content_alignment_contains_child_margins_and_keeps_explicit_abspos_insets() {
 	mut document := html.parse_document('<!doctype html><style>*{margin:0;padding:0}
 		#outer{position:relative;height:100px;align-content:center}

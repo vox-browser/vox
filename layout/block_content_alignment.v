@@ -1,5 +1,12 @@
 module layout
 
+import css
+
+fn block_content_alignment_text(root &Node) string {
+	value := unsafe { &css.ComputedProperties(root.computed_values()) }.property(.align_content,.yes) or { return 'normal' }
+	return value.css_text
+}
+
 // CSS Align 3, content distribution for ordinary horizontal block containers.
 // Apply after final sizing, before positioned descendants and relative insets.
 // Flex/grid/table/multicol contexts retain their own alignment algorithms.
@@ -11,8 +18,9 @@ fn align_block_contents(mut state LayoutState, root &Node) {
 		|| root.computed_values().establishes_multi_column_container() {
 		return
 	}
-	align := root.computed_values().align_content()
-	if align !in [.center, .end_, .flex_end, .space_around, .space_evenly] { return }
+	text := block_content_alignment_text(root)
+	align := if text == 'last baseline' { 'end' } else { text.split(' ').last() }
+	if align !in ['center', 'end', 'flex-end', 'flow-end', 'space-around', 'space-evenly'] { return }
 	styled := root.as_node_with_style() or { return }
 	mut values := state.get_mutable(styled)
 	mut extent := CSSPixels.new(0)
@@ -35,8 +43,8 @@ fn align_block_contents(mut state LayoutState, root &Node) {
 	// Default overflow alignment for blocks is safe: overflowing content stays
 	// at block-start. Distributed values align the whole contents as one unit.
 	free_space := values.content_height().minus(extent)
-	if free_space.raw_value() <= 0 { return }
-	delta := if align in [.end_, .flex_end] { free_space } else { free_space.divided_by_float(2) }
+	if free_space.raw_value() <= 0 && !text.starts_with('unsafe ') { return }
+	delta := if align in ['end', 'flex-end', 'flow-end'] { free_space } else { free_space.divided_by_float(2) }
 	for index in 0 .. values.line_boxes.len {
 		shift_line_box(mut state, mut values.line_boxes[index], CSSPixels.new(0), delta)
 		for fragment in values.line_boxes[index].fragments_ {
