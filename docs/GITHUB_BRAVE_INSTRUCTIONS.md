@@ -1,8 +1,8 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **The latest c33 build gives
-19.0509% fewer and misses the conservative gate by 101,666,988 instructions.
+**20% fewer observed instructions** than Brave. **The latest c34 build gives
+19.3602% fewer and misses the conservative gate by 68,738,225 instructions.
 The earlier c26 pass does not establish acceptance for this build.**
 Acceptance requires seven complete alternating pairs and
 `10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
@@ -337,6 +337,42 @@ unchanged geometry. Combined inline-root/symbol controls save 249,783,401,
 219,346,314 and 215,110,353 (median 219,346,314). Separate diagnostic messages
 prove all four paths execute in that headless workload; these figures are
 not additive native instruction credit.
+
+C34 also fails 20%, with all seven alternating pairs, fourteen exact per-engine
+captures, complete content audits and normal browser exits retained. Maximum
+Vox **8,663,077,330** / minimum Brave **10,742,923,882** gives ratio
+**0.80639847** (**19.3602% fewer**). The integer gate is
+`86,630,773,300 > 85,943,391,056`, leaving **68,738,225** instructions.
+Medians are 8,624,573,397 / 10,776,923,039. The 20.0908% median paired saving
+still does not satisfy the conservative gate; regression checks remain deferred.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,663,077,330 | 10,829,953,356 |
+| 2 | 8,640,653,745 | 10,776,923,039 |
+| 3 | 8,624,573,397 | 10,797,236,777 |
+| 4 | 8,642,351,762 | 10,785,432,057 |
+| 5 | 8,595,284,168 | 10,775,392,885 |
+| 6 | 8,576,602,412 | 10,751,989,778 |
+| 7 | 8,584,584,876 | 10,742,923,882 |
+
+Executable `cd7f5f91e8b46a0f1a313ee9b8c93478081c035eaf36e6532699f0035ffeb978`,
+receipt `20261108-193625-82de3115`, keeps the single-C-unit O3/1500 policy.
+It was measured directly under its artifact lease; a held canonical reader
+lease and newer source request later superseded its unpublished staging app.
+Build guard exits 0, peak RSS 11,126,177,792 bytes; benchmark/guard exits 1 for
+the numerical failure, peak RSS 1,220,001,792 bytes. Local raw evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c34.json`.
+
+The readback endpoint candidate saves about 494M instructions on a conversion
+probe with mostly transparent/opaque pixels, but its matched native ABBA pairs
+save 3,031,909 and regress 1,489,470 instructions. Those native runs all retain
+exact pixels, content and normal exits. With no consistent native saving, the
+candidate is reverted and supplies no load optimization credit. A subsequent
+eligibility diagnostic accidentally launches the older canonical c33 image;
+its absent path messages cannot establish whether c34 executed the shortcut.
+The earlier interrupted readback build has no retained final exit, executable
+or browser samples and is not counted as a completed attempt.
 
 ## Workload and scope
 
