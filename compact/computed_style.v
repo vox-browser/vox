@@ -119,5 +119,5 @@ Object.defineProperty(globalThis,"getComputedStyle",{writable:true,configurable:
  __elementApply(__elementRecordSet,__computedStyleOwners,[proxy,owner]);
  return proxy;
 }});
-'
+' + compact_typed_style_bootstrap()
 }
