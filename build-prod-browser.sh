@@ -484,17 +484,21 @@ if [ ! -f "$compile_dir/Vox" ]; then
             -cflags "$extra_cflags" \
             -dump-c-flags "$generated_dir/Vox.flags" -o "$generated_dir/Vox.c" "$repo_dir"
     fi
-    python3 "$repo_dir/tools/production_source_manifest.py" combine --root "$repo_dir" \
-        --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
-        --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
-        --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
-        --output "$VOX_BUILD_RECEIPT_DIR/source-manifest.json"
-    python3 "$repo_dir/tools/freeze_browser_compile.py" \
-        --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
-        --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" \
-        --source-manifest "$VOX_BUILD_RECEIPT_DIR/source-manifest.json" \
-        --source-inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
-        --output "$compile_dir/Vox"
+    set -- --root "$repo_dir" --stage "$build_dir" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        --source "$generated_dir/Vox.c" --flags "$generated_dir/Vox.flags" --output "$compile_dir/Vox"
+    if [ -f "$VOX_BUILD_RECEIPT_DIR/worker-sources/v_sources" ] || \
+       [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
+        # A compiler without manifest support retains the whole-tree check.
+        # Partial manifests fail in combine rather than weakening verification.
+        python3 "$repo_dir/tools/production_source_manifest.py" combine --root "$repo_dir" \
+            --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+            --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
+            --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
+            --output "$VOX_BUILD_RECEIPT_DIR/source-manifest.json"
+        set -- "$@" --source-manifest "$VOX_BUILD_RECEIPT_DIR/source-manifest.json" \
+            --source-inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json"
+    fi
+    python3 "$repo_dir/tools/freeze_browser_compile.py" "$@"
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
 python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
