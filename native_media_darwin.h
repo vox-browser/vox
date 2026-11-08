@@ -4,6 +4,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <CoreVideo/CoreVideo.h>
 #include "native_avfoundation_darwin.h"
+#include "native_ffmpeg_playback_darwin.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -14,6 +15,11 @@
 // All calls run on the browser's main thread. AVFoundation owns asynchronous
 // networking, demuxing, decoding and audio; V pulls frames into VideoFrameSource.
 @interface VoxMediaPlayback : NSObject
+#ifdef LADYBIRD_V_HAS_FFMPEG
+@property(nonatomic) VoxFFmpegVideo *webm;
+@property(nonatomic) double webmPosition;
+@property(nonatomic) double webmEpoch;
+#endif
 @property(nonatomic, retain) AVPlayer *player;
 @property(nonatomic, retain) AVPlayerItemVideoOutput *output;
 @property(nonatomic) BOOL seeking;
@@ -41,6 +47,9 @@
     }
 }
 - (void)dealloc {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    vox_ffmpeg_video_close(_webm);
+#endif
     [[NSNotificationCenter defaultCenter] removeObserver:self];
     [_player pause];
     [_player replaceCurrentItemWithPlayerItem:nil];
@@ -84,6 +93,31 @@ static void *native_media_open(const char *url) {
 #endif
 }
 
+// The caller fetches into an owned local file before opening this decoder.
+static int32_t native_media_supports_webm(void) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    return 1;
+#else
+    return 0;
+#endif
+}
+static void *native_media_open_webm(const char *path) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    VoxFFmpegVideo *video = vox_ffmpeg_video_open(path);
+    if (!video) return NULL;
+    VoxMediaPlayback *media = [[VoxMediaPlayback alloc] init];
+    media.webm = video;
+#if __has_feature(objc_arc)
+    return (__bridge_retained void *)media;
+#else
+    return media;
+#endif
+#else
+    (void)path;
+    return NULL;
+#endif
+}
+
 static void native_media_close(void *handle) {
 #if __has_feature(objc_arc)
     VoxMediaPlayback *media = (__bridge_transfer VoxMediaPlayback *)handle;
@@ -95,14 +129,35 @@ static void native_media_close(void *handle) {
 static int32_t native_media_status(void *handle) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
     if (!media) return 0;
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) return media.webm->failed ? -1 : 1;
+#endif
     AVPlayerItemStatus status = media.player.currentItem.status;
     return status == AVPlayerItemStatusFailed ? -1 : status == AVPlayerItemStatusReadyToPlay ? 1 : 0;
 }
 static const char *native_media_error(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return "WebM decoding failed";
+#endif
     return [[[native_media_for_handle(handle) player] currentItem].error.localizedDescription UTF8String];
 }
 static double native_media_time(void *handle) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) {
+        if (media.atEnd) return media.webmPosition;
+        double position = media.webmPosition + media.requestedRate
+            * (NSProcessInfo.processInfo.systemUptime - media.webmEpoch);
+        double duration = media.webm->duration;
+        if ((media.requestedRate > 0 && isfinite(duration) && position >= duration)
+            || (media.requestedRate < 0 && position <= 0)) {
+            position = media.requestedRate < 0 ? 0 : duration;
+            media.webmPosition = position;
+            if (!media.atEnd) { media.atEnd = YES; media.endPending = YES; }
+        }
+        return fmax(0, position);
+    }
+#endif
     // The terminal decoded frame can precede the duration. The completion
     // notification establishes the exact endpoint used by HTML's ended test.
     double value = media.atEnd ? (media.requestedRate < 0 ? 0 : CMTimeGetSeconds(media.player.currentItem.duration))
@@ -119,6 +174,9 @@ static int32_t native_media_take_ended(void *handle) {
     return pending;
 }
 static double native_media_duration(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return native_media_for_handle(handle).webm->duration;
+#endif
     return CMTimeGetSeconds([native_media_for_handle(handle) player].currentItem.duration);
 }
 static int32_t native_media_audio(void *handle) {
@@ -127,21 +185,36 @@ static int32_t native_media_audio(void *handle) {
     return 0;
 }
 static int32_t native_media_width(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return native_media_for_handle(handle).webm->width;
+#endif
     return (int32_t)[native_media_for_handle(handle) player].currentItem.presentationSize.width;
 }
 static int32_t native_media_height(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return native_media_for_handle(handle).webm->height;
+#endif
     return (int32_t)[native_media_for_handle(handle) player].currentItem.presentationSize.height;
 }
 static int32_t native_media_buffer_count(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return isfinite(native_media_for_handle(handle).webm->duration) ? 1 : 0;
+#endif
     return (int32_t)[native_media_for_handle(handle) player].currentItem.loadedTimeRanges.count;
 }
 static double native_media_buffer_edge(void *handle, int32_t index, int32_t end) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return index == 0 && end ? native_media_for_handle(handle).webm->duration : 0;
+#endif
     NSArray *ranges = [native_media_for_handle(handle) player].currentItem.loadedTimeRanges;
     if (index < 0 || index >= (int32_t)ranges.count) return 0;
     CMTimeRange range = [ranges[index] CMTimeRangeValue];
     return CMTimeGetSeconds(end ? CMTimeRangeGetEnd(range) : range.start);
 }
 static int32_t native_media_buffering(void *handle) {
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (native_media_for_handle(handle).webm) return 0;
+#endif
     VoxMediaPlayback *media = native_media_for_handle(handle);
     // A paused HLS seek can leave playbackBufferEmpty set even after the seek
     // completes, with its target buffered and playbackLikelyToKeepUp true.
@@ -150,11 +223,26 @@ static int32_t native_media_buffering(void *handle) {
 }
 static void native_media_play(void *handle, double rate) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) {
+        media.webmPosition = native_media_time(handle);
+        media.webmEpoch = NSProcessInfo.processInfo.systemUptime;
+        media.requestedRate = rate;
+        return;
+    }
+#endif
     media.requestedRate = rate;
     if (!media.seeking) media.player.rate = (float)rate;
 }
 static void native_media_pause(void *handle) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) {
+        media.webmPosition = native_media_time(handle);
+        media.requestedRate = 0;
+        return;
+    }
+#endif
     media.requestedRate = 0;
     [media.player pause];
 }
@@ -164,6 +252,20 @@ static void native_media_volume(void *handle, double volume) {
 static void native_media_seek(void *handle, double seconds, int32_t approximate) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
     if (!media || !isfinite(seconds)) return;
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) {
+        seconds = fmax(0, seconds);
+        if (isfinite(media.webm->duration)) seconds = fmin(seconds, media.webm->duration);
+        if (!vox_ffmpeg_video_seek(media.webm, seconds)) { media.webm->failed = true; return; }
+        media.webmPosition = seconds;
+        media.webmEpoch = NSProcessInfo.processInfo.systemUptime;
+        media.atEnd = media.endPending = NO;
+        if (isfinite(media.webm->duration) && seconds >= media.webm->duration) {
+            media.atEnd = media.endPending = YES;
+        }
+        return;
+    }
+#endif
     NSUInteger generation = ++media.seekGeneration;
     media.seeking = YES;
     media.atEnd = NO;
@@ -216,6 +318,13 @@ static void native_media_bgra_to_rgba(const uint8_t *input, size_t stride, uint8
 static uint8_t *native_media_copy_frame(void *handle, int32_t *width, int32_t *height) {
     VoxMediaPlayback *media = native_media_for_handle(handle);
     if (!media) return NULL;
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    if (media.webm) {
+        uint8_t *pixels = vox_ffmpeg_video_copy_frame(media.webm, native_media_time(handle));
+        if (pixels) { *width = media.webm->width; *height = media.webm->height; }
+        return pixels;
+    }
+#endif
     CMTime when = media.player.currentTime;
     if (![media.output hasNewPixelBufferForItemTime:when]) return NULL;
     CVPixelBufferRef frame = [media.output copyPixelBufferForItemTime:when itemTimeForDisplay:NULL];

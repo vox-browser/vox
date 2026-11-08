@@ -25,6 +25,8 @@ $if macos {
 #flag darwin -framework CoreMedia
 
 fn C.native_media_open(&char) voidptr
+fn C.native_media_open_webm(&char) voidptr
+fn C.native_media_supports_webm() i32
 fn C.native_media_close(voidptr)
 fn C.native_media_status(voidptr) i32
 fn C.native_media_error(voidptr) &char
@@ -53,10 +55,19 @@ mut:
 	handle          voidptr
 	metadata_loaded bool
 	frame           ?&painting.MediaVideoFrame
+	mime_type       string = 'video/mp4'
 }
 
 fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
 	essence := type_.all_before(';').trim_space().to_lower()
+	if essence == 'video/webm' {
+		$if macos {
+			if C.native_media_supports_webm() != 0 && browser_webm_video_codecs_supported(type_) {
+				return .maybe
+			}
+		}
+		return .empty
+	}
 	if essence !in ['video/mp4', 'video/quicktime', 'audio/mp4', 'audio/aac', 'audio/mpeg', 'audio/mp3',
 		'audio/wav', 'audio/x-wav', 'audio/flac', 'application/vnd.apple.mpegurl',
 		'application/x-mpegurl', 'audio/mpegurl', 'audio/x-mpegurl'] {
@@ -205,10 +216,15 @@ fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
 		media.set_fetch_hook(fn [player] (source dom.URL, _ u64) !html.MediaResourceResponse {
 			mut p := unsafe { &BrowserMediaPlayback(player) }
 			p.close()
-			p.handle = C.native_media_open(source.serialize().str)
+			p.mime_type = if browser_media_source_is_webm(source, p.element) { 'video/webm' } else { 'video/mp4' }
+			p.handle = if p.mime_type == 'video/webm' {
+				browser_open_webm_resource(source, p.element.document().url.serialize())!
+			} else {
+				C.native_media_open(source.serialize().str)
+			}
 			if p.handle == unsafe { nil } { return error('Unsupported native media URL') }
 			C.native_wake_browser_after(16)
-			return html.MediaResourceResponse{ mime_type: 'video/mp4', metadata_pending: true }
+			return html.MediaResourceResponse{ mime_type: p.mime_type, metadata_pending: true }
 		})
 	}
 }
@@ -268,7 +284,7 @@ fn (mut app BrowserApp) poll_media_playback() {
 				height := C.native_media_height(player.handle)
 				duration := C.native_media_duration(player.handle)
 				media.complete_pending_media_resource(html.MediaResourceResponse{
-					mime_type:    'video/mp4'
+					mime_type:    player.mime_type
 					duration:     duration
 					buffered_end: if math.is_finite(duration) { duration } else { 0 }
 					audio_tracks: if C.native_media_audio(player.handle) != 0 {

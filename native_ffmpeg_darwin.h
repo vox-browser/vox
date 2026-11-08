@@ -102,6 +102,79 @@ extern bool ladybird_v_yuv_u8_to_rgba(const uint8_t *, uint32_t,
     uint32_t, bool, bool, uint8_t *, uint32_t, uint8_t, uint8_t);
 #endif
 
+#ifdef LADYBIRD_V_HAS_FFMPEG
+static bool native_ffmpeg_convert_frame(const VoxFFmpegAPI *ffmpeg, AVFrame *frame,
+    uint8_t *pixels, int pitch) {
+	int width = frame->width, height = frame->height;
+	// Gfx::YUVData converts unspecified VP9 matrix metadata as limited
+	// BT.709. Use the identical Rust yuv conversion entry point so the
+	// native frame has exactly the same RGBA values as upstream.
+	if (frame->format == AV_PIX_FMT_YUV420P
+	    && frame->color_range != AVCOL_RANGE_JPEG
+	    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
+	        || frame->colorspace == AVCOL_SPC_BT709)) {
+#ifdef LADYBIRD_V_HAS_RUST_YUV
+		if (ladybird_v_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
+			frame->data[1], frame->linesize[1], frame->data[2],
+			frame->linesize[2], width, height, true, true, pixels,
+			pitch, 0, 0)) {
+			return true;
+		}
+#else
+		if (ffmpeg->H420ToABGR(frame->data[0], frame->linesize[0],
+			frame->data[1], frame->linesize[1], frame->data[2],
+			frame->linesize[2], pixels, pitch, width, height) == 0) {
+			return true;
+		}
+#endif
+	}
+	struct SwsContext *converter = ffmpeg->sws_getContext(width, height, (enum AVPixelFormat)frame->format,
+		width, height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
+	if (converter == NULL)
+		return false;
+	int colorspace = SWS_CS_DEFAULT;
+	switch (frame->colorspace) {
+	case AVCOL_SPC_BT709:
+		colorspace = SWS_CS_ITU709;
+		break;
+	case AVCOL_SPC_FCC:
+		colorspace = SWS_CS_FCC;
+		break;
+	case AVCOL_SPC_SMPTE240M:
+		colorspace = SWS_CS_SMPTE240M;
+		break;
+	case AVCOL_SPC_BT2020_NCL:
+	case AVCOL_SPC_BT2020_CL:
+		colorspace = SWS_CS_BT2020;
+		break;
+	case AVCOL_SPC_BT470BG:
+	case AVCOL_SPC_SMPTE170M:
+		colorspace = SWS_CS_ITU601;
+		break;
+	case AVCOL_SPC_UNSPECIFIED:
+	default:
+		// Gfx::YUVData uses BT.709 when CICP matrix metadata is
+		// absent, so the browser host must not use swscale's
+		// BT.601 default for an unspecified VP9 stream.
+		colorspace = SWS_CS_ITU709;
+		break;
+	}
+	const int *coefficients = ffmpeg->sws_getCoefficients(colorspace);
+	if (coefficients != NULL) {
+		ffmpeg->sws_setColorspaceDetails(converter, coefficients,
+			frame->color_range == AVCOL_RANGE_JPEG, coefficients, 1,
+			0, 1 << 16, 1 << 16);
+	}
+	uint8_t *destination[] = { pixels, NULL, NULL, NULL };
+	int strides[] = { pitch, 0, 0, 0 };
+	int rows = ffmpeg->sws_scale(converter, (const uint8_t *const *)frame->data,
+		frame->linesize, 0, height, destination, strides);
+	ffmpeg->sws_freeContext(converter);
+	if (rows <= 0) return false;
+	return true;
+}
+#endif
+
 // Decode the first video frame at or after `seconds` into tightly packed RGBA.
 // The caller owns the returned buffer and releases it with
 // native_free_video_frame(). LibWeb retains the copied pixels in its external
@@ -128,7 +201,6 @@ uint8_t *native_decode_video_frame(const char *path, double seconds,
 	AVCodecContext *codec = NULL;
 	AVPacket *packet = NULL;
 	AVFrame *frame = NULL;
-	struct SwsContext *converter = NULL;
 	uint8_t *pixels = NULL;
 	int video_stream = -1;
 	if (ffmpeg->avformat_open_input(&format, path, NULL, NULL) < 0
@@ -193,75 +265,7 @@ uint8_t *native_decode_video_frame(const char *path, double seconds,
 			pixels = malloc((size_t)pitch * (size_t)height);
 			if (pixels == NULL)
 				goto cleanup;
-			// Gfx::YUVData converts unspecified VP9 matrix metadata as limited
-			// BT.709. Use the identical Rust yuv conversion entry point so the
-			// native frame has exactly the same RGBA values as upstream.
-			if (frame->format == AV_PIX_FMT_YUV420P
-			    && frame->color_range != AVCOL_RANGE_JPEG
-			    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
-			        || frame->colorspace == AVCOL_SPC_BT709)) {
-#ifdef LADYBIRD_V_HAS_RUST_YUV
-				if (ladybird_v_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
-					frame->data[1], frame->linesize[1], frame->data[2],
-					frame->linesize[2], width, height, true, true, pixels,
-					pitch, 0, 0)) {
-					*output_width = width;
-					*output_height = height;
-					*output_pitch = pitch;
-					goto cleanup;
-				}
-#else
-				if (ffmpeg->H420ToABGR(frame->data[0], frame->linesize[0],
-					frame->data[1], frame->linesize[1], frame->data[2],
-					frame->linesize[2], pixels, pitch, width, height) == 0) {
-					*output_width = width;
-					*output_height = height;
-					*output_pitch = pitch;
-					goto cleanup;
-				}
-#endif
-			}
-			converter = ffmpeg->sws_getContext(width, height, (enum AVPixelFormat)frame->format,
-				width, height, AV_PIX_FMT_RGBA, SWS_BILINEAR, NULL, NULL, NULL);
-			if (converter == NULL)
-				goto cleanup;
-			int colorspace = SWS_CS_DEFAULT;
-			switch (frame->colorspace) {
-			case AVCOL_SPC_BT709:
-				colorspace = SWS_CS_ITU709;
-				break;
-			case AVCOL_SPC_FCC:
-				colorspace = SWS_CS_FCC;
-				break;
-			case AVCOL_SPC_SMPTE240M:
-				colorspace = SWS_CS_SMPTE240M;
-				break;
-			case AVCOL_SPC_BT2020_NCL:
-			case AVCOL_SPC_BT2020_CL:
-				colorspace = SWS_CS_BT2020;
-				break;
-			case AVCOL_SPC_BT470BG:
-			case AVCOL_SPC_SMPTE170M:
-				colorspace = SWS_CS_ITU601;
-				break;
-			case AVCOL_SPC_UNSPECIFIED:
-			default:
-				// Gfx::YUVData uses BT.709 when CICP matrix metadata is
-				// absent, so the browser host must not use swscale's
-				// BT.601 default for an unspecified VP9 stream.
-				colorspace = SWS_CS_ITU709;
-				break;
-			}
-			const int *coefficients = ffmpeg->sws_getCoefficients(colorspace);
-			if (coefficients != NULL) {
-				ffmpeg->sws_setColorspaceDetails(converter, coefficients,
-					frame->color_range == AVCOL_RANGE_JPEG, coefficients, 1,
-					0, 1 << 16, 1 << 16);
-			}
-			uint8_t *destination[] = { pixels, NULL, NULL, NULL };
-			int strides[] = { pitch, 0, 0, 0 };
-			if (ffmpeg->sws_scale(converter, (const uint8_t *const *)frame->data,
-				frame->linesize, 0, height, destination, strides) <= 0)
+			if (!native_ffmpeg_convert_frame(ffmpeg, frame, pixels, pitch))
 				goto cleanup;
 			*output_width = width;
 			*output_height = height;
@@ -273,8 +277,6 @@ uint8_t *native_decode_video_frame(const char *path, double seconds,
 	}
 
 cleanup:
-	if (converter != NULL)
-		ffmpeg->sws_freeContext(converter);
 	if (frame != NULL)
 		ffmpeg->av_frame_free(&frame);
 	if (packet != NULL)
