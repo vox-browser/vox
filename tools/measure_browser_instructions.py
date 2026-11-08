@@ -268,6 +268,28 @@ def finish_chrome_capture(client, process, report, prefix, timeout=30):
             report["shutdown_cleanup_methods"].append(method)
         except (EOFError, OSError, RuntimeError) as error:
             report["shutdown_cleanup_errors"][method] = str(error)
+    # A target can still own renderer/resource teardown work after interception
+    # is disabled. Commit a blank document before closing the browser so that
+    # the old target's destruction can finish outside Browser.close's watchdog.
+    # Capture counters and the document audit have already been frozen.
+    try:
+        client.call("Page.navigate", {"url": "about:blank"})
+        report["shutdown_cleanup_methods"].append("Page.navigate")
+        deadline = time.monotonic() + 3
+        report["shutdown_blank_document_ready"] = False
+        while time.monotonic() < deadline:
+            state = client.call("Runtime.evaluate", {
+                "expression": 'location.href === "about:blank" && document.readyState === "complete"',
+                "returnByValue": True,
+            })
+            if not isinstance(state, dict):
+                break
+            if state.get("result", {}).get("value") is True:
+                report["shutdown_blank_document_ready"] = True
+                break
+            time.sleep(.02)
+    except (EOFError, OSError, RuntimeError) as error:
+        report["shutdown_cleanup_errors"]["Page.navigate"] = str(error)
     try:
         client.call("Browser.close")
     except (EOFError, OSError):

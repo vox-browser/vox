@@ -40,17 +40,37 @@ class ProcessStopTests(unittest.TestCase):
 class ChromeCaptureExitTests(unittest.TestCase):
     def test_shutdown_cancels_interception_after_preserving_capture_counters(self):
         client, process = Mock(), Mock()
+        client.call.return_value = {'result': {'value': True}}
         process.wait.return_value = 0
         report = dict(instructions=123, endpoint='screenshot response')
         measurement.finish_chrome_capture(client, process, report, Path('/unused/capture'))
         self.assertEqual([call.args[0] for call in client.call.call_args_list],
-                         ['Page.stopLoading', 'Fetch.disable', 'Browser.close'])
+                         ['Page.stopLoading', 'Fetch.disable', 'Page.navigate',
+                          'Runtime.evaluate', 'Browser.close'])
         self.assertEqual(report['instructions'], 123)
         self.assertEqual(report['endpoint'], 'screenshot response')
-        self.assertEqual(report['shutdown_cleanup_methods'], ['Page.stopLoading', 'Fetch.disable'])
+        self.assertEqual(report['shutdown_cleanup_methods'],
+                         ['Page.stopLoading', 'Fetch.disable', 'Page.navigate'])
+        self.assertTrue(report['shutdown_blank_document_ready'])
         self.assertEqual(report['shutdown_cleanup_errors'], {})
         self.assertEqual(report['exit'], 0)
         self.assertFalse(report['shutdown_forced'])
+
+    def test_blank_document_waits_for_navigation_before_browser_shutdown(self):
+        client, process = Mock(), Mock()
+        process.wait.return_value = 0
+        states = iter([False, True])
+        def respond(method, params=None):
+            if method == 'Runtime.evaluate':
+                return {'result': {'value': next(states)}}
+            return {}
+        client.call.side_effect = respond
+        report = dict(instructions=456)
+        with patch.object(measurement.time, 'sleep'):
+            measurement.finish_chrome_capture(client, process, report, Path('/unused/capture'))
+        self.assertTrue(report['shutdown_blank_document_ready'])
+        self.assertEqual(report['instructions'], 456)
+        self.assertEqual(client.call.call_args_list[-1].args, ('Browser.close',))
 
     def test_socket_eof_can_accompany_a_verified_clean_exit_after_capture(self):
         client = Mock()
@@ -269,6 +289,8 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                         expression = params['expression']
                         if 'document.fonts.ready' in expression:
                             return {'result': {'value': True}}
+                        if expression == 'location.href === "about:blank" && document.readyState === "complete"':
+                            return {'result': {'value': True}}
                         if expression == 'custom readiness':
                             readiness.append(True)
                             return {'result': {'value': json.dumps(dict(state,
@@ -309,8 +331,10 @@ class ChromeDirectLaunchTests(unittest.TestCase):
                     patch.object(measurement.time, 'sleep', side_effect=lambda seconds: methods.append(('settle', seconds))):
                 result = measurement.run_chrome(args, Path(directory) / 'capture', None)
             if direct:
-                for forbidden in ['Page.navigate', 'Emulation.setDeviceMetricsOverride',
-                                  'Page.enable', 'Runtime.enable']:
+                capture_methods = methods[:methods.index('Page.stopLoading')]
+                self.assertNotIn('Page.navigate', capture_methods)
+                self.assertEqual(methods.count('Page.navigate'), 1, 'Only teardown may navigate')
+                for forbidden in ['Emulation.setDeviceMetricsOverride', 'Page.enable', 'Runtime.enable']:
                     self.assertNotIn(forbidden, methods)
                 self.assertGreater(methods.index('Browser.getVersion'), methods.index('Page.captureScreenshot'))
                 self.assertNotIn('navigation_to_screenshot', result)
