@@ -17,7 +17,7 @@ fn chromium_partial_round_label(border BoxEdges, radii BoxRadii, rect painting.I
 		&& square_upper == CornerRadius{} && square_lower == CornerRadius{}
 }
 
-// Missing sides prevent Blink's uniform-border fast path. Equal opaque solid
+// Missing sides prevent Blink's uniform-border fast path. Equal solid
 // sides can still share the exact outer/inner rounded clips, without flattening
 // those curves into the portable border painter's polygonal arcs.
 fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border BoxEdges,
@@ -31,7 +31,7 @@ fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border Bo
 	mut count := 0
 	for side, width in widths {
 		if width <= 0 { continue }
-		if side_styles[side] != .solid || side_colors[side].a != 255
+		if side_styles[side] != .solid || side_colors[side].a == 0
 			|| width * 2 >= rect.width || width * 2 >= rect.height { return false }
 		if first >= 0 && side_colors[side] != side_colors[first] { return false }
 		first = side
@@ -41,6 +41,9 @@ fn append_chromium_partial_rounded_border(mut commands []PaintCommand, border Bo
 	// The native player retains each side's clips for square-ended labels,
 	// including the semicircle where opposite corner radii touch.
 	round_label := chromium_partial_round_label(border, radii, rect)
+	// Square-ended capsule labels retain separate side draws and their miter
+	// clips. Translucent labels need an additional opacity group there.
+	if round_label && side_colors[first].a != 255 { return false }
 	for radius in [radii.top_left, radii.top_right, radii.bottom_right, radii.bottom_left] {
 		if (radius.x * 2 >= rect.width || radius.y * 2 >= rect.height) && !round_label { return false }
 	}

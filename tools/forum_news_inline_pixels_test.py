@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_translucent_partial_borders_share_rounded_side_coverage(self):
+        self.compare_fixture('translucent-partial-rounded-border', width=1024, height=768)
+
     def test_svg_stroke_width_keeps_float_user_units_before_multisampling(self):
         self.compare_fixture('fractional-svg-stroke-width')
 

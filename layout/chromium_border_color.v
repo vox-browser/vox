@@ -7,6 +7,11 @@ import math
 // color. Invisible sides need no matching color; a border-bottom is common.
 fn chromium_border_srgb_color(handle voidptr, widths BoxEdges, colors BoxColors,
 	styles BoxBorderStyles) &PaintSRGBColor {
+	return chromium_border_srgb_color_with_alpha(handle, widths, colors, styles, false)
+}
+
+fn chromium_border_srgb_color_with_alpha(handle voidptr, widths BoxEdges, colors BoxColors,
+	styles BoxBorderStyles, allow_translucent bool) &PaintSRGBColor {
 	if handle == unsafe { nil } { return unsafe { nil } }
 	node := unsafe { &Node(handle) }
 	if node.document().font_rendering_policy() != .chromium { return unsafe { nil } }
@@ -20,10 +25,12 @@ fn chromium_border_srgb_color(handle voidptr, widths BoxEdges, colors BoxColors,
 	mut fractional := false
 	for index, size in sizes {
 		if size <= 0 || side_styles[index] in [.none, .hidden] { continue }
-		if side_styles[index] != .solid || side_colors[index].a != 255 { return unsafe { nil } }
+		if side_styles[index] != .solid || (!allow_translucent && side_colors[index].a != 255) {
+			return unsafe { nil }
+		}
 		value := computed.typed_property_value(properties[index]) or { return unsafe { nil } }
 		components := value.srgb_paint_components() or { return unsafe { nil } }
-		if components[3] != 1 { return unsafe { nil } }
+		if !allow_translucent && components[3] != 1 { return unsafe { nil } }
 		serialized := side_colors[index].serialize()
 		if chosen != unsafe { nil } {
 			if chosen.components != components || chosen.serialized != serialized {
@@ -36,6 +43,7 @@ fn chromium_border_srgb_color(handle voidptr, widths BoxEdges, colors BoxColors,
 		for channel in 0 .. 3 {
 			fractional = fractional || math.abs(components[channel] * 255 - f64(bytes[channel])) > 1e-6
 		}
+		fractional = fractional || math.abs(components[3] * 255 - f64(side_colors[index].a)) > 1e-6
 	}
 	return if fractional { chosen } else { unsafe { nil } }
 }
@@ -44,7 +52,8 @@ fn retain_chromium_border_color(mut commands []PaintCommand, start int, handle v
 	widths BoxEdges, colors BoxColors, styles BoxBorderStyles, radii BoxRadii) {
 	if start >= commands.len { return }
 	retain_chromium_dashed_border_color(mut commands, start, handle, widths, colors, styles)
-	color := chromium_border_srgb_color(handle, widths, colors, styles)
+	partial := commands[start..].any(it.kind == 'paint_partial_rounded_border')
+	color := chromium_border_srgb_color_with_alpha(handle, widths, colors, styles, partial)
 	if color == unsafe { nil } { return }
 	for index in start .. commands.len {
 		command := commands[index]
