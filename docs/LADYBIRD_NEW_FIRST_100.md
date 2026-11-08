@@ -394,3 +394,14 @@ must not be presented as a completed windowed production-browser run. Reuse the
 existing `tools/wpt_compare.py` command above with
 `--wpt-server-root /Users/alex/code/3rd/web-platform-tests` when a completed
 bundle contains the final fixes.
+
+
+A newer production executable,
+`91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831`,
+was published while the final native evidence was being archived. Its sealed
+source manifest includes the earlier SharedWorker and response-policy fixes,
+but predates the final frame-target, readiness and literal-text navigation
+changes. It has not received a cohort result here. The 82/100 production
+baseline belongs specifically to executable `59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`;
+the 100/100 native result remains attached to executable
+`559768100803bf929efbbadf5cdac6208e35d79293dab58ff5c06208b6421ecd`.

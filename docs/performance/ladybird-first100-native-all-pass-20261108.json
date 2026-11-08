@@ -1038,8 +1038,22 @@
     "pending": true,
     "build_guard_busy": true,
     "available_executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
-    "available_completed_browser_result": "82/100 cases, 8396/8462 registered subtests; manifest ladybird-first100-forms-csp-browser82-20261108.json",
-    "reason": "Available completed production browser predates these fixes. Shared production build is already running; no duplicate build was queued. Native engine acceptance is complete; a newer production bundle still needs its own run."
+    "reason": "Available completed production browser predates these fixes. Shared production build is already running; no duplicate build was queued. Native engine acceptance is complete; a newer production bundle still needs its own run.",
+    "last_completed_browser_run": {
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "passing_cases": 82,
+      "cases": 100,
+      "passing_subtests": 8396,
+      "registered_subtests": 8462,
+      "manifest": "ladybird-first100-forms-csp-browser82-20261108.json"
+    },
+    "available_bundle_cohort_run": "Not run. Bundle was published during archival and differs from the executable of the saved 82-case baseline.",
+    "available_bundle_sealed_inputs": "Build/production-build/receipts/20261108-151324-a8c2bca5/source-manifest.json",
+    "available_bundle_predates_final_source_paths": [
+      "document/form_submission.v",
+      "browserjs/document_window_event_binding_jsc.c.v",
+      "html/navigable.v"
+    ]
   },
   "development_guard_summary": {
     "first100-archive-stage-20261108.json": {
