@@ -23,11 +23,15 @@ pub:
 	y_plane     []u8
 	u_plane     []u8
 	v_plane     []u8
+	a_plane     []u8
 	y_stride    int
 	u_stride    int
 	v_stride    int
+	a_stride    int
 	subsampling MediaVideoSubsampling = .yuv420
 	full_range  bool
+	// Optional contiguous Y/U/V[/A] storage, retained for GPU plane uploads.
+	packed_planes []u8
 }
 
 @[heap]
@@ -111,6 +115,10 @@ pub fn (frame &MediaVideoFrame) to_bitmap() !&dom.Bitmap_ {
 			|| yuv_data.v_plane.len < v_stride * chroma_height) {
 		return error('video frame chroma plane is truncated')
 	}
+	a_stride := if yuv_data.a_stride > 0 { yuv_data.a_stride } else { width }
+	if yuv_data.a_plane.len > 0 && yuv_data.a_plane.len < a_stride * height {
+		return error('video frame alpha plane is truncated')
+	}
 
 	mut pixels := []u8{len: width * height * 4}
 	for y in 0 .. height {
@@ -155,7 +163,9 @@ pub fn (frame &MediaVideoFrame) to_bitmap() !&dom.Bitmap_ {
 			pixels[offset] = media_video_clamp_channel(red)
 			pixels[offset + 1] = media_video_clamp_channel(green)
 			pixels[offset + 2] = media_video_clamp_channel(blue)
-			pixels[offset + 3] = 255
+			pixels[offset + 3] = if yuv_data.a_plane.len > 0 {
+				yuv_data.a_plane[y * a_stride + x]
+			} else { 255 }
 		}
 	}
 	return &dom.Bitmap_{

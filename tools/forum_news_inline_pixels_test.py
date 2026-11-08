@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_transparent_webm_preserves_planes_until_filtered_gpu_sampling(self):
+        self.compare_fixture('transparent-webm-planes', settle_seconds=2)
+
     def test_fractional_skewed_borders_snap_in_their_local_paint_space(self):
         self.compare_fixture('fractional-skewed-border')
 

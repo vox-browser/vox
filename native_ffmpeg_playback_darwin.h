@@ -14,6 +14,9 @@ typedef struct {
     int stream, width, height;
     double duration, next_time;
     bool pending, draining, finished, failed;
+    uint8_t *packed_planes;
+    size_t packed_size;
+    int packed_format;
 } VoxFFmpegVideo;
 
 static void vox_ffmpeg_video_close(VoxFFmpegVideo *video) {
@@ -24,6 +27,7 @@ static void vox_ffmpeg_video_close(VoxFFmpegVideo *video) {
     if (video->codec) api->avcodec_free_context(&video->codec);
     if (video->format) api->avformat_close_input(&video->format);
     if (video->yuv_library) dlclose(video->yuv_library);
+    free(video->packed_planes);
     free(video);
 }
 
@@ -141,6 +145,35 @@ static bool vox_ffmpeg_video_convert(VoxFFmpegVideo *video, uint8_t *pixels) {
     return native_ffmpeg_convert_frame(video->api, frame, pixels, video->width * 4);
 }
 
+static bool vox_ffmpeg_video_retain_planes(VoxFFmpegVideo *video) {
+    AVFrame *frame = video->frame;
+    video->packed_format = 0;
+    if ((frame->format != AV_PIX_FMT_YUV420P && frame->format != AV_PIX_FMT_YUVA420P)
+        || (frame->colorspace != AVCOL_SPC_UNSPECIFIED && frame->colorspace != AVCOL_SPC_BT470BG
+            && frame->colorspace != AVCOL_SPC_SMPTE170M)) return true;
+    bool alpha = frame->format == AV_PIX_FMT_YUVA420P;
+    int widths[] = {video->width, (video->width + 1) / 2, (video->width + 1) / 2, video->width};
+    int heights[] = {video->height, (video->height + 1) / 2, (video->height + 1) / 2, video->height};
+    size_t count = (size_t)widths[0] * heights[0] * (alpha ? 2 : 1)
+        + (size_t)widths[1] * heights[1] * 2;
+    if (count != video->packed_size) {
+        uint8_t *replacement = realloc(video->packed_planes, count);
+        if (!replacement) return false;
+        video->packed_planes = replacement; video->packed_size = count;
+    }
+    uint8_t *destination = video->packed_planes;
+    for (int plane = 0; plane < (alpha ? 4 : 3); ++plane) {
+        for (int y = 0; y < heights[plane]; ++y) {
+            memcpy(destination, frame->data[plane] + (ptrdiff_t)y * frame->linesize[plane], widths[plane]);
+            destination += widths[plane];
+        }
+    }
+    // Match the browser image transport's limited/full 4:2:0 markers.
+    video->packed_format = alpha ? 13 : 8;
+    if (frame->color_range == AVCOL_RANGE_JPEG) ++video->packed_format;
+    return true;
+}
+
 static uint8_t *vox_ffmpeg_video_copy_frame(VoxFFmpegVideo *video, double seconds) {
     uint8_t *pixels = NULL;
     while (!video->finished && !video->failed) {
@@ -150,7 +183,8 @@ static uint8_t *vox_ffmpeg_video_copy_frame(VoxFFmpegVideo *video, double second
             video->failed = true; break;
         }
         if (!pixels) pixels = malloc((size_t)video->width * video->height * 4);
-        if (!pixels || !vox_ffmpeg_video_convert(video, pixels)) {
+        if (!pixels || !vox_ffmpeg_video_convert(video, pixels)
+            || !vox_ffmpeg_video_retain_planes(video)) {
             video->failed = true; break;
         }
         video->api->av_frame_unref(video->frame);

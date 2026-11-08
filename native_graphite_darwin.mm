@@ -593,6 +593,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
         int uv_height = full_chroma || horizontal_chroma ? image->height : (image->height + 1) / 2;
         size_t y_size = static_cast<size_t>(image->width) * image->height;
         size_t uv_size = static_cast<size_t>(uv_width) * uv_height;
+        bool has_alpha = image->flags & VOX_GRAPHITE_IMAGE_YUVA_ALPHA;
         SkPixmap planes[4] {
             SkPixmap(SkImageInfo::Make(image->width, image->height, kGray_8_SkColorType,
                 kOpaque_SkAlphaType), image->pixels, image->width),
@@ -601,15 +602,19 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
             SkPixmap(SkImageInfo::Make(uv_width, uv_height, kGray_8_SkColorType,
                 kOpaque_SkAlphaType), image->pixels + y_size + uv_size, uv_width), {}
         };
+        if (has_alpha)
+            planes[3] = SkPixmap(SkImageInfo::Make(image->width, image->height,
+                kGray_8_SkColorType, kOpaque_SkAlphaType),
+                image->pixels + y_size + 2 * uv_size, image->width);
         bool resized = upload_width != image->width || upload_height != image->height;
         std::vector<uint8_t> scaled_planes;
         if (resized) {
             size_t plane_size = static_cast<size_t>(upload_width) * upload_height;
-            scaled_planes.resize(plane_size * 3);
+            scaled_planes.resize(plane_size * (has_alpha ? 4 : 3));
             // Chromium's GPU decode cache scales each decoded plane on the CPU
             // and promotes the result to 4:4:4 before uploading it. Scaling the
             // original 4:2:0 textures on the GPU produces different texels.
-            for (int index = 0; index < 3; ++index) {
+            for (int index = 0; index < (has_alpha ? 4 : 3); ++index) {
                 SkPixmap scaled(SkImageInfo::Make(upload_width, upload_height,
                     kGray_8_SkColorType, kOpaque_SkAlphaType),
                     scaled_planes.data() + plane_size * index, upload_width);
@@ -622,7 +627,7 @@ static bool prepare_image_texture(skgpu::graphite::Recorder* recorder,
             prepared.source_scale_y = static_cast<float>(upload_height) / image->height;
         }
         SkYUVAInfo yuva(SkISize::Make(upload_width, upload_height),
-            SkYUVAInfo::PlaneConfig::kY_U_V,
+            has_alpha ? SkYUVAInfo::PlaneConfig::kY_U_V_A : SkYUVAInfo::PlaneConfig::kY_U_V,
             resized || full_chroma ? SkYUVAInfo::Subsampling::k444
                 : horizontal_chroma ? SkYUVAInfo::Subsampling::k422 : SkYUVAInfo::Subsampling::k420,
             // JPEG planes use the full BT.601 range; WebP planes are limited.

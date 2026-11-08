@@ -20,7 +20,9 @@ enum {
     // equals the image destination: it affects GPU shader interpolation.
     VOX_GRAPHITE_IMAGE_EXPLICIT_RECT_CLIP = 2048,
     // A whole background tile keeps filtering beyond its adjusted source.
-    VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE = 4096
+    VOX_GRAPHITE_IMAGE_UNCLAMPED_SOURCE = 4096,
+    // A full-resolution alpha plane follows the packed Y/U/V payload.
+    VOX_GRAPHITE_IMAGE_YUVA_ALPHA = 8192
 };
 
 enum {

@@ -6874,10 +6874,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 		'draw_video' {
 			paintable := command.video_paintable or { return }
 			mut video_bitmap := command.video_bitmap
+			mut planar_image := ?&gg.Image(none)
 			mut video_resource := painting.VideoFrameResourceIdentity{}
 			if source := command.video_frame_source {
 				if gpu_video_upload_keys_enabled { video_resource = source.resource_identity() }
 				if frame := source.current_frame() {
+					planar_image = browser_planar_video_image(frame)
 					if bitmap := frame.to_bitmap() {
 						video_bitmap = bitmap
 					} else {
@@ -6926,12 +6928,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						&& app.document.font_rendering_policy() == .chromium
 					clip_data := replaced_image_gpu_clip_data(command, clip, radii, gpu_image_ancestor_clip)
 					image_clip_radii_ptr := if gpu_clip { unsafe { &clip_data[4] } } else { unsafe { &f32(nil) } }
-					video_image := &gg.Image{
-						width: bitmap.width
-						height: bitmap.height
-						nr_channels: native_bitmap_channel_marker(bitmap, false)
-						ok: true
-						data: bitmap.data.data
+					video_image := planar_image or {
+						&gg.Image{
+							width: bitmap.width
+							height: bitmap.height
+							nr_channels: native_bitmap_channel_marker(bitmap, false)
+							ok: true
+							data: bitmap.data.data
+						}
 					}
 					C.native_begin_clip()
 					if !gpu_clip || gpu_image_ancestor_clip >= 0 {

@@ -45,6 +45,7 @@ fn C.native_media_pause(voidptr)
 fn C.native_media_volume(voidptr, f64)
 fn C.native_media_seek(voidptr, f64, i32)
 fn C.native_media_copy_frame(voidptr, &i32, &i32) &u8
+fn C.native_media_frame_planes(voidptr, &i32, &i32) &u8
 fn C.native_media_free_frame(&u8)
 
 @[heap]
@@ -304,7 +305,12 @@ fn (mut app BrowserApp) poll_media_playback() {
 			mut height := i32(0)
 			pixels := C.native_media_copy_frame(player.handle, &width, &height)
 			if pixels != unsafe { nil } {
+				previous_generation := if frame := player.frame { frame.generation } else { u64(0) }
 				stable := player.update_frame(pixels, int(width), int(height))
+				mut plane_format := i32(0)
+				mut plane_length := i32(0)
+				planes := C.native_media_frame_planes(player.handle, &plane_format, &plane_length)
+				player.update_frame_planes(planes, int(plane_length), int(plane_format), previous_generation)
 				C.native_media_free_frame(pixels)
 				mut document := media.document() or { continue }
 				app.invalidate_native_media_frame(mut document, stable)

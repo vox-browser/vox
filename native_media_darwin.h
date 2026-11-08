@@ -343,3 +343,18 @@ static uint8_t *native_media_copy_frame(void *handle, int32_t *width, int32_t *h
     return pixels;
 }
 static void native_media_free_frame(uint8_t *pixels) { free(pixels); }
+
+// Borrowed until the next decoded frame or close. V copies into its owned,
+// reusable frame storage before the decoder can advance.
+static const uint8_t *native_media_frame_planes(void *handle, int32_t *format, int32_t *length) {
+    *format = *length = 0;
+#ifdef LADYBIRD_V_HAS_FFMPEG
+    VoxMediaPlayback *media = native_media_for_handle(handle);
+    if (media.webm && media.webm->packed_format && media.webm->packed_size <= INT32_MAX) {
+        *format = media.webm->packed_format;
+        *length = (int32_t)media.webm->packed_size;
+        return media.webm->packed_planes;
+    }
+#endif
+    return NULL;
+}

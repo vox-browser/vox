@@ -2346,7 +2346,7 @@ static sk_sp<SkColorSpace> image_color_space()
 
 static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int height,
     SkSamplingOptions const& sampling, SkRect const& source, SkRect const& destination,
-    bool full_range, bool full_chroma, bool horizontal_chroma)
+    bool full_range, bool full_chroma, bool horizontal_chroma, bool has_alpha)
 {
     // Sample the original 4:2:0 planes before Rec.601 conversion, as Chromium's
     // GPU YUVA image does. Early RGB quantization changes downscaled colors.
@@ -2355,6 +2355,8 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
         uniform shader luma;
         uniform shader chroma_u;
         uniform shader chroma_v;
+        uniform shader alpha_plane;
+        uniform int has_alpha;
         uniform int nearest;
         uniform int full_range;
         uniform float2 chroma_scale;
@@ -2365,16 +2367,17 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
             float y = float(luma.eval(p).r);
             float u = float(chroma_u.eval(p * chroma_scale).r);
             float v = float(chroma_v.eval(p * chroma_scale).r);
+            float a = has_alpha != 0 ? float(alpha_plane.eval(p).r) : 1.0;
             if (full_range != 0) {
                 return half4(clamp(float3(
                     y + 1.402 * (v - 0.501961),
                     y - 0.344136 * (u - 0.501961) - 0.714136 * (v - 0.501961),
-                    y + 1.772 * (u - 0.501961)), 0.0, 1.0), 1.0);
+                    y + 1.772 * (u - 0.501961)), 0.0, 1.0) * a, a);
             }
             return half4(clamp(float3(
                 1.164384 * y + 1.596027 * v - 0.874202,
                 1.164384 * y - 0.391762 * u - 0.812968 * v + 0.531668,
-                1.164384 * y + 2.017232 * u - 1.085631), 0.0, 1.0), 1.0);
+                1.164384 * y + 2.017232 * u - 1.085631), 0.0, 1.0) * a, a);
         }
     )"));
     if (!effect.effect) return nullptr;
@@ -2392,6 +2395,7 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     SkRuntimeShaderBuilder builder(effect.effect);
     builder.uniform("nearest") = sampling.filter == SkFilterMode::kNearest ? 1 : 0;
     builder.uniform("full_range") = full_range ? 1 : 0;
+    builder.uniform("has_alpha") = has_alpha ? 1 : 0;
     builder.uniform("chroma_scale") = SkV2{full_chroma ? 1.0f : 0.5f,
         full_chroma || horizontal_chroma ? 1.0f : 0.5f};
     builder.uniform("source_bounds") = SkV4{source.left() + 0.5f, source.top() + 0.5f,
@@ -2399,6 +2403,13 @@ static sk_sp<SkShader> webp_yuv_shader(uint8_t const* planes, int width, int hei
     builder.child("luma") = y->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
     builder.child("chroma_u") = u->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
     builder.child("chroma_v") = v->makeShader(SkTileMode::kClamp, SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
+    if (has_alpha) {
+        auto alpha = plane(planes + static_cast<size_t>(width) * height
+            + static_cast<size_t>(uv_width) * uv_height * 2, width, height);
+        if (!alpha) return nullptr;
+        builder.child("alpha_plane") = alpha->makeShader(SkTileMode::kClamp,
+            SkTileMode::kClamp, SkSamplingOptions(SkFilterMode::kLinear));
+    } else builder.child("alpha_plane") = SkShaders::Color(SK_ColorWHITE);
     auto shader = builder.makeShader();
     return shader ? shader->makeWithLocalMatrix(SkMatrix::RectToRect(source, destination)) : nullptr;
 }
@@ -2855,7 +2866,8 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
     if (image_flags & 4) {
         auto shader = webp_yuv_shader(source_pixels, image_width, image_height,
             sampling, source_rect, local_destination, (image_flags & 8) != 0,
-            (image_flags & 16) != 0, (image_flags & VOX_GRAPHITE_IMAGE_YUV422) != 0);
+            (image_flags & 16) != 0, (image_flags & VOX_GRAPHITE_IMAGE_YUV422) != 0,
+            (image_flags & VOX_GRAPHITE_IMAGE_YUVA_ALPHA) != 0);
         if (!shader) return 0;
         paint.setShader(std::move(shader));
         canvas->drawRect(local_destination, paint);

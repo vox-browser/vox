@@ -7,12 +7,16 @@ static void checkAlpha(void *media, const char *reference) {
     int32_t width = 0, height = 0;
     uint8_t *pixels = native_media_copy_frame(media, &width, &height);
     assert(pixels && width == 16 && height == 16);
+    int32_t format = 0, length = 0;
+    const uint8_t *planes = native_media_frame_planes(media, &format, &length);
+    assert(planes && format == 13 && length == 16 * 16 * 2 + 8 * 8 * 2);
     FILE *file = fopen(reference, "rb");
     assert(file);
     for (int pixel = 0; pixel < width * height; ++pixel) {
         unsigned char rgba[4];
         assert(fread(rgba, 1, 4, file) == 4);
         assert(pixels[pixel * 4 + 3] == rgba[3]);
+        assert(planes[16 * 16 + 8 * 8 * 2 + pixel] == rgba[3]);
     }
     fclose(file);
     native_media_free_frame(pixels);

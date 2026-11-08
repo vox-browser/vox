@@ -388,6 +388,7 @@ private:
             size_t uv_h = image.flags & (16 | VOX_GRAPHITE_IMAGE_YUV422) ? h : (h + 1) / 2;
             if (w > limit / h || uv_w > limit / uv_h) return request;
             source = {image.pixels, w * h + 2 * uv_w * uv_h, 0, 1};
+            if (image.flags & VOX_GRAPHITE_IMAGE_YUVA_ALPHA) source.bytes += w * h;
         } else if (source.bytes > source.pitch) return request;
         return prepare_entry(parameters, source, width, height, pitch, has_background, pixels);
     }

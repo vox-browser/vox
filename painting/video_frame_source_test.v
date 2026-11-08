@@ -2,6 +2,30 @@ module painting
 
 import dom
 
+fn test_planar_video_fallback_preserves_strided_alpha_and_rejects_truncated_alpha() {
+	frame := &MediaVideoFrame{
+		width:    2
+		height:   2
+		yuv_data: MediaVideoYUVData{
+			y_plane:  [u8(16), 235, 235, 16]
+			u_plane:  [u8(128)]
+			v_plane:  [u8(128)]
+			a_plane:  [u8(0), 64, 99, 128, 255, 99]
+			a_stride: 3
+		}
+	}
+	bitmap := frame.to_bitmap()!
+	assert bitmap.data == [u8(0), 0, 0, 0, 255, 255, 255, 64, 255, 255, 255, 128, 0, 0, 0, 255]
+	data := frame.yuv_data or { panic('planes') }
+	truncated := &MediaVideoFrame{ ...frame, yuv_data: MediaVideoYUVData{ ...data, a_plane: [
+		u8(0),
+		64,
+	] } }
+	if _ := truncated.to_bitmap() {
+		assert false, 'Truncated alpha must not be read'
+	}
+}
+
 fn test_video_frame_resource_identity_tracks_source_lifetime_replacement_and_rewrites() {
 	bitmap := &dom.Bitmap_{ width: 1, height: 1, pitch: 4, data: [u8(20), 40, 60, 255] }
 	mut frame := MediaVideoFrame.from_bitmap(bitmap)

@@ -74,8 +74,43 @@ fn test_typed_webm_source_without_extension_uses_browser_resource_loader_and_tra
 			translucent = translucent || (alpha > 0 && alpha < 255)
 		}
 		assert transparent && translucent
+		planes := frame.yuv_data or { panic('Missing retained video planes') }
+		assert planes.packed_planes.len == 16 * 16 * 2 + 8 * 8 * 2
+		assert planes.a_plane.len == 16 * 16
+		for index in 0 .. 16 * 16 {
+			assert planes.a_plane[index] == bitmap.data[index * 4 + 3]
+		}
 		generation := frame.generation
 		app.poll_media_playback()
 		assert frame.generation == generation
 	}
+}
+
+fn test_video_plane_updates_reuse_storage_and_invalidate_equal_rgba_generations() {
+	mut player := BrowserMediaPlayback{
+		media:   html.HTMLMediaElement.create(none, dom.URL{ value: 'https://example.test/' })
+		element: unsafe { nil }
+	}
+	rgba := []u8{len: 3 * 3 * 4, init: u8(128)}
+	player.update_frame(rgba.data, 3, 3)
+	mut packed := []u8{len: 3 * 3 * 2 + 2 * 2 * 2, init: u8(128)}
+	player.update_frame_planes(packed.data, packed.len, 13, 0)
+	first := player.frame or { panic('frame') }
+	data := first.yuv_data or { panic('planes') }
+	assert first.color_space == .bt601 && data.a_plane.len == 9
+	first_generation := first.generation
+	player.update_frame_planes(packed.data, packed.len, 13, first_generation)
+	assert (player.frame or { panic('frame') }).generation == first_generation
+	packed[0]++
+	player.update_frame_planes(packed.data, packed.len, 13, first_generation)
+	updated := player.frame or { panic('frame') }
+	updated_data := updated.yuv_data or { panic('planes') }
+	assert voidptr(updated_data.packed_planes.data) == voidptr(data.packed_planes.data)
+	assert updated_data.y_plane[0] == 129
+	assert updated.generation == first_generation + 1
+	// Removing planar transport restores RGBA without retaining stale GPU data.
+	player.update_frame_planes(unsafe { nil }, 0, 0, updated.generation)
+	fallback := player.frame or { panic('frame') }
+	assert fallback.yuv_data == none && fallback.rgba_bitmap != none
+	assert fallback.generation == first_generation + 2
 }

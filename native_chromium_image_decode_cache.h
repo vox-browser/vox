@@ -129,6 +129,7 @@ public:
             size_t uv_w = image.flags & 16 ? w : (w + 1) / 2;
             size_t uv_h = image.flags & (16 | VOX_GRAPHITE_IMAGE_YUV422) ? h : (h + 1) / 2;
             row_bytes = w * h + 2 * uv_w * uv_h;
+            if (image.flags & VOX_GRAPHITE_IMAGE_YUVA_ALPHA) row_bytes += w * h;
             rows = 1; pitch = row_bytes;
         }
         size_t source_bytes = row_bytes * rows;
@@ -142,8 +143,8 @@ public:
             if (it->identity != identity) continue;
             auto const& prior = it->image;
             bool same = prior.width == image.width && prior.height == image.height
-                && (prior.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422))
-                    == (image.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422))
+                && (prior.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422 | VOX_GRAPHITE_IMAGE_YUVA_ALPHA))
+                    == (image.flags & (1 | 4 | 8 | 16 | VOX_GRAPHITE_IMAGE_YUV422 | VOX_GRAPHITE_IMAGE_YUVA_ALPHA))
                 && prior.has_color_profile == image.has_color_profile
                 && (!image.has_color_profile || !std::memcmp(prior.color_profile,
                     image.color_profile, sizeof(image.color_profile)));
