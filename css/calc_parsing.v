@@ -861,6 +861,8 @@ fn (node CalcNode) serialize_top() string {
 		}
 	}
 
+	if node is CalcAnchorSize { return node.style_value.serialize(.normal) }
+
 	// AD-HOC: random() is serialized directly because its value-sharing argument is not a
 	//         calculation node and its step is optional.
 	if node is CalcRandom {
