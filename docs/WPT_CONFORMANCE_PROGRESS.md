@@ -908,9 +908,66 @@ Status/completion are
 Its observer is `/Users/alex/.cache/vox/wpt/20261108-svg-pointer-fixed-production-followup.py`,
 SHA-256 `de4d24c48d1f872212903d130447d7bd9aff224ac04c61da91b05ef98c6206c2`.
 
-Production validation of the final coordinate fix is pending. The shared
-fastc production attempt fails on a missing `vlib/os/execute_capture_legacy.h`;
-the C backend already passes the focused checks. The next request uses that
-backend through the shared supervisor. No private production bundle is copied
-or separately built. r17 continues on its original pinned image. **The larger
+That production follow-up completed: **9,155 / 9,155 PASS**, all six cases
+COMPLETE with harness OK, and strict runner/outer guard exits 0. It checks the
+original completed production artifact in place under a shared read lease,
+with all 16 required implementation hashes unchanged. The executable is
+`cd7f5f91e8b46a0f1a313ee9b8c93478081c035eaf36e6532699f0035ffeb978`,
+receipt `Build/production-build/receipts/20261108-193625-82de3115`.
+Raw evidence is `/Users/alex/.cache/vox/wpt/20261108-svg-pointer-fixed-production-raw.tar.gz`,
+SHA-256 `046d31bf23b3b2438ef7dc5040e2403ee5b98b5c7dfb37c423134cd0194435ea`.
+The failed fastc attempt and the earlier failing nine-page collection remain
+retained above. r17 continues on its original pinned image. **The larger
 imported set and full upstream WPT have not reached 100%.**
+
+## SVG object boxes and active XML navigation
+
+Three further fixes are committed separately:
+
+| Commit | Change |
+| --- | --- |
+| `8a88436b4` | Resolve SVG text x/y/dx/dy and textLength lengths in the element's font context, including `dy="3em"`, while preserving float user-space and device-scale behavior. |
+| `60cc4ae8b` | Include nonempty SVG box edges, descendant text lines and gaps, and hidden SVG image viewports in the appropriate pointer regions. Keep aggregate hit bounds separate from painting geometry. |
+| `c1f5d35ed` | Navigate SVG/XML responses as active XML documents instead of image wrappers or HTML. Preserve namespaces, CDATA, script order, UTF-8/XML declarations and transport charsets; use inert XML trees for preload discovery and own source tokens beyond decoded-input storage. |
+
+**30 distinct focused checks pass in normal and preallocated-memory modes**:
+18 layout checks and 12 navigation/response checks. They retain V's 10 GiB
+compiler limit, 12 GiB compile/outer guards and 3 GiB focused runtime guards.
+The XML checks include character decoding, malformed-document handling,
+HTML/image navigation regressions and source lifetime after scratch reuse.
+An initial XML regression exposes an absent MIME charset becoming a present
+empty string; corrected extraction passes the final checks. Failed attempts
+and their diagnostics remain in the raw evidence. Shared-host load averages
+were about 28–44 while r17 and other sessions ran; no timing comparison is claimed.
+
+The unchanged original bbox page improves from **23 / 31 to 31 / 31** in
+native Page navigation. All seven selected original HTML pages then pass
+**9,186 / 9,186**. After the XML loader fix, both previously unreported SVG
+pages (`pointer-events-computed` and `pointer-events-valid`) report and pass
+**11 / 11 each**. The complete original nine-page focused collection passes
+**9,208 / 9,208**, with all expected counts, harness OK and strict driver/outer
+guard exits 0. Required source hashes, binary, fixtures, server and runner
+inputs remain unchanged throughout that collection. Its native Page executable
+is SHA-256 `ccf0ca8c89af224fa01e5655a616bbe2786365756406aba6f43dff1697d468b3`; this is not a production-browser or full-suite result.
+
+Focused raw evidence is
+`/Users/alex/.cache/vox/wpt/20261108-svg-bbox-xml-c1f5d35ed-raw.tar.gz`,
+SHA-256 `c74ec683fa664b494f341ca8217343f536a696f9de7cefaf89ad2d705875a047`.
+The summary is `/Users/alex/.cache/vox/wpt/20261108-svg-bbox-xml-summary.json`,
+SHA-256 `6624e8fcc3fa31e05a4b7f85ddce1c33f33324b3546c244f0a4f1e342fce9593`.
+Generated C is excluded. Completed Build output, temporary canonical combined
+tests and their locks are removed after archiving.
+
+A production follow-up requires all 23 implementation hashes from
+`c1f5d35ede5d4cbf5885c769d076f11561419b50` and checks the same nine original
+pages (**9,208 expected assertions**), with fresh browser processes, unchanged
+harness deadlines, 4 GiB browser caps and a 12 GiB outer guard. It checks a
+matching completed bundle in place under a read lease. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-svg-xml-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-svg-xml-production-followup.py`,
+SHA-256 `71a3cb09697323dcd0164204d7ff414aacf7367832ddc1a2847dea2c09757bd1`.
+Production validation of these latest slices remains pending. The shared build
+request uses the C backend because the fastc attempt fails on a missing legacy
+OS header. r17 remains on its original pinned image and has collected 5,400 of
+6,828 cases at this checkpoint, with no changed runner/bundle inputs.
+**Neither the larger imported cohort nor full upstream WPT is at 100%.**
