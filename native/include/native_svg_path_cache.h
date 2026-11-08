@@ -13,12 +13,13 @@ class VoxSmallSvgPathCache {
     struct Entry { std::vector<uint8_t> key, pixels; };
     std::deque<Entry> entries;
     size_t retained_bytes = 0;
+    uint64_t generation = 0;
     static constexpr size_t byte_limit = 8u * 1024 * 1024;
 public:
     bool enabled = false;
     uint64_t hits = 0;
 
-    void clear() { entries.clear(); retained_bytes = 0; }
+    void clear() { ++generation; entries.clear(); retained_bytes = 0; }
     size_t size() const { return entries.size(); }
     size_t bytes() const { return retained_bytes; }
 
@@ -70,8 +71,12 @@ public:
             ++hits;
             return 1;
         }
+        auto before_draw = generation;
         int result = backend(pixels, width, height, pitch, has_background, path);
-        if (!result) return result;
+        // The callback may purge graphics memory or replace its registered
+        // renderer. Its output belongs to this call, but cannot repopulate
+        // the invalidated cache after that operation returns.
+        if (!result || generation != before_draw) return result;
         Entry entry {std::move(key), std::vector<uint8_t>(size_t(width) * height * 4)};
         for (int y = 0; y < height; ++y)
             std::memcpy(entry.pixels.data() + size_t(y) * width * 4,
