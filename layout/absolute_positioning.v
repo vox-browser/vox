@@ -431,26 +431,48 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 	preferred_width := computed.size_value(.width)
 	preferred_height := computed.size_value(.height)
+	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper()
+		&& horizontal_alignment.stretches() && (!box.is_replaced_box() || horizontal_alignment.position == 'stretch') {
+		if l := left { if r := right {
+			forced_width = css_pixels_max(CSSPixels.new(0),containing_width.minus(l).minus(r).minus(flex_or_grid_item_outer_inline_edges(box_state)))
+		} }
+	}
+	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper()
+		&& vertical_alignment.stretches() && (!box.is_replaced_box() || vertical_alignment.position == 'stretch') {
+		if t := top { if b := bottom {
+			forced_height = css_pixels_max(CSSPixels.new(0),containing_height.minus(t).minus(b).minus(flex_or_grid_item_outer_block_edges(box_state)))
+		} }
+	}
 	// FormattingContext::compute_width_for_absolutely_positioned_element() and
 	// compute_height_for_absolutely_positioned_element() both select the replaced
 	// algorithm through box_is_sized_as_replaced_element(), so a non-replaced box
 	// with a preferred aspect ratio and one specified axis is sized by it too.
 	abspos_available_space := AvailableSpace.new(AvailableSize.make_definite(containing_width),
 		AvailableSize.make_definite(containing_height))
-	if box_is_sized_as_replaced_element(state, box, abspos_available_space) {
+	if box_is_sized_as_replaced_element(state, box, abspos_available_space)
+		|| (if sized_box := box.as_box() { sized_box.has_preferred_aspect_ratio() && (forced_width != none || forced_height != none) } else { false }) {
 		replaced := box.as_box() or { return }
 		// CSS ratio boxes transfer the border-box inline size before removing
 		// block-axis edges, just as they do in normal flow. The resolved ratio
 		// height supplies the existing percentage-size basis for descendants.
-		size := chromium_concrete_ratio_block_size(replaced, box_state, abspos_available_space) or {
-			compute_replaced_size(replaced, abspos_available_space)
+		mut substitutions := map[css.PropertyID]css.Size{}
+		for property in [css.PropertyID.min_width,.max_width,.min_height,.max_height] {
+			horizontal := property in [.min_width,.max_width]
+			if value := absolute_anchor_size_property(state,box,containing_state,property,if horizontal { containing_width } else { containing_height },horizontal) {
+				substitutions[property] = css.Size.make_px(value)
+			}
 		}
-		if forced_width == none {
-			forced_width = size.width()
+		model := ReplacedBoxModel{percentage_basis:containing_width,used_inline_padding:box_state.padding_left.plus(box_state.padding_right)}
+		if width := forced_width { substitutions[.width] = css.Size.make_px(width.plus(replaced_box_sizing_edges(box,model,true))) }
+		if height := forced_height { substitutions[.height] = css.Size.make_px(height.plus(replaced_box_sizing_edges(box,model,false))) }
+		size := compute_replaced_size_with_box_model(replaced,abspos_available_space,ReplacedBoxModel{...model,size_overrides:substitutions})
+		if forced_width != none && forced_height == none && replaced.has_preferred_aspect_ratio() {
+			forced_height = intrinsic_content_height_from_aspect_ratio(replaced,box_state,size.width())
+		} else if forced_height != none && forced_width == none && replaced.has_preferred_aspect_ratio() {
+			forced_width = intrinsic_content_width_from_aspect_ratio(replaced,box_state,size.height())
 		}
-		if forced_height == none {
-			forced_height = size.height()
-		}
+		forced_width = forced_width or { size.width() }
+		forced_height = forced_height or { size.height() }
 	}
 	if forced_width == none && preferred_width.is_intrinsic_sizing_constraint() {
 		if box_as_box := box.as_box() {
@@ -470,6 +492,10 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	}
 	if forced_width == none {
 		if box_as_box := box.as_box() {
+			if height := forced_height {
+				box_state.set_content_height(height)
+				box_state.set_has_definite_height(true)
+			}
 			// CSS 2.2 10.3.7 rules 1 and 3 use the space left by a
 			// specified inset as the stretch-fit limit for shrink-to-fit.
 			mut fit_available_width := containing_width
@@ -480,8 +506,13 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				fit_available_width = fit_available_width.minus(right_value)
 			}
 			fit_available_width = css_pixels_max(CSSPixels.new(0), fit_available_width)
-			forced_width = calculate_fit_content_width(mut state, box_as_box,
-				AvailableSize.make_definite(fit_available_width))
+			if forced_height != none && !box.is_replaced_box() {
+				minimum := calculate_content_width_with_constraint(mut state,box_as_box,.min_content)
+				maximum := calculate_content_width_with_constraint(mut state,box_as_box,.max_content)
+				forced_width = css_pixels_max(minimum,css_pixels_min(maximum,calculate_stretch_fit_width(box_as_box,AvailableSize.make_definite(fit_available_width))))
+			} else {
+				forced_width = calculate_fit_content_width(mut state, box_as_box,AvailableSize.make_definite(fit_available_width))
+			}
 		}
 	}
 	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper() && vertical_alignment.stretches() {
@@ -502,7 +533,8 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	}
 	box_state = layout_independent_child_with_forced_height_definiteness(mut state, box,
 		mut containing_state, containing_width, containing_height, forced_width, forced_height,
-		computed_height_establishes_definite_containing_block_height(preferred_height))
+		computed_height_establishes_definite_containing_block_height(preferred_height)
+			|| (preferred_height.is_auto() && top != none && bottom != none && vertical_alignment.stretches()))
 
 	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 

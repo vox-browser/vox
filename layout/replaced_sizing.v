@@ -15,6 +15,13 @@ import css
 struct ReplacedBoxModel {
 	percentage_basis    CSSPixels
 	used_inline_padding ?CSSPixels
+	// Used-value substitutions supplied by anchor positioning and stretch-fit
+	// sizing. The computed declarations remain unchanged for CSSOM.
+	size_overrides map[css.PropertyID]css.Size
+}
+
+fn replaced_size_value(node &Node, model ReplacedBoxModel, property css.PropertyID) css.Size {
+	return model.size_overrides[property] or { node.computed_values().size_value(property) }
 }
 
 // CSS 2.2 10.3.2 and 10.6.2 replaced-element tentative sizing. This is shared
@@ -49,8 +56,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	computed := node.computed_values()
 	width_basis := available_space.width.to_px_or_zero()
 	height_basis := available_space.height.to_px_or_zero()
-	computed_width := computed.size_value(.width)
-	computed_height := computed.size_value(.height)
+	computed_width := replaced_size_value(node, box_model, .width)
+	computed_height := replaced_size_value(node, box_model, .height)
 	mut specified_width := resolve_replaced_content_size(node, computed_width, width_basis, box_model, true)
 	mut specified_height := resolve_replaced_content_size(node, computed_height, height_basis, box_model, false)
 	if computed_width.contains_percentage() && !available_space.width.is_definite() {
@@ -89,8 +96,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		// tentative_width_for_replaced_element() transfers the *used* height,
 		// and compute_height_for_replaced_element() has already applied its
 		// max-height and min-height steps by then.
-		height = apply_replaced_axis_constraints(node, computed.size_value(.min_height),
-			computed.size_value(.max_height), specified_block, available_space.height,
+		height = apply_replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_height),
+			replaced_size_value(node, box_model, .max_height), specified_block, available_space.height,
 			box_model, false)
 		if intrinsic_ratio := ratio {
 			width = height.times_fraction(intrinsic_ratio)
@@ -158,7 +165,7 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 			height = solved.height()
 		}
 	}
-	width = apply_replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width),
+	width = apply_replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_width), replaced_size_value(node, box_model, .max_width),
 		width, available_space.width, box_model, true)
 	// CSS 2.2 10.6.2 transfers the used width into an automatic height.
 	// A specified width can still be changed by min/max-width; deriving the
@@ -173,8 +180,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	constraint_rerun_uses_intrinsic_height := specified_width == none
 		&& specified_height == none && ratio == none && intrinsic.height != none
 	constraint_rerun_intrinsic_height := intrinsic.height or { CSSPixels.new(0) }
-	height = apply_replaced_block_axis_constraints(node, computed.size_value(.min_height),
-		computed.size_value(.max_height), height, available_space.height, box_model,
+	height = apply_replaced_block_axis_constraints(node, replaced_size_value(node, box_model, .min_height),
+		replaced_size_value(node, box_model, .max_height), height, available_space.height, box_model,
 		constraint_rerun_uses_intrinsic_height, constraint_rerun_intrinsic_height)
 	// Blink transfers an automatically sized ratio-only SVG's used block size back
 	// through its natural ratio. The block size has already been quantized to
@@ -182,8 +189,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	// 19.984375px wide. Keep authored widths and SVG-image viewports independent.
 	if chromium_auto_svg_transfers_block_size(node) {
 		if natural_ratio := ratio {
-			width = apply_replaced_axis_constraints(node, computed.size_value(.min_width),
-				computed.size_value(.max_width), height.times_fraction(natural_ratio),
+			width = apply_replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_width),
+				replaced_size_value(node, box_model, .max_width), height.times_fraction(natural_ratio),
 				available_space.width, box_model, true)
 		}
 	}
@@ -298,8 +305,8 @@ fn apply_replaced_block_axis_constraints(node &Node, minimum css.Size, maximum c
 fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height CSSPixels, aspect_ratio css.CSSPixelFraction, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
 	node := unsafe { &Node(box) }
 	computed := node.computed_values()
-	min_width, max_width := replaced_axis_constraints(node, computed.size_value(.min_width), computed.size_value(.max_width), input_width, available_space.width, box_model, true)
-	min_height, max_height := replaced_axis_constraints(node, computed.size_value(.min_height), computed.size_value(.max_height), input_height, available_space.height, box_model, false)
+	min_width, max_width := replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_width), replaced_size_value(node, box_model, .max_width), input_width, available_space.width, box_model, true)
+	min_height, max_height := replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_height), replaced_size_value(node, box_model, .max_height), input_height, available_space.height, box_model, false)
 
 	if input_width.raw_value() < min_width.raw_value()
 		&& input_height.raw_value() > max_height.raw_value() {
