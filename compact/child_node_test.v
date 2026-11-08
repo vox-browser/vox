@@ -69,3 +69,21 @@ b.after(null,undefined,7,true,value);
 if(!host.textContent.includes("nullundefined7trueconverted")||conversions!==2)throw new Error("DOMString conversion");
 ')!
 }
+
+fn test_compact_element_remove_prototype_uses_the_receiver_and_native_tree() {
+	check_compact_child_node_script(r'
+const remove=Element.prototype.remove,descriptor=Object.getOwnPropertyDescriptor(Element.prototype,"remove");
+if(remove.name!=="remove"||remove.length!==0||Object.hasOwn(remove,"prototype")||!descriptor.writable||!descriptor.enumerable||!descriptor.configurable||Element.prototype[Symbol.unscopables].remove!==true)throw new Error("remove metadata");
+const saved=host.childNodes,observer=new MutationObserver(()=>{});observer.observe(host,{childList:true});
+b.remove=function(){throw new Error("author override must not run")};
+const ignored={toString(){throw new Error("remove ignores arguments")}};
+if(remove.call(b,ignored,Symbol())!==undefined||b.parentNode!==null||b.isConnected||document.getElementById("b")!==null||saved.length!==2)throw new Error("native prototype removal");
+let changes=observer.takeRecords();if(changes.length!==1||changes[0].removedNodes[0]!==b||changes[0].previousSibling!==a||changes[0].nextSibling!==c)throw new Error("removal record");
+remove.call(b);if(observer.takeRecords().length!==0)throw new Error("detached remove no-op");
+c.before(b);observer.takeRecords();remove.call(b);if(saved.length!==2||b.parentNode!==null||observer.takeRecords().length!==1)throw new Error("remove after reinsertion");
+const created=document.createElement("span");host.appendChild(created);remove.call(created);if(created.parentNode!==null||host.childNodes.length!==2)throw new Error("created removal");
+for(const receiver of [null,undefined,{},Object.create(Element.prototype),document,document.doctype,document.createTextNode("text"),document.createComment("comment"),document.createDocumentFragment()]){
+ let rejected=false;try{remove.call(receiver)}catch(error){rejected=error instanceof TypeError}if(!rejected)throw new Error("remove receiver");
+}
+')!
+}

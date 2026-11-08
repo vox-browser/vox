@@ -53,6 +53,7 @@ fn (mut binding CompactElementQueryBinding) child_node_query(root &dom.Node, inp
 fn compact_child_node_bootstrap() string {
 	return r'
 const __compactChildMethods={
+ remove(){"use strict";if(!__elementApply(__elementRecordGet,__elementRecords,[this]))throw new TypeError("Illegal Element receiver");__compactChildMutation(this,"remove",[]);},
  before(){"use strict";__compactChildMutation(this,"before",Array.from(arguments));},
  after(){"use strict";__compactChildMutation(this,"after",Array.from(arguments));},
  replaceWith(){"use strict";__compactChildMutation(this,"replaceWith",Array.from(arguments));}
@@ -78,9 +79,9 @@ function __compactChildMutation(receiver,method,values){
   if(parent)__compactInvalidateContent(__compactNodeState(parent));
  }
 }
-function __compactBindChildNode(target){for(const name of ["before","after","replaceWith"])Object.defineProperty(target,name,{value:__compactChildMethods[name],writable:true,enumerable:true,configurable:true});}
+function __compactBindChildNode(target){for(const name of ["remove","before","after","replaceWith"])Object.defineProperty(target,name,{value:__compactChildMethods[name],writable:true,enumerable:true,configurable:true});}
 __compactBindChildNode(Element.prototype);
-const __compactChildUnscopables=Object.assign(Object.create(null),Element.prototype[Symbol.unscopables],{before:true,after:true,replaceWith:true});
+const __compactChildUnscopables=Object.assign(Object.create(null),Element.prototype[Symbol.unscopables],{remove:true,before:true,after:true,replaceWith:true});
 Object.defineProperty(Element.prototype,Symbol.unscopables,{value:__compactChildUnscopables,configurable:true});
 '
 }
