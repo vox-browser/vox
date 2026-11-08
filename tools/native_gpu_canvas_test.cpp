@@ -272,6 +272,25 @@ static void draw_cpu_leaves(CGContextRef context, bool canvas)
     native_fill(context, 120, css_height - 150, 80, 30, 200, 40, 40, canvas);
 }
 
+static bool s_line_barrier, s_line_diagonal;
+static int s_line_style, s_line_alpha;
+static float s_line_width;
+static void draw_line_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+    assert(ladybird_v_skia_draw_rounded_rect(context,20,100,360,100,12,12,12,12,12,12,12,12,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,70,130,190,255,1,0,1,1));
+    if (canvas) {
+        assert(bool(ladybird_v_skia_gpu_canvas_command("draw_line",9,512)) == !s_line_barrier);
+    }
+    assert(ladybird_v_skia_draw_line(context,12.125f,128.375f,380.625f,
+        s_line_diagonal ? 154.625f : 128.375f,s_line_width,s_line_style,
+        css_width,css_height,153,47,101,uint8_t(s_line_alpha)));
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+    assert(ladybird_v_skia_draw_rounded_rect(context,200,130,80,12,3,3,3,3,3,3,3,3,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,33,211,67,93,1,0,1,1));
+}
+
 // Page zoom puts fill edges on fractional device pixels. A frame flagged
 // with fractional geometry antialiases them on the canvas instead of reading
 // it back, and accepts raster background images; an unflagged frame keeps
@@ -1335,6 +1354,33 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--line-raster")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
+        s_backend_read=api->read;api->read=counted_read;
+        unsigned cases=0;int error=0;
+        for (int style : {0,1,2}) for (int alpha : {137,255})
+            for (float thickness : {.5f,1.25f,3.f}) for (bool diagonal : {false,true})
+                for (bool full : {false,true}) {
+            s_line_style=style;s_line_alpha=alpha;s_line_width=thickness;s_line_diagonal=diagonal;
+            s_line_barrier=true;
+            setenv("VOX_DISABLE_GPU_CANVAS_LINES","1",1);
+            auto expected=render(true,false,draw_line_leaves,full);
+            unsigned previous_flushes=s_flushes;
+            unsetenv("VOX_DISABLE_GPU_CANVAS_LINES");
+            s_line_barrier=false;
+            auto actual=render(true,false,draw_line_leaves,full);
+            assert(s_flushes<previous_flushes);
+            for (size_t n=0;n<actual.size();++n)
+                error=std::max(error,std::abs(int(actual[n])-int(expected[n])));
+            if (error>3) { std::cerr<<"Line raster style="<<style<<" alpha="<<alpha
+                <<" width="<<thickness<<" diagonal="<<diagonal<<" full="<<full
+                <<" max error="<<error<<'\n';return 1; }
+            ++cases;
+        }
+        std::cout<<cases<<" solid/dotted/dashed line rasters: max error "<<error
+            <<"; fewer destination readbacks, full/strip clips, fractional geometry and paint order\n";
+        return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--many-damage-rects")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
         s_backend_read=api->read;api->read=counted_read;

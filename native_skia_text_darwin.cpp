@@ -2249,21 +2249,38 @@ extern "C" int ladybird_v_skia_draw_line(CGContextRef destination,
         SkScalar intervals[] = { dash_interval * raster_scale, dash_interval * raster_scale };
         paint.setPathEffect(SkDashPathEffect::Make(intervals, 0.0f));
     }
-    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
     auto image_info = SkImageInfo::Make(raster_width, raster_height, kBGRA_8888_SkColorType,
         kPremul_SkAlphaType, SkColorSpace::MakeSRGB());
     auto row_bytes = static_cast<size_t>(raster_width) * sizeof(uint32_t);
-    auto surface = SkSurfaces::WrapPixels(image_info, pixels.data(), row_bytes);
-    if (!surface)
-        return 0;
-    auto* canvas = surface->getCanvas();
-    canvas->clear(SK_ColorTRANSPARENT);
-    canvas->drawLine(
-        (from_x - static_cast<float>(region.left)) * raster_scale_x,
-        (from_y - static_cast<float>(region.top)) * raster_scale_y,
-        (to_x - static_cast<float>(region.left)) * raster_scale_x,
-        (to_y - static_cast<float>(region.top)) * raster_scale_y, paint);
-    surface.reset();
+    auto raster = [&](uint32_t* pixels) {
+        auto surface = SkSurfaces::WrapPixels(image_info, pixels, row_bytes);
+        if (!surface) return false;
+        auto* canvas = surface->getCanvas();
+        canvas->clear(SK_ColorTRANSPARENT);
+        canvas->drawLine(
+            (from_x - static_cast<float>(region.left)) * raster_scale_x,
+            (from_y - static_cast<float>(region.top)) * raster_scale_y,
+            (to_x - static_cast<float>(region.left)) * raster_scale_x,
+            (to_y - static_cast<float>(region.top)) * raster_scale_y, paint);
+        return true;
+    };
+    // Keep the established CPU coverage and dash geometry. When earlier GPU
+    // leaves are pending, upload this independent premultiplied raster rather
+    // than reading the destination back just to composite the line on the CPU.
+    auto ctm = CGContextGetCTM(destination);
+    bool owner_thread = pthread_main_np() != 0;
+    int canvas_result = 0;
+    if (owner_thread && !std::getenv("VOX_DISABLE_GPU_CANVAS_LINES")
+        && destination_scale >= 1 && destination_scale == std::round(destination_scale)
+        && raster_scale_x == destination_scale && raster_scale_y == destination_scale
+        && ctm.a == destination_scale && ctm.d == destination_scale
+        && !ctm.b && !ctm.c && !ctm.tx && !ctm.ty)
+        canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
+            region.left, region.top, "line", raster);
+    if (canvas_result == 2) return 1;
+    if (canvas_result == 0 && owner_thread) gpu_canvas_decline(destination);
+    std::vector<uint32_t> pixels(static_cast<size_t>(raster_width) * static_cast<size_t>(raster_height));
+    if (!raster(pixels.data())) return 0;
     return composite_pixels(destination, std::move(pixels), raster_width, raster_height,
         static_cast<float>(region.left), canvas_height - static_cast<float>(region.bottom),
         static_cast<float>(region.width()), static_cast<float>(region.height()));

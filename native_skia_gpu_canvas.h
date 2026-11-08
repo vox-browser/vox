@@ -580,6 +580,7 @@ bool gpu_canvas_kind_supported(std::string_view kind, int flags)
     if (kind == "stroke_rounded_rect") return outlines && !(flags & 512);
     if (kind == "fill_ellipse" || kind == "stroke_ellipse") return outlines;
     if (kind == "draw_text") return !gpu_canvas_text_disabled();
+    if (kind == "draw_line") return !std::getenv("VOX_DISABLE_GPU_CANVAS_LINES");
     // A capable host's capture/restore callbacks already synchronize CPU
     // access when needed. A video with no backdrop operation can therefore
     // join the pending GPU leaves without an unconditional earlier readback.

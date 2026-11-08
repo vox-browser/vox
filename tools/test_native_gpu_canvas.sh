@@ -67,6 +67,7 @@ if [ "$wrong_backend_status" -ne 1 ]; then
 fi
 "$output_dir/native_gpu_canvas_test"
 "$output_dir/native_gpu_canvas_test" --many-damage-rects
+"$output_dir/native_gpu_canvas_test" --line-raster
 "$output_dir/native_gpu_canvas_test" --capture-full-frame
 "$output_dir/native_gpu_canvas_test" --static-msaa-images
 "$output_dir/native_gpu_canvas_test" --cached-gpu-blurs
