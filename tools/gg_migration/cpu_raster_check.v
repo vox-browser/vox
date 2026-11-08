@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2465,7 +2465,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	factored := os.getenv('CPU_RASTER_CHECKS') in ['near-integer-factored-images', 'near-integer-factored-shadows']
 	near_shadows := os.getenv('CPU_RASTER_CHECKS') in ['near-integer-image-shadows', 'near-integer-factored-shadows']
 	near_integer := near_shadows || factored || os.getenv('CPU_RASTER_CHECKS') == 'near-integer-image-layers'
-	shadow_sources := near_shadows || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-shadows'
+	identity_shadows := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-shadows'
+	shadow_sources := identity_shadows || near_shadows || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-shadows'
 	resampled := shadow_sources || near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
 	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
@@ -2628,6 +2629,13 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			for j, step in filters {
 				if step.kind == .drop_shadow && (near_shadows || i % 5 != 0) {
 					filters[j] = cpuraster.CanvasFilterStep{...step, sigma: if near_shadows { f32(1.2) } else { f32(rand.f64() * 5 + .2) }}
+				}
+			}
+			if identity_shadows {
+				for j, step in filters {
+					if step.kind == .drop_shadow {
+						filters[j] = cpuraster.CanvasFilterStep{...step, sigma: if i % 4 == 0 { f32(-1) } else { f32(.000001) }}
+					}
 				}
 			}
 			c = BitmapCase{...c, filters: filters}

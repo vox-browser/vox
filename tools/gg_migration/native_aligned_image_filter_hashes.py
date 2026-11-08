@@ -241,6 +241,34 @@ cases += [
          transform=[1.25, 0, 0, .75, 3.25, 2.75], destination=[5.40032, 12.3341333333333, 5.60056, 7.9992],
          filters=[contrast, shadow(1.2), opacity], mode='multiply'),
 ]
+cases += [
+    dict(name='scaled-source-identity-shadow', destination=[4, 5, 30, 25], filters=[shadow(0)]),
+    dict(name='subset-nearest-identity-shadow', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         smoothing=False, filters=[shadow(.000001, 5, -4)], mode='src_in', clip=True),
+    dict(name='p3-prefiltered-identity-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.65, filters=[contrast, shadow(.000001), opacity], mode='overlay'),
+    dict(name='invalid-shadow-skips-prefilter-only-on-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.65, filters=[contrast, shadow(-1), opacity], mode='src_in', clip=True),
+    dict(name='downscaled-p3-invalid-shadow', destination=[10.25, 12.5, 2, 3], alpha=.7, p3=True,
+         filters=[shadow(-1)], mode='plus_lighter', clip=True),
+    dict(name='unpremul-nearest-invalid-shadow', destination=[10.25, 12.5, 28, 18], premul=False,
+         smoothing=False, filters=[shadow(-1, 5, -4)], mode='multiply', clip=True),
+    dict(name='near-raw-identity-shadow', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         filters=[shadow(.000001)]),
+    dict(name='factored-nearest-integer-offset-shadow', source=[2, 2, 4, 3], destination=[4.5, 6.25, 22, 16],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], smoothing=False,
+         filters=[shadow(0, 4, 4)], mode='src_in'),
+]
+cases.append(dict(name='offscreen-identity-shadow-preserves-merge-origin', iw=15, ih=24, width=84, height=24,
+    pixels=list((Path(__file__).resolve().parents[2] / 'cpuraster/testdata/identity-shadow-origin-source.rgba').read_bytes()),
+    initial=list((Path(__file__).resolve().parents[2] / 'cpuraster/testdata/identity-shadow-origin-background.rgba').read_bytes()),
+    pitch=344, alpha_type=1, pixel_pitch=64, p3=True,
+    transform=[1.5043701, 0, 0, -2.1267667, 3.25, 19.2],
+    destination=[2.4294972, 4.8504453, 24.454557, 2.9388463], source=[1, 13, 5, 2],
+    filters=[(2, 0, 0, 0, 0, [0, 0, 0, 0, .5, 0, 0, 0, 0, .5, 0, 0, 0, 0, .5, 0, 0, 0, 1, 0], 0),
+        shadow(-1, 6, 15, 2399918666),
+        (2, 0, 0, 0, 0, [.58240926, 0, 0, 0, .20879537, 0, .58240926, 0, 0, .20879537,
+            0, 0, .58240926, 0, .20879537, 0, 0, 0, 1, 0], 0)]))
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -256,14 +284,14 @@ for case in cases:
         x, y, cw, ch = case['clip_rect']
         clips = [(m.segment(0, x, y) + m.segment(1, x+cw, y) + m.segment(1, x+cw, y+ch)
                   + m.segment(1, x, y+ch) + m.segment(5), False)]
-    ints = [w, h, w * 4, 2, 2, int(case.get('smoothing', True)), len(clips),
+    ints = [w, h, case.get('pitch', w * 4), case.get('alpha_type', 2), 2, int(case.get('smoothing', True)), len(clips),
             *[v for p, even in clips for v in [len(p)//12, int(even)]],
             m.MODES[case.get('mode', 'src_over')], 0, iw, ih, image_pitch, 2 if premul else 1,
             int(case.get('p3', False))]
     floats = [*case.get('transform', m.IDENTITY), case.get('alpha', 1),
               *case.get('destination', [10, 12, 7, 6]), *case.get('source', [0, 0, 7, 6]),
               *[v for p, _ in clips for v in p]]
-    initial = bytearray(w*h*4) if case.get('empty') else m.background(w, h, 'image')
+    initial = bytearray(case['initial']) if 'initial' in case else (bytearray(w*h*4) if case.get('empty') else m.background(w, h, 'image'))
     r.call('oracle_canvas_bitmap', initial, ints, floats, case['name'], 'captured')
 expected = ['ed3ad78eb7f39e69', '175b0777ebb477e0', '008e86865ffcec77', 'c109c5a5d05dfb86',
             '6454322bbabaebc8', 'eb747c828384c545', '911409983b836492', '718eb0464fd3d842',
@@ -295,6 +323,10 @@ expected += ['2bb81f3c940efdd1', '1f1f586daef2c8bf', '5e5361d693406941', 'a314c8
 if platform.system() == 'Linux':
     expected[79] = '9d9fa7c17fc9bf77'
 expected += ['69bc99f80ec99582', '4e951a3d41351d05', 'a51dd6ce8df7e098', 'aa1915a0e5923229', 'a012597b325882fd', 'aff305b8a0ccc68b', 'abdab1d4f3a93229']
+expected += ['68ec54837de261df', '7a773e55fa8b6342', '8e8005e8ba8b0db1', '641353e85eba5b86', '47d575499b0cd948', 'f0d9a6813b237621', '6744041f50e2ed13', '25ca27a80dca1e6c']
+if platform.system() == 'Linux':
+    expected[94], expected[100] = '94c9d6dfcf804982', '92ad67f96173f5f1'
+expected += ['6918c091a7f3c206']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
