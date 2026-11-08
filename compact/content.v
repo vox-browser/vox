@@ -45,6 +45,9 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		runtime:  &runtime
 	}
 	if runtime.engine == .javascriptcore {
+		runtime.install_input_files_binding(fn [mut binding] (key string, state string, write bool, value voidptr) !voidptr {
+			return binding.input_files(key, state, write, value)
+		})!
 		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 			state := callback_runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
 			defer { state.finish() }
@@ -252,6 +255,10 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
+	if action == 'inputFilesOwner' {
+		_ = binding.equality_node(key, json2.decode[json2.Any](selector)!)!
+		return 'null'
+	}
 	if action == 'formControls' { return binding.form_controls_query(key, selector) }
 	if action == 'geometry' && selector.starts_with('{') {
 		return binding.client_rects_query(key, selector)

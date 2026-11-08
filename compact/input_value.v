@@ -91,6 +91,14 @@ fn (mut binding CompactElementQueryBinding) input_value_query(key string, source
 fn compact_input_value_bootstrap() string {
 	return r'
 function __compactIsInputState(state){return state.namespaceURI==="http://www.w3.org/1999/xhtml"&&state.tagName==="input";}
+const __compactInputFiles=globalThis.__ladybirdInputFiles;delete globalThis.__ladybirdInputFiles;
+function __compactControlFiles(receiver,write,value){
+ const state=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
+ if(!state||!__compactIsInputState(state))throw new TypeError("Illegal HTMLInputElement receiver");
+ __queryElements(state.bridgeKey,"inputFilesOwner",state.created?JSON.stringify(state):"null");
+ return __compactInputFiles(state.bridgeKey,state.created?JSON.stringify(state):"",write,value);
+}
+Object.defineProperty(HTMLInputElement.prototype,"files",Object.getOwnPropertyDescriptor({get files(){return __compactControlFiles(this,false,undefined)},set files(value){__compactControlFiles(this,true,value)}},"files"));
 function __compactControlValue(receiver,tag,property,write,value){
  const state=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
  if(!state||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||state.tagName!==tag)throw new TypeError("Illegal text control receiver");
