@@ -31,6 +31,9 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 		CalcAnchor {
 			return resolve_calc_anchor(node, calculation_context, ctx)
 		}
+		CalcAnchorSize {
+			return resolve_calc_anchor_size(node, calculation_context, ctx)
+		}
 		CalcChannel {
 			for channel in ctx.relative_color_channels {
 				if channel.name == node.name {
@@ -88,6 +91,21 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 		}
 	}
 	return none
+}
+
+fn resolve_calc_anchor_size(node CalcAnchorSize, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
+	resolver := ctx.anchor_size_resolver or { return none }
+	if resolved := resolver(ctx.anchor_resolver_context, node.style_value) {
+		return CalcResult{value: resolved.to_double(), type_: NumericType.with_type(.length, 1)}
+	}
+	fallback := node.style_value.fallback_value() or { return none }
+	return match fallback {
+		AnchorSizeStyleValue { resolve_calc_anchor_size(CalcAnchorSize{style_value:fallback}, calculation_context, ctx) }
+		LengthStyleValue { CalcResult{value:fallback.length().to_px_without_rounding(ctx.length_resolution_context), type_:NumericType.with_type(.length,1)} }
+		PercentageStyleValue { resolve_calc_percentage_against_basis(fallback.percentage().value(),ctx) }
+		CalculatedStyleValue { if fallback.node.len == 1 { resolve_calc_node(fallback.node[0],fallback.calculation_context,ctx) } else { none } }
+		else { none }
+	}
 }
 
 fn resolve_calc_anchor(node CalcAnchor, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {

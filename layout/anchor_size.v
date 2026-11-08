@@ -27,13 +27,29 @@ fn resolve_anchor_size_value(state &LayoutState, box &Node, containing_state &Us
 		fallback := value.fallback_value() or { return none }
 		return resolve_anchor_size_value(state, box, containing_state, fallback, basis, horizontal)
 	}
+	if value is css.CalculatedStyleValue {
+		containing := box.containing_block() or { return none }
+		context := AnchorInsetCalculationContext{state:state, box:box, containing_box:unsafe { &Node(containing) },
+			containing_state:containing_state, containing_extent:basis, is_horizontal_axis:horizontal}
+		length_context := layout_length_resolution_context(box)
+		resolved := value.resolve_length(css.CalculationResolutionContext{
+			percentage_basis:css.Length.make_css_px(basis), length_resolution_context:length_context,
+			anchor_size_resolver:resolve_anchor_size_for_calculation, anchor_resolver_context:voidptr(&context)
+		}) or { return none }
+		return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(length_context))
+	}
 	return resolve_layout_size(box, css.Size.from_style_value(value), basis)
+}
+
+fn resolve_anchor_size_for_calculation(pointer voidptr, anchor css.AnchorSizeStyleValue) ?css.CSSPixels {
+	context := unsafe { &AnchorInsetCalculationContext(pointer) }
+	return resolve_anchor_size_value(context.state,context.box,context.containing_state,css.StyleValue(anchor),context.containing_extent,context.is_horizontal_axis)
 }
 
 fn absolute_anchor_size_property(state &LayoutState, box &Node, containing_state &UsedValues,
 	property css.PropertyID, basis CSSPixels, horizontal bool) ?CSSPixels {
 	value := unsafe { &css.ComputedProperties(box.computed_values()) }.typed_property_value(property) or { return none }
-	if value !is css.AnchorSizeStyleValue { return none }
+	if value !is css.AnchorSizeStyleValue && value !is css.CalculatedStyleValue { return none }
 	return resolve_anchor_size_value(state, box, containing_state, value, basis, horizontal)
 }
 

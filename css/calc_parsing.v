@@ -22,6 +22,7 @@ type CalcNode = CalcNumeric
 	| CalcFunction
 	| CalcRandom
 	| CalcAnchor
+	| CalcAnchorSize
 	| CalcTreeCounting
 	| CalcChannel
 
@@ -102,6 +103,10 @@ struct CalcChannel {
 // after the anchor box and the inset axis are known.
 struct CalcAnchor {
 	style_value AnchorStyleValue
+}
+
+struct CalcAnchorSize {
+	style_value AnchorSizeStyleValue
 }
 
 fn calc_function_is_supported(name string) bool {
@@ -539,6 +544,12 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 	}
 	if component_value.is_function() {
 		name := to_ascii_lowercase(component_value.function().name)
+		if name == 'anchor-size' {
+			mut anchor_tokens := ComponentValueStream.new([component_value])
+			anchor := parser.parse_anchor_size(mut anchor_tokens) or { return none }
+			if anchor !is AnchorSizeStyleValue { return none }
+			return CalcNode(CalcAnchorSize{style_value: anchor as AnchorSizeStyleValue})
+		}
 		if name == 'anchor' {
 			mut anchor_tokens := ComponentValueStream.new([component_value])
 			anchor := parser.parse_anchor(mut anchor_tokens) or { return none }
@@ -653,7 +664,7 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 		CalcTreeCounting, CalcChannel {
 			return node
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return node
 		}
 		CalcSum {
@@ -741,7 +752,7 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		CalcTreeCounting, CalcChannel {
 			return NumericType.new()
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return NumericType.with_type(.length, 1)
 		}
 		CalcSum {
@@ -884,6 +895,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 			return node.name
 		}
 		CalcAnchor {
+			return node.style_value.serialize(.normal)
+		}
+		CalcAnchorSize {
 			return node.style_value.serialize(.normal)
 		}
 
