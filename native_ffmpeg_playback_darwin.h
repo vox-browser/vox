@@ -8,6 +8,9 @@ typedef struct {
     AVCodecContext *codec;
     AVPacket *packet;
     AVFrame *frame;
+    void *yuv_library;
+    __typeof__(&I420AlphaToABGR) alpha_to_rgba;
+    __typeof__(&I420ToABGR) opaque_to_rgba;
     int stream, width, height;
     double duration, next_time;
     bool pending, draining, finished, failed;
@@ -20,6 +23,7 @@ static void vox_ffmpeg_video_close(VoxFFmpegVideo *video) {
     if (video->packet) api->av_packet_free(&video->packet);
     if (video->codec) api->avcodec_free_context(&video->codec);
     if (video->format) api->avformat_close_input(&video->format);
+    if (video->yuv_library) dlclose(video->yuv_library);
     free(video);
 }
 
@@ -58,6 +62,11 @@ static VoxFFmpegVideo *vox_ffmpeg_video_open(const char *path) {
     video->packet = api->av_packet_alloc();
     video->frame = api->av_frame_alloc();
     if (!video->packet || !video->frame) goto fail;
+    video->yuv_library = dlopen("@rpath/libyuv.dylib", RTLD_LAZY | RTLD_LOCAL);
+    if (!video->yuv_library) goto fail;
+    video->alpha_to_rgba = dlsym(video->yuv_library, "I420AlphaToABGR");
+    video->opaque_to_rgba = dlsym(video->yuv_library, "I420ToABGR");
+    if (!video->alpha_to_rgba || !video->opaque_to_rgba) goto fail;
     return video;
 fail:
     vox_ffmpeg_video_close(video);
@@ -110,6 +119,28 @@ static bool vox_ffmpeg_video_next(VoxFFmpegVideo *video) {
 
 // Retain a future decoded frame and publish only the latest frame due at the
 // playback clock. Paused polls neither decode nor publish duplicate frames.
+static bool vox_ffmpeg_video_convert(VoxFFmpegVideo *video, uint8_t *pixels) {
+    AVFrame *frame = video->frame;
+    // Chromium defaults untagged SD video to limited BT.601. libyuv also
+    // preserves each 2x2 chroma sample for odd visible sizes; swscale instead
+    // stretches a 33-pixel plane over all 65 pixels of an odd-width video.
+    if (frame->color_range != AVCOL_RANGE_JPEG
+        && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
+            || frame->colorspace == AVCOL_SPC_BT470BG
+            || frame->colorspace == AVCOL_SPC_SMPTE170M)) {
+        if (frame->format == AV_PIX_FMT_YUVA420P)
+            return video->alpha_to_rgba(frame->data[0], frame->linesize[0],
+                frame->data[1], frame->linesize[1], frame->data[2], frame->linesize[2],
+                frame->data[3], frame->linesize[3], pixels, video->width * 4,
+                video->width, video->height, 0) == 0;
+        if (frame->format == AV_PIX_FMT_YUV420P)
+            return video->opaque_to_rgba(frame->data[0], frame->linesize[0],
+                frame->data[1], frame->linesize[1], frame->data[2], frame->linesize[2],
+                pixels, video->width * 4, video->width, video->height) == 0;
+    }
+    return native_ffmpeg_convert_frame(video->api, frame, pixels, video->width * 4);
+}
+
 static uint8_t *vox_ffmpeg_video_copy_frame(VoxFFmpegVideo *video, double seconds) {
     uint8_t *pixels = NULL;
     while (!video->finished && !video->failed) {
@@ -119,7 +150,7 @@ static uint8_t *vox_ffmpeg_video_copy_frame(VoxFFmpegVideo *video, double second
             video->failed = true; break;
         }
         if (!pixels) pixels = malloc((size_t)video->width * video->height * 4);
-        if (!pixels || !native_ffmpeg_convert_frame(video->api, video->frame, pixels, video->width * 4)) {
+        if (!pixels || !vox_ffmpeg_video_convert(video, pixels)) {
             video->failed = true; break;
         }
         video->api->av_frame_unref(video->frame);

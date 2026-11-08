@@ -19,6 +19,39 @@ static void checkAlpha(void *media, const char *reference) {
     assert(!native_media_copy_frame(media, &width, &height));
 }
 
+static void checkOddChroma(void *media) {
+    VoxFFmpegVideo *video = native_media_for_handle(media).webm;
+    AVFrame frame = {0};
+    uint8_t y[] = {81, 81, 81, 81, 81, 81, 81, 81, 81};
+    uint8_t u[] = {90, 240, 128, 54}, v[] = {240, 110, 128, 34};
+    uint8_t alpha[] = {0, 64, 255, 128, 255, 255, 255, 255, 255};
+    frame.width = frame.height = 3;
+    frame.format = AV_PIX_FMT_YUVA420P;
+    frame.colorspace = AVCOL_SPC_UNSPECIFIED;
+    frame.color_range = AVCOL_RANGE_MPEG;
+    frame.data[0] = y; frame.data[1] = u; frame.data[2] = v; frame.data[3] = alpha;
+    frame.linesize[0] = frame.linesize[3] = 3;
+    frame.linesize[1] = frame.linesize[2] = 2;
+    AVFrame *saved = video->frame;
+    int width = video->width, height = video->height;
+    video->frame = &frame; video->width = video->height = 3;
+    uint8_t pixels[36];
+    assert(vox_ffmpeg_video_convert(video, pixels));
+    const uint8_t expected[] = {
+        254,0,0,0, 254,0,0,64, 47,47,255,255,
+        254,0,0,128, 254,0,0,255, 47,47,255,255,
+        76,76,76,255, 76,76,76,255, 0,181,0,255
+    };
+    assert(memcmp(pixels, expected, sizeof(expected)) == 0);
+    frame.format = AV_PIX_FMT_YUV420P;
+    assert(vox_ffmpeg_video_convert(video, pixels));
+    for (int pixel = 0; pixel < 9; ++pixel) {
+        assert(memcmp(pixels + pixel * 4, expected + pixel * 4, 3) == 0);
+        assert(pixels[pixel * 4 + 3] == 255);
+    }
+    video->frame = saved; video->width = width; video->height = height;
+}
+
 int main(int argc, const char **argv) {
     @autoreleasepool {
         assert(argc == 5 && native_media_supports_webm());
@@ -30,6 +63,7 @@ int main(int argc, const char **argv) {
         assert(native_media_buffer_count(media) == 1);
         assert(native_media_buffer_edge(media, 0, 0) == 0);
         assert(native_media_buffer_edge(media, 0, 1) == native_media_duration(media));
+        checkOddChroma(media);
         checkAlpha(media, argv[2]);
         native_media_seek(media, 0.5, 0);
         assert(!native_media_buffering(media) && fabs(native_media_time(media) - 0.5) < 0.001);
