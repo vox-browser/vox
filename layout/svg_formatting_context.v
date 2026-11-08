@@ -515,6 +515,13 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	baseline_y := context.current_text_position.y + f64(dominant_baseline_offset(baseline_metric,
 		baseline_font.pixel_metrics()))
 	path := svg_adjusted_glyph_runs_outline_path(shaped.runs, x, baseline_y, adjustment)
+	metrics := baseline_font.pixel_metrics()
+	cells := svg.Rect{
+		x: x
+		y: baseline_y - f64(metrics.ascent)
+		width: adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
+		height: f64(metrics.ascent + metrics.descent)
+	}
 	if text.len > 0 {
 		graphics_state.set_svg_text_paint_origin(SVGTextPaintOrigin{
 			text:        text
@@ -522,6 +529,7 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 			baseline_y:  baseline_y
 			text_length: adjustment.text_length
 			stretched:   adjustment.glyph_scale != 1
+			character_cells: cells
 		})
 	}
 	mut final_local_bounds := svg_path_bounds(path) or { svg.Rect{} }
@@ -529,13 +537,6 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 		// Blink's text object bounding box is the union of its character
 		// cells, from the ascent to the descent across the advance; filter
 		// regions and objectBoundingBox units resolve against it.
-		metrics := baseline_font.pixel_metrics()
-		cells := svg.Rect{
-			x:      x
-			y:      baseline_y - f64(metrics.ascent)
-			width:  adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
-			height: f64(metrics.ascent + metrics.descent)
-		}
 		final_local_bounds = if path.instructions.len > 0 {
 			union_svg_rect(final_local_bounds, cells)
 		} else {
@@ -572,6 +573,7 @@ pub:
 	baseline_y  f64
 	text_length ?f64
 	stretched   bool
+	character_cells svg.Rect
 }
 
 fn (adjustment SVGTextLengthAdjustment) advance(width f64) f64 {

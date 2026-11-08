@@ -3563,7 +3563,7 @@ fn viewport_hit_test_with_culling(target voidptr, x f64, y f64, type_ dom.HitTes
 			}
 			.border {
 				candidate_node_id := box.node_id_for_hit_test()
-				if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
+				if candidate_node_id == 0 || !box.visible_for_pointer_events()
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
@@ -4303,7 +4303,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 			}
 			.border {
 				node_id := box.node_id_for_hit_test()
-				if node_id == 0 || !box.visible || !box.pointer_events_enabled
+				if node_id == 0 || !box.visible_for_pointer_events()
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
@@ -4327,6 +4327,9 @@ fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
 fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_root bool,
 	mut memo CompatibilityHitPointMemo) bool {
 	local_point := memo.local(box.accumulated_visual_context_index) or { return false }
+	if box.has_svg_hit_geometry() {
+		return box.svg_contains_hit_test_point(local_point)
+	}
 	if !box.svg_path_bounding_box_contains_hit_test_point(local_point) {
 		return false
 	}

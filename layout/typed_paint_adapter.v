@@ -10,6 +10,7 @@ import math
 import os
 import painting
 import platform
+import skia
 import svg
 import time
 
@@ -3671,6 +3672,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut svg_path := ''
 	mut svg_path_data := []f32{}
 	mut svg_path_bounding_box := painting.Rect{}
+	mut svg_hit_data := &SVGPathHitData(unsafe { nil })
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
 	mut svg_fill_color := ''
@@ -3823,9 +3825,19 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		ellipse_data := retained_svg_ellipse_data(node, path)
 		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
 			painting.WindingRule.even_odd
-		} else { painting.WindingRule.nonzero }, ellipse_data == none, node.document().font_rendering_policy() == .chromium)
+		} else { painting.WindingRule.nonzero }, true, node.document().font_rendering_policy() == .chromium)
 		svg_path_data = ellipse_data or { projection.packed_segments }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
+		svg_hit_data = &SVGPathHitData{
+			pointer_events: computed.pointer_events()
+			has_fill: computed.fill() != none
+			has_stroke: computed.stroke() != none
+			path: skia.Path{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			text_cells: if origin := used.svg_text_paint_origin() {
+				painting.Rect{origin.character_cells.x, origin.character_cells.y,
+					origin.character_cells.width, origin.character_cells.height}
+			} else { none }
+		}
 		to_page := svg_path_transform_to_page(node, state)
 		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
 		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
@@ -4357,6 +4369,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				fill_color: svg_fill_color
 				stroke_color: svg_stroke_color
 				stroke_width: svg_stroke_width
+				hit_test: svg_hit_data
 				text: if svg_text.runs.len > 0 && svg_text_color != unsafe { nil } {
 					&BlockBoxSVGText{
 						runs: svg_text.runs

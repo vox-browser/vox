@@ -15,6 +15,7 @@ pub:
 	fill_color   string
 	stroke_color string
 	stroke_width f64
+	hit_test     &SVGPathHitData = unsafe { nil }
 	// Solid-filled SVG text drawn as glyphs in page space instead of `path`.
 	text &BlockBoxSVGText = unsafe { nil }
 }
