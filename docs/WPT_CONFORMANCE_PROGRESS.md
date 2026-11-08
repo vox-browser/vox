@@ -722,3 +722,68 @@ focused production gate is now satisfied; r17 waits for actual r16 completion
 and a matching published bundle before collecting all 6,828 imported cases.
 **The larger cohort and full upstream WPT have not reached 100%.** The 227
 passing assertions here are a focused result, not a new full-suite percentage.
+
+
+## Referenced accessible-name text (2026-11-08)
+
+Commit `3843777c9` fixes a destructive builder read in the accessible-name
+algorithm: checking whether the accumulated IDREF text is empty consumed it,
+so the later return lost the referenced label. The result is now materialized
+once and reused for both the fallback check and return. Regressions cover
+IDREF order, missing IDs, self-labels and an empty-reference `aria-label`
+fallback; the JavaScript `getComputedLabel()` bridge also checks a referenced
+input label.
+
+Both new regressions fail before the implementation change. All five focused
+HTML accessibility checks pass with it in normal and preallocated-memory
+modes. The native JavaScript bridge regression also passes. Three original
+imported WPT pages pass **168 / 168 assertions**, meeting every expected count:
+
+| Original imported WPT page | Native Page PASS / reported |
+| --- | ---: |
+| `accname/name/comp_label` | 131 / 131 |
+| `accname/name/comp_labelledby` | 10 / 10 |
+| `accname/name/comp_labelledby_hidden_nodes` | 27 / 27 |
+
+All three harnesses report OK. These are fresh native Page processes loading
+the original HTTP pages through the pinned upstream server, rather than a
+production navigation result. Fixtures, server inputs, driver, tested source
+and binary hashes remain unchanged. The first native integration compilation
+reaches its 600-second
+compile timeout (guard exit 125, compiler killed with -9), below the 12 GiB
+budget at a sampled aggregate 6,076,055,552 bytes. Its log and guard receipt are
+retained. The successful compilation retry allows 1,800 seconds and finishes
+in 479.77 seconds. All final compiler, runtime, driver and guard exits are 0;
+the original WPT harness limits are unchanged. V is `0.5.2 395d574` with the
+C backend and 10 GiB compiler limit; compile/outer guards retain 12 GiB and
+native runtime guards retain 3 GiB.
+
+The final native test executable has SHA-256
+`06811accece3e5f7f00aef1510dd75cf824ef2092007f55532ed29c24aedaee0`.
+Raw evidence, including the initial failed regressions and compile timeout,
+is `/Users/alex/.cache/vox/wpt/20261108-accessibility-reference-3843777c9.tar.gz`,
+SHA-256 `ebf155546f8a666d9c0453d8188e384566187d1a1bf539ff8d837bfc3f5a5752`.
+The local summary is
+`/Users/alex/.cache/vox/wpt/20261108-accessibility-reference-summary.json`,
+SHA-256 `1145326f43227e545a8d1e5a8318f1fdf775b05fdb1e4bef23334984d25f4435`.
+Generated C is excluded from the archive. Completed job output, temporary
+canonical check files and locks are removed from Build/the checkout.
+
+The focused production observer is
+`/Users/alex/.cache/vox/wpt/20261108-accname-production-followup.py`, SHA-256
+`408b924b1b4b3bb5251ecf5bcabe37867a43f18ef79466ce17a69940c4f06fd4`.
+It selects three original pages with 168 expected assertions, uses fresh
+browser processes and private profiles, verifies sealed source and executable
+identities, and checks a matching completed production artifact in place.
+Status and completion are at
+`/Users/alex/.cache/vox/wpt/20261108-accname-production-{status,completion}.json`.
+The shared attempt `20261108-175454-dd4b7e01` parses the fixed source but is
+rejected when another input changes during compilation, so it supplies no
+production validation. No duplicate production build is started for this fix.
+
+r16's observer has detected that `tools/wpt_compare.py` changed on disk during
+collection. Preserve its results as diagnostic evidence; it cannot supply an
+accepted stable-input cohort. The serial r17 observer will pin its own tools
+at launch, after r16 finishes and a matching bundle is published. Neither
+these focused checks nor the pending broad run establish 100% of the larger
+imported set or full upstream WPT.
