@@ -30,7 +30,8 @@ def main():
     if sys.platform != "linux":
         raise SystemExit("Run these platform checks on Linux")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--gc", choices=["boehm", "none"], default="boehm")
+    parser.add_argument("--gc", choices=["boehm", "none", "prealloc"], default="boehm",
+                        help="prealloc exercises scoped arena ownership without a collector")
     parser.add_argument("cases", nargs="*", default=CASES)
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
@@ -56,7 +57,17 @@ def main():
     linux_modules = subprocess.check_output(
         [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
         cwd=repo, env=environment, text=True).strip()
-    paths = f"{repo}|{linux_modules}|{http_modules}|@vmodules|@vlib"
+    module_paths = [str(repo), linux_modules, http_modules]
+    if args.gc == "prealloc":
+        # Match the production allocator, including bounded realloc and the
+        # persistent closure directory. Flags alone leave global runtime
+        # metadata inside whichever document arena first grows it.
+        prealloc_modules = subprocess.check_output(
+            [sys.executable, str(repo / "tools/prepare_prealloc_runtime.py"), compiler],
+            cwd=repo, env=environment, text=True).strip()
+        compiler = str(Path(prealloc_modules) / "compiler/v")
+        module_paths.insert(1, prealloc_modules)
+    paths = "|".join([*module_paths, "@vmodules", "@vlib"])
     output_root = repo / "Build/linux/tests" / args.gc
     output_root.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
@@ -64,11 +75,12 @@ def main():
     print(f"C diagnostics: {c_compiler} -cstrict {c_flags}", flush=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
+            allocation_flags = ["-prealloc", "-gc", "none"] if args.gc == "prealloc" else ["-gc", args.gc]
             command = [compiler, "-memory-limit", "10G", "-enable-globals",
                        "-cc", c_compiler, "-cstrict", "-cflags", c_flags,
-                       "-gc", args.gc, "-d", "use_openssl",
+                       *allocation_flags, "-d", "use_openssl",
                        "-exclude", "@vlib/time/zoneinfo.native.v", "-path", paths]
-            if args.gc != "none":
+            if args.gc == "boehm":
                 command += ["-d", "dynamic_boehm"]
             # Compile separately so execution has the focused 3 GiB budget,
             # while the caller's build guard retains its compiler allowance.
