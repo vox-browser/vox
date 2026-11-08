@@ -347,3 +347,50 @@ functions and three existing UTF-8 serializer functions. These focused results
 are separate from full upstream upload integration, which remains under repair.
 The [manifest](performance/ladybird-first100-forms-csp-browser82-20261108.json)
 retains the production results, guard exits and local archive identity.
+
+
+## Full native engine acceptance
+
+The unchanged first-100 cohort now passes **100/100 cases and 8514/8514
+subtests** in fresh native Vox engine processes. All harness statuses and
+process exits are zero, with no failed, timed-out or unrun subtests. The
+executable SHA-256 is
+`559768100803bf929efbbadf5cdac6208e35d79293dab58ff5c06208b6421ecd`.
+The selection remains the original 100 IDs from Ladybird
+`2919bf87a5e5dfc49a210a70bda079afa411c6c5`, newly added since
+`963d46a829f3e1b79f44dba9d02afb70654300fa`.
+
+The denominator increases from 8462 to 8514 because the ten SharedWorker
+variants now register their 52 subtests. The other 90 cases retain the same
+subtest names and counts as the saved production baseline. Test bodies,
+wrappers, support files and assertions retain their pinned bytes. The existing
+harness normalization removes Ladybird-only CI shortcuts, and a collecting
+report script replaces the presentation reporter.
+
+This run uses actual Vox navigation documents, HTML/DOM bindings, JavaScriptCore,
+Fetch, upstream wptserve handlers, iframe POST navigation and native dedicated
+and shared worker processes. It exercises all 18 upload assertions and all 60
+CSP assertions through their original HTML pages. It does not exercise GUI
+creation or painting. The full controller and its children stay within the
+3 GiB runtime guard; compilation uses the C backend and the 12 GiB guard.
+Eight focused native regression functions also pass on the final executable.
+The [acceptance manifest](performance/ladybird-first100-native-all-pass-20261108.json)
+records every case, executable/source identity, guards, server identity and
+verified local raw archive. Completed job directories, generated C, guards and
+the temporary combined test file have been removed from the checkout.
+
+The final integration fixes preserve HTTP navigation policy headers
+(`af38f10ac`), resolve live submitter associations (`344cfe7d2`), retire a removed
+iframe before reusing its target name (`583e00a92`), publish complete readiness
+before load listeners run (`85cfa9fb6`), and parse text responses with the
+existing literal-text tokenizer (`e1b6e0d50`). The optional native document
+harness driver is committed in `0e2b7fc01`.
+
+Production-bundle acceptance remains pending. The last completed production
+browser tested here passes 82/100, as recorded above, and predates these fixes.
+The shared production build guard was busy at final verification; no duplicate
+production build was queued. The 100/100 result is native engine acceptance and
+must not be presented as a completed windowed production-browser run. Reuse the
+existing `tools/wpt_compare.py` command above with
+`--wpt-server-root /Users/alex/code/3rd/web-platform-tests` when a completed
+bundle contains the final fixes.
