@@ -7,6 +7,7 @@ import trustedtypes
 import webidl
 
 pub type TrustedTypesReplay = fn (&Runtime) !
+pub type TrustedTypesAttributeSetter = fn (string, ?string, string, trustedtypes.TrustedTypeOrString, bool, string) !string
 
 @[heap]
 struct TrustedTypesPolicyBinding {
@@ -14,6 +15,7 @@ struct TrustedTypesPolicyBinding {
 	document &dom.Document
 	convert voidptr
 	replay TrustedTypesReplay
+	set_attribute TrustedTypesAttributeSetter
 mut:
 	closed bool
 }
@@ -24,33 +26,83 @@ struct TrustedTypesCallbackOption {
 
 // Policy creation and DOM enforcement must consult the same Window factory.
 // The compact interface supplies actual callback values, never serialized IDs.
-pub fn (mut runtime Runtime) install_trusted_types_policy_binding(document &dom.Document, replay TrustedTypesReplay) ! {
+pub fn (mut runtime Runtime) install_trusted_types_policy_binding(document &dom.Document, replay TrustedTypesReplay, setter TrustedTypesAttributeSetter) ! {
 	runtime.require_javascript_value_context()!
 	// The native Window factory can retain a policy after its document payload
 	// retires. Its callback must still be able to observe the closed guard.
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	runtime.own_closure(voidptr(replay))
+	runtime.own_closure(voidptr(setter))
 	if document.relevant_settings_object() == unsafe { nil } {
 		_ := html.WindowModel.create_top_level(document, none, '')!
 	}
 	converter := runtime.evaluate_host_value('(function(){const S=String,T=TypeError;return function(value){if(typeof value==="symbol")throw new T("Cannot convert a Symbol to a string");return S(value);};})()')!
-	binding := &TrustedTypesPolicyBinding{runtime: &runtime, document: document, convert: converter, replay: replay}
+	binding := &TrustedTypesPolicyBinding{runtime: &runtime, document: document, convert: converter, replay: replay, set_attribute: setter}
 	operation := runtime.make_native_value_host_function('', 4, fn [binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(binding.runtime) }
 		return binding.create_policy(args) or {
 			return runtime.actual_javascript_exception(runtime.binding_exception_value(err))
 		}
 	})!
+	attribute := runtime.make_native_value_host_function('', 7, fn [binding] (_ voidptr, args []voidptr) !voidptr {
+		mut runtime := unsafe { &Runtime(binding.runtime) }
+		return binding.set_trusted_attribute(args) or {
+			return runtime.actual_javascript_exception(runtime.trusted_attribute_exception(err))
+		}
+	})!
 	// This bootstrap property is configurable so the compact closure can take
 	// ownership and remove it before any author script executes.
-	installer := runtime.evaluate_host_value('(function(operation){Object.defineProperty(globalThis,"__ladybirdCreateTrustedTypePolicy",{value:operation,configurable:true});})')!
+	installer := runtime.evaluate_host_value('(function(operation,attribute){Object.defineProperty(globalThis,"__ladybirdCreateTrustedTypePolicy",{value:operation,configurable:true});Object.defineProperty(globalThis,"__ladybirdSetTrustedAttribute",{value:attribute,configurable:true});})')!
 	defer { runtime.release_javascript_value(installer) }
-	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation])!
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation, attribute])!
 	runtime.add_close_handler(fn [binding] () {
 		mut owner := unsafe { &TrustedTypesPolicyBinding(binding) }
 		owner.closed = true
 	})
+}
+
+fn (mut runtime Runtime) trusted_attribute_exception(failure IError) voidptr {
+	// A callback may throw any JavaScript value, including an Error whose text
+	// resembles a native DOMException. Preserve that original value verbatim.
+	if failure is JavaScriptValueException || failure is webidl.ValueException {
+		return runtime.binding_exception_value(failure)
+	}
+	message := failure.msg()
+	for name in ['InvalidCharacterError', 'NamespaceError', 'InvalidStateError'] {
+		if message.starts_with(name + ':') {
+			value := webidl.dom_exception_value(webidl.DOMException.create(name,
+				message[name.len + 1..].trim_left(' ')))
+			return runtime.javascript_dom_exception(value) or { runtime.binding_exception_value(failure) }
+		}
+	}
+	return runtime.binding_exception_value(failure)
+}
+
+fn (binding &TrustedTypesPolicyBinding) set_trusted_attribute(args []voidptr) !voidptr {
+	if binding.closed { return error('InvalidStateError: Trusted Types realm is closed') }
+	if args.len != 7 { return error('TypeError: Invalid trusted attribute arguments') }
+	runtime := binding.runtime
+	work := platform.begin_thread_scratch('trusted attribute transport')
+	defer { work.finish() }
+	key := runtime.binding_dom_string(args[0])!
+	namespace := if C.JSValueIsNull(runtime.context, args[1]) { ?string(none) } else { ?string(runtime.binding_dom_string(args[1])!) }
+	name := runtime.binding_dom_string(args[2])!
+	kind := runtime.binding_dom_string(args[3])!
+	value := runtime.binding_dom_string(args[4])!
+	namespaced := C.JSValueToBoolean(runtime.context, args[5])
+	state := runtime.binding_dom_string(args[6])!
+	input := match kind {
+		'' { trustedtypes.TrustedTypeOrString(value) }
+		'TrustedHTML' { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedHTML{data: value}) }
+		'TrustedScript' { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScript{data: value}) }
+		'TrustedScriptURL' { trustedtypes.TrustedTypeOrString(trustedtypes.TrustedScriptURL{data: value}) }
+		else { return error('TypeError: Invalid private trusted attribute type') }
+	}
+	work.leave()
+	binding.replay(runtime)!
+	result := binding.set_attribute(key, namespace, name, input, namespaced, state)!
+	return runtime.binding_string(result)
 }
 
 fn (binding &TrustedTypesPolicyBinding) create_policy(args []voidptr) !voidptr {

@@ -6,6 +6,7 @@ import css
 import html
 import platform
 import strconv
+import trustedtypes
 import x.json2
 
 @[heap]
@@ -50,6 +51,8 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 			mut messages := []string{}
 			apply_javascript_runtime_state(document, state.value, callback_runtime, mut messages)
 			if messages.len != 0 { return error(messages.join('\n')) }
+		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !string {
+			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state)
 		})!
 	}
 	install_compact_mutation_observer_binding(mut binding, mut runtime)!

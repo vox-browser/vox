@@ -91,6 +91,7 @@ fn compact_element_members_bootstrap() string {
 	return r'
 (function(){
  const refresh=globalThis.__compactApplyMutationRefresh;
+ __compactTrustedTypes.setRefresh(refresh);
  function fail(error){
   const match=/^([A-Za-z]*Error):\s*(.*)/.exec(String(error&&error.message));
   if(!match)throw error;
@@ -124,7 +125,7 @@ fn compact_element_members_bootstrap() string {
   set nodeValue(value){__compactNodeState(this);},
   getAttributeNS(namespace,localName){required(arguments.length<2,"getAttributeNS");return call(this,"getAttributeNS",[nullable(namespace),string(localName)]).value;},
   hasAttributeNS(namespace,localName){required(arguments.length<2,"hasAttributeNS");return call(this,"hasAttributeNS",[nullable(namespace),string(localName)]).value;},
-  setAttributeNS(namespace,qualifiedName,value){required(arguments.length<3,"setAttributeNS");call(this,"setAttributeNS",[nullable(namespace),string(qualifiedName),string(value)]);},
+  setAttributeNS(namespace,qualifiedName,value){required(arguments.length<3,"setAttributeNS");if(__compactTrustedTypes.nativeAttributes)return __compactTrustedTypes.setAttribute(this,namespace,qualifiedName,value,true);call(this,"setAttributeNS",[nullable(namespace),string(qualifiedName),__compactTrustedTypes.input(value).value]);},
   removeAttributeNS(namespace,localName){required(arguments.length<2,"removeAttributeNS");call(this,"removeAttributeNS",[nullable(namespace),string(localName)]);},
   insertAdjacentElement(where,element){required(arguments.length<2,"insertAdjacentElement");const state=call(this,"insertAdjacentElement",[string(where),node(element)]).value;return state?element:null;},
   insertAdjacentText(where,data){required(arguments.length<2,"insertAdjacentText");call(this,"insertAdjacentText",[string(where),string(data)]);},

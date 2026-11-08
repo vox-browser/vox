@@ -377,7 +377,7 @@ fn dom_trusted_types_compliant_html(_ voidptr, document &dom.Document, input str
 		injection_sink, "'script'", true)!
 }
 
-fn dom_trusted_types_compliant_attribute(_ voidptr, element &dom.Element, local_name string, namespace_uri ?string, input string) !string {
+fn dom_trusted_types_compliant_attribute(_ voidptr, element &dom.Element, local_name string, namespace_uri ?string, input trustedtypes.TrustedTypeOrString) !string {
 	mut factory := trusted_types_factory_for_document(element.document())
 	element_interface := trustedtypes.element_interface(element.local_name(), element.namespace_uri() or {
 		''

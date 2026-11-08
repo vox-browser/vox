@@ -31,12 +31,16 @@ fn compact_trusted_types_query(source string) !string {
 // https://w3c.github.io/trusted-types/dist/spec/#trusted-type-policy-factory
 fn compact_trusted_types_bootstrap() string {
 	return r'
-(function(){
+const __compactTrustedTypes=(function(){
+ "use strict";
  const nativeCreatePolicy=globalThis.__ladybirdCreateTrustedTypePolicy;
+ const nativeAttribute=globalThis.__ladybirdSetTrustedAttribute;
  delete globalThis.__ladybirdCreateTrustedTypePolicy;
+ delete globalThis.__ladybirdSetTrustedAttribute;
  const data=new WeakMap(),policies=new WeakMap(),get=WeakMap.prototype.get,set=WeakMap.prototype.set,has=WeakMap.prototype.has;
  const call=request=>__queryElements("","trustedTypes",JSON.stringify(request),true);
- const string=value=>{if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return String(value);};
+ const S=String;
+ const string=value=>{if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return S(value);};
  const nullableString=value=>value===null||value===undefined?null:string(value);
  const types={};
  function create(name,value){const object=Object.create(types[name].prototype);__elementApply(set,data,[object,{name,value}]);return object;}
@@ -62,7 +66,7 @@ fn compact_trusted_types_bootstrap() string {
   const own=policyRecord(receiver),callback=own.options[callbackName];
   const value=string(input);
   if(callback===undefined||callback===null)throw new TypeError("The policy has no "+callbackName+" callback");
-  const result=Reflect.apply(callback,undefined,[value].concat(rest));
+  const result=__elementApply(callback,undefined,[value].concat(rest));
   return create(type,result===null||result===undefined?"":string(result));
  }
  for(const [method,type] of [["createHTML","TrustedHTML"],["createScript","TrustedScript"],["createScriptURL","TrustedScriptURL"]])
@@ -123,6 +127,31 @@ fn compact_trusted_types_bootstrap() string {
  const factory=Object.create(TrustedTypePolicyFactory.prototype);
  __elementApply(set,factories,[factory,{names:[],defaultPolicy:null}]);
  Object.defineProperty(globalThis,"trustedTypes",{get:function(){return factory;},enumerable:true,configurable:true});
+ let refresh;
+ function input(value){const own=__elementApply(get,data,[value]);return own?{kind:own.name,value:own.value}:{kind:"",value:string(value)};}
+ function elementState(receiver){
+  let state=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
+  if(!state){const local=__compactForeignNode(receiver);if(local)state=__elementApply(__elementRecordGet,__elementRecords,[local]);}
+  if(!state)throw new TypeError("Illegal Element receiver");return state;
+ }
+ function setAttribute(receiver,namespace,name,value,namespaced){
+  const state=elementState(receiver);
+  namespace=namespace===null||namespace===undefined?null:string(namespace);name=string(name);const converted=input(value);
+  if(typeof nativeAttribute!=="function"){
+   if(name==="src")__setElementSource(state,converted.value);else if(name==="data")__setElementData(state,converted.value);else __setAttribute(state,name,converted.value);
+   return;
+  }
+  const result=JSON.parse(nativeAttribute(state.bridgeKey,namespace,name,converted.kind,converted.value,namespaced,state.created?JSON.stringify(state):""));
+  refresh(result);
+  state.src=state.attributes.src||"";state.styleText=state.attributes.style||"";state.disabled=Object.prototype.hasOwnProperty.call(state.attributes,"disabled");
+  if((namespace===null||namespace==="")&&state.tagName==="canvas"&&(name==="width"||name==="height")){state[name]=converted.value;__canvasResize(state);}
+  __compactCustomElementFlush(state);
+ }
+ Object.defineProperty(Element.prototype,"setAttribute",{value:{setAttribute(name,value){
+  elementState(this);if(arguments.length<2)throw new TypeError("setAttribute requires a name and value");setAttribute(this,null,name,value,false);
+ }}.setAttribute,writable:true,enumerable:true,configurable:true});
+ for(const state of Object.values(__state.elements)){const object=state.__object;if(object&&__elementApply(__elementRecordGet,__elementRecords,[object]))delete object.setAttribute;}
+ return {nativeAttributes:typeof nativeAttribute==="function",input,setAttribute,setRefresh(value){refresh=value;}};
 })();
 '
 }

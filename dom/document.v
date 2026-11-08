@@ -22,6 +22,7 @@ import httpcookie
 import url as liburl
 import viewtransition
 import webidl
+import trustedtypes
 import webdriver
 
 pub type XPathCreateExpressionCallback = fn (string, ?&XPathNSResolver) !&XPathExpression
@@ -1885,7 +1886,7 @@ pub:
 // without introducing a DOM -> TrustedTypes -> WebIDL -> DOM import cycle.
 pub type DocumentTrustedTypesHTMLCallback = fn (voidptr, &Document, string, string) !string
 
-pub type DocumentTrustedTypesAttributeCallback = fn (voidptr, &Element, string, ?string, string) !string
+pub type DocumentTrustedTypesAttributeCallback = fn (voidptr, &Element, string, ?string, trustedtypes.TrustedTypeOrString) !string
 
 pub struct DocumentTrustedTypesHook {
 pub:
@@ -7773,10 +7774,10 @@ pub fn (d &Document) trusted_types_compliant_html(input string, sink string) !st
 	return hook.compliant_html(hook.target, d, input, sink)!
 }
 
-pub fn (d &Document) trusted_types_compliant_attribute_value(element &Element, local_name string, namespace_uri ?string, input string) !string {
-	hook := d.trusted_types_hook_ or { return input }
+pub fn (d &Document) trusted_types_compliant_attribute_value(element &Element, local_name string, namespace_uri ?string, input trustedtypes.TrustedTypeOrString) !string {
+	hook := d.trusted_types_hook_ or { return trustedtypes.stringify(input) }
 	if hook.compliant_attribute == unsafe { nil } {
-		return input
+		return trustedtypes.stringify(input)
 	}
 	return hook.compliant_attribute(hook.target, element, local_name, namespace_uri, input)!
 }

@@ -39,6 +39,7 @@ for(const key in __compactCommonProperties)__compactCommonProperties[key].config
 // SVG elements inherit className, an SVGAnimatedString, from SVGElement.
 const __compactSVGCommonProperties=Object.assign({},__compactCommonProperties);delete __compactSVGCommonProperties.className;
 function __compactElementCommonProperties(object,state){
+ if(__compactCommonElementGet(object))delete object.setAttribute;
  if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
  __compactDefineCommonProperties(object,state&&state.namespaceURI==="http://www.w3.org/2000/svg"?__compactSVGCommonProperties:__compactCommonProperties);
 }

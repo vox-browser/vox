@@ -11,6 +11,7 @@ import rand
 import math
 import strings
 import webidl
+import trustedtypes
 import platform
 
 // --- Types needed by Element that are NOT already in document.v ---
@@ -1968,7 +1969,7 @@ pub fn (mut e Element) set_attribute_value_ns(local_name string, value string, p
 }
 
 // https://dom.spec.whatwg.org/#dom-element-setattribute
-pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value string) ! {
+pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value trustedtypes.TrustedTypeOrString) ! {
 	if !is_valid_attribute_local_name(qualified_name) {
 		return error('InvalidCharacterError: Attribute name must not be empty or contain invalid characters')
 	}
@@ -1986,7 +1987,7 @@ pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value s
 }
 
 // https://dom.spec.whatwg.org/#dom-element-setattributens
-pub fn (mut e Element) set_attribute_ns_for_bindings(namespace_ ?string, qualified_name string, value string) ! {
+pub fn (mut e Element) set_attribute_ns_for_bindings(namespace_ ?string, qualified_name string, value trustedtypes.TrustedTypeOrString) ! {
 	extracted := validate_and_extract(namespace_, qualified_name, .attribute)!
 	verified_value := e.document().trusted_types_compliant_attribute_value(&e, extracted.local_name, extracted.namespace_, value)!
 	e.set_attribute_value_ns(extracted.local_name, verified_value, extracted.prefix_, extracted.namespace_)
