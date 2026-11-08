@@ -80,4 +80,11 @@ int main()
     }
     cache.clear();
     assert(cache.size() == 0 && cache.bytes() == 0);
+    std::vector<uint8_t> large(128 * 128 * 4, 0);
+    for (int i = 0; i < 100; ++i) {
+        path.matrix[2] = float(i);
+        cache.draw(render, large.data(), 128, 128, 128 * 4, 1, &path);
+        assert(cache.size() <= 64 && cache.bytes() <= 8u * 1024 * 1024);
+    }
+    assert(cache.size() < 64); // Exercise the byte budget as well as the entry limit.
 }
