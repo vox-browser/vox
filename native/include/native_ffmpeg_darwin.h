@@ -48,7 +48,7 @@
 typedef struct {
 #define VOX_FFMPEG_FIELD(name) __typeof__(&name) name;
     VOX_FFMPEG_FUNCTIONS(VOX_FFMPEG_FIELD)
-#ifndef LADYBIRD_V_HAS_RUST_YUV
+#ifndef LADYBIRD_V_HAS_V_YUV
     VOX_FFMPEG_FIELD(H420ToABGR)
 #endif
 #undef VOX_FFMPEG_FIELD
@@ -67,7 +67,7 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
             VOX_FFMPEG_STRINGIFY(LIBAVFORMAT_VERSION_MAJOR) ".dylib", RTLD_LAZY | RTLD_LOCAL);
         api->scale_library = dlopen("@rpath/libswscale."
             VOX_FFMPEG_STRINGIFY(LIBSWSCALE_VERSION_MAJOR) ".dylib", RTLD_LAZY | RTLD_LOCAL);
-#ifndef LADYBIRD_V_HAS_RUST_YUV
+#ifndef LADYBIRD_V_HAS_V_YUV
         api->yuv_library = dlopen("@rpath/libyuv.dylib", RTLD_LAZY | RTLD_LOCAL);
 #endif
         bool complete = api->format_library && api->scale_library;
@@ -77,7 +77,7 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
         if (!api->name) complete = false;
         VOX_FFMPEG_FUNCTIONS(VOX_FFMPEG_RESOLVE)
 #undef VOX_FFMPEG_RESOLVE
-#ifndef LADYBIRD_V_HAS_RUST_YUV
+#ifndef LADYBIRD_V_HAS_V_YUV
         api->H420ToABGR = api->yuv_library ? dlsym(api->yuv_library, "H420ToABGR") : NULL;
         if (!api->H420ToABGR) complete = false;
 #endif
@@ -96,9 +96,9 @@ static const VoxFFmpegAPI *native_ffmpeg_api(void) {
 #undef VOX_FFMPEG_STRINGIFY_INNER
 #endif
 
-#ifdef LADYBIRD_V_HAS_RUST_YUV
-extern bool ladybird_v_yuv_u8_to_rgba(const uint8_t *, uint32_t,
-    const uint8_t *, uint32_t, const uint8_t *, uint32_t, uint32_t,
+#ifdef LADYBIRD_V_HAS_V_YUV
+extern bool vox_yuv_u8_to_rgba(uint8_t *, uint32_t,
+    uint8_t *, uint32_t, uint8_t *, uint32_t, uint32_t,
     uint32_t, bool, bool, uint8_t *, uint32_t, uint8_t, uint8_t);
 #endif
 
@@ -107,14 +107,14 @@ static bool native_ffmpeg_convert_frame(const VoxFFmpegAPI *ffmpeg, AVFrame *fra
     uint8_t *pixels, int pitch) {
 	int width = frame->width, height = frame->height;
 	// Gfx::YUVData converts unspecified VP9 matrix metadata as limited
-	// BT.709. Use the identical Rust yuv conversion entry point so the
-	// native frame has exactly the same RGBA values as upstream.
+	// BT.709. The V converter preserves the previous yuv implementation's
+	// integer color conversion and channel quantization.
 	if (frame->format == AV_PIX_FMT_YUV420P
 	    && frame->color_range != AVCOL_RANGE_JPEG
 	    && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
 	        || frame->colorspace == AVCOL_SPC_BT709)) {
-#ifdef LADYBIRD_V_HAS_RUST_YUV
-		if (ladybird_v_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
+#ifdef LADYBIRD_V_HAS_V_YUV
+		if (vox_yuv_u8_to_rgba(frame->data[0], frame->linesize[0],
 			frame->data[1], frame->linesize[1], frame->data[2],
 			frame->linesize[2], width, height, true, true, pixels,
 			pitch, 0, 0)) {

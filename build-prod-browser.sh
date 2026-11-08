@@ -202,16 +202,11 @@ if [ -z "$rust_cargo" ]; then
 fi
 # A fresh Cargo build fails to load its proc-macro crates (rustc reports
 # "can't find crate for thiserror_impl") whenever MACOSX_DEPLOYMENT_TARGET is
-# set. Build the Rust helpers without it; they keep rustc's lower default
+# set. Build the JPEG XL helper without it; it keeps rustc's lower default
 # minimum, which the release accepts.
-if [ -n "$rust_cargo" ]; then
-    rust_target_dir="$cache_dir/rust-yuv"
-    env -u MACOSX_DEPLOYMENT_TARGET PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
-        "$rust_cargo" build --quiet --release --locked \
-        --manifest-path "$repo_dir/native_yuv_rust/Cargo.toml"
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
-    extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
-fi
+# The browser exports the planar converter from media/yuv_bridge.v. Its pure V
+# implementation preserves the previous decoder's integer color quantization.
+extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_V_YUV"
 jpegxl_library=""
 if [ -n "$rust_cargo" ]; then
     jpegxl_target_dir="$cache_dir/rust-jpegxl"
