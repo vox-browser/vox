@@ -18,7 +18,20 @@ pub enum ScriptElementType {
 
 pub type ScriptElementFetchHook = fn(dom.URL, ScriptElementType) !string
 
+// Completion is delivered by the embedder on the document's owning thread.
+// The model, rather than the transport, owns execution order and readiness.
+pub type ScriptElementAsyncFetchHook = fn (&HTMLScriptElementModel, dom.URL, ScriptElementType) !
+
 pub type ScriptElementExecuteHook = fn(ScriptElementType, string, dom.URL) !
+
+pub type ScriptElementExecuteHookWithElement = fn (&dom.HTMLScriptElement, ScriptElementType, string, dom.URL) !
+
+enum ScriptElementScheduling {
+	immediate
+	parser_blocking
+	after_parsing
+	asap
+}
 
 @[heap]
 pub struct HTMLScriptElementModel {
@@ -36,6 +49,7 @@ mut:
 	scripting_enabled_            bool = true
 	parser_document_              ?&dom.Document
 	preparation_time_document_    ?&dom.Document
+	preparation_stream_generation_ u64
 	force_async_                  bool = true
 	already_started_              bool
 	from_external_file_           bool
@@ -44,7 +58,14 @@ mut:
 	failed_to_load_               bool
 	script_type_                  ScriptElementType
 	fetch_hook_                   ?ScriptElementFetchHook
+	async_fetch_hook_             ?ScriptElementAsyncFetchHook
 	execute_hook_                 ?ScriptElementExecuteHook
+	execute_hook_with_element_    ?ScriptElementExecuteHookWithElement
+	scheduling_                   ScriptElementScheduling
+	fetch_pending_                bool
+	executed_                     bool
+	execution_queued_             bool
+	script_url_                   ?dom.URL
 	result_source_                ?string
 	import_map_result_            ?&ImportMapParseResult
 	registered_import_map_        ImportMap
@@ -138,8 +159,20 @@ pub fn (mut script HTMLScriptElementModel) set_fetch_hook(hook ?ScriptElementFet
 	script.fetch_hook_ = hook
 }
 
+pub fn (mut script HTMLScriptElementModel) set_async_fetch_hook(hook ?ScriptElementAsyncFetchHook) {
+	script.async_fetch_hook_ = hook
+}
+
 pub fn (mut script HTMLScriptElementModel) set_execute_hook(hook ?ScriptElementExecuteHook) {
 	script.execute_hook_ = hook
+}
+
+pub fn (mut script HTMLScriptElementModel) set_execute_hook_with_element(hook ?ScriptElementExecuteHookWithElement) {
+	script.execute_hook_with_element_ = hook
+}
+
+pub fn (script &HTMLScriptElementModel) element() ?&dom.HTMLScriptElement {
+	return script.element_
 }
 
 pub fn (mut script HTMLScriptElementModel) set_src(value ?string) {
@@ -275,6 +308,9 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 	}
 	script.already_started_ = true
 	script.preparation_time_document_ = document
+	if owner := document {
+		script.preparation_stream_generation_ = owner.html_parser_stream_generation()
+	}
 	if parser_document != none && voidptr(document or { unsafe { nil } }) != voidptr(parser_document or {
 		unsafe { nil }
 	}) {
@@ -295,22 +331,26 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 			return
 		}
 		script.from_external_file_ = true
+		script.script_url_ = url
+		script.prepare_execution_schedule()
 		if preparation_document := script.preparation_time_document_ {
 			script.begin_delaying_document_load_event(preparation_document)
 		}
+		script.fetch_pending_ = true
+		if fetch := script.async_fetch_hook_ {
+			fetch(script, url, script.script_type_) or { script.complete_external_fetch(none) }
+			return
+		}
 		fetch := script.fetch_hook_ or {
-			script.failed_to_load_ = true
-			script.mark_as_ready(none)
+			script.complete_external_fetch(none)
 			return
 		}
 
 		source := fetch(url, script.script_type_) or {
-			script.failed_to_load_ = true
-			script.mark_as_ready(none)
+			script.complete_external_fetch(none)
 			return
 		}
-		script.result_source_ = source
-		script.mark_as_ready(source)
+		script.complete_external_fetch(source)
 		return
 	}
 	if script.script_type_ == .import_map {
@@ -320,30 +360,118 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 		script.execute_script()
 		return
 	}
+	script.prepare_execution_schedule()
 	if script.script_type_ == .module {
 		if preparation_document := script.preparation_time_document_ {
 			script.begin_delaying_document_load_event(preparation_document)
 		}
 	}
-	script.result_source_ = script.text_
 	script.mark_as_ready(script.text_)
 }
 
-fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
+// Decide the scheduling class before calling the host. A cache hit can finish
+// fetching synchronously, but must not turn an async/deferred script into a
+// parser-blocking one.
+fn (mut script HTMLScriptElementModel) prepare_execution_schedule() {
+	if script.is_parser_inserted() {
+		deferred := if element := script.element_ {
+			script_dom_element(element).has_attribute('defer')
+		} else { false }
+		if !script.async_attribute_ && (script.script_type_ == .module
+			|| (script.from_external_file_ && deferred)) {
+			script.scheduling_ = .after_parsing
+		} else if script.script_type_ == .classic
+			&& (!script.from_external_file_ || !script.async_attribute_) {
+			script.scheduling_ = .parser_blocking
+		} else {
+			script.scheduling_ = .asap
+		}
+	} else if script.from_external_file_ || script.script_type_ == .module {
+		script.scheduling_ = .asap
+	}
+	element := script.element_ or { return }
+	owner := script.preparation_time_document_ or { return }
+	mut document := unsafe { &dom.Document(owner) }
+	match script.scheduling_ {
+		.parser_blocking { document.set_pending_parsing_blocking_script(element) }
+		.after_parsing { document.add_script_to_execute_when_parsing_has_finished(element) }
+		.asap { document.add_script_to_execute_as_soon_as_possible(element) }
+		.immediate {}
+	}
+}
+
+// Both queued requests and completed cache reads use the same transition.
+pub fn (mut script HTMLScriptElementModel) complete_external_fetch(source ?string) {
+	if !script.fetch_pending_ || script.executed_ { return }
+	script.fetch_pending_ = false
+	if !script.belongs_to_preparation_document() {
+		script.cancel_external_fetch()
+		return
+	}
+	mut allocations := enter_html_document_storage(script.preparation_time_document_)
+	defer { allocations.finish() }
+	owned_source := if text := source { ?string(text.clone()) } else { none }
+	script.mark_as_ready(owned_source)
+}
+
+pub fn (mut script HTMLScriptElementModel) cancel_external_fetch() {
+	mut allocations := enter_html_document_storage(script.preparation_time_document_)
+	defer { allocations.finish() }
+	script.fetch_pending_ = false
+	script.executed_ = true
+	// A parser waiting at this element still needs to advance past it.
 	script.script_ready_ = true
-	script.stop_delaying_document_load_event()
+	script.ready_to_be_parser_executed_ = true
+	script.finish_execution()
+}
+
+fn (script &HTMLScriptElementModel) belongs_to_preparation_document() bool {
+	if document := script.preparation_time_document_ {
+		if document.has_been_destroyed() { return false }
+		if script.preparation_stream_generation_ != document.html_parser_stream_generation() { return false }
+		if element := script.element_ {
+			return voidptr(script_dom_element(element).document()) == voidptr(document)
+		}
+	}
+	return true
+}
+
+fn (mut script HTMLScriptElementModel) mark_as_ready(result ?string) {
+	script.result_source_ = result
+	script.script_ready_ = true
 	if result == none {
 		script.failed_to_load_ = true
 	}
-	if script.is_parser_inserted() && !script.async_attribute_ {
+	if script.scheduling_ in [.parser_blocking, .after_parsing] {
 		script.ready_to_be_parser_executed_ = true
 		if document := script.preparation_time_document_ {
 			document.schedule_html_parser_end_check()
 		}
 		return
 	}
+	if script.scheduling_ == .asap && script.element_ != none {
+		if document := script.preparation_time_document_ {
+			if script.execution_queued_ { return }
+			script.execution_queued_ = true
+			model := voidptr(script)
+			queue_a_task(.networking, main_thread_event_loop(), document, fn [model] () {
+				mut ready := unsafe { &HTMLScriptElementModel(model) }
+				ready.execution_queued_ = false
+				ready.execute_script()
+			})
+			return
+		}
+	}
 	script.execute_script()
-	if document := script.preparation_time_document_ {
+}
+
+fn (mut script HTMLScriptElementModel) finish_execution() {
+	script.stop_delaying_document_load_event()
+	if owner := script.preparation_time_document_ {
+		mut document := unsafe { &dom.Document(owner) }
+		if script.scheduling_ == .asap {
+			if element := script.element_ { document.remove_script_to_execute_as_soon_as_possible(element) }
+		}
 		document.schedule_html_parser_end_check()
 	}
 }
@@ -391,12 +519,19 @@ pub fn (mut script HTMLScriptElementModel) adopted_from(_ &dom.Document) {
 }
 
 pub fn (mut script HTMLScriptElementModel) execute_script() {
+	if !script.script_ready_ || script.executed_ { return }
+	if !script.belongs_to_preparation_document() {
+		script.cancel_external_fetch()
+		return
+	}
+	mut allocations := enter_html_document_storage(script.preparation_time_document_)
+	defer { allocations.finish() }
 	if document := script.preparation_time_document_ {
 		assert document.document_ready_to_run_scripts()
 	}
-	if !script.script_ready_ {
-		return
-	}
+	script.executed_ = true
+	script.ready_to_be_parser_executed_ = false
+	defer { script.finish_execution() }
 	if script.script_type_ == .import_map {
 		mut result := script.import_map_result_ or { return }
 		mut target := &script.registered_import_map_
@@ -421,21 +556,52 @@ pub fn (mut script HTMLScriptElementModel) execute_script() {
 		return
 	}
 
-	execute := script.execute_hook_ or {
-		if script.from_external_file_ {
-			script.fire_event('load')
-		}
-		return
-	}
-
-	execute(script.script_type_, source, script.base_url_) or {
+	script.execute_source(source) or {
 		script.failed_to_load_ = true
 		script.fire_event('error')
 		return
 	}
-	if script.from_external_file_ {
+	// An element-aware module host owns graph evaluation and its eventual
+	// completion event; classic evaluation has finished when the hook returns.
+	if script.from_external_file_ && !(script.script_type_ == .module
+		&& script.execute_hook_with_element_ != none) {
 		script.fire_event('load')
 	}
+}
+
+fn (script &HTMLScriptElementModel) execute_source(source string) ! {
+	if owner := script.preparation_time_document_ {
+		mut document := unsafe { &dom.Document(owner) }
+		previous := document.current_script()
+		document.set_current_script(none)
+		if script.script_type_ == .classic {
+			if element := script.element_ {
+				if !script_dom_element(element).as_node().root().is_shadow_root() {
+					document.set_current_script(element)
+				}
+			}
+		}
+		ignore_destructive_writes := script.from_external_file_ || script.script_type_ == .module
+		if ignore_destructive_writes { document.increment_ignore_destructive_writes_counter() }
+		defer {
+			document.set_current_script(previous)
+			if ignore_destructive_writes { document.decrement_ignore_destructive_writes_counter() }
+		}
+		script.invoke_execute_hook(source)!
+		return
+	}
+	script.invoke_execute_hook(source)!
+}
+
+fn (script &HTMLScriptElementModel) invoke_execute_hook(source string) ! {
+	source_url := script.script_url_ or { script.base_url_ }
+	if execute := script.execute_hook_with_element_ {
+		if element := script.element_ {
+			execute(element, script.script_type_, source, source_url)!
+			return
+		}
+	}
+	if execute := script.execute_hook_ { execute(script.script_type_, source, source_url)! }
 }
 
 pub fn (mut script HTMLScriptElementModel) parser_execute_ready_script() {

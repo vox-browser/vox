@@ -20,13 +20,17 @@ pub fn (mut runtime Runtime) install_document_window_event_binding(document &dom
 	runtime.call_javascript_function(factory, global, [global, document_wrapper])!
 }
 
-// HTMLParser.cpp readiness event dispatch over the actual retained owner records.
-// Compact loading still invokes this at its existing post-script phase; source
-// parser task scheduling and parser-blocking execution remain a separate slice.
+// Standalone adapters can request readiness here. Navigation documents use the
+// parser's task state; a late image/module callback must not bypass its queues.
 pub fn (runtime &Runtime) dispatch_document_readiness_event(name string) ! {
 	settings := runtime.scripting_settings_ or { return error('Readiness event requires actual owning settings') }
 	document := settings.responsible_document() or { return error('Readiness event requires an actual Document') }
 	if name !in ['DOMContentLoaded', 'load'] { return error('Unknown document readiness event') }
+	if document.has_html_parser_creation_hook() {
+		mut owner := unsafe { &dom.Document(document) }
+		owner.schedule_html_parser_end_check()
+		return
+	}
 	if mut host := runtime.module_host_ {
 		waiting := if name == 'DOMContentLoaded' {
 			host.executions.any(!it.finished && it.blocks_readiness)

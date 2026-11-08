@@ -124,15 +124,19 @@ pub mut:
 	the_end_started                    bool
 	context_element                    ?&dom.Element
 	script_nesting_level               uint
+	document_stream_generation         u64
 	script_models                      map[i64]&HTMLScriptElementModel
 	script_fetch_hook                  ?ScriptElementFetchHook
+	script_async_fetch_hook            ?ScriptElementAsyncFetchHook
 	script_execute_hook                ?ScriptElementExecuteHook
+	script_execute_hook_with_element   ?ScriptElementExecuteHookWithElement
 	speculative_fetch_hook             ?SpeculativeFetchHook
 	active_speculative_html_parser     ?&SpeculativeHTMLParser
 	encoding_confidence                EncodingConfidence = .irrelevant
 	change_encoding_callback           ?HTMLParserChangeEncodingCallback
 	ready_for_more_input_callback      ?HTMLParserCallback
 	parsing_complete_callback          ?HTMLParserCallback
+	parsing_complete_callbacks         []HTMLParserCallback
 
 	character_insertion_node    ?&dom.Text
 	character_insertion_builder []rune
@@ -195,12 +199,14 @@ fn HTMLParser.create_with_tokenizer(document &dom.Document, tokenizer HTMLTokeni
 		realm_: realm
 		tokenizer: tokenizer
 		scripting_mode: scripting_mode
+		document_stream_generation: document.html_parser_stream_generation()
 	}
 	parser.tokenizer.set_parser(parser)
 	if scripting_mode != .fragment {
 		doc.set_parser(make_dom_html_parser_handle(parser))
 	}
 	parser.stack_of_open_elements.set_on_element_popped_with_context(voidptr(parser), parser_element_popped_callback)
+	if scripting_mode != .fragment { doc.notify_html_parser_created(voidptr(parser)) }
 	return parser
 }
 
@@ -307,6 +313,12 @@ pub fn (mut p HTMLParser) set_parsing_complete_callback(callback HTMLParserCallb
 	p.parsing_complete_callback = callback
 }
 
+// An embedder's completion work coexists with the incremental decoder's
+// buffer cleanup, which installs its own callback after creating the parser.
+pub fn (mut p HTMLParser) add_parsing_complete_callback(callback HTMLParserCallback) {
+	p.parsing_complete_callbacks << callback
+}
+
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inhead
 fn (mut p HTMLParser) process_meta_element(element &dom.Element) {
 	if p.active_speculative_html_parser != none || p.encoding_confidence != .tentative {
@@ -367,6 +379,14 @@ fn (mut p HTMLParser) change_the_encoding(requested_encoding string) {
 pub fn (mut p HTMLParser) set_script_hooks(fetch ?ScriptElementFetchHook, execute ?ScriptElementExecuteHook) {
 	p.script_fetch_hook = fetch
 	p.script_execute_hook = execute
+}
+
+pub fn (mut p HTMLParser) set_async_script_fetch_hook(fetch ?ScriptElementAsyncFetchHook) {
+	p.script_async_fetch_hook = fetch
+}
+
+pub fn (mut p HTMLParser) set_script_execute_hook_with_element(execute ?ScriptElementExecuteHookWithElement) {
+	p.script_execute_hook_with_element = execute
 }
 
 pub fn (mut p HTMLParser) set_speculative_fetch_hook(hook ?SpeculativeFetchHook) {
@@ -438,7 +458,9 @@ fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, toke
 	script.set_async(token.has_attribute('async'))
 	script.set_nomodule(token.has_attribute('nomodule'))
 	script.set_fetch_hook(p.script_fetch_hook)
+	script.set_async_fetch_hook(p.script_async_fetch_hook)
 	script.set_execute_hook(p.script_execute_hook)
+	script.set_execute_hook_with_element(p.script_execute_hook_with_element)
 	p.script_models[element.as_node().unique_id().value()] = script
 }
 
@@ -454,10 +476,6 @@ fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.El
 	p.increment_script_nesting_level()
 	script.prepare_script(p.document_)
 	p.decrement_script_nesting_level()
-	if script.is_ready_to_be_parser_executed() {
-		mut document := unsafe { &dom.Document(p.document_) }
-		document.set_pending_parsing_blocking_script(unsafe { &dom.HTMLScriptElement(element) })
-	}
 }
 
 fn (mut p HTMLParser) register_parser_inserted_svg_script(element &dom.Element, token &HTMLToken) &SVGScriptElementModel {
@@ -495,6 +513,10 @@ pub fn (mut p HTMLParser) run_until_insertion_point() {
 }
 
 fn (mut p HTMLParser) run_with_stop_at_insertion_point(stop_at_insertion_point StopAtInsertionPoint) {
+	if p.aborted || p.document_.has_been_destroyed()
+		|| p.document_stream_generation != p.document_.html_parser_stream_generation() { return }
+	mut allocations := enter_html_document_storage(p.document_)
+	defer { allocations.finish() }
 	p.stop_parsing = false
 	mut reached_end_of_file := false
 	mut tokens_processed := 0
@@ -557,6 +579,9 @@ fn (mut p HTMLParser) invoke_parsing_complete_callback() {
 		p.parsing_complete_callback = none
 		callback()
 	}
+	callbacks := p.parsing_complete_callbacks
+	p.parsing_complete_callbacks = []HTMLParserCallback{}
+	for callback in callbacks { callback() }
 }
 
 pub fn (mut p HTMLParser) schedule_resume_check() {
@@ -576,9 +601,12 @@ pub fn (mut p HTMLParser) schedule_resume_check() {
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
-	if !p.parser_pause_flag || p.aborted || p.stop_parsing {
+	if !p.parser_pause_flag || p.aborted || p.stop_parsing || p.document_.has_been_destroyed()
+		|| p.document_stream_generation != p.document_.html_parser_stream_generation() {
 		return
 	}
+	mut allocations := enter_html_document_storage(p.document_)
+	defer { allocations.finish() }
 	pending := p.document_.pending_parsing_blocking_script()
 	pending_svg := p.document_.pending_parsing_blocking_svg_script()
 	ready := if script := pending {
@@ -593,6 +621,7 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	}
 
 	mut document := unsafe { &dom.Document(p.document_) }
+	p.tokenizer.store_old_insertion_point()
 	p.tokenizer.update_insertion_point()
 	assert p.script_nesting_level == 0
 	// A resumed script can synchronously reenter parsing through document.write().
@@ -609,8 +638,10 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	p.decrement_script_nesting_level()
 	assert p.script_nesting_level == 0
 	p.stop_the_speculative_html_parser()
-	p.parser_pause_flag = false
-	p.tokenizer.undefine_insertion_point()
+	p.tokenizer.restore_old_insertion_point()
+	// document.write() can encounter a new pending external script. Preserve
+	// that pause until its own completion instead of parsing the trailing DOM.
+	if p.parser_pause_flag { return }
 	p.run()
 	if !p.parser_pause_flag {
 		if callback := p.ready_for_more_input_callback {
@@ -622,7 +653,10 @@ fn (mut p HTMLParser) resume_after_parser_blocking_script() {
 	}
 	if p.finish_loading_after_parse {
 		p.finish_loading_after_parse = false
-		document.completely_finish_loading()
+		if document.get_browsing_context() == none && document.readiness() == .complete
+			&& p.document_stream_generation == document.html_parser_stream_generation() {
+			document.completely_finish_loading()
+		}
 	}
 }
 
@@ -632,6 +666,10 @@ pub fn (mut p HTMLParser) abort() {
 	p.stop_parsing = true
 	p.tokenizer.abort()
 	p.stop_the_speculative_html_parser()
+	for _, model in p.script_models {
+		mut script := unsafe { &HTMLScriptElementModel(model) }
+		if !script.executed_ { script.cancel_external_fetch() }
+	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#start-the-speculative-html-parser
@@ -655,6 +693,7 @@ pub enum HTMLParserEndPhase {
 	waiting_for_deferred_scripts
 	waiting_for_asap_scripts
 	waiting_for_load_event_delay
+	completion_queued
 	completed
 }
 
@@ -665,12 +704,14 @@ mut:
 	check_pending bool
 	document      &dom.Document = unsafe { nil }
 	parser        ?&HTMLParser
+	document_stream_generation u64
 }
 
 pub fn HTMLParserEndState.create(document &dom.Document, parser ?&HTMLParser) &HTMLParserEndState {
 	return &HTMLParserEndState{
 		document: document
 		parser: parser
+		document_stream_generation: document.html_parser_stream_generation()
 	}
 }
 
@@ -688,7 +729,8 @@ fn html_parser_end_state_schedule_callback(target voidptr) {
 }
 
 pub fn (mut state HTMLParserEndState) schedule_progress_check() {
-	if state.phase_ == .completed || state.check_pending || state.document.has_been_destroyed() {
+	if state.phase_ == .completed || state.check_pending || state.document.has_been_destroyed()
+		|| state.document_stream_generation != state.document.html_parser_stream_generation() {
 		return
 	}
 	state.check_pending = true
@@ -704,11 +746,21 @@ pub fn (mut state HTMLParserEndState) schedule_progress_check() {
 }
 
 fn (mut state HTMLParserEndState) check_progress() {
+	if state.document.has_been_destroyed()
+		|| state.document_stream_generation != state.document.html_parser_stream_generation() {
+		state.phase_ = .completed
+		mut document := unsafe { &dom.Document(state.document) }
+		document.clear_html_parser_end_state(voidptr(state))
+		return
+	}
+	mut allocations := enter_html_document_storage(state.document)
+	defer { allocations.finish() }
 	if !state.document.is_fully_active() {
 		state.complete()
 		return
 	}
 	if state.phase_ == .waiting_for_deferred_scripts {
+		if state.document.pending_module_readiness_scripts > 0 { return }
 		for {
 			script := state.document.first_script_to_execute_when_parsing_has_finished() or {
 				break
@@ -718,9 +770,14 @@ fn (mut state HTMLParserEndState) check_progress() {
 				return
 			}
 			html_script_element_execute_script(script)
+			if state.document_stream_generation != state.document.html_parser_stream_generation() { return }
 			mut mutable_document := unsafe { &dom.Document(state.document) }
 			mutable_document.remove_first_script_to_execute_when_parsing_has_finished()
+			// The embedding module host can still be loading the graph when
+			// evaluation is requested. Keep later deferred scripts behind it.
+			if state.document.pending_module_readiness_scripts > 0 { return }
 		}
+		if state.document.pending_module_readiness_scripts > 0 { return }
 		state.advance_to_asap_scripts_phase()
 	}
 	if state.phase_ == .waiting_for_asap_scripts {
@@ -760,41 +817,70 @@ fn parser_end_waits_for_rendering_fonts(document &dom.Document) bool {
 
 fn (mut state HTMLParserEndState) advance_to_asap_scripts_phase() {
 	document := state.document
-	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document] () {
+	generation := state.document_stream_generation
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document, generation] () {
+		if generation != document.html_parser_stream_generation() { return }
+		mut allocations := enter_html_document_storage(document)
+		defer { allocations.finish() }
 		mut mutable_document := unsafe { &dom.Document(document) }
 		if !mutable_document.claim_readiness_event('DOMContentLoaded') {
 			return
 		}
 		mutable_document.mark_dom_content_loaded_event_start()
 		mutable_document.dispatch_event_simple('DOMContentLoaded', true)
+		if generation != document.html_parser_stream_generation() { return }
 		mutable_document.mark_dom_content_loaded_event_end()
 	})
 	state.phase_ = .waiting_for_asap_scripts
 }
 
 fn (mut state HTMLParserEndState) complete() {
-	if state.phase_ == .completed {
+	if state.phase_ in [.completion_queued, .completed] {
 		return
 	}
-	state.phase_ = .completed
-	mut mutable_document := unsafe { &dom.Document(state.document) }
-	mutable_document.clear_html_parser_end_state(voidptr(state))
+	state.phase_ = .completion_queued
+	state_pointer := voidptr(state)
 	document := state.document
 	parser := state.parser
-	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document, parser] () {
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [state_pointer, document, parser] () {
+		mut allocations := enter_html_document_storage(document)
+		defer { allocations.finish() }
+		mut end_state := unsafe { &HTMLParserEndState(state_pointer) }
 		mut mutable_document := unsafe { &dom.Document(document) }
+		if end_state.phase_ != .completion_queued || document.has_been_destroyed()
+			|| end_state.document_stream_generation != document.html_parser_stream_generation() {
+			return
+		}
+		// DOMContentLoaded runs before this task. A listener can start a new
+		// script, image, or child navigation, so its delay must still have an
+		// owner that will resume these steps when the resource completes.
+		if mutable_document.has_scripts_to_execute_as_soon_as_possible() {
+			end_state.phase_ = .waiting_for_asap_scripts
+			return
+		}
+		if mutable_document.anything_is_delaying_the_load_event()
+			|| mutable_document.pending_module_readiness_scripts > 0 {
+			end_state.phase_ = .waiting_for_load_event_delay
+			return
+		}
+		end_state.phase_ = .completed
+		mutable_document.clear_html_parser_end_state(state_pointer)
 		mutable_document.update_readiness(.complete)
+		if end_state.document_stream_generation != document.html_parser_stream_generation() { return }
 		if parser != none {
 			mutable_document.detach_parser()
+		}
+		mutable_document.set_ready_for_post_load_tasks(true)
+		if host := document.navigable() {
+			if navigable := navigable_model_for_host(host) {
+				mut mutable_navigable := unsafe { &NavigableModel(navigable) }
+				mutable_navigable.clear_navigation_load_event_guard()
+			}
 		}
 		if mutable_document.get_browsing_context() == none {
 			return
 		}
-		// The browser starts iframe navigations after parsing, so a child can
-		// begin delaying the load event after the end check queued this task.
-		// The scripting runtime then fires load once nothing delays it.
-		if !mutable_document.anything_is_delaying_the_load_event()
-			&& mutable_document.claim_readiness_event('load') {
+		if mutable_document.claim_readiness_event('load') {
 			// Fire load at the Document's relevant global object, where the
 			// scripting runtime's readiness dispatch also delivers it.
 			if window := mutable_document.get_window() {
@@ -804,20 +890,15 @@ fn (mut state HTMLParserEndState) complete() {
 				mutable_document.dispatch_event_simple('load', false)
 			}
 		}
+		if end_state.document_stream_generation != document.html_parser_stream_generation() { return }
 		mutable_document.set_page_showing(true)
 		mutable_document.completely_finish_loading()
 	})
-	mutable_document.set_ready_for_post_load_tasks(true)
-	if host := state.document.navigable() {
-		if navigable := navigable_model_for_host(host) {
-			mut mutable_navigable := unsafe { &NavigableModel(navigable) }
-			mutable_navigable.clear_navigation_load_event_guard()
-		}
-	}
 }
 
 // https://html.spec.whatwg.org/multipage/parsing.html#the-end
 pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
+	generation := document.html_parser_stream_generation()
 	if concrete_parser := parser {
 		if concrete_parser.parsing_fragment {
 			return
@@ -831,6 +912,7 @@ pub fn HTMLParser.the_end(document &dom.Document, parser ?&HTMLParser) {
 	}
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.update_readiness(.interactive)
+	if generation != document.html_parser_stream_generation() { return }
 	if concrete_parser := parser {
 		mut mutable_parser := unsafe { &HTMLParser(concrete_parser) }
 		for !mutable_parser.stack_of_open_elements.is_empty() {

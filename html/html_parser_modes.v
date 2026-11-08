@@ -964,7 +964,12 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 				p.prepare_and_execute_parser_inserted_script(element)
 				p.tokenizer.restore_old_insertion_point()
 				if pending := p.document_.pending_parsing_blocking_script() {
-					if p.document_.has_a_style_sheet_that_is_blocking_scripts()
+					pending_model := html_script_element_model_for_dom_element(pending)
+					// A cached external script written by another script still
+					// waits for the outer evaluation to return. Inline writes keep
+					// their synchronous execution at the live insertion point.
+					if (p.script_nesting_level > 0 && pending_model.from_external_file_)
+						|| p.document_.has_a_style_sheet_that_is_blocking_scripts()
 						|| !html_script_element_is_ready_to_be_parser_executed(pending) {
 						p.start_the_speculative_html_parser()
 						p.parser_pause_flag = true
@@ -975,11 +980,12 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 					the_script := document.take_pending_parsing_blocking_script()
 					// Preparing the element restored the previous insertion point.
 					// Parser execution opens a fresh one for synchronous document.write().
+					p.tokenizer.store_old_insertion_point()
 					p.tokenizer.update_insertion_point()
 					p.increment_script_nesting_level()
 					html_script_element_parser_execute_ready_script(the_script)
 					p.decrement_script_nesting_level()
-					p.tokenizer.undefine_insertion_point()
+					p.tokenizer.restore_old_insertion_point()
 				}
 			}
 		}

@@ -177,7 +177,9 @@ fn (mut app BrowserApp) start_page_preload(loaded LoadedPage, add_history bool) 
 			if !scripting_enabled && (!app.can_load_images_asynchronously() || resource_url in svg_images) {
 				pending.image_urls << resource_url
 			}
-		} else {
+		} else if (types[resource_url] or { 'image' }) == 'stylesheet' {
+			// Scripts are requested by their live parser elements after commit.
+			// An async or deferred source must not hold the old document onscreen.
 			initial_urls << resource_url
 		}
 	}

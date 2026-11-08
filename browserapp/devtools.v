@@ -177,6 +177,13 @@ fn (mut app BrowserApp) ensure_devtools_script_runtime() bool {
 	if app.document == unsafe { nil } || !app.document.as_node().is_scripting_enabled() {
 		return false
 	}
+	if loader := app.script_request_loader {
+		if mut host := loader.parser_host {
+			ready := host.initialize()
+			host.flush(mut app.js_messages)
+			return ready
+		}
+	}
 	app.js_runtime = create_browser_script_runtime(app.js_engine)
 	image_callback := if loader := app.image_request_loader {
 		?browserjs.ImageAsyncRequestFetchHook(loader.callback())

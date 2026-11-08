@@ -124,7 +124,37 @@ fn parse_browser_navigation_document_input(markup string, document_encoding ?str
 		initiator_origin, previous, page, response_time_ns, scripting_enabled, none)
 }
 
+// Navigation installs document-owned clients before consuming parser input.
+struct PreparedBrowserNavigationDocument {
+	document &dom.Document
+	markup string
+}
+
+fn prepare_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) PreparedBrowserNavigationDocument {
+	markup, encoding_name := loaded_browser_navigation_input(loaded)
+	document := create_browser_navigation_document_input_with_source(encoding_name, document_url,
+		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
+		loaded.javascript_url_source)
+	return PreparedBrowserNavigationDocument{ document: document, markup: markup }
+}
+
+fn parse_prepared_browser_navigation_document(input PreparedBrowserNavigationDocument) {
+	mut allocations := input.document.enter_native_storage()
+	defer { allocations.finish() }
+	html.parse_html_from_a_string(input.document, input.markup)
+}
+
 fn parse_browser_navigation_document_input_with_source(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
+	document := create_browser_navigation_document_input_with_source(document_encoding, document_url,
+		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source)
+	parse_prepared_browser_navigation_document(PreparedBrowserNavigationDocument{
+		document: document
+		markup: markup
+	})
+	return document
+}
+
+fn create_browser_navigation_document_input_with_source(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('html_parse', phase_mark)
@@ -163,6 +193,5 @@ fn parse_browser_navigation_document_input_with_source(markup string, document_e
 	// rather than committing it through session-history traversal. Grant the
 	// source document's script readiness before parser-inserted import maps run.
 	document.set_ready_to_run_scripts()
-	html.parse_html_from_a_string(document, markup)
 	return document
 }
