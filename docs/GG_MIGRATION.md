@@ -1430,3 +1430,37 @@ Counts include no-ops and explicit declines. Rounding-induced crops and
 identity/invalid resampled shadow blurs still decline, and the remaining
 filter graphs, native/GPU services and Skia-free browser link/run remain
 unfinished. See the [near-integer shadow receipt](gg-migration/near-integer-image-shadows-20261108.json).
+
+
+### Deferred identity and rejected source-image shadow blurs (2026-11-08)
+
+Source-image shadows now keep sampling, source conversion, paint alpha,
+color matrices and the SrcIn tint deferred when the blur is an identity.
+Rejected blur nodes tint SourceGraphic, while the foreground still retains
+its preceding matrices. Compatible offset sampling follows the native rules;
+nearest sources requiring a separate linear resolve surface still decline.
+The merge drops empty shadow/color-filter results from its bounds, preserving
+the native surface origin and floating-point sampling.
+
+Nine additional native fixtures bring the image-filter corpus to 102 exact
+cases on both platforms. Of 20,000 identity-shadow attempts, 9,499 supported
+draws match on each platform. Production mode matches 9,461 at another seed,
+and the broader Linux image-filter cohort matches 16,430. Counts include
+no-ops and explicit declines. The production cohort originally found a
+one-byte origin error; its frozen regression produces 127 before the fix
+and the native 128 afterward, with the whole-image hash matching as well.
+
+All 27 CPU raster test files, C/FastC image regressions, Linux production
+image tests and HTML integration pass. The FMA audit reports zero contracted
+operations (175 explicit). The Linux browser typecheck passes with Skia
+available; the later bounds correction is compiled and exercised by Linux
+production image tests. Initial concurrent-edit compile failures and a
+comparison rejected by the input guard are retained without pass credit.
+The differential harness now enables globals for shared module diagnostics.
+Concurrent pixel-readback work is preserved outside these commits and PR
+changes. See the [identity-shadow receipt](gg-migration/identity-source-image-shadows-20261108.json).
+
+Rounding-induced crops, nearest/fractional-offset resolve surfaces, further
+spatial chains, rotations, SVG graphs, boolean shadows, large-sigma rescaling,
+tiling and native/GPU bridges remain. The browser still links Skia, and a
+complete Skia-free Linux browser compile/link/run remains unverified.
