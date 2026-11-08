@@ -15,7 +15,7 @@ fn run_trusted_types_idl_check(source string) {
 	html.parse_html_from_a_string(document, '<!doctype html><body><iframe id="child"></iframe></body>')
 	allocation.finish()
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize(); document.release_native_storage() }
+	defer { runtime.close(); document.destroy_a_document_and_its_descendants(); document.finalize(); document.release_native_storage() }
 	mut messages := []string{}
 	run_document_javascript(document, url.serialize(), [source], runtime, mut messages)
 	assert messages == ['trusted IDL passed'], messages.join('\n')

@@ -19,7 +19,7 @@ fn native_trusted_policy_document(markup string) !&dom.Document {
 fn test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks() {
 	mut document := native_trusted_policy_document('<!doctype html><meta http-equiv="Content-Security-Policy" content="require-trusted-types-for &apos;script&apos;; trusted-types default safe"><body><div id="target"></div></body>')!
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize(); document.release_native_storage() }
+	defer { runtime.close(); document.destroy_a_document_and_its_descendants(); document.finalize(); document.release_native_storage() }
 	mut messages := []string{}
 	run_document_javascript(document, 'https://trusted-types.test/', [r'
 const check=(actual,expected)=>{if(actual!==expected)throw new Error(String(actual)+" != "+String(expected));};
@@ -46,7 +46,7 @@ console.log("shared native policy passed");
 fn test_default_policy_return_conversion_and_original_exception_values() {
 	mut document := native_trusted_policy_document('<!doctype html><meta http-equiv="Content-Security-Policy" content="require-trusted-types-for &apos;script&apos;"><body><div id="target"></div></body>')!
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize(); document.release_native_storage() }
+	defer { runtime.close(); document.destroy_a_document_and_its_descendants(); document.finalize(); document.release_native_storage() }
 	mut messages := []string{}
 	run_document_javascript(document, 'https://trusted-types.test/', [r'
 const check=(actual,expected)=>{if(actual!==expected)throw new Error(String(actual)+" != "+String(expected));};
@@ -73,7 +73,7 @@ console.log("native callback results passed");
 fn test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original() {
 	mut document := native_trusted_policy_document('<!doctype html><meta http-equiv="Content-Security-Policy" content="require-trusted-types-for &apos;script&apos;"><body><div id="target"></div></body>')!
 	mut runtime := browserjs.Runtime.create()
-	defer { runtime.close(); document.finalize(); document.release_native_storage() }
+	defer { runtime.close(); document.destroy_a_document_and_its_descendants(); document.finalize(); document.release_native_storage() }
 	mut messages := []string{}
 	run_document_javascript(document, 'https://trusted-types.test/', [r'
 const reason={conversion:true};
@@ -99,6 +99,7 @@ fn test_closed_native_policy_callback_outlives_document_payload_without_entering
 	factory := html.trusted_types_factory_for_document(document)
 	policy := factory.default_policy()?
 	runtime.close()
+	document.destroy_a_document_and_its_descendants()
 	document.finalize()
 	document.release_native_storage()
 	churn := platform.begin_thread_scratch('retired trusted policy owner')
