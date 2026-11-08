@@ -1,0 +1,17 @@
+<!doctype html><meta charset="utf-8"><title>Later matching font faces take precedence</title>
+<style>
+@font-face{font-family:Exact;src:url(../resources/Ahem.ttf);font-weight:400}
+@font-face{font-family:Exact;src:url(../resources/glyph-origin.ttf);font-weight:400}
+@font-face{font-family:Subset;src:url(../resources/Ahem.ttf);font-weight:400}
+@font-face{font-family:Subset;src:url(../resources/glyph-origin.ttf);font-weight:400;unicode-range:U+6D}
+@font-face{font-family:Reverse;src:url(../resources/glyph-origin.ttf);font-weight:400}
+@font-face{font-family:Reverse;src:url(../resources/Ahem.ttf);font-weight:400}
+body{margin:0;background:white;color:black}
+div{margin:20px;width:max-content;font-size:20px;line-height:40px}
+#exact{font-family:Exact}#weight{font-family:Exact;font-weight:450}
+#subset{font-family:Subset}#reverse{font-family:Reverse}
+</style>
+<div id="exact">mmm I mmm</div>
+<div id="weight">mmm I mmm</div>
+<div id="subset">mmm I mmm</div>
+<div id="reverse">mmm I mmm</div>

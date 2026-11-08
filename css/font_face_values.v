@@ -4470,6 +4470,16 @@ pub fn (mut computer FontComputer) synchronize_font_face_order(ordered_faces []&
 			}
 		}
 		computer.font_faces[key] = ordered_for_key
+		mut changed := false
+		for index, face in faces {
+			if voidptr(face) != voidptr(ordered_for_key[index]) {
+				changed = true
+				break
+			}
+		}
+		if changed {
+			computer.did_load_font(font_face_key_from_id(key).family_name)
+		}
 	}
 }
 
@@ -4758,7 +4768,7 @@ fn (mut computer FontComputer) find_font(family string, weight int, slope int, f
 	if faces := computer.font_faces[key.id()] {
 		mut result := FontCascadeList.create()
 		shape_features := font_feature_data.to_shape_features(font_feature_values)
-		for face in faces {
+		for face in font_faces_in_rendering_order(faces, computer.font_rendering_policy()) {
 			face_fonts := face.font_with_point_size(font_size_in_pt, variation, shape_features)
 			if face_fonts != unsafe { nil } {
 				result.extend(face_fonts)
@@ -4791,7 +4801,7 @@ fn (mut computer FontComputer) font_matching_algorithm(family_name string, weigh
 			matching_family_fonts << MatchingFontCandidate{
 				key: key
 				width: font_width_bucket_from_percentage(key.width)
-				font_faces: faces.clone()
+				font_faces: font_faces_in_rendering_order(faces, computer.font_rendering_policy())
 			}
 		}
 	}

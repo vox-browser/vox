@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_later_matching_font_faces_override_earlier_definitions_and_subsets(self):
+        self.compare_fixture('font-face-source-order', settle_seconds=2)
+
     def test_whole_background_tiles_preserve_unclamped_source_filtering(self):
         self.compare_fixture('whole-tile-image-filtering', width=1024, height=768)
 
