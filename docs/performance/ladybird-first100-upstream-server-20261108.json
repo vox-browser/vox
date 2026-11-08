@@ -1,0 +1,1933 @@
+{
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-first100-server-compression.tar.gz",
+  "archive_sha256": "432ab9311c0e35f6f337ecc958ca8ca31503da483af5546127494e6f8f4d6678",
+  "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "selection_baseline": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+  "scope": "Same pinned first 100 newly imported Ladybird cases; fresh published windowed Vox processes, upstream Python WPT server. Initial server configuration lacks ws/wss placeholders; five CSP cases have HARD_TIMEOUT and no report. Corrected-server CSP rerun is separately retained below.",
+  "all_100_pass": false,
+  "summary": {
+    "suite_scope": {
+      "name": "ladybird-imported-testharness",
+      "full_upstream_wpt": false,
+      "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+      "server": "upstream wptserve; Python handlers, stash, substitutions, localhost aliases, two HTTP and two HTTPS ports (private CA)",
+      "excluded_types": [
+        "reftest",
+        "print-reftest",
+        "crashtest",
+        "wdspec",
+        "test262",
+        "aamtest",
+        "manual",
+        "visual"
+      ],
+      "denominator": "reported runtime subtests in selected imported files only"
+    },
+    "tests": 100,
+    "browsers": {
+      "vox": {
+        "tests": 100,
+        "outcomes": {
+          "COMPLETE": 95,
+          "HARD_TIMEOUT": 5
+        },
+        "harness": {
+          "OK": 81,
+          "TIMEOUT": 14
+        },
+        "subtests": {
+          "PASS": 8375,
+          "FAIL": 8,
+          "TIMEOUT": 4,
+          "NOTRUN": 15
+        },
+        "subtest_total": 8402,
+        "subtest_pass_rate": 0.9968,
+        "tests_all_pass": 77
+      }
+    },
+    "wall_seconds": {
+      "vox": 624.3
+    },
+    "launches": {
+      "vox": 9
+    },
+    "both_clean": {
+      "tests": 0
+    },
+    "identical_results": {
+      "tests": 0
+    },
+    "directories": {},
+    "slowest_ratio": [],
+    "largest_difference": []
+  },
+  "identity": {
+    "suite_scope": {
+      "name": "ladybird-imported-testharness",
+      "full_upstream_wpt": false,
+      "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+      "server": "upstream wptserve; Python handlers, stash, substitutions, localhost aliases, two HTTP and two HTTPS ports (private CA)",
+      "excluded_types": [
+        "reftest",
+        "print-reftest",
+        "crashtest",
+        "wdspec",
+        "test262",
+        "aamtest",
+        "manual",
+        "visual"
+      ],
+      "denominator": "reported runtime subtests in selected imported files only"
+    },
+    "started": "2026-11-08T14:03:08+0300",
+    "argv": [
+      "tools/wpt_compare.py",
+      "--output",
+      "Build/first100-real-server-20261108",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--new-since",
+      "963d46a829f3e1b79f44dba9d02afb70654300fa",
+      "--limit",
+      "100",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "20",
+      "--browser-memory-gib",
+      "2",
+      "--require-all-pass",
+      "--wpt-server-root",
+      "/Users/alex/code/3rd/web-platform-tests"
+    ],
+    "ladybird_head": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "fixture_manifest": {
+      "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "repository": "/Users/alex/code/3rd/ladybird",
+      "prefixes": [
+        "Tests/LibWeb/Text/input/wpt-import",
+        "Tests/LibWeb/Text/expected/wpt-import"
+      ]
+    },
+    "selection_baseline": {
+      "revision": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+      "repository": "/Users/alex/code/3rd/ladybird",
+      "prefixes": [
+        "Tests/LibWeb/Text/input/wpt-import",
+        "Tests/LibWeb/Text/expected/wpt-import"
+      ]
+    },
+    "wpt_root": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/Tests/LibWeb/Text/input/wpt-import",
+    "host_cpus": 18,
+    "load_start": [
+      18.62,
+      16.11,
+      14.76
+    ],
+    "brave_version": null,
+    "vox_receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-132148-eb3fda13/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "02e71dbe8c8c5411189aa63050dcad7bb26c66905a63e183950f870790ae55c1",
+        "dirty": true,
+        "head": "e823b88721e70c321903c73274cd0abc98ba61ae",
+        "repository_sha256": "f279e3365e6c0b2f77ed8f1895eb09009e56837aba17d8d542fa96896727abe7"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "80ef8dbf3a0edee5060291cf684eff642713a7707fe78b919c343feb1bfbdf99",
+        "dirty": true,
+        "head": "c9e9322f427f44cc3128c99a081ab9d69d555ecf",
+        "repository_sha256": "28bf840354e98fb82396a78e93501d559c299d4abf8e007e1d32049be82686d5"
+      },
+      "request": {
+        "backend": "c",
+        "c_mode": "parallel",
+        "head": "e823b88721e70c321903c73274cd0abc98ba61ae",
+        "id": "23d442a2874a4820b716c8febd0a768f",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "f11531f864d64a13a6c79a94c6bd2096cf36766450551bdfa55adca000598feb",
+        "dirty": true,
+        "head": "c0799bdc380671c8761a21fc1175bc63b51139e5",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "pinned": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c0a94fba2236031c4851de70c8a62f270562b89a6cfe41e00d2add12c47c0a99",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2810160b0ba3b0c167374131e91e512ba45b4e2f5ed7de20f3d02eec9f7b4709",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d7845b105cdaed2200696f9e0ae4ff02acf7b3b31459b745248d2bf28d5b03f8",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+    },
+    "width": 1024,
+    "height": 768,
+    "chunk_size": 20,
+    "limits": {
+      "startup": 30,
+      "navigation": 10,
+      "harness_start": 5,
+      "grace": 10,
+      "browser_memory_gib": 2.0
+    },
+    "server": {
+      "kind": "upstream-wptserve",
+      "checkout": "/Users/alex/code/3rd/web-platform-tests",
+      "revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+      "host": "localhost",
+      "http_ports": [
+        53396,
+        53397
+      ],
+      "https_ports": [
+        53398,
+        53399
+      ],
+      "ca_certificate": "/Users/alex/code/vox2/Build/first100-real-server-20261108/certificates/cacert.pem",
+      "ca_sha256": "c442fc7c0baf9a2b5df65437ac2b98e0857837334edb35fe3379ef341c11dd78",
+      "source_files": {
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/__init__.py": "8a757e6c2014843fd01a341ee4c93c825ec5f39bf6e945bd5b7047a2ff6f0400",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/config.py": "90c5dd21b3a6d6f46a2cceda3c91a0e841ee2410e8f724b6dff23977d4ed893c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/connection.py": "22c59c91f3ba26e34358157c8bb472f88ad939c6fed8af951f37d2bfbcd70bed",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/errors.py": "e8ace66f261228cf51b8277a9f3ecfd8bb719a54ace4fda69de4bf49af2f4c4a",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/events.py": "1a9b444d5c1f7f73a96b14531cfe1bbddde04679f79c33f0aaaa51a0d97e9a97",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/exceptions.py": "3a57de347fdf70618cd2b1653a90f62463a45baaf41f10cdee749e1b33be1f3d",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/frame_buffer.py": "ee2d79a0f2ea7c03cf7d30c4e40f3b820816e05c41ee5fffbcc5f85def51ed35",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/settings.py": "cd1b3f6c0cfdaa0db58eca7a1d063e4d95a77086c20f0109ff5c193b276660d7",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/stream.py": "6f7840a51c2fc64e2b9541c3ac1d596f08303e890e6996bc30c65215111c5621",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/utilities.py": "470828210442983ad1bf2531d39e13c8e296d47963766fd9373de3c78a3db3f1",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/windows.py": "37f3fd9938b4559dbaf9e63642cbd6622e8d2f1ef7c6cc2f5196fb546a1dd739",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/__init__.py": "d6fed17439aa39358e149e16ba5acc7701cd05f40d8cfd17465a70e4a1726b75",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/exceptions.py": "46bc351647b909fabbd8ec2fc2b9d2e89b9c06fc37fdbc6ede8fee8ed01496b3",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/hpack.py": "aa838f72ca8c744e83cea208a31b3e518fabbccccf9f8012b6a8457db1f3501c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman.py": "d1e7e0b25d048d1a11088d0fb97f06f722b83f8f1d98e483e697a931b9314936",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_constants.py": "8a7d696ea53a1e4b63170439825b6b5d955d2f753893f42cb46f6b2108015b33",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_table.py": "e728a322e6b294878fc246e158c5ca7f7117b29797298ee16a4a6f3dd4912648",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/struct.py": "830ee8c66955cd7cb354457863abaf4b7c271ab274cce963a87fb12e926a5997",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/table.py": "902f12c1e4c9207de307faa51098f4ebd8ce9046101b340787010bafe4671a43",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/__init__.py": "3d4f98b3ed6e074f43cae4ca56ac070943a2e2cb20d5157fcab082a82cc8ada0",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/exceptions.py": "1c4709548ee42ee4deba0b7ec861c6abea736f8a456c30270114e8162c0a9d36",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/flags.py": "dbc84fe118f104bdc8e4ab3dfb1175db34dff46d1787c25afe224ba8373b3b8e",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/frame.py": "e42ffbdf4e3bce7d2a3017a511a915729f6ebef5c921b2e4097ec87ff83d0489",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/__init__.py": "b0db4010b05191b1abc32c3a46168ee50c5313c4c5587ab61aa321076fa4a8b6",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/_stream_exceptions.py": "bd2e571a45cd869a639e5ac04048cdc2665e251dc8610a3f02383791479c5263",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/common.py": "f1f46621904f254b42467bce614c41f4f5ef67aacf7db7d11c36c6ead3196bfb",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/dispatch.py": "1bea6b669b3eba6500e6f03adcf1f59768f47447c562751cf79b223bfc441585",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/extensions.py": "6ea603d9ce2bd26eb8e82cdb214cc7fa37d115b0243f9e5601444cb069ea7609",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/__init__.py": "d060d9288ce77a7b9c4af9440f236a82f2e79fab75595a606411e362596c7585",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/base.py": "0a2936d38c93244d51e8cb36f0e0a7c408d3cc0624c09008934241feeda4ee71",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/hybi.py": "bace292d3f76f99568a95f021124712fc09cb7d5a3ccb461ef47b116e256cb0b",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/http_header_util.py": "9a003299dc2f5c2552c7178cb1dd1ec1ee9de7b30120138f2b063fed8ab49ba1",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/msgutil.py": "a1a71af4bb1e58d442ddbff431395ea682225661ec5862a480b47806ad405194",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/stream.py": "7f8282b0c01056c177604e755acbcec3913467b67b5a2e15dbaf320cd9723a3f",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/util.py": "f13c20ffcec20173a25b7494257793fe54ff4aedaa544cf55ecc10cb23967830",
+        "/Users/alex/code/3rd/web-platform-tests/tools/third_party/six/six.py": "4ce39f422ee71467ccac8bed76beb05f8c321c7f0ceda9279ae2dfa3670106b3",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/docs/conf.py": "5ac333fd290c86d91c18530ae09bd354d064fdd440ed64c5c9c3851bb7f7c027",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/setup.py": "87b552bf033441a406e65a1dd102d8e375ad05a22da64835e8b067e6f9fc8007",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/base.py": "81a219ac2b98a7eba239ca4730d24a0d3a293f039d82376bd3eba276f4f5318e",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.py": "3267165da1879beace10f5dd4ff68db8bfbbcbac8ff736dae0c2809457d74477",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.sub.py": "9ad871406bef3d1bef57fdf29aeef2f7b6365f11aade764c8733f55bc711af58",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultsubpy/default.sub.py": "79ac4f25853a64e02eb81bbbe856a7a93f6c33b8e451d80eae4fd90030fe50ea",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/invalid.py": "4827239f0d462d95654e4b99240aad1908264684e1364b4cfcc2997ebebb160b",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/no_main.py": "b165350880e521a5bd47de630f9e42e0b5c45610f5315982b3b53465b3c28b6e",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/example_module.py": "f925058fca8d4e806d9ce0d22d55db2f93e0df118aab2c4ff4a190b06a81632c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/import_handler.py": "2a8977e4ff8c1174e608c9dafec5e524adee3cf2219913c4aa42f4301e97a598",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_data.py": "37b3e3b534b8470c8b75f35f525e563369053f25807c6e0418c44e417d8aad66",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers.py": "3272d89073aa6b0c9ae7a394d905252a8a37de10ac447e4802b157535fe2544d",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers_data.py": "ec4caec2cd6cfd91d8d7b5b16ac0b4547c67840f7a756373fb8ef4e6ad8cdead",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_string.py": "013a2a125eb356a7a67c56b26aa0a3fba480f660428ad41916dc5ff4646440a1",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_2.py": "e71815ac5fa17cf3933e2ae528453218111eda14f8145e4d1a1d711e2f9bf076",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_3.py": "aa9441158c9273d6777b660dee776aaa50e45b4ed67439c5e0357b2f51058487",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_cookies.py": "180a90c4910fa0649c04e1c8060d94881ed7bb633ef86a9f5b3bbf116a5433f3",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_handlers.py": "ad61d09080fce751f202c4442161517ee2285df8fa510ccf1bd7e2969816705f",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_input_file.py": "790617ef1ad35148e043b9b75e19d6d52d8bd90a00499038d8c5633c07805590",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_pipes.py": "7eedc059aa7531e276e05920d14b6a8b8e33526c7a3214b535812c068a83de80",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_request.py": "56ba853ed351d574325e5beaae7f798a8ef49f8ed7a7b4f74e3b7d39bc517178",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_response.py": "815646ca02126094d0a4352313d27a06e06da3f43c0f7ed69ff2c818c5b1a7d7",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_server.py": "f3320bd5d251eb5a708e606c52dccfab110914da7b5858c2f35235ca66c212f5",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_stash.py": "1c8886fb295fbee9a795a74da4b0098709d8dce501cb592f18f34deab2452043",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_config.py": "8eb3d5adb7bef997560b788f5714c4ddb80e07dbbac043b3d3f4f80db3faa4ea",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_replacement_tokenizer.py": "48ff6e90d26d23ec1f0bfa3af8a8bdb654815d70df211f82e805fdf96e78e5e9",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_request.py": "ca74dda01ad3d7b2979436215345f198d4cc3c793a0491aca581c33c5858292b",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_response.py": "1eb3f26fd7ba5e8b53b5419125b9ac0f20ced70409b685c956acaddea008d683",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_stash.py": "37e8a5a23ba45483526d7cbe0240bdd7f7dffdae934da6a915f1c1f66e9b3998",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/__init__.py": "43d9e569859eaf37b69367eabfb09c7e98e8ed7b9e63b186837fd961f10400af",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/__init__.py": "879c4b96b443f5356d16fb37891d368293f6cf4b2d90cfeaa2bbe14df929658e",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/cgi.py": "79ba98f3dbc82458cc785a95167dffe92940de47a6e4b7c7ce218b8e3821ee4d",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/test_cgi.py": "60287942dfc29e6fb27255859651fa5e302bef81c6710568424a662a42c07da4",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/config.py": "9b270173370908cd954affd446aabb80bd7980cb5ac2dc303620be92963c14e8",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/constants.py": "364c675b995159ce6fb75e392f48da01f1c5faff29bdf6131706509affeade7c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/handlers.py": "ccaa4c7b487b21909d4f7c12199088b57e8fbc3cb68f3705f4ebc4612a091c8a",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/logger.py": "a7d26967e170196d3c7fc017fa0708b6c8be27df4715745453e722e2ef5434e7",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/pipes.py": "79953d0eb5c79fb5e06055eb1d9f6f7d30c77e3f2e885e6815b36c8ea5c90e8e",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ranges.py": "80ad5dd6bc88bdf00dcfdbe67f4cb139a87d154f5e6c2beed20f45fbe9e52983",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/request.py": "30767f80fa432159317285846e6c5d2fec4a644c9ab4beb5fee349f0cef3c314",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/response.py": "69ef948acb90b4f30b41a6820cb2569477ec524b011b1ea858ea510e7dc0f9db",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/router.py": "f994b9956b3801854b8a66f504b30516060c9d76ca8a0d790db68d5706906ad4",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/routes.py": "b1d813ac53a12325eaa33c0cfb0b4fac70e0661293be5eb55779d1560409f546",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/server.py": "a01cb525cc56b3258b044c41343a74b38daff66f9efab26127b40cfc93c5877c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/__init__.py": "e1250cc6a298f098ab7ba7f2e18abd9cb5a533755d195d6199c07439dd02e72c",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/base.py": "2e5da0cefbc077153ff7608ccf1409ba907103683c81a3318b967e12f9c9288d",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/openssl.py": "85c9c715633d6654f5a74bc21d0e5c4d60da68a861222bae4989aae34811c54b",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/pregenerated.py": "de13e631b0bb198e93bf5c6784d1545725be1237c4f149f422ec507226883661",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/stash.py": "1c9e8699443e8648dd25aae2a812e5424ba2aadb2aa8a8f22996cdbb56202d4b",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/utils.py": "208f4d1516efeb29be91799dafffe742d0a8a5d8d28de1c57ca1b97291ab05fd",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/wptserve.py": "d24baf5aeae82f2b1de0716df0495bdf810dfa9e5cefb5dd87740217e421e873",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ws_h2_handshake.py": "e572ed34743be3c6368d7dc6d0f3a5a113906d01cba6bc25490630025f659fdc"
+      }
+    },
+    "base_url": "http://localhost:53396",
+    "load_end": [
+      24.14,
+      33.31,
+      26.15
+    ],
+    "finished": "2026-11-08T14:14:11+0300",
+    "changed_inputs": [],
+    "unexpected_posts": 0,
+    "aborted": null
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "tools/wpt_compare.py",
+      "--output",
+      "Build/first100-real-server-20261108",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--new-since",
+      "963d46a829f3e1b79f44dba9d02afb70654300fa",
+      "--limit",
+      "100",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "20",
+      "--browser-memory-gib",
+      "2",
+      "--require-all-pass",
+      "--wpt-server-root",
+      "/Users/alex/code/3rd/web-platform-tests"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1294581760,
+    "elapsed_seconds": 668.7545297089999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "tests": [
+    {
+      "id": "FileAPI/blob/Blob-text.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 16,
+      "nonpass": []
+    },
+    {
+      "id": "FileAPI/blob/Blob-textStream.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 8,
+      "nonpass": []
+    },
+    {
+      "id": "FileAPI/file/send-file-form-iso-2022-jp",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "nonpass": [
+        {
+          "name": "Upload file-for-upload-in-form.txt (ASCII) in ISO-2022-JP form",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: form.submit is not a function. (In 'form.submit()', 'form.submit' is undefined)\""
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\uf7f0\uf793\uf783\uf7a0.txt (x-user-defined) in ISO-2022-JP form",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u00e2\u02dc\u00ba\u00f0\u0178\u02dc\u201a.txt (windows-1252) in ISO-2022-JP form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u2605\u661f\u2605.txt (JIS X 0201 and JIS X 0208) in ISO-2022-JP form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u263a\ud83d\ude02.txt (Unicode) in ISO-2022-JP form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-ABC~\u203e\u00a5\u2248\u00a4\uff65\u30fb\u2022\u2219\u00b7\u263c\u2605\u661f\ud83c\udf1f\u661f\u2605\u263c\u00b7\u2219\u2022\u30fb\uff65\u00a4\u2248\u00a5\u203e~XYZ.txt (Unicode) in ISO-2022-JP form",
+          "status": "NOTRUN",
+          "message": null
+        }
+      ]
+    },
+    {
+      "id": "FileAPI/file/send-file-form-windows-1252",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "nonpass": [
+        {
+          "name": "Upload file-for-upload-in-form.txt (ASCII) in windows-1252 form",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: form.submit is not a function. (In 'form.submit()', 'form.submit' is undefined)\""
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\uf7f0\uf793\uf783\uf7a0.txt (x-user-defined) in windows-1252 form",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u00e2\u02dc\u00ba\u00f0\u0178\u02dc\u201a.txt (windows-1252) in windows-1252 form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u2605\u661f\u2605.txt (JIS X 0201 and JIS X 0208) in windows-1252 form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u263a\ud83d\ude02.txt (Unicode) in windows-1252 form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-ABC~\u203e\u00a5\u2248\u00a4\uff65\u30fb\u2022\u2219\u00b7\u263c\u2605\u661f\ud83c\udf1f\u661f\u2605\u263c\u00b7\u2219\u2022\u30fb\uff65\u00a4\u2248\u00a5\u203e~XYZ.txt (Unicode) in windows-1252 form",
+          "status": "NOTRUN",
+          "message": null
+        }
+      ]
+    },
+    {
+      "id": "FileAPI/file/send-file-form-x-user-defined",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "nonpass": [
+        {
+          "name": "Upload file-for-upload-in-form.txt (ASCII) in x-user-defined form",
+          "status": "FAIL",
+          "message": "promise_test: Unhandled rejection with value: object \"TypeError: form.submit is not a function. (In 'form.submit()', 'form.submit' is undefined)\""
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\uf7f0\uf793\uf783\uf7a0.txt (x-user-defined) in x-user-defined form",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u00e2\u02dc\u00ba\u00f0\u0178\u02dc\u201a.txt (windows-1252) in x-user-defined form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u2605\u661f\u2605.txt (JIS X 0201 and JIS X 0208) in x-user-defined form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-\u263a\ud83d\ude02.txt (Unicode) in x-user-defined form",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "Upload file-for-upload-in-form-ABC~\u203e\u00a5\u2248\u00a4\uff65\u30fb\u2022\u2219\u00b7\u263c\u2605\u661f\ud83c\udf1f\u661f\u2605\u263c\u00b7\u2219\u2022\u30fb\uff65\u00a4\u2248\u00a5\u203e~XYZ.txt (Unicode) in x-user-defined form",
+          "status": "NOTRUN",
+          "message": null
+        }
+      ]
+    },
+    {
+      "id": "IndexedDB/clone-before-keypath-eval.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": [
+        {
+          "name": "Cursor update checks and keypath evaluations operate on a clone",
+          "status": "FAIL",
+          "message": "cursor.update is not a function. (In 'cursor.update(obj)', 'cursor.update' is undefined)"
+        },
+        {
+          "name": "Blob expando properties are stripped in the clone used for index key path evaluation",
+          "status": "FAIL",
+          "message": "IndexedDB cannot yet store this object type"
+        }
+      ]
+    },
+    {
+      "id": "IndexedDB/get-databases.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 5,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/get-databases.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 5,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 9,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 9,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbindex_keyPath.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_createIndex.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 21,
+      "nonpass": [
+        {
+          "name": "Auto-Increment Primary Key - invalid key values elsewhere",
+          "status": "FAIL",
+          "message": "assert_equals: Expected all 7 records to be stored. expected (number) 7 but got (undefined) undefined"
+        }
+      ]
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_keyPath.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 8,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/keygenerator.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 21,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/keypath.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 20,
+      "nonpass": [
+        {
+          "name": "Key path conversion: a self-referential array exhausts the stack",
+          "status": "FAIL",
+          "message": "assert_throws_js: Converting a self-referential key path array should exhaust the stack. function \"function() {\n        db.createObjectStore('store', {keyPath: loop_array});\n      }\" did not throw"
+        }
+      ]
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 24,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/keypath_maxsize.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-generator-revert.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-multiple-metadata-revert.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-object-store-metadata-revert.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 4,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.sharedworker",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.worker",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CBC.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CTR.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-GCM.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_HMAC.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 436,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 340,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 116,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 116,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 4,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/cshake.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 88,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/sha3.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 48,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 18,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 240,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 277,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 28,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 252,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 312,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 108,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 468,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 144,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/getPublicKey.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 43,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/idlharness.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 28,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 144,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 180,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 324,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 20,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/kmac.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mldsa.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mlkem.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 103,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 57,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports-modern.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 147,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 200,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 18,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 84,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 104,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 36,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 32,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 72,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 54,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 770,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 662,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/ed448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/x448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "nonpass": []
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 19,
+      "nonpass": []
+    },
+    {
+      "id": "clipboard-apis/dataTransfer-clearData",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "nonpass": [
+        {
+          "name": "Clear data from dataTransfer",
+          "status": "FAIL",
+          "message": "assert_equals: expected 0 but got 2"
+        }
+      ]
+    },
+    {
+      "id": "compression/decompression-extra-input.any",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 4,
+      "nonpass": [
+        {
+          "name": "decompressing deflate input with extra pad should still give the output",
+          "status": "TIMEOUT",
+          "message": "Test timed out"
+        },
+        {
+          "name": "decompressing gzip input with extra pad should still give the output",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "decompressing deflate-raw input with extra pad should still give the output",
+          "status": "NOTRUN",
+          "message": null
+        },
+        {
+          "name": "decompressing brotli input with extra pad should still give the output",
+          "status": "NOTRUN",
+          "message": null
+        }
+      ]
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http",
+      "outcome": "HARD_TIMEOUT",
+      "harness": null,
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http",
+      "outcome": "HARD_TIMEOUT",
+      "harness": null,
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http",
+      "outcome": "HARD_TIMEOUT",
+      "harness": null,
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http",
+      "outcome": "HARD_TIMEOUT",
+      "harness": null,
+      "subtests": 0,
+      "nonpass": []
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http",
+      "outcome": "HARD_TIMEOUT",
+      "harness": null,
+      "subtests": 0,
+      "nonpass": []
+    }
+  ],
+  "csp_corrected_server": {
+    "selection": "Exactly the five CSP IDs from the same first-100 cohort, filtered after selection.",
+    "summary": {
+      "suite_scope": {
+        "name": "ladybird-imported-testharness",
+        "full_upstream_wpt": false,
+        "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+        "server": "upstream wptserve; Python handlers, stash, substitutions, localhost aliases, two HTTP and two HTTPS ports (private CA)",
+        "excluded_types": [
+          "reftest",
+          "print-reftest",
+          "crashtest",
+          "wdspec",
+          "test262",
+          "aamtest",
+          "manual",
+          "visual"
+        ],
+        "denominator": "reported runtime subtests in selected imported files only"
+      },
+      "tests": 5,
+      "browsers": {
+        "vox": {
+          "tests": 5,
+          "outcomes": {
+            "COMPLETE": 5
+          },
+          "harness": {
+            "OK": 5
+          },
+          "subtests": {
+            "PASS": 12,
+            "FAIL": 48
+          },
+          "subtest_total": 60,
+          "subtest_pass_rate": 0.2,
+          "tests_all_pass": 0
+        }
+      },
+      "wall_seconds": {
+        "vox": 3.9
+      },
+      "launches": {
+        "vox": 1
+      },
+      "both_clean": {
+        "tests": 0
+      },
+      "identical_results": {
+        "tests": 0
+      },
+      "directories": {},
+      "slowest_ratio": [],
+      "largest_difference": []
+    },
+    "identity": {
+      "suite_scope": {
+        "name": "ladybird-imported-testharness",
+        "full_upstream_wpt": false,
+        "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+        "server": "upstream wptserve; Python handlers, stash, substitutions, localhost aliases, two HTTP and two HTTPS ports (private CA)",
+        "excluded_types": [
+          "reftest",
+          "print-reftest",
+          "crashtest",
+          "wdspec",
+          "test262",
+          "aamtest",
+          "manual",
+          "visual"
+        ],
+        "denominator": "reported runtime subtests in selected imported files only"
+      },
+      "started": "2026-11-08T14:15:02+0300",
+      "argv": [
+        "/tmp/vox-first100-csp-run.py",
+        "--output",
+        "Build/first100-csp-real-r2-20261108",
+        "--ladybird-ref",
+        "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "--new-since",
+        "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "--limit",
+        "100",
+        "--browsers",
+        "vox",
+        "--chunk-size",
+        "5",
+        "--browser-memory-gib",
+        "2",
+        "--require-all-pass",
+        "--wpt-server-root",
+        "/Users/alex/code/3rd/web-platform-tests"
+      ],
+      "ladybird_head": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "fixture_manifest": {
+        "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "repository": "/Users/alex/code/3rd/ladybird",
+        "prefixes": [
+          "Tests/LibWeb/Text/input/wpt-import",
+          "Tests/LibWeb/Text/expected/wpt-import"
+        ]
+      },
+      "selection_baseline": {
+        "revision": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "repository": "/Users/alex/code/3rd/ladybird",
+        "prefixes": [
+          "Tests/LibWeb/Text/input/wpt-import",
+          "Tests/LibWeb/Text/expected/wpt-import"
+        ]
+      },
+      "wpt_root": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/Tests/LibWeb/Text/input/wpt-import",
+      "host_cpus": 18,
+      "load_start": [
+        22.08,
+        31.39,
+        25.84
+      ],
+      "brave_version": null,
+      "vox_receipt": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+          "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+          "mode": "single",
+          "requested": "parallel",
+          "v_prod": false
+        },
+        "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-132148-eb3fda13/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "02e71dbe8c8c5411189aa63050dcad7bb26c66905a63e183950f870790ae55c1",
+          "dirty": true,
+          "head": "e823b88721e70c321903c73274cd0abc98ba61ae",
+          "repository_sha256": "f279e3365e6c0b2f77ed8f1895eb09009e56837aba17d8d542fa96896727abe7"
+        },
+        "renderer": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+          "default": "gg",
+          "gg_adapters": true,
+          "skia_free": false,
+          "skia_required_for": [
+            "text preparation and fallback",
+            "canvas",
+            "shadows",
+            "bitmap export",
+            "recording and picture playback"
+          ]
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "80ef8dbf3a0edee5060291cf684eff642713a7707fe78b919c343feb1bfbdf99",
+          "dirty": true,
+          "head": "c9e9322f427f44cc3128c99a081ab9d69d555ecf",
+          "repository_sha256": "28bf840354e98fb82396a78e93501d559c299d4abf8e007e1d32049be82686d5"
+        },
+        "request": {
+          "backend": "c",
+          "c_mode": "parallel",
+          "head": "e823b88721e70c321903c73274cd0abc98ba61ae",
+          "id": "23d442a2874a4820b716c8febd0a768f",
+          "renderer": "gg",
+          "v_prod": false
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "f11531f864d64a13a6c79a94c6bd2096cf36766450551bdfa55adca000598feb",
+          "dirty": true,
+          "head": "c0799bdc380671c8761a21fc1175bc63b51139e5",
+          "source_kind": "verified parsed buffers and sealed native inputs"
+        }
+      },
+      "pinned": {
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "c0a94fba2236031c4851de70c8a62f270562b89a6cfe41e00d2add12c47c0a99",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2810160b0ba3b0c167374131e91e512ba45b4e2f5ed7de20f3d02eec9f7b4709",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d7845b105cdaed2200696f9e0ae4ff02acf7b3b31459b745248d2bf28d5b03f8",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+      },
+      "width": 1024,
+      "height": 768,
+      "chunk_size": 5,
+      "limits": {
+        "startup": 30,
+        "navigation": 10,
+        "harness_start": 5,
+        "grace": 10,
+        "browser_memory_gib": 2.0
+      },
+      "server": {
+        "kind": "upstream-wptserve",
+        "checkout": "/Users/alex/code/3rd/web-platform-tests",
+        "revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+        "host": "localhost",
+        "http_ports": [
+          56356,
+          56357
+        ],
+        "https_ports": [
+          56358,
+          56359
+        ],
+        "unserved_protocols": {
+          "ws": [
+            56360
+          ],
+          "wss": [
+            56361
+          ]
+        },
+        "ca_certificate": "/Users/alex/code/vox2/Build/first100-csp-real-r2-20261108/certificates/cacert.pem",
+        "ca_sha256": "e4217bcfb0bc637d802c49cd0cd26962f42299442ff4a1c89a7ac7743e4ae0eb",
+        "source_files": {
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/__init__.py": "8a757e6c2014843fd01a341ee4c93c825ec5f39bf6e945bd5b7047a2ff6f0400",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/config.py": "90c5dd21b3a6d6f46a2cceda3c91a0e841ee2410e8f724b6dff23977d4ed893c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/connection.py": "22c59c91f3ba26e34358157c8bb472f88ad939c6fed8af951f37d2bfbcd70bed",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/errors.py": "e8ace66f261228cf51b8277a9f3ecfd8bb719a54ace4fda69de4bf49af2f4c4a",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/events.py": "1a9b444d5c1f7f73a96b14531cfe1bbddde04679f79c33f0aaaa51a0d97e9a97",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/exceptions.py": "3a57de347fdf70618cd2b1653a90f62463a45baaf41f10cdee749e1b33be1f3d",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/frame_buffer.py": "ee2d79a0f2ea7c03cf7d30c4e40f3b820816e05c41ee5fffbcc5f85def51ed35",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/settings.py": "cd1b3f6c0cfdaa0db58eca7a1d063e4d95a77086c20f0109ff5c193b276660d7",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/stream.py": "6f7840a51c2fc64e2b9541c3ac1d596f08303e890e6996bc30c65215111c5621",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/utilities.py": "470828210442983ad1bf2531d39e13c8e296d47963766fd9373de3c78a3db3f1",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/windows.py": "37f3fd9938b4559dbaf9e63642cbd6622e8d2f1ef7c6cc2f5196fb546a1dd739",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/__init__.py": "d6fed17439aa39358e149e16ba5acc7701cd05f40d8cfd17465a70e4a1726b75",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/exceptions.py": "46bc351647b909fabbd8ec2fc2b9d2e89b9c06fc37fdbc6ede8fee8ed01496b3",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/hpack.py": "aa838f72ca8c744e83cea208a31b3e518fabbccccf9f8012b6a8457db1f3501c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman.py": "d1e7e0b25d048d1a11088d0fb97f06f722b83f8f1d98e483e697a931b9314936",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_constants.py": "8a7d696ea53a1e4b63170439825b6b5d955d2f753893f42cb46f6b2108015b33",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_table.py": "e728a322e6b294878fc246e158c5ca7f7117b29797298ee16a4a6f3dd4912648",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/struct.py": "830ee8c66955cd7cb354457863abaf4b7c271ab274cce963a87fb12e926a5997",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/table.py": "902f12c1e4c9207de307faa51098f4ebd8ce9046101b340787010bafe4671a43",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/__init__.py": "3d4f98b3ed6e074f43cae4ca56ac070943a2e2cb20d5157fcab082a82cc8ada0",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/exceptions.py": "1c4709548ee42ee4deba0b7ec861c6abea736f8a456c30270114e8162c0a9d36",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/flags.py": "dbc84fe118f104bdc8e4ab3dfb1175db34dff46d1787c25afe224ba8373b3b8e",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/frame.py": "e42ffbdf4e3bce7d2a3017a511a915729f6ebef5c921b2e4097ec87ff83d0489",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/__init__.py": "b0db4010b05191b1abc32c3a46168ee50c5313c4c5587ab61aa321076fa4a8b6",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/_stream_exceptions.py": "bd2e571a45cd869a639e5ac04048cdc2665e251dc8610a3f02383791479c5263",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/common.py": "f1f46621904f254b42467bce614c41f4f5ef67aacf7db7d11c36c6ead3196bfb",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/dispatch.py": "1bea6b669b3eba6500e6f03adcf1f59768f47447c562751cf79b223bfc441585",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/extensions.py": "6ea603d9ce2bd26eb8e82cdb214cc7fa37d115b0243f9e5601444cb069ea7609",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/__init__.py": "d060d9288ce77a7b9c4af9440f236a82f2e79fab75595a606411e362596c7585",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/base.py": "0a2936d38c93244d51e8cb36f0e0a7c408d3cc0624c09008934241feeda4ee71",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/hybi.py": "bace292d3f76f99568a95f021124712fc09cb7d5a3ccb461ef47b116e256cb0b",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/http_header_util.py": "9a003299dc2f5c2552c7178cb1dd1ec1ee9de7b30120138f2b063fed8ab49ba1",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/msgutil.py": "a1a71af4bb1e58d442ddbff431395ea682225661ec5862a480b47806ad405194",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/stream.py": "7f8282b0c01056c177604e755acbcec3913467b67b5a2e15dbaf320cd9723a3f",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/util.py": "f13c20ffcec20173a25b7494257793fe54ff4aedaa544cf55ecc10cb23967830",
+          "/Users/alex/code/3rd/web-platform-tests/tools/third_party/six/six.py": "4ce39f422ee71467ccac8bed76beb05f8c321c7f0ceda9279ae2dfa3670106b3",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/docs/conf.py": "5ac333fd290c86d91c18530ae09bd354d064fdd440ed64c5c9c3851bb7f7c027",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/setup.py": "87b552bf033441a406e65a1dd102d8e375ad05a22da64835e8b067e6f9fc8007",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/base.py": "81a219ac2b98a7eba239ca4730d24a0d3a293f039d82376bd3eba276f4f5318e",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.py": "3267165da1879beace10f5dd4ff68db8bfbbcbac8ff736dae0c2809457d74477",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.sub.py": "9ad871406bef3d1bef57fdf29aeef2f7b6365f11aade764c8733f55bc711af58",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultsubpy/default.sub.py": "79ac4f25853a64e02eb81bbbe856a7a93f6c33b8e451d80eae4fd90030fe50ea",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/invalid.py": "4827239f0d462d95654e4b99240aad1908264684e1364b4cfcc2997ebebb160b",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/no_main.py": "b165350880e521a5bd47de630f9e42e0b5c45610f5315982b3b53465b3c28b6e",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/example_module.py": "f925058fca8d4e806d9ce0d22d55db2f93e0df118aab2c4ff4a190b06a81632c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/import_handler.py": "2a8977e4ff8c1174e608c9dafec5e524adee3cf2219913c4aa42f4301e97a598",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_data.py": "37b3e3b534b8470c8b75f35f525e563369053f25807c6e0418c44e417d8aad66",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers.py": "3272d89073aa6b0c9ae7a394d905252a8a37de10ac447e4802b157535fe2544d",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers_data.py": "ec4caec2cd6cfd91d8d7b5b16ac0b4547c67840f7a756373fb8ef4e6ad8cdead",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_string.py": "013a2a125eb356a7a67c56b26aa0a3fba480f660428ad41916dc5ff4646440a1",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_2.py": "e71815ac5fa17cf3933e2ae528453218111eda14f8145e4d1a1d711e2f9bf076",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_3.py": "aa9441158c9273d6777b660dee776aaa50e45b4ed67439c5e0357b2f51058487",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_cookies.py": "180a90c4910fa0649c04e1c8060d94881ed7bb633ef86a9f5b3bbf116a5433f3",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_handlers.py": "ad61d09080fce751f202c4442161517ee2285df8fa510ccf1bd7e2969816705f",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_input_file.py": "790617ef1ad35148e043b9b75e19d6d52d8bd90a00499038d8c5633c07805590",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_pipes.py": "7eedc059aa7531e276e05920d14b6a8b8e33526c7a3214b535812c068a83de80",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_request.py": "56ba853ed351d574325e5beaae7f798a8ef49f8ed7a7b4f74e3b7d39bc517178",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_response.py": "815646ca02126094d0a4352313d27a06e06da3f43c0f7ed69ff2c818c5b1a7d7",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_server.py": "f3320bd5d251eb5a708e606c52dccfab110914da7b5858c2f35235ca66c212f5",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_stash.py": "1c8886fb295fbee9a795a74da4b0098709d8dce501cb592f18f34deab2452043",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_config.py": "8eb3d5adb7bef997560b788f5714c4ddb80e07dbbac043b3d3f4f80db3faa4ea",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_replacement_tokenizer.py": "48ff6e90d26d23ec1f0bfa3af8a8bdb654815d70df211f82e805fdf96e78e5e9",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_request.py": "ca74dda01ad3d7b2979436215345f198d4cc3c793a0491aca581c33c5858292b",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_response.py": "1eb3f26fd7ba5e8b53b5419125b9ac0f20ced70409b685c956acaddea008d683",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_stash.py": "37e8a5a23ba45483526d7cbe0240bdd7f7dffdae934da6a915f1c1f66e9b3998",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/__init__.py": "43d9e569859eaf37b69367eabfb09c7e98e8ed7b9e63b186837fd961f10400af",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/__init__.py": "879c4b96b443f5356d16fb37891d368293f6cf4b2d90cfeaa2bbe14df929658e",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/cgi.py": "79ba98f3dbc82458cc785a95167dffe92940de47a6e4b7c7ce218b8e3821ee4d",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/test_cgi.py": "60287942dfc29e6fb27255859651fa5e302bef81c6710568424a662a42c07da4",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/config.py": "9b270173370908cd954affd446aabb80bd7980cb5ac2dc303620be92963c14e8",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/constants.py": "364c675b995159ce6fb75e392f48da01f1c5faff29bdf6131706509affeade7c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/handlers.py": "ccaa4c7b487b21909d4f7c12199088b57e8fbc3cb68f3705f4ebc4612a091c8a",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/logger.py": "a7d26967e170196d3c7fc017fa0708b6c8be27df4715745453e722e2ef5434e7",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/pipes.py": "79953d0eb5c79fb5e06055eb1d9f6f7d30c77e3f2e885e6815b36c8ea5c90e8e",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ranges.py": "80ad5dd6bc88bdf00dcfdbe67f4cb139a87d154f5e6c2beed20f45fbe9e52983",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/request.py": "30767f80fa432159317285846e6c5d2fec4a644c9ab4beb5fee349f0cef3c314",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/response.py": "69ef948acb90b4f30b41a6820cb2569477ec524b011b1ea858ea510e7dc0f9db",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/router.py": "f994b9956b3801854b8a66f504b30516060c9d76ca8a0d790db68d5706906ad4",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/routes.py": "b1d813ac53a12325eaa33c0cfb0b4fac70e0661293be5eb55779d1560409f546",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/server.py": "a01cb525cc56b3258b044c41343a74b38daff66f9efab26127b40cfc93c5877c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/__init__.py": "e1250cc6a298f098ab7ba7f2e18abd9cb5a533755d195d6199c07439dd02e72c",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/base.py": "2e5da0cefbc077153ff7608ccf1409ba907103683c81a3318b967e12f9c9288d",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/openssl.py": "85c9c715633d6654f5a74bc21d0e5c4d60da68a861222bae4989aae34811c54b",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/pregenerated.py": "de13e631b0bb198e93bf5c6784d1545725be1237c4f149f422ec507226883661",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/stash.py": "1c9e8699443e8648dd25aae2a812e5424ba2aadb2aa8a8f22996cdbb56202d4b",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/utils.py": "208f4d1516efeb29be91799dafffe742d0a8a5d8d28de1c57ca1b97291ab05fd",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/wptserve.py": "d24baf5aeae82f2b1de0716df0495bdf810dfa9e5cefb5dd87740217e421e873",
+          "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ws_h2_handshake.py": "e572ed34743be3c6368d7dc6d0f3a5a113906d01cba6bc25490630025f659fdc"
+        }
+      },
+      "base_url": "http://localhost:56356",
+      "load_end": [
+        21.27,
+        30.9,
+        25.73
+      ],
+      "finished": "2026-11-08T14:15:10+0300",
+      "changed_inputs": [],
+      "unexpected_posts": 0,
+      "aborted": null
+    },
+    "guard": {
+      "command": [
+        "python3",
+        "/tmp/vox-first100-csp-run.py",
+        "--output",
+        "Build/first100-csp-real-r2-20261108",
+        "--ladybird-ref",
+        "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "--new-since",
+        "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "--limit",
+        "100",
+        "--browsers",
+        "vox",
+        "--chunk-size",
+        "5",
+        "--browser-memory-gib",
+        "2",
+        "--require-all-pass",
+        "--wpt-server-root",
+        "/Users/alex/code/3rd/web-platform-tests"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1771585536,
+      "elapsed_seconds": 15.337800957999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rows": [
+      {
+        "browser": "vox",
+        "test": "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http",
+        "outcome": "COMPLETE",
+        "harness": "OK",
+        "harness_message": null,
+        "subtests": [
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and no-redirect redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and swap-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and keep-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and no-redirect redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and swap-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          }
+        ],
+        "reported_url": "/content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http.html",
+        "url_matches": true,
+        "document_ms": 131.012,
+        "cycle_ms": 155.762,
+        "page_ms": 127.60000000000002,
+        "launch": "vox-000-000",
+        "first_of_launch": true
+      },
+      {
+        "browser": "vox",
+        "test": "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http",
+        "outcome": "COMPLETE",
+        "harness": "OK",
+        "harness_message": null,
+        "subtests": [
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          }
+        ],
+        "reported_url": "/content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http.html",
+        "url_matches": true,
+        "document_ms": 787.148,
+        "cycle_ms": 802.529,
+        "page_ms": 782.9999999999999,
+        "launch": "vox-000-000",
+        "first_of_launch": false
+      },
+      {
+        "browser": "vox",
+        "test": "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http",
+        "outcome": "COMPLETE",
+        "harness": "OK",
+        "harness_message": null,
+        "subtests": [
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and no-redirect redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and swap-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and keep-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and no-redirect redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and swap-origin redirection from http context.",
+            "status": "PASS",
+            "message": null
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for sharedworker-import-data to same-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          }
+        ],
+        "reported_url": "/content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http.html",
+        "url_matches": true,
+        "document_ms": 192.745,
+        "cycle_ms": 209.308,
+        "page_ms": 167.70000000000005,
+        "launch": "vox-000-000",
+        "first_of_launch": false
+      },
+      {
+        "browser": "vox",
+        "test": "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http",
+        "outcome": "COMPLETE",
+        "harness": "OK",
+        "harness_message": null,
+        "subtests": [
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          }
+        ],
+        "reported_url": "/content-security-policy/gen/top.meta/script-src-self/worker-import-data.http.html",
+        "url_matches": true,
+        "document_ms": 856.001,
+        "cycle_ms": 871.417,
+        "page_ms": 838.0999999999999,
+        "launch": "vox-000-000",
+        "first_of_launch": false
+      },
+      {
+        "browser": "vox",
+        "test": "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http",
+        "outcome": "COMPLETE",
+        "harness": "OK",
+        "harness_message": null,
+        "subtests": [
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and keep-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and no-redirect redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.",
+            "status": "FAIL",
+            "message": "assert_unreached: main promise resolved unexpectedly Reached unreachable code"
+          },
+          {
+            "name": "Content Security Policy: Expects blocked for worker-import-data to same-http origin and swap-origin redirection from http context.: securitypolicyviolation",
+            "status": "FAIL",
+            "message": "assert_equals: One violation event should be fired expected 1 but got 0"
+          }
+        ],
+        "reported_url": "/content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http.html",
+        "url_matches": true,
+        "document_ms": 827.529,
+        "cycle_ms": 844.096,
+        "page_ms": 821,
+        "launch": "vox-000-000",
+        "first_of_launch": false
+      }
+    ]
+  },
+  "limitations": [
+    "Production receipt inputs predate several final source fixes; this executable cannot validate code it does not contain.",
+    "The five CSP cases report with the corrected server; all five still have failing subtests.",
+    "Private localhost TLS CA is exercised by the server unit client; the browser was launched over HTTP. WebSocket listeners are not implemented."
+  ]
+}

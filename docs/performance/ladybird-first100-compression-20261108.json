@@ -1,0 +1,385 @@
+{
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-first100-server-compression.tar.gz",
+  "archive_sha256": "432ab9311c0e35f6f337ecc958ca8ca31503da483af5546127494e6f8f4d6678",
+  "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "selection_baseline": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+  "scope": "Actual native TransformStream/JSC bindings in the stock upstream shell harness; no browser-wide pass claim.",
+  "fix_commit": "15a9f7020",
+  "upstream_case": "compression/decompression-extra-input.any",
+  "result": {
+    "harness": 0,
+    "tests": [
+      {
+        "name": "decompressing deflate input with extra pad should still give the output",
+        "status": 0,
+        "message": null
+      },
+      {
+        "name": "decompressing gzip input with extra pad should still give the output",
+        "status": 0,
+        "message": null
+      },
+      {
+        "name": "decompressing deflate-raw input with extra pad should still give the output",
+        "status": 0,
+        "message": null
+      },
+      {
+        "name": "decompressing brotli input with extra pad should still give the output",
+        "status": 0,
+        "message": null
+      }
+    ]
+  },
+  "same_subtest_names_as_published_browser": true,
+  "assertions_unchanged": true,
+  "sources": {
+    "browserjs/compression_stream_binding_jsc.c.v": "9bd248bafa68ceca9a985f7e90dfab8452d59af8456004bebd081914d1d20eaa",
+    "browserjs/compression_stream_binding_test.v": "ceb6998d652dba52f884d08a9dd9ad2963a5bb4b42cbf97bd9a41809739318b8",
+    "browserjs/transform_stream_host_jsc.c.v": "5d47c2d5559505de3768b548c1b8265e7bf402540d16a49e4cfc9c0fe11609a1",
+    "compact/compression_streams.v": "47b60d946741534228c406a14638fb82118ccbe202d2dbb5c74e4d04e4f917d7",
+    "compact/document.v": "bdd1ec9e35361ffed3bec24f08293f6826beca77d210776743e00d2e8e981da0",
+    "compression/PORT_STATUS.md": "d26acde80960e69cc2841d0ee561a6730984d07d75dd7a88a818ceb5d3eb83da",
+    "compression/compression_stream.v": "e2c192cd965541d4c31fd9471cfc897a33516d2aeca2f9ee759e8f3d59283da1",
+    "compression/compression_test.v": "79129f0e9156fc1c64695dd44c4b24281ccb715b1ec5cd55f68d7f4566d361a6",
+    "compression/decompression_stream.v": "9cd2961b183173a86f48b9f5481cc33870bd4e5cf760c00e56c3c8fee6345c1e",
+    "compression/incremental_decoder.c.v": "4c29a2a0492411ccfaaa5360846e23a186d531f544f15208ab969c0172580dad",
+    "compression/incremental_decoder_test.v": "75097d8737b88dc3cb748e0354f79cc642c835dfa53562e98477ca4b826c0fa1",
+    "compression/native_decoder.h": "ccf16c035852ba55efb2cbb4d47033dfa052da065c8774db87d123e225abbb97"
+  },
+  "fixtures": {
+    "compression/resources/decompression-input.js": "b86fff0a0b52133cc20d175d48ea89c29db4a5c016f5c81e19ad9a3ff68c096f",
+    "compression/decompression-extra-input.any.js": "4a577fe09119111d837bdaa3542d5311b42c5195fa4432bd71f4100a6e4b97f0"
+  },
+  "checks": {
+    "model_test_files": 2,
+    "model_test_functions": 12,
+    "native_test_functions": 3,
+    "guards": {
+      "first100-compression-binding-compile-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-nocache",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang",
+          "-w",
+          "-skip-running",
+          "-o",
+          "Build/first100-compression-20261108/binding",
+          "browserjs/compression_stream_binding_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5045469184,
+        "elapsed_seconds": 131.054805917,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-binding-r2-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-nocache",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang",
+          "-w",
+          "-skip-running",
+          "-o",
+          "Build/first100-compression-20261108/binding-r2",
+          "browserjs/compression_stream_binding_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5028167680,
+        "elapsed_seconds": 103.019232833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-binding-r3-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang",
+          "-w",
+          "-skip-running",
+          "-o",
+          "Build/first100-compression-20261108/binding-r3",
+          "browserjs/compression_stream_binding_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5033803776,
+        "elapsed_seconds": 72.85139,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-compile-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-nocache",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang",
+          "-w",
+          "-skip-running",
+          "-o",
+          "Build/first100-compression-20261108/transform",
+          "browserjs/transform_stream_host_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5050073088,
+        "elapsed_seconds": 162.893432084,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-model-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "test",
+          "compression"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 465338368,
+        "elapsed_seconds": 35.791005458,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-model-r2-20261108.json": {
+        "command": [
+          "v",
+          "-b",
+          "c",
+          "-nocache",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-cc",
+          "clang",
+          "-w",
+          "test",
+          "compression"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 541999104,
+        "elapsed_seconds": 27.272786833999998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-native-20261108.json": {
+        "command": [
+          "Build/first100-compression-20261108/binding-r2"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 37814272,
+        "elapsed_seconds": 0.556761,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-compression-native-r3-20261108.json": {
+        "command": [
+          "Build/first100-compression-20261108/binding-r3"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 8945664,
+        "elapsed_seconds": 0.617290542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-csp-real-r2-20261108.json": {
+        "command": [
+          "python3",
+          "/tmp/vox-first100-csp-run.py",
+          "--output",
+          "Build/first100-csp-real-r2-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--new-since",
+          "963d46a829f3e1b79f44dba9d02afb70654300fa",
+          "--limit",
+          "100",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "5",
+          "--browser-memory-gib",
+          "2",
+          "--require-all-pass",
+          "--wpt-server-root",
+          "/Users/alex/code/3rd/web-platform-tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1771585536,
+        "elapsed_seconds": 15.337800957999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-real-server-20261108.json": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/first100-real-server-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--new-since",
+          "963d46a829f3e1b79f44dba9d02afb70654300fa",
+          "--limit",
+          "100",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "2",
+          "--require-all-pass",
+          "--wpt-server-root",
+          "/Users/alex/code/3rd/web-platform-tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1294581760,
+        "elapsed_seconds": 668.7545297089999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-wpt-server-r2-20261108.json": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "wpt*test.py",
+          "-v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 71286784,
+        "elapsed_seconds": 2.041657625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-wpt-server-r3-20261108.json": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "wpt*test.py",
+          "-v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 67993600,
+        "elapsed_seconds": 2.726959959,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-wpt-server-r4-20261108.json": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "wpt*test.py",
+          "-v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 67993600,
+        "elapsed_seconds": 2.6667675419999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "first100-wpt-upstream-server-20261108.json": {
+        "command": [
+          "python3",
+          "-m",
+          "unittest",
+          "discover",
+          "-s",
+          "tools",
+          "-p",
+          "wpt_upstream_server_test.py",
+          "-v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 65667072,
+        "elapsed_seconds": 1.283908625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "limitations": [
+    "The source probe does not exercise document loading, navigation or production allocation.",
+    "The first two native compile attempts failed in the existing V Brotli helper linkage. Compression now owns native zlib/Brotli codec calls directly.",
+    "An initial regression assertion inspected write rejection before its callback; the final test awaits the write promise and both terminal errors pass."
+  ]
+}

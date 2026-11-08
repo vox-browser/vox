@@ -271,3 +271,36 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
     --limit 100 --browsers vox --chunk-size 20 \
     --browser-memory-gib 2 --require-all-pass
 ```
+
+## Upstream server and compression continuation
+
+The next published browser, SHA-256
+`c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0`,
+passes **77/100** cases in a fresh windowed run of the same pinned cohort.
+It reports 8,375 PASS, 8 FAIL, 4 TIMEOUT and 15 NOTRUN subtests. The first
+upstream-server configuration omitted WebSocket placeholders used by a shared
+security helper, so five CSP cases reached the outer timeout without reports.
+After correcting the configuration, those exact five cases all report with
+harness OK; all five still contain failing assertions. The 100-case batch
+remains incomplete. The executable predates several final IndexedDB fixes.
+
+The runner now optionally uses an existing upstream WPT checkout with
+`--wpt-server-root`. Python upload handlers, stash, response headers,
+substitution, localhost aliases and two HTTP/HTTPS ports use real wptserve.
+All 22 tooling tests pass, including binary upload/stash and a TLS client
+trusting the isolated test CA. WebSocket listeners remain unavailable and are
+recorded explicitly; the browser run uses HTTP. See the
+[server/browser report](performance/ladybird-first100-upstream-server-20261108.json).
+
+Commit `15a9f7020` replaces the JavaScript decompression buffer with an owned
+incremental zlib/Brotli context behind native TransformStream queues. Decoded
+bytes reach a pending reader before trailing input errors the stream, without
+requiring writable close. It accepts the current `brotli` IDL spelling,
+validates BufferSource internal slots, and closes codec state on cancellation,
+errors and runtime shutdown. All four unchanged upstream extra-input subtests
+pass, with names matching the saved browser run. Twelve model functions and
+three native binding functions pass, including the optional upstream harness.
+The [compression report](performance/ladybird-first100-compression-20261108.json)
+retains successful and failed development attempts. This source check does not
+replace production browser validation. Raw evidence is archived locally and
+all completed job scratch has been removed.
