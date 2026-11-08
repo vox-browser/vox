@@ -70,7 +70,6 @@ pub fn (mut b BitReader) read_f16() !f32 {
 pub fn (mut b BitReader) read_name() !string {
 	length := int(b.read_u32([U32Code{}, U32Code{ bits: 4 }, U32Code{ bits: 5, offset: 16 },
 		U32Code{ bits: 10, offset: 48 }]!)!)
-	if length > b.available_bits() / 8 { return error('Truncated JPEG XL name') }
 	mut result := strings.new_builder(length * 2)
 	for _ in 0 .. length {
 		value := u8(b.read(8)!)
@@ -94,6 +93,10 @@ pub fn (mut b BitReader) skip_extensions() ! {
 			total += size
 		}
 	}
-	if total > u64(b.available_bits()) { return error('Truncated JPEG XL extensions') }
-	b.skip(int(total))!
+	if total > u64(b.available_bits()) {
+		// Match the source skip: consume available payload before reporting EOF.
+		b.skip(b.available_bits() + 1)!
+	} else {
+		b.skip(int(total))!
+	}
 }

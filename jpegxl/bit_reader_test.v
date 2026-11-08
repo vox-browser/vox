@@ -111,3 +111,16 @@ fn test_name_bytes_are_latin1_scalars_and_truncation_is_checked() {
 		assert false
 	}
 }
+
+fn test_truncated_names_and_extensions_preserve_source_consumption() {
+	mut name := new_bit_reader([u8(0x09), 0])
+	if _ := name.read_name() {
+		assert false
+	}
+	assert name.position == 14
+	mut extension := new_bit_reader([u8(0x81), 0, 0])
+	if _ := extension.skip_extensions() {
+		assert false
+	}
+	assert extension.position == 24
+}
