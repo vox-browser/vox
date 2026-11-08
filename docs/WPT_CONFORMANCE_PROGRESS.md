@@ -117,6 +117,48 @@ build was queued. A new full-suite result remains pending. Raw evidence is local
 at `/Users/alex/.cache/vox/wpt/20261108-trusted-types.tar.gz`, with its hash and
 per-attempt failures in the manifest.
 
+## Native token-list bindings and additional source checks
+
+The [token-list verification manifest](performance/wpt-token-lists-20261108.json)
+records the next fixes and all development attempts. These are source checks;
+they do not establish a new overall WPT percentage.
+
+| Fix | Commit |
+|---|---|
+| Trusted Types argument counts, accessor names, and native Window receiver/factory lookup across iframe realms | `7ef5b8d9c` |
+| Validate every token before mutating a DOMTokenList ordered set | `43d0cdcd8` |
+| Destroy native test documents before releasing storage, removing queued load tasks | `2cd4bd68d` |
+| Bind token lists and reflected token attributes to native DOM algorithms | `7a4904ebc` |
+
+The new bindings cover `classList`, `part`, `relList`, iframe `sandbox`, output
+`htmlFor`, and link `sizes`. Lists retain identity and read current attributes;
+invalid token mutations leave their ordered sets unchanged. Iteration uses the
+[specified Array intrinsics](https://webidl.spec.whatwg.org/#es-iterable).
+Forwarded assignments consult the public getter, preserve the original value,
+and follow the [Web IDL setter steps](https://webidl.spec.whatwg.org/#dfn-attribute-setter).
+
+**All 40 final focused integration tests pass in both allocator modes**, and
+the production-allocation binary also passes with shared node properties disabled.
+They include all 175 token-attribute/namespace combinations from the existing
+coverage table, plus live mutation, indexed/prototype lookup, iteration, receiver
+checks, forwarding, mutation observers, and custom-element reactions. The two
+native ordered-set validation regressions also pass. The final binaries and listed
+source inputs retain their recorded hashes throughout the checks.
+
+An additional existing SVG rendering test remains failing: it expects two gradient
+path commands and observes zero. An isolated control with the legacy class-list
+bootstrap reproduces that assertion; its other two tests pass. The assertion was
+not relaxed, and its results remain separate from the passing binding checks.
+Concurrent renderer edits limit attribution; no pixel-conformance claim is made.
+
+The available production bundle remains `843893a4a6f9…`, which predates these
+changes. The shared worker has the current build request; its recent attempts
+reject source inputs that change before C preprocessing. Production WPT, pixel
+validation, and a new full run remain pending. **100% conformance is still open.**
+The manifest links three verified local evidence archives; completed job outputs
+and the temporary combined test source have been removed from `Build/` and the
+canonical source tree.
+
 ## Full run and comparison
 
 | Cohort | Executions / distinct files | Passing / reported subtests | Reported pass rate |
