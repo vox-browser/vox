@@ -3729,14 +3729,34 @@ fn parse_html_integer(value string) ?int {
 
 	mut result := 0
 	for index < value.len && value[index] >= `0` && value[index] <= `9` {
-		result = result * 10 + int(value[index] - `0`)
+		digit := int(value[index] - `0`)
+		if result > (i64(9223372036854775807) - digit) / 10 { return none }
+		result = result * 10 + digit
 		index++
 	}
 	return sign * result
 }
 
 pub fn (e &Element) default_tab_index_value() int {
-	if e.is_html_element() && e.local_name() in ['iframe', 'object'] {
+	if e.is_html_element() {
+		if e.local_name() in ['a', 'area', 'button', 'frame', 'iframe', 'input', 'object', 'select', 'textarea'] {
+			return 0
+		}
+		if e.local_name() == 'summary' {
+			if parent := e.as_node().parent_element() {
+				if is_html_element_with_local_name(parent, 'details') {
+					for child in parent.as_node().children_as_vector() {
+						if element := child.as_element() {
+							if is_html_element_with_local_name(element, 'summary') {
+								return if voidptr(element) == voidptr(e) { 0 } else { -1 }
+							}
+						}
+					}
+				}
+			}
+		}
+	} else if e.local_name() == 'a' && (e.namespace_uri() or { '' }) in [namespace_svg_uri,
+		'http://www.w3.org/1998/Math/MathML'] {
 		return 0
 	}
 	return -1
@@ -3745,6 +3765,9 @@ pub fn (e &Element) default_tab_index_value() int {
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
 pub fn (e &Element) tab_index() int {
 	tab_index := parse_html_integer(e.get_attribute_value('tabindex')) or {
+		return e.default_tab_index_value()
+	}
+	if tab_index < -2147483648 || tab_index > 2147483647 {
 		return e.default_tab_index_value()
 	}
 	return tab_index
@@ -5934,9 +5957,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	// HTMLElement's base hook and body/frameset WindowEventHandlers run after
 	// Element's attribute steps, including the pinned source namespace FIXME.
 	defer {
-		if e.is_html_element() && (is_global_event_handler_content_attribute(local_name)
-			|| (e.local_name() in ['body', 'frameset']
-				&& is_window_event_handler_content_attribute(local_name))) {
+		namespace := e.namespace_uri() or { '' }
+		if ((e.is_html_element() || (namespace_ == none && namespace in [namespace_svg_uri,
+			'http://www.w3.org/1998/Math/MathML'])) && is_global_event_handler_content_attribute(local_name))
+			|| (e.is_html_element() && e.local_name() in ['body', 'frameset']
+				&& is_window_event_handler_content_attribute(local_name)) {
 			unsafe { &EventTarget(&e) }.element_event_handler_attribute_changed(local_name, value)
 		}
 	}

@@ -86,7 +86,7 @@ window.__ladybirdDispatch = function (name, id, replay) {
 		compact_element_click_bootstrap()
 }
 
-// HTMLElement's GlobalEventHandlers (on* IDL attributes). Ordinary HTML elements
+// HTML, SVG and MathML GlobalEventHandlers (on* IDL attributes). Native elements
 // read and write their native handler slots, which also hold the compiled
 // content attributes, so every native dispatch runs them. Elements whose inline
 // handlers the compact layer still replays (image, object, media, ...) keep an
@@ -100,19 +100,20 @@ function __compactNativeInlineHandlers(receiver){
 (function(pairs){
  if(typeof __compactInlineHandler!=="function")return;
  const apply=Reflect.apply,define=Object.defineProperty,getOwn=Object.getOwnPropertyDescriptor,native=__compactInlineHandler;
- function check(receiver){
+ function check(receiver,namespace){
   const s=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
-  if(!s||s.namespaceURI!=="http://www.w3.org/1999/xhtml")throw new TypeError("Illegal HTMLElement receiver");
+  if(!s||s.namespaceURI!==namespace)throw new TypeError("Illegal event handler receiver");
  }
+ for(const [constructor,namespace] of [[HTMLElement,"http://www.w3.org/1999/xhtml"],
+  [SVGElement,"http://www.w3.org/2000/svg"],[MathMLElement,"http://www.w3.org/1998/Math/MathML"]]){
  for(const [attribute,event] of pairs){
-  // Bound elements already expose these two as native own accessors.
-  if(event==="wheel"||event==="scrollend")continue;
   const accessors={
-   get [attribute](){check(this);const value=apply(native,undefined,[0,this,event]);return value===undefined?null:value;},
-   set [attribute](value){check(this);if(apply(native,undefined,[1,this,event,value])!==true)define(this,attribute,{value:value,writable:true,enumerable:true,configurable:true});}
+   get [attribute](){check(this,namespace);const value=apply(native,undefined,[0,this,event]);return value===undefined?null:value;},
+   set [attribute](value){check(this,namespace);if(apply(native,undefined,[1,this,event,value])!==true)define(this,attribute,{value:value,writable:true,enumerable:true,configurable:true});}
   };
   const descriptor=getOwn(accessors,attribute);
-  define(HTMLElement.prototype,attribute,{get:descriptor.get,set:descriptor.set,enumerable:true,configurable:true});
+  define(constructor.prototype,attribute,{get:descriptor.get,set:descriptor.set,enumerable:true,configurable:true});
+ }
  }
 })(' + browserjs.element_inline_handler_pairs_json() + r');
 '

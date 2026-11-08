@@ -25,7 +25,8 @@ const HTMLTextAreaElement=__makeHTMLConstructor("HTMLTextAreaElement");
 const HTMLSelectElement=__makeHTMLConstructor("HTMLSelectElement");
 const HTMLMetaElement=__makeHTMLConstructor("HTMLMetaElement");
 function SVGElement(){throw new TypeError("Illegal SVGElement constructor");}
-for(const [constructor,parent,name] of [[HTMLElement,Element,"HTMLElement"],[HTMLIFrameElement,HTMLElement,"HTMLIFrameElement"],[HTMLInputElement,HTMLElement,"HTMLInputElement"],[HTMLTemplateElement,HTMLElement,"HTMLTemplateElement"],[HTMLLinkElement,HTMLElement,"HTMLLinkElement"],[HTMLScriptElement,HTMLElement,"HTMLScriptElement"],[HTMLButtonElement,HTMLElement,"HTMLButtonElement"],[HTMLFormElement,HTMLElement,"HTMLFormElement"],[HTMLDialogElement,HTMLElement,"HTMLDialogElement"],[HTMLTextAreaElement,HTMLElement,"HTMLTextAreaElement"],[HTMLSelectElement,HTMLElement,"HTMLSelectElement"],[HTMLMetaElement,HTMLElement,"HTMLMetaElement"],[SVGElement,Element,"SVGElement"]]){
+function MathMLElement(){throw new __HTMLConstructorTypeError("Illegal MathMLElement constructor");}
+for(const [constructor,parent,name] of [[HTMLElement,Element,"HTMLElement"],[HTMLIFrameElement,HTMLElement,"HTMLIFrameElement"],[HTMLInputElement,HTMLElement,"HTMLInputElement"],[HTMLTemplateElement,HTMLElement,"HTMLTemplateElement"],[HTMLLinkElement,HTMLElement,"HTMLLinkElement"],[HTMLScriptElement,HTMLElement,"HTMLScriptElement"],[HTMLButtonElement,HTMLElement,"HTMLButtonElement"],[HTMLFormElement,HTMLElement,"HTMLFormElement"],[HTMLDialogElement,HTMLElement,"HTMLDialogElement"],[HTMLTextAreaElement,HTMLElement,"HTMLTextAreaElement"],[HTMLSelectElement,HTMLElement,"HTMLSelectElement"],[HTMLMetaElement,HTMLElement,"HTMLMetaElement"],[SVGElement,Element,"SVGElement"],[MathMLElement,Element,"MathMLElement"]]){
  Object.setPrototypeOf(constructor,parent);
  Object.setPrototypeOf(constructor.prototype,parent.prototype);
  Object.defineProperty(constructor,"prototype",{writable:false});
@@ -53,6 +54,7 @@ function __compactElementPrototype(state){
   const name=String(state.tagName),constructor=__compactSVGInterfaces[name.slice(name.indexOf(":")+1)];
   return constructor?constructor.prototype:SVGElement.prototype;
  }
+ if(state.namespaceURI==="http://www.w3.org/1998/Math/MathML")return MathMLElement.prototype;
  if(state.namespaceURI!=="http://www.w3.org/1999/xhtml")return Element.prototype;
  const name=String(state.tagName),local=name.slice(name.indexOf(":")+1);
  const constructor=__compactHTMLInterfaces[local];
