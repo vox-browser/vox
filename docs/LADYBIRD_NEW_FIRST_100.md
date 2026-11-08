@@ -161,6 +161,42 @@ the fixes. The full first-100 batch is not green. The
 retains all results, input hashes, bounded-check receipts, development failures,
 and the local evidence archive identity.
 
+## Public-key derivation and Blob source checks
+
+Commit `eec0bbbba` adds `crypto.subtle.getPublicKey()` for all 15 currently
+supported asymmetric algorithm names. It derives public material from the native
+private-key handle, including non-extractable keys and EC keys without a retained
+public point. Returned keys are distinct, extractable public keys with normalized
+usages. Capability errors reject immediately; key-type, usage and derivation
+results settle through the crypto task source.
+
+All 11 model and 15 native binding test functions pass. The unchanged upstream
+`WebCryptoAPI/modern-algos/getPublicKey.https.any` file passes **37/43 subtests**,
+versus zero in the original baseline. Its six remaining failures occur during
+`generateKey()` for `MLKEM768-P256`, `MLKEM768-X25519`, and `MLKEM1024-P384`, each
+with ordinary and empty public-key usages. Those hybrid algorithms remain
+unsupported; the full upstream file is still failing.
+
+The same continuation verifies the earlier Blob implementations against both
+unchanged upstream files: `Blob-text.any` passes **16/16**, and
+`Blob-textStream.any` passes **8/8**. The original baseline passed 13 and zero,
+respectively. These checks validate commits `99e7bece5` and `f3c82806a`; no Blob
+implementation changes were needed here.
+
+Every case and subtest-name multiset matches the original cohort. Assertions
+and upstream script bytes remain unchanged. The source checks use the stock
+shell harness, native bindings and default allocation, with no windowed or
+worker acceptance credit. The full first-100 batch remains unfinished, and
+production validation still needs a newer completed browser bundle.
+
+The first binding selection failed two fixture expectations. The new usage
+conversion fixture now follows the pinned WebIDL generator's behavior without
+IteratorClose on conversion failure. Commit `f4f3c1438` corrects an existing
+AES generation expectation to the upstream KeyUsage enum order. The successful
+26-function rerun, all upstream results, source hashes, guard receipts and local
+archive identity are retained in the
+[public-key manifest](performance/ladybird-first100-public-key-20261108.json).
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh

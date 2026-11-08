@@ -1,0 +1,695 @@
+{
+  "workspace": "/Users/alex/code/vox2",
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "implementation_commit": "eec0bbbba",
+  "fixture_correction_commit": "f4f3c1438",
+  "all_first_100_pass": false,
+  "scope": "SubtleCrypto.getPublicKey native and model implementation, plus unchanged upstream Blob text checks in the same first-100 cohort",
+  "source_inputs": {
+    "webcrypto/public_key_test.v": "2885f338babc15c34297e6b57de0082aadd50cdcfc45da6a8d6a25fdac040de4",
+    "webcrypto/subtle_crypto_binding_test.v": "ba9284652d30ebd7ab0894b632e846cf64a6216ccf8952dd9ea51a9924b692a9",
+    "webcrypto/usage_normalization_test.v": "fe6c2050a03a3e932770d9558464a84c56a67384f1a14562a9daa5b61cac85a1",
+    "browserjs/crypto_public_key_host_test.v": "6ed4fad1cd662014b140a6e53588cd0dc0fed9f67bb23ac5e15ffb83e3e3fd8c",
+    "browserjs/crypto_generate_host_test.v": "b905e79b0c5b726e3fe0447788387937fd99919e2af84a5da3b3a47b9b6f440a",
+    "browserjs/crypto_export_host_test.v": "1641815c3cafd467ec429d3c6612828c23cf5f0f28e69fb729279cc4b80fdadd",
+    "browserjs/crypto_key_host_test.v": "b09cd7292aff2175ef1a13c79845d83f3803d9ad3c003fb876be8e29be924eaa",
+    "webcrypto/public_key.v": "39f7ab9139ddc1bd3c86f058140c3a0533ae36e249b9c99f3ec30b134ed159fb",
+    "webcrypto/subtle_crypto_binding.v": "07de46479aeddc9581f11eac7c8a04a52c9f28fc1e62782692f3a04a52ea3f68",
+    "browserjs/crypto_host_jsc.c.v": "42a62c392f8b99f1bd2d1adf54a93593bdde43e5a547dc67130ad30ed62ca374",
+    "browserjs/crypto_public_key_host_jsc.c.v": "ab235e93ed0f99d31ab0c083670e6329fecccfdf719c4faca6e4d46d5d26a614",
+    "browserjs/zz_first100_public_key_wpt_20261108_test.v": "50c4e01ae7713a1ed2296b4f1a2fb48697a62aff7c8674709feef4d9f7cd83e9"
+  },
+  "blob_check_inputs": {
+    "browserjs/zz_first100_public_key_blob_wpt_20261108_test.v": "5b511ae3064e3a0f30067df46a50707dfdf6e1b5df61a605f1c7b516d2714b3a",
+    "browserjs/blob_host_jsc.c.v": "2c0895fcf8894ba4fe91b7d7becaf982d40340dd8ff3123a641509c71d113ee2",
+    "browserjs/readable_stream_host_jsc.c.v": "934e9b5f93bb67459a06a80b17c1a431477d112195cae3771b6a8dacfbb75ea5",
+    "browserjs/text_encoder_binding_jsc.c.v": "31f05fd942ecfbd6c2f402808a3c8fe8f8919ae63db5bb297422c9b8687b2718",
+    "html/blob_text.v": "89269e384506e2448a6d416bac06ddd854da5a0496d55831b3a82813e54d98e7",
+    "html/blob_text_stream.v": "0527921cf3da2b83e7beb691e201d6b582d212d79e845ce1ba952e6a1293c5ec",
+    "fileapi/blob.v": "f3d3b56214ff4e7aede3713911a50fcfa398e0d94142598bc7b21a0732d9bc23"
+  },
+  "upstream_source_hashes": {
+    "Libraries/LibWeb/Crypto/SubtleCrypto.cpp": "45688d2dd1ca494f8828fdb3fc96e9fabd37808ef837d3c76efdd261118ee3c0",
+    "Libraries/LibWeb/Crypto/SubtleCrypto.idl": "4cb0afee7b0795700e7c85f5a16e36b2c152baf5ff440271075c102c5a71ae72",
+    "Libraries/LibWeb/Crypto/CryptoAlgorithms.cpp": "5e828964aa9e2ac8aa322a9c25a7146701b8bbf10ca3fea99c793f575d706a60",
+    "Libraries/LibWeb/Crypto/CryptoKey.idl": "385369d97e323b3f4f615e9d0b1768f34d7aa6df67fee1cd85bccf3e58d60adb",
+    "Meta/Utils/webidl_parser.py": "dae62fa8dd1a55f5b6a9e91de496c8cdf5418ed9462d76f7c469c345caa9b1e1",
+    "Meta/Generators/libweb_bindings/to_idl_value.py": "052f2f722b1eb90e9968019727cef87c09002d6dfcf2c5458688e76cc1a694dd"
+  },
+  "unmodified_upstream_scripts": {
+    "resources/testharness.js": "b74d714183ab224df15612a6af6b65eb1ffc0d8f5501db34379308034d668622",
+    "WebCryptoAPI/util/helpers.js": "9dfd282f2bb5255ece417b7815a36ad4b16a91c67bc194a052ae58756843d11a",
+    "WebCryptoAPI/modern-algos/getPublicKey.https.any.js": "2d42c1318c867dfac39034a6bc11e27a1cb8e7767ffc4803615b8464ec2e5f85",
+    "FileAPI/support/Blob.js": "a1152b82af45d952c56f8b6f82c3a87e9ac58f834114a9813778418bfa7df25d",
+    "FileAPI/blob/Blob-text.any.js": "30903a3cf782cb650bfd87401584c385ac8178bbb752a557504d417674725f99",
+    "FileAPI/blob/Blob-textStream.any.js": "60d54d905e42911320df2a37c1ad0021985c2cb980215849220daaccf4d09c75"
+  },
+  "focused_checks": {
+    "model_test_functions": 11,
+    "native_binding_test_functions": 15,
+    "total_distinct_test_functions": 26,
+    "new_test_functions": 7,
+    "model_exit": 0,
+    "native_exit": 0,
+    "allocation": "default",
+    "coverage": [
+      "All 15 supported asymmetric algorithm names",
+      "Non-extractable private keys",
+      "Imported private keys and EC public-point computation",
+      "Independent public-key handle ownership",
+      "Usage normalization and rejection",
+      "Receiver brands and original author exceptions",
+      "Separate deferred work, crypto settlement and promise reactions"
+    ]
+  },
+  "upstream_native_shell": {
+    "cases": [
+      {
+        "id": "WebCryptoAPI/modern-algos/getPublicKey.https.any",
+        "subtests": 43,
+        "passing_subtests": 37,
+        "baseline_passing_subtests": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "getPublicKey works for ECDH",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ECDSA",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for Ed25519",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for Ed448",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for RSA-OAEP",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for RSA-PSS",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for RSASSA-PKCS1-v1_5",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for X25519",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for X448",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-DSA-44",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-DSA-65",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-DSA-87",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-KEM-512",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-KEM-768",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for ML-KEM-1024",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works for MLKEM768-P256",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-P256' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "getPublicKey works for MLKEM768-X25519",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-X25519' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "getPublicKey works for MLKEM1024-P384",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM1024-P384' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "Derived public key is functionally equivalent to original public key",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ECDH",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ECDSA",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for Ed25519",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for Ed448",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for RSA-OAEP",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for RSA-PSS",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for RSASSA-PKCS1-v1_5",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for X25519",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for X448",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-DSA-44",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-DSA-65",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-DSA-87",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-KEM-512",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-KEM-768",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for ML-KEM-1024",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey works with empty usages for MLKEM768-P256",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-P256' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "getPublicKey works with empty usages for MLKEM768-X25519",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-X25519' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "getPublicKey works with empty usages for MLKEM1024-P384",
+              "status": 1,
+              "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM1024-P384' is not supported for operation 'generateKey'\""
+            },
+            {
+              "name": "getPublicKey rejects with InvalidAccessError when given a public key",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey rejects with NotSupportedError for AES-GCM symmetric keys",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey rejects with NotSupportedError for HMAC symmetric keys",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey rejects with SyntaxError for invalid usages",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey rejects with SyntaxError when any usage is invalid for the algorithm",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "getPublicKey method is available",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "FileAPI/blob/Blob-text.any",
+        "subtests": 16,
+        "passing_subtests": 16,
+        "baseline_passing_subtests": 13,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "Blob.text()",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() empty blob data",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() multi-element array in constructor",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() non-unicode",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() different charset param in type option",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() different charset param with non-ascii input",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() invalid utf-8 input",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() strips a UTF-8 byte order mark",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() strips only one UTF-8 byte order mark",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() does not sniff a UTF-16LE byte order mark",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() does not sniff a UTF-16BE byte order mark",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() strips a UTF-8 byte order mark split across blob parts",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() does not strip a UTF-8 byte order mark in a later blob part",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() decodes a UTF-8 sequence split across blob parts",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() replaces a truncated UTF-8 sequence at the end",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.text() concurrent reads",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "FileAPI/blob/Blob-textStream.any",
+        "subtests": 8,
+        "passing_subtests": 8,
+        "baseline_passing_subtests": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "textStream method existence",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() basic functionality",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() with empty blob",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() with multi-part blob",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() ignores type charset (UTF-16LE)",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() ignores invalid type charset (invalid-charset)",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() ignores type charset (iso-8859-1)",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Blob.textStream() can be called multiple times",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      }
+    ],
+    "total_subtests": 67,
+    "passing_subtests": 61,
+    "baseline_passing_subtests": 13,
+    "get_public_key": {
+      "passing_subtests": 37,
+      "total_subtests": 43,
+      "baseline_passing_subtests": 0,
+      "remaining_failures": 6,
+      "reason": "Three hybrid ML-KEM algorithms lack generateKey support; each fails the normal-usages and empty-usages case before getPublicKey executes."
+    },
+    "blob_checks": {
+      "passing_subtests": 24,
+      "total_subtests": 24,
+      "baseline_passing_subtests": 13,
+      "implementation_commits": [
+        "99e7bece5",
+        "f3c82806a"
+      ],
+      "implementation_changed_in_this_continuation": false
+    },
+    "environment": "Stock ShellTestEnvironment, real native Vox Crypto/Blob/ReadableStream/TextEncoder/Base64/URL bindings, explicit owning task and microtask delivery; no query subset",
+    "limitations": [
+      "No windowed HTML/navigation/renderer or worker credit",
+      "Default allocation only",
+      "No updated whole-cohort pass rate; original published browser baseline remains historical"
+    ]
+  },
+  "check_receipts": {
+    "first100-public-key-blob-Blob-text-any-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/blob-wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.562300959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-blob-Blob-textStream-any-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/blob-wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 638976,
+      "elapsed_seconds": 0.268196667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-blob-wpt-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-public-key-20261108/blob-wpt",
+        "browserjs/zz_first100_public_key_blob_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4985962496,
+      "elapsed_seconds": 67.830685083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-public-key-20261108/model",
+        "webcrypto/zz_first100_public_key_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 698597376,
+      "elapsed_seconds": 9.682499333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-model-runtime-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 4128768,
+      "elapsed_seconds": 0.501307417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-public-key-20261108/native",
+        "browserjs/zz_first100_public_key_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4735631360,
+      "elapsed_seconds": 77.298865625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-public-key-20261108/native-r2",
+        "browserjs/zz_first100_public_key_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4983062528,
+      "elapsed_seconds": 68.95796387499999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-native-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/native-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 37240832,
+      "elapsed_seconds": 0.63815775,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-native-runtime-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/native"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 41811968,
+      "elapsed_seconds": 0.7035880840000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-wpt-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-public-key-20261108/wpt",
+        "browserjs/zz_first100_public_key_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4977082368,
+      "elapsed_seconds": 71.490535042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-public-key-wpt-runtime-20261108.json": {
+      "command": [
+        "Build/first100-public-key-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 48742400,
+      "elapsed_seconds": 0.9907993330000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "development_failure": {
+    "selection": "First 15-function native binding run",
+    "exit": 1,
+    "failures": [
+      "New getPublicKey fixture incorrectly expected IteratorClose for a failed usage conversion; corrected it to match the pinned WebIDL generator.",
+      "Existing AES generation fixture expected decrypt,encrypt, while the pinned normalized_key_usages sorts in KeyUsage enum order encrypt,decrypt; corrected that stale expectation."
+    ],
+    "implementation_changed_to_address_failure": false
+  },
+  "shared_checkout": "Other sessions edited unrelated paths during compilation. Recorded task source inputs and pinned upstream scripts were verified unchanged; no whole-checkout seal is claimed.",
+  "binaries": {
+    "model": "eed05ae0c00ddc61fd8ea62dc959d336a385f94cf653b91cc1247e2002d047ce",
+    "native": "ec9082d2a2c57c89d24bc5bd6ed24a21804605fe08fa9e1d78c9dc728c4342b7",
+    "native-r2": "b16e67659d95569e954ebb975789d5aab8937a8050466b704e5a7aa065c130d2",
+    "wpt": "35fca9ceb0755985a2eea620cd4826a3f6f7c334e39e98b51ece23137f1a10c2",
+    "blob-wpt": "ff0e1a4fa4d3c6a8a549ddaa35cfd68ba2431213941f663b981d2000e4230ab2"
+  },
+  "published_browser": {
+    "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "receipt_executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "build_guard_busy": true,
+    "contains_fix": false,
+    "production_validation": "pending"
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-first100-public-key.tar.gz",
+    "sha256": "02afd8024929e1ab7f274d4ab58ec672e34c9d6e293b2e0d8c07a821f68d782c",
+    "members": 55
+  }
+}
