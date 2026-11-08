@@ -1646,15 +1646,23 @@ independently without including that unrelated feature.
 The previous 18-hash production observer was retired through its archive
 cleanup handler without executing a production collection; retained archive
 SHA-256 `b24df92bd89b46181793467f438e3da693135c845361609b8e6bd6f517bdb114`.
-The replacement requires **29 actual source hashes**, recording concurrent
-changes since the feature commit. It checks the same 65 variants through the
-native vendor backend, then all **11 unchanged SVG source-switch/paint-server
-pixel comparisons with zero tolerance**, using only the canonical bundle or
-an original completed staging artifact under a shared read lease. Production
-and pixel validation remain pending a matching completed shared image.
-Status: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-{status,completion}.json`.
-Observer: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-followup.py`,
-SHA-256 `34346effbb71fa213027590ed0d3a08902fd9bfc79abcc118313c09c8f325a2e`.
+The first image-input observer was superseded before executing a collection
+when concurrent CSP edits changed a required source file. Its replacement
+records source versions observed while waiting, admits additional versions only
+with the feature markers preserved, and pins the **29 exact frozen source
+hashes of the selected completed image** before launching checks. It rejects
+incomplete receipts and versions missing the feature; focused controller checks
+also cover later compatible versions and refreshing a cached miss.
+
+It checks the same 65 variants through the native vendor backend, then all
+**11 unchanged SVG source-switch/paint-server pixel comparisons with zero
+tolerance**, using only the canonical bundle or an original completed staging
+artifact under a shared read lease. Production and pixel validation remain
+pending a matching completed shared image. The existing broad runner and its
+pinned inputs remain unchanged.
+Status: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v2-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v2-followup.py`,
+SHA-256 `ceda62819098f9ed30e9aa4e5297bdc6f88edd9ccdb9cffd729c2549ae410774`.
 
 The **40,139-variant official testharness collection continues on its original
 pinned production executable**. It does not measure these new commits; other
