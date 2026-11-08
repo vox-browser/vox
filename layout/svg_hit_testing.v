@@ -13,6 +13,8 @@ pub struct SVGPathHitData {
 	has_stroke     bool
 	path           skia.Path
 	text_cells     ?painting.Rect
+	bounding_box   ?painting.Rect
+	is_image       bool
 }
 
 fn svg_pointer_events_require_visibility(mode css.PointerEvents) bool {
@@ -36,7 +38,7 @@ fn svg_pointer_event_areas(data &SVGPathHitData) u8 {
 }
 
 fn (box &BlockBox) has_svg_hit_geometry() bool {
-	return box.has_svg_path() && box.svg_data.hit_test != unsafe { nil }
+	return box.svg_data != unsafe { nil } && box.svg_data.hit_test != unsafe { nil }
 }
 
 fn (box &BlockBox) visible_for_pointer_events() bool {
@@ -57,8 +59,9 @@ fn (box &BlockBox) svg_contains_hit_test_point(point painting.Point) bool {
 	x, y := point.x - matrix[4], point.y - matrix[5]
 	local := painting.Point{(matrix[3] * x - matrix[2] * y) / determinant, (-matrix[1] * x + matrix[0] * y) / determinant}
 	data := box.svg_data.hit_test
-	if data.pointer_events == .bounding_box {
-		return box.svg_data.bounding_box.contains(local)
+	if data.pointer_events == .bounding_box || data.is_image {
+		if data.pointer_events == .none_ { return false }
+		return svg_hit_bounding_box_contains(data.bounding_box or { box.svg_data.bounding_box }, local)
 	}
 	areas := svg_pointer_event_areas(data)
 	if areas == 0 { return false }
@@ -112,8 +115,8 @@ fn svg_inflated_hit_bounds(rect painting.Rect, amount f64) painting.Rect {
 fn (box &BlockBox) svg_hit_test_bounds() painting.Rect {
 	data := box.svg_data.hit_test
 	matrix := normalized_affine(box.svg_path().path_transform)
-	if data.pointer_events == .bounding_box {
-		return svg_transformed_hit_bounds(box.svg_data.bounding_box, matrix)
+	if data.pointer_events == .bounding_box || data.is_image {
+		return svg_transformed_hit_bounds(data.bounding_box or { box.svg_data.bounding_box }, matrix)
 	}
 	if cells := data.text_cells { return svg_transformed_hit_bounds(cells, matrix) }
 	mut bounds := box.svg_data.bounding_box
@@ -127,4 +130,46 @@ fn (box &BlockBox) svg_hit_test_bounds() painting.Rect {
 	}
 	bounds = svg_inflated_hit_bounds(bounds, stroke)
 	return svg_transformed_hit_bounds(bounds, matrix)
+}
+
+// SVG bounding-box regions include their boundary. Keep this rule local to
+// SVG rather than changing the half-open rectangles used by HTML layout.
+fn svg_hit_bounding_box_contains(bounds painting.Rect, point painting.Point) bool {
+	return bounds.width > 0 && bounds.height > 0 && point.x >= bounds.x
+		&& point.x <= bounds.x + bounds.width && point.y >= bounds.y
+		&& point.y <= bounds.y + bounds.height
+}
+
+// A text element's object box contains its descendant text runs, including
+// the space between separately positioned lines. Painting keeps its own path
+// bounds; only pointer-events:bounding-box uses this aggregate snapshot.
+fn svg_text_bounding_box_for_hit_testing(node &Node, state &LayoutState) ?painting.Rect {
+	styled := node.as_node_with_style() or { return none }
+	used := state.try_get(styled) or { return none }
+	mut bounds := ?painting.Rect(none)
+	if origin := used.svg_text_paint_origin() {
+		cells := origin.character_cells
+		if cells.width > 0 && cells.height > 0 {
+			bounds = painting.Rect{cells.x, cells.y, cells.width, cells.height}
+		}
+	} else if path := used.computed_svg_path() {
+		if rect := svg_path_bounds(path) {
+			bounds = painting.Rect{rect.x, rect.y, rect.width, rect.height}
+		}
+	}
+	for child in node.children() {
+		if !child.is_svg_text_box() && !child.is_svg_text_path_box() { continue }
+		child_bounds := svg_text_bounding_box_for_hit_testing(child, state) or { continue }
+		child_styled := child.as_node_with_style() or { continue }
+		child_used := state.try_get(child_styled) or { continue }
+		transform := child_used.svg_local_transform()
+		mapped := svg_transformed_hit_bounds(child_bounds,
+			[transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]!)
+		bounds = if current := bounds {
+			x, y := math.min(current.x, mapped.x), math.min(current.y, mapped.y)
+			painting.Rect{x, y, math.max(current.x + current.width, mapped.x + mapped.width) - x,
+				math.max(current.y + current.height, mapped.y + mapped.height) - y}
+		} else { mapped }
+	}
+	return bounds
 }

@@ -3833,6 +3833,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			has_fill: computed.fill() != none
 			has_stroke: computed.stroke() != none
 			path: skia.Path{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			bounding_box: if node.is_svg_text_box() {
+				svg_text_bounding_box_for_hit_testing(node, state)
+			} else { none }
 			text_cells: if origin := used.svg_text_paint_origin() {
 				painting.Rect{origin.character_cells.x, origin.character_cells.y,
 					origin.character_cells.width, origin.character_cells.height}
@@ -3907,6 +3910,19 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			}
 		}
 	}
+	if node.is_svg_image_box() {
+		// Image hit regions use the viewport rectangle for every pointer-events
+		// area; SVG fill/stroke styles do not restrict raster-image hits.
+		to_page := svg_path_transform_to_page(node, state)
+		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
+		svg_hit_data = &SVGPathHitData{
+			pointer_events: computed.pointer_events()
+			is_image: true
+			bounding_box: painting.Rect{used.offset.x().to_double(), used.offset.y().to_double(),
+				used.content_width().to_double(), used.content_height().to_double()}
+		}
+	}
+
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)
 	if svg_mask == none {
@@ -4341,7 +4357,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		layout_handle: voidptr(node)
 		children: []
 		lines: lines
-		svg_data: if has_svg_path || svg_path.len > 0 {
+		svg_data: if has_svg_path || svg_path.len > 0 || svg_hit_data != unsafe { nil } {
 			&BlockBoxSVGData{
 				has_path: has_svg_path
 				path: &PaintSVGPathData{
