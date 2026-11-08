@@ -647,10 +647,10 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				range := runtime.indexed_db_query_range(binding, runtime.ui_event_argument(args, 2), false)!
 				return runtime.indexed_db_request(mut binding, store.count_async(range)!, none, receiver)
 			}
-			if method == 'get' {
+			if method in ['get', 'getKey'] {
 				store.require_cursor_source()!
 				range := runtime.indexed_db_query_range(binding, args[2], true)!
-				request := store.get_async(range)!
+				request := if method == 'getKey' { store.get_key_async(range)! } else { store.get_async(range)! }
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
 			if method in ['put', 'add'] {
@@ -667,6 +667,11 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.index {
 			mut index := entry.index
+			if method == 'count' {
+				index.require_cursor_source()!
+				range := runtime.indexed_db_query_range(binding, runtime.ui_event_argument(args, 2), false)!
+				return runtime.indexed_db_request(mut binding, index.count_async(range)!, none, receiver)
+			}
 			if method in ['get', 'getKey'] {
 				index.require_cursor_source()!
 				range := runtime.indexed_db_query_range(binding, args[2], true)!

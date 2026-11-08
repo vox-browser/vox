@@ -225,7 +225,7 @@ pub fn (mut store IDBObjectStore) get(range IDBKeyRange) !&IDBRequest {
 }
 
 pub fn (mut store IDBObjectStore) get_key(range IDBKeyRange) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	mut request := store.new_request()
 	for record in data.records {

@@ -231,7 +231,7 @@ pub fn (mut index IDBIndex) get_all_records(options IDBGetAllOptions) !&IDBReque
 }
 
 pub fn (mut index IDBIndex) count(range ?IDBKeyRange) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	actual := range or { IDBKeyRange.unbounded() }
 	_, data := index.load()!
 	mut request := index.new_request()

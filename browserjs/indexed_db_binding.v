@@ -28,7 +28,7 @@ fn indexed_db_binding_factory() string {
  }
  const indexName=descriptor(constructors.IDBIndex.prototype,"name");
  define(constructors.IDBIndex.prototype,"name",{...indexName,set(value){operate("brand",this,"IDBIndex");operate("setName",this,value)}});
- for(const [type,methods] of [["IDBFactory",[["open",1],["deleteDatabase",1],["cmp",2]]],["IDBDatabase",[["createObjectStore",1],["deleteObjectStore",1],["transaction",1],["close",0]]],["IDBTransaction",[["objectStore",1],["abort",0],["commit",0]]],["IDBObjectStore",[["count",0],["get",1],["put",1],["add",1],["createIndex",2],["index",1],["deleteIndex",1],["openCursor",0],["openKeyCursor",0]]],["IDBIndex",[["get",1],["getKey",1],["openCursor",0],["openKeyCursor",0]]],["IDBCursor",[["update",1],["continue",0],["advance",1],["continuePrimaryKey",2]]]])for(const [name,length] of methods)method(type,name,length);
+ for(const [type,methods] of [["IDBFactory",[["open",1],["deleteDatabase",1],["cmp",2]]],["IDBDatabase",[["createObjectStore",1],["deleteObjectStore",1],["transaction",1],["close",0]]],["IDBTransaction",[["objectStore",1],["abort",0],["commit",0]]],["IDBObjectStore",[["count",0],["get",1],["getKey",1],["put",1],["add",1],["createIndex",2],["index",1],["deleteIndex",1],["openCursor",0],["openKeyCursor",0]]],["IDBIndex",[["get",1],["getKey",1],["count",0],["openCursor",0],["openKeyCursor",0]]],["IDBCursor",[["update",1],["continue",0],["advance",1],["continuePrimaryKey",2]]]])for(const [name,length] of methods)method(type,name,length);
  // Promise-returning WebIDL operations reject receiver errors. Capture the
  // intrinsic constructor before author code can replace the global property.
  const Promise=global.Promise;
