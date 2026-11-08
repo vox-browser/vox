@@ -1,8 +1,8 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **The corrected c28 build gives
-19.5248% fewer and still misses the conservative gate by 52,389,303 instructions.
+**20% fewer observed instructions** than Brave. **The latest c29 build gives
+19.7355% fewer and still misses the conservative gate by 29,265,424 instructions.
 The earlier c26 pass does not establish acceptance for the corrected build.**
 Acceptance requires seven complete alternating pairs and
 `10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
@@ -206,6 +206,31 @@ and the [verification receipt](performance/github-vlang-instruction-validation-2
 retain the exact counters, identities, inputs, commands, failures and exits.
 Brave remains Chrome 157, but its observed counts are lower than c26 under
 the retained OS-cache conditions. Further engine optimization remains required.
+
+
+C29 includes bulk ASCII/filter-byte probes and a narrowly eligible exact-UTF-8
+ASCII decoder shortcut. It again completes seven alternating pairs with exact
+pixels, complete audits and normal browser exits, but misses the20% gate:
+maximum Vox **8,880,773,337** / minimum Brave **11,064,384,892**, ratio
+**0.80264501** (**19.7355% fewer**). The integer check is
+`88,807,733,370 > 88,515,079,136`, leaving **29,265,424** Vox instructions to
+remove at this minimum. Medians are8,851,404,119 /11,128,645,021; the20.6438%
+median paired saving cannot replace the failed conservative check.
+Executable `f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`,
+receipt `20261108-155123-59ff4982`, uses the same single-C-unit compilation
+policy as c28. Build guard exits0, benchmark/guard1 for the numerical failure.
+
+The preprocessing path executes in a separate native diagnostic. In matched
+headless probes it saves median50,537,982 parsing instructions and18,894,627
+layout-workload instructions with identical geometry. These are not additive
+native credit: two same-image native A/B pairs show a10,170,454-instruction
+regression and a14,383,224 saving. The small net median2,106,385 saving does
+not establish a consistent full-load improvement. All four A/B captures retain
+exact reference pixels and normal exits. New bulk regression checks remain
+explicitly deferred after c29 fails. [Full c29 evidence](performance/github-vlang-instructions-20261108-20pct-c29.json)
+retains every pair and the complete A/B. Increasing the longhand cache beyond
+256 entries executes but has only a1,032,973 median probe saving with one
+regression; that experiment is removed. Further optimization is required.
 
 ## Workload and scope
 
