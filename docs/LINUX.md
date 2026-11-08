@@ -128,6 +128,22 @@ python3 tools/test_linux_native.py
 python3 tools/test_linux_native.py --gc none
 ```
 
+The production arena ownership checks use the same staged compiler runtime as
+the production build, run without a collector, and poison released storage to
+expose stale borrowed payloads:
+
+```sh
+VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+    --lock Build/linux-ownership-tests.lock --report Build/linux-ownership-tests.json -- \
+    python3 tools/test_linux_native.py --gc prealloc \
+    platform/closure_metadata_arena_test.v \
+    platform/retained_arena_test.v platform/retained_arena_lifetime_test.v \
+    dom/native_adoption_storage_test.v html/native_document_storage_test.v \
+    layout/hosted_scene_storage_test.v layout/native_layout_retirement_test.v \
+    layout/navigable_fallback_storage_test.v layout/svg_document_storage_test.v \
+    layout/static_svg_scene_test.v
+```
+
 The native test runner also honors `CC`. To check the CSS color interpolation,
 DOM range extraction, and WOFF2 font decoding regressions with GCC:
 

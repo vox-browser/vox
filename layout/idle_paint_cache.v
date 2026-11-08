@@ -90,6 +90,7 @@ fn release_idle_display_list_caches(display_list &dom.DisplayList, mut visited m
 	// The replay plan holds pointers into phase buckets. Drop the complete
 	// scratch generation together; clear() would retain scanned backing storage.
 	result.record_scratch = CompatibilityRecordScratch{}
+	clear_phase_command_storage(mut result.paint_phase_commands)
 	result.paint_phase_commands = [][]PaintCommand{}
 	result.paint_phase_entry_valid = []bool{}
 	result.paint_phase_command_count = 0

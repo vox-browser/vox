@@ -6,9 +6,6 @@ module layout
 pub fn retire_native_document_layout(handle voidptr) {
 	if handle == unsafe { nil } { return }
 	mut result := unsafe { &DocumentLayoutResult(handle) }
-	// An untracked host can still hold copied paint payloads. Match the
-	// conservative borrowing policy used by scene and tree-slot retirement.
-	if result.document != unsafe { nil } && result.document.paint_borrowed_by_host { return }
 	mut scene_pool := result.scene_pool
 	if scene_pool != unsafe { nil } {
 		scene_pool.retired = true
@@ -23,6 +20,12 @@ pub fn retire_native_document_layout(handle voidptr) {
 		for mut tree in tree_pool.free { tree.arena.release() }
 		tree_pool.free.clear()
 	}
+	// Phase caches and published scenes are independent consumers of hosted
+	// recordings. Retire both publishers; retained parent frames keep only the
+	// child scenes their immutable command streams actually reference.
+	clear_phase_command_storage(mut result.paint_phase_commands)
+	result.paint_phase_cache_valid = false
+	result.paint_phase_command_count = 0
 	result.retire_display_list_scene()
 	result.retire_paint_tree_storage()
 }

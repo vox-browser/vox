@@ -10969,6 +10969,7 @@ pub mut:
 	// Arenas for animation samples (css/animation_samples.v), used while the
 	// animated-style update samples targets.
 	animation_samples_         &AnimationSampleStorage = unsafe { nil }
+	animation_sample_arenas_disabled_ bool
 	sampling_animation_frame_  bool
 	animation_layout_style_    &ComputedProperties = unsafe { nil }
 	// Only the exact target being installed may reuse its non-compositor slots.

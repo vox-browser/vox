@@ -315,6 +315,7 @@ fn test_static_svg_scene_rejects_hidden_resource_owners_and_unsupported_commands
 		PaintCommand{ kind: 'fill_rect', video_frame_source: &painting.VideoFrameSource{} },
 		PaintCommand{ kind: 'fill_rect', video_paintable: &painting.VideoPaintable{} },
 		PaintCommand{ kind: 'fill_rect', nested_viewport_commands: [PaintCommand{ kind: 'fill_rect' }] },
+		PaintCommand{ kind: 'fill_rect', nested_viewport_scene: &DisplayListScene{} },
 		PaintCommand{ kind: 'fill_rect', nested_viewport_paintable: &painting.NavigableContainerViewportPaintable{} },
 		PaintCommand{ kind: 'fill_rect', text_clip_runs: [PaintTextClipRun{}] },
 		PaintCommand{ kind: 'fill_rect', backdrop_filter_data: &painting.GfxFilter{} },

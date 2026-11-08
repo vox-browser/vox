@@ -6,8 +6,8 @@ import platform
 // Storage of one published display list: its command vector and everything a
 // recording allocates for those commands (visual layer and clip lists, the
 // DisplayList handle). Recording reads retained state (paint tree, visual
-// contexts, per-phase command caches) and copies it shallowly, so a scene may
-// point into that state but nothing outside the scene points into it.
+// contexts, per-phase command caches) and copies it shallowly. The scene owns
+// leases on that state and any child scenes whose nested payloads it copies.
 //
 // The document's layout result holds one reference to its current scene;
 // every consumer that keeps the commands (the shell between frames) holds
@@ -24,6 +24,10 @@ mut:
 	generation u64
 	paint_tree_storage &PaintTreeStorage = unsafe { nil }
 	document_storage &platform.RetainedArena = unsafe { nil }
+	// Nested command payloads belong to these exact child recordings, not
+	// to the child's mutable current layout result. A phase cache has its own
+	// leases; this set survives cache eviction until this scene's last reader.
+	dependencies []&DisplayListScene
 }
 
 // Per-document scenes, carried from one layout result to the next.
@@ -34,10 +38,6 @@ mut:
 	free     []&DisplayListScene
 	// Scenes still referenced by the layout result or a consumer.
 	live []&DisplayListScene
-	// A hosting document copies this document's commands into its own paint
-	// transport (nested viewports), which outlives any one of our scenes.
-	// Such documents record into ordinary storage.
-	borrowed bool
 	retired bool
 }
 
@@ -86,7 +86,25 @@ fn (mut pool DisplayListScenePool) publish_oldest_live_generation() {
 }
 
 fn (mut scene DisplayListScene) retain() {
+	assert scene.references > 0
 	scene.references++
+}
+
+fn (mut scene DisplayListScene) retain_nested_scenes(commands []PaintCommand) {
+	for index in 0 .. commands.len {
+		mut child := commands[index].nested_viewport_scene
+		if child == unsafe { nil } { continue }
+		mut retained := false
+		for dependency in scene.dependencies {
+			if voidptr(dependency) == voidptr(child) {
+				retained = true
+				break
+			}
+		}
+		if retained { continue }
+		child.retain()
+		scene.dependencies << child
+	}
 }
 
 fn (mut scene DisplayListScene) release() {
@@ -106,6 +124,10 @@ fn (mut scene DisplayListScene) release() {
 		}
 	}
 	pool.publish_oldest_live_generation()
+	for mut child in scene.dependencies { child.release() }
+	// The dependency vector was allocated while recording in this scene.
+	// Do not carry its backing pointer into a reset and reused arena.
+	scene.dependencies = []&DisplayListScene{}
 	release_paint_tree(voidptr(scene.paint_tree_storage))
 	scene.paint_tree_storage = unsafe { nil }
 	if pool.retired || pool.free.len >= display_list_scene_spares {
@@ -185,15 +207,6 @@ pub fn release_display_list_scene(handle voidptr) {
 	}
 	mut scene := unsafe { &DisplayListScene(handle) }
 	scene.release()
-}
-
-// The hosted document's commands are copied into a host's paint transport.
-fn mark_display_list_scenes_borrowed(document &dom.Document) {
-	mut result := document_layout_result(document) or { return }
-	mut pool := result.scene_pool_()
-	pool.borrowed = true
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.paint_borrowed_by_host = true
 }
 
 // record_retained_display_list records `document` and keeps the scene behind

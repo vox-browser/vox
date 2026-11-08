@@ -8,8 +8,19 @@ pub:
 	arena &Arena = unsafe { nil }
 mut:
 	references int = 1
-	pinned     bool
+	lifetime   &RetainedArenaLifetime = unsafe { nil }
 	cleanup []fn ()
+}
+
+// Adoption preserves node identity, so allocations cannot be moved between
+// arenas. Aliased arenas instead share one final release boundary. Only
+// callers' references count: sharing adds no reference and cannot form a
+// cycle, including when nodes are adopted back into their original document.
+@[heap]
+struct RetainedArenaLifetime {
+mut:
+	references int
+	members []&RetainedArena
 }
 
 pub fn new_retained_arena(label string) &RetainedArena {
@@ -19,33 +30,101 @@ pub fn new_retained_arena(label string) &RetainedArena {
 }
 
 pub fn (mut storage RetainedArena) retain() {
-	assert storage.references > 0
+	assert storage.is_live()
 	storage.references++
+	if storage.lifetime != unsafe { nil } { storage.lifetime.references++ }
 }
 
 pub fn (mut storage RetainedArena) release() {
 	assert storage.references > 0
 	storage.references--
-	if storage.references == 0 && !storage.pinned {
-		for callback in storage.cleanup { callback() }
-		storage.cleanup.clear()
-		mut arena := storage.arena
-		arena.release()
+	mut lifetime := storage.lifetime
+	if lifetime != unsafe { nil } {
+		assert lifetime.references > 0
+		lifetime.references--
+		if lifetime.references > 0 { return }
+		// A cleanup may still read another member's adopted nodes or policy
+		// objects. Finish every cleanup before releasing any member payload.
+		for mut member in lifetime.members {
+			assert member.references == 0
+			member.run_cleanup()
+		}
+		for member in lifetime.members {
+			mut arena := member.arena
+			arena.release()
+		}
+		lifetime.members.clear()
+		return
 	}
+	if storage.references > 0 { return }
+	storage.run_cleanup()
+	mut arena := storage.arena
+	arena.release()
+}
+
+fn (storage &RetainedArena) is_live() bool {
+	if storage.lifetime != unsafe { nil } { return storage.lifetime.references > 0 }
+	return storage.references > 0
+}
+
+fn (mut storage RetainedArena) run_cleanup() {
+	for callback in storage.cleanup {
+		callback()
+		release_closure(voidptr(callback))
+	}
+	storage.cleanup.clear()
+}
+
+fn (mut storage RetainedArena) lifetime_group() &RetainedArenaLifetime {
+	if storage.lifetime == unsafe { nil } {
+		storage.lifetime = &RetainedArenaLifetime{
+			references: storage.references
+			members: [unsafe { &RetainedArena(storage) }]
+		}
+	}
+	return storage.lifetime
+}
+
+// Promote two indivisible allocation owners to a shared lifetime. All their
+// existing and future leases remain balanced; the final lease releases every
+// arena in the group. Repeated, reciprocal and transitive sharing adds no
+// references. A member with no local leases can still be shared or retained
+// while another member keeps the group alive.
+pub fn (mut storage RetainedArena) share_lifetime(other &RetainedArena) {
+	assert storage.is_live() && other.is_live()
+	if voidptr(&storage) == voidptr(other) { return }
+	persistent := enter_persistent()
+	defer { leave_persistent(persistent) }
+	mut destination := storage.lifetime_group()
+	mut other_storage := unsafe { &RetainedArena(other) }
+	mut source := other_storage.lifetime_group()
+	if voidptr(destination) == voidptr(source) { return }
+	// Move the smaller group, so repeated adoption into fresh documents does
+	// not repeatedly traverse all previously shared allocation owners.
+	if destination.members.len < source.members.len {
+		temporary := destination
+		destination = source
+		source = temporary
+	}
+	destination.references += source.references
+	for mut member in source.members {
+		member.lifetime = destination
+		destination.members << member
+	}
+	source.members.clear()
+	source.references = 0
 }
 
 // Dependent arenas (such as animation samples) remain readable by snapshots
 // for exactly as long as the document payload, and retire before that payload.
+// Registration transfers ownership of a closure; its capture is released
+// after cleanup so the runtime's closure directory cannot keep owners alive.
 pub fn (mut storage RetainedArena) add_cleanup(callback fn ()) {
-	assert storage.references > 0
+	assert storage.is_live()
 	persistent := enter_persistent()
 	storage.cleanup << callback
 	leave_persistent(persistent)
 }
-
-// Cross-document adoption or an untracked host borrower conservatively keeps
-// the allocation owner alive. Those references have no native release boundary.
-pub fn (mut storage RetainedArena) pin() { storage.pinned = true }
 
 // Only the arena's originating thread manipulates leases. Workers receive a
 // lease retained on the origin thread and return it for release there.

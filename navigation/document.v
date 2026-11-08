@@ -170,10 +170,13 @@ fn create_browser_navigation_document_input_with_source(document_encoding ?strin
 	defer { allocations.finish() }
 	if source := javascript_url_source {
 		// Policy containers preserve source identities across javascript: URL
-		// replacement. Keep their source allocation owner until these aliases
-		// acquire an explicit independent lifetime.
+		// replacement. Share their allocation lifetime until the last document
+		// or retained rendering consumer releases the aliased payloads.
 		mut source_storage := source.native_storage()
-		if source_storage != unsafe { nil } { source_storage.pin() }
+		mut destination_storage := document.native_storage()
+		if source_storage != unsafe { nil } && destination_storage != unsafe { nil } {
+			destination_storage.share_lifetime(source_storage)
+		}
 		document.set_origin(source.origin())
 		policy := source.policy_container().clone()
 		document.set_policy_container(&policy)

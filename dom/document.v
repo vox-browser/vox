@@ -1822,6 +1822,8 @@ pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64, bool) 
 
 pub type DocumentLayoutStyleUpdateCallback = fn (voidptr, &Document)
 
+pub type DocumentLayoutRetireCallback = fn (voidptr)
+
 pub type DocumentRenderedTextCallback = fn (voidptr, &Document, &Element) string
 
 pub struct DocumentLayoutUpdateHook {
@@ -1829,6 +1831,8 @@ pub:
 	target   voidptr = unsafe { nil }
 	callback DocumentLayoutUpdateCallback = unsafe { nil }
 	style_did_update DocumentLayoutStyleUpdateCallback = unsafe { nil }
+	// Releases a native layout publisher; the argument is its concrete handle.
+	retire_native_layout DocumentLayoutRetireCallback = unsafe { nil }
 }
 
 pub struct DocumentRenderedTextHook {
@@ -5388,14 +5392,13 @@ pub mut:
 	layout_pass_generation             u64
 	paint_scene_generation             u64
 	oldest_live_paint_scene_generation u64
-	// A hosting document copies this document's display list into its own
-	// paint data, which outlives this document's rendering updates.
-	paint_borrowed_by_host bool
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
 	recycle_native_paint_trees bool
 	compact_native_svg_backgrounds bool
 	native_storage_ &platform.RetainedArena = unsafe { nil }
 	native_storage_borrowed_ bool
+	native_storage_adoption_owner_ bool
+	native_storage_cleanup_ []fn ()
 
 	// Layout
 	layout_root &LayoutViewport = unsafe { nil }
@@ -6043,6 +6046,10 @@ pub fn (mut d Document) finalize() {
 	// Base::finalize()
 	// Unregister from the main thread event loop.
 	d.unregister_from_event_loop()
+	// A general DOM document that receives native nodes acquires an implicit
+	// allocation owner. Its existing finalize boundary releases that owner;
+	// explicitly managed native documents retain their shell retirement order.
+	if d.native_storage_adoption_owner_ { d.release_native_storage() }
 }
 
 fn document_cursor_blink_callback(document_pointer voidptr) {
@@ -8131,13 +8138,7 @@ pub fn (mut d Document) adopt_node(node &Node) {
 	// 3. If document is not oldDocument, then:
 	d_ptr := unsafe { &Document(d) }
 	if voidptr(old_document) != voidptr(d_ptr) {
-		mut storage := old_document.native_storage_
-		if storage != unsafe { nil } && voidptr(storage) != voidptr(d.native_storage_)
-			&& !storage.arena.contains(voidptr(d_ptr)) {
-			storage.pin()
-			mut source := unsafe { &Document(old_document) }
-			source.paint_borrowed_by_host = true
-		}
+		d.share_adopted_native_storage(old_document)
 		d.style_scope_adoption_depth_++
 		defer {
 			d.style_scope_adoption_depth_--
@@ -12733,6 +12734,7 @@ pub fn (mut d Document) did_stop_being_active_document_in_navigable() {
 	if !d.retains_layout_while_inactive {
 		d.clear_layout_and_paintable_nodes_for_inactive_document()
 		d.tear_down_layout_tree()
+		d.retire_native_layout()
 		// The compact layout backend and scroll hook own the same retired tree.
 		// Drop them with the viewport instead of retaining all old style/paint data.
 		d.layout_engine_handle_ = unsafe { nil }

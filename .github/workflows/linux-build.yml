@@ -112,6 +112,28 @@ jobs:
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py skia/shadow_test.v
 
+      - name: Check retained storage with the production allocator
+        timeout-minutes: 15
+        run: |
+          export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
+          # Poison released arenas so stale borrowed payloads fault rather
+          # than surviving accidentally in a reusable allocation block.
+          export VOX_ARENA_POISON=1
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-ownership-tests.lock" \
+            --report "$RUNNER_TEMP/vox-ownership-tests.json" --timeout 840 -- \
+            python3 tools/test_linux_native.py --gc prealloc \
+              platform/closure_metadata_arena_test.v \
+              platform/retained_arena_test.v \
+              platform/retained_arena_lifetime_test.v \
+              dom/native_adoption_storage_test.v \
+              html/native_document_storage_test.v \
+              layout/hosted_scene_storage_test.v \
+              layout/native_layout_retirement_test.v \
+              layout/navigable_fallback_storage_test.v \
+              layout/svg_document_storage_test.v \
+              layout/static_svg_scene_test.v
+
       - name: Build Vox and run the headless smoke test
         timeout-minutes: 50
         run: |
@@ -155,6 +177,7 @@ jobs:
           temporary = Path(os.environ['RUNNER_TEMP'])
           paths = [temporary / name for name in ('vox-v-build.json', 'vox-skia-build.json',
                                                     'vox-native-build.json', 'vox-skia-test.json',
+                                                    'vox-ownership-tests.json',
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))

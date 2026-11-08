@@ -90,25 +90,37 @@ pub struct NavigableContainerViewport {
 	ReplacedBox
 mut:
 	content_document_ &dom.Document = unsafe { nil }
+	content_source_ string
 }
 
 pub fn NavigableContainerViewport.new(document &dom.Document, element &dom.Element, computed_values &css.ComputedProperties) &NavigableContainerViewport {
-	source := element.get_attribute('srcdoc') or { '' }
 	mut box := &NavigableContainerViewport{
 		ReplacedBox: replaced_box_base(document, element, computed_values)
-		content_document_: html.parse_document(source)
 	}
 	box.is_navigable_container_viewport_ = true
 	return box
 }
 
 pub fn (box &NavigableContainerViewport) content_document() ?&dom.Document {
-	if node := box.dom_node() {
-		if navigable := node.content_navigable() {
-			return navigable.active_document()
+	node := box.dom_node() or { return none }
+	mut mutable_box := unsafe { &NavigableContainerViewport(box) }
+	if navigable := node.content_navigable() {
+		if mutable_box.content_document_ != unsafe { nil } {
+			retire_native_navigable_fallback_document(mutable_box.content_document_)
+			mutable_box.content_document_ = unsafe { nil }
+			mutable_box.content_source_ = ''
 		}
+		return navigable.active_document()
 	}
-	return box.content_document_
+	element := node.as_element() or { return none }
+	source := element.get_attribute('srcdoc') or { '' }
+	if mutable_box.content_document_ == unsafe { nil } || mutable_box.content_source_ != source {
+		previous := mutable_box.content_document_
+		mutable_box.content_document_ = create_navigable_fallback_document(node.document(), source)
+		mutable_box.content_source_ = source
+		if previous != unsafe { nil } { retire_native_navigable_fallback_document(previous) }
+	}
+	return mutable_box.content_document_
 }
 
 // NavigableContainerViewport::natural_size(). Only an object embedding an SVG
