@@ -1569,3 +1569,94 @@ The corrected **40,139-variant official testharness collection continues on
 its original pinned executable**, without measuring these new fixes. Other
 WPT types and unsupported services retain their earlier limits. **There is no
 completed full-WPT result or overall 100% claim.**
+
+
+## Image submitter coordinates and native WPT clicks (2026-11-09)
+
+The same **35 FormData/upload variants now pass 213/213 assertions**, including
+both previously retained image-button failures. Worker remains **86/86**;
+Window is now **127/127**. Adding the unchanged 30 FileReader variants gives
+**65 variants and 328/328 assertions passing in normal native Page checks and
+again with the prepared preallocation runtime**. Both final strict cohort
+exits are **0**, every harness completes with its expected count, and pinned
+inputs remain unchanged. This is a focused native result, not a production or
+full-WPT percentage.
+
+- `d6022fcd0` connects image inputs to the browser's existing image fetch and
+  decoder, including controls created from script or changed from another type.
+  Their layout and paint use the input's decoded SVG/bitmap provider. Cached
+  source replacements invalidate layout too. Width and height read the rendered
+  content size, with attribute/natural-size fallbacks, rather than the canvas
+  defaults. The earlier production diagnostic found a zero-sized box despite
+  the test's 200 by 200 SVG; its intentionally terminated process is retained
+  as baseline evidence, not a successful conformance run.
+- `0156dc34e` selects image coordinates from native content geometry for mouse
+  events dispatched from script, including borders, padding, transforms and a
+  doubled layout scale. Event trust stays unchanged. Both native and compact
+  `.click()` mark activation that selects no pointer coordinate, preserving
+  initial zero coordinates and an existing selection.
+- `5296d2e1d` supplies an optional native pointer backend through WPT's standard
+  `testdriver-vendor.js` extension point. `VOX_WPT_TESTDRIVER=1` enables it;
+  other launches have no trusted-input entry point. It checks the owning Page
+  and actual hit region, then uses Page's platform pointer move/down/up path.
+  Focused checks poison DOM `.click()` and `dispatchEvent()` shortcuts and
+  verify trusted event order, activation, cancellation and rejected input.
+  Other test-driver operations retain their stock unsupported behavior.
+
+The original test pages, assertions, stock testharness, selection and expected
+counts are unchanged. Installing the vendor backend repairs missing automation
+support; it is distinguished from the engine's image loading and coordinate
+fixes. A production testharness collection with that backend can be launched through
+`VOX_WPT_TESTDRIVER=1 python3 tools/wpt_native_testdriver_run.py` with the usual
+manifest-runner arguments. The underlying runner used by the existing broad
+collection was not modified.
+
+Per memory mode, **12 behavioral integration checks pass**, with two additional
+native worker/navigation entry points compiled into the harness. All three
+Python adapter checks pass. The pointer fixture requires a real paint tree;
+its initial use of a layout-only dump and the resulting failed checks are
+retained, along with the earlier sizing/coordinate failures.
+
+A direct preallocation compile reported all **328 assertions passing**, but
+its strict cohort still exited **1**: after the worker punctuation upload page
+completed, V's live-closure map panicked with `Probe overflow` while creating
+the next runtime. That attempt remains failed. The complete selection was then
+rerun with the existing `tools/prepare_prealloc_runtime.py` setup used by
+production: the same current compiler bytes, bounded realloc and closure
+metadata kept outside disposable document arenas. Its runtime identity is
+`f8b564a8cb61df4894e87cd1da3dee2348b45ee1b68f6395cf5a73e52310d087`.
+The existing arena regression also passes: create/release 4,096 closures in an
+arena, release that arena, then create and invoke another closure. This is a
+validation configuration repair, not an additional engine assertion gain.
+Compiles retain the 12 GiB aggregate guard and V's 10 GiB limit; focused
+runtimes retain 3 GiB. These correctness checks supply no timing claim or
+validation of later concurrent source edits.
+
+Raw evidence:
+`/Users/alex/.cache/vox/wpt/20261109-image-input-native-raw.tar.gz`, SHA-256
+`25110f17ee66b23b6f9133580c6567de03a9535296478f3f646ec4301ac7db20`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-image-input-native-summary.json`,
+SHA-256 `0c4b46ed1a7c4ba1267998ab79d17c8ee004c1979ce9128baf06d24a564e727a`.
+Generated C, binaries and private profiles are excluded; the completed native
+job, temporary combined test and owned job locks/reports are removed. Other
+sessions' work is preserved. A public-predicate compile correction remains
+inside another session's unfinished timer sink block and cannot be committed
+independently without including that unrelated feature.
+
+The previous 18-hash production observer was retired through its archive
+cleanup handler without executing a production collection; retained archive
+SHA-256 `b24df92bd89b46181793467f438e3da693135c845361609b8e6bd6f517bdb114`.
+The replacement requires **29 actual source hashes**, recording concurrent
+changes since the feature commit. It checks the same 65 variants through the
+native vendor backend, then all **11 unchanged SVG source-switch/paint-server
+pixel comparisons with zero tolerance**, using only the canonical bundle or
+an original completed staging artifact under a shared read lease. Production
+and pixel validation remain pending a matching completed shared image.
+Status: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-followup.py`,
+SHA-256 `34346effbb71fa213027590ed0d3a08902fd9bfc79abcc118313c09c8f325a2e`.
+
+The **40,139-variant official testharness collection continues on its original
+pinned production executable**. It does not measure these new commits; other
+WPT types and unsupported services retain their documented limits. **Full WPT
+and an overall 100% result remain unfinished.**

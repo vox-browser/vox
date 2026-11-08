@@ -56,15 +56,27 @@ control replies, with scalar conversion deferred to FormData entry creation.
 `34c9d0c64` uses the existing canonical number formatter for range sanitization,
 matching numeric setters and form-data entries.
 
-All **86 Worker assertions** in the selected original FormData/upload tests
-pass, including all 46 file uploads. The complete **35-variant Window/Worker
-selection passes 211/213 assertions in both normal and preallocated GC-none
-native Page checks**. Both image-button coordinate failures remain selected;
-the strict cohort exits 1. **32 integration checks, four CRLF checks and two
-range checks pass per mode**, including raw UTF-16 byte goldens, live control
-round trips, SVG replay/rendering neighbors and invalid JSON rejection.
+The current **35-variant FormData/upload selection passes 213/213 assertions**
+(**86/86 Worker, 127/127 Window**) in normal native Page checks and with the
+prepared preallocation runtime. The previous 211/213 result and both image
+failures remain in the evidence history. `d6022fcd0` connects image input
+requests and decoded providers to native sizing/paint; `0156dc34e` selects
+content-relative coordinates for dispatched mouse events while preserving
+coordinate-free `.click()` activation. `5296d2e1d` supplies an opt-in native Page
+pointer backend at WPT's standard vendor extension point; test assertions and
+harness behavior stay unchanged.
+
+Together with the unchanged 30 FileReader variants, **65 focused variants pass
+328/328 assertions with strict exits 0 in both final memory configurations**.
+A plain preallocation attempt reported 328 passing assertions but failed later
+with a closure-map arena panic; it remains failed. The final rerun uses the
+existing production runtime preparation, with detached closure metadata and
+bounded realloc. Twelve behavioral integration checks pass per mode, alongside
+the native worker/navigation entry points, three Python adapter checks and the
+closure metadata arena regression.
+
 Production validation and the required 11 unchanged SVG pixel comparisons are
 pending a source-matching completed shared build. These focused results do not
 establish full XHR, FormData or WPT parity; see the
 [WPT progress report](../docs/WPT_CONFORMANCE_PROGRESS.md) for evidence and
-remaining failures.
+remaining scope.
