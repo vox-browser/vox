@@ -2,6 +2,8 @@
 
 https://vox-browser.org
 
+[Windows build instructions](docs/WINDOWS.md)
+
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
 Vox compiles in 2 seconds on M5 Max with `v .`!
