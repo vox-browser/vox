@@ -1,5 +1,7 @@
 module css
 
+const absent_paint_constructor_samples = 256
+
 $if gcboehm ? {
 	fn C.GC_get_total_bytes() uint
 	fn C.GC_gcollect()
@@ -26,7 +28,7 @@ fn absent_paint_constructor_bytes(explicit_none bool) (uint, int) {
 	mut before := uint(0)
 	$if gcboehm ? { before = C.GC_get_total_bytes() }
 	mut matches := 0
-	for _ in 0 .. 32 {
+	for _ in 0 .. absent_paint_constructor_samples {
 		cache := if explicit_none {
 			ComputedLayoutCache{computed_values_fill_: none, computed_values_stroke_: none}
 		} else { ComputedLayoutCache{} }
@@ -49,11 +51,12 @@ fn test_absent_paint_defaults_match_explicit_absence_allocation() {
 	reference, reference_matches := absent_paint_constructor_bytes(true)
 	$if gcboehm ? { C.GC_gcollect() }
 	actual, actual_matches := absent_paint_constructor_bytes(false)
-	assert reference_matches == 32
-	assert actual_matches == 32
+	assert reference_matches == absent_paint_constructor_samples
+	assert actual_matches == absent_paint_constructor_samples
 	// Both paths construct the same other cache values and required heap records.
-	// One allocator quantum per iteration permits rounding, not nested owners.
-	assert actual <= reference + 32 * 16
+	// Amortize process-wide GC/free-list bookkeeping across a fixed sample.
+	// One allocator quantum per constructor permits rounding, not nested owners.
+	assert actual <= reference + absent_paint_constructor_samples * 16
 }
 
 fn absent_payload_populated_style() &ComputedProperties {
