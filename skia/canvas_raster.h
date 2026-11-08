@@ -9,6 +9,16 @@ struct VoxCanvasPath {
     int count;
     int even_odd;
 };
+struct VoxPathHitTest {
+    struct VoxCanvasPath path;
+    float x, y, width, miter;
+    float transform[6];
+    int cap, join, areas, non_scaling;
+    float const* dashes;
+    int dash_count;
+    float dash_offset;
+};
+bool vox_skia_path_hit_test(struct VoxPathHitTest const* query);
 struct VoxCanvasStyle {
     int kind;
     uint32_t color;

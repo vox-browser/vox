@@ -14,6 +14,7 @@
 #include "include/core/SkPaint.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkPathBuilder.h"
+#include "include/core/SkPathUtils.h"
 #include "include/core/SkShader.h"
 #include "include/core/SkSurface.h"
 #include "include/effects/SkBlurMaskFilter.h"
@@ -77,6 +78,31 @@ static SkPath make_path(VoxCanvasPath const& input)
 }
 
 static SkMatrix make_matrix(float const* v) { return SkMatrix::MakeAll(v[0], v[2], v[4], v[1], v[3], v[5], 0, 0, 1); }
+
+extern "C" bool vox_skia_path_hit_test(VoxPathHitTest const* query)
+{
+    if (!query || !query->path.segments || query->path.count <= 0 || !std::isfinite(query->x) || !std::isfinite(query->y))
+        return false;
+    auto path = make_path(query->path);
+    if (query->non_scaling)
+        path = path.makeTransform(make_matrix(query->transform));
+    if ((query->areas & 1) && path.contains(query->x, query->y))
+        return true;
+    if (!(query->areas & 2) || !std::isfinite(query->width) || query->width <= 0)
+        return false;
+    SkPaint paint;
+    paint.setStyle(SkPaint::kStroke_Style);
+    paint.setStrokeWidth(query->width);
+    paint.setStrokeCap(query->cap == 0 ? SkPaint::kButt_Cap : query->cap == 1 ? SkPaint::kRound_Cap : SkPaint::kSquare_Cap);
+    paint.setStrokeJoin(query->join == 0 ? SkPaint::kRound_Join : query->join == 1 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+    paint.setStrokeMiter(query->miter);
+    if (query->dash_count > 0)
+        paint.setPathEffect(SkDashPathEffect::Make({ query->dashes, size_t(query->dash_count) }, query->dash_offset));
+    SkPathBuilder stroke;
+    if (!skpathutils::FillPathWithPaint(path, paint, &stroke))
+        return false;
+    return stroke.detach().contains(query->x, query->y);
+}
 
 static sk_sp<SkBlender> make_blender(int operation)
 {
