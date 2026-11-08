@@ -14246,6 +14246,11 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 		mutable_element.set_needs_style_update(false)
 	}
 
+	if mode == .create_pseudo_element_style_if_needed
+		&& scope.generated_pseudo_has_no_content_candidates(abstract_element, s) {
+		return none
+	}
+
 	// 1. Perform the cascade. This produces the "specified style".
 	mut did_match_any_pseudo_element_rules := false
 	mut attempted_pseudo_class_matches := PseudoClassBitmap{}
