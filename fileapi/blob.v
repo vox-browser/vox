@@ -292,7 +292,8 @@ pub fn read_all_blob_bytes(blob &Blob) ![]u8 {
 
 // https://w3c.github.io/FileAPI/#dom-blob-text
 pub fn (blob &Blob) text() !string {
-	return encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark('UTF-8', read_all_blob_bytes(blob)!)
+	decoder := encoding.TextDecoder.create()
+	return decoder.decode(read_all_blob_bytes(blob)!, encoding.TextDecodeOptions{})
 }
 
 // The WebIDL ArrayBuffer and Uint8Array wrappers are LibJS-owned. Both typed

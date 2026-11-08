@@ -43,7 +43,7 @@ fn test_blob_text_owns_a_distinct_pending_fulfillment_promise_for_each_call() {
 	assert second.state == .fulfilled && second.result.string_value == 'héllo'
 }
 
-fn test_blob_text_uses_source_bom_override_and_replacement_independently_of_mime_charset() {
+fn test_blob_text_decodes_only_utf8_and_strips_only_one_initial_bom() {
 	settings := blob_text_settings()
 	cases := [
 		fileapi.Blob.create([u8(0xFF), 0xFE, 0x61, 0], 'text/plain;charset=UTF-8'),
@@ -51,13 +51,16 @@ fn test_blob_text_uses_source_bom_override_and_replacement_independently_of_mime
 		fileapi.Blob.create([u8(0xE9)], 'text/plain;charset=windows-1252'),
 		fileapi.Blob.create([u8(0xC3), 0x28], 'text/plain'),
 		fileapi.Blob.create([], 'text/plain'),
+		fileapi.Blob.create([u8(0xEF), 0xBB, 0xBF, 0xEF, 0xBB, 0xBF, 0x50], ''),
+		fileapi.Blob.create([u8(0x50), 0xEF, 0xBB, 0xBF], ''),
+		fileapi.Blob.create([u8(0x50), 0xC3], ''),
 	]
 	for i, blob in cases {
 		promise := settings.blob_text(blob)
 		assert promise.state == .pending
 		finish_blob_text_task(settings)
 		assert promise.state == .fulfilled
-		assert promise.result.string_value == ['a', 'a', '\ufffd', '\ufffd(', ''][i]
+		assert promise.result.string_value == ['\ufffd\ufffda\x00', '\ufffd\ufffd\x00a', '\ufffd', '\ufffd(', '', '\ufeffP', 'P\ufeff', 'P\ufffd'][i]
 	}
 }
 
@@ -73,5 +76,5 @@ fn test_worker_blob_text_fulfillment_stays_on_its_actual_relevant_realm() {
 	window_owner.perform_a_microtask_checkpoint()
 	assert promise.state == .pending
 	finish_blob_text_task(settings)
-	assert promise.state == .fulfilled && promise.result.string_value == 'a'
+	assert promise.state == .fulfilled && promise.result.string_value == '\ufffd\ufffda\x00'
 }

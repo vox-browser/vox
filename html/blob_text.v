@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 // FileAPI/Blob.cpp::text returns the fulfillment of its actual owning byte
-// Promise, with UTF-8 fallback and LibTextCodec's pinned BOM override.
+// Promise, using the UTF-8 decoder without sniffing another encoding.
+// Upstream 2919bf87a5e: Blob.cpp::web_blob_text calls utf8_decode_to_utf16.
 module html
 
 import encoding
@@ -19,7 +20,8 @@ pub fn (settings &EnvironmentSettingsObject) blob_text_in_realm(blob &fileapi.Bl
 	mut promise := settings.read_all_blob_bytes_in_realm(blob, realm)
 	return promise.upon_fulfillment(fn [realm] (argument webidl.Value) !webidl.Value {
 		bytes := realm.array_buffer_bytes(argument)!
-		text := encoding.convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_mark('UTF-8', bytes)!
+		decoder := encoding.TextDecoder.create()
+		text := decoder.decode(bytes, encoding.TextDecodeOptions{})!
 		return webidl.string_utf16_value(libjs.utf16_string(text))
 	})
 }

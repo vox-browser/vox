@@ -81,5 +81,5 @@ fn test_source_blob_native_stream_and_text_keep_actual_owner_tasks_and_engine_sl
 	assert native.state == .pending
 	execute_source_blob_realm_task(host)
 	assert native.state == .fulfilled
-	assert runtime.evaluate_host('sourceTextDone&&sourceText==="a"')! == 'true'
+	assert runtime.evaluate_host('sourceTextDone&&sourceText==="\ufffd\ufffda\\u0000"')! == 'true'
 }
