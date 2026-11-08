@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2460,7 +2460,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
 	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
-	converted := fractional || alpha_layers || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	resampled := os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	converted := fractional || alpha_layers || resampled || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
@@ -2542,7 +2543,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				source: [f32(left), top, sw, sh]!
 				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
 				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
-				global_alpha: if alpha_layers { random_composite_alpha() } else { f32(1) }
+				global_alpha: if alpha_layers || resampled { random_composite_alpha() } else { f32(1) }
 				chromium: false
 				filters: if converted { random_converted_image_blurs() } else { match i % 4 {
 					0 { random_layer_filters() }
@@ -2552,7 +2553,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				} }
 			}
 		}
-		if fractional || (alpha_layers && i % 2 == 0) {
+		if fractional || resampled || (alpha_layers && i % 2 == 0) {
 			l := f32(rand.f64() * f64(image.width) * .4)
 			t := f32(rand.f64() * f64(image.height) * .4)
 			r := f32(image.width) - f32(rand.f64() * f64(image.width) * .4)
@@ -2560,7 +2561,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			sx := f32(rand.f64() * 2 + .25) * if i % 3 == 0 { f32(-1) } else { f32(1) }
 			sy := f32(rand.f64() * 2 + .25) * if i % 4 == 0 { f32(-1) } else { f32(1) }
 			c = BitmapCase{...c,
-				source: [l, t, r - l, b - t]!
+				source: if resampled { c.source } else { [l, t, r - l, b - t]! }
 				destination: [f32(rand.f64() * f64(width) * .6 - 4), f32(rand.f64() * f64(height) * .6 - 4),
 					f32(rand.f64() * f64(width) + 1), f32(rand.f64() * f64(height) + 1)]!
 				transform: [sx, 0, 0, sy, if sx < 0 { f32(width) * .8 } else { f32(3.25) },

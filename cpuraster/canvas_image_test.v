@@ -346,7 +346,7 @@ fn test_unsupported_image_filters_preserve_the_destination() {
 	mut pixels := image_test_background()
 	before := pixels.clone()
 	filter := new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: 2.5}])
-	assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, image_test_identity,
+	assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, [f32(1), .2, 0, 1, 0, 0]!,
 		image_test_bitmap(7, 6, true, false), [f32(0), 0, 7, 6]!, [f32(4), 5, 30, 25]!,
 		true, 1, .src_over, [], filter, false)
 	assert pixels == before
@@ -505,6 +505,41 @@ fn test_source_image_paint_alpha_precedes_deferred_canvas_filters() {
 			image_test_bitmap(7, 6, i !in [1, 3, 4, 5, 9], i in [2, 5, 6, 8, 9]), source, destination,
 			true, alphas[i], mode, image_test_clips(i in [1, 3, 6, 7, 8, 9]), new_canvas_filter(steps), false)
 		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'image paint alpha fixture ${i}'
+	}
+}
+
+fn test_integer_source_images_resolve_sampling_and_color_before_blur() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+	box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	sequences := [[box], [gaussian], [contrast, gaussian, opacity, box],
+		[CanvasFilterStep{kind: .blur, sigma: 1.2}], [gaussian, contrast, box],
+		[CanvasFilterStep{kind: .blur, sigma: 1.2}], [box],
+		[contrast, CanvasFilterStep{kind: .blur}, opacity, CanvasFilterStep{kind: .blur, sigma: .01}, box]]
+	hashes := ['52a21c2bac4d4259', 'e9b398034919dbd9', 'a3b2ddfab2f04556', '8dbc9961e18faaa5',
+		'a8230d732d6e0330', '0e53661aa81425c3', '7bb5c150a395bcf9', 'e126bfc9481ba799']
+	for i, steps in sequences {
+		mut pixels := image_test_background()
+		source := if i in [1, 2, 4, 7] { [f32(1), 1, 5, 4]! } else { [f32(0), 0, 7, 6]! }
+		destination := match i {
+			0 { [f32(4), 5, 30, 25]! }
+			1 { [f32(4.25), 6.5, 25, 18]! }
+			3 { [f32(10.25), 12.5, 28, 18]! }
+			5 { [f32(10.25), 12.5, 2, 3]! }
+			6 { [f32(10), 12, 7, 6]! }
+			else { [f32(4.5), 6.25, 22, 16]! }
+		}
+		transform := if i == 4 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+			else if i == 6 { [f32(1), 0, 0, 1, .25, .75]! } else { image_test_identity }
+		mode := match i { 0, 6 { BlendMode.src_over } 2 { .overlay } 3 { .multiply }
+			5 { .plus_lighter } else { .src_in } }
+		alpha := if i == 2 { f32(.65) } else if i in [5, 7] { f32(.7) } else { f32(1) }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i !in [2, 3, 7], i in [2, 5, 7]), source, destination,
+			i != 1, alpha, mode, image_test_clips(i in [1, 3, 5, 7]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'resampled source fixture ${i}'
 	}
 }
 

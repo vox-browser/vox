@@ -612,6 +612,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 		sources << image
 	}
 	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	if spatial { destinations[1] = [f64(100.25), 30.5, 24, 18] }
 	if fractional { destinations[2] = [f64(140.25), 70.5, 28, 24] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
