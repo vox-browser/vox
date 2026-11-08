@@ -108,3 +108,11 @@ fn test_flow_root_content_alignment_uses_final_minimum_and_static_position() {
 	assert block_alignment_values(document, result, 'child').offset.y().to_double() == 25
 	assert block_alignment_values(document, result, 'absolute').offset.y().to_double() == 45
 }
+
+fn test_table_caption_align_content_centers_its_block_contents() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{display:table-caption;height:50px;align-content:unsafe center}#content{height:10px}</style><div id="target"><div id="content"></div></div>')
+	defer { document.finalize() }
+	run_document_layout(document,200,200) or { panic('layout') }
+	content := (document.get_element_by_id('content') or { panic('content') }).get_bounding_client_rect()
+	assert content.y == 20,content.y.str()
+}

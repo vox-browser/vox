@@ -12,7 +12,7 @@ fn block_content_alignment_text(root &Node) string {
 // Flex/grid/table/multicol contexts retain their own alignment algorithms.
 fn align_block_contents(mut state LayoutState, root &Node) {
 	if !root.is_block_container()
-		|| (!root.display().is_flow_inside() && !root.display().is_flow_root_inside())
+		|| (!root.display().is_flow_inside() && !root.display().is_flow_root_inside() && !root.display().is_table_caption())
 		|| root.is_replaced_box() || root.is_viewport() || root.is_table_wrapper()
 		|| root.computed_values().writing_mode() != .horizontal_tb
 		|| root.computed_values().establishes_multi_column_container() {
