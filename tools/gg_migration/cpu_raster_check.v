@@ -1388,7 +1388,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') == 'filterlayers' {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -2712,7 +2712,11 @@ fn send_filters(oracle Oracle, filters []cpuraster.CanvasFilterStep) {
 	mut values := []i32{}
 	mut floats := []f32{}
 	for f in filters {
-		if f.kind == .blur {
+		if f.kind == .drop_shadow {
+			values << [i32(1), 0, i32(f.color)]
+			floats << [f.sigma, f.offset_x, f.offset_y]
+			floats << []f32{len: 20}
+		} else if f.kind == .blur {
 			values << [i32(0), 0, 0]
 			floats << [f.sigma, 0, 0]
 			floats << []f32{len: 20}
@@ -2993,11 +2997,31 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	library := C.dlopen(os.args[1].str, 2)
 	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
-	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, random_layer_filters) or {
+	shadows := os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
+	make_filters := if shadows { random_shadow_filters } else { random_layer_filters }
+	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, make_filters) or {
 		eprintln(err.msg())
 		exit(1)
 	}
-	println('blur-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+	label := if shadows { 'drop-shadow' } else { 'blur' }
+	println('${label}-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+}
+
+fn random_shadow_filters() []cpuraster.CanvasFilterStep {
+	offset := fn () f32 {
+		return if rand.intn(3) or { 0 } == 0 {
+			f32(rand.f64() * 40 - 20)
+		} else {
+			f32(rand.intn(41) or { 0 } - 20)
+		}
+	}
+	return [cpuraster.CanvasFilterStep{
+		kind:     .drop_shadow
+		sigma:    random_blur_step().sigma
+		offset_x: offset()
+		offset_y: offset()
+		color:    random_composite_color()
+	}]
 }
 
 type OracleImageBlur = fn (pixels &u8, values &i32, floats &f32, out &u8, info &i32)

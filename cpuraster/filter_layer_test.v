@@ -66,8 +66,14 @@ fn test_blur_filtered_draws_match_skia() {
 	// A scaled stroke: the layer matrix carries the scale, and the sigma is
 	// mapped into layer space per axis (the Gaussian pass).
 	px = filter_layer_test_background()
-	assert stroke_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(), [f32(1.25), 0, 0,
-		0.75, 2, 4]!, 0xff3070c0, none, 1, .src_over, 0, 3, .round, .round, 10, [], 0, [], blur_filter(0.8))
+	assert stroke_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(), [
+		f32(1.25),
+		0,
+		0,
+		0.75,
+		2,
+		4,
+	]!, 0xff3070c0, none, 1, .src_over, 0, 3, .round, .round, 10, [], 0, [], blur_filter(0.8))
 	assert filter_layer_test_hash(px, 1) == '11314abdec52c202'
 	// Multiply through an anti-aliased clip, which cuts the sprite: the
 	// result is drawn with an image shader.
@@ -110,9 +116,63 @@ fn test_blur_filter_lists() {
 	assert f == none
 	mut px := filter_layer_test_background()
 	before := px.clone()
-	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [f32(1), 0, 0, 1,
-		0, 0]!, 0xff000000, none, 1, .src_in, 0, [], blur_filter(2))
-	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [f32(0.9), 0.4, -0.4,
-		0.9, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], blur_filter(2))
+	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [
+		f32(1),
+		0,
+		0,
+		1,
+		0,
+		0,
+	]!, 0xff000000, none, 1, .src_in, 0, [], blur_filter(2))
+	assert !fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), [
+		f32(0.9),
+		0.4,
+		-0.4,
+		0.9,
+		0,
+		0,
+	]!, 0xff000000, none, 1, .src_over, 0, [], blur_filter(2))
+	assert px == before
+}
+
+// Byte hashes captured from vox_skia_canvas_path() in the pinned LibWeb
+// Skia, on the same path/background as the blur-layer regression tests.
+fn test_drop_shadow_filter_layers_match_skia() {
+	steps := [
+		CanvasFilterStep{ kind: .drop_shadow, sigma: -1, color: 0xff000000 },
+		CanvasFilterStep{ kind: .drop_shadow, offset_x: 7, offset_y: -5, color: 0x805030e0 },
+		CanvasFilterStep{ kind: .drop_shadow, sigma: 2.5, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0 },
+		CanvasFilterStep{ kind: .drop_shadow, sigma: 0.8, offset_x: -7.25, offset_y: 4.5, color: 0xff3070c0 },
+		CanvasFilterStep{ kind: .drop_shadow, sigma: 12, offset_x: 2, offset_y: 3, color: 0x80ff8000 },
+		CanvasFilterStep{ kind: .drop_shadow, offset_x: 90, offset_y: 80, color: 0xff000000 },
+	]
+	modes := [BlendMode.src_over, .src_over, .src_over, .multiply, .screen, .xor]
+	hashes := ['e285128862b4c6f0', 'ab22cb5dca7fc310', 'a62f8ada40e53b93', '05e318754d94c77f',
+		'4cb7f8b02151c3f6', '4394924f9676093c']
+	for i, step in steps {
+		mut px := filter_layer_test_background()
+		clips := if i == 3 { filter_layer_test_clip() } else { []Path{} }
+		assert fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(),
+			[f32(1), 0, 0, 1, 0, 0]!, 0xc0e04010, none, 1, modes[i], 0, clips,
+			new_canvas_filter([step]))
+		assert filter_layer_test_hash(px, 2) == hashes[i], 'drop-shadow fixture ${i}'
+	}
+}
+
+fn test_unsupported_drop_shadow_layers_preserve_destination() {
+	step := CanvasFilterStep{ kind: .drop_shadow, sigma: 2, offset_x: 3.5, offset_y: -1.25, color: 0x80000000 }
+	mut px := filter_layer_test_background()
+	before := px.clone()
+	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
+		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_in, 0, [], new_canvas_filter([step]))
+	assert px == before
+	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
+		[f32(0.9), 0.4, -0.4, 0.9, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([step]))
+	assert px == before
+	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
+		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([
+			step,
+			step,
+		]))
 	assert px == before
 }

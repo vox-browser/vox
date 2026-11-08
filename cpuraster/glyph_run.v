@@ -58,7 +58,7 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	defer {
 		face.release()
 	}
-	if plan.blur >= 0 {
+	if layer_filter := plan.layer {
 		// The blob's conservative bounds at its origin are the layer
 		// content; fonts without typeface bounds would need the glyphs'
 		// tight bounds.
@@ -69,14 +69,18 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
-		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom { bounds } else { Rect{} }
+		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {
+			bounds
+		} else {
+			Rect{}
+		}
 		content := Rect{blob.left + run.translation[0], blob.top + run.translation[1], blob.right +
 			run.translation[0], blob.bottom + run.translation[1]}
-		return draw_blur_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
-			content, plan.blur, mode, fn [run, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
-			return fill_canvas_glyphs(mut layer, w, h, w * 4, 2, run, t, color, style, global_alpha,
-				.src_over, layer_clips, none)
-		})
+		return draw_filter_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
+			content, layer_filter, mode, fn [run, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
+				return fill_canvas_glyphs(mut layer, w, h, w * 4, 2, run, t, color, style, global_alpha,
+					.src_over, layer_clips, none)
+			})
 	}
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
@@ -138,7 +142,11 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
-		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom { bounds } else { Rect{} }
+		blob := if bounds.left < bounds.right && bounds.top < bounds.bottom {
+			bounds
+		} else {
+			Rect{}
+		}
 		local := Rect{blob.left + origin.x, blob.top + origin.y, blob.right + origin.x, blob.bottom +
 			origin.y}
 		if canvas_quick_reject(local, matrix, &rc) {

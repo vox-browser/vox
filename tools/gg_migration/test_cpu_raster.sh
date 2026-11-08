@@ -4,6 +4,7 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 output_dir=${1:-"$repo_dir/Build/gg-cpu-raster"}
 count=${2:-20000}
+seed=${3:-20261106}
 v_compiler=${V_BIN:-"$HOME/code/v/v"}
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 case "$(uname -m)" in
@@ -31,7 +32,7 @@ set --
 if [ "${CPU_RASTER_TEST_PROD:-0}" = 1 ]; then set -- -prod -gc none; fi
 "$v_compiler" -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
     -o "$output_dir/cpu_raster_check" "$repo_dir/tools/gg_migration/cpu_raster_check.v"
-"$output_dir/cpu_raster_check" "$output_dir/skia_cpu_oracle.dylib" "$count"
+"$output_dir/cpu_raster_check" "$output_dir/skia_cpu_oracle.dylib" "$count" "$seed"
 python3 - "$output_dir/inputs.json" <<'PY'
 import hashlib,json,sys
 from pathlib import Path

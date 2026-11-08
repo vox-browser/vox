@@ -823,9 +823,17 @@ fn test_color_filtered_canvas_draws_match_skia() {
 // A lone blur() draws through cpuraster's image filter layer: a scaled
 // fill, a stroke and text must match Skia with the same filter.
 fn test_blur_filtered_canvas_draws_match_skia() {
+	check_filtered_canvas_draws_match_skia(['blur(3px)', 'blur(1.2px)', 'blur(6px)'])
+}
+
+fn test_drop_shadow_filtered_canvas_draws_match_skia() {
+	check_filtered_canvas_draws_match_skia(['drop-shadow(5px 10px 3px #80402080)',
+		'drop-shadow(-10px 10px 1.2px blue)', 'drop-shadow(5px -10px 6px #10203090)'])
+}
+
+fn check_filtered_canvas_draws_match_skia(filters []string) {
 	mut context := cpu_raster_test_context()
 	context.set_font('21px sans-serif')
-	filters := ['blur(3px)', 'blur(1.2px)', 'blur(6px)']
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i, filter in filters {
@@ -837,7 +845,11 @@ fn test_blur_filtered_canvas_draws_match_skia() {
 			a: 220
 		})
 		context.drawing_state.stroke_style = context.drawing_state.fill_style
-		context.drawing_state.transform = CanvasAffineTransform{1.2, 0, 0, 0.9, 4, 2}
+		context.drawing_state.transform = if filter.starts_with('drop-shadow') {
+			CanvasAffineTransform{1, 0, 0, 1, 4, 2}
+		} else {
+			CanvasAffineTransform{1.2, 0, 0, 0.9, 4, 2}
+		}
 		context.drawing_state.line_width = 5
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
@@ -845,6 +857,9 @@ fn test_blur_filtered_canvas_draws_match_skia() {
 		state := context.drawing_state
 		skia_filters := context.canvas_skia_filters()
 		assert skia_filters.len == 1
+		supported, cpu_filter := canvas_cpu_filter(skia_filters)
+		assert supported
+		assert cpu_filter != none
 		if i == 2 {
 			text := 'Blurred text'
 			run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
@@ -894,7 +909,7 @@ fn test_blur_filtered_canvas_draws_match_skia() {
 		}
 		expected_alpha_type = 2
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'blurred draw ${i} differs from Skia'
+		assert after.data == expected, '${filter} draw ${i} differs from Skia'
 	}
 	assert expected.any(it != 0 && it != 255)
 }

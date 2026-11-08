@@ -591,7 +591,7 @@ integer arguments as one `i32` array.
 | `skia.draw_glyph_run` (`vox_skia_canvas_glyphs`) | Canvas 2D `fillText()` without filters | `cpuraster.fill_canvas_glyphs` on macOS, with CoreText doing exactly what `SkTypeface_Mac` and `SkScalerContext_Mac` ask of it (the font from the file's bytes, `SkCTFontCreateExactCopy()` at the strike's text size, advances and bounding rects through `fTransform`, glyphs drawn into the offscreen `CGBitmapContext`, CoreGraphics' inline point and size transforms evaluated without fused multiply-adds): `SkScalerContextRec`'s relaxed 2x2, `computeMatrices(kVertical)` with its Givens rotation, the quarter-pixel `SkPackedGlyphID` positions and rounding, `generateMetrics()`'s bounds rounding and outset, `SkTMaskGamma<3, 3, 3>`'s default sRGB tables selected by the paint's luminance color (a gradient's average stop color, gray for patterns), the blob's conservative quick reject from the typeface bounds, and `Draw::paintMasks()` through the existing blitters and anti-aliased clip; glyphs over 256 pixels per em are the 64-point strike's outlines (`generatePath()`'s 4x request through `SkCTPathGeometrySink`) filled like `SkCanvas::drawPath()`, concatenated onto the canvas matrix in `SkM44`'s float arithmetic or mapped first under a shader; color typefaces make ARGB32 strikes drawn whole by `Draw::drawSprite()` (sprite blitters, or a clamped image shader where the clip cuts them), and glyphs without outlines stay masks at path sizes; 80,000 random runs over two seeds (22,710 of them drawing, about 1,300 path-sized) and 10,000 color emoji runs (2,960 drawing) exact in both default and `-prod -gc none` builds. Declines faces past the first of a collection (Skia's CoreText manager cannot open them either), color glyphs 8192 or more pixels wide and non-finite positions; Linux declines until FreeType's scaler is ported |
 | `skia.draw_path` and `draw_glyph_run` color filters | Canvas 2D `filter` lists of grayscale, sepia, saturate, hue-rotate, invert, opacity, brightness and contrast on fills, strokes and `fillText()` | `cpuraster.ColorFilter`: `SkImageFilters::ColorFilter()`'s composed `SkMatrixColorFilter`s, moved into the paint by `SkCanvasPriv::ImageToColorFilter()` and folded by `SkBlitter::Choose()`'s `RemoveColorFilter()`: `filterColor4f()`'s one-pixel highp pipeline for a solid color (then the legacy blitter when it fits in bytes, else the constant pipeline, highp through `unbounded_uniform_color` when a channel exceeds alpha), `SkColorFilterShader` stages after gradients and patterns, `CheckFastPath()` and `nothingToDraw()` seeing the filter, and the filtered luminance color for glyph mask gamma; 200,000 random filtered draws over two seeds exact in both default and `-prod -gc none` builds. Filters that change transparent black decline (they need an image filter layer) |
 | `skia.draw_path` and `draw_glyph_run` blur layers | Canvas 2D `filter: blur()` on fills, strokes and `fillText()` | `cpuraster.draw_blur_layer`: `AutoLayerForImageFilter` and `internalSaveLayer()` for a scale-translate CTM (layer bounds from the clip bounds outset by the blur kernel and the paint's fast bounds rounded out with skif's epsilon, the transparent padding pixel, `SkM44::postTranslate()` for the layer matrix), `internalDrawDeviceWithFilter()` with `insetForSaveLayer()` and the layer-space sigma, SkBlurEngine's `Raster8888BlurAlgorithm` (`eval_blur_passes()`, the float Gaussian pass below sigma 2, `ThreeBoxApproxPass` with `ScaledDividerU32` up to 135) inside `Builder::blur()`'s bounds, and `FilterResult::draw()`'s sprite or image-shader draw-back with the composite operation; 60,000 random `SkImages::MakeWithFilter()` blurs and 60,000 random blurred canvas draws over two seeds exact in both default and `-prod -gc none` builds. Rotations, blenders that change transparent black, sigmas over 135, blurs mixed with other filters and fonts without typeface bounds decline |
-| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Not started: drop shadows, mixed and rotated filter layers, SVG filter graphs, and image filters on `drawImage()` |
+| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: scaled drop shadows, mixed and rotated filter layers, SVG filter graphs, and image filters on `drawImage()` |
 | `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Not started: AA clips under transforms, PathOps difference, blur mask filters, blur image filter layers, glyph masks |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
@@ -618,7 +618,47 @@ canvases), while the Linux build defines `SK_HIDE_PATH_EDIT_METHODS`
 RGBA canvases use the raster pipeline blitter); the Linux behavior is not ported
 yet. The pipeline stages follow the arm64 (NEON) build; x86 Skia's lowp
 `div255` and its `rcp_fast` differ. Next prerequisite: the rest of the image filter
-layers (drop shadows, mixed lists, rotations, SVG graphs).
+layers (scaled drop shadows, mixed lists, rotations, SVG graphs).
+
+### Drop-shadow canvas layers (2026-11-08)
+
+`cpuraster` now draws a single Canvas2D `drop-shadow()` on fills, strokes and
+text under a translation-only canvas transform. Shadow offsets may be
+fractional: the image is blurred, sampled through a deferred SrcIn tint,
+then merged beneath SourceGraphic before applying the original composite
+operation and device clip. This keeps paint alpha on the source and shadow
+tint alpha on the shadow. An invalid blur still leaves the tint, offset and
+merge intact. Offscreen shadow input is intersected with the content before
+unioning the foreground input, so it cannot unnecessarily enlarge the layer.
+
+The port retains the padded image boundary and Skia's matrix-conjugation,
+concatenation and integer-bound rounding order. Scaled drop shadows still
+decline: differential checks found one-byte errors that require more of
+FilterResult's resampling/crop analysis. Rotations, mixed filter lists,
+composites that affect transparent black, oversized sigmas/layers and text
+without typeface bounds also retain the native fallback. The existing scaled
+single-blur path remains supported. This is another migration slice, not a
+Skia-free browser.
+
+Feature commit `244dc3607` passes 9,343 supported byte-for-byte comparisons
+from 20,000 attempts in each of the default and `-prod -gc none` builds
+(seed 20261106); 10,657 draws decline in each build without changing the
+pixels. Seven focused raster test files pass normally, four also with
+`-prod -gc none`; two HTML canvas test files and a final translation-path
+HTML check pass. The full-browser type check passes and the final FMA audit
+reports zero contracted multiply-adds. All ten final memory-guard receipts
+have actual child exit zero. These are focused correctness checks, with no
+production-browser, Linux-build or performance claim. See the
+[verification receipt](gg-migration/drop-shadow-20261108.json) for source and
+oracle hashes, commands, exits and the unsuccessful intermediate candidates.
+
+Linux dependency audit: `build-linux-browser.sh` still requires `skia.pc`;
+`tools/build_linux_native.py` still builds the Skia canvas and shadow bridges;
+`skia/canvas.c.v` links that archive and Skia; and
+`cpuraster/glyph_scaler_linux.c.v` still declines glyphs. The macOS native text,
+Graphite and Dawn dependencies listed above also remain. No Skia-free Linux
+build has been produced. The local Linux VM failed to bring up SSH on both
+startup attempts, so no Linux compilation took place during this slice.
 
 ## Hacker News performance (2026-11-06)
 

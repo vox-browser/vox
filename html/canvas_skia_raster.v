@@ -159,6 +159,15 @@ fn canvas_cpu_filter(filters []skia.Filter) (bool, ?cpuraster.CanvasFilter) {
 					sigma: filter.radius
 				}
 			}
+			1 {
+				steps << cpuraster.CanvasFilterStep{
+					kind: .drop_shadow
+					sigma: filter.radius
+					offset_x: filter.offset_x
+					offset_y: filter.offset_y
+					color: filter.color
+				}
+			}
 			2, 4 {
 				steps << cpuraster.CanvasFilterStep{
 					kind:   .matrix

@@ -212,6 +212,10 @@ pub struct PipelineBlitter {
 	filtered      bool
 	filter        ColorFilter
 	filter_opaque bool
+	// Deferred SkColorFilters::Blend(color, kSrcIn), used by drop shadows.
+	tinted    bool
+	tint      [4]f32
+	lowp_tint [4]u32
 mut:
 	pixels []u8
 }
@@ -577,6 +581,12 @@ fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, c
 		alpha := lowp_from_float(b.scale)
 		for i in 0 .. 4 {
 			src[i] = lowp_div255(u16w(src[i] * alpha))
+		}
+	}
+	if b.tinted {
+		alpha := src[3]
+		for i in 0 .. 4 {
+			src[i] = lowp_div255(u16w(b.lowp_tint[i] * alpha))
 		}
 	}
 	mut r := lowp_min(src[0], 255)
@@ -948,6 +958,12 @@ fn (mut b PipelineBlitter) blit_highp(px int, py int, o int, kind CoverageKind, 
 	}
 	if b.filtered {
 		src = b.filter.apply(src, b.filter_opaque)
+	}
+	if b.tinted {
+		alpha := src[3]
+		for i in 0 .. 4 {
+			src[i] = b.tint[i] * alpha
+		}
 	}
 	mut r := neon_min(neon_max(0, src[0]), 1)
 	mut g := neon_min(neon_max(0, src[1]), 1)

@@ -70,7 +70,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   same scripts with `gg.canvas.RasterSurface` and compares every byte.
   `gen_text_corpus.py` generates random runs (fonts, sizes, colors,
   backgrounds, matrices and smoothing flags).
-- `test_cpu_raster.sh OUTPUT [COUNT]` builds `skia_cpu_oracle.cpp` (the
+- `test_cpu_raster.sh OUTPUT [COUNT [SEED]]` builds `skia_cpu_oracle.cpp` (the
   original LibWeb Skia implementations of everything moved to the Skia-free
   `cpuraster` and `gfxfont` code) against the vcpkg `libskia`, then
   `cpu_raster_check.v` compares both byte for byte: `read_pixels` over every
@@ -102,13 +102,13 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   quarter-pixel phase, mask and path sizes, flipped, rotated and skewed
   transforms, styles, composites and clips) through
   `vox_skia_canvas_glyphs()`, and all three under canvas filter lists of
-  color matrices and blurs (`oracle_filters()`), plus image filter blurs
+  color matrices, blurs and drop shadows (`oracle_filters()`), plus image filter blurs
   through `SkImages::MakeWithFilter()` (`oracle_image_blur()`); declined
   draws must leave the pixels untouched.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes`, `composites`, `shadows`,
   `gradients`, `patterns`, `clears`, `images`, `bwfills`, `glyphs`,
-  `colorfilters`, `filterlayers` or `imageblur` to run only those
+  `colorfilters`, `filterlayers`, `dropshadows` or `imageblur` to run only those
   comparisons (`CPU_RASTER_GLYPH_FONT` limits the glyph runs
   to one font file); a `-gc none` binary never frees, so run its
   categories in separate processes. The driver takes an optional seed after `COUNT`; with

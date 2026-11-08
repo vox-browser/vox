@@ -1,0 +1,250 @@
+{
+  "date": "2026-11-08",
+  "feature": "Translation-only Canvas2D drop-shadow filters; full Skia removal remains open",
+  "source_sha256": {
+    "cpuraster/canvas.v": "9cb1c42ed8a8c2f7e70fe124bfc57a1f43a6088e70b382308185d46c08189cf3",
+    "cpuraster/filter_layer.v": "d363f4d560edc9bbb2f64d66860ff6744763f7d4f4e871b7559f8263cee3b013",
+    "cpuraster/filter_layer_test.v": "384177e8491affd9d5742672554f62bc88f0dbd17f33379fa81f374fcfd0047b",
+    "cpuraster/glyph_run.v": "5ecb87ddcf57db7e2941c126772b96a4769c69929f66e7828b63b1056ba731f4",
+    "cpuraster/pipeline_blitter.v": "caec14643843a20264767ef7a3f94c70e526058827e42bcc2870485f505f657a",
+    "cpuraster/drop_shadow_test.v": "3789a1f6b26e4512bc34468aba2f0e03568d33b4d3c8c7747cec0af2f37d2e55",
+    "html/canvas_cpu_raster_test.v": "da4d6c288e8af76d8919d1930b7eb1574279e4841bf3e550f7fecf9bef85fa27",
+    "html/canvas_skia_raster.v": "c2ab427765921b78a50fac4d648a7dc30601828b724275e4574ab03cc398ea35",
+    "tools/gg_migration/cpu_raster_check.v": "c42565e9a408b85e39c67abcf41c12a93c09b58ba545e82e8a6d12aff44c2aba",
+    "tools/gg_migration/test_cpu_raster.sh": "b3006a3d4e6f2ab410c00dee318a254afa0c8090579467286578bca0689a5cc5"
+  },
+  "oracle_sha256": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+  "differential": {
+    "seed": 20261106,
+    "attempts_per_build": 20000,
+    "exact_per_build": 9343,
+    "declined_per_build": 10657,
+    "modes": [
+      "default",
+      "-prod -gc none"
+    ]
+  },
+  "checks": {
+    "11": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-drop-shadow",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 628736000,
+      "elapsed_seconds": 190.406214833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "prod": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-drop-shadow-prod",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2051964928,
+      "elapsed_seconds": 105.791005959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "cpu-tests": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/filter_layer_test.v",
+        "cpuraster/pipeline_blitter_test.v",
+        "cpuraster/color_filter_test.v",
+        "cpuraster/image_filter_test.v",
+        "cpuraster/glyph_run_test.v",
+        "cpuraster/canvas_image_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 405962752,
+      "elapsed_seconds": 112.884765833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "cpu-prod-tests": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/filter_layer_test.v",
+        "cpuraster/pipeline_blitter_test.v",
+        "cpuraster/glyph_run_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 426655744,
+      "elapsed_seconds": 89.005412292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "fallback": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/drop_shadow_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 333398016,
+      "elapsed_seconds": 8.820466541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "fallback-prod": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/drop_shadow_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 357728256,
+      "elapsed_seconds": 12.718051084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "html": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "test",
+        "html/canvas_cpu_raster_test.v",
+        "html/canvas_skia_raster_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3049095168,
+      "elapsed_seconds": 426.412743958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "html-final": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-enable-globals",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "test",
+        "html/canvas_cpu_raster_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3019751424,
+      "elapsed_seconds": 124.179464125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "typecheck": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-check",
+        "."
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4724899840,
+      "elapsed_seconds": 144.509003208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "fma-final-audit": {
+      "command": [
+        "python3",
+        "tools/gg_migration/fma_audit.py",
+        "--prefix",
+        "cpuraster__",
+        "--contracted-only",
+        "/tmp/vox2-drop-shadow-fma-20261108/probe-final.c",
+        "/tmp/vox2-drop-shadow-fma-20261108/cc.txt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 394870784,
+      "elapsed_seconds": 64.039736083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "retained_failures": [
+    "Invalid negative sigma incorrectly blurred the shadow: fixed; fixture retained.",
+    "Disjoint shadow input enlarged the foreground layer: fixed; fixture retained.",
+    "Unrestricted scaled glyph case 2578 differed by one byte; mapping conjugation ported.",
+    "Unrestricted scaled fill case 4126 differed by one byte; localToSrc mapping ported.",
+    "Unrestricted scaled patterned fill case 5714 still differed by one byte: all scaled drop shadows now decline before changing destination.",
+    "A forced-highp experiment failed case 0 and was reverted.",
+    "An intermediate map_filter_bounds rename did not compile and was fixed.",
+    "Initial arithmetic audit reported four contracted operations; split double products from additions; final audit reports zero."
+  ],
+  "linux": {
+    "compiled": false,
+    "skia_free": false,
+    "reason": "Skia remains required by canvas and shadow bridges; Linux glyph scaler is not ported. Local Lima VM failed to expose SSH on two starts; stopped and restored its original mount configuration."
+  },
+  "feature_commit": "244dc3607"
+}
