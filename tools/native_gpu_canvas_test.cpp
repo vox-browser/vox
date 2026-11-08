@@ -1390,6 +1390,29 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--transfer-buffers")) {
+        setenv("VOX_GPU_CANVAS_ISOLATED_SHAPES","1",1);
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
+        s_backend_read=api->read;api->read=counted_read;
+        unsigned cases=0;
+        for (auto leaves : {draw_leaves,draw_text_mask_leaves,draw_float_text_leaves})
+            for (bool full : {false,true}) for (int regions : {1,9,49}) {
+            s_gpu_canvas_transfer_pool.clear();
+            auto expected=render(true,false,leaves,full,regions);
+            assert(s_gpu_canvas_transfer_pool.cached_pixels()>0);
+            for (int repeat=0;repeat<3;++repeat) {
+                auto actual=render(true,false,leaves,full,regions);
+                assert(actual==expected);
+                assert(s_gpu_canvas_transfer_pool.cached_pixels()<=8*1024*1024);
+                ++cases;
+            }
+        }
+        s_gpu_canvas_transfer_pool.clear();
+        assert(!s_gpu_canvas_transfer_pool.cached_pixels());
+        std::cout<<cases<<" reused transfer cases: exact full/strip pixels, disjoint damage, "
+            "CPU barriers, text/alpha, bounded retention and explicit purge passed\n";
+        return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--line-raster")) {
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
         s_backend_read=api->read;api->read=counted_read;

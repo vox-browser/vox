@@ -179,6 +179,10 @@ int vox_picture_pixels_acquire(uint64_t token, VoxSharedPicturePixelsLease* out)
 namespace {
 
 VoxRasterBufferPool s_sparse_raster_pool;
+// At most 32 MiB of detached transfer storage; live readbacks hold leases so
+// nested painting cannot reuse their buffers. Idle/explicit purges release it.
+VoxRasterBufferPool s_gpu_canvas_transfer_pool(
+    std::getenv("VOX_DISABLE_GPU_CANVAS_TRANSFER_POOL") ? 0 : 8 * 1024 * 1024);
 uint64_t begin_deferred_gradient_text_input();
 void finish_deferred_gradient_text_input(uint64_t epoch, bool completed);
 void reject_deferred_gradient_text_input();
@@ -1176,6 +1180,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     clear_picture_raster_cache();
     clear_native_rounded_image_cache();
     s_sparse_raster_pool.clear();
+    s_gpu_canvas_transfer_pool.clear();
     s_glyph_raster_cache.clear();
     s_gradient_text_raster_cache.clear();
     s_glyph_text_blob_cache.clear();
@@ -1191,6 +1196,7 @@ extern "C" int ladybird_v_skia_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
     s_sparse_raster_pool.clear(true);
+    s_gpu_canvas_transfer_pool.clear(true);
     bool pending = false;
     if (auto* gpu = s_image_gpu_context.get(); gpu &&
         std::chrono::steady_clock::now() - s_image_gpu_context_last_use >= std::chrono::seconds(2)) {
