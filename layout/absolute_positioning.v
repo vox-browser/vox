@@ -453,6 +453,12 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 		horizontal_alignment = position_area_alignment(horizontal_alignment, area.x_tracks)
 		vertical_alignment = position_area_alignment(vertical_alignment, area.y_tracks)
 	}
+	mut alignment_anchor := ?css.CSSPixelRect(none)
+	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
+		if name := computed.position_anchor() { alignment_anchor = resolve_named_anchor_rect(state,box,containing_state,name) }
+	}
+	zero_horizontal_auto := position_area != none || (horizontal_alignment.position == 'anchor-center' && alignment_anchor != none)
+	zero_vertical_auto := position_area != none || (vertical_alignment.position == 'anchor-center' && alignment_anchor != none)
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
 	mut left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
@@ -463,8 +469,10 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 		computed, .top, containing_rect.y, containing_height, false, false)
 	mut bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .bottom, containing_rect.y, containing_height, true, false)
-	if position_area != none {
+	if zero_horizontal_auto {
 		if left == none { left = CSSPixels.new(0) }; if right == none { right = CSSPixels.new(0) }
+	}
+	if zero_vertical_auto {
 		if top == none { top = CSSPixels.new(0) }; if bottom == none { bottom = CSSPixels.new(0) }
 	}
 	mut forced_width := resolve_absolute_content_size(state, box, containing_state, .width,
@@ -585,8 +593,8 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 	// auto margins absorb the remaining space (equally when both are auto).
 	if left_value := left {
 		if right_value := right {
-			left_auto_margin := property_is_auto(computed, .margin_left)
-			right_auto_margin := property_is_auto(computed, .margin_right)
+			left_auto_margin := !zero_horizontal_auto && property_is_auto(computed, .margin_left)
+			right_auto_margin := !zero_horizontal_auto && property_is_auto(computed, .margin_right)
 			remaining := containing_width.minus(left_value).minus(right_value).minus(box_state.border_box_width()).minus(if left_auto_margin {
 				CSSPixels.new(0)
 			} else {
@@ -611,8 +619,8 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 	// space when both block-axis insets are specified.
 	if top_value := top {
 		if bottom_value := bottom {
-			top_auto_margin := property_is_auto(computed, .margin_top)
-			bottom_auto_margin := property_is_auto(computed, .margin_bottom)
+			top_auto_margin := !zero_vertical_auto && property_is_auto(computed, .margin_top)
+			bottom_auto_margin := !zero_vertical_auto && property_is_auto(computed, .margin_bottom)
 			remaining := containing_height.minus(top_value).minus(bottom_value).minus(box_state.border_box_height()).minus(if top_auto_margin {
 				CSSPixels.new(0)
 			} else {
@@ -695,17 +703,16 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 			}
 		}
 	}
-	if horizontal_alignment.position == 'anchor-center' {
+	if zero_horizontal_auto {
 		if property_is_auto(computed, .margin_left) { box_state.margin_left = CSSPixels.new(0) }
 		if property_is_auto(computed, .margin_right) { box_state.margin_right = CSSPixels.new(0) }
 	}
-	if vertical_alignment.position == 'anchor-center' {
+	if zero_vertical_auto {
 		if property_is_auto(computed, .margin_top) { box_state.margin_top = CSSPixels.new(0) }
 		if property_is_auto(computed, .margin_bottom) { box_state.margin_bottom = CSSPixels.new(0) }
 	}
 	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
-		if name := computed.position_anchor() {
-			if anchor := resolve_named_anchor_rect(state, box, containing_state, name) {
+		if anchor := alignment_anchor {
 				if horizontal_alignment.position == 'anchor-center' {
 					x = absolute_anchor_center_offset(anchor.x.minus(containing_state.padding_left), anchor.width, containing_rect.x,
 						containing_width, left or { CSSPixels.new(0) }, right or { CSSPixels.new(0) },
@@ -716,7 +723,6 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 						containing_height, top or { CSSPixels.new(0) }, bottom or { CSSPixels.new(0) },
 						box_state.margin_box_height()).plus(box_state.margin_box_top())
 				}
-			}
 		}
 	}
 	box_state.set_content_offset(CSSPixelPoint.new(x, y))
@@ -737,6 +743,14 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 		.minus(y)
 		.minus(box_state.content_height())
 		.minus(box_state.margin_box_bottom())
+	if zero_horizontal_auto {
+		if property_is_auto(computed,.left) { box_state.inset_left = CSSPixels.new(0) }
+		if property_is_auto(computed,.right) { box_state.inset_right = CSSPixels.new(0) }
+	}
+	if zero_vertical_auto {
+		if property_is_auto(computed,.top) { box_state.inset_top = CSSPixels.new(0) }
+		if property_is_auto(computed,.bottom) { box_state.inset_bottom = CSSPixels.new(0) }
+	}
 }
 
 fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
