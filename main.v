@@ -5295,6 +5295,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 			if app.frame_preparation_depth == 0 { app.record_document_paint_commands() }
 			return
 		}
+		if app.defer_site_image_completion_layout() { return }
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 		return
 	}
