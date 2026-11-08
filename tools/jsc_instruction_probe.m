@@ -31,6 +31,9 @@ static _Atomic unsigned faults;
 static unsigned maximum_depth;
 static _Atomic int active;
 static int started, factory_available, objc_call_available, script_eval_available;
+static int trace_callback_strings;
+static unsigned traced_callbacks;
+static double (*scroll_diagnostic_time)(void);
 static uint64_t initial_instructions;
 static char factory_encoding[256];
 static char call_encoding[128];
@@ -156,6 +159,25 @@ static JSValueRef invoke_native(unsigned slot, JSContextRef context, JSObjectRef
     JSObjectRef receiver, size_t count, const JSValueRef arguments[], JSValueRef *exception)
 {
     JSObjectCallAsFunctionCallback original = atomic_load_explicit(&callbacks[slot].original, memory_order_acquire);
+    // Diagnostic primitive strings only: never invoke a page getter, .name or
+    // toString hook while discovering which operation invalidated layout.
+    if (trace_callback_strings && traced_callbacks<4096 && scroll_diagnostic_time) {
+        double t=scroll_diagnostic_time();
+        if (t>=0) {
+            ++traced_callbacks;
+            fprintf(stderr,"JSC_CALLBACK_TRACE t_us=%.3f slot=%u count=%zu",t,slot,count);
+            for (size_t index=0;index<count && index<4;++index) {
+                if (!JSValueIsString(context,arguments[index])) continue;
+                JSStringRef string=JSValueToStringCopy(context,arguments[index],NULL);
+                if (!string) continue;
+                char text[2048];size_t size=JSStringGetUTF8CString(string,text,sizeof(text));
+                fprintf(stderr," string%zu_hex=",index);
+                for(size_t i=0;size && i<size-1;++i) fprintf(stderr,"%02x",(unsigned char)text[i]);
+                JSStringRelease(string);
+            }
+            fputc('\n',stderr);
+        }
+    }
     int entered = enter(6, (const void *)original, callbacks[slot].name, 0, 0);
     JSValueRef value = original(context, function, receiver, count, arguments, exception);
     leave(entered); return value;
@@ -299,6 +321,8 @@ __attribute__((constructor)) static void initialize(void)
     const char *enabled = getenv("VOX_JSC_INSTRUCTION_PROBE");
     if (!enabled || !*enabled || !pthread_main_np()) return;
     started = 1; mach_timebase_info(&timebase);
+    trace_callback_strings=getenv("VOX_JSC_CALLBACK_TRACE")!=NULL;
+    if (trace_callback_strings) scroll_diagnostic_time=dlsym(RTLD_DEFAULT,"vox_precise_scroll_diagnostic_time");
     initial_instructions = instructions();
     const char *selected = getenv("VOX_JSC_NATIVE_NAMES");
     if (selected && snprintf(native_names, sizeof(native_names), "%s", selected) >= (int)sizeof(native_names)) ++faults;

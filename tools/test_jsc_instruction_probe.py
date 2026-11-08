@@ -74,13 +74,20 @@ def main():
         common = ['clang', '-O2', '-Wall', '-Wextra', '-Werror', '-fno-objc-arc',
                   '-framework', 'Foundation', '-framework', 'JavaScriptCore']
         job('probe-compile', common + ['-dynamiclib', sources[1], '-o', probe])
-        job('fixture-compile', common + [sources[2], '-o', fixture])
+        job('fixture-compile', common + ['-Wl,-export_dynamic', sources[2], '-o', fixture])
         job('probe-sign', ['codesign', '--force', '--sign', '-', probe])
         job('fixture-sign', ['codesign', '--force', '--sign', '-', fixture])
         job('baseline', [fixture], True)
         job('inactive', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe)))
         job('active', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe),
             VOX_JSC_INSTRUCTION_PROBE='1', VOX_JSC_NATIVE_NAMES='native 🦊'))
+        job('trace', [fixture], True, dict(DYLD_INSERT_LIBRARIES=str(probe),
+            VOX_JSC_INSTRUCTION_PROBE='1', VOX_JSC_CALLBACK_TRACE='1'))
+        trace=(out / 'trace.log').read_text()
+        assert 'string0_hex=' + 'layout 🦊'.encode().hex() in trace
+        assert all(len(line.split('string0_hex=',1)[1].split()[0])<=4094
+                   for line in trace.splitlines() if 'string0_hex=' in line)
+        assert (out / 'trace.stdout').read_text()==(out / 'baseline.stdout').read_text()
         baseline = (out / 'baseline.stdout').read_text()
         assert baseline.startswith('JSC scope fixture passed:')
         assert baseline == (out / 'inactive.stdout').read_text() == (out / 'active.stdout').read_text()

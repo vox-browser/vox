@@ -9,6 +9,13 @@ static JSObjectRef recursive;
 static volatile unsigned bridge_returns;
 static int private_token;
 static JSObjectRef named_function;
+double vox_precise_scroll_diagnostic_time(void) { return 0; }
+static JSValueRef trace_bridge(JSContextRef context, JSObjectRef function, JSObjectRef receiver,
+    size_t count, const JSValueRef arguments[], JSValueRef *exception) {
+    (void)function;(void)receiver;(void)exception;
+    assert(count==2 && JSValueIsString(context,arguments[0]) && JSValueIsObject(context,arguments[1]));
+    return arguments[0];
+}
 static JSValueRef bridge(JSContextRef context, JSObjectRef function, JSObjectRef receiver,
     size_t count, const JSValueRef arguments[], JSValueRef *exception)
 {
@@ -125,6 +132,15 @@ int main(void)
         }
         assert(valid == 2 && invalid == 1);
         assert([[owner[@"probeAnswer"] toString] isEqualToString:@"🦊"]);
+        if (getenv("VOX_JSC_CALLBACK_TRACE")) {
+            JSStringRef trace_name=JSStringCreateWithUTF8CString("traceBridge");
+            JSObjectRef trace=JSObjectMakeFunctionWithCallback(context,trace_name,trace_bridge);
+            JSObjectSetProperty(context,JSContextGetGlobalObject(context),trace_name,trace,0,NULL);
+            JSStringRelease(trace_name);
+            exception=NULL;
+            value=evaluate(context,"(()=>{const p={toString(){throw sentinel},get name(){throw sentinel}};return traceBridge('layout 🦊',p)==='layout 🦊'&&traceBridge('x'.repeat(4096),p).length===4096})()",&exception);
+            assert(!exception && JSValueToBoolean(context,value));
+        }
         JSGlobalContextRelease(context);
         printf("JSC scope fixture passed: recursive=5 original-exceptions=2 scripts=%u/%u deferred-errors=%u\n", valid, invalid, deferred);
     }
