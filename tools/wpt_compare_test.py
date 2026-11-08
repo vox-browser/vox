@@ -10,7 +10,7 @@ from urllib.request import ProxyHandler, Request, build_opener
 
 from wpt_compare import (REPORT_SCRIPT, WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
                          group_rss, make_handler, signal_process_group, substitute, summarize,
-                         upstream_testharness, format_report, suite_passes)
+                         upstream_testharness, format_report, suite_passes, select_new_tests)
 
 HARNESS = ('var settings = { output: !(globalThis.internals && globalThis.internals.headless),\n'
            'harness_timeout:{ "normal":150000, "long":300000 } };\n'
@@ -28,6 +28,14 @@ def record(browser, test, ms, statuses=('PASS',), harness='OK'):
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_new_batch_excludes_existing_ids_before_limiting_and_keeps_variants(self):
+        tests = [dict(id=name) for name in ('a', 'b', 'b?x=1', 'b.any.worker', 'c')]
+        baseline = [dict(id='a'), dict(id='b'), dict(id='removed')]
+        self.assertEqual([test['id'] for test in select_new_tests(tests, baseline, 2)],
+                         ['b?x=1', 'b.any.worker'])
+        self.assertEqual(select_new_tests(tests, baseline), tests[2:])
+        self.assertEqual(select_new_tests(tests, tests, 100), [])
+
     def test_expectations_name_documents_variants_and_long_timeouts(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

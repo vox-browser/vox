@@ -189,6 +189,17 @@ def discover_tests(text_root=TEXT_TESTS, includes=()):
     return tests
 
 
+def select_new_tests(tests, baseline_tests, limit=None):
+    """Select newly imported IDs before limiting; changed existing tests stay out.
+
+    Keep discovery order, including distinct worker and query variants. Never
+    select on browser results, which would silently omit unsupported cases.
+    """
+    baseline_ids = {test['id'] for test in baseline_tests}
+    added = [test for test in tests if test['id'] not in baseline_ids]
+    return added if limit is None else added[:limit]
+
+
 def parse_headers_file(path):
     headers = []
     if path.is_file():
@@ -720,6 +731,10 @@ def format_report(summary, identity):
              f"load {identity['load_start']} → {identity['load_end']}.", '',
              f"Vox `{(vox_digest or 'not run')[:12]}` (C mode {receipt.get('c_compile', {}).get('mode')}, "
              f"head `{receipt.get('inputs', {}).get('head', '')[:12]}`); {identity.get('brave_version')}.", '']
+    if identity.get('selection_baseline'):
+        lines += [f"Selection: newly imported IDs absent from Ladybird "
+                  f"`{identity['selection_baseline']['revision'][:12]}`, in discovery order "
+                  "before applying the requested limit. Changed existing IDs are excluded.", '']
     if identity.get('aborted') or identity.get('changed_inputs'):
         lines += [f"**Incomplete:** {identity.get('aborted') or 'inputs changed: ' + str(identity['changed_inputs'])}", '']
     lines += ['## Conformance', '',
@@ -784,6 +799,7 @@ def main():
                         help='Test id prefix such as dom/nodes (repeatable)')
     parser.add_argument('--limit', type=int)
     parser.add_argument('--ladybird-ref', help='Read imported fixtures at this Git revision without changing the upstream checkout')
+    parser.add_argument('--new-since', help='With --ladybird-ref, select only IDs absent from this pinned Ladybird revision, before --limit')
     parser.add_argument('--fixture-cache', type=Path, default=Path.home() / '.cache/vox/wpt')
     parser.add_argument('--require-all-pass', action='store_true',
                         help='Exit nonzero unless every selected case and subtest passes in every requested browser')
@@ -804,6 +820,10 @@ def main():
     parser.add_argument('--browser-memory-gib', type=float, default=4,
                         help='Stop a browser whose process group exceeds this RSS')
     args = parser.parse_args()
+    if args.new_since and not args.ladybird_ref:
+        parser.error('--new-since requires --ladybird-ref')
+    if args.limit is not None and args.limit < 1:
+        parser.error('--limit must be positive')
     browsers = [name.strip() for name in args.browsers.split(',') if name.strip()]
     if not browsers or any(name not in ('vox', 'brave') for name in browsers):
         parser.error('--browsers takes vox and/or brave')
@@ -811,13 +831,19 @@ def main():
         parser.error(f'{args.output} already exists')
     args.fixture_root = None
     args.fixture_manifest = None
+    args.baseline_manifest = None
     args.text_root = TEXT_TESTS
     if args.ladybird_ref:
         args.fixture_root, args.fixture_manifest = export_fixtures(
             LADYBIRD, args.ladybird_ref, args.fixture_cache)
         args.text_root = args.fixture_root / 'Tests/LibWeb/Text'
     tests = discover_tests(args.text_root, includes=args.include)
-    if args.limit:
+    if args.new_since:
+        baseline_root, args.baseline_manifest = export_fixtures(
+            LADYBIRD, args.new_since, args.fixture_cache)
+        baseline_tests = discover_tests(baseline_root / 'Tests/LibWeb/Text')
+        tests = select_new_tests(tests, baseline_tests, args.limit)
+    elif args.limit:
         tests = tests[:args.limit]
     if not tests:
         parser.error('no tests selected')
@@ -852,6 +878,7 @@ def run(args, tests, browsers, executables):
         ladybird_head=args.fixture_manifest['revision'] if args.fixture_manifest else subprocess.run(
             ['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip(),
         fixture_manifest=args.fixture_manifest,
+        selection_baseline=args.baseline_manifest,
         wpt_root=str(report_root), host_cpus=os.cpu_count(),
         load_start=[round(value, 2) for value in os.getloadavg()],
         brave_version=subprocess.run([str(executables['brave']), '--version'], capture_output=True,
