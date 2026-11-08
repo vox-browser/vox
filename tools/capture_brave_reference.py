@@ -9,6 +9,7 @@ device scale. Focus emulation matches a focused browser window, and the
 capture waits for document load and web fonts. --rects writes every element's
 client rectangle as JSON for geometry comparisons. --proxy-server and
 --cookie-file reuse an explicitly imported session in the isolated profile.
+--block-url fails matching requests, for example ad networks.
 Captures use sRGB. --windowed --native-scale uses the display's real scale
 and resizes the window around the requested viewport without emulation.
 """
@@ -203,6 +204,8 @@ def main() -> None:
     parser.add_argument("--scroll-y", type=float, default=0, help="document scroll position in CSS pixels")
     parser.add_argument("--scroll-x", type=float, default=0, help="horizontal document scroll position in CSS pixels")
     parser.add_argument("--proxy-server", help="HTTP or SOCKS5 proxy for this isolated Brave process")
+    parser.add_argument("--block-url", action="append", default=[], metavar="PATTERN",
+                        help="fail requests matching this CDP URL pattern (* wildcards); repeatable")
     parser.add_argument("--cookie-file", type=Path, help="private Netscape cookie jar to import")
     parser.add_argument("--metadata", type=Path, help="write final URL, title, login state and viewport")
     parser.add_argument("--timeout", type=float, default=60, help="navigation watchdog in seconds")
@@ -253,6 +256,11 @@ def main() -> None:
             cdp.call("Runtime.enable")
             if args.cookie_file:
                 cdp.call('Network.setCookies', {'cookies': imported_cookies(args.cookie_file)})
+            if args.block_url:
+                # Lets a reference omit third-party ad networks the way a
+                # content blocker would, independent of any proxy routing.
+                cdp.call('Network.enable')
+                cdp.call('Network.setBlockedURLs', {'urls': args.block_url})
             if args.native_scale:
                 resize_native_viewport(browser, cdp, target, args.width, args.height, args.scale)
             else:
