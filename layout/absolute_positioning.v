@@ -113,6 +113,8 @@ fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValu
 struct SpanAllPositionArea {
 	rect        css.CSSPixelRect
 	anchor_rect css.CSSPixelRect
+	x_tracks PositionAreaRange
+	y_tracks PositionAreaRange
 }
 
 fn position_area_is_span_all(computed &css.ComputedValues) bool {
@@ -390,24 +392,32 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				containing_state.padding_top.plus(containing_state.content_height()).plus(containing_state.padding_bottom).to_double())
 		}
 	}
-	position_area := span_all_position_area(state, box, containing_state, computed, containing_rect)
+	position_area := resolved_position_area(state, box, containing_state, computed, containing_rect)
 	if area := position_area {
 		containing_rect = area.rect
 	}
 	containing_width := containing_rect.width
 	containing_height := containing_rect.height
-	horizontal_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, true)
-	vertical_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, false)
+	mut horizontal_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, true)
+	mut vertical_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, false)
+	if area := position_area {
+		horizontal_alignment = position_area_alignment(horizontal_alignment, area.x_tracks)
+		vertical_alignment = position_area_alignment(vertical_alignment, area.y_tracks)
+	}
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
-	left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .left, containing_rect.x, containing_width, false, true)
-	right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .right, containing_rect.x, containing_width, true, true)
-	top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .top, containing_rect.y, containing_height, false, false)
-	bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .bottom, containing_rect.y, containing_height, true, false)
+	if position_area != none {
+		if left == none { left = CSSPixels.new(0) }; if right == none { right = CSSPixels.new(0) }
+		if top == none { top = CSSPixels.new(0) }; if bottom == none { bottom = CSSPixels.new(0) }
+	}
 	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
 		containing_width, box_state, true)
 	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),
@@ -486,6 +496,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	box_state = layout_independent_child_with_forced_height_definiteness(mut state, box,
 		mut containing_state, containing_width, containing_height, forced_width, forced_height,
 		computed_height_establishes_definite_containing_block_height(preferred_height))
+
 
 	// CSS 2.2 10.3.7: with both insets specified and a definite width,
 	// auto margins absorb the remaining space (equally when both are auto).
@@ -601,15 +612,23 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 			}
 		}
 	}
+	if horizontal_alignment.position == 'anchor-center' {
+		if property_is_auto(computed, .margin_left) { box_state.margin_left = CSSPixels.new(0) }
+		if property_is_auto(computed, .margin_right) { box_state.margin_right = CSSPixels.new(0) }
+	}
+	if vertical_alignment.position == 'anchor-center' {
+		if property_is_auto(computed, .margin_top) { box_state.margin_top = CSSPixels.new(0) }
+		if property_is_auto(computed, .margin_bottom) { box_state.margin_bottom = CSSPixels.new(0) }
+	}
 	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
 		if name := computed.position_anchor() {
 			if anchor := resolve_named_anchor_rect(state, box, containing_state, name) {
-				if horizontal_alignment.position == 'anchor-center' && !property_is_auto(computed, .margin_left) && !property_is_auto(computed, .margin_right) {
+				if horizontal_alignment.position == 'anchor-center' {
 					x = absolute_anchor_center_offset(anchor.x.minus(containing_state.padding_left), anchor.width, containing_rect.x,
 						containing_width, left or { CSSPixels.new(0) }, right or { CSSPixels.new(0) },
 						box_state.margin_box_width()).plus(box_state.margin_box_left())
 				}
-				if vertical_alignment.position == 'anchor-center' && !property_is_auto(computed, .margin_top) && !property_is_auto(computed, .margin_bottom) {
+				if vertical_alignment.position == 'anchor-center' {
 					y = absolute_anchor_center_offset(anchor.y.minus(containing_state.padding_top), anchor.height, containing_rect.y,
 						containing_height, top or { CSSPixels.new(0) }, bottom or { CSSPixels.new(0) },
 						box_state.margin_box_height()).plus(box_state.margin_box_top())
