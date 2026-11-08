@@ -9,7 +9,6 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	if ctm.kx != 0 || ctm.ky != 0 || step.kind !in [.blur, .drop_shadow]
 		|| math_abs32(ctm.tx) > 1 << 20 || math_abs32(ctm.ty) > 1 << 20 { return false }
 	drop := step.kind == .drop_shadow
-	if drop && (step.sigma < 0 || !is_finite_f32(step.sigma)) { return false }
 	local := rect_to_rect(src, dst) or { return false }
 	mapped := m44_image_concat(ctm, local)
 	total := sk_concat(mapped, affine_translate(src.left, src.top))
@@ -19,8 +18,9 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	mut stages := step.blur_stages.clone()
 	mut real_blur := false
 	if stages.len == 0 {
-		real_blur = blur_layer_sigma(math_abs32(step.sigma * ctm.sx)) != 0
-			|| blur_layer_sigma(math_abs32(step.sigma * ctm.sy)) != 0
+		real_blur = (!drop || (step.sigma >= 0 && is_finite_f32(step.sigma)))
+			&& (blur_layer_sigma(math_abs32(step.sigma * ctm.sx)) != 0
+			|| blur_layer_sigma(math_abs32(step.sigma * ctm.sy)) != 0)
 	} else {
 		for i, stage in stages {
 			before << stage.pre_color
@@ -32,8 +32,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 			}
 		}
 	}
-	if drop && !real_blur { return false }
-	if !real_blur {
+	if !real_blur && !drop {
 		before << step.post_color
 		filter := new_color_filter(before)
 		source := [src.left, src.top, src.right - src.left, src.bottom - src.top]!
@@ -56,6 +55,10 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
 	if drop && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
+	if drop && !real_blur {
+		return draw_deferred_image_shadow(mut pixels, width, height, pitch, alpha_type,
+			ctm, dst, foreground, mode, clips, step)
+	}
 	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
 		// The blur can use the raw subset shortcut while a shadow's
 		// foreground retains its original mapping and sampling until merge.

@@ -10,6 +10,7 @@ struct FilterImageView {
 	smoothing bool
 	alpha f32 = 1
 	filter ?ColorFilter
+	tint ?u32
 }
 
 // MakeFromImage retains an integer-aligned source subset and defers its
@@ -124,10 +125,8 @@ fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode Blend
 		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true,
 			decal_bounds: decal_bounds, decal_matrix: decal_inverse}}
 	}
-	alpha := view.alpha
-	mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, alpha, mode,
-		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, view.filter,
-		canvas_rgba_uses_legacy() && alpha == 1) or { return target.ready() }
+	mut blitter := filter_image_view_blitter(mut pixels, pitch, shader, mode,
+		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, view) or { return target.ready() }
 	target.ready()
 	if unbounded || sprite {
 		fill_irect(if unbounded { rc.bounds() } else { bounds }, rc, mut blitter)
@@ -192,4 +191,22 @@ fn treat_as_aa_sprite(m SkAffine, width int, height int) bool {
 	y := int(saturate_to_i32(floor_f32(m.ty + f32(.5))))
 	return IRect{x * 16, y * 16, (x + width) * 16, (y + height) * 16}
 		== round_rect(Rect{dst.left * 16, dst.top * 16, dst.right * 16, dst.bottom * 16})
+}
+
+// A deferred SrcIn shadow color follows the image's alpha and matrix filters.
+// Keep these stages in one pipeline rather than tinting an 8-bit intermediate.
+fn filter_image_view_blitter(mut pixels []u8, pitch int, shader CanvasShader, mode BlendMode, bounds Rect, view FilterImageView) ?Blitter {
+	color := view.tint or {
+		return canvas_draw_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, view.alpha,
+			mode, bounds, view.filter, canvas_rgba_uses_legacy() && view.alpha == 1)
+	}
+	mut image := shader.image
+	image.check_device_bounds(bounds)
+	base := new_image_blitter(mut pixels, pitch, image, view.alpha, mode)
+	a := f32(color >> 24) * inv_255
+	tint := [f32((color >> 16) & 255) * inv_255 * a, f32((color >> 8) & 255) * inv_255 * a,
+		f32(color & 255) * inv_255 * a, a]!
+	mut blitter := PipelineBlitter{...base, tinted: true, tint: tint, lowp_tint: tint.map(lowp_from_float(it))}
+	if filter := view.filter { blitter = PipelineBlitter{...blitter, lowp: false, filtered: true, filter: filter} }
+	return blitter
 }
