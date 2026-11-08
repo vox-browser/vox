@@ -737,14 +737,7 @@ fn TokenizerInputArena.new(input string) TokenizerInputArena {
 	}
 	// ASCII code points and byte offsets are identical. Avoid constructing an
 	// optional rune for each byte while filling these privately owned tables.
-	mut all_ascii := true
-	for byte in input {
-		if byte >= 0x80 {
-			all_ascii = false
-			break
-		}
-	}
-	if all_ascii {
+	if css_input_is_ascii(input) {
 		for offset, byte in input {
 			unsafe {
 				arena.code_points[offset] = u32(byte)
@@ -777,6 +770,14 @@ fn (mut arena TokenizerInputArena) release() {
 }
 
 fn decode_css_input(input string, encoding_name string) string {
+	// Exact UTF-8 and ASCII cannot contain a BOM or a decoding error. The
+	// internal CSS decoder has no observable identity: retain a fresh owned
+	// destination without constructing a web TextDecoder for this case.
+	canonical_utf8_probed := !disable_bulk_css_input_probes && encoding_name == 'utf-8'
+	if canonical_utf8_probed && css_input_is_ascii(input) {
+		report_css_ascii_decoder_bypass()
+		return input.clone()
+	}
 	mut decoder := text_encoding.TextDecoder.construct(encoding_name,
 		text_encoding.TextDecoderOptions{}) or {
 		panic('VERIFY(TextCodec::decoder_for(${encoding_name}).has_value())')
@@ -784,15 +785,8 @@ fn decode_css_input(input string, encoding_name string) string {
 	// A fresh UTF-8 decoder maps every ASCII byte to itself. Keep the
 	// constructor/label policy and a fresh, terminated destination owner;
 	// neither the caller's buffer nor a substring view may back our result.
-	if decoder.encoding() == 'utf-8' {
-		mut ascii := true
-		for byte in input {
-			if byte >= 0x80 {
-				ascii = false
-				break
-			}
-		}
-		if ascii {
+	if !canonical_utf8_probed && decoder.encoding() == 'utf-8' {
+		if css_input_is_ascii(input) {
 			return input.clone()
 		}
 	}
@@ -819,14 +813,7 @@ fn filter_code_points(input string, encoding string) string {
 	// The decoder produces valid UTF-8: CR, FF and NUL occur only as single
 	// bytes, and surrogate code points cannot occur. Probe bytes before paying
 	// for scalar iteration in the replacement path below.
-	mut contains_filterable := false
-	for byte in decoded_input {
-		if byte == `\r` || byte == `\f` || byte == 0 {
-			contains_filterable = true
-			break
-		}
-	}
-	if !contains_filterable {
+	if !css_input_needs_filtering(decoded_input) {
 		return decoded_input
 	}
 
