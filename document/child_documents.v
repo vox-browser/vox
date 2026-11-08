@@ -357,21 +357,38 @@ fn start_browser_child_navigations(document &dom.Document, engine browserjs.Engi
 	}
 }
 
+// Parser-time installation may already have completed a link, even when its
+// response cannot be reused from a cache. Decide which owners still need bytes
+// before deduplicating their transport URLs.
+fn browser_hosted_stylesheet_resource_jobs(document &dom.Document) []ResourceFetchJob {
+	root := document.as_node()
+	base_url := document.base_url().serialize()
+	preferred_set_name := preferred_style_sheet_set_name(root)
+	mut jobs := []ResourceFetchJob{}
+	mut seen := map[string]bool{}
+	for link in css.query_selector_all(root, 'link[rel][href]') {
+		if !link.is_html_element()
+			|| (!link_stylesheet_applies(link, preferred_set_name) && !link_is_style_preload(link)) {
+			continue
+		}
+		if unsafe { &dom.HTMLLinkElement(link) }.linked_style_sheet_ != unsafe { nil } { continue }
+		url := resolve_document_reference(link.get_attribute_value('href'), base_url)
+		if (!url.starts_with('http://') && !url.starts_with('https://')) || url in seen { continue }
+		seen[url] = true
+		jobs << ResourceFetchJob{ url: url, request_type: 'stylesheet' }
+	}
+	return jobs
+}
+
 fn (mut service BrowserHostedDocument) start_resources() {
 	if service.resources_started || service.closed { return }
 	// A blocking script may have paused the parser before later stylesheet
 	// elements exist. Its loader progresses independently in poll().
 	if service.document.ready_state() == 'loading' || service.document.has_deferred_parser_start() { return }
 	service.resources_started = true
-	types := document_preload_resource_types(service.document, service.document.base_url().serialize())
-	mut jobs := []ResourceFetchJob{}
-	for url in document_preload_resource_urls(service.document, service.document.base_url().serialize()) {
-		kind := types[url] or { 'image' }
-		// Script requests already belong to the live parser. Re-enqueuing them
-		// here would make async work part of the child installation barrier.
-		if kind != 'stylesheet' { continue }
-		jobs << ResourceFetchJob{ url: url, request_type: kind }
-	}
+	// Script requests already belong to the live parser. Completed stylesheets
+	// likewise need no additional request in this installation barrier.
+	jobs := browser_hosted_stylesheet_resource_jobs(service.document)
 	service.remaining = jobs.len
 	spawn_resource_fetch_workers(jobs, service.document.url.serialize(), true, service.results)
 }

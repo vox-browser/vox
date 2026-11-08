@@ -1,5 +1,6 @@
 module main
 
+import adblock
 import dom
 import html
 import page
@@ -252,4 +253,104 @@ fn test_reopened_child_stream_waits_for_async_and_rejects_stale_container_comple
 	assert loads.count == 3
 	assert service.runtime.evaluate_host('latest')! == 'true'
 	assert !parent.anything_is_delaying_the_load_event()
+}
+
+fn child_parser_no_store_stylesheet(document &dom.Document, address string) PreloadedResource {
+	return PreloadedResource{
+		url: address
+		final_url: address
+		source_url: document.url.serialize()
+		request_type: 'stylesheet'
+		body: 'body { color: rgb(1, 2, 3) }'
+		response_headers: [
+			adblock.ResponseHeader{ name: 'Content-Type', value: 'text/css' },
+			adblock.ResponseHeader{ name: 'Cache-Control', value: 'no-store' },
+		]
+	}
+}
+
+fn test_child_installed_no_store_stylesheet_does_not_delay_resource_initialization() {
+	address := dom.URL{ value: 'https://child-styles.test/frame' }
+	mut document := html.parse_navigation_document(
+		'<!doctype html><link id="sheet" rel="stylesheet" href="installed.css"><p>child</p>',
+		address, address.origin(), none)!
+	defer {
+		document.destroy_a_document_and_its_descendants()
+		document.finalize()
+	}
+	link := document.get_element_by_id('sheet') or { panic('missing stylesheet owner') }
+	response := child_parser_no_store_stylesheet(document, 'https://child-styles.test/installed.css')
+	assert browser_response_forbids_storage(response.response_headers)
+	assert complete_browser_link_stylesheet(link, response)
+	native_link := unsafe { &dom.HTMLLinkElement(link) }
+	sheet := native_link.linked_style_sheet_
+	assert sheet != unsafe { nil }
+	model := html.html_link_element_model_for_dom_element(native_link)
+	loads := model.event_count('load')
+	assert loads == 1
+
+	// The completed response is deliberately absent from the resource cache.
+	// The link's installed sheet already satisfies the child initialization.
+	mut service := new_browser_hosted_document(document, .javascriptcore)
+	defer { service.close() }
+	assert service.resources.len == 0
+	assert service.resource_delay != none
+	assert document.anything_is_delaying_the_load_event()
+	assert browser_hosted_stylesheet_resource_jobs(document).len == 0
+	mut messages := []string{}
+	service.initialize(mut messages)
+	assert service.resources_started && service.initialized, messages.join('\n')
+	assert service.remaining == 0
+	assert service.results.len == 0
+	assert service.resource_delay == none
+	assert !document.anything_is_delaying_the_load_event()
+	assert native_link.linked_style_sheet_ == sheet
+	assert model.event_count('load') == loads
+}
+
+fn test_child_stylesheet_jobs_keep_unloaded_owners_and_deduplicate_their_urls() {
+	address := dom.URL{ value: 'https://child-styles.test/frame' }
+	mut document := html.parse_navigation_document(
+		'<!doctype html><base href="/assets/">' +
+		'<link id="installed" rel="stylesheet" href="shared.css">' +
+		'<link id="pending" rel="stylesheet" href="shared.css">' +
+		'<link id="other" rel="stylesheet" href="other.css">' +
+		'<link id="duplicate" rel="stylesheet" href="other.css">' +
+		'<link rel="preload" as="style" href="preload.css">' +
+		'<link rel="preload" as="script" href="ignored.js">' +
+		'<link rel="stylesheet" disabled href="ignored.css">' +
+		'<link rel="alternate stylesheet" title="Other" href="ignored.css">' +
+		'<script async type="application/json" src="ignored.css"></script>',
+		address, address.origin(), none)!
+	defer {
+		document.destroy_a_document_and_its_descendants()
+		document.finalize()
+	}
+	shared_url := 'https://child-styles.test/assets/shared.css'
+	other_url := 'https://child-styles.test/assets/other.css'
+	preload_url := 'https://child-styles.test/assets/preload.css'
+	installed := document.get_element_by_id('installed') or { panic('missing installed link') }
+	assert complete_browser_link_stylesheet(installed, child_parser_no_store_stylesheet(document, shared_url))
+	jobs := browser_hosted_stylesheet_resource_jobs(document)
+	assert jobs.len == 3
+	assert jobs.any(it.url == shared_url)
+	assert jobs.any(it.url == other_url)
+	assert jobs.any(it.url == preload_url)
+	for job in jobs { assert job.request_type == 'stylesheet' }
+
+	// A loaded owner cannot suppress another owner still needing the same URL.
+	// Once that second owner completes, only the other distinct requests remain.
+	pending := document.get_element_by_id('pending') or { panic('missing pending link') }
+	assert complete_browser_link_stylesheet(pending, child_parser_no_store_stylesheet(document, shared_url))
+	remaining := browser_hosted_stylesheet_resource_jobs(document)
+	assert remaining.len == 2
+	assert remaining.any(it.url == other_url)
+	assert remaining.any(it.url == preload_url)
+	for id in ['other', 'duplicate'] {
+		link := document.get_element_by_id(id) or { panic('missing duplicate link') }
+		assert complete_browser_link_stylesheet(link, child_parser_no_store_stylesheet(document, other_url))
+	}
+	preloads := browser_hosted_stylesheet_resource_jobs(document)
+	assert preloads.len == 1
+	assert preloads[0].url == preload_url
 }
