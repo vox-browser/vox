@@ -1077,3 +1077,60 @@ with broad suites serial. Other manifest types and unavailable server
 protocols remain explicit limitations. See [the upstream execution report](WPT_UPSTREAM_SUITE.md)
 for scope, original failed attempts, executable identity and local receipts.
 **No completed full-upstream rate or 100% result is established.**
+
+## Production follow-up fixes and renderer snapshot promotion
+
+| Commit | Change |
+| --- | --- |
+| `15b805dfc` | Retain SVG container object bounds and transforms separately from CSS border boxes. A bounding-box pointer region includes the gaps between descendant shapes; fill/painted modes do not turn those gaps into a filled container path. |
+| `1478eda7d` | Materialize the first renderer snapshot when a completed tree-only layout is subsequently requested for painting at the same viewport. Reuse the committed typed root and geometry and install the painting callbacks. |
+| `92d0c9e87` | Notify referencing SVG paint resources when animated samples change, including stops in hidden resource trees. Retire retained gradient colors, preserve existing snapshots, and restore original colors on cancellation. |
+
+**23 distinct focused checks pass in normal and preallocated-memory modes**:
+14 layout checks and nine application/rendering-loop checks. The latter include
+the existing SVG identity/mutation assertions and native finished-promise
+delivery. Original WPT assertions, references and pixel tolerances are preserved.
+The same V 10 GiB compiler limit, 12 GiB compile/outer guards and 3 GiB focused
+runtime guards remain in force. Final application compilations peak at
+6,105,661,440 and 6,106,873,856 bytes, respectively.
+
+Before these fixes, the new gradient check retains red instead of green, and
+the container check accepts an unfilled gap after switching pointer modes.
+The broader application checks also expose a tree-only result with an empty
+renderer snapshot: direct paint commands contain only a background, whereas a
+subsequent document recording materializes both SVG paths. Explicit promotion
+now makes the original mutation check pass without a viewport resize or forced
+geometry rebuild. Those failed attempts, the diagnostic, and an initial
+compiler variable-name error remain in the raw evidence.
+
+The final native Page collection repeats all **13 original MathML, SVG and
+accessibility pages: 9,880 / 9,880 PASS**, exact expected counts, harness OK,
+strict driver/outer exits 0, unchanged fixture/runner/source hashes. Executable
+SHA-256: `b9e452264f5720e814b9a92336fc621fea2c07de69c2ccdb45cc944d3fdf3aeb`.
+This is focused native evidence; it does not supersede the earlier failed
+production cohorts or establish a full-suite result.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261108-svg-resources-92d0c9e87-raw.tar.gz`,
+SHA-256 `6a547c64cc238c077bee41a39f5a52854deffce4c9a29650c35ef032c0c2e188`.
+Summary: `/Users/alex/.cache/vox/wpt/20261108-svg-resources-summary.json`, SHA-256
+`77a13c6a83ed572bb308dc083f63ef946ad7e4ae8db0e29df04918fccc2bac2c`.
+Generated C and private profiles are excluded. Completed Build output,
+temporary canonical combined tests and locks are removed after archiving.
+
+A new production follow-up checks all 13 pages and the same 11 original SVG
+reftests, requiring all 37 implementation hashes from `92d0c9e87`. It checks a
+matching completed artifact in place under a read lease. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-svg-resources-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-svg-resources-production-followup.py`,
+SHA-256 `93abe06b374c3ee0061bad68b463d74939183798d516d4aea5339fbffd58070b`.
+At this checkpoint validation is waiting for a matching completed image: the
+newer `20261108-213614-44e2fd3f` receipt contains the SVG fixes but lacks the two
+renderer-promotion source hashes; its staged artifact has already been retired.
+The shared C-backend build request is current. No separate bundle is copied or
+queued by the checks.
+
+The unfiltered official-manifest testharness collection continues on its
+original pinned `e66ce03390ef...` executable, with 200 case records at the last
+checkpoint and no changed inputs. Its partial counts are diagnostic only; it
+does not contain these last three commits. The imported r18 remains deferred.
+**Full upstream WPT and the larger imported set are not at 100%.**
