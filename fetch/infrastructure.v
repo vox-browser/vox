@@ -194,15 +194,17 @@ pub fn process_data_url(data_url dom.URL) !DataURL {
 
 // forgiving-base64 decode: strip ASCII whitespace, then base64-decode.
 fn forgiving_base64_decode(input string) ![]u8 {
-	mut stripped := ''
-	for ch in input.bytes() {
+	// Embedded fonts and images can contain hundreds of kilobytes. Growing a
+	// string for every byte retains quadratic temporary storage without GC.
+	mut stripped := []u8{cap: input.len}
+	for ch in input {
 		if ch != ` ` && ch != `\t` && ch != `\n` && ch != `\x0c` && ch != `\r` {
-			stripped += ch.ascii_str()
+			stripped << ch
 		}
 	}
 	// A length of exactly one more than a multiple of 4 is invalid.
 	if stripped.len % 4 == 1 {
 		return error('Invalid base64')
 	}
-	return base64.decode(stripped)
+	return base64.decode(stripped.bytestr())
 }
