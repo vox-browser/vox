@@ -62,6 +62,48 @@ Production validation of these fixes remains pending. The existing shared build
 was busy and its sealed inputs predated
 these changes; no duplicate production build was queued.
 
+## WebCrypto continuation
+
+Four further fixes are committed:
+
+| Fix | Commit |
+|---|---|
+| Enforce numeric parameter ranges instead of wrapping oversized values | `30e94987a` |
+| Normalize public key usages to a sorted set without duplicates | `038d76f72` |
+| Copy imported bytes after algorithm normalization, preserving getter mutations and detachment | `3f738c55e` |
+| Accept ML-DSA signing JWKs with `use: "sig"` and reject unrelated uses | `5bae25dd4` |
+
+**All 4,304 subtests in the 16 affected upstream files pass through Vox's
+native JavaScriptCore bindings.** Seven generation-failure files account for
+3,066 subtests; nine generation/import files account for 1,238. Their case IDs
+and complete multisets of subtest names match the saved browser baseline,
+which passed 3,716 of those same names. There are 588 previously failing names
+now passing in this source check. All pinned upstream script bytes and
+assertions remain unchanged.
+
+These are non-windowed checks using the stock harness's shell environment,
+real Vox Crypto/Base64/URL bindings, and explicit native task and microtask
+delivery. The URL has no query, so the subset helper runs every subtest.
+They do not exercise the HTML parser, navigation, rendering, or workers and
+do not replace the published browser's 26/100 baseline. No new browser-wide
+pass rate is claimed. The shared production/publication guard remains busy;
+the latest published executable is still `b8c5285a1947…`.
+
+The final focused checks also pass ten numeric-model tests, five native
+generation tests (including 35 range rejections before backend work), three
+native cipher tests, 23 usage/model regressions, five native import tests,
+and three ML-DSA model/vector tests. Checks use default allocation and bounded
+runtime guards; production allocation remains unverified for these changes.
+Development failures and their corrections are retained in the
+[continuation manifest](performance/ladybird-first100-crypto-20261108.json)
+and its local raw archive.
+
+`make app` passes. The required plain `v -enable-globals -o volt .` build fails
+in the shared compiler's cached C prefix with an incomplete `macos_range` and
+conflicting macOS function declarations. Its compatibility fallback then rejects
+the current global declaration in `forms/window.v:69`. This unrelated Volt build
+failure remains reported separately from the passing Vox source checks.
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh

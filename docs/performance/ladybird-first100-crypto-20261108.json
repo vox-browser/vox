@@ -1,0 +1,708 @@
+{
+  "scope": "Source-level native JavaScriptCore shell checks for 16 files from the unchanged first-100 Ladybird cohort; not a windowed browser rerun",
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "source_commits": {
+    "numeric_ranges": "30e94987a",
+    "normalized_usages": "038d76f72",
+    "import_snapshot": "3f738c55e",
+    "mldsa_jwk_use": "5bae25dd4"
+  },
+  "all_first_100_pass": false,
+  "source_inputs": {
+    "browserjs/crypto_generate_host_jsc.c.v": "af7dab8f2ddef0941d9ff700ff35d4dfb5c9d496b22b629cf59ef2eebb872220",
+    "browserjs/crypto_generate_host_test.v": "e9e957d7ada40301c6bbcadaec3323afe8d5be52358cf79cb9c2396ad333f66b",
+    "browserjs/crypto_cipher_host_test.v": "0588349eec10bc1998ca379b3eeb8395bac813021a1de8ffb3ab7e7c93ae50a3",
+    "browserjs/crypto_import_host_jsc.c.v": "24cff47682089b0b09656c63b7a5ec0be54c4bee3789a11176c3de810b8b9343",
+    "browserjs/crypto_import_host_test.v": "b964f7ebd367cc92a2baa57e8a7ce29c88f25a793067cb5dd63a0740977f74d9",
+    "webcrypto/crypto_protocol.v": "e7cf9326a7c7fea2fbefa5a058970b813cc2bb4038c413f9db5729482897adea",
+    "webcrypto/subtle_crypto_binding.v": "c1356ee5cf90b7f6723544baf5a16da1623e39efefe995a9ebb7d8660a188816",
+    "webcrypto/subtle_crypto.v": "eb98dedcafce3ac639fdcac829b622e25ee60c8c52dce2c56386d7e2ed9f206e",
+    "webcrypto/aes_parameter_conversion_test.v": "5bca952b7d6832bb15a9cc69d675eaea2e629ff62a11bb2f63aa9541709c3e34",
+    "webcrypto/enforced_parameter_conversion_test.v": "d30e5eadb444ef11f800c3a89f9eeaf479556d6b9c2f8e9714850dd0e4d10d0c",
+    "webcrypto/usage_normalization_test.v": "fe6c2050a03a3e932770d9558464a84c56a67384f1a14562a9daa5b61cac85a1",
+    "webcrypto/registry_test.v": "31157d02ff330f9709999d018907dea8a2c5a0c5356cdc6d26a23e64f1b5d773",
+    "webcrypto/ed25519_test.v": "4ad32772f9ea8f809fc099c8932d268ed71004d7b67d928aad4391c77aeefc02",
+    "webcrypto/ed448_import_metadata_test.v": "8c84776fd1f13d5ce9beb7cc8a9da0489773aa8003d8323c2764a7b078bb25dd",
+    "webcrypto/kmac_formats_test.v": "4899c45437e59f7236f3c0c83bac9cc14b5f49f3bbbddfa18131f5537993b992",
+    "webcrypto/upstream_entry_points_test.v": "0197389eb8b5e8d1304f07b969cef70c4836d29a5ab55becafe08afafc67222c",
+    "webcrypto/mldsa.v": "092efa9afd4f1341ff874250435e59d4e8995ac9f7af106875f69bd69f88c80e",
+    "webcrypto/mldsa_test.v": "9a888ada3325993ff2bde9542e0855a5f0a0cf2363b52d16a3f540dcaefba848"
+  },
+  "fixture_manifest_sha256": "74485a3af3d07f0da4a46fa031bfca3067ea58667a0193f8258d29357530fcb3",
+  "unmodified_scripts": {
+    "WebCryptoAPI/generateKey/algorithm_registry.js": "3fa5f8fc3b98a163a7008432c882002e5ddb04e91d504f58acb27a2674a5f68c",
+    "WebCryptoAPI/generateKey/failures.js": "070ff54911a1d747996c4381b1193b15d36ed1f8438c288b87210b61148f788d",
+    "WebCryptoAPI/generateKey/failures_AES-CBC.https.any.js": "dbbd225ca2e85fb6ff46f82ab04fb92d21f5bf14683bd507e4cc20dee07659ea",
+    "WebCryptoAPI/generateKey/failures_AES-CTR.https.any.js": "af666c9caa973597ebe2504539b42a623bceba727ebb4f8368f8b851f6c0aacb",
+    "WebCryptoAPI/generateKey/failures_AES-GCM.https.any.js": "8e73b3eca6687cdf35f87f83299d87391e1a1ac8b9b27df114b39db2dadf3880",
+    "WebCryptoAPI/generateKey/failures_HMAC.https.any.js": "4937c3585799ab9449ea21126b1b705a8fc273c15837d14ab2aa71e0c1d216de",
+    "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.js": "37a47186012fa40c8d83345e6d29de4f36c7b9d53673a5744482d78381578c03",
+    "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.js": "0eb091a6ee602a4a9fe52d1c514df08d4bd1c40b51d385436cd4b9e158e1fba8",
+    "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.js": "2fcfd2f620cdba710bbab3b9256d2989a92b8e3c04f10b01edd75f529443ca5b",
+    "WebCryptoAPI/generateKey/successes.js": "ffe652492496003fe3762d7cd0a9d5b01fc15e0014acdbee9e183de723f00e68",
+    "WebCryptoAPI/import_export/okp_importKey.js": "0e10fca264b0c85f10dd98f0e6e38faa7201f19d416ee8e15e63e63302dad009",
+    "WebCryptoAPI/import_export/okp_importKey_fixtures.js": "ddad596bc2888870a6d168e7f064925045b245ae7e6ae45642b9db9c906015cd",
+    "WebCryptoAPI/import_export/symmetric_importKey.js": "758a2d93b40decc42d2c1f2544809f9a5dc95668acd93e808a9a73bcec590b80",
+    "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.js": "535b41d90e80073862e376bbaae570a202c40351bf57a965fb6e5a5784b15b56",
+    "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.js": "b6b746f1306e2ce25929175b9c9b5419faeb924f4c65ff281bc8bb93d09e8b08",
+    "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.js": "dc34f47020432027051878e1edd7fe7cb98025d5018a201fd5abcc7ac3854a92",
+    "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.js": "ef6b3377cf21309d12b56fb4aec339c6a97bc7b6f492db33a7ba2e4b870c940d",
+    "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.js": "87adb67e990c5c46ff578d493b594311a4c440f08806a20806ca515ba4061d38",
+    "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey_fixtures.js": "5a4b1584a600c3a42c0d584049a82a07dcf009220277da302b5d2d6dc50a68be",
+    "WebCryptoAPI/modern-algos/import_export/ml_importKey.js": "e7ebc6597ad98d58ac967f202f9aed044c22e6d030ff9be56e767aa4b1417070",
+    "WebCryptoAPI/modern-algos/util/mldsa_key_fixtures.js": "5f666f47dae539956a61c7ed7e4d73e22f4e9b9469f521daf5ce753be446c38c",
+    "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.js": "13db5ea8f4864e7f0ccc0794bf62aebce0f1e064aa685133ce707e3412242ab8",
+    "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.js": "00b8493a8d59b99a3cd7c6123eafe5cf2786583826a8f9d3af5547667984cdfb",
+    "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.js": "d40fb31af8db73305e417959b7bd67a72b07d0a0c7fd0cbfa76f5d0e35f04515",
+    "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.js": "61842e87909f38f5ee244faa64e26b9f11bd5a1fc08ce37f3556b6be170b497a",
+    "WebCryptoAPI/util/helpers.js": "9dfd282f2bb5255ece417b7815a36ad4b16a91c67bc194a052ae58756843d11a",
+    "WebCryptoAPI/util/okp_key_fixtures.js": "f04882a29723aa50de3a68fb7e77e04029d3fea201e29cce914e0db96a7b3f0e",
+    "common/subset-tests.js": "72643af8e7b9e580a754dd7201179e104437da2265d4a20a898eaa15c5d7cb32",
+    "resources/testharness.js": "b74d714183ab224df15612a6af6b65eb1ffc0d8f5501db34379308034d668622"
+  },
+  "evidence_scope": {
+    "environment": "Stock testharness.js ShellTestEnvironment, secure owning Window settings, manual native task/microtask delivery",
+    "import_probe": "Real Vox Base64, URLSearchParams and URL bindings; location metadata is an unqueried URL so subset-tests runs every subtest",
+    "assertions": "Upstream scripts and assertion functions unchanged; exact test IDs and multiset of subtest names match the saved browser baseline",
+    "limits": "3 GiB aggregate runtime guard, 180-second supervisor timeout; shell harness has no document deadline",
+    "limitations": [
+      "No HTML parser, renderer, navigation, network, or worker conformance credit",
+      "Default allocation only; production prealloc validation remains pending",
+      "Windowed first-100 baseline remains 26/100; no updated overall browser pass rate"
+    ]
+  },
+  "source_results": {
+    "files": 16,
+    "subtests": 4304,
+    "passing": 4304,
+    "matching_baseline_passing": 3716,
+    "newly_passing_names": 588,
+    "cases": [
+      {
+        "id": "WebCryptoAPI/generateKey/failures_AES-CBC.https.any",
+        "subtests": 686,
+        "passing": 686,
+        "baseline_passing": 618,
+        "result_sha256": "2a1e4d0c6615b4fbf9090e9b09f9a93416bb3323716b3b83a1658e5880d36044"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_AES-CTR.https.any",
+        "subtests": 686,
+        "passing": 686,
+        "baseline_passing": 618,
+        "result_sha256": "b54c7b56c7e178c5ace6346d02655ad723730ed1d04a8925af555004f3f5678d"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_AES-GCM.https.any",
+        "subtests": 686,
+        "passing": 686,
+        "baseline_passing": 618,
+        "result_sha256": "fbc135af2dad9d373090d0e7f240ea2004b97222842ab700c2821401ce2a7a43"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_HMAC.https.any",
+        "subtests": 436,
+        "passing": 436,
+        "baseline_passing": 416,
+        "result_sha256": "1488010bff01ff49d7862c161d7f1a84160009a396a0dc12f62c3dd53c4655da"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any",
+        "subtests": 340,
+        "passing": 340,
+        "baseline_passing": 284,
+        "result_sha256": "48cca2d89ea3fa40b68ad24077e44966cde8333b3e4a9f3974c055dda3599ca2"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any",
+        "subtests": 116,
+        "passing": 116,
+        "baseline_passing": 100,
+        "result_sha256": "317b1794d31b75d3a0cdbadcb1c48ba3f9a71cf4ac98bec06cb52f77d99a89be"
+      },
+      {
+        "id": "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any",
+        "subtests": 116,
+        "passing": 116,
+        "baseline_passing": 100,
+        "result_sha256": "7e34a937bab9852dc2f2798fd8749489f2297573d24ad218556dc63ce3afd773"
+      },
+      {
+        "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any",
+        "subtests": 108,
+        "passing": 108,
+        "baseline_passing": 72,
+        "result_sha256": "5a4bb28145f082493c32f8c9eb80fc3dffb8d701f566d99220ceada070483d2d"
+      },
+      {
+        "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any",
+        "subtests": 468,
+        "passing": 468,
+        "baseline_passing": 432,
+        "result_sha256": "4f6a7f035b31933f5566814d9e5b6aaee450afef490b454a627e78bee505daf8"
+      },
+      {
+        "id": "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any",
+        "subtests": 144,
+        "passing": 144,
+        "baseline_passing": 108,
+        "result_sha256": "2f3ba29dd53b682b4e5c45a7788ac83e1767659deec2d8a38b0c9ce1422b6dd6"
+      },
+      {
+        "id": "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any",
+        "subtests": 144,
+        "passing": 144,
+        "baseline_passing": 96,
+        "result_sha256": "69df4ab8a915a2c9130f7f23788b5419c011e5b740b13a0a7e3e052877bc7559"
+      },
+      {
+        "id": "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any",
+        "subtests": 180,
+        "passing": 180,
+        "baseline_passing": 108,
+        "result_sha256": "5eaa11d2b2c5af2f0e57235e850152b3ec84d2292be95bb24b2d68ad0b11f96d"
+      },
+      {
+        "id": "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any",
+        "subtests": 36,
+        "passing": 36,
+        "baseline_passing": 24,
+        "result_sha256": "af13c50cc40e1886260c07d7fe6d60e11ce6462e88648fa468858d6464be4bca"
+      },
+      {
+        "id": "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any",
+        "subtests": 32,
+        "passing": 32,
+        "baseline_passing": 24,
+        "result_sha256": "7e4bbc7283531facdbee0eb895d7ca0fddf2cdfb7c58c7bc1b07385aa3d84576"
+      },
+      {
+        "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any",
+        "subtests": 72,
+        "passing": 72,
+        "baseline_passing": 52,
+        "result_sha256": "dc42e1415b0da8165bc6ed3f0dedfc49d2565adafd1f7914a089c65a20fd2783"
+      },
+      {
+        "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any",
+        "subtests": 54,
+        "passing": 54,
+        "baseline_passing": 46,
+        "result_sha256": "fc6c9fc1bf89fb5d201a35236b8af42baee98241bd3f82cdf669e453e001bd58"
+      }
+    ]
+  },
+  "focused_regressions": [
+    {
+      "group": "numeric model",
+      "functions": 10
+    },
+    {
+      "group": "native generation",
+      "functions": 5,
+      "additional_range_rejections": 35
+    },
+    {
+      "group": "native cipher",
+      "functions": 3
+    },
+    {
+      "group": "usage models and affected regressions",
+      "functions": 23
+    },
+    {
+      "group": "native import",
+      "functions": 5
+    },
+    {
+      "group": "ML-DSA models and vectors",
+      "functions": 3
+    }
+  ],
+  "check_receipts": {
+    "first100-crypto-import-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/import-check",
+        "browserjs/zz_first100_crypto_import_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4965056512,
+      "elapsed_seconds": 72.479322833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-import-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/import-check-r2",
+        "browserjs/zz_first100_crypto_import_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4957667328,
+      "elapsed_seconds": 74.5995255,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-import-native-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/import-check-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 272973824,
+      "elapsed_seconds": 2.320175584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-import-native-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/import-check"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 253313024,
+      "elapsed_seconds": 1.842446458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/check",
+        "browserjs/zz_first100_crypto_combined_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4962959360,
+      "elapsed_seconds": 86.3486645,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-native-20261108-runtime.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/check"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 72892416,
+      "elapsed_seconds": 1.151666958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/check-r2",
+        "browserjs/zz_first100_crypto_combined_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4946935808,
+      "elapsed_seconds": 77.01697675000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-native-r2-20261108-runtime.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/check-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 130580480,
+      "elapsed_seconds": 1.930450834,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-range-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-range-20261108",
+        "webcrypto/zz_first100_crypto_range_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 438861824,
+      "elapsed_seconds": 3.953074,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-range-host-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/range-host",
+        "browserjs/crypto_generate_host_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4969758720,
+      "elapsed_seconds": 71.123292416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-range-host-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/range-host"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.577292959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-range-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-range-r2-20261108",
+        "webcrypto/zz_first100_crypto_range_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 712376320,
+      "elapsed_seconds": 9.915009292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-range-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-range-r2-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.475401875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/usage-model",
+        "webcrypto/usage_normalization_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 433537024,
+      "elapsed_seconds": 3.412915666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-model-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/usage-model-r2",
+        "webcrypto/zz_first100_crypto_usage_model_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 688259072,
+      "elapsed_seconds": 7.305033458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-model-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/usage-model-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.576835875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/usage",
+        "browserjs/zz_first100_crypto_usage_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4951982080,
+      "elapsed_seconds": 71.172366459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/usage-r2",
+        "browserjs/zz_first100_crypto_usage_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4975280128,
+      "elapsed_seconds": 73.664131,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-native-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/usage-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 180256768,
+      "elapsed_seconds": 1.4062044159999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-crypto-usage-native-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/usage"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.528365667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-mldsa-jwk-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/mldsa-jwk",
+        "webcrypto/mldsa_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 696025088,
+      "elapsed_seconds": 6.870592333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-mldsa-jwk-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-crypto-native-20261108/mldsa-jwk-r2",
+        "webcrypto/mldsa_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 739655680,
+      "elapsed_seconds": 7.2920675,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-mldsa-jwk-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/mldsa-jwk-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.500576792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-mldsa-jwk-runtime-20261108.json": {
+      "command": [
+        "Build/first100-crypto-native-20261108/mldsa-jwk"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.46051354200000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "development_failures": [
+    "Original numeric-model combined fixture needed a mutable local map for the current compiler",
+    "Initial native-shell probe did not drain the explicitly paused owner microtask queue",
+    "Usage model initially passed BufferSource without its WebIDL Value wrapper",
+    "Initial import-page probe lacked URL metadata and native Base64/URL prerequisites",
+    "The import pages exposed an independent byte-snapshot ordering failure after duplicate usage normalization",
+    "Existing native import fixtures assumed wrapped HMAC length and successful import after algorithm-driven detachment",
+    "Existing ML-DSA generation fixture expected duplicate usages; updated to the new ordered-set behavior",
+    "One development KMAC result path was overwritten; its complete failure table is reconstructed from retained stdout and matching final deterministic names, with provenance in the archive"
+  ],
+  "volt_checks": [
+    {
+      "command": "v -enable-globals -o volt .",
+      "exit": 1,
+      "reason": "Shared compiler cached C prefix: incomplete macos_range and conflicting macos msg_id_rect declarations; compatibility fallback rejects forms/window.v:69"
+    },
+    {
+      "command": "make app",
+      "exit": 0
+    }
+  ],
+  "published_browser": {
+    "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "status": "Unchanged old bundle; shared build/publication guard busy; no duplicate build queued"
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-first100-crypto-followup.tar.gz",
+    "sha256": "9ff46ee01cacbaf6346801fdfafca5a1d561952f8222992f7ed304fd680921ef"
+  }
+}
