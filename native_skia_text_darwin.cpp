@@ -1181,6 +1181,7 @@ extern "C" void ladybird_v_skia_release_unused_graphics_memory()
     s_glyph_text_blob_cache.clear();
     vox_solid_svg_coverage::clear();
     s_small_svg_path_cache.clear();
+    clear_gg_shape_raster_cache();
     SkGraphics::PurgeAllCaches();
 }
 
