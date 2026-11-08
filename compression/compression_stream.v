@@ -6,7 +6,7 @@
 // GenericTransformStream surface it exposes.
 module compression
 
-import compress.brotli
+import x.compress.brotli
 
 pub enum CompressionFormat {
 	brotli
@@ -191,14 +191,7 @@ pub fn CompressionStream.construct_impl(format CompressionFormat) !&CompressionS
 }
 
 pub fn CompressionStream.create_for_constructor(format CompressionFormat) !&CompressionStream {
-	create_compressor(format)!
 	return CompressionStream.create(format)
-}
-
-fn create_compressor(format CompressionFormat) ! {
-	if format == .brotli && !brotli.is_available() {
-		return error('TypeError: Unable to create compressor: Brotli is unavailable')
-	}
 }
 
 pub fn CompressionStream.create(format CompressionFormat) &CompressionStream {

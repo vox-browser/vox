@@ -115,6 +115,34 @@ fn assert_http2_tls_redirect_blocked(address string, ca string) {
 	assert false, 'redirected tracker reached transport'
 }
 
+fn test_https_http1_and_http2_decode_external_brotli_html_binary_and_stacked_codings() {
+	fixture := start_http2_tls_fixture() or {
+		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')
+		return
+	}
+	defer { fixture.close() }
+	defer { http.close_idle_connections() }
+	ca := os.join_path(fixture.directory, 'ca.pem')
+	expected_html := '<!doctype html><meta charset="utf-8"><title>Brotli</title>' +
+		'<p>Compression dictionary: international information. Привет, 世界!</p>'.repeat(1024)
+	for port in [fixture.h1_port, fixture.h2_port] {
+		address := 'https://127.0.0.1:${port}'
+		for path in ['/brotli', '/brotli-html', '/brotli-html-gzip'] {
+			request_type := if path == '/brotli' { 'image' } else { 'main_frame' }
+			result := get(adblock.Request{url: address + path, source_url: address, request_type: request_type}, ca)!
+			assert result.response.status_code == 200
+			if path == '/brotli' {
+				assert result.response.body.bytes() == [u8(0), 1, 127, 128, 255, 0, 42]
+			} else {
+				assert result.response.body == expected_html
+			}
+		}
+	}
+	stats := http2_tls_stats(fixture)
+	assert stats.requests.filter(it.url.starts_with('/brotli') && it.protocol == '1.1').len == 3
+	assert stats.requests.filter(it.url.starts_with('/brotli') && it.protocol == '2.0').len == 3
+}
+
 fn test_https_http1_fallback_and_manual_redirect_filtering_remain_enabled() {
 	fixture := start_http2_tls_fixture() or {
 		eprintln('SKIP HTTP2 TLS fixture: Node and OpenSSL required')

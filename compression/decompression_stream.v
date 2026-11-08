@@ -6,7 +6,7 @@
 module compression
 
 import compress.deflate
-import compress.brotli
+import x.compress.brotli
 
 fn decode_raw_bytes(bytes []u8) ![]u8 {
 	result := deflate.decompress_raw_with_consumed(bytes)!
@@ -41,14 +41,7 @@ pub fn DecompressionStream.construct_impl(format CompressionFormat) !&Decompress
 }
 
 pub fn DecompressionStream.create_for_constructor(format CompressionFormat) !&DecompressionStream {
-	create_decompressor(format)!
 	return DecompressionStream.create(format)
-}
-
-fn create_decompressor(format CompressionFormat) ! {
-	if format == .brotli && !brotli.is_available() {
-		return error('TypeError: Unable to create decompressor: Brotli is unavailable')
-	}
 }
 
 pub fn DecompressionStream.create(format CompressionFormat) &DecompressionStream {

@@ -2,11 +2,48 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_http_compat import (patch_request, remove_obsolete_entries,
+from prepare_http_compat import (patch_brotli_compressor, patch_request, patch_response,
+                                 remove_obsolete_entries,
                                  remove_unused_private_helper, staged_modules)
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):
+    def test_http_response_uses_the_pure_v_brotli_codec(self):
+        source = ('module http\n\nimport compress.brotli\nimport compress.gzip\n'
+                  '\nfn decode_response_body() { brotli.decompress(bytes)! }\n')
+        expected = source.replace('import compress.brotli', 'import x.compress.brotli')
+        self.assertEqual(expected, patch_response(source))
+        self.assertEqual(expected, patch_response(expected))
+
+    def test_unknown_or_ambiguous_brotli_imports_fail_before_staging(self):
+        for source in ('module http\n',
+                       'import compress.brotli\nimport compress.brotli\n',
+                       'import x.compress.brotli\nimport x.compress.brotli\n',
+                       'import compress.brotli\nimport x.compress.brotli\n'):
+            with self.subTest(source=source), self.assertRaises(RuntimeError):
+                patch_response(source)
+
+    def test_brotli_encoding_never_uses_the_optional_native_fast_path(self):
+        source = '''module brotli
+import compress.brotli as native_brotli
+pub fn compress(data []u8, params CompressParams) ![]u8 {
+\tif data.len > 4096 && params.comment.len == 0 {
+\t\tif compressed := native_brotli.compress(data,
+\t\t\tquality: params.quality
+\t\t) {
+\t\t\treturn compressed
+\t\t}
+\t}
+\treturn compress_general(data, params, window_bits)!
+}
+'''
+        patched = patch_brotli_compressor(source)
+        self.assertNotIn('native_brotli', patched)
+        self.assertIn('return compress_general(data, params, window_bits)!', patched)
+        self.assertEqual(patched, patch_brotli_compressor(patched))
+        with self.assertRaisesRegex(RuntimeError, 'Unsupported optional native Brotli'):
+            patch_brotli_compressor(source.replace('if compressed :=', 'if result :='))
+
     def test_obsolete_helpers_are_removed_only_when_no_callers_remain(self):
         declaration = "// Helper description.\n@[inline]\nfn helper(value string) string {\n\treturn value\n}\n"
         unused = "module http\n\n" + declaration + "\n// helper() was used by an old API.\n"

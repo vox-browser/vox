@@ -5,7 +5,7 @@ import http2 from 'node:http2';
 import https from 'node:https';
 import http from 'node:http';
 import net from 'node:net';
-import { gzipSync } from 'node:zlib';
+import { brotliCompressSync, gzipSync } from 'node:zlib';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 
@@ -30,6 +30,8 @@ function save() {
     fs.renameSync('stats.json.tmp', 'stats.json');
 }
 const binary = Buffer.from([0, 1, 127, 128, 255, 0, 42]);
+const brotliHTML = Buffer.from('<!doctype html><meta charset="utf-8"><title>Brotli</title>' +
+    '<p>Compression dictionary: international information. Привет, 世界!</p>'.repeat(1024));
 function request(req, res) {
     state.requests.push({ url: req.url, method: req.method, protocol: req.httpVersion, headers: req.headers });
     state.active++;
@@ -54,6 +56,16 @@ function request(req, res) {
     if (req.url === '/proxy-to-direct') { res.writeHead(302, { location: `http://127.0.0.1:${http_port}/binary` }); res.end(); return; }
     if (req.url === '/direct-to-proxy') { res.writeHead(302, { location: `http://remote-dns.invalid:${http_port}/binary` }); res.end(); return; }
     if (req.url === '/blocked-redirect') { res.writeHead(302, { location: 'https://www.google-analytics.com/g/collect?v=2' }); res.end(); return; }
+    if (req.url.startsWith('/brotli')) {
+        const html = req.url !== '/brotli';
+        const stacked = req.url === '/brotli-html-gzip';
+        const input = html ? brotliHTML : binary;
+        const body = brotliCompressSync(stacked ? gzipSync(input) : input);
+        res.writeHead(200, { 'content-type': html ? 'text/html; charset=utf-8' : 'application/octet-stream',
+            'content-encoding': stacked ? 'gzip, br' : 'br', 'content-length': body.length });
+        res.end(body);
+        return;
+    }
     const gzip = req.url === '/gzip';
     const body = gzip ? gzipSync(binary) : binary;
     const headers = { 'content-type': 'application/octet-stream', 'content-length': body.length, 'x-fixture': 'retained' };

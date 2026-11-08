@@ -28,8 +28,8 @@ fn resource_request_headers(resource_url string, source_url string, request_type
 	cookie := browsercookies.request_header(resource_url, source_url, request_type == 'main_frame', 'GET')
 	if cookie != '' { headers.add(.cookie, cookie) }
 	headers.add(.accept, request_accept_header(request_type))
-	// net.http decodes these content codings on both its HTTP/1 and HTTP/2
-	// paths. Without negotiation, scripts and HTML arrive uncompressed.
+	// The staged net.http uses vlib's pure V Brotli decoder on both HTTP/1
+	// and HTTP/2. These codings need no installed native codec libraries.
 	headers.add(.accept_encoding, 'gzip, deflate, br')
 	return headers
 }

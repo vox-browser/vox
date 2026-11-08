@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage HTTP header, cookie and verified-proxy fixes without editing V."""
+"""Stage HTTP fixes and pure V Brotli codecs without editing V."""
 
 from pathlib import Path
 import hashlib
@@ -151,6 +151,59 @@ def write_if_changed(path, content):
         path.write_text(content)
 
 
+def patch_response(source):
+    """Compile HTTP/1 and HTTP/2 Brotli decoding into Vox using vlib's V codec."""
+    native = r'^import compress\.brotli$'
+    pure = 'import x.compress.brotli'
+    imports = (len(re.findall(native, source, re.MULTILINE)),
+               len(re.findall(r'^import x\.compress\.brotli$', source, re.MULTILINE)))
+    if imports == (0, 1):
+        return source
+    if imports != (1, 0):
+        raise RuntimeError('Unsupported HTTP Brotli import')
+    return re.sub(native, pure, source, flags=re.MULTILINE)
+
+
+def patch_brotli_compressor(source):
+    """Keep vlib's V encoder and remove its optional system-library fast path."""
+    native_import = 'import compress.brotli as native_brotli\n'
+    if native_import not in source:
+        if 'native_brotli.' in source:
+            raise RuntimeError('Unsupported native Brotli encoder reference')
+        return source
+    source = source.replace(native_import, '', 1)
+    source, count = re.subn(
+        r'\n\tif [^\n]*\{\n\t\tif compressed := native_brotli\.compress\(data,.*?\n\t\t\}\n\t\}\n',
+        '\n', source, flags=re.DOTALL)
+    if count != 1 or 'native_brotli' in source:
+        raise RuntimeError('Unsupported optional native Brotli encoder')
+    return source.replace(
+        '// Large inputs without metadata, custom dictionaries, or large windows may use\n'
+        '// the system encoder when available; other inputs use the V encoder.\n',
+        '// Vox always uses the V encoder, including large inputs.\n')
+
+
+def stage_brotli(vlib, modules):
+    original = vlib / 'x/compress/brotli'
+    source = (original / 'compressor.v').read_text()
+    patched = patch_brotli_compressor(source)
+    target = modules / 'x/compress/brotli'
+    target.mkdir(parents=True, exist_ok=True)
+    remove_obsolete_entries(target, original)
+    for entry in original.iterdir():
+        output = target / entry.name
+        if entry.name == 'compressor.v':
+            write_if_changed(output, patched)
+        elif not output.is_symlink() or output.resolve() != entry.resolve():
+            if output.is_symlink() or output.is_file():
+                output.unlink()
+            output.symlink_to(entry, target_is_directory=entry.is_dir())
+    return {
+        'source_brotli_compressor_sha256': hashlib.sha256(source.encode()).hexdigest(),
+        'staged_brotli_compressor_sha256': hashlib.sha256(patched.encode()).hexdigest(),
+    }
+
+
 def patch_request(source):
     """Preserve request-target bytes and explicit Cookie headers."""
     # Pointer identity must retain its full width with both compiler generations.
@@ -261,6 +314,8 @@ def main():
     header = original / "header.v"
     text = header.read_text()
     patched = patch_header(text)
+    response_text = (original / 'response.v').read_text()
+    patched_response = patch_response(response_text)
     request_text = (original / 'request.v').read_text()
     patched_request = patch_pooled_proxy_request(patch_receive_buffer(patch_request(request_text)))
     proxy_text = (original / 'http_proxy.v').read_text()
@@ -274,6 +329,7 @@ def main():
     h2_mux_text = (original / 'h2_mux_conn.v').read_text()
     patched_h2_mux = patch_h2_mux_read_chunk(patch_h2_mux_receive_credit(h2_mux_text))
     modules = staged_modules(work, vlib)
+    brotli_manifest = stage_brotli(vlib, modules)
     target = modules / "net/http"
     target.mkdir(parents=True, exist_ok=True)
     remove_obsolete_entries(target, original)
@@ -291,6 +347,8 @@ def main():
         output = target / entry.name
         if entry.name == "header.v":
             write_if_changed(output, patched)
+        elif entry.name == 'response.v':
+            write_if_changed(output, patched_response)
         elif entry.name == 'request.v':
             write_if_changed(output, patched_request)
         elif entry.name == 'http_proxy.v':
@@ -308,9 +366,12 @@ def main():
                 output.unlink()
             output.symlink_to(entry, target_is_directory=entry.is_dir())
     write_if_changed(modules.parent / "manifest.json", json.dumps({
+        **brotli_manifest,
         "vlib": str(vlib),
         "source_header_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "staged_header_sha256": hashlib.sha256(patched.encode()).hexdigest(),
+        "source_response_sha256": hashlib.sha256(response_text.encode()).hexdigest(),
+        "staged_response_sha256": hashlib.sha256(patched_response.encode()).hexdigest(),
         "source_request_sha256": hashlib.sha256(request_text.encode()).hexdigest(),
         "staged_request_sha256": hashlib.sha256(patched_request.encode()).hexdigest(),
         "receive_buffer_header_sha256": hashlib.sha256(receive_header.encode()).hexdigest(),
@@ -328,7 +389,7 @@ def main():
         "staged_h2_pooled_sha256": hashlib.sha256(patched_h2_pooled.encode()).hexdigest(),
         "source_h2_mux_sha256": hashlib.sha256(h2_mux_text.encode()).hexdigest(),
         "staged_h2_mux_sha256": hashlib.sha256(patched_h2_mux.encode()).hexdigest(),
-        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup; pooled proxy tunnels",
+        "adapter": "growable fields; copy-on-write; preserve empty/repeated fields; verified proxy TLS; TCP before TLS setup; pooled proxy tunnels; pure V Brotli",
     }, indent=2) + "\n")
     print(modules)
 

@@ -1,7 +1,7 @@
 module browsernet
 
 import adblock
-import compress.brotli
+import x.compress.brotli
 import compress.gzip
 import compress.zlib
 import net

@@ -1,5 +1,7 @@
 module compression
 
+import encoding.hex
+
 fn compressed_hello(format CompressionFormat) []u8 {
 	return match format {
 		.brotli {
@@ -76,6 +78,37 @@ fn test_decompression_accepts_external_format_vectors() {
 		mut readable := stream.readable()
 		assert readable.read_all().bytestr() == 'hello'
 	}
+}
+
+fn test_brotli_decodes_external_compressed_html_with_dictionary_and_utf8() {
+	// Node's native Brotli encoder, quality 11; independent of our V encoder.
+	encoded := hex.decode('1b7300008c94acf5893a84054e50eaf0f838e5c0a5057108f55d0e76cfe173704a94da26b0e07f3dc1840a57b85439a179f9f8df7b2e231c0d')!
+	mut stream := DecompressionStream.construct_from_string('br')!
+	mut writable := stream.writable()
+	for byte in encoded {
+		writable.write([byte])!
+	}
+	writable.close()!
+	assert stream.readable().state() == .closed
+	mut readable := stream.readable()
+	assert readable.read_all().bytestr() == '<!doctype html><meta charset="utf-8"><p>Compression dictionary: international information. Привет, 世界!</p>'
+}
+
+fn test_brotli_round_trips_large_binary_input_without_a_native_encoder() {
+	// Exercise sizes beyond vlib's optional native-encoder threshold (4096).
+	input := []u8{len: 8193, init: u8(index % 251)}
+	mut compressor := CompressionStream.construct_from_string('br')!
+	mut writable := compressor.writable()
+	writable.write(input[..4096])!
+	writable.write(input[4096..])!
+	writable.close()!
+	mut encoded := compressor.readable()
+	mut decompressor := DecompressionStream.construct_from_string('br')!
+	mut decoder := decompressor.writable()
+	decoder.write(encoded.read_all())!
+	decoder.close()!
+	mut decoded := decompressor.readable()
+	assert decoded.read_all() == input
 }
 
 fn test_empty_input_round_trips_all_formats() {
