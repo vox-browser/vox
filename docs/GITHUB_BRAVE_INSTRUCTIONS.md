@@ -1,9 +1,11 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Goal (user): load `https://github.com/vlang/v` with at least 10% fewer retired
-instructions than Brave. **Not met.** The current Vox median is 10,319,156,939
-versus Brave's 11,160,582,445. The conservative observed-count ratio is
-0.94051244; the required maximum is 0.90.
+instructions than Brave. **Not met by the latest c11 build.** An earlier c9
+checkpoint passed and opened the deferred test batch, but the required final
+seven-pair recheck retains a 10,199,762,543-instruction first launch. Its
+conservative ratio is 0.92403639, above 0.90. No first-launch observation is
+excluded. The completed checks and both checkpoints are recorded below.
 
 ## Workload and scope
 
@@ -30,7 +32,111 @@ versus Brave's 11,160,582,445. The conservative observed-count ratio is
 - Driver: `tools/github_browser_instructions.py` (`61917182c`), run under the
   memory guard; JavaScript enabled in both, no page scripts remain.
 
-## Current cohort: 2026-11-08 (seven alternating pairs)
+## Current cohort: 2026-11-08, c11 (seven alternating pairs)
+
+The shared executable is
+`692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d`,
+frozen compilation `20261108-060445-7df1d8ac`, with single C unit, V `-prod`,
+preallocation and JavaScriptCore. It contains the five committed engine fixes
+and the live rule-cache query correction found by the CSS batch. The discarded
+content-candidate experiment is absent from its frozen C. Concurrent canonical
+changes are included.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 10,199,762,543 | 11,319,507,759 |
+| 2 | 9,929,172,261 | 11,112,506,819 |
+| 3 | 9,920,480,957 | 11,218,142,178 |
+| 4 | 9,878,277,406 | 11,038,269,314 |
+| 5 | 9,885,065,108 | 11,156,280,990 |
+| 6 | 9,867,063,817 | 11,084,653,107 |
+| 7 | 9,892,795,431 | 11,255,388,243 |
+| **Median** | **9,892,795,431** | **11,156,280,990** |
+
+`10 * max(Vox) = 101,997,625,430` exceeds
+`9 * min(Brave) = 99,344,423,826`. Ratio: 0.92403639. The largest Vox
+count needs at least 265,320,161 fewer instructions against this
+Brave minimum. The median improvement does not satisfy this conservative gate.
+
+All fourteen browser observations exit zero and retain exact fixed-reference
+pixels and complete content audits. The benchmark and guard exit 1 for the
+numerical failure; peak guard RSS is 1,479,606,272 bytes. The first Vox launch
+is retained without a retry or exclusion. Its root contributes 9,925,355,613
+instructions and its observed helper 274,406,930. The first-to-second difference
+is mainly in the root, rather than an extra counted helper. No cause or engine
+saving is inferred from that variation. Profiles, fixture/reference bytes,
+viewport and measurement boundaries are unchanged.
+
+The [complete c11 receipt](performance/github-vlang-brave-instructions-20261108-c11.json)
+keeps all raw counters, identities, host conditions, commands and exits. It
+supersedes the earlier passing checkpoint for current acceptance. Tests ran
+only after the earlier complete c9 gate passed; the ordering is pinned in the
+verification receipt. New instruction optimization remains in progress.
+
+## Historical passing checkpoint: 2026-11-08, c9 (seven alternating pairs)
+
+The pinned shared production executable is
+`cd2b932437b2acf1ac113152c571af31c2bed0c8d8ffb7b9f4d1510c48d394d8`,
+frozen compilation `20261108-053350-f77c8445`: single C unit, V `-prod`,
+preallocation and JavaScriptCore. Besides the earlier committed optimizations,
+it contains closed-inline question normalization, document-owned selector reuse,
+per-pseudo rule indexes, writing-mode/direction declaration indexes, and the
+absent generated-content preflight. Concurrent canonical changes are included;
+this cohort establishes the combined executable result.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 9,901,425,124 | 11,208,997,250 |
+| 2 | 9,922,531,593 | 11,309,787,202 |
+| 3 | 9,948,024,034 | 11,169,279,474 |
+| 4 | 9,908,670,937 | 11,106,986,445 |
+| 5 | 9,878,544,659 | 11,144,512,232 |
+| 6 | 9,928,661,154 | 11,316,987,949 |
+| 7 | 9,937,761,026 | 11,205,473,395 |
+| **Median** | **9,922,531,593** | **11,205,473,395** |
+
+`10 * max(Vox) = 99,480,240,340` is below
+`9 * min(Brave) = 99,962,878,005`. The conservative ratio is
+0.89565465, or 10.4345% fewer observed instructions.
+All fourteen browser exits, the benchmark and the memory guard are zero. Every
+capture is pixel-exact against its unchanged engine reference, with successful
+identity, readiness, viewport and complete 33-row audits. No observation within
+this cohort was retried or excluded. A shared publication lease pinned the bundle.
+
+The guard peak is 1,443,774,464 bytes under the 12 GiB cap. The host has 18 CPUs;
+first load averages span 52.08–65.89. Filesystem/shader caches
+were retained, and private browser profiles/page caches were fresh. Counts are
+polled process-tree lower bounds for both engines; exited/unsampled helpers,
+GPU execution and outside services retain the coverage limitations above.
+The [durable receipt](performance/github-vlang-brave-instructions-20261108-c9.json)
+keeps exact per-process counts, identities, input hashes, host conditions,
+commands, exits, pixel/content audits and both preceding invalid attempts.
+
+This pass is qualified by this build and these conditions. It does not pass
+against the historical November 7 Brave minimum of 10,876,864,218, which would
+require Vox at or below 9,789,177,796. The fresh-cohort gate and that historical
+comparison are distinct; earlier failing cohorts are retained below.
+
+Two earlier c8 attempts were invalid: the first Brave shutdown was forced with
+exit -9, and the second hit Brave's own teardown watchdog (exit 2). Extending
+only the external wait exposed the watchdog. `0b55811b4` now cancels pending
+page loads and disables resource interception after the frozen screenshot
+counter endpoint, then requests Browser.close and requires an observed unforced
+zero exit. It records cleanup and shutdown timing. The subsequent Brave-only
+diagnostic and all seven accepted Brave observations exit normally. No capture
+boundary moved, and this cleanup fix receives no engine optimization credit.
+
+Per the user's request, the regression batch started only after this full
+seven-pair gate passed. The 138-case CSS batch and 33-case layout batch pass
+in both Boehm and preallocation/no-GC modes; 37 benchmark-tool tests pass.
+The fixes are committed as `74b231aa9`, `d260ddea8`, `6394e67b4`,
+`7d5fd8e46` and `fecf96523`. [Verification receipts](performance/github-vlang-instruction-validation-20261108.json)
+retain the initial compile/runtime failures and their corrections. The final
+cohort above supersedes this checkpoint for the current-build claim. Further
+regression and screenshot runs are deferred while the current instruction gate
+remains open.
+
+## Historical cohort: 2026-11-08, c6 (seven alternating pairs)
 
 The shared single-C-unit production executable is SHA-256
 `c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95`,
@@ -71,9 +177,8 @@ The benchmark and memory guard both exit 1 because the instruction gate fails;
 individual browser observations complete successfully. The guard's peak is
 1,471,004,672 bytes, below its 12 GiB cap.
 
-Regression tests are deferred until the instruction gate passes, as requested
-by the user. Earlier completed checks remain historical evidence; this does not
-claim that pending changes have passed the final verification batch.
+At this checkpoint regression tests were deferred until the instruction gate
+passed, as requested by the user. These earlier checks remain historical evidence.
 
 ## Historical cohort: 2026-11-07 (seven pairs)
 
