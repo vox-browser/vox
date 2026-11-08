@@ -138,7 +138,25 @@ frame serializer. Default and no-GC focused checks pass under separate 3 GiB
 guards, including unavailable Rust compiler paths. The initial C compilation
 and test-serialization errors were corrected without changing source records.
 
-Remaining work includes tables of contents, modular
+Permutation and TOC parsing now translate entropy-coded Lehmer ranks, skipped
+prefixes, composition, byte alignment, entry-size coders and incremental read
+state. A bounded order-statistics tree replaces naive removal. The V entry cap
+is 16,777,216, above the counts needed by the browser's supported image limits;
+invalid API sizes, ranks and indices return errors. Section views remain bounded
+and use local cursors, while the parent advances through the physical payloads;
+logical section order follows the source permutation.
+
+Comparisons add 2,424 complete TOCs, 2,424 incremental state transcripts,
+576 entropy permutations/compositions and seven fixture frame/section records.
+The latter walk all six bare fixtures and both Guardian frames, from its modular
+LF frame to the visible VarDCT frame that references it, with exact payload bytes
+and parent positions. All checks pass in both GC modes. The source does not
+finalize the isolated permutation symbol reader's ANS/deferred-error state;
+this behavior is retained, rather than claimed as full bitstream validation.
+A separate regression preserves source EOF consumption after section splitting
+fails. The sections are located and checked, not decoded into pixels yet.
+
+Remaining work includes modular
 prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
 remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
