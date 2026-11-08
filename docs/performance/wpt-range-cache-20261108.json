@@ -1,0 +1,479 @@
+{
+  "recorded": "2026-11-08T15:56:06+0300",
+  "scope": "Focused native regressions and 61 unchanged imported WPT cases in production Vox; not a complete imported or upstream run",
+  "full_goal_achieved": false,
+  "source_commits": {
+    "lazy_content_invalidation": "5b3b5161335b8a4f2bb3139d87e166fd2363d406",
+    "variant_filter": "89f3350e8838348358a797ba47550da5033fbdaf",
+    "paragraph_joins": "29feaceb914ee832fd4d6f6a702927df81c1416e",
+    "keyboard_refresh": "44732b1d3a3be39a040a23fa89d8bc157f221e89",
+    "qualified_attribute_setter": "c8a3a2b1514c85d9dcf0931d952403f3e96ad13d"
+  },
+  "changes": [
+    "Invalidate clean content facade fields by epoch and refresh only the element being read or replayed, preserving pending authored edits and native canvas fallback content.",
+    "Exact imported file filters now include their declared query variants; exact query filters and full inventory remain unchanged."
+  ],
+  "unit_checks": {
+    "distinct_checks": 25,
+    "production_prealloc_checks": 19,
+    "normal_boehm_checks": 25,
+    "tooling_checks": 15,
+    "all_pass": true,
+    "guards": {
+      "integrated-runtime-guard.json": {
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 194002944,
+        "elapsed_seconds": 1.431427,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "normal-runtime-guard.json": {
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 276414464,
+        "elapsed_seconds": 2.705368959,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "count_note": "The 19 prealloc checks are included in the 25 normal checks, not additional distinct tests."
+  },
+  "native_paragraph_variants": {
+    "scope": "All 60 declared imported WPT variants in a directly instantiated native Page, not production browser navigation",
+    "executable_sha256": "6778ff03340b062fe9b392f4f68e24d1ef20db96716794c835e67e77ac8138ab",
+    "all_selected_cases_pass": true,
+    "subtests": 3456,
+    "passing_subtests": 3456,
+    "inputs_unchanged": true,
+    "cases": 60
+  },
+  "production": {
+    "executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+    "checked_original_artifact_in_place": true,
+    "now_published_canonical": true,
+    "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-151324-a8c2bca5",
+    "identity": {
+      "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-151324-a8c2bca5",
+      "ready": {
+        "c_compile": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+          "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+          "mode": "single",
+          "requested": "parallel",
+          "v_prod": false
+        },
+        "exit": 0,
+        "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-151324-a8c2bca5/frozen-compile.json",
+        "inputs": {
+          "build_inputs_sha256": "b1a256dd4d985d1bb7b0ef4cb691bf3d27b93e515894bc48f925510e5e200788",
+          "dirty": true,
+          "head": "43af24792f78c380543269f165c0b6f15684da1a",
+          "repository_sha256": "3b546255d49acac394af9a4bbee5a8178964365f2006787feb302f0b738f7479"
+        },
+        "ready_executable": "/Users/alex/code/vox2/Build/.production-output-wkr3125e/Vox.app/Contents/MacOS/Vox",
+        "ready_executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+        "renderer": {
+          "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+          "default": "gg",
+          "gg_adapters": true,
+          "skia_free": false,
+          "skia_required_for": [
+            "text preparation and fallback",
+            "canvas",
+            "shadows",
+            "bitmap export",
+            "recording and picture playback"
+          ]
+        },
+        "repository_after_build": {
+          "build_inputs_sha256": "2a889e3e1d5e46db00000d81fd59849a8db5a562ae279cd0a44bb16b521dcbb2",
+          "dirty": true,
+          "head": "5a1e293398bfb15119dd08c97e3ede4464609337",
+          "repository_sha256": "5986642f834c3cc136763654bb37e870bfd98d9eae5e428b042e9cd5b384f13c"
+        },
+        "request": {
+          "backend": "c",
+          "c_mode": "parallel",
+          "head": "43af24792f78c380543269f165c0b6f15684da1a",
+          "id": "51ef0a3099bb44bbaf9eeb1d4f4fdd8b",
+          "renderer": "gg",
+          "v_prod": false
+        },
+        "verified_inputs": {
+          "build_inputs_sha256": "e2e83abd01f6c7bb1055b1d22029626cbfe352fc8a673cfe81cae0262450b820",
+          "dirty": true,
+          "head": "d30bfc72ffa01d5e167c344d2c87a016cba07f4f",
+          "source_kind": "verified parsed buffers and sealed native inputs"
+        }
+      },
+      "selected_executable": "/Users/alex/code/vox2/Build/.production-output-wkr3125e/Vox.app/Contents/MacOS/Vox",
+      "source_matches": {
+        "compact/content_cache.v": true,
+        "compact/pending.v": true,
+        "compact/range_selection.v": true,
+        "editing/paragraph_whitespace.v": true,
+        "compact/internals_keyboard.v": true,
+        "dom/element.v": true
+      },
+      "lease": "shared artifact.lock; original completed bundle used in place"
+    },
+    "fixture_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "fixture_files": 15399,
+    "fixture_manifest_sha256": "74485a3af3d07f0da4a46fa031bfca3067ea58667a0193f8258d29357530fcb3",
+    "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+    "candidate_summary": {
+      "tests": 61,
+      "outcomes": {
+        "COMPLETE": 61
+      },
+      "harness": {
+        "OK": 61
+      },
+      "subtests": {
+        "PASS": 5296
+      },
+      "subtest_total": 5296,
+      "subtest_pass_rate": 1.0,
+      "tests_all_pass": 61
+    },
+    "range": {
+      "browser": "vox",
+      "test": "dom/ranges/Range-insertNode",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "harness_message": null,
+      "reported_url": "/dom/ranges/Range-insertNode.html",
+      "url_matches": true,
+      "document_ms": 9200.976,
+      "cycle_ms": 9219.622,
+      "page_ms": 9108.9,
+      "launch": "vox-000-000",
+      "first_of_launch": true
+    },
+    "range_subtests": 1840,
+    "paragraph_variants": 60,
+    "paragraph_subtests": 3456,
+    "runner_exit": 0,
+    "guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4197515264,
+      "elapsed_seconds": 54.503383333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "browser_budget_gib": 4,
+    "aggregate_budget_gib": 12,
+    "limits": {
+      "startup": 30,
+      "navigation": 10,
+      "harness_start": 5,
+      "grace": 10,
+      "browser_memory_gib": 4
+    },
+    "changed_inputs": [],
+    "unexpected_posts": 0,
+    "aborted": null,
+    "host_cpus": 18,
+    "load_start": [
+      14.13,
+      23.07,
+      34.68
+    ],
+    "load_end": [
+      13.5,
+      21.4,
+      33.33
+    ],
+    "source_comparison_limit": "The two production builds include multiple changes; no isolated speedup or CPU-instruction optimization claim."
+  },
+  "control_standard": {
+    "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+    "summary": {
+      "tests": 1,
+      "outcomes": {
+        "HARD_TIMEOUT": 1
+      },
+      "harness": {},
+      "subtests": {},
+      "subtest_total": 0,
+      "subtest_pass_rate": null,
+      "tests_all_pass": 0
+    },
+    "runner_exit": 1,
+    "guard": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2907848704,
+      "elapsed_seconds": 76.1117165,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "budgets": "Same documented 4 GiB browser / 12 GiB aggregate defaults and unchanged 60+10 second Range deadline as candidate."
+  },
+  "svg": {
+    "cases": 7,
+    "all_pixel_exact": true,
+    "maximum_different_pixels": 0,
+    "maximum_channel_error": 0,
+    "reference_or_tolerance_changes": false,
+    "command": [
+      "sh",
+      "compare_screenshots.sh",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/pattern-attribute-update.html"
+    ],
+    "exit": 0,
+    "executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+    "fixture_inputs": {
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html": "00c8237fe47703896d26207dece9fdd802e4ca49b84e6b178f657d8293802f06",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html": "23addb46947da1c8c28de47d7846dc002285530f1ad2bc4d104aeca52d4d337f",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html": "cd9e530818694384a0f141cc71a7d1705c22394ad25756d20dd1dfd5ddf7db43",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html": "181cafc7b686ded3aa8f4444970461ea27438325a1135fde1459e5badfe1c48a",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html": "2064667b5de321879293c160680a9c1dc21dfd48e4f0061fab57f616f4db851e",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html": "46440e1a39e7d5761a6e5fadd2a40fcf7caa9a371c25f388d9f746872a70451d",
+      "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/pattern-attribute-update.html": "ed7c196c353f92afb6a07a6e2ea8babb43f3dc3449323d50c1a8e84e251e1af5"
+    },
+    "changed_inputs": [],
+    "guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 221839360,
+      "elapsed_seconds": 50.536716167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "retained_failures": [
+    {
+      "attempt": "Initial tighter-budget old-browser baseline",
+      "outcome": "HARD_TIMEOUT",
+      "reported_subtests": 0,
+      "budgets_gib": {
+        "browser": 2.5,
+        "aggregate": 3
+      },
+      "guard": {
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2599976960,
+        "elapsed_seconds": 80.245518792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "attempt": "Initial tighter-budget new-browser check",
+      "outcome": "MEMORY_LIMIT",
+      "reported_subtests": 0,
+      "budgets_gib": {
+        "browser": 2.5,
+        "aggregate": 3
+      },
+      "guard": {
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2742353920,
+        "elapsed_seconds": 13.89007675,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "selection_note": "Before the filter fix, the bare paragraph file filter selected no query variants; only Range was selected."
+    },
+    {
+      "attempt": "Direct native Page Range adapter diagnostics",
+      "outcome": "0/1840 PASS; not acceptance evidence",
+      "cause": "Without installed network host iframe resources were not fetched; with network host the expected iframe still lacked setup functions. The adapter did not reproduce production navigation.",
+      "credit": false
+    }
+  ],
+  "all_guard_receipts": {
+    "candidate-standard-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4197515264,
+      "elapsed_seconds": 54.503383333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "canvas-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 164577280,
+      "elapsed_seconds": 1.10319425,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6033276928,
+      "elapsed_seconds": 142.56411516699998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "control-standard-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2907848704,
+      "elapsed_seconds": 76.1117165,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "integrated-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6042943488,
+      "elapsed_seconds": 137.575706333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "integrated-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 194002944,
+      "elapsed_seconds": 1.431427,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-range-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 342622208,
+      "elapsed_seconds": 2.2408316249999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-range-diagnostic-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1187938304,
+      "elapsed_seconds": 58.551022208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-range-integrated-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1183088640,
+      "elapsed_seconds": 12.454863875000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "normal-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6010273792,
+      "elapsed_seconds": 247.800006042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "normal-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 276414464,
+      "elapsed_seconds": 2.705368959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "normal60-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 322191360,
+      "elapsed_seconds": 130.743973125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "production-wpt-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2742353920,
+      "elapsed_seconds": 13.89007675,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "range-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 6040584192,
+      "elapsed_seconds": 109.65057175000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 191791104,
+      "elapsed_seconds": 1.267626709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "svg-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 221839360,
+      "elapsed_seconds": 50.536716167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "raw_evidence": {
+    "archive": "/Users/alex/.cache/vox/wpt/20261108-range-cache-5b3b51613.tar.gz",
+    "sha256": "eef0a2833ce3764153f249ec283dc61dfd16f94fc1374fb33188fd963c4f4cda",
+    "bytes": 3842066,
+    "includes": "Original WPT results and identities, guards and commands, SVG PNGs, all failed diagnostic attempts, build receipt metadata and temporary canonical test sources. No app bundles or test binaries."
+  },
+  "remaining": "All 6828 imported cases need a fresh complete measurement; full upstream WPT has 132460 variants across types and is not represented by these 61 cases."
+}

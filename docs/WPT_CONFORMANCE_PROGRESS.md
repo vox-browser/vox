@@ -474,3 +474,41 @@ no separate browser build was launched. Production WPT and seven SVG pixel
 checks therefore remain pending on a bundle containing both fixes. This work
 does not establish 100% for the larger imported cohort or full upstream WPT;
 the Range reporting timeout and other browser failures remain open.
+
+
+## Production Range and paragraph checks pass after lazy content invalidation
+
+`5b3b51613` replaces whole-document content-cache cleanup after native edits
+with an epoch. An element retires stale clean content when it is next read or
+replayed. Pending author writes and native canvas fallback content remain
+preserved. `89f3350e8` also corrects focused file filtering so a bare imported
+file name includes its query variants; the full cohort inventory is unchanged.
+
+The [verification manifest](performance/wpt-range-cache-20261108.json) records
+**61 production WPT cases, 5,296 / 5,296 assertions PASS**, all harnesses OK:
+`Range-insertNode` passes **1,840 / 1,840**, and all 60 paragraph-join variants
+pass **3,456 / 3,456**. The unchanged Range page finishes in about 9.2 seconds.
+The completed C-backend executable is `91be2b76025a…`, now published at the
+canonical bundle location. Its sealed source manifest contains the lazy cache,
+paragraph translation, keyboard wrapper refresh and qualified-attribute fix.
+This closes their previously pending production validation on those selected
+cases. All seven SVG bridge reftests remain pixel-exact, with no reference or
+tolerance changes.
+
+The old `59de419d75f2…` bundle still times out on Range under the same documented
+WPT defaults: 4 GiB per browser and 12 GiB aggregate, unchanged harness and
+60-second timeout plus 10-second reporting grace. An earlier attempt using
+2.5 / 3 GiB hits the browser memory cap on the new build and remains archived;
+it has not passed that tighter budget. Native unit checks retain their 3 GiB
+guard. The two production builds include other changes, so this comparison
+does not isolate a performance gain attributable to one fix.
+
+All 25 distinct focused regressions pass with normal allocation; 19 also pass
+with production allocation. All 60 paragraph variants additionally pass in
+fresh direct native Page processes. The unsuccessful native Range adapter
+attempts are retained without pass credit; production navigation supplies the
+Range result above. Runner, guard, fixture and executable identities are clean
+for the passing production checks. Raw evidence and failed attempts are
+archived externally as recorded in the manifest, and completed job scratch is
+removed. **100% for the larger imported cohort and full upstream WPT remains
+unachieved; these results do not establish a new full-suite percentage.**
