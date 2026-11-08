@@ -158,19 +158,31 @@ fn test_color_matrices_before_and_after_filter_layers_match_native() {
 		[contrast, CanvasFilterStep{kind: .blur, sigma: .01}, opacity],
 		[blur, contrast],
 		[contrast, CanvasFilterStep{kind: .blur, sigma: 1.2}],
+		[contrast, CanvasFilterStep{kind: .drop_shadow, sigma: 2.5, offset_x: 5.25,
+			offset_y: -3.75, color: 0x805030e0}],
+		[opacity, CanvasFilterStep{kind: .drop_shadow, sigma: 2.5, offset_x: 5.25,
+			offset_y: -3.75, color: 0x805030e0}],
+		[contrast, CanvasFilterStep{kind: .drop_shadow, offset_x: 5.25,
+			offset_y: -3.75, color: 0x805030e0}, opacity],
+		[opacity, CanvasFilterStep{kind: .drop_shadow, sigma: .01, offset_x: -7.25,
+			offset_y: 4.5, color: 0x805030e0}, contrast],
+		[opacity, CanvasFilterStep{kind: .drop_shadow, sigma: -1, offset_x: 5.25,
+			offset_y: -3.75, color: 0x805030e0}],
 	]
 	hashes := $if linux {
 		['d33ced999498998e', '4fbf747408667051', '4d8eb2b67a5444e4', 'de2bccc7da8fbd81',
-		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'eaee08ab4ceff5d3']
+		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'eaee08ab4ceff5d3',
+		 '6cb1cc4f7b2ba1c8', 'f0578d3f3c4cca70', '78f5b6e1d62913b4', 'aa5bfe6fe1befdcc', '1d4747ee62d26c1d']
 	} $else {
 		['7ec1657ab2cd72b6', '4fbf747408667051', '4d8eb2b67a5444e4', 'de2bccc7da8fbd81',
-		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'ef47838643df8604']
+		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'ef47838643df8604',
+		 '5e4a0ce475763b5a', 'f98229fc7ce105d5', '78f5b6e1d62913b4', 'aa5bfe6fe1befdcc', '3cf70ee5009ca31f']
 	}
 	for i, filters in steps {
 		mut pixels := filter_layer_test_background()
 		transform := if i in [2, 7] { [f32(1.25), 0, 0, .75, 2, 4]! }
 			else { [f32(1), 0, 0, 1, 0, 0]! }
-		mode := match i { 2 { BlendMode.multiply } 3, 4 { .src_in } 5 { .plus_lighter } 6 { .overlay } else { .src_over } }
+		mode := match i { 2, 10 { BlendMode.multiply } 3, 4, 11 { .src_in } 5 { .plus_lighter } 6 { .overlay } else { .src_over } }
 		alpha_type := if i == 7 { 1 } else { 2 }
 		if i == 6 {
 			assert stroke_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),

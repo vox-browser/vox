@@ -113,9 +113,6 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 			if i < layer_index { before << matrix.matrix }
 			if i > layer_index { after << matrix.matrix }
 		}
-		// Drop-shadow's foreground must keep a deferred pre-filter until
-		// merging; that result state is not yet represented here.
-		if step.kind == .drop_shadow && before.len > 0 { return FilterPlan{declined: true} }
 		for matrices in [before, after] {
 			if composed := new_color_filter(matrices) {
 				if composed.affects_transparent_black() { return FilterPlan{declined: true} }
@@ -272,20 +269,31 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	// internalDrawDeviceWithFilter(): the layer without its padding, the
 	// clip bounds in layer pixels as the desired output.
 	mut layer_image := BlurImage{layer_pixels, lw, lh}
+	original_layer_image := layer_image
 	mut restore_matrices := step.post_color.clone()
 	if step.pre_color.len > 0 {
-		if layer_sx == 0 && layer_sy == 0 {
+		if !drop && layer_sx == 0 && layer_sy == 0 {
 			// An identity blur preserves the deferred color filter. Compose
 			// both sides without an intermediate 8-bit quantization.
 			restore_matrices = step.pre_color.clone()
 			restore_matrices << step.post_color
-		} else if color := new_color_filter(step.pre_color) {
-			layer_image = filter_layer_image(layer_image, color)
+		} else if layer_sx != 0 || layer_sy != 0 {
+			if color := new_color_filter(step.pre_color) {
+				layer_image = filter_layer_image(layer_image, color)
+			}
 		}
 	}
 	source := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
 	desired := IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top}
 	if drop {
+		// Preserve the source color filter for the foreground merge. A real
+		// shadow blur resolves it, while an identity blur keeps it deferred
+		// immediately before the SrcIn tint.
+		foreground := new_filter_result(SpecialImage{original_layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+		// A rejected blur node has a null child, so this shadow samples
+		// SourceGraphic rather than the preceding color-filter result.
+		shadow_matrices := if step.sigma >= 0 && is_finite_f32(step.sigma)
+			&& layer_sx == 0 && layer_sy == 0 { step.pre_color } else { []MatrixColorFilter{} }
 		// internalDrawDeviceWithFilter evaluates in the source device's
 		// coordinate system, using localToSrc rather than the parent CTM.
 		local := canvas_affine(layer_transform)
@@ -313,11 +321,11 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		merge_clip := canvas_raster_clip(mw, mh,
 			[rect_path(Rect{1, 1, f32(mw - 1), f32(mh - 1)})])
 		if shadow.has_image {
-			draw_tinted_filter_result(mut merged, mw * 4, shadow, local_offset,
-				merge_padded.left, merge_padded.top, &merge_clip, step.color)
+			draw_tinted_filter_result_with_color(mut merged, mw * 4, shadow, local_offset,
+				merge_padded.left, merge_padded.top, &merge_clip, step.color, shadow_matrices)
 		}
-		draw_filter_sprite(mut merged, mw * 4, source.image.bitmap(), source.origin_x - merge_padded.left,
-			source.origin_y - merge_padded.top, &merge_clip, .src_over)
+		draw_color_filtered_sprite(mut merged, mw * 4, foreground.image.bitmap(), foreground.origin_x - merge_padded.left,
+			foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color)
 		draw_color_filtered_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, padded.left + merge_padded.left,
 			padded.top + merge_padded.top, &rc, mode, restore_matrices)
 		return true
@@ -377,6 +385,10 @@ fn map_filter_bounds(bounds IRect, m SkAffine) IRect {
 }
 
 fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, mapped SkAffine, origin_x int, origin_y int, rc &RasterClip, color u32) {
+	draw_tinted_filter_result_with_color(mut pixels, pitch, result, mapped, origin_x, origin_y, rc, color, [])
+}
+
+fn draw_tinted_filter_result_with_color(mut pixels []u8, pitch int, result FilterResult, mapped SkAffine, origin_x int, origin_y int, rc &RasterClip, color u32, matrices []MatrixColorFilter) {
 	// Saved layers have a transparent border. Blur output only promises
 	// initialized padding: draw that subset with AA, without sampling its
 	// border as if it were transparent (FilterResult::draw()).
@@ -395,6 +407,9 @@ fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, ma
 	tint := [f32((color >> 16) & 255) * inv_255 * a, f32((color >> 8) & 255) * inv_255 * a,
 		f32(color & 255) * inv_255 * a, a]!
 	mut blitter := PipelineBlitter{ ...base, tinted: true, tint: tint, lowp_tint: tint.map(lowp_from_float(it)) }
+	if filter := new_color_filter(matrices) {
+		blitter = PipelineBlitter{...blitter, lowp: false, filtered: true, filter: filter}
+	}
 	bounds := map_filter_bounds(result.layer_bounds, mapped)
 	clip := IRect{bounds.left - origin_x, bounds.top - origin_y, bounds.right - origin_x, bounds.bottom - origin_y}
 	if result.transparent_boundary {

@@ -1410,7 +1410,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -3057,14 +3057,23 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	library := C.dlopen(os.args[1].str, 2)
 	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
-	shadows := os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if shadows { random_shadow_filters } else { random_layer_filters }
+	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
+	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
+	make_filters := if mixed { random_color_shadow_filters }
+		else if shadows { random_shadow_filters } else { random_layer_filters }
 	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, make_filters) or {
 		eprintln(err.msg())
 		exit(1)
 	}
 	label := if shadows { 'drop-shadow' } else { 'blur' }
 	println('${label}-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+}
+
+fn random_color_shadow_filters() []cpuraster.CanvasFilterStep {
+	mut filters := random_color_filters()
+	filters << random_shadow_filters()
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
 }
 
 fn random_shadow_filters() []cpuraster.CanvasFilterStep {
