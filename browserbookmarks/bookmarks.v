@@ -233,7 +233,7 @@ fn (mut store Store) write_profile(visible bool, items []Bookmark) ! {
 			return err
 		}
 		file.close()
-		os.rename(temporary, store.path) or {
+		platform.atomic_replace_file(temporary, store.path) or {
 			os.rm(temporary) or {}
 			return err
 		}

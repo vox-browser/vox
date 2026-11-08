@@ -94,7 +94,7 @@ fn (mut store ZoomLevels) write_zoom_levels(levels map[string]f64) ! {
 		return err
 	}
 	file.close()
-	os.rename_dir(temporary, store.path)!
+	platform.atomic_replace_file(temporary, store.path)!
 	store.profile_hash = processlock.fingerprint(encoded)
 }
 

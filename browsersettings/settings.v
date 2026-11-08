@@ -223,9 +223,7 @@ pub fn save(input Proxy) ! {
 		return err
 	}
 	file.close()
-	// Use the direct rename operation: os.rename treats a directory as a
-	// destination container instead of failing to replace the settings file.
-	os.rename_dir(temporary, state.path)!
+	platform.atomic_replace_file(temporary, state.path)!
 	// Publish only after persistence succeeds. Failed Apply keeps the old route.
 	state.proxy = Proxy{ ...proxy, host: proxy.host.clone(), port: proxy.port.clone(), sites: proxy.sites.clone() }
 	state.configured = true
