@@ -9951,6 +9951,9 @@ pub fn (style_value ColorStyleValue) serialize(mode SerializationMode) string {
 pub struct CustomIdentStyleValue {
 pub mut:
 	custom_ident_ string
+	// A font family can be a sequence of identifiers. Keep those boundaries
+	// for CSSOM serialization while font matching uses the complete name.
+	family_identifiers_ []string
 }
 
 pub fn CustomIdentStyleValue.create(custom_ident string) CustomIdentStyleValue {
@@ -9965,10 +9968,23 @@ pub fn (style_value CustomIdentStyleValue) custom_ident() string {
 
 pub fn (style_value CustomIdentStyleValue) serialize(mode SerializationMode) string {
 	_ = mode
+	if style_value.family_identifiers_.len > 1 {
+		return style_value.family_identifiers_.map(serialize_an_identifier(it)).join(' ')
+	}
 	return serialize_an_identifier(style_value.custom_ident_)
 }
 
 pub fn (style_value CustomIdentStyleValue) tokenize() []ComponentValue {
+	if style_value.family_identifiers_.len > 1 {
+		mut values := []ComponentValue{}
+		for index, ident in style_value.family_identifiers_ {
+			if index > 0 {
+				values << ComponentValue.from_token(Token.create_whitespace(' '))
+			}
+			values << ComponentValue.from_token(Token.create_ident(ident, serialize_an_identifier(ident)))
+		}
+		return values
+	}
 	return [
 		ComponentValue.from_token(Token.create_ident(style_value.custom_ident_, style_value.custom_ident_)),
 	]

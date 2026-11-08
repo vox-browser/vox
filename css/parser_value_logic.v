@@ -7893,7 +7893,10 @@ fn (mut parser Parser) parse_family_name_value(mut tokens ComponentValueStream) 
 	}
 
 	complete_name := parts.join(' ')
-	return StyleValue(CustomIdentStyleValue.create(complete_name))
+	return StyleValue(CustomIdentStyleValue{
+		custom_ident_: complete_name
+		family_identifiers_: if parts.len > 1 { parts } else { []string{} }
+	})
 }
 
 // https://svgwg.org/svg2-draft/painting.html#StrokeDashing
