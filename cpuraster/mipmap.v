@@ -49,3 +49,39 @@ fn new_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode
 	mapped := post_scale(inverse, f32(image.width)/f32(bitmap.width), f32(image.height)/f32(bitmap.height))
 	return image_shader_with_inverse(image, tile_x, tile_y, linear, mapped)
 }
+
+// SkMipmapAccessor's linear mode keeps the floor level and interpolates it
+// with the next smaller image. The pipeline scales the already mapped upper
+// coordinates to reach the lower level, then lerps before alpha conversion.
+fn new_linear_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, total SkAffine) CanvasShader {
+	inverse := affine_invert(total) or { return CanvasShader{kind: .empty} }
+	xx, xy := inverse.sx*inverse.sx, inverse.ky*inverse.ky
+	yx, yy := inverse.kx*inverse.kx, inverse.sy*inverse.sy
+	sx, sy := C.sqrtf(xx+xy), C.sqrtf(yx+yy)
+	mut level := f32(0)
+	if is_finite_f32(sx) && is_finite_f32(sy) && math_abs32(sx) > f32(1)/4096 && math_abs32(sy) > f32(1)/4096 {
+		scale := fmin_std(f32(1)/sx, f32(1)/sy)
+		if scale > 0 && scale < 1 {
+			l := fmax_std(-C.log2f(scale)-f32(0.5), 0)
+			if is_finite_f32(l) { level = l }
+		}
+	}
+	index := float_saturate2int(floor_f32(level))
+	upper := build_image_mipmap(bitmap, index) or { bitmap }
+	mapped := post_scale(inverse, f32(upper.width)/f32(bitmap.width), f32(upper.height)/f32(bitmap.height))
+	base := image_shader_with_inverse(upper, tile_x, tile_y, true, mapped)
+	mut shader := ImageShader{...base.image, mipmap_linear: true}
+	weight := level - f32(index)
+	if weight > 0 {
+		if lower := build_image_mipmap(bitmap, index + 1) {
+			lower_base := image_shader_with_inverse(lower, tile_x, tile_y, true, SkAffine{})
+			shader = ImageShader{...shader,
+				lower: &ImageShader{...lower_base.image, nearest: shader.nearest, mipmap_linear: true}
+				lower_weight: weight
+				lower_scale_x: f32(lower.width)/f32(upper.width)
+				lower_scale_y: f32(lower.height)/f32(upper.height)
+			}
+		}
+	}
+	return CanvasShader{kind: .image, image: shader}
+}

@@ -140,6 +140,37 @@ fn test_nearest_filtered_images_preserve_transforms_and_aa_edges() {
 	for i, c in cases { assert image_filter_test_hash(c, image_test_contrast_filter(), false) == hashes[i] }
 }
 
+fn test_linear_filtered_images_preserve_transforms_and_sampling() {
+	assert image_filter_test_hash(ImageTestCase{
+		destination: [f32(4.25), 5.5, 30, 25]!
+		transform: [f32(1.25), 0, 0, .75, 2, 4]!
+		alpha: .7
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == 'd5f8f3845bfa1191'
+	assert image_filter_test_hash(ImageTestCase{
+		premultiplied: false
+		display_p3: true
+		source: [f32(1), 1, 5, 4]!
+		destination: [f32(4), 6, 35, 24]!
+		transform: [f32(.9), .4, -.4, .9, 5, 2]!
+		alpha: .65
+		mode: .multiply
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == 'e95056f459921fcc'
+	// The odd-size source subset samples levels 1 and 2. Mixing precedes
+	// unpremultiplication and Display P3 conversion, as in the native shader.
+	for p3 in [false, true] {
+		mut pixels := image_test_background()
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2,
+			if p3 { [f32(.9), .4, -.4, .9, 5, 2]! } else { image_test_identity },
+			image_test_bitmap(31, 25, !p3, p3), [f32(1), 2, 28, 21]!, [f32(6.25), 5.75, 8, 7]!,
+			true, .85, .multiply, image_test_clips(true), new_canvas_filter([image_test_contrast_filter()]), false)
+		assert sha256.sum(pixels).hex()[..16] == if p3 { 'b7ec0bc884c06b1c' } else { '4d2545a295b0c06a' }
+	}
+}
+
 fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
 	assert image_filter_test_hash(ImageTestCase{
 		destination: [f32(4.25), 5.5, 30, 25]!

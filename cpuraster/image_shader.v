@@ -95,6 +95,13 @@ struct ImageShader {
 	unpremul   bool
 	display_p3 bool
 	premul     bool
+	// Linear mipmaps sample two levels before color-space conversion. Even
+	// a single level uses the general bilinear stages for this sampling mode.
+	mipmap_linear bool
+	lower &ImageShader = unsafe { nil }
+	lower_weight f32
+	lower_scale_x f32
+	lower_scale_y f32
 mut:
 	// bilerp_clamp_8888_force_highp: device bounds that map outside the
 	// 16-bit range in image space.
@@ -188,13 +195,13 @@ fn int_cast_preserves(v f32) bool {
 
 // The bilerp_clamp_8888 fast path: linear sampling with both axes clamped.
 fn (s &ImageShader) fast_bilerp() bool {
-	return !s.nearest && s.tile_x == .clamp && s.tile_y == .clamp
+	return !s.mipmap_linear && !s.nearest && s.tile_x == .clamp && s.tile_y == .clamp
 }
 
 // Whether a stage lacks a lowp version: the bilinear sampler, the repeat
 // tiles, the color space transform and bilerp_clamp_8888_force_highp.
 fn (s &ImageShader) needs_highp() bool {
-	if s.display_p3 {
+	if s.display_p3 || s.lower != unsafe { nil } {
 		return true
 	}
 	if s.fast_bilerp() {
@@ -314,6 +321,27 @@ fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 	sx := f32(px) + f32(0.5)
 	sy := f32(py) + f32(0.5)
 	x, y := apply_matrix(s.matrix, sx, sy, true)
+	mut c := s.sample_highp(x, y)
+	if s.lower != unsafe { nil } {
+		lower := s.lower.sample_highp(x * s.lower_scale_x, y * s.lower_scale_y)
+		for i in 0 .. 4 { c[i] = mad(lower[i] - c[i], s.lower_weight, c[i]) }
+	}
+	mut pixel := FloatPixel{c[0], c[1], c[2], c[3]}
+	if s.unpremul {
+		pixel.unpremul()
+	}
+	if s.display_p3 {
+		pixel.transfer(srgb_to_linear)
+		pixel.matrix_3x3(display_p3_to_srgb)
+		pixel.transfer(linear_to_srgb)
+	}
+	if s.premul {
+		pixel.premul()
+	}
+	return [pixel.r, pixel.g, pixel.b, pixel.a]!
+}
+
+fn (s &ImageShader) sample_highp(x f32, y f32) [4]f32 {
 	mut c := [f32(0), 0, 0, 0]!
 	if s.nearest {
 		c = s.highp_sample(x, y)
@@ -349,19 +377,7 @@ fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 			}
 		}
 	}
-	mut pixel := FloatPixel{c[0], c[1], c[2], c[3]}
-	if s.unpremul {
-		pixel.unpremul()
-	}
-	if s.display_p3 {
-		pixel.transfer(srgb_to_linear)
-		pixel.matrix_3x3(display_p3_to_srgb)
-		pixel.transfer(linear_to_srgb)
-	}
-	if s.premul {
-		pixel.premul()
-	}
-	return [pixel.r, pixel.g, pixel.b, pixel.a]!
+	return c
 }
 
 // Lowp.

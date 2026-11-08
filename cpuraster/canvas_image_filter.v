@@ -18,9 +18,9 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	mut total := sk_concat(mapped, affine_translate(src.left, src.top))
 	pixel_aligned := total.type_mask() <= affine_translate_mask
 		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
-	if !pixel_aligned && (smoothing || blend_affects_transparent_black(mode)) {
-		// Linear mipmap interpolation and shader-based layer-space decal
-		// edges require the remaining FilterResult sampling stages.
+	if !pixel_aligned && blend_affects_transparent_black(mode) {
+		// Shader-based layer-space decal edges need the remaining
+		// FilterResult sampling stages.
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -38,6 +38,7 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	ix := int(saturate_to_i32(floor_f32(total.tx + f32(.5))))
 	iy := int(saturate_to_i32(floor_f32(total.ty + f32(.5))))
 	sprite := bitmap.premultiplied && treat_as_aa_sprite(total, bitmap.width, bitmap.height)
+		&& (!smoothing || pixel_aligned)
 		&& (rc.is_bw || rc.aa.quick_contains(ix, iy, ix + bitmap.width, iy + bitmap.height))
 	if sprite {
 		total = affine_translate(floor_f32(total.tx + f32(.5)), floor_f32(total.ty + f32(.5)))
@@ -45,8 +46,9 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	dev := InverseMatrix{total, total.type_mask()}.map_rect(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)})
 	bounds := round_out(dev)
 	unbounded := blend_affects_transparent_black(mode) && !bounds.contains(rc.bounds())
-	shader := new_image_shader(bitmap, if unbounded { TileMode.decal } else { .clamp },
-		if unbounded { TileMode.decal } else { .clamp }, false, total)
+	tile := if unbounded { TileMode.decal } else { .clamp }
+	shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, total) }
+		else { new_image_shader(bitmap, tile, tile, false, total) }
 	alpha := f32(u8(global_alpha * f32(255))) * inv_255
 	mut blitter := canvas_filtered_blitter(mut pixels, pitch, 0xff000000, shader, alpha, mode,
 		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, filter,
