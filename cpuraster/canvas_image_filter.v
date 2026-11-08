@@ -3,13 +3,29 @@ module cpuraster
 // MakeFromImage retains an integer-aligned source subset and defers its
 // transform, paint alpha and color filters until the final image draw.
 fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ColorFilter) bool {
-	src := rect_xywh(source)
-	dst := rect_xywh(destination)
+	mut src := rect_xywh(source)
+	mut dst := rect_xywh(destination)
 	ctm := canvas_affine(transform)
 	if !transform[..].all(is_finite_f32(it)) || !source[..].all(int_cast_preserves(it))
-		|| !rect_is_finite(dst)
-		|| !rect_contains_rect(Rect{0, 0, f32(image.width), f32(image.height)}, src) {
+		|| !rect_is_finite(src) || !rect_is_finite(dst) {
 		return false
+	}
+	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
+	if rect_is_empty(src) || rect_is_empty(dst) { return target.ready() }
+	rc := canvas_raster_clip(width, height, clips)
+	if canvas_quick_reject(dst, affine_to_matrix(ctm), &rc) { return target.ready() }
+	affine_invert(ctm) or { return target.ready() }
+	image_bounds := Rect{0, 0, f32(image.width), f32(image.height)}
+	if !rect_contains_rect(image_bounds, src) {
+		// MakeFromImage clips the source first and maps the smaller source
+		// through the original src-to-dst matrix before constructing SkM44.
+		original := rect_to_rect(src, dst) or { return target.ready() }
+		src = rect_intersect(src, image_bounds) or {
+			target.ready()
+			draw_empty_filter_result(mut pixels, pitch, &rc, mode)
+			return true
+		}
+		dst = InverseMatrix{original, original.type_mask()}.map_rect(src)
 	}
 	local := rect_to_rect(src, dst) or { SkAffine{} }
 	// MakeFromImage concatenates SkM44 matrices before storing an SkMatrix;
@@ -22,17 +38,13 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 		// Rotated layer-space decal edges require transform decomposition.
 		return false
 	}
-	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
-	if rect_is_empty(src) || rect_is_empty(dst) { return target.ready() }
-	rc := canvas_raster_clip(width, height, clips)
-	if canvas_quick_reject(dst, affine_to_matrix(ctm), &rc) { return target.ready() }
 	left := int(src.left)
 	top := int(src.top)
 	bitmap := CanvasBitmap{
 		...image
 		pixels: image.pixels[top * image.pitch + left * 4..]
-		width: int(source[2])
-		height: int(source[3])
+		width: int(src.right - src.left)
+		height: int(src.bottom - src.top)
 	}
 	ix := int(saturate_to_i32(floor_f32(total.tx + f32(.5))))
 	iy := int(saturate_to_i32(floor_f32(total.ty + f32(.5))))

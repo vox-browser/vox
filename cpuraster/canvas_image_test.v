@@ -213,6 +213,39 @@ fn test_filtered_image_restores_cover_the_clip_with_clearing_blenders() {
 	assert sha256.sum(pixels).hex()[..16] == 'b597b38558cfdfc1'
 }
 
+fn test_filtered_image_sources_clip_before_transforming() {
+	assert image_filter_test_hash(ImageTestCase{
+		source: [f32(-2), 1, 12, 9]!
+		destination: [f32(3.25), 4.5, 24, 18]!
+		transform: [f32(.9), .4, -.4, .9, 5, 2]!
+		alpha: .65
+		mode: .multiply
+		clip: true
+	}, image_test_contrast_filter(), false) == 'c6cdff1bcb881136'
+	assert image_filter_test_hash(ImageTestCase{
+		premultiplied: false
+		display_p3: true
+		source: [f32(-2), 1, 12, 9]!
+		destination: [f32(3.25), 4.5, 24, 18]!
+		transform: [f32(1.25), 0, 0, .75, 2, 4]!
+		alpha: .65
+		mode: .src_in
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == '7b33de5d39e16a66'
+	for i, c in [
+		ImageTestCase{source: [f32(10), 1, 5, 4]!, destination: [f32(3.25), 4.5, 24, 18]!,
+			alpha: .65, mode: .src_in, clip: true},
+		ImageTestCase{source: [f32(10), 1, 5, 4]!, destination: [f32(60), 50, 24, 18]!,
+			alpha: .65, mode: .src_in, clip: true},
+		ImageTestCase{source: [f32(-2), 1, -5, 4]!, destination: [f32(3.25), 4.5, 24, 18]!,
+			alpha: .65, mode: .src_in, clip: true},
+	] {
+		assert image_filter_test_hash(c, image_test_contrast_filter(), false) ==
+			if i == 0 { fixture_hash('62b1b888837ad40a') } else { 'f00be8e39ec6bc7f' }
+	}
+}
+
 fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
 	assert image_filter_test_hash(ImageTestCase{
 		destination: [f32(4.25), 5.5, 30, 25]!
