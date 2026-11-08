@@ -2505,24 +2505,15 @@ fn check_image_cases(oracle Oracle, count int) {
 // font, when present. CPU_RASTER_GLYPH_FONT selects one font file instead.
 fn glyph_fonts(repo string) []string {
 	if only := os.getenv_opt('CPU_RASTER_GLYPH_FONT') {
-		return [only]
+		if !os.is_file(only) { panic('Glyph font not found: ${only}') }
+		return [os.real_path(only)]
 	}
-	mut fonts := [
-		'Tests/Browser/Brave/resources/Ahem.ttf',
-		'Tests/Browser/Brave/resources/cyrillic-context.ttf',
-		'Tests/Browser/Brave/resources/glyph-origin.ttf',
-		'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf',
-		'pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Italic-subset.ttf',
-		'pixel_tests/sites/jvns/cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.ttf',
-	].map(os.join_path(repo, it))
-	for path in ['/System/Library/Fonts/Supplemental/Arial.ttf', '/System/Library/Fonts/Supplemental/Georgia.ttf',
-		'/System/Library/Fonts/Supplemental/Times New Roman.ttf', '/System/Library/Fonts/Helvetica.ttc',
-		'/System/Library/Fonts/Menlo.ttc', '/System/Library/Fonts/SFNS.ttf', '/System/Library/Fonts/NewYork.ttf',
-		'/System/Library/Fonts/Geneva.ttf', '/System/Library/Fonts/LastResort.otf',
-		'/System/Library/Fonts/Apple Color Emoji.ttc'] {
-		if os.is_file(path) {
-			fonts << path
-		}
+	list := os.read_lines(os.join_path(repo, 'tools/gg_migration/glyph_fonts.txt')) or { panic(err) }
+	mut fonts := []string{}
+	for line in list {
+		path := line.trim_space()
+		if path == '' || path.starts_with('#') { continue }
+		fonts << if os.is_abs_path(path) { path } else { os.join_path(repo, path) }
 	}
 	return fonts.filter(os.is_file(it))
 }
@@ -2612,6 +2603,8 @@ fn compare_canvas_glyphs(glyphs OracleCanvasGlyphs, oracle Oracle, initial []u8,
 // composite operation, global alpha and clips.
 fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, count int) !(int, int, int) {
 	fonts := glyph_fonts(repo)
+	limit := (os.getenv_opt('CPU_RASTER_GLYPH_LIMIT') or { '120' }).int()
+	if limit <= 0 || limit > 65535 { return error('Invalid CPU_RASTER_GLYPH_LIMIT') }
 	mut declined := 0
 	mut drawn := 0
 	mut paths := 0
@@ -2642,7 +2635,7 @@ fn check_glyph_draws(oracle Oracle, glyphs OracleCanvasGlyphs, repo string, coun
 			ids << u16(match rand.intn(10) or { 0 } {
 				0 { 0 }
 				1 { rand.intn(65536) or { 0 } }
-				else { rand.intn(120) or { 0 } + 1 }
+				else { rand.intn(limit) or { 0 } + 1 }
 			})
 			y := if rand.intn(5) or { 0 } == 0 { f32(rand.f64() * 6 - 3) } else { f32(0) }
 			positions << [x, y]

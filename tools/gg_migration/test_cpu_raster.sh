@@ -17,7 +17,7 @@ mkdir -p "$output_dir"
 output_dir=$(CDPATH= cd -- "$output_dir" && pwd)
 unset VEXE VFLAGS
 python3 - "$repo_dir" "$v_compiler" "$skia_root" "$output_dir/inputs.json" <<'PY'
-import hashlib,json,sys
+import hashlib,json,os,sys
 from pathlib import Path
 root=Path(sys.argv[1]); compiler=Path(sys.argv[2]); skia=Path(sys.argv[3])
 files=[*sorted(root.glob('cpuraster/*.[vh]')),*sorted(root.glob('gfxfont/*.[vh]')),
@@ -25,8 +25,16 @@ files=[*sorted(root.glob('cpuraster/*.[vh]')),*sorted(root.glob('gfxfont/*.[vh]'
        root/'platform/native_state.h',root/'tools/gg_migration/cpu_raster_check.v',
        root/'tools/gg_migration/skia_cpu_oracle.cpp',root/'tools/gg_migration/test_cpu_raster.sh',
        compiler,skia/'lib/libskia.dylib']
-if __import__('os').environ.get('CPU_RASTER_FREETYPE') == '1':
+if os.environ.get('CPU_RASTER_FREETYPE') == '1':
     files += list(skia.glob('lib/libfreetype*.dylib'))
+font_list=root/'tools/gg_migration/glyph_fonts.txt'
+files += [font_list, *sorted(root.glob('cpuraster/testdata/*'))]
+font_paths=[os.environ['CPU_RASTER_GLYPH_FONT']] if os.environ.get('CPU_RASTER_GLYPH_FONT') else font_list.read_text().splitlines()
+for value in font_paths:
+    if not value.strip() or value.startswith('#'): continue
+    path=Path(value) if Path(value).is_absolute() else root/value
+    if path.is_file(): files.append(path)
+files=[p for p in files if p.is_file()]
 Path(sys.argv[4]).write_text(json.dumps({str(p.resolve()):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PY
 set --

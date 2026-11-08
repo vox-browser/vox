@@ -1,0 +1,16 @@
+Tests/Browser/Brave/resources/Ahem.ttf
+Tests/Browser/Brave/resources/cyrillic-context.ttf
+Tests/Browser/Brave/resources/glyph-origin.ttf
+pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf
+pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Italic-subset.ttf
+pixel_tests/sites/jvns/cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.ttf
+/System/Library/Fonts/Supplemental/Arial.ttf
+/System/Library/Fonts/Supplemental/Georgia.ttf
+/System/Library/Fonts/Supplemental/Times New Roman.ttf
+/System/Library/Fonts/Helvetica.ttc
+/System/Library/Fonts/Menlo.ttc
+/System/Library/Fonts/SFNS.ttf
+/System/Library/Fonts/NewYork.ttf
+/System/Library/Fonts/Geneva.ttf
+/System/Library/Fonts/LastResort.otf
+/System/Library/Fonts/Apple Color Emoji.ttc
