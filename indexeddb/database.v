@@ -38,6 +38,7 @@ pub mut:
 pub struct IDBDatabase {
 mut:
 	version_ u64
+	closed_object_store_names_ []string
 pub mut:
 	data                   &DatabaseData
 	global_scope           &IndexedDBGlobalScope
@@ -84,6 +85,7 @@ pub fn (database &IDBDatabase) version() u64 {
 }
 
 pub fn (database &IDBDatabase) object_store_names() []string {
+	if database.state == .closed { return database.closed_object_store_names_.clone() }
 	mut names := database.data.stores.keys()
 	sort_name_list(mut names)
 	return names
@@ -103,6 +105,7 @@ fn (mut database IDBDatabase) finish_close() {
 	if database.state == .closed {
 		return
 	}
+	database.closed_object_store_names_ = database.object_store_names()
 	database.state = .closed
 	unsafe {
 		database.data.dissociate(&database)
