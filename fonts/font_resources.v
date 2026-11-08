@@ -39,7 +39,7 @@ fn capture_retry_needs_frame(target voidptr) int {
 		|| app.has_resumable_lazy_image_requests() {
 		return 1
 	}
-	return if app.document_resources_ready_for_capture() { 1 } else { 0 }
+	return if app.document_resources_ready_for_capture() && app.capture_selector_ready() { 1 } else { 0 }
 }
 
 fn install_browser_font_resource_cache() {
