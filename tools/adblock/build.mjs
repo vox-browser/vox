@@ -54,7 +54,7 @@ const options = {
                 `\nexport const siteFilters = baseSiteFilters + ${JSON.stringify('\n' + extraPolicy.filters)};\n` +
                 Object.entries(extraPolicy.resources).map(([name, code]) =>
                     `siteResources.set(${JSON.stringify(name)}, ${JSON.stringify(code)});`).join('\n'),
-                loader:'js', resolveDir:here};
+                loader:'js', resolveDir:path.dirname(args.path)};
         });
         b.onLoad({filter: /\/tools\/adblock\/base64\.js$/}, () => lazyParser ? {
             contents: base64Stub(), loader:'js', resolveDir:here,
