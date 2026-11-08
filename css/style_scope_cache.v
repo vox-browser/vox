@@ -149,7 +149,7 @@ fn style_scope_is_roundabout_selector_bucketable_as_something_simpler(simple_sel
 	}
 
 	if pseudo_class.argument_selector_list.selectors.len != 1 {
-		return none
+		return common_is_where_subject_bucket(pseudo_class.argument_selector_list.selectors)
 	}
 
 	argument_selector := pseudo_class.argument_selector_list.selectors[0]
