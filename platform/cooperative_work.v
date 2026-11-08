@@ -3,6 +3,9 @@ module platform
 import time
 import os
 
+// Retain the previous pacing for matched diagnostic/control trials.
+const retain_cooperative_yield_start_deadline = os.getenv('VOX_RETAIN_COOPERATIVE_YIELD_START_DEADLINE') != ''
+
 pub type CooperativeWorkCallback = fn (voidptr)
 
 struct CooperativeWorkState {
@@ -11,6 +14,7 @@ mut:
 	target   voidptr
 	next_yield_ns           i64
 	started_ns              i64
+	generation              u64
 	delivering              bool
 	deferred_timers         []DeferredWorkTimer
 	deferred_native_calls   []voidptr
@@ -121,6 +125,7 @@ pub fn begin_cooperative_work(target voidptr, callback CooperativeWorkCallback) 
 	state.target = target
 	state.callback = callback
 	state.started_ns = now
+	state.generation++
 	state.next_yield_ns = now + 16_000_000
 	state.delivering = false
 	state.heap_adjustment_allowed = heap_adjustment_allowed
@@ -152,8 +157,20 @@ fn cooperative_work_checkpoint_at(now_ns i64) {
 		}
 	}
 	state.next_yield_ns = now_ns + 16_000_000
+	generation := state.generation
 	state.delivering = true
-	defer { state.delivering = false }
+	defer {
+		// Time spent servicing the host is not engine work. A slow host
+		// callback must not make the next checkpoint yield immediately again.
+		// It may also finish this scope and start another on the spare record.
+		if voidptr(cooperative_work_state_) == voidptr(state) && state.generation == generation {
+			if !retain_cooperative_yield_start_deadline {
+				finished_ns := time.sys_mono_now()
+				state.next_yield_ns = (if finished_ns > now_ns { finished_ns } else { now_ns }) + 16_000_000
+			}
+			state.delivering = false
+		}
+	}
 	state.callback(state.target)
 }
 
