@@ -639,3 +639,88 @@ libraries. Installed file-backed Mach-O sections match the measured candidate;
 deep signature verification and headless startup pass. The Reddit URL is reopened
 without test overrides. `installed-verification.json` records the live process
 and installation checks.
+
+## 10 man boots thread: clipped root image transfers (2026-11-08)
+
+For the [newly reported thread](https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/),
+`8bc8743a2` keeps the original root image raster dimensions, matrix, tile
+ownership and MSAA selection, while uploading and reading only the native
+clip and scroll damage. A typical exposed image strip transfers 16,276 pixels
+instead of a 1,344,000-pixel tile. Partial failures retain the original full
+replay fallback. No rendering tolerance or reference changes.
+
+Two alternating control/candidate pairs use one pinned completed production
+executable and one pinned native candidate bridge. The control sets
+`VOX_DISABLE_ROOT_IMAGE_REGION=1`; the candidate **omits** that variable.
+Native switches test presence, so setting it to an empty string still selects
+the control. The corrected cohort retains both earlier control-only cohorts
+without candidate credit.
+
+The frozen workload retains 152 original responses at their HTTPS origins,
+disables author script execution, and denies external network access. Unrelated
+default bookmark favicon CONNECTs are denied in both arms; document resources
+must be archived. Each fresh process has an empty private profile/cache, seeds
+only Reddit's saved 125% zoom, and keeps OS filesystem/shader caches. Its native
+document viewport is 1400×900 view pixels, excluding 112 pixels of chrome, at
+2× backing scale. Input is 900 precise native wheel events, nominally 120 Hz,
+delta 3, reversing every 300 events, after 12 seconds of title-checked settling.
+The observed root view offsets span 0–1950 pixels (0–1560 CSS pixels at this zoom).
+
+| Trial | Scroll updates/s | Median / p95 / maximum interval, ms | Intervals over 16.67 ms | Inputs / all publications / counted scroll changes |
+| --- | ---: | --- | ---: | --- |
+| Frozen control 1 | 112.14 | 8.35 / 14.73 / 24.62 | 3.03% | 900 / 895 / 892 |
+| Frozen candidate 1 | 114.84 | 8.37 / 12.36 / 20.05 | 0.78% | 900 / 905 / 892 |
+| Frozen control 2 | 109.93 | 8.38 / 16.24 / 26.94 | 4.03% | 900 / 904 / 893 |
+| Frozen candidate 2 | 117.07 | 8.34 / 11.65 / 19.63 | 0.22% | 900 / 901 / 895 |
+| Installed live 1 | 112.55 | 8.38 / 12.18 / 168.23 | 0.57% | 900 / 891 / 884 |
+| Installed live 2 | 111.72 | 8.35 / 12.58 / 172.02 | 1.02% | 900 / 893 / 886 |
+
+| Trial | Actual input Hz | Entire input window, s | Leading / trailing counted-scroll gap, ms |
+| --- | ---: | ---: | --- |
+| Frozen control 1 | 113.02 | 7.954 | 53.94 / 0.21 |
+| Frozen candidate 1 | 115.75 | 7.767 | 38.67 / 0.18 |
+| Frozen control 2 | 110.66 | 8.124 | 94.45 / 0.22 |
+| Frozen candidate 2 | 117.59 | 7.645 | 41.58 / 0.18 |
+| Installed live 1 | 114.46 | 7.854 | 36.15 / 0.20 |
+| Installed live 2 | 113.36 | 7.931 | 37.73 / 0.25 |
+
+The endpoint is completed native frame installation after outer view painting,
+stamped with the rendered input. Animation-only publications do not count as
+scroll changes. Throughput includes the entire input window and boundary gaps;
+it does not measure physical display scanout. Host load varied on this 18-core
+machine and remains in the receipt. No retired-instruction saving or Brave
+comparison is claimed, so the instruction-saving broad-check cadence is unchanged.
+
+The completed shared production bundle was checked independently, without an
+injected candidate renderer. A separate diagnostic confirms the new path runs
+on the live URL. The two live trials use automatic page-script policy and the
+existing SOCKS5h route, with fresh private profiles/caches. The executable hash
+is `c6b62c77913a18117f269fda73097c703b64e3d789b1ffe607f07c3f09efae95`;
+its build receipt predates the feature commit and includes dirty native source.
+This live validation gives no additional attribution credit to intervening
+shared-checkout changes.
+
+**Steady 60 fps remains open.** Average native throughput exceeds 60, and p95
+intervals meet its budget, but the rare 168–172 ms live gaps remain. Separate
+sampling observes synchronous JavaScript task layout in wheel handling, GPU
+waits and raster row copies. Sampling changes timing and does not identify the
+cause of every long live frame. Those stalls are not reported as fixed.
+
+Both full 1400×900 document captures, at view offsets 0 and 850, are pixel-exact
+against full replay. The scrolled capture advances in 3-pixel steps after its
+initial viewport settles. Native checks pass 1,728 complete-buffer comparisons
+covering 1×/2× density, 100%/125%/175% zoom, nearest/linear sampling, mixed MSAA,
+fractional and elliptical clips, scroll offsets, RGBA and planar YUV formats,
+plus 42 independent root-boundary cases. Both normal and ASan/UBSan builds pass;
+runtime checks use 3 GiB guards. Strict bundle signing and fresh headless startup
+also pass. Reproduce the focused checks with:
+
+```sh
+python3 tools/test_root_image_regions.py --output Build/reddit-root-images
+python3 tools/test_root_image_regions.py --sanitize --output Build/reddit-root-images-asan
+```
+
+The [durable receipt](performance/reddit-boots-scroll-20261108.json) records all
+trial commands, exact metrics, build/resource hashes, host loads, exits,
+rejected attempts and the private local raw-evidence archive identity. Per-job
+`Build/reddit-boots-scroll-20261108/` output is removed after recording.
