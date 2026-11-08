@@ -35,8 +35,12 @@ const __compactTrustedTypes=(function(){
  "use strict";
  const nativeCreatePolicy=globalThis.__ladybirdCreateTrustedTypePolicy;
  const nativeAttribute=globalThis.__ladybirdSetTrustedAttribute;
+ const nativeFactoryGetter=globalThis.__ladybirdTrustedTypesFactoryGetter;
+ const registerFactory=globalThis.__ladybirdRegisterTrustedTypesFactory;
  delete globalThis.__ladybirdCreateTrustedTypePolicy;
  delete globalThis.__ladybirdSetTrustedAttribute;
+ delete globalThis.__ladybirdTrustedTypesFactoryGetter;
+ delete globalThis.__ladybirdRegisterTrustedTypesFactory;
  const data=new WeakMap(),policies=new WeakMap(),get=WeakMap.prototype.get,set=WeakMap.prototype.set,has=WeakMap.prototype.has;
  const call=request=>__queryElements("","trustedTypes",JSON.stringify(request),true);
  const S=String;
@@ -70,14 +74,14 @@ const __compactTrustedTypes=(function(){
   return create(type,result===null||result===undefined?"":string(result));
  }
  for(const [method,type] of [["createHTML","TrustedHTML"],["createScript","TrustedScript"],["createScriptURL","TrustedScriptURL"]])
-  Object.defineProperty(TrustedTypePolicy.prototype,method,{value:{[method](input,...rest){return createTrusted(this,type,method,input,rest);}}[method],writable:true,enumerable:true,configurable:true});
- Object.defineProperty(TrustedTypePolicy.prototype,"name",{get:function(){return policyRecord(this).name;},enumerable:true,configurable:true});
+  Object.defineProperty(TrustedTypePolicy.prototype,method,{value:{[method](input,...rest){policyRecord(this);if(arguments.length===0)throw new TypeError(method+" requires an input");return createTrusted(this,type,method,input,rest);}}[method],writable:true,enumerable:true,configurable:true});
+ Object.defineProperty(TrustedTypePolicy.prototype,"name",{get:Object.getOwnPropertyDescriptor({get name(){return policyRecord(this).name;}},"name").get,enumerable:true,configurable:true});
  function TrustedTypePolicyFactory(){throw new TypeError("Illegal constructor");}
  const factories=new WeakMap();
  function factoryRecord(receiver){const own=__elementApply(get,factories,[receiver]);if(!own)throw new TypeError("Illegal TrustedTypePolicyFactory receiver");return own;}
- const isType=name=>function(value){factoryRecord(this);const own=value!==null&&(typeof value==="object"||typeof value==="function")?__elementApply(get,data,[value]):undefined;return !!own&&own.name===name;};
+ const isType=name=>function(value){factoryRecord(this);if(arguments.length===0)throw new TypeError("A value is required");const own=value!==null&&(typeof value==="object"||typeof value==="function")?__elementApply(get,data,[value]):undefined;return !!own&&own.name===name;};
  const factoryMembers={
-  createPolicy(policyName,policyOptions){
+  createPolicy(policyName,policyOptions=undefined){
    const own=factoryRecord(this);
    if(arguments.length===0)throw new TypeError("createPolicy requires a policy name");
    const name=string(policyName);
@@ -116,9 +120,8 @@ const __compactTrustedTypes=(function(){
  }
  Object.defineProperty(TrustedTypePolicyFactory.prototype.getAttributeType,"length",{value:2});
  Object.defineProperty(TrustedTypePolicyFactory.prototype.getPropertyType,"length",{value:2});
- Object.defineProperty(TrustedTypePolicyFactory.prototype,"emptyHTML",{get:function(){factoryRecord(this);return create("TrustedHTML","");},enumerable:true,configurable:true});
- Object.defineProperty(TrustedTypePolicyFactory.prototype,"emptyScript",{get:function(){factoryRecord(this);return create("TrustedScript","");},enumerable:true,configurable:true});
- Object.defineProperty(TrustedTypePolicyFactory.prototype,"defaultPolicy",{get:function(){return factoryRecord(this).defaultPolicy||null;},enumerable:true,configurable:true});
+ const factoryAccessors={get emptyHTML(){factoryRecord(this);return create("TrustedHTML","");},get emptyScript(){factoryRecord(this);return create("TrustedScript","");},get defaultPolicy(){return factoryRecord(this).defaultPolicy||null;}};
+ for(const name of ["emptyHTML","emptyScript","defaultPolicy"])Object.defineProperty(TrustedTypePolicyFactory.prototype,name,Object.getOwnPropertyDescriptor(factoryAccessors,name));
  for(const [constructor,name] of [[TrustedTypePolicy,"TrustedTypePolicy"],[TrustedTypePolicyFactory,"TrustedTypePolicyFactory"]]){
   Object.defineProperty(constructor,"prototype",{writable:false});
   Object.defineProperty(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});
@@ -126,7 +129,9 @@ const __compactTrustedTypes=(function(){
  }
  const factory=Object.create(TrustedTypePolicyFactory.prototype);
  __elementApply(set,factories,[factory,{names:[],defaultPolicy:null}]);
- Object.defineProperty(globalThis,"trustedTypes",{get:function(){return factory;},enumerable:true,configurable:true});
+ if(typeof registerFactory==="function")registerFactory(factory);
+ const factoryGetter=typeof nativeFactoryGetter==="function"?nativeFactoryGetter:Object.getOwnPropertyDescriptor({get trustedTypes(){if(this!==globalThis&&this!==null&&this!==undefined)throw new TypeError("Illegal Window receiver");return factory;}},"trustedTypes").get;
+ Object.defineProperty(globalThis,"trustedTypes",{get:factoryGetter,enumerable:true,configurable:true});
  let refresh;
  function input(value){const own=__elementApply(get,data,[value]);return own?{kind:own.name,value:own.value}:{kind:"",value:string(value)};}
  function elementState(receiver){

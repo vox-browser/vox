@@ -1,3 +1,4 @@
+@[has_globals]
 module browserjs
 
 import dom
@@ -18,7 +19,10 @@ struct TrustedTypesPolicyBinding {
 	set_attribute TrustedTypesAttributeSetter
 mut:
 	closed bool
+	factory voidptr
 }
+
+__global trusted_types_policy_bindings_ = map[voidptr]&TrustedTypesPolicyBinding{}
 
 struct TrustedTypesCallbackOption {
 	callback ?trustedtypes.PolicyCallback
@@ -51,15 +55,57 @@ pub fn (mut runtime Runtime) install_trusted_types_policy_binding(document &dom.
 			return runtime.actual_javascript_exception(runtime.trusted_attribute_exception(err))
 		}
 	})!
+	getter := runtime.make_native_value_host_function('get trustedTypes', 0, fn [binding] (receiver voidptr, _ []voidptr) !voidptr {
+		mut runtime := unsafe { &Runtime(binding.runtime) }
+		return runtime.trusted_types_factory_for_receiver(receiver) or {
+			return runtime.actual_javascript_exception(runtime.binding_exception_value(err))
+		}
+	})!
+	register := runtime.make_native_value_host_function('', 1, fn [binding] (_ voidptr, args []voidptr) !voidptr {
+		if binding.closed { return error('InvalidStateError: Trusted Types realm is closed') }
+		mut owner := unsafe { &TrustedTypesPolicyBinding(binding) }
+		if args.len != 1 || owner.factory != unsafe { nil } { return error('TypeError: Invalid private factory registration') }
+		mut runtime := unsafe { &Runtime(binding.runtime) }
+		owner.factory = runtime.retain_javascript_value(args[0])!
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	})!
+	trusted_types_policy_bindings_[runtime.context] = binding
 	// This bootstrap property is configurable so the compact closure can take
 	// ownership and remove it before any author script executes.
-	installer := runtime.evaluate_host_value('(function(operation,attribute){Object.defineProperty(globalThis,"__ladybirdCreateTrustedTypePolicy",{value:operation,configurable:true});Object.defineProperty(globalThis,"__ladybirdSetTrustedAttribute",{value:attribute,configurable:true});})')!
+	installer := runtime.evaluate_host_value('(function(operation,attribute,getter,register){Object.defineProperty(globalThis,"__ladybirdCreateTrustedTypePolicy",{value:operation,configurable:true});Object.defineProperty(globalThis,"__ladybirdSetTrustedAttribute",{value:attribute,configurable:true});Object.defineProperty(globalThis,"__ladybirdTrustedTypesFactoryGetter",{value:getter,configurable:true});Object.defineProperty(globalThis,"__ladybirdRegisterTrustedTypesFactory",{value:register,configurable:true});})')!
 	defer { runtime.release_javascript_value(installer) }
-	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation, attribute])!
+	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation, attribute, getter, register])!
 	runtime.add_close_handler(fn [binding] () {
 		mut owner := unsafe { &TrustedTypesPolicyBinding(binding) }
 		owner.closed = true
+		trusted_types_policy_bindings_.delete(binding.runtime.context)
 	})
+}
+
+fn (mut runtime Runtime) trusted_types_factory_for_receiver(receiver voidptr) !voidptr {
+	mut actual := receiver
+	// A Window global attribute converts a null or undefined receiver to its
+	// own global. Same-agent iframe globals are actual JSC objects, not JSON.
+	if C.JSValueIsNull(runtime.context, actual) || C.JSValueIsUndefined(runtime.context, actual) {
+		actual = C.JSContextGetGlobalObject(runtime.context)
+	}
+	if proxy := runtime.native_window_proxy(actual) {
+		window := window_model_for_proxy(proxy)!
+		settings := runtime.scripting_settings_ or { return error('InvalidStateError: Window has no settings') }
+		if !window.associated_document().origin().is_same_origin_domain(settings.origin()) {
+			return runtime.window_proxy_security_error()
+		}
+		mut proxies := window_proxy_bindings_[voidptr(&runtime)] or { return error('TypeError: Illegal Window receiver') }
+		actual = runtime.window_proxy_realm_global(proxies, window) or { return error('InvalidStateError: Window realm is unavailable') }
+	}
+	group := C.JSContextGetGroup(runtime.context)
+	for _, binding in trusted_types_policy_bindings_ {
+		if binding.closed || binding.factory == unsafe { nil } { continue }
+		owner := binding.runtime
+		if C.JSContextGetGroup(owner.context) != group { continue }
+		if actual == C.JSContextGetGlobalObject(owner.context) { return binding.factory }
+	}
+	return error('TypeError: Illegal Window receiver')
 }
 
 fn (mut runtime Runtime) trusted_attribute_exception(failure IError) voidptr {
