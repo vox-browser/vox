@@ -1,12 +1,14 @@
 import json
 from pathlib import Path
+import shutil
+import subprocess
 import tempfile
 import threading
 import unittest
 from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
-from wpt_compare import (WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
+from wpt_compare import (REPORT_SCRIPT, WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
                          group_rss, make_handler, signal_process_group, substitute, summarize,
                          upstream_testharness)
 
@@ -58,6 +60,17 @@ class DiscoveryTests(unittest.TestCase):
 
 
 class SessionTests(unittest.TestCase):
+    def test_late_alive_ping_cannot_start_the_next_documents_harness(self):
+        runner = Runner()
+        session = Session('vox', [dict(id='a', url='/a.html?x=1', harness_timeout=60)], 0, [], warmup=False)
+        runner.begin(session)
+        runner.note_request('/a.html?x=1')
+        runner.note_harness('/previous.html')
+        runner.note_harness('/a.html?x=2')
+        self.assertIsNone(session.harness_seen_at)
+        runner.note_harness('/a.html?x=1')
+        self.assertIsNotNone(session.harness_seen_at)
+
     def test_each_phase_has_its_own_deadline(self):
         limits = Limits(startup=30, navigation=10, harness_start=5, grace=7)
         session = Session('vox', [dict(id='t', url='/t.html', harness_timeout=60)], 0, [],
@@ -127,6 +140,40 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual(summary['browsers']['vox']['outcomes'], dict(COMPLETE=3, NO_HARNESS=1))
         self.assertEqual(summary['browsers']['brave']['subtest_pass_rate'], 1.0)
         self.assertEqual(summary['launches'], dict(vox=2, brave=1))
+
+
+class ReporterTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which('node'), 'Node is required to execute the reporter fixture')
+    def test_cached_reporter_announces_before_timers_and_keeps_completion_results(self):
+        fixture = r'''
+const vm=require("node:vm"),assert=require("node:assert/strict");
+const source=JSON.parse(require("node:fs").readFileSync(0,"utf8"));
+function make(frame,popup){
+ const requests=[],timers=[],callbacks=[];
+ const sandbox={location:{pathname:"/dom/test.html",search:"?case=1"},performance:{now:()=>42},
+  setup(){},add_completion_callback(callback){callbacks.push(callback);},setTimeout(callback){timers.push(callback);},
+  XMLHttpRequest:class{open(method,url){this.method=method;this.url=url;}setRequestHeader(){}send(body){requests.push({method:this.method,url:this.url,body});}}};
+ sandbox.window=sandbox;sandbox.top=frame?{}:sandbox;sandbox.opener=popup?{}:null;
+ vm.runInNewContext(source,sandbox);
+ return {requests,timers,callbacks,sandbox};
+}
+const active=make(false,false);
+assert.equal(active.requests.length,1);
+assert.deepEqual(active.requests[0],{method:"POST",url:"/__vox_wpt__/alive",body:"/dom/test.html?case=1"});
+assert.equal(active.timers.length,0); // Synchronous test code can block all timers now.
+active.callbacks[0]([{name:"actual assertion",status:1,message:"failure retained"}],{status:0});
+assert.equal(active.requests.length,1);
+active.timers.shift()();
+const payload=JSON.parse(active.requests[1].body);
+assert.equal(payload.tests[0].status,1);assert.equal(payload.tests[0].message,"failure retained");
+assert.equal(payload.url,"/dom/test.html?case=1");assert.equal(payload.finished_ms,42);
+for(const child of [make(true,false),make(false,true)]){
+ assert.equal(child.requests.length,0);assert.equal(child.callbacks.length,0);
+}
+'''
+        result = subprocess.run([shutil.which('node'), '-e', fixture], input=json.dumps(REPORT_SCRIPT),
+                                text=True, capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
 
 class MemoryTests(unittest.TestCase):

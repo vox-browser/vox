@@ -18,8 +18,8 @@ result table (as wptrunner does), posts each top-level document's results to the
 server and navigates to the next test, so one fresh-profile window runs a whole
 chunk after an unrecorded warm-up page. Chunks alternate the browser that runs
 first. A test whose document is never requested (NO_DOCUMENT), whose harness
-never starts (NO_HARNESS: no testharnessreport.js request and no alive ping
-from a test still running after 500 ms), that does not report by its harness
+does not announce execution (NO_HARNESS: no testharnessreport.js request
+and no immediate, document-matched alive ping), that does not report by its harness
 timeout plus a grace period (HARD_TIMEOUT), whose browser exits (CRASH) or
 whose browser's process group exceeds --browser-memory-gib RSS (MEMORY_LIMIT,
 sampled every 250 ms) is recorded as such and the browser is relaunched at the
@@ -75,16 +75,14 @@ REPORT_SCRIPT = r"""(function () {
         return;
     setup({ output: false });
     // Vox reuses subresources across navigations despite no-store, so the
-    // server cannot rely on seeing this script requested. A test still
-    // running after %(alive_ms)d ms says so once; quicker tests send nothing.
-    var alive = setTimeout(function () {
-        var request = new XMLHttpRequest();
-        request.open("POST", "%(alive)s");
-        request.send("");
-    }, %(alive_ms)d);
+    // server cannot rely on seeing this script requested. Announce execution
+    // before a synchronous test can occupy the main thread and delay timers.
+    // Include document identity so a late request cannot start the next test.
+    var alive = new XMLHttpRequest();
+    alive.open("POST", "%(alive)s");
+    alive.send(location.pathname + location.search);
     add_completion_callback(function (tests, harness_status) {
         var finished = performance.now();
-        clearTimeout(alive);
         function text(value) {
             return value === null || value === undefined ? null : String(value).slice(0, %(limit)d);
         }
@@ -110,8 +108,7 @@ REPORT_SCRIPT = r"""(function () {
         }, 0);
     });
 })();
-""" % dict(limit=MESSAGE_LIMIT, result=RUNNER_PREFIX + 'result', alive=RUNNER_PREFIX + 'alive',
-           alive_ms=500)
+""" % dict(limit=MESSAGE_LIMIT, result=RUNNER_PREFIX + 'result', alive=RUNNER_PREFIX + 'alive')
 
 
 # Each launch first runs this page so that no measured test pays for loading
@@ -312,11 +309,13 @@ class Runner:
             elif urlsplit(target).path == '/resources/testharnessreport.js':
                 self.note_harness()
 
-    def note_harness(self):
+    def note_harness(self, target=None):
         with self.condition:
             session = self.session
             if session and session.current and session.document_requested_at is not None \
                     and session.harness_seen_at is None:
+                if target is not None and normalized_target(target) != normalized_target(session.current['url']):
+                    return
                 session.harness_seen_at = time.monotonic()
                 self.condition.notify_all()
 
@@ -433,7 +432,7 @@ def make_handler(runner, root, host, port_holder):
             body = self.rfile.read(length) if length else b''
             path = urlsplit(self.path).path
             if path == RUNNER_PREFIX + 'alive':
-                runner.note_harness()
+                runner.note_harness(body.decode('utf-8', errors='replace'))
                 return self.send_body(204, b'', 'text/plain')
             if path != RUNNER_PREFIX + 'result':
                 return self.send_body(404, b'Not found', 'text/plain')
