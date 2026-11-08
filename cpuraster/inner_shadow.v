@@ -28,7 +28,8 @@ pub fn rasterize_inner_shadow(width int, height int, outer RoundedRect, inner Ro
 	}
 	if canvas_quick_reject(fast_bounds, matrix, &rc) { return pixels }
 	if !rc.is_empty && color >> 24 != 0 {
-		mut blitter := canvas_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255, .src_over) or { return none }
+		mut blitter := choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
+			.src_over, canvas_rgba_uses_legacy()) or { return none }
 		if sigma := canvas_shadow_sigma(blur) {
 			plan := plan_blur(device, false, sigma, matrix, &rc, false)
 			if plan.kind == .declined { return none }
