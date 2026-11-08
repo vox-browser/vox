@@ -1993,7 +1993,11 @@ pub fn EventDispatcher.dispatch_with_legacy_output(target &EventTarget, event &E
 				}
 			}
 
+			// A non-node hierarchy (IndexedDB request -> transaction ->
+			// connection) has no shadow boundary at which to retarget. Keep
+			// its original target and ordinary capture/bubble phases.
 			mut parent_is_in_current_target_root := event_target_as_window(parent_target) != none
+				|| event_target_as_node(current_target) == none
 			if current_target_node := event_target_as_node(current_target) {
 				if parent_node := event_target_as_node(parent_target) {
 					parent_is_in_current_target_root =
@@ -2165,6 +2169,12 @@ fn event_target_or_ancestor_has_event_listener(target &EventTarget, type_ string
 }
 
 fn event_target_get_parent(target &EventTarget, event &Event) ?&EventTarget {
+	if target.data.cold_data_ != unsafe { nil } {
+		state := target.data.cold_data_
+		if state.parent_algorithm != unsafe { nil } {
+			return state.parent_algorithm(state.parent_context, event)
+		}
+	}
 	if event_target_as_window(target) != none {
 		return none
 	}

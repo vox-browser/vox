@@ -92,6 +92,28 @@ fn test_indexed_db_binding_cancelled_error_keeps_transaction_and_uncancelled_err
 	assert runtime.evaluate_host('JSON.stringify(log)')! == '["handled","complete","error","ConstraintError","absent"]'
 }
 
+fn test_indexed_db_request_events_capture_and_bubble_through_transaction_and_connection() {
+	mut runtime, mut document := indexed_db_fixture()!
+	defer { runtime.close(); document.finalize() }
+	runtime.evaluate_host(r'
+ globalThis.events=[];globalThis.opening=indexedDB.open("event-parents",1);
+ opening.onupgradeneeded=()=>{
+  const db=opening.result,tx=opening.transaction,store=db.createObjectStore("items"),first=store.add("a",1),duplicate=store.add("b",1);
+  for(const [name,target] of [["db",db],["tx",tx],["first",first],["duplicate",duplicate]]){
+   for(const type of ["success","error"]){
+    target.addEventListener(type,e=>events.push("capture "+name+" "+type),true);
+    target.addEventListener(type,e=>events.push("bubble "+name+" "+type));
+   }
+  }
+  db.addEventListener("error",e=>e.preventDefault());
+  tx.onabort=()=>events.push("unexpected abort");
+ };
+ opening.onsuccess=()=>events.push("open");true
+ ')!
+	deliver_indexed_db_binding_tasks()
+	assert runtime.evaluate_host('JSON.stringify(events)')! == '["capture db success","capture tx success","capture first success","bubble first success","capture db error","capture tx error","capture duplicate error","bubble duplicate error","bubble tx error","bubble db error","open"]'
+}
+
 fn test_indexed_db_binding_brands_conversion_blocking_and_upgrade_abort() {
 	$if !darwin && !linux {
 		return

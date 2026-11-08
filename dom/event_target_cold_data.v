@@ -9,6 +9,8 @@ mut:
 	changed_target  voidptr
 	changed_hook    fn (voidptr)         = unsafe { nil }
 	handler_storage &EventHandlerStorage = unsafe { nil }
+	parent_context voidptr
+	parent_algorithm fn (voidptr, &Event) ?&EventTarget = unsafe { nil }
 }
 
 fn (data &EventTargetData) copy_cold_data() &EventTargetColdData {
@@ -18,7 +20,18 @@ fn (data &EventTargetData) copy_cold_data() &EventTargetColdData {
 		changed_target:  old.changed_target
 		changed_hook:    old.changed_hook
 		handler_storage: old.handler_storage
+		parent_context: old.parent_context
+		parent_algorithm: old.parent_algorithm
 	}
+}
+
+// Non-node interfaces, including IndexedDB requests and transactions, define
+// their own DOM "get the parent" algorithm. Ordinary EventTargets have none.
+pub fn (mut target EventTarget) set_parent_algorithm(context voidptr, algorithm fn (voidptr, &Event) ?&EventTarget) {
+	mut state := target.data.copy_cold_data()
+	state.parent_context = context
+	state.parent_algorithm = algorithm
+	target.data.cold_data_ = state
 }
 
 fn (data &EventTargetData) event_handler_storage() ?&EventHandlerStorage {

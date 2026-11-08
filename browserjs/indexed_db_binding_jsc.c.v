@@ -59,6 +59,32 @@ mut:
 
 __global indexed_db_bindings_ = map[voidptr]&IndexedDBBinding{}
 
+@[heap]
+struct IndexedDBEventParentContext {
+	binding &IndexedDBBinding
+	entry &IndexedDBBindingEntry
+}
+
+fn indexed_db_event_parent(context voidptr, _ &dom.Event) ?&dom.EventTarget {
+	state := unsafe { &IndexedDBEventParentContext(context) }
+	entry := state.entry
+	identity := if entry.kind == .transaction {
+		voidptr(entry.transaction.database)
+	} else {
+		transaction := entry.request.transaction_ or { return none }
+		voidptr(transaction)
+	}
+	wrapper := state.binding.wrappers[identity] or { return none }
+	parent := state.binding.entries[wrapper] or { return none }
+	return parent.target
+}
+
+fn indexed_db_install_event_parent(binding &IndexedDBBinding, entry &IndexedDBBindingEntry) {
+	context := &IndexedDBEventParentContext{binding: binding, entry: entry}
+	mut target := entry.target
+	target.set_parent_algorithm(voidptr(context), indexed_db_event_parent)
+}
+
 pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
@@ -169,6 +195,7 @@ fn (mut runtime Runtime) indexed_db_request(mut binding IndexedDBBinding, reques
 	mut entry := &IndexedDBBindingEntry{ kind: if open != none { .open_request } else { .request }, request: request, source: source }
 	if value := open { entry.open = value }
 	wrapper := runtime.indexed_db_wrap(mut binding, voidptr(request), entry)!
+	indexed_db_install_event_parent(&binding, entry)
 	owner := voidptr(&runtime)
 	mut pending := unsafe { &indexeddb.IDBRequest(request) }
 	pending.onsucceed_ = fn [owner, mut binding, mut entry] () {
@@ -254,8 +281,10 @@ fn (mut runtime Runtime) indexed_db_database(mut binding IndexedDBBinding, datab
 
 fn (mut runtime Runtime) indexed_db_transaction(mut binding IndexedDBBinding, transaction &indexeddb.IDBTransaction) !voidptr {
 	if wrapper := binding.wrappers[voidptr(transaction)] { return wrapper }
+	runtime.indexed_db_database(mut binding, transaction.database)!
 	entry := &IndexedDBBindingEntry{ kind: .transaction, transaction: transaction }
 	wrapper := runtime.indexed_db_wrap(mut binding, voidptr(transaction), entry)!
+	indexed_db_install_event_parent(&binding, entry)
 	owner := voidptr(&runtime)
 	mut actual := unsafe { &indexeddb.IDBTransaction(transaction) }
 	actual.oncomplete_ = fn [owner, mut binding, entry] () {
