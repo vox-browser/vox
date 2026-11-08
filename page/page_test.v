@@ -240,8 +240,12 @@ fn test_page_editing_keys_route_through_the_active_input_target() {
 	assert model.handle_keydown(39, dom.modifier_shift, 0, false) == .handled
 	assert selection.anchor_offset() == 2
 	assert selection.focus_offset() == 3
-	assert model.handle_keydown(35, 0, 0, false) == .handled
+	assert model.handle_keydown(int(dom.KeyCode.home), 0, 0, false) == .handled
 	assert selection.is_collapsed()
+	assert selection.focus_offset() == 0
+	assert model.handle_keydown(int(dom.KeyCode.end), 0, 0, false) == .handled
+	assert selection.focus_offset() == 3
+	assert model.handle_keydown(int(dom.KeyCode.home), 0, 0, false) == .handled
 	assert selection.focus_offset() == 0
 	assert model.handle_keydown(int(`A`), 0, u32(`a`), false) == .handled
 	assert observation.command == 'insertText'

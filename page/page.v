@@ -429,10 +429,10 @@ fn page_editing_key_action_callback(target voidptr, original_key int, code_point
 	$if macos {
 		if modifiers & dom.modifier_super != 0 {
 			if key == 37 {
-				key = 35
+				key = int(dom.KeyCode.home)
 				modifiers &= ~dom.modifier_super
 			} else if key == 39 {
-				key = 36
+				key = int(dom.KeyCode.end)
 				modifiers &= ~dom.modifier_super
 			} else if key == 38 {
 				input_target.move_cursor_to_start_of_document(collapse)
@@ -485,12 +485,12 @@ fn page_editing_key_action_callback(target voidptr, original_key int, code_point
 		}
 		plain_home_or_end := modifiers & ~(dom.modifier_shift | dom.modifier_keypad) == 0
 		action := if focused_is_textarea && plain_home_or_end {
-			if key == 35 {
+			if key == int(dom.KeyCode.home) {
 				dom.InputEventsTargetNavigationAction.line_start
 			} else {
 				dom.InputEventsTargetNavigationAction.line_end
 			}
-		} else if key == 35 {
+		} else if key == int(dom.KeyCode.home) {
 			dom.InputEventsTargetNavigationAction.start
 		} else {
 			dom.InputEventsTargetNavigationAction.end

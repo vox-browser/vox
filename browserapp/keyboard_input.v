@@ -46,8 +46,8 @@ fn browser_editing_key(key gg.KeyCode) int {
 		.right { 39 }
 		.up { 38 }
 		.down { 40 }
-		.home { 35 }
-		.end { 36 }
+		.home { int(dom.KeyCode.home) }
+		.end { int(dom.KeyCode.end) }
 		.page_up { 33 }
 		.page_down { 34 }
 		.a, .c, .v, .x, .y, .z { int(key) }

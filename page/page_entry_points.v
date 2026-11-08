@@ -132,8 +132,7 @@ pub fn (mut p Page) handle_pinch_event(position PixelPoint, scale f64) EventResu
 	return .handled
 }
 
-pub fn (mut p Page) handle_keydown(key int, modifiers u32, code_point u32,
-	repeat bool) EventResult {
+fn (mut p Page) refresh_keyboard_focus_target() {
 	if root := p.local_root_navigable_ {
 		if document := root.active_document() {
 			p.event_handler.focused_target_ = ''
@@ -150,11 +149,20 @@ pub fn (mut p Page) handle_keydown(key int, modifiers u32, code_point u32,
 			}
 		}
 	}
+}
+
+pub fn (mut p Page) handle_keydown(key int, modifiers u32, code_point u32,
+	repeat bool) EventResult {
+	p.refresh_keyboard_focus_target()
 	return p.event_handler.handle_keydown(key, code_point, modifiers, repeat, false)
 }
 
-pub fn (mut p Page) handle_keyup(_ int, _ u32, _ u32, repeat bool) EventResult {
-	return p.event_handler.handle_keyup(repeat, false)
+pub fn (mut p Page) handle_keyup(key int, modifiers u32, code_point u32, repeat bool) EventResult {
+	p.refresh_keyboard_focus_target()
+	if repeat { return p.event_handler.handle_keyup(repeat, false) }
+	cancelled := !p.event_handler.dispatch_keyboard_event('keyup', p.event_handler.focused_target(),
+		key, code_point, modifiers, repeat)
+	return p.event_handler.handle_keyup(repeat, cancelled)
 }
 
 pub fn (mut p Page) handle_sdl_input_events() {

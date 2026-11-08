@@ -255,6 +255,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
+	if action == 'internalsSendText' { return binding.internals_send_text(key, selector) }
 	if action == 'inputFilesOwner' {
 		_ = binding.equality_node(key, json2.decode[json2.Any](selector)!)!
 		return 'null'
