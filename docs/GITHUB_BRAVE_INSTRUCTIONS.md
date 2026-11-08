@@ -1,8 +1,8 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **The latest c31 build gives
-17.4709% fewer and misses the conservative gate by 272,344,776 instructions.
+**20% fewer observed instructions** than Brave. **The latest c33 build gives
+19.0509% fewer and misses the conservative gate by 101,666,988 instructions.
 The earlier c26 pass does not establish acceptance for this build.**
 Acceptance requires seven complete alternating pairs and
 `10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
@@ -288,6 +288,55 @@ concurrent IndexedDB, CPU raster, encoding, LibJS parser and YUV changes; this
 cohort supplies no isolated optimization attribution. The local untracked raw
 receipt is `docs/performance/github-vlang-instructions-20261108-20pct-c31.json`.
 New regression checks remain explicitly deferred.
+
+Later same-image headless probes admit disposable principal inline runs of
+list items, table cells and single-text-child markers. The outer list/table
+algorithms and committed-layout admission remain unchanged. Three alternating
+control/candidate pairs save 220,735,209, 199,182,788 and 231,610,657 instructions
+(median 220,735,209), with identical geometry and normal exits in all six runs.
+These diagnostic savings do not replace another native seven-pair cohort.
+Focused regression cases are written but remain deferred.
+
+
+C33 completes seven alternating pairs with fourteen exact per-engine captures,
+complete content audits and normal browser exits. It still fails 20%: maximum
+Vox **8,671,388,014** / minimum Brave **10,712,151,283**, ratio
+**0.80949081** (**19.0509% fewer**).
+The integer gate is `86,713,880,140 > 85,697,210,264`, leaving
+**101,666,988** Vox instructions to remove. Medians are
+8,607,781,417 / 10,848,284,246; the 20.0987% median paired
+saving does not satisfy the conservative gate. All observations are retained.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,661,584,606 | 10,978,712,272 |
+| 2 | 8,602,387,129 | 10,848,284,246 |
+| 3 | 8,607,781,417 | 10,939,119,476 |
+| 4 | 8,671,388,014 | 10,852,625,128 |
+| 5 | 8,638,993,155 | 10,786,713,238 |
+| 6 | 8,603,953,097 | 10,730,890,037 |
+| 7 | 8,572,371,776 | 10,712,151,283 |
+
+Executable `8fe20c9aaaa506da42672d47f1f1ffc087fce78f44290e68f14e62d00a1b90de`,
+receipt `20261108-184019-5afc557c`, contains the new inline-root and stable
+symbol-marker candidates and is published to the canonical bundle. It keeps
+the single-C-unit O3/1500 policy, but uses staged V
+`20959647402d7b629c24e796c72f8a8ac644de4551e8675365b655692602d998`
+and updated native/font inputs. The cross-build difference includes concurrent
+changes and cannot be assigned solely to this session's optimizations. Build
+guard exits 0, peak RSS 11,696,570,368 bytes; benchmark/guard 1 records the failed
+numerical gate. New regression checks remain deferred. Raw local evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c33.json`.
+The intermediate c32 attempt produces no executable after a concurrent CSS
+source edit invalidates its parsed-buffer fingerprint; no browser samples or
+new regression checks run for it.
+
+The symbol-text shortcut separately saves 17,248,948, 10,529,608 and 11,586,810
+instructions (median 11,586,810) in three same-image headless pairs, all with
+unchanged geometry. Combined inline-root/symbol controls save 249,783,401,
+219,346,314 and 215,110,353 (median 219,346,314). Separate diagnostic messages
+prove all four paths execute in that headless workload; these figures are
+not additive native instruction credit.
 
 ## Workload and scope
 
