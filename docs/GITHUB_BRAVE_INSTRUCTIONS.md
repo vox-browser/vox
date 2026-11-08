@@ -1,9 +1,9 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **C26 passes against the updated
-installed Brave (Chrome 157). Deferred regression checks pass after a serializer
-correction; that corrected native build still needs a new acceptance cohort.**
+**20% fewer observed instructions** than Brave. **The corrected c28 build gives
+19.5248% fewer and still misses the conservative gate by 52,389,303 instructions.
+The earlier c26 pass does not establish acceptance for the corrected build.**
 Acceptance requires seven complete alternating pairs and
 `10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
 
@@ -172,6 +172,40 @@ check after the module-directory build fix. Initial failures and fixture fixes
 remain in the [20% verification receipt](performance/github-vlang-instruction-validation-20261108-20pct.json).
 C26 predates the serializer correction; final native startup/visual checks and
 a new seven-pair cohort remain required before completing the goal.
+
+C27 is invalid: Vox captures correctly at 8,986,010,264 instructions, then
+Brave captures but exits 2 from its macOS teardown watchdog. Both counters and
+the failed browser/guard exits are retained. A target-close cleanup experiment
+also hits the watchdog and is removed. The retained cleanup change releases the
+observer's DevTools socket after `Browser.close` is acknowledged and before
+waiting for process exit (`493ff9f58`). It runs after the frozen counter endpoint
+and earns no instruction credit. No launch flags, references or counter
+boundaries change. The watchdog's documented ten-second termination is described
+in the [Chromium implementation](https://chromium.googlesource.com/chromium/src/+/dc1ae3ada2dffe30971100b5b1d3185b1ad395c1%5E!/).
+
+C28 completes all seven alternating pairs with exact per-engine references,
+complete content audits and normal exits. Maximum Vox **8,872,351,990** /
+minimum Brave **11,024,953,359** gives **0.80475188**, or **19.5248% fewer**.
+The integer gate fails: `88,723,519,900 > 88,199,626,872`. Vox/Brave medians
+are 8,852,126,742 / 11,070,951,458; the median paired reduction of 20.0780%
+does not satisfy the conservative gate. Benchmark/guard exit is 1 for the
+numerical failure. The build and native-check guards exit 0.
+
+Executable `91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831`,
+receipt `20261108-151324-a8c2bca5`, is a completed production staging build
+with one C unit, non-literal-prod O3/1500 and minimum macOS 26.0. It contains
+the serializer correction and all retained slot/equality/tokenizer changes.
+The same image passes native DOM mutation/click/wheel startup checks, the real
+filter-worker self-check, and all eleven standard visual cases: eight exact
+and three within their unchanged existing fuzzy bounds. Source/reference hashes
+remain fixed. A separate diagnostic explicitly verifies scripting enabled,
+page runtime uninitialized and zero page sources on this script-free fixture;
+the helper independently executes JavaScript. This supplies no live-page
+script-execution claim. [Full c28 and partial c27 evidence](performance/github-vlang-instructions-20261108-20pct-c28.json)
+and the [verification receipt](performance/github-vlang-instruction-validation-20261108-20pct.json)
+retain the exact counters, identities, inputs, commands, failures and exits.
+Brave remains Chrome 157, but its observed counts are lower than c26 under
+the retained OS-cache conditions. Further engine optimization remains required.
 
 ## Workload and scope
 

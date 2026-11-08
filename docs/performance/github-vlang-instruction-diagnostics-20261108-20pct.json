@@ -1,7 +1,7 @@
 {
-  "updated": "2026-11-08T12:22:14.410633+00:00",
+  "updated": "2026-11-08T12:50:50.945756+00:00",
   "goal": "20% fewer observed instructions; 10 * max(Vox) <= 8 * min(Brave)",
-  "status": "c26 passes against updated Brave157; post-gate CSS/layout/tool checks pass after color correction; corrected native acceptance pending",
+  "status": "Corrected c28 has19.5248% fewer observed instructions, conservative20% gate unmet by52,389,303; regressions and11native visuals pass; bulk CSS input probes under evaluation",
   "regression_tests_run": true,
   "scope": "Performance diagnostics only; probes do not establish native acceptance.",
   "notes": [
@@ -28,7 +28,8 @@
     "User-requested deferred regressions start only after c26 full gate proof at 2026-11-08T11:29:25.776238+00:00. Actual normal-assertion CSS batches236/214/26 and layout84 pass in both allocation modes after a real modern color serializer correction. Corrected source requires a new native acceptance cohort.",
     "Compact singleton children retain structural value equality through17 explicit variant operators, committed280fc2c6c. Boxed ComponentValue syntax equality fixed69b751be3. Regressing static has-input-stamp shortcut removed839e404de. Mixed ASCII token filling committed4e395d1a6.",
     "C production attempt145217 rejects unconsumed tools/gg_migration/README.md edit. Build-input fix b3fe818ad ignores unconsumed tooling Markdown while actual reported consumed Markdown stays pinned. Default FastC helper builds fail generic JSON parsing in restricted single-file mode; directory input fixes compilation and real self-worker JavaScript/filtering/idle-release assertions, committed726e49f9b.",
-    "Production receipt20261108-151324-a8c2bca5 already running contains matching parsed hashes for final serializer, ASCII tokenizer, slots, slot equality, syntax equality and has-stamp removal. C27 watcher will measure that completed bundle directly; no duplicate production build requested."
+    "Production receipt20261108-151324-a8c2bca5 already running contains matching parsed hashes for final serializer, ASCII tokenizer, slots, slot equality, syntax equality and has-stamp removal. C27 watcher will measure that completed bundle directly; no duplicate production build requested.",
+    "C28 corrected build completes seven pairs and normal exits but conservative19.5248% misses20% by52,389,303. SameChrome157 observed costs nowlower than c26; earlierpassing20% is not reproduced for corrected source. All native startup/worker/visual checks pass with exact source/reference pinning. Continued optimization required."
   ],
   "records": {
     "Build/github-20-instr/inline-capacity-counts.json": [
@@ -72440,6 +72441,31 @@
       "observed_peak_rss_bytes": 9408233472,
       "elapsed_seconds": 581.095673958,
       "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "c27_invalid_teardown": {
+      "receipt": "github-vlang-instructions-20261108-20pct-c28.json",
+      "reason": "Brave macOS teardown watchdog rootexit2; all counters retained, no complete pair/cohort"
+    },
+    "c28_complete_cohort": {
+      "receipt": "github-vlang-instructions-20261108-20pct-c28.json",
+      "max_vox": 8872351990,
+      "min_brave": 11024953359,
+      "vox_times_10": 88723519900,
+      "brave_times_8": 88199626872,
+      "passed": false,
+      "remaining_vox_instructions": 52389303,
+      "benchmark_guard_exit": 1,
+      "build_guard_exit": 0,
+      "native_validation_guard_exit": 0
+    },
+    "c28_native_checks": {
+      "receipt": "github-vlang-instruction-validation-20261108-20pct.json",
+      "native_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+      "visual_case_count": 11,
+      "exact_case_count": 8,
+      "unchanged_fuzzy_case_count": 3,
+      "page_script_runtime": "enabled=true runtime=false sources=0 source_bytes=0 preloaded_scripts=0",
+      "worker_self_check_exit": 0
     }
   },
   "input_sha256": {
