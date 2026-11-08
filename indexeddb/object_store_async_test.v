@@ -129,3 +129,20 @@ fn test_async_upgrade_failure_rolls_back_and_finishes_the_open_request() {
 	assert connection.state == .closed
 	assert factory.database_infos().len == 0
 }
+
+fn test_async_counts_observe_prior_writes_and_finish_after_explicit_commit() {
+	mut connection := async_store_connection('count')!
+	defer { connection.close() }
+	mut tx := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
+	mut store := tx.object_store('items')!
+	store.put_async(string_value('one'), number_key(1), false)!
+	store.put_async(string_value('two'), number_key(2), false)!
+	all := store.count_async(none)!
+	one := store.count_async(IDBKeyRange.only(number_key(1))!)!
+	assert all.ready_state == .pending && one.ready_state == .pending
+	tx.commit()!
+	run_database_tasks()
+	assert all.result_kind == .count && all.count == 2
+	assert one.result_kind == .count && one.count == 1
+	assert tx.state == .finished
+}

@@ -485,6 +485,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				if request.error_message != '' { return undefined }
 				if entry.result != unsafe { nil } { return entry.result }
 				result := match request.result_kind {
+					.count { C.vox_jsc_JSValueMakeNumber(runtime.context, f64(request.count)) }
 					.database { runtime.indexed_db_database(mut binding, request.database)! }
 					.value { runtime.indexed_db_output(request.value)! }
 					.key {
@@ -630,6 +631,11 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				range, direction := runtime.indexed_db_cursor_arguments(args, entry)!
 				request := store.open_cursor_async(range, direction, method == 'openKeyCursor')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
+			}
+			if method == 'count' {
+				store.require_cursor_source()!
+				range := if args.len > 2 && !C.JSValueIsUndefined(runtime.context, args[2]) && !C.JSValueIsNull(runtime.context, args[2]) { ?indexeddb.IDBKeyRange(indexeddb.IDBKeyRange.only(runtime.indexed_db_key(args[2])!)!) } else { none }
+				return runtime.indexed_db_request(mut binding, store.count_async(range)!, none, receiver)
 			}
 			if method == 'get' {
 				store.transaction.require_active()!

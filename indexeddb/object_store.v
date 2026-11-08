@@ -281,7 +281,7 @@ pub fn (mut store IDBObjectStore) get_all_records(options IDBGetAllOptions) !&ID
 }
 
 pub fn (mut store IDBObjectStore) count(range ?IDBKeyRange) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	actual := range or { IDBKeyRange.unbounded() }
 	mut request := store.new_request()

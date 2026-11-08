@@ -94,6 +94,11 @@ fn (store &IDBObjectStore) operation_indexes(data &ObjectStoreData) []&IndexData
 	return if store.has_operation_indexes_ { store.operation_indexes_ } else { data.indexes.values() }
 }
 
+pub fn (mut store IDBObjectStore) count_async(range ?IDBKeyRange) !&IDBRequest {
+	store.require_cursor_source()!
+	return store.enqueue_operation(fn [range] (mut handle IDBObjectStore) !&IDBRequest { return handle.count(range) })
+}
+
 // Schema handles exist synchronously, while population runs between the
 // transaction's earlier and later requests. A population failure aborts the
 // transaction without dispatching an error at an author-visible request.
