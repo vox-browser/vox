@@ -101,9 +101,7 @@ fn image_filter_test_hash(c ImageTestCase, step CanvasFilterStep, bitmap_space b
 }
 
 fn test_color_filtered_image_subsets_match_native_source_images() {
-	step := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
-		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!
-	}}
+	step := image_test_contrast_filter()
 	cases := [
 		ImageTestCase{destination: [f32(10), 12, 7, 6]!, alpha: .7},
 		ImageTestCase{premultiplied: false, display_p3: true, source: [f32(1), 1, 5, 4]!,
@@ -117,6 +115,29 @@ fn test_color_filtered_image_subsets_match_native_source_images() {
 	// pixels through the alpha/filter stages until the restore blend.
 	hashes := ['fcdf07f1784c94ae', 'cdff66946d64f415', '79f27b4c61142d18', 'e3441259be4b7ca6']
 	for i, c in cases { assert image_filter_test_hash(c, step, false) == hashes[i] }
+}
+
+fn image_test_contrast_filter() CanvasFilterStep {
+	return CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!
+	}}
+}
+
+fn test_nearest_filtered_images_preserve_transforms_and_aa_edges() {
+	cases := [
+		ImageTestCase{destination: [f32(4.25), 5.5, 30, 25]!,
+			transform: [f32(1.25), 0, 0, .75, 2, 4]!, alpha: .7, clip: true},
+		ImageTestCase{premultiplied: false, display_p3: true, source: [f32(1), 1, 5, 4]!,
+			destination: [f32(4), 6, 35, 24]!, transform: [f32(.9), .4, -.4, .9, 5, 2]!,
+			alpha: .65, mode: .multiply, clip: true},
+		ImageTestCase{destination: [f32(10.01), 12.01, 7.002, 6.002]!, alpha: .35,
+			mode: .color_dodge, clip: true},
+		ImageTestCase{destination: [f32(5.25), 6.5, 22, 18]!,
+			transform: [f32(-1.2), 0, 0, .8, 42, 3]!, alpha: .7, mode: .overlay, clip: true},
+	]
+	// The same four native captures on macOS and Linux.
+	hashes := ['e025e6ff0e8b6e21', '116d6bd4d0f19821', '171f9638805833aa', '52406c90e7dae2ce']
+	for i, c in cases { assert image_filter_test_hash(c, image_test_contrast_filter(), false) == hashes[i] }
 }
 
 fn test_bitmap_space_filtered_images_match_native_cpu_policy() {

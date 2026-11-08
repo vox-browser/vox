@@ -349,8 +349,8 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 	// rather than the source image shader. Keep its existing fallback.
 	if bitmap_filter && plan.color != none { return false }
 	if color_filter := plan.color {
-		return draw_translated_color_filtered_image(mut pixels, width, height, pitch, alpha_type,
-			transform, rgba, source, destination, global_alpha, mode, clips, color_filter)
+		return draw_color_filtered_image(mut pixels, width, height, pitch, alpha_type,
+			transform, rgba, source, destination, smoothing, global_alpha, mode, clips, color_filter)
 	}
 	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, rgba,
 		source, destination, smoothing, global_alpha, mode, clips, false, canvas_rgba_uses_legacy())
