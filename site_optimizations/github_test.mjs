@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
-import { buildGithubResources, chunkFactories } from './github_builder.mjs';
+import { buildGithubResources, chunkFactories, withoutGithubResourceReporter } from './github_builder.mjs';
 import { githubFilters, githubResources } from './github_resources.js';
 import { defaultEngine, moduleReferences } from '../tools/adblock/audit_scripts.mjs';
 
@@ -50,9 +50,9 @@ test('compiled rules redirect only the reviewed GitHub script versions in GitHub
     assert.equal(check(request('https://github.com/vlang/v')).blocked, false);
 });
 
-function loadFactory(id, dependencies) {
+function loadFactory(id, dependencies, globals = {}) {
     const source = policy.reviewed.map(record => factories(policy.resources.get(record.resource)).get(id)).find(Boolean);
-    const context = vm.createContext({});
+    const context = vm.createContext(globals);
     const factory = vm.runInContext('({' + source + '})', context)[id];
     const exports = {};
     const require = name => {
@@ -97,4 +97,41 @@ test('metrics sinks preserve app identity, staff and automation helpers without 
     assert.deepEqual(flags, ['suppress_automated_browser_vitals']);
     assert.equal(metrics.sV(), false);
     for (const name of ['au', 'iv', 'kO']) assert.equal(metrics[name]({ name: 'metric', value: 1 }), undefined);
+});
+
+test('resource telemetry removal preserves fetch nonce and defensive DOM setup', async () => {
+    const calls = [];
+    class Node {
+        removeChild(child) { calls.push('remove'); return child; }
+        insertBefore(child) { calls.push('insert'); return child; }
+    }
+    const response = { ok: true, headers: { get: () => 'nonce' } };
+    const fetch = async () => response;
+    const window = { fetch, addEventListener() { throw Error('Unexpected telemetry listener'); } };
+    const document = { documentElement: { hasAttribute: () => false } };
+    const dependencies = { B: {}, f: {}, K: { Bb: () => calls.push('init') },
+        WN: { $r: nonce => calls.push(nonce), pS: () => calls.push('nonce-setup') },
+        u: { cg: window }, m: { iv() {}, au() {} }, j: { kt: () => ({}) },
+        E: { kt: () => calls.push('request-setup') }, D0: { BI() { throw Error('Unexpected telemetry'); } } };
+    assert.deepEqual(Object.keys(loadFactory('L', dependencies, { window, document, fetch, Node,
+        PerformanceObserver: class { constructor() { throw Error('Unexpected resource collector'); } } })), []);
+    assert.deepEqual(calls, ['init', 'nonce-setup', 'request-setup']);
+    assert.equal(await window.fetch('https://github.com/vlang/v'), response);
+    assert.equal(calls.at(-1), 'nonce');
+    const parent = new Node();
+    const child = { parentNode: parent };
+    assert.equal(parent.removeChild(child), child);
+    assert.equal(calls.at(-1), 'remove');
+    assert.equal(parent.insertBefore(child, child), child);
+    assert.equal(calls.at(-1), 'insert');
+    const count = calls.length;
+    assert.equal(parent.removeChild({ parentNode: null }).parentNode, null);
+    assert.equal(parent.insertBefore(child, { parentNode: null }), child);
+    assert.equal(calls.length, count);
+    const core = policy.reviewed.find(record => record.url.includes('/core-'));
+    const original = chunkFactories(core.source).find(factory => factory.key.name === 'L');
+    const changed = withoutGithubResourceReporter(core.source, original);
+    const untouched = core.source.slice(original.start, original.end);
+    const at = untouched.indexOf('function(){if("u"<typeof PerformanceObserver');
+    assert.equal(changed, untouched.slice(0, at) + 'void 0}}');
 });

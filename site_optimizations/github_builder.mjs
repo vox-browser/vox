@@ -24,6 +24,22 @@ function functions(source, factory, names) {
     }).join('\n');
 }
 
+// This factory also owns fetch nonces and defensive DOM patches. Remove only
+// its final resource-timing reporter; keep every byte of the functional setup.
+export function withoutGithubResourceReporter(source, factory) {
+    const outer = factory.value.body.body.at(-1);
+    const expression = outer?.type === 'IfStatement' && outer.consequent.body.at(-1)?.expression;
+    const call = expression?.type === 'SequenceExpression' && expression.expressions.at(-1);
+    if (call?.type !== 'CallExpression' || call.callee.type !== 'FunctionExpression') {
+        throw Error('Changed GitHub resource reporter structure');
+    }
+    const reporter = source.slice(call.start, call.end);
+    if (!reporter.includes('new PerformanceObserver(') || !reporter.includes('"bundle-stats"')) {
+        throw Error('Missing reviewed GitHub resource reporter');
+    }
+    return source.slice(factory.start, call.start) + 'void 0' + source.slice(call.end, factory.end);
+}
+
 export async function buildGithubResources() {
     const { responses } = JSON.parse(gunzipSync(await fs.readFile(fixture)));
     const resources = new Map(), filters = [], reviewed = [];
@@ -41,6 +57,7 @@ export async function buildGithubResources() {
                 // Hydro events. Neither owns navigation, focus, or hydration.
                 if (id === 'dB') replacement = 'dB(e,t,n){}';
                 if (id === 'XG') replacement = 'XG(e,t,n){n.d(t,{},{$3(){},HV(){},Vb(){}})}';
+                if (id === 'L') replacement = withoutGithubResourceReporter(source, factory);
             } else if (id === 'D0') {
                 // Retain the pure context serializer; acknowledge event calls
                 // without batching, timers, listeners, retries or RUM imports.
@@ -58,7 +75,7 @@ export async function buildGithubResources() {
             }
             if (replacement) edits.push({ start: factory.start, end: factory.end, replacement, id });
         }
-        if (edits.length !== 2) throw Error('Missing reviewed collectors');
+        if (edits.length !== (url.includes('/core-') ? 3 : 2)) throw Error('Missing reviewed collectors');
         // A redirect is a data URL. Resolve all relative ES module specifiers
         // against the original URL, including each chunk's self registration.
         for (const node of parseModule(source).body) {
