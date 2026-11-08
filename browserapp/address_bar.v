@@ -82,10 +82,10 @@ fn (mut app BrowserApp) focus_address_bar() {
 	app.address_select = true
 	app.address_cursor = app.address.runes().len
 	$if linux || ui2_custom_rendering ? {
-		ui2.select_embedded_textbox()
+		ui2.select_embedded_textbox('address')
 	}
 	$if vox_ui2 ? {
-		if app.native_address_bar { ui2.select_embedded_textbox() }
+		if app.native_address_bar { ui2.select_embedded_textbox('address') }
 	}
 }
 

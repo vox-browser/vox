@@ -17,7 +17,7 @@ The [repository UI rule](../AGENTS.md#ui-implementation) applies to future work.
 | History gesture classification, capture generations, cancellation and commit thresholds | [browserui/swipe.v](../browserui/swipe.v), [browserapp/history_swipe.v](../browserapp/history_swipe.v) | Native gesture policy fields and decisions |
 | Saved-window schema, validation, display clamping and fullscreen transitions | [browserui/window.v](../browserui/window.v), [browserapp/browser_window_state.v](../browserapp/browser_window_state.v) | Native saved-state/geometry policy |
 | Detached-window placement | [browserui/window.v](../browserui/window.v), [browserapp/browser_tab_detach_darwin.v](../browserapp/browser_tab_detach_darwin.v) | Native application placement calculations |
-| Compatibility chrome/bookmarks | Shared UI2 tree with [custom embedding](../tools/ui2/embedded_elements_custom.c.v) | Handwritten GG controls and hit testing |
+| Compatibility chrome/bookmarks | Shared UI2 tree with [custom embedding](https://github.com/vlang/ui2/blob/master/ui/embedded_elements_custom.c.v) | Handwritten GG controls and hit testing |
 
 Popups are asynchronous UI2 lists. They retain groups, disabled options,
 separators, indentation, selection marks, keyboard navigation and scrolling.
@@ -29,8 +29,9 @@ popups. Link actions retain the clicked destination instead of consulting hover.
 UI2's native backend supplies controls, accessibility and field-editor services.
 The custom renderer draws the same declarations inside the existing GG pass.
 Settings use a generic UI2 panel host on macOS and a scrollable UI2 overlay with
-the custom backend. The dependency checkout is unchanged; additions are staged
-by [prepare_ui2.py](../tools/prepare_ui2.py) from [tools/ui2](../tools/ui2).
+the custom backend. These APIs live in
+[upstream UI2](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
+[prepare_ui2.py](../tools/prepare_ui2.py) selects the installed upstream checkout.
 
 ## Retained native boundaries
 

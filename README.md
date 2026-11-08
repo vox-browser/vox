@@ -8,6 +8,17 @@ https://vox-browser.org
 
 Vox compiles in 2 seconds on M5 Max with `v .`!
 
+With the native dependencies installed, update UI2 and compile directly:
+
+```sh
+v up ui2
+v -b fastc -enable-globals .
+```
+
+For a first install, use `v install https://github.com/vlang/ui2`.
+UI2 must include its [embedding API](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
+The production build also checks this dependency version.
+
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
 GUI - V UI2

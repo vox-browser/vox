@@ -20,7 +20,7 @@ fn test_custom_ui2_readonly_address_is_focusable_and_rejects_text_mutation() {
 			readonly: true
 		}
 		ui2.draw_embedded_elements(ctx, [field], map[string]int{}, fn (_ string) {})
-		ui2.select_embedded_textbox()
+		ui2.select_embedded_textbox('address')
 		assert ui2.focused_id() == 'address'
 		assert ui2.embedded_elements_event(&gg.Event{ typ: .char, char_code: u32(`X`) })
 		assert ui2.embedded_elements_event(&gg.Event{ typ: .key_down, key_code: .backspace })

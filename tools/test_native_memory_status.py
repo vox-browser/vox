@@ -20,8 +20,10 @@ def main():
     binary = output / "tests"
     command = ["sh", "tools/test_address_bar.sh", "-memory-limit", "10G",
                "-skip-running", "-o", str(binary)]
-    sources = [root / name for name in ["memorymgmt/memory_status.v", "memorymgmt/memory_status_test.v",
-                                      "tools/ui2/embedded_browser_darwin.v"]]
+    sources = [root / name for name in ["memorymgmt/memory_status.v", "memorymgmt/memory_status_test.v"]]
+    ui2 = pathlib.Path(os.environ.get('UI2_SOURCE_DIR',
+        str(pathlib.Path(os.environ.get('VMODULES', str(pathlib.Path.home() / '.vmodules'))) / 'ui2')))
+    sources.append(ui2.resolve() / 'appkit/embedded_browser_darwin.v')
     result = {"compile_command": command, "started_unix": time.time(),
               "source_sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
                                 for path in sources}}

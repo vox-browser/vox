@@ -64,7 +64,7 @@ fn test_mounted_tabs_deliver_normalized_pointer_actions_and_typed_shortcuts() {
 		})
 		assert C.native_test_address_shortcut(ui2.embedded_browser_control('address'), unsafe { nil }, fn (_ voidptr, _ int) {}, 2, 0) != 0
 		assert log.events.last() == 'bookmark-add'
-		ui2.select_embedded_textbox()
+		ui2.select_embedded_textbox('address')
 		assert C.native_test_address_shortcut(ui2.embedded_browser_control('address'), unsafe { nil }, fn (_ voidptr, _ int) {}, 0, 0) != 0
 		assert C.native_test_address_selection(ui2.embedded_browser_control('address')) == u64('https://example.com'.len)
 		ui2.update_embedded_browser([tab_strip(800, [Tab{ index: 3, title: 'Other', x: 62, width: 80 }], 154)])

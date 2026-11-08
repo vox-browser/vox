@@ -32,13 +32,12 @@ reconciles keyed controls, preserving editing state across resize/status updates
 A V timer samples browser-plus-worker memory once a second and updates only the
 UI2 RAM label; it stops on unmount. It does not invalidate the document painter.
 
-`build-prod-browser.sh` stages UI2 under `Build/v/modules` using
-`tools/prepare_ui2.py`, enabling `-d vox_ui2` on macOS. `UI2_SOURCE_DIR` defaults
-to `~/.vmodules/ui2`; the dependency checkout is never modified. The adapter adds
-mount/reconciliation cleanup, generic normalized keyboard/wheel delivery,
-clipboard and host-window actions, and auxiliary panel hosting. Browser shortcut
-and form policy stay outside the backend. Stable UI2 IDs are exposed as native
-view identifiers for accessibility/testing tools.
+The vector, icon, native/custom embedding and input APIs live in
+[upstream UI2](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
+Update that dependency with `v up ui2` before building. `tools/prepare_ui2.py`
+selects the installed checkout and prepares compiler compatibility modules; it
+no longer patches UI2 or copies a private UI implementation. Stable UI2 IDs are
+exposed as native view identifiers for accessibility/testing tools.
 
 Linux uses the same element tree through UI2's custom renderer in the existing
 GG pass. `embedded_elements_custom.c.v` handles event delivery and text editing;
@@ -66,7 +65,7 @@ The same runner accepts `VOX_CHROME_TEST_FILE` for
 `browserapp/browser_window_state_test.v`, and `browserapp/history_swipe_test.v`.
 Sources are linked from the canonical checkout, including for the settings test.
 
-Small component checks avoid compiling the document engine. Stage UI2 first with
+Small component checks avoid compiling the document engine. Prepare compatibility modules with
 `python3 tools/prepare_ui2.py`; use its printed directory in `-path`:
 
 ```sh

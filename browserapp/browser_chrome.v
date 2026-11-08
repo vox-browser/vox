@@ -233,7 +233,7 @@ $if vox_ui2 ? {
 		app.native_address_bar = true
 		ui2.install_embedded_keys(browser_ui_key)
 		ui2.install_embedded_wheel(browser_ui_scroll)
-		ui2.install_embedded_menus([ui2.Menu{
+		ui2.install_embedded_menus('Vox', [ui2.Menu{
 			title: 'Browser'
 			items: [
 				ui2.menu_item_with_shortcut('settings-open', 'Settings…', 'cmd+,'),
