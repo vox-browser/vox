@@ -134,7 +134,7 @@ fn test_source_enforced_binding_real_argon2_output_and_explicit_undefined_member
 		host.work << task
 	}, fn [mut host] (task fn ()) { host.settle << task })
 	key := subtle.import_key(.raw_secret, []u8{len: 32, init: 1}, 'Argon2id', false, [.derive_bits], '')!
-	fields := {
+	mut fields := {
 		'name':           webidl.string_value('Argon2id')
 		'nonce':          webidl.buffer_source_value(webidl.BufferSource.array_buffer([]u8{len: 16, init: 2}))
 		'parallelism':    webidl.number_value(4.9)

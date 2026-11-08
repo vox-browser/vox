@@ -58,7 +58,7 @@ fn test_native_cipher_source_parameter_copy_order_gcm_vector_and_crypto_settleme
 	], []u8{len: 16}))!
 	assert runtime.evaluate_host(r'(function(){
  globalThis.cipherOrder=[];globalThis.nativeCiphertext=null;globalThis.cipherData=new Uint8Array(16);const iv=new Uint8Array(12),aad=new Uint8Array(0);
- const algorithm=new Proxy({name:"aEs-GcM",iv,additionalData:aad,tagLength:{valueOf(){cipherOrder.push("number");iv.fill(255);cipherData.fill(0);return 384.9}}},{get(target,name){cipherOrder.push("get "+name);return target[name]},has(target,name){cipherOrder.push("has "+name);return name in target}});
+ const algorithm=new Proxy({name:"aEs-GcM",iv,additionalData:aad,tagLength:{valueOf(){cipherOrder.push("number");iv.fill(255);cipherData.fill(0);return 128.9}}},{get(target,name){cipherOrder.push("get "+name);return target[name]},has(target,name){cipherOrder.push("has "+name);return name in target}});
  cipherData.fill(255);globalThis.cipherPromise=crypto.subtle.encrypt(algorithm,__cipherKey(),new DataView(cipherData.buffer),"ignored");cipherPromise.then(value=>nativeCiphertext=value);cipherData.fill(255);
  return cipherPromise instanceof Promise&&SubtleCrypto.prototype.encrypt.length===3&&SubtleCrypto.prototype.decrypt.length===3&&nativeCiphertext===null&&cipherOrder.join(",")==="get name,get iv,has additionalData,get additionalData,has tagLength,get tagLength,number";
  })()')! == 'true'

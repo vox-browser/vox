@@ -70,8 +70,8 @@ fn algorithm_js_string(object map[string]json2.Any, key string) !string {
 	}
 }
 
-// CryptoAlgorithms.cpp uses JS::Value::to_u8/to_u16/to_u32. Reuse the translated
-// StringToNumber and WebIDL modulo-integer operations for primitive values.
+// CryptoAlgorithms.cpp at 2919bf87a5e uses EnforceRange integer conversion.
+// Keep the primitive-number boundary shared with the native browser binding.
 // The json2 host boundary cannot execute an arbitrary object's ToPrimitive.
 fn algorithm_primitive_number(object map[string]json2.Any, key string) !f64 {
     value := object[key] or { json2.Any(json2.Null{}) }
@@ -84,12 +84,8 @@ fn algorithm_primitive_number(object map[string]json2.Any, key string) !f64 {
     }
 }
 
-fn algorithm_js_uint(object map[string]json2.Any, key string, width int) !u32 {
-    number := algorithm_primitive_number(object, key)!
-    return u32(webidl.convert_to_int(webidl.number_value(number), width, false, .no, .no)!)
-}
-
 fn algorithm_enforce_uint(object map[string]json2.Any, key string, width int) !u32 {
+    if key !in object { return error('TypeError: Number must not be NaN or Infinity') }
     number := algorithm_primitive_number(object, key)!
     return u32(webidl.convert_to_int(webidl.number_value(number), width, false, .yes, .no)!)
 }
@@ -150,7 +146,7 @@ pub fn AesCbcParams.from_value(value json2.Any) !AesCbcParams {
 pub fn AesCtrParams.from_value(value json2.Any) !AesCtrParams {
     object := algorithm_object(value)!
     counter := required_algorithm_bytes(object, 'counter')!
-    length := algorithm_js_uint(object, 'length', 8)!
+    length := algorithm_enforce_uint(object, 'length', 8)!
     return AesCtrParams{ name: '', counter: counter, length: u8(length) }
 }
 
@@ -160,7 +156,7 @@ pub fn AesGcmParams.from_value(value json2.Any) !AesGcmParams {
     mut additional_data := ?[]u8(none)
     if 'additionalData' in object { additional_data = required_algorithm_bytes(object, 'additionalData')! }
     mut tag_length := ?u8(none)
-    if 'tagLength' in object { tag_length = u8(algorithm_js_uint(object, 'tagLength', 8)!) }
+    if 'tagLength' in object { tag_length = u8(algorithm_enforce_uint(object, 'tagLength', 8)!) }
     return AesGcmParams{ name: '', iv: iv, additional_data: additional_data, tag_length: tag_length }
 }
 
@@ -180,31 +176,31 @@ pub fn HKDFParams.from_value(value json2.Any) !HKDFParams {
 pub fn PBKDF2Params.from_value(value json2.Any) !PBKDF2Params {
     object := algorithm_object(value)!
     salt := required_algorithm_bytes(object, 'salt')!
-    iterations := algorithm_js_uint(object, 'iterations', 32)!
+    iterations := algorithm_enforce_uint(object, 'iterations', 32)!
     hash := hash_algorithm_identifier_from_value(object['hash'] or { return error('TypeError: hash is required') })!
     return PBKDF2Params(Pbkdf2Params{ name: '', salt: salt, iterations: iterations, hash: hash.name()! })
 }
 
 pub fn AesKeyGenParams.from_value(value json2.Any) !AesKeyGenParams {
     object := algorithm_object(value)!
-    return AesKeyGenParams{ name: '', length: u16(algorithm_js_uint(object, 'length', 16)!) }
+    return AesKeyGenParams{ name: '', length: u16(algorithm_enforce_uint(object, 'length', 16)!) }
 }
 
 pub fn AesDerivedKeyParams.from_value(value json2.Any) !AesDerivedKeyParams {
     object := algorithm_object(value)!
-    return AesDerivedKeyParams{ name: '', length: u16(algorithm_js_uint(object, 'length', 16)!) }
+    return AesDerivedKeyParams{ name: '', length: u16(algorithm_enforce_uint(object, 'length', 16)!) }
 }
 
 pub fn RsaKeyGenParams.from_value(value json2.Any) !RsaKeyGenParams {
     object := algorithm_object(value)!
-    modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
+    modulus_length := algorithm_enforce_uint(object, 'modulusLength', 32)!
     public_exponent := big_integer_from_api_big_integer(required_api_big_integer_bytes(object, 'publicExponent')!)
     return RsaKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent }
 }
 
 pub fn RsaHashedKeyGenParams.from_value(value json2.Any) !RsaHashedKeyGenParams {
     object := algorithm_object(value)!
-    modulus_length := algorithm_js_uint(object, 'modulusLength', 32)!
+    modulus_length := algorithm_enforce_uint(object, 'modulusLength', 32)!
     public_exponent := big_integer_from_api_big_integer(required_api_big_integer_bytes(object, 'publicExponent')!)
     hash := hash_algorithm_identifier_from_value(object['hash'] or { return error('TypeError: hash is required') })!
     return RsaHashedKeyGenParams{ name: '', modulus_length: modulus_length, public_exponent: public_exponent, hash: hash.name()! }
@@ -234,7 +230,7 @@ pub fn RsaPssParams.from_value(value json2.Any) !RsaPssParams {
 	object := algorithm_object(value)!
 	return RsaPssParams{
 		name: ''
-		salt_length: algorithm_js_uint(object, 'saltLength', 32)!
+		salt_length: algorithm_enforce_uint(object, 'saltLength', 32)!
 	}
 }
 
@@ -272,7 +268,7 @@ pub fn HmacImportParams.from_value(value json2.Any) !HmacImportParams {
 	})!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = algorithm_js_uint(object, 'length', 32)!
+		length = algorithm_enforce_uint(object, 'length', 32)!
 	}
 	return HmacImportParams{
 		name: ''
@@ -288,7 +284,7 @@ pub fn HmacKeyGenParams.from_value(value json2.Any) !HmacKeyGenParams {
 	})!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = algorithm_js_uint(object, 'length', 32)!
+		length = algorithm_enforce_uint(object, 'length', 32)!
 	}
 	return HmacKeyGenParams{
 		name: ''
@@ -350,7 +346,7 @@ pub fn KmacKeyGenParams.from_value(value json2.Any) !KmacKeyGenParams {
 	object := algorithm_object(value)!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = algorithm_js_uint(object, 'length', 32)!
+		length = algorithm_enforce_uint(object, 'length', 32)!
 	}
 	return KmacKeyGenParams{
 		name: ''
@@ -362,7 +358,7 @@ pub fn KmacImportParams.from_value(value json2.Any) !KmacImportParams {
 	object := algorithm_object(value)!
 	mut length := ?u32(none)
 	if 'length' in object {
-		length = algorithm_js_uint(object, 'length', 32)!
+		length = algorithm_enforce_uint(object, 'length', 32)!
 	}
 	return KmacImportParams{
 		name: ''
@@ -376,7 +372,7 @@ pub fn AeadParams.from_value(value json2.Any) !AeadParams {
     mut additional_data := ?[]u8(none)
     if 'additionalData' in object { additional_data = required_algorithm_bytes(object, 'additionalData')! }
     mut tag_length := ?u8(none)
-    if 'tagLength' in object { tag_length = u8(algorithm_js_uint(object, 'tagLength', 8)!) }
+    if 'tagLength' in object { tag_length = u8(algorithm_enforce_uint(object, 'tagLength', 8)!) }
     return AeadParams{ name: '', iv: iv, additional_data: additional_data, tag_length: tag_length }
 }
 

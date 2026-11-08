@@ -79,7 +79,7 @@ fn (host &CryptoHost) crypto_hash_identifier(value voidptr) !webidl.Value {
 fn (host &CryptoHost) generation_uint(dictionary voidptr, field string, width int) !webidl.Value {
 	value := host.runtime.binding_property(dictionary, field)!
 	number := host.algorithm_number(value)!
-	return webidl.number_value(webidl.convert_to_int(webidl.number_value(number), width, false, .no, .no)!)
+	return webidl.number_value(webidl.convert_to_int(webidl.number_value(number), width, false, .yes, .no)!)
 }
 
 fn (host &CryptoHost) normalize_generation(value voidptr, is_object bool) !webidl.Value {

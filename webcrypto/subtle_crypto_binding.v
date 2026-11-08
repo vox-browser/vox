@@ -242,7 +242,7 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             }
             converted := json2.Any(webidl.value_to_number(property)!)
             width := if field == 'tagLength' || (name == 'AES-CTR' && field == 'length' && operation in ['encrypt', 'decrypt']) { 8 } else if name.starts_with('AES-') && field == 'length' { 16 } else { 32 }
-            object[field] = i64(algorithm_js_uint({field: converted}, field, width)!)
+            object[field] = i64(algorithm_enforce_uint({field: converted}, field, width)!)
             continue
         }
         if name == 'RSA-OAEP' && field == 'label' && property.kind in [.null_, .undefined] { continue }

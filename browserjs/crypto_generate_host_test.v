@@ -31,6 +31,25 @@ fn generation_host_tasks(owner &html.EventLoop) {
 	generation_host_jobs(owner)
 }
 
+fn test_native_crypto_numeric_ranges_reject_before_scheduling_backend_work() {
+	$if !darwin { return }
+	mut runtime, mut owner := generation_host_fixture()
+	defer { runtime.close() }
+	pause := owner.pause()
+	defer { owner.unpause(pause) }
+	assert runtime.evaluate_host(r'(function(){
+ globalThis.rangeErrors=[];globalThis.rangeCount=0;
+ function check(algorithm){rangeCount++;const promise=crypto.subtle.generateKey(algorithm,true,[algorithm.name.startsWith("RSA")?"sign":algorithm.name.startsWith("AES")?"encrypt":"sign"]);promise.catch(error=>rangeErrors.push(error));if(!(promise instanceof Promise))throw new Error("not a Promise")}
+ for(const name of ["AES-CBC","AES-CTR","AES-GCM"])for(const length of [-1,NaN,Infinity,65536+128,2**32+128])check({name,length});
+ for(const name of ["HMAC","KMAC128","KMAC256"])for(const length of [-1,NaN,Infinity,2**32+128])check({name,length,hash:"SHA-256"});
+ for(const name of ["RSA-PSS","RSASSA-PKCS1-v1_5"])for(const modulusLength of [-1,NaN,Infinity,2**32+1024])check({name,modulusLength,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"});
+ return rangeCount===35&&rangeErrors.length===0;
+ })()')! == 'true'
+	assert owner.task_queue().is_empty()
+	generation_host_jobs(owner)
+	assert runtime.evaluate_host('rangeErrors.length===rangeCount&&rangeErrors.every(error=>error instanceof TypeError)')! == 'true'
+}
+
 fn test_native_generate_key_source_argument_conversion_parameter_order_and_deferred_key_record() {
 	$if !darwin {
 		return
@@ -41,7 +60,7 @@ fn test_native_generate_key_source_argument_conversion_parameter_order_and_defer
 	defer { owner.unpause(pause) }
 	assert runtime.evaluate_host(r'(function(){
  globalThis.generationOrder=[];globalThis.generatedKey=null;
- const algorithm={get name(){generationOrder.push("name");return "aes-gcm"},get length(){generationOrder.push("length");return {valueOf(){generationOrder.push("number");return 65664.9}}}};
+ const algorithm={get name(){generationOrder.push("name");return "aes-gcm"},get length(){generationOrder.push("length");return {valueOf(){generationOrder.push("number");return 128.9}}}};
  const usages={[Symbol.iterator](){generationOrder.push("iterator");let index=0;return {next(){generationOrder.push("next");return index++===0?{value:{toString(){generationOrder.push("usage");return "decrypt"}},done:false}:index===2?{value:"encrypt",done:false}:{done:true}}}}};
  globalThis.generatedPromise=crypto.subtle.generateKey(algorithm,{valueOf(){throw "boolean conversion"}},usages);generatedPromise.then(key=>generatedKey=key);
  return generatedPromise instanceof Promise&&SubtleCrypto.prototype.generateKey.length===3&&generationOrder.join(",")==="iterator,next,usage,next,next,name,length,number"&&generatedKey===null;
