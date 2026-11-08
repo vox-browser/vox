@@ -25,6 +25,18 @@ def link_to(path, source):
     path.symlink_to(source, target_is_directory=source.is_dir())
 
 
+def link_directory_files(path, source):
+    """Keep cache directories real so later module staging cannot edit vlib."""
+    if path.is_symlink() or path.is_file():
+        path.unlink()
+    path.mkdir(parents=True, exist_ok=True)
+    for entry in source.iterdir():
+        if entry.is_dir():
+            link_directory_files(path / entry.name, entry)
+        else:
+            link_to(path / entry.name, entry)
+
+
 def prepare_gg_gradient(modules, vlib):
     """Keep FastC's map-string arithmetic separate from its method receiver."""
     source = vlib / 'gg'
@@ -41,7 +53,10 @@ def prepare_gg_gradient(modules, vlib):
     target.mkdir(exist_ok=True)
     for entry in source.iterdir():
         if entry.name != 'canvas':
-            link_to(target / entry.name, entry)
+            if entry.is_dir():
+                link_directory_files(target / entry.name, entry)
+            else:
+                link_to(target / entry.name, entry)
     canvas = target / 'canvas'
     canvas.mkdir(exist_ok=True)
     for entry in (source / 'canvas').iterdir():
@@ -66,6 +81,8 @@ def prepare_gg_gradient(modules, vlib):
                 return '#include "@DIR/' + wrapper + '"'
             context = re.sub(r'#include "@DIR/([^"\n]+\.h)"', native_include, entry.read_text())
             write_if_changed(canvas / entry.name, context)
+        elif entry.is_dir():
+            link_directory_files(canvas / entry.name, entry)
         else:
             link_to(canvas / entry.name, entry)
 
