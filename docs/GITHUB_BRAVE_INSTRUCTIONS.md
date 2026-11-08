@@ -398,9 +398,19 @@ policy. Build guard exits 0, peak RSS 12,225,347,584 bytes; benchmark/guard
 exits 0, peak RSS 1,203,404,800 bytes. Its completed staging image was pinned
 through acceptance and native validation. A held canonical reader lease and
 newer request subsequently superseded the unpublished staging app; the shared
-bundle remains c33. The result is scoped to this pinned c35 executable.
+bundle remained c33 at that time. The result is scoped to this pinned c35 executable.
 Local raw evidence is
 `docs/performance/github-vlang-instructions-20261108-20pct-c35.json`.
+
+The November 9 publication check confirms a newer shared bundle,
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`,
+published by receipt `20261108-233251-1703525c`. All fourteen c35 implementation
+files match that build's parsed-source hashes exactly. A fresh process passes
+the guarded headless smoke check (exit 0, peak RSS 47,595,520 bytes), with stable
+executable and native-library identities. Thus the c35 optimizations are now in
+the shared app. The seven-pair instruction cohort has not been rerun on this
+newer executable; 20.5406% remains the measured c35 result. Local status evidence
+is `docs/performance/github-vlang-c35-publication-status-20261109.json`.
 
 C35 pins Brave Chrome **157.0.8103.39**, V8 **15.7.112.23**, executable
 `4772b8898cc23f044c134b75a494ddc9053f58d5ea8cd1acb6f60762292df513`.
