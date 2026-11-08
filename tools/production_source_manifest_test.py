@@ -69,6 +69,37 @@ class ProductionSourceManifestTests(unittest.TestCase):
             (root / 'tools/test_windows_runtime_guard.c').write_text('native test helper')
             manifest.validate_inventory(root, inventory)
 
+    def test_tooling_documentation_changes_do_not_invalidate_unrelated_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'repo'
+            self.fixture(root)
+            document = root / 'tools/gg_migration/README.md'
+            document.parent.mkdir(parents=True)
+            document.write_text('old tooling notes')
+            inventory = manifest.begin(root)
+            component = self.component(root, 'component', [root / 'browser.v'])
+            document.write_text('new tooling notes')
+            (document.parent / 'NEW.md').write_text('another tooling note')
+            manifest.validate_inventory(root, inventory)
+            combined = manifest.combine(root, inventory, [component])
+            self.assertNotIn(str(document), combined)
+            self.assertIn(str(root / 'native.h'), combined)
+
+    def test_explicitly_consumed_tooling_markdown_remains_pinned(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'repo'
+            self.fixture(root)
+            document = root / 'tools/embedded.md'
+            document.parent.mkdir()
+            document.write_text('compiled text')
+            inventory = manifest.begin(root)
+            component = self.component(root, 'component', [root / 'browser.v', document])
+            combined = manifest.combine(root, inventory, [component])
+            self.assertIn(str(document), combined)
+            document.write_text('changed compiled text')
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                manifest.combine(root, inventory, [component])
+
     def test_native_test_headers_remain_production_inputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'repo'
