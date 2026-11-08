@@ -43,7 +43,14 @@ cases += [
  dict(name='source-clipped-empty-restore',premul=True,destination=[3.25,4.5,24,18],source=[10,1,5,4],alpha=.65,mode='src_in',clip=True,filter=(2,0,0,0,0,contrast,0)),
  dict(name='source-clipped-empty-quick-reject',premul=True,destination=[60,50,24,18],source=[10,1,5,4],alpha=.65,mode='src_in',clip=True,filter=(2,0,0,0,0,contrast,0)),
  dict(name='source-clipped-negative-width',premul=True,destination=[3.25,4.5,24,18],source=[-2,1,-5,4],alpha=.65,mode='src_in',clip=True,filter=(2,0,0,0,0,contrast,0)),
+ dict(name='linear-restore-sheared',premul=False,p3=True,destination=[3.25,4.5,24,18],source=[1,1,5,4],alpha=.65,mode='plus_lighter',clip=True,smoothing=True,transform=[.7,.45,.3,1.2,5,2],filter=(2,0,0,0,0,contrast,0)),
+ dict(name='linear-restore-rotated-near-unit',premul=True,destination=[3.25,4.5,5,4],source=[1,1,5,4],alpha=.65,mode='src_in',clip=True,smoothing=True,transform=[.96,.28,-.28,.96,5,2],filter=(2,0,0,0,0,contrast,0)),
 ]
+for mode in ['src', 'src_in', 'src_out', 'dst_in', 'dst_atop', 'plus_darker', 'plus_lighter']:
+ cases.append(dict(name='rotated-linear-restore-'+mode,premul=False,p3=True,
+                   destination=[3.25,4.5,24,18],source=[1,1,5,4],alpha=.65,mode=mode,
+                   clip=True,smoothing=True,transform=[.9,.4,-.4,.9,5,2],
+                   filter=(2,0,0,0,0,contrast,0)))
 for c in cases:
  w,h=c.get('width',48),c.get('height',40);iw,ih=c.get('iw',7),c.get('ih',6)
  image=m.image_pixels(iw,ih,c['premul']);r.pattern_sha256=hashlib.sha256(image).hexdigest();storage=(C.c_uint8*len(image)).from_buffer(image);r.library.oracle_pattern(storage);r.filters([c['filter']])
@@ -54,11 +61,20 @@ for c in cases:
  r.call(name,m.background(w,h,'image') if w==48 else bytearray(w*h*4),ints,floats,c['name'],'captured')
 import platform
 if platform.system() == 'Darwin':
- expected = ['fcdf07f1784c94ae', 'cdff66946d64f415', '79f27b4c61142d18', 'e3441259be4b7ca6',
-             'b04f05f0f7807d28', '742faaa5a08e2c8d', '7a9e4b5a7ebf291f', '6dd8c713245e52c2', 'e025e6ff0e8b6e21', '116d6bd4d0f19821', '171f9638805833aa', '52406c90e7dae2ce',
-             'd5f8f3845bfa1191', 'e95056f459921fcc', '4d2545a295b0c06a', 'b7ec0bc884c06b1c',
-             '46fcd61c577e37c9', '8df3a99256c17efc', 'ee3b65cf28b7c260', '52bef994eb1f0a52', '74c6cb30d370371a', '1e7ab89a4da1e16f', '5e28aece98e44f83', '6a3d3514d69c10b6', '06b178d6241aeedf', '84bb844bc9446aa4', '10b411f2added94d', '9dcb80513fcef5b6', '4137bfce1d4c56ef', '424a58d921b95596', 'e9ae408499d06d09', 'b597b38558cfdfc1',
-             'c6cdff1bcb881136', '7b33de5d39e16a66', '62b1b888837ad40a', 'f00be8e39ec6bc7f', 'f00be8e39ec6bc7f']
+ expected = [
+  'fcdf07f1784c94ae', 'cdff66946d64f415', '79f27b4c61142d18', 'e3441259be4b7ca6',
+  'b04f05f0f7807d28', '742faaa5a08e2c8d', '7a9e4b5a7ebf291f', '6dd8c713245e52c2',
+  'e025e6ff0e8b6e21', '116d6bd4d0f19821', '171f9638805833aa', '52406c90e7dae2ce',
+  'd5f8f3845bfa1191', 'e95056f459921fcc', '4d2545a295b0c06a', 'b7ec0bc884c06b1c',
+  '46fcd61c577e37c9', '8df3a99256c17efc', 'ee3b65cf28b7c260', '52bef994eb1f0a52',
+  '74c6cb30d370371a', '1e7ab89a4da1e16f', '5e28aece98e44f83', '6a3d3514d69c10b6',
+  '06b178d6241aeedf', '84bb844bc9446aa4', '10b411f2added94d', '9dcb80513fcef5b6',
+  '4137bfce1d4c56ef', '424a58d921b95596', 'e9ae408499d06d09', 'b597b38558cfdfc1',
+  'c6cdff1bcb881136', '7b33de5d39e16a66', '62b1b888837ad40a', 'f00be8e39ec6bc7f',
+  'f00be8e39ec6bc7f', 'f3f022c3c8bcb02f', '33a4cc97cfdb1da1', 'a9973dbbb81b55a3',
+  'b9ed9372ad2fa689', '4b7094d961364ddc', 'c014e794ae2d0531', '820e54abd9a5bdb9',
+  '65bee32ef9751dba', '2f6d605edd08a4c8',
+ ]
  for record, digest in zip(r.records, expected):
   assert record['native_sha256'].startswith(digest), record['case']
 print(json.dumps(dict(platform=platform.platform(), reference_sha256=r.reference_sha256,
