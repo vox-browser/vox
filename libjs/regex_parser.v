@@ -64,6 +64,13 @@ pub fn parse_regex_ast_flags(source string) !RegexAstFlags {
 }
 
 pub fn parse_regex_ast_chars(source []rune, flags RegexAstFlags) !RegexPatternAst {
+	// Rust's Vec<char> guarantees scalars. V rune arrays also permit arbitrary
+	// integers, so enforce that source-side type invariant at this boundary.
+	for point in source {
+		if point < 0 || !regex_unicode_scalar(u32(point)) {
+			return error('invalid Unicode source character')
+		}
+	}
 	mut p := RegexSyntaxParser{ source: source, flags: flags }
 	mut in_class := false
 	for i := 0; i < source.len; i++ {

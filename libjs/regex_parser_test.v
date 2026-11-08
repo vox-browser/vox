@@ -121,7 +121,7 @@ fn test_regex_parser_preserves_complete_ast_and_errors_from_pinned_source() {
 		assert actual == fields[2], 'mode=${mode} pattern=${pattern}'
 		count++
 	}
-	assert count >= 1000
+	assert count == 3018
 }
 
 fn test_regex_parser_bounds_deep_groups_and_nested_unicode_sets() {

@@ -1,5 +1,23 @@
 module libjs
 
+fn test_regex_grammar_character_input_preserves_the_source_scalar_invariant() {
+	for point in [rune(-1), rune(0xd800), rune(0xdfff), rune(0x110000)] {
+		if _ := parse_regex_ast_chars([point], RegexAstFlags{ unicode_sets: true }) {
+			assert false
+		} else {
+			assert err.msg() == 'invalid Unicode source character'
+		}
+	}
+	for point in [rune(0), rune(0xd7ff), rune(0xe000), rune(0x1f600), rune(0x10ffff)] {
+		tree := parse_regex_ast_chars([point], RegexAstFlags{ unicode_sets: true })!
+		atom := tree.disjunction.alternatives[0].terms[0].atom
+		assert atom is RegexLiteral
+		if atom is RegexLiteral {
+			assert atom.code_point == u32(point)
+		}
+	}
+}
+
 fn test_regex_grammar_flags_preserve_each_compatible_subset_and_original_errors() {
 	alphabet := 'gimsuvyd'
 	for mask in 0 .. 256 {
