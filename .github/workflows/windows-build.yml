@@ -3,7 +3,7 @@ name: Windows build (scaffolding)
 # Baseline for the Windows release work (see docs/WINDOWS.md). A native
 # Windows checkout is still blocked by pixel_tests fixture names that are
 # illegal on Windows (see issue #8), so this runs on Linux: it verifies the
-# pinned sources, syntax-checks the touched helper, and exercises the
+# Windows driver syntax and exercises the
 # x.imp build script end to end through `v run build_browser.vsh --help`.
 on:
   push:
@@ -11,7 +11,8 @@ on:
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_regex_backend.py
+      - tools/build_windows_browser.py
+      - libregex/**
       - packaging/version.txt
       - browserupdate/**
       - docs/WINDOWS.md
@@ -19,7 +20,8 @@ on:
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_regex_backend.py
+      - tools/build_windows_browser.py
+      - libregex/**
       - packaging/version.txt
       - browserupdate/**
       - docs/WINDOWS.md
@@ -38,11 +40,8 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify pinned LibRegex sources
-        run: python3 tools/build_regex_backend.py --verify-only
-
-      - name: Syntax-check the LibRegex helper
-        run: python3 -m py_compile tools/build_regex_backend.py
+      - name: Syntax-check the Windows build driver
+        run: python3 -m py_compile tools/build_windows_browser.py
 
       - name: Install V from source (for x.imp)
         timeout-minutes: 20

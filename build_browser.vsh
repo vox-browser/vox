@@ -6,30 +6,10 @@
 // flows. macOS and Linux delegate to their existing shell builders; the
 // Windows `browser` flow reports that the native build is not supported
 // yet. See docs/WINDOWS.md for the release plan.
-import json2
 import os
 import x.imp
 
 const repo_dir = @DIR
-
-struct RegexManifestFile {
-	path   string
-	sha256 string
-}
-
-struct RegexManifest {
-	files           []RegexManifestFile
-	upstream_commit string
-}
-
-// host_triplet names the Build/libregex output directory used by
-// tools/build_regex_backend.py (platform.system().lower() there).
-fn host_triplet() string {
-	if os.user_os() == 'macos' {
-		return 'darwin'
-	}
-	return os.user_os()
-}
 
 // browser_target is the production binary for the current host.
 fn browser_target() string {
@@ -43,27 +23,9 @@ fn browser_target() string {
 	return 'Build/v/Vox.app/Contents/MacOS/Vox'
 }
 
-// regex_takes lists the pinned backend inputs so content edits defeat the
-// skip check. Falls back to coarser paths when the manifest is unreadable;
-// the builder itself re-verifies its content fingerprint on every run.
-fn regex_takes() []string {
-	manifest_path := os.join_path(repo_dir, 'libregex', 'native', 'manifest.json')
-	content := os.read_file(manifest_path) or { return ['libregex/native'] }
-	manifest := json2.decode[RegexManifest](content) or {
-		return ['libregex/native', 'tools/build_regex_backend.py']
-	}
-	mut takes := ['tools/build_regex_backend.py', 'libregex/native/manifest.json',
-		'libregex/native/unicode.rs']
-	for record in manifest.files {
-		takes << os.join_path('libregex', 'native', record.path)
-	}
-	return takes
-}
-
 os.chdir(repo_dir) or { panic('imp: cannot enter ${repo_dir}: ${err}') }
 
 target := browser_target()
-triplet := host_triplet()
 
 if !imp.check_binary(['git', 'python3'], panic: true) {
 	return
@@ -71,15 +33,6 @@ if !imp.check_binary(['git', 'python3'], panic: true) {
 
 mut ctx := imp.new()
 ctx.add_target(target)
-ctx.add_flow(
-	id:    'regex-backend'
-	help:  'build the pinned LibRegex Rust backend'
-	takes: regex_takes()
-	gives: ['Build/libregex/${triplet}/libregex_native.a']
-	flow:  fn (_ imp.Flow) ! {
-		imp.system_args(['python3', 'tools/build_regex_backend.py'])!
-	}
-)
 ctx.add_flow(
 	id:    'browser'
 	help:  'build the production browser for the current host'
@@ -121,5 +74,5 @@ ctx.add_flow(
 )
 ctx.add_auto_flow(.clean)
 ctx.add_auto_flow(.run)
-ctx.default(['regex-backend', 'browser'])
+ctx.default(['browser'])
 ctx.flow()

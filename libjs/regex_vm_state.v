@@ -62,13 +62,14 @@ pub:
 	program &RegexProgram @[required]
 	input   RegexInput
 pub mut:
-	pc        u32
-	pos       uint
-	scratch   &RegexVmScratch @[required]
-	steps     u64
-	modifiers RegexActiveModifiers
-	backward  bool
-	bt_floor  uint
+	pc         u32
+	pos        uint
+	scratch    &RegexVmScratch @[required]
+	steps      u64
+	modifiers  RegexActiveModifiers
+	backward   bool
+	bt_floor   uint
+	look_depth int
 }
 
 // The VM borrows the stable program/input and this scratch owner. Callers must
@@ -127,6 +128,7 @@ pub fn (mut vm RegexVm) reset(pos uint) {
 	vm.scratch.modifier_stack.clear()
 	vm.backward = false
 	vm.bt_floor = 0
+	vm.look_depth = 0
 }
 
 pub fn (mut vm RegexVm) snapshot_registers() uint {

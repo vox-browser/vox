@@ -68,7 +68,6 @@ if pkg-config --exists libavif; then
 else
     rm -f "$build_dir/libVoxAVIF.so"
 fi
-python3 "$repo_dir/tools/build_regex_backend.py"
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")

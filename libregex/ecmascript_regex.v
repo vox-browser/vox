@@ -38,27 +38,27 @@ pub:
 @[heap]
 pub struct ECMAScriptRegex {
 mut:
-	rust_regex_   &CompiledRustRegex
+	compiled_     &CompiledRegex
 	named_groups_ []ECMAScriptNamedCaptureGroup
 }
 
 pub fn ECMAScriptRegex.compile(pattern libjs.Utf16String, flags ECMAScriptCompileFlags) !&ECMAScriptRegex {
-	compiled := CompiledRustRegex.compile(pattern, flags)!
+	compiled := CompiledRegex.compile(pattern, flags)!
 	mut groups := []ECMAScriptNamedCaptureGroup{cap: compiled.named_groups().len}
 	for group in compiled.named_groups() {
 		groups << ECMAScriptNamedCaptureGroup{ name: group.name, index: group.index }
 	}
-	return &ECMAScriptRegex{ rust_regex_: compiled, named_groups_: groups }
+	return &ECMAScriptRegex{ compiled_: compiled, named_groups_: groups }
 }
 
-pub fn (mut regex ECMAScriptRegex) destroy() { regex.rust_regex_.destroy() }
+pub fn (mut regex ECMAScriptRegex) destroy() { regex.compiled_.destroy() }
 
 pub fn (mut regex ECMAScriptRegex) move_from(mut other ECMAScriptRegex) {
 	if voidptr(&regex) == voidptr(&other) { return }
 	regex.destroy()
-	regex.rust_regex_ = other.rust_regex_
+	regex.compiled_ = other.compiled_
 	regex.named_groups_ = other.named_groups_
-	other.rust_regex_ = &CompiledRustRegex{}
+	other.compiled_ = &CompiledRegex{}
 	other.named_groups_ = []
 }
 
@@ -69,23 +69,23 @@ fn match_result(result int) MatchResult {
 }
 
 pub fn (regex &ECMAScriptRegex) exec(input libjs.Utf16String, start_pos uint) MatchResult {
-	return match_result(regex.rust_regex_.exec_internal(input, start_pos))
+	return match_result(regex.compiled_.exec_internal(input, start_pos))
 }
 
 pub fn (regex &ECMAScriptRegex) capture_slot(slot u32) int {
-	return regex.rust_regex_.capture_slot(slot)
+	return regex.compiled_.capture_slot(slot)
 }
 
 pub fn (regex &ECMAScriptRegex) test(input libjs.Utf16String, start_pos uint) MatchResult {
-	return match_result(regex.rust_regex_.test(input, start_pos))
+	return match_result(regex.compiled_.test(input, start_pos))
 }
 
-pub fn (regex &ECMAScriptRegex) capture_count() u32 { return regex.rust_regex_.capture_count() }
+pub fn (regex &ECMAScriptRegex) capture_count() u32 { return regex.compiled_.capture_count() }
 
-pub fn (regex &ECMAScriptRegex) total_groups() u32 { return regex.rust_regex_.total_groups() }
+pub fn (regex &ECMAScriptRegex) total_groups() u32 { return regex.compiled_.total_groups() }
 
 pub fn (regex &ECMAScriptRegex) is_single_non_bmp_literal() bool {
-	return regex.rust_regex_.is_single_non_bmp_literal()
+	return regex.compiled_.is_single_non_bmp_literal()
 }
 
 pub fn (regex &ECMAScriptRegex) named_groups() []ECMAScriptNamedCaptureGroup {
@@ -93,9 +93,9 @@ pub fn (regex &ECMAScriptRegex) named_groups() []ECMAScriptNamedCaptureGroup {
 }
 
 pub fn (regex &ECMAScriptRegex) find_all(input libjs.Utf16String, start_pos uint) int {
-	return regex.rust_regex_.find_all(input, start_pos)
+	return regex.compiled_.find_all(input, start_pos)
 }
 
 pub fn (regex &ECMAScriptRegex) find_all_match(index int) MatchPair {
-	return regex.rust_regex_.find_all_match(index)
+	return regex.compiled_.find_all_match(index)
 }
