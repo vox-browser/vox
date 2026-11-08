@@ -1,0 +1,781 @@
+{
+  "workspace": "/Users/alex/code/vox2",
+  "implementation_commit": "723954c1a",
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "scope": "Native IndexedDB cursor and index JavaScript bindings from the unchanged first-100 cohort",
+  "all_first_100_pass": false,
+  "source_inputs": {
+    "browserjs/indexed_db_binding_test.v": "7400f568642ef74b5bc50da1e0baa7025cf4004e918cea2d9aebfa24e3209634",
+    "browserjs/indexed_db_indexes_binding_test.v": "0cb6aeb9d88023b4aeb2763cf96598a882835ab5d18a4b25162ee9e68749a453",
+    "browserjs/indexed_db_key_path_identity_test.v": "2c3414cad9b971cb9cf486861e70e43ff40b0311273f2aef33d269cd9241bbe0",
+    "browserjs/indexed_db_cursor_binding_test.v": "f339d227f0b6e05d489ef07e8cbe70ddfcc88695f1792f8fba48b9f71ed60085",
+    "indexeddb/cursor_async_test.v": "a16abd30d09310abbebdc1f9edb6cf9b3326ad1062f4df9d55e704c1e612394a",
+    "indexeddb/index_cursor_test.v": "fd68d724b80a52dc3c634001de11fdc5075aac0bf967e1b23f56babed678cef4",
+    "indexeddb/object_store_async_test.v": "4a80d1b3277b8c629d7afc8d3ebbb88c5f78ec643c7ab42013b0568b98a32620",
+    "indexeddb/index_schema_metadata_test.v": "d559f87683b626f451c9f96f99ca5116ad1bbca763b41649eb30a142bc06d149",
+    "browserjs/indexed_db_binding.v": "a44551e1f12dbc221a4774163add6ddc44ea48c391d57aed8d006a3f5f57cb02",
+    "browserjs/indexed_db_binding_jsc.c.v": "3a9810f564caf591c40778d17c0af09c60af735f019e8d22fdb9e651a6c727b7",
+    "indexeddb/cursor_async.v": "39d0e60e1a62de7dbc36a616e6f6cd6ca2ffbdebfb8e05c9db1fd9d21f46aa7f",
+    "indexeddb/cursor.v": "9684a7b2b6a15df2a1255f4e63b50e8fcc7342a7819c25fe8205c6337a63848b",
+    "indexeddb/object_store.v": "000866f706fd20cfcd600ee99e92ab460a3324a9121fb420417607378a0bbe36",
+    "indexeddb/request.v": "385cf5ad502f7cf98ffb0e551e693f40a62821d325a42f815952f11a8466bf79",
+    "indexeddb/request_list.v": "7bc754b8dc5c8d0156e93dc8183435b3a20e3d0f39ed32100a5b5e5a5c5be16c",
+    "browserjs/zz_first100_cursors_wpt_20261108_test.v": "fe04a05e034e8c43076a4daf1a55301e4c483314b06425a7b409b92068cbe5a3"
+  },
+  "model_suite_inputs": {
+    "indexeddb/binding_algorithms_test.v": "b2d8956cb252f4e5ce565f72f82630f3e737a9dddbb4a270100f69d709d8850d",
+    "indexeddb/connection_queue_test.v": "99912ad61a3b12ea9625426634b52d6c6e86bb7626b34c206a41b52c6ad15afc",
+    "indexeddb/cursor_async_test.v": "a16abd30d09310abbebdc1f9edb6cf9b3326ad1062f4df9d55e704c1e612394a",
+    "indexeddb/database_enumeration_test.v": "2a2d5cc67d292efdfa73d7580ef82d2c806341a7e29489107a4cf08b387926aa",
+    "indexeddb/factory_database_test.v": "c7e1b651f036672a2617f413c51f1cca9c32602489ec720c9d7cea1630ad3974",
+    "indexeddb/global_context_test.v": "47b34c6ad67da1d6ab42a7c0456bc32e75ff2f6bba73bf66877aff6b973dacfa",
+    "indexeddb/index_cursor_test.v": "fd68d724b80a52dc3c634001de11fdc5075aac0bf967e1b23f56babed678cef4",
+    "indexeddb/index_schema_metadata_test.v": "d559f87683b626f451c9f96f99ca5116ad1bbca763b41649eb30a142bc06d149",
+    "indexeddb/inspection_test.v": "776e57db707de2a58ef7bde2c2133d84208bfe1b1b9ccc9d739ec6e404c659a8",
+    "indexeddb/key_range_test.v": "b1d82ef1c485a56f9e45f6b40c29e36cf6b0a787711417a4c1a219feeaabfbba",
+    "indexeddb/object_store_async_test.v": "4a80d1b3277b8c629d7afc8d3ebbb88c5f78ec643c7ab42013b0568b98a32620",
+    "indexeddb/object_store_test.v": "d89feaeba5ae28947e8c69e8eaae60fc75e31fdb13fa19f2058d2d9b7bb50a91",
+    "indexeddb/record_range_test.v": "e61817ebf9eca78368d7909e6d8e5f0d9359723e7923bab1e79ea21e65c58993",
+    "indexeddb/transaction_changes_test.v": "ee6526854920dcc3d4904d4596ad09e802adacebff2fea5f3c2803ab3b5c92da",
+    "indexeddb/transaction_completion_test.v": "3e9d92114cda6e6d189a257f79d839b3bdbef3cf8221951b4b0ea08ed6063d6a",
+    "indexeddb/upstream_entry_points_test.v": "351bf177e352cdb7e66c638f1dc88d2837f2fb99d4344fe4274ab8542d7e3f34"
+  },
+  "unmodified_upstream_scripts": {
+    "IndexedDB/idbcursor-key.any.js": "9993e4c3833e86b59fdf2576f36f3d7ea7e99a97f8cd8498895068b8556bb383",
+    "IndexedDB/idbcursor-primarykey.any.js": "46a0b85227363c13362722b5d947edb1f363f0fb867c4ce9cdaf579623137d54",
+    "IndexedDB/idbindex_keyPath.any.js": "897a7b8ce58ff161e34f69620643d4a93ba0a5a01af34106bad90d074441edd6",
+    "IndexedDB/idbobjectstore_keyPath.any.js": "068f0f0a7cb14ab847b5131cb1f2f2c2bbd84c85d58ec28d715e9eebc9f379f1",
+    "IndexedDB/keypath.any.js": "1c3ac8b41e6c8146a510e2a99a9f04ffb72f572ba5361a56c8c54c9f1337e650",
+    "IndexedDB/keypath_maxsize.any.js": "4fc914073795ec879ab551c60f7f23d6ff3065e38bf3b0f73ae5655d740c26e3",
+    "IndexedDB/resources/support.js": "3bbc4fa7b1a4e2354a05322b4fd4e3ac1afad6ad065af746d9fc377ee28ef1a7",
+    "resources/testharness.js": "b74d714183ab224df15612a6af6b65eb1ffc0d8f5501db34379308034d668622"
+  },
+  "checks": {
+    "binding_functions": 13,
+    "binding_exit": 0,
+    "focused_model_functions": 16,
+    "model_suite_files": 16,
+    "model_suite_functions": 59,
+    "model_suite_exit": 0,
+    "allocation": "default",
+    "unique_regression_functions": 72,
+    "focused_model_is_subset_of_model_suite": true
+  },
+  "upstream_native_shell": {
+    "files": 6,
+    "fully_passing_files": 5,
+    "subtests": 33,
+    "passing_subtests": 32,
+    "baseline_passing_subtests": 0,
+    "previous_key_path_credit": 1,
+    "additional_passing_names_since_key_path_fix": 31,
+    "cases": [
+      {
+        "id": "IndexedDB/idbcursor-key.any",
+        "subtests": 3,
+        "passed": 3,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "IDBCursor.key",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBCursor.key 1",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBCursor.key 2",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "IndexedDB/idbcursor-primarykey.any",
+        "subtests": 3,
+        "passed": 3,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "IDBCursor.primaryKey",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBCursor.primaryKey 1",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBCursor.primaryKey 2",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "IndexedDB/idbindex_keyPath.any",
+        "subtests": 3,
+        "passed": 3,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "IDBIndex's keyPath attribute returns the same object.",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBIndex's keyPath array with a single value",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "IDBIndex's keyPath array with multiple values",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "IndexedDB/idbobjectstore_keyPath.any",
+        "subtests": 1,
+        "passed": 1,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "IDBObjectStore's keyPath attribute returns the same object.",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      },
+      {
+        "id": "IndexedDB/keypath.any",
+        "subtests": 20,
+        "passed": 19,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "undefined - my.key",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - my.køi",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - my.key_ya",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - public.key$ya",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - true.$",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - my._",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - delete.a7",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - p.p.p.p.p.p.p.p.p.p.p.p.p.p",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - str.length",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - arr.length",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - length",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - '' uses value as key",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - [''] uses value as [key]",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - ['x', 'y']",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - [['x'], 'y'] (stringifies)",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - ['x', {toString->'y'}] (stringifies)",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - name,type",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - name,type.name",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - list with 1 field",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "Key path conversion: a self-referential array exhausts the stack",
+              "status": 1,
+              "message": "assert_throws_js: Converting a self-referential key path array should exhaust the stack. function \"function() {\n        db.createObjectStore('store', {keyPath: loop_array});\n      }\" did not throw"
+            }
+          ]
+        }
+      },
+      {
+        "id": "IndexedDB/keypath_maxsize.any",
+        "subtests": 3,
+        "passed": 3,
+        "baseline_passed": 0,
+        "subtest_names_match_baseline": true,
+        "result": {
+          "harness": 0,
+          "tests": [
+            {
+              "name": "undefined - ~260 chars",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - ~530 chars",
+              "status": 0,
+              "message": null
+            },
+            {
+              "name": "undefined - ~1050 chars",
+              "status": 0,
+              "message": null
+            }
+          ]
+        }
+      }
+    ],
+    "scope": "Stock ShellTestEnvironment; real Vox native IndexedDB and URL bindings; explicit database task and microtask delivery; META_TITLE populated from the unchanged script metadata",
+    "limitations": [
+      "No windowed HTML, navigation, renderer or worker credit",
+      "Default allocation only",
+      "The 26/100 published-browser baseline remains historical; no new whole-cohort pass rate"
+    ]
+  },
+  "check_receipts": {
+    "first100-cursors-browser-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/browser",
+        "browserjs/zz_first100_cursors_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2649538560,
+      "elapsed_seconds": 36.723794291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-browser-final-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/browser-final",
+        "browserjs/zz_first100_cursors_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4983160832,
+      "elapsed_seconds": 50.588772082999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-browser-final-runtime-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/browser-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.46552516699999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-browser-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/browser-r2",
+        "browserjs/zz_first100_cursors_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4995465216,
+      "elapsed_seconds": 64.34115025,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-browser-runtime-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/browser-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 6946816,
+      "elapsed_seconds": 0.75555525,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/model",
+        "indexeddb/zz_first100_cursors_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 550993920,
+      "elapsed_seconds": 5.764003292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-all-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/model-all",
+        "indexeddb/zz_first100_cursors_all_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 540557312,
+      "elapsed_seconds": 4.571554542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-all-runtime-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/model-all"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.4065375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-final-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/model-final",
+        "indexeddb/zz_first100_cursors_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 515768320,
+      "elapsed_seconds": 3.849763791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-final-runtime-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/model-final"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.469471667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-model-runtime-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.778658584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/wpt",
+        "browserjs/zz_first100_cursors_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4999413760,
+      "elapsed_seconds": 64.334712,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/wpt-final",
+        "browserjs/zz_first100_cursors_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5551898624,
+      "elapsed_seconds": 38.368043875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-idbcursor-key-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.5404456249999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-idbcursor-primarykey-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25661025,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-idbindex_keyPath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24787058299999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-idbobjectstore_keyPath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24360816700000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-keypath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24228866599999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-keypath_maxsize-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt-final-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24055679100000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-final-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-cursors-20261108/wpt-final-r2",
+        "browserjs/zz_first100_cursors_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4990746624,
+      "elapsed_seconds": 61.999041583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-idbcursor-key-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.764444667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-idbcursor-primarykey-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 311296,
+      "elapsed_seconds": 0.22110783299999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-idbindex_keyPath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22134716699999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-idbobjectstore_keyPath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22211508399999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-keypath-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.223074792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-cursors-wpt-keypath_maxsize-any-20261108.json": {
+      "command": [
+        "Build/first100-cursors-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.226422958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "binaries": {
+    "browser-final": "2fd51734fd9756192c065f12346728fba42bf24287ee29f0d95a1d521b127471",
+    "model-final": "9e5ac771c3c11d11c68845d56cb7e50d214217cf6f83679c52495b898da0f7a0",
+    "model-all": "78c1f779ec79767d8218d92d9339139274748d6528e2eaf25b19dd067b1a3d46",
+    "wpt-final-r2": "06fe41974c9eb83e0ba9790bdd99e1fa789df8dc79c6a3ed676f481e38fb233e"
+  },
+  "development_failures": [
+    "The first binding compile rejected an immutable closure capture; made that entry capture mutable before successful focused checks.",
+    "The metadata-aware upstream probe initially imported the removed V json module; switched its scratch code to json2 before the successful compile.",
+    "keypath.any retains its failing RangeError assertion for a self-referential array. JavaScriptCore accepts this conversion; the upstream script and assertions are unchanged."
+  ],
+  "shared_checkout": "Other sessions edited unrelated paths during compilation. The recorded focused source inputs and pinned upstream scripts were verified unchanged; this is not a whole-checkout seal.",
+  "published_browser": {
+    "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "receipt_executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "build_guard_busy": true,
+    "contains_fix": false,
+    "production_validation": "pending"
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-first100-cursors.tar.gz",
+    "sha256": "5b0ba509cbd3f98abb9d59474f6de971bcb8e00f79263f5d5be16a4552cfa86a",
+    "members": 106
+  }
+}

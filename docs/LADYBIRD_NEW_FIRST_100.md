@@ -125,6 +125,42 @@ and the shared build guard is busy. The
 records source hashes, results, bounded-check receipts, and the local evidence
 archive. The full first-100 result remains pending.
 
+## IndexedDB cursor continuation
+
+Commit `723954c1a` exposes native object-store and index cursors, including key-only
+cursors, `continue()`, `advance()`, and `continuePrimaryKey()`. Iterations reuse
+their request through the transaction's ordered queue. JavaScript key and value
+objects keep their identity during an iteration and refresh for the next result.
+Index lookup retains the same wrapper across renames and distinguishes recreated
+indexes. Source and transaction errors precede author key conversion.
+
+All 13 binding checks and all 59 IndexedDB model test functions pass. The final
+six-file upstream source check passes **32 of 33 subtests**, with unchanged script
+hashes and exact subtest-name multisets matching the original browser baseline:
+
+| Case | Passing subtests |
+|---|---:|
+| `idbcursor-key.any` | 3/3 |
+| `idbcursor-primarykey.any` | 3/3 |
+| `idbindex_keyPath.any` | 3/3 |
+| `idbobjectstore_keyPath.any` | 1/1 |
+| `keypath.any` | 19/20 |
+| `keypath_maxsize.any` | 3/3 |
+
+The original baseline passed none of those 33 names. One passing name already
+belongs to the preceding keyPath fix, leaving 31 additional passing names in
+this continuation. The remaining test expects a `RangeError` for conversion of a
+self-referential array; JavaScriptCore accepts that conversion. Its assertion
+remains unchanged and failing.
+
+These checks use native bindings with the stock shell harness and default
+allocation. They provide no windowed or worker acceptance credit. The shared
+production build guard remains busy and the published executable still predates
+the fixes. The full first-100 batch is not green. The
+[cursor manifest](performance/ladybird-first100-cursors-20261108.json)
+retains all results, input hashes, bounded-check receipts, development failures,
+and the local evidence archive identity.
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh
