@@ -567,18 +567,22 @@ fn test_pattern_canvas_draws_match_skia() {
 // legacy, pipeline and sprite image draws and a clear must match Skia's
 // drawImageRect() and clear().
 fn test_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(false, false)
+	check_bitmap_commands_match_skia(false, false, false)
 }
 
 fn test_color_filtered_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(true, false)
+	check_bitmap_commands_match_skia(true, false, false)
 }
 
 fn test_spatially_filtered_source_image_matches_skia() {
-	check_bitmap_commands_match_skia(false, true)
+	check_bitmap_commands_match_skia(false, true, false)
 }
 
-fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
+fn test_fractional_source_image_filter_matches_skia() {
+	check_bitmap_commands_match_skia(false, true, true)
+}
+
+fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool) {
 	mut pixels := []u8{len: 6 * 4 * 4}
 	for i in 0 .. 24 {
 		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
@@ -607,7 +611,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 		image.set_bitmap(bitmap)
 		sources << image
 	}
-	destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	if fractional { destinations[2] = [f64(140.25), 70.5, 28, 24] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
@@ -653,10 +658,12 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 				pattern_alpha:  int(source.alpha_type)
 			}
 		}
+		source_rect := if fractional && i == 2 { [f32(.25), .5, 5.25, 3.25]! }
+			else { [f32(0), 0, 6, 4]! }
 		command := skia.Command{
 			operation:    if i < 3 { 2 } else { 1 }
 			destination:  destination
-			source:       [f32(0), 0, 6, 4]!
+			source:       source_rect
 			smoothing:    state.image_smoothing_enabled
 			style:        style
 			transform:    canvas_skia_transform(state.transform)
@@ -679,7 +686,16 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 					premultiplied: style.pattern_alpha == 2
 				}, command.source, command.destination, command.smoothing, command.global_alpha,
 				cpuraster.canvas_blend_mode(command.composite) or { panic('blend mode') }, [], filter, false)
-			assert direct == target
+			direct_matches := direct == target
+			assert direct_matches, 'direct bitmap command ${i} differs from Skia'
+		}
+		if fractional && i == 2 {
+			// The HTML painter currently rounds source rectangles before its
+			// service call. Preserve that policy while checking the direct
+			// fractional service result separately above.
+			target = bitmap.data.clone()
+			assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+				skia.Command{...command, source: command.source.map(f32(math.round(it)))})
 		}
 		expected = target.clone()
 		expected_alpha_type = 2
@@ -689,8 +705,10 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 				image:              ImageBitmapCanvasSource{
 					value: sources[i]
 				}
-				source_width:       6
-				source_height:      4
+				source_x:           source_rect[0]
+				source_y:           source_rect[1]
+				source_width:       source_rect[2]
+				source_height:      source_rect[3]
 				destination_x:      d[0]
 				destination_y:      d[1]
 				destination_width:  d[2]
@@ -700,7 +718,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 			context.clear_rect(40, 20, 50, 30)
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'bitmap command ${i} differs from Skia'
+		context_matches := after.data == expected
+		assert context_matches, 'bitmap command ${i} differs from Skia'
 	}
 	assert expected.any(it != 0 && it != 255)
 }

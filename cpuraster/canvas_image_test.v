@@ -441,6 +441,38 @@ fn test_image_shadow_offsets_keep_the_original_layer_origin() {
 	}
 }
 
+fn test_fractional_source_image_filters_rasterize_before_filtering() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+	box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+		offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+	sequences := [[CanvasFilterStep{kind: .blur, sigma: 1.2}], [contrast, gaussian, opacity, box],
+		[shadow], [CanvasFilterStep{...shadow, sigma: .01, offset_x: -.75, offset_y: .5}],
+		[gaussian, contrast, box], [contrast, opacity]]
+	hashes := $if linux {
+		['068ae7ede00bb8bd', '1edd441e708f831d', 'd8e5098c0b88d10e',
+		 '007ae7e038db824f', '67db8f58ce335193', '7e93e71b503d462d']
+	} $else {
+		['6285cc5ff30cb0e8', '1edd441e708f831d', 'd8e5098c0b88d10e',
+		 '5adddb55e2daa5f2', '87142d4b2b61a427', '7e93e71b503d462d']
+	}
+	for i, steps in sequences {
+		mut pixels := image_test_background()
+		source := if i in [0, 3] { [f32(.25), .5, 6.25, 5]! } else { [f32(1.25), 1.5, 4.5, 3.75]! }
+		destination := if i in [0, 3] { [f32(10.25), 12.5, 28, 18]! } else { [f32(4.5), 6.25, 22, 16]! }
+		transform := if i == 0 { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else if i == 4 { [f32(-1.1), 0, 0, .8, 42, 3]! } else { image_test_identity }
+		mode := match i { 1 { BlendMode.overlay } 2 { .multiply } 3 { .plus_lighter } else { .src_in } }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i !in [1, 2, 5], i in [1, 5]), source, destination,
+			true, 1, mode, image_test_clips(i in [0, 2, 3, 5]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'fractional image fixture ${i}'
+	}
+}
+
 fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
 	mut pixels := []u8{len: 65 * 44 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,

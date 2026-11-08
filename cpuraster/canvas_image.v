@@ -327,17 +327,17 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() { return false }
 	mut plan := plan_canvas_filter(filter_in)
 	if plan.declined { return false }
-	if bitmap_filter {
+	if bitmap_filter || !source[..].all(int_cast_preserves(it)) {
 		if color := plan.color {
-			// An explicit bitmap-space saveLayer keeps a color-only image
-			// filter on its restore. Rasterize the source into N32 first.
+			// Bitmap-space draws and MakeFromImage's fractional subsets keep
+			// color filters on the rasterized source's restore.
 			plan = FilterPlan{layer: CanvasFilterStep{kind: .blur, post_color: color.filters}}
 		}
 	}
 	rgba := CanvasBitmap{...image, native_n32: canvas_rgba_uses_legacy()}
 	if step := plan.layer {
 		if !bitmap_filter {
-			return draw_aligned_image_filter(mut pixels, width, height, pitch, alpha_type,
+			return draw_source_image_filter(mut pixels, width, height, pitch, alpha_type,
 				transform, rgba, source, destination, smoothing, global_alpha, mode, clips, step)
 		}
 		geometry := CanvasImageFilterGeometry{source, destination, transform}
@@ -359,6 +359,11 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 }
 
 fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool, legacy bool) bool {
+	return draw_canvas_image_sampled_aa(mut pixels, width, height, pitch, alpha_type, transform,
+		image, source, destination, smoothing, global_alpha, mode, clips, mipmap, legacy, false)
+}
+
+fn draw_canvas_image_sampled_aa(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool, legacy bool, antialias bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() {
 		return false
 	}
@@ -467,7 +472,8 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 			if rect_is_empty(dev) {
 				return true
 			}
-			fill_irect(round_rect(dev), &rc, mut blitter)
+			if antialias { anti_fill_rect(dev, &rc, mut blitter) }
+			else { fill_irect(round_rect(dev), &rc, mut blitter) }
 			return true
 		}
 	}
@@ -486,6 +492,7 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 	}
 	mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, paint_alpha, mode,
 		device_bounds, legacy) or { return true }
+	if antialias { return anti_fill_path_clip(device, false, &rc, mut blitter) }
 	return fill_path_clip(device, false, &rc, mut blitter)
 }
 

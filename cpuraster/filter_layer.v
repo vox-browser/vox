@@ -20,6 +20,7 @@ pub enum CanvasFilterKind {
 pub struct CanvasFilterStep {
 	blur_stages []BlurFilterStage
 	source_image bool
+	source_padding bool
 	source_color_info FilterImageInfo
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
@@ -188,7 +189,8 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, step CanvasFilterStep, mode BlendMode, content LayerContent, tint ?u32) bool {
 	if step.blur_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,
-			transform, clips, content_bounds, step.blur_stages, step.post_color, step.source_color_info, mode, content)
+			transform, clips, content_bounds, step.blur_stages, step.post_color, step.source_color_info,
+			step.source_image, step.source_padding, mode, content)
 	}
 	// An invalid DropShadow blur becomes a null child, leaving the tint,
 	// offset and merge on SourceGraphic. A lone invalid blur is discarded
@@ -319,15 +321,20 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		layer_info = FilterImageInfo{}
 	}
 	saved := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
-	source := FilterResult{...saved, transparent_boundary: !step.source_image,
+	mut source := FilterResult{...saved, transparent_boundary: !step.source_image || step.source_padding,
 		color_info: layer_info}
-	desired := IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top}
+	base_x := if step.source_image { 0 } else { padded.left }
+	base_y := if step.source_image { 0 } else { padded.top }
+	if step.source_image { source = source.translated(padded.left, padded.top) }
+	desired := if step.source_image { output } else {
+		IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top} }
 	if drop {
 		// Preserve the source color filter for the foreground merge. A real
 		// shadow blur resolves it, while an identity blur keeps it deferred
 		// immediately before the SrcIn tint.
 		foreground_saved := new_filter_result(SpecialImage{original_layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
 		mut foreground := FilterResult{...foreground_saved, color_info: step.source_color_info}
+		if step.source_image { foreground = foreground.translated(padded.left, padded.top) }
 		// A rejected blur node has a null child, so this shadow samples
 		// SourceGraphic rather than the preceding color-filter result.
 		shadow_matrices := if step.sigma >= 0 && is_finite_f32(step.sigma)
@@ -339,22 +346,13 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		local_offset := if step.source_image { mapped_offset } else {
 			sk_concat(local, post_translate(local_inverse, step.offset_x, step.offset_y)) }
 		shadow_desired := skif_outset(map_filter_bounds(desired, affine_invert(local_offset) or { return true }), 1, 1)
-		mut shadow := blur_filter_result(source, shadow_desired, sx, sy) or { return true }
-		mut merge_desired := desired
-		if step.source_image {
-			// Source-image filters evaluate in the original layer coordinates.
-			// Rebasing fractional offsets into a padded source-device origin
-			// changes their float rounding at sampling boundaries.
-			foreground = foreground.translated(padded.left, padded.top)
-			shadow = shadow.translated(padded.left, padded.top)
-			merge_desired = output
-		}
+		shadow := blur_filter_result(source, shadow_desired, sx, sy) or { return true }
 		mut merged_bounds := if shadow.has_image {
 			union_filter_bounds(foreground.layer_bounds, map_filter_bounds(shadow.layer_bounds, local_offset))
 		} else {
 			foreground.layer_bounds
 		}
-		merged_bounds = merged_bounds.intersect(merge_desired) or {
+		merged_bounds = merged_bounds.intersect(desired) or {
 			draw_empty_filter_result(mut pixels, pitch, &rc, mode)
 			return true
 		}
@@ -374,8 +372,6 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		}
 		draw_color_filtered_bitmap(mut merged, mw * 4, foreground.color_info.bitmap(foreground.image.bitmap()), foreground.origin_x - merge_padded.left,
 			foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color)
-		base_x := if step.source_image { 0 } else { padded.left }
-		base_y := if step.source_image { 0 } else { padded.top }
 		draw_color_filtered_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, base_x + merge_padded.left,
 			base_y + merge_padded.top, &rc, mode, restore_matrices)
 		return true
@@ -386,15 +382,15 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		return true
 	}
 	if color := tint {
-		draw_tinted_filter_result(mut pixels, pitch, result, SkAffine{}, -padded.left,
-			-padded.top, &rc, color)
+		draw_tinted_filter_result(mut pixels, pitch, result, SkAffine{}, -base_x,
+			-base_y, &rc, color)
 		return true
 	}
 	// FilterResult::draw(): a pixel-aligned image is a sprite at the layer
 	// origin, drawn with the blender at full alpha through the clip.
 	image := result.image.bitmap()
-	ix := padded.left + result.origin_x
-	iy := padded.top + result.origin_y
+	ix := base_x + result.origin_x
+	iy := base_y + result.origin_y
 	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(image), ix, iy, &rc, mode, restore_matrices)
 	return true
 }

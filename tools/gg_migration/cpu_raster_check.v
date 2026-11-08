@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2458,7 +2458,8 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
-	converted := os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
+	converted := fractional || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
@@ -2548,6 +2549,21 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 					2 { random_color_blur_chain() }
 					else { random_color_shadow_filters() }
 				} }
+			}
+		}
+		if fractional {
+			l := f32(rand.f64() * f64(image.width) * .4)
+			t := f32(rand.f64() * f64(image.height) * .4)
+			r := f32(image.width) - f32(rand.f64() * f64(image.width) * .4)
+			b := f32(image.height) - f32(rand.f64() * f64(image.height) * .4)
+			sx := f32(rand.f64() * 2 + .25) * if i % 3 == 0 { f32(-1) } else { f32(1) }
+			sy := f32(rand.f64() * 2 + .25) * if i % 4 == 0 { f32(-1) } else { f32(1) }
+			c = BitmapCase{...c,
+				source: [l, t, r - l, b - t]!
+				destination: [f32(rand.f64() * f64(width) * .6 - 4), f32(rand.f64() * f64(height) * .6 - 4),
+					f32(rand.f64() * f64(width) + 1), f32(rand.f64() * f64(height) + 1)]!
+				transform: [sx, 0, 0, sy, if sx < 0 { f32(width) * .8 } else { f32(3.25) },
+					if sy < 0 { f32(height) * .8 } else { f32(2.75) }]!
 			}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
