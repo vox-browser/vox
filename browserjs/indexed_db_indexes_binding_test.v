@@ -47,6 +47,26 @@ fn test_index_get_and_get_key_are_ordered_native_requests() {
 	assert runtime.evaluate_host('checks.length===8&&checks.every(Boolean)')! == 'true', runtime.evaluate_host('JSON.stringify(checks)')!
 }
 
+fn test_key_path_string_conversion_keeps_recursive_array_and_author_conversion_semantics() {
+	mut runtime, mut document := indexed_db_index_fixture()!
+	defer { runtime.close(); document.finalize() }
+	runtime.evaluate_host(r'
+ globalThis.checks=[];const opening=indexedDB.open("recursive-path",1);
+ opening.onupgradeneeded=()=>{
+  const db=opening.result,loop=[];loop.push(loop);
+  try{db.createObjectStore("cycle",{keyPath:loop});checks.push(false)}catch(e){checks.push(e instanceof RangeError)}
+  const store=db.createObjectStore("items"),nested=store.createIndex("nested",[[["id"]]]);checks.push(nested.keyPath[0]==="id");
+  const order=[],plain={get [Symbol.toPrimitive](){order.push("get");return function(hint){order.push(hint);return "field"}}};
+  checks.push(store.createIndex("exotic",[plain]).keyPath[0]==="field",order.join() === "get,string");
+  const fallback={toString(){order.push("toString");return {}},valueOf(){order.push("valueOf");return "fallback"}};
+  checks.push(store.createIndex("fallback",[fallback]).keyPath[0]==="fallback",order.slice(-2).join()==="toString,valueOf");
+  const child=["ignored"];child.join=function(){checks.push(this===child);return "custom"};checks.push(store.createIndex("custom",[child]).keyPath[0]==="custom");
+ };true
+ ')!
+	deliver_index_schema_tasks()
+	assert runtime.evaluate_host('checks.length===8&&checks.every(Boolean)')! == 'true', runtime.evaluate_host('JSON.stringify(checks)')!
+}
+
 fn test_index_creation_uses_native_schema_metadata_and_live_names() {
 	$if !darwin && !linux { return }
 	mut runtime, mut document := indexed_db_index_fixture()!

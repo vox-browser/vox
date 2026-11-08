@@ -74,7 +74,29 @@ fn indexed_db_binding_factory() string {
  // Convert the key-path union in one pass: read @@iterator once, convert each
  // member before advancing, and let for-of close the iterator on failure.
  const string=global.String,iterator=global.Symbol.iterator,apply=global.Reflect.apply;
- function domString(value){if(typeof value==="symbol")throw new T("Cannot convert a Symbol to DOMString");return string(value)}
+ const arrayString=Array.prototype.toString,arrayJoin=Array.prototype.join,objectString=Object.prototype.toString,primitiveKey=Symbol.toPrimitive,floor=Math.floor,min=Math.min;
+ const primitive=value=>value===null||(typeof value!=="object"&&typeof value!=="function");
+ // Follow the source ToString/Array.join recursion for key-path members.
+ // The native JSC join suppresses recursive visits, which would silently turn
+ // a self-referential key path member into the empty string instead.
+ function joinString(value){
+  const number=+value.length,length=number>0?min(floor(number),9007199254740991):0;
+  let output="";for(let i=0;i<length;i++){if(i)output+=",";const item=value[i];if(item!==null&&item!==undefined)output+=domString(item)}return output;
+ }
+ function arrayToString(value){const join=value.join;return join===arrayJoin?joinString(value):typeof join==="function"?apply(join,value,[]):apply(objectString,value,[])}
+ function domString(value){
+  if(primitive(value)){if(typeof value==="symbol")throw new T("Cannot convert a Symbol to DOMString");return string(value)}
+  const exotic=value[primitiveKey];
+  if(exotic!==null&&exotic!==undefined){
+   if(typeof exotic!=="function")throw new T("Expected a callable @@toPrimitive");
+   const result=apply(exotic,value,["string"]);if(!primitive(result))throw new T("Cannot convert object to primitive");return domString(result);
+  }
+  for(const name of ["toString","valueOf"]){const method=value[name];if(typeof method==="function"){
+   const result=method===arrayString?arrayToString(value):method===arrayJoin?joinString(value):apply(method,value,[]);
+   if(primitive(result))return domString(result);
+  }}
+  throw new T("Cannot convert object to primitive");
+ }
  function keyPath(value){
   if(value!==null&&(typeof value==="object"||typeof value==="function")){
    const method=value[iterator];
