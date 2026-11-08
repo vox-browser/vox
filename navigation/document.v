@@ -79,10 +79,19 @@ fn parse_browser_navigation_document_with_scripting(markup string, document_url 
 // which wins over a meta declaration.
 fn decode_browser_navigation_response(body string, content_type string) (string, string) {
 	mut workspace := platform.begin_thread_scratch('navigation text decoding')
-	transport_encoding := if mime := mimesniff.MimeType.parse(content_type) {
-		mime.parameters()['charset']
+	mut transport_encoding := if mime := mimesniff.MimeType.parse(content_type) {
+		if charset := mime.parameters()['charset'] { encoding.get_an_encoding(charset) } else { none }
 	} else {
 		none
+	}
+	if mime := mimesniff.MimeType.parse(content_type) {
+		if mime.is_xml() {
+			// XML defaults to UTF-8 and has its own declaration. HTML meta
+			// charset sniffing must not reinterpret an XML response.
+			if transport_encoding == none {
+				transport_encoding = browser_xml_declaration_encoding(body) or { 'UTF-8' }
+			}
+		}
 	}
 	encoding_name := html.run_html_encoding_sniffing_algorithm(body.bytes(), transport_encoding)
 	decoder := encoding.TextDecoder.construct(encoding_name, encoding.TextDecoderOptions{}) or {
@@ -117,7 +126,7 @@ fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.
 	workspace.leave()
 	document := parse_browser_navigation_document_input_with_response(markup, encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
-		loaded.javascript_url_source, loaded.response_headers, loaded.response_status)
+		loaded.javascript_url_source, loaded.response_headers, loaded.response_status, loaded.content_type)
 	workspace.finish()
 	return document
 }
@@ -137,26 +146,30 @@ fn prepare_loaded_browser_navigation_document(loaded LoadedPage, document_url do
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
 	document := create_browser_navigation_document_input_with_response(encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
-		loaded.javascript_url_source, loaded.response_headers, loaded.response_status)
+		loaded.javascript_url_source, loaded.response_headers, loaded.response_status, loaded.content_type)
 	return PreparedBrowserNavigationDocument{ document: document, markup: markup }
 }
 
 fn parse_prepared_browser_navigation_document(input PreparedBrowserNavigationDocument) {
 	mut allocations := input.document.enter_native_storage()
 	defer { allocations.finish() }
-	html.parse_html_from_a_string(input.document, input.markup)
+	if input.document.is_xml_document() {
+		parse_browser_navigation_xml_document(input.document, input.markup)
+	} else {
+		html.parse_html_from_a_string(input.document, input.markup)
+	}
 }
 
 fn parse_browser_navigation_document_input_with_source(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
 	return parse_browser_navigation_document_input_with_response(markup, document_encoding, document_url,
 		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
-		[]adblock.ResponseHeader{}, 0)
+		[]adblock.ResponseHeader{}, 0, 'text/html')
 }
 
-fn parse_browser_navigation_document_input_with_response(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16) &dom.Document {
+fn parse_browser_navigation_document_input_with_response(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16, content_type string) &dom.Document {
 	document := create_browser_navigation_document_input_with_response(document_encoding, document_url,
 		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
-		response_headers, response_status)
+		response_headers, response_status, content_type)
 	parse_prepared_browser_navigation_document(PreparedBrowserNavigationDocument{
 		document: document
 		markup: markup
@@ -167,10 +180,10 @@ fn parse_browser_navigation_document_input_with_response(markup string, document
 fn create_browser_navigation_document_input_with_source(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
 	return create_browser_navigation_document_input_with_response(document_encoding, document_url,
 		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
-		[]adblock.ResponseHeader{}, 0)
+		[]adblock.ResponseHeader{}, 0, 'text/html')
 }
 
-fn create_browser_navigation_document_input_with_response(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16) &dom.Document {
+fn create_browser_navigation_document_input_with_response(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16, content_type string) &dom.Document {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('html_parse', phase_mark)
@@ -216,8 +229,13 @@ fn create_browser_navigation_document_input_with_response(document_encoding ?str
 	// This constructor bypasses create_and_initialize(), which normally starts
 	// navigation readiness. Parser-time scripts must observe the loading state.
 	document.update_readiness(.loading)
-	document.set_document_type(.html)
-	document.set_allow_declarative_shadow_roots(true)
+	response_mime := mimesniff.MimeType.parse(content_type)
+	is_xml := if mime := response_mime { mime.is_xml() } else { false }
+	document.set_document_type(if is_xml { .xml } else { .html })
+	if is_xml {
+		document.set_content_type((response_mime or { panic('missing XML MIME') }).essence())
+	}
+	document.set_allow_declarative_shadow_roots(!is_xml)
 	// This compact embedder creates the active navigation document directly,
 	// rather than committing it through session-history traversal. Grant the
 	// source document's script readiness before parser-inserted import maps run.
