@@ -1381,3 +1381,31 @@ regressions pass in default and production builds on macOS and Linux. Another
 2,000 macOS and 10,000 Linux mipmap-level comparisons pass. Production sampling
 arithmetic is unchanged; comments explain the intentional fallback. See the
 [native review verification](gg-migration/mipmap-review-native-20261108.json).
+
+
+### Scaled source-image drop shadows (2026-11-08)
+
+Integer source images under real drop-shadow blurs now resample through the
+portable filter layer. The blur input resolves sampling, color conversion,
+paint alpha and preceding matrices together. The foreground retains those
+effects until the merge, avoiding an extra 8-bit quantization. Its original
+global mapping is preserved before translating the merge surface. The blur's
+sampling region is independent of the foreground extent. Reversed axes use
+sorted double-precision integer filter bounds.
+
+Eight new native fixtures cover scaled subsets, nearest sampling, P3 and
+unpremultiplied sources, paint alpha, color matrices, downscaling, reversed
+axes and fractional translation. All 86 image-filter reference fixtures pass
+on macOS and Linux. Of 20,000 random scaled-shadow attempts, 17,958 supported
+draws match exactly on each platform; production mode matches 17,975 at a
+second seed. The broader Linux filtered-image cohort matches 16,195 supported
+draws. Counts include no-ops and explicit declines.
+
+All 27 CPU raster files, the focused FastC image tests, Linux production image
+tests and HTML canvas integration pass. The FMA audit reports zero contracted
+operations (175 explicit). The filter still declines identity or invalid
+resampled shadow blurs, nearly integer shadow mappings and rounding-induced
+layer crops. General spatial chains, rotations, SVG graphs, boolean shadows,
+large-sigma rescaling, tiling and native/GPU bridges remain. The browser still
+links Skia; a Skia-free Linux browser compile/link/run is unverified. See the
+[scaled-source shadow receipt](gg-migration/scaled-source-image-shadows-20261108.json).
