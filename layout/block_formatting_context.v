@@ -949,13 +949,13 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	marker_styled := marker_node.as_node_with_style() or { return }
 	mut marker_state := state.get_mutable(marker_styled)
 	marker_state.set_containing_block_used_values(list_item_state)
+	symbol_marker := marker.chromium_symbol_marker()
 	marker_text := marker.text()
 	if text := marker_text {
 		if child := marker_node.first_child() {
 			if generated_text := child.as_text_node() {
 				mut mutable_text := unsafe { &TextNode(generated_text) }
-				mutable_text.source_text_ = text
-				mutable_text.invalidate_text_for_rendering()
+				set_resolved_marker_text_for_layout(mut mutable_text, text, symbol_marker)
 			}
 		}
 	}
@@ -967,7 +967,7 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	mut mutable_marker_box := unsafe { &Box(marker_box) }
 	mutable_marker_box.reset_cached_intrinsic_sizes()
 	marker_state.set_content_width(calculate_max_content_width(mut state, marker_box))
-	if marker.chromium_symbol_marker() {
+	if symbol_marker {
 		ascent := marker.chromium_symbol_ascent()
 		marker_state.set_content_width(CSSPixels.new((ascent * 2 / 3 + 1) / 2 + 2))
 	}
