@@ -1546,3 +1546,26 @@ records the exact commands, modes, source pins, dispatch and local evidence
 manifest. Its mode-0600 archive has 121 individually verified files, SHA256
 `2cdb576e636f506fc3cb6a5b28be4452368e3505564585245bc00b2ba024d4a9`.
 Completed job output and temporary drivers are removed after verification.
+
+
+## 2026-11-09: idle worker shutdown leaves the event loop
+
+Installed build `23d3335d...` contains the cooperative pacing and SVG cache
+lifetime fixes. Four fresh, alternating old-pacing/default live trials complete
+5,400 native inputs each, with exact unchanged fixed-pose references at offsets
+0 and 850. Default trials still have 29.467/47.307 ms maximum intervals and
+2.905%/4.024% budget misses; both have lower throughput than their preceding
+controls as host load varies. No isolated gain or stall-free acceptance is claimed.
+
+Separate live stack sampling catches synchronous idle ad-block worker shutdown
+delaying input 151. Commit `e01e931b3` transfers that helper to a bounded native
+reaper, lets new requests immediately start a replacement, accounts both owned
+helpers until reap, and preserves synchronous explicit/exit cleanup. Optimized,
+ASan/UBSan, ThreadSanitizer and 20 V tests in each normal/preallocated no-GC mode
+pass. A helper ignoring quit for two seconds hands off in 0–1 ms in focused
+tests; this is not browser FPS evidence.
+
+GPU waits and transfer allocation remain. Installed worker-fix validation is
+pending the shared production builder, whose attempts fail on missing generated-C
+include `vlib/os/execute_capture_legacy.h`. **The 60 Hz goal without stalls remains
+open.** See [the full evidence and limitations](performance/reddit-boots-idle-worker-20261109.md).
