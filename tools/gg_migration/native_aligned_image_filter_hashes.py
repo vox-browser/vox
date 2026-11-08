@@ -113,6 +113,29 @@ cases += [
          p3=True, premul=False, alpha=.7, filters=[contrast, blur(0), opacity, blur(.01), blur(2.5)],
          mode='src_in', clip=True),
 ]
+cases += [
+    dict(name='clipped-aligned-image-blur', source=[1, 1, 7, 6], destination=[4, 6, 7, 6],
+         p3=True, premul=False, filters=[blur(.8)], mode='multiply', clip=True),
+    dict(name='clipped-resampled-image-blur', source=[-2, -1, 10, 8], destination=[4.25, 6.5, 25, 18],
+         filters=[blur(.8)], mode='src_in', clip=True),
+    dict(name='clipped-fractional-source-shadow', source=[-.25, .5, 6.75, 6], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.65, filters=[contrast, shadow(2.5), opacity], mode='overlay'),
+    dict(name='clipped-aligned-source-shadow', source=[1, 1, 7, 6], destination=[4, 6, 7, 6],
+         p3=True, alpha=.7, filters=[contrast, shadow(2.5)], mode='src_in'),
+    dict(name='empty-source-image-clearing-blur', source=[9, 0, 7, 6],
+         filters=[blur(.8)], mode='src_in', clip=True),
+    dict(name='empty-source-image-shadow', source=[9, 0, 7, 6],
+         filters=[shadow(.01)], mode='multiply', clip=True),
+    dict(name='clipped-source-retains-original-quick-bounds', source=[0, 0, 100, 6],
+         destination=[-30, 5, 50, 18], filters=[blur(.8)], mode='src_in', clip=True),
+    dict(name='clipped-source-color-blur-chain', source=[-2, -1, 10, 8], destination=[4.25, 6.5, 25, 18],
+         p3=True, premul=False, alpha=.7, filters=[contrast, blur(0), opacity, blur(.8), blur(2.5)],
+         mode='src_in', clip=True),
+]
+cases.append(dict(name='near-integer-shadow-nearest-sampling', iw=2, ih=1, width=24, height=16,
+    pixels=[0, 0, 0, 255, 0, 0, 0, 1], pixel_pitch=8, p3=True, empty=True,
+    source=[0, 0, 2, 1], destination=[4, 6, 2, 1], alpha=127/255,
+    filters=[shadow(0, 10.00099, 4, 0xff000000)]))
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -147,6 +170,9 @@ expected += ['d97a0d9cd1df7e4d', '5e4ace20b1be0022', '0adcdf1ab86d62a6', '75e9b0
              '7947909c7171a8d1', 'e31ad4c4058362b9']
 expected += ['52a21c2bac4d4259', 'e9b398034919dbd9', 'a3b2ddfab2f04556', '8dbc9961e18faaa5',
              'a8230d732d6e0330', '0e53661aa81425c3', '7bb5c150a395bcf9', 'e126bfc9481ba799']
+expected += ['c6e6def672ae03e9', '1856d090e74e592c', 'da2274221967646b', '5fa502d06913b702',
+             '62b1b888837ad40a', 'f00be8e39ec6bc7f', '62b1b888837ad40a', '98407a88886b2f75']
+expected += ['d8f9957149e13dae']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
