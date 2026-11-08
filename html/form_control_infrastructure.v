@@ -88,6 +88,7 @@ pub fn normalize_line_breaks(value string) string {
 			output << '\r\n'.bytes()
 			position++
 		} else {
+			output << '\r\n'.bytes()
 			position += 2
 		}
 	}
