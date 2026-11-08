@@ -126,6 +126,10 @@ fn (mut host BlobHost) operate(name string, args []voidptr) !voidptr {
 			stream := host.settings.get_blob_stream_in_realm(blob, realm)
 			return host.runtime.javascript_readable_stream(stream)
 		}
+		'textStream' {
+			stream := host.settings.blob_text_stream_in_realm(blob, realm)!
+			return host.runtime.javascript_readable_stream(stream)
+		}
 		'text' { return host.promise(host.settings.blob_text_in_realm(blob, realm)) }
 		'arrayBuffer' { return host.promise(host.settings.blob_array_buffer_in_realm(blob, realm)) }
 		'bytes' { return host.promise(host.settings.blob_bytes_in_realm(blob, realm)) }
@@ -156,7 +160,7 @@ const blob_native_prototype_factory = r'(function(operate){
  for(const name of ["size","type"]){const getter=get({get [name](){return operate(name,this)}},name).get;define(prototype,name,{get:getter,enumerable:true,configurable:true})}
  const slice=({slice(){return operate("slice",this,arguments[0],arguments[1],arguments[2])}}).slice;
  define(prototype,"slice",{value:slice,writable:true,enumerable:true,configurable:true});
- for(const name of ["stream","text","arrayBuffer","bytes"]){const method=({[name](){return operate(name,this)}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
+ for(const name of ["stream","text","arrayBuffer","bytes","textStream"]){const method=({[name](){return operate(name,this)}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
  define(prototype,Symbol.toStringTag,{value:"Blob",configurable:true});
  return prototype;
 })'
