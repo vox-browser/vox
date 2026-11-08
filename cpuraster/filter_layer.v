@@ -21,6 +21,7 @@ pub struct CanvasFilterStep {
 	layer_stages []LayerFilterStage
 	source_image bool
 	source_padding bool
+	source_per_request bool
 	source_color_info FilterImageInfo
 	source_draw_bounds ?Rect
 	source_foreground ?FilterImageView
@@ -199,7 +200,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	if step.layer_stages.any(it.kind == .drop_shadow) {
 		return draw_spatial_filter_chain(mut pixels, width, height, pitch, alpha_type,
 			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color,
-			step.source_color_info, step.source_image, step.source_padding, mode, content)
+			step.source_color_info, step.source_image, step.source_padding, step.source_per_request, mode, content)
 	}
 	if step.layer_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,

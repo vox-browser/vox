@@ -614,6 +614,10 @@ fn test_mixed_source_image_filter_chains_match_skia() {
  check_bitmap_commands_match_skia(false, true, true, .spatial_chain)
 }
 
+fn test_resampled_source_image_filter_chains_match_skia() {
+ check_bitmap_commands_match_skia(false, true, false, .resolved_chain)
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
@@ -624,6 +628,7 @@ enum CpuImageIdentityTestMode {
 	identity_shadow
 	resolved_shadow
 	spatial_chain
+	resolved_chain
 }
 
 fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
@@ -666,7 +671,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if identity_mode == .spatial_chain && i == 1 { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) blur(.8px) opacity(65%)' }
+		context.set_filter(if identity_mode == .resolved_chain && i in [1, 2] { 'contrast(130%) blur(.8px) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%) drop-shadow(-7px 4px .8px blue)' }
+		else if identity_mode == .spatial_chain && i == 1 { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) blur(.8px) opacity(65%)' }
 		else if identity_mode == .spatial_chain && i == 2 { 'drop-shadow(5px -4px 0px blue) contrast(130%) blur(.01px) drop-shadow(-7px 4px 2.5px #805030e0)' }
 		else if identity_mode == .resolved_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 0px #805030e0) opacity(65%)' }
 		else if identity_mode == .identity_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5px -4px 0px #805030e0) opacity(65%)' }

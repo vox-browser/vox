@@ -2,7 +2,7 @@ module cpuraster
 
 // Mixed blur and shadow nodes share the saved source device. Request bounds
 // propagate backwards; each shadow merge and real blur retains its own pixels.
-fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
+fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, mode BlendMode, content LayerContent) bool {
 	// Bound both backwards requests and evaluation of the branching graph.
 	mut work := 1
 	for stage in stages {
@@ -68,7 +68,7 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	layer_transform := [zero_x + ctm.sx, zero_y + ctm.ky, zero_x + ctm.kx,
 		zero_y + ctm.sy, shift_x + ctm.tx, shift_y + ctm.ty]!
 	inner_clip := rect_path(Rect{1, 1, f32(lw - 1), f32(lh - 1)})
-	if !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) { return false }
+	if !source_per_request && !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) { return false }
 	mut result := FilterResult{...new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh},
 		IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer(), color_info: source_info,
 		transparent_boundary: !source_image || source_padding}
@@ -81,8 +81,15 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	if source_image { result = result.translated(padded.left, padded.top) }
 	desired := if source_image { output } else { IRect{output.left - padded.left, output.top - padded.top,
 		output.right - padded.left, output.bottom - padded.top} }
+	mut resolve_at := -1
+	if source_per_request {
+		for i in 0 .. stages.len {
+			if sx[i] != 0 || sy[i] != 0 { resolve_at = i; break }
+		}
+	}
 	graph := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
-		source: result, max_dim: max_dim}
+		source: result, max_dim: max_dim, resolve_at: resolve_at, content: content,
+		source_transform: transform, source_bounds: device_bounds or { layer }}
 	value := graph.evaluate(stages.len - 1, desired) or { return false }
 	result = value.image
 	mut pending := value.color.clone()
@@ -120,6 +127,10 @@ struct SpatialFilterGraph {
 	source FilterResult
 	max_dim int
 	content_bounds ?IRect
+	resolve_at int = -1
+	content LayerContent = unsafe { nil }
+	source_transform [6]f32
+	source_bounds IRect
 }
 
 // Known content bounds apply at each SourceGraphic leaf before unions.
@@ -139,6 +150,7 @@ fn (g &SpatialFilterGraph) input_bounds(index int, desired IRect) ?IRect {
 fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValue {
 	if desired.is_empty() { return SpatialFilterValue{} }
 	if index < 0 { return SpatialFilterValue{image: g.source} }
+	if index == g.resolve_at { return g.resolve_source_blur(index, desired) }
 	stage := g.stages[index]
 	rx, ry := skif_ceil(f32(3) * g.sx[index]), skif_ceil(f32(3) * g.sy[index])
 	if stage.kind == .blur {
@@ -153,6 +165,29 @@ fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValu
 	child := spatial_filter_apply_color(g.evaluate(index - 1, needed)?, stage.pre_color, needed)
 	shadow := spatial_filter_blur(child, shadow_desired, g.sx[index], g.sy[index])?
 	return spatial_filter_merge(foreground, shadow, offset, desired, stage.color, g.max_dim)
+}
+
+// Rescale resolves a deferred source per blur request. Clamping and the
+// strict subset sampler depend on that request's visible input rectangle.
+fn (g &SpatialFilterGraph) resolve_source_blur(index int, desired IRect) ?SpatialFilterValue {
+	rx, ry := skif_ceil(f32(3) * g.sx[index]), skif_ceil(f32(3) * g.sy[index])
+	output := desired.intersect(skif_outset(g.source_bounds, rx, ry)) or { return SpatialFilterValue{} }
+	visible := g.source_bounds.intersect(skif_outset(output, rx, ry)) or { return SpatialFilterValue{} }
+	padded := skif_outset(visible, 1, 1)
+	w, h := padded.width(), padded.height()
+	if w > g.max_dim || h > g.max_dim || w > max_untiled_dimension || h > max_untiled_dimension { return none }
+	mut pixels := []u8{len: w * h * 4}
+	ctm := canvas_affine(g.source_transform)
+	left, top := f32(padded.left), f32(padded.top)
+	zero_x, zero_y := -left * f32(0), -top * f32(0)
+	shift_x, shift_y := -left * f32(1), -top * f32(1)
+	transform := [zero_x + ctm.sx, zero_y + ctm.ky, zero_x + ctm.kx,
+		zero_y + ctm.sy, shift_x + ctm.tx, shift_y + ctm.ty]!
+	clip := rect_path(Rect{1, 1, f32(w - 1), f32(h - 1)})
+	if !g.content(mut pixels, w, h, transform, [clip]) { return none }
+	source := new_filter_result(SpecialImage{BlurImage{pixels, w, h}, IRect{0, 0, w, h}},
+		padded.left, padded.top).inset_for_save_layer()
+	return SpatialFilterValue{image: blur_filter_result(source, desired, g.sx[index], g.sy[index])?}
 }
 
 fn spatial_filter_apply_color(value SpatialFilterValue, matrices []MatrixColorFilter, desired IRect) SpatialFilterValue {

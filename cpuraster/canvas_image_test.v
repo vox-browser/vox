@@ -1,6 +1,7 @@
 module cpuraster
 
 import crypto.sha256
+import json2
 
 // The pattern tests' background, image and clip triangle.
 fn image_test_background() []u8 {
@@ -1046,5 +1047,131 @@ fn test_source_image_mixed_spatial_graphs_match_native() {
    source, destination, true, alpha, mode, image_test_clips(i in [1, 4, 5, 6, 8, 10, 11, 12, 13]),
    new_canvas_filter(steps), false), 'source chain ${i} declined'
   assert sha256.sum(pixels).hex()[..16] == hashes[i], 'source chain ${i}'
+ }
+}
+
+fn test_resampled_source_chains_resolve_at_first_real_blur() {
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+ tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+  offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ small := CanvasFilterStep{...shadow, sigma: .8}
+ sequences := [
+  [gaussian, shadow], [contrast, gaussian, shadow, opacity], [box, contrast, small],
+  [gaussian, CanvasFilterStep{...shadow, sigma: 1.2}],
+  [contrast, tiny, gaussian, opacity, shadow],
+  [gaussian, shadow, CanvasFilterStep{...small, offset_x: -7.25, offset_y: 4.5}],
+  [box, contrast, small], [gaussian, shadow],
+ ]
+ hashes := ['96377cc5e9c1be3b', '5a943a8884b2705e', 'd6368e170d652582', '7376c5a0cf4a2011', '75dc62f04fca90f3', '48ff3cff3719f678', 'e16b6f85b42e091e', '846b048d1a7a0879']
+ for i, steps in sequences {
+  mut pixels := image_test_background()
+  source := if i in [1, 2, 6] { [f32(1), 1, 5, 4]! }
+   else if i == 7 { [f32(-2), -1, 7, 6]! } else { [f32(0), 0, 7, 6]! }
+  destination := match i {
+   0 { [f32(4), 5, 30, 25]! }
+   1, 6, 7 { [f32(4.25), 6.5, 25, 18]! }
+   3 { [f32(10.0004), 12.0006, 7.0007, 5.9994]! }
+   4 { [f32(10.25), 12.5, 2, 3]! }
+   else { [f32(4.5), 6.25, 22, 16]! }
+  }
+  transform := if i == 2 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+   else if i in [4, 7] { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { image_test_identity }
+  mode := match i { 1, 7 { BlendMode.src_in } 2 { .src_out } 4 { .multiply }
+   5 { .src_atop } 6 { .src } else { .src_over } }
+  alpha := if i == 1 { f32(.65) } else if i in [2, 4, 5] { f32(.7) } else { f32(1) }
+  assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+   image_test_bitmap(7, 6, i !in [1, 4, 5], i in [1, 4]), source, destination,
+   i != 1, alpha, mode, image_test_clips(i in [1, 4, 6, 7]), new_canvas_filter(steps), false),
+   'resampled chain ${i} declined'
+  assert sha256.sum(pixels).hex()[..16] == hashes[i], 'resampled chain ${i}'
+ }
+}
+
+fn test_resampled_source_shadow_before_real_blur_preserves_destination() {
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+  offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ blur := CanvasFilterStep{kind: .blur, sigma: .8}
+ tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+ for steps in [[shadow, blur], [tiny, shadow, blur]] {
+  mut pixels := image_test_background()
+  before := pixels.clone()
+  assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, image_test_identity,
+   image_test_bitmap(7, 6, false, true), [f32(0), 0, 7, 6]!, [f32(4), 5, 30, 25]!,
+   true, .65, .src_over, [], new_canvas_filter(steps), false)
+  assert pixels == before
+ }
+}
+
+struct ImageRequestClipFixture {
+ segments []f32
+ even_odd bool
+}
+
+struct ImageRequestStepFixture {
+ kind int
+ matrix [20]f32
+ clamp bool
+ sigma f32
+ offset_x f32
+ offset_y f32
+ color u32
+}
+
+struct ImageRequestFixture {
+ width int
+ height int
+ pitch int
+ alpha_type int
+ transform [6]f32
+ source [4]f32
+ destination [4]f32
+ global_alpha f32
+ composite int
+ image_width int
+ image_height int
+ image_pitch int
+ image_premultiplied bool
+ image_display_p3 bool
+ clips []ImageRequestClipFixture
+ filters []ImageRequestStepFixture
+}
+
+// Each shadow branch can request a different first-blur resolve rectangle.
+// The full source cannot be sampled once and reused: the strict/clamp/decal
+// choice and its edge pixels depend on the branch's actual sample bounds.
+fn test_resampled_chain_source_resolution_uses_each_blur_request() {
+ inputs := [
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-prod.json').to_string(),
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-default.json').to_string(),
+ ]
+ sources := [
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-prod-source.rgba').to_bytes(),
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-default-source.rgba').to_bytes(),
+ ]
+ backgrounds := [
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-prod-background.rgba').to_bytes(),
+  $embed_file('@VMODROOT/cpuraster/testdata/resampled-request-default-background.rgba').to_bytes(),
+ ]
+ hashes := $if linux { ['647ddc0897133c6d', '9e770877597b62d4'] } $else { ['647ddc0897133c6d', 'f893a84730298ea1'] }
+ for i, input in inputs {
+  c := json2.decode[ImageRequestFixture](input) or { panic(err) }
+  steps := c.filters.map(CanvasFilterStep{
+   kind: match it.kind { 0 { CanvasFilterKind.blur } 1 { .drop_shadow } else { .matrix } }
+   matrix: MatrixColorFilter{it.matrix, it.clamp}
+   sigma: it.sigma, offset_x: it.offset_x, offset_y: it.offset_y, color: it.color
+  })
+  clips := c.clips.map(canvas_path(it.segments, it.even_odd))
+  mut pixels := backgrounds[i].clone()
+  assert draw_canvas_image_filtered(mut pixels, c.width, c.height, c.pitch, c.alpha_type,
+   c.transform, CanvasBitmap{pixels: sources[i], width: c.image_width, height: c.image_height,
+    pitch: c.image_pitch, premultiplied: c.image_premultiplied, display_p3: c.image_display_p3},
+   c.source, c.destination, true, c.global_alpha, canvas_blend_mode(c.composite) or { panic('mode') },
+   clips, new_canvas_filter(steps), false)
+  assert sha256.sum(pixels).hex()[..16] == hashes[i]
  }
 }
