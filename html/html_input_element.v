@@ -1349,6 +1349,37 @@ fn (mut model HTMLInputElementModel) run_form_action(action InputFormAction) ! {
 	}
 }
 
+// Image submitter coordinates are relative to the image's content edge. Use
+// native geometry for constructed MouseEvents too, without changing trust or
+// granting user activation. Reuse the paint transform for scaled/rotated boxes.
+fn (mut model HTMLInputElementModel) select_image_coordinate(event &dom.MouseEvent) {
+	element := input_element(&model)
+	rect := element.get_bounding_client_rect()
+	layout_node := element.as_node().unsafe_layout_node() or { return }
+	if !layout_node.has_geometry_ { return }
+	document := element.document()
+	scale := document.layout_coordinate_scale()
+	mut x := event.client_x() - rect.x
+	mut y := event.client_y() - rect.y
+	if paintable := element.as_node().unsafe_paintable() {
+		viewport := document.viewport_rect()
+		local := paintable.inverse_transform_point(dom.CSSPixelPoint_{
+			x_: event.client_x() + viewport.x
+			y_: event.client_y() + viewport.y
+		})
+		origin := paintable.box_type_agnostic_position()
+		x = (local.x() - origin.x()) / scale
+		y = (local.y() - origin.y()) / scale
+	} else {
+		box := layout_node.box_model()
+		x -= (box.border_left + box.padding_left) / scale
+		y -= (box.border_top + box.padding_top) / scale
+	}
+	if math.is_nan(x) || math.is_nan(y) || math.is_inf(x, 0) || math.is_inf(y, 0) { return }
+	model.selected_x_ = int(x)
+	model.selected_y_ = int(y)
+}
+
 // https://html.spec.whatwg.org/multipage/input.html#input-activation-behavior
 pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &dom.Event) ! {
 	match model.type_state_ {
@@ -1368,10 +1399,11 @@ pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &do
 			model.show_the_picker_if_applicable()
 		}
 		.image_button {
-			if event.is_trusted() && event.interface_ in [.mouse_event, .pointer_event] {
+			if event.interface_ in [.mouse_event, .pointer_event] {
 				mouse_event := unsafe { &dom.MouseEvent(event) }
-				model.selected_x_ = int(mouse_event.offset_x())
-				model.selected_y_ = int(mouse_event.offset_y())
+				if !mouse_event.is_synthetic_activation_ {
+					model.select_image_coordinate(mouse_event)
+				}
 			}
 			model.run_form_action(.submit)!
 		}

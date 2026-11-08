@@ -129,6 +129,7 @@ function __compactNativeInlineHandlers(receiver){
 fn compact_element_click_bootstrap() string {
 	return r'
 (function(){
+ const markSynthetic=globalThis.__ladybirdSyntheticClickEvent;delete globalThis.__ladybirdSyntheticClickEvent;
  const apply=Reflect.apply,matches=Element.prototype.matches,nativeAdd=EventTarget.prototype.addEventListener,
   nativeRemove=EventTarget.prototype.removeEventListener,nativeDispatch=EventTarget.prototype.dispatchEvent,
   ClickEvent=typeof PointerEvent==="function"?PointerEvent:MouseEvent,
@@ -144,6 +145,7 @@ fn compact_element_click_bootstrap() string {
   if(disabled(this)||apply(clickingHas,clicking,[s]))return;
   apply(clickingAdd,clicking,[s]);
   const target=this,event=new ClickEvent("click",{bubbles:true,cancelable:true,composed:true,view:window});
+  markSynthetic(event);
   const compact={type:"click",target:target,currentTarget:null,bubbles:true,cancelable:true,isTrusted:false,button:0,which:1,cancelBubble:false,
    get defaultPrevented(){return event.defaultPrevented;},
    preventDefault(){event.preventDefault();},

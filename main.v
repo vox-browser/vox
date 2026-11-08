@@ -3118,6 +3118,19 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return false
 	}
+	mutable_runtime.define_value_host_function('__ladybirdSyntheticClickEvent', fn [runtime] (_ voidptr, values []voidptr) !voidptr {
+		if values.len != 1 { return error('Invalid synthetic click event') }
+		event := runtime.native_event(values[0])!
+		if event.type_name() != 'click' || event.interface_ !in [.mouse_event, .pointer_event] {
+			return error('Invalid synthetic click event')
+		}
+		mut mouse := unsafe { &dom.MouseEvent(event) }
+		mouse.is_synthetic_activation_ = true
+		return values[0]
+	}) or {
+		messages << 'JavaScript synthetic click binding: ${err.msg()}'
+		return none
+	}
 	mutable_runtime.install_script_element_event_binding() or {
 		messages << 'JavaScript script element event bindings: ${err.msg()}'
 		return false

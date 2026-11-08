@@ -203,6 +203,8 @@ pub mut:
 	page_y_               f64
 	offset_x_             f64
 	offset_y_             f64
+	// HTMLElement.click() activates without selecting a pointer coordinate.
+	is_synthetic_activation_ bool
 	movement_x_           f64
 	movement_y_           f64
 	ctrl_key_             bool
