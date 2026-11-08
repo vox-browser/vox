@@ -234,5 +234,75 @@
     "path": "/Users/alex/.cache/vox/wpt/20261108-blob-text-stream.tar.gz",
     "sha256": "4c9f74aeed01eb6213372318eaad036b2b0cf1623b8d11ce0ebb8717fd430283",
     "bytes": 18708014
+  },
+  "current_source_followup": {
+    "tests": 7,
+    "result": "All seven focused native Blob tests PASS with -prealloc -gc none after the shared UTF-8 source fix 99e7bece5 and the remaining host assertion update 19dacc90f.",
+    "source_inputs": {
+      "browserjs/blob_text_stream_test.v": "0f9ddaae605eb43a6b4568e8e84920e97878862335d5288b1db7af12eab08be0",
+      "browserjs/blob_host_test.v": "8aa2a7eb3d42318db19e61788da05875c531416b4362e134f441674a1700b402",
+      "browserjs/blob_metadata_test.v": "2bea09ec209c8dd0e8f6a189f6f28677b123ddb4792d14c649b858868194a025",
+      "browserjs/blob_realm_test.v": "22d3c705277e43cf24ddaa32085b3680e999ced78952e4ff5014fee2b864a13c",
+      "browserjs/blob_constructor_test.v": "67a4d6096823331e81868589e976a02e7ab7d8ea1d0da09168c7c09f292073d5",
+      "html/blob_text.v": "89269e384506e2448a6d416bac06ddd854da5a0496d55831b3a82813e54d98e7",
+      "html/blob_text_stream.v": "0527921cf3da2b83e7beb691e201d6b582d212d79e845ce1ba952e6a1293c5ec",
+      "browserjs/blob_host_jsc.c.v": "2c0895fcf8894ba4fe91b7d7becaf982d40340dd8ff3123a641509c71d113ee2",
+      "browserjs/zz_blob_current_20261108_test.v": "e091cb04c93f848e0f989d979e5e055f7ac96350e4c30df20cb49449b4089d63"
+    },
+    "guards": {
+      "run-guard.json": {
+        "command": [
+          "Build/wpt-blob-final-20261108/tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.523523,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "compile-guard.json": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-blob-final-20261108/tests",
+          "browserjs/zz_blob_current_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4991418368,
+        "elapsed_seconds": 73.202217875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "archive": {
+      "path": "/Users/alex/.cache/vox/wpt/20261108-blob-current-followup.tar.gz",
+      "sha256": "515b3860f466165b9a2c8f2fd5e00ccdb31d3f1486fb74a73e09a6c4a225925c",
+      "bytes": 4858651
+    }
   }
 }
