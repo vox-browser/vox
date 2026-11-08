@@ -1943,7 +1943,7 @@ pub fn (c &ComputedProperties) table_box_and_wrapper_properties() (&ComputedProp
 	mut table := &ComputedProperties{
 		...c
 		property_store_:                c.clone_raw_property_store()
-		computed_property_graph_token_: unsafe { nil }
+		computed_property_graph_token_: &ComputedPropertyGraphMutationToken{}
 	}
 	wrapper := table.take_properties_for_table_wrapper()
 	return table, wrapper
