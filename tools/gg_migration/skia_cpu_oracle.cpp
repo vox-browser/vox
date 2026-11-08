@@ -513,9 +513,11 @@ ORACLE int oracle_canvas_stroke(uint8_t* pixels, int const* a, float const* f)
 // the image's width (0 for none), height, pitch, alpha type and color space.
 // floats: the transform, global alpha, destination and source rects, then
 // the clip segments. The image's pixels come from oracle_pattern().
-ORACLE int oracle_canvas_bitmap(uint8_t* pixels, int const* a, float const* f)
+static int oracle_canvas_bitmap_impl(uint8_t* pixels, int const* a, float const* f, bool chromium)
 {
     VoxCanvasCommand command {};
+    std::vector<VoxCanvasFilter> filters;
+    oracle_take_filters(command, filters);
     command.operation = a[4];
     command.smoothing = a[5];
     auto clips = oracle_clips(a + 6, f + 15);
@@ -540,7 +542,25 @@ ORACLE int oracle_canvas_bitmap(uint8_t* pixels, int const* a, float const* f)
         command.destination[i] = f[7 + i];
         command.source[i] = f[11 + i];
     }
-    return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
+    if (!chromium)
+        return vox_skia_canvas_path(pixels, a[0], a[1], a[2], a[3], &command);
+    // Exercise the bitmap-space command policy on the pinned CPU reference.
+    // This does not stand in for the separate Graphite/Dawn GPU comparison.
+    auto source_info = SkImageInfo::Make(a[0], a[1], kRGBA_8888_SkColorType,
+        a[3] == 2 ? kPremul_SkAlphaType : kUnpremul_SkAlphaType, SkColorSpace::MakeSRGB());
+    auto info = source_info.makeAlphaType(kPremul_SkAlphaType);
+    auto surface = SkSurfaces::Raster(info);
+    return surface && surface->getCanvas()->writePixels(source_info, pixels, a[2], 0, 0)
+        && draw_canvas_command(surface->getCanvas(), a[0], a[1], &command, true)
+        && surface->readPixels(info, pixels, a[2], 0, 0);
+}
+
+ORACLE int oracle_canvas_bitmap(uint8_t* pixels, int const* a, float const* f) {
+    return oracle_canvas_bitmap_impl(pixels, a, f, false);
+}
+
+ORACLE int oracle_canvas_bitmap_chromium(uint8_t* pixels, int const* a, float const* f) {
+    return oracle_canvas_bitmap_impl(pixels, a, f, true);
 }
 
 // A fillText() glyph run. arguments: width, height, pitch, alpha type, the

@@ -39,6 +39,7 @@ struct Oracle {
 	canvas_stroke          OracleCanvasStroke        = unsafe { nil }
 	pattern                OraclePattern             = unsafe { nil }
 	canvas_bitmap          OracleCanvasBitmap        = unsafe { nil }
+	canvas_bitmap_chromium OracleCanvasBitmap        = unsafe { nil }
 	filters                OracleFilters             = unsafe { nil }
 }
 
@@ -67,6 +68,9 @@ fn load_oracle(path string) Oracle {
 		pattern:                unsafe { OraclePattern(oracle_symbol(library, 'oracle_pattern')) }
 		canvas_bitmap:          unsafe {
 			OracleCanvasBitmap(oracle_symbol(library, 'oracle_canvas_bitmap'))
+		}
+		canvas_bitmap_chromium: unsafe {
+			OracleCanvasBitmap(oracle_symbol(library, 'oracle_canvas_bitmap_chromium'))
 		}
 		filters:                unsafe { OracleFilters(oracle_symbol(library, 'oracle_filters')) }
 	}
@@ -1394,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') == 'images' {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2293,6 +2297,8 @@ struct BitmapCase {
 	destination  [4]f32
 	source       [4]f32
 	image        ?cpuraster.CanvasPattern
+	filters      []cpuraster.CanvasFilterStep
+	chromium     bool
 }
 
 // Runs one bitmap command through vox_skia_canvas_path() and cpuraster and
@@ -2316,7 +2322,9 @@ fn compare_canvas_bitmap(oracle Oracle, initial []u8, c BitmapCase, label string
 	} else {
 		values << [i32(0), 0, 0, 0, 0]
 	}
-	if oracle.canvas_bitmap(expected.data, values.data, floats.data) == 0 {
+	send_filters(oracle, c.filters)
+	native := if c.chromium { oracle.canvas_bitmap_chromium } else { oracle.canvas_bitmap }
+	if native(expected.data, values.data, floats.data) == 0 {
 		return error('${label}: the Skia bitmap command failed')
 	}
 	mut actual := initial.clone()
@@ -2325,7 +2333,7 @@ fn compare_canvas_bitmap(oracle Oracle, initial []u8, c BitmapCase, label string
 			c.destination, c.color, clip_paths(c.clips))
 	} else {
 		image := c.image or { panic('drawImage without an image') }
-		cpuraster.draw_canvas_image(mut actual, c.width, c.height, c.pitch, c.alpha_type,
+		cpuraster.draw_canvas_image_filtered(mut actual, c.width, c.height, c.pitch, c.alpha_type,
 			c.transform, cpuraster.CanvasBitmap{
 			pixels:        image.pixels
 			width:         image.width
@@ -2334,7 +2342,7 @@ fn compare_canvas_bitmap(oracle Oracle, initial []u8, c BitmapCase, label string
 			premultiplied: image.premultiplied
 			display_p3:    image.display_p3
 		}, c.source, c.destination, c.smoothing, c.global_alpha, canvas_mode(c.composite),
-			clip_paths(c.clips))
+			clip_paths(c.clips), cpuraster.new_canvas_filter(c.filters), c.chromium)
 	}
 	if !drawn {
 		if actual != initial {
@@ -2450,6 +2458,9 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
+	filtered := os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
+	mut bitmap_space := 0
+	mut image_space := 0
 	for i in 0 .. count {
 		width := rand.intn(90) or { 0 } + 1
 		height := rand.intn(90) or { 0 } + 1
@@ -2506,10 +2517,23 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			destination:  destination
 			source:       source
 			image:        image
+			filters: if filtered {
+				match rand.intn(3) or { 0 } {
+					0 { random_color_filters() }
+					1 { random_layer_filters() }
+					else { random_shadow_filters() }
+				}
+			} else { []cpuraster.CanvasFilterStep{} }
+			chromium: filtered && (rand.intn(2) or { 0 }) == 0
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
+		} else if filtered {
+			if c.chromium { bitmap_space++ } else { image_space++ }
 		}
+	}
+	if filtered {
+		println('filtered image policies: ${image_space} image-space, ${bitmap_space} bitmap-space comparisons exact (includes no-ops)')
 	}
 	return count, declined
 }

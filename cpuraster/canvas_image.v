@@ -310,8 +310,43 @@ fn choose_sprite_for_surface(mut pixels []u8, row_bytes int, source CanvasBitmap
 // without changing pixels for devices Skia would tile and images it cannot
 // install.
 pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path) bool {
+	return draw_canvas_image_filtered(mut pixels, width, height, pitch, alpha_type, transform,
+		image, source, destination, smoothing, global_alpha, mode, clips, none, false)
+}
+
+// Bitmap-space filters match Chromium's composited image draws: the source
+// is transformed into a saved bitmap layer before the filter is evaluated.
+// Other canvas draws evaluate filter parameters in the drawing transform.
+pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, bitmap_filter bool) bool {
+	if !untiled_device(pixels, width, height, pitch) || !image.installs() { return false }
+	plan := plan_canvas_filter(filter_in)
+	if plan.declined { return false }
 	rgba := CanvasBitmap{...image, native_n32: canvas_rgba_uses_legacy()}
-	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, rgba, source, destination, smoothing, global_alpha, mode, clips, false, canvas_rgba_uses_legacy())
+	if step := plan.layer {
+		if !bitmap_filter {
+			// onDrawImageRect2 filters the source image directly via
+			// FilterResult::MakeFromImage(), preserving its transform and
+			// sampling. Drawing into a canvas layer first is not equivalent.
+			return false
+		}
+		return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
+			[f32(1), 0, 0, 1, 0, 0]!, clips, none, step, mode,
+			fn [rgba, source, destination, smoothing, global_alpha, transform] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
+				m := post_translate(canvas_affine(transform), t[4], t[5])
+				return draw_canvas_image_sampled(mut layer, w, h, w * 4, 2,
+					[m.sx, m.ky, m.kx, m.sy, m.tx, m.ty]!, rgba, source, destination,
+					smoothing, global_alpha, .src_over, inner_clips, false, true)
+			}, none)
+	}
+	// A bitmap-space color-filter restore acts on the rasterized source,
+	// rather than the source image shader. Keep its existing fallback.
+	if bitmap_filter && plan.color != none { return false }
+	if color_filter := plan.color {
+		return draw_translated_color_filtered_image(mut pixels, width, height, pitch, alpha_type,
+			transform, rgba, source, destination, global_alpha, mode, clips, color_filter)
+	}
+	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, rgba,
+		source, destination, smoothing, global_alpha, mode, clips, false, canvas_rgba_uses_legacy())
 }
 
 fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool, legacy bool) bool {

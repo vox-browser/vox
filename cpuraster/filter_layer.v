@@ -199,17 +199,22 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	} else { needed }
 	if drop {
 		shifted := skif_outset(map_filter_bounds(output, affine_invert(mapped_offset) or { return false }), 1, 1)
-		foreground_input := output.intersect(content_device) or { IRect{} }
-		shadow_input := skif_outset(shifted, rx, ry).intersect(content_device) or { IRect{} }
+		foreground_input := if content_bounds == none { output } else {
+			output.intersect(content_device) or { IRect{} }
+		}
+		shadow_needed := skif_outset(shifted, rx, ry)
+		shadow_input := if content_bounds == none { shadow_needed } else {
+			shadow_needed.intersect(content_device) or { IRect{} }
+		}
 		needed = union_filter_bounds(foreground_input, shadow_input)
 	}
-	layer := needed.intersect(content_device) or {
+	layer := if content_bounds == none { needed } else { needed.intersect(content_device) or {
 		// An empty source still restores through a transparency-affecting
 		// blender (internalSaveLayer's null-source filter evaluation).
 		target.ready()
 		draw_empty_filter_result(mut pixels, pitch, &rc, mode)
 		return true
-	}
+	} }
 	max_dim := math_max_int(2 * math_max_int(output.width(), output.height()), 2048)
 	if layer.width() > max_dim || layer.height() > max_dim {
 		return false
