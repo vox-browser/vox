@@ -674,3 +674,14 @@ The one-run supervisor is
 `10ebea87809d50238d79879865e54dc8dca286525f79874f1d16c1410694219c`.
 It remains pending until those prerequisites succeed; this is a schedule,
 not a completed r17 result or a full-upstream result.
+
+
+The focused production observer was restarted before launching any tests so
+its availability wait can cover the shared build's 45-minute guard and source
+inventory retries. It now allows up to two hours for a matching completed
+image; actual WPT deadlines and memory budgets are unchanged. The old waiter's
+plan and its replacement record are preserved at
+`/Users/alex/.cache/vox/wpt/20261108-idb-production-observer-restart.tar.gz`, SHA-256
+`98d094166ad39b17b10f1d99e68f1ff7565c22bf3b612eff1edeea38fe3a2e86`.
+The current observer is `/Users/alex/.cache/vox/wpt/20261108-idb-batch-production-followup-r2.py`, SHA-256
+`c535cadefe741068b84b63cfe7315176323119063255ae890d727e833f04efe3`; its status and completion paths remain unchanged.
