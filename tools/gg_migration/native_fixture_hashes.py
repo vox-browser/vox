@@ -40,7 +40,10 @@ def background(width, height, kind='stroke'):
     out = bytearray()
     for y in range(height):
         for x in range(width):
-            if kind == 'stroke':
+            if kind == 'blur':
+                a = 0 if (x+2*y) % 9 == 0 else (x*5+y*7) % 256
+                out.extend((a*x//width, a*y//height, a//3, a))
+            elif kind == 'stroke':
                 a = (x*7+y*3) % 256
                 out.extend((a*x//width, a*y//height, a//2, a))
             else:
@@ -74,6 +77,9 @@ def literal(source):
 
 class Reference:
     def __init__(self, library):
+        self.reference_sha256 = hashlib.sha256(library.read_bytes()).hexdigest()
+        self.pattern_sha256 = None
+        self.pending_filters = []
         self.library = C.CDLL(str(library.resolve()))
         for name in ['oracle_canvas_fill', 'oracle_canvas_stroke', 'oracle_canvas_bitmap']:
             getattr(self.library, name).argtypes = [C.POINTER(C.c_uint8), C.POINTER(C.c_int32), C.POINTER(C.c_float)]
@@ -89,10 +95,12 @@ class Reference:
         digest = hashlib.sha256(output).hexdigest()
         self.records.append(dict(case=key, expected_macos=expected_mac, native_sha256=digest,
                                  input_sha256=hashlib.sha256(pixels).hexdigest(),
-                                 function=name, arguments=ints, floats=floats))
+                                 function=name, arguments=ints, floats=floats, filters=self.pending_filters,
+                                 pattern_sha256=self.pattern_sha256))
         return digest
 
     def filters(self, filters):
+        self.pending_filters = filters
         ints, floats = [], []
         for kind, color, radius, dx, dy, matrix, clamp in filters:
             ints += [kind, clamp, color]
@@ -100,13 +108,15 @@ class Reference:
         self.library.oracle_filters(len(filters), (C.c_int32*len(ints))(*ints), (C.c_float*len(floats))(*floats))
 
     def path(self, pixels, width, height, path, key, expected, *, transform=IDENTITY,
-             color=0xff000000, alpha=1, stroke=None, clips=(), style=None, filters=(), alpha_type=2, mode='src_over'):
+             color=0xff000000, alpha=1, stroke=None, clips=(), style=None, filters=(), alpha_type=2, mode='src_over', mask_blur=0):
         clip_ints = [len(clips), *[v for p, even in clips for v in [len(p)//12, int(even)]]]
         clip_floats = [v for p, _ in clips for v in p]
+        self.pattern_sha256 = None
         style_ints, style_floats = [0], []
         if style:
             w, h = style['width'], style['height']
             bitmap = image_pixels(w, h, style.get('premultiplied', False))
+            self.pattern_sha256 = hashlib.sha256(bitmap).hexdigest()
             storage = (C.c_uint8*len(bitmap)).from_buffer(bitmap)
             self.library.oracle_pattern(storage)
             style_ints = [4, w, h, w*4+4, 2 if style.get('premultiplied') else 1,
@@ -117,12 +127,12 @@ class Reference:
             line_width, cap, join, miter, dashes, phase = stroke
             ints = [width, height, width*4, alpha_type, len(path)//12, color, cap, join, len(dashes),
                     *clip_ints, MODES[style.get('mode', mode)] if style else MODES[mode], *style_ints]
-            floats = [*transform, alpha, line_width, miter, *path, phase, *dashes, *clip_floats, 0, *style_floats]
+            floats = [*transform, alpha, line_width, miter, *path, phase, *dashes, *clip_floats, mask_blur, *style_floats]
             name = 'oracle_canvas_stroke'
         else:
             ints = [width, height, width*4, alpha_type, 0, len(path)//12, color,
                     *clip_ints, MODES[style.get('mode', mode)] if style else MODES[mode], *style_ints]
-            floats = [*transform, alpha, *path, *clip_floats, 0, *style_floats]
+            floats = [*transform, alpha, *path, *clip_floats, mask_blur, *style_floats]
             name = 'oracle_canvas_fill'
         return self.call(name, pixels, ints, floats, key, expected)
 
@@ -186,6 +196,7 @@ def image_fixtures(root, reference):
     for i, c, expected in struct_cases(text, 'image_test_hash', 'ImageTestCase'):
         premul = c.get('premultiplied', True)
         bitmap = image_pixels(7, 6, premul)
+        reference.pattern_sha256 = hashlib.sha256(bitmap).hexdigest()
         storage = (C.c_uint8*len(bitmap)).from_buffer(bitmap)
         reference.library.oracle_pattern(storage)
         reference.filters([])
@@ -233,6 +244,33 @@ def filter_fixtures(root, reference):
     reference.path(background(48,40,'image'),48,40,path,'color_filter_test.v:solid-grayscale','b9e3807216264fee',
                    color=0xc0e04010,filters=[(2,0,0,0,0,matrix,1)])
 
+    contrast = literal(re.search(r'(?s)const cf_contrast.*?matrix: (\[[^\]]*\])',text)[1])
+    opacity = literal(re.search(r'(?s)const cf_opacity.*?matrix: (\[[^\]]*\])',text)[1])
+    reference.path(background(48,40,'image'),48,40,path,'color_filter_test.v:thin-contrast','981723a1df76bd4e',
+                   color=2234942615,alpha=.54357654,alpha_type=1,stroke=(.81891125,2,2,10,[],0),
+                   filters=[(2,0,0,0,0,contrast,0),(2,0,0,0,0,opacity,1)])
+
+
+def mask_blur_fixtures(root, reference):
+    text = (root/'cpuraster/blur_test.v').read_text()
+    curve = segment(0,12,10)+segment(2,60,14,52,6)+segment(3,40,50,6,30,58,44)+segment(5)
+    cases = [
+        ('31420421a7850a76',curve,IDENTITY,0xff204080,3,None,[],'src_over',2),
+        ('dea51d8b129f7d39',curve,[1.5,0,0,1.5,-10,-6],0xa0e05010,12,None,[],'src_over',2),
+        ('edcd6b85fed92936',curve,IDENTITY,0xff204080,.5,None,[],'src_over',2),
+        ('49259369cfea127b',curve,IDENTITY,0xc0306090,5,(1,2,2,10,[],0),[],'src_over',2),
+        ('802858540a0d2a24',curve,IDENTITY,0xff40c060,7,None,[(rectangle(8.5,6.25,50.75,41.5),False)],'multiply',2),
+        ('727f7a3691bdb1cf',rectangle(10.25,8.5,52.75,44),IDENTITY,0xff802040,8,None,[],'src_over',2),
+        ('627f3ce6ef3d3aec',rectangle(6,6,58,50),IDENTITY,0xc0306090,6,(4,0,2,10,[],0),[],'src_over',2),
+        ('f9911f428908818f',rectangle(30,26,36,31),IDENTITY,0xff802040,9,None,[],'src_over',2),
+        ('6c7f50d0617e3740',rectangle(-4200,-100,4250,150)+rectangle(-100,-50,100,100),IDENTITY,0xff204080,12,None,[],'src_over',1),
+    ]
+    for i,(expected,path,transform,color,blur,stroke,clips,mode,alpha_type) in enumerate(cases):
+        assert expected in text
+        reference.path(background(64,56,'blur'),64,56,path,f'blur_test.v:{i}',expected,
+                       transform=transform,color=color,mask_blur=blur,stroke=stroke,clips=clips,mode=mode,
+                       alpha_type=alpha_type)
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -245,9 +283,13 @@ def main():
     pattern_fixtures(root, reference)
     image_fixtures(root, reference)
     filter_fixtures(root, reference)
+    mask_blur_fixtures(root, reference)
     files = [root/'cpuraster'/n for n in ['dash_test.v', 'scan_hairline_test.v', 'stroke_test.v',
-                                        'image_shader_test.v', 'canvas_image_test.v', 'filter_layer_test.v', 'color_filter_test.v']]
-    result = dict(platform=platform.platform(), reference_sha256=hashlib.sha256(args.library.read_bytes()).hexdigest(),
+                                        'image_shader_test.v', 'canvas_image_test.v', 'filter_layer_test.v', 'color_filter_test.v', 'blur_test.v']]
+    if hashlib.sha256(args.library.read_bytes()).hexdigest() != reference.reference_sha256:
+        raise SystemExit('Reference library changed while capturing fixtures')
+    result = dict(platform=platform.platform(), reference_sha256=reference.reference_sha256,
+                  tool_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   sources={str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files},
                   records=reference.records)
     if platform.system() == 'Darwin':
