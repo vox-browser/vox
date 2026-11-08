@@ -433,11 +433,13 @@ if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 # helper symbols. Do not initialize their unused native libraries at startup.
 export V_MACOS_V3_SOURCE_MANIFEST=1
 export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
+# Compile the module directory so FastC enables full language support, including
+# the generic JSON transport. Its single-file mode uses a restricted parser.
 python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
-    -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
+    -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null
