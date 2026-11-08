@@ -114,7 +114,7 @@ fn test_compliant_attribute_value_uses_event_handler_and_xlink_tables() {
 	} else {
 		assert err.msg().starts_with('TypeError:')
 	}
-	assert factory.violations.last().sample.starts_with('Element event handler|')
+	assert factory.violations.last().sample == 'Element onclick|alert(1)'
 	assert get_trusted_types_compliant_attribute_value(mut factory, 'title', none, element, 'plain')! == 'plain'
 }
 

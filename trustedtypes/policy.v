@@ -126,9 +126,13 @@ pub:
 }
 
 pub fn process_value_with_a_default_policy(factory &TrustedTypePolicyFactory, name TrustedTypeName, input TrustedTypeOrString, sink InjectionSink) !TrustedTypeResult {
+	return process_value_with_a_default_policy_named(factory, name, input, injection_sink_string(sink))
+}
+
+fn process_value_with_a_default_policy_named(factory &TrustedTypePolicyFactory, name TrustedTypeName, input TrustedTypeOrString, sink_name string) !TrustedTypeResult {
 	policy := factory.default_policy() or { return TrustedTypeResult{} }
 	callback_arguments := [webidl.string_value(trusted_type_name_string(name)),
-		webidl.string_value(injection_sink_string(sink))]
+		webidl.string_value(sink_name)]
 	result := policy.get_trusted_type_policy_value(name, stringify(input), callback_arguments, .no)!
 	data := result.value or { return TrustedTypeResult{} }
 	return TrustedTypeResult{
@@ -137,13 +141,18 @@ pub fn process_value_with_a_default_policy(factory &TrustedTypePolicyFactory, na
 }
 
 pub fn get_trusted_type_compliant_string(mut factory TrustedTypePolicyFactory, expected TrustedTypeName, input TrustedTypeOrString, sink InjectionSink, sink_group string, include_report_only bool) !string {
+	return get_trusted_type_compliant_string_named(mut factory, expected, input, sink,
+		injection_sink_string(sink), sink_group, include_report_only)
+}
+
+fn get_trusted_type_compliant_string_named(mut factory TrustedTypePolicyFactory, expected TrustedTypeName, input TrustedTypeOrString, sink InjectionSink, sink_name string, sink_group string, include_report_only bool) !string {
 	if trusted_type_matches(input, expected) {
 		return stringify(input)
 	}
 	if !factory.does_sink_require_trusted_types(sink_group, include_report_only) {
 		return stringify(input)
 	}
-	converted := process_value_with_a_default_policy(factory, expected, input, sink)!
+	converted := process_value_with_a_default_policy_named(factory, expected, input, sink_name)!
 	if trusted := converted.value {
 		return match trusted {
 			TrustedHTML { trusted.data }
@@ -151,8 +160,8 @@ pub fn get_trusted_type_compliant_string(mut factory TrustedTypePolicyFactory, e
 			TrustedScriptURL { trusted.data }
 		}
 	}
-	if should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory, sink, sink_group, stringify(input)) {
-		return error('TypeError: Sink ${injection_sink_string(sink)} of type ${sink_group} requires a TrustedType to be used')
+	if should_sink_type_mismatch_violation_be_blocked_named(mut factory, sink, sink_name, sink_group, stringify(input)) {
+		return error('TypeError: Sink ${sink_name} of type ${sink_group} requires a TrustedType to be used')
 	}
 	return stringify(input)
 }
@@ -169,5 +178,6 @@ pub fn get_trusted_types_compliant_attribute_value(mut factory TrustedTypePolicy
 	data := get_trusted_type_data_for_attribute(element, attribute_name.to_lower(), normalized_ns) or {
 		return stringify(new_value)
 	}
-	return get_trusted_type_compliant_string(mut factory, data.trusted_type, new_value, data.sink, "'script'", true)
+	sink_name := if data.sink == .element_event_handler { 'Element ${attribute_name.to_lower()}' } else { injection_sink_string(data.sink) }
+	return get_trusted_type_compliant_string_named(mut factory, data.trusted_type, new_value, data.sink, sink_name, "'script'", true)
 }

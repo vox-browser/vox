@@ -382,6 +382,10 @@ pub fn (mut factory TrustedTypePolicyFactory) should_sink_type_mismatch_violatio
 
 // https://w3c.github.io/trusted-types/dist/spec/#should-block-sink-type-mismatch
 pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy(mut factory TrustedTypePolicyFactory, sink InjectionSink, sink_group string, source string) bool {
+	return should_sink_type_mismatch_violation_be_blocked_named(mut factory, sink, injection_sink_string(sink), sink_group, source)
+}
+
+fn should_sink_type_mismatch_violation_be_blocked_named(mut factory TrustedTypePolicyFactory, sink InjectionSink, sink_name string, sink_group string, source string) bool {
 	mut sample := source
 	if sink == .function_ {
 		for prefix in ['function anonymous', 'async function anonymous', 'function* anonymous',
@@ -401,7 +405,7 @@ pub fn should_sink_type_mismatch_violation_be_blocked_by_content_security_policy
 			sample.runes()[..if sample.runes().len < 40 { sample.runes().len } else { 40 }].string()
 		factory.violations << TrustedTypesViolation{
 			resource: 'trusted-types-sink'
-			sample: '${injection_sink_string(sink)}|${trimmed}'
+			sample: '${sink_name}|${trimmed}'
 		}
 		if policy.disposition == .enforce {
 			blocked = true
