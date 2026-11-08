@@ -158,7 +158,7 @@ jobs:
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
-          receipts = sorted(Path('Build/production-build/receipts').glob('*'))
+          receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
           for receipt in receipts[-1:]:
               paths.extend(receipt / name for name in (
                   'build.log', 'smoke.log', 'memory.json', 'smoke-memory.json', 'result.json'))
