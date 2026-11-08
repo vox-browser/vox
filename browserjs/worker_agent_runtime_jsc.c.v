@@ -126,6 +126,7 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 	mut blobs := BlobHost.create_for_settings(settings)!
 	blobs.install(mut runtime)!
 	blobs.install_constructor()!
+	runtime.install_file_reader_sync_binding()!
 	mut files := FileHost.create_for_settings(settings)!
 	files.install(mut runtime)!
 	files.install_constructor()!
