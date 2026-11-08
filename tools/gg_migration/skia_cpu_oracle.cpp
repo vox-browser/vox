@@ -62,6 +62,35 @@ ORACLE void oracle_difference_clip(uint8_t* pixels, int const* v, float const* f
     surface->readPixels(info, pixels, v[0]*4, 0, 0);
 }
 
+#include "../../skia/shadow_raster.cpp"
+
+static VoxShadowRect oracle_shadow_rect(float const* f) {
+    VoxShadowRect r{};
+    for (int i = 0; i < 4; ++i) r.rect[i] = f[i];
+    for (int i = 0; i < 8; ++i) r.radii[i] = f[4 + i];
+    return r;
+}
+
+ORACLE int oracle_outer_shadow(uint8_t* pixels, int const* v, float const* f) {
+    VoxShadowCommand command{};
+    command.color = uint32_t(v[2]);
+    command.outer = oracle_shadow_rect(f);
+    command.content = oracle_shadow_rect(f + 12);
+    for (int i = 0; i < 6; ++i) command.transform[i] = f[24 + i];
+    command.blur = f[30];
+    std::vector<VoxShadowClip> clips;
+    for (int i = 0; i < v[3]; ++i) {
+        auto c = f + 31 + i*18;
+        VoxShadowClip clip{};
+        clip.shape = oracle_shadow_rect(c);
+        for (int j = 0; j < 6; ++j) clip.transform[j] = c[12 + j];
+        clips.push_back(clip);
+    }
+    command.clips = clips.data();
+    command.clip_count = int(clips.size());
+    return vox_skia_shadow(pixels, v[0], v[1], v[0]*4, &command);
+}
+
 // skia/canvas_raster.cpp: vox_skia_canvas_read_pixels().
 static bool read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
 {

@@ -1242,8 +1242,22 @@ fn (mut rc RasterClip) op_path(path Path) bool {
 // Subtract a device-space AA path while preserving the accumulated clip.
 pub fn (mut rc RasterClip) subtract_path(path Path) bool {
 	if rc.is_empty { return false }
+	if !path.is_inverse_fill() {
+		if r := path.rect_contour() { return rc.subtract_rect(r.rect) }
+	}
 	mut other := AAClip{}
 	other.set_path(path, rc.bounds())
+	if rc.is_bw { rc.convert_to_aa() }
+	rc.aa.subtract_clip(&other)
+	return rc.update_cache(true)
+}
+
+fn (mut rc RasterClip) subtract_rect(rect Rect) bool {
+	mut other := AAClip{}
+	if rc.is_bw && nearly_integral(rect.left) && nearly_integral(rect.top)
+		&& nearly_integral(rect.right) && nearly_integral(rect.bottom) {
+		other.set_rect(round_rect(rect))
+	} else { other.set_path(rect_path(rect), rc.bounds()) }
 	if rc.is_bw { rc.convert_to_aa() }
 	rc.aa.subtract_clip(&other)
 	return rc.update_cache(true)

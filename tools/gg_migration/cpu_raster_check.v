@@ -1392,6 +1392,10 @@ fn main() {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'portable-shadows' {
+		check_portable_outer_shadow_cases(count)
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'rrects' {
 		check_rounded_rect_cases(count)
 		return
@@ -3107,6 +3111,72 @@ fn check_image_blur_cases(count int) {
 
 type OracleRoundedRect = fn (&f32, &i32, &f32)
 type OracleDifferenceClip = fn (&u8, &i32, &f32)
+
+type OracleOuterShadow = fn (&u8, &i32, &f32) i32
+
+fn random_shadow_rrect() []f32 {
+	mut out := [f32(rand.f64() * 80 - 20), f32(rand.f64() * 80 - 20), f32(rand.f64() * 70), f32(rand.f64() * 70)]
+	for _ in 0 .. 8 { out << f32(rand.f64() * 40) }
+	match rand.intn(4) or { 0 } {
+		0 { for i in 4 .. 12 { out[i] = 0 } }
+		1 { for i in 4 .. 12 { out[i] = 5 } }
+		2 { for i in 4 .. 12 { out[i] = 100 } }
+		else {}
+	}
+	return out
+}
+
+fn shadow_rrect_from_values(f []f32) cpuraster.RoundedRect {
+	return cpuraster.rounded_rect(cpuraster.Rect{f[0], f[1], f[0] + f[2], f[1] + f[3]},
+		[f[4], f[5], f[6], f[7], f[8], f[9], f[10], f[11]]!)
+}
+
+fn check_portable_outer_shadow_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OracleOuterShadow(oracle_symbol(library, 'oracle_outer_shadow')) }
+	mut drawn := 0
+	for trial in 0 .. count {
+		w := rand.intn(80) or { 0 } + 1
+		h := rand.intn(80) or { 0 } + 1
+		outer := random_shadow_rrect()
+		content := if trial % 2 == 0 { outer } else { random_shadow_rrect() }
+		t := if trial % 3 == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
+		blur := match rand.intn(8) or { 0 } {
+			0 { f32(0) }
+			1 { f32(-1) }
+			2 { f32(1e-5) }
+			else { f32(rand.f64() * 20) }
+		}
+		color := random_composite_color()
+		mut floats := outer.clone()
+		floats << content
+		floats << t[..]
+		floats << blur
+		mut clips := []cpuraster.Path{}
+		clip_count := rand.intn(3) or { 0 }
+		for _ in 0 .. clip_count {
+			shape := random_shadow_rrect()
+			ct := random_stroke_matrix()
+			floats << shape
+			floats << ct[..]
+			clips << shadow_rrect_from_values(shape).clip_path(cpuraster.Matrix{ct[0], ct[1], ct[2], ct[3], ct[4], ct[5]})
+		}
+		values := [i32(w), h, i32(color), clip_count]
+		mut expected := []u8{len: w*h*4}
+		if oracle(expected.data, values.data, floats.data) == 0 { panic('native shadow failed') }
+		if expected.any(it != 0) { drawn++ }
+		actual := cpuraster.rasterize_outer_shadow(w, h, shadow_rrect_from_values(outer), shadow_rrect_from_values(content), t, color, blur, clips) or { panic('portable shadow declined at ${trial}') }
+		if actual != expected {
+			for i in 0 .. actual.len { if actual[i] != expected[i] {
+				eprintln('outer shadow ${trial}: (${i % (w*4) / 4}, ${i / (w*4)}) channel ${i%4} ${actual[i]} != ${expected[i]}, values ${values}, floats ${floats}')
+				break
+			} }
+			save_failure([]u8{len: actual.len}, expected, actual, '${values}, ${floats}')
+			exit(1)
+		}
+	}
+	println('${count} portable outer shadows exact (${drawn} painted)')
+}
 
 fn check_rounded_rect_cases(count int) {
 	library := C.dlopen(os.args[1].str, 2)
