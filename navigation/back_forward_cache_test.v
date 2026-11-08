@@ -300,3 +300,26 @@ fn test_a_script_navigation_that_left_a_cached_page_is_not_replayed() {
 	assert app.history_index == 0
 	assert app.js_runtime.evaluate_host('left')! == '1'
 }
+
+fn test_cached_page_scripts_can_read_persisted_on_real_lifecycle_events() {
+	$if !darwin { return }
+	mut app := back_forward_cache_test_app()
+	defer { app.dispose_browser_tab() }
+	app.install_loaded_page(LoadedPage{
+		url:          'https://bfcache.example/persisted'
+		markup:       '<!doctype html><title>persisted</title><script>window.transitions=[];for(const name of ["pagehide","pageshow"])addEventListener(name,event=>transitions.push([event.type,event.persisted,event instanceof PageTransitionEvent,event.isTrusted,event.target===document]));</script>'
+		content_type: 'text/html'
+	}, true)
+	first := app.document
+	back_forward_cache_test_finish_loading(first)
+	// Record the cache transitions independently of initial load delivery.
+	app.js_runtime.evaluate_host('transitions=[]')!
+	app.install_loaded_page(back_forward_cache_test_page('second'), true)
+	app.history_go(-1)
+	assert voidptr(app.document) == voidptr(first)
+	assert app.js_runtime.evaluate_host('JSON.stringify(transitions)')! == '[["pagehide",true,true,true,true],["pageshow",true,true,true,true]]'
+	app.history_go(1)
+	app.history_go(-1)
+	assert voidptr(app.document) == voidptr(first)
+	assert app.js_runtime.evaluate_host('JSON.stringify(transitions.slice(-2))')! == '[["pagehide",true,true,true,true],["pageshow",true,true,true,true]]'
+}
