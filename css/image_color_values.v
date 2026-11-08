@@ -265,10 +265,10 @@ fn alpha_needs_serialization(alpha StyleValue) bool {
 
 pub struct RGBColorStyleValue {
 pub mut:
-	r_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	g_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	b_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
+	r_            &StyleValueSlot = &StyleValueSlot{}
+	g_            &StyleValueSlot = &StyleValueSlot{}
+	b_            &StyleValueSlot = &StyleValueSlot{}
+	alpha_        &StyleValueSlot = &StyleValueSlot{}
 	color_syntax_ ColorSyntax
 	name_         ?string
 	// HSL conversion retains its float alpha in Chromium even when the
@@ -281,10 +281,10 @@ pub mut:
 
 pub fn RGBColorStyleValue.create(r StyleValue, g StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax, name ?string) RGBColorStyleValue {
 	return RGBColorStyleValue{
-		r_: [r]
-		g_: [g]
-		b_: [b]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		r_: style_value_slot(r)
+		g_: style_value_slot(g)
+		b_: style_value_slot(b)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 		color_syntax_: color_syntax
 		name_: name
 	}
@@ -299,19 +299,19 @@ pub fn (style_value RGBColorStyleValue) color_syntax() ColorSyntax {
 }
 
 pub fn (style_value RGBColorStyleValue) r() StyleValue {
-	return style_value.r_[0]
+	return style_value.r_.value
 }
 
 pub fn (style_value RGBColorStyleValue) g() StyleValue {
-	return style_value.g_[0]
+	return style_value.g_.value
 }
 
 pub fn (style_value RGBColorStyleValue) b() StyleValue {
-	return style_value.b_[0]
+	return style_value.b_.value
 }
 
 pub fn (style_value RGBColorStyleValue) alpha() StyleValue {
-	return style_value.alpha_[0]
+	return style_value.alpha_.value
 }
 
 pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -362,16 +362,16 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 	}
 
 	_ = color_resolution_context
-	r_val := resolve_rgb_to_u8(style_value.r_[0]) or { return none }
-	g_val := resolve_rgb_to_u8(style_value.g_[0]) or { return none }
-	b_val := resolve_rgb_to_u8(style_value.b_[0]) or { return none }
-	alpha_val := resolve_alpha_to_u8(style_value.alpha_[0]) or { return none }
+	r_val := resolve_rgb_to_u8(style_value.r_.value) or { return none }
+	g_val := resolve_rgb_to_u8(style_value.g_.value) or { return none }
+	b_val := resolve_rgb_to_u8(style_value.b_.value) or { return none }
+	alpha_val := resolve_alpha_to_u8(style_value.alpha_.value) or { return none }
 
 	return Color.rgba(r_val, g_val, b_val, alpha_val)
 }
 
 pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	value := RGBColorStyleValue.create(style_value.r_[0].absolutized(context), style_value.g_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context), style_value.color_syntax(), none)
+	value := RGBColorStyleValue.create(style_value.r_.value.absolutized(context), style_value.g_.value.absolutized(context), style_value.b_.value.absolutized(context), style_value.alpha_.value.absolutized(context), style_value.color_syntax(), none)
 	return RGBColorStyleValue{ ...value, preserve_float_alpha_: style_value.preserve_float_alpha_ }
 }
 
@@ -392,14 +392,14 @@ pub fn (style_value RGBColorStyleValue) serialize(mode SerializationMode) string
 	}
 
 	mut result := 'rgb('
-	result += serialize_color_component(style_value.r_[0], mode, 255, 0, 255)
+	result += serialize_color_component(style_value.r_.value, mode, 255, 0, 255)
 	result += ' '
-	result += serialize_color_component(style_value.g_[0], mode, 255, 0, 255)
+	result += serialize_color_component(style_value.g_.value, mode, 255, 0, 255)
 	result += ' '
-	result += serialize_color_component(style_value.b_[0], mode, 255, 0, 255)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_color_component(style_value.b_.value, mode, 255, 0, 255)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -409,10 +409,10 @@ pub fn (style_value RGBColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct HSLColorStyleValue {
 pub mut:
-	h_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	s_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	l_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
+	h_            &StyleValueSlot = &StyleValueSlot{}
+	s_            &StyleValueSlot = &StyleValueSlot{}
+	l_            &StyleValueSlot = &StyleValueSlot{}
+	alpha_        &StyleValueSlot = &StyleValueSlot{}
 	color_syntax_ ColorSyntax
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
@@ -424,10 +424,10 @@ pub mut:
 
 pub fn HSLColorStyleValue.create(h StyleValue, s StyleValue, l StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HSLColorStyleValue {
 	return HSLColorStyleValue{
-		h_: [h]
-		s_: [s]
-		l_: [l]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		h_: style_value_slot(h)
+		s_: style_value_slot(s)
+		l_: style_value_slot(l)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 		color_syntax_: color_syntax
 	}
 }
@@ -441,14 +441,14 @@ pub fn (style_value HSLColorStyleValue) to_color(color_resolution_context ColorR
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
-	s_val := resolve_with_reference_value(style_value.s_[0], 100.0, CalculationResolutionContext{}) or {
+	h_val := resolve_hue(style_value.h_.value, CalculationResolutionContext{}) or { return none }
+	s_val := resolve_with_reference_value(style_value.s_.value, 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	l_val := resolve_with_reference_value(style_value.l_[0], 100.0, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_.value, 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -456,10 +456,10 @@ pub fn (style_value HSLColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value HSLColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	absolutized_h := style_value.h_[0].absolutized(context)
-	absolutized_s := style_value.s_[0].absolutized(context)
-	absolutized_l := style_value.l_[0].absolutized(context)
-	absolutized_alpha := style_value.alpha_[0].absolutized(context)
+	absolutized_h := style_value.h_.value.absolutized(context)
+	absolutized_s := style_value.s_.value.absolutized(context)
+	absolutized_l := style_value.l_.value.absolutized(context)
+	absolutized_alpha := style_value.alpha_.value.absolutized(context)
 
 	// hsl() computes to rgb()
 	// https://drafts.csswg.org/css-color-4/#resolving-sRGB-values
@@ -494,22 +494,22 @@ pub fn (style_value HSLColorStyleValue) serialize(mode SerializationMode) string
 		return serialize_relative_color(parts, mode)
 	}
 	if style_value.missing_component_form_ {
-		return serialize_missing_component_form('hsl', [style_value.h_[0], style_value.s_[0],
-			style_value.l_[0]], style_value.alpha_[0], mode)
+		return serialize_missing_component_form('hsl', [style_value.h_.value, style_value.s_.value,
+			style_value.l_.value], style_value.alpha_.value, mode)
 	}
 	if color := style_value.to_color(ColorResolutionContext{}) {
 		return color.serialize_a_srgb_value()
 	}
 
 	mut result := 'hsl('
-	result += serialize_hue_component(style_value.h_[0], mode)
+	result += serialize_hue_component(style_value.h_.value, mode)
 	result += ' '
-	result += serialize_color_component(style_value.s_[0], mode, 100, 0, none)
+	result += serialize_color_component(style_value.s_.value, mode, 100, 0, none)
 	result += ' '
-	result += serialize_color_component(style_value.l_[0], mode, 100, 0, none)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_color_component(style_value.l_.value, mode, 100, 0, none)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -519,10 +519,10 @@ pub fn (style_value HSLColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct HWBColorStyleValue {
 pub mut:
-	h_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	w_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	b_            []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_        []StyleValue = [StyleValue(KeywordStyleValue{})]
+	h_            &StyleValueSlot = &StyleValueSlot{}
+	w_            &StyleValueSlot = &StyleValueSlot{}
+	b_            &StyleValueSlot = &StyleValueSlot{}
+	alpha_        &StyleValueSlot = &StyleValueSlot{}
 	color_syntax_ ColorSyntax
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
@@ -534,10 +534,10 @@ pub mut:
 
 pub fn HWBColorStyleValue.create(h StyleValue, w StyleValue, b StyleValue, alpha ?StyleValue, color_syntax ColorSyntax) HWBColorStyleValue {
 	return HWBColorStyleValue{
-		h_: [h]
-		w_: [w]
-		b_: [b]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		h_: style_value_slot(h)
+		w_: style_value_slot(w)
+		b_: style_value_slot(b)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 		color_syntax_: color_syntax
 	}
 }
@@ -551,14 +551,14 @@ pub fn (style_value HWBColorStyleValue) to_color(color_resolution_context ColorR
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
-	raw_w_value := resolve_with_reference_value(style_value.w_[0], 100.0, CalculationResolutionContext{}) or {
+	h_val := resolve_hue(style_value.h_.value, CalculationResolutionContext{}) or { return none }
+	raw_w_value := resolve_with_reference_value(style_value.w_.value, 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_b_value := resolve_with_reference_value(style_value.b_[0], 100.0, CalculationResolutionContext{}) or {
+	raw_b_value := resolve_with_reference_value(style_value.b_.value, 100.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -576,10 +576,10 @@ pub fn (style_value HWBColorStyleValue) to_color(color_resolution_context ColorR
 }
 
 pub fn (style_value HWBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
-	absolutized_h := style_value.h_[0].absolutized(context)
-	absolutized_w := style_value.w_[0].absolutized(context)
-	absolutized_b := style_value.b_[0].absolutized(context)
-	absolutized_alpha := style_value.alpha_[0].absolutized(context)
+	absolutized_h := style_value.h_.value.absolutized(context)
+	absolutized_w := style_value.w_.value.absolutized(context)
+	absolutized_b := style_value.b_.value.absolutized(context)
+	absolutized_alpha := style_value.alpha_.value.absolutized(context)
 
 	resolved_h := resolve_hue(absolutized_h, CalculationResolutionContext{}) or { 0.0 }
 	resolved_w := resolve_with_reference_value(absolutized_w, 100.0, CalculationResolutionContext{}) or {
@@ -629,22 +629,22 @@ pub fn (style_value HWBColorStyleValue) serialize(mode SerializationMode) string
 		return serialize_relative_color(parts, mode)
 	}
 	if style_value.missing_component_form_ {
-		return serialize_missing_component_form('hwb', [style_value.h_[0], style_value.w_[0],
-			style_value.b_[0]], style_value.alpha_[0], mode)
+		return serialize_missing_component_form('hwb', [style_value.h_.value, style_value.w_.value,
+			style_value.b_.value], style_value.alpha_.value, mode)
 	}
 	if color := style_value.to_color(ColorResolutionContext{}) {
 		return color.serialize_a_srgb_value()
 	}
 
 	mut result := 'hwb('
-	result += serialize_hue_component(style_value.h_[0], mode)
+	result += serialize_hue_component(style_value.h_.value, mode)
 	result += ' '
-	result += serialize_color_component(style_value.w_[0], mode, 100, 0, none)
+	result += serialize_color_component(style_value.w_.value, mode, 100, 0, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_[0], mode, 100, 0, none)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_color_component(style_value.b_.value, mode, 100, 0, none)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -654,10 +654,10 @@ pub fn (style_value HWBColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct LabColorStyleValue {
 pub mut:
-	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	l_     &StyleValueSlot = &StyleValueSlot{}
+	a_     &StyleValueSlot = &StyleValueSlot{}
+	b_     &StyleValueSlot = &StyleValueSlot{}
+	alpha_ &StyleValueSlot = &StyleValueSlot{}
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -665,10 +665,10 @@ pub mut:
 
 pub struct OKLabColorStyleValue {
 pub mut:
-	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	a_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	b_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	l_     &StyleValueSlot = &StyleValueSlot{}
+	a_     &StyleValueSlot = &StyleValueSlot{}
+	b_     &StyleValueSlot = &StyleValueSlot{}
+	alpha_ &StyleValueSlot = &StyleValueSlot{}
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -676,28 +676,28 @@ pub mut:
 
 pub fn LabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) LabColorStyleValue {
 	return LabColorStyleValue{
-		l_: [l]
-		a_: [a]
-		b_: [b]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		l_: style_value_slot(l)
+		a_: style_value_slot(a)
+		b_: style_value_slot(b)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 	}
 }
 
 pub fn OKLabColorStyleValue.create(l StyleValue, a StyleValue, b StyleValue, alpha ?StyleValue) OKLabColorStyleValue {
 	return OKLabColorStyleValue{
-		l_: [l]
-		a_: [a]
-		b_: [b]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		l_: style_value_slot(l)
+		a_: style_value_slot(a)
+		b_: style_value_slot(b)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 	}
 }
 
 pub fn (style_value OKLabColorStyleValue) absolutized(context ComputationContext) OKLabColorStyleValue {
-	return OKLabColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.a_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
+	return OKLabColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.a_.value.absolutized(context), style_value.b_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
 }
 
 pub fn (style_value LabColorStyleValue) absolutized(context ComputationContext) LabColorStyleValue {
-	return LabColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.a_[0].absolutized(context), style_value.b_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
+	return LabColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.a_.value.absolutized(context), style_value.b_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
 }
 
 pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -705,16 +705,16 @@ pub fn (style_value OKLabColorStyleValue) to_color(color_resolution_context Colo
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_.value, 1.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	a_val := resolve_with_reference_value(style_value.a_[0], 0.4, CalculationResolutionContext{}) or {
+	a_val := resolve_with_reference_value(style_value.a_.value, 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	b_val := resolve_with_reference_value(style_value.b_[0], 0.4, CalculationResolutionContext{}) or {
+	b_val := resolve_with_reference_value(style_value.b_.value, 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -728,14 +728,14 @@ pub fn (style_value OKLabColorStyleValue) serialize(mode SerializationMode) stri
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'oklab('
-	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
+	result += serialize_color_component(style_value.l_.value, mode, 1.0, 0, 1)
 	result += ' '
-	result += serialize_color_component(style_value.a_[0], mode, 0.4, none, none)
+	result += serialize_color_component(style_value.a_.value, mode, 0.4, none, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_[0], mode, 0.4, none, none)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_color_component(style_value.b_.value, mode, 0.4, none, none)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -746,16 +746,16 @@ pub fn (style_value LabColorStyleValue) to_color(color_resolution_context ColorR
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
+	l_val := resolve_with_reference_value(style_value.l_.value, 100, CalculationResolutionContext{}) or {
 		return none
 	}
-	a_val := resolve_with_reference_value(style_value.a_[0], 125, CalculationResolutionContext{}) or {
+	a_val := resolve_with_reference_value(style_value.a_.value, 125, CalculationResolutionContext{}) or {
 		return none
 	}
-	b_val := resolve_with_reference_value(style_value.b_[0], 125, CalculationResolutionContext{}) or {
+	b_val := resolve_with_reference_value(style_value.b_.value, 125, CalculationResolutionContext{}) or {
 		return none
 	}
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -769,14 +769,14 @@ pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'lab('
-	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
+	result += serialize_color_component(style_value.l_.value, mode, 100, 0, 100)
 	result += ' '
-	result += serialize_color_component(style_value.a_[0], mode, 125, none, none)
+	result += serialize_color_component(style_value.a_.value, mode, 125, none, none)
 	result += ' '
-	result += serialize_color_component(style_value.b_[0], mode, 125, none, none)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_color_component(style_value.b_.value, mode, 125, none, none)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -786,10 +786,10 @@ pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct LCHColorStyleValue {
 pub mut:
-	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	l_     &StyleValueSlot = &StyleValueSlot{}
+	c_     &StyleValueSlot = &StyleValueSlot{}
+	h_     &StyleValueSlot = &StyleValueSlot{}
+	alpha_ &StyleValueSlot = &StyleValueSlot{}
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -797,10 +797,10 @@ pub mut:
 
 pub struct OKLCHColorStyleValue {
 pub mut:
-	l_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	c_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	h_     []StyleValue = [StyleValue(KeywordStyleValue{})]
-	alpha_ []StyleValue = [StyleValue(KeywordStyleValue{})]
+	l_     &StyleValueSlot = &StyleValueSlot{}
+	c_     &StyleValueSlot = &StyleValueSlot{}
+	h_     &StyleValueSlot = &StyleValueSlot{}
+	alpha_ &StyleValueSlot = &StyleValueSlot{}
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -808,28 +808,28 @@ pub mut:
 
 pub fn LCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) LCHColorStyleValue {
 	return LCHColorStyleValue{
-		l_: [l]
-		c_: [c]
-		h_: [h]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		l_: style_value_slot(l)
+		c_: style_value_slot(c)
+		h_: style_value_slot(h)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 	}
 }
 
 pub fn OKLCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alpha ?StyleValue) OKLCHColorStyleValue {
 	return OKLCHColorStyleValue{
-		l_: [l]
-		c_: [c]
-		h_: [h]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		l_: style_value_slot(l)
+		c_: style_value_slot(c)
+		h_: style_value_slot(h)
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 	}
 }
 
 pub fn (style_value LCHColorStyleValue) absolutized(context ComputationContext) LCHColorStyleValue {
-	return LCHColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.c_[0].absolutized(context), style_value.h_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
+	return LCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
 }
 
 pub fn (style_value OKLCHColorStyleValue) absolutized(context ComputationContext) OKLCHColorStyleValue {
-	return OKLCHColorStyleValue.create(style_value.l_[0].absolutized(context), style_value.c_[0].absolutized(context), style_value.h_[0].absolutized(context), style_value.alpha_[0].absolutized(context))
+	return OKLCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
 }
 
 pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -837,14 +837,14 @@ pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorR
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	raw_l_val := resolve_with_reference_value(style_value.l_[0], 100, CalculationResolutionContext{}) or {
+	raw_l_val := resolve_with_reference_value(style_value.l_.value, 100, CalculationResolutionContext{}) or {
 		return none
 	}
-	c_val := resolve_with_reference_value(style_value.c_[0], 150, CalculationResolutionContext{}) or {
+	c_val := resolve_with_reference_value(style_value.c_.value, 150, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	raw_h_val := resolve_hue(style_value.h_.value, CalculationResolutionContext{}) or { return none }
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -861,14 +861,14 @@ pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'lch('
-	result += serialize_color_component(style_value.l_[0], mode, 100, 0, 100)
+	result += serialize_color_component(style_value.l_.value, mode, 100, 0, 100)
 	result += ' '
-	result += serialize_color_component(style_value.c_[0], mode, 150, 0, none)
+	result += serialize_color_component(style_value.c_.value, mode, 150, 0, none)
 	result += ' '
-	result += serialize_hue_component(style_value.h_[0], mode)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_hue_component(style_value.h_.value, mode)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -879,14 +879,14 @@ pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context Colo
 		return relative_color_to_color(StyleValue(style_value), color_resolution_context)
 	}
 	_ = color_resolution_context
-	raw_l_val := resolve_with_reference_value(style_value.l_[0], 1.0, CalculationResolutionContext{}) or {
+	raw_l_val := resolve_with_reference_value(style_value.l_.value, 1.0, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_c_val := resolve_with_reference_value(style_value.c_[0], 0.4, CalculationResolutionContext{}) or {
+	raw_c_val := resolve_with_reference_value(style_value.c_.value, 0.4, CalculationResolutionContext{}) or {
 		return none
 	}
-	raw_h_val := resolve_hue(style_value.h_[0], CalculationResolutionContext{}) or { return none }
-	alpha_val := resolve_alpha(style_value.alpha_[0], CalculationResolutionContext{}) or {
+	raw_h_val := resolve_hue(style_value.h_.value, CalculationResolutionContext{}) or { return none }
+	alpha_val := resolve_alpha(style_value.alpha_.value, CalculationResolutionContext{}) or {
 		return none
 	}
 
@@ -904,14 +904,14 @@ pub fn (style_value OKLCHColorStyleValue) serialize(mode SerializationMode) stri
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'oklch('
-	result += serialize_color_component(style_value.l_[0], mode, 1.0, 0, 1)
+	result += serialize_color_component(style_value.l_.value, mode, 1.0, 0, 1)
 	result += ' '
-	result += serialize_color_component(style_value.c_[0], mode, 0.4, 0, none)
+	result += serialize_color_component(style_value.c_.value, mode, 0.4, 0, none)
 	result += ' '
-	result += serialize_hue_component(style_value.h_[0], mode)
-	if alpha_needs_serialization(style_value.alpha_[0]) {
+	result += serialize_hue_component(style_value.h_.value, mode)
+	if alpha_needs_serialization(style_value.alpha_.value) {
 		result += ' / '
-		result += serialize_alpha_component(style_value.alpha_[0], mode)
+		result += serialize_alpha_component(style_value.alpha_.value, mode)
 	}
 	result += ')'
 	return result
@@ -929,7 +929,7 @@ pub struct ColorFunctionStyleValue {
 pub mut:
 	color_type_ ConcreteColorType
 	channels_   []StyleValue
-	alpha_      []StyleValue = [StyleValue(KeywordStyleValue{})]
+	alpha_      &StyleValueSlot = &StyleValueSlot{}
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -969,7 +969,7 @@ pub fn ColorFunctionStyleValue.create(color_space string, c1 StyleValue, c2 Styl
 	return ColorFunctionStyleValue{
 		color_type_: color_type_from_color_space(color_space)
 		channels_: [c1, c2, c3]
-		alpha_: [alpha or { StyleValue(NumberStyleValue.create(1)) }]
+		alpha_: style_value_slot(alpha or { StyleValue(NumberStyleValue.create(1)) })
 	}
 }
 
@@ -987,7 +987,7 @@ pub fn (style_value ColorFunctionStyleValue) resolve_properties(resolution_conte
 	c3 := resolve_with_reference_value(style_value.channels_[2], 1, resolution_context) or {
 		return none
 	}
-	alpha := resolve_alpha(style_value.alpha_[0], resolution_context) or { return none }
+	alpha := resolve_alpha(style_value.alpha_.value, resolution_context) or { return none }
 
 	return ColorFunctionStyleValueResolved{
 		channels: [c1, c2, c3]!
@@ -1025,7 +1025,7 @@ pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationCont
 	channel0 := style_value.channels_[0].absolutized(context)
 	channel1 := style_value.channels_[1].absolutized(context)
 	channel2 := style_value.channels_[2].absolutized(context)
-	alpha := style_value.alpha_[0].absolutized(context)
+	alpha := style_value.alpha_.value.absolutized(context)
 
 	return StyleValue(ColorFunctionStyleValue.create(color_space_from_color_type(style_value.color_type_), channel0, channel1, channel2, alpha))
 }
@@ -1036,7 +1036,7 @@ pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) s
 		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
 		return serialize_relative_color(parts, mode)
 	}
-	mut alpha := color_function_convert_percentage(style_value.alpha_[0], mode)
+	mut alpha := color_function_convert_percentage(style_value.alpha_.value, mode)
 	is_alpha_required := if alpha.is_number() {
 		alpha.as_number().number() < 1
 	} else {
@@ -2394,7 +2394,7 @@ pub enum RadialGradientEndingShape {
 pub struct RadialGradientStyleValue {
 pub mut:
 	ending_shape_               RadialGradientEndingShape
-	size_                       []StyleValue = [StyleValue(KeywordStyleValue{})]
+	size_                       &StyleValueSlot = &StyleValueSlot{}
 	position_                   PositionStyleValue
 	color_stop_list_            []ColorStopListElement
 	repeating_                  GradientRepeating
@@ -2408,7 +2408,7 @@ pub mut:
 pub fn RadialGradientStyleValue.create(ending_shape RadialGradientEndingShape, size StyleValue, position PositionStyleValue, color_stop_list []ColorStopListElement, repeating GradientRepeating, color_interpolation_method ?ColorInterpolationMethodStyleValue) RadialGradientStyleValue {
 	return RadialGradientStyleValue{
 		ending_shape_: ending_shape
-		size_: [size]
+		size_: style_value_slot(size)
 		position_: position
 		color_stop_list_: color_stop_list
 		repeating_: repeating
@@ -2440,9 +2440,9 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 		if style_value.webkit_shape_specified_ || style_value.webkit_extent_keyword_ != '' {
 			result += ', ' + if style_value.ending_shape_ == .circle { 'circle' } else { 'ellipse' }
 			result += ' ' + if style_value.webkit_extent_keyword_ != '' { style_value.webkit_extent_keyword_ } else { 'cover' }
-		} else if size := style_value.size_[0].as_radial_size() {
+		} else if size := style_value.size_.value.as_radial_size() {
 			if size.components().len == 2 {
-				result += ', ' + style_value.size_[0].serialize(mode)
+				result += ', ' + style_value.size_.value.serialize(mode)
 			}
 		}
 		return result + ', ' + serialize_color_stop_list(style_value.color_stop_list_, mode) + ')'
@@ -2455,7 +2455,7 @@ pub fn (style_value RadialGradientStyleValue) serialize(mode SerializationMode) 
 
 	// Upstream checks the serialized radial-size to determine whether it should
 	// be included. EndingShape affects resolution, but is not emitted separately.
-	serialized_size := style_value.size_[0].serialize(mode)
+	serialized_size := style_value.size_.value.serialize(mode)
 	has_size := serialized_size != 'farthest-corner'
 	has_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
@@ -2507,7 +2507,7 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 		?ColorInterpolationMethodStyleValue(none)
 	}
 
-	mut result := RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_[0].absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
+	mut result := RadialGradientStyleValue.create(style_value.ending_shape_, style_value.size_.value.absolutized(context), (style_value.position_.absolutized(context) as PositionStyleValue), absolutized_color_stops, style_value.repeating_, absolutized_color_interpolation_method)
 	result.webkit_ = style_value.webkit_
 	result.webkit_shape_specified_ = style_value.webkit_shape_specified_
 	result.webkit_extent_keyword_ = style_value.webkit_extent_keyword_
@@ -2518,7 +2518,7 @@ pub fn (style_value RadialGradientStyleValue) absolutized(context ComputationCon
 
 pub struct ConicGradientStyleValue {
 pub mut:
-	from_angle_                 ?[]StyleValue
+	from_angle_                 &StyleValueSlot = unsafe { nil }
 	position_                   PositionStyleValue
 	color_stop_list_            []ColorStopListElement
 	repeating_                  GradientRepeating

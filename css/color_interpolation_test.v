@@ -82,17 +82,17 @@ fn test_color_interpolation_substitutes_and_preserves_missing_components() {
 		ColorResolutionContext{}) or { panic('colors with missing components did not interpolate') }
 	assert interpolated is OKLabColorStyleValue
 	oklab := interpolated as OKLabColorStyleValue
-	assert_interpolation_component_close(oklab.l_[0], 0.8)
-	assert_interpolation_component_close(oklab.a_[0], 0.2)
-	assert_interpolation_component_close(oklab.b_[0], 0.2)
-	assert_interpolation_component_close(oklab.alpha_[0], 0.5)
+	assert_interpolation_component_close(oklab.l_.value, 0.8)
+	assert_interpolation_component_close(oklab.a_.value, 0.2)
+	assert_interpolation_component_close(oklab.b_.value, 0.2)
+	assert_interpolation_component_close(oklab.alpha_.value, 0.5)
 
 	both_missing := interpolate_style_values_color(
 		parsed_interpolation_test_color('oklab(none 0.2 0.1)'),
 		parsed_interpolation_test_color('oklab(none 0.4 0.3)'), 0.5, method,
 		ColorResolutionContext{}) or { panic('colors with shared missing components did not interpolate') }
 	assert both_missing is OKLabColorStyleValue
-	assert style_value_is_none_keyword((both_missing as OKLabColorStyleValue).l_[0])
+	assert style_value_is_none_keyword((both_missing as OKLabColorStyleValue).l_.value)
 }
 
 fn test_rectangular_color_interpolation_premultiplies_alpha() {
@@ -106,7 +106,7 @@ fn test_rectangular_color_interpolation_premultiplies_alpha() {
 	assert_interpolation_component_close(color_function.channels_[0], 0.2)
 	assert_interpolation_component_close(color_function.channels_[1], 0)
 	assert_interpolation_component_close(color_function.channels_[2], 0.8)
-	assert_interpolation_component_close(color_function.alpha_[0], 0.5)
+	assert_interpolation_component_close(color_function.alpha_.value, 0.5)
 }
 
 fn test_color_mix_uses_its_explicit_interpolation_space() {
@@ -128,10 +128,10 @@ fn test_transparent_endpoint_borrows_the_other_colors_components() {
 	interpolated := parsed_interpolation_test_color_mix('color-mix(in oklab, red 10%, transparent)').absolutized(ComputationContext{})
 	assert interpolated is OKLabColorStyleValue
 	oklab := interpolated as OKLabColorStyleValue
-	assert math.abs(oklab.l_[0].as_number().number() - 0.627956) < 0.00001
-	assert math.abs(oklab.a_[0].as_number().number() - 0.224863) < 0.00001
-	assert math.abs(oklab.b_[0].as_number().number() - 0.125846) < 0.00001
-	assert_interpolation_component_close(oklab.alpha_[0], 0.1)
+	assert math.abs(oklab.l_.value.as_number().number() - 0.627956) < 0.00001
+	assert math.abs(oklab.a_.value.as_number().number() - 0.224863) < 0.00001
+	assert math.abs(oklab.b_.value.as_number().number() - 0.125846) < 0.00001
+	assert_interpolation_component_close(oklab.alpha_.value, 0.1)
 }
 
 fn test_color_mix_without_an_explicit_method_defaults_to_oklab() {
@@ -150,7 +150,7 @@ fn test_color_mix_applies_its_alpha_multiplier_before_color_conversion() {
 	mix := parsed_interpolation_test_color_mix('color-mix(in oklab, red 12.5%, blue 37.5%)')
 	absolutized := mix.absolutized(ComputationContext{})
 	assert absolutized is OKLabColorStyleValue
-	assert_interpolation_component_close((absolutized as OKLabColorStyleValue).alpha_[0], 0.5)
+	assert_interpolation_component_close((absolutized as OKLabColorStyleValue).alpha_.value, 0.5)
 	color := mix.to_color(ColorResolutionContext{}) or {
 		panic('alpha-multiplied color-mix did not resolve')
 	}

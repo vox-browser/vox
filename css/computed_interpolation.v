@@ -9236,7 +9236,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 			}
 		}
 		EdgeStyleValue {
-			if animated is EdgeStyleValue && underlying.offset_ != none && animated.offset_ != none {
+			if animated is EdgeStyleValue && underlying.offset_ != unsafe { nil } && animated.offset_ != unsafe { nil } {
 				offset := composite_style_value(property_id, underlying.offset(), animated.offset(), operation) or { return none }
 				StyleValue(EdgeStyleValue.create(none, offset))
 			} else {

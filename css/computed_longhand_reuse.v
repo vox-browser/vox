@@ -184,10 +184,10 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 			} else {
 				ComputedLonghandReuseValue{ kind: .rgb, color_syntax: value.color_syntax_,
 					has_name: value.name_ != none, text: value.name_ or { '' }, children: [
-					computed_longhand_reuse_typed_snapshot(&value.r_[0]),
-					computed_longhand_reuse_typed_snapshot(&value.g_[0]),
-					computed_longhand_reuse_typed_snapshot(&value.b_[0]),
-					computed_longhand_reuse_typed_snapshot(&value.alpha_[0]),
+					computed_longhand_reuse_typed_snapshot(&value.r_.value),
+					computed_longhand_reuse_typed_snapshot(&value.g_.value),
+					computed_longhand_reuse_typed_snapshot(&value.b_.value),
+					computed_longhand_reuse_typed_snapshot(&value.alpha_.value),
 				] }
 			}
 		}
@@ -203,13 +203,14 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 		}
 		FontStyleStyleValue {
 			mut children := []ComputedLonghandReuseValue{}
-			if angles := value.angle_value_ {
-				for index in 0 .. angles.len {
-					children << computed_longhand_reuse_typed_snapshot(&angles[index])
+			if value.angle_value_ != unsafe { nil } {
+				angles := value.angle_value_
+				for _ in 0 .. angles.len {
+					children << computed_longhand_reuse_typed_snapshot(&angles.value)
 				}
 			}
 			ComputedLonghandReuseValue{ kind: .font_style, integer: i64(value.font_style_),
-				has_name: value.angle_value_ != none, children: children }
+				has_name: value.angle_value_ != unsafe { nil }, children: children }
 		}
 		TimeStyleValue {
 			ComputedLonghandReuseValue{ kind: .time, number: value.time_.value_, integer: i64(value.time_.unit_) }
@@ -274,10 +275,10 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 				&& snapshot.has_name == (value.name_ != none) && snapshot.text == (value.name_ or { '' })
 				&& value.relative_origin_.len == 0
 				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
-				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.r_[0])
-				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.g_[0])
-				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.b_[0])
-				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.alpha_[0])
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &value.r_.value)
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[1], &value.g_.value)
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[2], &value.b_.value)
+				&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[3], &value.alpha_.value)
 		}
 		RatioStyleValue {
 			snapshot.kind == .ratio && snapshot.children.len == 2
@@ -287,11 +288,12 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 		}
 		FontStyleStyleValue {
 			if snapshot.kind != .font_style || snapshot.integer != i64(value.font_style_)
-				|| snapshot.has_name != (value.angle_value_ != none) {
+				|| snapshot.has_name != (value.angle_value_ != unsafe { nil }) {
 				false
-			} else if angles := value.angle_value_ {
+			} else if value.angle_value_ != unsafe { nil } {
+				angles := value.angle_value_
 				angles.len == 1 && snapshot.children.len == 1
-					&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &angles[0])
+					&& computed_longhand_reuse_typed_snapshot_matches(&snapshot.children[0], &angles.value)
 			} else {
 				snapshot.children.len == 0
 			}
@@ -350,7 +352,7 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 				&& value.numerator_.len == 1 && value.denominator_.len == 1
 				&& value.numerator_[0] is NumberStyleValue && value.denominator_[0] is NumberStyleValue
 		}
-		FontStyleStyleValue { return computed_longhand_constants_enabled() && value.angle_value_ == none }
+		FontStyleStyleValue { return computed_longhand_constants_enabled() && value.angle_value_ == unsafe { nil } }
 		TimeStyleValue { return computed_longhand_constants_enabled() }
 		ColorStyleValue, NumberStyleValue, IntegerStyleValue, PercentageStyleValue,
 		DisplayStyleValue, StringStyleValue, CustomIdentStyleValue {
@@ -375,10 +377,10 @@ fn computed_longhand_reuse_typed_value_is_simple(value &StyleValue) bool {
 		RGBColorStyleValue {
 			return computed_longhand_colors_enabled() && value.relative_origin_.len == 0
 				&& value.r_.len == 1 && value.g_.len == 1 && value.b_.len == 1 && value.alpha_.len == 1
-				&& computed_longhand_reuse_color_component_is_simple(&value.r_[0])
-				&& computed_longhand_reuse_color_component_is_simple(&value.g_[0])
-				&& computed_longhand_reuse_color_component_is_simple(&value.b_[0])
-				&& computed_longhand_reuse_color_component_is_simple(&value.alpha_[0])
+				&& computed_longhand_reuse_color_component_is_simple(&value.r_.value)
+				&& computed_longhand_reuse_color_component_is_simple(&value.g_.value)
+				&& computed_longhand_reuse_color_component_is_simple(&value.b_.value)
+				&& computed_longhand_reuse_color_component_is_simple(&value.alpha_.value)
 		}
 		else { return longhand_shape_is_simple(value) }
 	}
@@ -467,10 +469,10 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			}
 			mut hash := (u64(12) ^ u64(value.color_syntax_) ^ if value.name_ != none { u64(256) } else { u64(0) }) * u64(0x100000001b3)
 			hash = (hash ^ u64((value.name_ or { '' }).hash())) * u64(0x100000001b3)
-			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.r_[0])?) * u64(0x100000001b3)
-			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.g_[0])?) * u64(0x100000001b3)
-			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.b_[0])?) * u64(0x100000001b3)
-			(hash ^ computed_longhand_reuse_typed_hash(&value.alpha_[0])?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.r_.value)?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.g_.value)?) * u64(0x100000001b3)
+			hash = (hash ^ computed_longhand_reuse_typed_hash(&value.b_.value)?) * u64(0x100000001b3)
+			(hash ^ computed_longhand_reuse_typed_hash(&value.alpha_.value)?) * u64(0x100000001b3)
 		}
 		RatioStyleValue {
 			if !computed_longhand_reuse_typed_value_is_simple(value) { return none }

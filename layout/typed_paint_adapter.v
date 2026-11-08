@@ -1385,7 +1385,7 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 	center_fraction_x, center_fraction_y := resolved_typed_gradient_position(resolution_context, gradient.position_, width, height)
 	center_x := center_fraction_x * width
 	center_y := center_fraction_y * height
-	components := if radial_size := gradient.size_[0].as_radial_size() {
+	components := if radial_size := gradient.size_.value.as_radial_size() {
 		radial_size.components()
 	} else {
 		[]css.RadialSizeStyleValueComponent{}

@@ -18,10 +18,10 @@ fn test_longhand_reuse_rgb_snapshots_guard_components_syntax_and_optional_name()
 		assert computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)
 		if mut changed is RGBColorStyleValue {
 			match field {
-				0 { changed.r_[0] = StyleValue(NumberStyleValue.create(11)) }
-				1 { changed.g_[0] = StyleValue(NumberStyleValue.create(21)) }
-				2 { changed.b_[0] = StyleValue(NumberStyleValue.create(31)) }
-				3 { changed.alpha_[0] = StyleValue(NumberStyleValue.create(0.6)) }
+				0 { changed.r_.value = StyleValue(NumberStyleValue.create(11)) }
+				1 { changed.g_.value = StyleValue(NumberStyleValue.create(21)) }
+				2 { changed.b_.value = StyleValue(NumberStyleValue.create(31)) }
+				3 { changed.alpha_.value = StyleValue(NumberStyleValue.create(0.6)) }
 				4 { changed.color_syntax_ = .legacy }
 				5 { changed.name_ = 'named' }
 				else { changed.name_ = '' }
@@ -68,7 +68,7 @@ fn test_longhand_reuse_rgb_matches_uncached_computation_and_rejects_mutated_reta
 	longhand_reuse_assert_oracle(actual, computer, element, mut second)
 	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
 	if mut box.value is RGBColorStyleValue {
-		box.value.r_[0] = StyleValue(NumberStyleValue.create(99))
+		box.value.r_.value = StyleValue(NumberStyleValue.create(99))
 	} else { panic('RGB expected') }
 	assert !computer.restore_computed_longhands(key, second, mut probe)
 	updated := computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
@@ -90,7 +90,7 @@ fn test_longhand_reuse_rgb_parent_payload_mutations_are_checked_even_after_hash_
 	assert computer.restore_computed_longhands(key, cascaded, mut probe)
 	mut box := unsafe { &TypedStyleValueBox(color.css_value_handle) }
 	if mut box.value is RGBColorStyleValue {
-		box.value.alpha_[0] = StyleValue(NumberStyleValue.create(0.25))
+		box.value.alpha_.value = StyleValue(NumberStyleValue.create(0.25))
 	} else { panic('RGB expected') }
 	assert !computer.restore_computed_longhands(key, cascaded, mut probe)
 	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut cascaded)
@@ -101,7 +101,7 @@ fn test_longhand_reuse_rgb_excludes_context_dependent_and_malformed_channels() {
 	for count in [0, 2] {
 		mut malformed := longhand_reuse_rgb_value()
 		if mut malformed is RGBColorStyleValue {
-			malformed.r_ = []StyleValue{len: count, init: StyleValue(NumberStyleValue.create(10))}
+			malformed.r_ = &StyleValueSlot{len: count, value: StyleValue(NumberStyleValue.create(10))}
 		}
 		assert !computed_longhand_reuse_typed_value_is_simple(&malformed)
 		assert computed_longhand_reuse_typed_hash(&malformed) == none
@@ -109,13 +109,13 @@ fn test_longhand_reuse_rgb_excludes_context_dependent_and_malformed_channels() {
 	}
 	mut relative := longhand_reuse_rgb_value()
 	if mut relative is RGBColorStyleValue {
-		relative.r_[0] = StyleValue(LengthStyleValue.create(Length.new(1, .em)))
+		relative.r_.value = StyleValue(LengthStyleValue.create(Length.new(1, .em)))
 	}
 	assert !computed_longhand_reuse_typed_value_is_simple(&relative)
 	assert computed_longhand_reuse_typed_hash(&relative) == none
 	calculated := parse_css_value(ParsingParams{}, 'calc(1em + 1px)', .width) or { panic('calculation') }
 	if mut relative is RGBColorStyleValue {
-		relative.r_[0] = typed_style_value_logic_from_dom(calculated) or { panic('typed calculation') }
+		relative.r_.value = typed_style_value_logic_from_dom(calculated) or { panic('typed calculation') }
 	}
 	assert !computed_longhand_reuse_typed_value_is_simple(&relative)
 	assert computed_longhand_reuse_typed_hash(&relative) == none
@@ -488,11 +488,15 @@ fn test_longhand_reuse_accepts_equal_payloads_in_distinct_parent_and_cascade_box
 		PropertyID.font_size: '20px'
 		PropertyID.color:     'rgb(255, 0, 0)'
 	} {
-		replacement := if id == .color {
+		replacement_source := if id == .color {
 			dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create(Color.rgba(255, 0, 0, 255))))
 		} else {
 			parse_css_value(ParsingParams{}, text, id) or { panic(text) }
 		}
+		// This fixture explicitly exercises equal payloads in independent boxes.
+		// Ordinary scalar construction may reuse an immutable typed payload.
+		replacement_value := typed_style_value_logic_from_dom(replacement_source) or { panic('replacement source') }
+		replacement := dom_style_value_from_value_logic_uncached(replacement_value)
 		original := parent_style.property(id, .no) or { panic(text) }
 		original_typed := typed_style_value_logic_from_dom(original) or { panic('original') }
 		replacement_typed := typed_style_value_logic_from_dom(replacement) or { panic('replacement') }
@@ -755,11 +759,10 @@ fn test_constant_font_snapshots_guard_angles_and_reject_malformed_storage() {
 			StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))))
 		if mut changed is FontStyleStyleValue {
 			changed.angle_value_ = match field {
-				0 { [StyleValue(AngleStyleValue.create(Angle.new(15, .deg)))] }
-				1 { [StyleValue(AngleStyleValue.create(Angle.new(14, .rad)))] }
-				2 { []StyleValue{} }
-				else { [StyleValue(AngleStyleValue.create(Angle.new(14, .deg))),
-					StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))] }
+				0 { style_value_slot(StyleValue(AngleStyleValue.create(Angle.new(15, .deg)))) }
+				1 { style_value_slot(StyleValue(AngleStyleValue.create(Angle.new(14, .rad)))) }
+				2 { &StyleValueSlot{len: 0} }
+				else { &StyleValueSlot{len: 2, value: StyleValue(AngleStyleValue.create(Angle.new(14, .deg)))} }
 			}
 		}
 		assert !computed_longhand_reuse_typed_snapshot_matches(snapshot, &changed)

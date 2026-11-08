@@ -283,7 +283,7 @@ pub struct AnchorStyleValue {
 pub mut:
 	anchor_name_    ?string
 	anchor_side_    []StyleValue = [StyleValue(KeywordStyleValue{})]
-	fallback_value_ ?[]StyleValue
+	fallback_value_ &StyleValueSlot = unsafe { nil }
 }
 
 pub fn AnchorStyleValue.create(anchor_name ?string, anchor_side StyleValue, fallback_value ?StyleValue) AnchorStyleValue {
@@ -340,7 +340,7 @@ pub mut:
 	anchor_name_ ?string
 	anchor_size_ ?AnchorSize
 	// StyleValue includes AnchorSizeStyleValue, so the optional child must be boxed.
-	fallback_value_ ?[]StyleValue
+	fallback_value_ &StyleValueSlot = unsafe { nil }
 }
 
 pub fn AnchorSizeStyleValue.create(anchor_name ?string, anchor_size ?AnchorSize, fallback_value ?StyleValue) AnchorSizeStyleValue {
@@ -1099,8 +1099,8 @@ pub fn (style_value ContentStyleValue) properties_equal(other ContentStyleValue)
 pub struct CursorStyleValue {
 pub mut:
 	image_ []CursorImageValue = [CursorImageValue{}]
-	x_     ?[]StyleValue
-	y_     ?[]StyleValue
+	x_     &StyleValueSlot = unsafe { nil }
+	y_     &StyleValueSlot = unsafe { nil }
 }
 
 pub fn CursorStyleValue.create(image CursorImageValue, x ?StyleValue, y ?StyleValue) CursorStyleValue {
@@ -1334,7 +1334,7 @@ pub fn (style_value EasingStyleValue) properties_equal(other EasingStyleValue) b
 pub struct EdgeStyleValue {
 pub mut:
 	edge_   ?PositionEdge
-	offset_ ?[]StyleValue
+	offset_ &StyleValueSlot = unsafe { nil }
 }
 
 pub fn EdgeStyleValue.create(edge ?PositionEdge, offset ?StyleValue) EdgeStyleValue {
@@ -1667,7 +1667,7 @@ pub fn (style_value FontSourceStyleValue) properties_equal(other FontSourceStyle
 pub struct FontStyleStyleValue {
 pub mut:
 	font_style_  FontStyleKeyword
-	angle_value_ ?[]StyleValue
+	angle_value_ &StyleValueSlot = unsafe { nil }
 }
 
 pub fn FontStyleStyleValue.create(font_style FontStyleKeyword, angle_value ?StyleValue) FontStyleStyleValue {
@@ -1939,7 +1939,7 @@ pub fn (key RandomCachingKey) cache_key_string() string {
 
 pub struct RandomValueSharingStyleValue {
 pub mut:
-	fixed_value_    ?[]StyleValue
+	fixed_value_    &StyleValueSlot = unsafe { nil }
 	is_auto_        bool
 	name_           ?string
 	element_shared_ bool
@@ -2243,11 +2243,11 @@ pub enum ShadowType {
 pub struct ShadowStyleValue {
 pub mut:
 	shadow_type_     ShadowType
-	color_           ?[]StyleValue
+	color_           &StyleValueSlot = unsafe { nil }
 	offset_x_        []StyleValue = [StyleValue(KeywordStyleValue{})]
 	offset_y_        []StyleValue = [StyleValue(KeywordStyleValue{})]
-	blur_radius_     ?[]StyleValue
-	spread_distance_ ?[]StyleValue
+	blur_radius_     &StyleValueSlot = unsafe { nil }
+	spread_distance_ &StyleValueSlot = unsafe { nil }
 	placement_       ShadowPlacement
 }
 
