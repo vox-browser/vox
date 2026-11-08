@@ -49,6 +49,7 @@ mut:
 	runtime            &browserjs.Runtime = unsafe { nil }
 	scripts            ?&BrowserScriptRequestLoader
 	images             ?&BrowserImageRequestLoader
+	adblock_tokens     BrowserAdblockTokenCache
 	load_fired         bool
 	pending_navigation ?string
 }
@@ -164,6 +165,7 @@ fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
 fn (mut service BrowserHostedDocument) close() {
 	if mut loader := service.scripts { loader.cancel() }
 	if mut loader := service.images { loader.cancel() }
+	service.adblock_tokens.release()
 	if service.runtime != unsafe { nil } {
 		service.runtime.close()
 		service.runtime = unsafe { nil }
@@ -315,6 +317,11 @@ fn (mut service BrowserHostedDocument) initialize(engine browserjs.Engine, mut m
 	document := service.document
 	base := document.base_url().serialize()
 	messages << install_external_styles(document, base, service.resources)
+	// Each frame is a separate filtering document. The parent's user sheet
+	// cannot hide adverts inside a same-origin or cross-origin child.
+	install_browser_adblock_styles_with_tokens(document, '', mut service.adblock_tokens) or {
+		messages << 'Child adblock styles: ${err.msg()}'
+	}
 	install_object_image_fetch_hooks(document)
 	install_video_poster_fetch_hooks(document)
 	mut images := new_browser_image_request_loader(document, service.resources)
@@ -330,6 +337,8 @@ fn (mut service BrowserHostedDocument) initialize(engine browserjs.Engine, mut m
 		install_static_browser_image_fetch_hooks_with_loader(document, map[string]bool{}, images)
 	}
 	images.finish_initialization(service.runtime != unsafe { nil })
+	refresh_browser_adblock_with_tokens(document, service.runtime, mut messages,
+		mut service.adblock_tokens)
 	service.resources = map[string]PreloadedResource{}
 }
 
@@ -362,7 +371,15 @@ fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 		}
 		loader.start_queued_fetches()
 	}
-	if service.runtime == unsafe { nil } { return changed }
+	if service.runtime == unsafe { nil } {
+		if service.adblock_tokens.tree_version != service.document.dom_tree_version()
+			|| service.adblock_tokens.attribute_version != service.document.attribute_version() {
+			refresh_browser_adblock_with_tokens(service.document, service.runtime, mut messages,
+				mut service.adblock_tokens)
+			changed = true
+		}
+		return changed
+	}
 	if mut scripts := service.scripts { scripts.poll(service.runtime, mut messages) }
 	mut runtime := service.runtime
 	if !service.document.anything_is_delaying_the_load_event() {
@@ -373,6 +390,8 @@ fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 		service.pending_navigation = apply_javascript_runtime_state(service.document, state.value, runtime, mut messages)
 		state.finish()
 		runtime.evaluate_host('__ladybirdClearLogs()') or {}
+		refresh_browser_adblock_with_tokens(service.document, runtime, mut messages,
+			mut service.adblock_tokens)
 		changed = true
 	}
 	return changed

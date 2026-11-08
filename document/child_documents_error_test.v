@@ -72,7 +72,9 @@ fn test_browser_child_empty_http_error_keeps_parent_and_sibling_documents_distin
 		host.poll(mut messages)
 		_ = layout.run_document_layout(parent, 320, 200)
 		if service := host.children[0].service {
-			if service.initialized && service.load_fired { break }
+			// Scheduling load precedes its task releasing the parent's delay.
+			if service.initialized && service.load_fired
+				&& !parent.anything_is_delaying_the_load_event() { break }
 		}
 	}
 	assert host.children.len == 2
