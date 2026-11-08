@@ -100,3 +100,24 @@ now cover 149,526 source cases, counting individual ANS alias transitions.
 Frame/pixel decoding and production integration remain, so the Rust JPEG XL
 backend, build hooks and native test tool are retained. The LibJS results above
 are historical and were not rerun for this independent JPEG XL slice.
+
+## Frame and modular continuation on 2026-11-09
+
+The V JPEG XL package now also parses frame/restoration headers, permutations,
+complete/incremental section tables, modular transform headers and decision
+trees. All fourteen predictors, weighted predictor error/row state and all
+42 reversible color transforms run in V. Six browser fixtures have exact
+frame/section-chain checks; no pixels are decoded by these chains yet.
+
+The fifteen-file package passes through the V corpus checker in both GC modes
+with unavailable Rust compiler paths. Frozen comparisons now cover 176,133
+source cases, including whole weighted transcripts and individual ANS alias
+transitions. [The frame/modular report](JPEGXL_V_FRAME_MODULAR.md) records the
+source coverage, commands, memory observations and remaining boundaries.
+
+Modular channel reconstruction, palettes/squeeze application, VarDCT, filters,
+pixel conversion/output and browser integration still need completion.
+`native_jpegxl_rust`, its Cargo/CI hooks and `tools/test_jpegxl.py` remain until
+the V path preserves the production decoder's supported images and limits.
+This does not claim that all Rust dependencies, including developer tools, have
+been removed. Prior LibJS/ICU results above were not rerun for this continuation.

@@ -50,9 +50,12 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now executes nine test files covering primitives, containers,
-Huffman/ANS, context maps, LZ77, checkpoints and file/metadata/transform headers.
+The `jpegxl` suite now executes fifteen test files covering primitives,
+containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
+headers, permutations, section tables, predictors, reversible color transforms
+and modular decision trees. Its 176,133 source cases include whole weighted
+predictor transcripts and individual ANS alias transitions.
 It passes in default and no-GC modes with unavailable Rust compiler paths.
-[The current verification report](../docs/translation-audit/JPEGXL_V_ENTROPY_HEADERS.md)
+[The current verification report](../docs/translation-audit/JPEGXL_V_FRAME_MODULAR.md)
 records the source-case coverage and limits. This checks the V layers; the
 production pixel decoder and its native developer test still require Rust.

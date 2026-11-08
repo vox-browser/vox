@@ -141,8 +141,8 @@ and test-serialization errors were corrected without changing source records.
 Permutation and TOC parsing now translate entropy-coded Lehmer ranks, skipped
 prefixes, composition, byte alignment, entry-size coders and incremental read
 state. A bounded order-statistics tree replaces naive removal. The V entry cap
-is 16,777,216; invalid API sizes, ranks and indices return errors. Section views remain bounded
-and use local cursors, while the parent advances through the physical payloads;
+is 16,777,216; invalid API sizes, ranks and indices return errors. Section views
+remain bounded and use local cursors, while the parent advances through the physical payloads;
 logical section order follows the source permutation.
 
 Comparisons add 2,424 complete TOCs, 2,424 incremental state transcripts,
@@ -203,13 +203,15 @@ errors, empty ranges and caller size limits are included. Separate checks cover
 both sides of the depth bound. Default and no-GC checks pass. Computing pixel
 properties and reconstructing channel samples remain pending.
 
-Remaining work includes modular
-pixel properties/channel decoding, palettes and squeeze transforms, VarDCT, filtering, pixel color conversion, oriented output
+Remaining work includes modular pixel properties/channel decoding, palettes and
+squeeze transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
-remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
+remains a broader parity task. All fifteen module test files pass with default
+GC and `-gc none` through
 `tools/check_translation_corpora.v --suite jpegxl`, with unavailable Rust compiler
-paths. The complete package now checks 149,526 source cases, counting individual
-ANS alias transitions. [The entropy/header verification report](../docs/translation-audit/JPEGXL_V_ENTROPY_HEADERS.md)
+paths. The complete package now checks 176,133 source cases, counting individual
+ANS alias transitions and whole weighted-predictor transcripts.
+[The frame/modular verification report](../docs/translation-audit/JPEGXL_V_FRAME_MODULAR.md)
 records the commands, limits and source-case definitions.
 
 The V package is not connected to the production image path until
