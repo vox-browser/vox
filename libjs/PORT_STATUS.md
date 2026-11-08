@@ -2162,32 +2162,27 @@ Future fixture tests require no Rust compiler. Initial test-compilation failures
 in sum narrowing and optional-name handling were corrected in the test
 serializer; no failed attempt receives execution credit. Checks use current V,
 `-enable-globals -memory-limit 10G -b c -cc clang`, with separate 3 GiB guards.
-These grammar tests do not execute a compiled regex or establish a Rust-free
-browser. The browser still uses the native backend pending the compiler and
-execution-loop ports.
+The bytecode compiler, fast/general VM dispatch, lookarounds, bounded
+required-literal analysis and high-level `RegexEngine` are now translated too.
+The frozen full-engine corpus compares 26,544 complete source results and
+capture/output buffers in both GC modes. Ninety repeated-empty-class-string
+UnicodeSets cases exhausted the source oracle's 3 GiB guard; separate V
+regressions fix zero-progress repetition and compare captures with Node
+v26.8.1. See [LibRegex status](../libregex/PORT_STATUS.md) for ownership,
+limits and source-oracle boundaries. HTML input patterns use this V engine;
+regex no longer builds or links a Rust archive.
 
 The frontend and supported VM execution slice are integrated into the browser;
 JavaScriptCore continues to execute scripts in the default mode. This is not a
 complete LibJS runtime migration.
 
-- RegExp flags, named-group surrogate checks, ParsePattern preprocessing and
-  source escaping are translated, but `compile_regex_pattern()` still has no
-  backend. LibRegex's complete AST/bytecode models, input/capture primitives,
-  pattern-hint analysis, literal prefilters, scratch storage, register snapshots,
-  saved choices, modifiers/repetition, character traversal, canonicalization,
-  builtin classes, literal matching, word boundaries, backreferences, UnicodeSet
-  case closure/range operations, character classes, simple-scan membership,
-  Unicode property lookup/resolution/validation, string-property data,
-  simple-match predicates, candidate filters, simple-scan execution, fast greedy
-  consumption, suffix measurements, saved-state backtracking and shared
-  failure/assertion handlers are
-  translated. Its grammar parser is now translated separately; `compiler.rs`,
-  fast/general VM execution, lookaround
-  bodies and `regex.rs`/FFI remain pending.
-  The RegExp object, allocation/initialization, constructor/prototype methods and
-  matching depend on those remaining slices. Neither the JavaScript AST corpus,
-  RegExp preparation corpus nor regex helper corpus establishes regex grammar
-  or matching conformance.
+- RegExp flags, named-group surrogate checks, ParsePattern preprocessing,
+  source escaping and the standalone matching engine are translated. The
+  frontend `compile_regex_pattern()` hook still has no backend, and the RegExp
+  object, allocation/initialization and constructor/prototype integration remain
+  pending. The independent grammar and full-engine corpora establish their
+  recorded cases, rather than full ECMAScript matching conformance. The browser
+  continues to execute author scripts through JavaScriptCore by default.
 - The parser recursion guard is **32 guarded calls**, rather than upstream's
   2,000. V's flattened expression and statement records produce much larger
   stack frames. The guard reports a positioned syntax error instead of a stack

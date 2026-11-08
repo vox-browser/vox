@@ -1,47 +1,49 @@
-# LibRegex wrapper translation
+# LibRegex V translation
 
-Upstream reference: Ladybird
-`963d46a829f3e1b79f44dba9d02afb70654300fa`.
+Upstream reference: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`.
 
-| Source | V implementation | Completed behavior |
-| --- | --- | --- |
-| `Libraries/LibRegex/RustRegex.{h,cpp}` | `compiled_rust_regex.c.v` | Native owner construction/destruction and moves, all compile flags, original compile errors, ASCII/UTF-16 dispatch, named captures, cached capture slots, matching, single-astral-literal detection, and the source 256-slot doubling loop for bulk matches |
-| `Libraries/LibRegex/ECMAScriptRegex.{h,cpp}` | `ecmascript_regex.v` | Concrete wrapper construction and moves, match/limit result mapping, all forwarding operations, named-group records and match pairs |
-| `Libraries/LibUnicode/CharacterTypes.cpp` C exports | `unicode_abi.v` | Calls to the existing translated LibJS Unicode property, string-property, case-fold, range and closure helpers through their ICU ABI |
-| `Libraries/LibWeb/HTML/HTMLInputElement.cpp:303–335,3856–3894` | `../html/html_input_element.v` | Original-pattern compile gate, UnicodeSets mode, noncapturing full-value anchors, applicable-state and empty-value gates, multiple-email nonempty split views and live validity synchronization |
+The regex parser, bytecode compiler, fast/general execution loops, lookarounds,
+required-literal analysis and high-level engine are implemented in `../libjs/`.
+`compiled_regex.v` translates the source owner wrapper, including flags, original
+compile errors, named captures, ASCII/UTF-16 dispatch, capture slots, moves,
+single-astral detection and bulk-buffer growth. `ecmascript_regex.v` preserves
+the concrete wrapper's result mapping and forwarding operations. HTML input
+pattern validation now calls this V engine in UnicodeSets mode, preserving
+the original-pattern compile gate and noncapturing full-value anchors.
 
-The C++ source wrappers use a Rust backend. This translation uses byte-exact,
-repository-owned copies of that same pinned backend, listed with SHA-256 hashes
-in [native/manifest.json](native/manifest.json). The native header contains ABI
-declarations only. No substitute V regex grammar or JavaScriptCore regex call is
-used for this HTML algorithm. The Rust parser, compiler and instruction loop
-have **not** been translated to V; the separate LibJS runtime RegExp objects and
-its partial V regex VM remain unfinished.
+There is no regex Rust snapshot, archive build or link dependency. Unicode
+properties and case data still use the existing ICU bridge. This does not
+replace JavaScriptCore or complete LibJS's RegExp object, constructor and
+prototype integration; the frontend `compile_regex_pattern()` hook remains
+unfinished.
 
-Build the offline dependency with `python3 tools/build_regex_backend.py` before
-running V tests in a fresh checkout. `build-prod-browser.sh` performs this step
-automatically. It requires Rust edition 2024 support; `RUSTC` selects the
-compiler. Archives are built under `Build/libregex/{darwin,linux,windows}/` so
-concurrent hosts keep separate link inputs, without reading or linking the
-Ladybird checkout. Source verification is available separately as
-`python3 tools/build_regex_backend.py --verify-only`.
+The frozen parser corpus contains 3,018 complete source AST/error records.
+The full-engine corpus contains 26,544 exact source records, including every
+capture/output slot, UTF-16 surrogates, flags, ASCII dispatch and bulk-buffer
+capacities. Both GC modes pass. The temporary migration oracle used the pinned,
+unchanged Rust implementation and the same translated Unicode exports as the
+old browser backend. Future checks consume the frozen records without Rust;
+see [the reference-checker guide](../tools/REFERENCE_CORPORA.md).
 
-The focused wrapper tests cover UnicodeSets intersections, named captures and
-backreferences, original compile errors, empty input, capture preservation on a
-failed match, ASCII and retained UTF-16 storage paths, 300-match buffer growth,
-move ownership and astral literals. They pass with default GC and `-gc none`.
-The HTML tests cover set subtraction, changed backreference numbering under the
-old capturing wrapper, missing/empty/invalid/inapplicable patterns and email
-lists; the new and existing input test files pass together with GC disabled.
-The new input and wrapper files also pass together with default GC. A
-`-prod -gc none` probe executes UnicodeSets matching, named captures and buffer
-growth outside assertions and passes (`source-regex-wrapper-production.log`
-under `Build/audit-fixes/`).
+Ninety repeated-empty-class-string `/v` cases could not produce source
+expectations: the source exceeded the 3 GiB memory guard. They are excluded
+from the count above. Separate regression tests bound zero-progress repetition
+and verify captures against Node v26.8.1 for six patterns, including nested set
+intersection. Successful source records have no case overrides. This fixes an
+inherited source defect; it does not establish full ECMAScript conformance.
+The source 10,000,000-step execution limit is retained. Group/class parsing
+and nested lookaround execution have explicit stack-safety bounds of 128.
 
-Callers explicitly destroy the native owner, matching the source's destructor;
-automatic V GC finalization and FlyString interning are not implemented here.
-The HTML caller uses the existing UTF-8 DOM/model string representation;
-arbitrary lone-surrogate DOM strings remain a broader string-storage boundary.
-The source Rust panic initialization hook and complete native startup/VM graph
-are outside this wrapper slice. These limits do not use replacement regex
-algorithms or fabricated execution results.
+The focused wrapper tests cover errors, moves, destruction, set operations,
+named backreferences, buffer growth and source surrogate conversion. They pass
+in both GC modes. The HTML input-pattern caller also executes successfully with
+`-gc none` and unavailable Rust compiler paths. Windows native smoke code
+compiles and links with warnings treated as errors; it was not executed on
+Windows for this change. No production browser was rebuilt, so an older shared
+bundle is not evidence for the new V runtime.
+
+`destroy()` detaches V-owned references and is idempotent; allocation lifetime
+now follows V's collector or the caller's arena. It does not reproduce immediate
+Rust destructor reclamation under `-gc none`. DOM strings still use the existing
+UTF-8 representation, so arbitrary lone-surrogate DOM storage remains a broader
+boundary. JPEG XL remains a separate Rust dependency pending its V decoder port.

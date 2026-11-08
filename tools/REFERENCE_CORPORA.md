@@ -1,0 +1,52 @@
+# Checking translated modules without Rust
+
+`check_translation_corpora.v` runs V tests against independently generated,
+checked-in reference records. It never writes expected results. The regex
+runtime, YUV conversion and GB18030 generator no longer need a Rust compiler.
+JPEG XL still uses its Rust decoder and test tool pending a complete V port.
+
+Run from the canonical checkout, with current V:
+
+```sh
+python3 tools/run_memory_bounded.py \
+  --lock Build/reference-driver.lock --report Build/reference-driver.json -- \
+  v -memory-limit 10G -b c -cc clang run tools/check_translation_corpora.v \
+  --suite regex --gc none
+```
+
+Available groups are `all`, `encoding`, `replacement` (one focused encoding
+file), `regex`, `yuv` and `gb18030`. `--compiler /path/to/v` selects the test
+compiler; `V_BIN` also works. `--dry-run` validates input paths and prints the
+exact argv without executing tests. `--jobs 1..4` controls compilation jobs,
+with one by default. Each test invocation runs under a separate 3 GiB process
+tree guard with V's `-memory-limit 10G`. The checker removes its temporary
+lock/report; remove the outer driver's lock/report after recording its result.
+Do not run broad suites concurrently.
+
+The migration retired forty Python regex/encoding source-refresh scripts that
+compiled Rust, including helpers imported indirectly by other probes. Their
+independent golden files remain the test authority. Automatic regeneration was
+retired, not replaced with a generator that computes expectations from the
+candidate V implementation. Refreshing a source reference requires a separately
+reviewed, pinned independent oracle and a documented migration. The C++ Wasm
+source probes and `libjs_regexp_preparation_corpus.py` remain independent tools.
+
+The GB18030 data generator is a separate pure V tool:
+`v -memory-limit 10G run tools/gen_gb18030_data.v --check`, also run through a
+memory guard. It reads checksummed official WHATWG indices in
+`encoding/indices/` and preserves the existing runtime table bytes apart from
+attribution. It does not depend on `encoding_rs` or Cargo.
+
+For the current regex migration, the parser fixture has 3,018 complete AST/error
+records and the engine fixture has 26,544 exact matching/capture/bulk records
+from Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`. Successful engine
+records have no overrides. Ninety `/v` repeated-empty-class-string cases
+exceeded the source oracle's 3 GiB memory guard and are excluded. Separate
+regressions verify bounded repetition and captures against Node v26.8.1.
+See [LibRegex status](../libregex/PORT_STATUS.md) for the remaining runtime and
+ownership boundaries.
+
+The checker was compiled, its complete dry-run path and invalid-suite failure
+were checked, and its `replacement` suite actually executed successfully under
+the guard. These driver checks do not claim that every selected suite was run
+through the driver; individual module checks are recorded with their changes.
