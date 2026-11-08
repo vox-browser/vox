@@ -139,19 +139,19 @@ const signing_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'ECDSA', 'HMAC', 'Ed
 const generation_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'X25519', 'X448', 'Ed25519', 'Ed448', 'ML-DSA-44',
 	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305', 'AES-OCB',
-	'KMAC128', 'KMAC256']
+	'KMAC128', 'KMAC256', 'MLKEM768-P256', 'MLKEM768-X25519', 'MLKEM1024-P384']
 const import_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2', 'X25519', 'X448', 'Ed25519', 'Ed448',
 	'ML-DSA-44', 'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'Argon2d',
-	'Argon2i', 'Argon2id', 'ChaCha20-Poly1305', 'AES-OCB', 'KMAC128', 'KMAC256']
+	'Argon2i', 'Argon2id', 'ChaCha20-Poly1305', 'AES-OCB', 'KMAC128', 'KMAC256', 'MLKEM768-P256', 'MLKEM768-X25519', 'MLKEM1024-P384']
 const export_algorithms = ['RSASSA-PKCS1-v1_5', 'RSA-PSS', 'RSA-OAEP', 'ECDSA', 'ECDH', 'AES-CTR',
 	'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'X25519', 'X448', 'Ed25519', 'Ed448', 'ML-DSA-44',
 	'ML-DSA-65', 'ML-DSA-87', 'ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'ChaCha20-Poly1305', 'AES-OCB',
-	'KMAC128', 'KMAC256']
+	'KMAC128', 'KMAC256', 'MLKEM768-P256', 'MLKEM768-X25519', 'MLKEM1024-P384']
 const derive_algorithms = ['ECDH', 'HKDF', 'PBKDF2', 'X25519', 'X448', 'Argon2d', 'Argon2i', 'Argon2id']
 const key_length_algorithms = ['AES-CTR', 'AES-CBC', 'AES-GCM', 'AES-KW', 'HMAC', 'HKDF', 'PBKDF2',
 	'Argon2d', 'Argon2i', 'Argon2id', 'ChaCha20-Poly1305', 'AES-OCB', 'KMAC128', 'KMAC256']
-const encapsulation_algorithms = ['ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024']
+const encapsulation_algorithms = ['ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'MLKEM768-P256', 'MLKEM768-X25519', 'MLKEM1024-P384']
 
 pub fn supported_algorithms_for_operation(operation string) []string {
 	return match operation {
@@ -367,6 +367,7 @@ pub fn (subtle_crypto &SubtleCrypto) generate_key(params KeyGenerationParams, ex
 			GeneratedKey{ key: key }
 		}
 		AlgorithmParams {
+			if is_hybrid_kem(normalized) { return generate_hybrid_kem(normalized,extractable,normalized_usages) }
 			if normalized == 'Ed25519' {
                 pair := generate_ed25519_key(extractable, normalized_usages)!
                 if pair.private_key.usages.len == 0 { return error('SyntaxError: usages must not be empty') }
@@ -430,6 +431,11 @@ pub fn (subtle_crypto &SubtleCrypto) import_key(format KeyFormat, material []u8,
 	_ = subtle_crypto
 	normalized := normalize_an_algorithm(import_algorithm_name(algorithm), 'importKey')!
 	normalized_usages := normalize_key_usages_for_operation(usages)
+    if is_hybrid_kem(normalized) {
+        key := import_hybrid_kem(normalized,format,material,extractable,normalized_usages)!
+        if key.type_ == .private_key && normalized_usages.len == 0 { return error('SyntaxError: usages must not be empty') }
+        return key
+    }
     if normalized == 'ChaCha20-Poly1305' {
         // Existing typed raw convenience alias; source AlgorithmMethods and JS
         // importKey support raw-secret and JWK only.
@@ -573,6 +579,10 @@ pub fn (subtle_crypto &SubtleCrypto) import_jwk(jwk JsonWebKey, algorithm Import
 pub fn (subtle_crypto &SubtleCrypto) export_key(format KeyFormat, key &CryptoKey) ![]u8 {
 	_ = subtle_crypto
 	normalize_an_algorithm(key.algorithm_name(), 'exportKey')!
+    if is_hybrid_kem(key.algorithm_name()) {
+        if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
+        return export_hybrid_kem(format,key)
+    }
     if key.algorithm_name() == 'ChaCha20-Poly1305' {
         if !key.extractable { return error('InvalidAccessError: Key is not extractable') }
         actual_format := if format == .raw { KeyFormat.raw_secret } else { format }
@@ -643,6 +653,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 	if !key.extractable {
 		return error('InvalidAccessError: Key is not extractable')
 	}
+    if is_hybrid_kem(key.algorithm_name()) { return export_hybrid_kem_jwk(key) }
     if key.algorithm_name() in ['AES-CBC', 'AES-CTR', 'AES-GCM', 'AES-KW'] { return export_aes_jwk(key) }
     if key.algorithm_name() == 'ChaCha20-Poly1305' { return export_chacha_jwk(key) }
 	if key.algorithm_name() == 'Ed25519' { return export_ed25519_jwk(key) }

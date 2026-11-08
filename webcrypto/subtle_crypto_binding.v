@@ -552,6 +552,7 @@ fn normalized_import(algorithm NormalizedCryptoAlgorithm, format KeyFormat, byte
 	if algorithm.name.starts_with('ML-DSA-') {
 		return MLDSA.create().import_key(basic, format, bytes, extractable, usages)
 	}
+	if is_hybrid_kem(algorithm.name) { return import_hybrid_kem(algorithm.name,format,bytes,extractable,usages) }
 	if algorithm.name.starts_with('ML-KEM-') {
 		return MLKEM.create().import_key(basic, format, bytes, extractable, usages)
 	}

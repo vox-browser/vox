@@ -166,12 +166,14 @@ fn export_mlkem_key(format KeyFormat, key &CryptoKey) ![]u8 {
 }
 
 fn mlkem_encapsulate(params AlgorithmParams, key &CryptoKey) !EncapsulatedBits {
+	if is_hybrid_kem(params.name) { return hybrid_kem_encapsulate(params.name,key) }
 	if key.type_ != .public_key { return error('InvalidAccessError: Invalid key type') }
 	handle := key.internal_handle_ as MlkemPublicKeyHandle
 	return native_mlkem_encapsulate(params.name, handle.public_key)
 }
 
 fn mlkem_decapsulate(params AlgorithmParams, key &CryptoKey, ciphertext []u8) ![]u8 {
+	if is_hybrid_kem(params.name) { return hybrid_kem_decapsulate(params.name,key,ciphertext) }
 	if key.type_ != .private_key { return error('InvalidAccessError: Invalid key type') }
 	return native_mlkem_decapsulate(params.name, key.internal_handle_ as MlkemPrivateKeyHandle, ciphertext)
 }
