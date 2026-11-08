@@ -14,7 +14,7 @@ pub mut:
 
 pub type CSSFetchClientProvider = fn (&dom.Document) ?fetch.RequestClient
 
-__global css_fetch_client_provider_ ?CSSFetchClientProvider = none
+__global css_fetch_client_provider_ ?CSSFetchClientProvider = ?CSSFetchClientProvider(none)
 
 pub fn install_css_fetch_client_provider(provider CSSFetchClientProvider) {
 	css_fetch_client_provider_ = provider

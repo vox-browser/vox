@@ -7,7 +7,7 @@ import fetch
 
 pub type NativeResponseCacheProvider = fn (&fetch.Request) ?&fetch.Response
 
-__global native_response_cache_provider_ ?NativeResponseCacheProvider = none
+__global native_response_cache_provider_ ?NativeResponseCacheProvider = ?NativeResponseCacheProvider(none)
 
 pub fn install_native_response_cache_provider(provider ?NativeResponseCacheProvider) {
 	native_response_cache_provider_ = provider

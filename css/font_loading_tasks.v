@@ -8,15 +8,15 @@ import webidl
 
 pub type FontLoadingTaskProvider = fn (&dom.Document, bool, fn ()) bool
 
-__global font_loading_task_provider_ ?FontLoadingTaskProvider = none
+__global font_loading_task_provider_ ?FontLoadingTaskProvider = ?FontLoadingTaskProvider(none)
 
 pub type FontLoadingPromiseContextProvider = fn (&dom.Document) webidl.PromiseContext
 
-__global font_loading_promise_context_provider_ ?FontLoadingPromiseContextProvider = none
+__global font_loading_promise_context_provider_ ?FontLoadingPromiseContextProvider = ?FontLoadingPromiseContextProvider(none)
 
 pub type FontLoadingEventTimeStampProvider = fn (&dom.Document) f64
 
-__global font_loading_event_time_stamp_provider_ ?FontLoadingEventTimeStampProvider = none
+__global font_loading_event_time_stamp_provider_ ?FontLoadingEventTimeStampProvider = ?FontLoadingEventTimeStampProvider(none)
 
 pub fn install_font_loading_event_time_stamp_provider(provider FontLoadingEventTimeStampProvider) {
 	font_loading_event_time_stamp_provider_ = provider

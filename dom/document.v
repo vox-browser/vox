@@ -1587,7 +1587,7 @@ pub interface FontFaceSet {
 
 pub type DocumentFontFaceSetFactory = fn (&Document) FontFaceSet
 
-__global document_font_face_set_factory_ ?DocumentFontFaceSetFactory = none
+__global document_font_face_set_factory_ ?DocumentFontFaceSetFactory = ?DocumentFontFaceSetFactory(none)
 
 pub fn install_document_font_face_set_factory(factory DocumentFontFaceSetFactory) {
 	document_font_face_set_factory_ = factory
@@ -1617,7 +1617,7 @@ pub interface VisualViewport {
 
 pub type DocumentVisualViewportFactory = fn (&Document) VisualViewport
 
-__global document_visual_viewport_factory_ ?DocumentVisualViewportFactory = none
+__global document_visual_viewport_factory_ ?DocumentVisualViewportFactory = ?DocumentVisualViewportFactory(none)
 
 pub fn install_document_visual_viewport_factory(factory DocumentVisualViewportFactory) {
 	document_visual_viewport_factory_ = factory

@@ -526,7 +526,7 @@ pub:
 // URL instead of flattening their text into the importing sheet.
 pub type RemoteStyleSheetLoader = fn (&dom.Document, string) ?ImportedStyleSheetSource
 
-__global remote_style_sheet_loader_ ?RemoteStyleSheetLoader = none
+__global remote_style_sheet_loader_ ?RemoteStyleSheetLoader = ?RemoteStyleSheetLoader(none)
 
 pub fn install_remote_style_sheet_loader(loader ?RemoteStyleSheetLoader) {
 	remote_style_sheet_loader_ = loader
