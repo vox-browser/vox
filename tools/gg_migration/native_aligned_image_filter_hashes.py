@@ -166,6 +166,46 @@ cases += [
     dict(name='translated-source-identity-blur', source=[0, 0, 7, 6], destination=[10, 12, 7, 6],
          transform=[1, 0, 0, 1, .3, .7], filters=[blur(0)]),
 ]
+cases += [
+    dict(name='near-integer-raw-premul-blur', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         filters=[blur(1.2)]),
+    dict(name='near-integer-raw-unpremul-blur', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         premul=False, filters=[blur(1.2)], mode='src_in', clip=True),
+    dict(name='near-integer-p3-resolved-blur', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         p3=True, premul=False, alpha=.65, filters=[blur(1.2)], mode='multiply'),
+    dict(name='near-integer-prefiltered-blur', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         alpha=.7, filters=[contrast, blur(.001), opacity, blur(1.2)], mode='src_in', clip=True),
+    dict(name='near-transform-replaces-nearest-identity', source=[2, 2, 4, 3],
+         destination=[6.0018, 8.0018, 4.0036, 3.0027], smoothing=False,
+         p3=True, premul=False, filters=[blur(.001)]),
+    dict(name='near-transform-replaces-nearest-blur', source=[2, 2, 4, 3],
+         destination=[6.0018, 8.0018, 4.0036, 3.0027], smoothing=False,
+         p3=True, alpha=.7, filters=[blur(1.2)], mode='plus_lighter', clip=True),
+    dict(name='near-transform-resolves-unpremul-blur', source=[2, 2, 4, 3],
+         destination=[6.0018, 8.0018, 4.0036, 3.0027], smoothing=False,
+         premul=False, filters=[blur(1.2)]),
+    dict(name='near-transform-replaces-nearest-color', source=[2, 2, 4, 3],
+         destination=[6.0018, 8.0018, 4.0036, 3.0027], smoothing=False,
+         p3=True, premul=False, filters=[opacity], mode='src', clip=True),
+    dict(name='near-final-retains-linear-mipmap', source=[2, 2, 4, 3],
+         destination=[6, 8, 4.0024, 3.0018], p3=True, filters=[blur(.001)]),
+    dict(name='near-final-retains-requested-nearest', source=[2, 2, 4, 3],
+         destination=[6, 8, 4.0024, 3.0018], smoothing=False, premul=False, alpha=.65,
+         filters=[blur(.001)], mode='src_in', clip=True),
+]
+cases.append(dict(name='near-linear-clearing-sprite', iw=4, ih=1,
+    pixels=[0, 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 255], pixel_pitch=16,
+    source=[2, 0, 2, 1], destination=[6, 6, 2.0018, 1], mode='src_in', clip_rect=[7, 6, 1, 1],
+    filters=[blur(.001), (2, 0, 0, 0, 0, [8, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+        0, 0, 1, 0, 0, 0, 0, 0, 1, 0], 1)]))
+cases += [
+    dict(name='factored-near-integer-raw-unpremul', premul=False,
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], destination=[5.40032, 12.3341333333333, 5.60056, 7.9992],
+         filters=[blur(1.2)], mode='src_in', clip=True),
+    dict(name='factored-near-integer-p3-color', premul=False, p3=True, alpha=.65,
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], destination=[5.40032, 12.3341333333333, 5.60056, 7.9992],
+         filters=[contrast, blur(.001), opacity, blur(1.2)], mode='multiply'),
+]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -177,6 +217,10 @@ for case in cases:
     r.pattern_sha256 = hashlib.sha256(image).hexdigest()
     r.filters(case['filters'])
     clips = [(triangle, False)] if case.get('clip') else []
+    if 'clip_rect' in case:
+        x, y, cw, ch = case['clip_rect']
+        clips = [(m.segment(0, x, y) + m.segment(1, x+cw, y) + m.segment(1, x+cw, y+ch)
+                  + m.segment(1, x, y+ch) + m.segment(5), False)]
     ints = [w, h, w * 4, 2, 2, int(case.get('smoothing', True)), len(clips),
             *[v for p, even in clips for v in [len(p)//12, int(even)]],
             m.MODES[case.get('mode', 'src_over')], 0, iw, ih, image_pitch, 2 if premul else 1,
@@ -207,6 +251,11 @@ expected += ['66ea4382a30ae423', 'faf646ac30327c3f', 'e10325f572b4dc14',
              'e12c13dca8162f9f', 'f6e28ad1753237d4', 'c1ada75f25f9bac0']
 expected += ['fac95cda665447d0', '3dc171f15c4a6337', '4ec3f389f0ccf270',
              '41cedb613f3f59b3', 'f43245c7c409678f', '78e8496c23d32d03']
+expected += ['fa94d509cac7a3aa', 'd0e26776186b8bea', 'acc7141f085d1362', 'edddaf35caff87f0',
+             '3c3fb2d670bf7693', '60aef21c9403b4ef', '0c4068f3faaac712', '61ae453832882d02',
+             'd5ea576df832e18b', '35dc909ee4d6fb74']
+expected += ['a95ab159f7e63159']
+expected += ['c143b26618f52631', 'f095ad3dcce7789e']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
