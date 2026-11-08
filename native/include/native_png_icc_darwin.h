@@ -6,7 +6,7 @@
 #include <limits.h>
 #include <zlib.h>
 #include "native_image_color_profile.h"
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 // Packed, top-down, straight RGBA with a separately retained PNG ICC profile.
 // Ordinary RGBA and planar YUV buffers must never consult the ICC pointer map.

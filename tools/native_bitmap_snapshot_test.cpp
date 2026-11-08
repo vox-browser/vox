@@ -1,5 +1,5 @@
-#include "../native_bitmap_snapshot_darwin.h"
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_bitmap_snapshot_darwin.h"
+#include "../native/include/native_opacity_group_darwin.h"
 #include <cassert>
 #include <cstdlib>
 #include <cstring>

@@ -1,5 +1,5 @@
 #pragma once
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 // Pointwise color filters depend only on their owned input rows, profile and
 // operations. Reuse identical small inputs even when scrolling moves them.

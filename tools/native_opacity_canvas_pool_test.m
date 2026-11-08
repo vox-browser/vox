@@ -1,4 +1,4 @@
-#include "../native_opacity_canvas_pool_darwin.h"
+#include "../native/include/native_opacity_canvas_pool_darwin.h"
 #include <CoreText/CoreText.h>
 #include <assert.h>
 #include <math.h>

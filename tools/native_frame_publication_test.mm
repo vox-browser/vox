@@ -1,6 +1,6 @@
 // A blocked GPU scheduling fence must not block input, publish unfinished
 // pixels, grow a dispatch backlog, or overwrite a newer synchronous capture.
-#include "../native_layer_presentation_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
 #include <atomic>
 #include <cassert>
 #include <map>

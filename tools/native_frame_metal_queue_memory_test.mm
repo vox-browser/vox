@@ -1,4 +1,4 @@
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <Foundation/Foundation.h>
 #include <mach/mach.h>
 #include <algorithm>

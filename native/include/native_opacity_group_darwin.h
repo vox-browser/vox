@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 #if defined(__aarch64__) && !defined(VOX_OPACITY_DISABLE_NEON)
 #include <arm_neon.h>

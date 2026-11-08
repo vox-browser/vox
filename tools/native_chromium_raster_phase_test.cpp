@@ -1,4 +1,4 @@
-#include "../native_chromium_raster_phase.h"
+#include "../native/include/native_chromium_raster_phase.h"
 #include <cassert>
 #include <initializer_list>
 int main() {

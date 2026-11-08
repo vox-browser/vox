@@ -1,4 +1,4 @@
-#include "../native_jpegxl.h"
+#include "../native/include/native_jpegxl.h"
 #include <jxl/encode.h>
 #include <cassert>
 #include <cstdio>

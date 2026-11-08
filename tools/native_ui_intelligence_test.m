@@ -1,8 +1,8 @@
 // Run in fresh processes with VOX_ENABLE_UI_INTELLIGENCE unset, empty, 0 and 1.
 // Exercise AppKit launch itself: the opt-out must suppress registration, while
 // the override must leave the original registration reachable and invoke it.
-#include "../native_ui_intelligence_darwin.h"
-#include "../native_writing_tools_darwin.h"
+#include "../native/include/native_ui_intelligence_darwin.h"
+#include "../native/include/native_writing_tools_darwin.h"
 #include <assert.h>
 #include <stdio.h>
 

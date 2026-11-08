@@ -35,7 +35,7 @@ fn main() {
         else { panic('unknown index type') }
     }
 }
-'''.replace("HEADER", (ROOT / "native_runtime_bounds.h").as_posix()))
+'''.replace("HEADER", (ROOT / "native/include/native_runtime_bounds.h").as_posix()))
         cls.binary = work / "bounds"
         subprocess.run([COMPILER, "-memory-limit", "10G", "-cflags", "-O2",
                         "-o", str(cls.binary), str(fixture)], check=True,

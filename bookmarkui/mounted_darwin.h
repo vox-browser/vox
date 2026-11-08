@@ -1,5 +1,5 @@
 #pragma once
-#include "../native_browser_bookmarks_test_darwin.h"
+#include "../native/include/native_browser_bookmarks_test_darwin.h"
 
 static int bookmark_test_icon_size(void *control) {
 	NSButton *button = (__bridge NSButton *)control;

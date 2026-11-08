@@ -1,5 +1,5 @@
 #pragma once
-#include "../native_browser_tabs_test_darwin.h"
+#include "../native/include/native_browser_tabs_test_darwin.h"
 
 static NSBitmapImageRep *ui2_test_tabs_bitmap(void *handle) {
     NSView *view=(__bridge NSView *)handle;

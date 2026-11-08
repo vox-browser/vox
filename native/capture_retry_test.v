@@ -1,7 +1,7 @@
 module main
 
 $if macos {
-	#include "@VMODROOT/native_capture_retry_test_darwin.h"
+	#include "@VMODROOT/native/include/native_capture_retry_test_darwin.h"
 }
 
 fn C.native_test_capture_retry_idle_coalescing_and_cancellation() int

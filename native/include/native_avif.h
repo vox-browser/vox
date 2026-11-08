@@ -5,7 +5,7 @@
 #if defined(__APPLE__) || defined(__linux__)
 #include <dlfcn.h>
 #include <pthread.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 #if defined(__linux__)
 #include <limits.h>
 #include <stdio.h>

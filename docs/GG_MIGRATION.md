@@ -28,7 +28,7 @@ new `vlib/gg` module, without changing any pixel of the passing tests.
   divergent draw.
 
 The ABI between Vox and Graphite is plain values and pixel buffers
-(`native/include/native_graphite_bridge.h`), so each entry point can be replaced by a V
+(`native/include/native/include/native_graphite_bridge.h`), so each entry point can be replaced by a V
 implementation exporting the same symbols and compared against the pinned
 original dylib with the existing `tools/native_graphite_*_test.cpp` harnesses.
 
@@ -294,7 +294,7 @@ rotated/skewed matrices, and both the Chromium and LibWeb smoothing settings.
 ### Text in the browser (`VOX_GG_TEXT=1`)
 
 With `VOX_GG_TEXT=1` the browser registers `ggtext.glyph_run` with the text
-bridge (`native/include/native_gg_text.h`), and the bridge's raster glyph paths (retained glyph
+bridge (`native/include/native/include/native_gg_text.h`), and the bridge's raster glyph paths (retained glyph
 runs and glyph bitmap tiles) draw single-run blobs with `gg.canvas` instead of
 `SkCanvas::drawTextBlob`. Typefaces wrap the bridge's own CTFonts
 (`Typeface.from_ct_font`). Runs `gg.canvas` cannot draw exactly fall back to
@@ -372,7 +372,7 @@ damage-clip checks. Their source inputs stay unchanged throughout the run.
 ### Shapes in the browser (`VOX_GG_SHAPES=1`)
 
 With `VOX_GG_SHAPES=1` the bridge's four `libVoxGraphite` shape entry points
-(`native/include/native_gg_shape.h`) first offer each descriptor to `ggshape.draw`:
+(`native/include/native/include/native_gg_shape.h`) first offer each descriptor to `ggshape.draw`:
 rounded-rect fills and strokes with an optional underlay, with or without
 forced MSAA and a backdrop. Region, rounded-part and batched draws render the
 same full surface with the CPU views as the only backdrop; a batch falls back

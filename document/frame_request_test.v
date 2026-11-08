@@ -7,7 +7,7 @@ import dom
 import encoding.base64
 
 $if macos {
-	#include "@VMODROOT/native_document_frame_request_test_darwin.h"
+	#include "@VMODROOT/native/include/native_document_frame_request_test_darwin.h"
 	fn C.vox_test_document_preparation_begin() u64
 	fn C.vox_test_document_redraw_generation() u64
 	fn C.vox_test_document_preparation_pump() u64

@@ -17,7 +17,7 @@ def main():
     output = args.output or Path(tempfile.mkdtemp(prefix='image-decode-cache-', dir=repo / 'Build'))
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    sources = ['native_chromium_image_decode_cache.h', 'native_graphite_bridge.h',
+    sources = ['native/include/native_chromium_image_decode_cache.h', 'native/include/native_graphite_bridge.h',
                'tools/native_chromium_image_decode_cache_test.cpp']
     before = {name: hashlib.sha256((repo / name).read_bytes()).hexdigest() for name in sources}
     binary = output / 'decode-cache-test'

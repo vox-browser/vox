@@ -6,7 +6,7 @@ import sokol.sapp
 import time
 
 $if linux || windows {
-	#include "@VMODROOT/native_browser_portable.h"
+	#include "@VMODROOT/native/include/native_browser_portable.h"
 
 	__global (
 		portable_screenshot_path string

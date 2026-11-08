@@ -1,6 +1,6 @@
 #pragma once
 #include "native_address_bar_test_darwin.h"
-#include "browserui/tab_visual_test_darwin.h"
+#include "../../browserui/tab_visual_test_darwin.h"
 
 static int native_test_tab_rename(void *handle) {
     NSMenu *menu = [(__bridge NSView *)handle menu];

@@ -95,7 +95,7 @@ fn path_gradient(path &C.VoxGraphitePath) !canvas.Gradient {
 }
 
 // path_from_segments mirrors vox_path_from_serialized_segments()
-// (native_svg_path_segments.h): twelve floats per segment, beginning with
+// (native/include/native_svg_path_segments.h): twelve floats per segment, beginning with
 // the segment kind.
 fn path_from_segments(data &f32, count int, even_odd bool) canvas.Path {
 	mut b := canvas.PathBuilder{}

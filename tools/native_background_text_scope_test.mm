@@ -1,7 +1,7 @@
 // Compile the real mask entry points with the production shared clip state.
 #import <Cocoa/Cocoa.h>
 #include "../native_skia_text_darwin.cpp"
-#include "../native_initial_document_clear.h"
+#include "../native/include/native_initial_document_clear.h"
 #include <cassert>
 #include <iostream>
 

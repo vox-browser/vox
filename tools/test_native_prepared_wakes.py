@@ -26,10 +26,10 @@ def main():
         start = text.index(declaration)
         functions.append(text[start:text.index('\n}\n', start) + 2])
     (args.output / 'native_prepared_wakes.inc').write_text('\n\n'.join(functions) + '\n')
-    inputs = [source, root / 'native_layer_presentation_darwin.h',
+    inputs = [source, root / 'native/include/native_layer_presentation_darwin.h',
               root / 'platform/native_state.h',
-              root / 'native_frame_snapshot_darwin.h',
-              root / 'native_layer_presentation_test_darwin.h',
+              root / 'native/include/native_frame_snapshot_darwin.h',
+              root / 'native/include/native_layer_presentation_test_darwin.h',
               root / 'tools/native_prepared_wakes_test.m', Path(__file__).resolve()]
     fingerprint = lambda: {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     before = fingerprint()

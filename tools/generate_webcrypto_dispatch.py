@@ -9,7 +9,7 @@ root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--check', action='store_true')
 args = parser.parse_args()
-headers = sorted((root / 'webcrypto').glob('native_*.h'))
+headers = sorted((root / 'webcrypto').glob('native/include/native_*.h'))
 source = '\n'.join(p.read_text() for p in headers)
 includes = '''#include <openssl/evp.h>
 #include <openssl/core_names.h>

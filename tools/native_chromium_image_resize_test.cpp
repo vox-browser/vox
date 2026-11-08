@@ -1,6 +1,6 @@
 // Frozen CPU upload hashes from Chromium's pinned Skia revision
 // 29ed1e87a0a50f3d8347e988842d9d59e7573efa. No Skia ABI crosses the test boundary.
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <algorithm>
 #include <array>
 #include <cassert>

@@ -26,7 +26,7 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     inputs = [root / 'native_capture_darwin.m', root / 'tools/native_css_filter_source_test.m',
               root / 'tools/test_native_document_canvas.py', Path(__file__).resolve()]
-    inputs += list(root.glob('native*darwin.h'))
+    inputs += list(root.glob('native/include/native*darwin.h'))
     pins = {str(path): digest(path) for path in inputs}
     fragment = output / 'native_document_canvas_entry_points.inc'
     fragment.write_text(entry_points(inputs[0].read_text()))

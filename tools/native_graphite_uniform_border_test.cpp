@@ -1,4 +1,4 @@
-#include "../native_graphite_solid_rect.h"
+#include "../native/include/native_graphite_solid_rect.h"
 #include <cassert>
 #include <cstdio>
 #include <dlfcn.h>

@@ -1,6 +1,6 @@
 // Isolated scan-region diagnostic. This does not execute V bounds lowering or
 // establish browser savings. Both regions must find the same synthetic ink.
-#include "../native_sparse_opacity_ink_darwin.h"
+#include "../native/include/native_sparse_opacity_ink_darwin.h"
 #include "../processmetrics/instruction_counter_darwin.h"
 #include <assert.h>
 #include <stdio.h>

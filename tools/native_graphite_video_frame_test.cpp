@@ -1,7 +1,7 @@
 // A video frame leaf samples the uploaded frame like Chromium's compositor:
 // complete resolution, linear filtering, no decode-cache resize or mips.
-#include "../native_graphite_bridge.h"
-#include "../native_picture_image_transport.h"
+#include "../native/include/native_graphite_bridge.h"
+#include "../native/include/native_picture_image_transport.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkPictureRecorder.h"
 #include "include/core/SkPicture.h"

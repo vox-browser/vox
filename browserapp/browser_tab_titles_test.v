@@ -8,7 +8,7 @@ import time
 import ui2
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_tab_titles_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_tab_titles_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(voidptr) voidptr
 	fn C.native_test_address_close(voidptr)

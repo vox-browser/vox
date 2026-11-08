@@ -37,7 +37,7 @@ def main():
     graphite = args.graphite_dir.resolve()
     fixture = repo / 'tools/native_skia_layer_shape_region_test.cpp'
     inputs = [Path(__file__).resolve(), fixture, repo / 'native_skia_text_darwin.cpp',
-              reference, skia / 'lib/libskia.dylib', *repo.glob('native*.h'),
+              reference, skia / 'lib/libskia.dylib', *repo.glob('native/include/native*.h'),
               *graphite.glob('*.dylib')]
     pins = {str(p): sha(p) for p in inputs}
     binary = output / 'clipped_shape_batch_test'

@@ -1,4 +1,4 @@
-#include "../native_video_image_resource.h"
+#include "../native/include/native_video_image_resource.h"
 #include <assert.h>
 #include <stdio.h>
 

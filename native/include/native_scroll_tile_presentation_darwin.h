@@ -9,7 +9,7 @@
 #include <string.h>
 #include <math.h>
 #include <dlfcn.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 #include "native_graphite_bridge.h"
 
 // The ring's physical rows are immutable compositor resources. Scrolling

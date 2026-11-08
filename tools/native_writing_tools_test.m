@@ -2,7 +2,7 @@
 // finishes launching, so neither the Edit menu nor the first text input context
 // loads the Writing Tools UI framework. Run once normally and once with
 // VOX_ENABLE_WRITING_TOOLS=1 to check that AppKit's own behavior still loads it.
-#include "../native_writing_tools_darwin.h"
+#include "../native/include/native_writing_tools_darwin.h"
 #include <assert.h>
 #include <mach-o/dyld.h>
 #include <objc/message.h>

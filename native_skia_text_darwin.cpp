@@ -2,31 +2,31 @@
 // uses for DisplayListPlayerSkia. V continues to shape and position every glyph;
 // this file only turns the retained glyph IDs into the final antialiased pixels.
 
-#include "native_allocator_policy_darwin.h"
-#include "native_glyph_flags.h"
-#include "native_raster_buffer_pool.h"
-#include "native_parallel_pixels.h"
-#include "native_raster_snapshot.h"
-#include "native_picture_raster_cache.h"
-#include "native_immutable_rgba_image.h"
-#include "native_rgba_alpha_bounds.h"
-#include "native_snapshot_deflate.h"
+#include "native/include/native_allocator_policy_darwin.h"
+#include "native/include/native_glyph_flags.h"
+#include "native/include/native_raster_buffer_pool.h"
+#include "native/include/native_parallel_pixels.h"
+#include "native/include/native_raster_snapshot.h"
+#include "native/include/native_picture_raster_cache.h"
+#include "native/include/native_immutable_rgba_image.h"
+#include "native/include/native_rgba_alpha_bounds.h"
+#include "native/include/native_snapshot_deflate.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <dlfcn.h>
 #include <chrono>
-#include "native_graphite_bridge.h"
-#include "native_gradient_visibility.h"
-#include "native_chromium_image_decode_cache.h"
-#include "native_picture_typeface_cache.h"
-#include "native_variable_font_descriptor.h"
-#include "native_graphite_solid_rect.h"
-#include "native_solid_svg_polygons.h"
-#include "native_plain_rect_raster.h"
-#include "native_svg_path_regions.h"
-#include "native_chromium_raster_phase.h"
-#include "native_chromium_raster_rows.h"
-#include "native_chromium_raster_grid.h"
-#include "native_chromium_raster_batch.h"
+#include "native/include/native_graphite_bridge.h"
+#include "native/include/native_gradient_visibility.h"
+#include "native/include/native_chromium_image_decode_cache.h"
+#include "native/include/native_picture_typeface_cache.h"
+#include "native/include/native_variable_font_descriptor.h"
+#include "native/include/native_graphite_solid_rect.h"
+#include "native/include/native_solid_svg_polygons.h"
+#include "native/include/native_plain_rect_raster.h"
+#include "native/include/native_svg_path_regions.h"
+#include "native/include/native_chromium_raster_phase.h"
+#include "native/include/native_chromium_raster_rows.h"
+#include "native/include/native_chromium_raster_grid.h"
+#include "native/include/native_chromium_raster_batch.h"
 #import <Metal/Metal.h>
 #include "include/gpu/ganesh/GrDirectContext.h"
 #include "include/gpu/ganesh/SkSurfaceGanesh.h"
@@ -42,8 +42,8 @@
 #include "include/core/SkColor.h"
 #include "include/core/SkColorFilter.h"
 #include "include/core/SkColorSpace.h"
-#include "native_skia_image_color_space.h"
-#include "native_picture_image_transport.h"
+#include "native/include/native_skia_image_color_space.h"
+#include "native/include/native_picture_image_transport.h"
 #include "include/core/SkData.h"
 #include "include/core/SkFont.h"
 #include "include/core/SkFontArguments.h"
@@ -60,16 +60,16 @@
 #include "include/core/SkSerialProcs.h"
 #include "include/core/SkPath.h"
 #include "include/core/SkRRect.h"
-#include "native_rounded_single_border.h"
+#include "native/include/native_rounded_single_border.h"
 #include "include/core/SkSize.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkSurfaceProps.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTextBlob.h"
-#include "native_glyph_text_blob_cache.h"
-#include "native_gg_text.h"
-#include "native_gg_shape.h"
-#include "native_gg_path.h"
+#include "native/include/native_glyph_text_blob_cache.h"
+#include "native/include/native_gg_text.h"
+#include "native/include/native_gg_shape.h"
+#include "native/include/native_gg_path.h"
 #include "src/core/SkGlyph.h"
 #include "include/core/SkTypeface.h"
 #include "include/core/SkSamplingOptions.h"
@@ -737,7 +737,7 @@ CGImageRef create_pixel_image(CGContextRef destination, std::vector<uint32_t>&& 
     return image_from_provider(provider, width, height, rgba);
 }
 
-#include "native_glyph_bitmap_copy.h"
+#include "native/include/native_glyph_bitmap_copy.h"
 bool glyph_bitmap_clip_is_rectangular(CGContextRef);
 bool glyph_bitmap_device_clip(CGContextRef, float, float, SkIRect&);
 
@@ -1016,7 +1016,7 @@ bool copy_backdrop(CGContextRef destination, RasterRegion const& region,
     return source.pixels != nullptr;
 }
 
-#include "native_skia_rounded_image_cache.h"
+#include "native/include/native_skia_rounded_image_cache.h"
 
 // SVG mask canvases retain page coordinates in a translated, smaller bitmap.
 // Read its actual device pixels before blending a path instead of quantizing
@@ -1579,10 +1579,10 @@ static bool append_cpu_mask_positions(std::vector<uint8_t>& key, SkFont const& f
 
 static bool apply_unrounded_glyph_color(SkPaint&);
 
-#include "native_glyph_bitmap_surface.h"
+#include "native/include/native_glyph_bitmap_surface.h"
 
 namespace {
-// Experimental GPU canvas (native_skia_gpu_canvas.h): composite a CPU raster of
+// Experimental GPU canvas (native/include/native_skia_gpu_canvas.h): composite a CPU raster of
 // a transparent leaf. Returns 2 when the leaf is complete, 1 when verification
 // still needs the ordinary path, and 0 when the ordinary path must draw.
 int gpu_canvas_draw_cpu_raster(CGContextRef destination, int width, int height,
@@ -3990,8 +3990,8 @@ static bool apply_chromium_paint_origin(VoxGraphiteShape& shape,
     return true;
 }
 
-#include "native_chromium_shared_recording.h"
-#include "native_skia_gpu_canvas.h"
+#include "native/include/native_chromium_shared_recording.h"
+#include "native/include/native_skia_gpu_canvas.h"
 
 extern "C" void ladybird_v_skia_set_raster_layer(double x, double y, int root)
 {
@@ -5570,8 +5570,8 @@ extern "C" int ladybird_v_skia_prefetch_plain_rects(CGContextRef destination,
     return submit_plain_rect_prefetch(jobs);
 }
 
-#include "native_skia_rect_prefetch_scratch.h"
-#include "native_skia_inner_shadow.h"
+#include "native/include/native_skia_rect_prefetch_scratch.h"
+#include "native/include/native_skia_inner_shadow.h"
 
 #ifdef VOX_TEST_CLIPPED_ROOT_SHADOWS
 static unsigned s_test_clipped_root_shadows, s_test_clipped_layer_shadows;
@@ -6704,7 +6704,7 @@ static long chromium_raster_tile_for_row(long row)
     return row <= spacing ? 0 : (row - 1) / spacing;
 }
 
-#include "native_skia_save_layer_image.h"
+#include "native/include/native_skia_save_layer_image.h"
 
 static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     int raster_width, int raster_height, RasterRegion const& region,
@@ -7488,8 +7488,8 @@ extern "C" int ladybird_v_skia_draw_clipped_svg_radial_gradient_path(
         stop_data, stop_count, opacity, opaque_backdrop, clip, ancestor_clip);
 }
 
-#include "native_chromium_corner_shape_paint.h"
+#include "native/include/native_chromium_corner_shape_paint.h"
 
-#include "native_chromium_svg_cover_pattern.h"
+#include "native/include/native_chromium_svg_cover_pattern.h"
 
-#include "native_svg_image_pattern.h"
+#include "native/include/native_svg_image_pattern.h"

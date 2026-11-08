@@ -2541,7 +2541,7 @@ cases also pass. Compiler and runtime commands/guards are retained in
 the same private evidence root.
 
 The initial broad source fingerprint detects a concurrent change to
-`native_browser_tab_titles_test_darwin.h`. The compiler dependency list proves
+`native/include/native_browser_tab_titles_test_darwin.h`. The compiler dependency list proves
 that header is not used by these tests. `dependency-seal.json` verifies the
 actual renderer inputs remain unchanged; `related-results.json` retains the
 original broad-fingerprint failure rather than relabeling it as a pass.
@@ -2752,7 +2752,7 @@ The related rounded-parts, underlay-color and shadow-color checks pass, includin
 `sticky-rrect-dependencies-2/` verifies 183 actual compiler dependencies and
 runtime inputs remain unchanged across the four native test binaries. The
 preceding dependency run detects a concurrent edit to
-`native_solid_svg_polygons.h` and is retained as unstable. Only the rounded
+`native/include/native_solid_svg_polygons.h` and is retained as unstable. Only the rounded
 geometry hunk is committed from the shared native source file; the unrelated
 SVG optimization remains with its owner.
 

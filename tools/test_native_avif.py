@@ -42,14 +42,14 @@ def main():
             path = sdk / 'lib' / Path(name).name if name.startswith('@rpath/') else Path(name)
             if path.is_file() and path.is_relative_to(sdk):
                 pending.append(path)
-    paths = [REPO / 'native_avif.c', REPO / 'native_avif.h',
+    paths = [REPO / 'native_avif.c', REPO / 'native/include/native_avif.h',
              REPO / 'tools/native_avif_test.cpp', REPO / 'tools/build_native_avif.py',
              Path(__file__).resolve(), sdk / 'include/avif/avif.h',
              *sorted(resources.iterdir()), *sorted(dependencies)]
     if args.graphite_library:
         args.graphite_library = args.graphite_library.resolve()
         paths += [args.graphite_library, REPO / 'tools/native_avif_yuv_test.cpp',
-                  REPO / 'native_graphite_bridge.h',
+                  REPO / 'native/include/native_graphite_bridge.h',
                   REPO / 'Tests/Browser/Brave/expected/avif-yuv-sampling.png',
                   REPO / 'Tests/Browser/Brave/expected/avif-image-paths.png']
     pins = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in paths}

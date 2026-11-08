@@ -1,7 +1,7 @@
 // Retain both WebP draw paths against a frozen full-uBO Brave interior crop.
 // The source/frozen site fidelity failure is independent of this diagnostic.
 #import <Foundation/Foundation.h>
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <cassert>
 #include <cstdio>
 #include <dlfcn.h>

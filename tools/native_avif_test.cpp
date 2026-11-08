@@ -1,4 +1,4 @@
-#include "../native_avif.h"
+#include "../native/include/native_avif.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdio>

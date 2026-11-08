@@ -2,7 +2,7 @@ module browserui
 
 $if vox_ui2 ? {
 	import ui2
-	#include "@DIR/../native_browser_tabs_test_darwin.h"
+	#include "@DIR/../native/include/native_browser_tabs_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)

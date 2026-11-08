@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 // Dedicated anonymous storage gives the sparse ink query a known zero-fill
 // object. The CGContext owns it through its release callback, including when

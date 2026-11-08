@@ -1,4 +1,4 @@
-#include "../native_image_capture_policy_darwin.h"
+#include "../native/include/native_image_capture_policy_darwin.h"
 #include <cassert>
 #include <cstdio>
 

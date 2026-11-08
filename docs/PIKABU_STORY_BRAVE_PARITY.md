@@ -176,7 +176,7 @@ SHA-256 `dd79a7f37a79bd5b32459e07dce644f31716fe2b0a67e9397c76bfdd183aa7e6`;
 `Build/pikabu-story-idb.metadata.json` records the source manifest, compiler,
 native libraries, profiles, and capture exits. Its bundle is retained at
 `Build/pikabu-story-document-verified.app`. A concurrent edit to
-`native_rounded_single_border.h` occurred during this build, so rendering
+`native/include/native_rounded_single_border.h` occurred during this build, so rendering
 differences cannot be attributed to the document bridge alone. The executable,
 native libraries, and Brave identity remained stable throughout the captures.
 

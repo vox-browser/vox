@@ -1,7 +1,7 @@
 #define VOX_TEST_SPARSE_BITMAP_CONTEXT
-#include "../native_sparse_bitmap_context_darwin.h"
-#include "../native_sparse_opacity_ink_darwin.h"
-#include "../native_bitmap_snapshot_darwin.h"
+#include "../native/include/native_sparse_bitmap_context_darwin.h"
+#include "../native/include/native_sparse_opacity_ink_darwin.h"
+#include "../native/include/native_bitmap_snapshot_darwin.h"
 #include <cassert>
 #include <cstdio>
 #include <thread>

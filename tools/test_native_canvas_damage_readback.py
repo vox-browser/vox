@@ -20,7 +20,7 @@ def main():
     skia = ROOT / 'Build/deps/skia-brave/source'
     source = ROOT / 'tools/native_canvas_damage_readback_test.mm'
     paths = [source, Path(__file__).resolve(), ROOT / 'native_graphite_darwin.mm',
-             *ROOT.glob('native*.h'), skia / 'out/Release/libskia.a',
+             *ROOT.glob('native/include/native*.h'), skia / 'out/Release/libskia.a',
              skia / 'out/Release/libskcms.a']
 
     def hashes():

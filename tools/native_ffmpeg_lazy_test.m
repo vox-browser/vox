@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <mach-o/dyld.h>
-#include "../native_ffmpeg_darwin.h"
+#include "../native/include/native_ffmpeg_darwin.h"
 
 static bool codecs_loaded(void) {
     for (uint32_t i = 0; i < _dyld_image_count(); ++i) {

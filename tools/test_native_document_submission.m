@@ -1,6 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
-#include "../native_layer_presentation_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
 
 static NSView *submitted_view;
 static unsigned reports;

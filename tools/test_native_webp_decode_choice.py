@@ -33,8 +33,8 @@ def main():
     if codec is None:
         raise SystemExit('libwebpdecoder is required')
     sources = [BODY, REFERENCE, library, codec.resolve(), Path(__file__).resolve(),
-               REPO / 'tools/native_webp_decode_choice_test.mm', REPO / 'native_graphite_bridge.h',
-               REPO / 'native_image_color_profile.h']
+               REPO / 'tools/native_webp_decode_choice_test.mm', REPO / 'native/include/native_graphite_bridge.h',
+               REPO / 'native/include/native_image_color_profile.h']
     pins = lambda: {str(p): digest(p) for p in sources}
     before = pins()
     (output / 'identity.json').write_text(json.dumps(before, indent=2))

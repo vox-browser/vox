@@ -33,7 +33,7 @@ def main():
     sources = [REPO / 'native_skia_text_darwin.cpp',
                REPO / 'tools/native_skia_scrolled_image_grid_test.cpp',
                REPO / 'tools/native_skia_image_root_rows_test.cpp']
-    sources += sorted(REPO.glob('native_*.h'))
+    sources += sorted(REPO.glob('native/include/native_*.h'))
     source_identity = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest()
                                for path in sources}
     source_before = source_identity()

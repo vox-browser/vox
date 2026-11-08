@@ -1,4 +1,4 @@
-#include "../native_crc32.h"
+#include "../native/include/native_crc32.h"
 #include <assert.h>
 #include <stdio.h>
 

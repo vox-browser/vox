@@ -1,4 +1,4 @@
-#include "../native_chromium_raster_batch.h"
+#include "../native/include/native_chromium_raster_batch.h"
 #include <cassert>
 #include <cstdio>
 

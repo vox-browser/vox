@@ -189,7 +189,7 @@ fn test_errored_remote_favicon_is_remembered_absent_without_refetch() {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_bookmarks_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_bookmarks_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)

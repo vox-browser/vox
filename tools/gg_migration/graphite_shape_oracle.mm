@@ -1,6 +1,6 @@
 // Runs the original Graphite shape backend on a fixed corpus, saving each
 // input descriptor, backdrop, output and Metal trace for the gg port.
-#include "../../native_graphite_bridge.h"
+#include "../../native/include/native_graphite_bridge.h"
 #include "metal_trace.h"
 #include <cstdio>
 #include <cstring>

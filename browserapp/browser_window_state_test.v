@@ -11,7 +11,7 @@ $if macos {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_address_bar_test_darwin.h"
+	#include "@VMODROOT/native/include/native_address_bar_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_close(voidptr)
 }

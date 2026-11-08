@@ -1,5 +1,5 @@
-#include "../native_graphite_raster_cache.h"
-#include "../native_graphite_image_upload_cache.h"
+#include "../native/include/native_graphite_raster_cache.h"
+#include "../native/include/native_graphite_image_upload_cache.h"
 #include <cassert>
 #include <iostream>
 #include <limits>

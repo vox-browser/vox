@@ -1,5 +1,5 @@
 // Explicit SVG primitive identity must survive the serialized native boundary.
-#include "native_svg_path_segments.h"
+#include "native/include/native_svg_path_segments.h"
 #include <array>
 #include <cassert>
 #include <limits>

@@ -1,6 +1,6 @@
 // Compare cached GPU output with an uncached build of the same renderer.
 // Usage: native_graphite_raster_replay_test CONTROL.dylib CANDIDATE.dylib
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <algorithm>
 #include <cassert>
 #include <cstdlib>

@@ -20,7 +20,7 @@ python3 - "$repo_dir" "$v_compiler" "$skia_root" "$output_dir/inputs.json" "$v_l
 import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]); compiler=Path(sys.argv[2]); skia=Path(sys.argv[3])
-files=[root/'native_gg_text.h',root/'native_glyph_bitmap_surface.h',root/'native_parallel_pixels.h',root/'native_parallel_raster.h',root/'tools/gg_migration/clipped_text_check.v',root/'tools/gg_migration/clipped_text_oracle.mm',root/'tools/gg_migration/test_clipped_text.sh',*root.glob('ggtext/*.v'),*root.glob('platform/*.v'),compiler,skia/'lib/libskia.dylib']
+files=[root/'native/include/native_gg_text.h',root/'native/include/native_glyph_bitmap_surface.h',root/'native/include/native_parallel_pixels.h',root/'native/include/native_parallel_raster.h',root/'tools/gg_migration/clipped_text_check.v',root/'tools/gg_migration/clipped_text_oracle.mm',root/'tools/gg_migration/test_clipped_text.sh',*root.glob('ggtext/*.v'),*root.glob('platform/*.v'),compiler,skia/'lib/libskia.dylib']
 vroot=Path(sys.argv[5])
 for directory in [vroot/'vlib/gg/canvas',vroot/'vlib/sokol',vroot/'thirdparty/sokol']:
  files.extend(p for p in directory.rglob('*') if p.is_file() and p.suffix in ['.v','.h','.metal'])

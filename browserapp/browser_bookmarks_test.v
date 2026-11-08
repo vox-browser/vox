@@ -110,7 +110,7 @@ fn test_bookmarks_and_bar_visibility_are_shared_with_new_and_switched_tabs() {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_bookmarks_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_bookmarks_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)

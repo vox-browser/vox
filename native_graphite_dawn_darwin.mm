@@ -1,15 +1,15 @@
 // Chromium's Dawn/Metal raster context. Serialized pictures and plain pixels
 // cross the boundary; this library owns its revision-pinned Skia and Dawn ABI.
-#include "native_graphite_bridge.h"
-#include "native_graphite_context_lifetime.h"
+#include "native/include/native_graphite_bridge.h"
+#include "native/include/native_graphite_context_lifetime.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkColorSpace.h"
 #include "include/core/SkImage.h"
 #include "include/core/SkPicture.h"
 #include "include/core/SkPixmap.h"
 #include "include/core/SkSerialProcs.h"
-#include "native_picture_typeface_cache.h"
-#include "native_picture_image_transport.h"
+#include "native/include/native_picture_typeface_cache.h"
+#include "native/include/native_picture_image_transport.h"
 #include "include/core/SkSurface.h"
 #include "include/gpu/graphite/Context.h"
 #include "include/gpu/graphite/ContextOptions.h"
@@ -29,7 +29,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
-#include "native_graphite_shared_dawn.h"
+#include "native/include/native_graphite_shared_dawn.h"
 
 namespace {
 std::mutex gpu_mutex;

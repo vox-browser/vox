@@ -1,5 +1,5 @@
 #import <Foundation/Foundation.h>
-#include "../native_media_darwin.h"
+#include "../native/include/native_media_darwin.h"
 #include <assert.h>
 #include <unistd.h>
 

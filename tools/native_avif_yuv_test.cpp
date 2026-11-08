@@ -1,6 +1,6 @@
-#include "../native_avif.h"
-#include "../native_graphite_bridge.h"
-#include "../native_chromium_image_decode_cache.h"
+#include "../native/include/native_avif.h"
+#include "../native/include/native_graphite_bridge.h"
+#include "../native/include/native_chromium_image_decode_cache.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <ImageIO/ImageIO.h>
 #include <cassert>

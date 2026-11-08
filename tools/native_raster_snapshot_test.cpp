@@ -1,4 +1,4 @@
-#include "../native_raster_snapshot.h"
+#include "../native/include/native_raster_snapshot.h"
 #include <cassert>
 #include <iostream>
 #include <random>

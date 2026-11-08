@@ -4,7 +4,7 @@ import dom
 import page
 
 $if darwin {
-	#include "@VMODROOT/native_navigation_test_darwin.h"
+	#include "@VMODROOT/native/include/native_navigation_test_darwin.h"
 }
 
 fn C.vox_navigation_test_window() voidptr

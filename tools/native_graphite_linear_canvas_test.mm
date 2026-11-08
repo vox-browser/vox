@@ -8,8 +8,8 @@
 #define VOX_TEST_CANVAS_PRESENT
 #include "../native_graphite_darwin.mm"
 #include <cassert>
-#include "../native_chromium_screen_blend.h"
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_chromium_screen_blend.h"
+#include "../native/include/native_opacity_group_darwin.h"
 
 static std::vector<uint8_t> read_surface(skgpu::graphite::Context* gpu,
     skgpu::graphite::Recorder* recorder, SkSurface* surface) {

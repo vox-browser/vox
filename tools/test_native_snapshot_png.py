@@ -75,7 +75,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     assert not (output / 'result.json').exists(), output
     compiler = Path(shutil.which('clang')).resolve()
-    files = (source / 'native_snapshot_png_darwin.h', source / 'native_snapshot_png_opaque_darwin.h', source / 'native_rgba_is_opaque.h', source / 'native_presented_pixels_darwin.h', source / 'tools/native_snapshot_png_test.m',
+    files = (source / 'native/include/native_snapshot_png_darwin.h', source / 'native/include/native_snapshot_png_opaque_darwin.h', source / 'native/include/native_rgba_is_opaque.h', source / 'native/include/native_presented_pixels_darwin.h', source / 'tools/native_snapshot_png_test.m',
              Path(__file__).resolve(), compiler)
     pins = {str(path): digest(path) for path in files}
     if args.compression_library:

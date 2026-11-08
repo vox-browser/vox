@@ -1,6 +1,6 @@
 module main
 
-#include "@VMODROOT/native_drawables_test_darwin.h"
+#include "@VMODROOT/native/include/native_drawables_test_darwin.h"
 
 fn C.native_test_unused_metal_drawable_configuration() int
 

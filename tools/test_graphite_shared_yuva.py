@@ -22,8 +22,8 @@ def main():
     out.mkdir()
     source = repo / 'Build/deps/skia-brave/source'
     inputs = [Path(__file__).resolve(), repo / 'tools/native_graphite_shared_yuva_test.mm',
-              repo / 'native_graphite_darwin.mm', repo / 'native_graphite_shared_yuva_metal.h',
-              repo / 'native_graphite_shared_metal.h', source / 'out/Release/libskia.a',
+              repo / 'native_graphite_darwin.mm', repo / 'native/include/native_graphite_shared_yuva_metal.h',
+              repo / 'native/include/native_graphite_shared_metal.h', source / 'out/Release/libskia.a',
               source / 'out/Release/libskcms.a']
     def identity():
         return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}

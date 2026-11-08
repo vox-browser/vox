@@ -6,7 +6,7 @@
 #if !defined(_WIN32)
 #include <dlfcn.h>
 #include <pthread.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 typedef struct {
     uint32_t (*version)(void);
     uint8_t *(*decode)(const uint8_t *, uint64_t, int32_t *, int32_t *, int32_t *);

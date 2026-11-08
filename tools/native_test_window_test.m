@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "../native_test_window_darwin.h"
+#include "../native/include/native_test_window_darwin.h"
 
 @interface TestDisplay : NSObject
 @property NSRect frame;

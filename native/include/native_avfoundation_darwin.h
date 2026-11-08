@@ -1,6 +1,6 @@
 #pragma once
 #import <Foundation/Foundation.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 #include <dispatch/dispatch.h>
 #include <dlfcn.h>
 #include <stdlib.h>

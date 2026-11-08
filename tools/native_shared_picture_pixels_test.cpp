@@ -1,4 +1,4 @@
-#include "../native_shared_picture_pixels.h"
+#include "../native/include/native_shared_picture_pixels.h"
 #include <cassert>
 #include <vector>
 #include <iostream>

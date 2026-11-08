@@ -62,7 +62,7 @@ def main():
                 "native_sparse_bitmap_context_test.cpp", "native_pointwise_output_bounds_test.m")
     compiler = Path(shutil.which("clang")).resolve()
     inputs = [implementation, extracted, compiler, Path(__file__).resolve()]
-    inputs += list(source.glob("native*darwin.h"))
+    inputs += list(source.glob("native/include/native*darwin.h"))
     inputs += [source / "tools" / name for name in fixtures]
     pins = {str(path): sha256(path) for path in inputs}
     result = {"status": "running", "pins": pins, "jobs": []}

@@ -1,4 +1,4 @@
-#include "native_direct_image_raster.h"
+#include "native/include/native_direct_image_raster.h"
 #include <cassert>
 #include <limits>
 #include <cstdio>

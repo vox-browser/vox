@@ -4,7 +4,7 @@ import css
 import layout
 import painting
 
-#include "@VMODROOT/native_graphite_bridge.h"
+#include "@VMODROOT/native/include/native_graphite_bridge.h"
 
 @[typedef]
 struct C.VoxGraphitePath {

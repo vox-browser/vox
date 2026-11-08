@@ -27,7 +27,7 @@ def main():
     image = REPO / 'Tests/Browser/Brave/resources/techcrunch-hero.webp'
     reference = REPO / 'Tests/Browser/Brave/expected/techcrunch-gradient-image.png'
     compiler = Path(shutil.which('clang++')).resolve()
-    files = [source, Path(__file__).resolve(), REPO / 'native_graphite_bridge.h', image,
+    files = [source, Path(__file__).resolve(), REPO / 'native/include/native_graphite_bridge.h', image,
              reference, compiler, args.decoder.resolve()]
     bridge = args.vox.resolve().parent / 'libLadybirdVSkiaText.dylib'
     dependencies = subprocess.check_output(['otool', '-L', str(bridge)], text=True)

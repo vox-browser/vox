@@ -1,7 +1,7 @@
 // Exercise the real frame allocator and Core Animation's IOSurface renderer.
 #import <Metal/Metal.h>
-#include "../native_layer_presentation_darwin.h"
-#include "../native_presented_capture_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
+#include "../native/include/native_presented_capture_darwin.h"
 #include "native_test_presented_frame.h"
 #include <cassert>
 #include <cstdio>

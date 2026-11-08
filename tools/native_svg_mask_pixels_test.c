@@ -1,4 +1,4 @@
-#include "native_svg_mask_pixels.h"
+#include "native/include/native_svg_mask_pixels.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

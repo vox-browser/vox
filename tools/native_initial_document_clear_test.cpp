@@ -1,4 +1,4 @@
-#include "../native_initial_document_clear.h"
+#include "../native/include/native_initial_document_clear.h"
 #include <cassert>
 #include <cstdio>
 #include <vector>

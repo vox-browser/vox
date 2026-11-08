@@ -44,15 +44,15 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     # Refuse to overwrite prior evidence, including a failed attempt.
     assert not (output / "result.json").exists(), output
-    header = source / "native_layer_presentation_darwin.h"
-    png_header = source / "native_snapshot_png_darwin.h"
+    header = source / "native/include/native_layer_presentation_darwin.h"
+    png_header = source / "native/include/native_snapshot_png_darwin.h"
     implementation = source / "native_capture_darwin.m"
     fixture = source / "tools/native_capture_idle_test.m"
     extracted = output / "native_capture_entry_points.inc"
     extracted.write_text(entry_points(implementation))
     compiler = Path(shutil.which("clang")).resolve()
     pins = {str(path): sha256(path) for path in (header, png_header,
-        source / 'native_presented_capture_darwin.h', source / 'native_presented_pixels_darwin.h',
+        source / 'native/include/native_presented_capture_darwin.h', source / 'native/include/native_presented_pixels_darwin.h',
         implementation, fixture, extracted,
         compiler, Path(__file__).resolve())}
     result = {"status": "running", "pins": pins, "jobs": {}}

@@ -72,8 +72,8 @@ fn test_new_tabs_inherit_bookmark_seeding_and_open_unlisted_destinations() {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_settings_test_darwin.h"
-	#include "@VMODROOT/native_browser_bookmarks_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_settings_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_bookmarks_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)

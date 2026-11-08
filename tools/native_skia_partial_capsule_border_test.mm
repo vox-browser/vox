@@ -1,8 +1,8 @@
 // Replay the V fixture's snapped geometry through the production border helper.
 #import <Foundation/Foundation.h>
 #include <ImageIO/ImageIO.h>
-#include "../native_graphite_bridge.h"
-#include "../native_rounded_single_border.h"
+#include "../native/include/native_graphite_bridge.h"
+#include "../native/include/native_rounded_single_border.h"
 #include "include/core/SkData.h"
 #include "include/core/SkPicture.h"
 #include "include/core/SkPictureRecorder.h"

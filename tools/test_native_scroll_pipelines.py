@@ -19,7 +19,7 @@ def main():
     output.mkdir(parents=True, exist_ok=False)
     skia = ROOT / 'Build/deps/skia-brave/source'
     source = ROOT / 'tools/native_scroll_pipeline_warmup_test.mm'
-    paths = [source, ROOT / 'native_graphite_darwin.mm', *ROOT.glob('native*.h'),
+    paths = [source, ROOT / 'native_graphite_darwin.mm', *ROOT.glob('native/include/native*.h'),
              skia / 'out/Release/libskia.a', skia / 'out/Release/libskcms.a']
     def hashes():
         return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths}

@@ -4,7 +4,7 @@ import gg
 import page
 
 $if macos {
-	#include "@VMODROOT/native_link_context_menu_test_darwin.h"
+	#include "@VMODROOT/native/include/native_link_context_menu_test_darwin.h"
 	fn C.vox_link_test_begin() voidptr
 	fn C.vox_link_test_end(voidptr)
 	fn C.vox_link_test_clipboard_matches(&u8, int) int

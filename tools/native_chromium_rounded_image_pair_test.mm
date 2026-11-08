@@ -1,6 +1,6 @@
 // Compare the publisher photo's corner pixels with frozen full-uBO Brave data.
 #import <Foundation/Foundation.h>
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>

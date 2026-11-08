@@ -1,6 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
-#include "../native_scroll_raster_darwin.h"
+#include "../native/include/native_scroll_raster_darwin.h"
 
 // Exercise the real ring reader independently of Quartz painting: omitted
 // pixels must keep their sentinel and every other byte must match the ring.

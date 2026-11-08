@@ -1,5 +1,5 @@
-#include "native_snapshot_png_darwin.h"
-#include "native_png_color_darwin.h"
+#include "native/include/native_snapshot_png_darwin.h"
+#include "native/include/native_png_color_darwin.h"
 #include <assert.h>
 #include <stdio.h>
 

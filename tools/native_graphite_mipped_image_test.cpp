@@ -1,6 +1,6 @@
 // Compare the image leaf with Chromium's complete-source mipmapped replay.
-#include "../native_graphite_bridge.h"
-#include "../native_picture_image_transport.h"
+#include "../native/include/native_graphite_bridge.h"
+#include "../native/include/native_picture_image_transport.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkPictureRecorder.h"
 #include "include/core/SkPicture.h"

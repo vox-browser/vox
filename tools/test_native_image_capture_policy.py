@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
-    inputs = [ROOT / p for p in ['native_image_capture_policy_darwin.h',
+    inputs = [ROOT / p for p in ['native/include/native_image_capture_policy_darwin.h',
               'tools/native_image_capture_policy_test.mm', 'Tests/Browser/Brave/resources/two-frame-capture.gif']]
     identity = lambda: {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}
     before = identity()

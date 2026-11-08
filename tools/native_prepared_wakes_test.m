@@ -1,7 +1,7 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
 #include <stdio.h>
-#include "native_layer_presentation_test_darwin.h"
+#include "native/include/native_layer_presentation_test_darwin.h"
 
 @interface PreparedWakeApplication : NSApplication
 @property NSUInteger postedEvents;

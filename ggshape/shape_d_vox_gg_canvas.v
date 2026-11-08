@@ -1,6 +1,6 @@
 // Draws libVoxGraphite shape descriptors with gg.canvas (VOX_GG_SHAPES=1).
 // The bridge offers every shape entry point's descriptor to draw through
-// VoxGGShapeDraw (native_gg_shape.h) and uses the original Graphite backend
+// VoxGGShapeDraw (native/include/native_gg_shape.h) and uses the original Graphite backend
 // whenever it returns 0.
 module ggshape
 
@@ -17,7 +17,7 @@ import platform
 const diagnostics = os.getenv('VOX_GG_DIAGNOSTICS') == '1'
 
 #include <pthread.h>
-#include "@DIR/../native_graphite_bridge.h"
+#include "@DIR/../native/include/native_graphite_bridge.h"
 
 fn C.pthread_main_np() i32
 
@@ -192,7 +192,7 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 }
 
 // draw_border mirrors vox_draw_rounded_single_border()
-// (native_rounded_single_border.h): a uniform
+// (native/include/native_rounded_single_border.h): a uniform
 // elliptical ring (modes 6 and 7) as a double rounded rect, or with mode 7's
 // background in a layer with the inverse inner contour, a single side (modes
 // 2..5: top, right, bottom, left) as a rectangle clipped to the border area,

@@ -55,7 +55,7 @@ module, using the `macos` module's Objective-C runtime senders:
   integration for hidden process-tab windows. Session membership, selection,
   close and replacement decisions remain in the V tab owner.
 - `event_pump_darwin.v`: native event delivery during long document work; the
-  presentation redraw state it reports stays in `native_layer_presentation_darwin.h`.
+  presentation redraw state it reports stays in `native/include/native_layer_presentation_darwin.h`.
 
 AVFoundation playback and other native rendering/media helpers remain engine
 services. Their use of an NSView does not make them application widgets. Native

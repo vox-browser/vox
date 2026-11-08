@@ -1,4 +1,4 @@
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>

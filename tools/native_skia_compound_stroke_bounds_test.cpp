@@ -1,7 +1,7 @@
 // Compare an isolated rounded background/border with its independent Skia
 // saveLayer recording, including fractional sticky translations.
 #include "../native_skia_text_darwin.cpp"
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_opacity_group_darwin.h"
 #include <cassert>
 #include <cstdio>
 

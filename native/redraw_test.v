@@ -1,6 +1,6 @@
 module main
 
-#include "@VMODROOT/native_redraw_test_darwin.h"
+#include "@VMODROOT/native/include/native_redraw_test_darwin.h"
 
 fn C.native_test_async_redraw_without_active_window() int
 

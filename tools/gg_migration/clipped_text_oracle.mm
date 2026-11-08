@@ -13,8 +13,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include "../../native_gg_text.h"
-#include "../../native_parallel_pixels.h"
+#include "../../native/include/native_gg_text.h"
+#include "../../native/include/native_parallel_pixels.h"
 
 static bool rgba_bitmap(CGContextRef context)
 {
@@ -28,7 +28,7 @@ static void swap_red_blue_pixels(uint8_t* destination, uint8_t const* source, si
     vox_swap_red_blue_pixels(destination, source, count);
 }
 
-#include "../../native_glyph_bitmap_surface.h"
+#include "../../native/include/native_glyph_bitmap_surface.h"
 
 namespace {
 constexpr int frame_width = 128, frame_height = 80, row_pixels = 137;

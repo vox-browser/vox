@@ -1,4 +1,4 @@
-#include "../native_snapshot_pixel_runs.h"
+#include "../native/include/native_snapshot_pixel_runs.h"
 #include <zlib.h>
 #include <cassert>
 #include <cstdio>

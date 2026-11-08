@@ -8,19 +8,19 @@
 #include "include/private/base/SkASAN.h"
 #undef SK_SANITIZE_ADDRESS
 #include "../native_skia_text_darwin.cpp"
-#include "../native_scroll_raster_darwin.h"
-#include "../native_layer_presentation_darwin.h"
-#include "../native_opacity_canvas_pool_darwin.h"
-#include "../native_bitmap_snapshot_darwin.h"
-#include "../native_chromium_screen_blend.h"
+#include "../native/include/native_scroll_raster_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
+#include "../native/include/native_opacity_canvas_pool_darwin.h"
+#include "../native/include/native_bitmap_snapshot_darwin.h"
+#include "../native/include/native_chromium_screen_blend.h"
 #define LADYBIRD_V_HAS_SKIA_TEXT
 static CGFloat native_svg_mask_backing_scale() { return 2; }
 static CGContextRef native_font_compositing_context;
 static int native_font_compositing_transparency_depth;
 #include "native_video_backdrop_entry_points.inc"
 #include <cassert>
-#include "../native_chromium_screen_blend.h"
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_chromium_screen_blend.h"
+#include "../native/include/native_opacity_group_darwin.h"
 #include <cstdlib>
 #include <iostream>
 

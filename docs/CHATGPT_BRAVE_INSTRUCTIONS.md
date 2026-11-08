@@ -2481,7 +2481,7 @@ The requested **5% advantage over Brave remains unmet**.
 
 Two newer parallel builds completed compilation and smoke checks but were
 superseded after their source inputs changed. The next attempt failed in
-`native_graphite_canvas.h`: the pinned Skia API has no
+`native/include/native_graphite_canvas.h`: the pinned Skia API has no
 `SkCanvas::writePixels(SkPixmap, int, int)` overload. That graphics file belongs
 to concurrent work and is not changed by this task. The
 [availability receipt](performance/chatgpt-percent-encoding-bytes-production-20261105.json)

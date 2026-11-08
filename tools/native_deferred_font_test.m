@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "../native_deferred_font_darwin.h"
+#include "../native/include/native_deferred_font_darwin.h"
 static int loads;
 static void loaded(const char *path) { assert(path && *path); ++loads; }
 int main(void) {

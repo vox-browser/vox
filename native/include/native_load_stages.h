@@ -1,7 +1,7 @@
 #ifndef VOX_NATIVE_LOAD_STAGES_H
 #define VOX_NATIVE_LOAD_STAGES_H
 #include <stdint.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 // Installed only for the opt-in diagnostic. V owns identities and restores
 // its JavaScript nesting state across the native boundary.

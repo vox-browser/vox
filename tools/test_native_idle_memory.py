@@ -21,7 +21,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     host = repo / "native_capture_darwin.m"
     test = repo / "tools/native_idle_memory_test.m"
-    header = repo / "native_layer_presentation_darwin.h"
+    header = repo / "native/include/native_layer_presentation_darwin.h"
     pins = {str(p): digest(p) for p in (host, test, header, Path(__file__))}
     source = host.read_text()
     begin = "// Run after the native draw has unwound."

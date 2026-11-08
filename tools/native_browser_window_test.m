@@ -3,7 +3,7 @@
 static NSView *native_cached_browser_view;
 #include "browser_view_functions.inc"
 #include "native_browser_view_cache_test.h"
-#include "../native_redraw_test_darwin.h"
+#include "../native/include/native_redraw_test_darwin.h"
 @interface VoxWindowSelectionApplication : NSObject
 @property(nonatomic, strong) NSWindow *helper;
 @property(nonatomic, strong) NSWindow *browser;

@@ -1,6 +1,6 @@
 #import <Foundation/Foundation.h>
-#include "../native_media_darwin.h"
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_media_darwin.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <assert.h>
 #include <stdio.h>
 

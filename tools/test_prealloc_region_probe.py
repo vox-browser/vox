@@ -12,7 +12,7 @@ SMOKE = r'''
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <stdint.h>
-#include "native_allocator_policy_darwin.h"
+#include "native/include/native_allocator_policy_darwin.h"
 int main(int argc, char **argv) {
     size_t size = 512 * 1024;
     volatile uint8_t *p = mmap(0, size, PROT_READ | PROT_WRITE,

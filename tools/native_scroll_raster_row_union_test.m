@@ -1,6 +1,6 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
-#include "../native_scroll_raster_darwin.h"
+#include "../native/include/native_scroll_raster_darwin.h"
 
 static void compare_store(size_t width, size_t height, size_t origin, size_t padding,
     int damage_count, int scenario) {

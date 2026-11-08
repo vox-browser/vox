@@ -5,7 +5,7 @@ import gg.render
 import sokol.gfx
 
 $if windows && sokol_d3d11 ? {
-	#flag windows -include @VMODROOT/native_browser_windows_graphics.h
+	#flag windows -include @VMODROOT/native/include/native_browser_windows_graphics.h
 
 	const windows_browser_vertex_shader = r'
 cbuffer vs_params : register(b0) { float4 columns[8]; };

@@ -20,8 +20,8 @@ def main():
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     test_source = repo / 'tools/native_chromium_image_resize_test.cpp'
-    sources = [repo / name for name in ['native_graphite_bridge.h', 'native_graphite_darwin.mm',
-               'native_image_color_profile.h', 'native_skia_image_color_space.h']]
+    sources = [repo / name for name in ['native/include/native_graphite_bridge.h', 'native_graphite_darwin.mm',
+               'native/include/native_image_color_profile.h', 'native/include/native_skia_image_color_space.h']]
     library = args.library.resolve()
     sources += [test_source, library]
     identity = lambda: {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}

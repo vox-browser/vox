@@ -13,7 +13,7 @@
 #include "native_frame_publication_darwin.h"
 #include "native_initial_document_clear.h"
 #include "native_frame_snapshot_darwin.h"
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 #include "native_load_stages.h"
 #if defined(__aarch64__)
 #include <arm_neon.h>

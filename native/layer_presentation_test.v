@@ -10,7 +10,7 @@ fn test_native_load_stage_callbacks_balance_returns_exceptions_and_unregistratio
 	}
 }
 
-#include "@VMODROOT/native_layer_presentation_test_darwin.h"
+#include "@VMODROOT/native/include/native_layer_presentation_test_darwin.h"
 
 fn C.native_test_parent_tick_frame_ownership(fn (voidptr), voidptr) int
 fn C.native_test_capture_copy_preserves_pixels_and_skips_redundant_frames() int

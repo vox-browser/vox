@@ -1,9 +1,9 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
-#include "../native_scroll_raster_darwin.h"
+#include "../native/include/native_scroll_raster_darwin.h"
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
-#include "../native_layer_presentation_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
 #pragma clang diagnostic pop
 
 static BOOL redraw_during_paint;

@@ -23,8 +23,8 @@ def main():
     movie = root / 'Tests/Browser/Brave/input/assets/transparent-odd.webm'
     reference = root / 'Tests/Browser/Brave/expected/transparent-webm-planes.png'
     inputs = [Path(__file__).resolve(), root / 'tools/native_webm_gpu_test.m',
-              root / 'native_media_darwin.h', root / 'native_ffmpeg_playback_darwin.h',
-              root / 'native_ffmpeg_darwin.h', library, movie, reference]
+              root / 'native/include/native_media_darwin.h', root / 'native/include/native_ffmpeg_playback_darwin.h',
+              root / 'native/include/native_ffmpeg_darwin.h', library, movie, reference]
 
     def identity():
         return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}

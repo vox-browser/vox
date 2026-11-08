@@ -1,5 +1,5 @@
 #pragma once
-#include "../../native_address_bar_test_darwin.h"
+#include "../../native/include/native_address_bar_test_darwin.h"
 
 @interface UI2ReopenTestDelegate : NSObject <NSApplicationDelegate>
 @end

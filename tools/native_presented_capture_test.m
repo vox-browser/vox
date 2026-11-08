@@ -1,9 +1,9 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
 #include <stdio.h>
-#include "native_layer_presentation_test_darwin.h"
-#include "native_presented_capture_darwin.h"
-#include "native_snapshot_png_darwin.h"
+#include "native/include/native_layer_presentation_test_darwin.h"
+#include "native/include/native_presented_capture_darwin.h"
+#include "native/include/native_snapshot_png_darwin.h"
 #include <dlfcn.h>
 
 static unsigned codec_regions;

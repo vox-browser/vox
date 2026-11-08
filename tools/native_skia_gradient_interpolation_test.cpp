@@ -1,5 +1,5 @@
 // Compare Metal gradients with independent complete Dawn pictures.
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkData.h"
 #include "include/core/SkPathBuilder.h"

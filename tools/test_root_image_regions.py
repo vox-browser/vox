@@ -34,7 +34,7 @@ def main():
                              'arm64-osx-dynamic' if os.uname().machine == 'arm64' else 'x64-osx-dynamic')
     skia = upstream / 'Build/release/vcpkg_installed' / triplet
     backend = ROOT / 'Build/v/Vox.app/Contents/MacOS'
-    sources = [ROOT / 'native_skia_text_darwin.cpp', *ROOT.glob('native*.h'),
+    sources = [ROOT / 'native_skia_text_darwin.cpp', *ROOT.glob('native/include/native*.h'),
                ROOT / 'tools/native_skia_root_image_region_test.cpp',
                ROOT / 'tools/native_skia_image_root_rows_test.cpp']
     before = {str(p.resolve()): sha(p) for p in sources}

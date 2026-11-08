@@ -1,6 +1,6 @@
 // Component diagnostic, not browser acceptance: current-process retired
 // instructions cover only repeated compositing, excluding input generation.
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_opacity_group_darwin.h"
 #include "../processmetrics/instruction_counter_darwin.h"
 #include <assert.h>
 #include <string.h>

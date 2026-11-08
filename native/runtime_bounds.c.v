@@ -1,3 +1,3 @@
 module main
 
-#include "@VMODROOT/native_runtime_bounds.h"
+#include "@VMODROOT/native/include/native_runtime_bounds.h"

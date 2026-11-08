@@ -1,4 +1,4 @@
-#include "../native_chromium_recorded_ink_bounds.h"
+#include "../native/include/native_chromium_recorded_ink_bounds.h"
 #include <cassert>
 #include <cstdio>
 #include <limits>

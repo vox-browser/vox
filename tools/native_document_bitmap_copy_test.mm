@@ -1,5 +1,5 @@
-#import "../native_layer_presentation_darwin.h"
-#include "../native_bitmap_snapshot_darwin.h"
+#import "../native/include/native_layer_presentation_darwin.h"
+#include "../native/include/native_bitmap_snapshot_darwin.h"
 #include <cassert>
 #include <cstdio>
 #include <cstring>

@@ -1,5 +1,5 @@
-#include "../native_parallel_pixels.h"
-#include "../native_opacity_group_darwin.h"
+#include "../native/include/native_parallel_pixels.h"
+#include "../native/include/native_opacity_group_darwin.h"
 #include <atomic>
 #include <cassert>
 #include <chrono>

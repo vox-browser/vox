@@ -195,7 +195,7 @@ fn test_browser_debug_row_returns_its_height_to_the_document_when_hidden() {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_address_bar_test_darwin.h"
+	#include "@VMODROOT/native/include/native_address_bar_test_darwin.h"
 
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr

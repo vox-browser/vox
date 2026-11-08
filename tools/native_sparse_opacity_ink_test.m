@@ -20,7 +20,7 @@ static kern_return_t query_pages(vm_map_read_t task, mach_vm_offset_t address,
     return status;
 }
 #define mach_vm_page_range_query query_pages
-#include "../native_sparse_opacity_ink_darwin.h"
+#include "../native/include/native_sparse_opacity_ink_darwin.h"
 #undef mach_vm_page_range_query
 #include <assert.h>
 #include <stdio.h>

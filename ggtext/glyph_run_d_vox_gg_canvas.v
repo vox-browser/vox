@@ -1,5 +1,5 @@
 // Draws the Skia text bridge's CPU glyph runs with gg.canvas (VOX_GG_TEXT=1).
-// The bridge calls glyph_run through VoxGGGlyphRun (native_gg_text.h) and
+// The bridge calls glyph_run through VoxGGGlyphRun (native/include/native_gg_text.h) and
 // falls back to Skia whenever it returns 0.
 module ggtext
 

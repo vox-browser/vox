@@ -2,7 +2,7 @@
 #define VOX_NATIVE_VIDEO_IMAGE_RESOURCE_H
 #include <stddef.h>
 #include <stdint.h>
-#include "platform/native_state.h"
+#include "../../platform/native_state.h"
 
 typedef struct {
     uint64_t source, revision, generation, key;

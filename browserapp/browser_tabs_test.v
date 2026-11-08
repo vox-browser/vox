@@ -419,7 +419,7 @@ fn test_modified_link_pointer_dispatch_opens_a_background_tab() {
 }
 
 $if vox_ui2 ? {
-	#include "@VMODROOT/native_browser_tabs_test_darwin.h"
+	#include "@VMODROOT/native/include/native_browser_tabs_test_darwin.h"
 	fn C.native_test_address_window() voidptr
 	fn C.native_test_address_parent(window voidptr) voidptr
 	fn C.native_test_address_close(window voidptr)

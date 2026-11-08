@@ -1,13 +1,13 @@
 #include <dlfcn.h>
 #include <Cocoa/Cocoa.h>
-#include "native_snapshot_png_darwin.h"
-#include "native_allocator_policy_darwin.h"
-#include "native_glyph_flags.h"
-#include "native_gpu_canvas_limits.h"
-#include "native_test_window_darwin.h"
-#include "native_media_preferences_darwin.h"
-#include "native_writing_tools_darwin.h"
-#include "native_ui_intelligence_darwin.h"
+#include "native/include/native_snapshot_png_darwin.h"
+#include "native/include/native_allocator_policy_darwin.h"
+#include "native/include/native_glyph_flags.h"
+#include "native/include/native_gpu_canvas_limits.h"
+#include "native/include/native_test_window_darwin.h"
+#include "native/include/native_media_preferences_darwin.h"
+#include "native/include/native_writing_tools_darwin.h"
+#include "native/include/native_ui_intelligence_darwin.h"
 #include <CoreImage/CoreImage.h>
 #include <CoreText/CoreText.h>
 #include <malloc/malloc.h>
@@ -29,10 +29,10 @@ static void native_capture_instruction_checkpoint(const char *label) {
             (unsigned long long)instructions);
 }
 
-#include "native_layer_presentation_darwin.h"
-#include "native_presented_capture_darwin.h"
-#include "native_image_capture_policy_darwin.h"
-#include "native_scroll_raster_darwin.h"
+#include "native/include/native_layer_presentation_darwin.h"
+#include "native/include/native_presented_capture_darwin.h"
+#include "native/include/native_image_capture_policy_darwin.h"
+#include "native/include/native_scroll_raster_darwin.h"
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_gpu_canvas_begin(CGContextRef, const int *, int);
 extern void ladybird_v_skia_gpu_canvas_cpu_access(void);
@@ -81,20 +81,20 @@ int native_gpu_tile_compositor_enabled(void) {
     return native_scroll_gpu_tiles_enabled()
         && native_scroll_tile_destination == NSGraphicsContext.currentContext.CGContext;
 }
-#include "native_stationary_raster_darwin.h"
-#include "native_deferred_font_darwin.h"
-#include "native_svg_mask_layer_darwin.h"
-#include "native_svg_mask_pixels.h"
+#include "native/include/native_stationary_raster_darwin.h"
+#include "native/include/native_deferred_font_darwin.h"
+#include "native/include/native_svg_mask_layer_darwin.h"
+#include "native/include/native_svg_mask_pixels.h"
 
-#include "native_ffmpeg_darwin.h"
-#include "native_media_darwin.h"
-#include "native_webp_darwin.h"
-#include "native_jpeg_darwin.h"
-#include "native_png_color_darwin.h"
-#include "native_opacity_group_darwin.h"
-#include "native_opacity_canvas_pool_darwin.h"
-#include "native_bitmap_snapshot_darwin.h"
-#include "native_svg_mask_opacity_darwin.h"
+#include "native/include/native_ffmpeg_darwin.h"
+#include "native/include/native_media_darwin.h"
+#include "native/include/native_webp_darwin.h"
+#include "native/include/native_jpeg_darwin.h"
+#include "native/include/native_png_color_darwin.h"
+#include "native/include/native_opacity_group_darwin.h"
+#include "native/include/native_opacity_canvas_pool_darwin.h"
+#include "native/include/native_bitmap_snapshot_darwin.h"
+#include "native/include/native_svg_mask_opacity_darwin.h"
 
 int native_prefers_overlay_scrollbars(void) {
 	return [NSScroller preferredScrollerStyle] == NSScrollerStyleOverlay;
@@ -1045,7 +1045,7 @@ void native_end_background_blend_mode(void) {
 	}
 }
 
-#include "native_chromium_screen_blend.h"
+#include "native/include/native_chromium_screen_blend.h"
 
 static CGBlendMode native_compositing_operator(int mode) {
 	switch (mode) {
@@ -1942,7 +1942,7 @@ void native_add_path_clip(const float *data, int segment_count, int even_odd,
 	CGPathRelease(local_path);
 }
 
-#include "native_graphite_bridge.h"
+#include "native/include/native_graphite_bridge.h"
 #ifdef LADYBIRD_V_HAS_SKIA_TEXT
 extern int ladybird_v_skia_draw_svg_path_batch(CGContextRef, const VoxGraphitePath*, int,
     const float*, float, float, float, float, float, float, float, float, float, int, const float*);
@@ -1978,7 +1978,7 @@ int native_draw_svg_cover_pattern(const VoxGraphitePath *paths, int count,
 #endif
 }
 
-#include "native_rounded_svg_ancestor_darwin.h"
+#include "native/include/native_rounded_svg_ancestor_darwin.h"
 
 int native_draw_svg_path_batch_with_rounded_ancestor(const VoxGraphitePath *paths,
     int count, const float *outer, float x, float y, float width, float height,
@@ -2711,8 +2711,8 @@ static CGFloat native_svg_mask_backing_scale(void) {
 }
 
 #define NATIVE_CSS_FILTER_MAX_DEPTH 64
-#include "native_sparse_bitmap_context_darwin.h"
-#include "native_sparse_opacity_ink_darwin.h"
+#include "native/include/native_sparse_bitmap_context_darwin.h"
+#include "native/include/native_sparse_opacity_ink_darwin.h"
 
 typedef struct {
 	int kind;
@@ -3013,7 +3013,7 @@ void native_invalidate_video_backdrop(double x, double y, double width, double h
 // The next image draws are frames of a playing video.
 static int native_video_frame_image;
 
-#include "native_video_image_resource.h"
+#include "native/include/native_video_image_resource.h"
 void native_set_video_frame_image(int active) {
     native_video_frame_image = active != 0;
     native_video_image_resource_key = 0;
@@ -4683,7 +4683,7 @@ void native_bound_pointwise_filter_output(double x, double y, double width, doub
 	layer->has_pointwise_output_bounds = 1;
 }
 
-#include "native_opacity_group_darwin.h"
+#include "native/include/native_opacity_group_darwin.h"
 
 // Diagnostic only: verify retained geometry against the completed input's
 // actual alpha coverage. This scan is excluded from unprofiled timing arms.
@@ -5117,7 +5117,7 @@ static CGImageRef native_css_filter_grayscale_rows(NativeCSSFilterLayer const *l
     return image;
 }
 
-#include "native_css_color_filter_cache_darwin.h"
+#include "native/include/native_css_color_filter_cache_darwin.h"
 
 static int native_try_gpu_css_filter_image(CGContextRef destination, CGImageRef image,
     CGRect target, float canvas_height) {
@@ -6332,7 +6332,7 @@ int native_finish_rect_prefetch_scratch(int commit) {
 #endif
 }
 
-#include "native_chromium_corner_shapes_darwin.h"
+#include "native/include/native_chromium_corner_shapes_darwin.h"
 
 // Deferred viewport scrollbars repaint a few pixels after the scroll raster
 // has stored the document. Quartz fills them directly; a Skia leaf would

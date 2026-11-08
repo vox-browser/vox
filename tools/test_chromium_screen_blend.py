@@ -22,8 +22,8 @@ def main():
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     skia, dawn = args.skia_root.resolve(), args.dawn_library.resolve()
-    sources = [repo / name for name in ['native_chromium_screen_blend.h',
-               'native_graphite_bridge.h', 'native_picture_image_transport.h',
+    sources = [repo / name for name in ['native/include/native_chromium_screen_blend.h',
+               'native/include/native_graphite_bridge.h', 'native/include/native_picture_image_transport.h',
                'tools/native_chromium_screen_blend_test.cpp']]
     sources += [skia / 'out/Release/libskia.a', skia / 'out/Release/libskcms.a', dawn]
     before = {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}

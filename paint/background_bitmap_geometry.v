@@ -4,7 +4,7 @@ import css
 import painting
 import math
 
-// Keep these bits aligned with VoxGraphiteImage in native_graphite_bridge.h.
+// Keep these bits aligned with VoxGraphiteImage in native/include/native_graphite_bridge.h.
 const chromium_bitmap_repeat_x = 64
 const chromium_bitmap_repeat_y = 128
 

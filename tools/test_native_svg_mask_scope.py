@@ -62,7 +62,7 @@ def main():
     fixture = source / "tools/native_svg_mask_scope_test.mm"
     inputs = [implementation, extracted, compiler, Path(__file__).resolve(), fixture,
               source / "native_skia_text_darwin.cpp", skia / "lib/libskia.dylib"]
-    inputs += list(source.glob("native*.h"))
+    inputs += list(source.glob("native/include/native*.h"))
     inputs += [args.graphite_dir / "libVoxGraphiteDawn.dylib"]
     pins = {str(path): sha256(path) for path in inputs}
     result = {"pins": pins, "source_copies": 0, "jobs": []}

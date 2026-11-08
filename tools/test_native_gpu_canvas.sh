@@ -26,7 +26,7 @@ import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]);backend=Path(sys.argv[2]).resolve()
 if not backend.is_file(): raise SystemExit('Requested GPU backend is missing: '+str(backend))
-files=[backend,Path(sys.argv[4]).resolve(),root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/native_video_image_resource_test.c',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
+files=[backend,Path(sys.argv[4]).resolve(),root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/native_video_image_resource_test.c',root/'tools/test_native_gpu_canvas.sh',*root.glob('native/include/native*.h')]
 Path(sys.argv[3]).write_text(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PIN
 python3 - "$repo_dir/native_capture_darwin.m" "$output_dir/native_video_backdrop_entry_points.inc" <<'PY'

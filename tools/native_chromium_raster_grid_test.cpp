@@ -1,4 +1,4 @@
-#include "../native_chromium_raster_grid.h"
+#include "../native/include/native_chromium_raster_grid.h"
 #include <cassert>
 #include <cstdio>
 #include <limits>

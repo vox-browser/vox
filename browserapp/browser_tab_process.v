@@ -13,7 +13,7 @@ import ui2
 $if macos {
 	import browserwindow
 } $else $if linux {
-	#include "@VMODROOT/native_browser_tab_process_linux.h"
+	#include "@VMODROOT/native/include/native_browser_tab_process_linux.h"
 	fn C.vox_tab_x11_frame(voidptr, uint, &f64)
 	fn C.vox_tab_x11_show(voidptr, uint, i32, f64, f64, f64, f64)
 }

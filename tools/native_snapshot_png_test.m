@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include "native_snapshot_png_darwin.h"
+#include "native/include/native_snapshot_png_darwin.h"
 
 static void test_opacity_scan(void)
 {

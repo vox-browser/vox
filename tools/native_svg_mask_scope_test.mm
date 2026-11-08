@@ -2,11 +2,11 @@
 #import <Cocoa/Cocoa.h>
 #include "../native_skia_text_darwin.cpp"
 #define restrict __restrict
-#include "../native_svg_mask_pixels.h"
+#include "../native/include/native_svg_mask_pixels.h"
 #undef restrict
-#include "../native_svg_mask_layer_darwin.h"
-#include "../native_svg_mask_opacity_darwin.h"
-#include "../native_initial_document_clear.h"
+#include "../native/include/native_svg_mask_layer_darwin.h"
+#include "../native/include/native_svg_mask_opacity_darwin.h"
+#include "../native/include/native_initial_document_clear.h"
 #include <cassert>
 #include <iostream>
 

@@ -2,8 +2,8 @@
 #import <CoreImage/CoreImage.h>
 #include <assert.h>
 #include <mach/mach.h>
-#include "native_layer_presentation_darwin.h"
-#include "native_bitmap_snapshot_darwin.h"
+#include "native/include/native_layer_presentation_darwin.h"
+#include "native/include/native_bitmap_snapshot_darwin.h"
 typedef struct { uint8_t r, g, b, a; } gg__Color;
 typedef struct { int unused; } gg__Image;
 static CGContextRef native_font_compositing_context;

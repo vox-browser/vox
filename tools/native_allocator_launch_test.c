@@ -9,7 +9,7 @@ static int allocator_test_exec(const char *path, char *const arguments[])
 }
 
 #define execv allocator_test_exec
-#include "../native_allocator_policy_darwin.h"
+#include "../native/include/native_allocator_policy_darwin.h"
 #undef execv
 
 int main(void)

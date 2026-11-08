@@ -20,7 +20,7 @@ def main():
     dawn = ROOT / 'Build/deps/skia-brave-dawn/dawn-build'
     source = ROOT / 'tools/native_dawn_idle_retention_test.mm'
     paths = [source, Path(__file__).resolve(), ROOT / 'native_graphite_dawn_darwin.mm',
-             *ROOT.glob('native*.h'), skia / 'out/Release/libskia.a',
+             *ROOT.glob('native/include/native*.h'), skia / 'out/Release/libskia.a',
              skia / 'out/Release/libskcms.a', dawn / 'src/dawn/native/libwebgpu_dawn.a']
 
     def hashes():

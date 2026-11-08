@@ -4,7 +4,7 @@ import dom
 import gg
 import sokol.gfx
 
-#include "@VMODROOT/native_jpegxl.h"
+#include "@VMODROOT/native/include/native_jpegxl.h"
 
 $if macos {
 	#flag -Wl,-rpath,@VMODROOT/Build/v

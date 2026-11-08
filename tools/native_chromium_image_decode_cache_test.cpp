@@ -1,4 +1,4 @@
-#include "../native_chromium_image_decode_cache.h"
+#include "../native/include/native_chromium_image_decode_cache.h"
 #include <cstdio>
 #include <cstdlib>
 #include <limits>

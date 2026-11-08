@@ -27,10 +27,10 @@ def main():
     dawn = repo / 'Build/deps/skia-brave-dawn/dawn-build'
     archive = repo / 'Build/deps/skia-brave' / (REVISION + '.tar.gz')
     inputs = [Path(__file__).resolve(), repo / 'tools/native_graphite_shared_dawn_test.mm',
-              repo / 'native_graphite_dawn_darwin.mm', repo / 'native_graphite_shared_dawn.h',
-              repo / 'native_picture_image_transport.h', repo / 'native_picture_typeface_cache.h',
-              repo / 'native_graphite_context_lifetime.h', repo / 'native_skia_image_color_space.h',
-              repo / 'native_shared_picture_pixels.h',
+              repo / 'native_graphite_dawn_darwin.mm', repo / 'native/include/native_graphite_shared_dawn.h',
+              repo / 'native/include/native_picture_image_transport.h', repo / 'native/include/native_picture_typeface_cache.h',
+              repo / 'native/include/native_graphite_context_lifetime.h', repo / 'native/include/native_skia_image_color_space.h',
+              repo / 'native/include/native_shared_picture_pixels.h',
               repo / 'tools/build_mac_graphite_dawn.py', repo / 'tools/skia_dawn_shared_pixels.patch',
               archive, source / 'out/Release/libskia.a', source / 'out/Release/libskcms.a',
               dawn / 'src/dawn/native/libwebgpu_dawn.a']

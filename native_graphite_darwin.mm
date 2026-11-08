@@ -3,19 +3,19 @@
 #define SK_RELEASE
 #endif
 #import <Metal/Metal.h>
-#include "native_frame_metal_queue.h"
-#include "native_graphite_bridge.h"
-#include "native_graphite_context_lifetime.h"
-#include "native_chromium_image_decode_cache.h"
-#include "native_graphite_raster_cache.h"
-#include "native_graphite_image_upload_cache.h"
-#include "native_graphite_solid_rect.h"
+#include "native/include/native_frame_metal_queue.h"
+#include "native/include/native_graphite_bridge.h"
+#include "native/include/native_graphite_context_lifetime.h"
+#include "native/include/native_chromium_image_decode_cache.h"
+#include "native/include/native_graphite_raster_cache.h"
+#include "native/include/native_graphite_image_upload_cache.h"
+#include "native/include/native_graphite_solid_rect.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkBlurTypes.h"
 #include "include/core/SkColorSpace.h"
 #include "modules/skcms/skcms.h"
-#include "native_skia_image_color_space.h"
-#include "native_webp_color_profile.h"
+#include "native/include/native_skia_image_color_space.h"
+#include "native/include/native_webp_color_profile.h"
 #include "include/core/SkImageInfo.h"
 #include "include/core/SkMaskFilter.h"
 #include "include/core/SkPaint.h"
@@ -30,7 +30,7 @@
 #include "include/effects/SkGradient.h"
 #include "include/effects/SkDashPathEffect.h"
 #include "include/core/SkRRect.h"
-#include "native_rounded_single_border.h"
+#include "native/include/native_rounded_single_border.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkYUVAPixmaps.h"
 #include "include/gpu/graphite/Context.h"
@@ -40,7 +40,7 @@
 #include "include/gpu/graphite/Recording.h"
 #include "include/gpu/graphite/Surface.h"
 #include "include/gpu/graphite/mtl/MtlBackendContext.h"
-#include "native_svg_path_segments.h"
+#include "native/include/native_svg_path_segments.h"
 #include <algorithm>
 #include <atomic>
 #include <cmath>
@@ -56,8 +56,8 @@
 #include <chrono>
 #include <unistd.h>
 
-#include "native_graphite_shared_metal.h"
-#include "native_graphite_shared_yuva_metal.h"
+#include "native/include/native_graphite_shared_metal.h"
+#include "native/include/native_graphite_shared_yuva_metal.h"
 
 namespace {
 std::mutex gpu_mutex;
@@ -768,7 +768,7 @@ static void draw_prepared_image(SkCanvas* canvas, VoxGraphiteImage const* image,
     }
 }
 
-#include "native_direct_image_draw.h"
+#include "native/include/native_direct_image_draw.h"
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_direct_image_pixels(uint8_t* pixels, int width, int height,
     int pitch, int has_background, VoxGraphiteImage const* image)
@@ -893,7 +893,7 @@ int vox_graphite_draw_image_region_pixels(VoxGraphitePixelRegion const* region,
     return 1;
 }
 
-#include "native_graphite_image_batch.h"
+#include "native/include/native_graphite_image_batch.h"
 
 // Placements of images drawn in turn over one raster, as Chromium draws a
 // background's tiles in one GPU pass: one backdrop upload and one readback
@@ -1539,7 +1539,7 @@ int vox_graphite_draw_shape_region_pixels(VoxGraphitePixelRegion const* region,
     return draw_small_shape_patch(*region, width, height, has_background != 0, *shape);
 }
 
-#include "native_graphite_shape_batch.h"
+#include "native/include/native_graphite_shape_batch.h"
 
 extern "C" __attribute__((visibility("default")))
 int vox_graphite_draw_shape_pixels(uint8_t* pixels, int width, int height,
@@ -1659,7 +1659,7 @@ static bool draw_path_on_canvas(SkCanvas* canvas, VoxGraphitePath const* path,
     return true;
 }
 
-#include "native_graphite_canvas.h"
+#include "native/include/native_graphite_canvas.h"
 
 // Chromium draws SVG paths through its GPU rasterizer, whose multisampled
 // coverage differs from Skia's CPU analytic antialiasing on complex outlines.
@@ -1994,4 +1994,4 @@ int vox_graphite_draw_svg_image_region_pixels(VoxGraphitePixelRegion const* regi
         paths, count, parent, viewport, rounded_clip, region);
 }
 
-#include "native_graphite_svg_pattern.h"
+#include "native/include/native_graphite_svg_pattern.h"

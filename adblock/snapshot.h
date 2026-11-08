@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "runtime.h"
-#include "../native_crc32.h"
+#include "../native/include/native_crc32.h"
 
 static JSValueRef vox_adblock_snapshot_error(JSContextRef context,
         const char *text, JSValueRef *exception) {

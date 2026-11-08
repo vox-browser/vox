@@ -4,7 +4,7 @@ import dom
 import gg
 import sokol.gfx
 
-#include "@VMODROOT/native_avif.h"
+#include "@VMODROOT/native/include/native_avif.h"
 $if macos {
 	#flag -Wl,-rpath,@VMODROOT/Build/v
 }

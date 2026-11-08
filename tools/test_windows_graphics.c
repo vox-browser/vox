@@ -1,7 +1,7 @@
 // Run on the interactive Windows desktop, inside windows_runtime_guard.
 #define COBJMACROS
 #define SOKOL_D3D11
-#include "../native_browser_windows_graphics.h"
+#include "../native/include/native_browser_windows_graphics.h"
 #include <assert.h>
 
 static void test_driver(D3D_DRIVER_TYPE driver) {

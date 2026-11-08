@@ -1,8 +1,8 @@
 // Real ring reuse, immutable captures, and Metal Core Animation composition.
 #define VOX_TEST_SCROLL_TILES
 #import <Metal/Metal.h>
-#include "../native_layer_presentation_darwin.h"
-#include "../native_scroll_raster_darwin.h"
+#include "../native/include/native_layer_presentation_darwin.h"
+#include "../native/include/native_scroll_raster_darwin.h"
 #include <cassert>
 #include <cstdio>
 #include <vector>

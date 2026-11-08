@@ -7,7 +7,7 @@
 #include <cstdio>
 #include <cstring>
 #include <vector>
-#include "../native_glyph_flags.h"
+#include "../native/include/native_glyph_flags.h"
 
 static_assert((VOX_GLYPH_PRIVATE_BITMAP & 0xff) == 0,
     "private bitmap capability must not enable synthetic italics or change smoothing");
@@ -25,7 +25,7 @@ static void swap_red_blue_pixels(uint8_t* destination, uint8_t const* source, si
         destination[i*4+2] = source[i*4]; destination[i*4+3] = source[i*4+3];
     }
 }
-#include "../native_glyph_bitmap_copy.h"
+#include "../native/include/native_glyph_bitmap_copy.h"
 
 static CGContextRef frame(double scale)
 {

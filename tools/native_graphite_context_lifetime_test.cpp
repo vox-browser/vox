@@ -1,4 +1,4 @@
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include "include/core/SkCanvas.h"
 #include "include/core/SkPictureRecorder.h"
 #include "include/core/SkPicture.h"

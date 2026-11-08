@@ -1,6 +1,6 @@
 // A real publisher image, frozen Brave pixels and the native image adapter.
 #import <Cocoa/Cocoa.h>
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <cassert>
 #include <cstdio>
 #include <dlfcn.h>

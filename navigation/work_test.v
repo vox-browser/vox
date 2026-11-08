@@ -41,7 +41,7 @@ fn test_navigation_guard_keeps_active_heap_policy_until_all_nested_cleanup_finis
 }
 
 $if macos {
-	#include "@VMODROOT/native_navigation_work_test_darwin.h"
+	#include "@VMODROOT/native/include/native_navigation_work_test_darwin.h"
 }
 
 fn C.vox_test_navigation_frame_guard() int

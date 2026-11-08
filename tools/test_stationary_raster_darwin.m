@@ -5,7 +5,7 @@ static CGImageRef create_snapshot(CGContextRef context) {
     return fail_snapshot_creation ? NULL : CGBitmapContextCreateImage(context);
 }
 #define CGBitmapContextCreateImage create_snapshot
-#include "../native_stationary_raster_darwin.h"
+#include "../native/include/native_stationary_raster_darwin.h"
 #undef CGBitmapContextCreateImage
 
 static int bitmap_padding;

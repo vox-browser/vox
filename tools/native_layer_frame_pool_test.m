@@ -5,7 +5,7 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
 #include <stdio.h>
-#include "native_layer_presentation_darwin.h"
+#include "native/include/native_layer_presentation_darwin.h"
 
 // Use the same backend frame contract as the V browser, without a window.
 @interface MyView2 : NSView

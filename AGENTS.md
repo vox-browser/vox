@@ -37,7 +37,7 @@
   not match any module or submodule name (such as `ui`, `gg`, or the `memory`
   of `sokol.memory`): the repository root is first on `-path`.
 - From those directories, reach root files through `@VMODROOT`
-  (`#include "@VMODROOT/native_x.h"`, `$embed_file('@VMODROOT/Tests/...')`);
+  (`#include "@VMODROOT/native/include/native_x.h"`, `$embed_file('@VMODROOT/Tests/...')`);
   `@DIR` and relative includes resolve against the subdirectory.
 - Name files in those directories without a `main_` or directory prefix:
   `chromium/caret_paint.v`, not `chromium/main_chromium_caret_paint.v`. Keep

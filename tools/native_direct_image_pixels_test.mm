@@ -1,6 +1,6 @@
 // Preserve the original publisher bytes and the existing Brave photo pixels.
 #import <Foundation/Foundation.h>
-#include "../native_graphite_bridge.h"
+#include "../native/include/native_graphite_bridge.h"
 #include <CoreGraphics/CoreGraphics.h>
 #include <ImageIO/ImageIO.h>
 #include <cassert>
