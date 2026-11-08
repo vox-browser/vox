@@ -1050,3 +1050,24 @@ reports zero contracted operations and 175 explicit operations. See the
 [rotated-restore receipt](gg-migration/rotated-image-restores-20261108.json).
 Blur/drop-shadow source images, mixed filters, general rotated filter layers
 and native bridges still retain browser Skia dependencies.
+
+
+### Color matrices combined with filter layers (2026-11-08)
+
+Filter layers now support color matrices before and after one blur, and
+after one drop shadow. A real blur resolves the preceding matrices into
+pixels; an identity blur keeps them deferred through the final color filter
+and restore blend, preserving native quantization. Eight native fixtures
+cover solid/pattern fills, a dashed stroke, clearing/runtime composite
+operations, scaled layers, and unpremultiplied destinations.
+
+Of 20,000 attempts, 15,813 supported mixed blur comparisons match on macOS
+at seed 20261106, 15,772 in production mode at seed 20261108, and 16,717
+on Linux at seed 20261106. Filtered-image comparisons also pass: 9,727
+on Linux and 9,856 in macOS production mode, including no-ops and both CPU
+policies. All 26 CPU raster files and the focused Linux production tests
+pass. The FMA audit reports zero contracted operations. See the
+[mixed-filter receipt](gg-migration/mixed-filter-layers-20261108.json).
+Color filters before drop-shadow, repeated spatial filters, rotated layers,
+SVG graphs, source-image blur/drop-shadow and native bridges remain open;
+the browser still retains Skia dependencies.
