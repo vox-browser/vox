@@ -1293,3 +1293,22 @@ Scaled shadow foregrounds, all-identity and nearly integer source mappings,
 general rotated layers, remaining spatial chains, SVG graphs, intersecting
 boolean shadows, large-sigma rescaling, tiling and native browser bridges
 continue to retain Skia dependencies.
+
+
+### Deferred color through source-image identity blurs (2026-11-08)
+
+When every mapped blur is an identity and a color matrix remains, integer
+source images now retain their sampling, color conversion, alpha and matrix
+list through the final image draw. The original expanded draw bounds still
+control quick rejection, including clearing blends. Six new native fixtures
+cover mipmaps, flips, P3, source clipping and a fully transparent clearing draw.
+
+At seed 20261108, 17,281 of 20,000 attempts are supported and exact on both
+platforms; production mode matches 17,298 at seed 20261109. All 27 CPU raster
+files, canvas integration and focused Linux production tests pass. The FMA
+audit reports zero contracted operations. Counts include no-ops and explicit
+declines. See the [identity-blur receipt](gg-migration/identity-image-blurs-20261108.json).
+
+Identity lists without color matrices, nearly integer deferred mappings,
+scaled shadow foregrounds and the previously listed graph/native work remain
+open. The browser still links Skia.
