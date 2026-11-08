@@ -181,7 +181,8 @@ def discover_tests(text_root=TEXT_TESTS, includes=()):
         if document is None:
             continue
         test_id = relative.replace('@', '?', 1) if query else relative
-        if includes and not any(test_id == prefix or test_id.startswith(prefix.rstrip('/') + '/')
+        if includes and not any(test_id == prefix or test_id.partition('?')[0] == prefix
+                                or test_id.startswith(prefix.rstrip('/') + '/')
                                 for prefix in includes):
             continue
         source = document.read_text(errors='replace')
