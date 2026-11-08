@@ -140,6 +140,15 @@ fn compact_reflected_attributes_bootstrap() string {
  if(select){boolean(select,"multiple","multiple");boolean(select,"required","required");}
  const form=typeof HTMLFormElement==="function"?HTMLFormElement.prototype:null;
  if(form){boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");}
+ // https://html.spec.whatwg.org/multipage/interaction.html#dom-writingsuggestions
+ define(element,"writingSuggestions",function(){
+  for(let current=this;current;current=current.parentElement){
+   if(current.namespaceURI!=="http://www.w3.org/1999/xhtml")continue;
+   const value=current.getAttribute("writingsuggestions");
+   if(value!==null)return value.toLowerCase()==="false"?"false":"true";
+  }
+  return "true";
+ },function(value){this.setAttribute("writingsuggestions",string(value));});
 })();
 '
 }
