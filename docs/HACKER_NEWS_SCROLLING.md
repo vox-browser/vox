@@ -396,3 +396,44 @@ time native layer publications. Brave's tighter p95 therefore does not
 establish lower jitter than Vox's 10.5 ms, and the two FPS figures are not
 a matched ratio. Receipt:
 [`docs/performance/hn-item-scroll-brave-120hz-20261108.json`](performance/hn-item-scroll-brave-120hz-20261108.json).
+
+### Frame-tail followup (2026-11-08)
+
+`d86caf0ce` removes the full-document temporary step vector from viewport
+recording. Recording now reads the visibility mask while walking the retained
+paint steps. The commands, visual layers and clips still use the same recorder;
+no buffer retained across frames points into a reset scene.
+`VOX_FILTER_VIEWPORT_PAINT_STEPS=1` restores the former allocation for controls.
+
+Nine focused test functions pass in regular GC and prealloc/no-GC builds. They
+cover the culled/full paths, fixed/transformed content, effects, command order,
+retained scene immutability and repeated scene reuse. The new allocation check
+passes with mask traversal and fails as expected with the old allocation
+restored in the same prealloc executable: six visible commands then consume
+223,240 scene bytes, including a 216,264-byte full-document step payload.
+Compilers ran under the 12 GiB guard with `-memory-limit 10G`; runtime checks
+ran under 3 GiB. Earlier assertion and compiler-memory failures are retained.
+
+**Production frame-interval validation remains pending.** The available
+`c6b62c77…` bundle predates this change. Two fresh live baselines measured
+38.19 / 27.92 ms maximum scroll intervals, 8.33 / 8.35 ms medians and
+13.05 / 13.43 ms p95, at 115.14 / 114.08 scroll-changing publications/s.
+The first baseline used the default 60 Hz budget metric despite 120 Hz input;
+the second explicitly uses a 120 Hz target. Their leading counted-scroll gaps
+were 67.36 / 66.17 ms, trailing gaps 0.17 / 17.83 ms. Neither is a candidate
+result or a comparison with the historical 76 ms maximum.
+
+The first three baseline preparations take about 33–37 ms. A separate frozen
+page diagnostic reaches its first replay after 23.49 ms; IOSurface allocation
+itself takes only 0.10–0.11 ms. This identifies initial preparation as work to
+reduce, but does not prove that the removed allocation explains every stall.
+Native publication is not physical display scanout.
+
+The shared production worker repeatedly rejected builds because repository
+inputs changed before C preprocessing. The last completed bundle was preserved;
+no duplicate production build was requested. Same-binary alternating native
+scroll trials and HN pixel comparisons need a completed bundle containing this
+commit. No browser maximum reduction or instruction savings is credited yet.
+This is one focused fix in this followup; broad suites remain batched.
+
+[Receipt, raw input/publication timestamps, identities, failures and checks](performance/hn-item-scroll-frame-tails-20261108.json).
