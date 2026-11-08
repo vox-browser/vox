@@ -1127,3 +1127,10 @@ contracted operations. See the
 This validates the explicit CPU policy; the existing macOS Dawn dispatch is
 unchanged. Direct image-space spatial filters, remaining spatial chains,
 rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
+
+
+### Portable Linux shadow blending (2026-11-08)
+
+Portable box shadows now select blending for the explicit RGBA surface instead of native N32. Two native fixtures freeze faint inner and outer shadows on both platforms. The isolated regression tests pass on macOS and Linux production builds; 20,000 existing Linux inner-shadow attempts also match, including 5,364 painted results.
+See the [verification receipt](gg-migration/shadow-rgba-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
