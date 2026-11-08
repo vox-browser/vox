@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 from browser_bundle_lease import canonical_bundle_lease, publication_lease
+from build_platform import production_state_dir
 
 
 class BrowserBundleLeaseTest(unittest.TestCase):
@@ -74,7 +75,7 @@ with publication_lease(Path(sys.argv[1]), shared=True):
             with self.assertRaisesRegex(RuntimeError, 'capture failed'):
                 with publication_lease(root, shared=True):
                     raise RuntimeError('capture failed')
-            with (root / 'Build/production-build/bundle.lock').open('a') as file:
+            with (production_state_dir(root) / 'bundle.lock').open('a') as file:
                 fcntl.flock(file, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 fcntl.flock(file, fcntl.LOCK_UN)
 
@@ -105,7 +106,7 @@ class InheritedPublicationLeaseTest(unittest.TestCase):
                         'lease.__enter__(); lease.__exit__(None,None,None)')
                 subprocess.run([sys.executable, '-c', code, str(root)], env=env,
                                cwd=Path(__file__).resolve().parent, pass_fds=(fd,), check=True)
-                with (root / 'Build/production-build/bundle.lock').open('a') as contender:
+                with (production_state_dir(root) / 'bundle.lock').open('a') as contender:
                     with self.assertRaises(BlockingIOError):
                         fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
 

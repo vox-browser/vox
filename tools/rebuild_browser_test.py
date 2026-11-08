@@ -14,9 +14,34 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_linux_build_does_not_queue_behind_or_replace_macos_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            mac = root / 'Build/production-build'
+            prior = dict(id='mac-request', renderer='skia', c_mode='single')
+            build.write_json(mac / 'request.json', prior)
+            build.write_json(mac / 'latest.json', dict(executable_sha256='mac-binary'))
+            def compile(repo, stage, receipt, environment):
+                (stage / 'vox').write_bytes(b'linux-browser')
+                return 0
+            with build.lock(mac / 'build.lock'), patch.object(sys, 'platform', 'linux'), \
+                    patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'git', return_value=b'head'), \
+                    patch.object(build, 'repository_state', return_value=dict(head='head')):
+                build.enqueue(root, background=False)
+                state = build.production_state_dir(root)
+                self.assertEqual(state, root / 'Build/linux/production-build')
+                self.assertEqual(json.loads((state / 'request.json').read_text())['renderer'], 'gg')
+                self.assertEqual(build.build_pending(root, compile, foreground=True), 0)
+            self.assertEqual((root / 'Build/linux/vox').read_bytes(), b'linux-browser')
+            self.assertEqual(json.loads((mac / 'request.json').read_text()), prior)
+            self.assertEqual(json.loads((mac / 'latest.json').read_text())['executable_sha256'], 'mac-binary')
+            self.assertTrue((root / 'Build/linux/production-build/bundle.lock').exists())
+            self.assertFalse((mac / 'bundle.lock').exists())
+
     def test_explicit_pending_legacy_request_survives_automatic_requests(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);state=root/'Build/production-build'
+            root=Path(directory);state=build.production_state_dir(root)
             with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
                 build.enqueue(root,background=False,renderer='skia')
                 build.enqueue(root,background=False)
@@ -30,7 +55,7 @@ class ProductionBuildTests(unittest.TestCase):
     def test_renderer_change_is_not_lost_when_source_inputs_are_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory);self.app(root/'Build/v',b'old')
-            state=root/'Build/production-build'
+            state=build.production_state_dir(root)
             build.write_json(state/'request.json',dict(id='one',renderer='gg'))
             modes=[]
             def compile(repo,stage,receipt,environment):
@@ -49,7 +74,7 @@ class ProductionBuildTests(unittest.TestCase):
 
     def test_literal_prod_request_survives_automatic_requests_and_can_be_reset(self):
         with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory); state=root/'Build/production-build'
+            root=Path(directory); state=build.production_state_dir(root)
             with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
                 build.enqueue(root,background=False,c_mode='single',v_prod=True)
                 first=json.loads((state/'request.json').read_text())
@@ -74,14 +99,14 @@ class ProductionBuildTests(unittest.TestCase):
     def test_literal_prod_request_reaches_the_supervised_build(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); self.app(root/'Build/v',b'old')
-            build.write_json(root/'Build/production-build/request.json',dict(id='prod',c_mode='single',v_prod=True))
+            build.write_json(build.production_state_dir(root) / 'request.json',dict(id='prod',c_mode='single',v_prod=True))
             def compile(repo,stage,receipt,environment):
                 self.assertEqual(environment['VOX_BUILD_C_MODE'],'single')
                 self.assertEqual(environment['VOX_BUILD_V_PROD'],'1')
                 self.app(stage,b'prod'); return 0
             with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='one')):
                 self.assertEqual(build.build_pending(root,compile),0)
-            self.assertTrue(json.loads((root/'Build/production-build/latest.json').read_text())['request']['v_prod'])
+            self.assertTrue(json.loads((build.production_state_dir(root) / 'latest.json').read_text())['request']['v_prod'])
 
     def test_shell_prod_option_forwards_both_options_in_either_order(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -105,7 +130,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            build.write_json(build.production_state_dir(root) / 'request.json', dict(id='one'))
             before = dict(head='one', build_inputs_sha256='compiled-source')
             after = dict(head='later', build_inputs_sha256='later-source')
             def compile(repo, stage, receipt, environment):
@@ -119,7 +144,7 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.build_pending(root, compile), 0)
             validate.assert_called_once()
             self.assertEqual(old.read_bytes(), b'frozen compiled engine')
-            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            receipt = json.loads((build.production_state_dir(root) / 'latest.json').read_text())
             self.assertEqual(receipt['verified_inputs'], before)
             self.assertEqual(receipt['repository_after_build'], after)
 
@@ -128,7 +153,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.app(root / 'Build/v', b'old')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             one, two = dict(head='one', build_inputs_sha256='one'), dict(head='two', build_inputs_sha256='two')
             calls = []
@@ -148,7 +173,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            build.write_json(build.production_state_dir(root) / 'request.json', dict(id='one'))
             def compile(repo, stage, receipt, environment):
                 self.app(stage, b'changed inputs')
                 build.write_json(receipt / 'frozen-compile.json', {})
@@ -158,13 +183,13 @@ class ProductionBuildTests(unittest.TestCase):
                     patch('freeze_browser_compile.validate', side_effect=RuntimeError('changed linker input')):
                 self.assertEqual(build.build_pending(root, compile), 1)
             self.assertEqual(old.read_bytes(), b'old')
-            receipt = next((root / 'Build/production-build/receipts').glob('*/result.json'))
+            receipt = next((build.production_state_dir(root) / 'receipts').glob('*/result.json'))
             self.assertIn('changed linker input', json.loads(receipt.read_text())['frozen_input_error'])
 
     def test_worker_handoff_does_not_enqueue_or_hold_the_build_lock_for_the_successor(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            state = root / 'Build/production-build'
+            state = build.production_state_dir(root)
             def successor(repo):
                 with build.lock(state / 'build.lock', nonblocking=True) as available:
                     self.assertIsNotNone(available)
@@ -181,7 +206,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             one, two = dict(head='one', build_inputs_sha256='one'), dict(head='two', build_inputs_sha256='two')
             calls = []
@@ -256,7 +281,7 @@ class ProductionBuildTests(unittest.TestCase):
             fixture = root / 'Tests/Browser/expected.png'
             fixture.parent.mkdir(parents=True)
             fixture.write_bytes(b'old reference')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             calls = []
             def git(repo, *args):
@@ -273,7 +298,7 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.build_pending(root, compile), 0)
             self.assertEqual(len(calls), 1)
             self.assertEqual(old.read_bytes(), b'compiled engine')
-            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            receipt = json.loads((build.production_state_dir(root) / 'latest.json').read_text())
             self.assertNotEqual(receipt['inputs']['repository_sha256'],
                                 receipt['verified_inputs']['repository_sha256'])
             self.assertTrue(build.same_build_inputs(receipt['inputs'], receipt['verified_inputs']))
@@ -306,7 +331,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             calls = []
             def compile(repo, stage, receipt, environment):
@@ -321,7 +346,7 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.build_pending(root, compile), 0)
             self.assertEqual(len(calls), 1)
             self.assertEqual(old.read_bytes(), b'compiled engine')
-            receipt = json.loads((root / 'Build/production-build/latest.json').read_text())
+            receipt = json.loads((build.production_state_dir(root) / 'latest.json').read_text())
             self.assertEqual(receipt['inputs'], before)
             self.assertEqual(receipt['verified_inputs'], after)
 
@@ -335,7 +360,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'last successful build')
-            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            build.write_json(build.production_state_dir(root) / 'request.json', dict(id='one'))
             stages = []
 
             def fail(repo, stage, receipt, environment):
@@ -349,14 +374,14 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(build.build_pending(root, fail), 7)
             self.assertEqual(old.read_bytes(), b'last successful build')
             self.assertTrue(all(not stage.exists() for stage in stages))
-            self.assertFalse((root / 'Build/production-build/latest.json').exists())
+            self.assertFalse((build.production_state_dir(root) / 'latest.json').exists())
 
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_changed_source_is_rebuilt_and_only_the_latest_complete_bundle_is_published(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             calls = []
 
@@ -381,7 +406,7 @@ class ProductionBuildTests(unittest.TestCase):
     def test_busy_build_does_not_start_another_compiler(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            with build.lock(root / 'Build/production-build/build.lock'), \
+            with build.lock(build.production_state_dir(root) / 'build.lock'), \
                     patch.object(build, 'validate_repository'):
                 self.assertEqual(build.build_pending(root, foreground=True), 75)
                 self.assertEqual(build.build_pending(root), 0)
@@ -391,7 +416,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             old = self.app(root / 'Build/v', b'old')
-            request = root / 'Build/production-build/request.json'
+            request = build.production_state_dir(root) / 'request.json'
             build.write_json(request, dict(id='one'))
             calls = []
 
@@ -560,7 +585,7 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.app(root / 'Build/v', b'old')
-            build.write_json(root / 'Build/production-build/request.json', dict(id='one', c_mode='single'))
+            build.write_json(build.production_state_dir(root) / 'request.json', dict(id='one', c_mode='single'))
             def compile(repo, stage, receipt, environment):
                 self.assertEqual(environment['VOX_BUILD_C_MODE'], 'single')
                 build.write_json(receipt / 'c-compile.json', dict(mode='single', requested='single'))
@@ -570,15 +595,15 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
             with patch.object(build, 'validate_repository'), \
                     patch.object(build, 'repository_state', return_value=state):
                 self.assertEqual(build.build_pending(root, compile), 0)
-            latest = json.loads((root / 'Build/production-build/latest.json').read_text())
+            latest = json.loads((build.production_state_dir(root) / 'latest.json').read_text())
             self.assertEqual(latest['c_compile'], dict(mode='single', requested='single'))
-            started = json.loads((root / 'Build/production-build/started.json').read_text())
+            started = json.loads((build.production_state_dir(root) / 'started.json').read_text())
             self.assertEqual(started['id'], 'one')
 
     def test_requests_without_a_mode_build_parallel_c(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            build.write_json(root / 'Build/production-build/request.json', dict(id='one'))
+            build.write_json(build.production_state_dir(root) / 'request.json', dict(id='one'))
             modes = []
             def compile(repo, stage, receipt, environment):
                 modes.append(environment['VOX_BUILD_C_MODE'])
@@ -592,7 +617,7 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
     def test_automatic_requests_keep_a_single_unit_request_until_a_build_starts_it(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            state = root / 'Build/production-build'
+            state = build.production_state_dir(root)
             def request():
                 return json.loads((state / 'request.json').read_text())
             with patch.object(build, 'validate_repository'), \

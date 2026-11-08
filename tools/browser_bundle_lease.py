@@ -3,13 +3,14 @@ from contextlib import contextmanager
 import fcntl
 import os
 from pathlib import Path
+from build_platform import production_state_dir
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 @contextmanager
 def publication_lease(root, shared=False):
-    path = root / 'Build/production-build/bundle.lock'
+    path = production_state_dir(root) / 'bundle.lock'
     path.parent.mkdir(parents=True, exist_ok=True)
     inherited = os.environ.get('VOX_BUNDLE_LEASE_FD')
     if inherited is not None:

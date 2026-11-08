@@ -15,6 +15,7 @@ import sys
 import tempfile
 import uuid
 from browser_bundle_lease import publication_lease
+from build_platform import production_state_dir
 import prune_build
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -101,7 +102,7 @@ def pending_c_mode(state):
 
 def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None):
     validate_repository(root)
-    state = root / 'Build/production-build'
+    state = production_state_dir(root)
     with lock(state / 'queue.lock'):
         prior = read_json(state / 'request.json') or {}
         prod = bool(prior.get('v_prod')) if v_prod is None else v_prod
@@ -236,7 +237,7 @@ def run_build(root, stage, receipt, environment):
                sha256=hashlib.sha256(script_bytes).hexdigest(), delivery='memory through stdin'))
     with (receipt / 'build.log').open('wb') as log:
         result = subprocess.run([sys.executable, str(guard), '--lock',
-            str(root / 'Build/production-build/memory.lock'), '--report',
+            str(production_state_dir(root) / 'memory.lock'), '--report',
             str(receipt / 'memory.json'), '--timeout',
             str(PRODUCTION_BUILD_TIMEOUT_SECONDS), '--', 'sh', '-c',
             'exec sh -c "$(cat)" "$0"', str(script)], input=script_bytes,
@@ -247,14 +248,14 @@ def run_build(root, stage, receipt, environment):
     smoke_environment = dict(environment, VOX_PROFILE_DIR=str(stage / 'smoke-profile'), VOX_TEST_WINDOW='1')
     with (receipt / 'smoke.log').open('wb') as log:
         return subprocess.run([sys.executable, str(guard), '--limit-gib', '3', '--lock',
-            str(root / 'Build/production-build/smoke.lock'), '--report',
+            str(production_state_dir(root) / 'smoke.lock'), '--report',
             str(receipt / 'smoke-memory.json'), '--', str(executable), '--headless-smoke'],
             cwd=root, env=smoke_environment, stdout=log, stderr=subprocess.STDOUT).returncode
 
 
 def build_pending(root, runner=run_build, foreground=False):
     validate_repository(root)
-    state = root / 'Build/production-build'
+    state = production_state_dir(root)
     with lock(state / 'build.lock', nonblocking=True) as build_lock:
         if build_lock is None:
             print('Production build already running; latest request is recorded.', flush=True)
@@ -268,7 +269,7 @@ def build_pending(root, runner=run_build, foreground=False):
             receipt.mkdir(parents=True)
             # Older attempts keep only their small records; the generated C and
             # sealed compiler inputs stay with this and the published receipt.
-            prune_build.prune_receipts(root / 'Build')
+            prune_build.prune_receipts(state.parent)
             with tempfile.TemporaryDirectory(prefix='.production-output-', dir=root / 'Build') as temporary:
                 stage = Path(temporary)
                 write_json(receipt / 'inputs-before.json', before)
@@ -337,7 +338,7 @@ def build_pending(root, runner=run_build, foreground=False):
 
 def request_worker_upgrade(root):
     """Let the old worker finish; its next script entry yields without compiling."""
-    state = root / 'Build/production-build'
+    state = production_state_dir(root)
     with (state / 'worker.log').open('ab') as log:
         subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'),
                           '--worker-after-current'], cwd=root,
@@ -347,7 +348,7 @@ def request_worker_upgrade(root):
 
 
 def worker_after_current(root):
-    state = root / 'Build/production-build'
+    state = production_state_dir(root)
     # Multiple stale entries can request an upgrade while editors are active.
     # One waiter owns the handoff. It neither interrupts the running compiler
     # nor enqueues another production request.
