@@ -1308,6 +1308,8 @@ mut:
 
 @[heap]
 pub struct LayoutState {
+mut:
+	absolute_layout_status map[voidptr]u8
 pub mut:
 	used_values_store UsedValuesPagedStore
 	subtree_root      ?&NodeWithStyle

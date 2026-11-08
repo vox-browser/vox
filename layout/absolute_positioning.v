@@ -8,6 +8,7 @@ import css
 import dom
 
 struct AnchorElementLookupContext {
+	name string
 	box              &Node = unsafe { nil }
 	containing_block &Box = unsafe { nil }
 	state            &LayoutState = unsafe { nil }
@@ -18,14 +19,37 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 		return false
 	}
 	context := unsafe { &AnchorElementLookupContext(target) }
+	if !anchor_name_scopes_match(candidate, context.box, context.name) { return false }
 	dom_layout_node := candidate.as_node().unsafe_layout_node() or { return false }
 	if dom_layout_node.real_layout_handle() == unsafe { nil } {
 		return false
 	}
 	anchor_node := unsafe { &Node(dom_layout_node.real_layout_handle()) }
-	if layout_nodes_same(anchor_node, context.box) || anchor_node.as_box() == none {
+	if layout_nodes_same(anchor_node, context.box) || (anchor_node.as_box() == none && anchor_node.as_inline_node() == none) {
 		return false
 	}
+	if anchor_node.is_absolutely_positioned() {
+		if block := anchor_node.containing_block() {
+			if layout_nodes_same(unsafe { &Node(block) },unsafe { &Node(context.containing_block) }) {
+				query := anchor_query_element(context.box) or { return false }
+				if candidate.as_node().compare_document_position(query.as_node()) & dom.document_position_following == 0 { return false }
+			}
+		}
+	}
+	mut pending := []&Node{}
+	mut pending_ancestor := ?&Node(anchor_node)
+	for pending_ancestor != none {
+		ancestor_node := pending_ancestor or { break }
+		if layout_nodes_same(ancestor_node,unsafe { &Node(context.containing_block) }) { break }
+		if ancestor_node.is_absolutely_positioned() {
+			status := context.state.absolute_layout_status[voidptr(ancestor_node)] or { u8(0) }
+			if status == 1 { return false }
+			if status == 0 { pending << ancestor_node }
+		}
+		pending_ancestor = if block := ancestor_node.containing_block() { unsafe { &Node(block) } } else { none }
+	}
+	mut mutable_state := unsafe { &LayoutState(context.state) }
+	for index := pending.len-1; index >= 0; index-- { layout_absolutely_positioned_box(mut mutable_state,pending[index]) }
 	anchor_styled := anchor_node.as_node_with_style() or { return false }
 	if context.state.try_get(anchor_styled) == none {
 		return false
@@ -43,10 +67,10 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 
 fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, name string) ?css.CSSPixelRect {
 	if saved := position_try_saved_anchor(box,name) { return saved }
-	dom_node := box.dom_node() or { return none }
-	element := dom_node.as_element() or { return none }
+	element := anchor_query_element(box) or { return none }
 	containing_block := box.containing_block() or { return none }
 	lookup_context := AnchorElementLookupContext{
+		name: name
 		box: box
 		containing_block: containing_block
 		state: state
@@ -61,9 +85,17 @@ fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &Us
 		return none
 	}
 	anchor_layout_node := unsafe { &Node(dom_anchor_layout_node.real_layout_handle()) }
-	if anchor_layout_node.as_box() == none {
-		return none
+	if inline := anchor_layout_node.as_inline_node() {
+		mut mutable_state := unsafe { &LayoutState(state) }
+		rect := compute_inline_containing_block_rect(mut mutable_state,inline,containing_block) or { return none }
+		styled := anchor_layout_node.as_node_with_style() or { return none }
+		values := state.try_get(styled) or { return none }
+		border_rect := css.CSSPixelRect{x:rect.x.minus(values.border_left),y:rect.y.minus(values.border_top),
+			width:rect.width.plus(values.border_left).plus(values.border_right),height:rect.height.plus(values.border_top).plus(values.border_bottom)}
+		position_try_note_anchor(box,name,border_rect)
+		return border_rect
 	}
+	if anchor_layout_node.as_box() == none { return none }
 	anchor_styled := anchor_layout_node.as_node_with_style() or { return none }
 	anchor_state := state.try_get(anchor_styled) or { return none }
 	anchor_border_box_origin := anchor_state.cumulative_offset()
@@ -375,6 +407,9 @@ fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &No
 }
 
 fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
+	if state.absolute_layout_status[voidptr(box)] or { u8(0) } != 0 { return }
+	state.absolute_layout_status[voidptr(box)] = 1
+	defer { state.absolute_layout_status[voidptr(box)] = 2 }
 	if layout_with_position_try_fallbacks(mut state,box) { return }
 	layout_absolutely_positioned_box_once(mut state,box)
 }
@@ -705,11 +740,16 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 }
 
 fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
+	state.absolute_layout_status.clear()
+	layout_absolutely_positioned_subtree(mut state,root)
+}
+
+fn layout_absolutely_positioned_subtree(mut state LayoutState, root &Node) {
 	if root.is_absolutely_positioned() {
 		layout_absolutely_positioned_box(mut state, root)
 	}
 	align_block_contents(mut state, root)
 	for child in root.children() {
-		layout_absolutely_positioned_descendants(mut state, child)
+		layout_absolutely_positioned_subtree(mut state, child)
 	}
 }
