@@ -4,6 +4,15 @@ import browserjs
 import dom
 import platform
 
+fn flush_compact_iframe_runtime_state(document &dom.Document, runtime &browserjs.Runtime) ! {
+	// A contentWindow/contentDocument read replays writes synchronously, but
+	// neither its JSON text nor queued console output belongs to the frame.
+	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
+	defer { state.finish() }
+	mut messages := []string{}
+	apply_javascript_runtime_state(document, state.value, runtime, mut messages)
+}
+
 fn install_compact_iframe_windows(document &dom.Document, mut runtime browserjs.Runtime) ! {
 	host := browser_child_document_host(document, runtime.engine)
 	if voidptr(host.root) == voidptr(document) {
@@ -27,9 +36,8 @@ fn install_compact_iframe_windows(document &dom.Document, mut runtime browserjs.
 		if !element.is_html_element() || element.local_name() != 'iframe' {
 			return error('TypeError: Illegal HTMLIFrameElement receiver')
 		}
-		state := runtime.evaluate_host('__ladybirdFinalize()')!
 		mut messages := []string{}
-		apply_javascript_runtime_state(document, state, runtime, mut messages)
+		flush_compact_iframe_runtime_state(document, runtime)!
 		if !element.as_node().is_connected() || !element.document().has_page() || !element.document().is_fully_active() {
 			return browserjs.FrameWindowResult{}
 		}
