@@ -29,6 +29,19 @@ Run expensive checks through `tools/run_memory_bounded.py` as required by
 where the repository permits source fixtures. Generated browser assets remain
 in `adblock/`; they are rebuilt from this directory rather than hand edited.
 
+`image_layout.v` lets GitHub image completions share the current frame's layout
+boundary. `svg_path_cache.v` scopes the native small-path raster cache to GitHub
+painting and restores the previous scope after nested draws. The graphics service
+compares complete path geometry, transforms, colors, opacity and backdrop bytes;
+it retains at most 64 entries and 8 MiB of vector storage. Unsupported paths use
+the existing renderer. Graphics-memory cleanup releases the cache.
+
+The reversible controls are `VOX_DISABLE_GITHUB_IMAGE_LAYOUT_BATCHING=1` and
+`VOX_DISABLE_GITHUB_SVG_PATH_CACHE=1`. Separate diagnostics use
+`VOX_GITHUB_IMAGE_LAYOUT_DIAGNOSTICS=1` and
+`VOX_GITHUB_SVG_PATH_CACHE_DIAGNOSTICS=1`. The cache's sanitizer test is
+`tools/native_svg_path_cache_test.cpp`; run it through the memory guard.
+
 Removing collection code does not establish a rendering instruction reduction.
 The GitHub 20% target remains open; see
 [the diagnostic report](../docs/GITHUB_SITE_OPTIMIZATIONS.md) before making a
