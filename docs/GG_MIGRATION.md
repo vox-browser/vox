@@ -911,3 +911,24 @@ including native fixture inputs and the failed intermediate experiments.
 The full Linux browser type check also passes. This does not establish a
 Skia-free browser link or run: remaining filter, shadow and native bridge
 fallbacks still link Skia.
+
+
+### Filter restores with all composite operations (2026-11-08)
+
+`87e152a92` removes the composite-mode fallback for single blur and
+drop-shadow layers. Restores use a decal shader to fill the clip when the
+blender affects transparent black and the filtered image does not cover it.
+Empty filtered sources also restore through that blender, while the draw's
+quick reject still avoids a restore. Fast bounds preserve the native handling
+of empty path bounds.
+
+All 12,195 supported blur draws match out of 20,000 attempts in each build
+mode. Drop shadows match 17,475 supported draws in the normal seed-20261106
+run and 17,395 in the production seed-20261108 run. The native Linux run
+matches 18,608 supported drop-shadow draws. Four focused test files pass on
+each platform, including Linux production mode, and 14 native fixtures cover
+the clearing and runtime blend modes through an AA clip. The FMA audit reports
+zero contracted operations. See the
+[composite-filter receipt](gg-migration/filter-composites-20261108.json).
+Mixed filters, rotated layers, tiled draws and the native browser bridges
+remain open.
