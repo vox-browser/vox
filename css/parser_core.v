@@ -287,25 +287,25 @@ pub fn Token.create_whitespace(original_source_text string) Token {
 	}
 }
 
-pub fn (token Token) token_type() TokenType {
+pub fn (token &Token) token_type() TokenType {
 	return token.type_
 }
 
-pub fn (token Token) is(type_ TokenType) bool {
+pub fn (token &Token) is(type_ TokenType) bool {
 	return token.type_ == type_
 }
 
-pub fn (token Token) ident() string {
+pub fn (token &Token) ident() string {
 	assert token.type_ == .ident
 	return token.value
 }
 
-pub fn (token Token) function_name() string {
+pub fn (token &Token) function_name() string {
 	assert token.type_ == .function
 	return token.value
 }
 
-pub fn (token Token) delim() u32 {
+pub fn (token &Token) delim() u32 {
 	assert token.type_ == .delim
 	if token.value.len == 0 {
 		return 0
@@ -319,32 +319,32 @@ pub fn (token Token) delim() u32 {
 	return u32(token.value.runes()[0])
 }
 
-pub fn (token Token) string_value() string {
+pub fn (token &Token) string_value() string {
 	assert token.type_ == .string
 	return token.value
 }
 
-pub fn (token Token) url() string {
+pub fn (token &Token) url() string {
 	assert token.type_ == .url
 	return token.value
 }
 
-pub fn (token Token) at_keyword() string {
+pub fn (token &Token) at_keyword() string {
 	assert token.type_ == .at_keyword
 	return token.value
 }
 
-pub fn (token Token) hash_type() HashType {
+pub fn (token &Token) hash_type() HashType {
 	assert token.type_ == .hash
 	return token.hash_type_
 }
 
-pub fn (token Token) hash_value() string {
+pub fn (token &Token) hash_value() string {
 	assert token.type_ == .hash
 	return token.value
 }
 
-pub fn (token Token) number() Number {
+pub fn (token &Token) number() Number {
 	assert token.type_ == .number || token.type_ == .dimension || token.type_ == .percentage
 	return token.number_value_
 }
@@ -359,36 +359,36 @@ fn clamp_to_single_precision(value f64) f64 {
 	return value
 }
 
-pub fn (token Token) number_value() f64 {
+pub fn (token &Token) number_value() f64 {
 	assert token.type_ == .number
 	return clamp_to_single_precision(token.number_value_.value())
 }
 
-pub fn (token Token) to_integer() i64 {
+pub fn (token &Token) to_integer() i64 {
 	assert token.type_ == .number && token.number_value_.is_integer()
 	return token.number_value_.integer_value()
 }
 
-pub fn (token Token) dimension_unit() string {
+pub fn (token &Token) dimension_unit() string {
 	assert token.type_ == .dimension
 	return token.value
 }
 
-pub fn (token Token) dimension_value() f64 {
+pub fn (token &Token) dimension_value() f64 {
 	assert token.type_ == .dimension
 	return clamp_to_single_precision(token.number_value_.value())
 }
 
-pub fn (token Token) dimension_value_int() i64 {
+pub fn (token &Token) dimension_value_int() i64 {
 	return token.number_value_.integer_value()
 }
 
-pub fn (token Token) percentage() f64 {
+pub fn (token &Token) percentage() f64 {
 	assert token.type_ == .percentage
 	return clamp_to_single_precision(token.number_value_.value())
 }
 
-pub fn (token Token) mirror_variant() TokenType {
+pub fn (token &Token) mirror_variant() TokenType {
 	if token.is(.open_curly) {
 		return .close_curly
 	}
@@ -401,7 +401,7 @@ pub fn (token Token) mirror_variant() TokenType {
 	return .invalid
 }
 
-pub fn (token Token) bracket_string() string {
+pub fn (token &Token) bracket_string() string {
 	if token.is(.open_curly) {
 		return '{'
 	}
@@ -423,7 +423,7 @@ pub fn (token Token) bracket_string() string {
 	return ''
 }
 
-pub fn (token Token) bracket_mirror_string() string {
+pub fn (token &Token) bracket_mirror_string() string {
 	if token.is(.open_curly) {
 		return '}'
 	}
@@ -445,7 +445,7 @@ pub fn (token Token) bracket_mirror_string() string {
 	return ''
 }
 
-pub fn (token Token) to_string() string {
+pub fn (token &Token) to_string() string {
 	match token.type_ {
 		.end_of_file {
 			return ''
@@ -535,7 +535,7 @@ pub fn (token Token) to_string() string {
 	}
 }
 
-pub fn (token Token) to_debug_string() string {
+pub fn (token &Token) to_debug_string() string {
 	match token.type_ {
 		.invalid {
 			panic('invalid token cannot be debug-serialized')
@@ -628,15 +628,15 @@ pub fn (token Token) to_debug_string() string {
 	}
 }
 
-pub fn (token Token) original_source_text() string {
+pub fn (token &Token) original_source_text() string {
 	return token.original_source_text_
 }
 
-pub fn (token Token) start_position() TokenPosition {
+pub fn (token &Token) start_position() TokenPosition {
 	return token.start_position_
 }
 
-pub fn (token Token) end_position() TokenPosition {
+pub fn (token &Token) end_position() TokenPosition {
 	return token.end_position_
 }
 
@@ -2222,7 +2222,7 @@ pub mut:
 	attr_tainted bool
 }
 
-pub fn (component_value ComponentValue) contains_attr_tainted_value() bool {
+pub fn (component_value &ComponentValue) contains_attr_tainted_value() bool {
 	if component_value.attr_tainted {
 		return true
 	}
@@ -2271,11 +2271,13 @@ pub fn ComponentValue.from_guaranteed_invalid(invalid GuaranteedInvalidValue) Co
 	}
 }
 
-pub fn (component_value ComponentValue) is_block() bool {
+// Syntax payloads contain inline unions, including two full tokens per block.
+// Read-only accessors borrow them rather than copying the union at every test.
+pub fn (component_value &ComponentValue) is_block() bool {
 	return component_value.value is SimpleBlock
 }
 
-pub fn (component_value ComponentValue) block() SimpleBlock {
+pub fn (component_value &ComponentValue) block() SimpleBlock {
 	if component_value.value is SimpleBlock {
 		return component_value.value
 	}
@@ -2285,55 +2287,56 @@ pub fn (component_value ComponentValue) block() SimpleBlock {
 // True if this component value is a {}-block. In this port's component-value stream, a {}-block is
 // a single SimpleBlock (the normalizer pre-parses blocks), so rule consumption must detect it this
 // way rather than checking for a raw <{-token>.
-pub fn (component_value ComponentValue) is_curly_block() bool {
-	return component_value.is_block() && component_value.block().is_curly()
+pub fn (component_value &ComponentValue) is_curly_block() bool {
+	return component_value.value is SimpleBlock && component_value.value.is_curly()
 }
 
-pub fn (component_value ComponentValue) is_function() bool {
+pub fn (component_value &ComponentValue) is_function() bool {
 	return component_value.value is Function
 }
 
-pub fn (component_value ComponentValue) is_function_named(name string) bool {
-	return component_value.is_function()
-		&& equals_ignoring_ascii_case(component_value.function().name, name)
+pub fn (component_value &ComponentValue) is_function_named(name string) bool {
+	return component_value.value is Function
+		&& equals_ignoring_ascii_case(component_value.value.name, name)
 }
 
-pub fn (component_value ComponentValue) function() Function {
+pub fn (component_value &ComponentValue) function() Function {
 	if component_value.value is Function {
 		return component_value.value
 	}
 	panic('component value is not a function')
 }
 
-pub fn (component_value ComponentValue) is_token() bool {
+pub fn (component_value &ComponentValue) is_token() bool {
 	return component_value.value is Token
 }
 
-pub fn (component_value ComponentValue) is(type_ TokenType) bool {
-	return component_value.is_token() && component_value.token().is(type_)
+pub fn (component_value &ComponentValue) is(type_ TokenType) bool {
+	return component_value.value is Token && component_value.value.is(type_)
 }
 
-pub fn (component_value ComponentValue) is_delim(delim u32) bool {
-	return component_value.is(.delim) && component_value.token().delim() == delim
+pub fn (component_value &ComponentValue) is_delim(delim u32) bool {
+	return component_value.value is Token && component_value.value.is(.delim)
+		&& component_value.value.delim() == delim
 }
 
-pub fn (component_value ComponentValue) is_ident(ident string) bool {
-	return component_value.is(.ident)
-		&& equals_ignoring_ascii_case(component_value.token().ident(), ident)
+pub fn (component_value &ComponentValue) is_ident(ident string) bool {
+	return component_value.value is Token && component_value.value.is(.ident)
+		&& equals_ignoring_ascii_case(component_value.value.ident(), ident)
 }
 
-pub fn (component_value ComponentValue) token() Token {
+pub fn (component_value &ComponentValue) token() Token {
 	if component_value.value is Token {
 		return component_value.value
 	}
 	panic('component value is not a token')
 }
 
-pub fn (component_value ComponentValue) is_guaranteed_invalid() bool {
+pub fn (component_value &ComponentValue) is_guaranteed_invalid() bool {
 	return component_value.value is GuaranteedInvalidValue
 }
 
-pub fn (component_value ComponentValue) contains_guaranteed_invalid_value() bool {
+pub fn (component_value &ComponentValue) contains_guaranteed_invalid_value() bool {
 	match component_value.value {
 		Token {
 			return false
@@ -2363,7 +2366,7 @@ pub fn (component_value ComponentValue) contains_guaranteed_invalid_value() bool
 	}
 }
 
-pub fn (component_value ComponentValue) to_string() string {
+pub fn (component_value &ComponentValue) to_string() string {
 	match component_value.value {
 		Token {
 			return component_value.value.to_string()
@@ -2383,7 +2386,7 @@ pub fn (component_value ComponentValue) to_string() string {
 	}
 }
 
-pub fn (component_value ComponentValue) to_debug_string() string {
+pub fn (component_value &ComponentValue) to_debug_string() string {
 	match component_value.value {
 		Token {
 			return 'Token: ${component_value.value.to_debug_string()}'
@@ -2403,7 +2406,7 @@ pub fn (component_value ComponentValue) to_debug_string() string {
 	}
 }
 
-pub fn (component_value ComponentValue) original_source_text() string {
+pub fn (component_value &ComponentValue) original_source_text() string {
 	match component_value.value {
 		Token {
 			return component_value.value.original_source_text()
@@ -2431,19 +2434,19 @@ pub mut:
 	end_token Token
 }
 
-pub fn (block SimpleBlock) is_curly() bool {
+pub fn (block &SimpleBlock) is_curly() bool {
 	return block.token.is(.open_curly)
 }
 
-pub fn (block SimpleBlock) is_paren() bool {
+pub fn (block &SimpleBlock) is_paren() bool {
 	return block.token.is(.open_paren)
 }
 
-pub fn (block SimpleBlock) is_square() bool {
+pub fn (block &SimpleBlock) is_square() bool {
 	return block.token.is(.open_square)
 }
 
-pub fn (block SimpleBlock) to_string() string {
+pub fn (block &SimpleBlock) to_string() string {
 	mut builder := strings.new_builder(16)
 
 	builder.write_string(block.token.bracket_string())
@@ -2455,7 +2458,7 @@ pub fn (block SimpleBlock) to_string() string {
 	return builder.str()
 }
 
-pub fn (block SimpleBlock) original_source_text() string {
+pub fn (block &SimpleBlock) original_source_text() string {
 	mut builder := strings.new_builder(16)
 	builder.write_string(block.token.original_source_text())
 	for component_value in block.value {
@@ -2474,7 +2477,7 @@ pub mut:
 	end_token  Token
 }
 
-pub fn (function Function) to_string() string {
+pub fn (function &Function) to_string() string {
 	mut builder := strings.new_builder(16)
 
 	builder.write_string(serialize_an_identifier(function.name))
@@ -2487,7 +2490,7 @@ pub fn (function Function) to_string() string {
 	return builder.str()
 }
 
-pub fn (function Function) original_source_text() string {
+pub fn (function &Function) original_source_text() string {
 	mut builder := strings.new_builder(16)
 	builder.write_string(function.name_token.original_source_text())
 	for component_value in function.value {
