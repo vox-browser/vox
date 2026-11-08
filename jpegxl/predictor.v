@@ -69,7 +69,8 @@ pub fn PredictionData.from_rows(row []i32, row_top []i32, row_toptop []i32, x in
 }
 
 pub fn (d PredictionData) update_for_interior_row(row_top []i32, row_toptop []i32, x int, current i32, needs_toptop bool) !PredictionData {
-	if x <= 1 || x + 2 >= row_top.len || (needs_toptop && x >= row_toptop.len) {
+	if row_top.len < 5 || x <= 1 || x >= row_top.len - 2
+		|| (needs_toptop && x >= row_toptop.len) {
 		return error('Invalid JPEG XL interior prediction row')
 	}
 	return PredictionData{

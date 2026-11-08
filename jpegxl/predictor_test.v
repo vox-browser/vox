@@ -122,6 +122,9 @@ fn test_predictor_signed_rounding_ties_and_bounds() {
 	if _ := PredictionData{}.update_for_interior_row([i32(0)], [], 0, 0, false) {
 		assert false
 	}
+	if _ := PredictionData{}.update_for_interior_row([i32(0), 0, 0, 0, 0], [], int(u64(0x7fffffffffffffff)), 0, false) {
+		assert false
+	}
 	mut state := WeightedPredictorState.new(WeightedPredictorHeader{}, 1)!
 	for x in [-1, 1] {
 		if _ := state.predict_and_property(x, 0, PredictionData{}) {
