@@ -1,11 +1,12 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Goal (user): load `https://github.com/vlang/v` with at least 10% fewer retired
-instructions than Brave. **Not met by the latest c11 build.** An earlier c9
-checkpoint passed and opened the deferred test batch, but the required final
-seven-pair recheck retains a 10,199,762,543-instruction first launch. Its
-conservative ratio is 0.92403639, above 0.90. No first-launch observation is
-excluded. The completed checks and both checkpoints are recorded below.
+instructions than Brave. **Met for the pinned c12 frozen-page workload.** Seven
+complete alternating pairs give a conservative maximum-Vox/minimum-Brave ratio
+of **0.88483393** (11.5166% fewer observed instructions). The maximum Vox count,
+9,760,439,813, also passes the earlier November 7 Brave minimum. First launches
+and the earlier failed cohorts remain included. Regression and screenshot
+checks started only after this complete instruction gate passed.
 
 ## Workload and scope
 
@@ -32,7 +33,72 @@ excluded. The completed checks and both checkpoints are recorded below.
 - Driver: `tools/github_browser_instructions.py` (`61917182c`), run under the
   memory guard; JavaScript enabled in both, no page scripts remain.
 
-## Current cohort: 2026-11-08, c11 (seven alternating pairs)
+## Current cohort: 2026-11-08, c12 (seven alternating pairs)
+
+The shared production executable is
+`468f7a4d650bf9880564cc40be5d8c60221ac769a9097714e639f499bb8b5201`,
+frozen compilation `20261108-064807-93bb0c84`: single C unit, V `-prod`,
+preallocation and JavaScriptCore. It includes the committed c11 engine fixes,
+common-subject bucketing for multi-alternative `:is()`/`:where()`, and early
+before/after admission when no candidate declaration can set `content`/`all`.
+Concurrent canonical changes are included; this cohort establishes the combined
+executable result. GitHub's URL-specific stylesheet startup handling is present
+but ineligible for this file-URL fixture.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 9,760,439,813 | 11,030,815,529 |
+| 2 | 9,731,553,687 | 11,094,836,329 |
+| 3 | 9,719,933,395 | 11,155,174,516 |
+| 4 | 9,680,281,407 | 11,131,048,931 |
+| 5 | 9,719,071,273 | 11,078,394,136 |
+| 6 | 9,685,598,004 | 11,073,377,614 |
+| 7 | 9,680,452,413 | 11,116,788,355 |
+| **Median** | **9,719,071,273** | **11,094,836,329** |
+
+The integer gate passes:
+`10 * max(Vox) = 97,604,398,130 <= 9 * min(Brave) = 99,277,339,761`.
+The median reduction is 12.4000%; the conservative reduction is 11.5166%.
+Against the historical Brave minimum of 10,876,864,218, the maximum Vox
+observation is also below the 9,789,177,796 limit.
+
+All fourteen browser observations exit zero, with exact fixed-reference pixels
+and complete identity, readiness, viewport and 33-row audits. Benchmark and guard
+exits are zero; peak guard RSS is 1,485,062,144 bytes under the 12 GiB cap. The
+publication lease pins browser/native-library hashes throughout. Brave reports
+Chrome/156.0.8078.48 and V8 15.6.75.19. The host has 18 CPUs; first load averages
+span 14.13–19.56. Profiles and page caches are fresh; OS filesystem/shader caches
+are retained. No preparatory Vox-only measurement ran for this cohort; no trial
+was retried or excluded, including its first launch. Observed process-tree
+counts are lower bounds for both engines; they exclude GPU/outside-service
+work, and Vox's exited helper lacks a final sample. This is a frozen script-free
+startup/capture result; it establishes no live-site JavaScript, isolated rendering
+time or scrolling-FPS result.
+
+The [complete c12 receipt](performance/github-vlang-brave-instructions-20261108-c12.json)
+retains every raw process count, identity, endpoint, host observation, command,
+exit and content/pixel audit. Separate headless matched probes measure the
+common-subject bucket and combined admission changes with unchanged geometry;
+those diagnostics do not isolate their contribution to the native cohort.
+
+After the passing gate, all 146 CSS cases pass in both Boehm and
+preallocation/no-GC modes. All eleven standard visual cases pass their unchanged
+tolerances: eight are pixel-exact, while inline-node, text-decorations and
+canvas-text retain their existing font/canvas allowances. The GitHub cohort's
+fourteen captures are separately pixel-exact. New cases cover bucket completeness
+against full selector matching, ancestor versus subject conditions, quirks
+folding, specificity, lazy declaration inspection, CSSOM edits, hover content,
+removal of published pseudo styles, origin/layer sources and shadow/host fallbacks.
+The final fixes are committed as `bb70b2864` and `b58a355e5`. The earlier 138-case
+CSS and 33-case layout batches already passed both modes after c9; the driver's
+37 Python cases passed then too.
+The [c12 verification receipt](performance/github-vlang-instruction-validation-20261108-c12.json)
+retains commands, executable/source hashes, exits, case names, memory peaks,
+visual metrics and initial fixture failures with their corrections. No engine
+code changed after the measured c12 cohort. Scratch captures and temporary
+combined test binaries are removed after recording the durable receipts.
+
+## Historical failing cohort: 2026-11-08, c11 (seven alternating pairs)
 
 The shared executable is
 `692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d`,
@@ -69,9 +135,10 @@ viewport and measurement boundaries are unchanged.
 
 The [complete c11 receipt](performance/github-vlang-brave-instructions-20261108-c11.json)
 keeps all raw counters, identities, host conditions, commands and exits. It
-supersedes the earlier passing checkpoint for current acceptance. Tests ran
-only after the earlier complete c9 gate passed; the ordering is pinned in the
-verification receipt. New instruction optimization remains in progress.
+superseded the earlier c9 checkpoint; the c12 cohort above now supplies
+acceptance. Tests ran only after the earlier complete c9 gate passed; the
+ordering is pinned in the verification receipt. Optimization continued after
+this failure.
 
 ## Historical passing checkpoint: 2026-11-08, c9 (seven alternating pairs)
 
@@ -131,10 +198,9 @@ seven-pair gate passed. The 138-case CSS batch and 33-case layout batch pass
 in both Boehm and preallocation/no-GC modes; 37 benchmark-tool tests pass.
 The fixes are committed as `74b231aa9`, `d260ddea8`, `6394e67b4`,
 `7d5fd8e46` and `fecf96523`. [Verification receipts](performance/github-vlang-instruction-validation-20261108.json)
-retain the initial compile/runtime failures and their corrections. The final
-cohort above supersedes this checkpoint for the current-build claim. Further
-regression and screenshot runs are deferred while the current instruction gate
-remains open.
+retain the initial compile/runtime failures and their corrections. The later
+c11 failure and c12 pass above retain the complete sequence. Further checks
+resumed only after the c12 instruction gate passed.
 
 ## Historical cohort: 2026-11-08, c6 (seven alternating pairs)
 
