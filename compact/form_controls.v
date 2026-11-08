@@ -30,10 +30,16 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 		}
 		element := node.as_element() or { return error('TypeError: Invalid form control receiver') }
 		if !element.is_html_element() { return error('TypeError: Invalid form control receiver') }
+		if element.local_name() in ['fieldset', 'object', 'output'] {
+			return if owner := html.computed_listed_element_form_owner(element) {
+				binding.encode_element_state(unsafe { &dom.Element(owner) })
+			} else { 'null' }
+		}
 		mut control := match element.local_name() {
 			'input' { html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) }).control }
 			'textarea' { html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) }).control }
 			'button' { html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(element) }).control }
+			'select' { html.HTMLSelectElementModel.create(unsafe { &dom.HTMLSelectElement(element) }).control }
 			else { return error('TypeError: Invalid form control receiver') }
 		}
 		if control.form() == none { control.reset_form_owner() }
@@ -159,7 +165,7 @@ for(const constructor of [HTMLCollection,HTMLFormControlsCollection,RadioNodeLis
 const __formCollections=new WeakMap(),__formCollectionStates=new WeakMap(),__radioListStates=new WeakMap();
 function __formControlsState(receiver){const state=__elementApply(__elementRecordGet,__elementRecords,[receiver]);if(!state||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||String(state.tagName).split(":").pop()!=="form")throw new TypeError("Illegal HTMLFormElement receiver");return state;}
 function __formControlsQuery(state,request){if(state.created)request.state=state;return __queryElements(state.bridgeKey,"formControls",JSON.stringify(request));}
-for(const [constructor,tag] of [[HTMLInputElement,"input"],[HTMLTextAreaElement,"textarea"],[HTMLButtonElement,"button"]])Object.defineProperty(constructor.prototype,"form",{get:function(){
+for(const [constructor,tag] of [[globalThis.HTMLInputElement,"input"],[globalThis.HTMLTextAreaElement,"textarea"],[globalThis.HTMLButtonElement,"button"],[globalThis.HTMLSelectElement,"select"],[globalThis.HTMLFieldSetElement,"fieldset"],[globalThis.HTMLObjectElement,"object"],[globalThis.HTMLOutputElement,"output"]])if(typeof constructor==="function")Object.defineProperty(constructor.prototype,"form",{get:function(){
  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!state||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||String(state.tagName).split(":").pop()!==tag)throw new TypeError("Illegal form control receiver");
  const owner=__formControlsQuery(state,{op:"owner"});return owner===null?null:__queryElement(owner);
 },enumerable:true,configurable:true});

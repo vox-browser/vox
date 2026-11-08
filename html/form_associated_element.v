@@ -297,6 +297,20 @@ pub fn (mut control FormAssociatedElement) element_with_id_was_added_or_removed(
 	control.reset_form_owner()
 }
 
+// The form owner the reset the form owner algorithm gives a listed element
+// that keeps no form-associated state of its own, such as a fieldset.
+pub fn computed_listed_element_form_owner(element &dom.Element) ?&dom.HTMLFormElement {
+	if element.has_attribute('form') {
+		if !element.is_connected() {
+			return none
+		}
+		form_id := element.get_attribute('form') or { return none }
+		return form_element_find_form_by_id(element.as_node().root(), form_id)
+	}
+	ancestor := form_element_nearest_ancestor(element, 'form') or { return none }
+	return unsafe { &dom.HTMLFormElement(ancestor) }
+}
+
 pub fn (mut control FormAssociatedElement) reset_form_owner() {
 	control.parser_inserted = false
 	if current_form := control.form_ {

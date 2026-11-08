@@ -99,3 +99,41 @@ fn test_compact_option_selected_sets_the_native_selectedness() {
 	html.set_html_select_element_selected_index(select_element, 2)
 	assert runtime.evaluate_host('[...filter.querySelectorAll("option")].map(o=>o.selected).join()')! == 'false,false,true'
 }
+
+fn test_compact_option_and_select_members_follow_the_html_interfaces() {
+	$if !darwin {
+		return
+	}
+	document := html.parse_document('<!doctype html><html><body><form id="f"><select id="s"><option id="a"> First\n option </option><optgroup><option name="b" label="Bee">B</option></optgroup><option value="v" selected>C<script>x</script></option></select><fieldset id="fs"></fieldset></form><output id="out" form="f"></output><object id="obj" form="missing"></object></body></html>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://example.test/', [r'
+		const select = document.getElementById("s"), options = select.options;
+		const [a, b, c] = Array.from(options);
+		const entries = [a.text, a.label, a.value, b.label, b.index, c.value, c.text, c.defaultSelected, c.index, a.form === document.getElementById("f")];
+		entries.push(select.type, select.length, select.item(1) === b, select.namedItem("b") === b, options.selectedIndex, select.selectedOptions.length);
+		const created = new Option("New", "n", true, false);
+		entries.push(created instanceof HTMLOptionElement, created.text, created.value, created.defaultSelected, created.selected, created.index);
+		select.add(created, 0);
+		entries.push(select.length, select.options[0] === created, created.index);
+		options.length = 5;
+		entries.push(select.length, select.options[4].text === "");
+		select.remove(4);
+		options.selectedIndex = 1;
+		entries.push(select.length, select.selectedIndex, a.selected);
+		let threw = "none";
+		try { select.add(document.createElement("option"), document.createElement("option")); } catch (error) { threw = error.name; }
+		entries.push(threw);
+		a.text = "Renamed";
+		entries.push(a.textContent, a.label);
+		const form = document.getElementById("f");
+		entries.push(select.form === form, document.getElementById("fs").form === form, document.getElementById("out").form === form, String(document.getElementById("obj").form));
+		globalThis.result = entries.join("|");
+	'], runtime, mut messages)
+	result := runtime.evaluate_host('typeof result==="string"?result:"missing"')!
+	assert messages == [], messages.join('\n')
+	assert result == 'First option|First option|First option|Bee|1|v|C|true|2|true|select-one|3|true|true|2|1|true|New|n|true|false|0|4|true|0|5|true|4|1|true|NotFoundError|Renamed|Renamed|true|true|true|null', result
+}
