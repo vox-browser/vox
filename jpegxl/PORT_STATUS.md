@@ -75,8 +75,27 @@ Known single/two-symbol examples, truncation and checksum failures also pass.
 These focused tests run in both GC modes under separate 3 GiB guards, including
 unavailable Rust compiler paths. No source records were changed to obtain a pass.
 
-Remaining work includes streaming/checkpoints, metadata/color headers,
-context maps and the combined symbol/LZ77 reader, modular prediction/transforms, VarDCT,
+The combined histogram and symbol reader now translates simple and nested
+entropy-coded context maps, inverse move-to-front, contiguous-cluster checks,
+Huffman/ANS dispatch, hybrid expansion, signed reads and LZ77. LZ77 preserves
+all 120 special distance codes, checked width arithmetic, distance/history
+clamping, overlapping copies, the bounded 1,048,576-entry window and deferred
+repeat/overflow errors. Its window grows lazily, unlike the source's up-front
+reservation. Resizing context maps preserves the original distance cluster.
+
+Frozen comparisons add 5,656 histogram/symbol records (2,105 accepted by the
+source) and 4,098 context maps (1,618 accepted). They compare metadata,
+cluster maps, values, validity and consumed bits exactly. Constructed cases
+cover all 128 direct/special distance symbols at six widths, before/after
+context padding, first-token repeats and copy-length overflow. The source's
+256-cluster map is exercised with and without MTF. Ring wrap and overlapping
+copies have separate checks. Both GC modes pass under 3 GiB guards, including
+unavailable Rust compiler paths. The source oracle completed without panic;
+no successful or error records were overridden. These comparisons also exposed
+and corrected early Huffman alphabet-size validation and overly restrictive
+hybrid selectors; their regressions are committed separately.
+
+Remaining work includes streaming/checkpoints, metadata/color headers, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
 integration. The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
