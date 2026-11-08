@@ -34,13 +34,14 @@ fn corpus_cases(suite string) ![]string {
 		'regex' { regex_corpus_cases.clone() }
 		'yuv' { ['yuv'] }
 		'gb18030' { ['tools/gb18030gen'] }
+		'jpegxl' { ['jpegxl'] }
 		'all' {
-			mut selected := ['encoding', 'yuv', 'tools/gb18030gen']
+			mut selected := ['encoding', 'yuv', 'tools/gb18030gen', 'jpegxl']
 			selected << regex_corpus_cases
 			selected
 		}
 		else {
-			return error('Unknown suite: ${suite}. Choose all, encoding, replacement, regex, yuv or gb18030.')
+			return error('Unknown suite: ${suite}. Choose all, encoding, replacement, regex, yuv, gb18030 or jpegxl.')
 		}
 	}
 }
@@ -50,7 +51,7 @@ fn check_corpora() int {
 	options.application('check_translation_corpora')
 	options.description('Check frozen independent reference records using V. This command never refreshes reference data.')
 	options.skip_executable()
-	suite := options.string('suite', `s`, 'all', 'Reference group: all, encoding, replacement, regex, yuv, gb18030')
+	suite := options.string('suite', `s`, 'all', 'Reference group: all, encoding, replacement, regex, yuv, gb18030, jpegxl')
 	gc_mode := options.string('gc', 0, 'boehm', 'Heap mode: boehm or none')
 	default_compiler := os.getenv_opt('V_BIN') or { os.getenv_opt('VEXE') or { 'v' } }
 	compiler := options.string('compiler', 0, default_compiler, 'Current V compiler executable')

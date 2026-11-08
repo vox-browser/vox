@@ -15,7 +15,7 @@ python3 tools/run_memory_bounded.py \
 ```
 
 Available groups are `all`, `encoding`, `replacement` (one focused encoding
-file), `regex`, `yuv` and `gb18030`. `--compiler /path/to/v` selects the test
+file), `regex`, `yuv`, `gb18030` and `jpegxl` (the V decoder layers completed so far). `--compiler /path/to/v` selects the test
 compiler; `V_BIN` also works. `--dry-run` validates input paths and prints the
 exact argv without executing tests. `--jobs 1..4` controls compilation jobs,
 with one by default. Each test invocation runs under a separate 3 GiB process
@@ -50,3 +50,6 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
+The `jpegxl` suite also executes all four completed decoder-layer test files
+with `--gc none` and unavailable Rust compiler paths. This checks the V layers,
+not the still-Rust production image decoder.
