@@ -754,6 +754,10 @@ fn TokenizerInputArena.new(input string) TokenizerInputArena {
 		arena.len = input.len
 		return arena
 	}
+	if !disable_mixed_ascii_token_input {
+		fill_tokenizer_mixed_input(mut arena, input)
+		return arena
+	}
 	mut byte_offset := 0
 	for code_point in input.runes_iterator() {
 		unsafe {
