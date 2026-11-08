@@ -27,7 +27,7 @@ const descriptor=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"fil
 check(descriptor.get.name,"get files");check(descriptor.set.name,"set files");check(descriptor.enumerable,true);check(descriptor.configurable,true);
 check(upload.files instanceof FileList,true);check(upload.files,upload.files);check(upload.files.length,0);check(plain.files,null);
 const data=new DataTransfer(),file=new File(["payload"],"chosen.txt",{type:"text/plain"});data.items.add(file);
-const selected=data.files;
+const selected=data.files;check(data.files,selected);
 upload.files=selected;check(upload.files,selected);check(upload.files[0],selected[0]);check(upload.value,"C:\\fakepath\\chosen.txt");
 upload.files=null;check(upload.files,selected);upload.files=undefined;check(upload.files,selected);
 for(const invalid of [[],{},file]){let rejected=false;try{upload.files=invalid}catch(error){rejected=error instanceof TypeError}check(rejected,true);check(upload.files,selected)}
@@ -36,6 +36,9 @@ for(const receiver of [{},container,Object.create(HTMLInputElement.prototype),do
 }
 const detached=document.createElement("input");detached.type="file";detached.files=selected;check(detached.value,"C:\\fakepath\\chosen.txt");container.appendChild(detached);check(detached.files,selected);check(detached.value,"C:\\fakepath\\chosen.txt");
 upload.value="";check(upload.value,"");check(upload.files.length,0);check(detached.files.length,1);
+data.items.add(new File(["second"],"second.txt"));check(data.files,selected);check(selected.length,2);check(detached.files,selected);check(detached.files.length,2);
+data.items.remove(0);check(detached.files.length,1);check(detached.value,"C:\\fakepath\\second.txt");
+data.items.clear();check(selected.length,0);check(detached.files.length,0);check(detached.value,"");
 plain.files=data.files;check(plain.files,null);check(globalThis.__ladybirdInputFiles,undefined);
 if(issues.length)throw new Error(issues.join(" | "));
 console.log("native input files passed");

@@ -107,9 +107,7 @@ fn (mut runtime Runtime) data_transfer_binding_call(operation string, receiver v
 			return runtime.data_transfer_types_array(transfer)
 		}
 		'getFiles' {
-			// The pinned implementation constructs fresh FileList/File records,
-			// and its binding generator does not cache the IDL's SameObject tag.
-			return runtime.javascript_data_transfer_files(transfer)
+			return runtime.javascript_file_list(transfer.live_file_list())
 		}
 		'getItems' {
 			return runtime.javascript_data_transfer_item_list(transfer.items())

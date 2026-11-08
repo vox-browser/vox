@@ -5,6 +5,57 @@ module html
 
 import fileapi
 
+struct DataTransferLiveFile {
+	data DragDataStoreItem
+	file &fileapi.File
+}
+
+// The public [SameObject] files attribute is live even when only a saved
+// FileList is read after an item mutation or a drag-store mode change.
+pub fn (transfer &DataTransfer) live_file_list() &fileapi.FileList {
+	mut owner := unsafe { &DataTransfer(transfer) }
+	if list := owner.live_file_list_ { return list }
+	list := fileapi.FileList.create_live(voidptr(owner), data_transfer_live_file_contents)
+	owner.live_file_list_ = list
+	return list
+}
+
+fn data_transfer_live_file_contents(target voidptr) []&fileapi.File {
+	mut transfer := unsafe { &DataTransfer(target) }
+	store := transfer.associated_store or {
+		transfer.live_files_ = {}
+		return []&fileapi.File{}
+	}
+	if store.mode == .protected { return []&fileapi.File{} }
+	mut files := []&fileapi.File{}
+	mut retained := map[voidptr]DataTransferLiveFile{}
+	for index, data in store.item_list {
+		if data.kind != .file { continue }
+		// Native producers can append to the store before its transfer is read.
+		for transfer.item_list.len <= index {
+			transfer.item_list << DataTransferItem.create(transfer, uint(transfer.item_list.len))
+		}
+		key := voidptr(transfer.item_list[index])
+		if cached := transfer.live_files_[key] {
+			if cached.data.data == data.data
+				&& cached.data.type_utf16().code_units() == data.type_utf16().code_units()
+				&& cached.data.file_name_utf16().code_units() == data.file_name_utf16().code_units() {
+				files << cached.file
+				retained[key] = cached
+				continue
+			}
+		}
+		file := drag_data_store_file(data)
+		files << file
+		retained[key] = DataTransferLiveFile{
+			data: DragDataStoreItem{...data, data: data.data.clone()}
+			file: file
+		}
+	}
+	transfer.live_files_ = retained
+	return files
+}
+
 // Both Source getters copy the stored file bytes into a Blob, then process
 // that Blob through File::create with the item's type and default options.
 fn drag_data_store_file(item DragDataStoreItem) &fileapi.File {

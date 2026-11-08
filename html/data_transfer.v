@@ -6,6 +6,7 @@
 module html
 
 import entriesapi
+import fileapi
 import libjs
 
 const data_transfer_drop_effects = ['none', 'copy', 'link', 'move']
@@ -23,6 +24,8 @@ mut:
 	types_utf16_     []libjs.Utf16String
 	types_revision_  u64
 	associated_store ?&DragDataStore
+	live_file_list_ ?&fileapi.FileList
+	live_files_ map[voidptr]DataTransferLiveFile
 }
 
 pub fn DataTransfer.create(store &DragDataStore) &DataTransfer {
@@ -526,7 +529,11 @@ pub fn (mut list DataTransferItemList) clear() {
 			return
 		}
 		mut transfer := unsafe { &DataTransfer(list.data_transfer) }
-		transfer.clear_data(none)
+		// clearData() removes strings; DataTransferItemList.clear() removes
+		// every item, including files, and disables the retained item owners.
+		for transfer.length() > 0 {
+			transfer.remove_item(transfer.length() - 1)
+		}
 	}
 }
 
