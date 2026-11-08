@@ -5,8 +5,10 @@ and the `site_optimizations/` virtual module are implemented; this report does
 not mark the performance target complete.
 
 The policy replaces two exact reviewed `github.githubassets.com` chunk versions.
-Only four collector factories change: click/impression observation, Hydro event
-submission, analytics batching, and browser metrics/RUM submission. Every other
+Six collector sites change: click/impression observation, Hydro event
+submission, analytics batching, browser metrics/RUM submission, resource timing,
+and selector-observer route metadata. Functional observer callbacks, fetch
+nonces and defensive DOM setup remain intact. Every other
 factory remains byte-identical. ES module exports, chunk registration, dependency
 URLs, context serialization, current application identity, staff checks and
 automation queries are preserved. Unknown asset versions use the site's code.
@@ -149,14 +151,15 @@ Its focused tests cover synchronous geometry reads, changed display, generated
 content and non-GitHub/initial-layout boundaries. The measured startup diagnostic
 did not enter this path, so no startup saving is attributed to it.
 
-`8c9f8b53d` changes native animation wakeup scheduling. Scroll timelines wait for
-scrolling or geometry updates. Reviewed empty offscreen skeletons whose only
-animated property is a border-box-clipped mask position need no visual display
-grants. Observed iteration boundaries retain timed grants. Visible targets,
-finite effects, transitions, other Web Animations, escaping ink, filters, outlines
-and backdrop filters retain the normal path. Scrolling refreshes visual contexts
-and scroll snapshots before the visibility decision. Animation sampling, timelines
-and the author scripts remain in the existing engine.
+The initial wakeup experiment in `8c9f8b53d` was superseded by
+`462c891d2`: active effects keep normal display grants in every visibility state.
+Only completed finite CSS effects and input-driven scroll timelines can stop
+requesting animation-only display callbacks. `11519063e` also preserves the CSS
+clock while declining redundant style invalidation for completed or unchanged
+scroll effects. `64aff6e61` reads the document clock for JavaScript animation
+reads and seeks between display callbacks. Animation events, ordinary rendering
+opportunities, active transitions and relevant Web Animations retain their
+existing engine paths. No offscreen-mask suppression is shipped.
 
 Focused validation passes: 65 Node tests; four wakeup cases with GC disabled in
 both normal and rollback modes; initial stylesheet and stylesheet-completion
@@ -174,6 +177,59 @@ latest-commit content and the full README. Offscreen sidebar fragments can still
 load lazily, as the original app requests them; their image counts are retained.
 None of these pilots establishes the conservative 20% target.
 
-The production build with the final wakeup code, its execution diagnostic and a
-qualifying seven-pair measurement remain pending. The shared build guard has
-rejected changing source inputs; it has not been bypassed.
+Later production builds execute the idle-clock policy. The 20% target still
+requires a qualifying seven-pair cohort; source and memory guards remain active.
+
+## Targeted stylesheet invalidation and paint-input reuse
+
+`47c208fc2` removes selector-observer telemetry while retaining its registration,
+callbacks and abort behavior. All 66 adblock tests pass. `c748d84a0` preserves
+CSSOM's targeted stylesheet invalidation instead of forcing a whole-document
+restyle after each lazy stylesheet completes. Six integration cases cover changed
+geometry, generated content, broad layer invalidation, unaffected elements and
+rules used by subsequently inserted content; enabled and rollback modes pass.
+
+`8446f227c` adds optional capture readiness. The later comparison waits for the
+Sponsor button to leave its SSR-disabled state before starting the existing
+five-second settle. This gates capture only; scripts, painting and display grants
+continue. Later audits also compare all present image and button entries.
+Offscreen sidebar fragments remain lazy. A different image count invalidates a
+cohort even when its viewport PNG is identical. This scope correction earns no
+optimization credit over earlier cohorts.
+
+The last complete four-observation pilot before raster-input reuse has controls
+52,696,392,763 and 55,190,333,845 instructions, and candidates 48,737,897,708 and
+50,343,294,792. Its median reduction is 8.16% and conservative reduction 4.47%;
+all four viewport PNGs match, but offscreen DOM differences invalidate the
+comparison. This is not an accepted improvement.
+
+`0dfe78311` introduces a GitHub-only paint-input key for the existing stationary
+raster cache. `3166ed4d5` includes the static shadow, rounded-border and replaced
+image commands used by the page. Keys include supported paint values, path
+coordinates, bitmap bytes and formats, response bytes and decode availability.
+Live media, canvases, nested documents, complex SVG resources and unknown
+commands keep the existing revision key. Owner, viewport, transform and native
+independent-content guards remain active. Production eligibility and matched
+instruction savings must be verified before attributing benefit.
+
+The first raster pilot's last control crashed in retained inline validation, so
+its completed observations cannot establish acceptance. `cd8ca2f97` retains image
+snapshots and their source strings beyond geometry scratch. The preallocation
+regression test fails on the original code and passes with the fix, together with
+the four existing image cases. `b410d6579` supplies an explicit supervised
+compiler-backend option so comparisons can retain the baseline's C mode while
+the separate FastC configuration is under development. The build-tool suite
+passes 76 tests with two platform skips.
+
+The production build with SHA256
+`a7fdb4c11ce886a952f4bc9b217eca0f57227ce4530509b3f4f0fbec620a7427`
+passes fresh headless startup, all 11 default screenshot checks and all eight SVG
+mutation checks. Its live GitHub capture received an HTTP 504 page, and a later
+independent unproxied HTTP request also received 504. Neither is a successful
+live-site validation. Later raster/ownership changes require their own checks.
+
+The [raster continuation evidence](performance/github-raster-input-validation-20261108.json)
+retains attempts, failures, source identities, counters, clock probes and check
+receipts. The [earlier wakeup evidence](performance/github-wakeup-validation-20261108.json)
+retains earlier production build proofs and the source-inventory changes. No
+seven-pair 20% acceptance or live performance fix is claimed yet.

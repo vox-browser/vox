@@ -11,8 +11,7 @@ two reviewed GitHub chunks, suppressing six telemetry collectors while
 preserving all other factories and ES module dependencies. The core setup
 factory retains its fetch nonce and defensive DOM setup. Selector-observer keeps
 its registration, lifecycle and callbacks without route-metadata collection.
-Unknown versioned
-URLs fall back to the original site code. Navigation, code-view hydration,
+Unknown versioned URLs fall back to the original site code. Navigation, code-view hydration,
 repository actions, Codespaces and accessibility/theme initialization remain in
 the original factories.
 
@@ -69,5 +68,17 @@ Animations and CSS transitions retain the conservative path.
 
 Additional controls are `VOX_DISABLE_GITHUB_INITIAL_STYLESHEET_DEDUP=1`,
 `VOX_DISABLE_GITHUB_STYLESHEET_LAYOUT_REUSE=1` and
-`VOX_DISABLE_GITHUB_ANIMATION_WAKEUP_THROTTLING=1`. Diagnostic switches are listed in the corresponding V files. Production validation of the final wakeup policy
-is pending; the focused cases pass, including GC-disabled execution.
+`VOX_DISABLE_GITHUB_ANIMATION_WAKEUP_THROTTLING=1`. Diagnostic switches are
+listed in the corresponding V files. Production diagnostics have exercised the
+idle-clock policy; they do not establish the requested instruction reduction.
+
+`raster_inputs.v` compares supported static paint values across display-list
+generations before using the existing stationary viewport raster. Its key
+includes path coordinates, bitmap pixels and formats, response bytes and image
+decode availability. Unknown commands, live media and complex SVG resources
+keep the existing revision key. Native owner, viewport, transform and independent
+content guards still apply. Disable this policy with
+`VOX_DISABLE_GITHUB_RASTER_INPUT_REUSE=1`; inspect eligibility with
+`VOX_GITHUB_RASTER_INPUT_DIAGNOSTICS=1`. Focused cases pass with reuse enabled
+and disabled. Production eligibility and instruction savings require separate
+verification.
