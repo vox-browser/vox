@@ -71,7 +71,9 @@ pub fn (mut b BitReader) align_to_byte() ! {
 // The returned view cannot read into the following section.
 pub fn (mut b BitReader) split_bytes(n int) !BitReader {
 	b.align_to_byte()!
-	if n < 0 || n > b.available_bits() / 8 {
+	if n < 0 { return error('Invalid JPEG XL section size') }
+	if n > b.available_bits() / 8 {
+		b.position = b.data.len * 8
 		return error('Truncated JPEG XL section')
 	}
 	start := b.position / 8

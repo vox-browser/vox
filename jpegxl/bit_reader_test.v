@@ -124,3 +124,12 @@ fn test_truncated_names_and_extensions_preserve_source_consumption() {
 	}
 	assert extension.position == 24
 }
+
+fn test_truncated_section_split_preserves_source_parent_consumption() {
+	mut reader := new_bit_reader([u8(0x12), 0x34])
+	if _ := reader.split_bytes(3) {
+		assert false
+	}
+	assert reader.position == 16
+	assert reader.available_bits() == 0
+}
