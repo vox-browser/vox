@@ -15,3 +15,15 @@ fn test_constraint_validation_api_reads_native_validity() {
 	assert messages == ['true true true false true true false true false true', 'false 1 false',
 		'true true', 'true bad false', 'true']
 }
+
+fn test_autocomplete_reads_the_autofill_field_and_form_state() {
+	$if !darwin { return }
+	document := html.parse_document('<!doctype html><form id="off" autocomplete="OFF"><input id="plain"><input id="on" autocomplete="on"></form><form id="bad" autocomplete="foo"></form>')
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [
+		'const input=document.createElement("input");input.setAttribute("autocomplete"," NAME\\t");const area=document.createElement("textarea");area.setAttribute("autocomplete","  section-FOO  shipping work tel webauthn ");const hidden=document.createElement("input");hidden.type="hidden";hidden.autocomplete="on";const select=document.createElement("select");select.setAttribute("autocomplete","foo off");console.log([off.autocomplete,bad.autocomplete,plain.autocomplete,on.autocomplete,input.autocomplete,area.autocomplete,hidden.autocomplete,hidden.getAttribute("autocomplete"),select.autocomplete].join("|"));',
+	], runtime, mut messages)
+	assert messages == ['off|on||on|name|section-foo shipping work tel webauthn||on|']
+}

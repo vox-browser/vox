@@ -53,6 +53,11 @@ fn (mut binding CompactElementQueryBinding) form_validation_query(key string, so
 	op := json_string_property(request, 'op') or { return error('Invalid validation operation') }
 	node := binding.equality_node(key, request['state'] or { json2.Any(json2.Null{}) })!
 	element := node.as_element() or { return error('TypeError: Illegal receiver') }
+	// https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#dom-fe-autocomplete
+	if op == 'autocomplete' {
+		if !element.is_html_element() { return error('TypeError: Illegal receiver') }
+		return json2.encode(html.AutocompleteElement.create(unsafe { &dom.HTMLElement(element) }).autocomplete())
+	}
 	if element.is_html_element() && element.local_name() == 'form' {
 		// The form validates every listed element it owns; their controls
 		// join it once their models exist.
@@ -122,6 +127,10 @@ fn compact_form_validation_bootstrap() string {
  const all=Object.keys(members);
  for(const name of ["HTMLInputElement","HTMLTextAreaElement","HTMLSelectElement","HTMLButtonElement","HTMLFieldSetElement","HTMLOutputElement","HTMLObjectElement"])if(typeof globalThis[name]==="function")install(globalThis[name].prototype,all);
  if(typeof globalThis.HTMLFormElement==="function")install(HTMLFormElement.prototype,["checkValidity","reportValidity"]);
+ // The autofill field of a control, and the enumerated autocomplete of a form.
+ const own=(prototype,name)=>Object.prototype.hasOwnProperty.call(prototype,name);
+ for(const name of ["HTMLInputElement","HTMLTextAreaElement","HTMLSelectElement"])if(typeof globalThis[name]==="function"&&!own(globalThis[name].prototype,"autocomplete"))Object.defineProperty(globalThis[name].prototype,"autocomplete",{get:function(){return call(this,"autocomplete");},set:function(value){this.setAttribute("autocomplete",String(value));},enumerable:true,configurable:true});
+ if(typeof globalThis.HTMLFormElement==="function"&&!own(HTMLFormElement.prototype,"autocomplete"))Object.defineProperty(HTMLFormElement.prototype,"autocomplete",{get:function(){const value=this.getAttribute("autocomplete");return value!==null&&value.toLowerCase()==="off"?"off":"on";},set:function(value){this.setAttribute("autocomplete",String(value));},enumerable:true,configurable:true});
 })();
 '
 }
