@@ -2,6 +2,7 @@ module main
 
 import adblock
 import browserjs
+import css
 import dom
 import html
 import layout
@@ -25,6 +26,8 @@ fn test_upstream_testharness_in_native_document() {
 	output := os.getenv('VOX_UPSTREAM_WPT_RESULT')
 	assert output != ''
 	requestserver.install_native_font_fetch_host()!
+	install_browser_font_resource_cache()
+	css.install_remote_style_sheet_loader(load_browser_imported_style_sheet)
 	defer { requestserver.close_native_font_fetch_host() }
 	loaded := fetch_page(address, '')!
 	url := dom.URL{value: loaded.url}
