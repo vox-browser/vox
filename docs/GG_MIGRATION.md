@@ -1134,3 +1134,10 @@ rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
 Portable box shadows now select blending for the explicit RGBA surface instead of native N32. Two native fixtures freeze faint inner and outer shadows on both platforms. The isolated regression tests pass on macOS and Linux production builds; 20,000 existing Linux inner-shadow attempts also match, including 5,364 painted results.
 See the [verification receipt](gg-migration/shadow-rgba-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Linux rounded-clip convexity (2026-11-08)
+
+Axis-preserving transforms now retain rounded-rectangle convexity on Linux, matching immutable SkPathData. The legacy macOS path behavior is preserved. A frozen mask regression covers the quarter-turn rounding difference. Both platforms match 20,000 rounded-rectangle and difference-clip cases; Linux also matches 20,000 outer-shadow attempts, including 3,285 painted results.
+See the [verification receipt](gg-migration/rounded-clip-convexity-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
