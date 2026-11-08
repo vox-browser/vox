@@ -2,7 +2,8 @@
 #define VOX_PRECISE_SCROLL_STALLS_H
 
 // Diagnostic only: bounded snapshots of this process's main-thread stack
-// during a slow native display callback. Resolve symbols after input ends;
+// during a slow native display callback or delayed input delivery between
+// callbacks. Resolve symbols after input ends;
 // dyld/malloc locks must never be acquired while the main thread is suspended.
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
@@ -18,7 +19,7 @@
 
 enum { stall_sample_limit = 1024, stall_stack_limit = 96, stall_frame_limit = 512 };
 typedef struct { uint64_t id, previous_id, previous_start, start; unsigned inputs; } StallScope;
-typedef struct { uint64_t id, time, start; unsigned count; uintptr_t pc[stall_stack_limit]; } StallSample;
+typedef struct { uint64_t id, time, start; unsigned count, inputs; uintptr_t pc[stall_stack_limit]; } StallSample;
 typedef struct { uint64_t id, start, end; unsigned inputs; } StallFrame;
 static StallSample stall_samples[stall_sample_limit];
 static StallFrame stall_frames[stall_frame_limit];
@@ -26,6 +27,8 @@ static unsigned stall_sample_count, stall_frame_count, stall_failures;
 static _Atomic unsigned stall_dropped;
 static uint64_t stall_sequence, stall_threshold_ns;
 static _Atomic uint64_t stall_current_id, stall_current_start;
+static _Atomic uint64_t stall_next_input_due;
+static _Atomic unsigned stall_last_input_sequence;
 static dispatch_source_t stall_timer;
 static dispatch_queue_t stall_queue;
 static thread_t stall_main_thread;
@@ -44,10 +47,16 @@ static uintptr_t stall_code_address(uintptr_t address) {
 static void stall_capture(void) {
     uint64_t id = atomic_load_explicit(&stall_current_id, memory_order_acquire);
     uint64_t start = atomic_load_explicit(&stall_current_start, memory_order_relaxed);
+    unsigned inputs = 0;
+    if (!id) {
+        inputs = atomic_load_explicit(&stall_last_input_sequence, memory_order_acquire);
+        if (!inputs) return;
+        start = atomic_load_explicit(&stall_next_input_due, memory_order_relaxed);
+    }
     uint64_t now = stall_now();
-    if (!id || now < start || now - start < stall_threshold_ns) return;
+    if (now < start || now - start < stall_threshold_ns) return;
     if (stall_sample_count == stall_sample_limit) { ++stall_dropped; return; }
-    StallSample sample = {.id=id, .time=now, .start=start};
+    StallSample sample = {.id=id, .time=now, .start=start, .inputs=inputs};
     if (thread_suspend(stall_main_thread) != KERN_SUCCESS) { ++stall_failures; return; }
     uintptr_t fp=0, sp=0, pc=0;
 #if defined(__aarch64__) || defined(__arm64__)
@@ -82,10 +91,22 @@ static void stall_capture(void) {
     }
     kern_return_t resumed=thread_resume(stall_main_thread);
     if (result!=KERN_SUCCESS || resumed!=KERN_SUCCESS) { ++stall_failures; return; }
-    // A callback can finish between the first read and suspension. Discard a
-    // snapshot whose callback identity no longer matches, including idle time.
-    if (id==atomic_load_explicit(&stall_current_id, memory_order_acquire))
+    // A callback or input can finish between the first read and suspension.
+    // Keep only snapshots whose observation context still matches.
+    bool same_frame = id && id==atomic_load_explicit(&stall_current_id, memory_order_acquire);
+    bool same_gap = !id && !atomic_load_explicit(&stall_current_id, memory_order_acquire)
+        && inputs==atomic_load_explicit(&stall_last_input_sequence, memory_order_acquire);
+    if (same_frame || same_gap)
         stall_samples[stall_sample_count++]=sample;
+}
+static void stall_input_progress(unsigned inputs, uint64_t interval_ns) {
+    if (!stall_threshold_ns) return;
+    atomic_store_explicit(&stall_last_input_sequence,0,memory_order_release);
+    atomic_store_explicit(&stall_next_input_due,stall_now()+interval_ns,memory_order_relaxed);
+    atomic_store_explicit(&stall_last_input_sequence,inputs,memory_order_release);
+}
+static void stall_inputs_end(void) {
+    atomic_store_explicit(&stall_last_input_sequence,0,memory_order_release);
 }
 static void stall_monitor_start(double milliseconds) {
     if (!(milliseconds > 0)) return;
@@ -125,6 +146,7 @@ static void stall_hex(const char *value) {
 }
 static void stall_monitor_finish(double epoch) {
     if (!stall_timer) return;
+    stall_inputs_end();
     atomic_store(&stall_current_id,0);
     dispatch_source_cancel(stall_timer);
     dispatch_sync(stall_queue, ^{});
@@ -141,8 +163,12 @@ static void stall_monitor_finish(double epoch) {
     if (!symbols) { fputs("SCROLL_ERROR stall symbol allocation failed\n",stderr); return; }
     for (unsigned i=0;i<stall_sample_count;++i) {
         StallSample *s=&stall_samples[i];
-        fprintf(stderr,"SCROLL_STALL_SAMPLE %u frame=%llu t_us=%.3f age_us=%.3f pcs=",i,s->id,
-            (s->time/1e9-epoch)*1e6,(s->time-s->start)/1e3);
+        if (s->id)
+            fprintf(stderr,"SCROLL_STALL_SAMPLE %u frame=%llu t_us=%.3f age_us=%.3f pcs=",i,s->id,
+                (s->time/1e9-epoch)*1e6,(s->time-s->start)/1e3);
+        else
+            fprintf(stderr,"SCROLL_STALL_GAP_SAMPLE %u inputs=%u t_us=%.3f late_us=%.3f pcs=",i,s->inputs,
+                (s->time/1e9-epoch)*1e6,(s->time-s->start)/1e3);
         for (unsigned j=0;j<s->count;++j) fprintf(stderr,"%s%llx",j?",":"",(unsigned long long)s->pc[j]);
         fputc('\n',stderr);
         for (unsigned j=0;j<s->count;++j) {

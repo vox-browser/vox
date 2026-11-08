@@ -315,9 +315,11 @@ static void tick(void) {
     input_samples[index].delta_y = positioned.backing.scrollingDeltaY;
     input_samples[index].modifiers = positioned.backing.modifierFlags;
     if (count_instructions && index==0) read_counter(&counter_start);
+    stall_input_progress(inputs,(uint64_t)(1e9/input_hz));
     [input_view scrollWheel:(NSEvent *)positioned];
     input_samples[index].elapsed = CACurrentMediaTime()-last_input;
     if (inputs == input_limit) {
+        stall_inputs_end();
         if (count_instructions) {
             read_counter(&counter_input_end);
             if (counter_publication_end.present) counter_complete=counter_input_end;

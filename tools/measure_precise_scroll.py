@@ -310,7 +310,7 @@ def main():
     parser.add_argument("--instructions", action="store_true",
                         help="Separate counter cohort: main-process hardware instructions and CPU ms over the input/publication pipeline")
     parser.add_argument("--sample-stalls-ms", type=float,
-                        help="Diagnostic only: sample main-thread stacks in display callbacks longer than this threshold")
+                        help="Diagnostic only: sample main-thread stacks during slow display callbacks or input timers late by this threshold")
     parser.add_argument("--network-policy", required=True,
                         help="Describe live access or supplied network-blocking interposer; recorded verbatim")
     parser.add_argument("--insert-library", action="append", type=Path, default=[])

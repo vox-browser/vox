@@ -49,6 +49,24 @@ class StallSamplerTests(unittest.TestCase):
             self.assertIsNotNone(symbol, log)
             self.assertGreater(int(symbol[1], 16), int(symbol[2], 16))
             self.assertEqual(os.fsdecode(bytes.fromhex(symbol[3])), str(binary))
+            self.assertNotIn('SCROLL_STALL_GAP_SAMPLE ', log)
+
+            gap_log = run('runtime-gaps', [str(binary), '--gaps'], 3)
+            diagnostic = re.search(r'SCROLL_STALL_DIAGNOSTIC .*samples=(\d+) frames=0 dropped=0 failures=0', gap_log)
+            self.assertIsNotNone(diagnostic, gap_log)
+            self.assertGreater(int(diagnostic[1]), 0)
+            spans = {int(m[1]): (float(m[2]), float(m[3])) for m in re.finditer(
+                r'STALL_TEST_GAP inputs=(\d+) start_us=([\d.]+) end_us=([\d.]+)', gap_log)}
+            sampled = set()
+            for m in re.finditer(r'SCROLL_STALL_GAP_SAMPLE \d+ inputs=(\d+) t_us=([\d.]+)', gap_log):
+                identity, timestamp = int(m[1]), float(m[2])
+                sampled.add(identity)
+                start, end = spans[identity]
+                self.assertGreaterEqual(timestamp, start + 10000 - 1)
+                self.assertLessEqual(timestamp, end)
+            self.assertEqual(sampled, {7, 8})
+            self.assertNotIn('SCROLL_STALL_SAMPLE ', gap_log)
+            self.assertIn(b'precise_scroll_known_gap_work'.hex(), gap_log)
 
 
 if __name__ == '__main__':
