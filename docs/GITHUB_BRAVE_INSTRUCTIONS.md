@@ -1,12 +1,27 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
-Goal (user): load `https://github.com/vlang/v` with at least 10% fewer retired
-instructions than Brave. **Met for the pinned c12 frozen-page workload.** Seven
+Current goal (user, November 8): load `https://github.com/vlang/v` with at least
+**20% fewer observed instructions** than Brave. **Not met yet.** Acceptance now
+requires seven complete alternating pairs and
+`10 * max(Vox) <= 8 * min(Brave)`. Regression tests remain deferred until this
+new instruction gate passes, as requested.
+
+The earlier 10% goal was **met for the pinned c12 frozen-page workload.** Seven
 complete alternating pairs give a conservative maximum-Vox/minimum-Brave ratio
 of **0.88483393** (11.5166% fewer observed instructions). The maximum Vox count,
 9,760,439,813, also passes the earlier November 7 Brave minimum. First launches
 and the earlier failed cohorts remain included. Regression and screenshot
 checks started only after this complete instruction gate passed.
+
+The ongoing 20% work retains its
+[performance diagnostic ledger](performance/github-vlang-instruction-diagnostics-20261108-20pct.json).
+The restored HTML and both engine reference PNGs match c12 exactly. The rebuilt
+response-cache directory has a different fingerprint, so it is pinned as a new
+workload cohort and supplies no fixture-change optimization credit. The first
+new cohort attempt is invalid because Brave's teardown watchdog exited nonzero;
+its counters and failure remain recorded. Separate cleanup diagnostics exit
+normally after the already-frozen capture endpoint. Parser and layout probes
+are diagnostic only; no 20% acceptance or new regression-test pass is claimed.
 
 ## Workload and scope
 
