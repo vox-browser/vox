@@ -346,6 +346,13 @@ pub fn (mut c CharacterData) replace_data_with_mutation_steps(offset int, count 
 
 	// OPTIMIZATION: If the characters are the same, we can skip the remainder of this function.
 	if c.data_ == old_data {
+		// Live ranges may still have moved; caches keyed on the version must
+		// observe their new offsets.
+		doc := node.document()
+		if doc != unsafe { nil } {
+			mut mutable_doc := unsafe { &Document(doc) }
+			mutable_doc.bump_character_data_version()
+		}
 		return
 	}
 

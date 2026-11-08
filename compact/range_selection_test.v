@@ -51,3 +51,21 @@ console.log("ranges passed");
 '], runtime, mut messages)
 	assert messages == ['ranges passed']
 }
+
+fn test_compact_range_offsets_follow_an_identical_data_replacement() {
+	mut document := html.parse_document('<!doctype html><p id="a">hello</p>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+const text=document.getElementById("a").firstChild,range=document.createRange();
+range.setStart(text,1);range.setEnd(text,3);
+const before=[range.startOffset,range.endOffset].join(",");
+text.data=text.data;
+console.log(before+" "+[range.startOffset,range.endOffset].join(","));
+'], runtime, mut messages)
+	assert messages == ['1,3 0,0']
+}
