@@ -1392,6 +1392,10 @@ fn main() {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'rrects' {
+		check_rounded_rect_cases(count)
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'imageblur' {
 		check_image_blur_cases(count)
 		return
@@ -3099,4 +3103,60 @@ fn check_image_blur_cases(count int) {
 		exit(1)
 	}
 	println('image filter blurs: ${blurs} exact (${empty} empty)')
+}
+
+type OracleRoundedRect = fn (&f32, &i32, &f32)
+type OracleDifferenceClip = fn (&u8, &i32, &f32)
+
+fn check_rounded_rect_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OracleRoundedRect(oracle_symbol(library, 'oracle_rounded_rect')) }
+	difference := unsafe { OracleDifferenceClip(oracle_symbol(library, 'oracle_difference_clip')) }
+	for trial in 0 .. count {
+		mut paths := []cpuraster.Path{}
+		mut floats := []f32{}
+		for _ in 0 .. 2 {
+			mut f := []f32{}
+			for _ in 0 .. 4 { f << f32(rand.f64() * 80 - 20) }
+			for _ in 0 .. 8 { f << f32(rand.f64() * 80 - 10) }
+			if trial % 5 == 0 { for i in 4 .. 12 { f[i] = 0 } }
+			if trial % 5 == 1 { for i in 4 .. 12 { f[i] = 5 } }
+			if trial % 11 == 0 { f[4] = 1e20 }
+			if trial % 13 == 0 { for i in 4 .. 12 { f[i] = 100 } }
+			mut info := []i32{len: 35}
+			mut out := []f32{len: 96}
+			oracle(f.data, info.data, out.data)
+			r := cpuraster.rounded_rect(cpuraster.Rect{f[0], f[1], f[2], f[3]}, [f[4], f[5], f[6], f[7], f[8], f[9], f[10], f[11]]!)
+			p := r.path()
+			mut actual := [r.bounds.left, r.bounds.top, r.bounds.right, r.bounds.bottom]
+			actual << r.radii[..]
+			for point in p.points { actual << [point.x, point.y] }
+			actual << p.weights
+			if info[0] != p.verbs.len || info[1] != p.points.len || info[2] != p.weights.len
+				|| p.verbs.map(int(it)) != info[3..3 + p.verbs.len].map(int(it)) || actual != out[..actual.len] {
+				eprintln('rounded rect ${trial}: ${f}\nexpected ${info}, ${out[..12 + int(info[1])*2 + int(info[2])]}\nactual ${p}, normalized ${actual}')
+				exit(1)
+			}
+			t := if trial % 2 == 0 { random_stroke_matrix() } else { [f32(1), 0, 0, 1, 0, 0]! }
+			paths << r.clip_path(cpuraster.Matrix{t[0], t[1], t[2], t[3], t[4], t[5]})
+			floats << f
+			floats << t[..]
+		}
+		mut expected := []u8{len: 48*40*4}
+		values := [i32(48), 40]
+		difference(expected.data, values.data, floats.data)
+		mut actual := []u8{len: expected.len}
+		mut clip := cpuraster.canvas_raster_clip(48, 40, [paths[0]])
+		clip.subtract_path(paths[1])
+		cpuraster.fill_clipped_color(mut actual, 48, 40, 192, 0xffffffff, clip)
+		if actual != expected {
+			for j in 0 .. actual.len { if actual[j] != expected[j] {
+				eprintln('difference clip ${trial}: (${j % 192 / 4}, ${j / 192}) actual ${actual[j]}, expected ${expected[j]}: ${floats}')
+				break
+			} }
+			save_failure([]u8{len: actual.len}, expected, actual, '${floats}')
+			exit(1)
+		}
+	}
+	println('${count} normalized rounded rectangles and difference clips exact')
 }

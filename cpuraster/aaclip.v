@@ -684,7 +684,7 @@ fn (mut it AAClipIter) next() {
 }
 
 // operateX() with the intersect proc.
-fn (mut b AAClipBuilder) operate_x(last_y int, mut iter_a AAClipRowIter, mut iter_b AAClipRowIter) {
+fn (mut b AAClipBuilder) operate_x(last_y int, mut iter_a AAClipRowIter, mut iter_b AAClipRowIter, difference bool) {
 	mut left_a := iter_a.left
 	mut rite_a := iter_a.right
 	mut left_b := iter_b.left
@@ -729,7 +729,8 @@ fn (mut b AAClipBuilder) operate_x(last_y int, mut iter_a AAClipRowIter, mut ite
 			rite = b.bounds.right
 		}
 		if left >= b.bounds.left {
-			b.add_run(left, last_y, u8(mul_div255_round(alpha_a, alpha_b)), rite - left)
+			coverage := if difference { u8(255 - alpha_b) } else { alpha_b }
+			b.add_run(left, last_y, u8(mul_div255_round(alpha_a, coverage)), rite - left)
 			prev_rite = rite
 		}
 		if rite == rite_a {
@@ -752,7 +753,7 @@ fn (mut b AAClipBuilder) operate_x(last_y int, mut iter_a AAClipRowIter, mut ite
 }
 
 // operateY() for kIntersect.
-fn (mut b AAClipBuilder) operate_y(a &AAClip, other &AAClip) {
+fn (mut b AAClipBuilder) operate_y(a &AAClip, other &AAClip, difference bool) {
 	mut iter_a := new_aaclip_iter(a)
 	mut iter_b := new_aaclip_iter(other)
 	mut top_a := iter_a.top
@@ -810,7 +811,7 @@ fn (mut b AAClipBuilder) operate_y(a &AAClip, other &AAClip) {
 			} else {
 				new_aaclip_row_iter([]u8{}, false, b.bounds)
 			}
-			b.operate_x(bot - 1, mut row_iter_a, mut row_iter_b)
+			b.operate_x(bot - 1, mut row_iter_a, mut row_iter_b, difference)
 		}
 		if bot == bot_a {
 			iter_a.next()
@@ -842,7 +843,18 @@ fn (mut c AAClip) op_clip(other &AAClip) bool {
 		bounds: c.bounds
 		rows:   c.rows
 	}
-	builder.operate_y(&source, other)
+	builder.operate_y(&source, other, false)
+	return builder.finish(mut c)
+}
+
+// SkAAClip::op(other, kDifference). Unlike an intersection, subtraction
+// retains the first clip's bounds and coverage outside the second clip.
+fn (mut c AAClip) subtract_clip(other &AAClip) bool {
+	if c.is_empty() { return false }
+	if other.is_empty() || !irect_intersects(c.bounds, other.bounds) { return true }
+	mut builder := new_aaclip_builder(c.bounds)
+	source := AAClip{bounds: c.bounds, rows: c.rows}
+	builder.operate_y(&source, other, true)
 	return builder.finish(mut c)
 }
 
@@ -1227,6 +1239,16 @@ fn (mut rc RasterClip) op_path(path Path) bool {
 	return rc.update_cache(true)
 }
 
+// Subtract a device-space AA path while preserving the accumulated clip.
+pub fn (mut rc RasterClip) subtract_path(path Path) bool {
+	if rc.is_empty { return false }
+	mut other := AAClip{}
+	other.set_path(path, rc.bounds())
+	if rc.is_bw { rc.convert_to_aa() }
+	rc.aa.subtract_clip(&other)
+	return rc.update_cache(true)
+}
+
 // canvas_raster_clip applies Canvas2D clip paths, captured in device space,
 // to a width x height device as draw_canvas_command() does:
 // SkCanvas::clipPath(path, kIntersect, true) before the matrix is set.
@@ -1242,4 +1264,13 @@ pub fn canvas_raster_clip(width int, height int, clips []Path) RasterClip {
 		rc.op_path(clip)
 	}
 	return rc
+}
+
+// Draw a premultiplied RGBA surface's uniform SkColor through a prepared
+// raster clip, used by retained shadow and paint replay.
+pub fn fill_clipped_color(mut pixels []u8, width int, height int, pitch int, color u32, clip RasterClip) bool {
+	if !untiled_device(pixels, width, height, pitch) { return false }
+	mut blitter := canvas_blitter(mut pixels, pitch, color, f32(color >> 24) * inv_255, .src) or { return true }
+	fill_irect(IRect{0, 0, width, height}, &clip, mut blitter)
+	return true
 }

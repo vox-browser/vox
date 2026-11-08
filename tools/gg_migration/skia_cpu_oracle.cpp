@@ -12,6 +12,56 @@
 // in one array.
 #define ORACLE extern "C" __attribute__((visibility("default")))
 
+#include "include/core/SkRRect.h"
+#include "include/core/SkPath.h"
+#include "include/core/SkSurface.h"
+#include "include/core/SkCanvas.h"
+
+static SkRRect oracle_rrect(float const* f) {
+    SkVector radii[4];
+    for (int i = 0; i < 4; ++i) radii[i] = {f[4 + i*2], f[5 + i*2]};
+    SkRRect r;
+    r.setRectRadii(SkRect::MakeLTRB(f[0], f[1], f[2], f[3]), radii);
+    return r;
+}
+
+ORACLE void oracle_rounded_rect(float const* f, int* info, float* out) {
+    auto r = oracle_rrect(f);
+    auto b = r.rect();
+    out[0] = b.left(); out[1] = b.top(); out[2] = b.right(); out[3] = b.bottom();
+    for (int i = 0; i < 4; ++i) {
+        auto radius = r.radii(static_cast<SkRRect::Corner>(i));
+        out[4 + i*2] = radius.x(); out[5 + i*2] = radius.y();
+    }
+    auto path = SkPath::RRect(r);
+    uint8_t verbs[32];
+    SkPoint points[32];
+    info[0] = path.getVerbs({verbs, 32});
+    info[1] = path.getPoints({points, 32});
+    for (int i = 0; i < info[0]; ++i) info[3 + i] = verbs[i];
+    for (int i = 0; i < info[1]; ++i) {
+        out[12 + i*2] = points[i].x(); out[13 + i*2] = points[i].y();
+    }
+    int count = 0;
+    for (auto weight : path.conicWeights()) out[12 + info[1]*2 + count++] = weight;
+    info[2] = count;
+}
+
+ORACLE void oracle_difference_clip(uint8_t* pixels, int const* v, float const* f) {
+    auto info = SkImageInfo::Make(v[0], v[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    auto surface = SkSurfaces::Raster(info);
+    auto canvas = surface->getCanvas();
+    for (int i = 0; i < 2; ++i) {
+        auto s = f + i*18;
+        auto m = s + 12;
+        canvas->setMatrix(SkMatrix::MakeAll(m[0], m[2], m[4], m[1], m[3], m[5], 0, 0, 1));
+        canvas->clipRRect(oracle_rrect(s), i ? SkClipOp::kDifference : SkClipOp::kIntersect, true);
+    }
+    canvas->resetMatrix();
+    canvas->clear(SK_ColorWHITE);
+    surface->readPixels(info, pixels, v[0]*4, 0, 0);
+}
+
 // skia/canvas_raster.cpp: vox_skia_canvas_read_pixels().
 static bool read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
 {

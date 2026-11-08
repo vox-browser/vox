@@ -86,6 +86,7 @@ const segment_cubic = 8
 
 // Path is an immutable SkPath.
 pub struct Path {
+	convex_hint PathConvexity = .concave
 pub:
 	verbs     []PathVerb
 	points    []Point
@@ -271,7 +272,17 @@ pub fn (p Path) transform(m Matrix) Path {
 	if m.is_identity() {
 		return p
 	}
+	// SkPathPriv::TransformConvexity discards the hint under a rotation or
+	// skew: floating point mapping can make even a convex contour concave.
+	mut hint := PathConvexity.concave
+	if p.convex_hint != .concave && m.b == 0 && m.c == 0 {
+		determinant := m.a * m.d
+		hint = if determinant == 0 { PathConvexity.convex_degenerate }
+			else if determinant < 0 && p.convex_hint == .convex_cw { PathConvexity.convex_ccw }
+			else if determinant < 0 && p.convex_hint == .convex_ccw { PathConvexity.convex_cw } else { p.convex_hint }
+	}
 	return Path{
+		convex_hint: hint
 		verbs:     p.verbs
 		points:    p.points.map(m.map_point(it))
 		weights:   p.weights
@@ -433,6 +444,7 @@ fn verb_point_count(v PathVerb) int {
 }
 
 fn (p Path) convexity() PathConvexity {
+	if p.convex_hint != .concave { return p.convex_hint }
 	mut verb_count := p.verbs.len
 	mut point_count := p.points.len
 	for verb_count > 0 && p.verbs[verb_count - 1] == .move {
