@@ -5263,6 +5263,7 @@ fn (mut app BrowserApp) poll_background_resources() {
 	script_images_updated := completed_script_images.len > 0 && app.document != unsafe { nil }
 		&& app.complete_script_inserted_images(url_set(completed_script_images))
 	if installed_stylesheets && app.document != unsafe { nil } {
+		if app.complete_site_stylesheet_update() { return }
 		app.document.set_needs_full_style_update(true)
 		app.document.tear_down_layout_tree()
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
