@@ -685,3 +685,40 @@ plan and its replacement record are preserved at
 `98d094166ad39b17b10f1d99e68f1ff7565c22bf3b612eff1edeea38fe3a2e86`.
 The current observer is `/Users/alex/.cache/vox/wpt/20261108-idb-batch-production-followup-r2.py`, SHA-256
 `c535cadefe741068b84b63cfe7315176323119063255ae890d727e833f04efe3`; its status and completion paths remain unchanged.
+
+
+## Production validation of all five IndexedDB fixes
+
+The focused production check has now completed on the signed C-backend
+executable `7c41735d12565c78ebfdfd91156e84e1fad2f05871f3b4ec9e2518eef3002e79`:
+**18 / 18 cases COMPLETE, all 18 harnesses OK, 227 / 227 assertions PASS**.
+The original expected count is met for every selected page. This verifies
+both the earlier key conversion, key-range and key/count-query fixes and the
+new batch retrieval and fixed-view storage in the browser, closing their
+previously pending production validation.
+
+The original completed production artifact is checked in place under its read
+lease, with 18 fresh launches and private profiles. The sealed manifest matches
+all 13 required implementation hashes from `0a4708c60d33d3c38a80781f734ed02a04fefdbc`.
+Browser/native-library and runner-tool identities remain unchanged, unexpected
+posts are zero, and collection is not aborted. The strict runner and aggregate
+guard both exit 0. Original harness deadlines, the 4 GiB browser cap and 12 GiB
+aggregate guard remain unchanged. The guard observes
+`414384128` bytes sampled aggregate RSS;
+this is functional validation, not a performance comparison.
+
+Raw production evidence is
+`/Users/alex/.cache/vox/wpt/20261108-idb-batch-production-raw.tar.gz`, SHA-256
+`f2830f9d636b82279cfe77f0823ed9e5f5d5e70c1c1ec0495edab0ffa8ca946b`.
+Completion is recorded at
+`/Users/alex/.cache/vox/wpt/20261108-idb-batch-production-completion.json`.
+The separate sealed-source verification is
+`/Users/alex/.cache/vox/wpt/20261108-idb-batch-production-source-proof.json`, SHA-256
+`625e307c5ae5d0128bc2a674bc7011795db7796f769d078da615a7eb190d8734`.
+The observer removes its completed Build scratch after archiving.
+
+r16 continues on its pinned earlier image. The serial r17 prerequisite for the
+focused production gate is now satisfied; r17 waits for actual r16 completion
+and a matching published bundle before collecting all 6,828 imported cases.
+**The larger cohort and full upstream WPT have not reached 100%.** The 227
+passing assertions here are a focused result, not a new full-suite percentage.
