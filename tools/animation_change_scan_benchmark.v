@@ -15,11 +15,12 @@ fn animation_scan_document(scene string, ordinary bool) (&dom.Document, &css.Sty
 	document.enable_native_storage()
 	mut owner := document.enter_native_storage()
 	defer { owner.finish() }
+	mut computer := css.css_style_computer_for(document)
+	if ordinary { computer.disable_animation_sample_arenas() }
 	html.parse_html_from_a_string(document, '<!doctype html><main>' +
 		'<span class="target checked">target<i class="checked">child</i></span>'.repeat(32) + '</main>')
 	document.set_browsing_context(&dom.BrowsingContext{ active_document_: document })
 	document.set_navigable(&dom.Navigable{ active_document_: document })
-	document.paint_borrowed_by_host = ordinary
 	document.oldest_live_paint_scene_generation = 2
 	frames := match scene {
 		'opacity-transform' {
@@ -32,7 +33,6 @@ fn animation_scan_document(scene string, ordinary bool) (&dom.Document, &css.Sty
 		else { 'from{opacity:.5}to{opacity:.5}' }
 	}
 	css.add_document_author_style_sheet(document, '.target{display:inline-block;animation:sample 1s linear infinite}@keyframes sample{' + frames + '}')
-	mut computer := css.css_style_computer_for(document)
 	computer.set_animation_time_ms(0)
 	document.update_style()
 	targets := css.query_selector_all(document.as_node(), '.checked')

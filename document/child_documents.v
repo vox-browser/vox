@@ -86,9 +86,9 @@ fn browser_child_document_host(document &dom.Document, engine browserjs.Engine) 
 		scripting: document.as_node().is_scripting_enabled()
 	}
 	browser_child_document_hosts_[voidptr(document)] = host
-	mut storage := document.native_storage()
-	if storage != unsafe { nil } {
-		storage.add_cleanup(fn [host] () {
+	if document.native_storage() != unsafe { nil } {
+		mut document_owner := unsafe { &dom.Document(document) }
+		document_owner.add_native_storage_cleanup(fn [host] () {
 			mut owner := unsafe { &BrowserChildDocumentHost(host) }
 			owner.close()
 		})
@@ -138,8 +138,12 @@ fn (mut host BrowserChildDocumentHost) ensure_initial_realm(element &dom.Element
 
 fn retire_hosted_browser_document(document &dom.Document) {
 	mut owner := unsafe { &dom.Document(document) }
+	if owner.native_storage() == unsafe { nil } { return }
+	layout_handle := owner.layout_engine_handle()
 	if !owner.has_been_destroyed() { owner.destroy_a_document_and_its_descendants() }
-	layout.retire_native_document_layout(owner.layout_engine_handle())
+	layout.retire_native_document_layout(layout_handle)
+	owner.layout_engine_handle_ = unsafe { nil }
+	owner.cached_display_list_ = unsafe { nil }
 	owner.finalize()
 	owner.release_native_storage()
 }
@@ -154,11 +158,15 @@ fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
 	owner.enable_native_storage()
 	layout.enable_native_paint_tree_storage(document)
 	layout.enable_native_static_svg_backgrounds(document)
-	// Parent scenes contain shallow child paint payloads. Keep their source
-	// until the root's last scene reader has released its document storage.
-	mut storage := host.root.native_storage()
-	if storage != unsafe { nil } {
-		storage.add_cleanup(fn [document] () { retire_hosted_browser_document(document) })
+	// Close child publishers when the root document owner retires. Parent
+	// caches and scenes hold their own child-scene leases, so copied payloads
+	// remain readable until their final consumer releases them. Waiting for
+	// the root arena's final cleanup here would cycle with adopted child nodes.
+	if host.root.native_storage() != unsafe { nil } {
+		mut root := unsafe { &dom.Document(host.root) }
+		persistent := platform.enter_persistent()
+		root.add_native_storage_cleanup(fn [document] () { retire_hosted_browser_document(document) })
+		platform.leave_persistent(persistent)
 	}
 }
 

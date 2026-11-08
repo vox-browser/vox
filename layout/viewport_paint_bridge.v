@@ -1748,7 +1748,7 @@ fn viewport_invalidate_fixed_background_entry(mut result DocumentLayoutResult, i
 	for phase in 0 .. compatibility_paint_phase_count {
 		bucket := index * compatibility_paint_phase_count + phase
 		result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
-		result.paint_phase_commands[bucket].clear()
+		clear_paint_phase_bucket(mut result.paint_phase_commands[bucket])
 	}
 	result.paint_phase_entry_valid[index] = false
 }
@@ -1766,7 +1766,7 @@ fn viewport_invalidate_box_paint_cache(mut result DocumentLayoutResult, box &Blo
 		for phase in 0 .. compatibility_paint_phase_count {
 			bucket := index * compatibility_paint_phase_count + phase
 			result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
-			result.paint_phase_commands[bucket].clear()
+			clear_paint_phase_bucket(mut result.paint_phase_commands[bucket])
 		}
 		result.paint_phase_entry_valid[index] = false
 	}
@@ -3007,13 +3007,10 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	result.record_scratch.reserve(result.visual_context_tree.nodes.len,
 		result.paint_phase_command_count + result.paint_steps.len)
 	mut pool := result.scene_pool_()
-	mut scene := if pool.borrowed { unsafe { &DisplayListScene(nil) } } else { pool.acquire() }
-	mut scene_entry := platform.ArenaEntry{}
-	if scene != unsafe { nil } {
-		scene.paint_tree_storage = result.paint_tree_storage
-		if scene.paint_tree_storage != unsafe { nil } { scene.paint_tree_storage.retain() }
-		scene_entry = scene.arena.enter()
-	}
+	mut scene := pool.acquire()
+	scene.paint_tree_storage = result.paint_tree_storage
+	if scene.paint_tree_storage != unsafe { nil } { scene.paint_tree_storage.retain() }
+	scene_entry := scene.arena.enter()
 	// Read the visibility mask while walking the retained plan. Filtering first
 	// allocated capacity for every step in the document inside each scene, even
 	// when only a few hundred commands were visible. No temporary step vector or
@@ -3029,14 +3026,13 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 	if settings := force_dark {
 		commands = resolve_force_dark_paint_commands(commands, settings)
 	}
+	scene.retain_nested_scenes(commands)
 	display_list := &dom.DisplayList{
 		concrete_handle: target
 		command_count_: commands.len
 		dump_callback: viewport_display_list_dump
 	}
-	if scene != unsafe { nil } {
-		scene.arena.leave(scene_entry)
-	}
+	scene.arena.leave(scene_entry)
 	result.drop_display_list_scene()
 	result.scene = scene
 	result.display_list_commands = commands
@@ -3493,7 +3489,7 @@ fn viewport_reconcile_retained_paint_cache(mut result DocumentLayoutResult,
 		for phase in 0 .. compatibility_paint_phase_count {
 			bucket := index * compatibility_paint_phase_count + phase
 			result.paint_phase_command_count -= result.paint_phase_commands[bucket].len
-			result.paint_phase_commands[bucket].clear()
+			clear_paint_phase_bucket(mut result.paint_phase_commands[bucket])
 		}
 		result.paint_phase_entry_valid[index] = false
 	}

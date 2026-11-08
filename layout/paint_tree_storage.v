@@ -28,7 +28,7 @@ const paint_tree_storage_spares = 2
 
 // Opt in only for the native shell, whose snapshots have explicit release
 // points. General layout APIs continue to return process-lifetime snapshots
-// under -prealloc. Documents whose trees are borrowed by a host stay unpooled.
+// under -prealloc. Hosted scenes retain these slots through their scene leases.
 pub fn enable_native_paint_tree_storage(document &dom.Document) {
 	$if prealloc {
 		mut mutable_document := unsafe { &dom.Document(document) }
@@ -38,8 +38,7 @@ pub fn enable_native_paint_tree_storage(document &dom.Document) {
 
 fn (mut result DocumentLayoutResult) acquire_paint_tree_storage(document &dom.Document) &PaintTreeStorage {
 	$if prealloc {
-		if document == unsafe { nil } || !document.recycle_native_paint_trees
-			|| document.paint_borrowed_by_host {
+		if document == unsafe { nil } || !document.recycle_native_paint_trees {
 			return unsafe { nil }
 		}
 		persistent := platform.enter_persistent()
@@ -71,9 +70,6 @@ fn (mut storage PaintTreeStorage) release() {
 	if storage.references > 0 { return }
 	if storage.references < 0 { panic('paint tree released too often') }
 	mut pool := storage.pool
-	// A later host can borrow an already-recorded document. Keep its storage
-	// just as display-list scenes do when host ownership is not tracked.
-	if pool.document != unsafe { nil } && pool.document.paint_borrowed_by_host { return }
 	for index, live in pool.live {
 		if voidptr(live) == voidptr(storage) {
 			pool.live.delete(index)

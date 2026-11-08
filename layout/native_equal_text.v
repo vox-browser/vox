@@ -85,8 +85,7 @@ fn collect_native_equal_text_inputs(node &Node, mut inputs []NativeEqualTextInpu
 
 fn (mut result DocumentLayoutResult) remember_native_equal_text_inputs(width f64, height f64) {
 	document := result.document
-	if document.native_storage() == unsafe { nil } || !document.recycle_native_paint_trees
-		|| document.paint_borrowed_by_host {
+	if document.native_storage() == unsafe { nil } || !document.recycle_native_paint_trees {
 		return
 	}
 	mut retained := platform.enter_retained_allocations()
@@ -160,12 +159,12 @@ fn (mut result DocumentLayoutResult) reuse_native_equal_text(width f64, height f
 	cache := result.equal_text_cache
 	document := result.document
 	if cache == unsafe { nil } || document.needs_full_layout_tree_update()
-		|| document.paint_borrowed_by_host || cache.width != width || cache.height != height
+		|| cache.width != width || cache.height != height
 		|| cache.scale != document.layout_coordinate_scale()
 		|| cache.environment != document.style_environment_version()
 		|| cache.fonts != css.css_style_computer_for(document).font_computer().environment_generation() {
 		if cache != unsafe { nil } && os.getenv('VOX_NATIVE_EQUAL_TEXT_DIAGNOSTICS') != '' {
-			eprintln('Vox native equal text inputs: full=${document.needs_full_layout_tree_update()} borrowed=${document.paint_borrowed_by_host} viewport=${cache.width},${cache.height}/${width},${height} scale=${cache.scale}/${document.layout_coordinate_scale()} environment=${cache.environment}/${document.style_environment_version()} fonts=${cache.fonts}/${css.css_style_computer_for(document).font_computer().environment_generation()}')
+			eprintln('Vox native equal text inputs: full=${document.needs_full_layout_tree_update()} viewport=${cache.width},${cache.height}/${width},${height} scale=${cache.scale}/${document.layout_coordinate_scale()} environment=${cache.environment}/${document.style_environment_version()} fonts=${cache.fonts}/${css.css_style_computer_for(document).font_computer().environment_generation()}')
 		}
 		return reject_native_equal_text('document inputs')
 	}

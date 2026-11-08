@@ -29,8 +29,8 @@ __global animation_sample_word_reported stdatomic.AtomicVal[bool]
 //   - no layout pass committed while it was current is still in use.
 // Transitions copy any sample they capture (see copy_sampled_style_value).
 //
-// Hosted documents whose display lists are copied into a parent (nested
-// viewports) and builds without -prealloc keep samples in ordinary storage.
+// Hosted recordings participate through their retained child-scene leases.
+// Builds without -prealloc keep samples in ordinary storage.
 
 // A sample arena holds at least this many bytes, and at least this many
 // updates' worth of samples, before the next update starts a new one. Each
@@ -94,9 +94,17 @@ mut:
 
 const animation_sample_inspection_interval = 8
 
+// Component diagnostics compare arena recycling with document-owned sample
+// allocations. Select this before the first animation update; it changes no
+// document or display-list ownership and does not pin either lifetime.
+pub fn (mut s StyleComputer) disable_animation_sample_arenas() {
+	assert s.animation_samples_ == unsafe { nil }
+	s.animation_sample_arenas_disabled_ = true
+}
+
 fn (mut s StyleComputer) animation_sample_storage() &AnimationSampleStorage {
 	$if prealloc {
-		if s.document_ == unsafe { nil } || s.document_.paint_borrowed_by_host {
+		if s.document_ == unsafe { nil } || s.animation_sample_arenas_disabled_ {
 			return unsafe { nil }
 		}
 		if s.animation_samples_ == unsafe { nil } {

@@ -17,20 +17,28 @@ fn take_document_phase_command_storage(document &dom.Document) [][]PaintCommand 
 
 fn clear_phase_command_storage(mut storage [][]PaintCommand) {
 	for mut bucket in storage {
-		// Every record is overwritten before publication. Zero only the live
-		// prefix to release old payload roots without constructing defaults.
-		if bucket.len > 0 {
-			unsafe { vmemset(bucket.data, 0, int(bucket.len) * int(sizeof(PaintCommand))) }
-		}
-		bucket.clear()
+		clear_paint_phase_bucket(mut bucket)
 	}
+}
+
+fn clear_paint_phase_bucket(mut bucket []PaintCommand) {
+	release_paint_commands(bucket)
+	// Every record is overwritten before publication. Zero only the live
+	// prefix to release old payload roots without constructing defaults.
+	if bucket.len > 0 {
+		unsafe { vmemset(bucket.data, 0, int(bucket.len) * int(sizeof(PaintCommand))) }
+	}
+	bucket.clear()
 }
 
 fn new_reusing_paint_phase_command_recorder(entry_count int, storage [][]PaintCommand) PaintPhaseCommandRecorder {
 	bucket_count := entry_count * compatibility_paint_phase_count
 	mut buckets := unsafe { storage }
 	if buckets.len > bucket_count {
-		for index in bucket_count .. buckets.len { buckets[index] = []PaintCommand{} }
+		for index in bucket_count .. buckets.len {
+			clear_paint_phase_bucket(mut buckets[index])
+			buckets[index] = []PaintCommand{}
+		}
 		buckets.trim(bucket_count)
 	}
 	if buckets.cap < bucket_count {
@@ -74,6 +82,7 @@ fn (box &BlockBox) build_selected_paint_phase_command_cache_with_debug(entries [
 	storage [][]PaintCommand, selected []bool, include_line_box_debug bool) ([][]PaintCommand, int) {
 	mut recorder := new_reusing_paint_phase_command_recorder(entries.len, storage)
 	recorder.include_line_box_debug = include_line_box_debug
-	box.record_paint_commands_for_entries(entries, selected, mut recorder)
+	unpublished := box.record_paint_commands_for_entries(entries, selected, mut recorder)
+	release_paint_commands(unpublished)
 	return recorder.phase_commands, recorder.command_count
 }

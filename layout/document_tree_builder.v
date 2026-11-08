@@ -708,6 +708,7 @@ fn install_document_layout_hook_with_callback(document &dom.Document,
 	mutable_document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
 		callback: callback
 		style_did_update: document_layout_style_did_update
+		retire_native_layout: retire_native_document_layout
 	})
 }
 

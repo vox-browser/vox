@@ -1012,6 +1012,9 @@ pub mut:
 	// NavigableContainerViewportPaintable retains the hosted document's
 	// display list as a nested command stream rather than rasterizing it.
 	nested_viewport_commands  []PaintCommand
+	// The phase bucket owns this lease; published parent scenes retain their
+	// own copy before the bucket can be invalidated or discarded.
+	nested_viewport_scene &DisplayListScene = unsafe { nil }
 	nested_viewport_paintable ?&painting.NavigableContainerViewportPaintable = ?&painting.NavigableContainerViewportPaintable(none)
 	// Synthetic balanced controls around the complete background color/layer
 	// group. The begin command owns the inclusive-subtree glyph runs.
@@ -2516,37 +2519,31 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 				layout_size := nested_viewport_paintable.nested_layout_size or {
 					painting.Size{nested_rect.width, nested_rect.height}
 				}
-				nested_layout := run_document_layout(hosted_document, layout_size.width, layout_size.height) or {
-					DocumentLayoutResult{}
-				}
-				if nested_layout.root != unsafe { nil } {
-					mut mutable_hosted_document := unsafe { &dom.Document(hosted_document) }
-					// The copied commands below outlive the hosted document's
-					// own scenes.
-					mark_display_list_scenes_borrowed(hosted_document)
-					if nested_display_list := mutable_hosted_document.record_display_list() {
-						mut nested_commands := display_list_commands(nested_display_list).clone()
-						if nested_viewport_paintable.nested_layout_size != none
-							&& layout_size.width > 0 && layout_size.height > 0 {
-							// The SVG recording uses the CSS container; the image draw
-							// maps that recording onto its snapped destination rectangle.
-							scale := [nested_rect.width / layout_size.width, f64(0), 0,
-								nested_rect.height / layout_size.height, 0, 0]!
-							for index, nested in nested_commands {
-								nested_commands[index] = paint_command_for_nested_viewport(nested,
-									scale, painting.IntPoint{}, 1)
-							}
+				if recording := retain_hosted_display_list(hosted_document, layout_size.width, layout_size.height) {
+					// Keep this exact recording alive while the parent caches
+					// its shallow payloads, even if the child repaints or closes.
+					mut nested_commands := recording.commands.clone()
+					if nested_viewport_paintable.nested_layout_size != none
+						&& layout_size.width > 0 && layout_size.height > 0 {
+						// The SVG recording uses the CSS container; the image draw
+						// maps that recording onto its snapped destination rectangle.
+						scale := [nested_rect.width / layout_size.width, f64(0), 0,
+							nested_rect.height / layout_size.height, 0, 0]!
+						for index, nested in nested_commands {
+							nested_commands[index] = paint_command_for_nested_viewport(nested,
+								scale, painting.IntPoint{}, 1)
 						}
-						commands << PaintCommand{
-							kind: 'paint_nested_display_list'
-							x: nested_rect.x
-							y: nested_rect.y
-							width: nested_rect.width
-							height: nested_rect.height
-							opacity: opacity
-							nested_viewport_commands: nested_commands
-							nested_viewport_paintable: nested_viewport_paintable
-						}
+					}
+					commands << PaintCommand{
+						kind: 'paint_nested_display_list'
+						x: nested_rect.x
+						y: nested_rect.y
+						width: nested_rect.width
+						height: nested_rect.height
+						opacity: opacity
+						nested_viewport_commands: nested_commands
+						nested_viewport_scene: recording.scene
+						nested_viewport_paintable: nested_viewport_paintable
 					}
 				}
 			}
@@ -3006,14 +3003,21 @@ fn (b &BlockBox) compatibility_hit_test_steps(entry_count int) []CompatibilityPa
 // Build commands once per retained box, then replay each box's cached phase in
 // the order produced by the translated stacking-context algorithm. This keeps
 // display-list construction linear while matching C++'s phase boundaries.
+// The returned vector owns its nested-scene leases; release_paint_commands
+// ends that ownership when the raw snapshot is no longer needed.
 pub fn (b &BlockBox) paint_commands() []PaintCommand {
 	entries, steps := b.compatibility_paint_plan()
 	return b.paint_commands_from_plan(entries, steps)
 }
 
 fn (b &BlockBox) paint_commands_from_plan(entries []PaintOrderEntry, steps []CompatibilityPaintStep) []PaintCommand {
-	phase_commands, command_count := b.build_paint_phase_command_cache(entries)
-	return replay_cached_paint_commands(steps, phase_commands, command_count, false)
+	mut phase_commands, command_count := b.build_paint_phase_command_cache(entries)
+	commands := replay_cached_paint_commands(steps, phase_commands, command_count, false)
+	// Replay may omit a cached command or emit one more than once. Give each
+	// returned nested command its own lease before retiring all cache leases.
+	retain_paint_command_scenes(commands)
+	clear_phase_command_storage(mut phase_commands)
+	return commands
 }
 
 // Translation of PaintableBox::m_cached_phase_commands. Each retained box has
@@ -3105,7 +3109,8 @@ fn (b &BlockBox) refresh_selected_paint_phase_command_cache_with_debug(entries [
 	}
 	// The owner has already cleared invalidated buckets. Valid bucket headers
 	// remain unchanged, while refreshed entries receive exact-sized storage.
-	b.record_paint_commands_for_entries(entries, selected, mut recorder)
+	unpublished := b.record_paint_commands_for_entries(entries, selected, mut recorder)
+	release_paint_commands(unpublished)
 	for index in 0 .. entries.len {
 		if selected[index] {
 			entry_valid[index] = true
@@ -5770,7 +5775,9 @@ fn css_gradient_svg_color_interpolation(gradient LinearGradient) string {
 pub fn (b &BlockBox) render_svg(width f64, height f64) string {
 	mut defs := []string{}
 	mut body := []string{}
-	for command in b.paint_commands() {
+	commands := b.paint_commands()
+	defer { release_paint_commands(commands) }
+	for command in commands {
 		if command.kind == 'begin_background_text_clip' {
 			id := 'background-text-mask${defs.len}'
 			mut glyphs := ''

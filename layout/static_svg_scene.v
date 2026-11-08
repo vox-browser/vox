@@ -61,6 +61,7 @@ fn own_static_svg_command(command &PaintCommand) ?PaintCommand {
 		|| command.canvas_paintable != none || command.video_bitmap != none
 		|| command.video_frame_source != none || command.video_paintable != none
 		|| command.nested_viewport_commands.len != 0 || command.nested_viewport_paintable != none
+		|| command.nested_viewport_scene != unsafe { nil }
 		|| command.text_clip_runs.len != 0 || command.backdrop_filter_data != none
 		|| command.scrollbar_axis != '' {
 		return none

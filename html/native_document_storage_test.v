@@ -42,7 +42,6 @@ fn test_inner_html_fragment_adoption_does_not_pin_the_native_document() {
 	target := document.get_element_by_id('target')?
 	for _ in 0 .. 3 {
 		set_inner_html(target, '<p>Fragment content</p><template><b>Inert child</b></template>')
-		assert !document.paint_borrowed_by_host
 		assert target.as_node().text_content()? == 'Fragment content'
 	}
 	document.destroy_a_document_and_its_descendants()
@@ -61,7 +60,6 @@ fn test_inert_template_adoption_uses_the_containing_documents_native_lifetime() 
 	mut allocations := document.enter_native_storage()
 	parse_html_from_a_string(document, '<!doctype html><template><p>Template content</p></template>')
 	allocations.finish()
-	assert !document.paint_borrowed_by_host
 	document.destroy_a_document_and_its_descendants()
 	document.finalize()
 	document.release_native_storage()

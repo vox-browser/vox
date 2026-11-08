@@ -14,6 +14,8 @@ pub fn (mut d Document) enable_native_storage() {
 			d.native_storage_.retain()
 			d.native_storage_borrowed_ = false
 		}
+		// An explicit native owner uses the embedder's retirement boundary.
+		d.native_storage_adoption_owner_ = false
 	}
 }
 
@@ -33,17 +35,76 @@ pub fn (d &Document) enter_native_storage() platform.RetainedArenaScope {
 	return storage.enter()
 }
 
-// The caller first closes the realm, cancels resource callbacks, removes this
-// document's event-loop tasks and releases the layout publisher. Retained
-// native geometry/scenes can still keep the payload arena alive afterwards.
+// A destination keeps all allocations behind adopted node identities. Sharing
+// whole arena lifetimes also preserves nodes previously adopted from a third
+// document, without creating reference cycles on reciprocal adoption.
+fn (mut d Document) share_adopted_native_storage(source &Document) {
+	storage := source.native_storage_
+	if storage == unsafe { nil } || voidptr(storage) == voidptr(d.native_storage_)
+		|| storage.arena.contains(voidptr(&d)) {
+		return
+	}
+	if d.native_storage_ == unsafe { nil } {
+		d.enable_native_storage()
+		// General DOM documents have no shell calling release_native_storage.
+		// Finalization owns the matching release unless an embedder later
+		// explicitly enables native storage and takes over that responsibility.
+		d.native_storage_adoption_owner_ = d.native_storage_ != unsafe { nil }
+	}
+	mut destination := d.native_storage_
+	if destination != unsafe { nil } { destination.share_lifetime(storage) }
+}
+
+// Retire document-owned services before dropping this document's storage lease.
+// In contrast to RetainedArena.add_cleanup, these callbacks do not wait for
+// retained frames or adopted nodes. That lets a child release its own lease
+// even when its allocation lifetime is shared with the parent document.
+// Registration transfers ownership of the callback closure.
+pub fn (mut d Document) add_native_storage_cleanup(callback fn ()) {
+	persistent := platform.enter_persistent()
+	d.native_storage_cleanup_ << callback
+	platform.leave_persistent(persistent)
+}
+
+// Layout supplies the concrete retirement operation through its existing DOM
+// hook. Detach before calling it, because retirement can reenter document
+// cleanup. Ordinary, non-native layout snapshots keep their existing lifetime.
+fn (mut d Document) retire_native_layout() {
+	mut storage := d.native_storage_
+	if storage == unsafe { nil } { return }
+	handle := d.layout_engine_handle_
+	d.layout_engine_handle_ = unsafe { nil }
+	d.cached_display_list_ = unsafe { nil }
+	if handle == unsafe { nil } { return }
+	hook := d.layout_update_hook_ or { return }
+	if hook.retire_native_layout == unsafe { nil } { return }
+	// A reentrant release can drop the document's lease while the concrete
+	// callback still reads its layout payload. Keep that payload until return.
+	storage.retain()
+	hook.retire_native_layout(handle)
+	storage.release()
+}
+
+// The caller first closes the realm, cancels resource callbacks and removes
+// this document's event-loop tasks. Retire any remaining layout publisher
+// before dropping the document's own storage lease; retained geometry/scenes
+// can still keep the payload arena alive afterwards.
 pub fn (mut d Document) release_native_storage() {
+	d.retire_native_layout()
 	d.rule_selector_memo_handle_ = unsafe { nil }
 	mut storage := d.native_storage_
 	d.native_storage_ = unsafe { nil }
-	if d.native_storage_borrowed_ {
-		d.native_storage_borrowed_ = false
-		return
+	borrowed := d.native_storage_borrowed_
+	d.native_storage_borrowed_ = false
+	d.native_storage_adoption_owner_ = false
+	// Detach before invoking callbacks, so recursive retirement is harmless.
+	cleanup := d.native_storage_cleanup_
+	d.native_storage_cleanup_ = []fn (){}
+	for callback in cleanup {
+		callback()
+		platform.release_closure(voidptr(callback))
 	}
+	if borrowed { return }
 	if storage != unsafe { nil } {
 		// The translated range registry is process-wide (weak upstream).
 		// Native runtime closure has removed every script owner at this point.
@@ -53,7 +114,6 @@ pub fn (mut d Document) release_native_storage() {
 				dom_live_ranges.delete(key)
 			}
 		}
-		if d.paint_borrowed_by_host { storage.pin() }
 		storage.release()
 	}
 }
