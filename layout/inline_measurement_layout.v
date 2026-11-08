@@ -127,6 +127,12 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	key := closed_inline_measurement_key(used, mode, space, width_only)
 	node_key := u64(voidptr(root))
 	font_generation := css.css_style_computer_for(root.document()).font_computer().environment_generation()
+	if !committed {
+		if result := previous_inline_measurement(mut state, containing_block, mut used,
+			context, pool, key, node_key, font_generation) {
+			return result
+		}
+	}
 	mut previous := pool.inline_measurements_[node_key] or { []&InlineMeasurementLayout{} }
 	for cache_index, cached in previous {
 		if cached.key == key && cached.font_generation == font_generation

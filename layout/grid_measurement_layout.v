@@ -132,7 +132,7 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 		if index > 0 && input.node.is_absolutely_positioned() && input.measurement_image == none
 			&& !measurement_absolute_dependencies_are_internal(inputs[0].node, input.node) { return false }
 		if image := input.measurement_image {
-			if (measurement_image_input(input.node) or { return false }) != image { return false }
+			if (measurement_image_input(input.node) or { return false }) != *image { return false }
 		}
 		if saved := input.simple_svg {
 			owner := input.node.dom_node() or { return false }
@@ -140,7 +140,7 @@ fn grid_measurement_inputs_are_current(inputs []RetainedInlineInput) bool {
 				|| !retained_simple_svg_input_is_current(saved) { return false }
 		}
 		if image := input.image {
-			if (retained_block_image_input(input.node) or { return false }) != image { return false }
+			if (retained_block_image_input(input.node) or { return false }) != *image { return false }
 		}
 		computed := input.node.computed_values()
 		if computed.line_height() != input.line_height
@@ -249,6 +249,7 @@ fn run_grid_formatting_context_internal(mut state LayoutState, container &Node,
 			eprintln('Vox grid measurement: reused resolved within-pass geometry')
 		}
 		if committed { report_committed_grid_measurement_reuse() }
+		report_static_generated_measurement(cached.inputs)
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)

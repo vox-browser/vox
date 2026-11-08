@@ -1252,7 +1252,7 @@ fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, cont
 				}
 			}
 		}
-		mut child_state := state.get_mutable(styled)
+		mut child_state := state.mutable_internal_box_values(styled)
 		child_state.set_static_position_rect(StaticPositionRect{
 			rect: css.CSSPixelRect.new(0, 0, container_state.content_width().to_double(), container_state.content_height().to_double())
 			horizontal_alignment: if row_axis { main_alignment } else { cross_alignment }
@@ -1263,14 +1263,14 @@ fn set_flex_abspos_static_positions(mut state LayoutState, container &Node, cont
 
 fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 	if styled := node.as_node_with_style() {
-		if mut values := state.try_get_mutable(styled) {
+		if mut values := state.values_for_line_disposal(styled) {
 			// Descendants may have been laid out in normal mode even though
 			// this ancestor is an intrinsic probe. Their flex/grid baselines
 			// must survive removal of the descendant text lines too.
 			if node.display().is_flex_inside() || node.display().is_grid_inside() {
 				cache_intrinsic_flex_baselines(mut state, node, values, .intrinsic_sizing)
 			}
-			values.line_boxes.clear()
+			values.clear_line_boxes()
 		}
 	}
 	for child in node.children() {
@@ -1303,7 +1303,7 @@ fn cache_intrinsic_flex_baselines(mut state LayoutState, container &Node, contai
 	}
 	first := layout_box_baseline(state, container, .first).minus(container_state.margin_box_top())
 	last := layout_box_baseline(state, container, .last).minus(container_state.margin_box_top())
-	mut mutable_container_state := state.get_mutable(container.as_node_with_style() or { return })
+	mut mutable_container_state := state.mutable_internal_box_values(container.as_node_with_style() or { return })
 	mutable_container_state.set_derived_baselines(first, last)
 }
 
@@ -1409,7 +1409,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	mut edges := []CSSPixels{cap: items.len}
 	for item in items {
 		styled := item.as_node_with_style() or { continue }
-		mut item_state := state.get_mutable(styled)
+		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, container_width.to_double())
 		// Definite-size rule: before determining flex bases, a stretched item in
@@ -1544,7 +1544,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		for current_line in lines {
 			for item_index, item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
-				mut item_state := state.get_mutable(styled)
+				mut item_state := state.mutable_internal_box_values(styled)
 				if item_state.has_definite_height() {
 					continue
 				}
@@ -1613,7 +1613,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 			each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
 			for item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
-				mut item_state := state.get_mutable(styled)
+				mut item_state := state.mutable_internal_box_values(styled)
 				if property_is_auto(item.computed_values(), .margin_left) {
 					item_state.margin_left = each_margin
 				}
@@ -1639,7 +1639,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		for visual_index, item_index in indexes {
 			item := current_line.items[item_index]
 			styled := item.as_node_with_style() or { continue }
-			mut item_state := state.get_mutable(styled)
+			mut item_state := state.mutable_internal_box_values(styled)
 			alignment := effective_flex_cross_alignment(container, item)
 			top_margin_auto := property_is_auto(item.computed_values(), .margin_top)
 			bottom_margin_auto := property_is_auto(item.computed_values(), .margin_bottom)
@@ -1753,7 +1753,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	mut contributions := []CSSPixels{cap: items.len}
 	for item in items {
 		styled := item.as_node_with_style() or { continue }
-		mut item_state := state.get_mutable(styled)
+		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, container_width.to_double())
 		alignment := effective_flex_cross_alignment(container, item)
@@ -1857,7 +1857,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 			&& (current.has_definite_height()
 				|| !flex_subtree_depends_on_definite_height(mut state, item))
 		item_state := if reuse_geometry {
-			mut reused := state.get_mutable(styled)
+			mut reused := state.mutable_internal_box_values(styled)
 			reused.set_has_definite_height(true)
 			reused
 		} else {
@@ -1880,7 +1880,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
 		for item in items {
 			styled := item.as_node_with_style() or { continue }
-			mut item_state := state.get_mutable(styled)
+			mut item_state := state.mutable_internal_box_values(styled)
 			if property_is_auto(item.computed_values(), .margin_top) {
 				item_state.margin_top = each_margin
 			}
@@ -1908,7 +1908,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	for visual_index, item_index in indexes {
 		item := items[item_index]
 		styled := item.as_node_with_style() or { continue }
-		mut item_state := state.get_mutable(styled)
+		mut item_state := state.mutable_internal_box_values(styled)
 		alignment := effective_flex_cross_alignment(container, item)
 		left_margin_auto := property_is_auto(item.computed_values(), .margin_left)
 		right_margin_auto := property_is_auto(item.computed_values(), .margin_right)
@@ -1965,7 +1965,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 	mut hypotheticals := []CSSPixels{cap: items.len}
 	for item in items {
 		styled := item.as_node_with_style() or { continue }
-		mut item_state := state.get_mutable(styled)
+		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, container_width.to_double())
 		mut forced_width := if property_is_auto(item.computed_values(), .width) {
@@ -2095,7 +2095,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
 			for item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
-				mut item_state := state.get_mutable(styled)
+				mut item_state := state.mutable_internal_box_values(styled)
 				if property_is_auto(item.computed_values(), .margin_top) {
 					item_state.margin_top = each_margin
 				}
@@ -2121,7 +2121,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		for visual_item_index, item_index in item_indexes {
 			item := current_line.items[item_index]
 			styled := item.as_node_with_style() or { continue }
-			mut item_state := state.get_mutable(styled)
+			mut item_state := state.mutable_internal_box_values(styled)
 			alignment := effective_flex_cross_alignment(container, item)
 			left_margin_auto := property_is_auto(item.computed_values(), .margin_left)
 			right_margin_auto := property_is_auto(item.computed_values(), .margin_right)

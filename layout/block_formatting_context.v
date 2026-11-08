@@ -552,7 +552,7 @@ fn (mut bfc BlockFormattingContext) commit_pending_margin_before_inline_content(
 // margin-box bottom edge (its contribution to the container's content height).
 fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState, box &NodeWithStyle, block_container &NodeWithStyle, containing_block_width f64, containing_block_height ?f64) f64 {
 	computed := box.computed_values()
-	mut box_state := state.get_mutable(box)
+	mut box_state := state.mutable_internal_box_values(box)
 	if bfc.laying_out_invisible_clamped_content {
 		box_state.set_invisible_for_line_clamp(true)
 	}
@@ -621,7 +621,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			}
 		}
 	}
-	box_state.set_containing_block_used_values(state.get_mutable(block_container))
+	box_state.set_containing_block_used_values(state.mutable_internal_box_values(block_container))
 	if box_should_avoid_floats(box_as_node) && bfc.floating_boxes.len > 0 {
 		bfc.place_box_avoiding_float_intrusions(mut state, box_as_node, mut box_state, block_container,
 			css_px(containing_block_width), computed, sized_as_replaced || box_as_node.is_table_wrapper())

@@ -67,10 +67,10 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 	mut accepted := false
 	defer { if !accepted { remember_rejected_block_input(mut rejected, key) } }
 	computed := node.computed_values()
-	image := if node.is_replaced_box() { retained_block_image_input(node) } else { none }
+	image := if node.is_replaced_box() { retained_block_image_snapshot(node) } else { none }
 	measurement_image := if measurement_images && node.is_image_box()
 		&& (node.is_absolutely_positioned() || image == none) {
-		measurement_image_input(node)
+		measurement_image_snapshot(node)
 	} else { none }
 	simple_svg := retained_simple_svg_input(node)
 	inside_svg := in_simple_svg || simple_svg != none
@@ -78,7 +78,8 @@ fn collect_retained_block_inputs_in_svg(node &Node, in_simple_svg bool, measurem
 		if measurement_only { report_measurement_rejection(node, computed, 'svg-style') }
 		return false
 	}
-	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
+	if ((node.is_generated_for_pseudo_element() || node.is_generated_text_node())
+		&& (!measurement_only || !static_generated_measurement_input(node)))
 		|| node.is_in_ua_internal_shadow_tree() || (node.is_svg_box() && !inside_svg)
 		|| (node.is_replaced_box() && image == none && simple_svg == none && measurement_image == none)
 		|| node.is_floating() || (!retained_layout_position_is_unshifted(node)

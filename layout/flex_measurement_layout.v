@@ -121,6 +121,7 @@ fn run_flex_formatting_context_with_mode(mut state LayoutState, container &Node,
 			flex_image_measurement_reuse_reported = true
 			eprintln('Vox flex images: reused decoded image measurement')
 		}
+		report_static_generated_measurement(cached.inputs)
 		report_relative_measurement_reuse(cached.inputs)
 		report_svg_measurement_reuse(cached.inputs)
 		report_extended_image_measurement(cached.inputs)

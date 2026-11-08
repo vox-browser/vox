@@ -16,8 +16,8 @@ struct RetainedInlineInput {
 	line_height    CSSPixels
 	root_font_size f64
 	root_line_height f64
-	image          ?RetainedBlockImageInput
-	measurement_image ?MeasurementImageInput
+	image          ?&RetainedBlockImageInput
+	measurement_image ?&MeasurementImageInput
 	simple_svg     ?&RetainedSimpleSVGInput
 }
 
@@ -133,7 +133,7 @@ fn retained_inline_inputs_are_current(inputs []RetainedInlineInput) bool {
 		}
 		if previous := input.image {
 			current := retained_block_image_input(input.node) or { return false }
-			if current != previous { return false }
+			if current != *previous { return false }
 		}
 		if input.node.needs_layout_update()
 			|| voidptr(input.node.computed_values()) != voidptr(input.style)

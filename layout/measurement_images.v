@@ -68,8 +68,8 @@ fn own_image_measurement_input(input RetainedInlineInput) RetainedInlineInput {
 		...input
 		text: input.text.clone()
 		measurement_image: if image := input.measurement_image {
-			MeasurementImageInput{
-				...image
+			&MeasurementImageInput{
+				...*image
 				request_url: image.request_url.clone()
 				source: image.source.clone()
 				src: image.src.clone()
@@ -87,4 +87,9 @@ fn report_extended_image_measurement(inputs []RetainedInlineInput) {
 		extended_image_measurement_reported = true
 		eprintln('Vox extended image measurement: reused pending or absolute image geometry')
 	}
+}
+
+fn measurement_image_snapshot(node &Node) ?&MeasurementImageInput {
+	value := measurement_image_input(node) or { return none }
+	return &MeasurementImageInput{ ...value }
 }

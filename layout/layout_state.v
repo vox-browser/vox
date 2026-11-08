@@ -1009,6 +1009,7 @@ mut:
 	intrinsic_seed_stamps_ []u32
 	intrinsic_seed_epoch_ u32
 	inline_measurements_ map[u64][]&InlineMeasurementLayout
+	previous_inline_measurements_ map[u64]&RetainedInlineLayout
 	grid_measurements_ map[u64][]&GridMeasurementLayout
 	grid_measurement_rejections_ map[u64]bool
 	flex_measurements_ map[u64][]&FlexMeasurementLayout
@@ -1052,6 +1053,7 @@ fn (mut pool MeasurementUsedValuesChunkPool) release() {
 	pool.intrinsic_seed_stamps_ = []u32{}
 	pool.intrinsic_seed_order_ = unsafe { nil }
 	pool.inline_measurements_ = map[u64][]&InlineMeasurementLayout{}
+	pool.previous_inline_measurements_ = map[u64]&RetainedInlineLayout{}
 	pool.grid_measurements_ = map[u64][]&GridMeasurementLayout{}
 	pool.grid_measurement_rejections_ = map[u64]bool{}
 	pool.flex_measurements_ = map[u64][]&FlexMeasurementLayout{}
@@ -1346,6 +1348,7 @@ fn (mut state LayoutState) enable_measurement_chunk_pool() {
 	assert state.measurement_chunk_pool_ == unsafe { nil }
 	state.measurement_chunk_pool_ = &MeasurementUsedValuesChunkPool{
 		backoff_: state.block_layout_backoff_
+		previous_inline_measurements_: unsafe { state.previous_inline_layouts_ }
 	}
 }
 
