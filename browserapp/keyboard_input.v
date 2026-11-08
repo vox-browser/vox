@@ -3,6 +3,7 @@ module main
 import dom
 import gg
 import html
+import page
 import platform
 
 fn (app &BrowserApp) prepare_page_editing_target() ?&dom.InputEventsTarget {
@@ -28,6 +29,7 @@ fn (mut app BrowserApp) handle_page_character(code u32) {
 	mut navigation_work := app.begin_navigation_work()
 	defer { navigation_work.finish() }
 	target := app.prepare_page_editing_target() or { return }
+	if !page.dispatch_editing_beforeinput(app.document, dom.input_type_insert_text, rune(code).str()) { return }
 	target.defer_cursor_scroll(true)
 	target.handle_insert(dom.input_type_insert_text, rune(code).str())
 	target.defer_cursor_scroll(false)

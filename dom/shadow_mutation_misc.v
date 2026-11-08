@@ -3975,10 +3975,10 @@ fn (manager &EditingHostManager) get_selection_for_navigation(collapse CollapseS
 	document := unsafe { &Document(manager.document_) }
 	selection := document.get_selection() or { return none }
 	focus_node := selection.focus_node() or { return none }
-	if !focus_node.is_text() {
+	if !focus_node.is_text() && !focus_node.is_element() {
 		return none
 	}
-	if collapse == .yes && !focus_node.is_editable() {
+	if collapse == .yes && !focus_node.is_editable() && focus_node.editing_host() == none {
 		return none
 	}
 	return selection

@@ -444,6 +444,7 @@ fn page_editing_key_action_callback(target voidptr, original_key int, code_point
 		}
 	}
 	if input_type := input_type_for_delete_key(key) {
+		if !dispatch_editing_beforeinput(document, input_type, none) { return true }
 		input_target.handle_delete(input_type)
 		return true
 	}
@@ -517,12 +518,14 @@ fn page_editing_key_action_callback(target voidptr, original_key int, code_point
 				}
 			}
 		}
+		if !dispatch_editing_beforeinput(document, input_type, none) { return true }
 		if input_target.handle_return_key(input_type) != .handled {
 			input_target.handle_insert(input_type, '\n')
 		}
 		return true
 	}
 	if !should_ignore_keydown_event(int(code_point), modifiers) {
+		if !dispatch_editing_beforeinput(document, dom.input_type_insert_text, rune(code_point).str()) { return true }
 		input_target.handle_insert(dom.input_type_insert_text, rune(code_point).str())
 		return true
 	}

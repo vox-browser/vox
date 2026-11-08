@@ -43,6 +43,8 @@ internals.sendText(field,"\ue003");check(field.value,"a😀");internals.sendText
 field.value="abc";internals.sendText(field,"\ue011");check(field.selectionStart,0);internals.sendText(field,"\ue010");check(field.selectionStart,3);
 internals.sendText(field,"\ue012",4);check(field.selectionStart,2);check(field.selectionEnd,3);internals.sendText(field,"B");check(field.value,"abB");
 internals.sendText(field,"\ue006");check(field.value,"abB\n");
+const cancelEdit=event=>event.preventDefault();field.addEventListener("beforeinput",cancelEdit);
+internals.sendText(field,"\ue003\ue006X");check(field.value,"abB\n");field.removeEventListener("beforeinput",cancelEdit);
 internals.sendText(readonly,"ignored");check(readonly.value,"unchanged");
 "passed"
 ')!
@@ -56,7 +58,9 @@ let conversions=0;const text={toString(){conversions++;return "😀!"}},bad={toS
 for(const target of [{},document,document.createElementNS("http://www.w3.org/2000/svg","svg")]){let rejected=false;try{internals.sendText(target,bad)}catch(error){rejected=error instanceof TypeError}check(rejected,true)}
 for(const operation of [()=>internals.sendText(field),()=>internals.sendText(field,Symbol()),()=>internals.sendText(field,"x",1n)]){let rejected=false;try{operation()}catch(error){rejected=error instanceof TypeError}check(rejected,true)}
 editor.focus();const selection=getSelection(),range=document.createRange();range.selectNodeContents(editor);range.collapse(false);selection.removeAllRanges();selection.addRange(range);
+internals.sendText(editor,"\ue011");check(selection.focusOffset,0);internals.sendText(editor,"\ue010");check(selection.focusOffset,5);
 internals.sendText(editor,text);check(conversions,1);check(editor.textContent,"start😀!");check(document.activeElement,editor);
+let before=0;editor.addEventListener("beforeinput",event=>{before++;check(event.isTrusted,true);check(event.inputType,"insertText");check(event.getTargetRanges().length,1);event.preventDefault()});internals.sendText(editor,"cancel");check(before,6);check(editor.textContent,"start😀!");
 "passed"
 ')!
 }

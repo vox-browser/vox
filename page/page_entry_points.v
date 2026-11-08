@@ -158,8 +158,8 @@ pub fn (mut p Page) handle_keydown(key int, modifiers u32, code_point u32,
 }
 
 pub fn (mut p Page) handle_keyup(key int, modifiers u32, code_point u32, repeat bool) EventResult {
+	if !p.event_handler.active_document || repeat { return .dropped }
 	p.refresh_keyboard_focus_target()
-	if repeat { return p.event_handler.handle_keyup(repeat, false) }
 	cancelled := !p.event_handler.dispatch_keyboard_event('keyup', p.event_handler.focused_target(),
 		key, code_point, modifiers, repeat)
 	return p.event_handler.handle_keyup(repeat, cancelled)

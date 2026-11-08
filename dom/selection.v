@@ -804,6 +804,14 @@ fn (navigator &CaretNavigator) move_by_page(location CaretLocation, direction Ca
 }
 
 pub fn (navigator &CaretNavigator) move(location CaretLocation, alteration SelectionAlteration, direction CaretNavigationDirection, granularity SelectionGranularity, preferred_inline_coordinate ?f64) ?CaretLocation {
+	// DOM selections can end at an element child boundary. Line navigation
+	// starts from its equivalent rendered text caret, just as editing does.
+	if granularity == .line_boundary && !location.node.is_text() {
+		canonical := navigator.canonical_location_for_editing(location)
+		if canonical.node.is_text() {
+			return navigator.move(canonical, alteration, direction, granularity, preferred_inline_coordinate)
+		}
+	}
 	if granularity == .document_boundary {
 		return navigator.move_to_editing_host_boundary(location, direction)
 	}
