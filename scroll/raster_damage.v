@@ -431,7 +431,7 @@ fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, trans
 	h = srk_bool(h, command.mono)
 	h = srk_bool(h, command.rtl)
 	if run := command.glyph_run {
-		h = srk_ptr(h, voidptr(run))
+		h = srk_glyph_run(h, run)
 	}
 	h = srk_f64(h, command.glyph_translation_x)
 	h = srk_f64(h, command.glyph_translation_y)
@@ -533,7 +533,7 @@ fn scroll_raster_command_hash_ex(command &layout.PaintCommand, scroll f64, trans
 		h = srk_str(h, run.text)
 		h = srk_f64(h, run.font_size)
 		if glyphs := run.glyph_run {
-			h = srk_ptr(h, voidptr(glyphs))
+			h = srk_glyph_run(h, glyphs)
 		}
 	}
 	// Accumulated clips are viewport space: remove the scroll translation.
@@ -1287,7 +1287,7 @@ fn scroll_raster_command_hash_parts(command &layout.PaintCommand, scroll f64) [8
 	h = srk_int(h, int(command.force_dark_role))
 	parts[1] = h
 	h = srk_str(seed, command.text)
-	if run := command.glyph_run { h = srk_ptr(h, voidptr(run)) }
+	if run := command.glyph_run { h = srk_glyph_run(h, run) }
 	h = srk_f64(h, command.glyph_translation_x)
 	h = srk_f64(h, command.glyph_translation_y)
 	h = srk_f64(h, command.font_size)
