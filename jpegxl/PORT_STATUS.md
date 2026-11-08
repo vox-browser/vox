@@ -31,7 +31,20 @@ under separate 3 GiB guards with current V and `-memory-limit 10G -b c -cc clang
 The initial compile and half-float mismatches were corrected before this result;
 no failed attempt receives execution credit.
 
-Remaining work includes container assembly, metadata/color headers, prefix/ANS
+Signature probing now preserves incomplete-prefix hints, and a complete-input
+container extractor handles mandatory file types, version 0 ordered parts,
+version 1 out-of-order parts, extended and terminal sizes, skipped auxiliary
+boxes and compressed-metadata type restrictions. Input is bounded at 64 MiB.
+Whole streams are borrowed views; split streams are assembled once. Tests cover
+all signature prefixes and single-bit corruptions, malformed box sizes and
+orders, every truncation of a small container, multiple valid part permutations
+and byte-exact extraction of the existing independent RGBA container fixture.
+The extractor rejects duplicate whole codestream boxes explicitly; malformed
+container error/state parity and the source's streaming API are not claimed.
+The complete three-file module suite passes in both GC modes, including a
+no-GC run with unavailable Rust compiler paths.
+
+Remaining work includes streaming/checkpoints, metadata/color headers, prefix/ANS
 entropy decoding and context maps, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
 integration. The V package is not connected to the production image path until
