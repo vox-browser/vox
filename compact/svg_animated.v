@@ -32,12 +32,13 @@ fn compact_svg_animated_bootstrap() string {
   if(setter)descriptor.set=Object.getOwnPropertyDescriptor({set [name](value){setter.call(this,value);}},name).set;
   Object.defineProperty(prototype,name,descriptor);
  }
- function method(prototype,name,value,length){const named={[name]:function(){return value.apply(this,arguments);}}[name];Object.defineProperty(named,"length",{value:length});Object.defineProperty(prototype,name,{value:named,writable:true,enumerable:true,configurable:true});}
- defineInterface("SVGMarkerElement",SVGElement,{SVG_MARKERUNITS_UNKNOWN:0,SVG_MARKERUNITS_USERSPACEONUSE:1,SVG_MARKERUNITS_STROKEWIDTH:2,SVG_MARKER_ORIENT_UNKNOWN:0,SVG_MARKER_ORIENT_AUTO:1,SVG_MARKER_ORIENT_ANGLE:2});
+ function method(prototype,name,value,length){const named={[name](){return __elementApply(value,this,arguments);}}[name];Object.defineProperty(named,"length",{value:length});Object.defineProperty(prototype,name,{value:named,writable:true,enumerable:true,configurable:true});}
+ defineInterface("SVGMarkerElement",SVGElement,{SVG_MARKERUNITS_UNKNOWN:0,SVG_MARKERUNITS_USERSPACEONUSE:1,SVG_MARKERUNITS_STROKEWIDTH:2,SVG_MARKER_ORIENT_UNKNOWN:0,SVG_MARKER_ORIENT_AUTO:1,SVG_MARKER_ORIENT_ANGLE:2,SVG_MARKER_ORIENT_AUTO_START_REVERSE:3});
  if(!__compactSVGInterfaces.marker)__compactSVGInterfaces.marker=SVGMarkerElement;
  defineInterface("SVGPreserveAspectRatio",null,{SVG_PRESERVEASPECTRATIO_UNKNOWN:0,SVG_PRESERVEASPECTRATIO_NONE:1,SVG_PRESERVEASPECTRATIO_XMINYMIN:2,SVG_PRESERVEASPECTRATIO_XMIDYMIN:3,SVG_PRESERVEASPECTRATIO_XMAXYMIN:4,SVG_PRESERVEASPECTRATIO_XMINYMID:5,SVG_PRESERVEASPECTRATIO_XMIDYMID:6,SVG_PRESERVEASPECTRATIO_XMAXYMID:7,SVG_PRESERVEASPECTRATIO_XMINYMAX:8,SVG_PRESERVEASPECTRATIO_XMIDYMAX:9,SVG_PRESERVEASPECTRATIO_XMAXYMAX:10,SVG_MEETORSLICE_UNKNOWN:0,SVG_MEETORSLICE_MEET:1,SVG_MEETORSLICE_SLICE:2});
  for(const name of ["SVGAnimatedPreserveAspectRatio","SVGAnimatedInteger","SVGAnimatedEnumeration","SVGAnimatedString","SVGAnimatedBoolean","SVGAnimatedAngle"])defineInterface(name,null,{});
  for(const name of ["SVGNumber","SVGLength","SVGLengthList","SVGNumberList","SVGAnimatedLength","SVGAnimatedNumber","SVGAnimatedRect","SVGAnimatedLengthList","SVGAnimatedNumberList","SVGAnimatedTransformList","SVGTransformList"])defineInterface(name,null,{});
+' + compact_svg_angle_bootstrap() + r'
  // SVGLength values: [unit type, number in that unit].
  const units=["","","%","em","ex","px","cm","mm","in","pt","pc"];
  const absolute={1:1,5:1,6:96/2.54,7:96/25.4,8:96,9:96/72,10:16};
@@ -183,6 +184,7 @@ fn compact_svg_animated_bootstrap() string {
  accessor(SVGAnimatedEnumeration.prototype,"baseVal",function(){const own=record(this,"SVGAnimatedEnumeration");return own.read();},function(value){const own=record(this,"SVGAnimatedEnumeration");own.write(value);});
  accessor(SVGAnimatedEnumeration.prototype,"animVal",function(){return record(this,"SVGAnimatedEnumeration").read();});
  function animatedEnumeration(element,interfaceName,attribute){
+  if(interfaceName==="SVGMarkerElement"&&attribute==="orientType")return wrap(SVGAnimatedEnumeration.prototype,"SVGAnimatedEnumeration",markerOrientationEnumeration(element));
   const [table,defaultValue]=enumeration(interfaceName,attribute)||[{},0];
   const read=()=>{const value=element.getAttribute(attribute);return value!==null&&Object.prototype.hasOwnProperty.call(table,value)?table[value]:defaultValue;};
   const write=value=>{
@@ -240,13 +242,14 @@ fn compact_svg_animated_bootstrap() string {
    case "SVGAnimatedInteger":return animatedNumber(element,attribute,numberDefaults[attribute]!==undefined?numberDefaults[attribute]:0,true);
    case "SVGAnimatedString":return wrap(SVGAnimatedString.prototype,type,{element,attribute});
    case "SVGAnimatedEnumeration":return animatedEnumeration(element,interfaceName,attribute);
+   case "SVGAnimatedAngle":return animatedAngle(element);
    case "SVGAnimatedRect":return wrap(SVGAnimatedRect.prototype,type,{element});
    case "SVGAnimatedPreserveAspectRatio":return wrap(SVGAnimatedPreserveAspectRatio.prototype,type,{base:wrap(SVGPreserveAspectRatio.prototype,"SVGPreserveAspectRatio",{element,readOnly:false}),anim:wrap(SVGPreserveAspectRatio.prototype,"SVGPreserveAspectRatio",{element,readOnly:true})});
    default:return animatedList(element,type,attribute);
   }
  }
  const members=Object.assign({},__compactSVGAnimatedMembers);
- members.SVGMarkerElement=[["refX","SVGAnimatedLength"],["refY","SVGAnimatedLength"],["markerWidth","SVGAnimatedLength"],["markerHeight","SVGAnimatedLength"],["markerUnits","SVGAnimatedEnumeration"],["viewBox","SVGAnimatedRect"],["preserveAspectRatio","SVGAnimatedPreserveAspectRatio"]];
+ members.SVGMarkerElement=[["refX","SVGAnimatedLength"],["refY","SVGAnimatedLength"],["markerWidth","SVGAnimatedLength"],["markerHeight","SVGAnimatedLength"],["markerUnits","SVGAnimatedEnumeration"],["orientType","SVGAnimatedEnumeration"],["orientAngle","SVGAnimatedAngle"],["viewBox","SVGAnimatedRect"],["preserveAspectRatio","SVGAnimatedPreserveAspectRatio"]];
  for(const [interfaceName,list] of Object.entries(members)){
   const constructor=globalThis[interfaceName];
   if(typeof constructor!=="function")continue;
@@ -263,14 +266,14 @@ fn compact_svg_animated_bootstrap() string {
    if(current.localName==="svg"&&current.namespaceURI==="http://www.w3.org/2000/svg")return current;
   return null;
  }
- accessor(SVGElement.prototype,"ownerSVGElement",function(){return ownerSVG(this);});
- accessor(SVGElement.prototype,"viewportElement",function(){return ownerSVG(this);});
+ accessor(SVGElement.prototype,"ownerSVGElement",function(){return ownerSVG(svgReceiver(this));});
+ accessor(SVGElement.prototype,"viewportElement",function(){return ownerSVG(svgReceiver(this));});
  if(typeof SVGSVGElement==="function"){
-  method(SVGSVGElement.prototype,"createSVGLength",function(){return createLength({element:null,readOnly:false,value:[1,0],attribute:"",content:""});},0);
-  method(SVGSVGElement.prototype,"createSVGNumber",function(){let value=0;return wrap(SVGNumber.prototype,"SVGNumber",{readOnly:false,read:()=>value,write:number=>{value=number;}});},0);
-  method(SVGSVGElement.prototype,"createSVGPoint",function(){return new DOMPoint();},0);
-  method(SVGSVGElement.prototype,"createSVGMatrix",function(){return new DOMMatrix();},0);
-  method(SVGSVGElement.prototype,"createSVGRect",function(){return new DOMRect();},0);
+  method(SVGSVGElement.prototype,"createSVGLength",function(){svgReceiver(this,"svg");return createLength({element:null,readOnly:false,value:[1,0],attribute:"",content:""});},0);
+  method(SVGSVGElement.prototype,"createSVGNumber",function(){svgReceiver(this,"svg");let value=0;return wrap(SVGNumber.prototype,"SVGNumber",{readOnly:false,read:()=>value,write:number=>{value=number;}});},0);
+  method(SVGSVGElement.prototype,"createSVGPoint",function(){svgReceiver(this,"svg");return new DOMPoint();},0);
+  method(SVGSVGElement.prototype,"createSVGMatrix",function(){svgReceiver(this,"svg");return new DOMMatrix();},0);
+  method(SVGSVGElement.prototype,"createSVGRect",function(){svgReceiver(this,"svg");return new DOMRect();},0);
  }
 })();
 '
