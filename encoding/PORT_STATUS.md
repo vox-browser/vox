@@ -33,6 +33,22 @@ debug and release**. Source mapping, exact dependency checksum and remaining
 FileReader owner boundaries are recorded in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
 
+GB18030 table generation no longer requires Cargo or `encoding_rs`.
+`tools/gen_gb18030_data.v` and `tools/gb18030gen/` read the pinned WHATWG
+[two-byte index](https://encoding.spec.whatwg.org/index-gb18030.txt) and
+[range index](https://encoding.spec.whatwg.org/index-gb18030-ranges.txt), stored
+under `encoding/indices/`. SHA-256 checks reject changed inputs. The V generator
+preserves all 23,940 two-byte pointers, BMP range starts, the first-pointer
+encoder mapping and the decoder's separate handling of pointer 7457 and astral
+ranges. The generated V file differs from its previous Rust-generated version
+only in its attribution comment. The generator tests cover exact regeneration
+and malformed, unsorted and duplicate index entries; generation and `--check`
+also pass under separate 3 GiB guards with current V's `-memory-limit 10G`.
+Run `v -memory-limit 10G run tools/gen_gb18030_data.v --check` through a memory
+guard to verify the checked-in output offline. The old Python/Cargo generator
+has been removed. Other historical Rust decoder probes still need replacement;
+this tooling change does not establish that all developer tools are Rust-free.
+
 Pinned LibTextCodec isomorphic UTF8/UTF16 encoding (`242a95de`) now uses
 Source code-point iteration and byte truncation, retaining its diagnostic
 above U+00FF and its commented-out range VERIFY. The HTTP Header overloads

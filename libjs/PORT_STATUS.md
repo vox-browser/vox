@@ -1959,8 +1959,9 @@ the same-size SVG source switch with zero differing pixels.
   stored by value. Recursive simple-matcher unions use heap-owned boxes, with
   value equality and independent clone storage. Immutable UTF-8 strings share
   backing storage when cloned. Class-string `[]rune` values represent Rust
-  `Vec<char>`; the pending parser must enforce Unicode scalar validity there,
-  while literal `u32` values preserve WTF-16 lone surrogates.
+  `Vec<char>`; the V grammar parser enforces Unicode scalar validity for its
+  character input, class strings and group names, while escaped literal `u32`
+  values preserve WTF-16 lone surrogates.
 - Regex input records expose read-only views of caller-owned arrays; callers
   must retain stable backing storage without Rust's borrow checker. Positions
   use `usize`, while V arrays retain their signed capacity boundary. Bounds
@@ -2140,6 +2141,31 @@ the same-size SVG source switch with zero differing pixels.
 
 ## Remaining translation work
 
+The standalone ECMAScript regex grammar is translated in `regex_parser.v`,
+`regex_parser_escape.v` and `regex_parser_class.v`. `parse_regex_ast()` and
+`parse_regex_ast_chars()` produce the existing concrete AST, and
+`parse_regex_ast_flags()` preserves the source flag errors. The grammar covers
+Annex B numeric/control/identity escapes, forward and named backreferences,
+duplicate-name alternative scopes, capture numbering, quantifiers, modifiers,
+lookarounds, Unicode properties, nested Unicode sets and class strings. It has
+an explicit 128-level combined group/class nesting limit for V stack safety;
+this is distinct from the JavaScript parser's 32-call limit below.
+
+The immutable `testdata/regex-parser.tsv` corpus records 3,018 complete ASTs or
+original error messages from the byte-verified pinned Rust parser at
+`963d46a829f3e1b79f44dba9d02afb70654300fa`. The temporary oracle used unchanged
+Rust AST/parser/Unicode wrapper sources and the same translated Unicode exports
+as the existing production Rust backend. Both GC modes pass the corpus,
+deep-nesting and independent-owner tests. Separate tests cover all 256 flag
+subsets, duplicates, invalid flags and the raw character-input scalar invariant.
+Future fixture tests require no Rust compiler. Initial test-compilation failures
+in sum narrowing and optional-name handling were corrected in the test
+serializer; no failed attempt receives execution credit. Checks use current V,
+`-enable-globals -memory-limit 10G -b c -cc clang`, with separate 3 GiB guards.
+These grammar tests do not execute a compiled regex or establish a Rust-free
+browser. The browser still uses the native backend pending the compiler and
+execution-loop ports.
+
 The frontend and supported VM execution slice are integrated into the browser;
 JavaScriptCore continues to execute scripts in the default mode. This is not a
 complete LibJS runtime migration.
@@ -2155,7 +2181,7 @@ complete LibJS runtime migration.
   simple-match predicates, candidate filters, simple-scan execution, fast greedy
   consumption, suffix measurements, saved-state backtracking and shared
   failure/assertion handlers are
-  translated. Its `parser.rs`, `compiler.rs`,
+  translated. Its grammar parser is now translated separately; `compiler.rs`,
   fast/general VM execution, lookaround
   bodies and `regex.rs`/FFI remain pending.
   The RegExp object, allocation/initialization, constructor/prototype methods and
