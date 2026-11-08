@@ -22,7 +22,12 @@ fn scalar_style_values_equal(first &StyleValue, second &StyleValue) bool {
 		IntegerStyleValue { if second is IntegerStyleValue { first.value_ == second.value_ } else { false } }
 		PercentageStyleValue { if second is PercentageStyleValue { first.percentage_ == second.percentage_ } else { false } }
 		StringStyleValue { if second is StringStyleValue { first.string_value_ == second.string_value_ } else { false } }
-		CustomIdentStyleValue { if second is CustomIdentStyleValue { first.custom_ident_ == second.custom_ident_ } else { false } }
+		CustomIdentStyleValue {
+			if second is CustomIdentStyleValue {
+				first.custom_ident_ == second.custom_ident_
+					&& first.family_identifiers_ == second.family_identifiers_
+			} else { false }
+		}
 		AngleStyleValue { if second is AngleStyleValue { first.angle_ == second.angle_ } else { false } }
 		TimeStyleValue { if second is TimeStyleValue { first.time_ == second.time_ } else { false } }
 		FrequencyStyleValue { if second is FrequencyStyleValue { first.frequency_ == second.frequency_ } else { false } }

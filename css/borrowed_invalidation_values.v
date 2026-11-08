@@ -41,7 +41,10 @@ fn borrowed_scalar_style_values_changed(old &TypedStyleValueBox, new &TypedStyle
 			if new.value is StringStyleValue { return old.value.string_value_ != new.value.string_value_ }
 		}
 		CustomIdentStyleValue {
-			if new.value is CustomIdentStyleValue { return old.value.custom_ident_ != new.value.custom_ident_ }
+			if new.value is CustomIdentStyleValue {
+				return old.value.custom_ident_ != new.value.custom_ident_
+					|| old.value.family_identifiers_ != new.value.family_identifiers_
+			}
 		}
 		else { return none }
 	}

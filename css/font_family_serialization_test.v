@@ -26,3 +26,20 @@ fn test_font_shorthand_serializes_multi_identifier_family_names() {
 	// Identifiers for other properties still escape spaces inside one token.
 	assert CustomIdentStyleValue.create('Two Words').serialize(.normal) == r'Two\ Words'
 }
+
+fn test_font_family_identifier_boundaries_participate_in_equality_and_invalidation() {
+	sequence := StyleValue(CustomIdentStyleValue{
+		custom_ident_: 'Two Words'
+		family_identifiers_: ['Two', 'Words']
+	})
+	one_ident := StyleValue(CustomIdentStyleValue.create('Two Words'))
+	for left in [sequence, one_ident] {
+		for right in [sequence, one_ident] {
+			expected := style_values_equal_using_union(left, right)
+			assert left.equals(right) == expected
+			assert style_value_option_changed(dom_style_value_from_value_logic(left),
+				dom_style_value_from_value_logic(right)) == !expected
+		}
+	}
+	assert !sequence.equals(one_ident)
+}
