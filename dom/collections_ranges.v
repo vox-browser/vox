@@ -2884,13 +2884,13 @@ pub fn (mut r Range) insert_node(node &Node) ! {
 // https://dom.spec.whatwg.org/#concept-range-insert
 pub fn (mut r Range) insert(node &Node) ! {
 	// 1. If range's start node is a ProcessingInstruction or Comment node, is a Text node whose parent is null, or is node, then throw.
-	if r.start_container_.node_type == .processing_instruction_node || r.start_container_.is_comment() || (r.start_container_.is_exclusive_text() && r.start_container_.parent_node() == none) || r.start_container_ == node {
+	if r.start_container_.node_type == .processing_instruction_node || r.start_container_.is_comment() || (r.start_container_.is_text() && r.start_container_.parent_node() == none) || r.start_container_ == node {
 		return error('HierarchyRequestError: Range has inappropriate start node for insertion')
 	}
 	// 2. Let referenceNode be null.
 	mut reference_node := ?&Node(none)
 	// 3. If range's start node is a Text node, set referenceNode to that Text node.
-	if r.start_container_.is_exclusive_text() {
+	if r.start_container_.is_text() {
 		reference_node = r.start_container_
 	} else {
 		// 4. Otherwise, set referenceNode to the child of start node whose index is start offset, and null if there is no such child.
@@ -2905,7 +2905,7 @@ pub fn (mut r Range) insert(node &Node) ! {
 	// 6. Ensure pre-insertion validity of node into parent before referenceNode.
 	parent.ensure_pre_insertion_validity(unsafe { nil }, node, reference_node)!
 	// 7. If range's start node is a Text node, set referenceNode to the result of splitting it with offset range's start offset.
-	if r.start_container_.is_exclusive_text() {
+	if r.start_container_.is_text() {
 		mut text := unsafe { &Text(r.start_container_) }
 		reference_node = text.split_text(r.start_offset_)!.as_node()
 	}
@@ -2941,11 +2941,11 @@ pub fn (mut r Range) insert(node &Node) ! {
 pub fn (mut r Range) surround_contents(new_parent &Node) ! {
 	// 1. If a non-Text node is partially contained in this, then throw an "InvalidStateError" DOMException.
 	mut start_non_text_node := r.start_container_
-	if start_non_text_node.is_exclusive_text() {
+	if start_non_text_node.is_text() {
 		start_non_text_node = start_non_text_node.parent_node() or { start_non_text_node }
 	}
 	mut end_non_text_node := r.end_container_
-	if end_non_text_node.is_exclusive_text() {
+	if end_non_text_node.is_text() {
 		end_non_text_node = end_non_text_node.parent_node() or { end_non_text_node }
 	}
 	if start_non_text_node != end_non_text_node {

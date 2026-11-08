@@ -84,3 +84,24 @@ fn test_delete_contents_collapses_spanning_range_before_mutations() {
 	assert range.start_container() == root.as_node()
 	assert range.start_offset() == 1
 }
+
+fn test_insert_node_splits_a_cdata_section_start_node() {
+	document := Document.create(url_about_blank())
+	mut root := document.create_element('p') or { panic(err) }
+	mut root_node := root.as_node()
+	cdata := CDATASection.new(document, '1234')
+	root_node.append_child(cdata.as_node()) or { panic(err) }
+	inserted := document.create_element('b') or { panic(err) }
+	mut range := document.create_range()
+	range.set_start(cdata.as_node(), 2) or { panic(err) }
+	range.set_end(cdata.as_node(), 2) or { panic(err) }
+
+	range.insert_node(inserted.as_node()) or { panic(err) }
+
+	children := root_node.children_as_vector()
+	assert children.len == 3
+	assert children[0] == cdata.as_node()
+	assert children[0].text_content() or { '' } == '12'
+	assert children[1] == inserted.as_node()
+	assert children[2].text_content() or { '' } == '34'
+}
