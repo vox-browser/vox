@@ -105,6 +105,7 @@ fn compact_reflected_attributes_bootstrap() string {
   else if(lower==="true"||lower==="false"||lower==="plaintext-only")this.setAttribute("contenteditable",lower);
   else throw new DOMException("The value must be true, false, plaintext-only or inherit","SyntaxError");
  });
+ if(typeof HTMLStyleElement==="function")for(const attribute of ["media","type"])plainString(HTMLStyleElement.prototype,attribute,attribute);
  // Form controls: https://html.spec.whatwg.org/multipage/input.html#the-input-element
  const integer=/^[\t\n\f\r ]*([+-]?[0-9]+)/;
  // long limited to only non-negative numbers, -1 when missing or invalid.
