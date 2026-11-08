@@ -117,6 +117,11 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 		if supplied_key != none {
 			return error('DataError: an explicit key is forbidden for inline keys')
 		}
+		if path is string {
+			if extracted := evaluate_string_key_path(value, path) {
+				if !value_to_key(extracted).is_valid() { return error('DataError: inline key path yielded an invalid key') }
+			}
+		}
 		key = evaluate_key_path(value, path) or { invalid_key() }
 		if !key.is_valid() {
 			if !data.auto_increment {

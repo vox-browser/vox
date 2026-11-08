@@ -18,6 +18,11 @@ pub fn (mut store IDBObjectStore) put_async(input Value, key ?Key, no_overwrite 
 	store.transaction.require_writable()!
 	if path := data.key_path {
 		if key != none { return error('DataError: an explicit key is forbidden for inline keys') }
+		if path is string {
+			if extracted := evaluate_string_key_path(input, path) {
+				if !value_to_key(extracted).is_valid() { return error('DataError: inline key path yielded an invalid key') }
+			}
+		}
 		if actual := evaluate_key_path(input, path) {
 			ensure_valid_key(actual)!
 		} else {

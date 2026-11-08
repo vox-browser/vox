@@ -146,3 +146,21 @@ fn test_async_counts_observe_prior_writes_and_finish_after_explicit_commit() {
 	assert one.result_kind == .count && one.count == 1
 	assert tx.state == .finished
 }
+
+fn test_auto_increment_rejects_present_invalid_inline_keys_before_queuing_a_write() {
+	mut factory := IDBFactory.create('https://async-store.test/invalid-inline-key')!
+	mut opening := factory.open('items', u64(1))!
+	run_database_tasks()
+	mut tx := opening.upgrade_transaction
+	mut store := opening.connection.create_object_store(mut tx, 'items', IDBObjectStoreParameters{auto_increment: true, key_path: KeyPath('id')})!
+	for invalid in [object_value(map[string]Value{}), null_value(), bool_value(false)] {
+		input := object_value({'id': invalid})
+		if _ := store.put_async(input, none, false) { assert false }
+		else { assert err.msg().starts_with('DataError:') }
+	}
+	assert tx.request_list_.is_empty()
+	assert opening.connection.data.stores['items'].records.len == 0
+	opening.finish_upgrade()!
+	run_database_tasks()
+	opening.connection.close()
+}
