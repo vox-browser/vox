@@ -14,7 +14,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	mapped := m44_image_concat(ctm, local)
 	total := sk_concat(mapped, affine_translate(src.left, src.top))
 	default_sampling := filter_nearly_integer_translation(mapped)
-	if drop && (!affine_is_finite(total) || filter_nearly_integer_translation(total)) { return false }
+	if drop && !affine_is_finite(total) { return false }
 	mut before := step.pre_color.clone()
 	mut stages := step.blur_stages.clone()
 	mut real_blur := false
@@ -57,8 +57,11 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
 	if drop && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
 	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
+		// The blur can use the raw subset shortcut while a shadow's
+		// foreground retains its original mapping and sampling until merge.
+		near_step := if drop { CanvasFilterStep{...step, source_foreground: foreground} } else { step }
 		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
-			transform, bitmap, src, dst, mapped, total, mode, clips, step)
+			transform, bitmap, src, dst, mapped, total, mode, clips, near_step)
 	}
 	prepared := CanvasFilterStep{...step, blur_stages: stages, pre_color: []MatrixColorFilter{},
 		source_image: true, source_padding: true, source_color_info: FilterImageInfo{},

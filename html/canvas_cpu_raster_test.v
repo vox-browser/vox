@@ -598,12 +598,17 @@ fn test_scaled_source_image_shadows_match_skia() {
 	check_bitmap_commands_match_skia(false, true, false, .shadow)
 }
 
+fn test_near_integer_source_image_shadows_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .near_shadow)
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
 	plain
 	near
 	shadow
+	near_shadow
 }
 
 fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
@@ -638,7 +643,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
 	if spatial { destinations[1] = [f64(100.25), 30.5, 24, 18] }
 	if fractional || identity_mode != .none { destinations[2] = [f64(140.25), 70.5, 28, 24] }
-	if identity_mode == .near { destinations[2] = [f64(150.0004), 70.0006, 6.0006, 3.9996] }
+	if identity_mode in [.near, .near_shadow] { destinations[2] = [f64(150.0004), 70.0006, 6.0006, 3.9996] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
@@ -646,7 +651,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if identity_mode == .shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%)' }
+		context.set_filter(if identity_mode in [.shadow, .near_shadow] && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%)' }
 		else if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
 		else if identity_mode == .color && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
 		else if identity_mode == .plain && i == 2 { 'blur(.001px) blur(0px)' }

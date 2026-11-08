@@ -839,3 +839,30 @@ fn test_scaled_integer_source_shadow_preserves_deferred_foreground() {
 		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'scaled shadow fixture ${i}'
 	}
 }
+
+fn test_near_integer_shadow_blur_keeps_raw_subset_and_original_foreground() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	hashes := ['69bc99f80ec99582', '4e951a3d41351d05', 'a51dd6ce8df7e098', 'aa1915a0e5923229', 'a012597b325882fd', 'aff305b8a0ccc68b', 'abdab1d4f3a93229']
+	for i in 0 .. hashes.len {
+		mut pixels := image_test_background()
+		source := if i in [3, 4] { [f32(2), 2, 4, 3]! } else { [f32(0), 0, 7, 6]! }
+		destination := if i >= 5 { [f32(5.40032), 12.3341333333333, 5.60056, 7.9992]! }
+			else if i < 3 { [f32(10.0004), 12.0006, 7.0007, 5.9994]! }
+			else { [f32(6), 8, 4.0024, 3.0018]! }
+		transform := if i >= 5 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { image_test_identity }
+		mode := match i { 0 { BlendMode.src_over } 2, 6 { .multiply } 3 { .plus_lighter } else { .src_in } }
+		alpha := if i in [2, 4, 6] { f32(.65) } else { f32(1) }
+		mut steps := []CanvasFilterStep{}
+		if i in [2, 6] { steps << contrast }
+		steps << CanvasFilterStep{kind: .drop_shadow, sigma: 1.2,
+			offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+		if i in [2, 6] { steps << opacity }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i in [0, 3], i in [2, 3, 6]), source, destination,
+			i != 4, alpha, mode, image_test_clips(i in [1, 3, 4, 5]), new_canvas_filter(steps), false),
+			'near shadow fixture ${i} declined'
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'near shadow fixture ${i}'
+	}
+}
