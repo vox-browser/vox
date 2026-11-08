@@ -220,6 +220,8 @@ mut:
 	media_evaluation_candidates_ []&CSSRule
 	media_evaluation_generation_ u64
 	media_evaluation_flattened_groups_ bool
+	font_presence_generation_ u64
+	font_presence_ bool
 }
 
 pub fn CSSRuleList.create(rules []&CSSRule) &CSSRuleList {
@@ -1836,6 +1838,7 @@ pub mut:
 	source_text_            ?string
 mut:
 	shared_style_cache_revision_ u64
+	font_synchronization_had_rules_ bool
 }
 
 fn (rule &CSSRule) has_process_lifetime_sheet() bool {
@@ -2384,6 +2387,17 @@ pub fn (mut sheet CSSStyleSheet) set_disabled(disabled bool) {
 }
 
 fn (mut sheet CSSStyleSheet) load_fonts_for_document(document &dom.Document) {
+	if !disable_font_rule_presence {
+		present := sheet.rules.may_contain_font_rules()
+		if !present && !sheet.font_synchronization_had_rules_ {
+			report_font_rule_presence_skip()
+			return
+		}
+		// A sheet may have several owning documents. Keep this history sticky:
+		// synchronizing the first owner after removal must not let another
+		// owner retain stale faces or font-feature values.
+		if present { sheet.font_synchronization_had_rules_ = true }
+	}
 	style_computer := css_style_computer_for(document)
 	mut font_computer := unsafe { &FontComputer(style_computer.font_computer_) }
 	font_computer.synchronize_fonts_from_css_rules(sheet.rules.rules, style_computer.font_face_set_,
@@ -2407,6 +2421,10 @@ fn synchronize_font_face_order_for_document(document &dom.Document, style_comput
 	ordered_faces_ptr := &ordered_faces
 	scope := css_style_scope_for_node(unsafe { &dom.Node(document) })
 	scope.for_each_active_css_style_sheet(fn [ordered_faces_ptr] (active_sheet &CSSStyleSheet) {
+		if !disable_font_rule_presence {
+			mut rules := active_sheet.rules
+			if !rules.may_contain_font_rules() { return }
+		}
 		active_sheet.for_each_effective_rule(.preorder, fn [ordered_faces_ptr] (rule &CSSRule) {
 			font_rule := rule.font_face_rule_ref() or { return }
 			face := font_rule.css_connected_font_face_ref() or { return }

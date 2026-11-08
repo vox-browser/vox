@@ -20,35 +20,71 @@ fn parse_css_value_in_workspace(context ParsingParams, property PropertyID, text
 	return parser.parse_css_value(property)
 }
 
+// Component payloads may be shared by cached syntax or custom-property input.
+// Publish new headers and vectors; changing a borrowed header would transfer a
+// document-owned string into the shared input and shorten its lifetime.
 fn own_value_component_text(mut components []ComponentValue) {
-	for mut component in components {
-		mut payload := component.value
-		match mut payload {
-			Token {
-				payload.value = payload.value.clone()
-				// Typed values never retain whitespace. Comments can occupy a large
-				// whitespace token; borrow that text until the parse completes.
-				// Unresolved values own their entire token tree above.
-				if !payload.is(.whitespace) {
-					payload.original_source_text_ = payload.original_source_text_.clone()
-				}
+	components = own_value_components(components)
+}
+
+fn own_value_components(components []ComponentValue) []ComponentValue {
+	mut owned := []ComponentValue{cap: components.len}
+	for component in components {
+		owned << own_value_component(component)
+	}
+	return owned
+}
+
+fn own_value_component(component ComponentValue) ComponentValue {
+	match component.value {
+		&Token {
+			token := component.token()
+			return ComponentValue{
+				value: ComponentValuePayload(&Token{
+					...token
+					value: token.value.clone()
+					// Typed values never retain whitespace. Unresolved values
+					// separately own their entire component tree.
+					original_source_text_: if token.is(.whitespace) {
+						token.original_source_text_
+					} else { token.original_source_text_.clone() }
+				})
+				attr_tainted: component.attr_tainted
 			}
-			Function {
-				payload.name = payload.name.clone()
-				payload.name_token = own_stylesheet_token(payload.name_token)
-				payload.end_token = own_stylesheet_token(payload.end_token)
-				own_value_component_text(mut payload.value)
-			}
-			SimpleBlock {
-				payload.token = own_stylesheet_token(payload.token)
-				payload.end_token = own_stylesheet_token(payload.end_token)
-				own_value_component_text(mut payload.value)
-			}
-			RawComponentValue { payload.text = payload.text.clone() }
-			GuaranteedInvalidValue {}
 		}
-		// Sum-type assignment copies its payload in current V. Publish the
-		// owned strings back to the component used by the second parser pass.
-		component.value = payload
+		&Function {
+			function := component.function()
+			children := own_value_components(function.value)
+			return ComponentValue{
+				value: ComponentValuePayload(&Function{
+					...function
+					name: function.name.clone()
+					name_token: own_stylesheet_token(function.name_token)
+					end_token: own_stylesheet_token(function.end_token)
+					value: children
+				})
+				attr_tainted: component.attr_tainted
+			}
+		}
+		&SimpleBlock {
+			block := component.block()
+			children := own_value_components(block.value)
+			return ComponentValue{
+				value: ComponentValuePayload(&SimpleBlock{
+					...block
+					token: own_stylesheet_token(block.token)
+					end_token: own_stylesheet_token(block.end_token)
+					value: children
+				})
+				attr_tainted: component.attr_tainted
+			}
+		}
+		RawComponentValue {
+			return ComponentValue{
+				value: ComponentValuePayload(RawComponentValue{text: component.value.text.clone()})
+				attr_tainted: component.attr_tainted
+			}
+		}
+		GuaranteedInvalidValue { return component }
 	}
 }

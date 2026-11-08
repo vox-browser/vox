@@ -5,8 +5,8 @@ import dom
 fn assert_stylesheet_components_equal(left ComponentValue, right ComponentValue) {
 	assert left.attr_tainted == right.attr_tainted
 	match left.value {
-		Token { assert left.token() == right.token() }
-		SimpleBlock {
+		&Token { assert left.token() == right.token() }
+		&SimpleBlock {
 			assert right.is_block()
 			one := left.block()
 			two := right.block()
@@ -15,7 +15,7 @@ fn assert_stylesheet_components_equal(left ComponentValue, right ComponentValue)
 			assert one.value.len == two.value.len
 			for index, value in one.value { assert_stylesheet_components_equal(value, two.value[index]) }
 		}
-		Function {
+		&Function {
 			assert right.is_function()
 			one := left.function()
 			two := right.function()

@@ -30,10 +30,7 @@ fn parse_property_components_with_export(context ParsingParams, property Propert
 
 	// A complex typed value can retain strings or component arrays from its
 	// input. Preserve the existing publication path, including unresolved trees.
-	mut owned_components := unsafe { components }
-	if transient {
-		own_value_component_text(mut owned_components)
-	}
+	owned_components := if transient { own_value_components(components) } else { components }
 	value_context := context.value_context
 	mut parser := Parser{
 		component_values: owned_components
@@ -62,6 +59,9 @@ fn property_value_can_export(value StyleValue) bool {
 		RepeatStyleStyleValue, ScrollbarGutterStyleValue, GuaranteedInvalidStyleValue,
 		GridAutoFlowStyleValue {
 			true
+		}
+		UnresolvedStyleValue, StringStyleValue, CustomIdentStyleValue {
+			!disable_retained_text_value_export
 		}
 		CalculatedStyleValue {
 			!retain_calculated_value_reparse && calculated_property_value_can_export(value)
@@ -134,6 +134,7 @@ fn export_property_value(value StyleValue) StyleValue {
 		GridAutoFlowStyleValue {
 			StyleValue(GridAutoFlowStyleValue{ row_: value.row_, dense_: value.dense_ })
 		}
+		UnresolvedStyleValue, StringStyleValue, CustomIdentStyleValue { export_retained_text_value(value) }
 		CalculatedStyleValue { StyleValue(export_calculated_property_value(value)) }
 		TransformationStyleValue { StyleValue(export_transformation_property_value(value)) }
 		RatioStyleValue {

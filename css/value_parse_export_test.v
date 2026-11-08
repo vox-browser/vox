@@ -118,7 +118,9 @@ fn test_property_value_workspace_fallback_preserves_unsupported_graphs_and_decod
 	for i, property in properties {
 		mut reference := Parser.from_css_text(sources[i])
 		expected := reference.parse_css_value(property) or { panic('reference fallback missing') }
-		assert !property_value_can_export(expected)
+		if i in [2, 5] {
+			assert property_value_can_export(expected) == !disable_retained_text_value_export
+		} else { assert !property_value_can_export(expected) }
 		actual := parse_css_value_logic(property, sources[i]) or { panic('fallback value missing') }
 		$if gcboehm ? {
 			C.GC_gcollect()

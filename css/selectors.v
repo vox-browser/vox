@@ -3504,6 +3504,11 @@ fn matches_relative_selector(selector Selector, compound_index int, element &dom
 }
 
 fn has_matching_descendant_for_relative(selector Selector, node &dom.Node, shadow_host ?&dom.Element, mut context MatchContext, anchor &dom.Element, scope ?&dom.ParentNode) bool {
+	if voidptr(node) == voidptr(anchor.as_node()) {
+		if compound := static_has_descendant_compound(selector, shadow_host, context) {
+			return has_static_matching_descendant(compound, node, mut context)
+		}
+	}
 	for child in node.children {
 		if descendant_element := child.as_element() {
 			if context.inside_has_argument_match

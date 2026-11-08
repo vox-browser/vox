@@ -7,12 +7,12 @@ $if gcboehm ? {
 	fn C.GC_gcollect()
 }
 
-fn test_component_text_ownership_updates_the_original_token_payloads() {
+fn test_component_text_ownership_survives_the_original_token_payloads() {
 	scratch := platform.begin_thread_scratch('test decoded component text')
 	mut components := parse_component_values_for_value_logic(r'n\61 me fn(f\61 mily)')
 	scratch.leave()
 	own_value_component_text(mut components)
-	// The vectors are still temporary; only their decoded strings escape.
+	// Headers, vectors and decoded strings belong to the retained owner.
 	identifier := components[0].token().value
 	function := components[2].function()
 	name := function.name
@@ -87,4 +87,50 @@ fn test_cached_property_values_survive_token_retirement_and_cache_reset() {
 	$if gcboehm ? { C.GC_gcollect() }
 	assert value.serialize(.normal) == again.serialize(.normal)
 	assert value.serialize(.normal).contains('family')
+}
+
+fn assert_value_export_does_not_share_payloads(original ComponentValue, owned ComponentValue) {
+	assert original.original_source_text() == owned.original_source_text()
+	if original.is_token() {
+		assert owned.is_token()
+		assert component_export_payload_address(original) != component_export_payload_address(owned)
+		assert original.token() == owned.token()
+	} else if original.is_function() {
+		assert owned.is_function()
+		assert component_export_payload_address(original) != component_export_payload_address(owned)
+		one := original.function()
+		two := owned.function()
+		assert one.name == two.name && one.value.len == two.value.len
+		if one.value.len > 0 { assert voidptr(one.value.data) != voidptr(two.value.data) }
+		for index, child in one.value { assert_value_export_does_not_share_payloads(child, two.value[index]) }
+	} else if original.is_block() {
+		assert owned.is_block()
+		assert component_export_payload_address(original) != component_export_payload_address(owned)
+		one := original.block()
+		two := owned.block()
+		assert one.value.len == two.value.len
+		if one.value.len > 0 { assert voidptr(one.value.data) != voidptr(two.value.data) }
+		for index, child in one.value { assert_value_export_does_not_share_payloads(child, two.value[index]) }
+	}
+}
+
+fn test_component_export_preserves_shared_syntax_headers_and_vectors() {
+	original := ParserTokenStream.from_source(r'n\61 me fn(f\61 mily ["word"])', 'utf-8').values
+	name_pointer := original[0].token().value.str
+	argument_pointer := original[2].function().value[0].token().value.str
+	mut owned := unsafe { original }
+	own_value_component_text(mut owned)
+	assert voidptr(original.data) != voidptr(owned.data)
+	assert voidptr(original[0].token().value.str) == voidptr(name_pointer)
+	assert voidptr(original[2].function().value[0].token().value.str) == voidptr(argument_pointer)
+	for index, component in original { assert_value_export_does_not_share_payloads(component, owned[index]) }
+}
+
+fn component_export_payload_address(component ComponentValue) voidptr {
+	match component.value {
+		&Token { return voidptr(component.value) }
+		&Function { return voidptr(component.value) }
+		&SimpleBlock { return voidptr(component.value) }
+		else { return unsafe { nil } }
+	}
 }

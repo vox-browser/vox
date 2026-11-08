@@ -351,6 +351,9 @@ fn resolve_unresolved_style_value_for_property_with_context(abstract_element dom
 	if unresolved.includes_var_function() {
 		element.set_style_uses_var_css_function()
 	}
+	if guarded_contexts.contexts.len == 0 && guarded_contexts.function_local_scopes.len == 0 {
+		if value := reuse_simple_var_property(abstract_element, property_id, unresolved) { return value }
+	}
 
 	$if prealloc {
 		// A top-level property resolution publishes only its typed value. The

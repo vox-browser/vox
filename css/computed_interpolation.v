@@ -10925,6 +10925,8 @@ pub mut:
 	slotted_rules                []&MatchingRule
 	part_rules                   []&MatchingRule
 	other_rules                  []&MatchingRule
+	disjunctive_subject_masks_ &DisjunctiveSubjectMasks = unsafe { nil }
+	disjunctive_subject_masks_trusted_ bool
 	rules_by_animation_keyframes map[string]&KeyFrameSet
 	pseudo_subject_index_ready_ bool
 	pseudo_subject_rules_ map[PseudoElement]&RuleCache
@@ -10973,6 +10975,7 @@ pub mut:
 	// Arena rotation always rebuilds them before old samples can be retired.
 	animation_layout_compositor_only_ bool
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
+	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {

@@ -40,6 +40,27 @@ fn (c &ComputedProperties) absolute_layout_length_to_px(length Length) CSSPixels
 
 fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_id PropertyID, percentage_basis_px f64) ?f64 {
 	value := c.property(property_id, .yes) or { return none }
+	if !disable_borrowed_layout_scalars && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		report_borrowed_layout_scalar()
+		match box.value {
+			LengthStyleValue {
+				if box.value.length_.is_absolute() {
+					return c.absolute_layout_length_to_px(box.value.length_).to_double()
+				}
+			}
+			PercentageStyleValue {
+				return LengthPercentage.from_percentage(box.value.percentage_).to_px(LengthResolutionContext{},
+					CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
+			}
+			NumberStyleValue {
+				if property_id in [.stroke_width, .stroke_dashoffset] { return box.value.value_ }
+				return none
+			}
+			CalculatedStyleValue {}
+			else { return none }
+		}
+	}
 	typed := style_value_logic_from_dom(property_id, value) or { return none }
 	// SVG accepts a unitless <number> for these presentation properties. In
 	// user space that number is a CSS pixel, matching SVGLength::value() and
@@ -121,6 +142,13 @@ pub fn (c &ComputedProperties) length_resolution_context() LengthResolutionConte
 // This computed style's font-size in px (already absolute in a computed style). Falls back to 16px.
 pub fn (c &ComputedProperties) resolved_font_size_px() f64 {
 	value := c.property(.font_size, .yes) or { return 16.0 }
+	if !disable_borrowed_layout_scalars && value.css_value_handle != unsafe { nil } {
+		box := unsafe { &TypedStyleValueBox(value.css_value_handle) }
+		if box.value is LengthStyleValue && box.value.length_.is_absolute() {
+			return box.value.length_.absolute_length_to_px_without_rounding()
+		}
+		return 16.0
+	}
 	typed := style_value_logic_from_dom(.font_size, value) or { return 16.0 }
 	if typed.is_length() {
 		length := typed.as_length().length()

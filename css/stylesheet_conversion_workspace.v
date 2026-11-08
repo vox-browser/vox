@@ -1,6 +1,7 @@
 module css
 
 import processmetrics
+import dom
 
 import platform
 
@@ -14,7 +15,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('stylesheet conversion input')
 		mut parser := RuleSelectorParser{
-			token_stream:             ParserTokenStream.from_source(text, 'utf-8')
+			token_stream:             stylesheet_conversion_input(text)
 			document:                 params.document
 			mode:                     params.mode
 			value_context:            params.value_context.clone()
@@ -138,12 +139,20 @@ fn deferred_property_sources(declarations []Declaration) []DeferredPropertySourc
 }
 
 fn (mut parser RuleSelectorParser) convert_source_declarations(sources []DeferredPropertySource) &CSSStyleProperties {
+	mut parsed_values := []&dom.StyleValue{}
+	if !disable_simple_declaration_value_reuse && css_parsed_value_cache_enabled {
+		parsed_values = []&dom.StyleValue{len: sources.len, init: unsafe { nil }}
+		params := parser.parsing_params()
+		for index, source in sources {
+			if value := parse_simple_source_declaration(params, source) { parsed_values[index] = value }
+		}
+	}
 	scratch := platform.begin_thread_scratch('deferred declaration input')
 	mut declarations := []Declaration{cap: sources.len}
-	for source in sources {
+	for index, source in sources {
 		declarations << Declaration{
 			name:                source.name
-			value:               parse_component_values_for_value_logic(source.text)
+			value:               if index < parsed_values.len && parsed_values[index] != unsafe { nil } { []ComponentValue{} } else { parse_component_values_for_value_logic(source.text) }
 			important:           source.important
 			original_value_text: source.text
 		}
@@ -152,5 +161,5 @@ fn (mut parser RuleSelectorParser) convert_source_declarations(sources []Deferre
 	defer { scratch.finish() }
 	parser.raw_rules_transient = true
 	parser.component_input_transient = true
-	return parser.convert_to_style_declaration(declarations)
+	return parser.convert_to_style_declaration_with_values(declarations, parsed_values)
 }

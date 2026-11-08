@@ -8,6 +8,11 @@ $if prealloc {
 // global cache state. Retain its final graph, not identifier builders, rejected
 // arguments and growing compound/selector vectors.
 fn parse_owned_selector(text string) Selector {
+	if simple := simple_owned_selector(text) { return simple }
+	if can_construct_selector_in_retained_owner(text) {
+		report_retained_selector_construction()
+		return selector_from_text_impl(text.clone())
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('selector graph')
 		parsed := selector_from_text_impl(text)

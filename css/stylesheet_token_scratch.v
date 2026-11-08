@@ -30,17 +30,16 @@ fn own_stylesheet_token(token Token) Token {
 	}
 }
 
-// A match expression initializes the sum type's first (Function) variant in
-// current V before selecting a branch. Return from each branch instead: token
-// leaves must allocate their actual payload once, without an unused Function.
+// Export each payload and its text recursively into the retained owner.
+// Explicit branch returns avoid constructing an unused default sum variant.
 fn own_stylesheet_component(component &ComponentValue) ComponentValue {
 	match component.value {
-		Token {
-			return ComponentValue{value:ComponentValuePayload(own_stylesheet_token(component.value)), attr_tainted:component.attr_tainted}
+		&Token {
+			return ComponentValue{value:ComponentValuePayload(&Token{...own_stylesheet_token(*component.value)}), attr_tainted:component.attr_tainted}
 		}
-		SimpleBlock {
+		&SimpleBlock {
 			return ComponentValue{
-				value:ComponentValuePayload(SimpleBlock{
+				value:ComponentValuePayload(&SimpleBlock{
 					token:own_stylesheet_token(component.value.token)
 					end_token:own_stylesheet_token(component.value.end_token)
 					value:own_stylesheet_components(component.value.value)
@@ -48,9 +47,9 @@ fn own_stylesheet_component(component &ComponentValue) ComponentValue {
 				attr_tainted:component.attr_tainted
 			}
 		}
-		Function {
+		&Function {
 			return ComponentValue{
-				value:ComponentValuePayload(Function{
+				value:ComponentValuePayload(&Function{
 					name:component.value.name.clone()
 					name_token:own_stylesheet_token(component.value.name_token)
 					end_token:own_stylesheet_token(component.value.end_token)

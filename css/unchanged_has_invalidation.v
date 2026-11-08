@@ -16,6 +16,8 @@ struct ObservedHasArgument {
 	sheet_identity u64
 	matched bool
 	attempted PseudoClassBitmap
+	static_inputs bool
+	input_stamp StaticHasInputStamp
 }
 
 struct ObservedHasAnchor {
@@ -49,13 +51,14 @@ fn record_has_argument_for_invalidation(selector Selector, anchor &dom.Element,
 		supported = supported && sheet.namespace_rules.len == 0
 	}
 	selector_text := selector.text()
+	stamp := static_has_input_stamp(anchor)
 	if previous_anchor := cache.observed_arguments_[key] {
 		if !previous_anchor.complete { return }
 		if supported {
 			for previous in previous_anchor.arguments {
 				if previous.selector_text == selector_text && previous.sheet_identity == sheet_identity
 					&& previous.matched == result && previous.attempted == attempted {
-					return
+					if !previous.static_inputs || previous.static_inputs_are_unchanged(stamp) { return }
 				}
 			}
 		}
@@ -76,8 +79,8 @@ fn record_has_argument_for_invalidation(selector Selector, anchor &dom.Element,
 	}
 	for index, previous in observed.arguments {
 		if previous.selector_text == selector_text && previous.sheet_identity == sheet_identity {
-			observed.arguments[index] = ObservedHasArgument{selector,context.style_sheet_for_rule,
-				selector_text,sheet_identity,result,attempted}
+			observed.arguments[index] = observed_has_argument(selector, context.style_sheet_for_rule,
+				selector_text, sheet_identity, result, attempted, anchor)
 			cache.observed_arguments_[key] = observed
 			return
 		}
@@ -86,8 +89,8 @@ fn record_has_argument_for_invalidation(selector Selector, anchor &dom.Element,
 		observed.complete = false
 		observed.arguments = []ObservedHasArgument{}
 	} else {
-		observed.arguments << ObservedHasArgument{selector,context.style_sheet_for_rule,
-			selector_text,sheet_identity,result,attempted}
+		observed.arguments << observed_has_argument(selector, context.style_sheet_for_rule,
+			selector_text, sheet_identity, result, attempted, anchor)
 	}
 	cache.observed_arguments_[key] = observed
 }
@@ -99,14 +102,21 @@ fn has_argument_results_unchanged(anchor &dom.Element) bool {
 	if bridge.css_handle == unsafe { nil } { return false }
 	computer := unsafe { &StyleComputer(bridge.css_handle) }
 	mut cache := computer.has_result_cache_
-	observed := cache.observed_arguments_[u64(anchor.as_node().unique_id().value())] or { return false }
+	key := u64(anchor.as_node().unique_id().value())
+	mut observed := cache.observed_arguments_[key] or { return false }
 	if !observed.complete || observed.arguments.len == 0 || cache.rechecking_arguments_ { return false }
 	cache.rechecking_arguments_ = true
 	defer { cache.rechecking_arguments_ = false }
 	scratch := platform.begin_thread_scratch('unchanged has argument recheck')
 	defer { scratch.finish() }
+	stamp := static_has_input_stamp(anchor)
+	mut refresh_static_stamps := false
 	for previous in observed.arguments {
 		if sheet := previous.sheet { if sheet.namespace_rules.len > 0 { return false } }
+		if !disable_static_has_input_stamps && previous.static_inputs_are_unchanged(stamp) {
+			report_static_has_input_stamp()
+			continue
+		}
 		mut context := MatchContext{
 			style_sheet_for_rule: previous.sheet
 			subject: anchor
@@ -118,6 +128,19 @@ fn has_argument_results_unchanged(anchor &dom.Element) bool {
 			|| context.attempted_pseudo_class_matches != previous.attempted {
 			return false
 		}
+		if previous.static_inputs { refresh_static_stamps = true }
+	}
+	if refresh_static_stamps {
+		// Only scalar stamps change; selectors, strings and argument vectors
+		// keep their existing retained owner. No recheck scratch is published.
+		for index, previous in observed.arguments {
+			if previous.static_inputs {
+				observed.arguments[index] = ObservedHasArgument{ ...previous, input_stamp: stamp }
+			}
+		}
+		mut retained := platform.enter_retained_allocations()
+		cache.observed_arguments_[key] = observed
+		retained.finish()
 	}
 	if unchanged_has_diagnostics && !unchanged_has_reported {
 		unchanged_has_reported = true

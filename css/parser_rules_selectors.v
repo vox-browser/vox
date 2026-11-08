@@ -156,9 +156,15 @@ fn ParserTokenStream.from_tokens(tokens []Token) ParserTokenStream {
 }
 
 fn ParserTokenStream.from_source(input string, encoding string) ParserTokenStream {
+	return ParserTokenStream.from_source_with_spelling(input, encoding, false)
+}
+
+fn ParserTokenStream.from_source_with_spelling(input string, encoding string,
+	borrow_spelling bool) ParserTokenStream {
 	mut source := &StylesheetTokenSource{
 		tokenizer: Tokenizer.new(filter_code_points(input, encoding))
 	}
+	source.tokenizer.borrow_source_spelling = borrow_spelling
 	defer { source.tokenizer.input_arena.release() }
 	source.advance()
 	mut stream := RawTokenStream{source: source}
@@ -688,6 +694,7 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 		declarations: []Declaration{}
 		child_rules: []RuleOrListOfDeclarations{}
 	}
+	prelude_start := input.index
 
 	// NOTE: Qualified rules inside @keyframes are a keyframe rule. We'll assume all others are style rules.
 	type_of_qualified_rule := if parser.rule_context.len > 0
@@ -724,12 +731,19 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 			if nested == .yes {
 				return false
 			}
-			rule.prelude << input.consume_a_token()
+			if disable_borrowed_rule_preludes {
+				rule.prelude << input.consume_a_token()
+			} else {
+				input.discard_a_token()
+			}
 			continue
 		}
 
 		// <{-token>
 		if token.is_curly_block() {
+			if !disable_borrowed_rule_preludes {
+				rule.prelude = input.values[prelude_start..input.index]
+			}
 			// If the first two non-<whitespace-token> values of rule's prelude are an <ident-token> whose value starts
 			// with "--" followed by a <colon-token>, then:
 			mut prelude_tokens := ParserTokenStream.from_values(rule.prelude)
@@ -770,7 +784,11 @@ fn (mut parser RuleSelectorParser) consume_a_qualified_rule(mut input ParserToke
 
 		// anything else
 		// Consume a component value from input and append the result to rule's prelude.
-		rule.prelude << parser.consume_a_component_value(mut input)
+		if disable_borrowed_rule_preludes {
+			rule.prelude << parser.consume_a_component_value(mut input)
+		} else {
+			input.discard_a_token()
+		}
 	}
 	return false
 }
@@ -2446,10 +2464,14 @@ fn (mut parser RuleSelectorParser) convert_child_rule_list(children []RuleOrList
 }
 
 fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations ParserRuleDeclarations) &CSSStyleProperties {
+	return parser.convert_to_style_declaration_with_values(declarations, []&dom.StyleValue{})
+}
+
+fn (mut parser RuleSelectorParser) convert_to_style_declaration_with_values(declarations ParserRuleDeclarations, parsed_values []&dom.StyleValue) &CSSStyleProperties {
 	mut result := CSSStyleProperties.create()
 	mut builder := CSSOMDeclarationBuilder{}
 	params := parser.parsing_params()
-	for declaration in declarations {
+	for index, declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
 			value_text := if original := declaration.original_value_text {
 				if parser.raw_rules_transient { original.clone() } else { original }
@@ -2464,10 +2486,18 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration(declarations Par
 		} else {
 			property := PropertyNameAndID.from_name(declaration.name) or { continue }
 			property_id := property.id() or { continue }
+			if index < parsed_values.len && parsed_values[index] != unsafe { nil } {
+				append_parsed_cssom_declaration(voidptr(&builder), StyleProperty{
+					important: declaration.important
+					property_id: property_id
+					value: parsed_values[index]
+				})
+				continue
+			}
 			// Syntax parsing already produced this immutable component tree.
 			// Serializing and tokenizing it again both allocates and can merge
 			// tokens separated by comments, changing the declaration's grammar.
-			// Only transient input is mutated; ordinary caller-owned trees remain read-only.
+			// Transient input is exported into independent retained payloads.
 			parsed := parse_property_components_with_export(params, property_id, declaration.value,
 				parser.component_input_transient) or {
 				continue
@@ -3205,8 +3235,8 @@ fn parser_selector_prelude_to_string(values []ComponentValue) string {
 
 fn parser_append_selector_prelude_component(mut builder strings.Builder, value ComponentValue) {
 	match value.value {
-		Token {
-			token := value.value as Token
+		&Token {
+			token := value.token()
 			if token.type_ in [TokenType.number, .percentage, .dimension] {
 				original := token.original_source_text()
 				if original.len > 0 {
@@ -3216,16 +3246,16 @@ fn parser_append_selector_prelude_component(mut builder strings.Builder, value C
 			}
 			builder.write_string(token.to_string())
 		}
-		SimpleBlock {
-			block := value.value as SimpleBlock
+		&SimpleBlock {
+			block := value.block()
 			builder.write_string(block.token.bracket_string())
 			for item in block.value {
 				parser_append_selector_prelude_component(mut builder, item)
 			}
 			builder.write_string(block.token.bracket_mirror_string())
 		}
-		Function {
-			function := value.value as Function
+		&Function {
+			function := value.function()
 			builder.write_string(serialize_an_identifier(function.name))
 			builder.write_u8(`(`)
 			for item in function.value {
@@ -3266,10 +3296,38 @@ fn parser_component_values_original_text(values []ComponentValue) string {
 
 fn assemble_component_values_original_text(values []ComponentValue) string {
 	mut builder := strings.new_builder(values.len * 8)
-	for value in values {
-		builder.write_string(value.original_source_text())
+	if !disable_flat_component_source && flat_component_source_diagnostics && !flat_component_source_reported {
+		flat_component_source_reported = true
+		eprintln('Vox CSS source: serialized nested components into one builder')
+	}
+	for index in 0 .. values.len {
+		value := unsafe { &values[index] }
+		if disable_flat_component_source { builder.write_string(value.original_source_text()) }
+		else { append_component_original_text(mut builder, value) }
 	}
 	return builder.str()
+}
+
+fn append_component_original_text(mut builder strings.Builder, component &ComponentValue) {
+	match component.value {
+		&Token { builder.write_string(component.value.original_source_text()) }
+		&Function {
+			builder.write_string(component.value.name_token.original_source_text())
+			for index in 0 .. component.value.value.len {
+				append_component_original_text(mut builder, unsafe { &component.value.value[index] })
+			}
+			builder.write_string(component.value.end_token.original_source_text())
+		}
+		&SimpleBlock {
+			builder.write_string(component.value.token.original_source_text())
+			for index in 0 .. component.value.value.len {
+				append_component_original_text(mut builder, unsafe { &component.value.value[index] })
+			}
+			builder.write_string(component.value.end_token.original_source_text())
+		}
+		RawComponentValue { builder.write_string(component.value.text) }
+		GuaranteedInvalidValue {}
+	}
 }
 
 fn parser_is_valid_layer_name_part(token ComponentValue) bool {

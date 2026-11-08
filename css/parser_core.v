@@ -703,6 +703,7 @@ mut:
 	prev_index    int
 	position      TokenPosition
 	prev_position TokenPosition
+	borrow_source_spelling bool
 }
 
 // The tokenizer alone owns these numeric lookup tables. Tokens retain only
@@ -2120,6 +2121,9 @@ fn (tokenizer Tokenizer) input_since(offset int) string {
 		if byte == `\n` { return '\n' }
 		if byte == `\t` { return '\t' }
 	}
+	if tokenizer.borrow_source_spelling {
+		return unsafe { tos(tokenizer.decoded_input.str + start, end - start) }
+	}
 	return tokenizer.decoded_input[start..end]
 }
 
@@ -2152,11 +2156,11 @@ pub type Rule = AtRule | QualifiedRule
 
 pub type RuleOrListOfDeclarations = DeclarationList | RuleNode
 
-pub type ComponentValuePayload = Function
+pub type ComponentValuePayload = &Function
 	| GuaranteedInvalidValue
 	| RawComponentValue
-	| SimpleBlock
-	| Token
+	| &SimpleBlock
+	| &Token
 
 pub struct RawComponentValue {
 pub mut:
@@ -2218,7 +2222,7 @@ pub fn (presence SubstitutionFunctionsPresence) has_any() bool {
 // https://drafts.csswg.org/css-syntax/#component-value
 pub struct ComponentValue {
 pub mut:
-	value        ComponentValuePayload = Token{}
+	value        ComponentValuePayload = &Token{}
 	attr_tainted bool
 }
 
@@ -2241,7 +2245,7 @@ pub fn (mut component_value ComponentValue) set_attr_tainted() {
 
 pub fn ComponentValue.from_token(token Token) ComponentValue {
 	return ComponentValue{
-		value: token
+		value: &Token{...token}
 	}
 }
 
@@ -2255,13 +2259,13 @@ pub fn ComponentValue.new(text string) ComponentValue {
 
 pub fn ComponentValue.from_function(function Function) ComponentValue {
 	return ComponentValue{
-		value: function
+		value: &Function{...function}
 	}
 }
 
 pub fn ComponentValue.from_block(block SimpleBlock) ComponentValue {
 	return ComponentValue{
-		value: block
+		value: &SimpleBlock{...block}
 	}
 }
 
@@ -2271,15 +2275,15 @@ pub fn ComponentValue.from_guaranteed_invalid(invalid GuaranteedInvalidValue) Co
 	}
 }
 
-// Syntax payloads contain inline unions, including two full tokens per block.
-// Read-only accessors borrow them rather than copying the union at every test.
+// Component vectors carry small references to immutable syntax payloads.
+// Predicates borrow those references; accessors return concrete header values.
 pub fn (component_value &ComponentValue) is_block() bool {
-	return component_value.value is SimpleBlock
+	return component_value.value is &SimpleBlock
 }
 
 pub fn (component_value &ComponentValue) block() SimpleBlock {
-	if component_value.value is SimpleBlock {
-		return component_value.value
+	if component_value.value is &SimpleBlock {
+		return *component_value.value
 	}
 	panic('component value is not a block')
 }
@@ -2288,46 +2292,46 @@ pub fn (component_value &ComponentValue) block() SimpleBlock {
 // a single SimpleBlock (the normalizer pre-parses blocks), so rule consumption must detect it this
 // way rather than checking for a raw <{-token>.
 pub fn (component_value &ComponentValue) is_curly_block() bool {
-	return component_value.value is SimpleBlock && component_value.value.is_curly()
+	return component_value.value is &SimpleBlock && component_value.value.is_curly()
 }
 
 pub fn (component_value &ComponentValue) is_function() bool {
-	return component_value.value is Function
+	return component_value.value is &Function
 }
 
 pub fn (component_value &ComponentValue) is_function_named(name string) bool {
-	return component_value.value is Function
+	return component_value.value is &Function
 		&& equals_ignoring_ascii_case(component_value.value.name, name)
 }
 
 pub fn (component_value &ComponentValue) function() Function {
-	if component_value.value is Function {
-		return component_value.value
+	if component_value.value is &Function {
+		return *component_value.value
 	}
 	panic('component value is not a function')
 }
 
 pub fn (component_value &ComponentValue) is_token() bool {
-	return component_value.value is Token
+	return component_value.value is &Token
 }
 
 pub fn (component_value &ComponentValue) is(type_ TokenType) bool {
-	return component_value.value is Token && component_value.value.is(type_)
+	return component_value.value is &Token && component_value.value.is(type_)
 }
 
 pub fn (component_value &ComponentValue) is_delim(delim u32) bool {
-	return component_value.value is Token && component_value.value.is(.delim)
+	return component_value.value is &Token && component_value.value.is(.delim)
 		&& component_value.value.delim() == delim
 }
 
 pub fn (component_value &ComponentValue) is_ident(ident string) bool {
-	return component_value.value is Token && component_value.value.is(.ident)
+	return component_value.value is &Token && component_value.value.is(.ident)
 		&& equals_ignoring_ascii_case(component_value.value.ident(), ident)
 }
 
 pub fn (component_value &ComponentValue) token() Token {
-	if component_value.value is Token {
-		return component_value.value
+	if component_value.value is &Token {
+		return *component_value.value
 	}
 	panic('component value is not a token')
 }
@@ -2338,13 +2342,13 @@ pub fn (component_value &ComponentValue) is_guaranteed_invalid() bool {
 
 pub fn (component_value &ComponentValue) contains_guaranteed_invalid_value() bool {
 	match component_value.value {
-		Token {
+		&Token {
 			return false
 		}
 		RawComponentValue {
 			return false
 		}
-		SimpleBlock {
+		&SimpleBlock {
 			for item in component_value.value.value {
 				if item.contains_guaranteed_invalid_value() {
 					return true
@@ -2352,7 +2356,7 @@ pub fn (component_value &ComponentValue) contains_guaranteed_invalid_value() boo
 			}
 			return false
 		}
-		Function {
+		&Function {
 			for item in component_value.value.value {
 				if item.contains_guaranteed_invalid_value() {
 					return true
@@ -2368,16 +2372,16 @@ pub fn (component_value &ComponentValue) contains_guaranteed_invalid_value() boo
 
 pub fn (component_value &ComponentValue) to_string() string {
 	match component_value.value {
-		Token {
+		&Token {
 			return component_value.value.to_string()
 		}
 		RawComponentValue {
 			return component_value.value.text
 		}
-		SimpleBlock {
+		&SimpleBlock {
 			return component_value.value.to_string()
 		}
-		Function {
+		&Function {
 			return component_value.value.to_string()
 		}
 		GuaranteedInvalidValue {
@@ -2388,16 +2392,16 @@ pub fn (component_value &ComponentValue) to_string() string {
 
 pub fn (component_value &ComponentValue) to_debug_string() string {
 	match component_value.value {
-		Token {
+		&Token {
 			return 'Token: ${component_value.value.to_debug_string()}'
 		}
 		RawComponentValue {
 			return 'Raw: ${component_value.value.text}'
 		}
-		SimpleBlock {
+		&SimpleBlock {
 			return 'Block: ${component_value.value.to_string()}'
 		}
-		Function {
+		&Function {
 			return 'Function: ${component_value.value.to_string()}'
 		}
 		GuaranteedInvalidValue {
@@ -2408,16 +2412,16 @@ pub fn (component_value &ComponentValue) to_debug_string() string {
 
 pub fn (component_value &ComponentValue) original_source_text() string {
 	match component_value.value {
-		Token {
+		&Token {
 			return component_value.value.original_source_text()
 		}
 		RawComponentValue {
 			return component_value.value.text
 		}
-		SimpleBlock {
+		&SimpleBlock {
 			return component_value.value.original_source_text()
 		}
-		Function {
+		&Function {
 			return component_value.value.original_source_text()
 		}
 		GuaranteedInvalidValue {

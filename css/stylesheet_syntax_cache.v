@@ -27,6 +27,8 @@ mut:
 	source_bytes int
 	nodes int
 	serial u64
+	conversion_seen_ []StylesheetConversionSeen
+	conversion_seen_bytes_ int
 }
 
 __global stylesheet_syntax_cache_ = StylesheetSyntaxCache{}
@@ -42,6 +44,8 @@ fn (mut cache StylesheetSyntaxCache) release_unused() {
 	cache.entries = []&StylesheetSyntaxEntry{}
 	cache.source_bytes = 0
 	cache.nodes = 0
+	cache.conversion_seen_ = []StylesheetConversionSeen{}
+	cache.conversion_seen_bytes_ = 0
 }
 
 pub fn release_unused_stylesheet_syntax() {

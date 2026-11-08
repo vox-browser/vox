@@ -43,15 +43,15 @@ fn append_component_resource_urls(values []ComponentValue, base_url string,
 	mut candidates []ResourceURLCandidate) {
 	for component in values {
 		match component.value {
-			Token {
+			&Token {
 				if component.value.is(.url) || component.value.is(.string) {
 					candidates << ResourceURLCandidate{url: component.value.value, base_url: base_url}
 				}
 			}
-			Function {
+			&Function {
 				append_component_resource_urls(component.value.value, base_url, mut candidates)
 			}
-			SimpleBlock {
+			&SimpleBlock {
 				append_component_resource_urls(component.value.value, base_url, mut candidates)
 			}
 			RawComponentValue {

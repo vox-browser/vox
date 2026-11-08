@@ -15664,6 +15664,13 @@ fn set_style_sheet_on_dom_style_value(value &dom.StyleValue, style_sheet ?&CSSSt
 }
 
 fn dom_style_value_from_value_logic(value StyleValue) &dom.StyleValue {
+	if entry := reusable_scalar_dom_box(&value) {
+		return &dom.StyleValue{css_text: entry.value.css_text, css_value_handle: entry.value.css_value_handle}
+	}
+	return dom_style_value_from_value_logic_uncached(value)
+}
+
+fn dom_style_value_from_value_logic_uncached(value StyleValue) &dom.StyleValue {
 	typed_value := &TypedStyleValueBox{
 		value: value
 	}
@@ -15715,6 +15722,15 @@ fn serialize_dom_style_value(value StyleValue) string {
 	}
 	if value is LengthStyleValue {
 		if text := serialize_dom_integer_length(value) { return text }
+	}
+	if !disable_dom_scalar_serialization {
+		match value {
+			ColorStyleValue { return serialize_dom_color(value.color_) }
+			NumberStyleValue { if text := serialize_dom_exact_integer(value.value_, '') { return text } }
+			IntegerStyleValue { if text := serialize_dom_exact_integer(f64(value.value_), '') { return text } }
+			PercentageStyleValue { if text := serialize_dom_exact_integer(value.percentage_.value(), '%') { return text } }
+			else {}
+		}
 	}
 	$if prealloc {
 		// Only the final text belongs to the opaque DOM value. Builders,

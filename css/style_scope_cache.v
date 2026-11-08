@@ -194,7 +194,7 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 
 	compound_selectors := matching_rule.selector.compound_selectors()
 	if compound_selectors.len == 0 {
-		cache.other_rules << matching_rule
+		cache.append_other_subject_rule(matching_rule)
 		return
 	}
 	last_compound_selector := compound_selectors[compound_selectors.len - 1]
@@ -257,7 +257,7 @@ pub fn (mut cache RuleCache) add_rule(matching_rule &MatchingRule, pseudo_elemen
 				return
 			}
 		}
-		cache.other_rules << matching_rule
+		cache.append_other_subject_rule(matching_rule)
 	}
 }
 
@@ -729,6 +729,7 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 		}
 
 		rule_cache.fold_id_and_class_name_case = fold_id_and_class_name_case
+		rule_cache.disjunctive_subject_masks_trusted_ = true
 
 		mut contains_root_pseudo_class := false
 		mut pseudo_element := ?PseudoElement(none)
@@ -2361,7 +2362,7 @@ fn style_scope_add_subject_rules_to_run(style_computer &StyleComputer, abstract_
 		}
 	}
 
-	style_scope_add_rules_to_run(style_computer, abstract_element, cache.other_rules, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+	style_scope_add_masked_other_rules(style_computer, abstract_element, cache, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 }
 
 pub fn style_computer_collect_matching_rules_in_scope(style_computer &StyleComputer, abstract_element dom.AbstractElement, cascade_origin CascadeOrigin, mut attempted_pseudo_class_matches PseudoClassBitmap, qualified_layer_name ?string, scope &StyleScope) []ScopedMatchingRule {
