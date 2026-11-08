@@ -252,9 +252,9 @@ fn replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, inp
 		CSSPixels.new(0)
 	}
 	specified_max := if should_treat_replaced_max_as_none(maximum, available_size) {
-		input
+		CSSPixels.max()
 	} else {
-		resolve_replaced_content_size(node, maximum, basis, box_model, width) or { input }
+		resolve_replaced_content_size(node, maximum, basis, box_model, width) or { CSSPixels.max() }
 	}
 	return min_value, css_pixels_max(min_value, specified_max)
 }
