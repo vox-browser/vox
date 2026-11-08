@@ -152,6 +152,20 @@ cases += [
          p3=True, premul=False, alpha=.7, filters=[contrast, blur(0), opacity, blur(.001)],
          mode='src_in', clip=True),
 ]
+cases += [
+    dict(name='scaled-source-identity-blur', source=[0, 0, 7, 6], destination=[4.5, 6.25, 22, 16],
+         filters=[blur(0)]),
+    dict(name='downscaled-source-identity-legacy-rejected', source=[1, 1, 5, 4], destination=[10.25, 12.5, 2, 3],
+         filters=[blur(.001)]),
+    dict(name='downscaled-p3-identity-alpha', source=[1, 1, 5, 4], destination=[10.25, 12.5, 2, 3],
+         p3=True, alpha=.7, filters=[blur(0), blur(.001)], mode='plus_lighter', clip=True),
+    dict(name='unpremul-source-identity-blur', source=[0, 0, 7, 6], destination=[4.5, 6.25, 22, 16],
+         premul=False, alpha=.65, filters=[blur(.001)], mode='src_in', clip=True),
+    dict(name='flipped-source-identity-blur', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], filters=[blur(.001)], mode='plus_darker'),
+    dict(name='translated-source-identity-blur', source=[0, 0, 7, 6], destination=[10, 12, 7, 6],
+         transform=[1, 0, 0, 1, .3, .7], filters=[blur(0)]),
+]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -191,6 +205,8 @@ expected += ['c6e6def672ae03e9', '1856d090e74e592c', 'da2274221967646b', '5fa502
 expected += ['d8f9957149e13dae']
 expected += ['66ea4382a30ae423', 'faf646ac30327c3f', 'e10325f572b4dc14',
              'e12c13dca8162f9f', 'f6e28ad1753237d4', 'c1ada75f25f9bac0']
+expected += ['fac95cda665447d0', '3dc171f15c4a6337', '4ec3f389f0ccf270',
+             '41cedb613f3f59b3', 'f43245c7c409678f', '78e8496c23d32d03']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
