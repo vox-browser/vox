@@ -342,6 +342,7 @@ fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box
 		percentage_basis: css.Length.make_css_px(basis)
 		length_resolution_context: length_context
 		anchor_resolver: resolve_anchor_for_calculation
+		anchor_size_resolver: resolve_anchor_size_for_calculation
 		anchor_resolver_context: voidptr(&context)
 	}) or { return none }
 	return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(length_context))
