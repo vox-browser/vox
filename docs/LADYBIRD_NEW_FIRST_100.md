@@ -1,5 +1,9 @@
 # First 100 newly imported Ladybird tests
 
+The target workspace is `/Users/alex/code/vox2`. Earlier Volt build checks
+were incidental to the initial workspace setting; they neither validate Vox
+nor block this work. Validation follows this repository's Vox instructions.
+
 The first batch is pinned to Ladybird `2919bf87a5e5dfc49a210a70bda079afa411c6c5`,
 the latest fetched `origin/master` on 2026-11-08. The upstream working checkout
 remains at `963d46a829f3e1b79f44dba9d02afb70654300fa`.
@@ -50,7 +54,7 @@ Source changes from this batch correct UTF-8-only `Blob.text()` decoding and
 expose committed database snapshots through `indexedDB.databases()`. Focused
 verification passes all nine distinct model, promise, worker-realm, and native
 binding test functions with default allocation. All 19 WPT tooling unit tests
-pass. The required Volt build and `make app` both pass. One development compile
+pass. Incidental Volt builds also passed. One development compile
 was blocked by a concurrently edited CSS file; a later clean compile passes.
 The first combined binding run also exposed a test-fixture lexical redeclaration,
 which was corrected before the final three-case binding check passed. Those
@@ -98,11 +102,11 @@ Development failures and their corrections are retained in the
 [continuation manifest](performance/ladybird-first100-crypto-20261108.json)
 and its local raw archive.
 
-`make app` passes. The required plain `v -enable-globals -o volt .` build fails
+The incidental Volt `make app` check passed. Its plain `v -enable-globals -o volt .` build failed
 in the shared compiler's cached C prefix with an incomplete `macos_range` and
 conflicting macOS function declarations. Its compatibility fallback then rejects
-the current global declaration in `forms/window.v:69`. This unrelated Volt build
-failure remains reported separately from the passing Vox source checks.
+the current global declaration in `forms/window.v:69`. These historical Volt
+outcomes are unrelated to Vox acceptance and do not block the remaining work.
 
 Reproduce the exact selection from the canonical Vox checkout:
 
