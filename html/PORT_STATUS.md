@@ -641,3 +641,7 @@ GC and preallocated GC-none modes. Twenty-two original official Window/Worker
 WPT variants pass 564/564 in both native Page modes; production verification is
 tracked separately. Exact resizable-view metadata and full WebMessaging parity
 remain open. See [WPT progress](../docs/WPT_CONFORMANCE_PROGRESS.md).
+
+Production verification of that local-port change also passes all 564 assertions
+in the same 22 original variants on a fresh matching executable, with harness
+OK and strict exits 0; its build identity and evidence are in the linked report.

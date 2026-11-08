@@ -1290,3 +1290,60 @@ official testharness collection continues on its original pinned executable,
 with 1,000 case records and unchanged inputs. Other WPT types, FileReader
 exposure, exact resizable-view metadata and active/nested worker-port transfer
 support remain open. **Full WPT coverage and 100% remain unfinished.**
+
+The local-port production follow-up has completed on executable
+`d53af473a85555743b8b1d06ec37377536517476ff5b09eb6cebc94282be813c`, receipt
+`20261108-231712-b7e1201d`: **564 / 564 PASS**, all 22 pages COMPLETE with
+harness OK, exact counts, unchanged inputs and strict runner/outer exits 0.
+All 14 required implementation hashes match. The original completed artifact
+is checked in place under its read lease while the broad collection retains
+its earlier canonical bundle. Production raw evidence:
+`/Users/alex/.cache/vox/wpt/20261108-local-ports-production-raw.tar.gz`, SHA-256
+`d9a3b34e821ef65a6f31dd022d766bc6e22703bc5a88fce3dd707ec1628f4adf`.
+The completed production check directory and locks are removed.
+
+## Empty HKDF/PBKDF2 provider inputs (2026-11-08)
+
+`1485745ff` preserves present empty key/password/salt BufferSources at the
+OpenSSL KDF parameter boundary. A zero-length V array can have a null data
+pointer; the provider treats that pointer as an absent parameter. The adapter
+now supplies a stable non-null byte address with the original zero byte count.
+The native empty-key regression fails with `OperationError` before the fix.
+
+**Six typed KDF checks pass in each memory mode**, including 24 new vector
+comparisons: all 16 official HKDF empty-key combinations of hash/salt/info and
+eight independently computed empty-password PBKDF2 vectors. Existing RFC vectors,
+validation order, zero-length output, excessive HKDF output and deferred
+settlement checks also pass. The usual 12 GiB compile, 10 GiB V and 3 GiB runtime
+limits remain in force.
+
+All eight original official HTTPS HKDF Window/Worker variants are selected,
+with **7,328 expected assertions**. In preallocated GC-none native Page checks,
+the four Window variants pass **3,664 / 3,664** with exact counts and harness OK.
+The earlier pinned collection reports 3,392 / 3,664 for the same Window cases;
+the focused result gains 272 passes. The four Worker variants still time out
+before reporting any subtests, matching their earlier failure shape. Their
+expected assertions remain in the selection. **The complete eight-page result
+fails with strict runner/outer exits 1**; 3,664 reported passing assertions do
+not establish a 100% result for the expected 7,328. Request logs reach the worker
+wrapper and stock harness but not its later helper imports; the worker startup
+failure remains open.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261108-empty-kdf-1485745ff-raw.tar.gz`,
+SHA-256 `5bac14b2c22aa0e0de539cbcb2d9f5f0a3a680c3a13cfb5f031e4bb8640f7521`.
+Summary: `/Users/alex/.cache/vox/wpt/20261108-empty-kdf-summary.json`, SHA-256
+`40f26de233da95d08ce7cac81287c8af1a226dd2a93a2e84663b91f5672224f7`.
+The original failure and all four worker timeouts remain retained. Finished
+job output, temporary combined tests and locks are removed; generated C and
+private profiles are excluded from the archive.
+
+The available production artifact's frozen KDF header predates this fix.
+A shared C-backend build is required; an observer checks all eight original
+variants only after four required source/header hashes match, retaining the
+known worker failures, exact expected counts and original deadlines. Status:
+`/Users/alex/.cache/vox/wpt/20261108-empty-kdf-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-empty-kdf-production-followup.py`,
+SHA-256 `989120964ae4e2c8493350ca88846bdf6467d64d5031273813ee5f0a3a1c550a`.
+Production KDF verification is pending. The full official testharness collection
+continues on its original pinned image, with 1,000 flushed records and unchanged
+inputs at this checkpoint. **Full WPT coverage and 100% remain unfinished.**
