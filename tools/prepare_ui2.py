@@ -163,6 +163,15 @@ def main():
                 "\t\tst.nodes.delete(key)",
                 "\t\tst.nodes.delete(key)\n\t\tst.node_visual_inputs.delete(key)",
             )
+            text = text.replace(
+                'fn render_element(parent NativeView, el Element, key string, mut active map[string]bool) NativeView {',
+                'fn render_element(parent NativeView, source Element, key string, mut active map[string]bool) NativeView {\n'
+                '\tel := embedded_button_image_element(source)',
+            ).replace(
+                '\t\t\tnative_update_element(native, el, declared_text_changed, content_changed)',
+                '\t\t\tnative_update_element(native, el, declared_text_changed, content_changed)\n'
+                '\t\t\tapply_embedded_button_image(native, el)',
+            )
             write_if_changed(output, text)
         elif entry.name == "ui_macos_objc_darwin.v":
             if output.is_symlink():
@@ -201,6 +210,11 @@ def main():
             if entry.name == "ui.v":
                 text = text.replace("pub struct Element {\npub:", "pub struct Element {\npub:\n\tvector VectorPath\n\tbutton_image_size f64")
             if entry.name == "ui_immediate.c.v":
+                text = text.replace(
+                    'fn render_element(ctx &gg.Context, el Element, off_x f64, off_y f64, clip Rect, scroll_parent_id string) {',
+                    'fn render_element(ctx &gg.Context, source Element, off_x f64, off_y f64, clip Rect, scroll_parent_id string) {\n'
+                    '\t\tel := embedded_button_image_element(source)',
+                )
                 text = text.replace(
                     "button_image_layout(el.frame.width, el.frame.height, el.text,\n\t\t\t\t\tel.image_path)",
                     "embedded_button_image_layout(el)",

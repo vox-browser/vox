@@ -15,6 +15,7 @@ __global frame_task_layout_reported bool
 // ahead of the frame's normal script/resource flush. Event geometry queries
 // retain their synchronous Document update boundary.
 fn (mut app BrowserApp) prepare_frame_page_input() {
+	app.prepare_browser_navigation_icons()
 	app.begin_frame_preparation()
 	app.queue_frame_aligned_wheel_for_replay()
 	app.poll_deferred_page_input()

@@ -3,6 +3,22 @@ module main
 import gg
 import ui2
 import platform
+import browserui
+
+// Prepare textures before the frame enters its render pass. Their ownership
+// stays with the GG context; UI2 and the Vinix adapter borrow the image IDs.
+fn (mut app BrowserApp) prepare_browser_navigation_icons() {
+	$if !vox_ui2 ? {
+		$if linux || ui2_custom_rendering ? {
+			if app.ctx == unsafe { nil } || app.ctx.native_rendering { return }
+			mut state := app.browser_ui()
+			if state.navigation_images.len == 6 { return }
+			persistent := platform.enter_persistent()
+			defer { platform.leave_persistent(persistent) }
+			browserui.prepare_navigation_images(mut app.ctx, mut state.navigation_images)
+		}
+	}
+}
 
 $if !vox_ui2 ? {
 	fn (mut app BrowserApp) draw_portable_browser_chrome(window gg.Size) {
@@ -17,6 +33,7 @@ $if !vox_ui2 ? {
 			app.browser_chrome = chrome
 			app.sync_browser_tab_loading_animation(chrome)
 			mut images := map[string]int{}
+			for path, id in ui_state.navigation_images { images[path] = id }
 			for index, icon in chrome.bookmark_favicons {
 				if icon < 0 { continue }
 				items := app.bookmarks.items

@@ -143,6 +143,10 @@ fn (app &BrowserApp) browser_chrome_state(width int, height int) BrowserChromeSt
 }
 
 fn chrome_navigation_button(id string, title string, x f64, enabled bool) ui2.Element {
+	if id in ['back', 'forward', 'reload'] {
+		action := match id { 'back' { browserui.NavigationAction.back } 'forward' { browserui.NavigationAction.forward } else { browserui.NavigationAction.reload } }
+		return browserui.navigation_button(action, ui2.rect(x, tab_strip_height + 4, 22, 22), enabled)
+	}
 	return ui2.Element{
 		...ui2.button(id, title, ui2.rect(x, tab_strip_height + 4, 22, 22),
 			ui2.BoxStyle{ transparent: true }, ui2.TextStyle{ size: 17, color: 0x7d7d7d })

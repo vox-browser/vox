@@ -22,6 +22,7 @@ mut:
 	tab_loading_frame int
 	tab_loading []bool
 	version         u64
+	navigation_images map[string]int
 	popup           ?browserui.Popup
 	link            string
 	select_node     &dom.Node = unsafe { nil }
