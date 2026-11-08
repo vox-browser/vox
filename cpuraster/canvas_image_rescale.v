@@ -15,7 +15,8 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	default_sampling := filter_nearly_integer_translation(mapped)
 	if drop && !affine_is_finite(total) { return false }
 	mut before := step.pre_color.clone()
-	mut stages := step.blur_stages.clone()
+	mut stages := step.layer_stages.clone()
+	if stages.any(it.kind != .blur) { return false }
 	mut real_blur := false
 	if stages.len == 0 {
 		real_blur = (!drop || (step.sigma >= 0 && is_finite_f32(step.sigma)))
@@ -24,7 +25,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	} else {
 		for i, stage in stages {
 			before << stage.pre_color
-			stages[i] = BlurFilterStage{...stage, pre_color: []MatrixColorFilter{}}
+			stages[i] = LayerFilterStage{...stage, pre_color: []MatrixColorFilter{}}
 			if blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
 				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0 {
 				real_blur = true
@@ -66,7 +67,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
 			transform, bitmap, src, dst, mapped, total, mode, clips, near_step)
 	}
-	prepared := CanvasFilterStep{...step, blur_stages: stages, pre_color: []MatrixColorFilter{},
+	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
 		source_image: true, source_padding: true, source_color_info: FilterImageInfo{},
 		source_foreground: if drop { ?FilterImageView(foreground) } else { none }}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,

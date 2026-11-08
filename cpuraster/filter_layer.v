@@ -18,7 +18,7 @@ pub enum CanvasFilterKind {
 // CanvasFilterStep is one canvas filter function. Blur and drop-shadow
 // radii are Gaussian sigmas; offsets are in canvas coordinates.
 pub struct CanvasFilterStep {
-	blur_stages []BlurFilterStage
+	layer_stages []LayerFilterStage
 	source_image bool
 	source_padding bool
 	source_color_info FilterImageInfo
@@ -35,9 +35,13 @@ pub:
 	color    u32
 }
 
-// A blur's incoming color filters remain deferred through identity passes.
-struct BlurFilterStage {
+// A spatial stage retains incoming color filters through identity passes.
+struct LayerFilterStage {
+	kind CanvasFilterKind = .blur
 	sigma f32
+	offset_x f32
+	offset_y f32
+	color u32
 	pre_color []MatrixColorFilter
 }
 
@@ -111,8 +115,8 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 	if f.steps.len == 1 && f.steps[0].kind in [.blur, .drop_shadow] {
 		return FilterPlan{ layer: f.steps[0] }
 	}
-	if f.steps.filter(it.kind == .blur).len > 1 && f.steps.all(it.kind in [.blur, .matrix]) {
-		mut stages := []BlurFilterStage{}
+	if f.steps.filter(it.kind != .matrix).len > 1 && f.steps.all(it.kind in [.blur, .drop_shadow, .matrix]) {
+		mut stages := []LayerFilterStage{}
 		mut matrices := []MatrixColorFilter{}
 		for step in f.steps {
 			if step.kind == .matrix {
@@ -122,14 +126,15 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 			if incoming_color := new_color_filter(matrices) {
 				if incoming_color.affects_transparent_black() { return FilterPlan{declined: true} }
 			}
-			stages << BlurFilterStage{step.sigma, matrices.clone()}
+			stages << LayerFilterStage{kind: step.kind, sigma: step.sigma, offset_x: step.offset_x,
+				offset_y: step.offset_y, color: step.color, pre_color: matrices.clone()}
 			matrices.clear()
 		}
 		if final_color := new_color_filter(matrices) {
 			if final_color.affects_transparent_black() { return FilterPlan{declined: true} }
 		}
 		return FilterPlan{layer: CanvasFilterStep{kind: .blur, sigma: stages.last().sigma,
-			blur_stages: stages, post_color: matrices}}
+			layer_stages: stages, post_color: matrices}}
 	}
 	mut layer_index := -1
 	for i, step in f.steps {
@@ -191,9 +196,14 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, step CanvasFilterStep, mode BlendMode, content LayerContent, tint ?u32) bool {
 	mut quick_bounds := content_bounds
 	if original := step.source_draw_bounds { quick_bounds = original }
-	if step.blur_stages.len > 0 {
+	if step.layer_stages.any(it.kind == .drop_shadow) {
+		return draw_spatial_filter_chain(mut pixels, width, height, pitch, alpha_type,
+			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color,
+			step.source_color_info, step.source_image, mode, content)
+	}
+	if step.layer_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,
-			transform, clips, content_bounds, quick_bounds, step.blur_stages, step.post_color, step.source_color_info,
+			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color, step.source_color_info,
 			step.source_image, step.source_padding, mode, content)
 	}
 	// An invalid DropShadow blur becomes a null child, leaving the tint,

@@ -3,7 +3,7 @@ module cpuraster
 // A sequence of raster blurs shares one source layer. Each filter requests
 // its input bounds from the preceding filter and retains its own quantized
 // intermediate image, as the native image-filter graph does.
-fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []BlurFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
+fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
 	ctm := canvas_affine(transform)
 	if ctm.kx != 0 || ctm.ky != 0 { return false }
 	sigmas := stages.map(it.sigma)

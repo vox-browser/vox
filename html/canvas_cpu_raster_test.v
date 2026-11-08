@@ -939,6 +939,14 @@ fn test_repeated_blur_and_color_canvas_draws_match_skia() {
 	])
 }
 
+fn test_mixed_shadow_and_blur_canvas_draws_match_skia() {
+ check_filtered_canvas_draws_match_skia([
+  'blur(.8px) drop-shadow(5px -3px 2.5px #805030e0) opacity(65%)',
+  'drop-shadow(5px -3px 2.5px #805030e0) contrast(130%) blur(.8px) drop-shadow(-7px 4px .8px #c0ff6040)',
+  'contrast(130%) drop-shadow(5px -3px 0px blue) blur(0px) opacity(65%) drop-shadow(-7px 4px 2.5px #805030e0)',
+ ])
+}
+
 fn check_filtered_canvas_draws_match_skia(filters []string) {
 	mut context := cpu_raster_test_context()
 	context.set_font('21px sans-serif')
