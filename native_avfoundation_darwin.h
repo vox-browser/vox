@@ -1,5 +1,6 @@
 #pragma once
 #import <Foundation/Foundation.h>
+#include "platform/native_state.h"
 #include <dispatch/dispatch.h>
 #include <dlfcn.h>
 #include <stdlib.h>
@@ -8,6 +9,7 @@
 // registration nor its native dependencies during browser startup.
 static Class vox_av_player, vox_av_player_item, vox_av_video_output;
 static NSString *vox_av_audio_type;
+VOX_NATIVE_STATE NSString *vox_av_item_did_play_to_end;
 static int vox_prepare_avfoundation(void) {
     static dispatch_once_t once;
     static int ready;
@@ -18,11 +20,13 @@ static int vox_prepare_avfoundation(void) {
         Class item = NSClassFromString(@"AVPlayerItem");
         Class output = NSClassFromString(@"AVPlayerItemVideoOutput");
         NSString * __unsafe_unretained const *audio = (NSString * __unsafe_unretained const *)dlsym(library, "AVMediaTypeAudio");
-        if (!player || !item || !output || !audio || !*audio) { dlclose(library); return; }
+        NSString * __unsafe_unretained const *did_end = (NSString * __unsafe_unretained const *)dlsym(library, "AVPlayerItemDidPlayToEndTimeNotification");
+        if (!player || !item || !output || !audio || !*audio || !did_end || !*did_end) { dlclose(library); return; }
         vox_av_player = player;
         vox_av_player_item = item;
         vox_av_video_output = output;
         vox_av_audio_type = *audio;
+        vox_av_item_did_play_to_end = *did_end;
         ready = 1;
         // Keep the framework and its classes alive while playback handles exist.
     });

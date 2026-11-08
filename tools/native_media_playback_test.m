@@ -74,7 +74,40 @@ static void checkPlayback(const char *url) {
     assert(waitFor(^BOOL{ return frameHash(media) != 0; }, 10));
     native_media_play(media, 1);
     assert(waitFor(^BOOL{ return native_media_time(media) > 2.8; }, 10));
-    printf("PASS playback, changing frames, audio track, pause, seek, resume: %s\n", url);
+    assert(waitFor(^BOOL{ return native_media_take_ended(media); }, 10));
+    assert(native_media_ended(media));
+    assert(!native_media_take_ended(media));
+    assert(native_media_time(media) == native_media_duration(media));
+    assert([native_media_for_handle(media) player].rate == 0);
+    pump(0.1);
+    assert(!native_media_take_ended(media));
+    // The HTML owner remains unpaused when looping. A seek must restore its
+    // requested rate after AVPlayer's automatic pause at the endpoint.
+    native_media_seek(media, 0, 0);
+    assert(!native_media_ended(media));
+    assert(!native_media_take_ended(media));
+    assert(waitFor(^BOOL{ return !native_media_buffering(media) && native_media_time(media) > 0.2; }, 10));
+    assert(native_media_time(media) < 2);
+    assert([native_media_for_handle(media) player].rate == 1);
+    // A pause during a pending loop seek takes precedence over that restart.
+    native_media_seek(media, 1, 0);
+    native_media_pause(media);
+    assert(waitFor(^BOOL{ return !native_media_buffering(media); }, 10));
+    pump(0.2);
+    assert(fabs(native_media_time(media) - 1) < 0.04);
+    assert([native_media_for_handle(media) player].rate == 0);
+    native_media_play(media, 1.5);
+    native_media_seek(media, 3, 0);
+    assert(waitFor(^BOOL{ return native_media_take_ended(media); }, 10));
+    assert(!native_media_take_ended(media));
+    native_media_pause(media);
+    native_media_seek(media, 0.5, 0);
+    assert(waitFor(^BOOL{ return !native_media_buffering(media); }, 10));
+    assert(!native_media_ended(media));
+    native_media_seek(media, native_media_duration(media), 0);
+    assert(waitFor(^BOOL{ return !native_media_buffering(media) && native_media_ended(media); }, 10));
+    assert(native_media_take_ended(media) && !native_media_take_ended(media));
+    printf("PASS playback, frames, pause, seek, resume, endpoint, loop restart, paused endpoint and pause during seek: %s\n", url);
     native_media_seek(media, 0.5, 0);
     native_media_close(media); // An in-flight completion must not touch freed state.
     pump(0.2);

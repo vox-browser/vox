@@ -17,10 +17,31 @@
 @property(nonatomic, retain) AVPlayer *player;
 @property(nonatomic, retain) AVPlayerItemVideoOutput *output;
 @property(nonatomic) BOOL seeking;
-@property(nonatomic) NSUInteger seekGeneration;
+@property(atomic) NSUInteger seekGeneration;
+@property(nonatomic) BOOL atEnd;
+@property(nonatomic) BOOL endPending;
+@property(nonatomic) double requestedRate;
 @end
 @implementation VoxMediaPlayback
+- (void)recordEndForItem:(AVPlayerItem *)item generation:(NSUInteger)generation {
+    if (generation != self.seekGeneration || self.seeking || self.atEnd || item != self.player.currentItem) return;
+    self.atEnd = YES;
+    self.endPending = YES;
+}
+- (void)itemDidPlayToEnd:(NSNotification *)notification {
+    NSUInteger generation = self.seekGeneration;
+    // AVFoundation may post from another thread. Keep the V-facing state on
+    // the main thread and discard notifications overtaken by a seek.
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self recordEndForItem:notification.object generation:generation];
+        });
+    } else {
+        [self recordEndForItem:notification.object generation:generation];
+    }
+}
 - (void)dealloc {
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
     [_player pause];
     [_player replaceCurrentItemWithPlayerItem:nil];
 #if !__has_feature(objc_arc)
@@ -54,6 +75,8 @@ static void *native_media_open(const char *url) {
     [item addOutput:media.output];
     media.player = [vox_av_player playerWithPlayerItem:item];
     media.player.actionAtItemEnd = AVPlayerActionAtItemEndPause;
+    [[NSNotificationCenter defaultCenter] addObserver:media selector:@selector(itemDidPlayToEnd:)
+        name:vox_av_item_did_play_to_end object:item];
 #if __has_feature(objc_arc)
     return (__bridge_retained void *)media;
 #else
@@ -79,8 +102,21 @@ static const char *native_media_error(void *handle) {
     return [[[native_media_for_handle(handle) player] currentItem].error.localizedDescription UTF8String];
 }
 static double native_media_time(void *handle) {
-    double value = CMTimeGetSeconds([native_media_for_handle(handle) player].currentTime);
+    VoxMediaPlayback *media = native_media_for_handle(handle);
+    // The terminal decoded frame can precede the duration. The completion
+    // notification establishes the exact endpoint used by HTML's ended test.
+    double value = media.atEnd ? (media.requestedRate < 0 ? 0 : CMTimeGetSeconds(media.player.currentItem.duration))
+        : CMTimeGetSeconds(media.player.currentTime);
     return isfinite(value) ? value : 0;
+}
+static int32_t native_media_ended(void *handle) {
+    return native_media_for_handle(handle).atEnd;
+}
+static int32_t native_media_take_ended(void *handle) {
+    VoxMediaPlayback *media = native_media_for_handle(handle);
+    BOOL pending = media.endPending;
+    media.endPending = NO;
+    return pending;
 }
 static double native_media_duration(void *handle) {
     return CMTimeGetSeconds([native_media_for_handle(handle) player].currentItem.duration);
@@ -113,9 +149,15 @@ static int32_t native_media_buffering(void *handle) {
     return media.seeking || (item.playbackBufferEmpty && !item.playbackLikelyToKeepUp);
 }
 static void native_media_play(void *handle, double rate) {
-    [native_media_for_handle(handle) player].rate = (float)rate;
+    VoxMediaPlayback *media = native_media_for_handle(handle);
+    media.requestedRate = rate;
+    if (!media.seeking) media.player.rate = (float)rate;
 }
-static void native_media_pause(void *handle) { [[native_media_for_handle(handle) player] pause]; }
+static void native_media_pause(void *handle) {
+    VoxMediaPlayback *media = native_media_for_handle(handle);
+    media.requestedRate = 0;
+    [media.player pause];
+}
 static void native_media_volume(void *handle, double volume) {
     [native_media_for_handle(handle) player].volume = (float)volume;
 }
@@ -124,10 +166,29 @@ static void native_media_seek(void *handle, double seconds, int32_t approximate)
     if (!media || !isfinite(seconds)) return;
     NSUInteger generation = ++media.seekGeneration;
     media.seeking = YES;
+    media.atEnd = NO;
+    media.endPending = NO;
     CMTime tolerance = approximate ? CMTimeMakeWithSeconds(0.1, 600) : kCMTimeZero;
     [media.player seekToTime:CMTimeMakeWithSeconds(seconds, 600)
         toleranceBefore:tolerance toleranceAfter:tolerance completionHandler:^(BOOL finished) {
-            if (generation == media.seekGeneration) media.seeking = NO;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (generation != media.seekGeneration) return;
+                media.seeking = NO;
+                // AVPlayer pauses itself at the endpoint; HTML loops by seeking
+                // while remaining unpaused. Honor any play/pause during the seek.
+                if (finished) {
+                    // A paused seek to the exact end does not produce AVPlayer's
+                    // playback-completion notification. The completed seek itself
+                    // establishes the endpoint in that case.
+                    double duration = CMTimeGetSeconds(media.player.currentItem.duration);
+                    if (!approximate && media.requestedRate >= 0 && isfinite(duration)
+                        && duration > 0 && seconds >= duration) {
+                        media.atEnd = YES;
+                        media.endPending = YES;
+                    }
+                    media.player.rate = (float)media.requestedRate;
+                }
+            });
         }];
 }
 // A playing video converts every new frame on the main thread: swap red and

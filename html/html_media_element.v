@@ -80,6 +80,8 @@ pub type MediaPlaybackSeekHook = fn(f64, MediaPlaybackSeekMode)
 
 pub type MediaPlaybackCurrentTimeHook = fn() f64
 
+pub type MediaPlaybackHasEndedHook = fn() bool
+
 pub type MediaCanPlayTypeHook = fn(string) CanPlayTypeResult
 
 pub type MediaPlaybackCurrentFrameHook = fn () ?&painting.MediaVideoFrame
@@ -110,6 +112,7 @@ pub:
 	set_video_track     ?MediaPlaybackSetVideoTrackHook
 	seek                ?MediaPlaybackSeekHook
 	current_time        ?MediaPlaybackCurrentTimeHook
+	has_ended           ?MediaPlaybackHasEndedHook
 	current_video_frame ?MediaPlaybackCurrentFrameHook
 	buffered_ranges     ?MediaPlaybackBufferedRangesHook
 	start_time_realtime ?MediaPlaybackStartTimeRealtimeHook
@@ -1821,6 +1824,7 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 	})
 	if hook := element.playback_hooks_.seek {
 		hook(target, playback_seek_mode)
+		element.upon_has_ended_playback_possibly_changed()
 	} else {
 		element.current_playback_position_ = target
 		element.upon_has_ended_playback_possibly_changed()
@@ -1962,7 +1966,7 @@ pub fn (mut element HTMLMediaElement) play_element() {
 			})
 		} else {
 			element.notify_about_playing()
-			if element.official_playback_position_ == element.duration_ {
+			if !element.seeking_ && element.official_playback_position_ == element.duration_ {
 				element.reached_end_of_media_playback()
 			}
 		}
@@ -2232,7 +2236,15 @@ pub fn (element &HTMLMediaElement) has_ended_playback() bool {
 	if int(element.ready_state_) < int(MediaReadyState.have_metadata) {
 		return false
 	}
-	if element.current_playback_position_ == element.duration_ && element.direction_of_playback() == .forwards && !element.loop_was_specified_at_end_ {
+	// PlaybackManager enters Ended only after consuming all real media data.
+	// A platform clock can reach the duration before that transition, or retain
+	// its old endpoint while an asynchronous replay/loop seek is pending.
+	reached_end := if hook := element.playback_hooks_.has_ended {
+		hook()
+	} else {
+		element.current_playback_position_ == element.duration_
+	}
+	if reached_end && element.direction_of_playback() == .forwards && !element.loop_was_specified_at_end_ {
 		return true
 	}
 	return element.current_playback_position_ == 0 && element.direction_of_playback() == .backwards
@@ -2249,6 +2261,7 @@ pub fn (mut element HTMLMediaElement) upon_has_ended_playback_possibly_changed()
 
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 	element.loop_was_specified_at_end_ = element.loop()
+	element.upon_has_ended_playback_possibly_changed()
 	if element.loop_was_specified_at_end_ {
 		if !element.paused_ {
 			element.seek_element(0, .accurate)

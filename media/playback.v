@@ -29,6 +29,8 @@ fn C.native_media_close(voidptr)
 fn C.native_media_status(voidptr) i32
 fn C.native_media_error(voidptr) &char
 fn C.native_media_time(voidptr) f64
+fn C.native_media_ended(voidptr) i32
+fn C.native_media_take_ended(voidptr) i32
 fn C.native_media_duration(voidptr) f64
 fn C.native_media_audio(voidptr) i32
 fn C.native_media_width(voidptr) i32
@@ -196,6 +198,7 @@ fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
 				})
 			}
 			current_time:        fn [player] () f64 { return C.native_media_time(player.handle) }
+			has_ended:           fn [player] () bool { return C.native_media_ended(player.handle) != 0 }
 			current_video_frame: fn [player] () ?&painting.MediaVideoFrame { return player.frame }
 			buffered_ranges:     fn [player] () []html.MediaBufferedRange { return player.ranges() }
 		})
@@ -291,7 +294,15 @@ fn (mut app BrowserApp) poll_media_playback() {
 				app.invalidate_native_media_frame(mut document, stable)
 			}
 			media.on_playback_manager_state_change(C.native_media_buffering(player.handle) != 0)
+			ended := C.native_media_take_ended(player.handle) != 0
+			if ended {
+				duration := C.native_media_duration(player.handle)
+				if math.is_finite(duration) && duration != media.duration() {
+					media.set_duration(duration)
+				}
+			}
 			media.update_video_frame_and_timeline()
+			if ended { media.reached_end_of_media_playback() }
 			if !media.paused() { media.time_marches_on(.normal_playback) }
 			// Continue polling while paused as well: loading, seeks and new frames
 			// must complete without a playing clock or a JavaScript timer.
