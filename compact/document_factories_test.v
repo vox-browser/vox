@@ -25,7 +25,7 @@ if(empty.documentElement!==null||empty.childNodes.length!==0)fail("empty createD
 let threw=false;try{document.implementation.createDocument(null,"1bad");}catch(error){threw=error instanceof DOMException&&error.name==="InvalidCharacterError";}
 if(!threw)fail("invalid qualified name");
 const instruction=xml.createProcessingInstruction("target","data");
-if(!(instruction instanceof ProcessingInstruction)||instruction.nodeType!==7||instruction.data!=="data")fail("processing instruction");
+if(!(instruction instanceof ProcessingInstruction)||instruction.nodeType!==7||instruction.data!=="data"||instruction.target!=="target")fail("processing instruction "+instruction.target);
 const section=xml.createCDATASection("cdata");
 if(!(section instanceof CDATASection)||section.nodeType!==4||section.data!=="cdata")fail("cdata");
 const parsed=new DOMParser().parseFromString("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"foo\"><html xmlns=\"http://www.w3.org/1999/xhtml\"><body id=\"test\">&Aacute;&amp;</body></html>","application/xhtml+xml");
