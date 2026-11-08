@@ -1464,3 +1464,37 @@ Rounding-induced crops, nearest/fractional-offset resolve surfaces, further
 spatial chains, rotations, SVG graphs, boolean shadows, large-sigma rescaling,
 tiling and native/GPU bridges remain. The browser still links Skia, and a
 complete Skia-free Linux browser compile/link/run remains unverified.
+
+
+### Nearest source-image shadows with fractional offsets (2026-11-09)
+
+Nearest source images now resolve their shadow tint, color conversion and
+paint effects before a fractional linear offset. The foreground remains
+deferred. The intermediate retains its transparent pixel border, and its
+restore uses the destination's RGBA color type. Linux therefore keeps the
+raster-pipeline shader where native N32 would be BGRA. The full pixel outset
+is drawn without an unnecessary logical-layer clip; a thin-shadow control
+captures legacy bilerp's nonzero four-bit contribution beyond epsilon-rounded
+bounds. This fixes the second seed's one-byte coverage difference.
+
+Twelve new native fixtures bring the image-filter corpus to 114 exact cases
+on both platforms. Of 20,000 forced-nearest shadow attempts, 19,109 supported
+draws match on each platform; production mode matches 19,131 at a second seed.
+The broader Linux image-filter cohort matches 16,573 supported draws at seed
+20261108. Counts include no-ops and explicit declines. All 27 CPU raster files,
+C/FastC image regressions, HTML integration, the FMA audit (zero contracted
+operations, 175 explicit) and the canonical Linux browser typecheck pass.
+
+The standalone Linux image tests also compile with Skia unavailable to
+pkg-config, then execute all 34 generated test functions. The link command
+contains no Skia libraries; readelf and ldd confirm no direct or transitive
+Skia dependency. Direct dependencies are FreeType, libm and libc. This proves
+the portable image-raster module's build and execution, while the complete
+browser still retains Skia services and uses Skia files for its typecheck.
+A full Skia-free browser compile/link/run remains unverified.
+
+Rounding-induced crops, additional spatial chains, rotated layers, SVG graphs,
+intersecting boolean shadows, large-sigma rescaling, tiling and native/GPU
+bridges remain. The [resolve-surface receipt](gg-migration/resolved-source-image-shadows-20261109.json)
+retains source and binary identities, native hashes, the Linux dependency
+inspection and initial failures without full-cohort pass credit.
