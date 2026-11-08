@@ -547,3 +547,44 @@ whose sealed source manifest matches all six required implementation files.
 The detached observer and aggregate guard are active. This is an in-progress
 collection, with no complete result or all-pass claim; the independent preflight
 above remains attributed to its original `91be2b76025a…` executable.
+
+
+## IndexedDB keys, key ranges and ordered key/count queries
+
+Three further fixes are committed: `f6d912b04` separates key conversion from
+structured clone; `edbbebca2` exposes native `IDBKeyRange` in Window and Worker
+realms; `7f9fa5e21` adds ordered object-store `getKey()` and index `count()`
+requests. Key conversion now reads indexed own array properties and engine
+Date/buffer slots, accepts repeated array children, rejects cycles with
+`DataError`, preserves original getter exceptions and binary view slices, and
+leaves author buffers transferable. Key ranges retain native bounds and accept
+range queries without converting the range object into a stored value.
+
+The [focused verification manifest](performance/wpt-indexeddb-key-ranges-20261108.json)
+records **eight original imported WPT pages, 53 / 53 assertions PASS**, all
+harnesses OK, in fresh direct native Page processes with the real upstream
+server. The original `getKey()` page passes 17 / 17; key-range construction,
+binary comparisons, cursor advance/continue, bounded index directions and
+reverse cursors supply the other 36 assertions. Fixtures, assertions and
+harness deadlines are unchanged. These are native Page checks, not production
+browser results or a new full-cohort percentage.
+
+All **44 distinct focused regressions pass with production allocation**:
+32 binding checks and 12 typed model checks. The 12 model checks and all 12
+new binding checks additionally pass with normal allocation. Coverage includes
+receiver validation, source/transaction identity, explicit commit, deleted-source
+error ordering, stable request values and actual Worker task dispatch. Final
+compiler and runtime guards complete with exit 0; source, executable, fixture
+and server identities remain unchanged. The raw archive retains the earlier
+36-assertion run as well as the final 53-assertion run. Completed test scratch
+and temporary canonical test files are removed after archival verification.
+
+r16 continues on its pinned earlier `f26b41bdc734…` production image, which
+contains none of these three new fixes. A single coalesced C-backend production
+build is requested because no available production bundle contains them. A
+detached focused observer will check the eight pages against that completed
+image in place under its artifact read lease, preserving r16's bundle. Its
+durable status/completion paths are recorded in the manifest. Production
+validation is pending at this recording. Missing batch retrieval APIs, storage
+clone types and the other larger-suite failures remain open; **100% has not
+been reached**.
