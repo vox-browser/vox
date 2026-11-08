@@ -1,0 +1,461 @@
+{
+  "date": "2026-11-08",
+  "vm": {
+    "name": "V Windows 11 bootstrap test",
+    "existing_image": "v-win11-vm/v-windows.qcow2",
+    "os": "Windows 11 Enterprise Evaluation",
+    "version": "10.0.26200.9711",
+    "architecture": "x86-64",
+    "emulator": "QEMU TCG on macOS arm64",
+    "vcpus": 4,
+    "ram_mib": 8192
+  },
+  "final_executable": {
+    "size": 68421928,
+    "sha256": "8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce"
+  },
+  "runtime_manifest": {
+    "windows-smoke.html": {
+      "size": 817,
+      "sha256": "b4eed570221be31e6ca77e5b6473cab27e33e0a3c716ca8a277fcc9513cb27d6"
+    },
+    "libcrypto-3-x64.dll": {
+      "size": 5501270,
+      "sha256": "26c5c4804d14049dc50e7d1a7ba5fd479c1bcee3ae5c3942a7f069f5159a4745"
+    },
+    "libbrotlidec.dll": {
+      "size": 60092,
+      "sha256": "dab7d47981ee887865d1f82dcbcc8fc4c7a43942278bb27877e168909e10d346"
+    },
+    "libwinpthread-1.dll": {
+      "size": 343646,
+      "sha256": "4546bde48168fd708b6bc4b47d60d351c851bac7b95c9e238407614415ac8854"
+    },
+    "libharfbuzz-subset-0.dll": {
+      "size": 2765775,
+      "sha256": "6a14a39c232f7ede432692866226ec948d99f2d1fde943a8dd21b772a5d98b08"
+    },
+    "libngtcp2-16.dll": {
+      "size": 393515,
+      "sha256": "6b3f4009a2ecd9e83c3ae0940768e1b5469eae76bf24cbfabea766b4fc924f0a"
+    },
+    "libstdc++-6.dll": {
+      "size": 29558267,
+      "sha256": "089683d3ab0762b98cc8ff7a68f3ff1df03b020abbf9081b7afe2f0b88996088"
+    },
+    "libngtcp2_crypto_ossl-0.dll": {
+      "size": 51367,
+      "sha256": "c3c92dac03d4d2b27aecc24b6da05bda8a018a86408940f0ce160aea814e5303"
+    },
+    "libharfbuzz-0.dll": {
+      "size": 1893882,
+      "sha256": "042059d5fcb90daaabd2af52ac60b1aed43df9a2f785ce92ec4cfdc08234d2e2"
+    },
+    "icudt77.dll": {
+      "size": 31897600,
+      "sha256": "ae94671b43ecbb9008a2618def0f4cbcc6158c9e117414463a2a28b66c4c9fe0"
+    },
+    "icuuc77.dll": {
+      "size": 1839616,
+      "sha256": "2104a3d7d7e64409f7ab17a5d0864dac6b47d2dd37835cddcf866bf72dec4434"
+    },
+    "libgraphite2.dll": {
+      "size": 167155,
+      "sha256": "063a9ad34a5ec87d038b4646660957395224ecf2cf707917256b7d251a7c5f57"
+    },
+    "libicudt78.dll": {
+      "size": 33120806,
+      "sha256": "60255653982986c9fb72ad1b10b8dc502e498d890e0218cb0a47bc5907aa4e43"
+    },
+    "libicuuc78.dll": {
+      "size": 1999466,
+      "sha256": "27edc25710faa3489cd9cbd6cbc64c305b69ce5dbb9e0a29273d85e9badddde9"
+    },
+    "libsharpyuv-0.dll": {
+      "size": 53757,
+      "sha256": "ab0c9f61dc69b6bcdff1011e215f8d5fd6e5096aba9be3386ab87f217fbbeffe"
+    },
+    "libintl-8.dll": {
+      "size": 298731,
+      "sha256": "0537c3dd2378218508ebe3cc416d72a99ee2d24ae1c5525e23458f32544ef861"
+    },
+    "libpcre2-8-0.dll": {
+      "size": 706915,
+      "sha256": "68a7cee2acc36d6a61d73f78825d17dfd32f8580f4bb1bc399134719518213d5"
+    },
+    "libwebpdemux-2.dll": {
+      "size": 25726,
+      "sha256": "10fd43e1820a03dea175e3c4a7c96ba0463d41971f4ec75dbd375d10b585446a"
+    },
+    "libwebpmux-3.dll": {
+      "size": 82858,
+      "sha256": "2c8a2e9d7901ec65330f31f9989c2a07ef0506e903b485fcd8b241a6bab9b88f"
+    },
+    "libcurl-4.dll": {
+      "size": 1420810,
+      "sha256": "c446cc0e7f2d1bc14046ff92c87f88c86bee15e62e2602673d4b462c885963a1"
+    },
+    "libssh2-1.dll": {
+      "size": 312147,
+      "sha256": "a8e1cc06bfff6be779066c5dc34ce740ed0226dcb6f75f46d9c915aee19a21b1"
+    },
+    "libbrotlicommon.dll": {
+      "size": 140068,
+      "sha256": "121006fe45e8bd12b1929f86e1efb1dbd1c6291118f9a409693ce8c030f1cefb"
+    },
+    "libwoff2dec.dll": {
+      "size": 80983,
+      "sha256": "a66b6d38ab88d060330a48616e2490ab8601a8ea53e74dc45469f27ca3ed1c54"
+    },
+    "zlib1.dll": {
+      "size": 191257,
+      "sha256": "72df18f3a7c8e9341c776a5a23c2dfb2524dbbf1f343c3012cb1178436535a29"
+    },
+    "libglib-2.0-0.dll": {
+      "size": 1570710,
+      "sha256": "84b15dc907fd1d3bb1cd799fc034d2edcbc3946c8c4acd6a8dd3ace381f9e568"
+    },
+    "icuin77.dll": {
+      "size": 2975232,
+      "sha256": "19803f9c1573d0b021bfac6e2531611bd3639ff3b5ccc7ba190a48cc38b150f2"
+    },
+    "libssl-3-x64.dll": {
+      "size": 997269,
+      "sha256": "a3ddb63a654e05844cf59d463c9557eed7ae675d59fd2c47f3415f5e1fc067f5"
+    },
+    "libiconv-2.dll": {
+      "size": 1141004,
+      "sha256": "587bd8c780e89f5d834c251accc6053f479713184c433e0f1bab898ee0aa3751"
+    },
+    "libgcc_s_seh-1.dll": {
+      "size": 988015,
+      "sha256": "606e87911f93bb521b6071df301eb11e6f7435158a57a4b704b4739f95c1df9f"
+    },
+    "libEGL.dll": {
+      "size": 259584,
+      "sha256": "0033437d679274030766277ea6dc4f95efa7dd836dc08f2bc92efcfd20110e21"
+    },
+    "libnghttp2-14.dll": {
+      "size": 213808,
+      "sha256": "69edb8a5047bcfaf837f3ae92339784449835768c2d33804fc9d07e1e3d86782"
+    },
+    "libidn2-0.dll": {
+      "size": 247081,
+      "sha256": "9880b52651a0247640a2531d777380f7c35fac7efa7e3979b265ddcb78db8642"
+    },
+    "libwebp-7.dll": {
+      "size": 749724,
+      "sha256": "c6c21a10f8cfe13270832e64640b82709e1d87b956b5f15af435a6c25acd6bbf"
+    },
+    "libnghttp3-9.dll": {
+      "size": 204618,
+      "sha256": "64152e7cf508855ab18f93ecf4089298f0fd722d7ef70d94c9bdddc81cc60b14"
+    },
+    "runtime-guard.exe": {
+      "size": 153755,
+      "sha256": "5f48c5796ce5de29bd16c0cb97d661ce93855ad8b78980a4b79d47447528fbc6"
+    },
+    "libexpat-1.dll": {
+      "size": 237027,
+      "sha256": "d96eafff7e3356e13aab6b569cc373ef61b1b2b9489803f45561cbfeaf70ee1b"
+    },
+    "libfreetype-6.dll": {
+      "size": 807389,
+      "sha256": "9f62ad75bdc24573940f2e0b0db1848464ce02928926808885e3744fc5272add"
+    },
+    "JavaScriptCore.dll": {
+      "size": 31384064,
+      "sha256": "1a0a0428b724cf2c2e15982a1199f37186cdcfad90f89892620737a181c9b7fe"
+    },
+    "libbz2-1.dll": {
+      "size": 108633,
+      "sha256": "a4fbb97c26662d2b8a80bf4597ed3effb69b12048b0cb1eef2c3f211e2e66673"
+    },
+    "libwoff2common.dll": {
+      "size": 18837,
+      "sha256": "cfe20f64d829ea24da47bf4b4c511a2e34b468a9bb494fb0043e2355c1491236"
+    },
+    "libpsl-5.dll": {
+      "size": 105304,
+      "sha256": "b31fc70eda598a39b65fe2736d815518db0652d641346f75eac40c2a0499b058"
+    },
+    "libpng16-16.dll": {
+      "size": 260070,
+      "sha256": "4a33007395f1d30881d0c185c120f1ecf05c8ebb520933068902ddc1f6c58506"
+    },
+    "libzstd.dll": {
+      "size": 1218273,
+      "sha256": "b95c223a9548a9ecf51377c962e0bc8f0c51eb0c6f67a296dbc885996f0dd40d"
+    },
+    "libGLESv2.dll": {
+      "size": 11604992,
+      "sha256": "52d62906224c9d81075304a56eff44b0b11c9e04a41a64203b78e46621623a96"
+    },
+    "libjpeg-8.dll": {
+      "size": 964809,
+      "sha256": "49aae36dc96d8dd9ca3a3c126b261d7ff3deeda1040e9bc32149db0763dff849"
+    },
+    "libunistring-5.dll": {
+      "size": 2251328,
+      "sha256": "b91e2850d3668d4931056a8f4d35783b8ec3eea3735485108a936a072cd16071"
+    },
+    "libz-1.dll": {
+      "size": 148872,
+      "sha256": "b82cab3e02b60e664c19eb3459f6e6ca7f6165a727bbb18f48dee0474b42a920"
+    },
+    "libskia.dll": {
+      "size": 10985903,
+      "sha256": "9b0f363cb77c8da1a1f768ecf14efd4c03a90279124eab7f0ab256eeeac05397"
+    },
+    "Vox.exe": {
+      "size": 68421928,
+      "sha256": "8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce"
+    }
+  },
+  "checks": {
+    "native2": {
+      "guard": {
+        "pid": 1836,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 1957888
+      },
+      "executable_sha256": "6ee84f90ef7483aaab706c4d4068df3599180774a272eae89b0e6bab0c56949e"
+    },
+    "guard-tests": {
+      "guard": {
+        "pid": 5220,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 138395648
+      },
+      "stdout": "{\"pid\":9944,\"child_exit_code\":23,\"timed_out\":false,\"job_memory_limit_bytes\":67108864,\"peak_job_committed_bytes\":1728512}\n{\"pid\":7692,\"child_exit_code\":124,\"timed_out\":true,\"job_memory_limit_bytes\":67108864,\"peak_job_committed_bytes\":1617920}\n{\"pid\":8268,\"child_exit_code\":42,\"timed_out\":false,\"job_memory_limit_bytes\":67108864,\"peak_job_committed_bytes\":136105984}\nWindows runtime guard: exit, quoting, streams, timeout and memory limit passed\n",
+      "stderr": "",
+      "executable_sha256": "9d723e119217e226c6ead36a64e4b3064d33a7008e4d8d6f2ff6bfe3ff490830"
+    },
+    "graphics2": {
+      "guard": {
+        "pid": 9928,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 3473408
+      },
+      "stdout": "Windows Direct3D 11 default and WARP creation, clear and pixel readback: passed\n",
+      "stderr": "",
+      "executable_sha256": "a1bb2bf06caefb16eae8e067d0eda91a1a69f3d6d08490ed6fccd0486e8ab3e3"
+    },
+    "projection": {
+      "guard": {
+        "pid": 9824,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 41209856
+      },
+      "stdout": "Windows GG projection, color and text smoke: captured\n",
+      "stderr": "",
+      "executable_sha256": "8628600c10c06dfe79c878b0f4cc66e9d4166f4e393fc82ce7c7b8272166bfe1"
+    },
+    "embedded-headless": {
+      "guard": {
+        "pid": 8080,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 407908352
+      },
+      "stdout": "javascript DOM mutation: passed\njavascript click event: passed\nnative wheel routing and scrolling: passed\nordinary element wheel listeners: passed\nLadybird V smoke check passed\nsource: about:element-wheel-smoke\nLoaded element wheel smoke \u00b7 7 paints \u00b7 1024\u00d74000 CSS px\n",
+      "stderr": "",
+      "executable_sha256": "c56b72cdf20c5097731a8e4f421a80f010994b45b03bf655961dfe5c15a9ba25"
+    },
+    "interactive": {
+      "guard": {
+        "pid": 8228,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 1050062848
+      },
+      "executable_sha256": "8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce",
+      "stdout": "",
+      "stderr": "",
+      "verification": {
+        "normal_launch": true,
+        "visible_fixture_rendered": true,
+        "initial_script_text": "JavaScript passed",
+        "mouse_click_result": "Click passed",
+        "profile_save_error_visible": false,
+        "desktop_capture": "windows/windows-vm-click-20261108.png",
+        "fixture": "Tests/Browser/Windows/smoke.html",
+        "fixture_sha256": "b4eed570221be31e6ca77e5b6473cab27e33e0a3c716ca8a277fcc9513cb27d6"
+      }
+    },
+    "final-headless": {
+      "guard": {
+        "pid": 8244,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 406212608
+      },
+      "executable_sha256": "8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce",
+      "stdout": "",
+      "stderr": ""
+    },
+    "profile-test": {
+      "guard": {
+        "pid": 4664,
+        "child_exit_code": 0,
+        "timed_out": false,
+        "job_memory_limit_bytes": 3221225472,
+        "peak_job_committed_bytes": 36823040
+      },
+      "executable_sha256": "9efd90ce670f71191384b279d429bb77efc14711e167f429cb13f1d9887781b3",
+      "stdout": "",
+      "stderr": ""
+    }
+  },
+  "final_build": {
+    "command": [
+      "python3",
+      "tools/build_windows_browser.py",
+      "--deps-root",
+      "Build/deps/windows",
+      "--javascriptcore-dll",
+      "Build/deps/windows/webkit/JavaScriptCore.dll",
+      "--output",
+      "/tmp/vox-windows-verified.exe"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 7243644928,
+    "elapsed_seconds": 350.18471079200003,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "guest_executable_hash_check": "SHA256 hash of C:\\vox-runtime\\Vox.exe:\n8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce\nCertUtil: -hashfile command completed successfully.\n",
+  "projection_pixel_check": {
+    "passed": true,
+    "size": [
+      320,
+      240
+    ],
+    "red_rectangle_pixels": 4000,
+    "blue_rectangle_pixels": 4200,
+    "text_dark_pixels": 184,
+    "png_sha256": "5be73d13328d46ca8a753552ff53fe58c6a5fe07f24942b467c428a03eeccafe"
+  },
+  "earlier_runtime_failures": [
+    {
+      "executable_sha256": "f6b084528bbb0d7eac12f0d5b397e63ad5ef71c422ac5adae11b8d253ad3501d",
+      "exit": 3221225785,
+      "cause": "Packaged libstdc++ lacked __cxa_thread_atexit; replaced GCC runtime DLLs with the compiler-matching files."
+    },
+    {
+      "exit": 1,
+      "cause": "Development build reopened public_suffix_list_reversed.dat from the macOS checkout; enabled production embedding."
+    },
+    {
+      "exit": 3221226505,
+      "cause": "Sokol OpenGL asserted on absent WGL_ARB_pixel_format; selected Direct3D 11."
+    },
+    {
+      "exit": 0,
+      "visual_check": false,
+      "cause": "Default GG HLSL constructed rows from column-major matrices, distorting geometry; installed corrected V adapter pipelines."
+    }
+  ],
+  "guest_hash_after_checks": "SHA256 hash of C:\\vox-runtime\\Vox.exe:\n8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce\nCertUtil: -hashfile command completed successfully.\n",
+  "host_profile_test": {
+    "command": [
+      "/tmp/vox-profile-host-test"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 32768,
+    "elapsed_seconds": 0.497653416,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "profile_test_link_configuration": "The cross sysroot contained both static and DLL pthread runtimes. The focused Windows unit-test compile used a GCC forwarding wrapper replacing the trailing -Wl,-Bstatic with -Wl,-Bdynamic, selecting DLL runtimes without suppressing linker errors. The browser used the unmodified MinGW GCC driver.",
+  "persisted_bookmarks": {
+    "sha256": "8a6fd4f13b8833eb073af2bfed8f216a36fc70933a4d70eed132d985a84e1d15",
+    "count": 18,
+    "optimized_defaults_added": true,
+    "hacker_news_default_added": true,
+    "forum_news_defaults_added": true
+  },
+  "commits": {
+    "guard": "c91765f33",
+    "profile_replacement": "46f43ab88",
+    "windows_runtime": "e9b4dd5a5"
+  },
+  "limits": "Local functional smoke checks, including ID-backed compact JavaScript event replay. No general Windows web-platform conformance claim. Worker-process, RequestServer socket event delivery and native media limits remain documented in WINDOWS.md.",
+  "vm_host_guard": {
+    "command": [
+      "/opt/homebrew/bin/qemu-system-x86_64",
+      "-name",
+      "V Windows 11 bootstrap test",
+      "-machine",
+      "q35",
+      "-accel",
+      "tcg,thread=multi,tb-size=2048",
+      "-cpu",
+      "max",
+      "-smp",
+      "4",
+      "-m",
+      "8192",
+      "-drive",
+      "if=pflash,format=raw,readonly=on,file=/opt/homebrew/share/qemu/edk2-x86_64-code.fd",
+      "-drive",
+      "if=pflash,format=raw,file=/Users/alex/code/v-win11-vm/edk2-vars.fd",
+      "-drive",
+      "file=/Users/alex/code/v-win11-vm/v-windows.qcow2,format=qcow2,if=ide,media=disk",
+      "-drive",
+      "file=/Users/alex/code/v-win11-vm/v-transfer.iso,format=raw,if=ide,media=cdrom,readonly=on",
+      "-boot",
+      "c,menu=on",
+      "-device",
+      "e1000e,netdev=net0",
+      "-netdev",
+      "user,id=net0,hostfwd=tcp:127.0.0.1:22212-:22",
+      "-device",
+      "qemu-xhci",
+      "-device",
+      "usb-tablet",
+      "-vga",
+      "std",
+      "-display",
+      "none",
+      "-vnc",
+      "127.0.0.1:12",
+      "-qmp",
+      "unix:/Users/alex/code/v-win11-vm/qmp.sock,server=on,wait=off",
+      "-serial",
+      "file:/Users/alex/code/v-win11-vm/serial.log",
+      "-monitor",
+      "none",
+      "-rtc",
+      "base=localtime",
+      "-pidfile",
+      "/Users/alex/code/v-win11-vm/qemu.pid"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 10271457280,
+    "elapsed_seconds": 6969.766216542001,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "vm_shutdown_clean": true
+}

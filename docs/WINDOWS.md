@@ -1,8 +1,13 @@
-# Windows compilation
+# Windows build and runtime
 
 Vox can be compiled for Windows x86-64 with current V and MinGW-w64. The build
 uses the shared V/UI2 chrome, GG/Sokol window host, Skia raster services,
-HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API.
+HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
+window host uses Direct3D 11, with WARP software rendering when hardware device
+creation fails. The fallback lives in Vox's graphics adapter; the shared V and
+Sokol installations do not need changes.
+The V graphics adapter also supplies shaders that consume GG's column-major
+projection and texture matrices correctly in HLSL, including the font atlas.
 
 The native `build.v`/`x.imp` browser flow and portable ZIP packaging remain
 release scaffolding. Use the dedicated helper below for this compilation path.
@@ -50,6 +55,18 @@ override tool discovery. UI2 preparation needs permission to create symlinks;
 Windows Developer Mode supplies this for ordinary user accounts. Keep the
 native dependency DLL directories on PATH, or install their DLLs beside Vox.
 JavaScriptCore's dependencies must come from its matching WebKit distribution.
+The GCC runtime DLLs must match the compiler used for Vox's native bridges.
+An older `libstdc++-6.dll` can load successfully itself while lacking an export
+required by Vox, such as GCC 16's `__cxa_thread_atexit`. For a cross compiler,
+locate its C++ and exception runtimes with:
+
+```sh
+x86_64-w64-mingw32-gcc -print-file-name=libstdc++-6.dll
+x86_64-w64-mingw32-gcc -print-file-name=libgcc_s_seh-1.dll
+```
+
+Use that toolchain's `libwinpthread-1.dll` too, rather than mixing compiler
+runtime versions from a different dependency distribution.
 
 ## Cross-compilation from macOS or Linux
 
@@ -75,10 +92,17 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-v -memory-limit 10G -enable-globals -gc none -os windows -arch amd64 \
-  -cc x86_64-w64-mingw32-gcc -d ui2_custom_rendering \
+v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+  -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
+  -d ui2_custom_rendering -d sokol_d3d11 \
   -path "$PWD|$PWD/Build/v/modules|@vmodules|@vlib" -o /tmp/Vox.exe .
 ```
+
+`-prod` includes embedded resources in the executable. Without it, startup can
+try to reopen files such as the public suffix list from the build machine's
+source checkout. `-no-prod-options` retains the existing C optimization level.
+Add `--console` to the helper when capturing startup diagnostics: V's GUI entry
+point otherwise reopens stdout and stderr on a console or `NUL`.
 
 The Windows build uses `-gc none`; scoped `-prealloc` remains unavailable.
 Process tab grouping uses the existing in-process fallback. Dedicated script
@@ -105,7 +129,54 @@ The existing `libjs/stack_info_test.v`, `libgc/primitive_storage_test.v`,
 compiled test binaries with the repository's 3 GiB runtime guard on hosts that
 support it. Cross-compiling a test binary only verifies compilation.
 
-## Verification on 2026-11-08
+For Windows itself, build the job-object guard and its integration checks:
+
+```sh
+gcc -municode -std=gnu11 -O2 -Wall -Wextra -Wno-unused-function -Werror \
+  -o runtime-guard.exe tools/windows_runtime_guard.c
+gcc -municode -std=gnu11 -O2 -Wall -Wextra -Werror \
+  -o guard-tests.exe tools/test_windows_runtime_guard.c
+runtime-guard.exe 60000 3072 guard-tests.out guard-tests.err \
+  C:/path/to/guard-tests.exe C:/path/to/runtime-guard.exe
+```
+
+The guard sets a kernel job committed-memory limit before resuming the child,
+kills remaining descendants on close and enforces a timeout. Its JSON receipt
+records the child exit, timeout and job memory counters. This is a different
+metric from the host Python guard's sampled process-tree RSS. The integration
+checks exercise Unicode/quoted arguments, both output streams, exit propagation,
+timeout termination and a rejected allocation above the job limit.
+
+Run the graphics check on the interactive Windows desktop, also through the
+3 GiB guard:
+
+```sh
+gcc -std=gnu11 -O2 -Wall -Wextra -Werror -o graphics-test.exe \
+  tools/test_windows_graphics.c -ld3d11 -ldxgi -ldxguid -luser32
+runtime-guard.exe 180000 3072 graphics.out graphics.err C:/path/to/graphics-test.exe
+```
+
+It creates the same Direct3D device/swap-chain adapter used by Sokol, clears a
+render target and checks the pixels read back from it with both the default
+driver and explicit WARP. Check GG's projection and font pipelines separately:
+
+```sh
+v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+  -os windows -arch amd64 -cc gcc -d sokol_d3d11 -subsystem console \
+  -file-list native/graphics_windows.c.v,native/paint.v \
+  -o projection-smoke.exe tools/windows_graphics_smoke.v
+runtime-guard.exe 180000 3072 projection.out projection.err \
+  C:/path/to/projection-smoke.exe C:/path/to/projection.png
+python tools/check_windows_graphics_smoke.py C:/path/to/projection.png
+```
+
+The PNG checker uses Pillow and can run on the host after copying the PNG out
+of the VM. It checks rectangle positions, full areas, colors and text coverage.
+The browser fixture
+`Tests/Browser/Windows/smoke.html` separately checks page rendering, a script
+mutation and a clickable DOM event target.
+
+## Initial compilation checks on 2026-11-08
 
 The macOS workspace cross-compiled the full browser with `-os windows -arch
 amd64`, MinGW GCC 16.2.0 and the helper above. Compilation and its 12 GiB memory
@@ -118,8 +189,36 @@ All five shared test files listed above and
 macOS with `-gc none` and guarded runtimes. The Windows native smoke program
 compiled and linked with warnings treated as errors; its panic-handoff checks
 also executed on macOS. The modified Skia bridges passed macOS C++ syntax
-checks. Windows execution and visual conformance were not tested.
+checks. Those initial checks did not execute the Windows binaries.
 
 The existing build scaffolding's help and the pinned Rust source audit remain
 available with `v run build.v --help` and
 `python3 tools/build_regex_backend.py --verify-only`.
+
+## Windows VM verification on 2026-11-08
+
+The existing Windows 11 Enterprise Evaluation VM (10.0.26200.9711) executed
+the full x86-64 GUI browser, with four virtual CPUs and 8 GiB RAM under QEMU
+TCG. The final executable is installed at `C:\vox-runtime\Vox.exe`, with SHA-256
+`8534d2c99448d24894f2f6449fa99e2c9b7b7d091ff2dd2bae0d56b50cfb80ce`.
+Its hash was checked inside the guest before and after the browser runs.
+
+Fresh processes passed `--headless-smoke` and a normal interactive launch.
+The local fixture rendered correctly, displayed its script-updated
+"JavaScript passed" text, and changed it to "Click passed" after an actual
+mouse click. The normal window also loaded and saved its default bookmarks
+successfully after the Windows atomic-replacement fix.
+
+The native memory/socket tests, runtime-guard integration tests, default and
+WARP Direct3D pixel readback, GG projection/color/text checks, and atomic
+profile-replacement tests all executed successfully in Windows. The profile
+tests also executed successfully on macOS. Browser and focused Windows test
+processes ran under 3 GiB job limits; the VM and cross-compilers used the
+host's 12 GiB RSS guard.
+
+The [verification receipt](WINDOWS_VM_VERIFICATION_20261108.json) records the
+executable and DLL identities, commands, exits, memory receipts and earlier
+runtime failures. The [Windows desktop capture](windows/windows-vm-click-20261108.png)
+shows the normal browser window after the click. These are functional smoke
+checks of the pinned build; the platform limitations listed above still apply.
+The VM shut down cleanly after the checks; the tested runtime remains installed.
