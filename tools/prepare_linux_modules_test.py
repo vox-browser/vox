@@ -1,11 +1,96 @@
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
 
-from prepare_linux_modules import patch_module, stage_module
+from prepare_linux_modules import patch_fontstash_callbacks, patch_module, stage_module
 
 
 class LinuxModuleStagingTest(unittest.TestCase):
+    @staticmethod
+    def fontstash_source():
+        return '''module gg
+fn fons_render_update(uptr voidptr, rect &i32, data &u8) {
+}
+fn fons_render_draw(uptr voidptr, verts &f32, tcoords &f32, colors &u32, nverts i32) {
+}
+fn create_fonts() {
+\tparams.renderUpdate = fons_render_update
+\tparams.renderDraw = fons_render_draw
+\tif memory_font {
+\t\tparams.renderUpdate = fons_render_update
+\t\tparams.renderDraw = fons_render_draw
+\t}
+}
+'''
+
+    def test_fontstash_staging_adapts_both_paths_and_preserves_the_dependency(self):
+        original = self.fontstash_source()
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / 'compiler/gg', Path(directory) / 'staged'
+            source.mkdir(parents=True)
+            (source / 'text_rendering.c.v').write_text(original)
+            stage_module(source, target, 'gg')
+            patched = (target / 'text_rendering.c.v').read_text()
+            self.assertEqual(patched.count('C.vox_gg_fontstash_callbacks(&params)'), 2)
+            self.assertIn("@[export: 'vox_gg_fontstash_render_update']", patched)
+            self.assertIn("@[export: 'vox_gg_fontstash_render_draw']", patched)
+            self.assertEqual(patch_fontstash_callbacks(patched), patched)
+            self.assertEqual((target / 'vox_fontstash_callbacks.h').read_text(),
+                             Path(__file__).with_name('linux_fontstash_callbacks.h').read_text())
+            stage_module(source, target, 'gg')
+            self.assertEqual((target / 'text_rendering.c.v').read_text(), patched)
+            self.assertEqual((source / 'text_rendering.c.v').read_text(), original)
+
+    def test_fontstash_staging_rejects_changed_signatures_and_assignment_counts(self):
+        original = self.fontstash_source()
+        for changed in [original.replace('rect &i32', 'rect &int'),
+                        original.replace('\tparams.renderUpdate = fons_render_update\n', '', 1),
+                        original + '\n\tparams.renderUpdate = fons_render_update\n\tparams.renderDraw = fons_render_draw\n']:
+            with self.subTest(source=changed), self.assertRaises(RuntimeError):
+                patch_fontstash_callbacks(changed)
+        with self.assertRaises(RuntimeError):
+            patch_fontstash_callbacks(patch_fontstash_callbacks(original).replace(
+                'C.vox_gg_fontstash_callbacks(&params)', 'partial_callback(&params)', 1))
+
+    def test_fontstash_adapter_has_the_const_c_abi_and_forwards_borrowed_buffers(self):
+        compiler = os.environ.get('CC') or shutil.which('cc')
+        if not compiler:
+            self.skipTest('C compiler unavailable')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'fontstash.h').write_text('''typedef struct {
+void (*renderUpdate)(void*, int*, const unsigned char*);
+void (*renderDraw)(void*, const float*, const float*, const unsigned int*, int);
+} FONSparams;
+''')
+            (root / 'adapter.h').write_text(Path(__file__).with_name('linux_fontstash_callbacks.h').read_text())
+            (root / 'test.c').write_text('''#include <assert.h>
+#include "adapter.h"
+static int owner, updates, draws;
+void vox_gg_fontstash_render_update(void* target, int32_t* rect, uint8_t* data) {
+    assert(target == &owner && rect[0] == 3 && data[0] == 7); updates++;
+}
+void vox_gg_fontstash_render_draw(void* target, float* verts, float* coords, uint32_t* colors, int32_t count) {
+    assert(target == &owner && verts[0] == 2 && coords[0] == 4 && colors[0] == 9 && count == 1); draws++;
+}
+int main(void) {
+    FONSparams params = {0}; int rect[] = {3};
+    const unsigned char data[] = {7}; const unsigned int colors[] = {9};
+    const float verts[] = {2}, coords[] = {4};
+    vox_gg_fontstash_callbacks(&params);
+    params.renderUpdate(&owner, rect, data);
+    params.renderDraw(&owner, verts, coords, colors, 1);
+    assert(updates == 1 && draws == 1 && data[0] == 7 && verts[0] == 2 && coords[0] == 4 && colors[0] == 9);
+    return 0;
+}
+''')
+            subprocess.run([compiler, '-std=c11', '-Wall', '-Wextra', '-Werror', '-I', str(root),
+                            str(root / 'test.c'), '-o', str(root / 'test')], check=True, capture_output=True)
+            subprocess.run([str(root / 'test')], check=True, capture_output=True)
+
     def test_graphics_sampler_capacity_tracks_the_image_pool(self):
         original = """module gg
 fn gg_init_sokol_window(user_data voidptr) {
