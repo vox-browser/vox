@@ -1354,3 +1354,82 @@ verified files, SHA256
 `1c79d99d4427eb1d1d9b640347772119d29f1a78bb8957526d03ab725b3ea36e`.
 Completed job output and temporary drivers are removed after verification;
 immutable replay data and unchanged references move into the readback job.
+
+
+## 2026-11-08: uncompressed CPU-readback textures
+
+Commit `ee53a2fb4` addresses the sampled Metal readback conversion. The earlier
+live stack enters AGX compressed-region decoding from `getBytes`, through
+`vox_shared_readback` and the GPU canvas CPU-access barrier. These synchronous
+shared BGRA targets inherited `allowGPUOptimizedContents=true`. The installed
+Metal SDK documents disabling this property to opt out of compression and make
+CPU readback predictable. CPU-readback targets now disable it;
+`VOX_GPU_OPTIMIZED_READBACK_TEXTURES=1` retains the previous layout for controls.
+Geometry, format, synchronization, conversion fallback and paint policy stay
+the same. This removes that texture-conversion path, without promising a bound
+on GPU completion or operating-system scheduling.
+
+Seven GPU control/candidate scenes are byte exact in optimized and ASan/UBSan
+modes: odd/large dimensions, clipped AA/MSAA, padded partial reads, pending
+writers, result lifetime and context replacement. The existing Metal canvas
+suite also passes in both modes, covering direct/staged and linear/ordinary
+transfers, nested layers, compositor transport, alpha, clips, failure handling
+and ownership. All four fixed-pose checks match the unchanged Reddit references
+at offsets 0 and 850 exactly, with checker and image hashes pinned throughout.
+Separate input diagnostics observe 2,602 live and 2,626 frozen canvas uploads
+with `optimized=0`; their timings receive no performance credit.
+
+All eight unprofiled trials use completed executable `59de419d...`, installed
+primary `c2ec42c0...` and the same explicit Metal candidate
+`bce89e00ebfe0c7d3a6ee4ba70206ab17b987a50f3ac0cf3458d828d2f373eb9`.
+Only the layout control flag changes. Both live and frozen order is
+control/candidate/control/candidate. The actual C mode is single, C `-O3`,
+V `-prod=false`, GG and JSC. No GPU tile, offscreen-layer, animation or paint
+policy changes enter these trials.
+
+Each fresh process completes 5,400 native precise inputs, nominal 120 Hz, delta
+3, reversing every 300, after matching-title readiness and a 12-second settle.
+The document is 1400×900 at 2× backing and 125% zoom. Scripts are automatic,
+private profiles/caches fresh and OS caches retained. Live uses the existing
+SOCKS5h route; frozen replays the original-origin 152-response fixture while
+blocking external DNS/connect/connectx. Throughput uses the entire first-to-last
+input window. The endpoint is completed native frame installation, not physical
+scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| frozen-cohort/1-frozen-control | 115.790 | 8.382 | 11.047 | 32.952 | 0.670% | 5400 / 5389 | 34.889 / 0.228 |
+| frozen-cohort/2-frozen-candidate | 98.575 | 8.828 | 17.228 | 39.054 | 5.839% | 5400 / 5282 | 32.664 / 0.366 |
+| frozen-cohort/3-frozen-control | 82.189 | 11.173 | 21.109 | 52.899 | 13.839% | 5400 / 4999 | 53.597 / 0.516 |
+| frozen-cohort/4-frozen-candidate | 82.275 | 10.995 | 20.968 | 43.866 | 13.892% | 5400 / 5159 | 63.519 / 1.250 |
+| live-cohort/1-live-control | 107.277 | 8.675 | 14.373 | 67.038 | 2.602% | 5400 / 5342 | 49.863 / 0.570 |
+| live-cohort/2-live-candidate | 114.319 | 8.435 | 11.864 | 38.271 | 1.012% | 5400 / 5384 | 37.974 / 4.556 |
+| live-cohort/3-live-control | 112.908 | 8.434 | 12.186 | 44.877 | 1.439% | 5400 / 5383 | 36.943 / 4.305 |
+| live-cohort/4-live-candidate | 117.436 | 8.346 | 10.113 | 19.671 | 0.485% | 5400 / 5403 | 30.669 / 2.662 |
+
+Both live pairs improve observed throughput, maxima and deadline misses. The
+frozen candidate regresses in pair one, while the host load average rises from
+15 to 60; the next control slows further as load rises from 68 to 139 on 18 CPUs.
+The final candidate remains contended. All attempts and regressions remain in
+the receipt. These changing conditions do not support an isolated percentage
+claim or a clean frozen-page gain. No instruction savings are credited.
+
+**The stall-free 60 Hz goal remains open.** Even the better live candidate has
+a 19.671 ms interval and 0.485% deadline misses. Samples still enter synchronous
+GG shape/path transfers and Graphite submit waits, alongside other paint work;
+they do not identify the sole cause of every long interval. A separate existing
+small-SVG-cache probe records 32 input draws and zero hits, so it does not justify
+changing that cache's Reddit policy.
+
+Pure installed-bundle validation of this fix is pending. The available completed
+bundle's sealed readback-header hash predates the change; the shared production
+guard is busy, and its queued target already contains `ee53a2fb4`. The explicit
+component checks above execute the new code; no duplicate browser build is queued.
+
+The [full receipt](performance/reddit-boots-readback-layout-20261108.json) records
+component/source hashes, the SDK reference, every command, browser/guard exit,
+actual input timestamps and host conditions. All guards and browsers exit zero.
+The mode-0600 raw archive contains 2,990 individually verified files, SHA256
+`0810978f6fb26b4f6e32d9e7be7495b7c4f9da2976f983f536423aa4bb86c6ce`.
+Per-job Build output, locks, reports and temporary drivers are removed after
+verification. Existing references and tolerances are unchanged.
