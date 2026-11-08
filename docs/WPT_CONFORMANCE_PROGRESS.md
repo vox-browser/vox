@@ -1222,3 +1222,18 @@ bundle is made. The unfiltered 40,139-variant official testharness collection
 continues serially on its original pinned image, with 900 case records and
 unchanged inputs at this checkpoint. FileReader exposure and local MessagePort
 transfer support remain open. **Full WPT coverage and 100% remain unfinished.**
+
+The production follow-up has now completed on matching executable
+`3ac75cfa0b4adffbe515a4ca4560f4dfac713892f6fe366057e9bc760331f1d1`:
+**544 / 546 PASS**, all six pages COMPLETE with harness OK, exact final
+counts, unchanged inputs and the same two local MessagePort failures. Strict
+runner/outer exits are 1. All eight required implementation hashes match;
+the completed production artifact is checked in place under a read lease.
+Four pages pass every assertion (400 / 400); each Blob-constructor page still
+passes 72 / 73. No reduced selection or changed tolerance supplies pass credit.
+Production raw evidence:
+`/Users/alex/.cache/vox/wpt/20261108-worker-files-production-raw.tar.gz`,
+SHA-256 `18147e2fa95e03f07d7f2dd2b228f2e6f695e265baaae21a79f5b1ed6f64d340`.
+The completed focused production directory and locks have been removed.
+The full official-manifest collection continues on its earlier pinned image;
+these focused results do not measure its complete conformance.
