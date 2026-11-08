@@ -20,20 +20,22 @@ static int vox_kdf_derive(int pbkdf2, const char* hash, const unsigned char* key
 {
     if (!vox_crypto_prepare()) return 0;
     int success = 0;
-    static const unsigned char empty_salt = 0;
+    /* A null octet pointer can mean "parameter absent" to the provider.
+       Empty BufferSources are present inputs with a zero byte count. */
+    static const unsigned char empty_input = 0;
     EVP_KDF* kdf = EVP_KDF_fetch(NULL, pbkdf2 ? "PBKDF2" : "HKDF", NULL);
     EVP_KDF_CTX* ctx = kdf ? EVP_KDF_CTX_new(kdf) : NULL;
     OSSL_PARAM params[5] = { OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END, OSSL_PARAM_END };
     if (!ctx) goto cleanup;
     params[0] = (OSSL_PARAM)OSSL_PARAM_utf8_string(OSSL_KDF_PARAM_DIGEST, (char*)hash, strlen(hash));
-    params[1] = (OSSL_PARAM)OSSL_PARAM_octet_string(pbkdf2 ? OSSL_KDF_PARAM_PASSWORD : OSSL_KDF_PARAM_KEY, (void*)key, key_size);
+    params[1] = (OSSL_PARAM)OSSL_PARAM_octet_string(pbkdf2 ? OSSL_KDF_PARAM_PASSWORD : OSSL_KDF_PARAM_KEY, (void*)(key ? key : &empty_input), key_size);
     if (pbkdf2) {
-        params[2] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT, (void*)salt, salt_size);
+        params[2] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT, (void*)(salt ? salt : &empty_input), salt_size);
         params[3] = (OSSL_PARAM)OSSL_PARAM_uint32(OSSL_KDF_PARAM_ITER, &iterations);
     } else {
         params[2] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_KDF_PARAM_INFO, (void*)info, info_size);
         /* Upstream explicitly supplies a non-null pointer for present empty salt. */
-        params[3] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT, (void*)(salt ? salt : &empty_salt), salt_size);
+        params[3] = (OSSL_PARAM)OSSL_PARAM_octet_string(OSSL_KDF_PARAM_SALT, (void*)(salt ? salt : &empty_input), salt_size);
     }
     success = EVP_KDF_derive(ctx, output, output_size, params) == 1;
 cleanup:
