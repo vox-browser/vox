@@ -108,6 +108,23 @@ conflicting macOS function declarations. Its compatibility fallback then rejects
 the current global declaration in `forms/window.v:69`. These historical Volt
 outcomes are unrelated to Vox acceptance and do not block the remaining work.
 
+## IndexedDB keyPath continuation
+
+Commit `5dbbec6fc` retains each object store's and index's JavaScript `keyPath`
+array for the lifetime of its wrapper. Repeated reads return the same object;
+different transactions retain separate arrays. Author mutations remain visible
+through that wrapper while the native database schema stays unchanged.
+
+All ten focused IndexedDB regression functions pass. The unchanged upstream
+`IndexedDB/idbobjectstore_keyPath.any` test now passes its single subtest through
+Vox's native bindings; that same subtest failed in the original browser baseline.
+This uses the stock shell harness and default allocation. Windowed browser
+validation remains pending because the published executable predates the fix
+and the shared build guard is busy. The
+[keyPath manifest](performance/ladybird-first100-key-path-20261108.json)
+records source hashes, results, bounded-check receipts, and the local evidence
+archive. The full first-100 result remains pending.
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh

@@ -1,0 +1,176 @@
+{
+  "workspace": "/Users/alex/code/vox2",
+  "implementation_commit": "5dbbec6fc",
+  "scope": "IndexedDB keyPath wrapper identity, from the unchanged first-100 Ladybird cohort",
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "case_id": "IndexedDB/idbobjectstore_keyPath.any",
+  "all_first_100_pass": false,
+  "source_inputs": {
+    "browserjs/indexed_db_binding_jsc.c.v": "8a35a9b28e7b6a3a72eb76227e7b3e44ea4f0bf797018e59fad436baaff2ecd8",
+    "browserjs/indexed_db_indexes_binding_test.v": "a92a8b3b83d77bbd78918c6e65b7c66bb921165807d36ee76e0dcad5e7964195",
+    "browserjs/indexed_db_key_path_identity_test.v": "2c3414cad9b971cb9cf486861e70e43ff40b0311273f2aef33d269cd9241bbe0",
+    "browserjs/zz_first100_key_path_wpt_20261108_test.v": "d326996a60f6e55444a358a75dfef482c2ddafa1da1963f7d4f00eeab4e4c9ba"
+  },
+  "unmodified_upstream_scripts": {
+    "resources/testharness.js": "b74d714183ab224df15612a6af6b65eb1ffc0d8f5501db34379308034d668622",
+    "IndexedDB/resources/support.js": "3bbc4fa7b1a4e2354a05322b4fd4e3ac1afad6ad065af746d9fc377ee28ef1a7",
+    "IndexedDB/idbobjectstore_keyPath.any.js": "068f0f0a7cb14ab847b5131cb1f2f2c2bbd84c85d58ec28d715e9eebc9f379f1"
+  },
+  "focused_regressions": {
+    "test_functions": 10,
+    "exit": 0,
+    "coverage": [
+      "Stable arrays per store/index wrapper",
+      "Separate objects for different transactions",
+      "Author-visible array mutations",
+      "Native schema isolation",
+      "Existing schema and request regressions"
+    ]
+  },
+  "upstream_native_shell": {
+    "result": {
+      "harness": 0,
+      "tests": [
+        {
+          "name": "IDBObjectStore's keyPath attribute returns the same object.",
+          "status": 0,
+          "message": null
+        }
+      ]
+    },
+    "baseline": [
+      {
+        "name": "IDBObjectStore's keyPath attribute returns the same object.",
+        "status": "FAIL",
+        "message": "assert_equals: Same object instance is returned each time keyPath is inspected expected [\"a\", \"b\"] but got [\"a\", \"b\"]"
+      }
+    ],
+    "runtime_exit": 0,
+    "scope": "Stock harness in shell mode, real native IndexedDB and URL bindings, full unchanged upstream test",
+    "limitations": "No windowed HTML/navigation/worker/renderer credit; default allocation only"
+  },
+  "check_receipts": {
+    "first100-key-path-wpt-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-key-path-20261108/wpt-r2",
+        "browserjs/zz_first100_key_path_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4968169472,
+      "elapsed_seconds": 62.800142042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-key-path-wpt-runtime-20261108.json": {
+      "command": [
+        "Build/first100-key-path-20261108/wpt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.524302041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-key-path-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-key-path-20261108/check",
+        "browserjs/zz_first100_key_path_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4981260288,
+      "elapsed_seconds": 72.717699541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-key-path-wpt-r2-runtime-20261108.json": {
+      "command": [
+        "Build/first100-key-path-20261108/wpt-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.49843070799999994,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-key-path-wpt-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-key-path-20261108/wpt",
+        "browserjs/zz_first100_key_path_wpt_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4969185280,
+      "elapsed_seconds": 71.35040812499999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-key-path-runtime-20261108.json": {
+      "command": [
+        "Build/first100-key-path-20261108/check"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.566822458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "development_failure": "The first shell probe paused its owning event loop and suppressed event callbacks. Corrected the probe to deliver database tasks with an unpaused owning event loop; assertions and the upstream test remain unchanged.",
+  "published_browser": {
+    "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "build_guard_busy": true,
+    "contains_fix": false,
+    "production_validation": "pending"
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-first100-key-path.tar.gz",
+    "sha256": "78a6d3625e09af40cf0e4d8c1cb0011efdedb4bd2afff7e891e64f4d5fe19278"
+  }
+}
