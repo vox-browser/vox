@@ -118,6 +118,9 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		strike.color = true
 		strike.foreground = paint_color & 0xffffff
 	}
+	$if linux || cpuraster_freetype ? {
+		strike.foreground = (u32(paint_alpha_byte(alpha)) << 24) | (paint_color & 0xffffff)
+	}
 	// prepare_for_direct_mask_drawing(): device positions plus half the
 	// quarter-pixel sample frequency, floored, with the fraction packed into
 	// the glyph's subpixel position.
@@ -180,6 +183,10 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	}
 	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
 		filter)
+	$if linux || cpuraster_freetype ? {
+		fill_freetype_drawables(mut pixels, pitch, run, routes, face, ctm, &rc,
+			paint_color, alpha, mode, filter)
+	}
 	if strike.font == unsafe { nil } {
 		// A singular matrix zeroes fTransform: every mask is empty.
 		return true
@@ -303,6 +310,7 @@ fn draw_glyph_sprite(mut pixels []u8, pitch int, glyph StrikeGlyph, x int, y int
 enum GlyphRouteKind {
 	mask
 	path
+	drawable
 	drop
 }
 
@@ -335,10 +343,13 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 			continue
 		}
 		bounds := strike.glyph_bounds(id, 0, 0)
+		drawable := $if linux || cpuraster_freetype ? { C.cpuraster_ft_glyph_type(strike.font, id, 2) == 4 } $else { false }
 		route := if bounds.width == 0 || bounds.height == 0 {
 			GlyphRoute{
 				kind: .drop
 			}
+		} else if drawable {
+			GlyphRoute{kind: .drawable}
 		} else if face.color_glyphs {
 			GlyphRoute{}
 		} else if outline := glyph_outline(strike.font, id, strike.transform) {
@@ -361,6 +372,10 @@ fn glyph_routes(face GlyphFace, ids []u16, as_paths bool) ?[]GlyphRoute {
 // point dropped, y flipped), scaled back by a quarter.
 fn glyph_outline(font voidptr, id u16, transform [6]f64) ?Path {
 	elements := glyph_path(font, id, transform, 4, 4)?
+	return glyph_outline_elements(elements)
+}
+
+fn glyph_outline_elements(elements []f64) Path {
 	mut b := PathBuilder{}
 	mut started := false
 	mut cx := f64(0)

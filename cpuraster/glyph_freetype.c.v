@@ -27,6 +27,8 @@ $if linux || cpuraster_freetype ? {
 	fn C.cpuraster_ft_matrix(font voidptr, values &f32)
 	fn C.cpuraster_ft_bitmap(font voidptr, glyph u16, smoothing int, info &i32, pixels &u8) int
 	fn C.cpuraster_ft_path(font voidptr, glyph u16, values &&f64) int
+	fn C.cpuraster_ft_color_layers(font voidptr, glyph u16, glyphs &u16, colors &u32, foreground u32) int
+	fn C.cpuraster_ft_layer_path(font voidptr, glyph u16, smoothing int, values &&f64) int
 	fn C.free(ptr voidptr)
 
 	struct GlyphFace {
@@ -107,7 +109,7 @@ $if linux || cpuraster_freetype ? {
 		for id in glyphs {
 			kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
 			if kind < 0 { return false }
-			if kind in [2, 3] {
+			if kind in [2, 3, 4] {
 				bounds := freetype_glyph_bounds(s, id, 3, 3)
 				if bounds.width >= glyph_max_width || bounds.height > max_untiled_dimension {
 					return false
@@ -135,6 +137,7 @@ $if linux || cpuraster_freetype ? {
 
 	fn freetype_glyph_bounds(s &GlyphStrike, id u16, sub_x int, sub_y int) StrikeGlyph {
 		kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
+		if kind == 4 { return freetype_color_bounds(s, id, sub_x, sub_y) }
 		if kind in [2, 3] {
 			mut info := [6]i32{}
 			if C.cpuraster_ft_bitmap(s.font, id, s.smoothing, &info[0], unsafe { nil }) == 0 {
@@ -151,6 +154,7 @@ $if linux || cpuraster_freetype ? {
 
 	fn freetype_make_glyph(s &GlyphStrike, id u16, sub_x int, sub_y int) StrikeGlyph {
 		kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
+		if kind == 4 { return freetype_make_color_glyph(s, id, sub_x, sub_y) }
 		if kind in [2, 3] { return freetype_make_bitmap_glyph(s, id, sub_x, sub_y) }
 		g := freetype_glyph_bounds(s, id, sub_x, sub_y)
 		if g.width == 0 || g.height == 0 || g.width >= glyph_max_width { return g }

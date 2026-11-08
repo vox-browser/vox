@@ -115,16 +115,17 @@ static int cpuraster_ft_load_any(CPURasterFTFont* f, uint16_t id, int smoothing,
 }
 
 static int cpuraster_ft_colr(CPURasterFTFont* f, uint16_t id) {
-    FT_LayerIterator iter = {0}; FT_UInt glyph, color;
-    if (FT_Get_Color_Glyph_Layer(f->face,id,&glyph,&color,&iter)) return 1;
     FT_OpaquePaint paint = {0};
-    return FT_Get_Color_Glyph_Paint(f->face,id,FT_COLOR_INCLUDE_ROOT_TRANSFORM,&paint) != 0;
+    if (FT_Get_Color_Glyph_Paint(f->face,id,FT_COLOR_INCLUDE_ROOT_TRANSFORM,&paint)) return 2;
+    FT_LayerIterator iter = {0}; FT_UInt glyph, color;
+    return FT_Get_Color_Glyph_Layer(f->face,id,&glyph,&color,&iter) ? 1 : 0;
 }
 
-// 0 empty, 1 outline, 2 gray/mono bitmap, 3 color bitmap, -1 unported paint graph.
+// 0 empty, 1 outline, 2 gray/mono bitmap, 3 color bitmap, 4 COLRv0.
 static int cpuraster_ft_glyph_type(void* reference, uint16_t id, int smoothing) {
     CPURasterFTFont* f = (CPURasterFTFont*)reference;
-    if (cpuraster_ft_colr(f,id)) return -1;
+    int colr = cpuraster_ft_colr(f,id);
+    if (colr) return colr == 1 ? 4 : -1;
     if (!cpuraster_ft_load_any(f,id,smoothing,0)) return 0;
     if (f->face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) return 1;
     if (f->face->glyph->format == FT_GLYPH_FORMAT_BITMAP) {
@@ -247,6 +248,41 @@ static int cpuraster_ft_path(void* reference, uint16_t id, double** output) {
     CPURasterFTFont* f = (CPURasterFTFont*)reference;
     *output = NULL;
     if (cpuraster_ft_colr(f,id) || !cpuraster_ft_load_any(f,id,2,1)
+        || f->face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) return -1;
+    CPURasterFTPath p = {0};
+    FT_Outline_Funcs funcs = {cpuraster_ft_move,cpuraster_ft_line,cpuraster_ft_conic,cpuraster_ft_cubic,0,0};
+    if (FT_Outline_Decompose(&f->face->glyph->outline,&funcs,&p)
+        || p.failed || (p.count && cpuraster_ft_emit(&p,4,NULL,NULL,NULL))) {
+        free(p.values); return -1;
+    }
+    *output = p.values;
+    return p.count;
+}
+
+// Native services only: palette lookup and outline extraction. Layer order,
+// subpixel placement, coverage and RGBA composition belong to the V renderer.
+static int cpuraster_ft_color_layers(void* reference, uint16_t id,
+        uint16_t* glyphs, uint32_t* colors, uint32_t foreground) {
+    CPURasterFTFont* f = (CPURasterFTFont*)reference;
+    FT_Palette_Data data = {0}; FT_Color* palette = NULL;
+    if (FT_Palette_Data_Get(f->face,&data) || FT_Palette_Select(f->face,0,&palette)) return 0;
+    FT_LayerIterator iter = {0}; FT_UInt glyph, color; int count = 0;
+    while (FT_Get_Color_Glyph_Layer(f->face,id,&glyph,&color,&iter)) {
+        if (glyphs) glyphs[count] = glyph;
+        if (colors) {
+            FT_Color c = color < data.num_palette_entries ? palette[color] : (FT_Color){0,0,0,0};
+            colors[count] = color == 0xffff ? foreground
+                : ((uint32_t)c.alpha<<24)|((uint32_t)c.red<<16)|((uint32_t)c.green<<8)|c.blue;
+        }
+        ++count;
+    }
+    return count;
+}
+
+static int cpuraster_ft_layer_path(void* reference, uint16_t id, int smoothing, double** output) {
+    CPURasterFTFont* f = (CPURasterFTFont*)reference;
+    *output = NULL;
+    if (!cpuraster_ft_load_any(f,id,smoothing,1)
         || f->face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) return -1;
     CPURasterFTPath p = {0};
     FT_Outline_Funcs funcs = {cpuraster_ft_move,cpuraster_ft_line,cpuraster_ft_conic,cpuraster_ft_cubic,0,0};
