@@ -3,6 +3,7 @@ module browserjs
 import dom
 import html
 import indexeddb
+import libjs
 
 // IndexedDB's current typed storage representation supports finite value
 // trees. Unsupported clone records fail explicitly rather than being stored
@@ -85,7 +86,7 @@ fn indexed_db_value_to_projection(value indexeddb.Value) !dom.JSValue {
 		.null_ { return dom.js_null() }
 		.boolean { return dom.js_bool(value.bool_) }
 		.number { return dom.js_number(value.number) }
-		.string_ { return dom.js_string(value.text) }
+		.string_ { return dom.js_utf16_string(libjs.utf16_string_from_utf8_without_validation(value.text)) }
 		else {}
 	}
 	mut object := html.StructuredObject.create(match value.kind {

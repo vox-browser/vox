@@ -6,6 +6,8 @@
 // portions of Internal/Algorithms.{h,cpp}.
 module indexeddb
 
+import libjs
+
 import math
 
 pub enum KeyType {
@@ -129,18 +131,7 @@ fn compare_bytes(a []u8, b []u8) int {
 // observable when a supplementary-plane character is compared with a BMP
 // character above the surrogate range.
 fn utf16_code_units(value string) []u16 {
-	mut units := []u16{cap: value.len}
-	for character in value.runes() {
-		code_point := u32(character)
-		if code_point <= 0xffff {
-			units << u16(code_point)
-		} else {
-			offset := code_point - 0x10000
-			units << u16(0xd800 + (offset >> 10))
-			units << u16(0xdc00 + (offset & 0x3ff))
-		}
-	}
-	return units
+	return libjs.utf16_string_from_utf8_without_validation(value).code_units()
 }
 
 fn compare_utf16_code_units(a string, b string) int {

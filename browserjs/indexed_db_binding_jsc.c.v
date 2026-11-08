@@ -148,7 +148,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 			mut runtime := unsafe { &Runtime(owner) }
 			events := runtime.event_binding()!
 			return runtime.call_javascript_function(events.factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [
-				runtime.binding_string('event'),
+				runtime.indexed_db_string('event'),
 				binding.prototypes[8],
 			])
 		}
@@ -332,7 +332,7 @@ fn (runtime &Runtime) indexed_db_integer(value voidptr) !u64 {
 
 fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args []voidptr) !voidptr {
 	if args.len < 2 { return runtime.event_binding_type_error('Missing IndexedDB receiver') }
-	method := runtime.binding_dom_string(args[0])!
+	method := runtime.indexed_db_dom_string(args[0])!
 	receiver := args[1]
 	undefined := C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	if method in ['globalBrand', 'factory'] {
@@ -347,7 +347,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		return runtime.indexed_db_wrap(mut binding, voidptr(factory), &IndexedDBBindingEntry{ kind: .factory, factory: factory })
 	}
 	if method == 'constructVersionEvent' {
-		type_ := runtime.binding_dom_string(args[2])!
+		type_ := runtime.indexed_db_dom_string(args[2])!
 		dictionary := runtime.ui_event_argument(args, 3)
 		bubbles := runtime.event_binding_bool_property(dictionary, 'bubbles', false)!
 		cancelable := runtime.event_binding_bool_property(dictionary, 'cancelable', false)!
@@ -383,7 +383,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 	}
 	mut entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal IndexedDB receiver') }
 	if method == 'brand' {
-		name := runtime.binding_dom_string(args[2])!
+		name := runtime.indexed_db_dom_string(args[2])!
 		expected := ['IDBFactory', 'IDBRequest', 'IDBOpenDBRequest', 'IDBDatabase', 'IDBTransaction',
 			'IDBObjectStore', 'IDBIndex', 'IDBCursor'][int(entry.kind)]
 		if name != expected && !(name == 'IDBRequest' && entry.kind == .open_request) &&
@@ -393,14 +393,14 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		return undefined
 	}
 	if method == 'getHandler' {
-		return runtime.javascript_event_handler(entry.target, runtime.binding_dom_string(args[2])!)
+		return runtime.javascript_event_handler(entry.target, runtime.indexed_db_dom_string(args[2])!)
 	}
 	if method == 'setHandler' {
-		runtime.set_javascript_event_handler(entry.target, runtime.binding_dom_string(args[2])!, args[3])!
+		runtime.set_javascript_event_handler(entry.target, runtime.indexed_db_dom_string(args[2])!, args[3])!
 		return undefined
 	}
 	if method in ['listLength', 'listItem', 'listContains'] {
-		kind := runtime.binding_dom_string(args[2])!
+		kind := runtime.indexed_db_dom_string(args[2])!
 		list := match entry.kind {
 			.database { entry.database.object_store_names() }
 			.transaction { entry.transaction.object_store_names() }
@@ -411,11 +411,11 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		if method == 'listLength' { return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(list.len)) }
 		if method == 'listContains' {
-			return C.vox_jsc_JSValueMakeBoolean(runtime.context, runtime.binding_dom_string(args[3])! in list)
+			return C.vox_jsc_JSValueMakeBoolean(runtime.context, runtime.indexed_db_dom_string(args[3])! in list)
 		}
 		index := runtime.indexed_db_integer(args[3])!
 		return if index < u64(list.len) {
-			runtime.binding_string(list[int(index)])
+			runtime.indexed_db_string(list[int(index)])
 		} else {
 			C.vox_jsc_JSValueMakeNull(runtime.context)
 		}
@@ -442,7 +442,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return runtime.indexed_db_output(indexeddb.array_value(values))
 			}
 			if method in ['open', 'deleteDatabase'] {
-				name := runtime.binding_dom_string(args[2])!
+				name := runtime.indexed_db_dom_string(args[2])!
 				if method == 'deleteDatabase' {
 					opening := entry.factory.delete_database(name)!
 					return runtime.indexed_db_request(mut binding, opening.request, opening, C.vox_jsc_JSValueMakeNull(runtime.context))
@@ -463,7 +463,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.request, .open_request {
 			request := entry.request
-			if method == 'readyState' { return runtime.binding_string(request.ready_state.str()) }
+			if method == 'readyState' { return runtime.indexed_db_string(request.ready_state.str()) }
 			if method == 'source' { return entry.source }
 			if method == 'transaction' {
 				if transaction := request.transaction_ {
@@ -515,7 +515,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.database {
 			mut database := entry.database
-			if method == 'name' { return runtime.binding_string(database.name()) }
+			if method == 'name' { return runtime.indexed_db_string(database.name()) }
 			if method == 'version' {
 				return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(database.version()))
 			}
@@ -524,7 +524,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return undefined
 			}
 			if method in ['createObjectStore', 'deleteObjectStore'] {
-				name := runtime.binding_dom_string(args[2])!
+				name := runtime.indexed_db_dom_string(args[2])!
 				mut transaction := database.data.upgrade_transaction or { return error('InvalidStateError: no upgrade transaction') }
 				if method == 'deleteObjectStore' {
 					database.delete_object_store(mut transaction, name)!
@@ -544,7 +544,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 			if method == 'transaction' {
 				names := runtime.indexed_db_names(args[2])!
 				mode_text := if args.len > 3 && !C.JSValueIsUndefined(runtime.context, args[3]) {
-					runtime.binding_dom_string(args[3])!
+					runtime.indexed_db_dom_string(args[3])!
 				} else {
 					'readonly'
 				}
@@ -558,7 +558,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				durability_text := if C.JSValueIsUndefined(runtime.context, durability_value) {
 					'default'
 				} else {
-					runtime.binding_dom_string(durability_value)!
+					runtime.indexed_db_dom_string(durability_value)!
 				}
 				durability := match durability_text {
 					'default' { indexeddb.IDBTransactionDurability.default_ }
@@ -577,13 +577,13 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 			if method == 'db' {
 				return runtime.indexed_db_database(mut binding, transaction.database)
 			}
-			if method == 'mode' { return runtime.binding_string(transaction.mode.str()) }
+			if method == 'mode' { return runtime.indexed_db_string(transaction.mode.str()) }
 			if method == 'durability' {
-				return runtime.binding_string(transaction.durability.str().trim_right('_'))
+				return runtime.indexed_db_string(transaction.durability.str().trim_right('_'))
 			}
 			if method == 'error' { return runtime.indexed_db_error(transaction.error_message) }
 			if method == 'objectStore' {
-				return runtime.indexed_db_store(mut binding, transaction.object_store(runtime.binding_dom_string(args[2])!)!)
+				return runtime.indexed_db_store(mut binding, transaction.object_store(runtime.indexed_db_dom_string(args[2])!)!)
 			}
 			if method == 'abort' {
 				transaction.abort('')!
@@ -596,7 +596,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.object_store {
 			mut store := entry.store
-			if method == 'name' { return runtime.binding_string(store.name()) }
+			if method == 'name' { return runtime.indexed_db_string(store.name()) }
 			if method == 'keyPath' {
 				if entry.key_path_value == unsafe { nil } {
 					entry.key_path_value = runtime.indexed_db_output(store.key_path_value())!
@@ -610,7 +610,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return runtime.indexed_db_transaction(mut binding, store.transaction)
 			}
 			if method == 'createIndex' {
-				name := runtime.binding_dom_string(args[2])!
+				name := runtime.indexed_db_dom_string(args[2])!
 				path := runtime.indexed_db_key_path(args[3])!
 				dictionary := runtime.ui_event_argument(args, 4)
 				multi_entry := runtime.event_binding_bool_property(dictionary, 'multiEntry', false)!
@@ -620,10 +620,10 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return runtime.indexed_db_index(mut binding, created, receiver)
 			}
 			if method == 'index' {
-				return runtime.indexed_db_index(mut binding, store.index(runtime.binding_dom_string(args[2])!)!, receiver)
+				return runtime.indexed_db_index(mut binding, store.index(runtime.indexed_db_dom_string(args[2])!)!, receiver)
 			}
 			if method == 'deleteIndex' {
-				store.delete_index(runtime.binding_dom_string(args[2])!)!
+				store.delete_index(runtime.indexed_db_dom_string(args[2])!)!
 				return undefined
 			}
 			if method in ['openCursor', 'openKeyCursor'] {
@@ -657,9 +657,9 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				request := index.get_async(indexeddb.IDBKeyRange.only(key)!, method == 'getKey')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
-			if method == 'name' { return runtime.binding_string(index.name()) }
+			if method == 'name' { return runtime.indexed_db_string(index.name()) }
 			if method == 'setName' {
-				index.rename(runtime.binding_dom_string(args[2])!)!
+				index.rename(runtime.indexed_db_dom_string(args[2])!)!
 				return undefined
 			}
 			if method == 'objectStore' { return entry.source }
@@ -684,7 +684,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		.cursor {
 			mut cursor := entry.cursor
 			if method == 'source' { return entry.source }
-			if method == 'direction' { return runtime.binding_string(cursor.direction.str()) }
+			if method == 'direction' { return runtime.indexed_db_string(cursor.direction.str()) }
 			if method == 'request' { return binding.wrappers[voidptr(cursor.request)] or { undefined } }
 			if method in ['key', 'primaryKey', 'value'] {
 				current := cursor.current_entry or { return undefined }
@@ -727,7 +727,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 }
 
 fn (mut runtime Runtime) indexed_db_cursor_arguments(args []voidptr, entry &IndexedDBBindingEntry) !(?indexeddb.IDBKeyRange, indexeddb.IDBCursorDirection) {
-	direction_text := if args.len > 3 && !C.JSValueIsUndefined(runtime.context, args[3]) { runtime.binding_dom_string(args[3])! } else { 'next' }
+	direction_text := if args.len > 3 && !C.JSValueIsUndefined(runtime.context, args[3]) { runtime.indexed_db_dom_string(args[3])! } else { 'next' }
 	direction := match direction_text {
 		'next' { indexeddb.IDBCursorDirection.next }
 		'nextunique' { indexeddb.IDBCursorDirection.nextunique }
@@ -748,14 +748,14 @@ fn (mut runtime Runtime) indexed_db_error(message string) !voidptr {
 }
 
 fn (mut runtime Runtime) indexed_db_names(value voidptr) ![]string {
-	if C.JSValueIsString(runtime.context, value) { return [runtime.binding_dom_string(value)!] }
+	if C.JSValueIsString(runtime.context, value) { return [runtime.indexed_db_dom_string(value)!] }
 	binding := indexed_db_bindings_[voidptr(&runtime)] or { return error('Missing IndexedDB binding') }
 	array := runtime.retain_javascript_value(runtime.call_javascript_function(binding.sequence, C.vox_jsc_JSValueMakeUndefined(runtime.context), [value])!)!
 	defer { runtime.release_javascript_value(array) }
 	length := int(C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(array, 'length')!, unsafe { nil }))
 	mut names := []string{cap: length}
 	for index in 0 .. length {
-		names << runtime.binding_dom_string(runtime.binding_property(array, index.str())!)!
+		names << runtime.indexed_db_dom_string(runtime.binding_property(array, index.str())!)!
 	}
 	return names
 }
@@ -768,11 +768,11 @@ fn (mut runtime Runtime) indexed_db_key_path(value voidptr) !indexeddb.KeyPath {
 		length := int(C.vox_jsc_JSValueToNumber(runtime.context, runtime.binding_property(converted, 'length')!, unsafe { nil }))
 		mut path := []string{cap: length}
 		for index in 0 .. length {
-			path << runtime.binding_dom_string(runtime.binding_property(converted, index.str())!)!
+			path << runtime.indexed_db_dom_string(runtime.binding_property(converted, index.str())!)!
 		}
 		return indexeddb.KeyPath(path)
 	}
-	return indexeddb.KeyPath(runtime.binding_dom_string(converted)!)
+	return indexeddb.KeyPath(runtime.indexed_db_dom_string(converted)!)
 }
 
 fn (mut runtime Runtime) indexed_db_key(value voidptr) !indexeddb.Key {
