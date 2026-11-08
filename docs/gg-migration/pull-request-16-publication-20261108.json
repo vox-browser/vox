@@ -1,0 +1,228 @@
+{
+  "base": "166f04d9ac863e2da9db3d5afa25deaff6654617",
+  "head": "e3b12c508905f9dbd843a0558d60a764067e6e1a",
+  "commits": [
+    {
+      "canonical": "404906f5b5030734f574db9158dec47fb4bd7b3f",
+      "published": "90f6f411953bb9ddcd9b5162d76db263392a721e"
+    },
+    {
+      "canonical": "57422172fd3494b330f17c8b06fd639c19148c7b",
+      "published": "1da2e69818fcbf22fc51eb0ca9202a420f31ab7f"
+    },
+    {
+      "canonical": "fefe52bc4d9e661b83fce3cc7be4b0f2bf67e9e2",
+      "published": "5dca9a614c37beff6caddc29298c1b6586b554b4"
+    },
+    {
+      "canonical": "e3e8790762bc4b07894007a380fe209188fe50d3",
+      "published": "dc4b87d24168090f33784a46c66c6b705b56eb20"
+    },
+    {
+      "canonical": "207516e40a6b90eed5edbca273c7455df5e6004c",
+      "published": "12962b5d81a8766eca044f57514b5800e34b2fcb"
+    },
+    {
+      "canonical": "51253aac5ce08887594c8d7c002f7ec174df3225",
+      "published": "072e78f4cc3ccb9fa23580e996011f0249357f4b"
+    },
+    {
+      "canonical": "6c96821cfb26dfd50595eec1816029c9bb99a110",
+      "published": "b7944b3deeb3ecc11aab155b64027c06d514fff3"
+    },
+    {
+      "canonical": "b5634a8cc0fe6ca0da600596b58bc56e4937ff1c",
+      "published": "8ad05d382794d5aa09a924ce963267fb34570e58"
+    },
+    {
+      "canonical": "fa8188a4edc40564a306bad56faa4639b0a7b68a",
+      "published": "0260e92c290dd03b7769d83f5e840de8aa5b4cfb"
+    },
+    {
+      "canonical": "a279e5373d760a54fcfdcd93237643e39936b889",
+      "published": "cbab72cede63e4cfbf627f2c3a4c7ff5fc9061c0"
+    },
+    {
+      "canonical": "38d1c9223bc0eae967358a9af985ed75c88556f5",
+      "published": "861b91e706a9698683e4b2d64377904efd65f11c"
+    },
+    {
+      "canonical": "7aa60c1dcc0bee1ba87457287479398202104acc",
+      "published": "5c46674eb534e9c1a0fbf19859e0a6213f789eab"
+    },
+    {
+      "canonical": "37b39b5bdf42701dfe3514c716a2b7b485c0a4d4",
+      "published": "a5b76df3315e82fa361b859f015b38c5fde2196f"
+    },
+    {
+      "canonical": "74fd88caa86ae779e3d34816549d2675c0c96857",
+      "published": "36f629550df2c26d56ef1d5c411f44165cf39ca7"
+    },
+    {
+      "canonical": "601709dab0fd3ec4c7d129127481316bb6d078f6",
+      "published": "9bae12659c0df9ce66aec4c10dfbae6c57a20103"
+    },
+    {
+      "canonical": "f281b65577ae752b1a8121d3e1e02418375eeb2d",
+      "published": "ac16d29b2c2a4436d973175bb09dfb588c84fc00"
+    },
+    {
+      "canonical": "9f2a95302707501ac646756f002ed061b6cb1950",
+      "published": "2459a196e6f73bd3d7c07a85fc3dd02570702b97"
+    },
+    {
+      "canonical": "06405e09542ab5911e97d08b1e50194cafedf126",
+      "published": "7885952dd8f662bcc26450dd81d9e1701e151cb9"
+    },
+    {
+      "canonical": "3bf202a524824fa8c3e51ca8ced60c0af967bf80",
+      "published": "4376c6dff58cbaf42945cfd1b508f43bbdaa264d"
+    },
+    {
+      "canonical": "51b691aefbcf76c5a073b2959f5be4b7ce797ed7",
+      "published": "55ac61072047305e8531d336e287ae2144bcbf52"
+    },
+    {
+      "canonical": "3d8dcb22a7057b1569012c348ed878fdaea2754a",
+      "published": "ca1ae510cf9bcb4903f5bc5633e2e1d965a084ea"
+    },
+    {
+      "canonical": "257f583411b2a92d21ee3a47949e0dfe8b9ba614",
+      "published": "5433e7fa8db22887e8106e5bf84c3766293f9d8f"
+    },
+    {
+      "canonical": "a58966470ae76fd5f763e5f2f9317c0b713d8d79",
+      "published": "98e1247bd88819f093236fff56e3d64ba891e25a"
+    },
+    {
+      "canonical": "36c6d146f82c8776351578ccf5f33c34ef11bf95",
+      "published": "2382c44dd36df69005a61d877dffd1b6e31a1d2f"
+    },
+    {
+      "canonical": "0496c3b81cb9328ccb51e2a4bd3bbb0b2401455c",
+      "published": "8c5b62068b1b95aede3e00919e88382c3fbfdd1a"
+    },
+    {
+      "canonical": "478d7dcab528f7e79ed4691c3bdd2f1ce764967a",
+      "published": "8f67ebe3eeb05b9b39a1aa83643ee88053f0efad"
+    },
+    {
+      "canonical": "f58b137add85a2979f10cfb8a4778172549af385",
+      "published": "0367f36e049e03e472ceb74356bcca194fa071b0"
+    },
+    {
+      "canonical": "888a5c16be6f5973c4791dcfcc2e045a7a9a6b1d",
+      "published": "de57e4ef699d0e3147affa32543328128f9a79ad"
+    },
+    {
+      "canonical": "87e152a92608c6293cf278066ec13a28fba77218",
+      "published": "e5a9534121647ee6cd4cd592fb191ca2071be46e"
+    },
+    {
+      "canonical": "9c7ca42c583a3fdf6928038a7092016e75caf665",
+      "published": "e3b12c508905f9dbd843a0558d60a764067e6e1a"
+    }
+  ],
+  "paths": [
+    "cpuraster/aaclip.v",
+    "cpuraster/aaclip_test.v",
+    "cpuraster/bitmap_export.v",
+    "cpuraster/bitmap_export_test.v",
+    "cpuraster/bitmap_proc.v",
+    "cpuraster/blitter.v",
+    "cpuraster/blur_test.v",
+    "cpuraster/box_shadow.v",
+    "cpuraster/box_shadow_test.v",
+    "cpuraster/canvas.v",
+    "cpuraster/canvas_image.v",
+    "cpuraster/canvas_image_test.v",
+    "cpuraster/color_filter.v",
+    "cpuraster/color_filter_test.v",
+    "cpuraster/dash_test.v",
+    "cpuraster/drop_shadow_test.v",
+    "cpuraster/filter_layer.v",
+    "cpuraster/filter_layer_test.v",
+    "cpuraster/fixture_hashes.v",
+    "cpuraster/glyph_bitmap_test.v",
+    "cpuraster/glyph_color_layers_test.v",
+    "cpuraster/glyph_coretext.h",
+    "cpuraster/glyph_freetype.c.v",
+    "cpuraster/glyph_freetype.h",
+    "cpuraster/glyph_freetype_color.c.v",
+    "cpuraster/glyph_freetype_test.v",
+    "cpuraster/glyph_run.v",
+    "cpuraster/glyph_scaler_darwin.c.v",
+    "cpuraster/glyph_scaler_default.c.v",
+    "cpuraster/glyph_scaler_linux.c.v",
+    "cpuraster/glyph_smoothing_probe.h",
+    "cpuraster/image_filter.v",
+    "cpuraster/image_shader.v",
+    "cpuraster/image_shader_test.v",
+    "cpuraster/inner_shadow.v",
+    "cpuraster/inner_shadow_test.v",
+    "cpuraster/mipmap.v",
+    "cpuraster/mipmap_test.v",
+    "cpuraster/path.v",
+    "cpuraster/pipeline_blitter.v",
+    "cpuraster/rounded_rect.v",
+    "cpuraster/rounded_rect_test.v",
+    "cpuraster/scan_hairline_test.v",
+    "cpuraster/scan_rect.v",
+    "cpuraster/stroke_test.v",
+    "cpuraster/testdata/README.md",
+    "cpuraster/testdata/bitmap-color.ttf",
+    "cpuraster/testdata/color-layers.ttf",
+    "cpuraster/testdata/drop-shadow-pattern.rgba",
+    "cpuraster/testdata/make_bitmap_font.py",
+    "cpuraster/testdata/make_color_layers_font.py",
+    "cpuraster/text_shadow.v",
+    "cpuraster/text_shadow_test.v",
+    "docs/GG_MIGRATION.md",
+    "docs/gg-migration/bitmap-glyphs-mipmaps-20261108.json",
+    "docs/gg-migration/colrv0-glyphs-20261108.json",
+    "docs/gg-migration/filter-composites-20261108.json",
+    "docs/gg-migration/freetype-outlines-20261108.json",
+    "docs/gg-migration/linux-bitmap-export-20261108.json",
+    "docs/gg-migration/linux-native-raster-fixtures-20261108.json",
+    "docs/gg-migration/linux-rgba-raster-20261108.json",
+    "docs/gg-migration/macos-native-raster-fixtures-20261108.json",
+    "docs/gg-migration/nested-inner-shadow-20261108.json",
+    "docs/gg-migration/portable-outer-shadow-20261108.json",
+    "docs/gg-migration/retained-text-shadow-20261108.json",
+    "docs/gg-migration/scaled-drop-shadow-20261108.json",
+    "skia/shadow.c.v",
+    "tools/browser_bundle_lease.py",
+    "tools/browser_bundle_lease_test.py",
+    "tools/build_platform.py",
+    "tools/gg_migration/README.md",
+    "tools/gg_migration/cpu_raster_check.v",
+    "tools/gg_migration/glyph_fonts.txt",
+    "tools/gg_migration/native_fixture_hashes.py",
+    "tools/gg_migration/skia_cpu_oracle.cpp",
+    "tools/gg_migration/test_cpu_raster.sh",
+    "tools/prepare_ui2.py",
+    "tools/rebuild_browser.py",
+    "tools/rebuild_browser_test.py"
+  ],
+  "mismatches": [
+    {
+      "path": "tools/prepare_ui2.py",
+      "published": "100644 blob 7b299689751f21e4f88c4db76c8db1a9eb95f544",
+      "canonical": "100644 blob 6f545dfea5e33cf335f1b0cba5efa0e5b52a4519"
+    },
+    {
+      "path": "tools/rebuild_browser.py",
+      "published": "100644 blob 3c3bf2346ac84ff302d4f5766de5f6de7cbcf47a",
+      "canonical": "100644 blob a6cc3545a19e67265c1b40cae63d52bea85c886b"
+    },
+    {
+      "path": "tools/rebuild_browser_test.py",
+      "published": "100644 blob f98230486de0895a254ff4ebdf6d5da0cec32d0e",
+      "canonical": "100644 blob a0877a4cccafa9a3520572d5f363c7b0f298523a"
+    }
+  ],
+  "pull_request": "https://github.com/vlang/vox2/pull/16",
+  "reviewable": true,
+  "scope": "Continuation of Skia removal; no Skia-free browser link/run claimed.",
+  "shared_tool_differences": "The three listed tool blobs omit unrelated UI2 button-image/Windows staging and production-publication v5/v6 changes. All renderer blobs and modes match canonical committed master."
+}
