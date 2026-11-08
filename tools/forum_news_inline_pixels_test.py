@@ -13,6 +13,10 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_blended_video_keeps_the_surrounding_compositor_metadata(self):
+        self.compare_fixture('blended-video-paint-metadata', width=1024, height=768,
+                             settle_seconds=2)
+
     def test_translucent_partial_borders_share_rounded_side_coverage(self):
         self.compare_fixture('translucent-partial-rounded-border', width=1024, height=768)
 

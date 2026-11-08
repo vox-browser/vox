@@ -430,10 +430,19 @@ fn chromium_layerize_visible_paint_chunks(result &DocumentLayoutResult,
 	// Captured masks, filters and normal opacity form balanced atomic chunks. Their
 	// descendants' metadata is skipped below, just like their enclosed paint;
 	// ordinary siblings still need their own hit-test geometry and tile origin.
+	// A bounded blend group likewise retains one atomic native scope. Its
+	// compositor boundary must not discard the surrounding hit-test geometry:
+	// that geometry determines the transparent rasters above the blended layer.
 	// Other legacy effects retain the preceding planner.
 	for chunk in scratch.chunks {
+		mut atomic_blend := false
+		if layer := commands[chunk.command_index].visual_layer_data {
+			atomic_blend = commands[chunk.command_index].kind == 'begin_css_effect_layer'
+				&& layer.kind == .css_effect && layer.blend_mode != .normal
+				&& layer.filter == none && layer.opacity > 0 && layer.opacity <= 1
+		}
 		if chunk.state.legacy_effect && chromium_paint_chunk_is_interested(chunk, cull)
-			&& !chunk.state.atomic_opacity
+			&& !chunk.state.atomic_opacity && !atomic_blend
 			&& commands[chunk.command_index].kind !in ['begin_svg_mask_layer', 'begin_css_filter_layer'] {
 			chromium_layerize_chunks_into(scratch.chunks, commands.len, scale, mut plan, mut scratch.layer_states)
 			return
