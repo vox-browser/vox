@@ -1554,8 +1554,14 @@ $if test {
 					element: script_element
 				}
 			} else {
+				code := script_element.as_node().text_content() or { '' }
+				if document.should_block_inline_content(script_element, 'script', code) { continue }
+				starting_line := if script_element.is_html_element() {
+					html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) }).source_line_number()
+				} else { 1 }
 				source = browserjs.ScriptSource{
-					code: script_element.as_node().text_content() or { '' }
+					starting_line: starting_line
+					code: code
 					url: document.url.serialize()
 					source_type: if type_ == 'module' { .module } else { .script }
 					element: script_element

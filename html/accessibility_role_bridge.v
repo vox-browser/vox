@@ -244,7 +244,8 @@ fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, sou
 		is_html_or_svg: element.is_html_element() || element.is_svg_element()
 		is_script: element.local_name() == 'script'
 		is_style: element.local_name() == 'style'
-		nonce: element.get_attribute_value('nonce')
+		nonce: element.cryptographic_nonce()
+		had_duplicate_attribute: element.had_duplicate_attribute_during_tokenization
 		attributes: attributes
 		connected_to_policy_document: element.as_node().is_connected()
 	}

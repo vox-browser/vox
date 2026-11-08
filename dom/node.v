@@ -2968,6 +2968,7 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 				})
 			}
 		}
+		element_copy.set_cryptographic_nonce(element.cryptographic_nonce())
 		// Preserve declarations already checked in this document, including CSSOM
 		// edits. A detached, unchecked source or an imported node is checked when
 		// its copy connects to the destination document.

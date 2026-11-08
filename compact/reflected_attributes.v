@@ -167,7 +167,7 @@ fn compact_reflected_attributes_bootstrap() string {
   return "true";
  },function(value){this.setAttribute("writingsuggestions",string(value));});
 })();
-'
+' + compact_nonce_bootstrap()
 }
 
 // Token lists use the native ordered-set and attribute mutation algorithms.

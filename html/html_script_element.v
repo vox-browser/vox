@@ -231,6 +231,10 @@ pub fn (mut script HTMLScriptElementModel) set_source_line_number(line uint) {
 	script.source_line_number_ = if line == 0 { uint(1) } else { line }
 }
 
+pub fn (script &HTMLScriptElementModel) source_line_number() int {
+	return int(script.source_line_number_)
+}
+
 pub fn (script &HTMLScriptElementModel) is_parser_inserted() bool {
 	return script.parser_document_ != none
 }
@@ -352,6 +356,10 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 		}
 		script.complete_external_fetch(source)
 		return
+	}
+	if element := script.element_ {
+		owner := script_dom_element(element)
+		if owner.document().should_block_inline_content(owner, 'script', script.text_) { return }
 	}
 	if script.script_type_ == .import_map {
 		result := ImportMapParseResult.create(script.text_, script.base_url_)

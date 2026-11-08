@@ -5986,6 +5986,9 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	value_or_empty := value or { '' }
+	if local_name == 'nonce' && (e.is_html_element() || e.is_svg_element()) {
+		e.set_cryptographic_nonce(value_or_empty)
+	}
 	if local_name in ['autoplay', 'preload'] && e.is_html_element() && e.local_name() in ['audio', 'video'] {
 		if hook := e.document().media_element_resource_attribute_changed_hook_ {
 			hook(&e)
@@ -6594,6 +6597,8 @@ pub fn (mut e Element) inserted() {
 			e.svg_use_process_the_url()
 		}
 	}
+
+	e.hide_cryptographic_nonce_if_needed()
 
 	// HTMLStyleElement::inserted() and SVGStyleElement::inserted().
 	if mut style_element_base := e.style_element_base() {
