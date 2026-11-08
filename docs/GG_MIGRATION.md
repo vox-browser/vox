@@ -1363,3 +1363,21 @@ chains, rotations, SVG graphs, intersecting boolean shadows, large-sigma
 rescaling, tiling and native browser bridges remain open. The Linux typecheck
 uses Skia development files; a Skia-free browser compile/link/run remains
 unverified.
+
+
+### CPU mipmap exhaustion review verification (2026-11-08)
+
+The review's proposed clamp beyond the mipmap pyramid was checked against
+the pinned native CPU renderer. Its SkMipmapAccessor calls getLevel(), which
+rejects a missing upper level and reloads the base image. When only the lower
+level is missing, linear mode retains the available upper level without a
+lerp. The separate extractLevel() API clamps, but neither these image shaders
+nor the legacy bitmap context use that API.
+
+Eight direct native shader cases match on both platforms. They distinguish
+the base image's clamped edge (192) from the final 1x1 mip's average (96), at
+scales .125, .1, .05 and .025 in nearest and linear mipmap modes. The portable
+regressions pass in default and production builds on macOS and Linux. Another
+2,000 macOS and 10,000 Linux mipmap-level comparisons pass. Production sampling
+arithmetic is unchanged; comments explain the intentional fallback. See the
+[native review verification](gg-migration/mipmap-review-native-20261108.json).
