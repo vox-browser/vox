@@ -134,6 +134,8 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 	mut file_list := FileListHost.create_for_settings(settings)!
 	file_list.install(mut runtime)!
 	file_list.install_constructor()!
+	mut form_data := FormDataHost.create_for_settings(settings)!
+	form_data.install(mut runtime)!
 	mut params := URLSearchParamsHost.create_for_settings(settings)!
 	params.install(mut runtime)!
 	mut urls := URLHost.create_for_settings(settings)!
