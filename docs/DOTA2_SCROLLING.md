@@ -1141,3 +1141,52 @@ outputs are retained in a private mode-0600 archive outside Git: SHA256
 143,925,122 bytes. All 6,644 archived evidence files are read back and checked.
 The per-job Build directory and its archived temporary drivers/harnesses are
 removed after verification.
+
+
+## 2026-11-08: timer registration found inside a slow paint callback
+
+The final diagnostic above also samples `CFRunLoopAddTimer` beneath
+`finish_frame_memory_activity`. Source inspection finds that resetting an active
+memory-maintenance timer removes and re-adds its native registration even when
+its 500 ms interval is unchanged. This is a possible source of avoidable work;
+the sampled call's active/inactive eligibility is not yet established on a fresh
+production browser.
+
+Commit `c28b9f851` resets a valid macOS timer's next fire date while preserving
+its registration and callback context. It still advances V's callback generation
+and keeps the activity root, preventing an already-deferred deadline from firing
+after restart. Changed intervals, zero timers, invalid handles and another run
+loop retain ordinary registration behavior. The native argument uses an explicit
+32-bit cast after a range check. `0a97caad9` scopes the C declaration to macOS;
+Linux and Windows retain their prior restart implementation. The environment
+control `VOX_DISABLE_NATIVE_TIMER_RESTART=1` restores the previous behavior.
+
+The final native fixture resets a deadline 10,000 times with one registration,
+preserving callback ownership and checking rejected cases. Optimized and
+ASan/UBSan executions pass. All 28 focused timer, cooperative-delivery and arena
+ownership cases pass under Boehm, no GC and prealloc. V's compiler automatically
+runs the cases too; separate executions under a 3 GiB runtime guard also pass.
+The negative control retains the old CF object so allocator address reuse cannot
+fake registration identity; disabling reuse makes that regression fail as
+expected, with exit 1. A positive-timer test also verifies that restarting drops
+its already-deferred old deadline and allows the new callback to release its
+activity root. The final source identities and all compiler/runtime exits are
+retained.
+
+Two selection errors precede the passing checks: the standalone zero-timer file
+requires an existing helper from the native-timer file, and the initial combined
+file list repeats its entry file. The corrected invocation compiles the four
+canonical files directly. No test source is copied into Build and no existing
+assertion is relaxed.
+
+**Installed-browser acceptance remains pending.** The current completed bundle
+cannot exercise this V change, and the shared production worker is already
+active. The earlier 52.053 ms candidate interval predates this timer fix; no new
+scrolling measurement, isolated FPS gain, instruction saving or zero-stall claim
+is attached to the timer unit tests. No duplicate production build is queued.
+
+The [timer receipt](performance/reddit-boots-timer-restarts-20261108.json) includes
+all attempts, source pins, commands, guards, executed cases and the private raw
+archive identity. All 205 archived evidence files are read back and verified;
+the mode-0600 archive SHA256 is `b47195a9d837056a646d04dafd79faee47f10670b71054f5f484e8ae14eb993a`. Per-job Build output,
+locks and temporary test binaries/drivers are removed after verification.
