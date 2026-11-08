@@ -81,8 +81,7 @@ fn test_overflow_paint_commands_retain_the_device_snapped_clip() {
 		document.set_display_device_pixel_ratio(density)
 		_ = layout_document_typed_in_viewport(document, 300, 150)
 		list := document.record_display_list() or { panic('display list') }
-		result := viewport_layout_result(list.concrete_handle)
-		commands := result.display_list_commands.filter(it.kind == 'fill_rect' && it.color == 'rgb(255 0 0)')
+		commands := display_list_commands(list).filter(it.kind == 'fill_rect' && it.color == 'rgb(255 0 0)')
 		assert commands.len == 1
 		command := commands[0]
 		assert command.has_clip

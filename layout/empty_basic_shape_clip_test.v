@@ -42,7 +42,7 @@ fn test_fixed_svg_header_discards_collapsed_accessibility_clip_before_layer_plan
 		document.set_font_rendering_policy(.chromium)
 		_ = layout_document_typed_in_viewport(document, 800, 600)
 		list := document.record_display_list() or { panic('missing paint') }
-		result := viewport_layout_result(list.concrete_handle)
+		result := document_layout_result(document) or { panic('missing layout') }
 		commands := display_list_commands(list)
 		plan := chromium_raster_layer_plan(document, commands, 1)
 		mut empty_paths := 0

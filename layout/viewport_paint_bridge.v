@@ -2887,21 +2887,20 @@ fn record_cached_paint_commands_with_visual_context_into(steps []CompatibilityPa
 	return result
 }
 
-// The shell's adopted command vector, returned once it holds a newer list. The
-// next recording of the same document may overwrite it; the vector currently
-// published by the document is never accepted.
+// Return an unleased command vector from this document after adopting its
+// current list. The next recording may reuse it only when no live scene still
+// owns it, including scenes retained by another consumer or an older layout.
 pub fn recycle_display_list_commands(display_list &dom.DisplayList, commands []PaintCommand) {
 	// Under -prealloc the vector belongs to its scene, which is reused whole.
 	$if prealloc {
 		return
 	}
-	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil }
-		|| commands.cap == 0 {
-		return
-	}
-	mut result := viewport_layout_result(display_list.concrete_handle)
-	if commands.data == result.display_list_commands.data {
-		return
+	if commands.cap == 0 { return }
+	mut result := current_display_list_layout_result(display_list) or { return }
+	pool := result.scene_pool
+	if pool == unsafe { nil } { return }
+	for scene in pool.live {
+		if commands.data == scene.commands_data { return }
 	}
 	result.record_scratch.recycled_commands = unsafe { commands }
 }
@@ -3027,15 +3026,23 @@ fn viewport_record_display_list(target voidptr) &dom.DisplayList {
 		commands = resolve_force_dark_paint_commands(commands, settings)
 	}
 	scene.retain_nested_scenes(commands)
+	recording := &DisplayListRecording{
+		commands: commands
+		generation: scene.generation
+		scene: scene
+		visual_context_tree: snapshot_display_list_visual_context_tree(&result.visual_context_tree)
+		document: result.document
+	}
 	display_list := &dom.DisplayList{
-		concrete_handle: target
-		command_count_: commands.len
+		concrete_handle: voidptr(recording)
+		command_count_: recording.commands.len
+		generation_: recording.generation
 		dump_callback: viewport_display_list_dump
 	}
+	scene.commands_data = commands.data
 	scene.arena.leave(scene_entry)
 	result.drop_display_list_scene()
 	result.scene = scene
-	result.display_list_commands = commands
 	result.display_list = display_list
 	result.needs_repaint = false
 	result.paint_recording_viewport_only = viewport_only
@@ -3294,20 +3301,20 @@ fn append_display_list_command_dump(command PaintCommand, mut builder strings.Bu
 }
 
 fn viewport_display_list_dump(target voidptr) string {
-	result := viewport_layout_result(target)
-	mut builder := strings.new_builder(256 + result.display_list_commands.len * 48)
+	recording := unsafe { &DisplayListRecording(target) }
+	mut builder := strings.new_builder(256 + recording.commands.len * 48)
 	builder.write_string('AccumulatedVisualContext Tree:\n')
-	for index := 1; index < result.visual_context_tree.nodes.len; index++ {
-		node := result.visual_context_tree.nodes[index]
+	for index := 1; index < recording.visual_context_tree.nodes.len; index++ {
+		node := recording.visual_context_tree.nodes[index]
 		for _ in 0 .. node.depth {
 			builder.write_string('  ')
 		}
-		builder.writeln('[${index}] ${result.visual_context_tree.dump(index)}')
+		builder.writeln('[${index}] ${recording.visual_context_tree.dump(index)}')
 	}
 
 	builder.write_string('\nDisplayList:\n')
 	mut indent := 0
-	for command in result.display_list_commands {
+	for command in recording.commands {
 		nesting_change := display_list_command_nesting_change(command.kind)
 		if nesting_change < 0 && indent > 0 {
 			indent--
@@ -4339,9 +4346,6 @@ fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_
 // storage with the display list instead of cloning every command at the native
 // boundary.
 pub fn display_list_commands(display_list &dom.DisplayList) []PaintCommand {
-	if display_list.concrete_handle == unsafe { nil } {
-		return []PaintCommand{}
-	}
-	result := viewport_layout_result(display_list.concrete_handle)
-	return result.display_list_commands
+	recording := display_list_recording(display_list) or { return []PaintCommand{} }
+	return recording.commands
 }

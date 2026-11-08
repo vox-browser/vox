@@ -239,10 +239,11 @@ fn test_viewport_scene_storage_tracks_visible_output_instead_of_document_steps()
 			_ = document.record_viewport_display_list()?
 			result := document_layout_result(document)?
 			assert result.scene != unsafe { nil }
-			assert result.display_list_commands.len < 40
+			command_count := result.display_list.command_count()
+			assert command_count < 40
 			step_bytes := i64(result.paint_steps.len) * i64(sizeof(CompatibilityPaintStep))
 			used := result.scene.arena.usage().used
-			assert used < step_bytes, 'scene used ${used} bytes for ${result.display_list_commands.len} commands; full step vector would use ${step_bytes}'
+			assert used < step_bytes, 'scene used ${used} bytes for ${command_count} commands; full step vector would use ${step_bytes}'
 		}
 	}
 }

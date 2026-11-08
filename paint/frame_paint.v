@@ -163,9 +163,8 @@ fn (mut app BrowserApp) record_document_paint_commands() {
 		app.paint_commands = layout.display_list_commands(list)
 		app.paint_scene = layout.retain_display_list_scene(list)
 		layout.release_display_list_scene(previous_scene)
-		// The shell is the only reader of its adopted vector. Return the previous
-		// one so the next recording can reuse its capacity instead of
-		// allocating a fresh frame-sized vector.
+		// Return the previous vector after dropping our lease. The recording
+		// owner rejects reuse while any other consumer still retains it.
 		if previous_commands.data != app.paint_commands.data {
 			layout.recycle_display_list_commands(list, previous_commands)
 		}

@@ -533,7 +533,7 @@ pub:
 	document &dom.Document = unsafe { nil }
 pub mut:
 	paint_tree                        BlockBox
-	display_list_commands             []PaintCommand
+	// The latest immutable recording; older consumers retain their own list.
 	display_list                      &dom.DisplayList = unsafe { nil }
 	stacking_context                  &dom.StackingContext = unsafe { nil }
 	needs_accumulated_visual_contexts bool = true
