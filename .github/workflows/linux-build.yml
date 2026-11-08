@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 120
     env:
       V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
-      UI2_REVISION: 96f5924d73f69c0302de3c5c31d9964d4d11f573
+      UI2_REVISION: 846659299558061cf0de063f029a9f9b941ff9a1
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
     steps:
