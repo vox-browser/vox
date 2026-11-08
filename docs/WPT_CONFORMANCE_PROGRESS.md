@@ -787,3 +787,130 @@ accepted stable-input cohort. The serial r17 observer will pin its own tools
 at launch, after r16 finishes and a matching bundle is published. Neither
 these focused checks nor the pending broad run establish 100% of the larger
 imported set or full upstream WPT.
+
+
+## Completed larger r16 collection: diagnostic only
+
+r16 collected all **6,828 imported cases** on executable
+`f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`.
+It reports **251,699 / 312,898 runtime subtests PASS (80.44%)**. This is a
+**diagnostic count, not an accepted stable-input cohort**: the observer detects
+`tools/wpt_compare.py` changing during collection. It is also a different
+fixture selection and denominator from r13; these percentages do not establish
+a regression or a rate for full upstream WPT.
+
+The case outcomes are 6,711 COMPLETE, 35 CRASH, 67 NO_HARNESS, 5 HARD_TIMEOUT,
+7 MEMORY_LIMIT and 3 NO_DOCUMENT. Completed harnesses include 6,148 OK,
+112 ERROR and 451 TIMEOUT. There are 59,983 failing, 307 timed-out,
+899 not-run and 10 precondition-failed reported assertions; only 2,382 cases
+pass completely. Cases without a harness are not counted as passing.
+The strict runner and aggregate guard exit 1.
+
+Raw evidence is `/Users/alex/.cache/vox/wpt/20261108-r16-1558-raw.tar.gz`,
+SHA-256 `ab758535b7722f3e7dbec67e73ae182ba23de836b9b84cea63dd8e31ba13c071`.
+r17 has started all 6,828 cases on the pinned completed production executable
+`8fe20c9aaaa506da42672d47f1f1ffc087fce78f44290e68f14e62d00a1b90de`.
+Its result remains pending; it does not contain the final coordinate fix below.
+
+## Accessibility production validation completed
+
+The same completed production image passes all **168 / 168 assertions** on
+`accname/name/comp_label`, `comp_labelledby` and
+`comp_labelledby_hidden_nodes`: three fresh processes, all harnesses OK, every
+expected count met, and runner/guard exits 0. This closes production validation
+of `3843777c9`. Raw evidence is
+`/Users/alex/.cache/vox/wpt/20261108-accname-production-raw.tar.gz`, SHA-256
+`969033eccefaa3a82233cb159a782a4e86e297ca27caa4fad855526292971ad0`.
+
+## SVG pointer regions and native coordinate mapping
+
+The following slices are committed separately:
+
+| Commit | Change |
+| --- | --- |
+| `1c3591c32` | Parse and preserve all eleven SVG pointer-events values. |
+| `4ff319b3a` | Query fill/stroke geometry through the existing Skia path decoder, including winding rules, caps, joins, dashes and non-scaling strokes. |
+| `d0a5cfed7` | Clip hit queries to the union of transformed SVG clip-path components; retain non-geometric alpha-mask, filter and opacity behavior. |
+| `ec0ff060b` | Use SVG fill/stroke regions and text character cells, specified paint presence and each pointer-events visibility rule. Preserve geometry in immutable retained snapshots and conservative hit bounds. |
+| `9ec7ba16d` | Give native Page WPT checks a visible viewport and rendering updates so FontFaceSet.ready can settle. |
+| `b64060862` | Map SVG user units into scaled native layout without an authored viewBox, and apply SVG CTMs to client rectangles. |
+
+The geometry rules follow [SVG 2 pointer events](https://www.w3.org/TR/SVG2/interact.html#PointerEventsProperty).
+The referenced SVG clip change intentionally corrects the upstream translation's
+paint-only clip limitation. Existing regressions that encoded that limitation
+now check the geometric clip, while retaining the paint-mask assertions.
+
+**22 distinct focused checks pass in normal and preallocated-memory modes**:
+3 CSS, 3 native geometry, 2 clip-context and 14 layout checks. Three geometry
+checks also pass with the fastc backend. The final layout cohort covers retained
+storage, transformed strokes, unpainted character cells, live attributes,
+clipping, percentages, nested SVGs, authored viewBoxes and both rendering
+policies at native scales 1 and 2. V is `0.5.2 395d574`; V retains its 10 GiB
+compiler limit, compilation/outer guards retain 12 GiB, and native runtime
+guards retain 3 GiB. Required final checks and guards exit 0.
+
+Before the final coordinate fix, the original nine-page native Page collection
+matches the relevant sources of `9ec7ba16d` and reports the following results:
+
+| Original imported WPT page | Native Page PASS / reported | Expected |
+| --- | ---: | ---: |
+| `accname/name/comp_label` | 131 / 131 | 131 |
+| `accname/name/comp_labelledby` | 10 / 10 | 10 |
+| `accname/name/comp_labelledby_hidden_nodes` | 27 / 27 | 27 |
+| `svg/interact/parsing/pointer-events-computed` | 0 / 0, no harness | 11 |
+| `svg/interact/parsing/pointer-events-valid` | 0 / 0, no harness | 11 |
+| `svg/interact/scripted/ellipse-hittest` | 24 / 24 | 24 |
+| `svg/interact/scripted/pointer-events-fill-stroke-hittest` | 8,910 / 8,910 | 8,910 |
+| `svg/interact/scripted/rect-hittest-002` | 53 / 53 | 53 |
+| `svg/interact/scripted/svg-pointer-events-bbox` | 23 / 31 | 31 |
+
+This is **9,178 / 9,186 reported assertions**, with 22 expected assertions
+unreported by the two SVG document pages. The strict driver/outer guard exit 1;
+the eight bounding-box failures and missing harnesses remain failures.
+The native executable is SHA-256
+`0937e4ebd9423aa06458370bc2d57c5fbf968c628a6c5f1f2453b04a2ef27c81`.
+Fixtures, required source files, native binary, server and runner inputs remain
+unchanged during that collection. It uses native Page processes at an 800x600
+viewport, rather than production navigation or the production display scale.
+The earlier no-rendering native probe reports zero assertions and a harness
+timeout; that failed attempt is retained too.
+
+The first nine-page production check on `8fe20c9a…` reports only
+**4,725 / 9,186 PASS**, 4,461 FAIL and two NO_HARNESS cases. Both strict exits
+are 1. Its source proof includes the pointer-region implementation but lacks
+the final coordinate and corrected clip code. This discrepancy is retained at
+`/Users/alex/.cache/vox/wpt/20261108-svg-pointer-production-raw.tar.gz`, SHA-256
+`29d831dd4d5508ac582a6abb365c24fe2b973e1eee7050810697efcbaa08af42`.
+A separate minimized production diagnostic reproduces a 40 CSS-pixel SVG
+rectangle reporting a 20-pixel client width on the native scaled viewport.
+The initial wide-stroke probe masked this error. The strengthened regression
+fails with the same 20-versus-40 result before `b64060862`, then passes along
+with percentage, nested-viewport and authored-viewBox checks after both
+coordinate mappings are fixed. The minimized diagnostic is not an official
+WPT result or part of a WPT denominator.
+
+Raw focused evidence, including failed regressions, compilation attempts and
+diagnostics, is `/Users/alex/.cache/vox/wpt/20261108-svg-pointer-b64060862-raw.tar.gz`,
+SHA-256 `997f55972cfe7c9df53d2440dc97d3b748c8ea044a350029e56d5e7dfb5af790`.
+The local summary is `/Users/alex/.cache/vox/wpt/20261108-svg-pointer-summary.json`,
+SHA-256 `2760a3ea4e7c8c0311fdd74cc4a40b9c246c32b555135ac928eca8e37009cf05`.
+Generated C is excluded; completed Build output, locks and the temporary
+canonical combined test file are removed after archiving.
+
+A matching-image production follow-up targets six original HTML pages with
+**9,155 expected assertions**, with fresh browser processes, unchanged harness
+deadlines, 4 GiB browser caps and a 12 GiB outer guard. It requires all 16
+implementation hashes from `b6406086260673bb5136284254572bbbe6059d07` and checks
+the original completed artifact in place under a read lease. The two SVG
+document-loader cases and eight bounding-box failures remain recorded above.
+Status/completion are
+`/Users/alex/.cache/vox/wpt/20261108-svg-pointer-fixed-production-{status,completion}.json`.
+Its observer is `/Users/alex/.cache/vox/wpt/20261108-svg-pointer-fixed-production-followup.py`,
+SHA-256 `de4d24c48d1f872212903d130447d7bd9aff224ac04c61da91b05ef98c6206c2`.
+
+Production validation of the final coordinate fix is pending. The shared
+fastc production attempt fails on a missing `vlib/os/execute_capture_legacy.h`;
+the C backend already passes the focused checks. The next request uses that
+backend through the shared supervisor. No private production bundle is copied
+or separately built. r17 continues on its original pinned image. **The larger
+imported set and full upstream WPT have not reached 100%.**
