@@ -3,7 +3,7 @@ module cpuraster
 // A real blur resolves MakeFromImage's deferred sampling, source conversion,
 // paint alpha and preceding color filters together into its input surface.
 // Identity blurs preserve these effects until the first non-identity blur.
-fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, src Rect, dst Rect, smoothing bool, alpha f32, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
+fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, src Rect, dst Rect, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
 	ctm := canvas_affine(transform)
 	if ctm.kx != 0 || ctm.ky != 0 || step.kind != .blur
 		|| math_abs32(ctm.tx) > 1 << 20 || math_abs32(ctm.ty) > 1 << 20 { return false }
@@ -29,7 +29,22 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 			}
 		}
 	}
-	if !real_blur { return false }
+	if !real_blur {
+		before << step.post_color
+		filter := new_color_filter(before) or { return false }
+		source := [src.left, src.top, src.right - src.left, src.bottom - src.top]!
+		destination := [dst.left, dst.top, dst.right - dst.left, dst.bottom - dst.top]!
+		if rect_xywh(source) != src || rect_xywh(destination) != dst { return false }
+		mut fast := step.source_draw_bounds or { dst }
+		sigmas := if stages.len == 0 { [step.sigma] } else { stages.map(it.sigma) }
+		for sigma in sigmas {
+			pad := f32(3) * sigma
+			fast = Rect{fast.left - pad, fast.top - pad, fast.right + pad, fast.bottom + pad}
+		}
+		return draw_color_filtered_image_with_bounds(mut pixels, width, height, pitch, alpha_type,
+			transform, image, source, destination, smoothing, global_alpha, mode, clips, filter, fast)
+	}
+	alpha := f32(u8(global_alpha * f32(255))) * inv_255
 	filter := new_color_filter(before)
 	bitmap := CanvasBitmap{...image, pixels: image.pixels[int(src.top) * image.pitch + int(src.left) * 4..],
 		width: int(src.right - src.left), height: int(src.bottom - src.top)}

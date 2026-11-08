@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2460,7 +2460,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
 	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
-	resampled := os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	identity_layers := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-layers'
+	resampled := identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
 	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
@@ -2580,6 +2581,14 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			c = BitmapCase{...c, source: src,
 				destination: if i % 3 == 0 { [f32(4), 5, src[2], src[3]]! } else { c.destination },
 				transform: if i % 3 == 1 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { c.transform }}
+		}
+		if identity_layers {
+			mut filters := random_color_filters()
+			filters << cpuraster.CanvasFilterStep{kind: .blur, sigma: .001}
+			filters << random_color_filters()
+			if i % 2 == 0 { filters << cpuraster.CanvasFilterStep{kind: .blur} }
+			if i % 3 == 0 { filters << random_color_filters() }
+			c = BitmapCase{...c, filters: filters}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++

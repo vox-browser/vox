@@ -592,6 +592,36 @@ fn test_near_integer_shadow_offsets_reduce_sampling_to_nearest() {
 	assert sha256.sum(pixels).hex() == 'd8f9957149e13daea2abd1cc604f651ba2d4ceb5ef921760f9077cb1be069f9d'
 }
 
+fn test_identity_blurs_keep_source_sampling_and_color_filters_deferred() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	zero := CanvasFilterStep{kind: .blur}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .001}
+	sequences := [[contrast, zero, opacity], [contrast, tiny, opacity, zero, contrast],
+		[zero, opacity, tiny, contrast], [contrast, tiny], [contrast, tiny], [contrast, zero, opacity, tiny]]
+	hashes := ['66ea4382a30ae423', 'faf646ac30327c3f', 'e10325f572b4dc14',
+		'e12c13dca8162f9f', 'f6e28ad1753237d4', 'c1ada75f25f9bac0']
+	for i, steps in sequences {
+		mut pixels := image_test_background()
+		source := if i in [0, 4] { [f32(0), 0, 7, 6]! }
+			else if i == 5 { [f32(-2), -1, 10, 8]! } else { [f32(1), 1, 5, 4]! }
+		destination := match i {
+			2 { [f32(10.25), 12.5, 2, 3]! }
+			4 { [f32(-8.002), 5, 7, 6]! }
+			5 { [f32(4.25), 6.5, 25, 18]! }
+			else { [f32(4.5), 6.25, 22, 16]! }
+		}
+		transform := if i == 3 { [f32(-1.1), 0, 0, .8, 42, 3]! } else { image_test_identity }
+		alpha := if i == 1 { f32(.65) } else if i in [2, 5] { f32(.7) } else { f32(1) }
+		mode := match i { 0 { BlendMode.overlay } 2 { .plus_lighter } 3 { .multiply } else { .src_in } }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i !in [1, 5], i in [1, 2, 5]), source, destination,
+			true, alpha, mode, image_test_clips(i in [1, 2, 3, 5]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'identity source fixture ${i}'
+	}
+}
+
 fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
 	mut pixels := []u8{len: 65 * 44 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,

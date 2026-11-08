@@ -3,6 +3,11 @@ module cpuraster
 // MakeFromImage retains an integer-aligned source subset and defers its
 // transform, paint alpha and color filters until the final image draw.
 fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ColorFilter) bool {
+	return draw_color_filtered_image_with_bounds(mut pixels, width, height, pitch, alpha_type,
+		transform, image, source, destination, smoothing, global_alpha, mode, clips, filter, none)
+}
+
+fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ColorFilter, quick_bounds ?Rect) bool {
 	mut src := rect_xywh(source)
 	mut dst := rect_xywh(destination)
 	ctm := canvas_affine(transform)
@@ -13,7 +18,8 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	if rect_is_empty(src) || rect_is_empty(dst) { return target.ready() }
 	rc := canvas_raster_clip(width, height, clips)
-	if canvas_quick_reject(dst, affine_to_matrix(ctm), &rc) { return target.ready() }
+	fast := quick_bounds or { dst }
+	if canvas_quick_reject(fast, affine_to_matrix(ctm), &rc) { return target.ready() }
 	affine_invert(ctm) or { return target.ready() }
 	image_bounds := Rect{0, 0, f32(image.width), f32(image.height)}
 	if !rect_contains_rect(image_bounds, src) {
