@@ -8,29 +8,11 @@ https://vox-browser.org
 
 Vox compiles in 2 seconds on M5 Max with `v .`!
 
-With the native dependencies installed, use a current V compiler and update UI2:
-run `git pull` in a linked UI2 checkout, or `v up ui2` for a VPM-managed install.
-Then compile directly:
+With the native dependencies installed, use a current V compiler:
 
 ```sh
 v -b fastc -enable-globals .
 ```
-
-For a first install, use `v install https://github.com/vlang/ui2`.
-An existing `~/.vmodules/ui2` symlink already makes that checkout available to V;
-VPM intentionally refuses to install or update through links outside the modules directory.
-UI2 must include its [embedding API](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
-The production build also checks this dependency version.
-
-A separate `vprod` executable stays stale when you pull V sources. Rebuild it from
-the updated V checkout before using it to compile Vox:
-
-```sh
-./v -b c -prod -cc clang -memory-limit 10G -o vprod cmd/v
-```
-
-Older FastC binaries lack support for imported modules' `v.mod` subdirectories and
-can report `undeclared type KeyEvent` even when UI2 is up to date.
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
