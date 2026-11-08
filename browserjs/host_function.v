@@ -4,6 +4,7 @@ module browserjs
 
 import libjs
 import platform
+import webidl
 
 pub type HostFunction = fn (input string) !string
 pub type TemporaryHostFunction = fn (input string) !HostFunctionReply
@@ -17,6 +18,17 @@ pub struct HostFunctionReply {
 pub:
 	value string
 	workspace platform.ThreadScratchScope
+}
+
+// Call after leaving a transport workspace and before retiring it. Engine
+// exception values already have a Runtime root; copy their native envelope
+// rather than reducing an arbitrary thrown value to its diagnostic message.
+pub fn copy_host_exception(failure IError) IError {
+	if failure is JavaScriptValueException {
+		return JavaScriptValueException{context: failure.context, value: failure.value}
+	}
+	if failure is webidl.ValueException { return webidl.throw_value(failure.value) }
+	return error(failure.msg().clone())
 }
 
 fn (reply HostFunctionReply) finish() { reply.workspace.finish() }

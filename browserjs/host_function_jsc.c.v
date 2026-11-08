@@ -1,6 +1,7 @@
 module browserjs
 
 import platform
+import webidl
 
 #include "host_function_darwin.h"
 
@@ -19,6 +20,24 @@ fn host_function_error(context voidptr, message string, exception &voidptr) void
 	unsafe { *exception = object }
 	if ignored != unsafe { nil } { unsafe { *exception = ignored } }
 	return C.vox_jsc_JSValueMakeUndefined(context)
+}
+
+// A text transport can invoke a native DOM algorithm which calls back into
+// JavaScript. Keep its abrupt completion as the original engine value.
+fn host_function_exception(context voidptr, failure IError, exception &voidptr) voidptr {
+	if failure is JavaScriptValueException && failure.context == context {
+		unsafe { *exception = failure.value }
+		return C.vox_jsc_JSValueMakeUndefined(context)
+	}
+	if failure is webidl.ValueException {
+		if actual := failure.value.runtime_value_ {
+			if actual.context == context {
+				unsafe { *exception = actual.value }
+				return C.vox_jsc_JSValueMakeUndefined(context)
+			}
+		}
+	}
+	return host_function_error(context, failure.msg(), exception)
 }
 
 @[export: 'vox_jsc_host_function']
@@ -43,7 +62,7 @@ fn javascript_core_host_function(context voidptr, function voidptr, _ voidptr, c
 	// Host-published state belongs to the caller; only the conversion bytes
 	// remain in this detached workspace through the final JavaScript copy.
 	input_work.leave()
-	output := record.invoke(input) or { return host_function_error(context, err.msg(), exception) }
+	output := record.invoke(input) or { return host_function_exception(context, err, exception) }
 	defer { output.finish() }
 	string_value := js_source_string(output.value)
 	defer { C.JSStringRelease(string_value) }
