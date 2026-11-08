@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import vm from 'node:vm';
-import { buildGithubResources, chunkFactories, withoutGithubResourceReporter } from './github_builder.mjs';
+import { buildGithubResources, chunkFactories, withoutGithubResourceReporter, withoutGithubSelectorObserverReporter } from './github_builder.mjs';
 import { githubFilters, githubResources } from './github_resources.js';
 import { defaultEngine, moduleReferences } from '../tools/adblock/audit_scripts.mjs';
 
@@ -134,4 +134,37 @@ test('resource telemetry removal preserves fetch nonce and defensive DOM setup',
     const untouched = core.source.slice(original.start, original.end);
     const at = untouched.indexOf('function(){if("u"<typeof PerformanceObserver');
     assert.equal(changed, untouched.slice(0, at) + 'void 0}}');
+});
+
+test('selector telemetry removal preserves observer registration, callbacks and abort', () => {
+    const flags = [], calls = [], selectors = [];
+    class Element {}
+    const document = { nodeType: 9, readyState: 'complete', defaultView: { Element },
+        documentElement: { addEventListener() {} },
+        createElement: () => ({ setAttribute() {} }),
+        querySelector() { throw Error('Unexpected route telemetry query'); } };
+    const observer = loadFactory('vs', {
+        ua: { A: class { add(selector) { selectors.push(selector); } remove(selector) { calls.push(selector); } } },
+        vK: { G7: key => { flags.push(key); return true; } },
+        D0: { BI() { throw Error('Unexpected selector telemetry'); } },
+    }, { window: { document }, document, MutationObserver: class { observe() {} disconnect() {} } });
+    const result = { add() {}, remove() {} };
+    const registered = observer.l('.example', function (...args) {
+        assert.equal(this, undefined);
+        calls.push(args);
+        return result;
+    });
+    assert.deepEqual(selectors, ['.example']);
+    assert.equal(registered.initialize('element', 42), result);
+    assert.deepEqual(calls, [['element', 42]]);
+    registered.abort();
+    assert.deepEqual(calls, [['element', 42], '.example']);
+    assert.deepEqual(flags, []);
+    const core = policy.reviewed.find(record => record.url.includes('/core-'));
+    const factory = chunkFactories(core.source).find(node => node.key.name === 'vs');
+    const original = core.source.slice(factory.start, factory.end);
+    const changed = withoutGithubSelectorObserverReporter(core.source, factory);
+    const start = original.indexOf('!function(e){if(!(0,g.G7)("selector_observer_stats"))');
+    const end = original.indexOf('}(e),t(...n)', start) + '}(e)'.length;
+    assert.equal(changed, original.slice(0, start) + 'void 0' + original.slice(end));
 });

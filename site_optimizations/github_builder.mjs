@@ -40,6 +40,21 @@ export function withoutGithubResourceReporter(source, factory) {
     return source.slice(factory.start, call.start) + 'void 0' + source.slice(call.end, factory.end);
 }
 
+// Keep selector-observer's lifecycle and callback wrapper. Its reporting IIFE
+// still queries route metadata even when the analytics sink itself is disabled.
+export function withoutGithubSelectorObserverReporter(source, factory) {
+    const wrapper = factory.value.body.body.find(node => node.type === 'FunctionDeclaration' && node.id.name === '$');
+    const callback = wrapper?.body.body[0]?.argument;
+    const sequence = callback?.type === 'ArrowFunctionExpression' && callback.body;
+    const reporter = sequence?.type === 'SequenceExpression' && sequence.expressions[0];
+    const text = reporter && source.slice(reporter.start, reporter.end);
+    if (sequence?.expressions?.length !== 2 || reporter?.type !== 'UnaryExpression' ||
+        !text.includes('"selector_observer_stats"') || !text.includes('"selector-observer.observe"')) {
+        throw Error('Changed GitHub selector observer reporter structure');
+    }
+    return source.slice(factory.start, reporter.start) + 'void 0' + source.slice(reporter.end, factory.end);
+}
+
 export async function buildGithubResources() {
     const { responses } = JSON.parse(gunzipSync(await fs.readFile(fixture)));
     const resources = new Map(), filters = [], reviewed = [];
@@ -58,6 +73,7 @@ export async function buildGithubResources() {
                 if (id === 'dB') replacement = 'dB(e,t,n){}';
                 if (id === 'XG') replacement = 'XG(e,t,n){n.d(t,{},{$3(){},HV(){},Vb(){}})}';
                 if (id === 'L') replacement = withoutGithubResourceReporter(source, factory);
+                if (id === 'vs') replacement = withoutGithubSelectorObserverReporter(source, factory);
             } else if (id === 'D0') {
                 // Retain the pure context serializer; acknowledge event calls
                 // without batching, timers, listeners, retries or RUM imports.
@@ -75,7 +91,7 @@ export async function buildGithubResources() {
             }
             if (replacement) edits.push({ start: factory.start, end: factory.end, replacement, id });
         }
-        if (edits.length !== (url.includes('/core-') ? 3 : 2)) throw Error('Missing reviewed collectors');
+        if (edits.length !== (url.includes('/core-') ? 4 : 2)) throw Error('Missing reviewed collectors');
         // A redirect is a data URL. Resolve all relative ES module specifiers
         // against the original URL, including each chunk's self registration.
         for (const node of parseModule(source).body) {
