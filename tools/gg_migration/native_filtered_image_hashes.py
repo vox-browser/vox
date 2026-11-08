@@ -23,6 +23,10 @@ cases=[
  dict(name='color-rotated-nearest',premul=False,p3=True,destination=[4,6,35,24],source=[1,1,5,4],alpha=.65,mode='multiply',clip=True,transform=[.9,.4,-.4,.9,5,2],filter=(2,0,0,0,0,contrast,0)),
  dict(name='color-snap-nearest',premul=True,destination=[10.01,12.01,7.002,6.002],source=[0,0,7,6],alpha=.35,mode='color_dodge',clip=True,filter=(2,0,0,0,0,contrast,0)),
  dict(name='color-flipped-nearest',premul=True,destination=[5.25,6.5,22,18],source=[0,0,7,6],alpha=.7,mode='overlay',clip=True,transform=[-1.2,0,0,.8,42,3],filter=(2,0,0,0,0,contrast,0)),
+ dict(name='color-scaled-linear',premul=True,destination=[4.25,5.5,30,25],source=[0,0,7,6],alpha=.7,mode='src_over',clip=True,smoothing=True,transform=[1.25,0,0,.75,2,4],filter=(2,0,0,0,0,contrast,0)),
+ dict(name='color-rotated-linear',premul=False,p3=True,destination=[4,6,35,24],source=[1,1,5,4],alpha=.65,mode='multiply',clip=True,smoothing=True,transform=[.9,.4,-.4,.9,5,2],filter=(2,0,0,0,0,contrast,0)),
+ dict(name='color-mipmap-premul',premul=True,iw=31,ih=25,destination=[6.25,5.75,8,7],source=[1,2,28,21],alpha=.85,mode='multiply',clip=True,smoothing=True,filter=(2,0,0,0,0,contrast,0)),
+ dict(name='color-mipmap-unpremul-p3',premul=False,p3=True,iw=31,ih=25,destination=[6.25,5.75,8,7],source=[1,2,28,21],alpha=.85,mode='multiply',clip=True,smoothing=True,transform=[.9,.4,-.4,.9,5,2],filter=(2,0,0,0,0,contrast,0)),
 ]
 for c in cases:
  w,h=c.get('width',48),c.get('height',40);iw,ih=c.get('iw',7),c.get('ih',6)
@@ -35,7 +39,8 @@ for c in cases:
 import platform
 if platform.system() == 'Darwin':
  expected = ['fcdf07f1784c94ae', 'cdff66946d64f415', '79f27b4c61142d18', 'e3441259be4b7ca6',
-             'b04f05f0f7807d28', '742faaa5a08e2c8d', '7a9e4b5a7ebf291f', '6dd8c713245e52c2', 'e025e6ff0e8b6e21', '116d6bd4d0f19821', '171f9638805833aa', '52406c90e7dae2ce']
+             'b04f05f0f7807d28', '742faaa5a08e2c8d', '7a9e4b5a7ebf291f', '6dd8c713245e52c2', 'e025e6ff0e8b6e21', '116d6bd4d0f19821', '171f9638805833aa', '52406c90e7dae2ce',
+             'd5f8f3845bfa1191', 'e95056f459921fcc', '4d2545a295b0c06a', 'b7ec0bc884c06b1c']
  for record, digest in zip(r.records, expected):
   assert record['native_sha256'].startswith(digest), record['case']
 print(json.dumps(dict(platform=platform.platform(), reference_sha256=r.reference_sha256,
