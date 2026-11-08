@@ -1,5 +1,6 @@
 {
-  "scope": "One complete Vox-only imported-WPT cohort. Reported-subtest rates exclude tests that do not report and do not establish all-tests-pass conformance.",
+  "scope": "One complete Vox-only Ladybird-imported expectation cohort, not full upstream WPT. The static HTTP runner lacks Python handlers, HTTPS and WPT multi-origin configuration. Reported-subtest rates exclude tests that do not report and do not establish all-tests-pass conformance.",
+  "full_upstream_wpt": false,
   "all_wpt_tests_pass": false,
   "r13": {
     "executions": 3810,

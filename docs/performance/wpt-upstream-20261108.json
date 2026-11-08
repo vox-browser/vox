@@ -1,0 +1,499 @@
+{
+  "status": "FETCHED; OFFICIAL RUN BLOCKED BEFORE FIRST TEST",
+  "full_upstream_wpt_executed": false,
+  "executed_wpt_cases": 0,
+  "passing_subtests": null,
+  "inventory": {
+    "types": {
+      "aamtest": {
+        "source_files": 190,
+        "test_variants": 190
+      },
+      "crashtest": {
+        "source_files": 2111,
+        "test_variants": 2111
+      },
+      "manual": {
+        "source_files": 3047,
+        "test_variants": 3047
+      },
+      "print-reftest": {
+        "source_files": 448,
+        "test_variants": 448
+      },
+      "reftest": {
+        "source_files": 28938,
+        "test_variants": 29312
+      },
+      "support": {
+        "source_files": 43094,
+        "test_variants": 0
+      },
+      "test262": {
+        "source_files": 53814,
+        "test_variants": 53814
+      },
+      "testharness": {
+        "source_files": 32831,
+        "test_variants": 40139
+      },
+      "visual": {
+        "source_files": 2714,
+        "test_variants": 2714
+      },
+      "wdspec": {
+        "source_files": 685,
+        "test_variants": 685
+      }
+    },
+    "manifest_source_files": 167872,
+    "test_source_files": 124778,
+    "test_variants": 132460,
+    "subtests": null,
+    "scope": "full upstream WPT manifest inventory; no tests executed",
+    "upstream": {
+      "root": "/Users/alex/code/3rd/web-platform-tests",
+      "revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+      "tracked_files": 167878
+    },
+    "manifest": {
+      "path": "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+      "version": 9,
+      "sha256": "58335f893bf910636d5452015275cf529938a7539f36cd4afc8794b3d507fc11",
+      "bytes": 41006157
+    },
+    "imported_cohort": {
+      "root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text",
+      "scope": "Ladybird expectation-selected testharness subset; static HTTP server",
+      "expectation_files": 3822,
+      "selected_files_or_query_variants": 3808,
+      "literal_upstream_testharness_url_matches": 3697,
+      "note": "Matching URLs do not establish identical test bytes across revisions."
+    }
+  },
+  "automatically_selectable_manifest_variants": 126699,
+  "checkout": {
+    "history": "shallow",
+    "sparse": false,
+    "submodules": false,
+    "tracked_files_clean": true
+  },
+  "setup_guards": {
+    "fetch": {
+      "command": [
+        "git",
+        "clone",
+        "--depth",
+        "1",
+        "https://github.com/web-platform-tests/wpt.git",
+        "/Users/alex/code/3rd/web-platform-tests"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 381616128,
+      "elapsed_seconds": 303.723803875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "manifest": {
+      "command": [
+        "python3",
+        "/Users/alex/code/3rd/web-platform-tests/wpt",
+        "manifest",
+        "--no-download",
+        "--no-parallel",
+        "--path",
+        "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+        "--tests-root",
+        "/Users/alex/code/3rd/web-platform-tests"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 827260928,
+      "elapsed_seconds": 272.717267333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "dependencies": {
+      "command": [
+        "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+        "-m",
+        "pip",
+        "--disable-pip-version-check",
+        "install",
+        "--prefer-binary",
+        "-r",
+        "/Users/alex/code/3rd/web-platform-tests/tools/wptrunner/requirements.txt",
+        "-r",
+        "/Users/alex/code/3rd/web-platform-tests/tools/serve/requirements.txt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 124436480,
+      "elapsed_seconds": 71.386661041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "audit": {
+      "command": [
+        "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+        "-"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 354418688,
+      "elapsed_seconds": 3.762906542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "production_identity": {
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "pinned": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7f188689d739afd9ff57ef9fc033db03a36ad52f4499095a0d83e40974b2f9be",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "f43c713d230cbd14d96ce79ae80da791ba9b5ff6bf2b5404875771faf4da95b6"
+    },
+    "receipt": {
+      "c_compile": {
+        "mode": "single",
+        "requested": "single",
+        "v_prod": true
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-072002-e3db71fa/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+        "dirty": true,
+        "head": "34314a33e7abc687407dd2e3a6144fcc282a4e98",
+        "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+        "dirty": true,
+        "head": "93ce20867b70e54863049d3ef03479c923b3bf95",
+        "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+      },
+      "request": {
+        "c_mode": "single",
+        "head": "34314a33e7abc687407dd2e3a6144fcc282a4e98",
+        "id": "7381f22028c749599ac1b57fd2e6e79c",
+        "renderer": "gg",
+        "v_prod": true
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+        "dirty": true,
+        "head": "f55a7ebc247c7704796e811c208ce9d7ca8272fc",
+        "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+      }
+    },
+    "upstream_revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+    "attempts": [
+      {
+        "product": "vox",
+        "command": [
+          "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+          "/Users/alex/code/3rd/web-platform-tests/wpt",
+          "--venv",
+          "/Users/alex/code/3rd/web-platform-tests/_venv3",
+          "--skip-venv-setup",
+          "run",
+          "--yes",
+          "--binary",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--browser-version",
+          "vox-843893a4a6f9",
+          "--manifest",
+          "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+          "--no-manifest-update",
+          "--no-manifest-download",
+          "--processes",
+          "1",
+          "--log-wptreport",
+          "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/vox-wptreport.json",
+          "vox"
+        ],
+        "guard_exit": 70
+      },
+      {
+        "product": "ladybird",
+        "command": [
+          "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+          "/Users/alex/code/3rd/web-platform-tests/wpt",
+          "--venv",
+          "/Users/alex/code/3rd/web-platform-tests/_venv3",
+          "--skip-venv-setup",
+          "run",
+          "--yes",
+          "--binary",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--browser-version",
+          "vox-843893a4a6f9",
+          "--manifest",
+          "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+          "--no-manifest-update",
+          "--no-manifest-download",
+          "--processes",
+          "1",
+          "--log-wptreport",
+          "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/ladybird-adapter-probe-wptreport.json",
+          "ladybird"
+        ],
+        "guard_exit": 1
+      }
+    ],
+    "changed_inputs": []
+  },
+  "official_attempt_guards": {
+    "vox": {
+      "command": [
+        "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+        "/Users/alex/code/3rd/web-platform-tests/wpt",
+        "--venv",
+        "/Users/alex/code/3rd/web-platform-tests/_venv3",
+        "--skip-venv-setup",
+        "run",
+        "--yes",
+        "--binary",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--browser-version",
+        "vox-843893a4a6f9",
+        "--manifest",
+        "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+        "--no-manifest-update",
+        "--no-manifest-download",
+        "--processes",
+        "1",
+        "--log-wptreport",
+        "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/vox-wptreport.json",
+        "vox"
+      ],
+      "reason": "completed",
+      "child_exit_code": 70,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 68206592,
+      "elapsed_seconds": 3.3041089589999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-adapter-probe": {
+      "command": [
+        "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+        "/Users/alex/code/3rd/web-platform-tests/wpt",
+        "--venv",
+        "/Users/alex/code/3rd/web-platform-tests/_venv3",
+        "--skip-venv-setup",
+        "run",
+        "--yes",
+        "--binary",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--browser-version",
+        "vox-843893a4a6f9",
+        "--manifest",
+        "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+        "--no-manifest-update",
+        "--no-manifest-download",
+        "--processes",
+        "1",
+        "--log-wptreport",
+        "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/ladybird-adapter-probe-wptreport.json",
+        "ladybird"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 66813952,
+      "elapsed_seconds": 1.0651105840000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "blockers": [
+    "WPT test-domain DNS/hosts configuration is absent; the Vox product attempt exits 70 before execution.",
+    "No Vox product is registered in upstream wptrunner, and the production browser has no integrated WebDriver service.",
+    "The upstream Ladybird adapter probe exits 1: Missing required argument webdriver_binary. It is not a Vox runner integration.",
+    "The Ladybird product lacks print-reftest and aamtest executors even after a driver is supplied. Manual/visual cases need a separate workflow."
+  ],
+  "upstream_products": [
+    "android_webview",
+    "chrome",
+    "chrome_android",
+    "chrome_ios",
+    "chromium",
+    "edge",
+    "epiphany",
+    "firefox",
+    "firefox_android",
+    "headless_shell",
+    "ladybird",
+    "opera",
+    "safari",
+    "sauce",
+    "servo",
+    "servo_legacy",
+    "webkit",
+    "webkitgtk_minibrowser",
+    "wktr",
+    "wpewebkit_minibrowser"
+  ],
+  "validation": {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tools",
+      "-p",
+      "wpt*_test.py"
+    ],
+    "exit": 0,
+    "tests": 15,
+    "tooling_commit": "1e50f8b85",
+    "official_manifest_loader": {
+      "counts_match_official_manifest_loader": true,
+      "source_files": {
+        "aamtest": 190,
+        "crashtest": 2111,
+        "manual": 3047,
+        "print-reftest": 448,
+        "reftest": 28938,
+        "support": 43094,
+        "test262": 53814,
+        "testharness": 32831,
+        "visual": 2714,
+        "wdspec": 685
+      },
+      "items": {
+        "aamtest": 190,
+        "crashtest": 2111,
+        "manual": 3047,
+        "print-reftest": 448,
+        "reftest": 29312,
+        "support": 43094,
+        "test262": 53814,
+        "testharness": 40139,
+        "visual": 2714,
+        "wdspec": 685
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+          "-"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 354418688,
+        "elapsed_seconds": 3.762906542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    "smoke": {
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "sha256": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+      "sha256_after": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+      "command": [
+        "python3",
+        "tools/run_memory_bounded.py",
+        "--lock",
+        "Build/wpt-upstream-smoke-20261108.lock",
+        "--report",
+        "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/smoke-guard.json",
+        "--limit-gib",
+        "3",
+        "--timeout",
+        "120",
+        "--",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--headless-smoke"
+      ],
+      "guard_exit": 0,
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "--headless-smoke"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 121798656,
+        "elapsed_seconds": 0.6943537089999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  },
+  "initial_cli_error": {
+    "reason": "Omitted --venv with --skip-venv-setup; corrected in both retained runner attempts.",
+    "guard": {
+      "command": [
+        "/Users/alex/code/3rd/web-platform-tests/_venv3/bin/python3",
+        "/Users/alex/code/3rd/web-platform-tests/wpt",
+        "--skip-venv-setup",
+        "run",
+        "--yes",
+        "--binary",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+        "--browser-version",
+        "vox-843893a4a6f9",
+        "--manifest",
+        "/Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json",
+        "--no-manifest-update",
+        "--no-manifest-download",
+        "--processes",
+        "1",
+        "--log-wptreport",
+        "/Users/alex/code/vox2/Build/wpt-upstream-run-20261108/vox-wptreport.json",
+        "vox"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 18284544,
+      "elapsed_seconds": 0.44824858300000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-upstream-suite.tar.gz",
+    "bytes": 5973404,
+    "sha256": "882f7118bffe4d7436298b9c1b8d38c73a23a53adfd4b0c75fc25edab291db3d",
+    "includes": "Official manifest, inventory, setup and execution guards, exact commands, logs, empty WPT reports, product registrations and package versions."
+  }
+}

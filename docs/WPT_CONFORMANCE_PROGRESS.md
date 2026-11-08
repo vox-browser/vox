@@ -1,4 +1,12 @@
-# WPT conformance follow-up, 2026-11-08
+# Imported WPT conformance follow-up, 2026-11-08
+
+**Scope correction:** every historical "full run" or "full-suite" reference in
+this report means the complete **Ladybird-imported expectation cohort**, not
+the full upstream Web Platform Tests repository. The runner selects 3,808
+imported testharness cases and uses a static HTTP server without WPT's Python
+handlers, HTTPS, or multi-origin configuration. Its rates cannot establish
+full upstream WPT conformance. The [upstream suite audit](WPT_UPSTREAM_SUITE.md)
+records the complete checkout, manifest counts, and blocked execution attempts.
 
 **The suite still fails.** r14 reports **153,046 / 170,027
 passing subtests (90.0%)**, with 1,920 of 3,808 files fully passing.
