@@ -73,7 +73,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 		mut response := fetch.Response.create()
 		response.url_list = [request.current_url()]
 		response.header_list.append(http.Header{name: 'Content-Type', value: 'text/plain; charset=UTF-8'})
-		response.set_body_bytes('posted'.bytes())
+		response.set_body_bytes('posted &#63472; <b>literal</b>\r\nnext'.bytes())
 		return response
 	}
 	child.set_navigation_fetch_hook(hook)
@@ -86,11 +86,14 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 		if runtime.evaluate_host('uploadDone')! == 'true' { break }
 		assert time.now() < deadline, messages.join('\n')
 	}
+	loaded_document := child.active_document() or { panic('loaded child document') }
+	assert loaded_document.get_content_type() == 'text/plain'
+	assert loaded_document.get_elements_by_tag_name('b').length() == 0
 	assert observed.methods == ['POST']
 	assert observed.bodies.len == 1 && observed.bodies[0].bytestr().contains('name="field"\r\n\r\nsent\r\n')
 	boundary := observed.content_types[0].all_after('boundary=')
 	assert boundary != '' && observed.bodies[0].bytestr().starts_with('--'+boundary+'\r\n')
-	assert runtime.evaluate_host('uploadText')! == 'posted'
+	assert runtime.evaluate_host('uploadText')! == 'posted &#63472; <b>literal</b>\nnext'
 
 	// The cleanup and replacement happen within one task, before host.poll().
 	// A name lookup must not select the removed frame's retained context.
@@ -109,7 +112,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 	}
 	assert observed.methods == ['POST','POST']
 	assert observed.bodies[1].bytestr().contains('name="field"\r\n\r\nagain\r\n')
-	assert runtime.evaluate_host('uploadText')! == 'posted'
+	assert runtime.evaluate_host('uploadText')! == 'posted &#63472; <b>literal</b>\nnext'
 	model := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(document.get_element_by_id('form') or { panic('form') }) })
 	assert !model.has_submission_hook()
 }
