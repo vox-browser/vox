@@ -108,7 +108,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
   `-prod -gc none`, and `CPU_RASTER_CHECKS=exports`, `strokes`, `composites`, `shadows`,
   `gradients`, `patterns`, `clears`, `images`, `imagefilters`, `bwfills`, `glyphs`,
-  `colorfilters`, `filterlayers`, `dropshadows` or `imageblur` to run only those
+  `colorfilters`, `filterlayers`, `dropshadows`, `mixedshadows` or `imageblur` to run only those
   comparisons (`CPU_RASTER_GLYPH_FONT` limits the glyph runs
   to one font file); a `-gc none` binary never frees, so run its
   categories in separate processes. The driver takes an optional seed after `COUNT`; with

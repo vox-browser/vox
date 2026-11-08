@@ -1071,3 +1071,23 @@ pass. The FMA audit reports zero contracted operations. See the
 Color filters before drop-shadow, repeated spatial filters, rotated layers,
 SVG graphs, source-image blur/drop-shadow and native bridges remain open;
 the browser still retains Skia dependencies.
+
+
+### Color filters before drop shadows (2026-11-08)
+
+Drop-shadow layers now preserve the preceding color filters on the foreground
+through its merge draw. Real shadow blurs resolve those filters into pixels;
+identity blurs keep them deferred through tinting and sampling. An invalid
+blur instead discards its shadow input filter while the foreground retains
+it, matching the native filter graph. Five native fixtures cover the real,
+identity and invalid blur branches.
+
+The new `CPU_RASTER_CHECKS=mixedshadows` corpus matches 15,840 supported
+draws out of 20,000 on macOS at seed 20261106, 15,896 in production mode
+at seed 20261108, and 16,760 on Linux at seed 20261106. The unchanged
+single-shadow corpus still matches 17,475 supported draws. Focused production
+tests pass on both platforms, and the FMA audit reports zero contracted
+operations. See the
+[prefiltered-shadow receipt](gg-migration/prefiltered-drop-shadows-20261108.json).
+Spatial filter chains, rotated layers, SVG graphs, image-space blur/drop-shadow
+and native browser bridges still retain Skia dependencies.
