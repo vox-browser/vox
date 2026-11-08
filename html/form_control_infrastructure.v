@@ -9,6 +9,7 @@ module html
 import rand
 import fileapi
 import infra
+import encoding
 
 pub struct FormDataFile {
 pub:
@@ -112,15 +113,20 @@ fn append_form_data_string(mut output []u8, value string) {
 
 // https://html.spec.whatwg.org/multipage/form-control-infrastructure.html#multipart/form-data-encoding-algorithm
 pub fn serialize_to_multipart_form_data(entry_list []FormDataEntry) SerializedFormData {
+	return serialize_to_multipart_form_data_with_encoding(entry_list, 'UTF-8') or { panic(err) }
+}
+
+pub fn serialize_to_multipart_form_data_with_encoding(entry_list []FormDataEntry, label string) !SerializedFormData {
+	encoder := encoding.HTMLCharsetEncoder.create(label)!
 	boundary := '---------------------------${rand.u64()}'
 	mut output := []u8{}
 	for entry in entry_list {
 		append_form_data_string(mut output, '--${boundary}\r\n')
 		normalized_name := normalize_line_breaks(entry.name)
-		escaped_name := escape_form_data_header_value(normalized_name)
+		escaped_name := escape_form_data_header_value(encoder.encode(normalized_name)!.bytestr())
 		match entry.value {
 			FormDataFile {
-				escaped_filename := escape_form_data_header_value(entry.value.name)
+				escaped_filename := escape_form_data_header_value(encoder.encode(entry.value.name)!.bytestr())
 				append_form_data_string(mut output,
 					'Content-Disposition: form-data; name="${escaped_name}"; filename="${escaped_filename}"\r\n')
 				if entry.value.mime_type != '' {
@@ -137,7 +143,8 @@ pub fn serialize_to_multipart_form_data(entry_list []FormDataEntry) SerializedFo
 				normalized_value := normalize_line_breaks(entry.value)
 				append_form_data_string(mut output,
 					'Content-Disposition: form-data; name="${escaped_name}"\r\n\r\n')
-				append_form_data_string(mut output, '${normalized_value}\r\n')
+				output << encoder.encode(normalized_value)!
+				append_form_data_string(mut output, '\r\n')
 			}
 		}
 	}
