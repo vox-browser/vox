@@ -1,0 +1,153 @@
+{
+  "recorded_at": "2026-11-08T07:29:40.432829+00:00",
+  "status": "RUNNING; 100% FAILS ON CONFIRMED RESULTS; NO FINAL LARGE-COHORT PERCENTAGE",
+  "scope": "The 6,828 November 8 Ladybird imported testharness cases selected by the existing runner, not full upstream WPT. Static HTTP lacks Python, real HTTPS and multi-origin setup.",
+  "all_selected_tests_pass": false,
+  "selected_cases": 6828,
+  "durable_case_records": 3250,
+  "remaining_unrecorded_cases": 3578,
+  "partial_subtests": {
+    "PASS": 100173,
+    "FAIL": 35048,
+    "TIMEOUT": 20,
+    "NOTRUN": 71,
+    "PRECONDITION_FAILED": 3
+  },
+  "partial_outcomes": {
+    "COMPLETE": 3237,
+    "NO_HARNESS": 4,
+    "HARD_TIMEOUT": 3,
+    "CRASH": 4,
+    "MEMORY_LIMIT": 1,
+    "NO_DOCUMENT": 1
+  },
+  "fully_passing_recorded_cases": 1350,
+  "fixture_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "fixture_manifest": {
+    "path": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/source.json",
+    "sha256": "74485a3af3d07f0da4a46fa031bfca3067ea58667a0193f8258d29357530fcb3"
+  },
+  "selection_sha256": "29a7d7cc0d12cf9b7069457c04558ba5cd96d789b45d0e7986ac1eaa827461ac",
+  "pinned_executables_and_libraries": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "008f691fa394e24c24f2d2708d089f574ac055a9c8b037bdcfac2f000b4e3ed6",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "37ae6bc438c1c740e6f32e3e4897553690f78d2921fc025e7831663aac0e72ff"
+  },
+  "bundle_receipt": {
+    "c_compile": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+      "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+      "mode": "single",
+      "requested": "parallel",
+      "v_prod": false
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-091839-e5dbdb92/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "a66e1ce8e5ed3336ed6274a9d2cf776801ed4051b7491fb97558224547524cdc",
+      "dirty": true,
+      "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+      "repository_sha256": "012e7c3414e73d0a26537e3b031772ccf6d15b616414447f25f24faaad7ebf98"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "0d4446e7e2a932ac4373f49007e527f5e3cfdb7acc7ad9a6a9ba8d9db329505d",
+      "dirty": true,
+      "head": "ca348b2df7a269ea1c5f995b29b579360f57f444",
+      "repository_sha256": "cd37310a8496548fd73c667a1a4d49f3c17b05d43a2c4f515811b53b70436265"
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+      "id": "935663dfd904486eaf6aa135fe6a69ad",
+      "renderer": "gg",
+      "v_prod": false
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "8b3032dc4af4bc82f5b10127c265081bc75cfbda172723dd866026d2509ed355",
+      "dirty": true,
+      "head": "74fd88caa86ae779e3d34816549d2675c0c96857",
+      "source_kind": "verified parsed buffers and sealed native inputs"
+    }
+  },
+  "live_process_identities": {
+    "50647": "Sun Nov  8 09:40:15 2026    ",
+    "50654": "Sun Nov  8 09:40:15 2026    "
+  },
+  "guard_exit": null,
+  "runner_exit": null,
+  "command": [
+    "python3",
+    "tools/run_memory_bounded.py",
+    "--lock",
+    "Build/wpt-larger-r15-20261108.lock",
+    "--report",
+    "Build/wpt-larger-r15-20261108-guard.json",
+    "--timeout",
+    "24000",
+    "--",
+    "python3",
+    "tools/wpt_compare.py",
+    "--output",
+    "Build/wpt-larger-r15-20261108",
+    "--ladybird-ref",
+    "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "--browsers",
+    "vox",
+    "--chunk-size",
+    "50",
+    "--require-all-pass"
+  ],
+  "live_output": "/Users/alex/code/vox2/Build/wpt-larger-r15-20261108",
+  "driver_log": "/Users/alex/code/vox2/Build/wpt-larger-r15-20261108-driver.log",
+  "driver_session": 66126,
+  "source_fixes": {
+    "Blob.textStream": "f3c82806a",
+    "UTF8_host_assertion": "19dacc90f",
+    "input_attribute_hooks": "f418f5b48",
+    "native_input_files": "073100a83"
+  },
+  "native_checks": {
+    "Blob": {
+      "tests": 7,
+      "allocator": "-prealloc -gc none",
+      "result": "PASS",
+      "evidence": "wpt-blob-text-stream-20261108.json"
+    },
+    "input_files_attributes_and_Trusted_Types": {
+      "tests": 10,
+      "allocator": "-prealloc -gc none",
+      "result": "PASS",
+      "evidence": "wpt-input-files-20261108.json"
+    }
+  },
+  "normal_mode_pending": "Current compiler links fail at v_brotli_unpoison_noop; a pinned compiler attempt reports undefined visual_changed in the shared UI2 dependency. Failed attempts retained; no compatibility fallback result accepted.",
+  "production_WPT_pending": "This baseline executable predates the source fixes in this report. A newer shared bundle and focused production WPT reruns are required. No duplicate production build was queued.",
+  "tooling": {
+    "commits": [
+      "dc56eeefc",
+      "e5dc5eb2a"
+    ],
+    "unit_tests": 18,
+    "result": "PASS",
+    "acceptance": "--require-all-pass rejects missing/duplicate cases, empty results, harness errors and non-PASS subtests."
+  }
+}

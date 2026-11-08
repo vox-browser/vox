@@ -271,3 +271,50 @@ still prevent an all-tests-pass result. Expectations, assertions and tolerances 
 Raw full-run data and baseline records are preserved in `/Users/alex/.cache/vox/wpt/20261108-r14-full.tar.gz`
 (SHA-256 `4da67d256f14cd6c19b3e7034f916f4a9f02013d9eabd2c5d4b50c4e7baaf374`); focused archives are listed in their manifest. Archives stay local;
 completed job directories are removed from `Build/`.
+
+## November 8 imported cohort: 6,828 cases, run still active
+
+**100% has not been reached.** The [larger-cohort progress snapshot](performance/wpt-larger-r15-progress-20261108.json)
+records an active Vox-only run against all 6,828 cases selected from Ladybird
+`2919bf87a5e5dfc49a210a70bda079afa411c6c5`. At that snapshot, 3,250 durable case
+records contain 100,173 PASS, 35,048 FAIL, 20 TIMEOUT, 71 NOTRUN, and three
+PRECONDITION_FAILED subtests. Four recorded cases crashed and one reached the
+browser memory cap. These are partial counts, not a new full-cohort percentage.
+
+The runner now accepts `--ladybird-ref` and exports only the requested revision's
+imported inputs and expectations into the external WPT cache. It leaves the
+upstream translation-reference checkout unchanged. All 15,399 fixture files are
+hashed and checked before each chunk and after collection. The
+`--require-all-pass` gate rejects incomplete or duplicate coverage, empty
+reports, harness failures, and every non-PASS subtest; all 18 tooling tests pass.
+
+The active run uses the shared executable `b8c5285a1947…`, fresh processes,
+50-case chunks, the unchanged harness deadlines, a 4 GiB browser cap, and the
+default 12 GiB aggregate guard. Its live results are under
+`Build/wpt-larger-r15-20261108`, with the driver log beside that directory. The
+runner writes final identity, summary, and report files when collection ends.
+The snapshot preserves process identities and the exact command for follow-up.
+
+| Source fix | Commit | Focused validation |
+|---|---|---|
+| Pipe `Blob.textStream()` through a fresh native UTF-8 decoder and stream | `f3c82806a` | Eight data scenarios, native stream identity, receiver and metadata checks |
+| Update the remaining native Blob assertion after the shared UTF-8 text fix | `19dacc90f` | All seven current native Blob checks pass with production allocation |
+| Notify input models after synchronous typed attribute writes, preserving old type state and namespaces | `f418f5b48` | Existing input-value regressions plus one-write/one-mutation checks |
+| Bind `input.files` to native FileList owners and synchronize pending detached-element state | `073100a83` | Assignment identity, nullable/invalid inputs, fake paths, insertion and clearing |
+
+The [Blob evidence](performance/wpt-blob-text-stream-20261108.json) preserves the
+initial checks, two legacy assertion failures during concurrent UTF-8 source
+changes, and the later seven-test passing run. The
+[input evidence](performance/wpt-input-files-20261108.json) retains development
+failures and the final **10 / 10 passing production-allocation checks**, including
+the existing Trusted Types regressions. All run under 3 GiB runtime guards.
+Final normal-allocation compilation remains pending: one attempt failed to
+link `_v_brotli_unpoison_noop`; a pinned compiler attempt found an undefined
+`visual_changed` in the shared UI2 dependency. Neither attempt counts as passing.
+
+The active baseline executable predates these fixes. Their production WPT
+validation needs a newer shared bundle; the existing build worker has the latest
+request, and no duplicate build was queued. The static imported runner still
+lacks Python handlers, real HTTPS and WPT's multi-origin setup. Browser gaps and
+runner limitations remain open alongside the failed assertions. This run covers
+the larger imported subset, not full upstream WPT.
