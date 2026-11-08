@@ -4,10 +4,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/dict.h>
 #include <libswscale/swscale.h>
 #include <libyuv/convert_argb.h>
 #include <dispatch/dispatch.h>
@@ -26,6 +28,7 @@
     X(av_seek_frame) \
     X(avcodec_alloc_context3) \
     X(avcodec_find_decoder) \
+    X(avcodec_find_decoder_by_name) \
     X(avcodec_flush_buffers) \
     X(avcodec_free_context) \
     X(avcodec_open2) \
@@ -35,6 +38,7 @@
     X(avformat_close_input) \
     X(avformat_find_stream_info) \
     X(avformat_open_input) \
+    X(av_dict_get) \
     X(sws_scale) \
     X(sws_getContext) \
     X(sws_freeContext) \
@@ -136,6 +140,17 @@ uint8_t *native_decode_video_frame(const char *path, double seconds,
 		goto cleanup;
 	AVStream *stream = format->streams[video_stream];
 	const AVCodec *decoder = ffmpeg->avcodec_find_decoder(stream->codecpar->codec_id);
+	// WebM carries VP8/VP9 alpha in BlockAdditional packets. FFmpeg's native
+	// decoders ignore that plane; libvpx exposes it as YUVA for RGBA conversion.
+	// Keep the ordinary decoder and YUV fast path for opaque video.
+	const AVDictionaryEntry *alpha = ffmpeg->av_dict_get(stream->metadata, "alpha_mode", NULL, 0);
+	if (alpha && strcmp(alpha->value, "1") == 0) {
+		const char *name = stream->codecpar->codec_id == AV_CODEC_ID_VP9 ? "libvpx-vp9"
+			: stream->codecpar->codec_id == AV_CODEC_ID_VP8 ? "libvpx" : NULL;
+		if (name) {
+			decoder = ffmpeg->avcodec_find_decoder_by_name(name);
+		}
+	}
 	if (decoder == NULL)
 		goto cleanup;
 	codec = ffmpeg->avcodec_alloc_context3(decoder);
