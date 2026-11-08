@@ -123,6 +123,42 @@ static void draw_text_mask_leaves(CGContextRef context, bool canvas)
     }
 }
 
+static float s_float_text_color[4] {.2f,.4f,.7f,1};
+static int s_float_text_smoothing = 2;
+static bool s_float_text_following_shape;
+static void draw_float_text_leaves(CGContextRef context, bool canvas)
+{
+    if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+    assert(ladybird_v_skia_draw_rounded_rect(context,20,80,360,140,4,4,4,4,4,4,4,4,
+        1,0,0,1,0,0,0,0,0,css_width,css_height,70,130,190,255,1,0,1,1));
+    char const* paths[] {"/System/Library/Fonts/Supplemental/Verdana.ttf",
+        "/System/Library/Fonts/Supplemental/Verdana Bold.ttf", "/System/Library/Fonts/HelveticaNeue.ttc"};
+    char const* text="Overlapping AVAW wmw 0123";
+    for (int index=0;index<3;++index) {
+        auto* face=select_typeface(paths[index],0,index==1?700:400,0);assert(face);
+        float size=index==0?12.6f:index==1?14.f:17.f;
+        SkFont font(sk_ref_sp(face),size);
+        int count=font.countText(text,std::strlen(text),SkTextEncoding::kUTF8);
+        std::vector<uint16_t> glyphs(count);
+        assert(font.textToGlyphs(text,std::strlen(text),SkTextEncoding::kUTF8,
+            SkSpan<SkGlyphID>(glyphs.data(),count))==count);
+        std::vector<float> widths(count);font.getWidths(SkSpan<SkGlyphID const>(glyphs.data(),count),widths);
+        std::vector<double> positions(size_t(count)*2);double advance=0;
+        for (int i=0;i<count;++i) {positions[size_t(i)*2]=advance;advance+=widths[i]*(index==2?.82:1);}
+        if (canvas) assert(ladybird_v_skia_gpu_canvas_command("draw_text",9,0));
+        ladybird_v_skia_set_unrounded_paint_color(s_float_text_color);
+        assert(ladybird_v_skia_draw_glyph_run(context,paths[index],0,glyphs.data(),positions.data(),
+            count,size,index==1?700:400,0,31.25f,118.f+index*27,1,0,0,1,0,0,0,0,0,
+            css_width,css_height,51,102,178,uint8_t(std::lround(s_float_text_color[3]*255)),
+            16|32|s_float_text_smoothing|VOX_GLYPH_PRIVATE_BITMAP));
+    }
+    if (s_float_text_following_shape) {
+        if (canvas) assert(ladybird_v_skia_gpu_canvas_command("fill_rounded_rect",17,0));
+        assert(ladybird_v_skia_draw_rounded_rect(context,211.3f,84.2f,102.6f,121.3f,
+            4,4,4,4,4,4,4,4,1,0,0,1,0,0,0,0,0,css_width,css_height,25,27,30,255,1,0,1,1));
+    }
+}
+
 // A tall run that only grazes the repainted strip, as when a heading scrolls
 // out of a zoomed viewport. The canvas rasterizes and uploads only the part
 // of its coverage near the strip, shifted by whole device pixels, so the
@@ -1588,6 +1624,75 @@ int main(int argc, char** argv)
         std::cout << "Grazing text mask: exact, " << s_largest_mask_height << " mask rows\n";
         return 0;
     }
+    if (argc == 2 && !std::strcmp(argv[1], "--float-text-mask")) { @autoreleasepool {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read && api->draw_mask);
+        s_backend_read=api->read;api->read=counted_read;
+        auto picture=shared_picture_draw();assert(picture);
+        auto expected=std::getenv("VOX_TEST_PICTURE_LIBRARY");assert(expected);
+        Dl_info loaded {};char actual_path[PATH_MAX],expected_path[PATH_MAX];
+        assert(dladdr(reinterpret_cast<void*>(picture),&loaded));
+        assert(realpath(loaded.dli_fname,actual_path) && realpath(expected,expected_path));
+        assert(!std::strcmp(actual_path,expected_path));
+        float palettes[][3] {{.20147f,.40221f,.70091f},{.501f,.2271f,.71829f},
+            {.999f,.101f,.399f},{.000392f,.003529f,.006274f},{44.f/255,139.f/255,0}};
+        unsigned cases=0;
+        for (auto const& color:palettes) for (int smoothing:{0,1,2,3})
+            for (float alpha:{1.f,.6067f,232.f/255}) for (bool full:{false,true})
+            for (bool following_shape:{false,true}) {
+            s_float_text_following_shape=following_shape;
+            std::copy_n(color,3,s_float_text_color);s_float_text_smoothing=smoothing;
+            s_float_text_color[3]=alpha;
+            setenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS","1",1);
+            auto reference=render(true,false,draw_float_text_leaves,full);
+            assert(s_flushes>0);
+            unsetenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS");
+            auto candidate=render(true,false,draw_float_text_leaves,full);
+            if (s_draws!=4+unsigned(following_shape) || s_flushes!=unsigned(following_shape) || s_declined) {
+                std::cerr << "Float mask full=" << full << " following shape=" << following_shape
+                    << " draws=" << s_draws << " flushes=" << s_flushes << " declined=" << s_declined << '\n';
+                return 1;
+            }
+            size_t different=0;int error=0;
+            for (size_t n=0;n<reference.size();++n) {
+                different+=reference[n]!=candidate[n];
+                error=std::max(error,std::abs(int(reference[n])-int(candidate[n])));
+            }
+            if (different) {
+                std::cerr<<"Fractional text color="<<color[0]<<","<<color[1]<<","<<color[2]
+                    <<" alpha="<<alpha<<" smoothing="<<smoothing<<" full="<<full<<" differing bytes="<<different
+                    <<" max error="<<error<<'\n';return 1;
+            }
+            setenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK","1",1);
+            auto fallback=render(true,false,draw_float_text_leaves,full);
+            unsetenv("VOX_GPU_CANVAS_DISABLE_TEXT_MASK");
+            assert(fallback==reference && s_flushes>0);
+            ++cases;
+        }
+        s_float_text_following_shape=false;
+        s_float_text_color[3]=0;
+        auto reference=render(true,false,draw_float_text_leaves);
+        assert(s_draws==1 && s_flushes>0);
+        setenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS","1",1);
+        assert(render(true,false,draw_float_text_leaves)==reference);
+        unsetenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS");
+        s_float_text_color[3]=232.f/255;
+        setenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS","1",1);
+        reference=render(true,false,draw_float_text_leaves);
+        unsetenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS");
+        auto original_mask=api->draw_mask;
+        api->draw_mask=[](uint8_t const*,int,int,int,int,int,int,float const*,
+            VoxGraphiteCanvasClip const*,int) { return 0; };
+        assert(render(true,false,draw_float_text_leaves)==reference && s_flushes>0);
+        api->draw_mask=original_mask;
+        s_float_text_color[0]=1.2f;s_float_text_color[3]=1;
+        setenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS","1",1);
+        reference=render(true,false,draw_float_text_leaves);
+        unsetenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS");
+        assert(render(true,false,draw_float_text_leaves)==reference && s_draws==1 && s_flushes>0);
+        std::cout<<cases<<" fractional-color/alpha text scenes exact; no intermediate readback; "
+            <<"full/strip clips, disabled/failed masks and zero/extended colors preserved\n";
+        return 0;
+    } }
     if (argc == 2 && !std::strcmp(argv[1], "--text-mask")) {
         auto* api = const_cast<GpuCanvasApi*>(gpu_canvas_api());
         assert(api && api->draw_mask && api->read);

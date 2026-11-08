@@ -1598,6 +1598,7 @@ int gpu_canvas_draw_cpu_mask(CGContextRef destination, int width, int height,
     int region_left, int region_top, char const* name, SkColor4f const& color,
     std::function<int()> const& prepare_layers, std::function<bool(uint8_t*, int)> const& raster);
 void gpu_canvas_decline(CGContextRef destination);
+void gpu_canvas_float_text_barrier(CGContextRef destination);
 // Whether the active GPU canvas paints into `destination`.
 bool gpu_canvas_targets(CGContextRef destination);
 void gpu_canvas_note_miss(CGContextRef destination, char const* leaf, bool msaa);
@@ -1793,7 +1794,22 @@ static int draw_retained_glyph_run(CGContextRef destination,
     auto raster_scale_x = static_cast<float>(raster_width) / static_cast<float>(region.width());
     auto raster_scale_y = static_cast<float>(raster_height) / static_cast<float>(region.height());
     size_t pixel_count = static_cast<size_t>(raster_width) * raster_height;
-    if (!emoji_face && blur == 0 && !has_float_color) {
+    bool const backdrop_blend = chromium && (font_smoothing & 32);
+    auto foreground = paint.getColor4f();
+    bool const float_mask = has_float_color && pthread_main_np() && !emoji_face && blur == 0
+        && backdrop_blend && foreground.fA > 0 && foreground.fA <= 1
+        && foreground.fR >= 0 && foreground.fR <= 1
+        && foreground.fG >= 0 && foreground.fG <= 1 && foreground.fB >= 0 && foreground.fB <= 1
+        && !std::getenv("VOX_DISABLE_GPU_FLOAT_TEXT_MASKS") && !typeface_has_color_glyphs(*typeface);
+    if (has_float_color && blur == 0 && pthread_main_np()
+        && std::getenv("VOX_FLOAT_TEXT_DIAGNOSTICS")) {
+        static unsigned reported = 0;
+        if (reported++ < 4096)
+            std::fprintf(stderr,"VOX_FLOAT_TEXT target=%d mask=%d flags=%d alpha8=%u rgba=%.9g,%.9g,%.9g,%.9g\n",
+                gpu_canvas_targets(destination),float_mask,font_smoothing,unsigned(alpha),
+                foreground.fR,foreground.fG,foreground.fB,foreground.fA);
+    }
+    if (!emoji_face && blur == 0 && (!has_float_color || float_mask)) {
         // The ordinary leaf below blends each glyph over the backdrop it reads
         // (font_smoothing & 32), like Blink's GPU raster. Opaque coverage
         // blends with the unquantized color on the GPU; a transparent CPU
@@ -1801,7 +1817,6 @@ static int draw_retained_glyph_run(CGContextRef destination,
         // a translucent color before coverage, which that raster reproduces.
         // Color glyphs keep that raster. Both take one layer per set of
         // non-overlapping glyphs, in order.
-        bool const backdrop_blend = chromium && (font_smoothing & 32);
         auto text_matrix = raster_matrix(matrix, region, raster_scale_x, raster_scale_y);
         std::vector<sk_sp<SkTextBlob>> layers;
         auto prepare_layers = [&] {
@@ -1839,9 +1854,14 @@ static int draw_retained_glyph_run(CGContextRef destination,
             mask_height = raster_dimension(visible.height(), destination_scale);
         }
         auto mask_matrix = raster_matrix(matrix, mask_region, raster_scale_x, raster_scale_y);
-        if (backdrop_blend && alpha == 255 && !typeface_has_color_glyphs(*typeface))
+        auto mask_paint = paint;
+        // Raster only glyph coverage. The GPU applies the float paint alpha
+        // once when blending each layer over the existing destination.
+        if (float_mask) mask_paint.setAlphaf(1);
+        if (backdrop_blend && (alpha == 255 || float_mask) && !typeface_has_color_glyphs(*typeface))
             canvas_result = gpu_canvas_draw_cpu_mask(destination, mask_width, mask_height,
-                mask_region.left, mask_region.top, "text-mask", paint.getColor4f(), prepare_layers,
+                mask_region.left, mask_region.top, float_mask ? "float-text-mask" : "text-mask",
+                foreground, prepare_layers,
                 [&](uint8_t* coverage, int layer) {
                     auto info = SkImageInfo::MakeA8(mask_width, mask_height);
                     SkSurfaceProps properties(0, kUnknown_SkPixelGeometry, 0.0f,
@@ -1851,16 +1871,22 @@ static int draw_retained_glyph_run(CGContextRef destination,
                     auto* mask_canvas = surface->getCanvas();
                     mask_canvas->clear(SK_ColorTRANSPARENT);
                     mask_canvas->setMatrix(mask_matrix);
-                    if (layers[layer]) mask_canvas->drawTextBlob(layers[layer], blob_x, blob_y, paint);
+                    if (layers[layer]) mask_canvas->drawTextBlob(layers[layer], blob_x, blob_y, mask_paint);
                     return true;
                 });
-        else if (backdrop_blend)
+        else if (backdrop_blend && !has_float_color)
             canvas_result = gpu_canvas_draw_cpu_raster_layers(destination, raster_width, raster_height,
                 region.left, region.top, "text-layers", prepare_layers,
                 [&](uint32_t* text_pixels, int layer) { return text_raster(text_pixels, layers[layer].get()); });
-        if (canvas_result < 0) canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
+        if (canvas_result < 0 && !has_float_color) canvas_result = gpu_canvas_draw_cpu_raster(destination, raster_width, raster_height,
             region.left, region.top, "text", [&](uint32_t* text_pixels) { return text_raster(text_pixels, blob.get()); });
-        if (canvas_result == 2) return 1;
+        if (canvas_result == 2) {
+            if (float_mask) gpu_canvas_float_text_barrier(destination);
+            return 1;
+        }
+        // A float foreground must never fall back to an 8-bit transparent
+        // raster. Keep its established full-precision path if masks decline.
+        if (has_float_color && canvas_result <= 0) gpu_canvas_decline(destination);
     } else gpu_canvas_decline(destination);
     // Avoid quantizing a partially covered foreground to premultiplied 8-bit
     // color before blending it over the page. The owning native bitmap frame

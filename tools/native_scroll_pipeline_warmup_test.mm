@@ -7,7 +7,7 @@
 #include "src/gpu/graphite/GlobalCache.h"
 #include <cassert>
 
-static std::vector<uint8_t> draw_scrolling_mask() {
+static std::vector<uint8_t> draw_scrolling_mask(float alpha = 1) {
     int rects[] {0, 0, 64, 64, 0, 20, 64, 4};
     assert(vox_graphite_canvas_begin(rects, 1));
     std::vector<uint8_t> backdrop(64*64*4, 255), mask(128*128, 128);
@@ -17,7 +17,7 @@ static std::vector<uint8_t> draw_scrolling_mask() {
     clip.rect[0]=2.25f; clip.rect[1]=2.25f; clip.rect[2]=60; clip.rect[3]=60;
     for (int i=4; i<12; ++i) clip.rect[i]=4;
     clip.antialias=1;
-    float color[] {.25f,.5f,.75f,1};
+    float color[] {.25f,.5f,.75f,alpha};
     assert(vox_graphite_canvas_draw_mask(mask.data(), 128, 64, 128, 2, -16, -16, color, &clip, 1));
     VoxGraphitePixelRegion output {0, 0, 64, 64, 64*4, backdrop.data()};
     assert(vox_graphite_canvas_read(&output, 1));
@@ -63,6 +63,7 @@ int main() { @autoreleasepool {
     // First retain a cold reference, using the same actual scroll-strip draw.
     setenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP","1",1);
     auto expected=draw_scrolling_mask();
+    auto alpha_expected=draw_scrolling_mask(232.f/255);
     auto opacity_expected=draw_scrolling_opacity_layer();
     auto msaa_expected=draw_scrolling_opacity_layer(true);
     assert(vox_graphite_retire_graphics_context());
@@ -83,6 +84,7 @@ int main() { @autoreleasepool {
     assert(additions==pipelines);
     auto actual=draw_scrolling_mask();
     assert(actual==expected);
+    assert(draw_scrolling_mask(232.f/255)==alpha_expected);
     assert(draw_scrolling_opacity_layer()==opacity_expected);
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
     assert(additions==pipelines);
@@ -93,6 +95,7 @@ int main() { @autoreleasepool {
     assert(!region_recorder && region_targets.empty() && !full_draw_recorder);
     assert(vox_graphite_release_idle_graphics_memory()==0);
     assert(draw_scrolling_mask()==expected);
+    assert(draw_scrolling_mask(232.f/255)==alpha_expected);
     assert(additions==pipelines && !gpu_context_idle);
     assert(draw_scrolling_opacity_layer()==opacity_expected);
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
@@ -113,6 +116,7 @@ int main() { @autoreleasepool {
     assert(draw_scrolling_opacity_layer()==opacity_expected);
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
     assert(draw_scrolling_mask()==expected && additions==pipelines);
+    assert(draw_scrolling_mask(232.f/255)==alpha_expected && additions==pipelines);
     assert(vox_graphite_retire_graphics_context()==1);
     std::printf("Scroll mask/opacity: exact pixels; %u prepared pipelines, no first-use compilation; idle reuse and context replacement passed\n", pipelines);
 } }

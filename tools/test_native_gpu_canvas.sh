@@ -15,12 +15,18 @@ mkdir -p "$output_dir"
 # An explicit backend must never silently fall back to the installed bundle.
 VOX_TEST_GRAPHITE_LIBRARY=$(CDPATH= cd -- "$graphite_dir" && pwd -P)/libVoxGraphite.dylib
 export VOX_TEST_GRAPHITE_LIBRARY
-python3 - "$repo_dir" "$VOX_TEST_GRAPHITE_LIBRARY" "$output_dir/inputs.json" <<'PIN'
+if [ -f "$graphite_dir/libVoxGraphiteDawn.dylib" ]; then
+    VOX_TEST_PICTURE_LIBRARY="$graphite_dir/libVoxGraphiteDawn.dylib"
+else
+    VOX_TEST_PICTURE_LIBRARY="$repo_dir/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+fi
+export VOX_TEST_PICTURE_LIBRARY
+python3 - "$repo_dir" "$VOX_TEST_GRAPHITE_LIBRARY" "$output_dir/inputs.json" "$VOX_TEST_PICTURE_LIBRARY" <<'PIN'
 import hashlib,json,sys
 from pathlib import Path
 root=Path(sys.argv[1]);backend=Path(sys.argv[2]).resolve()
 if not backend.is_file(): raise SystemExit('Requested GPU backend is missing: '+str(backend))
-files=[backend,root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/native_video_image_resource_test.c',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
+files=[backend,Path(sys.argv[4]).resolve(),root/'native_skia_text_darwin.cpp',root/'native_capture_darwin.m',root/'tools/native_gpu_canvas_test.cpp',root/'tools/native_video_image_resource_test.c',root/'tools/test_native_gpu_canvas.sh',*root.glob('native*.h')]
 Path(sys.argv[3]).write_text(json.dumps({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PIN
 python3 - "$repo_dir/native_capture_darwin.m" "$output_dir/native_video_backdrop_entry_points.inc" <<'PY'
@@ -111,6 +117,7 @@ done
 "$output_dir/native_gpu_canvas_test" --layer-pixels
 "$output_dir/native_gpu_canvas_test" --text-layer-composite
 "$output_dir/native_gpu_canvas_test" --text-mask
+"$output_dir/native_gpu_canvas_test" --float-text-mask
 "$output_dir/native_gpu_canvas_test" --text-two-clips
 "$output_dir/native_gpu_canvas_test" --grazing-text-mask
 VOX_DISABLE_CLIPPED_TEXT_MASKS=1 "$output_dir/native_gpu_canvas_test" --grazing-text-mask

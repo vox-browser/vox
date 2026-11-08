@@ -173,12 +173,12 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
         for (bool subset : {false, true}) for (int clip = 0; clip < 4; ++clip)
             for (bool covering : {false, true}) for (bool rotated : {false, true})
                 for (float opacity : {1.f, .4f}) {
-                if (opacity < 1 && (mask || std::getenv("VOX_DISABLE_SCROLL_OPACITY_PIPELINE_WARMUP"))) continue;
+                if (opacity < 1 && std::getenv("VOX_DISABLE_SCROLL_OPACITY_PIPELINE_WARMUP")) continue;
                 auto surface = vox_shared_surface(recorder.get(), canvas_info(32, 32));
                 if (!surface) return;
                 SkPaint paint;
-                // Layer opacity selects a different color-image shader from
-                // the A8 mask and opaque-image variants.
+                // Partial-opacity color images and A8 text coverage select
+                // different shaders from their fully opaque paint variants.
                 paint.setColor4f({.25f, .5f, .75f, opacity}, SkColorSpace::MakeSRGB().get());
                 Target target {std::move(surface), image,
                     subset ? SkRect::MakeXYWH(1, 1, 6, 6) : SkRect::MakeWH(8, 8),

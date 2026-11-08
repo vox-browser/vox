@@ -29,6 +29,7 @@ struct GpuCanvasFrame {
     // conservatively revoke this proof until the next CPU upload.
     bool opaque_upload = false;
     bool cpu_stale = false;
+    bool float_text_barrier = false;
     bool compositor = false, presented = false, queued_upload = false;
     bool has_initial_clip = false;
     VoxGraphiteCanvasClip initial_clip {};
@@ -836,6 +837,11 @@ bool gpu_canvas_targets(CGContextRef destination)
     return s_gpu_canvas && s_gpu_canvas->destination == destination;
 }
 
+void gpu_canvas_float_text_barrier(CGContextRef destination)
+{
+    if (gpu_canvas_targets(destination)) s_gpu_canvas->float_text_barrier = true;
+}
+
 // A leaf of an approved command that must draw on the CPU canvas.
 void gpu_canvas_decline(CGContextRef destination)
 {
@@ -851,6 +857,14 @@ extern "C" int ladybird_v_skia_gpu_canvas_command(char const* kind, int length, 
     auto* frame = s_gpu_canvas.get();
     if (!frame) return 0;
     std::string_view name(kind ? kind : "", kind && length > 0 ? size_t(length) : 0);
+    // Float text used to finish the pass before drawing its picture. Keep
+    // consecutive coverage masks together, but restore that CPU boundary
+    // before another primitive: its CPU/GPU coverage must not change merely
+    // because the preceding text no longer needs a separate picture readback.
+    if (frame->float_text_barrier && name != "draw_text") {
+        gpu_canvas_flush();
+        frame->float_text_barrier = false;
+    }
     frame->in_gpu_command = !s_gpu_canvas_read_failed && gpu_canvas_kind_supported(name, flags);
     if (frame->in_gpu_command) {
         static bool const start_diagnostics = std::getenv("VOX_GPU_CANVAS_START_DIAGNOSTICS") != nullptr;
