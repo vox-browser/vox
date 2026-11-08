@@ -1,6 +1,9 @@
 /Build/
 # Generated benchmark reports and raw measurements stay local.
 /docs/benchmark-results/
+/docs/performance/**/*.json
+/docs/performance/**/*.jsonl
+/docs/performance/**/*.ndjson
 # Evidence archives (.tar.gz, .zip, .gz) stay local; commit their reports and manifests.
 /docs/**/*.gz
 /docs/**/*.tgz

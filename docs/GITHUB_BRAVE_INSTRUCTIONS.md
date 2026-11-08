@@ -14,8 +14,8 @@ of **0.88483393** (11.5166% fewer observed instructions). The maximum Vox count,
 and the earlier failed cohorts remain included. Regression and screenshot
 checks started only after this complete instruction gate passed.
 
-The ongoing 20% work retains its
-[performance diagnostic ledger](performance/github-vlang-instruction-diagnostics-20261108-20pct.json).
+The ongoing 20% work keeps its generated performance diagnostic ledger local,
+outside Git; the results are summarized in this report.
 The restored HTML and both engine reference PNGs match c12 exactly. The rebuilt
 response-cache directory has a different fingerprint, so it is pinned as a new
 workload cohort and supplies no fixture-change optimization credit. The first
