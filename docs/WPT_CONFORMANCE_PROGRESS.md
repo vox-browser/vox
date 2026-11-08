@@ -1347,3 +1347,70 @@ SHA-256 `989120964ae4e2c8493350ca88846bdf6467d64d5031273813ee5f0a3a1c550a`.
 Production KDF verification is pending. The full official testharness collection
 continues on its original pinned image, with 1,000 flushed records and unchanged
 inputs at this checkpoint. **Full WPT coverage and 100% remain unfinished.**
+
+## HTTPS shutdown and upstream origin setup (2026-11-09)
+
+`1a7c4b72a` fixes direct HTTPS shutdown in the WPT server adapter. A native
+worker replay loads the unchanged stock harness in both secure and insecure
+realms, while the native HTTPS fetch fails with curl result 56 and
+`NetworkError: worker script response body failed`. The server closes
+EOF-delimited responses without a TLS `close_notify`. Its existing upstream
+CONNECT handling already supplies that shutdown; the adapter now applies it
+to direct HTTPS too, with the same bounded one-second shutdown wait. Browser
+certificate verification, test bytes, assertions and harness deadlines remain
+unchanged. A strict TLS regression fails before the fix and passes afterward;
+a deliberately truncated HTTP body continues to fail.
+
+`1ae3f9c5c` supplies the upstream local/public HTTP origin groups. The stock
+`common/get-host-info.sub.js` eagerly references `https-public`; its absence
+causes HTTP 500 before test assertions execute. All six ordinary/local/public
+HTTP/HTTPS groups now have eight real listeners. The complete stock helper
+renders and loads through each listener. Ports for h2, WebSocket, WebTransport
+and DNS also substitute, but those services remain explicitly unserved.
+Loopback origin groups do not establish public/local IP address-space emulation.
+**All 35 WPT tooling tests pass** under the 3 GiB guard, including both new
+failure-before/fix-after regressions.
+
+All eight original HKDF HTTPS Window/Worker variants now pass **7,328 / 7,328
+assertions** on production executable
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`, receipt
+`20261108-233251-1703525c`. Every page is COMPLETE with harness OK, exact expected
+counts, unchanged inputs and strict runner/outer exits 0. A second complete
+check after adding the origin groups also passes 7,328 / 7,328. The seven native
+executable/helper/library hashes match the earlier 3,664-reported-assertion
+production result exactly. **The recovered Worker results are a measurement
+repair, not 3,664 new engine passes.** The eight-page expected denominator was
+7,328 throughout; the prior four Worker timeouts reported zero subtests.
+
+The first unfiltered collection is stopped through its existing SIGTERM cleanup
+handler, preserving **1,128 partial records**, runner/outer exits 143 and
+unchanged pinned inputs. Its archive is
+`/Users/alex/.cache/vox/wpt/20261108-official-testharness-raw.tar.gz`, SHA-256
+`bae24070071d3138a42390877b40813c6d1f0978046d96bbadf9a417dfd50f2d`.
+A short TLS-corrected restart exposes the missing public-origin configuration
+and is also preserved: **three partial records**, exits 143, archive
+`/Users/alex/.cache/vox/wpt/20261108-official-testharness-tls-raw.tar.gz`, SHA-256
+`1052fcf5fa70893bf5d88bbc37c54af069e1b18814f3079fd9ca175b97806ce9`.
+Neither incomplete, setup-affected collection establishes an overall pass rate.
+
+Focused evidence:
+`/Users/alex/.cache/vox/wpt/20261109-wpt-server-corrections-raw.tar.gz`, SHA-256
+`afb10ecb3af43e3b80e2fd207dcf6dd5dad029ab2198f4e2755c6c3179282b59`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-wpt-server-corrections-summary.json`,
+SHA-256 `79ba564e14e34c62eaedb110b277ea7eac6e8e5d6ad77a681defc1f0ebc4bee7`.
+Original failures, diagnostic controls and complete production results remain
+retained. Generated C/private profiles are excluded. Completed diagnostic output,
+temporary canonical probes and their locks are removed. No new production
+browser build is needed for these Python adapter fixes.
+
+The corrected unfiltered **40,139-variant testharness collection is running**
+on the production identity above, with 25-case batches, a 4 GiB browser cap and
+12 GiB aggregate guard. Both predecessor archives are linked in its receipt.
+All original variants remain selected, including unsupported h2 cases. At this
+checkpoint, 100 case records are flushed with unchanged inputs. Status:
+`/Users/alex/.cache/vox/wpt/20261109-official-testharness-corrected-{status,completion}.json`.
+Supervisor:
+`/Users/alex/.cache/vox/wpt/20261109-official-testharness-corrected-supervisor.py`,
+SHA-256 `5ebfc77637f077b1a1ffaceb9b79b63568dbbf39657c73e6b2cb067afe170b44`.
+Other WPT types and unsupported services retain their documented limits.
+**There is no completed full-WPT result or 100% claim.**
