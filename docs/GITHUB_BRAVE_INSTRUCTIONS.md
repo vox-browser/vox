@@ -1,9 +1,9 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **The latest c29 build gives
-19.7355% fewer and still misses the conservative gate by 29,265,424 instructions.
-The earlier c26 pass does not establish acceptance for the corrected build.**
+**20% fewer observed instructions** than Brave. **The latest c31 build gives
+17.4709% fewer and misses the conservative gate by 272,344,776 instructions.
+The earlier c26 pass does not establish acceptance for this build.**
 Acceptance requires seven complete alternating pairs and
 `10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
 
@@ -210,27 +210,29 @@ the retained OS-cache conditions. Further engine optimization remains required.
 
 C29 includes bulk ASCII/filter-byte probes and a narrowly eligible exact-UTF-8
 ASCII decoder shortcut. It again completes seven alternating pairs with exact
-pixels, complete audits and normal browser exits, but misses the20% gate:
+pixels, complete audits and normal browser exits, but misses the 20% gate:
 maximum Vox **8,880,773,337** / minimum Brave **11,064,384,892**, ratio
 **0.80264501** (**19.7355% fewer**). The integer check is
 `88,807,733,370 > 88,515,079,136`, leaving **29,265,424** Vox instructions to
-remove at this minimum. Medians are8,851,404,119 /11,128,645,021; the20.6438%
+remove at this minimum. Medians are 8,851,404,119 / 11,128,645,021; the 20.6438%
 median paired saving cannot replace the failed conservative check.
 Executable `f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`,
 receipt `20261108-155123-59ff4982`, uses the same single-C-unit compilation
-policy as c28. Build guard exits0, benchmark/guard1 for the numerical failure.
+policy as c28. Build guard exits 0, benchmark/guard 1 for the numerical failure.
 
 The preprocessing path executes in a separate native diagnostic. In matched
-headless probes it saves median50,537,982 parsing instructions and18,894,627
+headless probes it saves median 50,537,982 parsing instructions and 18,894,627
 layout-workload instructions with identical geometry. These are not additive
-native credit: two same-image native A/B pairs show a10,170,454-instruction
-regression and a14,383,224 saving. The small net median2,106,385 saving does
+native credit: two same-image native A/B pairs show a 10,170,454-instruction
+regression and a 14,383,224 saving. The small net median 2,106,385 saving does
 not establish a consistent full-load improvement. All four A/B captures retain
 exact reference pixels and normal exits. New bulk regression checks remain
 explicitly deferred after c29 fails. The local raw c29 receipt at
 `docs/performance/github-vlang-instructions-20261108-20pct-c29.json` retains
 every observation and the complete A/B; generated JSON remains untracked under
-the repository policy. The exact cohort counts are retained here in Git. | Pair | Vox | Brave |
+the repository policy. The exact cohort counts are retained here in Git.
+
+| Pair | Vox | Brave |
 | --- | ---: | ---: |
 | 1 | 8,880,773,337 | 11,343,154,934 |
 | 2 | 8,799,782,942 | 11,088,971,550 |
@@ -241,8 +243,51 @@ the repository policy. The exact cohort counts are retained here in Git. | Pair 
 | 7 | 8,878,841,686 | 11,239,274,637 |
 
 Increasing the longhand cache beyond
-256 entries executes but has only a1,032,973 median probe saving with one
+256 entries executes but has only a 1,032,973 median probe saving with one
 regression; that experiment is removed. Further optimization is required.
+
+The next candidate boxes immutable calculation type metadata while retaining
+the public value snapshot and structural equality. It reduces `StyleValue`
+from 232 to 208 bytes. Three headless control/candidate pairs save
+23,386,479, 26,258,848 and 2,292,229 instructions with identical geometry.
+These separate builds also contain concurrent unrelated edits, so the probe
+does not establish isolated native credit. The planned c30 cohort never
+launches: receipt `20261108-170928-4691702f` fails its source guard after
+unconsumed `encoding/PORT_STATUS.md` changes during compilation. Build and
+waiting cohort guards exit 1; there are no browser observations or new
+regression checks. The follow-on build extends the existing unconsumed
+Markdown exclusion; explicitly compiler-reported resources remain pinned.
+
+
+C31 completes all seven alternating pairs with exact per-engine reference pixels,
+complete audits and normal browser exits, but also fails. Maximum Vox is
+**8,887,166,010**, minimum Brave **10,768,526,543**, ratio **0.82529081**
+(**17.4709% fewer**). The integer gate is
+`88,871,660,100 > 86,148,212,344`; another **272,344,776** Vox
+instructions must be removed at this minimum. Medians are 8,810,553,950 /
+10,813,605,174. Vox's median falls relative to c29, while Brave's
+observed counts fall too; its executable SHA and Chrome 157 version are unchanged.
+No cause is assigned to this variation, and no observations are excluded.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,887,166,010 | 10,849,391,785 |
+| 2 | 8,825,799,367 | 10,813,605,174 |
+| 3 | 8,725,266,753 | 10,894,278,444 |
+| 4 | 8,810,896,857 | 10,768,526,543 |
+| 5 | 8,765,543,256 | 10,777,985,075 |
+| 6 | 8,770,753,113 | 10,789,028,450 |
+| 7 | 8,810,553,950 | 10,814,989,706 |
+
+Executable `7c41735d12565c78ebfdfd91156e84e1fad2f05871f3b4ec9e2518eef3002e79`,
+receipt `20261108-171433-91108974`, uses the same single-C-unit O3/1500
+policy as c29 and contains both pending CSS optimizations. Build guard exits 0
+with peak RSS 11,598,381,056 bytes; benchmark/guard exits 1 for the numerical
+failure, peaking at 1,222,721,536 bytes. The source receipt also includes
+concurrent IndexedDB, CPU raster, encoding, LibJS parser and YUV changes; this
+cohort supplies no isolated optimization attribution. The local untracked raw
+receipt is `docs/performance/github-vlang-instructions-20261108-20pct-c31.json`.
+New regression checks remain explicitly deferred.
 
 ## Workload and scope
 
