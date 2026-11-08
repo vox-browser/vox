@@ -134,7 +134,35 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
     options.fGpuBudgetInBytes = 1024 * 1024;
     auto recorder = gpu->makeRecorder(options);
     if (!recorder) return;
-    std::vector<sk_sp<SkSurface>> targets;
+    struct Target {
+        sk_sp<SkSurface> surface;
+        sk_sp<SkImage> image;
+        SkRect source, destination;
+        SkPaint paint;
+        int clip;
+        bool rotated;
+    };
+    std::vector<Target> targets;
+    auto apply_clip = [](SkCanvas* canvas, int clip, bool rotated) {
+        auto box = SkRect::MakeLTRB(2.25f, 2.25f, 29.25f, 29.25f);
+        if (clip == 1) canvas->clipRect(box, SkClipOp::kIntersect, true);
+        if (clip >= 2) canvas->clipRRect(SkRRect::MakeRectXY(box, 4, 4), SkClipOp::kIntersect, true);
+        if (clip == 3) canvas->clipRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(0, 0, 25, 20), 7, 7), SkClipOp::kIntersect, true);
+        // A transformed quad cannot fold its rounded clip into draw geometry.
+        if (rotated) canvas->rotate(17, 16, 16);
+    };
+    auto draw_image = [](SkCanvas* canvas, Target const& target, SkPaint const& paint) {
+        canvas->drawImageRect(target.image, target.source, target.destination,
+            SkSamplingOptions(SkFilterMode::kNearest), &paint, SkCanvas::kStrict_SrcRectConstraint);
+    };
+    auto submit = [&] {
+        auto recording = recorder->snap();
+        if (!recording) return false;
+        skgpu::graphite::InsertRecordingInfo insertion;
+        insertion.fRecording = recording.get();
+        return gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess
+            && gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    };
     uint32_t pixels[64];
     std::fill(std::begin(pixels), std::end(pixels), 0x80808080);
     for (bool mask : {false, true}) {
@@ -146,35 +174,59 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
             for (bool covering : {false, true}) for (bool rotated : {false, true})
                 for (float opacity : {1.f, .4f}) {
                 if (opacity < 1 && (mask || std::getenv("VOX_DISABLE_SCROLL_OPACITY_PIPELINE_WARMUP"))) continue;
-                auto target = vox_shared_surface(recorder.get(), canvas_info(32, 32));
-                if (!target) return;
-                auto* canvas = target->getCanvas();
-                canvas->clear(SK_ColorTRANSPARENT);
-                auto box = SkRect::MakeLTRB(2.25f, 2.25f, 29.25f, 29.25f);
-                if (clip == 1) canvas->clipRect(box, SkClipOp::kIntersect, true);
-                if (clip >= 2) canvas->clipRRect(SkRRect::MakeRectXY(box, 4, 4), SkClipOp::kIntersect, true);
-                if (clip == 3) canvas->clipRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(0, 0, 25, 20), 7, 7), SkClipOp::kIntersect, true);
-                // A transformed quad cannot fold its rounded clip into the
-                // draw geometry; warm that analytic-clip pipeline as well.
-                if (rotated) canvas->rotate(17, 16, 16);
+                auto surface = vox_shared_surface(recorder.get(), canvas_info(32, 32));
+                if (!surface) return;
                 SkPaint paint;
                 // Layer opacity selects a different color-image shader from
-                // the A8 mask and opaque-image variants. Covering rounded
-                // clips first expose that variant when a layer scrolls away.
+                // the A8 mask and opaque-image variants.
                 paint.setColor4f({.25f, .5f, .75f, opacity}, SkColorSpace::MakeSRGB().get());
-                canvas->drawImageRect(image, subset ? SkRect::MakeXYWH(1, 1, 6, 6) : SkRect::MakeWH(8, 8),
+                Target target {std::move(surface), image,
+                    subset ? SkRect::MakeXYWH(1, 1, 6, 6) : SkRect::MakeWH(8, 8),
                     covering ? SkRect::MakeLTRB(-16, -16, 48, 48) : SkRect::MakeXYWH(1, 1, 12, 12),
-                    SkSamplingOptions(SkFilterMode::kNearest), &paint, SkCanvas::kStrict_SrcRectConstraint);
+                    paint, clip, rotated};
+                auto* canvas = target.surface->getCanvas();
+                canvas->clear(SK_ColorTRANSPARENT);
+                canvas->save();
+                apply_clip(canvas, clip, rotated);
+                draw_image(canvas, target, paint);
+                canvas->restore();
                 targets.push_back(std::move(target));
             }
     }
-    auto recording = recorder->snap();
-    if (!recording) return;
-    skgpu::graphite::InsertRecordingInfo insertion;
-    insertion.fRecording = recording.get();
-    if (gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess)
-        gpu_scroll_pipelines_prepared = gpu->submit(
-            skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+    if (!submit()) return;
+    if (!std::getenv("VOX_DISABLE_SCROLL_MSAA_PIPELINE_WARMUP")) {
+        // A scroll tile already contains uploaded pixels when an SVG stroke
+        // selects MSAA. Its load pass has distinct pipeline keys from a new
+        // cleared MSAA surface. Finish the initial images before selecting that
+        // pass, and warm both the following mask/image and solid stroke draws.
+        SkPathBuilder path;
+        path.moveTo(2, 6).cubicTo(6, 30, 28, 0, 30, 22);
+        auto curve = path.detach();
+        for (auto const& target : targets) {
+            auto* canvas = target.surface->getCanvas();
+            canvas->save();
+            force_msaa_render_pass(canvas, 32, 32);
+            apply_clip(canvas, target.clip, target.rotated);
+            for (auto blend : {SkBlendMode::kSrcOver, SkBlendMode::kSrc}) {
+                auto paint = target.paint;
+                paint.setBlendMode(blend);
+                draw_image(canvas, target, paint);
+                SkPaint solid;
+                solid.setAntiAlias(true);
+                solid.setColor(SkColorSetARGB(255, 35, 90, 170));
+                solid.setBlendMode(blend);
+                solid.setStyle(SkPaint::kStroke_Style);
+                solid.setStrokeWidth(1.25f);
+                canvas->drawPath(curve, solid);
+                solid.setStyle(SkPaint::kFill_Style);
+                canvas->drawRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(4, 4, 24, 24), 4, 4), solid);
+                canvas->drawRect(SkRect::MakeLTRB(-16, -16, 48, 48), solid);
+            }
+            canvas->restore();
+        }
+        if (!submit()) return;
+    }
+    gpu_scroll_pipelines_prepared = true;
 }
 }
 
