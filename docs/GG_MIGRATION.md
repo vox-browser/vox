@@ -1575,3 +1575,42 @@ remaining crops, rotations, SVG graphs, boolean shadows, large-sigma/tiling
 paths and native/GPU bridges. The requested Skia-free full-browser Linux
 compile/link/run remains unverified. See the
 [source-image graph checks and native fixtures](gg-migration/source-spatial-chains-20261109.json).
+
+
+### Mixed spatial graphs after source-image resampling (2026-11-09)
+
+`0061d1d78` supports scaled/flipped integer-source images when a real blur
+precedes the first shadow. Each branch resolves the source using its own
+first-blur sample bounds. Reusing one union-sized source surface changes
+clamping and strict/decal sampling. Larger default and production cohorts
+exposed that error; both full inputs and native output hashes are frozen as
+regressions. Ten new native fixtures include those failures, minification,
+identity prefixes, nearest sampling, source clipping and clearing composites.
+All 138 source-image native fixtures verify on macOS and Linux.
+
+| Platform/build | Seed | Attempts | Exact | Declined |
+| --- | --- | ---: | ---: | ---: |
+| macOS, current pinned compiler | 20261113 | 10,000 | 8,288 | 1,712 |
+| Linux ARM64 | 20261113 | 10,000 | 8,288 | 1,712 |
+| macOS, `-prod -gc none` | 20261114 | 5,000 | 4,137 | 863 |
+
+Each accepted cohort finishes with unchanged listed input pins. Counts include
+no-ops. C/FastC image tests, all 27 CPU raster files, HTML canvas integration,
+and the full Linux browser typecheck pass. The latter uses installed Skia
+development files. The FMA audit reports zero contracted operations (189
+explicit with this compiler). Host checks pin compiler executable
+`d39159ce199ca1aa9c8734d2ae4f4a05fd468d79165ad9a1e8a7c0d6b2ac3145`;
+the receipt retains the compiler/test-harness and shared-edit setup failures.
+These concurrent bounded checks establish pixel parity, not performance gains.
+
+The Linux production/no-GC image-test executable runs all 38 registered tests
+with Skia unavailable to pkg-config. Its only direct libraries are FreeType,
+libm and libc, and its transitive library list contains no Skia. This remains
+component evidence: the full browser and the older shared bundle still need
+Skia, and a Skia-free full-browser Linux compile/link/run remains unverified.
+
+Resampled graphs that branch into a shadow before a real blur keep the native
+fallback so their original foreground stays deferred. Remaining crops,
+rotations, SVG graphs, boolean shadows, large-sigma/tiling paths and native/GPU
+bridges also remain. See the
+[resampling graph checks and retained failures](gg-migration/resampled-spatial-chains-20261109.json).
