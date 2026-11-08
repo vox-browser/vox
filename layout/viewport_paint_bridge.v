@@ -1299,11 +1299,27 @@ fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none {
 		restore_complete_paint_projection(mut result)
 	}
-	context_index := result.client_rect_visual_context(layout_handle) or {
-		return layout_rects_in_css_pixels(rects, scale)
+	// SVG geometry is stored in user units, not the HTML layout coordinate
+	// space. Apply its viewport/element CTM before the shared visual contexts
+	// map the result back to CSS pixels (including native display scaling).
+	mut source_rects := rects
+	if box := result.retained_box_for_layout(layout_handle) {
+		if box.has_svg_path() {
+			bounds := svg_transformed_hit_bounds(box.svg_data.bounding_box,
+				normalized_affine(box.svg_path().path_transform))
+			source_rects = [dom.CSSPixelRect_{
+				x_: bounds.x
+				y_: bounds.y
+				width_: bounds.width
+				height_: bounds.height
+			}]
+		}
 	}
-	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
-	for rect in rects {
+	context_index := result.client_rect_visual_context(layout_handle) or {
+		return layout_rects_in_css_pixels(source_rects, scale)
+	}
+	mut transformed_rects := []dom.CSSPixelRect_{cap: source_rects.len}
+	for rect in source_rects {
 		transformed := transform_rect_to_viewport_in_layout_coordinates(context_index, LayoutRect{
 			x: rect.x_
 			y: rect.y_

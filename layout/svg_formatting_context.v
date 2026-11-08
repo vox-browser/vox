@@ -186,6 +186,21 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 		}
 	}
 
+	// A viewport without an authored viewBox still uses CSS pixels as its
+	// user units. CSS box layout is scaled on native displays, while SVG
+	// descendant lengths remain unscaled; bridge those spaces at this boundary.
+	device_scale := context.context_box.document().layout_coordinate_scale()
+	if active_view_box == none && device_scale != 1
+		&& !context.context_box.document().is_svg_image_document()
+		&& css.is_outermost_svg_element_for_css_box_layout(element)
+		&& svg_box_state.content_width().to_double() > 0
+		&& svg_box_state.content_height().to_double() > 0 {
+		active_view_box = svg.ViewBox{
+			width: svg_box_state.content_width().to_double() / device_scale
+			height: svg_box_state.content_height().to_double() / device_scale
+		}
+	}
+
 	// SVGFormattingContext::run() starts with the inherited viewBox transform.
 	// The SVG viewport's own offset remains in its paintable and is accumulated
 	// through the containing-block chain; folding it into this transform would

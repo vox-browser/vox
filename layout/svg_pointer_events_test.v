@@ -5,6 +5,24 @@ import html
 import painting
 import skia
 
+fn test_svg_pointer_geometry_matches_cssom_at_native_layout_scales() {
+	for scale in [f64(1), 2] {
+		for policy in [dom.FontRenderingPolicy.libweb, .chromium] {
+			mut document := html.parse_document('<!doctype html><svg id="svg" width="300" height="100"><rect id="target" x="10" y="10" width="40" height="40" fill="blue" stroke="none"/></svg>')
+			document.set_layout_coordinate_scale(scale)
+			document.set_display_device_pixel_ratio(scale)
+			document.set_font_rendering_policy(policy)
+			_ = layout_document_typed_in_viewport(document, 800, 600)
+			target := document.get_element_by_id('target') or { panic('target') }
+			viewport := document.get_element_by_id('svg') or { panic('svg') }
+			bounds := viewport.get_bounding_client_rect()
+			assert target.get_bounding_client_rect().width == 40, 'scale=${scale} policy=${policy} svg=${bounds} target=${target.get_bounding_client_rect()}'
+			assert svg_pointer_hits(mut document, target, bounds.x + 30, bounds.y + 30), 'scale=${scale} policy=${policy} svg=${bounds} target=${target.get_bounding_client_rect()}'
+			document.finalize()
+		}
+	}
+}
+
 fn svg_pointer_hits(mut document dom.Document, target &dom.Element, x f64, y f64) bool {
 	hit := document.element_from_point(x, y) or { return false }
 	return hit.as_node().unique_id() == target.as_node().unique_id()

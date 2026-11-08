@@ -12216,7 +12216,7 @@ pub fn html_element_adjust_computed_style(mut properties ComputedProperties, ele
 // DOM::Element::adjust_computed_style() overrides implemented by the element
 // classes. Keep this after the generic box-type transformations, matching
 // StyleComputer::compute_properties().
-fn is_outermost_svg_element_for_css_box_layout(element &dom.Element) bool {
+pub fn is_outermost_svg_element_for_css_box_layout(element &dom.Element) bool {
 	if !element.is_svg_element() || element.local_name() != 'svg' {
 		return false
 	}
