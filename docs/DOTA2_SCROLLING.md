@@ -1569,3 +1569,30 @@ GPU waits and transfer allocation remain. Installed worker-fix validation is
 pending the shared production builder, whose attempts fail on missing generated-C
 include `vlib/os/execute_capture_legacy.h`. **The 60 Hz goal without stalls remains
 open.** See [the full evidence and limitations](performance/reddit-boots-idle-worker-20261109.md).
+
+
+## 2026-11-09: scoped GPU transfer reuse and queued-upload comparison
+
+Commit `3250b00e8` replaces repeated GPU canvas transfer-vector allocation with
+scoped buffer leases, bounded to 32 MiB/eight retained slots and released on
+idle/explicit purge. Generation checks preserve purge and live-buffer ownership;
+upload padding and failed-read behavior are retained. Optimized/ASan checks pass
+54 exact GPU transfer cases per mode, plus damage/failure checks and the existing
+concurrent pool ownership tests. All eight strictly pinned pool/queued-upload
+fixed-pose captures remain exact against unchanged references.
+
+Separate diagnostics observe 124/128 live and 125/128 frozen input transfers
+reusing storage. The four matched live trials complete all 5,400 inputs each;
+pool candidates improve compared with their preceding controls, but load varies
+roughly 86–158 on 18 CPUs and the controls differ. No isolated FPS gain is claimed.
+The pool trials still have 116.747/33.023 ms maximum moving intervals and
+1.231%/8.520% deadline misses. **The 60 Hz goal without stalls remains open.**
+
+The isolated queued-upload experiment executes 7,684 times during a separate
+live diagnostic and preserves pixels, but its unprofiled cohort has one regression
+and one improvement. It remains disabled. Commit `738a12dcc` resolves the staged
+compiler's missing capture-header include; nine Python tests and an actual staged
+prealloc capture/exit-code smoke pass. The completed production bundle is still
+`23d3335d...`; installed validation of the worker and transfer fixes is pending.
+
+See [the transfer-pool measurements, retained regressions and evidence](performance/reddit-boots-transfer-pool-20261109.md).
