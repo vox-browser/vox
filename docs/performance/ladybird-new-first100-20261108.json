@@ -1,0 +1,2128 @@
+{
+  "scope": "First 100 newly imported Ladybird WPT case IDs, not full upstream WPT",
+  "all_100_pass": false,
+  "selection": {
+    "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "baseline": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+    "ordering": "Sorted expectation discovery order; exclude IDs in baseline before taking 100; include worker and query variants",
+    "new_runnable_ids": 3063,
+    "limit": 100,
+    "tests_json_sha256": "a9332673786401714844a0cd0939e0b94ac40018bb254d0c5581c891c30ee336"
+  },
+  "production": {
+    "pinned": {
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "37ae6bc438c1c740e6f32e3e4897553690f78d2921fc025e7831663aac0e72ff",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "008f691fa394e24c24f2d2708d089f574ac055a9c8b037bdcfac2f000b4e3ed6",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+    },
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-091839-e5dbdb92/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "a66e1ce8e5ed3336ed6274a9d2cf776801ed4051b7491fb97558224547524cdc",
+        "dirty": true,
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "repository_sha256": "012e7c3414e73d0a26537e3b031772ccf6d15b616414447f25f24faaad7ebf98"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "0d4446e7e2a932ac4373f49007e527f5e3cfdb7acc7ad9a6a9ba8d9db329505d",
+        "dirty": true,
+        "head": "ca348b2df7a269ea1c5f995b29b579360f57f444",
+        "repository_sha256": "cd37310a8496548fd73c667a1a4d49f3c17b05d43a2c4f515811b53b70436265"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "id": "935663dfd904486eaf6aa135fe6a69ad",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "8b3032dc4af4bc82f5b10127c265081bc75cfbda172723dd866026d2509ed355",
+        "dirty": true,
+        "head": "74fd88caa86ae779e3d34816549d2675c0c96857",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "changed_inputs": [],
+    "aborted": null
+  },
+  "conditions": {
+    "started": "2026-11-08T09:47:22+0300",
+    "finished": "2026-11-08T09:52:24+0300",
+    "width": 1024,
+    "height": 768,
+    "chunk_size": 20,
+    "limits": {
+      "startup": 30,
+      "navigation": 10,
+      "harness_start": 5,
+      "grace": 10,
+      "browser_memory_gib": 2.0
+    },
+    "load_start": [
+      42.71,
+      29.92,
+      39.95
+    ],
+    "load_end": [
+      63.44,
+      42.47,
+      41.96
+    ],
+    "host_cpus": 18,
+    "argv": [
+      "tools/wpt_compare.py",
+      "--output",
+      "Build/ladybird-new-first100-20261108",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--new-since",
+      "963d46a829f3e1b79f44dba9d02afb70654300fa",
+      "--limit",
+      "100",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "20",
+      "--browser-memory-gib",
+      "2",
+      "--require-all-pass"
+    ]
+  },
+  "limitations": [
+    "Static HTTP server lacks Python handlers, HTTPS and full WPT multi-origin setup",
+    "Concurrent full imported-suite sweep, source work and production compilation; no timing claims",
+    "This executable predates this session's Blob.text and IndexedDB enumeration fixes; no production pass credit for them"
+  ],
+  "summary": {
+    "tests": 100,
+    "outcomes": {
+      "COMPLETE": 100
+    },
+    "harness": {
+      "OK": 83,
+      "TIMEOUT": 16,
+      "ERROR": 1
+    },
+    "subtests": {
+      "PASS": 6927,
+      "FAIL": 1470,
+      "TIMEOUT": 5,
+      "NOTRUN": 16
+    },
+    "subtest_total": 8418,
+    "subtest_pass_rate": 0.8229,
+    "tests_all_pass": 26
+  },
+  "guard": {
+    "command": [
+      "python3",
+      "tools/wpt_compare.py",
+      "--output",
+      "Build/ladybird-new-first100-20261108",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--new-since",
+      "963d46a829f3e1b79f44dba9d02afb70654300fa",
+      "--limit",
+      "100",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "20",
+      "--browser-memory-gib",
+      "2",
+      "--require-all-pass"
+    ],
+    "reason": "completed",
+    "child_exit_code": 1,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 1131134976,
+    "elapsed_seconds": 316.959335708,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-ladybird-new-first100.tar.gz",
+    "sha256": "eec64c47bcf73de50724bc3877ff1c1591e380c30c22356a79aa35e470bc60b2"
+  },
+  "cases": [
+    {
+      "id": "FileAPI/blob/Blob-text.any",
+      "url": "/FileAPI/blob/Blob-text.any.html",
+      "path": "FileAPI/blob/Blob-text.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "d5b97f453a71a182af74eb09b30b5cdea404dbc7c89044e9d2637ff6efc6b0b3",
+      "expected_sha256": "f8a41bdf3d5fbaccd2bebcacba31482574d89641d70c2d436a0a953c4c5e34d0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 16,
+      "passing": 13,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Blob.text() strips only one UTF-8 byte order mark",
+        "status": "FAIL",
+        "message": "assert_equals: expected \"\ufeffP\" but got \"P\""
+      }
+    },
+    {
+      "id": "FileAPI/blob/Blob-textStream.any",
+      "url": "/FileAPI/blob/Blob-textStream.any.html",
+      "path": "FileAPI/blob/Blob-textStream.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "1e04622c89785e9e924b89b50c717941d1a9c3e8b462186ba7f232de775b8dee",
+      "expected_sha256": "222db6c1dbfc73f1a194e26909afc389dd0dc2a49c9111d726b8f14ee2500dd4",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 8,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "textStream method existence",
+        "status": "FAIL",
+        "message": "assert_true: textStream exists on Blob.prototype expected true got false"
+      }
+    },
+    {
+      "id": "FileAPI/file/send-file-form-iso-2022-jp",
+      "url": "/FileAPI/file/send-file-form-iso-2022-jp.html",
+      "path": "FileAPI/file/send-file-form-iso-2022-jp.html",
+      "harness_timeout": 60,
+      "input_sha256": "b115a02f3688a4ef15ab38871765b219d4044fa4799467d464f7b02ba5ac4eec",
+      "expected_sha256": "f2410e65c10075707720df7693ecc706404c138a3a54dadd89b8b5754fc3f3b1",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Upload file-for-upload-in-form.txt (ASCII) in ISO-2022-JP form",
+        "status": "FAIL",
+        "message": "assert_equals: The basename of the field's value should match its files[0].name expected \"\" but got \"file-for-upload-in-form.txt\""
+      }
+    },
+    {
+      "id": "FileAPI/file/send-file-form-windows-1252",
+      "url": "/FileAPI/file/send-file-form-windows-1252.html",
+      "path": "FileAPI/file/send-file-form-windows-1252.html",
+      "harness_timeout": 10,
+      "input_sha256": "43e4f6fb7ee20bc0d010dc22f787169ec6ffefd57e17f33cc0f7f2dc275a2b5f",
+      "expected_sha256": "7bd0362e747b621692b8d4c4bb7c1c704fccac5ff07a37cda837ca78212bf269",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Upload file-for-upload-in-form.txt (ASCII) in windows-1252 form",
+        "status": "FAIL",
+        "message": "assert_equals: The basename of the field's value should match its files[0].name expected \"\" but got \"file-for-upload-in-form.txt\""
+      }
+    },
+    {
+      "id": "FileAPI/file/send-file-form-x-user-defined",
+      "url": "/FileAPI/file/send-file-form-x-user-defined.html",
+      "path": "FileAPI/file/send-file-form-x-user-defined.html",
+      "harness_timeout": 10,
+      "input_sha256": "3467840ef74e845e62593e0983de25b8d663ca8ddd47f1a02aba8b653179d7a1",
+      "expected_sha256": "66341f122852cb6af7d3bf3d5f3b74193c9c70137215b401da970a135486d7c4",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 6,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Upload file-for-upload-in-form.txt (ASCII) in x-user-defined form",
+        "status": "FAIL",
+        "message": "assert_equals: The basename of the field's value should match its files[0].name expected \"\" but got \"file-for-upload-in-form.txt\""
+      }
+    },
+    {
+      "id": "IndexedDB/clone-before-keypath-eval.any",
+      "url": "/IndexedDB/clone-before-keypath-eval.any.html",
+      "path": "IndexedDB/clone-before-keypath-eval.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "aaaa038ec8daa59c03439628c13c874a2b92a8343d4f2cfb7321429c9a590c6e",
+      "expected_sha256": "c8c3cda2090d123ebe2aa15bd6e30f4aad9ffda80a15b1fd27fed4d6ecd06655",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 3,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Failing key path validity check operates on a clone",
+        "status": "FAIL",
+        "message": "assert_throws_dom: put() should throw if primary key cannot be injected function \"() => {\n        store.put(obj);\n      }\" did not throw"
+      }
+    },
+    {
+      "id": "IndexedDB/get-databases.any",
+      "url": "/IndexedDB/get-databases.any.html",
+      "path": "IndexedDB/get-databases.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "f11d80b07070cb493956842bb7591508084172dddf68b85df1ea30616c4a7729",
+      "expected_sha256": "e35bbd34f973845e06d24265e4ccd15063aac413b38a48fa46fdbdc019460922",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 5,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Ensure that databases() returns a promise.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: indexedDB.databases is not a function. (In 'indexedDB.databases()', 'indexedDB.databases' is undefined)\""
+      }
+    },
+    {
+      "id": "IndexedDB/get-databases.any.worker",
+      "url": "/IndexedDB/get-databases.any.worker.html",
+      "path": "IndexedDB/get-databases.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "a02e05f0e8b51f4969b7333d373603edc72c342219ea912d4dada488fd8381d4",
+      "expected_sha256": "e35bbd34f973845e06d24265e4ccd15063aac413b38a48fa46fdbdc019460922",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 5,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Ensure that databases() returns a promise.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: Can't find variable: indexedDB\""
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.sharedworker",
+      "url": "/IndexedDB/idbcursor-key.any.sharedworker.html",
+      "path": "IndexedDB/idbcursor-key.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "ec86d570a6734f85ebdefc0a97e0bb280a4fd151696cdde2342edf17a27a5df7",
+      "expected_sha256": "a8838528b389b6c73eedc0ade24ff3de3435cf7caf93c80312e8384e51edeba9",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any",
+      "url": "/IndexedDB/idbcursor-key.any.html",
+      "path": "IndexedDB/idbcursor-key.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "a36fbdaec8352fab6e930de5b98a0e986faf135e8b00b49327e220b0cf349f1e",
+      "expected_sha256": "a8838528b389b6c73eedc0ade24ff3de3435cf7caf93c80312e8384e51edeba9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBCursor.key",
+        "status": "FAIL",
+        "message": "db.transaction('test', 'readonly').objectStore('test').openCursor is not a function. (In 'db.transaction('test', 'readonly').objectStore('test').openCursor()', 'db.transaction('test', 'readonly').objectStore('test').openCursor' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.worker",
+      "url": "/IndexedDB/idbcursor-key.any.worker.html",
+      "path": "IndexedDB/idbcursor-key.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "9bcec3049ba3de6542b5145282ac010770ed599fbb1ced97704c5c53f4310436",
+      "expected_sha256": "a8838528b389b6c73eedc0ade24ff3de3435cf7caf93c80312e8384e51edeba9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBCursor.key",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.sharedworker",
+      "url": "/IndexedDB/idbcursor-primarykey.any.sharedworker.html",
+      "path": "IndexedDB/idbcursor-primarykey.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "096c1aefdc8924cdc90c0380f676e9ef85c30a3d8185b06f0baabd9ff3f0252f",
+      "expected_sha256": "8b6d767aeeaa66b9418ba99ee4a8873c47dc3cbb3c40baf2a22764dbf7fc2c16",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any",
+      "url": "/IndexedDB/idbcursor-primarykey.any.html",
+      "path": "IndexedDB/idbcursor-primarykey.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "aa847acf996af50ed140db66d36fee450ea118a94f0a495b38bb09837f6b734d",
+      "expected_sha256": "8b6d767aeeaa66b9418ba99ee4a8873c47dc3cbb3c40baf2a22764dbf7fc2c16",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBCursor.primaryKey",
+        "status": "FAIL",
+        "message": "db.transaction('test', 'readonly')\n                            .objectStore('test')\n                            .index is not a function. (In 'db.transaction('test', 'readonly')\n                            .objectStore('test')\n                            .index('index')', 'db.transaction('test', 're"
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.worker",
+      "url": "/IndexedDB/idbcursor-primarykey.any.worker.html",
+      "path": "IndexedDB/idbcursor-primarykey.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "5201a77b0538b49e0a67c8a3fa126e6d60da38e3bd52dbc3f20af4c5e9a8add4",
+      "expected_sha256": "8b6d767aeeaa66b9418ba99ee4a8873c47dc3cbb3c40baf2a22764dbf7fc2c16",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBCursor.primaryKey",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.sharedworker",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.sharedworker.html",
+      "path": "IndexedDB/idbfactory-open-error-properties.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "312413d0e742c84d0bc02e4af17ee2928531a2cfc451093cdfbcad3a569b770e",
+      "expected_sha256": "04f1c7a6a080994be4b67a94f727db38f8446539ee584c4f426c73018dcc39e0",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.html",
+      "path": "IndexedDB/idbfactory-open-error-properties.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "5b18976d1aa1216854647a44fe43152d4e33724b8e5332eff7d46e1689878069",
+      "expected_sha256": "04f1c7a6a080994be4b67a94f727db38f8446539ee584c4f426c73018dcc39e0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 1,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.worker",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.worker.html",
+      "path": "IndexedDB/idbfactory-open-error-properties.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "5c6d350c30ad049b8094ecf54c32da3991b7d7b00579b7b5f8294cb102b403e6",
+      "expected_sha256": "04f1c7a6a080994be4b67a94f727db38f8446539ee584c4f426c73018dcc39e0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Properties of error event from failed open()",
+        "status": "FAIL",
+        "message": "Can't find variable: indexedDB"
+      }
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.sharedworker",
+      "url": "/IndexedDB/idbindex-rename.any.sharedworker.html",
+      "path": "IndexedDB/idbindex-rename.any.sharedworker.html",
+      "harness_timeout": 60,
+      "input_sha256": "ef9fd52b4c57bd61bb6259a1bcd9c53e66503c5b323e9c243b93268d2ab50682",
+      "expected_sha256": "9d263e884326298c171b6153aa4ba7a2dfcc8d7cf4da8e22088771d45558dfb7",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any",
+      "url": "/IndexedDB/idbindex-rename.any.html",
+      "path": "IndexedDB/idbindex-rename.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "b092b1bb0f2a560ef6b590987dad6993ac4e2d4a5cbf549811b7a60aa3772b5c",
+      "expected_sha256": "9d263e884326298c171b6153aa4ba7a2dfcc8d7cf4da8e22088771d45558dfb7",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 9,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IndexedDB index rename in new transaction",
+        "status": "FAIL",
+        "message": "store.index is not a function. (In 'store.index('by_author')', 'store.index' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.worker",
+      "url": "/IndexedDB/idbindex-rename.any.worker.html",
+      "path": "IndexedDB/idbindex-rename.any.worker.html",
+      "harness_timeout": 60,
+      "input_sha256": "2cbcb7a56eecd40418a4d0ee05cb8d46db6a9f699321e92c3ce9662844963d7e",
+      "expected_sha256": "9d263e884326298c171b6153aa4ba7a2dfcc8d7cf4da8e22088771d45558dfb7",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 9,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IndexedDB index rename in new transaction",
+        "status": "FAIL",
+        "message": "Can't find variable: indexedDB"
+      }
+    },
+    {
+      "id": "IndexedDB/idbindex_keyPath.any",
+      "url": "/IndexedDB/idbindex_keyPath.any.html",
+      "path": "IndexedDB/idbindex_keyPath.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "a69718ac4cd8cbfae26a5f55508a354ccb284a60432de04a3f20ae01388ede97",
+      "expected_sha256": "0db57f34502d962ec643b5468d4c1748f892aa52c0558abc33ff95b3f4bf4115",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBIndex's keyPath attribute returns the same object.",
+        "status": "FAIL",
+        "message": "store.index is not a function. (In 'store.index('index')', 'store.index' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_createIndex.any.worker",
+      "url": "/IndexedDB/idbobjectstore_createIndex.any.worker.html",
+      "path": "IndexedDB/idbobjectstore_createIndex.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "6481162293fc8f06ec616a608cce1ad5f5352610941cc616d13071b1b0ecb554",
+      "expected_sha256": "24b7da74f921ab0ea832280ddcb74cb6218864f302cbc54ebc4aa8926280af6b",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 21,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Returns an IDBIndex and the properties are set correctly",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_keyPath.any",
+      "url": "/IndexedDB/idbobjectstore_keyPath.any.html",
+      "path": "IndexedDB/idbobjectstore_keyPath.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "ab641efa9b85445c2e2482c7bfa23b591d9af55293f69058cea0206abc152825",
+      "expected_sha256": "ccb4a5dddfb951cdd265278d86099bfb115f66558759390e3123e694cc6ca962",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBObjectStore's keyPath attribute returns the same object.",
+        "status": "FAIL",
+        "message": "assert_equals: Same object instance is returned each time keyPath is inspected expected [\"a\", \"b\"] but got [\"a\", \"b\"]"
+      }
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.sharedworker",
+      "url": "/IndexedDB/idbrequest_error.any.sharedworker.html",
+      "path": "IndexedDB/idbrequest_error.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "6e7988f9ea69d73c03078f317774a378501a6f76436287b22faeea42658de6a6",
+      "expected_sha256": "e45bd9b665ebb5f5decaacd562f0d4b8c74034e7f0594186c8804c2fa898bf24",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any",
+      "url": "/IndexedDB/idbrequest_error.any.html",
+      "path": "IndexedDB/idbrequest_error.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "41f616f5e41f4b215db9a1905ad19ba7d623846ab7ed3cd535d7895b5b221ee2",
+      "expected_sha256": "e45bd9b665ebb5f5decaacd562f0d4b8c74034e7f0594186c8804c2fa898bf24",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 1,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.worker",
+      "url": "/IndexedDB/idbrequest_error.any.worker.html",
+      "path": "IndexedDB/idbrequest_error.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "682f1f2003f3072c7295f6c74e666e56c0b0ba2f29a75d5d5ed510e8d2fc00e1",
+      "expected_sha256": "e45bd9b665ebb5f5decaacd562f0d4b8c74034e7f0594186c8804c2fa898bf24",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBRequest.error throws if ready state is pending",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.sharedworker",
+      "url": "/IndexedDB/idbtransaction_objectStoreNames.any.sharedworker.html",
+      "path": "IndexedDB/idbtransaction_objectStoreNames.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "02c643c96d32370757d5c068ad79862e118b8b3d08ac1d469f39b381c1f1ee75",
+      "expected_sha256": "41fa0760c276f3da44d88cb3376e4e0e83632d3b8ffd2a2c950964f30b982f70",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.worker",
+      "url": "/IndexedDB/idbtransaction_objectStoreNames.any.worker.html",
+      "path": "IndexedDB/idbtransaction_objectStoreNames.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "e8b3e3a4d7d5a2ec8682468d05d050eb49925346168ad8f746d467f01d5fce5d",
+      "expected_sha256": "41fa0760c276f3da44d88cb3376e4e0e83632d3b8ffd2a2c950964f30b982f70",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 8,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IDBTransaction.objectStoreNames - during upgrade transaction",
+        "status": "FAIL",
+        "message": "Can't find variable: indexedDB"
+      }
+    },
+    {
+      "id": "IndexedDB/keygenerator.any.worker",
+      "url": "/IndexedDB/keygenerator.any.worker.html",
+      "path": "IndexedDB/keygenerator.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "034cce7e9de6e04852954fade075667a9c0cbc74c80e453da7a611a7441a3192",
+      "expected_sha256": "d50c1ec98b7b6699bc02b7bdf582cb6c47e2315ede2bac67ec66b7cbab6bfabc",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Keygenerator - starts at one, and increments by one",
+        "status": "NOTRUN",
+        "message": null
+      }
+    },
+    {
+      "id": "IndexedDB/keypath.any",
+      "url": "/IndexedDB/keypath.any.html",
+      "path": "IndexedDB/keypath.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "5345ef4bf2e7c8846386cfd240cca0a6e1b71f3e1371bdc441bdeca42a485482",
+      "expected_sha256": "a27e5d367ee24a2f894e8c7d5d9cf9f31f96d860e46d6d656d9bcbee7333f6e4",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 20,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "undefined - my.key",
+        "status": "FAIL",
+        "message": "db.transaction(store_name).objectStore(store_name).openCursor is not a function. (In 'db.transaction(store_name).objectStore(store_name).openCursor()', 'db.transaction(store_name).objectStore(store_name).openCursor' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.sharedworker",
+      "url": "/IndexedDB/keypath_invalid.any.sharedworker.html",
+      "path": "IndexedDB/keypath_invalid.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "715c5e7c9528456d3245dcc29130c98ad2f211c9f0c6acf7f434ca286b97b069",
+      "expected_sha256": "6c72f7ee11851af6bf7b6a86861acb258312f906f38c2a689cf558e0a97ed339",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.worker",
+      "url": "/IndexedDB/keypath_invalid.any.worker.html",
+      "path": "IndexedDB/keypath_invalid.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "b178442102c6a966df357096e50c6068f2c5f6373c1f0f2f44e5e9b6db4ffb14",
+      "expected_sha256": "6c72f7ee11851af6bf7b6a86861acb258312f906f38c2a689cf558e0a97ed339",
+      "outcome": "COMPLETE",
+      "harness": "ERROR",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/keypath_maxsize.any",
+      "url": "/IndexedDB/keypath_maxsize.any.html",
+      "path": "IndexedDB/keypath_maxsize.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "d4ef6cf0a994a9b8ae9f924410ff3d3b9d3a164d7bcc91a93eec8e4064ccb449",
+      "expected_sha256": "2d40f2d1ba2cd1e482986c35a1df3c859bf72a74b5430fb5e3737b8e4b1ac78f",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "undefined - ~260 chars",
+        "status": "FAIL",
+        "message": "db.transaction('store', 'readonly', {durability: 'relaxed'})\n                 .objectStore('store')\n                 .openCursor is not a function. (In 'db.transaction('store', 'readonly', {durability: 'relaxed'})\n                 .objectStore('store')\n                 .openCursor()', 'db.transactio"
+      }
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.sharedworker",
+      "url": "/IndexedDB/request_bubble-and-capture.any.sharedworker.html",
+      "path": "IndexedDB/request_bubble-and-capture.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "ddd5635b559fc2d85d0f8d76c240ba360d09abd66f594f0f3c298153588755b8",
+      "expected_sha256": "fc1cd41bb9203c2c288963f3c5e90e68b6059134c6e73a658d6cfd644f7eadc1",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any",
+      "url": "/IndexedDB/request_bubble-and-capture.any.html",
+      "path": "IndexedDB/request_bubble-and-capture.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "c0ad620059d1d86674be847258d2990e0aa4003f7f508f8e716f9675910b4640",
+      "expected_sha256": "fc1cd41bb9203c2c288963f3c5e90e68b6059134c6e73a658d6cfd644f7eadc1",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IndexedDB Request Event Propagation: Bubbling and Capturing",
+        "status": "FAIL",
+        "message": "assert_unreached: unexpected open.error event Reached unreachable code"
+      }
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.worker",
+      "url": "/IndexedDB/request_bubble-and-capture.any.worker.html",
+      "path": "IndexedDB/request_bubble-and-capture.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "53e1e53d4a7ebff1d726b97ba7d07a1ca3f65bbf81ba92c8fa108df8c28b91b7",
+      "expected_sha256": "fc1cd41bb9203c2c288963f3c5e90e68b6059134c6e73a658d6cfd644f7eadc1",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "IndexedDB Request Event Propagation: Bubbling and Capturing",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-generator-revert.any",
+      "url": "/IndexedDB/transaction-abort-generator-revert.any.html",
+      "path": "IndexedDB/transaction-abort-generator-revert.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "3895c1aafa1e528e06f812eaff7fc435d76f792b6fa70383463e967ae6f56176",
+      "expected_sha256": "2573fdb04a17f40a0ae3ae1d90f191f32548de6e8096100406d30a17632e81e2",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "passing": 2,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-index-metadata-revert.any.html",
+      "path": "IndexedDB/transaction-abort-index-metadata-revert.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "b551df078581612bd53cb8c77921519bed920614aee2162d6f9ff617840530ed",
+      "expected_sha256": "24a1d89b5e014435510ea5963993eecf880619b9b08c85a670cf36cb6e3e184e",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Created stores get their indexes marked as deleted after the transaction that created them aborts",
+        "status": "FAIL",
+        "message": "store.index is not a function. (In 'store.index('not_by_author')', 'store.index' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any.worker",
+      "url": "/IndexedDB/transaction-abort-index-metadata-revert.any.worker.html",
+      "path": "IndexedDB/transaction-abort-index-metadata-revert.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "3f9190f2a232433f2137e222b5c4d087b37fedc29bebd709811ed880e1b043f4",
+      "expected_sha256": "24a1d89b5e014435510ea5963993eecf880619b9b08c85a670cf36cb6e3e184e",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Created stores get their indexes marked as deleted after the transaction that created them aborts",
+        "status": "FAIL",
+        "message": "Can't find variable: indexedDB"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-multiple-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-multiple-metadata-revert.any.html",
+      "path": "IndexedDB/transaction-abort-multiple-metadata-revert.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "023de02e3dc0951ab7798dcb7d11503d968ce1e6e0073dd0624352996e7305e2",
+      "expected_sha256": "d4f8ced6de81a8916c570d55a45c8f6ac93ebbac5216e534989147548cc1c2f9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Deleted indexes in newly created stores are still marked as deleted after the transaction aborts",
+        "status": "FAIL",
+        "message": "store.index is not a function. (In 'store.index('not_by_author')', 'store.index' is undefined)"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-object-store-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-object-store-metadata-revert.any.html",
+      "path": "IndexedDB/transaction-abort-object-store-metadata-revert.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "ddb649f734bb4cf34e5c374054264a06269a66cd5106850a917464cdc1b8a947",
+      "expected_sha256": "10262b4af927941684f064ac6e379be69341ef6865f8f88b246242d237316d41",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 4,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Created stores get marked as deleted after their transaction aborts",
+        "status": "FAIL",
+        "message": "assert_throws_dom: IDBObjectStore.get should throw InvalidStateError, indicating that the store is marked for deletion, immediately after IDBTransaction.abort() returns function \"() => store.get('query')\" threw object \"TransactionInactiveError: transaction is not active\" that is not a DOMException I"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.sharedworker",
+      "url": "/IndexedDB/transaction-abort-request-error.any.sharedworker.html",
+      "path": "IndexedDB/transaction-abort-request-error.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "21d9ad07ecedde302933155f13223a48c134f890b9adfaaf2e70f79114b6e725",
+      "expected_sha256": "aea4b80604ef893a0e27409ed1b6af0698f775acf09dcf56ac006754bb719842",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any",
+      "url": "/IndexedDB/transaction-abort-request-error.any.html",
+      "path": "IndexedDB/transaction-abort-request-error.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "5a931a1000cb29b39690e3194e87dc8c875afec2f8d596090abdfb8a2edd50dc",
+      "expected_sha256": "aea4b80604ef893a0e27409ed1b6af0698f775acf09dcf56ac006754bb719842",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Properties of error events fired at requests when aborting a transaction",
+        "status": "TIMEOUT",
+        "message": "Test timed out"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.worker",
+      "url": "/IndexedDB/transaction-abort-request-error.any.worker.html",
+      "path": "IndexedDB/transaction-abort-request-error.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "56690da03a5668f4a033af2fc214d821c10a95d7e4b0382777fe93f7d636dec6",
+      "expected_sha256": "aea4b80604ef893a0e27409ed1b6af0698f775acf09dcf56ac006754bb719842",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Properties of error events fired at requests when aborting a transaction",
+        "status": "FAIL",
+        "message": "Can't find variable: indexedDB"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.sharedworker",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.sharedworker.html",
+      "path": "IndexedDB/transaction_bubble-and-capture.any.sharedworker.html",
+      "harness_timeout": 10,
+      "input_sha256": "48dec3bc73bb8ab54b3ffdf1d46555845a1cf01a4a5cd4dcca736bfe7b2bee81",
+      "expected_sha256": "5b07e4acd6d3da0ae204aaa540d9534ddc55e14910fdf87e10644467e4f9d643",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 0,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": null
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.html",
+      "path": "IndexedDB/transaction_bubble-and-capture.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "af1de5a66902fd85d72d897cfce3a71080c461f028fcce18bc4698eaa418e87c",
+      "expected_sha256": "5b07e4acd6d3da0ae204aaa540d9534ddc55e14910fdf87e10644467e4f9d643",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Capture and bubble",
+        "status": "FAIL",
+        "message": "assert_unreached: unexpected open.error event Reached unreachable code"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.worker",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.worker.html",
+      "path": "IndexedDB/transaction_bubble-and-capture.any.worker.html",
+      "harness_timeout": 10,
+      "input_sha256": "4522ed4cc20596a2cef0e54be2c8c14cc3534c75a28cd1e7ecc321be51c017ee",
+      "expected_sha256": "5b07e4acd6d3da0ae204aaa540d9534ddc55e14910fdf87e10644467e4f9d643",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Capture and bubble",
+        "status": "FAIL",
+        "message": "undefined is not an object (evaluating 'self.indexedDB.open')"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CBC.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-CBC.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_AES-CBC.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "3abf9221249cee5391a71774d346851b697317b5bdc801b17c48c505b6535f89",
+      "expected_sha256": "f98b0365a6b14f3132e091a7b94596f61dfed460165262399a231b20acfe3333",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "passing": 618,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({length: 4294967424, name: AES-CBC}, false, [encrypt])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CTR.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-CTR.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_AES-CTR.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "222204a2ded3db91b02f1f3c9bbcb5d1cd9e234cefc9cb6b676c6cbb15a2eaf6",
+      "expected_sha256": "3c384172ae458df0bd68d3941a96fae2b0d6031ce7d40f013225aef909c14a36",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "passing": 618,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({length: 4294967424, name: AES-CTR}, false, [encrypt])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-GCM.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-GCM.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_AES-GCM.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "71ed2a06762167f1917a53d8e297d9b11273c4a9b11941e3c140bb8e306fc6eb",
+      "expected_sha256": "b0fee73ac448ceeb3fd2c6f10b68cf4951cc3c7e0aa9d6bfe019759b49d2cc8c",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 686,
+      "passing": 618,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({length: 4294967424, name: AES-GCM}, false, [encrypt])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_HMAC.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_HMAC.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_HMAC.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "cf2e6c44891381b108dd11885aa3bacf6131627ff8592e6e7524271a8cdd50e3",
+      "expected_sha256": "f57eccc288574bd1aa8768a8cab0173cd8b23b22ed36a0dec12c18fec0d1215d",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 436,
+      "passing": 416,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({hash: SHA-256, length: 4294967424, name: HMAC}, false, [sign])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "0d306f3910cdec853c7beb1ea5d40f726fab2608588ea78272401fb7bd40f628",
+      "expected_sha256": "1d27a8bc0e3c7558761a1686b74415968e9f69c9935bf943f409449fa2cbbba4",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 340,
+      "passing": 284,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({hash: SHA-256, modulusLength: 4294968320, name: RSA-OAEP, publicExponent: {0: 1, 1: 0, 2: 1}}, false, [decrypt, encrypt])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "1cc3d97253d95af6ff7aeaed1f8a44e5dd86338a87249548dcff5000e9de3748",
+      "expected_sha256": "73db6503844d350a7efa1a045a4876fa1806fb7a5d7739e9900c1bc20f6fa82d",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 116,
+      "passing": 100,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({hash: SHA-256, modulusLength: 4294968320, name: RSA-PSS, publicExponent: {0: 1, 1: 0, 2: 1}}, false, [sign])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.html",
+      "path": "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "205d711259f13a1eeb0cbdf5767be8a1d2c90be71a9191971933eb29d34bcfe0",
+      "expected_sha256": "0a05ace3d342577af7dd1931ebb904318224d05290e11286d81f386aa0f6de1b",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 116,
+      "passing": 100,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Bad algorithm property: generateKey({hash: SHA-256, modulusLength: 4294968320, name: RSASSA-PKCS1-v1_5, publicExponent: {0: 1, 1: 0, 2: 1}}, false, [sign])",
+        "status": "FAIL",
+        "message": "assert_unreached: Operation succeeded, but should not have Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any",
+      "url": "/WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "4919ef0d92fe4dac2745911ca7a33b950195922160337de82994b65452916db0",
+      "expected_sha256": "e1b30828c656141a2cc8887729511b1dc6ff96fa84b2b5074f44e0419d3ddb19",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 4,
+      "passing": 4,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/cshake.https.any",
+      "url": "/WebCryptoAPI/modern-algos/digest/cshake.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/digest/cshake.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "8407f2f4cbc66563dd895dd569f686f918f995b6863ebd82fd2224daf3d3551d",
+      "expected_sha256": "53c17e2f692fa3f9c2bd7ed655825f8ebd4539b86a291140fbc1fe03ae1a66b3",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 88,
+      "passing": 88,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/sha3.https.any",
+      "url": "/WebCryptoAPI/modern-algos/digest/sha3.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/digest/sha3.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "e7db82f58b19afc2236264192f699761ef1b4afe1602b4ef6aa5bbca4fefe0f1",
+      "expected_sha256": "f91c1e1fb824e4eed809b08387caecf0b6f94f2611e5c96b04e2cc79e095e138",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 48,
+      "passing": 48,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "58c518943dc30e14919090f8e5bedec95f8a438fdb75beb1f77f3a07ffbe27af",
+      "expected_sha256": "f290b03fb2cac3a5d3f964aeb71f80644e75c2a74846d333cdf78625905aa682",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 18,
+      "passing": 9,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "MLKEM768-P256 encapsulateBits basic functionality",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-P256' is not supported for operation 'generateKey'\""
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "c7d05eaf5d2ba2a9b91411d34130a5587719210a87a2c3ac06b9e1f25098d3cc",
+      "expected_sha256": "9fab38b4052a8e2385e01e28b863e1707d4794616258b114faa16dadf22fb862",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 240,
+      "passing": 120,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "MLKEM768-P256 encapsulateKey with AES-GCM-256 (extractable=true)",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"NotSupportedError: Algorithm 'MLKEM768-P256' is not supported for operation 'generateKey'\""
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "d68fa7ac7fe707e1d92d0302f5f3790cddc52c14fba4e82ad307a10077a8aa6d",
+      "expected_sha256": "79a447a192add5abfab948ce94e28ce1b33d8052433fbf3a4a483742b0c8f506",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 277,
+      "passing": 277,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "565d8b5fa099f8ee49df11f58b0d0abd78961640180cde92cbb0967aa7673b04",
+      "expected_sha256": "5f161443274afacd7dd04767ab48b2d0658de2f254b4983e68c33fd79acc5ac0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 28,
+      "passing": 28,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "88b73e5c49f16e5e21290c77a2f4239d676decb51e58b69345856213ba1f7149",
+      "expected_sha256": "80a06c99a0d810a9de7a6c322dc1a87e656e7ce162795fa1c4d16b687e3dce55",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 252,
+      "passing": 252,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "2a5ca43695e9fc67f9f56adce2fded2cc3cd2e734854195b6d18fa0e7d4e7aa2",
+      "expected_sha256": "f76f3c57ef441ecb1520dffa1b3b15f7a30b796e51a435ffcb8319d5dba39ef2",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 312,
+      "passing": 312,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "d7e6b35afdd618c0a18fedef966bba97c1b0c66a04b0fddfd1d55b3945efd9ae",
+      "expected_sha256": "f93091af59e8cf00d8f294ca1e1d651048f52d79d5a513c6427dbf24369a1ac5",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 108,
+      "passing": 72,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Success: generateKey(ML-DSA-44, false, [sign, verify, sign, sign, verify])",
+        "status": "FAIL",
+        "message": "assert_unreached: exportKey threw an unexpected error: Error: assert_array_equals: usages property is correct lengths differ, expected array [\"sign\"] length 1, got [\"sign\", \"sign\", \"sign\"] length 3 Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "f48150fde94a662c61c47ea6bdfd79d2bed99d7caf9c2b6723469576a2392b71",
+      "expected_sha256": "df2a85b92325f0af20678e031cbeae21717acb82ba8d289bddd78abedf39d2d0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 468,
+      "passing": 432,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Success: generateKey(ML-KEM-512, false, [decapsulateBits, decapsulateKey, encapsulateBits, encapsulateKey, decapsulateBits, decapsulateKey, decapsulateBits, decapsulateKey, encapsulateBits, encapsulateKey])",
+        "status": "FAIL",
+        "message": "assert_unreached: exportKey threw an unexpected error: Error: assert_array_equals: usages property is correct lengths differ, expected array [\"decapsulateBits\", \"decapsulateKey\"] length 2, got [\"decapsulateBits\", \"decapsulateBits\", \"decapsulateBits\", \"decapsulateKey\", \"decapsulateKey\", \"decapsulateK"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "215c995670fd6f4344927b7af5aa5892b956ca6b530b8c9b610d09b00b0cfc98",
+      "expected_sha256": "3c42dfc165f9bca9c4a238a9f7e014044128e47f4fbbc0ba83c20393873257f6",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 144,
+      "passing": 108,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Success: generateKey({length: 128, name: KMAC128}, false, [sign, verify, sign, verify])",
+        "status": "FAIL",
+        "message": "assert_unreached: exportKey threw an unexpected error: Error: assert_array_equals: usages property is correct lengths differ, expected array [\"sign\", \"verify\"] length 2, got [\"sign\", \"sign\", \"verify\", \"verify\"] length 4 Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/getPublicKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/getPublicKey.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/getPublicKey.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "1c20c1a962b5a065f4915ef0445d10d4acaa0576dae5a7ebf685d2c51e5b1ad9",
+      "expected_sha256": "b415c4d7c878277bc5d5ab95313dc63f2ea1f2edef2f7ae119a93f3765aeaed1",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 43,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "getPublicKey works for ECDH",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: crypto.subtle.getPublicKey is not a function. (In 'crypto.subtle.getPublicKey(\n            keyPair.privateKey,\n            algorithm.publicKeyUsages\n        )', 'crypto.subtle.getPublicKey' is undefined)\""
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/idlharness.https.any",
+      "url": "/WebCryptoAPI/modern-algos/idlharness.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/idlharness.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "ca348f8f80b2c044053a6434951b399aabdeff5deb5fc520419a5889d22bee3d",
+      "expected_sha256": "140b43f940ee100d3e51304035fcabec602197451b1bf6b80a562ebb2a023a8b",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 28,
+      "passing": 21,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "SubtleCrypto interface: operation getPublicKey(CryptoKey, sequence<KeyUsage>)",
+        "status": "FAIL",
+        "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getPublicKey\" missing"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "ad85b7b3e13d1698f6c0151c3335597d022827aa6b339bbaaf1526cdf705ae70",
+      "expected_sha256": "4858f65e6f36aafaca93b60ec61c60e5771c8de1f07e815115c73f6162fc1df5",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 144,
+      "passing": 96,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Good parameters: 128 bits (raw-secret, {0: 1, 1: 2, 10: 11, 11: 12, 12: 13, 13: 14, 14: 15, 15: 16, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10}, {name: KMAC128}, true, [sign, verify, sign, verify])",
+        "status": "FAIL",
+        "message": "assert_array_equals: usages property is correct lengths differ, expected array [\"sign\", \"verify\"] length 2, got [\"sign\", \"sign\", \"verify\", \"verify\"] length 4"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "da8b734097b5808d4a73b70c7ccca354446c36cebe21ea7a43c036febcb00162",
+      "expected_sha256": "2095e17cec93e9d081d7b5a3d664d6ac3eaa4a547a86b99e210282b50cca75a9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 180,
+      "passing": 108,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Good parameters: ML-DSA-44 bits (spki, buffer(1334), {name: ML-DSA-44}, true, [verify, verify])",
+        "status": "FAIL",
+        "message": "assert_array_equals: usages property is correct lengths differ, expected array [\"verify\"] length 1, got [\"verify\", \"verify\"] length 2"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "4bd3334ef999cc97eee52b713c0a9562f0742e19002cb2339f39246ae1d59997",
+      "expected_sha256": "1cbe95bd99b89e62cd6eb280bd7fd75cd41af9adc53eaa6725ea4825da6ce0d0",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 324,
+      "passing": 168,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Good parameters: ML-KEM-512 bits (jwk, object(kty, alg, pub), {name: ML-KEM-512}, true, [encapsulateBits])",
+        "status": "FAIL",
+        "message": "assert_unreached: Threw an unexpected error: NotSupportedError: Invalid key format Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "fccb0250204c8cb564234d37c3f930352b7339cf35f0eb802b83b287b695afcb",
+      "expected_sha256": "c827d006b93b5abb59aa47ca30ab6439f2c17ed4d72e35c7b78dfa47f0811571",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 20,
+      "passing": 20,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "085b970bd23a4a72d051f152f43c9ff6adf365c4c37bc81e2b5758ca6d44cf5f",
+      "expected_sha256": "582b54ec3467e1a1e9343ea30563c0d7b76cd2c636dff7d02f66c5a3ad65f35f",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 3,
+      "passing": 3,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "38ce73b67a3274af4f31c9618cb8e216f4b729e281b773072dceac17aa366073",
+      "expected_sha256": "474872126985a9c49f1383e81671ed56462e19cef8e6c4e241b8b20b0a1be579",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "passing": 2,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/kmac.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/serialization/kmac.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "18cb931493990cbe510ed72eb616f55580003bfc26a75886badb90d2b2392c56",
+      "expected_sha256": "fe3172ceeebe170313479d39edbb6f641cb3d2923465bdceb9208f4da1800592",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 6,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mldsa.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/mldsa.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/serialization/mldsa.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "a1b56c557a14259a29dd47cf94cb7289ee78bed4dd8b158b80dc09a6c44686d7",
+      "expected_sha256": "27b660f09476e6d4b9f851f446998cf8c1d83eaaa57e97fc3dfe64d0924d0ac9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 6,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mlkem.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/mlkem.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/serialization/mlkem.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "24a83efac090f0fc6acae28b7efbec03e4eb04391ae80332ecd37914fc8ce448",
+      "expected_sha256": "be7c3254f4c475324a4a671d0eba454159a36da874f37b48f36d721a1391e887",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 6,
+      "passing": 6,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/sign_verify/kmac.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "62eea8680c5c37fb64139b8c0d0c1d11d0b6de7aa4cbfc282afe5418d503b8e1",
+      "expected_sha256": "1460618747803f696dba7b29a5fd22b473cc3acb97f62b555bfb39965932334f",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 103,
+      "passing": 103,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any",
+      "url": "/WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "05e289e251382e9c7f7e811c4a97bee57b855c007bd63013961b3f3d1a60f6f1",
+      "expected_sha256": "27f3579a3341de58ca6d387972248afc696cdf5ae99a5ef35674502eaaca0627",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 57,
+      "passing": 57,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports-modern.https.any",
+      "url": "/WebCryptoAPI/modern-algos/supports-modern.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/supports-modern.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "d579726950e78849c3eeef1d982abd70ca99a16f8ceb1bc8ee4f7074fac5ee88",
+      "expected_sha256": "2cfd2fa2750d0333f515914f325b4faf5a39338f98d2db07225a14446ee27750",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 147,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "SubtleCrypto.supports method exists",
+        "status": "FAIL",
+        "message": "assert_true: SubtleCrypto.supports should be a function expected true got false"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports.https.any",
+      "url": "/WebCryptoAPI/modern-algos/supports.https.any.html",
+      "path": "WebCryptoAPI/modern-algos/supports.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "c0321aef77abe426712015be7eeca6b13188cfcd5aa5a18ceb46dbaf42a84574",
+      "expected_sha256": "dc7532dd44c4eaa69012ae2482b1ecd546044014515ef212b7755f6a91d13d51",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 200,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "SubtleCrypto.supports method exists",
+        "status": "FAIL",
+        "message": "assert_true: SubtleCrypto.supports should be a function expected true got false"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "e794503837500e33285af950b2ef38a5ec536d2fc8605cca9a1bb88ed8ff2e98",
+      "expected_sha256": "67d5a0784341225222df17b1fe07c510b1f56597ec9c81cad74f29feea18edb5",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 18,
+      "passing": 18,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "5d29cab1121d7538678e31bca8097e517eb52baaa02b6403e97495032e9f152b",
+      "expected_sha256": "b7a3930d8f34dfb7ebcb9f23c4f4e1f8d865cccd5b3da59e4f870f000ba2c5eb",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 84,
+      "passing": 84,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "76911e742234ce8e88a2741662ad00283d7b8b6b7a33873bce18f6c2e9cf655a",
+      "expected_sha256": "7c864c47ad49944cd81a37196dec1b8efa1ba660e9e727f9b2ba49d6ae83b2fa",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 104,
+      "passing": 104,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "87ec7f423e3fe34d1af55d163a837cf8d74ef8c34ede9ac0351a6c84ae21a1ca",
+      "expected_sha256": "1b6b5420dd620bb86257cd315d93824ff1916bd2d87bf4738ed9135394d4bc8e",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 36,
+      "passing": 24,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Success: generateKey(ED448, false, [sign, verify, sign, sign, verify])",
+        "status": "FAIL",
+        "message": "assert_unreached: exportKey threw an unexpected error: Error: assert_array_equals: usages property is correct lengths differ, expected array [\"sign\"] length 1, got [\"sign\", \"sign\", \"sign\"] length 3 Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "a9a70d1ec5a2b4ab0c9ec5d9c08d7ad56ce6e29b4350db28d801975f5ab75783",
+      "expected_sha256": "4539163aa7c267953d526f2f7221faa4f61b9fd42c272283f610617bd117517c",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 32,
+      "passing": 24,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Success: generateKey(X448, false, [deriveKey, deriveBits, deriveKey, deriveBits, deriveKey, deriveBits])",
+        "status": "FAIL",
+        "message": "assert_unreached: exportKey threw an unexpected error: Error: assert_array_equals: usages property is correct lengths differ, expected array [\"deriveBits\", \"deriveKey\"] length 2, got [\"deriveBits\", \"deriveBits\", \"deriveBits\", \"deriveKey\", \"deriveKey\", \"deriveKey\"] length 6 Reached unreachable code"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "a9b1694c5e39ac875ac6ed0c9691554f32bbf0c19426de0b160a5af9a245dde4",
+      "expected_sha256": "69a69643a3fc74dc90aa3c43e045fc5ebc82cc1f864ff30706744870f7d4f241",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 72,
+      "passing": 52,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Good parameters: Ed448 bits (spki, buffer(69), {name: Ed448}, true, [verify, verify])",
+        "status": "FAIL",
+        "message": "assert_array_equals: usages property is correct lengths differ, expected array [\"verify\"] length 1, got [\"verify\", \"verify\"] length 2"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "cb8104a04981ba9320612d3db1bc33ca02c581687e1e0a2bd5a1158003da09fa",
+      "expected_sha256": "11c49b230d497cce4f3a838cc45d58d75752b90dbea7a69cc4098e9c05d99db9",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 54,
+      "passing": 46,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Good parameters: X448 bits (pkcs8, buffer(72), {name: X448}, true, [deriveKey, deriveBits, deriveKey, deriveBits])",
+        "status": "FAIL",
+        "message": "assert_array_equals: usages property is correct lengths differ, expected array [\"deriveBits\", \"deriveKey\"] length 2, got [\"deriveBits\", \"deriveBits\", \"deriveKey\", \"deriveKey\"] length 4"
+      }
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "683d7f6fd6f59cf0fb627006f31f5caed1c965ffe845c0aed3c5c59c4ce52042",
+      "expected_sha256": "8e2fece430050e49f20954588881e3e27f3ecb199d268f8ac5069a434e1f9009",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 770,
+      "passing": 770,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "b72ace52eaa65bebca9d51645803251a898b0cb52d497cc48c4b5ef633d076c6",
+      "expected_sha256": "e083f84c8e1731bcaa5b90d8bbb0d9162c693894ffd1d4b783d9115e810ca5a7",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 662,
+      "passing": 662,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/serialization/ed448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/serialization/ed448.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "377eebe6568407964324f044cd0b79687de4379ef2ac1fa9be0f6000a378059a",
+      "expected_sha256": "cc18b4b5d6e96494d8c443dfa6999f913412ff3d734a7388cccc08c221a4e725",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "passing": 2,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/x448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/serialization/x448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/serialization/x448.https.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "3bcc53079894857fb48b29923caef47b217e889ef63e4ec0cd3c201d9a41c170",
+      "expected_sha256": "35817e74dbcb02f3356c631d4da81f49df1c5f19046f29e4459dfe58dfbf5a6d",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 2,
+      "passing": 2,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any.html",
+      "path": "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any.html",
+      "harness_timeout": 60,
+      "input_sha256": "1dbebef4cc28b2d11bea89609f22ea0572bc12c8037067c5cc4d265f72266143",
+      "expected_sha256": "2fa5b5f63433e7f5c2aba211f9716bc04073dc49f04d2758620b936966299b55",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 19,
+      "passing": 19,
+      "fully_passing": true,
+      "first_failure": null
+    },
+    {
+      "id": "clipboard-apis/dataTransfer-clearData",
+      "url": "/clipboard-apis/dataTransfer-clearData.html",
+      "path": "clipboard-apis/dataTransfer-clearData.html",
+      "harness_timeout": 10,
+      "input_sha256": "a4fc3f01978e2f056ac56315c5af829b7ebf8249d3a70f8f96d0294f404df800",
+      "expected_sha256": "291e704268f1ceaa6c578f809a7e8461d1f2f7cad9c1dd4875206229219cf900",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 1,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Clear data from dataTransfer",
+        "status": "FAIL",
+        "message": "assert_equals: expected 0 but got 2"
+      }
+    },
+    {
+      "id": "compression/decompression-extra-input.any",
+      "url": "/compression/decompression-extra-input.any.html",
+      "path": "compression/decompression-extra-input.any.html",
+      "harness_timeout": 10,
+      "input_sha256": "ddd6bbfbed71bd375a013103fb8eb42076124ea54d7915d021f125ee31955b13",
+      "expected_sha256": "20d036e560b396455b1d4fd8618c6a59381ef34c1a934710ba24d5cffde2f94d",
+      "outcome": "COMPLETE",
+      "harness": "TIMEOUT",
+      "subtests": 4,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "decompressing deflate input with extra pad should still give the output",
+        "status": "TIMEOUT",
+        "message": "Test timed out"
+      }
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http",
+      "url": "/content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http.html",
+      "path": "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http.html",
+      "harness_timeout": 60,
+      "input_sha256": "ca0eb6fe3a26d73ebee06d1d2179ded94743f837e98f4f85645aef9d1b979333",
+      "expected_sha256": "af55845f084d6bd77d68c8da07358346aa02172c7bd178648a8fa6a072030084",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 12,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: null is not an object (evaluating 'assertResult.status')\""
+      }
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http.html",
+      "path": "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http.html",
+      "harness_timeout": 60,
+      "input_sha256": "9e7b7ef018cac9d26fda6bdd156ff608980370c123efe2be437351e169b41168",
+      "expected_sha256": "54ddda283b461e10c5408cb1256c19be69a47f52b2fadd051cc04f5d75a70ef6",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 12,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: null is not an object (evaluating 'assertResult.status')\""
+      }
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http.html",
+      "path": "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http.html",
+      "harness_timeout": 60,
+      "input_sha256": "12afde09df92127a4be02e672271188e37af3b753904a162d367a99c36dcfea4",
+      "expected_sha256": "af55845f084d6bd77d68c8da07358346aa02172c7bd178648a8fa6a072030084",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 12,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Content Security Policy: Expects blocked for sharedworker-import-data to cross-http origin and keep-origin redirection from http context.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: null is not an object (evaluating 'assertResult.status')\""
+      }
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-self/worker-import-data.http.html",
+      "path": "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http.html",
+      "harness_timeout": 60,
+      "input_sha256": "1c13bbccba28e64438696ec7865958d80bebd169dd4dd11fd9e99a359613814a",
+      "expected_sha256": "54ddda283b461e10c5408cb1256c19be69a47f52b2fadd051cc04f5d75a70ef6",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 12,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: null is not an object (evaluating 'assertResult.status')\""
+      }
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http.html",
+      "path": "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http.html",
+      "harness_timeout": 60,
+      "input_sha256": "c7c036e6bd017903cb23b87f2a75a237fbec320510c4754eb979b4dd4516b446",
+      "expected_sha256": "54ddda283b461e10c5408cb1256c19be69a47f52b2fadd051cc04f5d75a70ef6",
+      "outcome": "COMPLETE",
+      "harness": "OK",
+      "subtests": 12,
+      "passing": 0,
+      "fully_passing": false,
+      "first_failure": {
+        "name": "Content Security Policy: Expects blocked for worker-import-data to cross-http origin and keep-origin redirection from http context.",
+        "status": "FAIL",
+        "message": "promise_test: Unhandled rejection with value: object \"TypeError: null is not an object (evaluating 'assertResult.status')\""
+      }
+    }
+  ],
+  "source_files": {
+    "tools/wpt_compare.py": "02ed88151132e3c0d35a1e50741b86e0213d7cd94d0d8a64928387d3f22a1746",
+    "tools/wpt_compare_test.py": "2a993e9a7a80926c4fe4e4174d15475baaf6cb6c4f2318c2325f407ba6e8b519",
+    "fileapi/blob.v": "f3d3b56214ff4e7aede3713911a50fcfa398e0d94142598bc7b21a0732d9bc23",
+    "fileapi/blob_text_decoder_test.v": "74dd4f497747ff9320ea217ebd1308a5469df4dd8af6c8eebfa1b2d99e5caf1f",
+    "html/blob_text.v": "89269e384506e2448a6d416bac06ddd854da5a0496d55831b3a82813e54d98e7",
+    "html/blob_text_test.v": "b69d6f1c2cb116ecfc28227360d0e6792134dd079d7708e38f34ae6fc1a7d956",
+    "browserjs/blob_realm_test.v": "22d3c705277e43cf24ddaa32085b3680e999ced78952e4ff5014fee2b864a13c",
+    "browserjs/indexed_db_binding.v": "1e8831369e6cdfefd72515ce2f2e76d2ddf8747c48b87db85fda46c88900abc0",
+    "browserjs/indexed_db_binding_jsc.c.v": "b66704400a68a562cf1e417507a9a29930e4218dcc1ff09525be4495f49bebee",
+    "browserjs/indexed_db_databases_test.v": "ac00cf4ee6814d27ba86e5c16850397c1a040451c198d621c007a70338398c38",
+    "indexeddb/factory.v": "d506a8c05199e19044aedac42a26ce3f96cb3118ef006661e543e0673e8fd011",
+    "indexeddb/database_enumeration_test.v": "2a2d5cc67d292efdfa73d7580ef82d2c806341a7e29489107a4cf08b387926aa"
+  },
+  "checks": {
+    "ladybird-blob-text-check-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-blob-text-check-20261108",
+        "fileapi/blob_text_decoder_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1921089536,
+      "elapsed_seconds": 52.456382540999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-blob-text-runtime-20261108": {
+      "command": [
+        "Build/ladybird-blob-text-check-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.49718745900000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-databases-model-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-databases-model-20261108",
+        "indexeddb/database_enumeration_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 874414080,
+      "elapsed_seconds": 49.6785825,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-databases-model-runtime-20261108": {
+      "command": [
+        "Build/ladybird-databases-model-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.4473579160000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-blob-promise-check-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-blob-promise-check-20261108",
+        "html/blob_text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1915650048,
+      "elapsed_seconds": 36.207785041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-blob-promise-recheck-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-blob-promise-recheck-20261108",
+        "html/blob_text_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3033595904,
+      "elapsed_seconds": 69.89661650000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-blob-promise-runtime-20261108": {
+      "command": [
+        "Build/ladybird-blob-promise-recheck-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.553777625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-first100-bindings-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-first100-bindings-20261108",
+        "browserjs/zz_ladybird_first100_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5886967808,
+      "elapsed_seconds": 535.8975248749999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-first100-bindings-runtime-20261108": {
+      "command": [
+        "Build/ladybird-first100-bindings-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 25526272,
+      "elapsed_seconds": 0.5448869590000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "development_failures": [
+      {
+        "job": "ladybird-blob-promise-check-20261108-compile",
+        "error": "Concurrent css/borrowed_size_values.v:24 invalid indirect of css.CalculatedStyleValue; owner corrected the file; fresh compilation and runtime pass"
+      },
+      {
+        "job": "ladybird-first100-bindings-runtime-20261108",
+        "error": "Test fixture redeclared global lexical const request in its second evaluate call; renamed upgradeRequest; corrected check pending",
+        "resolution": "Corrected combined check passes all three native cases; compiler, test and guard exits are zero."
+      }
+    ],
+    "wpt_tool_unit_tests": {
+      "command": "python3 -m unittest discover -s tools -p 'wpt_*test.py'",
+      "tests": 19,
+      "exit": 0
+    },
+    "volt_builds": [
+      {
+        "cwd": "/Users/alex/code/volt",
+        "command": "v -enable-globals -o volt .",
+        "exit": 0
+      },
+      {
+        "cwd": "/Users/alex/code/volt",
+        "command": "make app",
+        "exit": 0
+      }
+    ],
+    "ladybird-first100-bindings-recheck-20261108-compile": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/ladybird-first100-bindings-recheck-20261108",
+        "browserjs/zz_ladybird_first100_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4976181248,
+      "elapsed_seconds": 76.406929292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "ladybird-first100-bindings-recheck-runtime-20261108": {
+      "command": [
+        "Build/ladybird-first100-bindings-recheck-20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.5398372499999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "focused_passes": {
+      "total_distinct_test_functions": 9,
+      "allocator": "default",
+      "groups": [
+        {
+          "source": "fileapi/blob_text_decoder_test.v",
+          "tests": 2
+        },
+        {
+          "source": "html/blob_text_test.v",
+          "tests": 3
+        },
+        {
+          "source": "browserjs/blob_realm_test.v",
+          "tests": 2
+        },
+        {
+          "source": "browserjs/indexed_db_databases_test.v",
+          "tests": 1
+        },
+        {
+          "source": "indexeddb/database_enumeration_test.v",
+          "tests": 1
+        }
+      ],
+      "successful_executables": {
+        "ladybird-blob-text-check-20261108": "01209d6baf9c87d94ff7ca34639fbad12325936529fff531b3bcf4e0bcb950cc",
+        "ladybird-blob-promise-recheck-20261108": "7056ac642fa0dd40626ee0add33a3e65f5c365a9d24355a38f0cfff3f79c339c",
+        "ladybird-first100-bindings-recheck-20261108": "460fb3852328cd627f59ae1b3595f34fbe51026b228568c090b2616c78d2e4ee",
+        "ladybird-databases-model-20261108": "0fe28e00e8a65567a184804e65222c94774337730696ed9219deea4a94bc5385"
+      }
+    },
+    "combined_test": {
+      "path": "browserjs/zz_ladybird_first100_20261108_test.v",
+      "sha256": "64433da753f222478deeb66b9eb8125baaf82a13da2680b97ec74d0603112b7a",
+      "parts": [
+        "browserjs/blob_realm_test.v",
+        "browserjs/indexed_db_databases_test.v"
+      ],
+      "construction": "Keep one module browserjs header, combine unique import lines, concatenate the remaining source bodies in this order."
+    }
+  },
+  "production_validation": {
+    "status": "pending",
+    "reason": "Shared production build already running; sealed manifest at 20261108-094601-fd31969d differs from all five changed implementation files; no duplicate build queued"
+  },
+  "focused_raw_evidence": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-ladybird-new-first100-focused.tar.gz",
+    "sha256": "4674bebb4579ab9186de1820ab542aab9e21ae65d1f9cd7b1e11b8184341d8fd"
+  },
+  "commits": {
+    "batch_selection": "1afc80e15",
+    "blob_text": "99e7bece5",
+    "database_enumeration": "c61d61c2e"
+  }
+}
