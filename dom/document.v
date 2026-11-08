@@ -5546,6 +5546,8 @@ pub mut:
 
 	// Animations
 	default_timeline               &DocumentTimeline = unsafe { nil }
+	// The concrete Animations timeline shares this document's allocation lifetime.
+	animations_default_timeline_handle_ voidptr = unsafe { nil }
 	associated_animation_timelines []AnimationTimelineHandle
 	last_animation_frame_timestamp ?f64
 	pending_animation_event_queue  []PendingAnimationEvent

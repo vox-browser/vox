@@ -7,10 +7,7 @@ module animations
 
 import css
 import dom
-
-__global (
-	document_animation_timelines = map[u64]&AnimationTimeline{}
-)
+import platform
 
 pub struct KeyframeAnimationOptions {
 	KeyframeEffectOptions
@@ -309,20 +306,23 @@ fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
 fn default_timeline_for_animatable(animatable &Animatable) &AnimationTimeline {
 	if element := animatable.target_ {
 		document := element.document()
-		key := u64(voidptr(document))
-		if existing := document_animation_timelines[key] {
-			// A later document can reuse a destroyed document's address. Only
-			// a timeline still associated with this document is its own;
-			// the check does not read the possibly released timeline.
-			if document.associated_animation_timelines.any(it.target == voidptr(existing)) {
-				return existing
+		handle := document.animations_default_timeline_handle_
+		if handle != unsafe { nil } {
+			if document.associated_animation_timelines.any(it.target == handle) {
+				return unsafe { &AnimationTimeline(handle) }
 			}
 		}
+		// A process-wide map can allocate its backing storage in the first
+		// document's arena and retain it after navigation releases that arena.
+		// Keep both the cached handle and its timeline with the owning document.
+		mut allocation_scope := platform.RetainedArenaScope{}
+		mut storage := document.native_storage()
+		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+		defer { allocation_scope.finish() }
 		mut timeline := new_document_timeline(document, 0, 0)
 		timeline.set_document_active(document.is_active())
-		unsafe {
-			document_animation_timelines[key] = timeline
-		}
+		mut mutable_document := unsafe { &dom.Document(document) }
+		mutable_document.animations_default_timeline_handle_ = voidptr(timeline)
 		return timeline
 	}
 	mut timeline := new_document_timeline(none, 0, 0)
