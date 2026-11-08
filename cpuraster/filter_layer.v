@@ -143,11 +143,6 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		return false
 	}
 	drop := step.kind == .drop_shadow
-	// Scaled shadow layers need the remaining FilterResult resampling and
-	// crop analysis. Preserve the native fallback until those are ported.
-	if drop && (ctm.sx != 1 || ctm.sy != 1) {
-		return false
-	}
 	// Mapping::paramToLayer(matrix) conjugates the offset. Float inverse
 	// and concat arithmetic can retain a tiny scale; keep it for sampling.
 	inverse := affine_invert(ctm) or { SkAffine{} }
@@ -223,7 +218,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	// internalDrawDeviceWithFilter(): the layer without its padding, the
 	// clip bounds in layer pixels as the desired output.
 	layer_image := BlurImage{layer_pixels, lw, lh}
-	source := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_by_pixel()
+	source := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
 	desired := IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top}
 	if drop {
 		// internalDrawDeviceWithFilter evaluates in the source device's
@@ -239,18 +234,24 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 			source.layer_bounds
 		}
 		merged_bounds = merged_bounds.intersect(desired) or { return true }
-		mw := merged_bounds.width()
-		mh := merged_bounds.height()
+		// Builder::merge() uses a transparent one-pixel boundary. Its device
+		// origin includes that padding before the offset matrix is inverted.
+		// Sampling in an unpadded device changes rounding for residual scales
+		// introduced by paramToLayer()'s matrix conjugation.
+		merge_padded := skif_outset(merged_bounds, 1, 1)
+		mw := merge_padded.width()
+		mh := merge_padded.height()
 		mut merged := []u8{len: mw * mh * 4}
-		merge_clip := canvas_raster_clip(mw, mh, [])
+		merge_clip := canvas_raster_clip(mw, mh,
+			[rect_path(Rect{1, 1, f32(mw - 1), f32(mh - 1)})])
 		if shadow.has_image {
 			draw_tinted_filter_result(mut merged, mw * 4, shadow, local_offset,
-				merged_bounds.left, merged_bounds.top, &merge_clip, step.color)
+				merge_padded.left, merge_padded.top, &merge_clip, step.color)
 		}
-		draw_filter_sprite(mut merged, mw * 4, source.image.bitmap(), source.origin_x - merged_bounds.left,
-			source.origin_y - merged_bounds.top, &merge_clip, .src_over)
-		draw_filter_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, padded.left + merged_bounds.left,
-			padded.top + merged_bounds.top, &rc, mode)
+		draw_filter_sprite(mut merged, mw * 4, source.image.bitmap(), source.origin_x - merge_padded.left,
+			source.origin_y - merge_padded.top, &merge_clip, .src_over)
+		draw_filter_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, padded.left + merge_padded.left,
+			padded.top + merge_padded.top, &rc, mode)
 		return true
 	}
 	result := blur_filter_result(source, desired, sx, sy) or { return true }
@@ -300,15 +301,17 @@ fn map_filter_bounds(bounds IRect, m SkAffine) IRect {
 }
 
 fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, mapped SkAffine, origin_x int, origin_y int, rc &RasterClip, color u32) {
-	// The transparent boundary is sampled before the color filter. Retain
-	// the backing's padding (which can contain pixels beyond a soft crop).
-	subset := skif_outset(result.image.subset, 1, 1)
+	// Saved layers have a transparent border. Blur output only promises
+	// initialized padding: draw that subset with AA, without sampling its
+	// border as if it were transparent (FilterResult::draw()).
+	pad := if result.transparent_boundary { 1 } else { 0 }
+	subset := skif_outset(result.image.subset, pad, pad)
 	assert IRect{0, 0, result.image.backing.width, result.image.backing.height}.contains(subset)
 	image := SpecialImage{result.image.backing, subset}.bitmap()
 	// applyTransform(), Concat(device, result), then preTranslate(-1).
 	transformed := sk_concat(mapped, affine_translate(f32(result.origin_x), f32(result.origin_y)))
 	net := sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), transformed)
-	total := pre_translate(net, -1, -1)
+	total := pre_translate(net, -f32(pad), -f32(pad))
 	bitmap := CanvasBitmap{ pixels: image.pixels, width: image.width, height: image.height, pitch: image.width * 4, premultiplied: true }
 	shader := new_image_shader(bitmap, .clamp, .clamp, true, total)
 	base := new_image_blitter(mut pixels, pitch, shader.image, 1, .src_over)
@@ -317,7 +320,14 @@ fn draw_tinted_filter_result(mut pixels []u8, pitch int, result FilterResult, ma
 		f32(color & 255) * inv_255 * a, a]!
 	mut blitter := PipelineBlitter{ ...base, tinted: true, tint: tint, lowp_tint: tint.map(lowp_from_float(it)) }
 	bounds := map_filter_bounds(result.layer_bounds, mapped)
-	fill_irect(IRect{bounds.left - origin_x, bounds.top - origin_y, bounds.right - origin_x, bounds.bottom - origin_y}, rc, mut blitter)
+	clip := IRect{bounds.left - origin_x, bounds.top - origin_y, bounds.right - origin_x, bounds.bottom - origin_y}
+	if result.transparent_boundary {
+		fill_irect(clip, rc, mut blitter)
+	} else {
+		dev := InverseMatrix{total, total.type_mask()}.map_rect(Rect{0, 0, f32(image.width), f32(image.height)})
+		visible := rect_intersect(dev, Rect{f32(clip.left), f32(clip.top), f32(clip.right), f32(clip.bottom)}) or { return }
+		anti_fill_rect(visible, rc, mut blitter)
+	}
 }
 
 // SkBitmapDevice::drawSpecial() of a pixel-aligned filter result:

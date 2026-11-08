@@ -159,6 +159,40 @@ fn test_drop_shadow_filter_layers_match_skia() {
 	}
 }
 
+// A native comparison reduced from seed 20261106, draw 5714. The mapped
+// X sigma produces a blur while Y is an identity. Sampling the initialized
+// bottom edge as a transparent border loses one alpha value at (55, 50).
+fn test_scaled_drop_shadow_keeps_initialized_blur_boundary() {
+	mut b := PathBuilder{}
+	b.move_to(36.080982, 64.31974)
+	b.cubic_to(33.5, 62.165848, 49.5, -3.6732166, 5.4647284, 53.63945)
+	b.line_to(34, 16.909954)
+	b.cubic_to(52.80074, 59.36197, 63.24132, 18.59892, 17.961535, 28.317299)
+	b.quad_to(60.485752, 17, 41.736267, 58.978004)
+	b.close()
+	style := CanvasPaintStyle(CanvasPattern{
+		pixels: $embed_file('testdata/drop-shadow-pattern.rgba').to_bytes()
+		width: 10
+		height: 14
+		pitch: 48
+		transform: [f32(1), 0, 0, 1, 0, 0]!
+	})
+	filter := new_canvas_filter([CanvasFilterStep{
+		kind: .drop_shadow
+		sigma: .023268236
+		offset_x: 7
+		offset_y: -13.374848
+		color: 0xff000000
+	}])
+	mut pixels := []u8{len: 61 * 59 * 4}
+	assert fill_canvas_path(mut pixels, 61, 59, 244, 2, b.detach(),
+		[f32(1.4418191), 0, 0, 1.0050474, -6.6226745, -1.0314453]!, 0xff000000,
+		style, 1, .src_over, 0, [], filter)
+	offset := (50 * 61 + 55) * 4
+	assert pixels[offset..offset + 4] == [u8(54), 110, 80, 184]
+	assert sha256.sum(pixels).hex() == '2bc0e0020dae8a2c6b45581b13f07fd8c9357a810d291d7115d1975030a57fb0'
+}
+
 fn test_unsupported_drop_shadow_layers_preserve_destination() {
 	step := CanvasFilterStep{ kind: .drop_shadow, sigma: 2, offset_x: 3.5, offset_y: -1.25, color: 0x80000000 }
 	mut px := filter_layer_test_background()

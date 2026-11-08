@@ -57,6 +57,10 @@ fn skif_outset(r IRect, dx int, dy int) IRect {
 struct FilterResult {
 	image        SpecialImage
 	has_image    bool
+	// PixelBoundary::kTransparent permits sampling the surrounding pixel
+	// instead of anti-aliasing the image edge. Blur output is initialized,
+	// but its surrounding pixels are not known to be transparent.
+	transparent_boundary bool
 	origin_x     int
 	origin_y     int
 	layer_bounds IRect
@@ -86,7 +90,14 @@ fn (f FilterResult) subset(bounds IRect) FilterResult {
 		return FilterResult{}
 	}
 	sub := IRect{image_bounds.left - f.origin_x, image_bounds.top - f.origin_y, image_bounds.right - f.origin_x, image_bounds.bottom - f.origin_y}
-	return new_filter_result(f.image.make_subset(sub), image_bounds.left, image_bounds.top)
+	return FilterResult{
+		...new_filter_result(f.image.make_subset(sub), image_bounds.left, image_bounds.top)
+		transparent_boundary: f.transparent_boundary
+	}
+}
+
+fn (f FilterResult) inset_for_save_layer() FilterResult {
+	return FilterResult{...f.inset_by_pixel(), transparent_boundary: true}
 }
 
 // FilterResult::insetByPixel().
