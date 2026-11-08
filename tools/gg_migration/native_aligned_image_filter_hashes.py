@@ -269,6 +269,46 @@ cases.append(dict(name='offscreen-identity-shadow-preserves-merge-origin', iw=15
         shadow(-1, 6, 15, 2399918666),
         (2, 0, 0, 0, 0, [.58240926, 0, 0, 0, .20879537, 0, .58240926, 0, 0, .20879537,
             0, 0, .58240926, 0, .20879537, 0, 0, 0, 1, 0], 0)]))
+cases += [
+    dict(name='resolved-nearest-scaled-shadow', destination=[4, 5, 30, 25],
+         smoothing=False, filters=[shadow(0)]),
+    dict(name='resolved-nearest-subset-shadow', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         smoothing=False, filters=[shadow(.000001)], mode='src_in', clip=True),
+    dict(name='resolved-nearest-p3-prefiltered-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         smoothing=False, p3=True, premul=False, alpha=.65,
+         filters=[contrast, shadow(.000001), opacity], mode='overlay'),
+    dict(name='resolved-nearest-invalid-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         smoothing=False, p3=True, premul=False, alpha=.65,
+         filters=[contrast, shadow(-1), opacity], mode='src_in', clip=True),
+    dict(name='resolved-nearest-downscaled-shadow', destination=[10.25, 12.5, 2, 3],
+         smoothing=False, p3=True, alpha=.7, filters=[shadow(-1)], mode='plus_lighter', clip=True),
+    dict(name='resolved-nearest-unpremul-shadow', destination=[10.25, 12.5, 28, 18],
+         smoothing=False, premul=False, alpha=.999, filters=[shadow(.000001)], mode='multiply', clip=True),
+    dict(name='resolved-nearest-flipped-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], smoothing=False,
+         filters=[contrast, shadow(0, 3.5, -2.25)], mode='src_in'),
+    dict(name='resolved-nearest-factored-shadow', source=[2, 2, 4, 3], destination=[4.5, 6.25, 22, 16],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], smoothing=False, p3=True, alpha=.7,
+         filters=[shadow(0, .25, -.75)], mode='src_in'),
+    dict(name='resolved-nearest-shadow-without-foreground', destination=[-30, 6, 24, 18],
+         smoothing=False, filters=[contrast, shadow(0, 34.5, -2.25), opacity], mode='src_in', clip=True),
+    dict(name='empty-nearest-shadow-resolution', destination=[4.5, 6.25, 22, 16],
+         smoothing=False, filters=[contrast, shadow(0, 150.25, -100), opacity], mode='src_in', clip=True),
+]
+cases.append(dict(name='thin-resolved-shadow', iw=24, ih=2, width=87, height=8,
+    pixels=list((Path(__file__).resolve().parents[2] / 'cpuraster/testdata/resolved-shadow-thin-source.rgba').read_bytes()),
+    initial=list((Path(__file__).resolve().parents[2] / 'cpuraster/testdata/resolved-shadow-thin-background.rgba').read_bytes()),
+    pixel_pitch=100, pitch=352, alpha_type=1, p3=True, smoothing=False, mode='src_atop',
+    transform=[1.9846058, 0, 0, -.2999618, 3.25, 6.4],
+    destination=[18.515005, -1.4122566, 85.50765, 2.448695], source=[5, 0, 16, 2],
+    filters=[(2, 0, 0, 0, 0, [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0], 1),
+        shadow(-1, -16, 10, 0xffffffff),
+        (2, 0, 0, 0, 0, [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0], 1),
+        (2, 0, 0, 0, 0, [-.0664451, .47126946, .10513631, -.90223706, .2727217,
+            -.21826614, -.57720643, .41614532, .73150754, -.86200744,
+            -.14551322, -.39294574, -.6733888, .11890532, -.2589099, 0, 0, 0, .16235755, 0], 0)]))
+cases.append(dict(cases[-1], name='thin-resolved-shadow-without-postfilters',
+                  filters=cases[-1]['filters'][:2], mode='src'))
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -327,6 +367,12 @@ expected += ['68ec54837de261df', '7a773e55fa8b6342', '8e8005e8ba8b0db1', '641353
 if platform.system() == 'Linux':
     expected[94], expected[100] = '94c9d6dfcf804982', '92ad67f96173f5f1'
 expected += ['6918c091a7f3c206']
+expected += ['58dcb346943e34ad', '9b7978b9155b68b7', 'a005d44326d848c9', '75f9f4859dba60e3', '2e3b1a72ba273cd9', '2e367dd716646a39', '4e105e2ca7a7eea7', '34955f83e4426d58', '30aa689b07f085a0', '58098840e4e0f6d9']
+if platform.system() == 'Linux':
+    expected[-10:] = ['74ef0767c101390a', 'b0b67dba3bb87d45', '741e193007ca6ec3', '9a8d7906fd102a19', 'e00d7577ca66d313', '1ad1f894abb926c3', '5581e3d64779e918', 'a752fab16a4109bb', '98ab8774ecaffba1', '58098840e4e0f6d9']
+expected += ['09ffe213e3642515', 'b54173ae0d037c96']
+if platform.system() == 'Linux':
+    expected[-2:] = ['aff78d507ddefba6', 'a1efef67211fbbde']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
