@@ -1,5 +1,6 @@
 #include "../native_gg_path.h"
 #include <cassert>
+#include <thread>
 
 static int draws;
 static int render(uint8_t* pixels, int width, int height, int pitch,
@@ -139,6 +140,15 @@ int main(int argc, char** argv)
     });
     assert(s_small_svg_path_cache.size() == 0);
     assert(bridge_draw() && pixels[0] == 177);
+#if defined(__APPLE__)
+    auto main_pixels=pixels;
+    auto main_hits=s_small_svg_path_cache.hits;
+    auto main_entries=s_small_svg_path_cache.size();
+    std::thread worker([&] { assert(!bridge_draw()); });
+    worker.join();
+    assert(pixels==main_pixels && s_small_svg_path_cache.hits==main_hits
+        && s_small_svg_path_cache.size()==main_entries);
+#endif
     ladybird_v_skia_set_gg_path_draw(nullptr);
     assert(!bridge_draw() && s_small_svg_path_cache.size() == 0);
     if (argc == 2) {

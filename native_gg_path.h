@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <pthread.h>
 #include <vector>
 
 using VoxGGPathDraw = int (*)(uint8_t* pixels, int width, int height, int pitch,
@@ -93,6 +94,11 @@ static void gg_copy_path_views(VoxGraphitePixelRegion const* views, int count,
 static int gg_draw_path_pixels(uint8_t* pixels, int width, int height, int pitch,
     int has_background, VoxGraphitePath const* path)
 {
+#if defined(__APPLE__)
+    // A cache hit must obey the GG renderer's ownership boundary too. Do not
+    // read/mutate its deque or bypass the callback's main-thread rejection.
+    if (!pthread_main_np()) return 0;
+#endif
     // The exact descriptor, subpixel phase and backdrop bytes already govern
     // eligibility. An explicit experiment can extend the caller's scoped
     // cache to other documents without changing its ordinary policy. Reuse
