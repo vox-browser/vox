@@ -2434,7 +2434,8 @@ static std::vector<char> chromium_layer_msaa_rows(long top, int height,
 static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     int raster_width, int raster_height, RasterRegion const& region,
     float scale, float page_x, float page_y, float scroll_y,
-    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor);
+    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor,
+    CGContextRef destination = nullptr, float canvas_height = 0);
 
 extern "C" int ladybird_v_skia_draw_rgba_image_tiles(CGContextRef destination,
     uint8_t const* source_pixels, int image_width, int image_height,
@@ -2750,7 +2751,7 @@ extern "C" int ladybird_v_skia_draw_rgba_image(CGContextRef destination,
         auto draw = graphite_image_draw();
         bool drawn = draw && draw_chromium_layer_image_tiles(pixels, raster_width,
             raster_height, region, destination_scale, page_x, page_y, scroll_y,
-            canvas_width, has_background, descriptor);
+            canvas_width, has_background, descriptor, destination, canvas_height);
         if (!drawn && draw) drawn = vox_draw_with_msaa_rows(pixels, raster_width, rows, [&](auto& target, bool msaa) {
                 descriptor.flags = (descriptor.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
                     | (msaa ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
@@ -6652,7 +6653,8 @@ static long chromium_raster_tile_for_row(long row)
 static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     int raster_width, int raster_height, RasterRegion const& region,
     float scale, float page_x, float page_y, float scroll_y,
-    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor)
+    float canvas_width, bool has_background, VoxGraphiteImage const& descriptor,
+    CGContextRef destination, float canvas_height)
 {
     auto draw = graphite_image_draw();
     auto draw_region = graphite_image_region_draw();
@@ -6769,6 +6771,52 @@ static bool draw_chromium_layer_image_tiles(std::vector<uint32_t>& pixels,
     long spacing = s_msaa_tile_rows - 2;
     long first_tile = chromium_raster_tile_for_row(first_row);
     long last_tile = chromium_raster_tile_for_row(first_row + raster_height - 1);
+    if (draw_region && !std::getenv("VOX_DISABLE_ROOT_IMAGE_REGION")) {
+        VoxRasterSnapshot::Rect writable{0, 0, size_t(raster_width), size_t(raster_height)};
+        // Keep the exact matrix, target size and tile origin of full replay.
+        // Only backdrop upload/readback is cropped to the native damage clip;
+        // source filtering and MSAA still execute in the original GPU target.
+        if (destination && scale == std::round(scale)
+            && raster_width == region.width() * scale && raster_height == region.height() * scale)
+            writable_raster_rect(destination, canvas_height, region, scale, scale,
+                raster_width, raster_height, writable);
+        auto result = pixels;
+        first_tile = chromium_raster_tile_for_row(first_row + long(writable.top));
+        last_tile = chromium_raster_tile_for_row(first_row + long(writable.bottom) - 1);
+        size_t transferred = 0;
+        for (long tile = first_tile; tile <= last_tile; ++tile) {
+            long origin = tile * spacing;
+            long top = std::max(long(writable.top), origin - first_row);
+            long bottom = std::min(long(writable.bottom), origin + s_msaa_tile_rows - first_row);
+            if (bottom <= top) continue;
+            int width = int(writable.right - writable.left), height = int(bottom - top);
+            std::vector<uint32_t> patch(size_t(width) * height);
+            for (int y = 0; y < height; ++y)
+                std::copy_n(pixels.data() + size_t(top + y) * raster_width + writable.left,
+                    width, patch.data() + size_t(y) * width);
+            auto image = descriptor;
+            image.matrix[2] += offset_x;
+            image.matrix[5] += first_row - origin;
+            long projected = origin - std::lround(s_root_raster_scroll_y * scale);
+            image.flags = (image.flags & ~VOX_GRAPHITE_IMAGE_FORCE_MSAA)
+                | (row_in_msaa_tile(projected + 1) ? VOX_GRAPHITE_IMAGE_FORCE_MSAA : 0);
+            VoxGraphitePixelRegion view{int(offset_x + writable.left), int(first_row + top - origin),
+                width, height, width * 4, reinterpret_cast<uint8_t*>(patch.data())};
+            if (!draw_region(&view, tile_width, s_msaa_tile_rows, 1, &image)) return false;
+            for (int y = 0; y < height; ++y) {
+                if (chromium_raster_tile_for_row(first_row + top + y) != tile) continue;
+                std::copy_n(patch.data() + size_t(y) * width, width,
+                    result.data() + size_t(top + y) * raster_width + writable.left);
+            }
+            transferred += patch.size();
+        }
+        if (std::getenv("VOX_ROOT_IMAGE_REGION_DIAGNOSTICS"))
+            std::fprintf(stderr, "VOX_ROOT_IMAGE_REGION pixels=%zu full_pixels=%zu tiles=%ld\n",
+                transferred, size_t(tile_width) * s_msaa_tile_rows * (last_tile - first_tile + 1),
+                last_tile - first_tile + 1);
+        pixels = std::move(result);
+        return true;
+    }
     auto backdrop = pixels;
     auto result = pixels;
     std::vector<uint32_t> tile_pixels(static_cast<size_t>(tile_width) * s_msaa_tile_rows);
