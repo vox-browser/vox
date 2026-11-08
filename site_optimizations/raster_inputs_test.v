@@ -24,7 +24,7 @@ fn test_github_raster_inputs_include_mutable_path_coordinates_and_pixels() {
 	mut pixels := [u8(255),0,0,255]
 	bitmap := &dom.Bitmap_{width:1,height:1,pitch:4,data:pixels}
 	mut app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'draw_svg_path',svg_data:&layout.PaintSVGPathData{path:'M1 2',path_data:path}},
-		layout.PaintCommand{kind:'draw_image',replaced_image_bitmap:bitmap}]}
+		layout.PaintCommand{kind:'draw_replaced_image',replaced_image_bitmap:bitmap}]}
 	before := app.github_static_raster_inputs()?
 	path[1] = 4
 	assert app.github_static_raster_inputs()? != before
@@ -36,7 +36,7 @@ fn test_github_raster_inputs_include_mutable_path_coordinates_and_pixels() {
 
 fn test_github_raster_inputs_include_response_bytes_and_decode_availability() {
 	address := 'https://avatars.githubusercontent.com/example.png'
-	mut app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'draw_image',image_data:&layout.PaintImageData{image_url:address}}]}
+	mut app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'draw_replaced_image',image_data:&layout.PaintImageData{image_url:address}}]}
 	assert app.github_static_raster_inputs() == none
 	app.resource_cache[address] = PreloadedResource{url:address,body:'red pixels'}
 	before := app.github_static_raster_inputs()?
@@ -62,4 +62,17 @@ fn test_github_raster_input_policy_requires_github() {
 	assert (app.site_stationary_raster_inputs() != none) == !disable_github_raster_input_reuse
 	document.url = dom.URL{value:'https://github.com.evil.test/'}
 	assert app.site_stationary_raster_inputs() == none
+}
+
+fn test_github_raster_inputs_include_border_and_shadow_geometry() {
+	for kind in ['paint_uniform_border', 'paint_rounded_border_top', 'paint_partial_rounded_border',
+		'paint_inner_box_shadow', 'paint_outer_box_shadow'] {
+		mut app := BrowserApp{paint_commands:[layout.PaintCommand{kind:kind,width:20,height:10,color:'red'}]}
+		before := app.github_static_raster_inputs()?
+		app.paint_commands[0].stroke_width = 2
+		assert app.github_static_raster_inputs()? != before, kind
+		app.paint_commands[0].stroke_width = 0
+		app.paint_commands[0].blur = 4
+		assert app.github_static_raster_inputs()? != before, kind
+	}
 }

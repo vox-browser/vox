@@ -27,7 +27,10 @@ fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
 		command := &app.paint_commands[index]
 		if command.kind !in ['fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect',
 			'fill_ellipse', 'stroke_ellipse', 'fill_polygon', 'draw_line', 'draw_text',
-			'draw_svg_path', 'fill_gradient', 'draw_border', 'draw_image', 'draw_background_image',
+			'draw_svg_path', 'fill_gradient', 'draw_border', 'draw_image', 'draw_replaced_image', 'draw_background_image',
+			'paint_uniform_border', 'paint_rounded_border_top', 'paint_rounded_border_right',
+			'paint_rounded_border_bottom', 'paint_rounded_border_left', 'paint_partial_rounded_border',
+			'paint_inner_box_shadow', 'paint_outer_box_shadow', 'draw_text_shadow', 'fill_inset_shadow',
 			'begin_css_effect_layer', 'end_css_effect_layer', 'begin_css_filter_layer',
 			'end_css_filter_layer', 'apply_backdrop_filter'] {
 			if github_raster_input_diagnostics { eprintln('Vox site raster inputs: unsupported=${command.kind}') }
@@ -84,6 +87,9 @@ fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
 			resources = srk_int(resources, bitmap.width)
 			resources = srk_int(resources, bitmap.height)
 			resources = srk_int(resources, bitmap.pitch)
+			resources = srk_int(resources, int(bitmap.format))
+			resources = srk_int(resources, int(bitmap.alpha_type))
+			resources = srk_bool(resources, bitmap.native_rows_are_top_down)
 			resources = srk_str(resources, unsafe { tos(bitmap.data.data, bitmap.data.len) })
 		}
 		address := command.image_url()
