@@ -121,9 +121,11 @@ static int gg_draw_path_pixels(uint8_t* pixels, int width, int height, int pitch
             ++logged;
             static auto clock = reinterpret_cast<double (*)()>(
                 dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
-            std::fprintf(stderr, "VOX_SMALL_SVG_PATH_CACHE size=%dx%d stroke=%d hit=%d hits=%llu t_us=%.3f\n",
+            std::fprintf(stderr, "VOX_SMALL_SVG_PATH_CACHE size=%dx%d stroke=%d hit=%d hits=%llu clip=%d ancestor=%d gradient=%d segments=%d t_us=%.3f\n",
                 width, height, path ? path->stroke : 0, int(s_small_svg_path_cache.hits != hits),
-                (unsigned long long)s_small_svg_path_cache.hits, clock ? clock() : -1);
+                (unsigned long long)s_small_svg_path_cache.hits, path ? path->has_clip : 0,
+                path ? path->has_ancestor_clip : 0, path ? path->gradient : 0,
+                path ? path->segment_count : 0, clock ? clock() : -1);
         }
     }
     return result;
