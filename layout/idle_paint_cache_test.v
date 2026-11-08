@@ -67,7 +67,7 @@ fn test_idle_trim_preserves_published_commands_and_hit_testing_without_rerecordi
 	release_unused_display_list_caches(list)
 	idle_paint_assert_trimmed(result)
 	idle_paint_expect(voidptr(result.display_list) == voidptr(list))
-	idle_paint_expect(result.display_list_commands.data == commands.data)
+	idle_paint_expect(display_list_commands(result.display_list).data == commands.data)
 	idle_paint_expect(idle_paint_snapshot(commands) == snapshot)
 	idle_paint_expect(result.paint_order.data == paint_order)
 	idle_paint_expect(result.paint_steps.data == paint_steps)
@@ -222,7 +222,7 @@ fn idle_paint_lifetime_prepare() {
 		for bucket in result.paint_phase_commands {
 			if bucket.len > 0 { C.vox_idle_paint_watch(6, bucket.data); break }
 		}
-		C.vox_idle_paint_watch(7, result.display_list_commands.data)
+		C.vox_idle_paint_watch(7, display_list_commands(result.display_list).data)
 	}
 }
 

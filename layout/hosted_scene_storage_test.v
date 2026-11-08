@@ -72,6 +72,7 @@ fn test_hosted_scene_survives_phase_cache_eviction_and_native_document_retiremen
 	assert parent_scene.references == 1
 	assert child_scene.references == 1
 	assert hosted_scene_test_nested(commands).nested_viewport_commands.any(it.text == 'retained child')
+	assert hosted_scene_test_nested(display_list_commands(list)).nested_viewport_commands.any(it.text == 'retained child')
 	$if prealloc {
 		assert parent_owner.arena.usage().used > 0
 		assert child_owner.arena.usage().used > 0
@@ -98,6 +99,8 @@ fn test_hosted_scene_repaint_leases_stay_bounded_while_an_older_parent_is_retain
 	parent_layout := parent.layout_engine_handle()
 	first := parent.record_display_list() or { panic('missing initial recording') }
 	first_reader := retain_display_list_scene(first)
+	first_dump := first.dump()
+	first_generation := first.generation()
 	first_commands := display_list_commands(first)
 	first_nested := hosted_scene_test_nested(first_commands)
 	old_child := first_nested.nested_viewport_scene
@@ -115,6 +118,15 @@ fn test_hosted_scene_repaint_leases_stay_bounded_while_an_older_parent_is_retain
 		nested := hosted_scene_test_nested(display_list_commands(current))
 		assert nested.nested_viewport_commands.any(it.text == 'child ${generation}')
 		assert first_nested.nested_viewport_commands.any(it.text == 'original child')
+		retained_nested := hosted_scene_test_nested(display_list_commands(first))
+		assert retained_nested.nested_viewport_commands.any(it.text == 'original child')
+		assert voidptr(retained_nested.nested_viewport_scene) == voidptr(old_child)
+		assert first.dump() == first_dump
+		assert first.generation() == first_generation
+		assert current.generation() > first_generation
+		another_reader := retain_display_list_scene(first)
+		assert another_reader == first_reader
+		release_display_list_scene(another_reader)
 		assert parent.layout_engine_handle() == parent_layout
 		assert old_child.references == 1
 		assert child_pool.live.len == 2

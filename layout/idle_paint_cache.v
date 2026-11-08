@@ -61,11 +61,9 @@ fn trim_spare_paint_pages(result &DocumentLayoutResult) {
 }
 
 fn trim_layout_pages_in_list(display_list &dom.DisplayList, mut visited map[u64]bool) {
-	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil } { return }
-	identity := u64(display_list.concrete_handle)
+	result := current_display_list_layout_result(display_list) or { return }
+	identity := u64(voidptr(result))
 	if visited[identity] { return }
-	result := viewport_layout_result(display_list.concrete_handle)
-	if voidptr(result.display_list) != voidptr(display_list) { return }
 	visited[identity] = true
 	trim_spare_paint_pages(result)
 	css.trim_unused_computation_pages(result.root.document())
@@ -77,13 +75,10 @@ fn trim_layout_pages_in_list(display_list &dom.DisplayList, mut visited map[u64]
 }
 
 fn release_idle_display_list_caches(display_list &dom.DisplayList, mut visited map[u64]bool) {
-	if voidptr(display_list) == unsafe { nil } || display_list.concrete_handle == unsafe { nil } {
-		return
-	}
-	identity := u64(display_list.concrete_handle)
+	mut result := current_display_list_layout_result(display_list) or { return }
+	identity := u64(voidptr(result))
 	if visited[identity] { return }
-	mut result := viewport_layout_result(display_list.concrete_handle)
-	if voidptr(result.display_list) != voidptr(display_list) || result.needs_repaint {
+	if result.needs_repaint {
 		return
 	}
 	visited[identity] = true

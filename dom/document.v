@@ -1505,11 +1505,14 @@ mut:
 @[heap]
 pub struct DisplayList {
 
-	// Owned and interpreted by the module which installed the viewport
-	// paintable callbacks.
+	// One immutable recording, owned and interpreted by the module which
+	// installed the viewport paintable callbacks. The handle must not identify
+	// mutable current layout state. Retain its storage before keeping this list
+	// across another recording or document retirement.
 pub:
 	concrete_handle voidptr = unsafe { nil }
 	command_count_  int
+	generation_     u64
 	dump_callback   DisplayListDumpCallback = unsafe { nil }
 }
 
@@ -4385,6 +4388,11 @@ pub type StackingContextDumpCallback = fn (voidptr) string
 // DisplayList methods
 pub fn (dl &DisplayList) command_count() int {
 	return dl.command_count_
+}
+
+// Monotonically increasing within the document that recorded this list.
+pub fn (dl &DisplayList) generation() u64 {
+	return dl.generation_
 }
 
 pub fn (dl &DisplayList) dump() string {

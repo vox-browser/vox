@@ -22,6 +22,8 @@ mut:
 	pool       &DisplayListScenePool = unsafe { nil }
 	// The document's paint_scene_generation when this scene was recorded.
 	generation u64
+	// Only live scenes protect a published vector from explicit recycling.
+	commands_data voidptr = unsafe { nil }
 	paint_tree_storage &PaintTreeStorage = unsafe { nil }
 	document_storage &platform.RetainedArena = unsafe { nil }
 	// Nested command payloads belong to these exact child recordings, not
@@ -57,6 +59,7 @@ fn (mut pool DisplayListScenePool) acquire() &DisplayListScene {
 		}
 	}
 	scene.references = 1
+	scene.commands_data = unsafe { nil }
 	if pool.document != unsafe { nil } {
 		scene.document_storage = pool.document.native_storage()
 		if scene.document_storage != unsafe { nil } { scene.document_storage.retain() }
@@ -124,6 +127,7 @@ fn (mut scene DisplayListScene) release() {
 		}
 	}
 	pool.publish_oldest_live_generation()
+	scene.commands_data = unsafe { nil }
 	for mut child in scene.dependencies { child.release() }
 	// The dependency vector was allocated while recording in this scene.
 	// Do not carry its backing pointer into a reset and reused arena.
@@ -157,7 +161,6 @@ fn (mut result DocumentLayoutResult) scene_pool_() &DisplayListScenePool {
 // The layout result stops publishing its current scene: invalidation or a
 // replacement result. Consumers that retained it keep it alive.
 fn (mut result DocumentLayoutResult) drop_display_list_scene() {
-	result.display_list_commands = []PaintCommand{}
 	result.display_list = unsafe { nil }
 	mut scene := result.scene
 	result.scene = unsafe { nil }
@@ -166,35 +169,20 @@ fn (mut result DocumentLayoutResult) drop_display_list_scene() {
 	}
 }
 
-// A replacement result takes over publishing. The replaced result keeps its
-// commands for holders of its display list; under -prealloc only a holder
-// that retained the scene keeps them valid, so with none left they are
-// dropped together with the storage.
+// A replacement result takes over publishing. Each retained list identifies
+// its own recording, so the old result no longer needs to keep replay state.
 fn (mut result DocumentLayoutResult) retire_display_list_scene() {
-	mut scene := result.scene
-	result.scene = unsafe { nil }
-	if scene == unsafe { nil } {
-		return
-	}
-	$if prealloc {
-		if scene.references <= 1 {
-			result.display_list_commands = []PaintCommand{}
-			result.display_list = unsafe { nil }
-		}
-	}
-	scene.release()
+	result.drop_display_list_scene()
 }
 
-// retain_display_list_scene keeps the storage behind `display_list`'s current
-// commands alive until release_display_list_scene. It returns nil when the
-// list has no scene of its own.
+// Retain this exact recording, including its command vector and resource
+// leases, before keeping the list across invalidation or document retirement.
+// Additional consumers may retain an already retained old list after repaint.
+// The returned lease must be balanced with release_display_list_scene.
 pub fn retain_display_list_scene(display_list &dom.DisplayList) voidptr {
-	if display_list == unsafe { nil } || display_list.concrete_handle == unsafe { nil } {
-		return unsafe { nil }
-	}
-	result := viewport_layout_result(display_list.concrete_handle)
-	mut scene := result.scene
-	if scene == unsafe { nil } {
+	recording := display_list_recording(display_list) or { return unsafe { nil } }
+	mut scene := recording.scene
+	if scene == unsafe { nil } || scene.references <= 0 || scene.generation != recording.generation {
 		return unsafe { nil }
 	}
 	scene.retain()

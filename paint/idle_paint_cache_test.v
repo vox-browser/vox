@@ -8,7 +8,7 @@ import time
 
 #include "@DIR/idle_paint_cache_test.h"
 
-fn C.vox_main_idle_paint_phase_capacity(list voidptr) int
+fn C.vox_main_idle_paint_phase_capacity(result voidptr) int
 $if native_memory_cleanup_stub ? {
 	fn C.vox_main_idle_paint_deliver(owner voidptr) int
 }
@@ -59,15 +59,15 @@ fn main_idle_paint_cleanup(mut app BrowserApp) {
 fn test_nojs_natural_idle_cleanup_releases_only_unpublished_paint_cache() {
 	for native_rendering in [false, true] {
 		mut app := main_idle_paint_app(false, native_rendering)
-		assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) > 0
+		assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) > 0
 		list := app.paint_display_list
 		commands := app.paint_commands
 		main_idle_paint_cleanup(mut app)
 		$if gcboehm ? {
-			assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) == 0
+			assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) == 0
 			assert !app.memory_maintenance.pending_document_work
 		} $else {
-			assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) > 0
+			assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) > 0
 		}
 		assert app.paint_display_list == list
 		assert app.paint_commands.data == commands.data
@@ -82,9 +82,9 @@ fn test_idle_paint_cleanup_keeps_scripted_documents_and_existing_runtime_caches(
 	for with_runtime in [false, true] {
 		mut app := main_idle_paint_app(!with_runtime, true)
 		if with_runtime { app.js_runtime = browserjs.Runtime.create() }
-		capacity := C.vox_main_idle_paint_phase_capacity(app.paint_display_list)
+		capacity := C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle())
 		main_idle_paint_cleanup(mut app)
-		assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) == capacity
+		assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) == capacity
 		assert app.paint_commands.any(it.text == 'published paint')
 		assert native_memory_cleanup_owners_.len == 0
 		main_idle_paint_finish(mut app)
@@ -94,14 +94,14 @@ fn test_idle_paint_cleanup_keeps_scripted_documents_and_existing_runtime_caches(
 fn test_idle_paint_cleanup_rechecks_navigation_resources_nested_work_and_readiness() {
 	for busy in 0 .. 5 {
 		mut app := main_idle_paint_app(false, true)
-		capacity := C.vox_main_idle_paint_phase_capacity(app.paint_display_list)
+		capacity := C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle())
 		if busy == 0 { app.pending_navigation = PendingNavigation{resolved: 'about:blank'} }
 		if busy == 1 { app.background_resource_pending['https://example.com/pending.png'] = true }
 		if busy == 2 { app.navigation_work_depth = 1 }
 		if busy == 3 { app.frame_preparation_depth = 1 }
 		if busy == 4 { app.document.update_readiness(.loading) }
 		main_idle_paint_cleanup(mut app)
-		assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) == capacity
+		assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) == capacity
 		assert app.memory_maintenance.pending_document_work
 		assert native_memory_cleanup_owners_.len == 0
 		app.pending_navigation = none
@@ -111,7 +111,7 @@ fn test_idle_paint_cleanup_rechecks_navigation_resources_nested_work_and_readine
 		app.document.update_readiness(.complete)
 		main_idle_paint_cleanup(mut app)
 		$if gcboehm ? {
-			assert C.vox_main_idle_paint_phase_capacity(app.paint_display_list) == 0
+			assert C.vox_main_idle_paint_phase_capacity(app.document.layout_engine_handle()) == 0
 		}
 		assert native_memory_cleanup_owners_.len == 0
 		main_idle_paint_finish(mut app)

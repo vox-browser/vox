@@ -142,6 +142,22 @@ jobs:
           sh build-prod-browser.sh
           test -x Build/linux/vox
 
+      - name: Check display-list recording ownership
+        timeout-minutes: 30
+        run: |
+          # Replay identity and buffer recycling must agree in collector and
+          # production arena builds. Each executable has a 3 GiB runtime guard.
+          # Poison released arenas to expose any stale recording readers.
+          export VOX_ARENA_POISON=1
+          for gc in boehm prealloc; do
+            python3 tools/run_memory_bounded.py \
+              --lock "$RUNNER_TEMP/vox-recording-$gc.lock" \
+              --report "$RUNNER_TEMP/vox-recording-$gc.json" --timeout 840 -- \
+              python3 tools/test_linux_native.py --gc "$gc" \
+                layout/display_list_recording_test.v \
+                layout/visual_context_memo_test.v
+          done
+
       - name: Check parser script lifecycles
         timeout-minutes: 60
         run: |
@@ -178,7 +194,8 @@ jobs:
           paths = [temporary / name for name in ('vox-v-build.json', 'vox-skia-build.json',
                                                     'vox-native-build.json', 'vox-skia-test.json',
                                                     'vox-ownership-tests.json',
-                                                    'vox-parser-tests.json', 'vox-parser-storage-tests.json')]
+                                                    'vox-parser-tests.json', 'vox-parser-storage-tests.json',
+                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
