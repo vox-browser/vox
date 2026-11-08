@@ -294,6 +294,10 @@ default 12 GiB aggregate guard. Its live results are under
 `Build/wpt-larger-r15-20261108`, with the driver log beside that directory. The
 runner writes final identity, summary, and report files when collection ends.
 The snapshot preserves process identities and the exact command for follow-up.
+An observer archives the raw results and logs after the guarded run exits,
+verifies the archive, and removes the completed `Build/` job. Its final local
+receipt will be `/Users/alex/.cache/vox/wpt/20261108-r15-completed.json`; the
+snapshot records the archive destination and observer identity.
 
 | Source fix | Commit | Focused validation |
 |---|---|---|
@@ -318,3 +322,5 @@ request, and no duplicate build was queued. The static imported runner still
 lacks Python handlers, real HTTPS and WPT's multi-origin setup. Browser gaps and
 runner limitations remain open alongside the failed assertions. This run covers
 the larger imported subset, not full upstream WPT.
+The existing SVG paint-server and same-size image-mutation pixel checks likewise
+remain pending on a bundle containing these source changes.

@@ -140,7 +140,7 @@
     }
   },
   "normal_mode_pending": "Current compiler links fail at v_brotli_unpoison_noop; a pinned compiler attempt reports undefined visual_changed in the shared UI2 dependency. Failed attempts retained; no compatibility fallback result accepted.",
-  "production_WPT_pending": "This baseline executable predates the source fixes in this report. A newer shared bundle and focused production WPT reruns are required. No duplicate production build was queued.",
+  "production_WPT_pending": "This baseline executable predates the source fixes in this report. A newer shared bundle and focused production WPT reruns are required. No duplicate production build was queued. Existing SVG paint-server and same-size image-mutation pixel checks also require the newer bundle.",
   "tooling": {
     "commits": [
       "dc56eeefc",
@@ -149,5 +149,12 @@
     "unit_tests": 18,
     "result": "PASS",
     "acceptance": "--require-all-pass rejects missing/duplicate cases, empty results, harness errors and non-PASS subtests."
+  },
+  "completion_observer": {
+    "pid": 53458,
+    "plan": "/Users/alex/.cache/vox/wpt/20261108-r15-completion-plan.json",
+    "archive_after_completion": "/Users/alex/.cache/vox/wpt/20261108-r15-0940-b8c5285a.tar.gz",
+    "receipt_after_completion": "/Users/alex/.cache/vox/wpt/20261108-r15-completed.json",
+    "behavior": "Waits for the guarded run to exit, verifies and archives raw results and logs, writes a local completion receipt, removes completed Build scratch. It does not change engine code or commit Git files."
   }
 }
