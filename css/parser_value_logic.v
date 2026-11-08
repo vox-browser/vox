@@ -10957,18 +10957,22 @@ fn (mut parser Parser) parse_font_style_value(mut tokens ComponentValueStream) ?
 	font_style := font_style_keyword_from_string(component_value.token().ident()) or { return none }
 	transaction.consume_whitespace()
 	if transaction.has_more_tokens() && font_style == .oblique {
+		// The angle is optional: in the font shorthand the font size can
+		// follow oblique directly.
+		mut angle_transaction := transaction.clone()
 		parser.push_temporary_value_parsing_context(ValueParsingContext(SpecialContext.font_style_angle))
-		maybe_angle_value := parser.parse_angle_value(mut transaction)
+		maybe_angle_value := parser.parse_angle_value(mut angle_transaction)
 		parser.pop_temporary_value_parsing_context()
-		angle_value := maybe_angle_value or { return none }
-		if angle_value is AngleStyleValue {
-			angle_degrees := angle_value.angle().to_degrees()
-			if angle_degrees < -90 || angle_degrees > 90 {
-				return none
+		if angle_value := maybe_angle_value {
+			if angle_value is AngleStyleValue {
+				angle_degrees := angle_value.angle().to_degrees()
+				if angle_degrees < -90 || angle_degrees > 90 {
+					return none
+				}
 			}
+			tokens = angle_transaction
+			return StyleValue(FontStyleStyleValue.create(font_style, angle_value))
 		}
-		tokens = transaction
-		return StyleValue(FontStyleStyleValue.create(font_style, angle_value))
 	}
 	tokens = transaction
 	return StyleValue(FontStyleStyleValue.create(font_style, none))
@@ -11046,12 +11050,11 @@ fn (mut parser Parser) parse_line_height_value(mut tokens ComponentValueStream) 
 	mut normal_transaction := tokens.clone()
 	normal_transaction.consume_whitespace()
 	if token := normal_transaction.consume() {
+		// The font shorthand continues with the font family after the
+		// line height, so the keyword need not end the stream.
 		if token.is(.ident) && equals_ignoring_ascii_case(token.token().ident(), 'normal') {
-			normal_transaction.consume_whitespace()
-			if !normal_transaction.has_more_tokens() {
-				tokens = normal_transaction
-				return StyleValue(KeywordStyleValue.create(.normal))
-			}
+			tokens = normal_transaction
+			return StyleValue(KeywordStyleValue.create(.normal))
 		}
 	}
 
