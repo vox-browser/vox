@@ -1192,3 +1192,99 @@ the mode-0600 archive SHA256 is `b47195a9d837056a646d04dafd79faee47f10670b71054f
 locks and temporary test binaries/drivers are removed after verification.
 
 The mode-0600 raw archive SHA256 is `aeff781c74beab7fc64ab21d353969fb4f33156c2b88ab1df811f73da327155d`; all 4360 evidence files are read back and verified. The completed job, its locks/reports and temporary drivers/test binaries are removed after verification.
+
+
+## 2026-11-08: gradient first use and production timer validation
+
+Commit `2c0b58b98` prepares gradient shaders selected by clipped scrolling
+pictures. Its first two-variant prototype prepares 142 pipelines and passes
+its narrow test, but the live page still compiles full-opacity and compound-clip
+variants during input. The final eight combinations cover bounded/covering
+rounded geometry, full/partial paint alpha and compound fractional clips.
+Normal and ASan/UBSan checks prepare 148 total pipelines, within the unchanged
+160 limit. Eight public serialized-picture cases retain exact cold/warm pixels
+and compile no new pipelines after preparation, idle reuse or context replacement.
+The initial test constructor/rectangle mistakes and the intended old-140-pipeline
+failure are retained. Both unchanged page references at offsets 0 and 850 remain
+pixel exact. Separate final live and frozen diagnostics show no input-window
+gradient pipeline additions; other MSAA/stroke variants remain.
+
+The shared production worker finishes a newer browser during this job:
+`3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c`.
+It uses the actual single-C fallback, C `-O3`, V `-prod=false`, GG and JSC. Its
+sealed timer-source hashes match the implemented restart fix. Fresh installed
+processes now exercise that fix: a bounded diagnostic interposer filters calls
+by the actual executable's return-address image, observing 1,791 active 500 ms
+resets and zero repeated registrations during input. The disable control observes
+1,750 registrations and zero resets. Neither reaches the logging cap. The
+installed primary also exercises float text masks. These diagnostic observations
+establish path eligibility; their timings receive no optimization credit. A
+fresh installed-browser headless smoke passes.
+
+The gradient candidate changes only the Metal backend, SHA256
+`d7845b105cdaed2200696f9e0ae4ff02acf7b3b31459b745248d2bf28d5b03f8`.
+The primary stays installed. Candidate/control pairs use this same unpublished
+backend, toggling only `VOX_DISABLE_SCROLL_GRADIENT_PIPELINE_WARMUP=1` for
+controls. Pure installed baselines retain Metal `6349f2ab...`. No comparison
+across the old and new executable earns optimization credit. A concurrent header
+relocation to `native/include/` preserves the committed warmup byte for byte;
+compiled component identities and all common probe/runtime inputs are checked.
+
+All eight unprofiled trials complete 5,400 precise native inputs, nominal 120 Hz,
+delta 3, reversing every 300. The title-confirmed settle is 12 seconds, the
+document viewport 1400 by 900 at 2× backing and 125% zoom. Each launch has a fresh
+private profile/cache, automatic scripts and retained OS caches. Frozen inputs
+use the same original-origin 152-response fixture with external DNS/connect/
+connectx denied; live inputs use the existing SOCKS5h route. No experimental
+GPU tile/layer options are enabled. Native frame installation is the endpoint,
+not physical display scanout. Throughput uses the full first-to-last input period.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| frozen-cohort/1-candidate | 115.603 | 8.373 | 10.981 | 30.563 | 1.311% |
+| frozen-cohort/2-candidate | 109.835 | 8.494 | 13.506 | 43.688 | 2.013% |
+| installed-cohort/1-baseline | 105.291 | 8.723 | 14.946 | 32.564 | 2.970% |
+| installed-cohort/2-baseline | 111.287 | 8.482 | 12.655 | 99.048 | 1.442% |
+| live-cohort/1-control | 112.275 | 8.448 | 12.333 | 42.481 | 1.341% |
+| live-cohort/2-candidate | 111.067 | 8.474 | 12.987 | 28.981 | 1.687% |
+| live-cohort/3-control | 117.296 | 8.352 | 10.238 | 29.714 | 0.353% |
+| live-cohort/4-candidate | 116.394 | 8.354 | 10.630 | 24.053 | 0.877% |
+
+| Trial | Completed inputs / publications | First counted moving gap ms | Last moving gap ms |
+| --- | ---: | ---: | ---: |
+| frozen-cohort/1-candidate | 5400 / 5381 | 35.488 | 0.129 |
+| frozen-cohort/2-candidate | 5400 / 5375 | 30.606 | 0.200 |
+| installed-cohort/1-baseline | 5400 / 5337 | 33.413 | 0.613 |
+| installed-cohort/2-baseline | 5400 / 5375 | 38.238 | 3.090 |
+| live-cohort/1-control | 5400 / 5382 | 33.218 | 0.229 |
+| live-cohort/2-candidate | 5400 / 5365 | 36.331 | 3.156 |
+| live-cohort/3-control | 5400 / 5400 | 34.666 | 0.197 |
+| live-cohort/4-candidate | 5400 / 5406 | 29.683 | 4.323 |
+
+**The no-stalls goal remains open.** Both live candidate means are lower and
+miss fractions higher than their paired controls, despite shorter maxima.
+Host contention and control variation are retained in the receipt; no isolated
+FPS gain is established. Frozen candidate checks are unpaired validation, with
+no optimization credit. The installed browser's 99.048 ms interval contains a
+94.294 ms paint near input 5,167. A subsequent full-period sampled run completes
+with a 24.938 ms maximum and does not reproduce that late pause, so no cause is
+assigned to it from a different frame.
+
+A separate attempt to capture GG callbacks times out before document readiness;
+it supplies no scrolling or shape evidence. The existing sampler succeeds
+without that extra interposer. Another full-period diagnostic uses only existing
+shape-log flags, with no SVG cache opt-in: its 122 small SVG stroke calls have
+four segments and sizes 38×38, 34×36 or 34×34. They are not the simple two-segment
+line case. Its samples still include shape/readback waits, snapshot/atlas work,
+upload barriers, image construction and script stylesheet scanning. Logging and
+sampled runs do not establish unprofiled gains.
+
+The [receipt](performance/reddit-boots-gradient-pipelines-20261108.json) retains
+all 16 browser attempts (15 valid, one invalid), 32 memory guards, precise input
+and publication metrics, commands/exits, source/component pins and host loads.
+All eight unprofiled browser/cohort/guard exits are zero, with unchanged common
+inputs throughout each cohort. This work claims no retired-instruction saving
+or broad-check cadence reset. Raw evidence is archived privately before removing
+the completed job's Build output, locks and temporary drivers.
+
+The verified mode-0600 archive SHA256 is `f9ddef9674e742c1597b3ada4ec611b003352d014df64e86accfc48edfa6ff7a` (84,565,052 bytes; 4,618 files). Its Build job, locks and temporary drivers are removed. Immutable fixture/reference/interposer data and the pinned candidate Metal library are transferred to the next bounded GG shape-cache job, with no browser/source/tool copies.
