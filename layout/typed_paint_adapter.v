@@ -3922,6 +3922,16 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				used.content_width().to_double(), used.content_height().to_double()}
 		}
 	}
+	if container_element := svg_element_for_layout_node(node) {
+		if node.is_svg_graphics_box() && is_svg_container_element(container_element) {
+			to_page := svg_path_transform_to_page(node, state)
+			svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
+			svg_hit_data = &SVGPathHitData{
+				pointer_events: computed.pointer_events()
+				bounding_box: svg_container_bounding_box_for_hit_testing(node, state)
+			}
+		}
+	}
 
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)

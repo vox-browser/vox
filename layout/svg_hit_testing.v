@@ -140,6 +140,40 @@ fn svg_hit_bounding_box_contains(bounds painting.Rect, point painting.Point) boo
 		&& point.y <= bounds.y + bounds.height
 }
 
+// Containers have no filled path of their own. Their bounding-box region is
+// the union of descendant object boxes in the container's SVG user space,
+// including the gaps between shapes, independent of CSS border-box geometry.
+fn svg_container_bounding_box_for_hit_testing(node &Node, state &LayoutState) ?painting.Rect {
+	if node.is_svg_text_box() { return svg_text_bounding_box_for_hit_testing(node, state) }
+	styled := node.as_node_with_style() or { return none }
+	used := state.try_get(styled) or { return none }
+	mut bounds := ?painting.Rect(none)
+	if path := used.computed_svg_path() {
+		if rect := svg_path_bounds(path) {
+			bounds = painting.Rect{rect.x, rect.y, rect.width, rect.height}
+		}
+	} else if node.is_svg_image_box() {
+		bounds = painting.Rect{used.offset.x().to_double(), used.offset.y().to_double(),
+			used.content_width().to_double(), used.content_height().to_double()}
+	}
+	for child in node.children() {
+		if !child.is_svg_graphics_box() || child.is_svg_mask_box() || child.is_svg_clip_box()
+			|| child.is_svg_pattern_box() { continue }
+		child_bounds := svg_container_bounding_box_for_hit_testing(child, state) or { continue }
+		child_styled := child.as_node_with_style() or { continue }
+		child_used := state.try_get(child_styled) or { continue }
+		transform := child_used.svg_local_transform()
+		mapped := svg_transformed_hit_bounds(child_bounds,
+			[transform.a, transform.b, transform.c, transform.d, transform.e, transform.f]!)
+		bounds = if current := bounds {
+			x, y := math.min(current.x, mapped.x), math.min(current.y, mapped.y)
+			painting.Rect{x, y, math.max(current.x + current.width, mapped.x + mapped.width) - x,
+				math.max(current.y + current.height, mapped.y + mapped.height) - y}
+		} else { mapped }
+	}
+	return bounds
+}
+
 // A text element's object box contains its descendant text runs, including
 // the space between separately positioned lines. Painting keeps its own path
 // bounds; only pointer-events:bounding-box uses this aggregate snapshot.
