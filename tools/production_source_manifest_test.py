@@ -98,6 +98,21 @@ class ProductionSourceManifestTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'input changed'):
                 manifest.validate_inventory(root, inventory)
 
+    def test_compiled_checkout_matching_ignores_reports_and_rejects_new_or_edited_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'repo'
+            inventory = self.fixture(root)
+            frozen = dict(source_inventory=inventory,
+                          exact_source_manifest=manifest.fingerprint([root / 'worker.v', root / 'native.h']))
+            (root / 'docs').mkdir()
+            (root / 'docs/report.json').write_text('{}')
+            self.assertTrue(manifest.matches_compiled_checkout(root, frozen))
+            (root / 'worker.v').write_text('new compiled source')
+            self.assertFalse(manifest.matches_compiled_checkout(root, frozen))
+            (root / 'worker.v').write_text('module main\n')
+            (root / 'new.v').write_text('new package member')
+            self.assertFalse(manifest.matches_compiled_checkout(root, frozen))
+
     def test_partial_or_malformed_compiler_manifests_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'repo'

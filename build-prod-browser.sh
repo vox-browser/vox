@@ -78,7 +78,7 @@ export MACOSX_DEPLOYMENT_TARGET
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v5 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v6 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi

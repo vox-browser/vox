@@ -1,6 +1,7 @@
 from pathlib import Path
 from contextlib import chdir
 import hashlib
+import fcntl
 import json
 import os
 from types import SimpleNamespace
@@ -14,6 +15,63 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_completed_artifact_reader_blocks_publication_until_its_check_finishes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            previous = self.app(root / 'Build/v', b'old')
+            state = build.production_state_dir(root)
+            build.write_json(state / 'request.json', dict(id='one'))
+            held = []
+            def compile(repo, stage, receipt, environment):
+                self.app(stage, b'new')
+                handle = (receipt / 'artifact.lock').open('a')
+                fcntl.flock(handle, fcntl.LOCK_SH)
+                held.append(handle)
+                return 0
+            def check_finished(_):
+                self.assertEqual(previous.read_bytes(), b'old')
+                held.pop().close()
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'repository_state', return_value=dict(head='same')), \
+                    patch.object(build.time, 'sleep', side_effect=check_finished) as wait:
+                self.assertEqual(build.build_pending(root, compile), 0)
+            wait.assert_called_once()
+            self.assertEqual(previous.read_bytes(), b'new')
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_busy_publication_can_supersede_stale_code_without_touching_the_leased_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            previous = self.app(root / 'Build/v', b'leased browser')
+            state = build.production_state_dir(root)
+            build.write_json(state / 'request.json', dict(id='one'))
+            calls, attempts = [], []
+            original_publish = build.try_publish
+            def compile(repo, stage, receipt, environment):
+                calls.append(stage)
+                self.app(stage, str(len(calls)).encode())
+                build.write_json(receipt / 'frozen-compile.json', {})
+                if len(calls) == 1:
+                    build.write_json(state / 'request.json', dict(id='two'))
+                return 0
+            def publish(repo, stage):
+                attempts.append(stage)
+                if len(attempts) == 1:
+                    self.assertEqual(previous.read_bytes(), b'leased browser')
+                    return False
+                return original_publish(repo, stage)
+            with patch.object(build, 'validate_repository'), \
+                    patch.object(build, 'PUBLICATION_REVIEW_GRACE_SECONDS', 0), \
+                    patch.object(build, 'repository_state', return_value=dict(head='fixture')), \
+                    patch('freeze_browser_compile.validate', return_value=dict(source_inputs=dict(head='compiled'))), \
+                    patch.object(build, 'try_publish', side_effect=publish):
+                self.assertEqual(build.build_pending(root, compile), 0)
+            self.assertEqual(len(calls), 2)
+            self.assertEqual(previous.read_bytes(), b'2')
+            records = [json.loads(path.read_text()) for path in (state / 'receipts').glob('*/result.json')]
+            self.assertEqual(sum(record.get('superseded', False) for record in records), 1)
+
     def test_linux_build_does_not_queue_behind_or_replace_macos_state(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

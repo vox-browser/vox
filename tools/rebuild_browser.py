@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from browser_bundle_lease import publication_lease
 from build_platform import production_state_dir
@@ -22,8 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v5'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v5.lock'
+BUILD_PROTOCOL = 'bundle-lease-v6'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v6.lock'
+PUBLICATION_REVIEW_GRACE_SECONDS = 5
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -193,6 +195,14 @@ def publish(root, stage):
         publish_unlocked(root, stage)
 
 
+def try_publish(root, stage):
+    with lock(production_state_dir(root) / 'bundle.lock', nonblocking=True) as held:
+        if held is None:
+            return False
+        publish_unlocked(root, stage)
+        return True
+
+
 def publish_unlocked(root, stage):
     platform = 'v' if sys.platform == 'darwin' else 'linux'
     target = root / 'Build' / platform
@@ -318,7 +328,36 @@ def build_pending(root, runner=run_build, foreground=False):
                     record['superseded'] = True
                     write_json(receipt / 'result.json', record)
                     continue
-                publish(root, stage)
+                ready_executable = (stage / 'Vox.app/Contents/MacOS/Vox' if sys.platform == 'darwin'
+                                    else stage / 'vox')
+                write_json(receipt / 'ready.json', dict(record, ready_executable=str(ready_executable),
+                    ready_executable_sha256=hashlib.sha256(ready_executable.read_bytes()).hexdigest()))
+                ready_time = time.monotonic()
+                superseded = False
+                while True:
+                    # Protect both publication and replacement while a focused
+                    # checker pins this completed, unpublished production app.
+                    with lock(receipt / 'artifact.lock', nonblocking=True) as artifact:
+                        if artifact is not None:
+                            if try_publish(root, stage):
+                                break
+                            with lock(state / 'queue.lock'):
+                                latest = json.loads((state / 'request.json').read_text())
+                            if latest['id'] != request['id']:
+                                from production_source_manifest import matches_compiled_checkout
+                                matches = (matches_compiled_checkout(root, frozen) if frozen else
+                                           same_build_inputs(repository_state(root), before))
+                                same_options = all(latest.get(key) == request.get(key)
+                                                   for key in ('renderer', 'c_mode', 'v_prod'))
+                                if (not matches or not same_options) and time.monotonic() - ready_time >= PUBLICATION_REVIEW_GRACE_SECONDS:
+                                    record.update(superseded=True, publication_deferred='reader lease held; newer source requested')
+                                    write_json(receipt / 'result.json', record)
+                                    print('Superseded an unpublished build; the leased browser is unchanged.', flush=True)
+                                    superseded = True
+                                    break
+                    time.sleep(.25)
+                if superseded:
+                    continue
                 executable = (root / 'Build/v/Vox.app/Contents/MacOS/Vox' if sys.platform == 'darwin'
                               else root / 'Build/linux/vox')
                 record['executable'] = str(executable)
@@ -330,7 +369,10 @@ def build_pending(root, runner=run_build, foreground=False):
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
                 same_renderer = latest.get('renderer','gg') == request.get('renderer','gg')
-                if latest['id'] == request['id'] or (same_renderer and same_build_inputs(repository_state(root), record['verified_inputs'])):
+                from production_source_manifest import matches_compiled_checkout
+                if latest['id'] == request['id'] or (same_renderer and (
+                    same_build_inputs(repository_state(root), record['verified_inputs'])
+                    or frozen is not None and matches_compiled_checkout(root, frozen))):
                     fcntl.flock(build_lock, fcntl.LOCK_UN)
                     print('Published canonical production browser: ' + before['head'], flush=True)
                     return 0

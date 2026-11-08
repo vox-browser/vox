@@ -136,6 +136,18 @@ def combine(root, inventory, components, parsed=False):
     return result
 
 
+def matches_compiled_checkout(root, frozen):
+    """Coalesce a request only when the consumed bytes still match checkout."""
+    if not frozen.get('source_inventory') or not frozen.get('exact_source_manifest'):
+        return False
+    try:
+        validate_inventory(root, frozen['source_inventory'])
+        check_fingerprints(frozen['exact_source_manifest'])
+    except (OSError, RuntimeError):
+        return False
+    return True
+
+
 def compile_component(root, inventory, directory, command):
     """Seal parsed-buffer metadata before expensive checking/C generation.
 
