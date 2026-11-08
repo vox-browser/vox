@@ -92,6 +92,7 @@ fn init() {
 		platform.EventLoopPlugin.install(platform.EventLoopPlugin.new())
 	}
 	html_main_thread_event_loop = EventLoop.create(.window)
+	dom.install_element_cloning_steps(html_element_cloning_steps)
 	html_broadcast_channel_repository = BroadcastChannelRepository.create()
 	css.install_css_fetch_client_provider(css_fetch_client_for_document)
 	css.install_font_loading_task_provider(font_loading_task_for_document)

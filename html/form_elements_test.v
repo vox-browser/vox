@@ -116,6 +116,29 @@ fn test_input_length_constraints_apply_only_to_user_edits() {
 	assert !input.control.suffering_from_being_too_short()
 }
 
+fn test_cloned_input_copies_value_dirtiness_checkedness_and_indeterminateness() {
+	mut document := parse_document('<input id="text"><input id="box" type="checkbox">')
+	form_elements_make_document_fully_active(mut document)
+	text_element := document.get_element_by_id('text') or { panic('text input') }
+	mut text := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(text_element) })
+	text.set_value('foo bar')!
+	text_copy := text_element.as_node().clone_node(none, false, none)!
+	mut copy := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(text_copy.as_element() or { panic('copy') }) })
+	assert copy.value() == 'foo bar'
+	mut copy_element := text_copy.as_element() or { panic('copy') }
+	copy_element.set_attribute_value('value', 'something else')
+	assert copy.value() == 'foo bar'
+
+	box_element := document.get_element_by_id('box') or { panic('checkbox') }
+	mut box := unsafe { &dom.HTMLInputElement(box_element) }
+	box.set_checkedness(true, true)
+	box.set_indeterminate(true)
+	box_copy := box_element.as_node().clone_node(none, false, none)!
+	copied_box := unsafe { &dom.HTMLInputElement(box_copy.as_element() or { panic('copy') }) }
+	assert copied_box.checked()
+	assert copied_box.indeterminate()
+}
+
 fn test_window_selection_stringifier_uses_focused_text_control_selection() {
 	mut document := parse_document('<textarea>Ladybird</textarea>')
 	form_elements_make_document_fully_active(mut document)

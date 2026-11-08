@@ -4591,10 +4591,23 @@ pub fn (mut n Node) children_changed(metadata ChildrenChangedMetadata) {
 	_ = metadata
 }
 
+// The cloning steps of HTML elements that keep their state in HTML models,
+// installed by HTML across the dom -> html import cycle.
+pub type ElementCloningSteps = fn (source &Element, copy &Node, subtree bool) !
+
+__global dom_element_cloning_steps ElementCloningSteps
+
+pub fn install_element_cloning_steps(steps ElementCloningSteps) {
+	dom_element_cloning_steps = steps
+}
+
 pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
 	if element := n.as_element() {
 		if element.is_html_element() && element.local_name() == 'template' {
 			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!
+		}
+		if element.is_html_element() && dom_element_cloning_steps != unsafe { nil } {
+			dom_element_cloning_steps(element, copy, subtree)!
 		}
 	}
 }

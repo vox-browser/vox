@@ -2603,6 +2603,26 @@ pub fn (mut model HTMLInputElementModel) handle_return_key(_ string) ! {
 	}
 }
 
+// The cloning steps of the HTML elements whose state lives in their models.
+fn html_element_cloning_steps(source &dom.Element, copy &dom.Node, subtree bool) ! {
+	if source.local_name() != 'input' {
+		return
+	}
+	copy_element := copy.as_element() or { return }
+	if !copy_element.is_html_element() || copy_element.local_name() != 'input' {
+		return
+	}
+	// Only inputs with a model carry state beyond their attributes.
+	source_input := unsafe { &dom.HTMLInputElement(source) }
+	if source_input.input_element_model_ == unsafe { nil } && !source_input.indeterminate()
+		&& !source_input.dirty_checkedness_ {
+		return
+	}
+	model := HTMLInputElementModel.create(source_input)
+	mut copy_model := HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(copy_element) })
+	model.cloned(mut copy_model, subtree)
+}
+
 pub fn (model &HTMLInputElementModel) cloned(mut copy HTMLInputElementModel, _ bool) {
 	copy.value_ = model.value_
 	copy.dirty_value_ = model.dirty_value_
