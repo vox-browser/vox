@@ -46,7 +46,7 @@ the installed bundle require neither Node nor a network connection for filtering
 ## ChatGPT collector modules
 
 The default snapshot also compiles Vox's local
-[`site_resources.js`](../tools/adblock/site_resources.js) supplement through the
+[site optimization catalog](../site_optimizations/resources.js) supplement through the
 same uBO parser and network engine. The ten subscription identities stay intact;
 independent custom-filter engines do not inherit the supplement.
 

@@ -47,7 +47,7 @@ const options = {
     plugins: [{ name: 'standalone-ublock-background', setup(b) {
         b.onResolve({filter: /^\.\/generated-defaults\.js$/}, () => ({path:'defaults', namespace:'vox-build'}));
         b.onLoad({filter: /.*/, namespace:'vox-build'}, () => ({contents:defaultsSource, loader:'js', resolveDir:here}));
-        b.onLoad({filter: /\/tools\/adblock\/site_resources\.js$/}, async args => {
+        b.onLoad({filter: /\/site_optimizations\/resources\.js$/}, async args => {
             if (!extraPolicy) return;
             const source = await fs.readFile(args.path, 'utf8');
             return {contents:source.replace('export const siteFilters =', 'const baseSiteFilters =') +

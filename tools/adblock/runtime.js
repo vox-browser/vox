@@ -12,7 +12,7 @@ import defaultData from './generated-defaults.js';
 import * as serializer from '../../adblock/vendor/ublock/js/s14e-serializer.js';
 import { checkResponseHeaders } from './response_headers.js';
 import { snapshotResources } from './resources.js';
-import { siteFilters } from './site_resources.js';
+import { siteFilters } from '../../site_optimizations/resources.js';
 
 const environment = ['ublock', 'chromium', 'user_stylesheet'];
 globalThis.voxAdblockLoadBase64 = () => {

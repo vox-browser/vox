@@ -4,7 +4,7 @@ import test from 'node:test';
 import { parse } from 'acorn';
 import { gunzipSync } from 'node:zlib';
 import { buildBasicResources } from './build_chatgpt_basic.mjs';
-import { basicSiteFilters, basicSiteResources } from './chatgpt_basic_resources.js';
+import { basicSiteFilters, basicSiteResources } from '../../site_optimizations/chatgpt_basic_resources.js';
 import { defaultEngine, moduleReferences } from './audit_scripts.mjs';
 
 const policy = await buildBasicResources();

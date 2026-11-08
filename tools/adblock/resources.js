@@ -1,7 +1,7 @@
 import redirectableResources from '../../adblock/vendor/ublock/js/redirect-resources.js';
 import { builtinScriptlets } from '../../adblock/vendor/ublock/js/resources/scriptlets.js';
 import resourceData from '../../adblock/extended/redirect-resources.json';
-import { siteResources } from './site_resources.js';
+import { siteResources } from '../../site_optimizations/resources.js';
 
 export function createResources() {
     const resources = new Map(), aliases = new Map();

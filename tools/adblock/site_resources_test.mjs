@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import { gunzipSync } from 'node:zlib';
 import test from 'node:test';
 import { defaultEngine, moduleReferences } from './audit_scripts.mjs';
-import { siteResources } from './site_resources.js';
+import { siteResources } from '../../site_optimizations/resources.js';
 
 const root = new URL('../../Tests/Browser/Brave/archives/chatgpt-home-20261104-v2/archive/', import.meta.url);
 const manifest = JSON.parse(await fs.readFile(new URL('manifest.json', root)));
