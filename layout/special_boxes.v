@@ -237,6 +237,12 @@ fn image_source_selected_from_attributes(element &dom.Element) string {
 }
 
 fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRatio {
+	if element.is_html_element() && element.local_name() == 'input' {
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		if !model.is_image_available() { return none }
+		return natural_size_with_aspect_ratio(model.intrinsic_width(), model.intrinsic_height(),
+			model.intrinsic_aspect_ratio())
+	}
 	if !element.as_node().is_html_image_element() {
 		return none
 	}
@@ -252,6 +258,16 @@ fn available_html_image_natural_size(element &dom.Element) ?css.SizeWithAspectRa
 }
 
 fn available_html_svg_image_document(element &dom.Element) ?&dom.Document {
+	if element.is_html_element() && element.local_name() == 'input' {
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		decoded := model.decoded_image_data() or { return none }
+		if decoded is html.SVGDecodedImageData {
+			mut isolated := decoded.svg_document
+			isolated.set_font_rendering_policy(element.document().font_rendering_policy())
+			return isolated
+		}
+		return none
+	}
 	if !element.as_node().is_html_image_element() { return none }
 	image := unsafe { &dom.HTMLImageElement(element) }
 	decoded := html.html_image_element_model_for_dom_element(image).decoded_image_data() or { return none }
@@ -932,6 +948,11 @@ fn (box &ImageBox) replaced_image_bitmap() ?&dom.Bitmap_ {
 	if element.local_name() == 'object' {
 		model := html.html_object_element_model_for_dom_element(unsafe { &dom.HTMLObjectElement(element) })
 		return model.image_data()
+	}
+	if element.local_name() == 'input' {
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		frame := model.current_image_frame_sized(0, 0) or { return none }
+		return frame.deferred_bitmap()
 	}
 	if !node.is_html_image_element() { return none }
 	model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })

@@ -37,6 +37,7 @@ fn compact_native_attribute_change(element &dom.Element, name string, namespace 
 	mut input := unsafe { &html.HTMLInputElementModel(nil) }
 	if namespace == none && element.is_html_element() && element.local_name() == 'input' {
 		input = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		configure_browser_input_image_fetch(element, false)
 	}
 	return CompactNativeAttributeChange{
 		name:      name

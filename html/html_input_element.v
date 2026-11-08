@@ -100,6 +100,9 @@ pub:
 	run    InputFormActionCallback = unsafe { nil }
 }
 
+// Hosts receive the model so adopted image inputs use their current owner.
+pub type InputImageModelFetchHook = fn (&HTMLInputElementModel, dom.URL) !DecodedImageData
+
 @[heap]
 pub struct HTMLInputElementModel {
 pub:
@@ -141,6 +144,7 @@ pub mut:
 	resource_request_                ?&SharedResourceRequest
 	load_event_delayer_              ?dom.DocumentLoadEventDelayer
 	image_fetch_hook_                ?HTMLImageFetchHook
+	image_model_fetch_hook_          ?InputImageModelFetchHook
 	visible_in_viewport_             bool = true
 	form_action_hook_                ?InputFormActionHook
 }
@@ -1579,8 +1583,13 @@ pub fn (mut model HTMLInputElementModel) set_size(value u64) ! {
 }
 
 pub fn (model &HTMLInputElementModel) height() u32 {
+	mut document := unsafe { &dom.Document(input_element(model).document()) }
+	document.update_layout(.html_input_element_height)
 	if model.type_state_ != .image_button {
 		return 0
+	}
+	if node := input_element(model).as_node().layout_node() {
+		if node.has_geometry_ { return u32(node.content_height_ / document.layout_coordinate_scale()) }
 	}
 	if attribute := input_element(model).get_attribute('height') {
 		if parsed := parse_non_negative_integer(attribute) {
@@ -1589,8 +1598,8 @@ pub fn (model &HTMLInputElementModel) height() u32 {
 			}
 		}
 	}
-	frame := model.current_image_frame_sized(0, 0) or { return 0 }
-	return u32(frame.height())
+	value := model.intrinsic_height() or { return 0 }
+	return if value > 0 { u32(value) } else { 0 }
 }
 
 pub fn (mut model HTMLInputElementModel) set_height(value u64) {
@@ -1600,8 +1609,13 @@ pub fn (mut model HTMLInputElementModel) set_height(value u64) {
 }
 
 pub fn (model &HTMLInputElementModel) width() u32 {
+	mut document := unsafe { &dom.Document(input_element(model).document()) }
+	document.update_layout(.html_input_element_width)
 	if model.type_state_ != .image_button {
 		return 0
+	}
+	if node := input_element(model).as_node().layout_node() {
+		if node.has_geometry_ { return u32(node.content_width_ / document.layout_coordinate_scale()) }
 	}
 	if attribute := input_element(model).get_attribute('width') {
 		if parsed := parse_non_negative_integer(attribute) {
@@ -1610,8 +1624,8 @@ pub fn (model &HTMLInputElementModel) width() u32 {
 			}
 		}
 	}
-	frame := model.current_image_frame_sized(0, 0) or { return 0 }
-	return u32(frame.width())
+	value := model.intrinsic_width() or { return 0 }
+	return if value > 0 { u32(value) } else { 0 }
 }
 
 pub fn (mut model HTMLInputElementModel) set_width(value u64) {
@@ -1657,6 +1671,10 @@ pub fn (mut model HTMLInputElementModel) set_image_fetch_hook(hook ?HTMLImageFet
 	model.image_fetch_hook_ = hook
 }
 
+pub fn (mut model HTMLInputElementModel) set_image_model_fetch_hook(hook ?InputImageModelFetchHook) {
+	model.image_model_fetch_hook_ = hook
+}
+
 fn (mut model HTMLInputElementModel) begin_delaying_document_load_event() {
 	if mut delayer := model.load_event_delayer_ {
 		delayer.finish()
@@ -1695,6 +1713,8 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	mut request := SharedResourceRequest.get_or_create(input_element(&model).document(), url)
 	model.resource_request_ = request
 	model.update_image_button_alt_text_shadow_tree()
+	mut node := input_element(&model).as_node()
+	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 	if request.state() == .finished {
 		model.fire_event('load')
 		model.update_image_button_alt_text_shadow_tree()
@@ -1705,9 +1725,9 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 		model.update_image_button_alt_text_shadow_tree()
 		return
 	}
-	fetch := model.image_fetch_hook_ or { return }
+	if model.image_model_fetch_hook_ == none && model.image_fetch_hook_ == none { return }
 	model.begin_delaying_document_load_event()
-	decoded := fetch(url) or {
+	decoded := model.fetch_image(url) or {
 		request.handle_failed_fetch()
 		model.fire_event('error')
 		model.stop_delaying_document_load_event()
@@ -1718,8 +1738,12 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	model.fire_event('load')
 	model.stop_delaying_document_load_event()
 	model.update_image_button_alt_text_shadow_tree()
-	mut node := input_element(&model).as_node()
-	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
+}
+
+fn (model &HTMLInputElementModel) fetch_image(url dom.URL) !DecodedImageData {
+	if fetch := model.image_model_fetch_hook_ { return fetch(model, url) }
+	fetch := model.image_fetch_hook_ or { return error('No input image fetch hook') }
+	return fetch(url)
 }
 
 pub fn (model &HTMLInputElementModel) image_data() ?DecodedImageData {
