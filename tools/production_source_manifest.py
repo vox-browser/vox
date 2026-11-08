@@ -7,6 +7,7 @@ file need not invalidate an independent helper compiled earlier. Conflicting
 component inputs, edited consumed files and changed package membership fail.
 """
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -19,10 +20,39 @@ from rebuild_browser import git, production_input_path, write_json
 from freeze_browser_compile import check_fingerprints, fingerprint
 
 
+def production_python_tools(root):
+    """Conservative local dependency closure of the production shell tools."""
+    pending, found = [], set()
+    for script in ['build-prod-browser.sh', 'build-linux-browser.sh']:
+        path = root / script
+        if path.exists():
+            pending.extend(root / name for name in re.findall(r'tools/[\w/.-]+\.py', path.read_text()))
+    while pending:
+        path = pending.pop()
+        if path in found or not path.is_file():
+            continue
+        found.add(path)
+        source = path.read_text()
+        tree = ast.parse(source, filename=str(path))
+        for node in ast.walk(tree):
+            modules = ([alias.name for alias in node.names] if isinstance(node, ast.Import)
+                       else [node.module or ''] if isinstance(node, ast.ImportFrom) else [])
+            for module in modules:
+                pending.append(root / 'tools' / (module.replace('.', '/') + '.py'))
+            # Build helpers also invoke local scripts through subprocess/Path.
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                for name in re.findall(r'(?:tools/)?[\w/.-]+\.py', node.value):
+                    pending.append(root / name if name.startswith('tools/') else root / 'tools' / name)
+    return {str(path.relative_to(root)) for path in found}
+
+
 def input_names(root):
     names = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split(b'\0')
+    python_tools = production_python_tools(root)
     return sorted({name.decode() for name in names if name
                    and not name.decode().endswith('.swp') and b'.v3cc.' not in name
+                   and not (name.startswith(b'tools/') and name.endswith(b'.py')
+                            and name.decode() not in python_tools)
                    and production_input_path(name.decode())})
 
 

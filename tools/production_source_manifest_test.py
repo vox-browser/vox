@@ -81,6 +81,23 @@ class ProductionSourceManifestTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'input changed'):
                 manifest.validate_inventory(root, inventory)
 
+    def test_production_python_dependency_closure_keeps_unrelated_work_independent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'repo'
+            self.fixture(root)
+            (root / 'tools').mkdir()
+            (root / 'build-prod-browser.sh').write_text('python3 "$repo_dir/tools/build_fixture.py"\n')
+            (root / 'tools/build_fixture.py').write_text('import shared_build_input\n')
+            shared = root / 'tools/shared_build_input.py'
+            shared.write_text('VALUE = 1\n')
+            inventory = manifest.begin(root)
+            (root / 'tools/wpt_fixtures.py').write_text('unused test tooling')
+            manifest.validate_inventory(root, inventory)
+            self.assertIn(str(shared), inventory['early_inputs'])
+            shared.write_text('VALUE = 2\n')
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                manifest.validate_inventory(root, inventory)
+
     def test_partial_or_malformed_compiler_manifests_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'repo'
