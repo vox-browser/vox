@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Classic Worker pending</title>
+<style>
+html,body{margin:0;background:#fff}
+#result{position:absolute;left:32px;top:32px;width:240px;height:96px;background:#c22}
+</style>
+<div id="result"></div>
+<script>
+const source=`
+importScripts('data:text/javascript,globalThis.imported%3D40');
+onmessage=event=>{
+  const value=event.data;
+  if(!event.isTrusted||event.target!==self||value.self!==value||value.view.buffer!==value.buffer||typeof document!=='undefined')throw Error('worker message');
+  value.view[0]+=2;value.name=name;value.imported=imported;
+  close();
+  const push=Array.prototype.push;
+  try{Array.prototype.push=()=>{throw Error('author push')};postMessage(value,{transfer:[value.buffer]})}
+  finally{Array.prototype.push=push}
+  if(value.buffer.byteLength!==0)throw Error('worker transfer');
+};`;
+globalThis.worker=new Worker('data:text/javascript,'+encodeURIComponent(source),{name:'Санкт-Петербург 😀'});
+worker.onmessage=function(event){
+  const value=event.data;
+  if(this!==worker||event.target!==worker||!event.isTrusted||!(event instanceof MessageEvent)||value.self!==value||value.view.buffer!==value.buffer||value.view[0]!==42||value.imported!==40||value.name!=='Санкт-Петербург 😀')throw Error('parent message');
+  worker.terminate();
+  const discarded=new ArrayBuffer(1);worker.postMessage({discarded},[discarded]);
+  let cloneError=false;try{worker.postMessage(()=>{})}catch(error){cloneError=error instanceof DOMException&&error.name==='DataCloneError'}
+  if(discarded.byteLength!==0||!cloneError)throw Error('terminated transfer');
+  document.getElementById('result').setAttribute('style','background:#008000');
+  document.title='Classic Worker PASS';
+};
+worker.onerror=()=>{document.title='Classic Worker FAIL'};
+const buffer=new ArrayBuffer(4),view=new Uint8Array(buffer);view[0]=40;
+const value={buffer,view};value.self=value;
+worker.postMessage(value,[buffer]);
+if(buffer.byteLength!==0)throw Error('parent transfer');
+</script>
