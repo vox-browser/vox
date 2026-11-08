@@ -7643,6 +7643,8 @@ fn (mut app BrowserApp) draw() {
 	processmetrics.instruction_checkpoint('frame_prepared')
 	replay_instructions := processmetrics.begin_instruction_stage('native_document_replay')
 	context_instructions := processmetrics.begin_instruction_stage('native_frame_context')
+	site_svg_cache_previous := app.begin_site_svg_path_cache()
+	defer { finish_site_svg_path_cache(site_svg_cache_previous) }
 	begin_browser_frame(app.ctx)
 	context_instructions.finish()
 	if frame_part_diagnostics_enabled {

@@ -104,6 +104,8 @@ extern void ladybird_v_skia_set_chromium_painting(int active);
 extern void ladybird_v_skia_set_gg_glyph_run(void* run);
 extern void ladybird_v_skia_set_gg_shape_draw(void* draw);
 extern void ladybird_v_skia_set_gg_path_draw(void* draw);
+extern int ladybird_v_skia_set_small_svg_path_cache(int enabled);
+extern uint64_t ladybird_v_skia_small_svg_path_cache_hits(void);
 extern void ladybird_v_skia_set_gg_svg_image_draw(void* draw);
 extern void ladybird_v_skia_release_unused_graphics_memory(void);
 extern int ladybird_v_skia_release_idle_graphics_memory(void);
@@ -3422,6 +3424,23 @@ void native_set_gg_path_draw(void* draw) {
 	ladybird_v_skia_set_gg_path_draw(draw);
 #else
 	(void)draw;
+#endif
+}
+
+int native_set_small_svg_path_cache(int enabled) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	return ladybird_v_skia_set_small_svg_path_cache(enabled);
+#else
+	(void)enabled;
+	return 0;
+#endif
+}
+
+uint64_t native_small_svg_path_cache_hits(void) {
+#ifdef LADYBIRD_V_HAS_SKIA_TEXT
+	return ladybird_v_skia_small_svg_path_cache_hits();
+#else
+	return 0;
 #endif
 }
 

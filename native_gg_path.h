@@ -5,6 +5,7 @@
 #pragma once
 
 #include "native_graphite_bridge.h"
+#include "native_svg_path_cache.h"
 
 #include <cstdint>
 #include <cstring>
@@ -14,9 +15,23 @@ using VoxGGPathDraw = int (*)(uint8_t* pixels, int width, int height, int pitch,
     int has_background, VoxGraphitePath const* path);
 
 static VoxGGPathDraw s_gg_path_draw = nullptr;
+static VoxSmallSvgPathCache s_small_svg_path_cache;
+
+extern "C" int ladybird_v_skia_set_small_svg_path_cache(int enabled)
+{
+    int previous = s_small_svg_path_cache.enabled;
+    s_small_svg_path_cache.enabled = enabled != 0;
+    return previous;
+}
+
+extern "C" uint64_t ladybird_v_skia_small_svg_path_cache_hits()
+{
+    return s_small_svg_path_cache.hits;
+}
 
 extern "C" void ladybird_v_skia_set_gg_path_draw(VoxGGPathDraw draw)
 {
+    if (s_gg_path_draw != draw) s_small_svg_path_cache.clear();
     s_gg_path_draw = draw;
 }
 
@@ -75,8 +90,8 @@ static void gg_copy_path_views(VoxGraphitePixelRegion const* views, int count,
 static int gg_draw_path_pixels(uint8_t* pixels, int width, int height, int pitch,
     int has_background, VoxGraphitePath const* path)
 {
-    return s_gg_path_draw && path
-        && s_gg_path_draw(pixels, width, height, pitch, has_background, path);
+    return s_small_svg_path_cache.draw(s_gg_path_draw, pixels, width, height,
+        pitch, has_background, path);
 }
 
 static int gg_draw_path_region_pixels(VoxGraphitePixelRegion const* region,
