@@ -49,6 +49,42 @@ policy as c13. Benchmark/guard exit is 1 for the failed gate, with peak RSS
 retains every pair. Newer scalar-read, repeated-input, font-rule and line-buffer
 candidates are absent from that binary and still need native validation.
 
+The ownership-corrected candidate's complete c16 cohort also fails:
+maximum Vox **9,106,689,654**, minimum Brave **11,061,084,520**, ratio
+**0.82330893** (17.6691% fewer). All fourteen captures retain exact references,
+complete content audits and normal exits. The 20% integer gate is
+`91,066,896,540 > 88,488,676,160`. Executable
+`67e9b8010eba8dcf31cc78152f7df19b7cd2793bac84720ecf673efb226e7c5e`
+is newly compiled from the canonical source tree, using the same single-C-unit
+non-literal-prod O3 policy as c13/c14. Its resources and ordinary small helper
+reference the shared bundle under a publication lease; no app bundle was copied.
+C compilation and frozen-input verification succeed; signing through referenced
+bundle metadata initially fails and succeeds after generating regular packaging
+metadata and verifying the raw executable signature. [Full c16 evidence](performance/github-vlang-instructions-20261108-20pct-c16.json)
+retains both build/sign exits and every observation. Regression tests remain
+deferred. A separate [c15 diagnostic cohort](performance/github-vlang-instructions-20261108-20pct-c15-diagnostic.json)
+also fails and predates the boxed-payload ownership correction; it supplies no
+acceptance claim. Fresh native diagnostics confirm the proposed fast paths
+execute, but their headless gains are not additive native instruction credit.
+
+
+Two later complete cohorts also fail. Experimental LLVM code generation in
+c19 regresses to maximum Vox **9,607,344,384** / minimum Brave
+**10,877,278,616**, ratio **0.88324890** (11.6751% fewer). Fresh C compilation
+in c20, with native CPU tuning, inline threshold 3000 and machine outlining
+and LTO disabled, gives **9,290,744,836** / **11,035,100,242**, ratio
+**0.84192664** (15.8073% fewer). Each retains all seven pairs, fourteen exact
+per-engine captures, complete content audits and normal browser exits. Both
+benchmark/guard exits are 1 because their numerical gates fail; build guards
+exit 0. These compiler experiments supply no optimization credit. The best
+complete result remains c16, and regression tests remain deferred.
+[Full c19 evidence](performance/github-vlang-instructions-20261108-20pct-c19.json)
+and [full c20 evidence](performance/github-vlang-instructions-20261108-20pct-c20.json)
+retain raw observations, identities, compiler provenance and exits. The two
+intermediate build attempts c17/c18 produced no executable after their memory
+guards terminated compilation; they contain no browser observations and remain
+in the diagnostic ledger.
+
 ## Workload and scope
 
 - Input: Brave's serialized DOM of the hydrated repository page, with every
