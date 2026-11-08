@@ -26,7 +26,10 @@ def main():
     source = Path(os.environ.get("UI2_SOURCE_DIR", str(modules / "ui2"))).resolve()
     if not (source / "ui/ui.v").is_file():
         raise SystemExit("UI2 not found. Set UI2_SOURCE_DIR to your UI2 checkout.")
-    target = repo / "Build/v/modules/ui2"
+    # Linux VMs can mount this checkout while macOS is compiling. Their
+    # guest-only source symlinks must not replace the host's staged modules.
+    platform_dir = "linux" if sys.platform.startswith("linux") else "windows" if os.name == "nt" else "v"
+    target = repo / "Build" / platform_dir / "modules/ui2"
     target.mkdir(parents=True, exist_ok=True)
     for name in ("uikit", "windows", "linux"):
         link_to(target / name, source / name)
