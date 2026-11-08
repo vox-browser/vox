@@ -1344,6 +1344,12 @@ fn main() {
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
 	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
 	rand.seed([seed, 7])
+	if os.getenv('CPU_RASTER_CHECKS') == 'exports' {
+		table := check_export_exhaustive(oracle) or { panic(err) }
+		exports := check_export_random(oracle, count) or { panic(err) }
+		println('bitmap export: ${table} exhaustive and ${exports} random exports exact')
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'pathgeometry' {
 		check_path_geometry(count)
 		return

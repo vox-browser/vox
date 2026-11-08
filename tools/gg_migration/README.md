@@ -106,7 +106,7 @@ of the pinned Chromium Skia that Vox currently uses, bit for bit.
   through `SkImages::MakeWithFilter()` (`oracle_image_blur()`); declined
   draws must leave the pixels untouched.
   Inputs must stay unchanged during the run; set `CPU_RASTER_TEST_PROD=1` for
-  `-prod -gc none`, and `CPU_RASTER_CHECKS=strokes`, `composites`, `shadows`,
+  `-prod -gc none`, and `CPU_RASTER_CHECKS=exports`, `strokes`, `composites`, `shadows`,
   `gradients`, `patterns`, `clears`, `images`, `bwfills`, `glyphs`,
   `colorfilters`, `filterlayers`, `dropshadows` or `imageblur` to run only those
   comparisons (`CPU_RASTER_GLYPH_FONT` limits the glyph runs

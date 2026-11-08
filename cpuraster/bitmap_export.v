@@ -295,8 +295,9 @@ fn export_pixels(bitmap BitmapSource, pitch int, format BitmapExportFormat, prem
 		limit:    f32(bitmap.height)
 	}
 	// The legacy N32 shader blitter draws premultiplied sRGB RGBA into
-	// premultiplied RGBA_8888 without a raster pipeline.
-	legacy := !identity && bitmap.layout == 0 && pipeline.premultiplied && !pipeline.display_p3
+	// premultiplied RGBA_8888 only when RGBA is the platform's native N32.
+	// Linux's RGBA export surface uses the raster pipeline sampler instead.
+	legacy := canvas_rgba_uses_legacy() && !identity && bitmap.layout == 0 && pipeline.premultiplied && !pipeline.display_p3
 		&& format == .rgba8888 && premultiply
 	legacy_sampling := new_legacy_sampling(horizontal, vertical)
 	columns := if legacy {

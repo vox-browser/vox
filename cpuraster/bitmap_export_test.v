@@ -81,3 +81,24 @@ fn test_bitmap_export_matches_skia_pipelines() {
 	assert export_hash(export_table(2, 1, 1), .gray8, false, true, none, none) == 'c789f7ef07129beb'
 	assert export_hash(export_table(0, 2, 0), .rgba8888, true, true, 97, 401) == '88d2a51f84ada28c'
 }
+
+// Native oracle_bitmap_export: [15,14,60,0,2,0,6,3,15,49]. The vertical
+// scale places row 3 on a nearest-sampling boundary. The legacy N32 sampler
+// selects source row 12; Linux's RGBA raster pipeline selects row 13.
+fn test_bitmap_export_uses_platform_sampler_at_flipped_scale_boundary() {
+	mut pixels := []u8{cap: 15 * 14 * 4}
+	for y in 0 .. 14 {
+		for x in 0 .. 15 {
+			pixels << [u8(x * 13), u8(y * 17), u8((x + y) * 7), u8(255)]
+		}
+	}
+	bitmap := BitmapSource{width: 15, height: 14, alpha_type: 2, pixels: pixels}
+	exported := export_bitmap_to_byte_buffer(bitmap, .rgba8888, true, true, none, 49)!
+	$if linux {
+		assert exported.pixels[180..184] == [u8(0), 221, 91, 255]
+		assert sha256.sum(exported.pixels).hex() == 'ce153c76536c482a662970ed77277ecf8654692d6fd5efb536a9a4bfdf983024'
+	} $else {
+		assert exported.pixels[180..184] == [u8(0), 204, 84, 255]
+		assert sha256.sum(exported.pixels).hex() == '590b5ffa98fd8856a615d38a55fbd0a142d3a0d4df8691932ecff920267b24ef'
+	}
+}
