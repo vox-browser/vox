@@ -728,6 +728,17 @@ pub fn (binding &SubtleCryptoBinding) export_key(format KeyFormat, key &CryptoKe
 	}, false)
 }
 
+pub fn (binding &SubtleCryptoBinding) get_public_key(key &CryptoKey, usages []KeyUsage) &webidl.Promise {
+	// Capability errors reject before deferral; key type, usage and derivation
+	// errors settle through the crypto task source, like successful results.
+	public_key_usages(key.algorithm_name()) or { return binding.rejected(err.msg()) }
+	copied_usages := usages.clone()
+	realm := binding.context.realm_id.str()
+	return binding.run(fn [binding, key, copied_usages, realm] () !webidl.Value {
+		return crypto_key(realm, binding.crypto.get_public_key(key, copied_usages)!)
+	}, true)
+}
+
 pub fn (binding &SubtleCryptoBinding) derive_bits(algorithm webidl.Value, key &CryptoKey, length ?u32) &webidl.Promise {
 	normalized := normalize_binding_algorithm(algorithm, 'deriveBits') or { return binding.rejected(err.msg()) }
 	return binding.run(fn [normalized, key, length] () !webidl.Value {
