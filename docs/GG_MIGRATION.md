@@ -1247,3 +1247,24 @@ pass; the FMA audit reports zero contracted operations. See the
 Integer-source spatial resampling, source clipping, general rotated layers,
 remaining spatial chains, SVG graphs, tiling and native bridges still retain
 Skia dependencies.
+
+
+### Resampling integer source images before blur (2026-11-08)
+
+Scaled, flipped and fractionally translated integer source rectangles now
+resolve their sampling, source color conversion, paint alpha and preceding
+color filters together before the first real blur. Identity blurs preserve
+that ordering. Native bounds analysis chooses clamp or decal and the backing
+image or strict subset, including linear mipmaps. Eight new frozen native
+fixtures match on both platforms.
+
+At seed 20261108, 8,310 of 20,000 attempts are supported and exact on both
+macOS and Linux. Production mode matches 8,349 at seed 20261109. The original
+Linux filtered-image corpus matches 14,397 supported draws. All 27 CPU raster
+files, the canvas integration test and focused Linux production tests pass;
+the FMA audit reports zero contracted operations. Counts include no-ops and
+explicit declines. See the [resampling receipt](gg-migration/resampled-image-blurs-20261108.json).
+
+Source clipping, scaled shadow foregrounds, all-identity lists, near-integer
+transforms, general rotated layers, remaining spatial chains, SVG graphs,
+tiling and native browser bridges remain open. The browser still links Skia.
