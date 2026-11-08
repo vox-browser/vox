@@ -1109,3 +1109,21 @@ See the [repeated-blur receipt](gg-migration/repeated-blurs-20261108.json).
 Color matrices within repeated spatial chains, drop-shadow chains, rotated
 layers, SVG graphs, image-space spatial filters and native bridges remain
 open; the browser still retains Skia dependencies.
+
+
+### Bitmap-space color filters (2026-11-08)
+
+Explicit bitmap-space CPU color filters now draw into an N32 layer before
+applying the color filter on restore. Three native fixtures retain the source
+quantization and platform rounding for translated premultiplied images,
+rotated unpremultiplied Display P3 images, and downsampled clearing restores.
+
+Of 20,000 comparisons, 13,261 match on both platforms at seed 20261106,
+with 6,739 declines. Production seed 20261108 matches 13,321 with 6,679
+declines. Counts include no-ops and both CPU policies. Focused image tests
+pass on macOS and in Linux production mode; the FMA audit reports zero
+contracted operations. See the
+[bitmap-color receipt](gg-migration/bitmap-color-filters-20261108.json).
+This validates the explicit CPU policy; the existing macOS Dawn dispatch is
+unchanged. Direct image-space spatial filters, remaining spatial chains,
+rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
