@@ -325,3 +325,25 @@ checks pass. This does not replace production windowed browser validation.
 and the registry does not claim cross-browser persistence. See the
 [SharedWorker report](performance/ladybird-first100-shared-workers-20261108.json)
 for identities, per-case results, failed development checks and local evidence.
+
+
+## Production refresh and form/CSP source checks
+
+The next completed production executable, SHA-256
+`59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`,
+passes **82/100 cases and 8396/8462 subtests** in the unchanged cohort using
+upstream wptserve. There are 87 harness-OK cases and 13 harness timeouts.
+The remaining 18 cases are ten SharedWorker variants, three multipart upload
+pages and five CSP pages. This bundle includes incremental decompression and
+passes all four corresponding upstream subtests. It predates the subsequent
+SharedWorker, form and CSP fixes.
+
+Source commits `c238849e7`, `a5e36790d` and `d30bfc72f` add legacy form submit
+navigation, creator-window worker CSP enforcement, and HTML form charset
+encoding. Focused checks pass two form binding/navigation functions, two native
+worker-CSP functions, two CSP owner/destination model functions, three encoder
+functions (including all three pinned upload encoding vectors), two multipart
+functions and three existing UTF-8 serializer functions. These focused results
+are separate from full upstream upload integration, which remains under repair.
+The [manifest](performance/ladybird-first100-forms-csp-browser82-20261108.json)
+retains the production results, guard exits and local archive identity.
