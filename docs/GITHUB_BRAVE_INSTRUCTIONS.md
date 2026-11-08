@@ -23,6 +23,19 @@ its counters and failure remain recorded. Separate cleanup diagnostics exit
 normally after the already-frozen capture endpoint. Parser and layout probes
 are diagnostic only; no 20% acceptance or new regression-test pass is claimed.
 
+The first complete 20% cohort, c13, still fails: maximum Vox **9,147,785,937**,
+minimum Brave **11,072,030,805**, ratio **0.82620669** (17.3793% fewer).
+Vox/Brave medians are 9,107,530,866 / 11,182,995,768. All seven alternating
+pairs completed with normal browser exits, complete document audits and exact
+per-engine reference pixels. Benchmark exit is 1 because the gate fails;
+the memory guard completed under its 12 GiB cap, peaking at 1,406,369,792 bytes.
+[Full c13 counts, commands, identities and exits](performance/github-vlang-instructions-20261108-20pct-c13.json)
+are retained. The pinned executable is `b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a`,
+receipt `20261108-091839-e5dbdb92`. It uses a single C unit with non-literal
+V `-prod` generation, `-O3` and inline threshold 1500, unlike c12's literal
+`-prod`/`-O2` build. Concurrent engine changes are included; the cross-build
+difference cannot be assigned solely to this session's optimizations.
+
 ## Workload and scope
 
 - Input: Brave's serialized DOM of the hydrated repository page, with every
@@ -48,7 +61,7 @@ are diagnostic only; no 20% acceptance or new regression-test pass is claimed.
 - Driver: `tools/github_browser_instructions.py` (`61917182c`), run under the
   memory guard; JavaScript enabled in both, no page scripts remain.
 
-## Current cohort: 2026-11-08, c12 (seven alternating pairs)
+## Earlier 10% cohort: 2026-11-08, c12 (seven alternating pairs)
 
 The shared production executable is
 `468f7a4d650bf9880564cc40be5d8c60221ac769a9097714e639f499bb8b5201`,
