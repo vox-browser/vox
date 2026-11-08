@@ -507,6 +507,9 @@ int vox_graphite_picture_release_idle_graphics_memory()
     regional_recorder.reset();
     gpu_context->freeGpuResources();
     gpu_context_idle = true;
+    if (std::getenv("VOX_GRAPHICS_CONTEXT_DIAGNOSTICS"))
+        std::fprintf(stderr,"VOX_DAWN_IDLE_RASTER_RELEASE retained_device=1 purgeable_bytes=%zu\n",
+            gpu_context->currentPurgeableBytes());
     return 1;
 }
 

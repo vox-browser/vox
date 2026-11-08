@@ -37,7 +37,8 @@ def main():
         with (output / (name + '.log')).open('w') as log:
             result = subprocess.run(guarded, stdout=log, stderr=subprocess.STDOUT,
                                     env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0',
-                                             UBSAN_OPTIONS='halt_on_error=1'))
+                                             UBSAN_OPTIONS='halt_on_error=1',
+                                             VOX_GRAPHICS_CONTEXT_DIAGNOSTICS='1'))
         records.append(dict(name=name, command=guarded, exit=result.returncode))
         (output / 'commands.json').write_text(json.dumps(records, indent=2) + '\n')
         result.check_returncode()
@@ -59,6 +60,8 @@ def main():
         if before != hashes():
             raise RuntimeError('Dawn inputs changed during compilation')
         run(mode + '-runtime', [str(binary)], 3)
+        assert 'VOX_DAWN_IDLE_RASTER_RELEASE retained_device=1 purgeable_bytes=0' in (
+            output / (mode + '-runtime.log')).read_text()
         print((output / (mode + '-runtime.log')).read_text().splitlines()[0], flush=True)
     if before != hashes():
         raise RuntimeError('Dawn inputs changed during checks')
