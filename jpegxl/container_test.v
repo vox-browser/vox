@@ -80,8 +80,8 @@ fn test_whole_codestream_extended_sizes_unknown_boxes_and_terminal_boxes() {
 
 fn test_codestream_parts_reassemble_in_order_and_version_one_permutations() {
 	stream := [u8(0xff), 0x0a, 0x80, 0x35]
-	chunks := [container_part(0, false, stream[..1]), container_part(1, false, []u8{}), container_part(2, false, stream[1..3]),
-		container_part(3, true, stream[3..])]
+	chunks := [container_part(0, false, stream[..1]), container_part(1, false, []u8{}),
+		container_part(2, false, stream[1..3]), container_part(3, true, stream[3..])]
 	for order in [[0, 1, 2, 3], [3, 2, 1, 0], [1, 0, 3, 2], [2, 3, 0, 1]] {
 		mut bytes := container_prefix(1)
 		for index in order {
@@ -111,7 +111,8 @@ fn test_container_rejects_overflow_truncation_invalid_order_and_metadata_types()
 		bytes << box('jxlc', stream, false, false)
 		assert_container_rejected(bytes)
 	}
-	for suffix in [box('jxlc', stream, false, false), container_part(0, true, stream), container_prefix(0)[12..]] {
+	for suffix in [box('jxlc', stream, false, false), container_part(0, true, stream),
+		container_prefix(0)[12..]] {
 		mut bytes := complete.clone()
 		bytes << suffix
 		assert_container_rejected(bytes)
@@ -125,8 +126,8 @@ fn test_container_rejects_overflow_truncation_invalid_order_and_metadata_types()
 	}
 	for chunks in [[container_part(1, true, stream)], [container_part(0, false, stream)],
 		[container_part(0, false, stream), container_part(0, true, []u8{})],
-		[container_part(2, true, []u8{}), container_part(0, false, stream)],
-		[container_part(2, false, []u8{}), container_part(1, true, []u8{}), container_part(0, false, stream)]] {
+		[container_part(2, true, []u8{}), container_part(0, false, stream)], [container_part(2, false, []u8{}),
+			container_part(1, true, []u8{}), container_part(0, false, stream)]] {
 		mut bytes := container_prefix(1)
 		for chunk in chunks { bytes << chunk }
 		assert_container_rejected(bytes)
