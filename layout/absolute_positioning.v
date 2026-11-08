@@ -42,6 +42,7 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 }
 
 fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, name string) ?css.CSSPixelRect {
+	if saved := position_try_saved_anchor(box,name) { return saved }
 	dom_node := box.dom_node() or { return none }
 	element := dom_node.as_element() or { return none }
 	containing_block := box.containing_block() or { return none }
@@ -70,12 +71,14 @@ fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &Us
 		.minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
 	containing_block_padding_box_origin := containing_state.cumulative_offset().minus(css.CSSPixelPoint.new(containing_state.padding_left, containing_state.padding_top))
 	origin := anchor_border_box_origin.minus(containing_block_padding_box_origin)
-	return css.CSSPixelRect{
+	rect := css.CSSPixelRect{
 		x: origin.x()
 		y: origin.y()
 		width: anchor_state.border_box_width()
 		height: anchor_state.border_box_height()
 	}
+	position_try_note_anchor(box,name,rect)
+	return rect
 }
 
 // Absolute descendants are laid out before the final relative-inset pass.
@@ -372,6 +375,11 @@ fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &No
 }
 
 fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
+	if layout_with_position_try_fallbacks(mut state,box) { return }
+	layout_absolutely_positioned_box_once(mut state,box)
+}
+
+fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 	containing_box := box.containing_block() or { return }
 	containing_styled := unsafe { &Node(containing_box) }.as_node_with_style() or { return }
 	mut containing_state := state.get_mutable(containing_styled)

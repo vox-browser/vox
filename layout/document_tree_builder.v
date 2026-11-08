@@ -711,6 +711,7 @@ fn install_document_layout_hook_with_callback(document &dom.Document,
 		callback: callback
 		style_did_update: document_layout_style_did_update
 		retire_native_layout: retire_native_document_layout
+		commit_position_options: commit_document_position_try_options
 	})
 }
 

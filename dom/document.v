@@ -1836,6 +1836,7 @@ pub:
 	style_did_update DocumentLayoutStyleUpdateCallback = unsafe { nil }
 	// Releases a native layout publisher; the argument is its concrete handle.
 	retire_native_layout DocumentLayoutRetireCallback = unsafe { nil }
+	commit_position_options DocumentLayoutStyleUpdateCallback = unsafe { nil }
 }
 
 pub struct DocumentRenderedTextHook {
@@ -7745,6 +7746,11 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 
 pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
 	d.layout_update_hook_ = hook
+}
+
+pub fn (d &Document) record_last_successful_position_options() {
+	hook := d.layout_update_hook_ or { return }
+	if hook.commit_position_options != unsafe { nil } { hook.commit_position_options(hook.target,d) }
 }
 
 pub fn (mut d Document) set_rendered_text_hook(hook DocumentRenderedTextHook) {

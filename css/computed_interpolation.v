@@ -10951,6 +10951,7 @@ pub mut:
 @[heap]
 pub struct StyleComputer {
 pub mut:
+	position_try_override_ ?PositionTryStyleOverride
 	document_                                            &dom.Document = unsafe { nil }
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
 	device_layout_property_pages_ &DeviceLayoutPropertyPages = unsafe { nil }
@@ -14456,6 +14457,12 @@ fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties Casca
 	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
 	for layer in matching_rule_set.author_rules {
 		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .no, layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
+	}
+	if override := s.position_try_override_ {
+		if voidptr(override.target.element()) == voidptr(abstract_element.element())
+			&& override.target.pseudo_element() == abstract_element.pseudo_element() {
+			cascade_one_declaration(mut cascaded_properties,abstract_element,override.declaration,none,.author,.no,'\x00position-try',logical_alias_mapping_context,properties_to_cascade)
+		}
 	}
 
 	// Important author declarations, with un-@layer-ed rules first, followed by each @layer in reverse order.
