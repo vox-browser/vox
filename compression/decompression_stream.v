@@ -6,7 +6,6 @@
 module compression
 
 import compress.deflate
-import x.compress.brotli
 
 fn decode_raw_bytes(bytes []u8) ![]u8 {
 	result := deflate.decompress_raw_with_consumed(bytes)!
@@ -18,7 +17,13 @@ fn decode_raw_bytes(bytes []u8) ![]u8 {
 
 fn decode_bytes(format CompressionFormat, bytes []u8) ![]u8 {
 	return match format {
-		.brotli { brotli.decompress(bytes)! }
+		.brotli {
+			mut decoder := IncrementalDecompressor.create(.brotli)!
+			defer { decoder.close() }
+			result := decoder.push(bytes, true)
+			if result.error_message != '' { return error(result.error_message) }
+			result.bytes
+		}
 		.deflate { deflate.decompress_zlib(bytes)! }
 		.deflate_raw { decode_raw_bytes(bytes)! }
 		.gzip { deflate.decompress_gzip(bytes)! }
