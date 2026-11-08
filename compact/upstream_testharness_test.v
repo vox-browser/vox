@@ -54,6 +54,8 @@ fn test_upstream_testharness_in_native_document() {
 		service.poll(mut messages)
 		manager.poll(mut messages)
 		html.main_thread_event_loop().process()
+		mut client := owner.client()
+		client.rendering_opportunity(time.sys_mono_now(), 16.667)
 		html.main_thread_event_loop().update_the_rendering()
 		platform.pump_native_events(0.001)
 		if service.runtime != unsafe { nil } {
