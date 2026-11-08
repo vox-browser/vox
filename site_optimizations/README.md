@@ -7,8 +7,9 @@ ChatGPT and GitHub retain JavaScript. Only Wikipedia defaults to static renderin
 `resources.js` is the site resource catalog consumed by the uBlock adapter.
 `chatgpt.js`, `chatgpt_builder.mjs`, and `chatgpt_basic_resources.js` contain the
 existing ChatGPT replacements. `github_builder.mjs` generates replacements for
-two reviewed GitHub chunks, suppressing four analytics/metrics factories while
-preserving all other factories and ES module dependencies. Unknown versioned
+two reviewed GitHub chunks, suppressing five telemetry collectors while
+preserving all other factories and ES module dependencies. The core setup
+factory retains its fetch nonce and defensive DOM setup. Unknown versioned
 URLs fall back to the original site code. Navigation, code-view hydration,
 repository actions, Codespaces and accessibility/theme initialization remain in
 the original factories.
@@ -46,3 +47,22 @@ Removing collection code does not establish a rendering instruction reduction.
 The GitHub 20% target remains open; see
 [the diagnostic report](../docs/GITHUB_SITE_OPTIMIZATIONS.md) before making a
 performance claim.
+
+`github_css_builder.mjs` and `github_css.js` reuse four already-loaded component
+entry sheets when the original Rspack loader asks for byte-equivalent chunk CSS.
+`initial_stylesheets.v` removes repeated reviewed Primer sheets before bootstrap,
+retaining the last owner and the original layer order. `stylesheet_layout.v`
+keeps CSS property invalidation in charge of rebuilding affected boxes after an
+asynchronous sheet completes.
+
+`animation_wakeups.v` avoids animation-only display grants for scroll timelines
+and reviewed empty offscreen skeleton masks. Timelines and sampling remain in
+the engine; visible effects retain normal grants, and iteration listeners retain
+their next timed boundary. Visibility uses refreshed scroll and visual contexts.
+Filters, outlines, shadows, backdrop filters, finite effects and other Web
+Animations keep the conservative path.
+
+Additional controls are `VOX_DISABLE_GITHUB_INITIAL_STYLESHEET_DEDUP=1`,
+`VOX_DISABLE_GITHUB_STYLESHEET_LAYOUT_REUSE=1` and
+`VOX_DISABLE_GITHUB_ANIMATION_WAKEUP_THROTTLING=1`. Diagnostic switches are listed in the corresponding V files. Production validation of the final wakeup policy
+is pending; the focused cases pass, including GC-disabled execution.

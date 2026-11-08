@@ -122,3 +122,58 @@ production build and fresh headless startup. A fresh live GitHub capture has
 all 33 rows, 53 commit links, the latest commit and README, with zero reported
 errors and stable executable/library hashes. It is a functional check, not a
 live performance comparison or complete interaction-parity proof.
+
+## Immediate startup and stylesheet reuse
+
+The app continues to start immediately, including repository hydration and
+commit metadata. No interaction-triggered script loading is added.
+
+`1b08b634d` reuses four component entry stylesheets when Rspack requests their
+identical short-name copies. Reviewed bodies differ only in source-map comments
+and share the same URL directory. The original runtime executes unchanged from
+its original CDN URL with a query suffix; the wrapper only supplies an already
+loaded CSS filename. Missing, disabled, conditional, loading or unreadable sheets,
+unknown chunk names and unknown runtime versions retain the original path.
+`e008064e7` removes four repeated initial Primer links across the head and body,
+keeping the last owner and the first layer declarations. The reviewed source
+fixture pins the runtime and all CSS bytes.
+
+`15b492f67` removes a fifth telemetry collector: the final asset-timing reporter
+inside the core setup factory. Fetch nonce handling, request setup and defensive
+DOM methods remain byte-identical. Tests execute the original CSS loader and
+verify that all four existing sheets resolve without another insertion/fetch.
+They also exercise the retained core setup, fetch nonce and DOM patches.
+
+`acf9b796c` preserves the layout tree when asynchronous GitHub stylesheets finish.
+Its focused tests cover synchronous geometry reads, changed display, generated
+content and non-GitHub/initial-layout boundaries. The measured startup diagnostic
+did not enter this path, so no startup saving is attributed to it.
+
+`8c9f8b53d` changes native animation wakeup scheduling. Scroll timelines wait for
+scrolling or geometry updates. Reviewed empty offscreen skeletons whose only
+animated property is a border-box-clipped mask position need no visual display
+grants. Observed iteration boundaries retain timed grants. Visible targets,
+finite effects, transitions, other Web Animations, escaping ink, filters, outlines
+and backdrop filters retain the normal path. Scrolling refreshes visual contexts
+and scroll snapshots before the visibility decision. Animation sampling, timelines
+and the author scripts remain in the existing engine.
+
+Focused validation passes: 65 Node tests; four wakeup cases with GC disabled in
+both normal and rollback modes; initial stylesheet and stylesheet-completion
+cases; 111 CSS regressions in both GC modes; and all 100 LibJS AST fixtures.
+The completed baseline bundle `843893a4` passes headless startup, all 11 default
+screenshot checks and all eight SVG mutation checks. That baseline bundle does
+not contain the wakeup policy and cannot validate it.
+
+The [immediate-start evidence](performance/github-immediate-stylesheets-20261108.json)
+retains the original-clock pilots, counters, exits, input identities and content
+and pixel audits. Two-second captures had transient pixel differences; matched
+five-second pilots are pixel-exact. No improvement is credited across the changed
+settle boundary. Later pilots retain all 33 rows, 141 table links, 53 commit links,
+latest-commit content and the full README. Offscreen sidebar fragments can still
+load lazily, as the original app requests them; their image counts are retained.
+None of these pilots establishes the conservative 20% target.
+
+The production build with the final wakeup code, its execution diagnostic and a
+qualifying seven-pair measurement remain pending. The shared build guard has
+rejected changing source inputs; it has not been bypassed.
