@@ -116,6 +116,12 @@ def verified_component(directory):
     return actual
 
 
+def component_membership(root, names, sources):
+    directories = {Path(name).parent for name in sources if Path(name).is_relative_to(root)}
+    return [name for name in names if Path(name).suffix in {'.v', '.vv', '.vsh'}
+            and (root / name).parent in directories]
+
+
 def combine(root, inventory, components, parsed=False):
     validate_inventory(root, inventory, parsed=parsed)
     result = dict(inventory['early_inputs'])
@@ -142,6 +148,8 @@ def compile_component(root, inventory, directory, command):
                        V_MACOS_V3_C_ERROR_DIR=str(directory))
     compiler = Path(command[0]).resolve()
     identity = fingerprint([compiler])
+    validate_inventory(root, inventory, parsed=True)
+    starting_names = input_names(root)
     process = subprocess.Popen(command, env=environment)
     proof, error = None, None
     while True:
@@ -155,12 +163,15 @@ def compile_component(root, inventory, directory, command):
                 pass
             else:
                 try:
-                    validate_inventory(root, inventory)
+                    validate_inventory(root, inventory, parsed=True)
+                    membership = component_membership(root, starting_names, sources)
+                    if component_membership(root, input_names(root), sources) != membership:
+                        raise RuntimeError('Consumed V package membership changed during parsing')
                     check_fingerprints(sources)
                     if sources != v_inputs(component_inputs(directory)):
                         raise RuntimeError('Compiler manifest changed during parsed-buffer verification')
                     proof = dict(protocol='verified-parsed-buffers-v1', sources=sources,
-                                 compiler=identity, verified_unix=time.time())
+                                 compiler=identity, verified_unix=time.time(), package_membership=membership)
                     write_json(directory / 'parsed-verified.json', proof)
                 except (OSError, RuntimeError) as failure:
                     error = str(failure)

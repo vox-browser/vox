@@ -177,6 +177,28 @@ s.write_text('changed before parsed-buffer verification')
             self.assertTrue((component / 'verification-error.json').exists())
             self.assertFalse((component / 'parsed-verified.json').exists())
 
+    def test_compiler_membership_is_scoped_to_its_consumed_packages(self):
+        for consumed in [False, True]:
+            with self.subTest(consumed=consumed), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / 'repo'
+                inventory = self.fixture(root)
+                component = root.parent / 'component'
+                program = '''import hashlib,os,sys
+from pathlib import Path
+p=Path(os.environ['V_MACOS_V3_C_ERROR_DIR']);p.mkdir()
+s=Path(sys.argv[1]);added=Path(sys.argv[2]);added.parent.mkdir(exist_ok=True)
+added.write_text('new package member')
+(p/'v_sources').write_bytes(str(s).encode());(p/'v_source_digests').write_bytes(hashlib.sha256(s.read_bytes()).hexdigest().encode())
+'''
+                added = root / ('new.v' if consumed else 'css/new.v')
+                command = [sys.executable, '-c', program, str(root / 'worker.v'), str(added)]
+                if consumed:
+                    with self.assertRaisesRegex(RuntimeError, 'package membership changed'):
+                        manifest.compile_component(root, inventory, component, command)
+                else:
+                    self.assertEqual(manifest.compile_component(root, inventory, component, command), 0)
+                    manifest.combine(root, inventory, [component], parsed=True)
+
 
 if __name__ == '__main__':
     unittest.main()
