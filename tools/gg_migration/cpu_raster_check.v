@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2464,7 +2464,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	identity_sampling := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-sampling'
 	factored := os.getenv('CPU_RASTER_CHECKS') == 'near-integer-factored-images'
 	near_integer := factored || os.getenv('CPU_RASTER_CHECKS') == 'near-integer-image-layers'
-	resampled := near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	shadow_sources := os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-shadows'
+	resampled := shadow_sources || near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
 	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
@@ -2620,6 +2621,15 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				filters << random_color_filters()
 				c = BitmapCase{...c, filters: filters}
 			}
+		}
+		if shadow_sources {
+			mut filters := if i % 2 == 0 { random_color_shadow_filters() } else { random_shadow_filters() }
+			for j, step in filters {
+				if step.kind == .drop_shadow && i % 5 != 0 {
+					filters[j] = cpuraster.CanvasFilterStep{...step, sigma: f32(rand.f64() * 5 + .2)}
+				}
+			}
+			c = BitmapCase{...c, filters: filters}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
