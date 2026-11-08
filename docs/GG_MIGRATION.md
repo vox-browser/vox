@@ -844,3 +844,20 @@ See the [bitmap and mipmap receipt](gg-migration/bitmap-glyphs-mipmaps-20261108.
 including the failed diagnostic attempts and their corrections. COLR paint
 graphs, oversized glyphs, other filters, the browser bridges and their Skia
 links still remain; this is not a completed browser dependency removal.
+
+
+### Portable layered color glyphs (2026-11-08)
+
+`3bf202a52` adds COLRv0 palette/current-color layers. Small glyphs compose
+native FreeType outlines into V-rendered color sprites. Large glyphs replay
+the canonical 64-point outlines as vector drawables through saved layers,
+including clip-relative allocation and transparency-affecting restores.
+An original font fixture covers overlapping translucent outlines and current
+text color. Over two seeds, all 48,971 supported runs match exactly; 1,029
+invalid-face runs decline. This includes 10,000 normal runs and 20,000
+production runs at seed 20261106 plus 20,000 normal runs at seed 20261108.
+Focused Linux golden-image tests and CoreText regression tests pass; the FMA
+audit reports zero contracted operations. See the [COLRv0 receipt](gg-migration/colrv0-glyphs-20261108.json).
+The broad Linux module run passes 25 files and exposes two platform-dependent
+SVG arc/stroke hashes in `aaclip_test.v`; native Linux verification is pending.
+COLRv1 graphs and the browser's remaining native dependencies are still open.
