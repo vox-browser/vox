@@ -192,7 +192,7 @@ def discover_tests(text_root=TEXT_TESTS, includes=()):
     return tests
 
 
-def select_new_tests(tests, baseline_tests, limit=None):
+def select_new_tests(tests, baseline_tests, limit=None, offset=0):
     """Select newly imported IDs before limiting; changed existing tests stay out.
 
     Keep discovery order, including distinct worker and query variants. Never
@@ -200,7 +200,7 @@ def select_new_tests(tests, baseline_tests, limit=None):
     """
     baseline_ids = {test['id'] for test in baseline_tests}
     added = [test for test in tests if test['id'] not in baseline_ids]
-    return added if limit is None else added[:limit]
+    return added[offset:] if limit is None else added[offset:offset + limit]
 
 
 def parse_headers_file(path):
@@ -737,7 +737,9 @@ def format_report(summary, identity):
     if identity.get('selection_baseline'):
         lines += [f"Selection: newly imported IDs absent from Ladybird "
                   f"`{identity['selection_baseline']['revision'][:12]}`, in discovery order "
-                  "before applying the requested limit. Changed existing IDs are excluded.", '']
+                  "before applying the requested offset and limit. Changed existing IDs are excluded.", '']
+    if identity.get('selection_offset'):
+        lines += [f"Skipped {identity['selection_offset']} eligible IDs before selecting this batch.", '']
     if identity.get('aborted') or identity.get('changed_inputs'):
         lines += [f"**Incomplete:** {identity.get('aborted') or 'inputs changed: ' + str(identity['changed_inputs'])}", '']
     lines += ['## Conformance', '',
@@ -801,6 +803,8 @@ def main():
     parser.add_argument('--include', action='append', default=[],
                         help='Test id prefix such as dom/nodes (repeatable)')
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--offset', type=int, default=0,
+                        help='Skip this many eligible IDs after --include/--new-since and before --limit')
     parser.add_argument('--ladybird-ref', help='Read imported fixtures at this Git revision without changing the upstream checkout')
     parser.add_argument('--new-since', help='With --ladybird-ref, select only IDs absent from this pinned Ladybird revision, before --limit')
     parser.add_argument('--fixture-cache', type=Path, default=Path.home() / '.cache/vox/wpt')
@@ -829,6 +833,8 @@ def main():
         parser.error('--new-since requires --ladybird-ref')
     if args.limit is not None and args.limit < 1:
         parser.error('--limit must be positive')
+    if args.offset < 0:
+        parser.error('--offset must be nonnegative')
     browsers = [name.strip() for name in args.browsers.split(',') if name.strip()]
     if not browsers or any(name not in ('vox', 'brave') for name in browsers):
         parser.error('--browsers takes vox and/or brave')
@@ -847,9 +853,9 @@ def main():
         baseline_root, args.baseline_manifest = export_fixtures(
             LADYBIRD, args.new_since, args.fixture_cache)
         baseline_tests = discover_tests(baseline_root / 'Tests/LibWeb/Text')
-        tests = select_new_tests(tests, baseline_tests, args.limit)
-    elif args.limit:
-        tests = tests[:args.limit]
+        tests = select_new_tests(tests, baseline_tests, args.limit, args.offset)
+    else:
+        tests = tests[args.offset:] if args.limit is None else tests[args.offset:args.offset + args.limit]
     if not tests:
         parser.error('no tests selected')
     executables = dict(vox=args.vox.resolve(), brave=args.brave)
@@ -887,6 +893,7 @@ def run(args, tests, browsers, executables):
             ['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip(),
         fixture_manifest=args.fixture_manifest,
         selection_baseline=args.baseline_manifest,
+        selection_offset=args.offset, selection_limit=args.limit,
         wpt_root=str(report_root), host_cpus=os.cpu_count(),
         load_start=[round(value, 2) for value in os.getloadavg()],
         brave_version=subprocess.run([str(executables['brave']), '--version'], capture_output=True,

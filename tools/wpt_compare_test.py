@@ -36,6 +36,16 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(select_new_tests(tests, baseline), tests[2:])
         self.assertEqual(select_new_tests(tests, tests, 100), [])
 
+    def test_continuation_batches_skip_only_new_ids_and_preserve_variants(self):
+        tests = [dict(id=name) for name in ('old', 'a', 'a?x=1', 'old.worker', 'b.worker', 'c')]
+        baseline = [dict(id='old'), dict(id='old.worker')]
+        first = select_new_tests(tests, baseline, 2)
+        second = select_new_tests(tests, baseline, 2, offset=2)
+        self.assertEqual([test['id'] for test in second], ['b.worker', 'c'])
+        self.assertEqual(first + second, select_new_tests(tests, baseline))
+        self.assertEqual(select_new_tests(tests, baseline, offset=2), second)
+        self.assertEqual(select_new_tests(tests, baseline, 200, offset=100), [])
+
     def test_expectations_name_documents_variants_and_long_timeouts(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
