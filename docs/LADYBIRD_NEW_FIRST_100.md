@@ -215,6 +215,25 @@ development failures and the local raw archive. These remain source checks;
 the older published browser cannot validate these changes, and the entire
 100-case batch is still incomplete.
 
+## Published-browser refresh
+
+A newer completed shared browser, SHA-256
+`3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c`,
+now fully passes **62/100 cases**, up from 26/100. It passes 8,183 of 8,462
+reported subtests, with 256 FAIL, eight TIMEOUT and 15 NOTRUN. The strict
+all-pass check still exits 1. All original 100 case IDs are retained, all
+documents report, and executable and fixture identities stay unchanged
+throughout five fresh browser processes.
+
+This executable predates the ML-KEM JWK and subsequent IndexedDB source
+fixes. It validates the earlier crypto, Blob, cursor and dedicated-worker
+exposure changes, including all 28 crypto IDL subtests. Shared-worker cases
+still time out. The static server still lacks Python handlers, HTTPS and
+complete multi-origin support. The
+[browser refresh manifest](performance/ladybird-first100-browser-refresh-20261108.json)
+records the remaining failures and the local raw archive. The task remains
+open until the complete new cohort passes.
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh
