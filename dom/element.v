@@ -517,6 +517,8 @@ pub struct CSSStyleProperties_ {
 pub mut:
 	is_updating_       bool
 	associated_element ?&Element
+	declarations_text string
+	awaits_content_security_policy_check bool
 	// DOM owns the element while CSS owns the typed CSSStyleProperties. Keep the
 	// same live declaration object across cascades and attribute mutations without
 	// introducing a dom -> css import cycle.
@@ -531,6 +533,7 @@ pub fn (c &CSSStyleProperties_) is_updating() bool {
 }
 
 pub fn (mut c CSSStyleProperties_) set_declarations_from_text(text string) {
+	c.declarations_text = text
 	if c.css_handle != unsafe { nil } && c.set_declarations_callback != unsafe { nil } {
 		c.set_declarations_callback(c.css_handle, text)
 	}
@@ -6080,7 +6083,10 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		if inline_style.is_updating() {
 			return
 		}
-		inline_style.set_declarations_from_text(value_or_empty)
+		inline_style.awaits_content_security_policy_check = value != none && !e.is_connected()
+		blocked := value != none && e.is_connected()
+			&& e.document().should_block_inline_content(&e, 'style-attribute', value_or_empty)
+		inline_style.set_declarations_from_text(if blocked { '' } else { value_or_empty })
 		e.set_needs_style_update(true)
 	} else if local_name == 'dir' || local_name == 'lang' {
 		is_dir := local_name == 'dir'
@@ -6527,6 +6533,16 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 pub fn (mut e Element) inserted() {
+	if mut inline_style := e.inline_style_ {
+		if inline_style.awaits_content_security_policy_check && e.is_connected() {
+			inline_style.awaits_content_security_policy_check = false
+			if value := e.get_attribute('style') {
+				if e.document().should_block_inline_content(&e, 'style-attribute', value) {
+					inline_style.set_declarations_from_text('')
+				}
+			}
+		}
+	}
 	mut owner_document := unsafe { &Document(e.document()) }
 	owner_document.note_element_local_name(e.local_name().to_lower())
 	owner_document.note_element_classes(e.classes)

@@ -680,7 +680,7 @@ fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSS
 	if bridge.css_handle != unsafe { nil } {
 		return unsafe { &CSSStyleProperties(bridge.css_handle) }
 	}
-	text := element.get_attribute('style') or { '' }
+	text := bridge.declarations_text
 	properties := parse_css_property_declaration_block_for_style_properties(ParsingParams{
 		document: element.document()
 	}, text)
@@ -858,7 +858,9 @@ pub fn (mut properties CSSStyleProperties) update_style_attribute() {
 		mut element := unsafe { &dom.Element(owner_node.element()) }
 		mut bridge := element.style_for_bindings()
 		bridge.is_updating_ = true
-		element.set_attribute_value('style', css_style_properties_serialized(properties))
+		bridge.awaits_content_security_policy_check = false
+		bridge.declarations_text = css_style_properties_serialized(properties)
+		element.set_attribute_value('style', bridge.declarations_text)
 		bridge.is_updating_ = false
 	}
 

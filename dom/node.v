@@ -2968,6 +2968,17 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 				})
 			}
 		}
+		// Preserve declarations already checked in this document, including CSSOM
+		// edits. A detached, unchecked source or an imported node is checked when
+		// its copy connects to the destination document.
+		if source_style := element.inline_style_ {
+			if !source_style.awaits_content_security_policy_check && voidptr(element.document()) == voidptr(document) {
+				if mut copy_style := element_copy.inline_style_ {
+					copy_style.set_declarations_from_text(source_style.declarations_text)
+					copy_style.awaits_content_security_policy_check = false
+				}
+			}
+		}
 		working_copy = element_copy.as_node()
 	} else if n.is_document() {
 		source_document := unsafe { &Document(n) }
