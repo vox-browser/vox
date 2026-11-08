@@ -1026,7 +1026,9 @@ pub fn (mut d DOMTokenList) add(tokens []string) ! {
 		// a. If token is the empty string, then throw a "SyntaxError" DOMException.
 		// b. If token contains any ASCII whitespace, then throw an "InvalidCharacterError" DOMException.
 		d.validate_token(token)!
-		// 2. For each token of tokens, append token to this's token set.
+	}
+	// 2. For each token of tokens, append token to this's token set.
+	for token in tokens {
 		append_to_ordered_set(mut d.token_set, token)
 	}
 	// 3. Run the update steps.
@@ -1040,7 +1042,9 @@ pub fn (mut d DOMTokenList) remove(tokens []string) ! {
 		// a. If token is the empty string, then throw a "SyntaxError" DOMException.
 		// b. If token contains any ASCII whitespace, then throw an "InvalidCharacterError" DOMException.
 		d.validate_token(token)!
-		// 2. For each token of tokens, remove token from this's token set.
+	}
+	// 2. For each token of tokens, remove token from this's token set.
+	for token in tokens {
 		remove_from_ordered_set(mut d.token_set, token)
 	}
 	// 3. Run the update steps.
