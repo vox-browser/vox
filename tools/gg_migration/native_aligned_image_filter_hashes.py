@@ -76,6 +76,23 @@ cases += [
          transform=[-1.1, 0, 0, .8, 42, 3], filters=[blur(.8), contrast, blur(2.5)], mode='src_in'),
     dict(name='fractional-source-color', source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
          p3=True, premul=False, filters=[contrast, opacity], mode='src_in', clip=True),
+    dict(name='alpha-premul-blur', alpha=.7, filters=[blur(2.5)]),
+    dict(name='alpha-unpremul-blur', alpha=.35, premul=False, filters=[blur(.8)], mode='multiply', clip=True),
+    dict(name='alpha-p3-prefiltered-shadow', alpha=.65, p3=True,
+         filters=[contrast, shadow(2.5)], mode='src_in'),
+    dict(name='alpha-unpremul-identity-shadow', alpha=.999, premul=False,
+         filters=[opacity, shadow(.01), contrast], mode='plus_lighter', clip=True),
+    dict(name='alpha-invalid-shadow-sourcegraphic', alpha=.43391985, premul=False,
+         filters=[contrast, shadow(-1)], mode='screen'),
+    dict(name='alpha-blur-color-chain', alpha=.5, p3=True, premul=False,
+         filters=[contrast, blur(.8), opacity, blur(2.5), contrast]),
+    dict(name='alpha-identity-color-chain', alpha=.65, p3=True,
+         filters=[contrast, blur(0), opacity, blur(.01), contrast], mode='src_in', clip=True),
+    dict(name='zero-alpha-clearing-blur', alpha=0, filters=[blur(.8)], mode='src_in', clip=True),
+    dict(name='fractional-alpha-blur', alpha=.65, source=[.25, .5, 6.25, 5], destination=[10.25, 12.5, 28, 18],
+         transform=[1.25, 0, 0, .75, 2, 4], p3=True, filters=[blur(1.2)], mode='src_in', clip=True),
+    dict(name='fractional-alpha-color', alpha=.7, source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, filters=[contrast, opacity], mode='src_in', clip=True),
 ]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
@@ -92,7 +109,7 @@ for case in cases:
             *[v for p, even in clips for v in [len(p)//12, int(even)]],
             m.MODES[case.get('mode', 'src_over')], 0, iw, ih, image_pitch, 2 if premul else 1,
             int(case.get('p3', False))]
-    floats = [*case.get('transform', m.IDENTITY), 1,
+    floats = [*case.get('transform', m.IDENTITY), case.get('alpha', 1),
               *case.get('destination', [10, 12, 7, 6]), *case.get('source', [0, 0, 7, 6]),
               *[v for p, _ in clips for v in p]]
     initial = bytearray(w*h*4) if case.get('empty') else m.background(w, h, 'image')
@@ -106,6 +123,9 @@ expected += ['6285cc5ff30cb0e8', '1edd441e708f831d', 'd8e5098c0b88d10e',
              '5adddb55e2daa5f2', '87142d4b2b61a427', '7e93e71b503d462d']
 if platform.system() == 'Linux':
     expected[20], expected[23], expected[24] = '068ae7ede00bb8bd', '007ae7e038db824f', '67db8f58ce335193'
+expected += ['d97a0d9cd1df7e4d', '5e4ace20b1be0022', '0adcdf1ab86d62a6', '75e9b0d52e0b770b',
+             'a13ffe5203eeb91e', '1c07622980ca4093', '502f0b408e262557', '62b1b888837ad40a',
+             '7947909c7171a8d1', 'e31ad4c4058362b9']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
