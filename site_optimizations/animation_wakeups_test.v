@@ -2,6 +2,7 @@ module main
 
 import css
 import dom
+import animations
 
 fn site_wakeup_fixture(extra string) &dom.Document {
 	mut document := parse_browser_navigation_document('<!doctype html><style>html,body{margin:0}@keyframes prc-Skeleton-shimmer---lzU{from{mask-position:200%}to{mask-position:0}}.prc-Skeleton-SkeletonBox-e93nW{width:100px;height:14px;mask-image:linear-gradient(75deg,black,transparent);animation:prc-Skeleton-shimmer---lzU 1s linear infinite}${extra}</style><div style="height:900px"></div><div id="skeleton" class="prc-Skeleton-SkeletonBox-e93nW"></div>', dom.URL{ value: 'https://github.com/vlang/v' }, none)
@@ -81,4 +82,42 @@ fn test_github_scroll_animation_waits_for_input_instead_of_wall_time() {
 	} else {
 		-1
 	}
+}
+
+fn test_github_completed_finite_effect_does_not_keep_waking_offscreen_skeletons() {
+	mut document := site_wakeup_fixture('@keyframes pulse-in{from{opacity:0.2}to{opacity:1}}body{animation:pulse-in 1s both}')
+	defer { document.finalize() }
+	document.update_animations_and_send_events(750)
+	document.update_layout(.debugging)
+	assert site_animation_wakeup_delay(document) == 16
+	document.update_animations_and_send_events(1500)
+	document.update_layout(.debugging)
+	record := css.document_css_animations(document).filter(it.name == 'pulse-in')[0]
+	animation := unsafe { &css.CSSAnimation(record.handle) }
+	assert animation.effect_.current_phase == .after
+	assert record.play_state == 'running'
+	assert site_animation_wakeup_delay(document) == if disable_github_animation_wakeup_throttling { 16 } else { -1 }
+	// A script seek can make the visible effect active again.
+	assert css.document_css_animation_set_current_time(document, record.handle, 250)
+	document.update_animations_and_send_events(1500)
+	document.update_layout(.debugging)
+	assert site_animation_wakeup_delay(document) == 16
+}
+
+fn test_github_empty_animation_target_registry_keeps_relevant_effects_conservative() {
+	mut document := site_wakeup_fixture('')
+	defer { document.finalize() }
+	target := document.get_element_by_id('skeleton')?
+	_ = animations.Animatable.new(target)
+	hook := document.animations_hook_?
+	assert hook.effect_targets(hook.target).len > 0
+	assert site_animation_wakeup_delay(document) == if disable_github_animation_wakeup_throttling { 16 } else { -1 }
+	document.set_animations_hook(dom.DocumentAnimationsHook{
+		target: hook.target
+		effect_targets: hook.effect_targets
+		calculate_get_animations: fn (_ voidptr, _ &dom.Node) ![]&dom.Animation {
+			return [&dom.Animation{ concrete_kind_: .web_animation }]
+		}
+	})
+	assert site_animation_wakeup_delay(document) == 16
 }

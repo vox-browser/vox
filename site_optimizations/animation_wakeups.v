@@ -10,8 +10,16 @@ const disable_github_animation_wakeup_throttling = os.getenv('VOX_DISABLE_GITHUB
 const github_animation_wakeup_diagnostics = os.getenv('VOX_GITHUB_ANIMATION_WAKEUP_DIAGNOSTICS') != ''
 
 fn (app &BrowserApp) site_animation_wakeup_delay_for_frame() int {
-	if app.document == unsafe { nil } || app.paint_commands_have_backdrop_filter { return 16 }
+	if app.document == unsafe { nil } { return 16 }
+	if app.paint_commands_have_backdrop_filter { return site_animation_wakeup_fallback('backdrop filter') }
 	return site_animation_wakeup_delay(app.document)
+}
+
+fn site_animation_wakeup_fallback(reason string) int {
+	if github_animation_wakeup_diagnostics {
+		eprintln('Vox site animation wakeup: keep_ms=16 reason=${reason}')
+	}
+	return 16
 }
 
 // This controls native display grants, never animation sampling or clocks.
@@ -24,10 +32,22 @@ fn site_animation_wakeup_delay(document &dom.Document) int {
 	}
 	if hook := document.animations_hook_ {
 		if hook.effect_targets != unsafe { nil } && hook.effect_targets(hook.target).len > 0 {
-			return 16
+			// The target registry also retains canceled animations so their old
+			// style overlays can be cleared. Only relevant effects need grants.
+			if hook.calculate_get_animations == unsafe { nil } {
+				return site_animation_wakeup_fallback('unknown Web Animation effects')
+			}
+			relevant := hook.calculate_get_animations(hook.target, document.as_node()) or {
+				return site_animation_wakeup_fallback('unavailable Web Animation effects')
+			}
+			for animation in relevant {
+				if animation.concrete_kind_ == .web_animation {
+					return site_animation_wakeup_fallback('Web Animation effect')
+				}
+			}
 		}
 	}
-	if !document.layout_is_up_to_date() { return 16 }
+	if !document.layout_is_up_to_date() { return site_animation_wakeup_fallback('pending layout') }
 	// Client rectangles consume the current scroll snapshot and visual contexts.
 	// A scroll can leave both stale even though layout geometry is still valid.
 	mut current_document := unsafe { &dom.Document(document) }
@@ -39,14 +59,22 @@ fn site_animation_wakeup_delay(document &dom.Document) int {
 	mut delay := -1
 	for record in records {
 		if record.play_state != 'running' { continue }
-		if record.is_transition { return 16 }
+		if record.is_transition { return site_animation_wakeup_fallback('CSS transition') }
 		animation := unsafe { &css.CSSAnimation(record.handle) }
 		if timeline := animation.timeline_ {
 			// A scroll timeline advances with scrolling or geometry, both of
 			// which already request a display grant. Wall time cannot advance it.
 			if timeline.kind == .scroll { continue }
 		}
-		if !site_offscreen_skeleton_animation(document, record, animation) { return 16 }
+		// CSS retains completed effects in its associated animation list. Their
+		// configured play state remains running, but their final phase cannot
+		// change with forward wall time. Sampling and event delivery stay owned
+		// by the engine; script seeks and style changes still request rendering.
+		if animation.effect_ != unsafe { nil } && animation.effect_.current_phase == .after
+			&& math.is_finite(animation.effect_.iteration_count) { continue }
+		if !site_offscreen_skeleton_animation(document, record, animation) {
+			return site_animation_wakeup_fallback('unreviewed CSS effect: ${record.name}')
+		}
 		mut observed := false
 		for event_name in ['animationiteration', 'webkitAnimationIteration'] {
 			if record.element.as_node().has_inclusive_ancestor_with_event_listener(event_name) {
