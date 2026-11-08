@@ -46,6 +46,7 @@ fn (store &IDBObjectStore) load() !&ObjectStoreData {
 }
 
 pub fn (store &IDBObjectStore) name() string {
+	if store.transaction.state == .finished { return store.name_ }
 	if data := store.store_ {
 		return data.name
 	}
@@ -328,8 +329,9 @@ fn records_in_range(records []ObjectStoreRecord, range IDBKeyRange, direction ID
 }
 
 pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, parameters IDBIndexParameters) !IDBIndex {
-	store.transaction.require_versionchange_active()!
 	mut data := store.load()!
+	if store.transaction.mode != .versionchange { return error('InvalidStateError: operation requires a versionchange transaction') }
+	store.transaction.require_active()!
 	if name in data.indexes {
 		return error('ConstraintError: index already exists')
 	}

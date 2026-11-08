@@ -572,7 +572,7 @@ pub fn (mut log MutationLog) note_object_store_renamed(old_name string) {
 }
 
 pub fn (mut log MutationLog) note_index_created(index &IndexData) {
-	log.entries << MutationEntry{ kind: .index_created, index_name: index.name }
+	log.entries << MutationEntry{ kind: .index_created, index_name: index.name, index: index }
 }
 
 pub fn (mut log MutationLog) note_index_deleted(index &IndexData) {
@@ -703,6 +703,8 @@ fn (mut log MutationLog) revert_entries(mut store ObjectStoreData, position uint
 		entry := log.entries[i]
 		match entry.kind {
 			.object_store_created {
+				store.deleted = true
+				for _, mut index in store.indexes { index.deleted = true }
 				if database_value := database {
 					mut mutable_database := unsafe { &DatabaseData(database_value) }
 					mutable_database.stores.delete(store.name)
@@ -732,6 +734,7 @@ fn (mut log MutationLog) revert_entries(mut store ObjectStoreData, position uint
 				}
 			}
 			.index_created {
+				if mut index := entry.index { index.deleted = true }
 				store.indexes.delete(entry.index_name)
 			}
 			.index_deleted {

@@ -43,6 +43,7 @@ fn (index &IDBIndex) load() !(&ObjectStoreData, &IndexData) {
 }
 
 pub fn (index &IDBIndex) name() string {
+	if index.transaction.state == .finished { return index.name_ }
 	if data := index.index_ {
 		return data.name
 	}
