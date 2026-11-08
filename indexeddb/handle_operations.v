@@ -214,6 +214,10 @@ pub fn (mut transaction IDBTransaction) revert_all_mutations() {
 		log.revert(mut store, transaction.database.data, transaction.database)
 	}
 	transaction.database.data.version = transaction.original_version
+	if transaction.mode == .versionchange {
+		transaction.scope_names = transaction.database.data.stores.keys()
+		sort_name_list(mut transaction.scope_names)
+	}
 }
 
 pub fn (mut transaction IDBTransaction) discard_mutation_logs() {

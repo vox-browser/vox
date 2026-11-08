@@ -638,7 +638,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return runtime.indexed_db_request(mut binding, store.count_async(range)!, none, receiver)
 			}
 			if method == 'get' {
-				store.transaction.require_active()!
+				store.require_cursor_source()!
 				key := runtime.indexed_db_key(args[2])!
 				request := store.get_async(indexeddb.IDBKeyRange.only(key)!)!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)

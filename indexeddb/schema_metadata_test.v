@@ -11,6 +11,7 @@ fn test_aborting_created_schema_marks_retained_store_and_index_handles_deleted()
 	mut deleted := store.create_index('deleted', 'field', IDBIndexParameters{})!
 	store.delete_index('deleted')!
 	tx.abort('')!
+	assert tx.object_store_names() == []string{}
 	mut handles := [index, deleted]
 	for mut handle in handles {
 		if _ := handle.get_async(IDBKeyRange.unbounded(), false) { assert false }
