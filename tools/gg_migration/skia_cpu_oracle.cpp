@@ -62,6 +62,13 @@ ORACLE void oracle_difference_clip(uint8_t* pixels, int const* v, float const* f
     surface->readPixels(info, pixels, v[0]*4, 0, 0);
 }
 
+#ifdef CPURASTER_FREETYPE_ORACLE
+// Keep the original canvas calls while selecting the FreeType face factory
+// used on Linux. Include CoreText's declaration before replacing its calls.
+#include "include/ports/SkFontMgr_mac_ct.h"
+#include "include/ports/SkFontMgr_empty.h"
+#define SkFontMgr_New_CoreText(...) SkFontMgr_New_Custom_Empty()
+#endif
 #include "../../skia/shadow_raster.cpp"
 
 static VoxShadowRect oracle_shadow_rect(float const* f) {

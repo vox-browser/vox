@@ -53,11 +53,13 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 			return false
 		}
 	}
-	// SkTypeface_Mac::MakeFromStream() only opens the first face.
-	if run.face_index != 0 {
-		return false
+	face := $if linux || cpuraster_freetype ? {
+		open_freetype_face(run.font_path, run.face_index) or { return false }
+	} $else {
+		// SkTypeface_Mac::MakeFromStream() only opens the first face.
+		if run.face_index != 0 { return false }
+		open_glyph_face(run.font_path) or { return false }
 	}
-	face := open_glyph_face(run.font_path) or { return false }
 	defer {
 		face.release()
 	}
@@ -102,7 +104,7 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 	strike.snap_y = run.baseline_snap && sk_relax(position_matrix.ky) == 0
 	strike.snap_x = run.baseline_snap && !strike.snap_y && sk_relax(position_matrix.sx) == 0
 	strike.smoothing = run.smoothing
-	$if macos {
+	$if macos && !cpuraster_freetype ? {
 		behavior := int(C.cpuraster_ct_smoothing_behavior())
 		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
 			luminance := paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
@@ -719,12 +721,17 @@ fn copysign_f32(magnitude f32, sign f32) f32 {
 // the rec of a mask strike: the text size CoreText draws at (s.y) and the
 // remaining transform sA, as SkScalerContext_Mac turns it into fTransform.
 struct GlyphStrikeMatrices {
+	text_size_x f32
 	text_size  f32
 	remaining  SkAffine
 	invertible bool
 }
 
 fn glyph_strike_matrices(size f32, device SkAffine) GlyphStrikeMatrices {
+	return glyph_strike_matrices_full(size, device, false)
+}
+
+fn glyph_strike_matrices_full(size f32, device SkAffine, full bool) GlyphStrikeMatrices {
 	// MakeRecAndEffects(): the device matrix's 2x2, relaxed.
 	mask := device.type_mask()
 	mut post := SkAffine{}
@@ -773,8 +780,9 @@ fn glyph_strike_matrices(size f32, device SkAffine) GlyphStrikeMatrices {
 		}
 	}
 	y_scale := f32(math.abs(ga.sy))
+	x_scale := if full { f32(math.abs(ga.sx)) } else { y_scale }
 	mut remaining := SkAffine{}
-	if !skewed_or_flipped && a.sx == a.sy {
+	if !skewed_or_flipped && (full || a.sx == a.sy) {
 		remaining = SkAffine{}
 	} else if !skewed_or_flipped {
 		remaining = SkAffine{
@@ -782,18 +790,20 @@ fn glyph_strike_matrices(size f32, device SkAffine) GlyphStrikeMatrices {
 		}
 	} else {
 		inv := f32(1) / y_scale
+		inv_x := f32(1) / x_scale
 		remaining = a
-		if inv != 1 {
+		if inv != 1 || inv_x != 1 {
 			remaining = SkAffine{
 				...a
-				sx: a.sx * inv
-				ky: a.ky * inv
+				sx: a.sx * inv_x
+				ky: a.ky * inv_x
 				kx: a.kx * inv
 				sy: a.sy * inv
 			}
 		}
 	}
 	return GlyphStrikeMatrices{
+		text_size_x: x_scale
 		text_size:  y_scale
 		remaining:  remaining
 		invertible: true
@@ -833,6 +843,7 @@ mut:
 }
 
 fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?GlyphStrike {
+	$if linux || cpuraster_freetype ? { return new_freetype_strike(face, size, device, luminance) }
 	m := glyph_strike_matrices(size, device)
 	if !m.invertible {
 		// A singular matrix zeroes fTransform: every glyph is empty.
@@ -867,6 +878,7 @@ fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
 // generateMetrics() and generateImage().
 fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
+	$if linux || cpuraster_freetype ? { return freetype_make_glyph(s, id, sub_x_field, sub_y_field) }
 	g := s.glyph_bounds(id, sub_x_field, sub_y_field)
 	if g.width == 0 || g.height == 0 || g.width >= glyph_max_width {
 		return g
@@ -880,7 +892,7 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 	context_height := next_pow2(g_height)
 	x := f32(-g_left) + sub_x
 	y := f32(g_top + g_height) - sub_y
-	cg := $if macos {
+	cg := $if macos && !cpuraster_freetype ? {
 		draw_glyph_mode(s.font, id, s.transform, s.invertible, f64(x), f64(y), context_width,
 			context_height, g_width, g_height, s.color, s.foreground, s.smoothing) or { return StrikeGlyph{} }
 	} $else {
@@ -923,6 +935,7 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 // generateMetrics()'s bounds, rounded out, outset and saturated; zero for
 // an empty glyph.
 fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
+	$if linux || cpuraster_freetype ? { return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field) }
 	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
 	// SkFixedToFloat() of the subpixel field.
 	sub_x := f32(sub_x_field) / f32(4)

@@ -25,15 +25,20 @@ files=[*sorted(root.glob('cpuraster/*.[vh]')),*sorted(root.glob('gfxfont/*.[vh]'
        root/'platform/native_state.h',root/'tools/gg_migration/cpu_raster_check.v',
        root/'tools/gg_migration/skia_cpu_oracle.cpp',root/'tools/gg_migration/test_cpu_raster.sh',
        compiler,skia/'lib/libskia.dylib']
+if __import__('os').environ.get('CPU_RASTER_FREETYPE') == '1':
+    files += list(skia.glob('lib/libfreetype*.dylib'))
 Path(sys.argv[4]).write_text(json.dumps({str(p.resolve()):hashlib.sha256(p.read_bytes()).hexdigest() for p in files},indent=2)+'\n')
 PY
-clang++ -std=c++20 -O2 -fno-rtti -dynamiclib \
+set --
+if [ "${CPU_RASTER_FREETYPE:-0}" = 1 ]; then set -- -DCPURASTER_FREETYPE_ORACLE; fi
+clang++ -std=c++20 -O2 -fno-rtti -dynamiclib "$@" \
     -I"$skia_root/include/skia" -I"$skia_root/include" \
     "$repo_dir/tools/gg_migration/skia_cpu_oracle.cpp" -L"$skia_root/lib" -lskia \
     -framework CoreFoundation -framework CoreGraphics -framework CoreText \
     -Wl,-rpath,"$skia_root/lib" -o "$output_dir/skia_cpu_oracle.dylib"
 set --
 if [ "${CPU_RASTER_TEST_PROD:-0}" = 1 ]; then set -- -prod -gc none; fi
+if [ "${CPU_RASTER_FREETYPE:-0}" = 1 ]; then set -- "$@" -d cpuraster_freetype; fi
 "$v_compiler" -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
     -o "$output_dir/cpu_raster_check" "$repo_dir/tools/gg_migration/cpu_raster_check.v"
 "$output_dir/cpu_raster_check" "$output_dir/skia_cpu_oracle.dylib" "$count" "$seed"
