@@ -127,7 +127,7 @@ def production_input_path(relative):
     # when their names mention tests: some host environment-driven checks.
     test_tool = relative.startswith('tools/') and (
         (path.stem.endswith('_test') and path.suffix in {'.py', '.c', '.cpp', '.m', '.mm'})
-        or (path.name.startswith('test_') and path.suffix == '.py'))
+        or (path.name.startswith('test_') and path.suffix in {'.py', '.c', '.cpp', '.m', '.mm'}))
     return not (relative.startswith(('docs/', 'Tests/'))
                 or relative.endswith('_test.v') or test_tool
                 or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})

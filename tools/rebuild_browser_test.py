@@ -258,6 +258,8 @@ class ProductionBuildTests(unittest.TestCase):
                 'tools/test_native_shadow.py',
                 'tools/native_shadow_test.cpp',
                 'tools/native_shadow_test.mm',
+                'tools/test_windows_runtime_guard.c',
+                'tools/test_native_shadow.cpp',
             ]
             runtime_inputs = [
                 'main.v', 'layout/paint.v', 'layout/test_helpers.v',

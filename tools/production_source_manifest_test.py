@@ -64,7 +64,21 @@ class ProductionSourceManifestTests(unittest.TestCase):
             (root / 'browser_test.v').write_text('test')
             (root / 'docs').mkdir()
             (root / 'docs/report.json').write_text('{}')
+            (root / 'tools').mkdir()
+            (root / 'tools/test_windows_runtime_guard.c').write_text('native test helper')
             manifest.validate_inventory(root, inventory)
+
+    def test_native_test_headers_remain_production_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / 'repo'
+            self.fixture(root)
+            (root / 'tools').mkdir()
+            header = root / 'tools/test_runtime.h'
+            header.write_text('int runtime;')
+            inventory = manifest.begin(root)
+            header.write_text('int changed;')
+            with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                manifest.validate_inventory(root, inventory)
 
     def test_partial_or_malformed_compiler_manifests_fail_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
