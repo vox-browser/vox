@@ -5,7 +5,7 @@ import cpuraster
 $if linux {
 	#flag @DIR/../Build/linux/native/skia.a
 } $else $if windows {
-	#flag @DIR/../Build/deps/windows/native/skia.a
+	#flag -Wl,@DIR/../Build/deps/windows/native/skia.a,-lstdc++
 } $else {
 	#flag @DIR/shadow_raster.o
 }
@@ -84,7 +84,7 @@ pub fn rasterize_shadow(width int, height int, command ShadowCommand) ![]u8 {
 	if width <= 0 || height <= 0 {
 		return error('Invalid shadow surface dimensions')
 	}
-	if command.kind == 0 {
+	if command.kind in [0, 1] {
 		mut cpu_clips := []cpuraster.Path{}
 		for clip in command.clips {
 			m := clip.transform
@@ -93,9 +93,15 @@ pub fn rasterize_shadow(width int, height int, command ShadowCommand) ![]u8 {
 				cpuraster.canvas_path(clip.path.segments, clip.path.even_odd).transform(matrix)
 			} else { cpu_shadow_rect(clip.shape).clip_path(matrix) }
 		}
-		if result := cpuraster.rasterize_outer_shadow(width, height, cpu_shadow_rect(command.outer),
-			cpu_shadow_rect(command.content), command.transform, command.color, command.blur, cpu_clips) {
-			return result
+		if command.kind == 0 {
+			if result := cpuraster.rasterize_outer_shadow(width, height, cpu_shadow_rect(command.outer),
+				cpu_shadow_rect(command.content), command.transform, command.color, command.blur, cpu_clips) {
+				return result
+			}
+		} else {
+			if result := cpuraster.rasterize_inner_shadow(width, height, cpu_shadow_rect(command.outer),
+				cpu_shadow_rect(command.inner), cpu_shadow_rect(command.content), command.transform,
+				command.color, command.blur, cpu_clips) { return result }
 		}
 	}
 	mut pixels := []u8{len: width * height * 4}

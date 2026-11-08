@@ -1396,6 +1396,10 @@ fn main() {
 		check_portable_outer_shadow_cases(count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'inner-shadows' {
+		check_portable_inner_shadow_cases(count)
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'rrects' {
 		check_rounded_rect_cases(count)
 		return
@@ -3176,6 +3180,49 @@ fn check_portable_outer_shadow_cases(count int) {
 		}
 	}
 	println('${count} portable outer shadows exact (${drawn} painted)')
+}
+
+fn check_portable_inner_shadow_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OracleOuterShadow(oracle_symbol(library, 'oracle_inner_shadow')) }
+	path_oracle := unsafe { OracleRoundedRect(oracle_symbol(library, 'oracle_inner_shadow_path')) }
+	mut painted := 0
+	for trial in 0 .. count {
+		w := rand.intn(80) or { 0 } + 1
+		h := rand.intn(80) or { 0 } + 1
+		inner := random_shadow_rrect()
+		pad := f32(rand.f64()*20 + 1)
+		outer := [inner[0] - pad, inner[1] - pad, inner[2] + pad*2, inner[3] + pad*2,
+			f32(0), 0, 0, 0, 0, 0, 0, 0]
+		content := if trial % 2 == 0 { inner } else { random_shadow_rrect() }
+		t := if trial % 3 == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
+		blur := if trial % 7 == 0 { f32(0) } else { f32(rand.f64()*20) }
+		color := random_composite_color()
+		mut floats := outer.clone()
+		floats << inner
+		floats << content
+		floats << t[..]
+		floats << blur
+		values := [i32(w), h, i32(color)]
+		mut expected := []u8{len: w*h*4}
+		if oracle(expected.data, values.data, floats.data) == 0 { panic('native inner shadow failed') }
+		if expected.any(it != 0) { painted++ }
+		actual := cpuraster.rasterize_inner_shadow(w, h, shadow_rrect_from_values(outer),
+			shadow_rrect_from_values(inner), shadow_rrect_from_values(content), t, color, blur, []) or { panic('inner shadow declined ${trial}') }
+		if actual != expected {
+			mut info := []i32{len: 67}
+			mut out := []f32{len: 192}
+			path_oracle(floats.data, info.data, out.data)
+			eprintln('difference path: ${info[..3 + int(info[0])]}, ${out[..int(info[1])*2 + 4]}')
+			for i in 0 .. actual.len { if actual[i] != expected[i] {
+				eprintln('inner shadow ${trial}: (${i % (w*4) / 4}, ${i / (w*4)}) channel ${i%4} ${actual[i]} != ${expected[i]}, values ${values}, floats ${floats}')
+				break
+			} }
+			save_failure([]u8{len: actual.len}, expected, actual, '${values}, ${floats}')
+			exit(1)
+		}
+	}
+	println('${count} portable inner shadows exact (${painted} painted)')
 }
 
 fn check_rounded_rect_cases(count int) {

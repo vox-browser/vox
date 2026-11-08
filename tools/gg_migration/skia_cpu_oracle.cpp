@@ -91,6 +91,33 @@ ORACLE int oracle_outer_shadow(uint8_t* pixels, int const* v, float const* f) {
     return vox_skia_shadow(pixels, v[0], v[1], v[0]*4, &command);
 }
 
+ORACLE int oracle_inner_shadow(uint8_t* pixels, int const* v, float const* f) {
+    VoxShadowCommand command{};
+    command.kind = 1;
+    command.color = uint32_t(v[2]);
+    command.outer = oracle_shadow_rect(f);
+    command.inner = oracle_shadow_rect(f + 12);
+    command.content = oracle_shadow_rect(f + 24);
+    for (int i = 0; i < 6; ++i) command.transform[i] = f[36 + i];
+    command.blur = f[42];
+    return vox_skia_shadow(pixels, v[0], v[1], v[0]*4, &command);
+}
+
+ORACLE void oracle_inner_shadow_path(float const* f, int* info, float* out) {
+    SkPath path;
+    Op(SkPath::RRect(shadow_rrect(oracle_shadow_rect(f))),
+       SkPath::RRect(shadow_rrect(oracle_shadow_rect(f + 12))),
+       SkPathOp::kDifference_SkPathOp, &path);
+    uint8_t verbs[64]; SkPoint points[64];
+    info[0] = path.getVerbs({verbs, 64});
+    info[1] = path.getPoints({points, 64});
+    info[2] = int(path.getFillType());
+    for (int i = 0; i < info[0]; ++i) info[3+i] = verbs[i];
+    for (int i = 0; i < info[1]; ++i) { out[i*2] = points[i].x(); out[i*2+1] = points[i].y(); }
+    int n = 0;
+    for (auto weight : path.conicWeights()) out[info[1]*2 + n++] = weight;
+}
+
 // skia/canvas_raster.cpp: vox_skia_canvas_read_pixels().
 static bool read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
 {
