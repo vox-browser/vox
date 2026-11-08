@@ -21,10 +21,26 @@ fn (app &BrowserApp) site_stationary_raster_inputs() ?[2]u64 {
 }
 
 fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
-	mut content := srk_int(u64(0xcbf29ce484222325), app.paint_commands.len)
+	if app.ctx != unsafe { nil } && app.ctx.native_rendering && app.page_zoom == 1
+		&& !app.paint_canvas_culling_disabled {
+		return app.github_static_raster_inputs_in_canvas(f64(app.page_top()),
+			f64(app.ctx.width), f64(app.ctx.height), true)
+	}
+	return app.github_static_raster_inputs_in_canvas(0, 0, 0, false)
+}
+
+fn (app &BrowserApp) github_static_raster_inputs_in_canvas(page_y f64,
+	width f64, height f64, cull bool) ?[2]u64 {
+	mut content := u64(0xcbf29ce484222325)
 	mut resources := srk_bool(u64(0x9e3779b97f4a7c15), adblock.is_enabled())
+	mut count := 0
+	// Apply exactly the renderer's conservative scope-aware culling. Filter
+	// and mask inputs remain relevant outside the viewport; unknown commands
+	// still fall through. Unpainted deferred images need no pixel read.
+	mut culling := PaintCanvasCulling{enabled: cull && width > 0 && height > 0}
 	for index in 0 .. app.paint_commands.len {
 		command := &app.paint_commands[index]
+		if culling.skip(command, 0, page_y, width, height) { continue }
 		if command.kind !in ['fill_rect', 'fill_rounded_rect', 'stroke_rounded_rect',
 			'fill_ellipse', 'stroke_ellipse', 'fill_polygon', 'draw_line', 'draw_text',
 			'draw_svg_path', 'fill_gradient', 'draw_border', 'draw_image', 'draw_replaced_image', 'draw_background_image',
@@ -58,7 +74,11 @@ fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
 				if clip.is_path || clip.is_svg_mask || clip.is_svg_content_mask { return none }
 			}
 		}
-		content = srk_mix(content, scroll_raster_command_hash(command, 0))
+		count++
+		// Extents beyond the canvas do not change a uniform viewport fill.
+		// The existing helper rejects clipped, rounded and transformed edges.
+		content = srk_mix(content, scroll_raster_command_hash_ex(command, 0,
+			culling.enabled && scroll_raster_viewport_filling_solid(command, width, height - page_y)))
 		if command.svg_data != unsafe { nil } {
 			path := command.svg_data
 			if path.svg_gradient_data != none || path.fill_pattern != none || path.stroke_pattern != none {
@@ -84,6 +104,9 @@ fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
 			}
 		}
 		if bitmap := command.replaced_image_bitmap {
+			// Recording can retain a size-only bitmap before its first draw.
+			// Keep the revision key until decoded bytes can identify its pixels.
+			if !bitmap.has_pixels() || bitmap.data.len == 0 { return none }
 			resources = srk_int(resources, bitmap.width)
 			resources = srk_int(resources, bitmap.height)
 			resources = srk_int(resources, bitmap.pitch)
@@ -105,5 +128,5 @@ fn (app &BrowserApp) github_static_raster_inputs() ?[2]u64 {
 			resources = srk_int(resources, app.background_image_scope_ids[address] or { -1 })
 		}
 	}
-	return [resources, content]!
+	return [resources, srk_int(content, count)]!
 }

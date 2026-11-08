@@ -2,6 +2,7 @@ module main
 
 import dom
 import layout
+import painting
 
 fn test_github_raster_inputs_compare_paint_values_across_recordings() {
 	mut app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'fill_rect',width:20,height:10,color:'red'}]}
@@ -48,6 +49,22 @@ fn test_github_raster_inputs_include_response_bytes_and_decode_availability() {
 	assert app.github_static_raster_inputs()? != before
 }
 
+fn test_github_raster_inputs_keep_empty_and_deferred_bitmaps_on_the_revision_key() {
+	mut bitmap := &dom.Bitmap_{}
+	app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'draw_replaced_image',replaced_image_bitmap:bitmap}]}
+	assert app.github_static_raster_inputs() == none
+	bitmap.data = [u8(255),0,0,255]
+	assert app.github_static_raster_inputs() != none
+	deferred := dom.Bitmap_.create_deferred(1,1,fn (mut image dom.Bitmap_) {
+		image.data = [u8(255),0,0,255]
+	})
+	deferred_app := BrowserApp{paint_commands:[layout.PaintCommand{kind:'draw_replaced_image',replaced_image_bitmap:deferred}]}
+	assert deferred_app.github_static_raster_inputs() == none
+	assert !deferred.has_pixels()
+	deferred.ensure_pixels()
+	assert deferred_app.github_static_raster_inputs() != none
+}
+
 fn test_github_raster_inputs_keep_live_and_unknown_content_on_the_existing_key() {
 	for kind in ['draw_canvas','draw_video','draw_nested_document','unknown-command'] {
 		app := BrowserApp{paint_commands:[layout.PaintCommand{kind:kind}]}
@@ -75,4 +92,42 @@ fn test_github_raster_inputs_include_border_and_shadow_geometry() {
 		app.paint_commands[0].blur = 4
 		assert app.github_static_raster_inputs()? != before, kind
 	}
+}
+
+fn test_github_raster_inputs_ignore_only_leaves_the_renderer_culls() {
+	mut app := BrowserApp{paint_commands:[
+		layout.PaintCommand{kind:'fill_rect',width:100,height:2000,color:'white'},
+		layout.PaintCommand{kind:'fill_rect',x:10,y:500,width:20,height:20,color:'red'},
+		layout.PaintCommand{kind:'draw_replaced_image',x:10,y:600,width:20,height:20,
+			image_paintable:&painting.ImagePaintable{image_rect:painting.Rect{10,600,20,20}},
+			replaced_image_bitmap:&dom.Bitmap_{}},
+	]}
+	assert app.github_static_raster_inputs() == none
+	before := app.github_static_raster_inputs_in_canvas(0,100,100,true)?
+	app.paint_commands[0].height = 3000
+	app.paint_commands[1].color = 'blue'
+	app.paint_commands << layout.PaintCommand{kind:'fill_rect',x:10,y:900,width:20,height:20,color:'green'}
+	assert app.github_static_raster_inputs_in_canvas(0,100,100,true)? == before
+	app.paint_commands[1].y = 20
+	assert app.github_static_raster_inputs_in_canvas(0,100,100,true)? != before
+	app.paint_commands[1].y = 500
+	app.paint_commands[2].y = 30
+	assert app.github_static_raster_inputs_in_canvas(0,100,100,true)? == before
+	app.paint_commands[2].image_paintable = &painting.ImagePaintable{image_rect:painting.Rect{10,30,20,20}}
+	assert app.github_static_raster_inputs_in_canvas(0,100,100,true) == none
+	app.paint_commands[2].y = 600
+	app.paint_commands[2].image_paintable = &painting.ImagePaintable{image_rect:painting.Rect{10,600,20,20}}
+	assert app.github_static_raster_inputs_in_canvas(0,100,100,false) == none
+}
+
+fn test_github_raster_inputs_preserve_offscreen_filter_inputs_and_unknown_commands() {
+	for begin in ['begin_css_filter_layer','begin_svg_mask_layer'] {
+		app := BrowserApp{paint_commands:[
+			layout.PaintCommand{kind:begin},
+			layout.PaintCommand{kind:'draw_replaced_image',x:10,y:600,width:20,height:20,replaced_image_bitmap:&dom.Bitmap_{}},
+		]}
+		assert app.github_static_raster_inputs_in_canvas(0,100,100,true) == none, begin
+	}
+	unknown := BrowserApp{paint_commands:[layout.PaintCommand{kind:'future-command',y:600,width:20,height:20}]}
+	assert unknown.github_static_raster_inputs_in_canvas(0,100,100,true) == none
 }
