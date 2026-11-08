@@ -11,7 +11,7 @@ Vox compiles in 2 seconds on M5 Max with `v .`!
 With the native dependencies installed, use a current V compiler:
 
 ```sh
-v -b fastc -enable-globals .
+v -enable-globals .
 ```
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
