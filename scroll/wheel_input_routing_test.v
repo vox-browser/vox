@@ -384,3 +384,46 @@ fn test_pending_script_mutation_rejects_wheel_hit_reuse_and_updates_default_scro
 	assert app.scroll_y == 3.75
 	assert !runtime.has_pending_document_state()
 }
+
+fn test_frame_replayed_wheel_adopts_script_geometry_without_duplicate_shell_layout() {
+	$if !darwin { return }
+	for cancelled in [false, true] {
+		mut owner, mut document := wheel_routing_test_document('https://wheel-frame-task.example.test/')!
+		mut runtime := browserjs.Runtime.create()
+		defer { runtime.close(); document.finalize() }
+		wheel_routing_test_initialize(mut runtime, document)!
+		mut app := wheel_routing_test_app(owner, document, runtime)
+		app.poll_javascript_tasks()
+		runtime.evaluate_host('routeScroller.style.overflow="visible";routeVideo.onwheel=e=>{${if cancelled { 'e.preventDefault();' } else { '' }}globalThis.frameWheelWidth=routeScroller.getBoundingClientRect().width};0')!
+		runtime.mark_document_state_dirty()
+		generation := document.layout_pass_generation
+		paint_generation := app.paint_generation
+		app.frame_aligned_wheel = DeferredPageInput{
+			document: voidptr(document)
+			generation: app.navigation_generation
+			event: gg.Event{
+				typ: .mouse_scroll
+				mouse_x: 25.25
+				mouse_y: f32(20.125 + app.page_top())
+				scroll_y: -1
+				window_height: app.viewport_height + app.chrome_height()
+			}
+		}
+		app.prepare_frame_page_input()
+		assert app.frame_preparation_depth == 1
+		assert app.frame_aligned_wheel == none && app.deferred_page_input.len == 0
+		assert runtime.evaluate_host('frameWheelWidth')! == '240'
+		assert document.get_element_by_id('wheel-scroller')?.el_scroll_offset().y() == 0
+		assert app.scroll_y == if cancelled { f64(0) } else { f64(42) }
+		if !disable_frame_task_layout_coalescing {
+			assert document.layout_pass_generation == generation + 1
+			assert app.paint_generation == paint_generation
+		}
+		app.finish_frame_preparation()
+		assert document.layout_is_up_to_date()
+		assert !app.javascript_tasks_have_unadopted_paint()
+		assert app.frame_preparation_depth == 0
+		assert app.paint_generation > paint_generation
+		assert app.js_messages == []
+	}
+}

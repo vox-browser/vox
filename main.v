@@ -7590,8 +7590,7 @@ fn (mut app BrowserApp) draw() {
 	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
-	app.queue_frame_aligned_wheel_for_replay()
-	app.poll_deferred_page_input()
+	app.prepare_frame_page_input()
 	app.poll_browser_history_page()
 	app.poll_browser_new_tab_page()
 	// Profile wheels enter like physical input, outside the frame's navigation
@@ -7601,7 +7600,6 @@ fn (mut app BrowserApp) draw() {
 	defer { navigation_work.finish() }
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(app.document_scripting_enabled_for_heap())
 	defer { heap_scope.finish() }
-	app.begin_frame_preparation()
 	app.sync_window_activity()
 	app.poll_native_navigation()
 	app.scroll_profile_mark('input')

@@ -9,6 +9,17 @@ const frame_task_layout_diagnostics = os.getenv('VOX_FRAME_TASK_LAYOUT_DIAGNOSTI
 
 __global frame_task_layout_reported bool
 
+// Replayed input belongs to the frame's preparation too. A wheel can apply
+// pending script effects after its synchronous hit-test layout. Starting this
+// boundary later forced a second shell layout and paint recording immediately,
+// ahead of the frame's normal script/resource flush. Event geometry queries
+// retain their synchronous Document update boundary.
+fn (mut app BrowserApp) prepare_frame_page_input() {
+	app.begin_frame_preparation()
+	app.queue_frame_aligned_wheel_for_replay()
+	app.poll_deferred_page_input()
+}
+
 // A frame can poll script effects before subsequent resource callbacks mutate
 // the same document. Preserve the shell's scale and cosmetic-filter work now,
 // then let finish_frame_preparation flush the final document. DOM geometry and
