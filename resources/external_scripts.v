@@ -16,6 +16,8 @@ struct BrowserScriptRequest {
 	element &dom.Element
 	url     string
 	ordered bool
+	// Parser-created elements keep scheduling, execution and events in HTML.
+	parser_model ?&html.HTMLScriptElementModel
 mut:
 	ready     bool
 	completed bool
@@ -38,22 +40,85 @@ mut:
 	scan_version   u64
 	scanned        bool
 	cancelled      bool
+	polling        bool
 	fetch          BrowserScriptFetch = fetch_script_in_background
+	resources      map[string]PreloadedResource
+	parser_host    ?&BrowserParserScriptHost
+}
+
+fn new_browser_script_request_loader(document &dom.Document,
+	resources map[string]PreloadedResource) &BrowserScriptRequestLoader {
+	// A navigation can begin inside the outgoing document's task or frame arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	return &BrowserScriptRequestLoader{document: document, resources: resources.clone()}
+}
+
+fn (loader &BrowserScriptRequestLoader) parser_fetch_hook() html.ScriptElementAsyncFetchHook {
+	return fn [loader] (model &html.HTMLScriptElementModel, address dom.URL,
+		kind html.ScriptElementType) ! {
+		mut owner := unsafe { &BrowserScriptRequestLoader(loader) }
+		owner.request_parser_script(model, address, kind)!
+	}
+}
+
+// The parser has prepared the element and registered its execution order before
+// calling this hook. This adapter supplies bytes only; HTML owns parser pauses,
+// deferred/async execution, load-event delays and each element's load/error event.
+fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTMLScriptElementModel,
+	address dom.URL, _ html.ScriptElementType) ! {
+	if loader.cancelled { return error('Script loader is closed') }
+	script := model.element() or { return error('Parser script has no DOM element') }
+	element := unsafe { &dom.Element(script) }
+	if voidptr(element.document()) != voidptr(loader.document) {
+		return error('Parser script belongs to another document')
+	}
+	resource_url := address.serialize()
+	if resource := loader.resources[resource_url] {
+		filtered := filter_preloaded_resource(resource, loader.document.url.serialize(), 'script')!
+		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
+		prepared.complete_external_fetch(filtered.body)
+		return
+	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	loader.requests << &BrowserScriptRequest{
+		element: element
+		url: resource_url.clone()
+		parser_model: model
+	}
+	if resource_url !in loader.fetching {
+		loader.fetching[resource_url] = true
+		loader.queued << resource_url.clone()
+	}
+	loader.start_fetches()
+}
+
+// A paused parser may still encounter another element using an initial response.
+// Keep those bytes until it reaches EOF, rather than dropping them at commit.
+fn (mut loader BrowserScriptRequestLoader) finish_parsing() {
+	loader.resources = map[string]PreloadedResource{}
 }
 
 fn fetch_script_in_background(address string, source string, results chan PreloadedResource) {
 	fetch_resource_in_background(address, source, 'script', results)
-	$if macos {
-		C.native_wake_browser()
-	}
+	C.native_wake_browser()
 }
 
 fn (mut loader BrowserScriptRequestLoader) cancel() {
 	loader.cancelled = true
+	if mut host := loader.parser_host { host.closed = true }
+	// Releasing a blocking model can schedule a resume check. Retirement must
+	// not let that check parse more markup or prepare requests on a closed host.
+	if parser := loader.document.active_parser() { parser.abort() }
 	loader.queued = []string{}
-	for mut request in loader.requests { request.delayer.finish() }
+	for mut request in loader.requests {
+		if mut model := request.parser_model { model.cancel_external_fetch() }
+		request.delayer.finish()
+	}
 	loader.requests = []&BrowserScriptRequest{}
 	loader.candidates = []&dom.Element{}
+	loader.resources = map[string]PreloadedResource{}
 }
 
 fn (mut loader BrowserScriptRequestLoader) start_fetches() {
@@ -63,7 +128,9 @@ fn (mut loader BrowserScriptRequestLoader) start_fetches() {
 		address := loader.queued[0]
 		loader.queued.delete(0)
 		loader.active_fetches++
-		spawn loader.fetch(address, loader.document.url.serialize(), loader.results)
+		// Workers never retain DOM/model pointers or document-owned strings.
+		source_url := loader.document.url.serialize().clone()
+		spawn loader.fetch(address, source_url, loader.results)
 	}
 }
 
@@ -124,12 +191,16 @@ fn (mut loader BrowserScriptRequestLoader) discover() {
 }
 
 fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut messages []string) {
-	if loader.cancelled { return }
+	// Script callbacks can spin the event loop. Leave responses in the channel
+	// for the outer poll so their completion order survives that reentrancy.
+	if loader.cancelled || loader.polling { return }
+	loader.polling = true
+	defer { loader.polling = false }
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	loader.discover()
 	loader.execute_ready(runtime, mut messages)
-	for loader.results.len > 0 {
+	for !loader.cancelled && loader.results.len > 0 {
 		select {
 			resource := <-loader.results {
 				loader.active_fetches--
@@ -154,18 +225,35 @@ fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut 
 
 fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runtime, mut messages []string) {
 	mut ordered_waiting := false
-	for mut request in loader.requests {
+	// A completion can enqueue another parser request. Retain each heap request
+	// by value and read the current array again after reentrant preparation.
+	request_count := loader.requests.len
+	for index in 0 .. request_count {
+		if loader.cancelled { return }
+		mut request := loader.requests[index]
+		if request.completed { continue }
 		if request.ordered && ordered_waiting { continue }
 		if !request.ready {
 			if request.ordered { ordered_waiting = true }
 			continue
 		}
+		if request.parser_model == none && runtime == unsafe { nil } { continue }
 		request.completed = true
 		// Removal alone does not cancel an already prepared script. Adoption
 		// into another document, however, must not execute in the old realm.
 		if voidptr(request.element.document()) != voidptr(loader.document)
 			|| !compact_document_can_run_script(loader.document) {
+			if mut model := request.parser_model { model.cancel_external_fetch() }
 			request.delayer.finish()
+			continue
+		}
+		if mut model := request.parser_model {
+			if resource := filter_preloaded_resource(request.resource, loader.document.url.serialize(), 'script') {
+				model.complete_external_fetch(resource.body)
+			} else {
+				messages << 'Script ${request.url}: ${err.msg()}'
+				model.complete_external_fetch(none)
+			}
 			continue
 		}
 		mut event_name := 'load'
@@ -208,12 +296,12 @@ fn run_compact_document_script(owner &dom.Document, source browserjs.ScriptSourc
 
 fn (mut app BrowserApp) poll_browser_script_requests() {
 	mut loader := app.script_request_loader or { return }
-	if app.js_runtime == unsafe { nil } || voidptr(app.document) != voidptr(loader.document) {
+	if voidptr(app.document) != voidptr(loader.document) {
 		return
 	}
 	loader.poll(app.js_runtime, mut app.js_messages)
 	// Completion callbacks can insert another bundle before window.load.
-	app.poll_javascript_tasks()
+	if app.js_runtime != unsafe { nil } { app.poll_javascript_tasks() }
 	if voidptr(app.document) == voidptr(loader.document) { loader.discover() }
 }
 

@@ -5435,6 +5435,8 @@ pub mut:
 	last_focus_trigger FocusTrigger = .other
 
 	// Parser
+	html_parser_creation_hook_               ?DocumentHTMLParserCreationHook
+	html_parser_stream_generation_           u64
 	parser                                  &HTMLParser = unsafe { nil }
 	active_parser_was_aborted               bool
 	html_parser_end_state_target            voidptr = unsafe { nil }
@@ -8692,6 +8694,8 @@ pub fn (mut d Document) open_document() !&Document {
 			hook.open_stop_loading(hook.target)
 		}
 	}
+	if d.parser != unsafe { nil } { d.parser.abort() }
+	d.reset_html_parser_stream()
 	// 11. Replace all with null (clear document).
 	mut document_node := unsafe { &Node(&d) }
 	document_node.replace_all(none)
@@ -8788,8 +8792,11 @@ pub fn (mut d Document) close() ! {
 		return
 	}
 
-	// AD-HOC: This ensures that a load event is fired if the node navigable's container is an iframe.
-	d.completely_finish_loading()
+	// Documents with a browsing context finish in the parser's end steps,
+	// after deferred/async scripts and load-event delayers have retired.
+	if d.get_browsing_context() == none && d.readiness() == .complete {
+		d.completely_finish_loading()
+	}
 }
 
 // --- Default view ---
@@ -9051,9 +9058,8 @@ pub fn (d &Document) document_completely_loaded_deferred() bool {
 	return d.completely_loaded_deferred
 }
 
-// DOMContentLoaded and load fire once per document. The compact embedder fires
-// them itself once its scripts have run, while the parser's end steps queue
-// their own tasks; whichever runs first claims the event and the other skips it.
+// DOMContentLoaded and load fire once per input stream. The native parser owns
+// their sequencing; hosts used without a parser share these event claims.
 pub fn (mut d Document) claim_readiness_event(name string) bool {
 	if name == 'DOMContentLoaded' {
 		if d.pending_module_readiness_scripts > 0 { return false }

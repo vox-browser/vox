@@ -61,6 +61,9 @@ def patch_module(package, source):
 
 def stage_module(source, target, package):
     """Keep compiler assets beside patched sources, without changing the compiler."""
+    if target.is_symlink():
+        target.unlink()
+    target.mkdir(parents=True, exist_ok=True)
     expected = set()
     for path in source.rglob("*"):
         if not path.is_file() or path.name.endswith("_test.v"):
@@ -68,7 +71,14 @@ def stage_module(source, target, package):
         relative = path.relative_to(source)
         expected.add(relative)
         destination = target / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
+        # UI2's compatibility stage links unmodified directories. Never write
+        # through those links when creating Linux's patched module tree.
+        parent = target
+        for part in relative.parts[:-1]:
+            parent = parent / part
+            if parent.is_symlink():
+                parent.unlink()
+            parent.mkdir(exist_ok=True)
         if path.suffix == ".v":
             write_if_changed(destination, patch_module(package, path.read_text()))
         elif not destination.is_symlink() or destination.resolve() != path.resolve():

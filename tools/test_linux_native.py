@@ -30,7 +30,7 @@ def main():
     if sys.platform != "linux":
         raise SystemExit("Run these platform checks on Linux")
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--gc", choices=["boehm", "none"], default="boehm")
+    parser.add_argument("--gc", choices=["boehm", "none", "prealloc"], default="boehm")
     parser.add_argument("cases", nargs="*", default=CASES)
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
@@ -64,11 +64,15 @@ def main():
     print(f"C diagnostics: {c_compiler} -cstrict {c_flags}", flush=True)
     with tempfile.TemporaryDirectory(prefix="vox-native-") as temporary:
         for case in args.cases:
-            command = [compiler, "-memory-limit", "10G", "-enable-globals",
+            # v.mod selects fastc for the application; native ABI diagnostics
+            # and the focused prealloc checks use the checked C backend.
+            command = [compiler, "-b", "c", "-memory-limit", "10G", "-enable-globals",
                        "-cc", c_compiler, "-cstrict", "-cflags", c_flags,
-                       "-gc", args.gc, "-d", "use_openssl",
+                       "-gc", "none" if args.gc == "prealloc" else args.gc, "-d", "use_openssl",
                        "-exclude", "@vlib/time/zoneinfo.native.v", "-path", paths]
-            if args.gc != "none":
+            if args.gc == "prealloc":
+                command += ["-prealloc"]
+            elif args.gc == "boehm":
                 command += ["-d", "dynamic_boehm"]
             # Compile separately so execution has the focused 3 GiB budget,
             # while the caller's build guard retains its compiler allowance.

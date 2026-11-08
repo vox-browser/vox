@@ -3,9 +3,38 @@ import tempfile
 import unittest
 
 from prepare_ui2 import prepare_gg_gradient, prepare_ui2_source
+from prepare_linux_modules import stage_module
 
 
 class GGGradientCompatibilityTests(unittest.TestCase):
+    def test_linux_and_ui2_stages_can_alternate_without_modifying_the_compiler(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            vlib, modules = root / 'vlib', root / 'modules'
+            source = vlib / 'gg'
+            contents = {
+                'gg.v': 'module gg\nfn size(n int) uint { return usize(n) }\n',
+                'render/context.v': 'module render\nfn size(n int) uint { return usize(n) }\n',
+                'canvas/gpu_gradient.v': 'module canvas\n',
+                'canvas/other.v': 'module canvas\n',
+                'canvas/shaders/reference.metal': 'unchanged compiler shader',
+            }
+            for relative, content in contents.items():
+                path = source / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content)
+            stage_module(source, modules / 'gg', 'gg')
+            for _ in range(2):
+                prepare_gg_gradient(modules, vlib)
+                stage_module(source, modules / 'gg', 'gg')
+                self.assertIn('uint(n)', (modules / 'gg/render/context.v').read_text())
+                self.assertFalse((modules / 'gg/render').is_symlink())
+                self.assertEqual((modules / 'gg/canvas/shaders/reference.metal').resolve(),
+                                 source / 'canvas/shaders/reference.metal')
+                for relative, content in contents.items():
+                    self.assertFalse((source / relative).is_symlink())
+                    self.assertEqual((source / relative).read_text(), content)
+
     def test_gradient_override_preserves_the_other_compiler_sources(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

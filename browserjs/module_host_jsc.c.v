@@ -269,7 +269,11 @@ fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !st
 			key:              key
 			element:          source.external_element
 			blocks_readiness: if element := source.element {
-				!element.has_attribute('async')
+				if element.is_html_element() && element.local_name() == 'script'
+					&& !element.has_attribute('async') {
+					model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(element) })
+					model.is_parser_inserted()
+				} else { false }
 			} else {
 				false
 			}

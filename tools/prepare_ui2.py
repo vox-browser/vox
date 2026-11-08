@@ -18,6 +18,10 @@ def link_to(path, source):
         if path.resolve() == source.resolve():
             return
         path.unlink()
+    elif path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
     path.symlink_to(source, target_is_directory=source.is_dir())
 
 
