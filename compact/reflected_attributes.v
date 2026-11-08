@@ -153,26 +153,9 @@ fn compact_reflected_attributes_bootstrap() string {
 '
 }
 
-// classList objects are built per element; give them the DOMTokenList
-// interface so they brand, stringify and iterate as one.
+// Token lists use the native ordered-set and attribute mutation algorithms.
 fn compact_dom_token_list_bootstrap() string {
-	return r'
-(function(){
- if(typeof globalThis.DOMTokenList!=="function"){
-  const DOMTokenList=function DOMTokenList(){throw new TypeError("Illegal constructor");};
-  Object.defineProperty(DOMTokenList.prototype,Symbol.toStringTag,{value:"DOMTokenList",configurable:true});
-  Object.defineProperty(globalThis,"DOMTokenList",{value:DOMTokenList,writable:true,configurable:true});
- }
- const prototype=globalThis.DOMTokenList.prototype;
- if(!(Symbol.iterator in prototype)){
-  Object.defineProperty(prototype,Symbol.iterator,{value:function*(){for(let index=0;index<this.length;index++)yield this.item(index);},writable:true,configurable:true});
- }
- const brand=list=>{if(list&&typeof list==="object"&&Object.getPrototypeOf(list)===Object.prototype)Object.setPrototypeOf(list,prototype);return list;};
- // The element factories call the __classList binding of this script.
- if(typeof __classList==="function"){const original=__classList;__classList=function(state){return brand(original(state));};}
- for(const element of [document.documentElement,document.head,document.body])if(element)brand(element.classList);
-})();
-'
+	return compact_native_token_list_bootstrap()
 }
 
 // Element-reflecting IDL attributes:
