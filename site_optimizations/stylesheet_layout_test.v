@@ -111,3 +111,18 @@ fn test_github_stylesheet_completion_preserves_broad_layer_invalidation() {
 	app.finish_frame_preparation()
 	assert app.document.layout_is_up_to_date()
 }
+
+fn test_github_unmatched_stylesheet_applies_to_later_script_content() {
+	mut app := github_stylesheet_layout_fixture()
+	defer { app.document.finalize() }
+	app.frame_preparation_depth = 1
+	github_test_complete_stylesheet(mut app, 'vox-test-site-sheet-later', '.shortcut-item{width:77px;height:11px}')
+	app.finish_frame_preparation()
+	mut item := app.document.create_element('div')!
+	item.set_attribute_value('class', 'shortcut-item')
+	mut body := app.document.body()?
+	body.as_node().append_child(item.as_node())!
+	app.document.update_layout(.debugging)
+	app.adopt_current_document_geometry()
+	assert app.root_box.find_box(i64(item.as_node().unique_id()))?.border_box().width == 77 * app.document.layout_coordinate_scale()
+}
