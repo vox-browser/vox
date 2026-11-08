@@ -181,6 +181,15 @@ migration oracle; it is not a new runtime or developer-tool dependency.
 Default and no-GC focused checks pass, including unavailable Rust compiler paths.
 These are predictor comparisons, not complete modular image decoding.
 
+Inverse reversible color transforms now cover all 42 operation/permutation
+combinations in signed 16-bit and 32-bit storage, for samples and separate
+channel rows. The source's wrapped additions, arithmetic shifts and differing
+16-bit/32-bit averaging behavior are retained. A further 2,048 frozen inputs
+compare all 84 outputs exactly, including signed extremes; row and invalid-API
+checks pass in both GC modes. The independent oracle used unchanged arithmetic
+and permutation functions extracted from the archive-verified source with its
+scalar SIMD descriptor. There is no SIMD or performance parity claim.
+
 Remaining work includes modular
 trees/channel decoding and transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
