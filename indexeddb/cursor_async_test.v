@@ -89,3 +89,24 @@ fn test_async_index_cursor_direction_advance_and_explicit_commit() {
 	assert result.cursor.key()!.number == 1
 	assert read.state == .finished
 }
+
+fn test_cursor_update_queues_a_write_without_changing_the_current_cursor_value() {
+	mut connection := async_cursor_connection('update')!
+	defer { connection.close() }
+	mut tx := connection.transaction(['items'], .readwrite, IDBTransactionOptions{})!
+	mut store := tx.object_store('items')!
+	store.put_async(string_value('before'), number_key(1), false)!
+	mut request := store.open_cursor_async(none, .next, false)!
+	mut log := &AsyncCursorLog{}
+	request.onsucceed_ = fn [mut request, mut store, mut log] () {
+		mut cursor := request.cursor
+		updated := cursor.update_async(string_value('after')) or { panic(err) }
+		assert updated.ready_state == .pending
+		assert cursor.value() or { panic(err) }.text == 'before'
+		mut read := store.get_async(IDBKeyRange.only(number_key(1)) or { panic(err) }) or { panic(err) }
+		read.onsucceed_ = fn [read, mut log] () { log.exhausted = read.value.text == 'after' }
+	}
+	tx.deactivate()
+	run_database_tasks()
+	assert log.exhausted && tx.state == .finished
+}

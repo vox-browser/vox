@@ -2,6 +2,23 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module indexeddb
 
+pub fn (cursor &IDBCursor) require_update() ! {
+	cursor.validate_source()!
+	cursor.transaction.require_writable()!
+	if !cursor.got_value || !cursor.with_value { return error('InvalidStateError: cursor has no value to update') }
+}
+
+pub fn (mut cursor IDBCursor) update_async(value Value) !&IDBRequest {
+	cursor.require_update()!
+	mut store := IDBObjectStore{transaction: cursor.transaction, name_: cursor.store_.name, store_: cursor.store_}
+	if path := cursor.store_.key_path {
+		key := evaluate_key_path(value, path) or { return error('DataError: Updated value has no valid inline key') }
+		if !keys_equal(key, cursor.primary_key()!) { return error('DataError: Updated value changed the cursor primary key') }
+		return store.put_async(value, none, false)
+	}
+	return store.put_async(value, cursor.primary_key()!, false)
+}
+
 // Browser cursor operations share the transaction's ordered request queue.
 // The synchronous typed entry points remain available for standalone callers.
 pub fn (mut store IDBObjectStore) open_cursor_async(range ?IDBKeyRange, direction IDBCursorDirection, keys_only bool) !&IDBRequest {

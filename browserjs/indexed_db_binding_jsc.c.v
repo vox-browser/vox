@@ -689,6 +689,11 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.cursor {
 			mut cursor := entry.cursor
+			if method == 'update' {
+				cursor.require_update()!
+				value := runtime.indexed_db_input(args[2])!
+				return runtime.indexed_db_request(mut binding, cursor.update_async(value)!, none, receiver)
+			}
 			if method == 'source' { return entry.source }
 			if method == 'direction' { return runtime.indexed_db_string(cursor.direction.str()) }
 			if method == 'request' { return binding.wrappers[voidptr(cursor.request)] or { undefined } }
