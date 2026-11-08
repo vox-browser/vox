@@ -123,23 +123,24 @@ fn (cursor &IDBCursor) validate_source() ! {
 }
 
 pub fn (mut cursor IDBCursor) advance(count u32) !bool {
-	if count == 0 {
-		return error('TypeError: advance count must be greater than zero')
-	}
-	cursor.transaction.require_active()!
-	cursor.validate_source()!
-	if !cursor.got_value {
-		return error('InvalidStateError: cursor is iterating')
-	}
+	cursor.validate_advance(count)!
 	return cursor.iterate(none, none, u64(count))
 }
 
-pub fn (mut cursor IDBCursor) continue_to(key ?Key) !bool {
-	cursor.transaction.require_active()!
-	cursor.validate_source()!
-	if !cursor.got_value {
-		return error('InvalidStateError: cursor is exhausted')
+fn (cursor &IDBCursor) validate_advance(count u32) ! {
+	if count == 0 {
+		return error('TypeError: advance count must be greater than zero')
 	}
+	cursor.require_iteration(false)!
+}
+
+pub fn (mut cursor IDBCursor) continue_to(key ?Key) !bool {
+	cursor.validate_continue(key)!
+	return cursor.iterate(key, none, 1)
+}
+
+fn (cursor &IDBCursor) validate_continue(key ?Key) ! {
+	cursor.require_iteration(false)!
 	if target := key {
 		ensure_valid_key(target)!
 		current := cursor.key()!
@@ -151,18 +152,15 @@ pub fn (mut cursor IDBCursor) continue_to(key ?Key) !bool {
 			return error('DataError: continuation key does not advance cursor')
 		}
 	}
-	return cursor.iterate(key, none, 1)
 }
 
 pub fn (mut cursor IDBCursor) continue_primary_key(key Key, primary_key Key) !bool {
-	cursor.transaction.require_active()!
-	cursor.validate_source()!
-	if cursor.index_name == '' || cursor.direction in [.nextunique, .prevunique] {
-		return error('InvalidAccessError: continuePrimaryKey requires a non-unique index cursor')
-	}
-	if !cursor.got_value {
-		return error('InvalidStateError: cursor is exhausted')
-	}
+	cursor.validate_continue_primary_key(key, primary_key)!
+	return cursor.iterate(key, primary_key, 1)
+}
+
+fn (cursor &IDBCursor) validate_continue_primary_key(key Key, primary_key Key) ! {
+	cursor.require_iteration(true)!
 	ensure_valid_key(key)!
 	ensure_valid_key(primary_key)!
 	current_key := cursor.key()!
@@ -172,7 +170,18 @@ pub fn (mut cursor IDBCursor) continue_primary_key(key Key, primary_key Key) !bo
 	if (cursor.direction == .next && (key_cmp < 0 || (key_cmp == 0 && primary_cmp <= 0))) || (cursor.direction == .prev && (key_cmp > 0 || (key_cmp == 0 && primary_cmp >= 0))) {
 		return error('DataError: continuation key and primary key do not advance cursor')
 	}
-	return cursor.iterate(key, primary_key, 1)
+}
+
+// Bindings must check these gates before converting an author-supplied key.
+pub fn (cursor &IDBCursor) require_iteration(primary_key bool) ! {
+	cursor.transaction.require_active()!
+	cursor.validate_source()!
+	if primary_key && (cursor.index_ == none || cursor.direction in [.nextunique, .prevunique]) {
+		return error('InvalidAccessError: continuePrimaryKey requires a non-unique index cursor')
+	}
+	if !cursor.got_value {
+		return error('InvalidStateError: cursor is exhausted')
+	}
 }
 
 struct CursorSearchResult {

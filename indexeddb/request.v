@@ -107,6 +107,9 @@ fn (mut request IDBRequest) fail(message string) {
 }
 
 fn (request &IDBRequest) finish_transaction_request() {
+	// A cursor's success listener may reuse this request for another iteration.
+	// That pending entry belongs to the next operation and must stay queued.
+	if !request.processed { return }
 	if transaction := request.transaction_ {
 		mut list := transaction.request_list_
 		list.remove(request)

@@ -133,3 +133,29 @@ fn test_index_metadata_and_owner_survive_deleted_schema_abort_and_temporary_inpu
 	assert runtime.evaluate_host('JSON.stringify(checks.map((x,i)=>x?null:i).filter(x=>x!==null))')! == '[]'
 	assert runtime.evaluate_host('checks.length')! == '9'
 }
+
+fn test_index_lookup_reuses_schema_handles_across_rename_and_recreation() {
+	$if !darwin && !linux { return }
+	mut runtime, mut document := indexed_db_index_fixture()!
+	defer { runtime.close(); document.finalize() }
+	assert runtime.evaluate_host(r'
+ globalThis.checks=[];globalThis.opening=indexedDB.open("index-lookup",1);
+ const throws=(name,fn)=>{try{fn();return false}catch(e){return e.name===name}};
+ checks.push(IDBObjectStore.prototype.index.length===1,IDBObjectStore.prototype.deleteIndex.length===1,throws("TypeError",()=>IDBObjectStore.prototype.index.call({},"x")));
+ opening.onupgradeneeded=()=>{
+  const store=opening.result.createObjectStore("items");globalThis.upgradeStore=store;
+  const first=store.createIndex("original",["field"]);checks.push(first===store.index("original"),first===store.index("original"));
+  first.name="renamed";checks.push(first===store.index("renamed"),throws("NotFoundError",()=>store.index("original")));
+  store.deleteIndex("renamed");checks.push(throws("NotFoundError",()=>store.index("renamed")),store.indexNames.length===0,first.name==="renamed");
+  const next=store.createIndex("renamed",["other"]);checks.push(next!==first,next===store.index("renamed"),next.keyPath!==first.keyPath,first.keyPath.join()==="field");
+  let converted=false;const marker={};try{store.index({toString(){converted=true;throw marker}})}catch(e){checks.push(converted,e===marker)}
+ };
+ opening.onsuccess=()=>{
+  checks.push(throws("InvalidStateError",()=>upgradeStore.index("renamed")));
+  const db=opening.result,a=db.transaction("items").objectStore("items"),b=db.transaction("items").objectStore("items");
+  checks.push(a.index("renamed")!==b.index("renamed"),a.index("renamed").objectStore===a);db.close();
+ };true
+ ')! == 'true'
+	deliver_index_schema_tasks()
+	assert runtime.evaluate_host('checks.length===19&&checks.every(Boolean)')! == 'true', runtime.evaluate_host('JSON.stringify(checks)')!
+}

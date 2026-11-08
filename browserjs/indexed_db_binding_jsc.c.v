@@ -31,10 +31,14 @@ mut:
 	transaction &indexeddb.IDBTransaction         = unsafe { nil }
 	store       &indexeddb.IDBObjectStore         = unsafe { nil }
 	index       &indexeddb.IDBIndex               = unsafe { nil }
+	cursor      &indexeddb.IDBCursor              = unsafe { nil }
 	source      voidptr
 	result      voidptr
 	error_value voidptr
 	key_path_value voidptr
+	key_value voidptr
+	primary_key_value voidptr
+	cursor_value voidptr
 }
 
 @[heap]
@@ -48,6 +52,7 @@ mut:
 	entries        map[voidptr]&IndexedDBBindingEntry
 	wrappers       map[voidptr]voidptr
 	stores         map[string]voidptr
+	indexes        map[string]voidptr
 	version_events map[voidptr]indexeddb.IDBVersionChangeEvent
 	closed         bool
 }
@@ -101,6 +106,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	binding.make_list = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 9, &exception))!
 	binding.sequence = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 10, &exception))!
 	binding.key_path = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 11, &exception))!
+	binding.prototypes << runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 12, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -125,6 +131,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 		binding.entries = {}
 		binding.wrappers = {}
 		binding.stores = {}
+		binding.indexes = {}
 		binding.version_events = {}
 		indexed_db_bindings_.delete(owner)
 	})
@@ -157,12 +164,22 @@ fn (mut runtime Runtime) indexed_db_request(mut binding IndexedDBBinding, reques
 	wrapper := runtime.indexed_db_wrap(mut binding, voidptr(request), entry)!
 	owner := voidptr(&runtime)
 	mut pending := unsafe { &indexeddb.IDBRequest(request) }
-	pending.onsucceed_ = fn [owner, mut binding, entry] () {
+	pending.onsucceed_ = fn [owner, mut binding, mut entry] () {
 		if binding.closed {
 			if !isnil(entry.request.database) { entry.request.database.close() }
 			return
 		}
 		mut runtime := unsafe { &Runtime(owner) }
+		entry.result = unsafe { nil }
+		if !isnil(entry.request.cursor) {
+			if wrapper := binding.wrappers[voidptr(entry.request.cursor)] {
+				if mut cursor_entry := binding.entries[wrapper] {
+					cursor_entry.key_value = unsafe { nil }
+					cursor_entry.primary_key_value = unsafe { nil }
+					cursor_entry.cursor_value = unsafe { nil }
+				}
+			}
+		}
 		runtime.indexed_db_dispatch(mut binding, entry, 'success', none)
 	}
 	pending.onerror_ = fn [owner, mut binding, entry] () {
@@ -257,6 +274,16 @@ fn (mut runtime Runtime) indexed_db_store(mut binding IndexedDBBinding, input in
 	return wrapper
 }
 
+fn (mut runtime Runtime) indexed_db_index(mut binding IndexedDBBinding, input indexeddb.IDBIndex, source voidptr) !voidptr {
+	data := input.index_ or { return error('InvalidStateError: index has no schema record') }
+	key := '${uint(source)}:${uint(data)}'
+	if wrapper := binding.indexes[key] { return wrapper }
+	index := &indexeddb.IDBIndex{ ...input }
+	wrapper := runtime.indexed_db_wrap(mut binding, voidptr(index), &IndexedDBBindingEntry{ kind: .index, index: index, source: source })!
+	binding.indexes[key] = wrapper
+	return wrapper
+}
+
 fn (runtime &Runtime) indexed_db_integer(value voidptr) !u64 {
 	mut exception := unsafe { nil }
 	number := C.vox_jsc_JSValueToNumber(runtime.context, value, &exception)
@@ -324,7 +351,8 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		name := runtime.binding_dom_string(args[2])!
 		expected := ['IDBFactory', 'IDBRequest', 'IDBOpenDBRequest', 'IDBDatabase', 'IDBTransaction',
 			'IDBObjectStore', 'IDBIndex', 'IDBCursor'][int(entry.kind)]
-		if name != expected && !(name == 'IDBRequest' && entry.kind == .open_request) {
+		if name != expected && !(name == 'IDBRequest' && entry.kind == .open_request) &&
+			!(name == 'IDBCursorWithValue' && entry.kind == .cursor && entry.cursor.with_value) {
 			return runtime.event_binding_type_error('Illegal ${name} receiver')
 		}
 		return undefined
@@ -429,6 +457,19 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 							runtime.indexed_db_output(indexeddb.key_to_value(key)!)!
 						} else {
 							undefined
+						}
+					}
+					.cursor {
+						cursor := request.cursor
+						mut cursor_entry := &IndexedDBBindingEntry{ kind: .cursor, cursor: cursor, source: entry.source }
+						if wrapper := binding.wrappers[voidptr(cursor)] {
+							wrapper
+						} else {
+							prototype := binding.prototypes[if cursor.with_value { 9 } else { 7 }]
+							wrapper := runtime.javascript_event_target(cursor_entry.target, prototype)!
+							binding.wrappers[voidptr(cursor)] = wrapper
+							binding.entries[wrapper] = cursor_entry
+							wrapper
 						}
 					}
 					else { undefined }
@@ -541,8 +582,19 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				unique := runtime.event_binding_bool_property(dictionary, 'unique', false)!
 				// WebIDL converts all arguments before the native transaction checks.
 				created := store.create_index(name, path, indexeddb.IDBIndexParameters{ unique: unique, multi_entry: multi_entry })!
-				index := &indexeddb.IDBIndex{ ...created }
-				return runtime.indexed_db_wrap(mut binding, voidptr(index), &IndexedDBBindingEntry{ kind: .index, index: index, source: receiver })
+				return runtime.indexed_db_index(mut binding, created, receiver)
+			}
+			if method == 'index' {
+				return runtime.indexed_db_index(mut binding, store.index(runtime.binding_dom_string(args[2])!)!, receiver)
+			}
+			if method == 'deleteIndex' {
+				store.delete_index(runtime.binding_dom_string(args[2])!)!
+				return undefined
+			}
+			if method in ['openCursor', 'openKeyCursor'] {
+				range, direction := runtime.indexed_db_cursor_arguments(args, entry)!
+				request := store.open_cursor_async(range, direction, method == 'openKeyCursor')!
+				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
 			if method == 'get' {
 				store.transaction.require_active()!
@@ -582,10 +634,71 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 			if method == 'unique' {
 				return C.vox_jsc_JSValueMakeBoolean(runtime.context, index.unique())
 			}
+			if method in ['openCursor', 'openKeyCursor'] {
+				range, direction := runtime.indexed_db_cursor_arguments(args, entry)!
+				request := index.open_cursor_async(range, direction, method == 'openKeyCursor')!
+				return runtime.indexed_db_request(mut binding, request, none, receiver)
+			}
+		}
+		.cursor {
+			mut cursor := entry.cursor
+			if method == 'source' { return entry.source }
+			if method == 'direction' { return runtime.binding_string(cursor.direction.str()) }
+			if method == 'request' { return binding.wrappers[voidptr(cursor.request)] or { undefined } }
+			if method in ['key', 'primaryKey', 'value'] {
+				current := cursor.current_entry or { return undefined }
+				if method == 'key' {
+					if entry.key_value == unsafe { nil } { entry.key_value = runtime.indexed_db_output(indexeddb.key_to_value(current.key)!)! }
+					return entry.key_value
+				}
+				if method == 'primaryKey' {
+					if entry.primary_key_value == unsafe { nil } { entry.primary_key_value = runtime.indexed_db_output(indexeddb.key_to_value(current.primary_key)!)! }
+					return entry.primary_key_value
+				}
+				if entry.cursor_value == unsafe { nil } { entry.cursor_value = runtime.indexed_db_output(current.value)! }
+				return entry.cursor_value
+			}
+			if method == 'continue' {
+				cursor.require_iteration(false)!
+				key := if args.len > 2 && !C.JSValueIsUndefined(runtime.context, args[2]) { ?indexeddb.Key(runtime.indexed_db_key(args[2])!) } else { none }
+				cursor.continue_async(key)!
+				return undefined
+			}
+			if method == 'advance' {
+				mut exception := unsafe { nil }
+				number := C.vox_jsc_JSValueToNumber(runtime.context, args[2], &exception)
+				if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+				count := webidl.convert_to_int(webidl.number_value(number), 32, false, .yes, .no)!
+				cursor.advance_async(u32(count))!
+				return undefined
+			}
+			if method == 'continuePrimaryKey' {
+				cursor.require_iteration(true)!
+				key := runtime.indexed_db_key(args[2])!
+				primary_key := runtime.indexed_db_key(args[3])!
+				cursor.continue_primary_key_async(key, primary_key)!
+				return undefined
+			}
 		}
 		else {}
 	}
 	return runtime.event_binding_type_error('Illegal IndexedDB operation ${method}')
+}
+
+fn (mut runtime Runtime) indexed_db_cursor_arguments(args []voidptr, entry &IndexedDBBindingEntry) !(?indexeddb.IDBKeyRange, indexeddb.IDBCursorDirection) {
+	direction_text := if args.len > 3 && !C.JSValueIsUndefined(runtime.context, args[3]) { runtime.binding_dom_string(args[3])! } else { 'next' }
+	direction := match direction_text {
+		'next' { indexeddb.IDBCursorDirection.next }
+		'nextunique' { indexeddb.IDBCursorDirection.nextunique }
+		'prev' { indexeddb.IDBCursorDirection.prev }
+		'prevunique' { indexeddb.IDBCursorDirection.prevunique }
+		else { return runtime.event_binding_type_error('Invalid cursor direction') }
+	}
+	if entry.kind == .object_store { entry.store.require_cursor_source()! } else { entry.index.require_cursor_source()! }
+	range := if args.len > 2 && !C.JSValueIsUndefined(runtime.context, args[2]) && !C.JSValueIsNull(runtime.context, args[2]) {
+		?indexeddb.IDBKeyRange(indexeddb.IDBKeyRange.only(runtime.indexed_db_key(args[2])!)!)
+	} else { none }
+	return range, direction
 }
 
 fn (mut runtime Runtime) indexed_db_error(message string) !voidptr {

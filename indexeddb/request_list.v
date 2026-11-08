@@ -54,6 +54,18 @@ pub fn (mut list RequestList) enqueue(request &IDBRequest, steps RequestSteps) {
 	list.maybe_process_next_request()
 }
 
+fn (mut list RequestList) reuse(request &IDBRequest, steps RequestSteps) {
+	// Finish the old iteration without firing all-processed notifications in
+	// between. A cursor continuation joins the tail behind earlier requests.
+	for index, entry in list.entries {
+		if voidptr(entry.request) == voidptr(request) {
+			list.entries.delete(index)
+			break
+		}
+	}
+	list.enqueue(request, steps)
+}
+
 pub fn (mut list RequestList) maybe_process_next_request() {
 	if list.blocked {
 		return

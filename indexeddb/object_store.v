@@ -370,6 +370,9 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 
 pub fn (store &IDBObjectStore) index(name string) !IDBIndex {
 	data := store.load()!
+	if store.transaction.state in [.finished, .aborted] {
+		return error('InvalidStateError: transaction has finished')
+	}
 	if name !in data.indexes {
 		return error('NotFoundError: index does not exist')
 	}

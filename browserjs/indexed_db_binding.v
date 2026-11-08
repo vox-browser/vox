@@ -11,15 +11,19 @@ fn indexed_db_binding_factory() string {
   define(constructor.prototype,Symbol.toStringTag,{value:name,configurable:true});define(constructor,"prototype",{writable:false});
   define(global,name,{value:constructor,writable:true,configurable:true});constructors[name]=constructor;
  }
+ const IDBCursorWithValue=function IDBCursorWithValue(){throw new T("Illegal constructor")};
+ Object.setPrototypeOf(IDBCursorWithValue,constructors.IDBCursor);Object.setPrototypeOf(IDBCursorWithValue.prototype,constructors.IDBCursor.prototype);
+ define(IDBCursorWithValue,"prototype",{writable:false});define(IDBCursorWithValue.prototype,Symbol.toStringTag,{value:"IDBCursorWithValue",configurable:true});
+ define(global,"IDBCursorWithValue",{value:IDBCursorWithValue,writable:true,configurable:true});constructors.IDBCursorWithValue=IDBCursorWithValue;
  function method(type,name,length){
   const value=({[name](...args){operate("brand",this,type);if(args.length<length)throw new T(name+" requires "+length+" argument(s)");return operate(name,this,...args)}})[name];
   define(value,"length",{value:length,configurable:true});define(constructors[type].prototype,name,{value,writable:true,enumerable:true,configurable:true});
  }
  function getter(type,name){const get=descriptor({get [name](){operate("brand",this,type);return operate(name,this)}},name).get;define(constructors[type].prototype,name,{get,enumerable:true,configurable:true})}
- for(const [type,properties] of [["IDBRequest",["result","error","source","transaction","readyState"]],["IDBDatabase",["name","version","objectStoreNames"]],["IDBTransaction",["db","mode","durability","error","objectStoreNames"]],["IDBObjectStore",["name","keyPath","autoIncrement","indexNames","transaction"]],["IDBIndex",["name","objectStore","keyPath","multiEntry","unique"]]])for(const name of properties)getter(type,name);
+ for(const [type,properties] of [["IDBRequest",["result","error","source","transaction","readyState"]],["IDBDatabase",["name","version","objectStoreNames"]],["IDBTransaction",["db","mode","durability","error","objectStoreNames"]],["IDBObjectStore",["name","keyPath","autoIncrement","indexNames","transaction"]],["IDBIndex",["name","objectStore","keyPath","multiEntry","unique"]],["IDBCursor",["source","direction","key","primaryKey","request"]],["IDBCursorWithValue",["value"]]])for(const name of properties)getter(type,name);
  const indexName=descriptor(constructors.IDBIndex.prototype,"name");
  define(constructors.IDBIndex.prototype,"name",{...indexName,set(value){operate("brand",this,"IDBIndex");operate("setName",this,value)}});
- for(const [type,methods] of [["IDBFactory",[["open",1],["deleteDatabase",1],["cmp",2]]],["IDBDatabase",[["createObjectStore",1],["deleteObjectStore",1],["transaction",1],["close",0]]],["IDBTransaction",[["objectStore",1],["abort",0],["commit",0]]],["IDBObjectStore",[["get",1],["put",1],["add",1],["createIndex",2]]]])for(const [name,length] of methods)method(type,name,length);
+ for(const [type,methods] of [["IDBFactory",[["open",1],["deleteDatabase",1],["cmp",2]]],["IDBDatabase",[["createObjectStore",1],["deleteObjectStore",1],["transaction",1],["close",0]]],["IDBTransaction",[["objectStore",1],["abort",0],["commit",0]]],["IDBObjectStore",[["get",1],["put",1],["add",1],["createIndex",2],["index",1],["deleteIndex",1],["openCursor",0],["openKeyCursor",0]]],["IDBIndex",[["openCursor",0],["openKeyCursor",0]]],["IDBCursor",[["continue",0],["advance",1],["continuePrimaryKey",2]]]])for(const [name,length] of methods)method(type,name,length);
  // Promise-returning WebIDL operations reject receiver errors. Capture the
  // intrinsic constructor before author code can replace the global property.
  const Promise=global.Promise;
@@ -83,6 +87,6 @@ fn indexed_db_binding_factory() string {
   }
   return domString(value);
  }
- return [...names.map(name=>constructors[name].prototype),versionPrototype,makeList,value=>{if(value===null||(typeof value!=="object"&&typeof value!=="function")||typeof value[Symbol.iterator]!=="function")throw new T("Expected a sequence");return Array.from(value)},keyPath];
+ return [...names.map(name=>constructors[name].prototype),versionPrototype,makeList,value=>{if(value===null||(typeof value!=="object"&&typeof value!=="function")||typeof value[Symbol.iterator]!=="function")throw new T("Expected a sequence");return Array.from(value)},keyPath,IDBCursorWithValue.prototype];
 })'
 }
