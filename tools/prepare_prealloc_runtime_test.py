@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from prepare_prealloc_runtime import (CAPTURE_DECLARATIONS, declare_capture_helpers,
+from prepare_prealloc_runtime import (declare_capture_helpers,
                                       patch_allocator, prepare, validate_allocator)
 
 
@@ -111,10 +111,13 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
 
     def test_staged_builtin_declares_the_os_capture_helpers(self):
         compat = 'module builtin\n\n$if !v3_c_extern_declarations ? {\n\t#include <poll.h>\n}\n'
-        declared = declare_capture_helpers(compat)
+        header = Path('/resolved/v source/vlib/os/execute_capture_legacy.h')
+        declaration = '#include "' + str(header) + '"'
+        declared = declare_capture_helpers(compat, header)
         self.assertTrue(declared.startswith(compat.rstrip('\n')))
-        self.assertEqual(declared.count(CAPTURE_DECLARATIONS), 1)
-        self.assertEqual(declare_capture_helpers(declared), declared)
+        self.assertEqual(declared.count(declaration), 1)
+        self.assertNotIn('@VEXEROOT', declared)
+        self.assertEqual(declare_capture_helpers(declared, header), declared)
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             vlib = base / 'v-source/vlib'
@@ -135,8 +138,11 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
                 staged = prepare(compiler, base / 'output')
                 staged_compat = staged / 'builtin/c_headers_compat_nix.c.v'
                 self.assertFalse(staged_compat.is_symlink())
-                self.assertIn(CAPTURE_DECLARATIONS, staged_compat.read_text())
+                self.assertIn('#include "' + str((vlib / 'os/execute_capture_legacy.h').resolve()) + '"', staged_compat.read_text())
                 self.assertEqual((vlib / 'builtin/c_headers_compat_nix.c.v').read_text(), compat)
+                # A changed declaration header invalidates the staged identity.
+                (vlib / 'os/execute_capture_legacy.h').write_text('int changed_capture_helper(void);\n')
+                self.assertNotEqual(prepare(compiler, base / 'output'), staged)
 
     def test_the_same_compiler_installed_at_another_path_reuses_its_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
