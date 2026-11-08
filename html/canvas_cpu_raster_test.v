@@ -857,6 +857,14 @@ fn test_drop_shadow_filtered_canvas_draws_match_skia() {
 		'drop-shadow(-10px 10px 1.2px blue)', 'drop-shadow(5px -10px 6px #10203090)'])
 }
 
+fn test_repeated_blur_and_color_canvas_draws_match_skia() {
+	check_filtered_canvas_draws_match_skia([
+		'contrast(130%) blur(.8px) opacity(65%) blur(2.5px) contrast(130%)',
+		'blur(2.5px) contrast(130%) blur(0px) opacity(65%)',
+		'blur(.8px) opacity(65%) blur(0px) contrast(130%) blur(2.5px)',
+	])
+}
+
 fn check_filtered_canvas_draws_match_skia(filters []string) {
 	mut context := cpu_raster_test_context()
 	context.set_font('21px sans-serif')
@@ -882,7 +890,7 @@ fn check_filtered_canvas_draws_match_skia(filters []string) {
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
 		state := context.drawing_state
 		skia_filters := context.canvas_skia_filters()
-		assert skia_filters.len == 1
+		assert skia_filters.len > 0
 		supported, cpu_filter := canvas_cpu_filter(skia_filters)
 		assert supported
 		assert cpu_filter != none

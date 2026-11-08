@@ -220,6 +220,54 @@ fn test_repeated_blurs_retain_native_intermediate_images() {
 	}
 }
 
+fn test_color_filters_between_blur_passes_match_native() {
+	contrast := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!}}
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	zero := CanvasFilterStep{kind: .blur}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+	gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+	box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	large := CanvasFilterStep{kind: .blur, sigma: 12}
+	sequences := [
+		[contrast, gaussian, opacity, box, contrast],
+		[zero, contrast, box],
+		[box, contrast, zero, opacity],
+		[contrast, zero, opacity, tiny, contrast],
+		[large, contrast, gaussian],
+		[contrast, gaussian, opacity, box, contrast, gaussian],
+		[gaussian, opacity, zero, contrast, box],
+		[contrast, box, opacity, large, contrast],
+	]
+	hashes := $if linux {
+		['7607d02c17545ce9', 'e6fc7d183d6f508a', '853d995ca42ed6ae', 'd44f4631ee09188a',
+		 'bc75c784f5dc7c47', '2e2efd552912f6ff', '9094cff4114223f5', 'de48da03ed37df5c']
+	} $else {
+		['7607d02c17545ce9', 'e6fc7d183d6f508a', '853d995ca42ed6ae', 'd44f4631ee09188a',
+		 'db5ae4482ca62300', '2e2efd552912f6ff', '9094cff4114223f5', 'de48da03ed37df5c']
+	}
+	for i, steps in sequences {
+		mut pixels := filter_layer_test_background()
+		transform := if i in [4, 7] { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else { [f32(1), 0, 0, 1, 0, 0]! }
+		mode := match i { 1 { BlendMode.multiply } 2, 6 { .src_in } 3 { .plus_lighter }
+			5 { .overlay } 7 { .plus_darker } else { .src_over } }
+		style := if i == 4 { ?CanvasPaintStyle(filter_layer_test_color_pattern()) } else { none }
+		filter := new_canvas_filter(steps)
+		if i == 5 {
+			assert stroke_canvas_path(mut pixels, 48, 40, 192, 2, filter_layer_test_path(),
+				transform, 0xc0e04010, style, .7, mode, 0, 3, .round, .round, 10,
+				[f32(3), 2], .7, filter_layer_test_clip(), filter)
+		} else {
+			assert fill_canvas_path(mut pixels, 48, 40, 192, if i in [4, 7] { 1 } else { 2 },
+				filter_layer_test_path(), transform, 0xc0e04010, style, .7, mode, 0,
+				filter_layer_test_clip(), filter)
+		}
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'color blur chain fixture ${i}'
+	}
+}
+
 // Byte hashes captured from vox_skia_canvas_path() in the pinned LibWeb
 // Skia, on the same path/background as the blur-layer regression tests.
 fn test_drop_shadow_filter_layers_match_skia() {

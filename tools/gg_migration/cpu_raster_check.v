@@ -1410,7 +1410,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -3059,7 +3059,8 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
 	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
 	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if mixed { random_color_shadow_filters }
+	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'mixedblurs' { random_color_blur_chain }
+		else if mixed { random_color_shadow_filters }
 		else if shadows { random_shadow_filters } else { random_layer_filters }
 	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, make_filters) or {
 		eprintln(err.msg())
@@ -3072,6 +3073,16 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 fn random_color_shadow_filters() []cpuraster.CanvasFilterStep {
 	mut filters := random_color_filters()
 	filters << random_shadow_filters()
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
+}
+
+fn random_color_blur_chain() []cpuraster.CanvasFilterStep {
+	mut filters := []cpuraster.CanvasFilterStep{}
+	for _ in 0 .. rand.intn(3) or { 0 } + 2 {
+		if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+		filters << random_blur_step()
+	}
 	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
 	return filters
 }
