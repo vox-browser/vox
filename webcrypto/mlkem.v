@@ -141,12 +141,13 @@ fn import_mlkem_key(params AlgorithmParams, format KeyFormat, material []u8, ext
 			if material.len != 64 { return error('DataError: Invalid key format') }
 			return mlkem_private_key(name, native_mlkem_generate(name, material)!, false, [])
 		}
-		// Upstream explicitly leaves JWK import unimplemented.
+		.jwk { return import_mlkem_jwk(name, decode_json_web_key_dictionary(material)!, extractable, usages) }
 		else { return error('NotSupportedError: Invalid key format') }
 	}
 }
 
 fn export_mlkem_key(format KeyFormat, key &CryptoKey) ![]u8 {
+	if format == .jwk { return export_mlkem_jwk(key)!.to_json().bytes() }
 	if format in [.spki, .raw_public] {
 		if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
 		handle := key.internal_handle_ as MlkemPublicKeyHandle
@@ -161,8 +162,46 @@ fn export_mlkem_key(format KeyFormat, key &CryptoKey) ![]u8 {
 		if format == .raw_seed { return handle.seed.clone() }
 		return wrap_no_parameter_key_info(mlkem_oid_bytes(key.algorithm_name())!, okp_der_value(0x80, handle.seed), true)
 	}
-	// Upstream explicitly leaves JWK export unimplemented.
 	return error('NotSupportedError: Invalid key format')
+}
+
+// Modern Algorithms §6.4.5: AKP private JWKs carry the 64-byte (d,z)
+// seed and must include its matching encapsulation key.
+fn import_mlkem_jwk(name string, jwk JsonWebKey, extractable bool, usages []KeyUsage) !&CryptoKey {
+	validate_mlkem_usages(usages, jwk.priv != none)!
+	if (jwk.kty or { '' }) != 'AKP' { return error('DataError: Invalid key type') }
+	if (jwk.alg or { '' }) != name { return error('DataError: Invalid algorithm') }
+	if usages.len > 0 {
+		if use_ := jwk.use { if use_ != 'enc' { return error('DataError: Invalid usage type') } }
+	}
+	validate_jwk_key_ops(jwk, usages)!
+	if ext := jwk.ext { if !ext && extractable { return error('DataError: Invalid ext field') } }
+	public_bytes := base64url_decode(jwk.pub_ or { return error('DataError: Missing public key') })!
+	public_size, _, _ := mlkem_sizes(name)!
+	if public_bytes.len != public_size { return error('DataError: Invalid public key length') }
+	if private_text := jwk.priv {
+		seed := base64url_decode(private_text)!
+		if seed.len != 64 { return error('DataError: Invalid seed length') }
+		handle := native_mlkem_generate(name, seed) or { return error('DataError: ${err.msg()}') }
+		if handle.public_key != public_bytes { return error('DataError: Public and private keys do not match') }
+		return mlkem_private_key(name, handle, extractable, usages)
+	}
+	return mlkem_public_key(name, public_bytes, extractable, usages)
+}
+
+fn export_mlkem_jwk(key &CryptoKey) !JsonWebKey {
+	mut public_bytes := []u8{}
+	mut private_text := ?string(none)
+	match key.internal_handle_ {
+		MlkemPublicKeyHandle { public_bytes = key.internal_handle_.public_key }
+		MlkemPrivateKeyHandle {
+			if key.internal_handle_.seed.len != 64 { return error('OperationError: Private seed is unavailable') }
+			public_bytes = key.internal_handle_.public_key
+			private_text = base64url_encode(key.internal_handle_.seed)
+		}
+		else { return error('OperationError: Invalid ML-KEM key handle') }
+	}
+	return JsonWebKey{kty: 'AKP', alg: key.algorithm_name(), pub_: base64url_encode(public_bytes), priv: private_text, key_ops: key.usages.map(key_usage_string(it)), ext: key.extractable}
 }
 
 fn mlkem_encapsulate(params AlgorithmParams, key &CryptoKey) !EncapsulatedBits {

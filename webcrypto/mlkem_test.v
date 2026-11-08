@@ -136,7 +136,7 @@ fn test_mlkem_generation_usages_key_variants_and_source_error_order() {
 	if _ := subtle.import_jwk(JsonWebKey{}, 'ML-KEM-512', true, [.encapsulate_bits], '') {
 		assert false
 	} else {
-		assert err.msg() == 'NotSupportedError: Invalid key format'
+		assert err.msg() == 'DataError: Invalid key type'
 	}
 	malformed := subtle.import_key(.raw_public, [u8(1)], 'ML-KEM-512', true, [.encapsulate_bits], '')!
 	assert malformed.handle() == [u8(1)]
@@ -178,6 +178,37 @@ fn test_mlkem_promise_decapsulation_copies_ciphertext_and_uses_crypto_tasks() {
 	host.settle[0]()
 	assert promise.state == .fulfilled
 	assert webidl.get_buffer_source_copy(promise.result.buffer_value or { panic('secret') }).hex() == vector.shared_hex
+}
+
+fn test_mlkem_jwk_roundtrips_and_rejects_invalid_metadata_or_key_material() {
+	subtle := SubtleCrypto.create()
+	for fixture in mlkem_source_fixtures {
+		private_key := subtle.import_key(.raw_seed, hex.decode(fixture.seed_hex)!, fixture.name, true, [.decapsulate_bits], '')!
+		private_jwk := subtle.export_jwk(private_key)!
+		assert private_jwk.kty or { '' } == 'AKP'
+		assert base64url_decode(private_jwk.pub_ or { '' })!.hex() == fixture.public_hex
+		assert subtle.import_jwk(private_jwk, fixture.name, true, [.decapsulate_bits], '')!.handle() == private_key.handle()
+		public_key := subtle.import_key(.raw_public, hex.decode(fixture.public_hex)!, fixture.name, true, [.encapsulate_bits], '')!
+		public_jwk := subtle.export_jwk(public_key)!
+		assert public_jwk.priv == none
+		assert subtle.import_jwk(public_jwk, fixture.name, true, [.encapsulate_bits], '')!.handle() == public_key.handle()
+		for invalid in [
+			JsonWebKey{...public_jwk, kty: 'oct'},
+			JsonWebKey{...public_jwk, alg: none},
+			JsonWebKey{...public_jwk, alg: 'ML-KEM-invalid'},
+			JsonWebKey{...public_jwk, use: 'sig'},
+			JsonWebKey{...public_jwk, key_ops: ['decapsulateBits']},
+			JsonWebKey{...public_jwk, ext: false},
+			JsonWebKey{...public_jwk, pub_: base64url_encode([u8(1)])},
+		] {
+			if _ := subtle.import_jwk(invalid, fixture.name, true, [.encapsulate_bits], '') { assert false }
+			else { assert err.msg().starts_with('DataError:') }
+		}
+		for invalid in [JsonWebKey{...private_jwk, priv: base64url_encode([u8(1)])}, JsonWebKey{...private_jwk, pub_: base64url_encode([]u8{len: hex.decode(fixture.public_hex)!.len})}] {
+			if _ := subtle.import_jwk(invalid, fixture.name, true, [.decapsulate_bits], '') { assert false }
+			else { assert err.msg().starts_with('DataError:') }
+		}
+	}
 }
 
 fn test_mlkem_async_key_methods_use_key_usage_and_source_shared_import_rules() {

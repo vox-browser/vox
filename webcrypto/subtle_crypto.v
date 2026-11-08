@@ -667,7 +667,7 @@ pub fn (subtle_crypto &SubtleCrypto) export_jwk(key &CryptoKey) !JsonWebKey {
 		return JsonWebKey.parse(export_aes_ocb_key(.jwk, key)!)
 	}
 	if key.algorithm_name().starts_with('ML-DSA-') { return export_mldsa_jwk(key) }
-	if key.algorithm_name().starts_with('ML-KEM-') { return error('NotSupportedError: Invalid key format') }
+	if key.algorithm_name().starts_with('ML-KEM-') { return export_mlkem_jwk(key) }
 	if key.algorithm_name() == 'Ed448' { return export_ed448_jwk(key) }
 	if key.algorithm_name() in ['X25519', 'X448'] { return export_exchange_jwk(key.algorithm_name(), key) }
 	return error('NotSupportedError: Invalid key format')
