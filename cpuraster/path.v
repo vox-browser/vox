@@ -667,6 +667,8 @@ fn (p Path) rect_contour() ?RectContour {
 		1) & 3)}
 }
 
+// glibc exposes the combined sin/cos entry point under GNU extensions.
+#flag linux -D_GNU_SOURCE=1
 #include "@DIR/path_math.h"
 
 fn C.cpuraster_sincosf(x f32, s &f32, c &f32)
