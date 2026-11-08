@@ -48,6 +48,8 @@ const image_filter_round_epsilon = f32(1e-3)
 struct FilterImageInfo {
 	premultiplied bool = true
 	display_p3 bool
+	// The paint's DstIn alpha filter precedes the canvas filter graph.
+	alpha f32 = 1
 }
 
 fn (info FilterImageInfo) bitmap(image BlurImage) CanvasBitmap {

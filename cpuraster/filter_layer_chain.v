@@ -75,7 +75,7 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		pending << stages[i].pre_color
 		if result.has_image && (sx[i] != 0 || sy[i] != 0) {
 			incoming_color := new_color_filter(pending)
-			if incoming_color != none || result.color_info.display_p3 {
+			if incoming_color != none || result.color_info.display_p3 || result.color_info.alpha != 1 {
 				// A real blur resolves its child's deferred color filter into
 				// N32 pixels. Identity passes preserve it without quantization.
 				result = FilterResult{...result, image: SpecialImage{
@@ -96,6 +96,6 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	}
 	pending << post_color
 	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()), base_x + result.origin_x,
-		base_y + result.origin_y, &rc, mode, pending)
+		base_y + result.origin_y, &rc, mode, pending, result.color_info.alpha)
 	return true
 }

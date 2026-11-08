@@ -316,7 +316,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		}
 	}
 	incoming_color := new_color_filter(step.pre_color)
-	if (layer_sx != 0 || layer_sy != 0) && (incoming_color != none || layer_info.display_p3) {
+	if (layer_sx != 0 || layer_sy != 0) && (incoming_color != none || layer_info.display_p3 || layer_info.alpha != 1) {
 		layer_image = filter_layer_source_image(layer_image, layer_info, incoming_color)
 		layer_info = FilterImageInfo{}
 	}
@@ -371,7 +371,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 				merge_padded.left, merge_padded.top, &merge_clip, step.color, shadow_matrices)
 		}
 		draw_color_filtered_bitmap(mut merged, mw * 4, foreground.color_info.bitmap(foreground.image.bitmap()), foreground.origin_x - merge_padded.left,
-			foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color)
+			foreground.origin_y - merge_padded.top, &merge_clip, .src_over, step.pre_color, foreground.color_info.alpha)
 		draw_color_filtered_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, base_x + merge_padded.left,
 			base_y + merge_padded.top, &rc, mode, restore_matrices)
 		return true
@@ -391,7 +391,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	image := result.image.bitmap()
 	ix := base_x + result.origin_x
 	iy := base_y + result.origin_y
-	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(image), ix, iy, &rc, mode, restore_matrices)
+	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(image), ix, iy, &rc, mode, restore_matrices, result.color_info.alpha)
 	return true
 }
 
@@ -448,7 +448,7 @@ fn draw_tinted_filter_result_with_color(mut pixels []u8, pitch int, result Filte
 	total := pre_translate(net, -f32(pad), -f32(pad))
 	bitmap := result.color_info.bitmap(image)
 	shader := new_image_shader(bitmap, .clamp, .clamp, true, total)
-	base := new_image_blitter(mut pixels, pitch, shader.image, 1, .src_over)
+	base := new_image_blitter(mut pixels, pitch, shader.image, result.color_info.alpha, .src_over)
 	a := f32(color >> 24) * inv_255
 	tint := [f32((color >> 16) & 255) * inv_255 * a, f32((color >> 8) & 255) * inv_255 * a,
 		f32(color & 255) * inv_255 * a, a]!
@@ -470,10 +470,19 @@ fn draw_tinted_filter_result_with_color(mut pixels []u8, pitch int, result Filte
 // SkBitmapDevice::drawSpecial() of a pixel-aligned filter result:
 // Draw::drawBitmap()'s sprite blitters when the clip handles the sprite,
 // otherwise its rect filled with the nearest clamped image shader.
-fn draw_filter_bitmap(mut pixels []u8, pitch int, bitmap CanvasBitmap, x int, y int, rc &RasterClip, mode BlendMode) {
+fn draw_filter_bitmap(mut pixels []u8, pitch int, bitmap CanvasBitmap, x int, y int, rc &RasterClip, mode BlendMode, source_alpha f32) {
 	bounds := IRect{x, y, x + bitmap.width, y + bitmap.height}
 	unbounded := blend_affects_transparent_black(mode)
 	if !unbounded && !irect_intersects(rc.bounds(), bounds) {
+		return
+	}
+	if source_alpha != 1 {
+		// DstIn alpha is a color filter, so it keeps the raster pipeline
+		// instead of the legacy sprite/context alpha-rounding rules.
+		shader := new_image_shader(bitmap, if unbounded { .decal } else { .clamp },
+			if unbounded { .decal } else { .clamp }, false, affine_translate(f32(x), f32(y)))
+		mut blitter := new_image_blitter(mut pixels, pitch, shader.image, source_alpha, mode)
+		fill_irect(if unbounded { rc.bounds() } else { bounds }, rc, mut blitter)
 		return
 	}
 	if unbounded && !bounds.contains(rc.bounds()) {

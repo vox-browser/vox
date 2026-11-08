@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2459,7 +2459,8 @@ fn random_image_source(width int, height int) [4]f32 {
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
 	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
-	converted := fractional || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
+	converted := fractional || alpha_layers || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
@@ -2541,7 +2542,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				source: [f32(left), top, sw, sh]!
 				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
 				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
-				global_alpha: 1
+				global_alpha: if alpha_layers { random_composite_alpha() } else { f32(1) }
 				chromium: false
 				filters: if converted { random_converted_image_blurs() } else { match i % 4 {
 					0 { random_layer_filters() }
@@ -2551,7 +2552,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				} }
 			}
 		}
-		if fractional {
+		if fractional || (alpha_layers && i % 2 == 0) {
 			l := f32(rand.f64() * f64(image.width) * .4)
 			t := f32(rand.f64() * f64(image.height) * .4)
 			r := f32(image.width) - f32(rand.f64() * f64(image.width) * .4)

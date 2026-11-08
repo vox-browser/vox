@@ -635,7 +635,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 				f: -2
 			}
 		}
-		context.drawing_state.global_alpha = if i == 1 && !spatial { 0.6 } else { 1 }
+		context.drawing_state.global_alpha = if i == 1 { 0.6 }
+			else if spatial && i == 2 { 0.65 } else { 1 }
 		context.drawing_state.image_smoothing_enabled = i == 0
 		context.drawing_state.current_compositing_and_blending_operator = if i < 3 {
 			operations[i]
