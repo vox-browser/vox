@@ -4,7 +4,7 @@ fn indexed_db_binding_factory() string {
 	return r'(function(operate,global){
  const define=Object.defineProperty,descriptor=Object.getOwnPropertyDescriptor,create=Object.create,T=global.TypeError;
  const constructors={},names=["IDBFactory","IDBRequest","IDBOpenDBRequest","IDBDatabase","IDBTransaction","IDBObjectStore","IDBIndex","IDBCursor"];
- for(const name of [...names,"IDBKeyRange"]){
+ for(const name of [...names,"IDBKeyRange","IDBRecord"]){
   const constructor={[name]:function(){throw new T("Illegal constructor")}}[name];
   const parent=name==="IDBOpenDBRequest"?constructors.IDBRequest:["IDBRequest","IDBDatabase","IDBTransaction"].includes(name)?global.EventTarget:null;
   if(parent){Object.setPrototypeOf(constructor,parent);Object.setPrototypeOf(constructor.prototype,parent.prototype)}
@@ -22,6 +22,8 @@ fn indexed_db_binding_factory() string {
  function getter(type,name){const get=descriptor({get [name](){operate("brand",this,type);return operate(name,this)}},name).get;define(constructors[type].prototype,name,{get,enumerable:true,configurable:true})}
  for(const [type,properties] of [["IDBRequest",["result","error","source","transaction","readyState"]],["IDBDatabase",["name","version","objectStoreNames"]],["IDBTransaction",["db","mode","durability","error","objectStoreNames"]],["IDBObjectStore",["name","keyPath","autoIncrement","indexNames","transaction"]],["IDBIndex",["name","objectStore","keyPath","multiEntry","unique"]],["IDBCursor",["source","direction","key","primaryKey","request"]],["IDBCursorWithValue",["value"]],["IDBKeyRange",["lower","upper","lowerOpen","upperOpen"]]])for(const name of properties)getter(type,name);
  method("IDBKeyRange","includes",1);
+ for(const name of ["key","primaryKey","value"])getter("IDBRecord",name);
+ for(const type of ["IDBObjectStore","IDBIndex"])for(const name of ["getAll","getAllKeys","getAllRecords"])method(type,name,0);
  for(const [name,length] of [["only",1],["lowerBound",1],["upperBound",1],["bound",2]]){
   const value=({[name](...args){if(args.length<length)throw new T(name+" requires "+length+" argument(s)");return operate("keyRange:"+name,undefined,...args)}})[name];
   define(value,"length",{value:length,configurable:true});define(constructors.IDBKeyRange,name,{value,writable:true,enumerable:true,configurable:true});
@@ -114,6 +116,6 @@ fn indexed_db_binding_factory() string {
   }
   return domString(value);
  }
- return [...names.map(name=>constructors[name].prototype),versionPrototype,makeList,value=>{if(value===null||(typeof value!=="object"&&typeof value!=="function")||typeof value[Symbol.iterator]!=="function")throw new T("Expected a sequence");return Array.from(value)},keyPath,IDBCursorWithValue.prototype,constructors.IDBKeyRange.prototype];
+ return [...names.map(name=>constructors[name].prototype),versionPrototype,makeList,value=>{if(value===null||(typeof value!=="object"&&typeof value!=="function")||typeof value[Symbol.iterator]!=="function")throw new T("Expected a sequence");return Array.from(value)},keyPath,IDBCursorWithValue.prototype,constructors.IDBKeyRange.prototype,constructors.IDBRecord.prototype];
 })'
 }

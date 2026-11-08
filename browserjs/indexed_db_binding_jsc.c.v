@@ -51,6 +51,8 @@ mut:
 	key_path       voidptr
 	key_range_prototype voidptr
 	key_ranges     map[voidptr]indexeddb.IDBKeyRange
+	record_prototype voidptr
+	records        map[voidptr]IndexedDBRecordBinding
 	entries        map[voidptr]&IndexedDBBindingEntry
 	wrappers       map[voidptr]voidptr
 	stores         map[string]voidptr
@@ -143,6 +145,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	binding.key_path = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 11, &exception))!
 	binding.prototypes << runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 12, &exception))!
 	binding.key_range_prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 13, &exception))!
+	binding.record_prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 14, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -170,6 +173,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 		binding.indexes = {}
 		binding.version_events = {}
 		binding.key_ranges = {}
+		binding.records = {}
 		indexed_db_bindings_.delete(owner)
 	})
 }
@@ -391,6 +395,9 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 	if range := binding.key_ranges[receiver] {
 		return runtime.indexed_db_range_operation(range, method, args)
 	}
+	if record := binding.records[receiver] {
+		return runtime.indexed_db_record_operation(record, method, args)
+	}
 	mut entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal IndexedDB receiver') }
 	if method == 'brand' {
 		name := runtime.indexed_db_dom_string(args[2])!
@@ -498,6 +505,13 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 					.count { C.vox_jsc_JSValueMakeNumber(runtime.context, f64(request.count)) }
 					.database { runtime.indexed_db_database(mut binding, request.database)! }
 					.value { runtime.indexed_db_output(request.value)! }
+					.values { runtime.indexed_db_output(indexeddb.array_value(request.values))! }
+					.keys {
+						mut values := []indexeddb.Value{cap: request.keys.len}
+						for key in request.keys { values << indexeddb.key_to_value(key)! }
+						runtime.indexed_db_output(indexeddb.array_value(values))!
+					}
+					.records { runtime.indexed_db_records(mut binding, request.records)! }
 					.key {
 						if key := request.key {
 							runtime.indexed_db_output(indexeddb.key_to_value(key)!)!
@@ -607,6 +621,10 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.object_store {
 			mut store := entry.store
+			if method in ['getAll', 'getAllKeys', 'getAllRecords'] {
+				options := runtime.indexed_db_batch_options(binding, entry, method, args)!
+				return runtime.indexed_db_request(mut binding, store.get_all_async(options, indexed_db_retrieval_kind(method))!, none, receiver)
+			}
 			if method == 'name' { return runtime.indexed_db_string(store.name()) }
 			if method == 'keyPath' {
 				if entry.key_path_value == unsafe { nil } {
@@ -667,6 +685,10 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.index {
 			mut index := entry.index
+			if method in ['getAll', 'getAllKeys', 'getAllRecords'] {
+				options := runtime.indexed_db_batch_options(binding, entry, method, args)!
+				return runtime.indexed_db_request(mut binding, index.get_all_async(options, indexed_db_retrieval_kind(method))!, none, receiver)
+			}
 			if method == 'count' {
 				index.require_cursor_source()!
 				range := runtime.indexed_db_query_range(binding, runtime.ui_event_argument(args, 2), false)!
