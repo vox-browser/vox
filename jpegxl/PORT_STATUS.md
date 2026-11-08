@@ -16,8 +16,8 @@ The direct bounded byte reader replaces the source's refill cache. Reads after
 an error and cached-reader checkpoints are not a source-state parity claim.
 Hybrid bit allocations and integer-coder overflow are checked before shifting
 or adding. Nonminimal split exponents above the alphabet log are accepted, as
-in the pinned source, and have focused regressions. Half-float decoding preserves the pinned source's subnormal
-exponent, which is one below IEEE binary16; it is not advertised as a general
+in the pinned source, and have focused regressions. Half-float decoding
+preserves the pinned source's subnormal exponent, which is one below IEEE binary16; it is not advertised as a general
 IEEE conversion utility.
 
 `testdata/primitives.tsv` has 75,776 independent reference records: every one of
@@ -68,7 +68,7 @@ checks all completed module tests using V alone.
 ANS entropy decoding now covers single/two-symbol, uniform and complex
 histograms, repeated/omitted probabilities, alias maps, state renormalization,
 context tables and final-state checks. Frozen comparisons contain 4,096
-header/symbol/state cases (2,559 accepted by the source) and 49,152 one-step
+header/symbol/state cases (2,559 with parsed outputs and explicit validity flags) and 49,152 one-step
 transitions spanning every alias position for twelve histograms. Values,
 consumed bits and states match exactly; parse error messages are normalized.
 Known single/two-symbol examples, truncation and checksum failures also pass.
@@ -83,8 +83,8 @@ clamping, overlapping copies, the bounded 1,048,576-entry window and deferred
 repeat/overflow errors. Its window grows lazily, unlike the source's up-front
 reservation. Resizing context maps preserves the original distance cluster.
 
-Frozen comparisons add 5,656 histogram/symbol records (2,105 accepted by the
-source) and 4,098 context maps (1,618 accepted). They compare metadata,
+Frozen comparisons add 5,656 histogram/symbol records (2,105 with parsed outputs and
+explicit final validity) and 4,098 context maps (1,618 accepted). They compare metadata,
 cluster maps, values, validity and consumed bits exactly. Constructed cases
 cover all 128 direct/special distance symbols at six widths, before/after
 context padding, first-token repeats and copy-length overflow. The source's
@@ -103,9 +103,28 @@ states. Ring-wrap, bound and type-mismatch checks run separately. Default and
 no-GC checks pass; excessive rewinds return an error instead of slicing beyond
 the checkpoint. The BitReader cursor remains the caller's separate snapshot.
 
-Remaining work includes container/API streaming, metadata/color headers, modular prediction/transforms, VarDCT,
-filtering, color conversion, orientation, exact alpha quantization and browser
-integration. The V package is not connected to the production image path until
+File headers and metadata now translate extra channels, orientation geometry,
+intrinsic/preview sizes, animation timing flags, bit depth, color descriptions,
+white-point/primary validation, gamma and tone mapping, extensions, custom
+opsin matrices and all three upsampling kernels. Parsing accepts metadata for
+unsupported animation/wide-gamut images so the eventual decoder can apply its
+existing policy; it does not add pixel support for those formats.
+
+The new header corpus has 6,184 source records (3,420 accepted), including all
+seventeen named extra-channel kinds, every custom-weight mask and the seven
+existing browser JPEG XL fixtures. Source-public metadata fields are compared
+explicitly; complete transform float bit patterns and complete file serializers
+are compared by SHA-256 to keep the fixture compact. Names/CFA fields also have
+known-input checks. Every record checks consumed bits, and error strings remain
+normalized. The RGBA container and bare stream agree, rotated dimensions map
+correctly and all eight orientations have pixel/rectangle/row-step checks.
+Truncated names and extension payloads now preserve source bit consumption,
+with separate focused regressions.
+
+Remaining work includes frame headers and tables of contents, modular
+prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
+rows, exact alpha quantization and browser integration. Container/API streaming
+remains a broader parity task. The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
 and rejection rules. The Rust decoder and its build/test dependencies must then
 be removed together.
