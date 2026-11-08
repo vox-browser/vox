@@ -920,3 +920,68 @@ fn test_offscreen_shadow_does_not_shift_the_identity_merge_origin() {
 	assert pixels[5 * 344 + 35 * 4] == 128
 	assert sha256.sum(pixels).hex()[..16] == '6918c091a7f3c206'
 }
+
+fn test_nearest_source_shadows_resolve_before_fractional_offset() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	hashes := $if linux { ['74ef0767c101390a', 'b0b67dba3bb87d45', '741e193007ca6ec3', '9a8d7906fd102a19', 'e00d7577ca66d313', '1ad1f894abb926c3', '5581e3d64779e918', 'a752fab16a4109bb', '98ab8774ecaffba1', '58098840e4e0f6d9'] } $else { ['58dcb346943e34ad', '9b7978b9155b68b7', 'a005d44326d848c9', '75f9f4859dba60e3', '2e3b1a72ba273cd9', '2e367dd716646a39', '4e105e2ca7a7eea7', '34955f83e4426d58', '30aa689b07f085a0', '58098840e4e0f6d9'] }
+	for i in 0 .. hashes.len {
+		mut pixels := image_test_background()
+		source := if i in [1, 2, 3, 6] { [f32(1), 1, 5, 4]! }
+			else if i == 7 { [f32(2), 2, 4, 3]! } else { [f32(0), 0, 7, 6]! }
+		destination := match i {
+			0 { [f32(4), 5, 30, 25]! }
+			1 { [f32(4.25), 6.5, 25, 18]! }
+			4 { [f32(10.25), 12.5, 2, 3]! }
+			5 { [f32(10.25), 12.5, 28, 18]! }
+			8 { [f32(-30), 6, 24, 18]! }
+			else { [f32(4.5), 6.25, 22, 16]! }
+		}
+		transform := if i == 6 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+			else if i == 7 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { image_test_identity }
+		mode := match i { 0 { BlendMode.src_over } 2 { .overlay } 4 { .plus_lighter } 5 { .multiply } else { .src_in } }
+		alpha := if i in [2, 3] { f32(.65) } else if i in [4, 7] { f32(.7) }
+			else if i == 5 { f32(.999) } else { f32(1) }
+		sigma := if i in [3, 4] { f32(-1) } else if i in [1, 2, 5] { f32(.000001) } else { f32(0) }
+		offset := match i {
+			6 { Point{3.5, -2.25} } 7 { Point{.25, -.75} } 8 { Point{34.5, -2.25} }
+			9 { Point{150.25, -100} } else { Point{5.25, -3.75} }
+		}
+		mut steps := []CanvasFilterStep{}
+		if i in [2, 3, 6, 8, 9] { steps << contrast }
+		steps << CanvasFilterStep{kind: .drop_shadow, sigma: sigma,
+			offset_x: offset.x, offset_y: offset.y, color: 0x805030e0}
+		if i in [2, 3, 8, 9] { steps << opacity }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i !in [2, 3, 5], i in [2, 3, 4, 7]), source, destination,
+			false, alpha, mode, image_test_clips(i in [1, 3, 4, 5, 8, 9]), new_canvas_filter(steps), false),
+			'resolved shadow fixture ${i} declined'
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'resolved shadow fixture ${i}'
+	}
+}
+
+fn test_thin_nearest_shadow_resolve_preserves_native_coverage() {
+	image := CanvasBitmap{width: 24, height: 2, pitch: 100, premultiplied: true, display_p3: true,
+		pixels: $embed_file('testdata/resolved-shadow-thin-source.rgba').to_bytes()}
+	identity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]!}}
+	for i in 0 .. 2 {
+		mut pixels := $embed_file('testdata/resolved-shadow-thin-background.rgba').to_bytes()
+		mut steps := [identity, CanvasFilterStep{kind: .drop_shadow, sigma: -1,
+			offset_x: -16, offset_y: 10, color: 0xffffffff}]
+		if i == 1 {
+			steps << identity
+			steps << CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+				matrix: [f32(-.0664451), .47126946, .10513631, -.90223706, .2727217,
+					-.21826614, -.57720643, .41614532, .73150754, -.86200744,
+					-.14551322, -.39294574, -.6733888, .11890532, -.2589099, 0, 0, 0, .16235755, 0]!}}
+		}
+		assert draw_canvas_image_filtered(mut pixels, 87, 8, 352, 1,
+			[f32(1.9846058), 0, 0, -.2999618, 3.25, 6.4]!, image, [f32(5), 0, 16, 2]!,
+			[f32(18.515005), -1.4122566, 85.50765, 2.448695]!, false, 1,
+			if i == 0 { .src } else { .src_atop }, [], new_canvas_filter(steps), false)
+		expected := $if linux { ['a1efef67211fbbde', 'aff78d507ddefba6'] } $else { ['b54173ae0d037c96', '09ffe213e3642515'] }
+		assert sha256.sum(pixels).hex()[..16] == expected[i]
+	}
+}

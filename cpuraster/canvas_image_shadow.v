@@ -6,11 +6,8 @@ fn draw_deferred_image_shadow(mut pixels []u8, width int, height int, pitch int,
 	inverse := affine_invert(ctm) or { return false }
 	offset := sk_concat(ctm, post_translate(inverse, step.offset_x, step.offset_y))
 	if !affine_is_finite(offset) || math_abs32(offset.tx) > 1 << 24 || math_abs32(offset.ty) > 1 << 24 { return false }
-	if !foreground.default_sampling && !foreground.smoothing && !filter_nearly_integer_translation(offset) {
-		// Nearest source sampling followed by a fractional linear offset
-		// requires a resolve surface before the transform can be applied.
-		return false
-	}
+	needs_resolve := !foreground.default_sampling && !foreground.smoothing
+		&& !filter_nearly_integer_translation(offset)
 	bitmap := foreground.bitmap
 	if !foreground.layer_bounds.contains(map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, foreground.transform)) {
 		return false
@@ -20,8 +17,9 @@ fn draw_deferred_image_shadow(mut pixels []u8, width int, height int, pitch int,
 		layer_bounds: map_filter_bounds(foreground.layer_bounds, offset),
 		default_sampling: foreground.default_sampling || foreground.smoothing,
 		filter: if valid_blur { foreground.filter } else { none }, tint: step.color}
-	if !affine_is_finite(shadow.transform)
-		|| !shadow.layer_bounds.contains(map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, shadow.transform)) { return false }
+	if !affine_is_finite(shadow.transform) { return false }
+	if !needs_resolve && !shadow.layer_bounds.contains(
+		map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, shadow.transform)) { return false }
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
 	bounds := step.source_draw_bounds or { dst }
@@ -34,10 +32,23 @@ fn draw_deferred_image_shadow(mut pixels []u8, width int, height int, pitch int,
 	// applyTransform() drops an offset image outside the desired output.
 	// A foreground color-filter node also drops a nonintersecting source.
 	// Empty inputs must not widen the merge bounds or change its origin.
-	has_shadow := irect_intersects(shadow.layer_bounds, rc.bounds())
+	mut resolved_shadow := ?FilterResult(none)
+	mut shadow_bounds := shadow.layer_bounds
+	if needs_resolve {
+		// applyTransform() resolves the tinted nearest source before its
+		// linear offset. This preserves both sampling operations and their
+		// intermediate quantization, while leaving the foreground deferred.
+		input := FilterImageView{...shadow, transform: foreground.transform,
+			layer_bounds: foreground.layer_bounds, default_sampling: foreground.default_sampling}
+		tight := map_filter_bounds(rc.bounds(), affine_invert(offset) or { return false })
+		resolved := resolve_filter_image_view(input, tight) or { return false }
+		resolved_shadow = resolved
+		shadow_bounds = if resolved.has_image { map_filter_bounds(resolved.layer_bounds, offset) } else { IRect{} }
+	}
+	has_shadow := irect_intersects(shadow_bounds, rc.bounds())
 	has_foreground := foreground.filter == none || irect_intersects(foreground.layer_bounds, rc.bounds())
 	foreground_bounds := if has_foreground { foreground.layer_bounds } else { IRect{} }
-	shadow_bounds := if has_shadow { shadow.layer_bounds } else { IRect{} }
+	if !has_shadow { shadow_bounds = IRect{} }
 	merged_bounds := union_filter_bounds(foreground_bounds, shadow_bounds).intersect(rc.bounds()) or {
 		target.ready()
 		draw_empty_filter_result(mut pixels, pitch, &rc, mode)
@@ -52,8 +63,13 @@ fn draw_deferred_image_shadow(mut pixels []u8, width int, height int, pitch int,
 	// Both views are finite and axial and use source-over, so neither draw
 	// can enter an unsupported rotated clearing or path rasterization case.
 	if has_shadow {
-		draw_filter_image_view(mut merged, mw * 4, &merge_clip, .src_over, shadow,
-			padded.left, padded.top, mut merge_target)
+		if resolved := resolved_shadow {
+			draw_resolved_filter_image(mut merged, mw * 4, &merge_clip, resolved, offset,
+				padded.left, padded.top)
+		} else {
+			draw_filter_image_view(mut merged, mw * 4, &merge_clip, .src_over, shadow,
+				padded.left, padded.top, mut merge_target)
+		}
 	}
 	if has_foreground {
 		draw_filter_image_view(mut merged, mw * 4, &merge_clip, .src_over, foreground,
