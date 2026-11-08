@@ -20,6 +20,8 @@ def main():
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--deps-root', type=Path,
                         help='cross-compilation sysroot containing mingw64/')
+    parser.add_argument('--console', action='store_true',
+                        help='keep a console entry point for startup diagnostics')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     environment = dict(os.environ, V_MACOS_V3_NO_FALLBACK='1')
@@ -56,9 +58,14 @@ def main():
     # Keep target C runtime objects independent of host builds and old sysroots.
     with tempfile.TemporaryDirectory(prefix='vox-windows-compile-') as scratch:
         environment['VTMP'] = scratch
-        run([compiler, '-memory-limit', '10G', '-enable-globals', '-gc', 'none',
+        # Production embedding is required when the executable leaves this
+        # checkout. Keep the C optimization level unchanged for this build path.
+        flags = ['-prod', '-no-prod-options']
+        if args.console:
+            flags += ['-subsystem', 'console']
+        run([compiler, '-memory-limit', '10G', *flags, '-enable-globals', '-gc', 'none',
              '-os', 'windows', '-arch', 'amd64', '-cc', environment['CC'],
-             '-d', 'ui2_custom_rendering',
+             '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11',
              '-path', f'{repo}|{modules}|@vmodules|@vlib', '-o', output, '.'])
     if output.read_bytes()[:2] != b'MZ':
         raise SystemExit('Compiler did not produce a Windows executable')

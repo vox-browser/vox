@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Vox Windows VM smoke</title>
+    <style>
+        body { font: 24px sans-serif; background: #eaf2ff; padding: 32px; color: #15365e; }
+        h1 { color: #145b39; }
+        .box { background: #20824b; color: white; padding: 24px; border-radius: 12px; width: 600px; }
+        button { font: 24px sans-serif; margin-top: 24px; padding: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Vox runs on Windows 11</h1>
+    <div class="box">Rendered by Vox inside the existing Windows VM.</div>
+    <p id="result">JavaScript pending</p>
+    <button id="click-test" onclick="document.getElementById('result').textContent = 'Click passed'">Test click</button>
+    <script>document.getElementById('result').textContent = 'JavaScript passed';</script>
+</body>
+</html>

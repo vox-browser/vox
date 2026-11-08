@@ -16,6 +16,11 @@ fn begin_browser_frame(ctx &gg.Context) {
 		}
 	}
 	ctx.begin()
+	$if windows && sokol_d3d11 ? {
+		// GG resets to its default pipeline at begin(). Opaque primitives keep
+		// that selection, so start them on the adapter's corrected shader too.
+		ctx.r.load_pipeline(ctx.pipeline.alpha)
+	}
 }
 
 fn end_browser_frame(ctx &gg.Context) {

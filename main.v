@@ -752,6 +752,9 @@ fn browser_window_size() gg.Size {
 }
 
 fn (mut app BrowserApp) initialize_native_window() {
+	$if windows && sokol_d3d11 ? {
+		configure_windows_browser_renderer(app.ctx)
+	}
 	$if macos {
 		C.native_finish_test_window()
 		if app.screenshot_path != '' {
