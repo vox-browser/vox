@@ -1141,3 +1141,10 @@ The browser still retains Skia dependencies; no Skia-free link or run is claimed
 Axis-preserving transforms now retain rounded-rectangle convexity on Linux, matching immutable SkPathData. The legacy macOS path behavior is preserved. A frozen mask regression covers the quarter-turn rounding difference. Both platforms match 20,000 rounded-rectangle and difference-clip cases; Linux also matches 20,000 outer-shadow attempts, including 3,285 painted results.
 See the [verification receipt](gg-migration/rounded-clip-convexity-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Nested rounded inner shadows (2026-11-08)
+
+Portable inner shadows now accept strictly nested rounded contours when bounding-box corners or concentric corner ellipses prove containment. Six native fixtures cover curved outer bounds, scales, rotations, antialiased overlap and concentric insets. The 20,000-attempt corpora match on macOS (5,134 painted), production macOS (5,167 painted) and Linux (5,155 painted). All 27 CPU raster test files pass; the FMA audit reports zero contracted operations. Intersections and shared edges still require the native fallback.
+See the [verification receipt](gg-migration/rounded-inner-shadows-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
