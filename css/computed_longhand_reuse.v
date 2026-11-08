@@ -79,6 +79,7 @@ struct ComputedLonghandReuseValue {
 	color       Color
 	display     Display
 	text        string
+	identifiers []string
 	value_type  string
 	children    []ComputedLonghandReuseValue
 	separator   StyleValueListSeparator
@@ -154,7 +155,8 @@ fn computed_longhand_reuse_typed_snapshot(value &StyleValue) ComputedLonghandReu
 		DisplayStyleValue { ComputedLonghandReuseValue{ kind: .display, display: value.display_ } }
 		StringStyleValue { ComputedLonghandReuseValue{ kind: .string_, text: value.string_value_ } }
 		CustomIdentStyleValue {
-			ComputedLonghandReuseValue{ kind: .custom_ident, text: value.custom_ident_ }
+			ComputedLonghandReuseValue{ kind: .custom_ident, text: value.custom_ident_,
+				identifiers: value.family_identifiers_.clone() }
 		}
 		StyleValueList {
 			mut children := []ComputedLonghandReuseValue{cap: value.values_.len}
@@ -243,6 +245,7 @@ fn computed_longhand_reuse_typed_snapshot_matches(snapshot &ComputedLonghandReus
 		StringStyleValue { snapshot.kind == .string_ && snapshot.text == value.string_value_ }
 		CustomIdentStyleValue {
 			snapshot.kind == .custom_ident && snapshot.text == value.custom_ident_
+				&& snapshot.identifiers == value.family_identifiers_
 		}
 		StyleValueList {
 			if snapshot.kind != .list || snapshot.separator != value.separator_ || snapshot.collapsible != value.collapsible_
@@ -431,7 +434,14 @@ fn computed_longhand_reuse_typed_hash(value &StyleValue) ?u64 {
 			hash
 		}
 		StringStyleValue { u64(8) ^ (u64(value.string_value_.hash()) * u64(0x100000001b3)) }
-		CustomIdentStyleValue { u64(9) ^ (u64(value.custom_ident_.hash()) * u64(0x100000001b3)) }
+		CustomIdentStyleValue {
+			mut hash := u64(9) ^ (u64(value.custom_ident_.hash()) * u64(0x100000001b3))
+			hash = (hash ^ u64(value.family_identifiers_.len)) * u64(0x100000001b3)
+			for ident in value.family_identifiers_ {
+				hash = (hash ^ u64(ident.hash())) * u64(0x100000001b3)
+			}
+			hash
+		}
 		StyleValueList {
 			mut hash := (u64(10) ^ u64(value.separator_) ^ (u64(value.collapsible_) << 8) ^
 				(u64(value.values_.len) << 16)) * u64(0x100000001b3)

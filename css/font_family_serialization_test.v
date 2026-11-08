@@ -43,3 +43,22 @@ fn test_font_family_identifier_boundaries_participate_in_equality_and_invalidati
 	}
 	assert !sequence.equals(one_ident)
 }
+
+fn test_font_family_reuse_snapshots_keep_identifier_boundaries_after_mutation() {
+	mut sequence := StyleValue(CustomIdentStyleValue{
+		custom_ident_: 'Two Words'
+		family_identifiers_: ['Two', 'Words']
+	})
+	one_ident := StyleValue(CustomIdentStyleValue.create('Two Words'))
+	snapshot := computed_longhand_reuse_typed_snapshot(sequence)
+	assert computed_longhand_reuse_typed_snapshot_matches(&snapshot, sequence)
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, one_ident)
+	sequence_hash := computed_longhand_reuse_typed_hash(sequence) or { panic('sequence hash') }
+	ident_hash := computed_longhand_reuse_typed_hash(one_ident) or { panic('identifier hash') }
+	assert sequence_hash != ident_hash
+	if mut sequence is CustomIdentStyleValue {
+		sequence.family_identifiers_[0] = 'Changed'
+	}
+	assert !computed_longhand_reuse_typed_snapshot_matches(&snapshot, sequence)
+	assert snapshot.identifiers == ['Two', 'Words']
+}
