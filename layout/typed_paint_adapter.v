@@ -3866,7 +3866,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			chromium_svg_paint_components(node, .fill, svg_fill_rgba),
 			chromium_svg_paint_components(node, .stroke, svg_stroke_rgba))
 		percentage_basis := viewport_percentage_basis(node, state)
-		svg_stroke_width = computed.length_percentage_to_px(.stroke_width, percentage_basis) or { 1.0 }
+		svg_stroke_width = svg_used_stroke_width(computed, percentage_basis,
+			node.document().font_rendering_policy() == .chromium)
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
 		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
 		svg_non_scaling_stroke = computed.vector_effect() == .non_scaling_stroke

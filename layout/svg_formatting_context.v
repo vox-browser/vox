@@ -1384,7 +1384,8 @@ fn visible_svg_stroke_width(graphics_box &Node, viewport_size CSSPixelSize) f64 
 		}
 	}
 	scaled_viewport_size := (viewport_size.width().to_double() + viewport_size.height().to_double()) * 0.5
-	return computed.length_percentage_to_px(.stroke_width, scaled_viewport_size) or { 1.0 }
+	return svg_used_stroke_width(computed, scaled_viewport_size,
+		graphics_box.document().font_rendering_policy() == .chromium)
 }
 
 fn svg_transform_element_model(graphics_box &Node, element &dom.Element, viewport_size CSSPixelSize) svg.Element {
