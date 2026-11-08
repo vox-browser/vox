@@ -126,6 +126,65 @@ fn test_blur_filter_lists() {
 	assert px == before
 }
 
+fn filter_layer_test_color_pattern() CanvasPattern {
+	mut pixels := []u8{len: 32 * 6}
+	for y in 0 .. 6 { for x in 0 .. 7 {
+		o := y * 32 + x * 4
+		mut alpha := (x * 37 + y * 91) % 256
+		if (x + 2 * y) % 5 == 0 { alpha = 255 }
+		if (x * 3 + y) % 7 == 3 { alpha = 0 }
+		pixels[o] = u8((x * 53 + y * 17) % 256)
+		pixels[o + 1] = u8((x * 11 + y * 67) % 256)
+		pixels[o + 2] = u8((x * 29 + y * 41 + 100) % 256)
+		pixels[o + 3] = u8(alpha)
+	} }
+	return CanvasPattern{pixels: pixels, width: 7, height: 6, pitch: 32,
+		display_p3: true, transform: [f32(1), 0, 0, 1, 0, 0]!}
+}
+
+fn test_color_matrices_before_and_after_filter_layers_match_native() {
+	contrast := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!}}
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	blur := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	steps := [
+		[contrast, blur],
+		[blur, contrast],
+		[contrast, CanvasFilterStep{kind: .blur, sigma: .8}, contrast],
+		[contrast, CanvasFilterStep{kind: .blur}, opacity],
+		[CanvasFilterStep{kind: .drop_shadow, sigma: 2.5, offset_x: 5.25,
+			offset_y: -3.75, color: 0x805030e0}, contrast],
+		[contrast, CanvasFilterStep{kind: .blur, sigma: .01}, opacity],
+		[blur, contrast],
+		[contrast, CanvasFilterStep{kind: .blur, sigma: 1.2}],
+	]
+	hashes := $if linux {
+		['d33ced999498998e', '4fbf747408667051', '4d8eb2b67a5444e4', 'de2bccc7da8fbd81',
+		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'eaee08ab4ceff5d3']
+	} $else {
+		['7ec1657ab2cd72b6', '4fbf747408667051', '4d8eb2b67a5444e4', 'de2bccc7da8fbd81',
+		 '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6', 'fe667fb7d0c8a804', 'ef47838643df8604']
+	}
+	for i, filters in steps {
+		mut pixels := filter_layer_test_background()
+		transform := if i in [2, 7] { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else { [f32(1), 0, 0, 1, 0, 0]! }
+		mode := match i { 2 { BlendMode.multiply } 3, 4 { .src_in } 5 { .plus_lighter } 6 { .overlay } else { .src_over } }
+		alpha_type := if i == 7 { 1 } else { 2 }
+		if i == 6 {
+			assert stroke_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),
+				transform, 0xc0e04010, none, .7, mode, 0, 3, .round, .round, 10, [f32(3), 2], .7,
+				filter_layer_test_clip(), new_canvas_filter(filters))
+		} else {
+			style := if i == 2 { ?CanvasPaintStyle(filter_layer_test_color_pattern()) } else { none }
+			assert fill_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),
+				transform, 0xc0e04010, style, .7, mode, 0, filter_layer_test_clip(), new_canvas_filter(filters))
+		}
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'mixed filter fixture ${i}'
+	}
+}
+
 // Byte hashes captured from vox_skia_canvas_path() in the pinned LibWeb
 // Skia, on the same path/background as the blur-layer regression tests.
 fn test_drop_shadow_filter_layers_match_skia() {

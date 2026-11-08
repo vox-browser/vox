@@ -18,6 +18,8 @@ pub enum CanvasFilterKind {
 // CanvasFilterStep is one canvas filter function. Blur and drop-shadow
 // radii are Gaussian sigmas; offsets are in canvas coordinates.
 pub struct CanvasFilterStep {
+	pre_color []MatrixColorFilter
+	post_color []MatrixColorFilter
 pub:
 	kind     CanvasFilterKind
 	matrix   MatrixColorFilter
@@ -96,6 +98,30 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 	}
 	if f.steps.len == 1 && f.steps[0].kind in [.blur, .drop_shadow] {
 		return FilterPlan{ layer: f.steps[0] }
+	}
+	mut layer_index := -1
+	for i, step in f.steps {
+		if step.kind == .matrix { continue }
+		if layer_index >= 0 { return FilterPlan{declined: true} }
+		layer_index = i
+	}
+	if layer_index >= 0 {
+		step := f.steps[layer_index]
+		mut before := []MatrixColorFilter{}
+		mut after := []MatrixColorFilter{}
+		for i, matrix in f.steps {
+			if i < layer_index { before << matrix.matrix }
+			if i > layer_index { after << matrix.matrix }
+		}
+		// Drop-shadow's foreground must keep a deferred pre-filter until
+		// merging; that result state is not yet represented here.
+		if step.kind == .drop_shadow && before.len > 0 { return FilterPlan{declined: true} }
+		for matrices in [before, after] {
+			if composed := new_color_filter(matrices) {
+				if composed.affects_transparent_black() { return FilterPlan{declined: true} }
+			}
+		}
+		return FilterPlan{layer: CanvasFilterStep{...step, pre_color: before, post_color: after}}
 	}
 	return FilterPlan{
 		declined: true
@@ -245,7 +271,18 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	target.ready()
 	// internalDrawDeviceWithFilter(): the layer without its padding, the
 	// clip bounds in layer pixels as the desired output.
-	layer_image := BlurImage{layer_pixels, lw, lh}
+	mut layer_image := BlurImage{layer_pixels, lw, lh}
+	mut restore_matrices := step.post_color.clone()
+	if step.pre_color.len > 0 {
+		if layer_sx == 0 && layer_sy == 0 {
+			// An identity blur preserves the deferred color filter. Compose
+			// both sides without an intermediate 8-bit quantization.
+			restore_matrices = step.pre_color.clone()
+			restore_matrices << step.post_color
+		} else if color := new_color_filter(step.pre_color) {
+			layer_image = filter_layer_image(layer_image, color)
+		}
+	}
 	source := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
 	desired := IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top}
 	if drop {
@@ -281,8 +318,8 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		}
 		draw_filter_sprite(mut merged, mw * 4, source.image.bitmap(), source.origin_x - merge_padded.left,
 			source.origin_y - merge_padded.top, &merge_clip, .src_over)
-		draw_filter_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, padded.left + merge_padded.left,
-			padded.top + merge_padded.top, &rc, mode)
+		draw_color_filtered_sprite(mut pixels, pitch, BlurImage{merged, mw, mh}, padded.left + merge_padded.left,
+			padded.top + merge_padded.top, &rc, mode, restore_matrices)
 		return true
 	}
 	result := blur_filter_result(source, desired, sx, sy) or { return true }
@@ -300,7 +337,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	image := result.image.bitmap()
 	ix := padded.left + result.origin_x
 	iy := padded.top + result.origin_y
-	draw_filter_sprite(mut pixels, pitch, image, ix, iy, &rc, mode)
+	draw_color_filtered_sprite(mut pixels, pitch, image, ix, iy, &rc, mode, restore_matrices)
 	return true
 }
 
