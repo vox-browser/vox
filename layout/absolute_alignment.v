@@ -47,7 +47,7 @@ fn absolute_aligned_axis_offset(alignment AbsoluteSelfAlignment, box &Node, cont
 	mut center := false
 	match alignment.position {
 		'center' { center = true }
-		'end', 'flex-end' { low = !starts_low }
+		'end', 'flex-end', 'flow-end' { low = !starts_low }
 		'self-start' { low = absolute_axis_starts_low(box, horizontal) }
 		'self-end' { low = !absolute_axis_starts_low(box, horizontal) }
 		'left' { low = true }

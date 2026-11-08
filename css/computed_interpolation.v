@@ -3764,9 +3764,9 @@ pub fn (c &ComputedProperties) align_content() AlignContent {
 	return match keyword {
 		.normal { AlignContent.normal }
 		.start { AlignContent.start }
-		.flex_start { AlignContent.flex_start }
+		.flex_start, .flow_start { AlignContent.flex_start }
 		.end_ { AlignContent.end_ }
-		.flex_end { AlignContent.flex_end }
+		.flex_end, .flow_end { AlignContent.flex_end }
 		.center { AlignContent.center }
 		.stretch { AlignContent.stretch }
 		.space_between { AlignContent.space_between }
@@ -3782,10 +3782,10 @@ pub fn (c &ComputedProperties) align_items() AlignItems {
 	return match keyword {
 		.normal { AlignItems.normal }
 		.start { AlignItems.start }
-		.flex_start { AlignItems.flex_start }
+		.flex_start, .flow_start { AlignItems.flex_start }
 		.self_start { AlignItems.self_start }
 		.end_ { AlignItems.end_ }
-		.flex_end { AlignItems.flex_end }
+		.flex_end, .flow_end { AlignItems.flex_end }
 		.self_end { AlignItems.self_end }
 		.center { AlignItems.center }
 		.stretch { AlignItems.stretch }
@@ -3803,10 +3803,10 @@ pub fn (c &ComputedProperties) align_self() AlignSelf {
 		.auto { AlignSelf.auto_ }
 		.normal { AlignSelf.normal }
 		.start { AlignSelf.start }
-		.flex_start { AlignSelf.flex_start }
+		.flex_start, .flow_start { AlignSelf.flex_start }
 		.self_start { AlignSelf.self_start }
 		.end_ { AlignSelf.end_ }
-		.flex_end { AlignSelf.flex_end }
+		.flex_end, .flow_end { AlignSelf.flex_end }
 		.self_end { AlignSelf.self_end }
 		.center { AlignSelf.center }
 		.stretch { AlignSelf.stretch }
@@ -3914,9 +3914,9 @@ pub fn (c &ComputedProperties) justify_content() JustifyContent {
 	return match keyword {
 		.normal { JustifyContent.normal }
 		.start { JustifyContent.start }
-		.flex_start { JustifyContent.flex_start }
+		.flex_start, .flow_start { JustifyContent.flex_start }
 		.end_ { JustifyContent.end_ }
-		.flex_end { JustifyContent.flex_end }
+		.flex_end, .flow_end { JustifyContent.flex_end }
 		.center { JustifyContent.center }
 		.stretch { JustifyContent.stretch }
 		.space_between { JustifyContent.space_between }
@@ -3934,10 +3934,10 @@ pub fn (c &ComputedProperties) justify_items() JustifyItems {
 	return match keyword {
 		.normal { JustifyItems.normal }
 		.start { JustifyItems.start }
-		.flex_start { JustifyItems.flex_start }
+		.flex_start, .flow_start { JustifyItems.flex_start }
 		.self_start { JustifyItems.self_start }
 		.end_ { JustifyItems.end_ }
-		.flex_end { JustifyItems.flex_end }
+		.flex_end, .flow_end { JustifyItems.flex_end }
 		.self_end { JustifyItems.self_end }
 		.center { JustifyItems.center }
 		.stretch { JustifyItems.stretch }
@@ -3958,10 +3958,10 @@ pub fn (c &ComputedProperties) justify_self() JustifySelf {
 		.auto { JustifySelf.auto_ }
 		.normal { JustifySelf.normal }
 		.start { JustifySelf.start }
-		.flex_start { JustifySelf.flex_start }
+		.flex_start, .flow_start { JustifySelf.flex_start }
 		.self_start { JustifySelf.self_start }
 		.end_ { JustifySelf.end_ }
-		.flex_end { JustifySelf.flex_end }
+		.flex_end, .flow_end { JustifySelf.flex_end }
 		.self_end { JustifySelf.self_end }
 		.center { JustifySelf.center }
 		.stretch { JustifySelf.stretch }
@@ -12066,6 +12066,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// Apply any property-specific computed value logic.
 	s.resolve_effective_overflow_values(mut properties)
 	compute_text_align(mut properties, abstract_element)
+	compute_alignment_values(mut properties, abstract_element)
 	if abstract_element.pseudo_element() == none {
 		adjust_element_computed_style(mut properties, abstract_element.element())
 	}

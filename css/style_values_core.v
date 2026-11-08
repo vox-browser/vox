@@ -2147,6 +2147,8 @@ pub enum Keyword {
 	trim_both
 	last
 	anchor_center
+	flow_start
+	flow_end
 	bounding_box
 	visible_painted
 	visible_fill
@@ -3061,6 +3063,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.manual { 'manual' }
 		.last { 'last' }
 		.anchor_center { 'anchor-center' }
+		.flow_start { 'flow-start' }
+		.flow_end { 'flow-end' }
 		.bounding_box { 'bounding-box' }
 		.visible_painted { 'visiblepainted' }
 		.visible_fill { 'visiblefill' }
@@ -3080,6 +3084,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'manual' { return .manual }
 	if name == 'last' { return .last }
 	if name == 'anchor-center' { return .anchor_center }
+	if name == 'flow-start' { return .flow_start }
+	if name == 'flow-end' { return .flow_end }
 	if name == 'bounding-box' { return .bounding_box }
 	if name == 'visiblepainted' { return .visible_painted }
 	if name == 'visiblefill' { return .visible_fill }

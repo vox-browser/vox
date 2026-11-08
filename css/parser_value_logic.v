@@ -8384,20 +8384,20 @@ fn (mut parser Parser) parse_object_fit_value(mut tokens ComponentValueStream) ?
 
 fn (mut parser Parser) parse_align_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'flex-start', 'end',
-		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'baseline', 'safe', 'unsafe'])
+	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'flex-start', 'flow-start', 'end',
+		'flex-end', 'flow-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'baseline', 'safe', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_align_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end',
-		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end', 'flow-end',
+		'flex-start', 'flow-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_align_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end',
-		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end', 'flow-end',
+		'flex-start', 'flow-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_appearance_value(mut tokens ComponentValueStream) ?StyleValue {
@@ -8430,22 +8430,22 @@ fn (mut parser Parser) parse_image_rendering_value(mut tokens ComponentValueStre
 
 fn (mut parser Parser) parse_justify_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'end', 'flex-start',
-		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'left',
+	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'end', 'flex-start', 'flow-start',
+		'flex-end', 'flow-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'left',
 		'right', 'safe', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_justify_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end',
-		'flex-start', 'legacy', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end', 'flow-end',
+		'flex-start', 'flow-start', 'legacy', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch',
 		'unsafe', 'left', 'right'])
 }
 
 fn (mut parser Parser) parse_justify_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end',
-		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end', 'flow-end',
+		'flex-start', 'flow-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe',
 		'left', 'right'])
 }
 
@@ -9601,7 +9601,7 @@ fn parse_alignment_keyword_value(mut tokens ComponentValueStream, allowed_keywor
 			if words[0] == 'first' { words = ['baseline'] }
 		} else if words[0] in ['safe', 'unsafe'] {
 			if words[1] !in allowed_keywords || (words[1] !in ['start', 'end', 'center',
-				'flex-start', 'flex-end', 'self-start', 'self-end', 'left', 'right']
+				'flex-start', 'flex-end', 'flow-start', 'flow-end', 'self-start', 'self-end', 'left', 'right']
 				&& !(words[1] == 'normal' && 'auto' in allowed_keywords)) { return none }
 		} else if 'legacy' in allowed_keywords && 'legacy' in words {
 			position := if words[0] == 'legacy' { words[1] } else { words[0] }
