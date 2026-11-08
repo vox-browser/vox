@@ -13,11 +13,24 @@ module fileapi
 pub struct FileList {
 mut:
 	files []&File
+	producer_target voidptr = unsafe { nil }
+	producer fn (voidptr) []&File = unsafe { nil }
 }
 
 // FileList::create(realm) — an empty FileList.
 pub fn FileList.create() &FileList {
 	return &FileList{}
+}
+
+// A live producer supplies native files without changing this list's identity.
+// Keeping the callback here avoids importing an owning API (such as HTML).
+pub fn FileList.create_live(target voidptr, producer fn (voidptr) []&File) &FileList {
+	return &FileList{producer_target: target, producer: producer}
+}
+
+fn (list &FileList) current_files() []&File {
+	if list.producer != unsafe { nil } { return list.producer(list.producer_target) }
+	return list.files
 }
 
 // FileList::add_file — append a File to the collection.
@@ -27,15 +40,16 @@ pub fn (mut list FileList) add_file(file &File) {
 
 // https://w3c.github.io/FileAPI/#dfn-length
 pub fn (list &FileList) length() int {
-	return list.files.len
+	return list.current_files().len
 }
 
 // https://w3c.github.io/FileAPI/#dfn-item — the indexth File, or none when there is no such index.
 pub fn (list &FileList) item(index int) ?&File {
-	if index < 0 || index >= list.files.len {
+	files := list.current_files()
+	if index < 0 || index >= files.len {
 		return none
 	}
-	return list.files[index]
+	return files[index]
 }
 
 pub fn (list &FileList) item_value(index int) ?&File {
@@ -43,12 +57,13 @@ pub fn (list &FileList) item_value(index int) ?&File {
 }
 
 pub fn (list &FileList) files() []&File {
-	return list.files.clone()
+	return list.current_files().clone()
 }
 
 pub fn (list &FileList) serialization_steps() []SerializedFile {
-	mut serialized := []SerializedFile{cap: list.files.len}
-	for file in list.files {
+	files := list.current_files()
+	mut serialized := []SerializedFile{cap: files.len}
+	for file in files {
 		serialized << file.serialization_steps()
 	}
 	return serialized
