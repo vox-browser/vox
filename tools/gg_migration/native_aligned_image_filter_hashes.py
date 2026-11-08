@@ -223,6 +223,24 @@ cases += [
     dict(name='scaled-prefiltered-translucent-shadow', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
          premul=False, alpha=.7, filters=[contrast, shadow(2.5), opacity], mode='src_in', clip=True),
 ]
+cases += [
+    dict(name='near-integer-raw-shadow', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         filters=[shadow(1.2)]),
+    dict(name='near-integer-unpremul-shadow', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         premul=False, filters=[shadow(1.2)], mode='src_in', clip=True),
+    dict(name='near-integer-p3-prefiltered-shadow', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         p3=True, premul=False, alpha=.65, filters=[contrast, shadow(1.2), opacity], mode='multiply'),
+    dict(name='near-shadow-retains-mipmap-sampling', source=[2, 2, 4, 3], destination=[6, 8, 4.0024, 3.0018],
+         p3=True, filters=[shadow(1.2)], mode='plus_lighter', clip=True),
+    dict(name='near-shadow-retains-requested-nearest', source=[2, 2, 4, 3], destination=[6, 8, 4.0024, 3.0018],
+         smoothing=False, premul=False, alpha=.65, filters=[shadow(1.2)], mode='src_in', clip=True),
+    dict(name='factored-near-integer-raw-shadow', premul=False,
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], destination=[5.40032, 12.3341333333333, 5.60056, 7.9992],
+         filters=[shadow(1.2)], mode='src_in', clip=True),
+    dict(name='factored-near-integer-color-shadow', premul=False, p3=True, alpha=.65,
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], destination=[5.40032, 12.3341333333333, 5.60056, 7.9992],
+         filters=[contrast, shadow(1.2), opacity], mode='multiply'),
+]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -276,6 +294,7 @@ expected += ['c143b26618f52631', 'f095ad3dcce7789e']
 expected += ['2bb81f3c940efdd1', '1f1f586daef2c8bf', '5e5361d693406941', 'a314c86fea2dc72a', 'b0cf78ae45b5d34a', 'b0b37ca26e9ec933', 'ecb21cc6ee1cdc4e', '5fe5ede2432aa2cc']
 if platform.system() == 'Linux':
     expected[79] = '9d9fa7c17fc9bf77'
+expected += ['69bc99f80ec99582', '4e951a3d41351d05', 'a51dd6ce8df7e098', 'aa1915a0e5923229', 'a012597b325882fd', 'aff305b8a0ccc68b', 'abdab1d4f3a93229']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
