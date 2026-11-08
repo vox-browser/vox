@@ -1344,6 +1344,18 @@ fn main() {
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
 	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
 	rand.seed([seed, 7])
+	if os.getenv('CPU_RASTER_CHECKS') == 'pathgeometry' {
+		check_path_geometry(count)
+		return
+	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'clips' {
+		draws, strokes := check_clipped_draws(oracle, count) or {
+			eprintln(err.msg())
+			exit(1)
+		}
+		println('clipped canvas draws: ${draws} exact (${strokes} strokes)')
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'strokes' {
 		check_stroke_cases(oracle, count)
 		return
@@ -1415,6 +1427,11 @@ fn main() {
 	if os.getenv('CPU_RASTER_CHECKS') == 'mipmaps' {
 		check_mipmap_cases(count)
 		return
+	}
+	selection := os.getenv('CPU_RASTER_CHECKS')
+	if selection != '' && selection != 'all' {
+		eprintln('Unknown CPU_RASTER_CHECKS: ${selection}')
+		exit(2)
 	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
@@ -3364,4 +3381,37 @@ fn check_mipmap_cases(count int) {
 		}
 	}
 	println('${count} raster mipmap levels exact')
+}
+
+type OraclePathGeometry = fn (&f32, &i32, &u8, &f32, &f32, &i32)
+
+fn check_path_geometry(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OraclePathGeometry(oracle_symbol(library, 'oracle_canvas_path_geometry')) }
+	for trial in 0 .. count {
+		segments := random_canvas_segments(80, 60)
+		path := cpuraster.canvas_path(segments, false)
+		capacity := segments.len*8+64
+		mut verbs := []u8{len: capacity}
+		mut points := []f32{len: capacity*2}
+		mut weights := []f32{len: capacity}
+		mut info := [3]i32{}
+		args := [i32(segments.len/12),0,i32(capacity)]
+		oracle(segments.data,args.data,verbs.data,points.data,weights.data,&info[0])
+		actual_verbs := path.verbs.map(u8(it))
+		if actual_verbs != verbs[..info[0]] || path.points.len != info[1] || path.weights.len != info[2] {
+			panic('path geometry ${trial}: structure ${actual_verbs} != ${verbs[..info[0]]}, points ${path.points.len} != ${info[1]}, weights ${path.weights.len} != ${info[2]}, segments ${segments}')
+		}
+		for i,p in path.points {
+			if math.f32_bits(p.x) != math.f32_bits(points[i*2]) || math.f32_bits(p.y) != math.f32_bits(points[i*2+1]) {
+				panic('path geometry ${trial}: point ${i} ${p} != (${points[i*2]},${points[i*2+1]}), segments ${segments}')
+			}
+		}
+		for i,w in path.weights {
+			if math.f32_bits(w) != math.f32_bits(weights[i]) {
+				panic('path geometry ${trial}: weight ${i} ${w} != ${weights[i]}, segments ${segments}')
+			}
+		}
+	}
+	println('${count} canvas path geometries exact')
 }

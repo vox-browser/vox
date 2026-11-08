@@ -78,7 +78,7 @@ ORACLE void oracle_difference_clip(uint8_t* pixels, int const* v, float const* f
     surface->readPixels(info, pixels, v[0]*4, 0, 0);
 }
 
-#ifdef CPURASTER_FREETYPE_ORACLE
+#if defined(CPURASTER_FREETYPE_ORACLE) && defined(__APPLE__)
 // Keep the original canvas calls while selecting the FreeType face factory
 // used on Linux. Include CoreText's declaration before replacing its calls.
 #include "include/ports/SkFontMgr_mac_ct.h"
@@ -190,11 +190,19 @@ ORACLE int oracle_read_pixels(uint8_t const* source, uint8_t* destination, int c
 #include "include/core/SkFontMgr.h"
 #include "include/core/SkStream.h"
 #include "include/core/SkTypeface.h"
+#if defined(__APPLE__)
 #include "include/ports/SkFontMgr_mac_ct.h"
+#else
+#include "include/ports/SkFontMgr_empty.h"
+#endif
 
 ORACLE int oracle_font_typeface_is_valid(uint8_t const* bytes, size_t size, int index)
 {
+#ifdef __APPLE__
     static auto manager = SkFontMgr_New_CoreText(nullptr);
+#else
+    static auto manager = SkFontMgr_New_Custom_Empty();
+#endif
     auto data = SkData::MakeWithoutCopy(bytes, size);
     SkFontArguments arguments;
     arguments.setCollectionIndex(index);
@@ -337,6 +345,15 @@ static void oracle_draw_path(uint8_t* pixels, int const* a, float const* f, bool
 
 // The production Canvas2D raster path (skia/canvas_raster.cpp).
 #include "../../skia/canvas_raster.cpp"
+
+ORACLE void oracle_canvas_path_geometry(float const* segments, int const* args,
+                                       uint8_t* verbs, float* points, float* weights, int* info) {
+    auto path = make_path(VoxCanvasPath{segments, args[0], args[1]});
+    info[0] = path.getVerbs({verbs, args[2]});
+    info[1] = path.getPoints({reinterpret_cast<SkPoint*>(points), args[2]});
+    info[2] = 0;
+    for (float weight : path.conicWeights()) weights[info[2]++] = weight;
+}
 
 #include <vector>
 
