@@ -619,6 +619,20 @@ static void native_end_scroll_raster(void) {
     uint8_t *pixels = (uint8_t *)CGBitmapContextGetData(context);
     size_t pitch = CGBitmapContextGetBytesPerRow(context);
     if (cache->gpu_tiled) {
+        // A complete zoomed frame deliberately uses CPU leaf raster. Seed
+        // immutable tiles from that complete bitmap so the following scroll
+        // can enter GPU residency. Absence of a GPU canvas is not a failed
+        // export. Never seed a partial replay or hide an actual GPU failure.
+        if (!cache->reused && !cache->independent_content && pixels
+            && !native_scroll_tile_pending && !native_scroll_gpu_tile_frame_failed) {
+            native_scroll_raster_store_rows(cache,pixels,pitch);
+            memset(cache->tile_dirty,1,sizeof(cache->tile_dirty));
+            if (native_scroll_tiles_commit_mode(cache->pixels,cache->width,cache->height,
+                    cache->row_origin,cache->top,cache->scale,cache->tile_dirty,YES)
+                && getenv("VOX_GPU_TILE_BOOTSTRAP_DIAGNOSTICS"))
+                fprintf(stderr,"VOX_GPU_TILE_CPU_BOOTSTRAP width=%zu height=%zu\n",
+                    cache->width,cache->height);
+        }
         if (cache->reused && !cache->damage_rect_count && !native_scroll_tile_pending)
             native_scroll_raster_export(NULL, NULL);
         cache->valid = !cache->independent_content && native_scroll_tile_pending != nil

@@ -272,8 +272,8 @@ static BOOL native_scroll_tiles_adopt(CGImageRef *, size_t, size_t, size_t, size
     size_t, size_t, CGFloat, BOOL);
 // Called after CPU/GPU raster finishes and before viewport overlays paint.
 // dirty_rows are ring-storage row numbers, never viewport positions.
-static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t height,
-    size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty) {
+static BOOL native_scroll_tiles_commit_mode(const uint8_t *ring, size_t width, size_t height,
+    size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty, BOOL gpu) {
     if (!native_scroll_tiles_accept(native_scroll_tile_destination)) return NO;
     size_t tiles = (height + VOX_SCROLL_TILE_ROWS - 1) / VOX_SCROLL_TILE_ROWS;
     if (!tiles || tiles > VOX_SCROLL_TILE_LIMIT) return NO;
@@ -293,7 +293,11 @@ static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t
             return NO;
         }
     }
-    return native_scroll_tiles_adopt(next, tiles, updated, width, height, row_origin, top, scale, NO);
+    return native_scroll_tiles_adopt(next, tiles, updated, width, height, row_origin, top, scale, gpu);
+}
+static BOOL native_scroll_tiles_commit(const uint8_t *ring, size_t width, size_t height,
+    size_t row_origin, size_t top, CGFloat scale, const BOOL *dirty) {
+    return native_scroll_tiles_commit_mode(ring,width,height,row_origin,top,scale,dirty,NO);
 }
 static BOOL native_scroll_tiles_adopt(CGImageRef *next, size_t tiles, size_t updated,
     size_t width, size_t height, size_t row_origin, size_t top, CGFloat scale, BOOL gpu) {

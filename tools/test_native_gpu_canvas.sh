@@ -125,6 +125,7 @@ if [ "${NATIVE_GPU_CANVAS_PRESENT_TEST:-0}" = 1 ]; then
     "$output_dir/native_gpu_canvas_test" --nested-unclosed
     "$output_dir/native_gpu_canvas_test" --present-tiles
     "$output_dir/native_gpu_canvas_test" --resident-ring
+    "$output_dir/native_gpu_canvas_test" --resident-ring-cpu-seed
 VOX_GPU_TILE_DEFER_SCHEDULE_WAIT=1 "$output_dir/native_gpu_canvas_test" --resident-ring
 "$output_dir/native_gpu_canvas_test" --resident-ring-legacy-schedule
     "$output_dir/native_gpu_canvas_test" --resident-ring-sparse

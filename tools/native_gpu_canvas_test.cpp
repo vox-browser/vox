@@ -1132,6 +1132,8 @@ static std::vector<uint8_t> render_nested_gpu_sources(bool nested_gpu,int depth,
 
 static double s_resident_scroll;
 static bool s_resident_cpu_barrier;
+static bool s_resident_cpu_seed, s_resident_seeded_this_frame;
+static unsigned s_resident_cpu_seeds;
 static void draw_resident_scene(CGContextRef context, bool canvas) {
     CGContextSetRGBFillColor(context,1,1,1,1);
     CGContextFillRect(context,CGRectMake(0,0,css_width,css_height));
@@ -1154,6 +1156,7 @@ static void draw_resident_scene(CGContextRef context, bool canvas) {
 }
 static void resident_ring_draw(id self, SEL selector, NSRect bounds) {
     vox_browser_frame_prepared();
+    ladybird_v_skia_set_chromium_painting(1);
     auto context=NSGraphicsContext.currentContext.CGContext;
     static double previous;
     double movement=s_resident_scroll-previous, delta=0;
@@ -1164,12 +1167,16 @@ static void resident_ring_draw(id self, SEL selector, NSRect bounds) {
     native_begin_scroll_raster(7,1,s_resident_scroll,0,css_width,css_height,1,
         &delta,damage,1,1,1);
     assert(native_scroll_raster.gpu_tiled);
-    bool canvas=native_gpu_canvas_begin();
-    assert(canvas && native_gpu_canvas_can_present());
+    s_resident_seeded_this_frame=s_resident_cpu_seed && !native_scroll_raster.reused;
+    bool canvas=!s_resident_seeded_this_frame && native_gpu_canvas_begin();
+    if (s_resident_seeded_this_frame) ++s_resident_cpu_seeds;
+    else assert(canvas && native_gpu_canvas_can_present());
     draw_resident_scene(context,canvas);
-    native_gpu_canvas_end(); native_end_scroll_raster();
+    if (canvas) native_gpu_canvas_end();
+    native_end_scroll_raster();
     assert(native_scroll_raster.valid && !native_scroll_gpu_tile_frame_failed);
     previous=s_resident_scroll;
+    ladybird_v_skia_set_chromium_painting(0);
     vox_browser_frame_completed();
 }
 
@@ -1429,11 +1436,13 @@ int main(int argc, char** argv)
     } }
 
     if (argc==2 && (!std::strcmp(argv[1],"--resident-ring")
+            || !std::strcmp(argv[1],"--resident-ring-cpu-seed")
             || !std::strcmp(argv[1],"--resident-ring-sparse")
             || !std::strcmp(argv[1],"--resident-ring-legacy-schedule"))) { @autoreleasepool {
         if (!std::strcmp(argv[1],"--resident-ring-sparse")) {
             setenv("VOX_GPU_TILE_SPARSE_CLEAR","1",1);s_resident_cpu_barrier=true;
         }
+        s_resident_cpu_seed=!std::strcmp(argv[1],"--resident-ring-cpu-seed");
         [NSApplication sharedApplication];
         assert(ladybird_v_skia_gpu_canvas_compositor_available());
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());
@@ -1441,7 +1450,7 @@ int main(int argc, char** argv)
         if (!std::strcmp(argv[1],"--resident-ring-legacy-schedule")) {
             setenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT","1",1);api->schedule_present=nullptr;
         }
-        bool expected_fence=getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT")
+        bool expected_fence=(getenv("VOX_GPU_TILE_DEFER_SCHEDULE_WAIT") || getenv("VOX_GPU_FRAME_READINESS_QUEUE"))
             && api->present_deferred && api->schedule_present;
         native_set_opaque_browser_frames(1);
         setenv("VOX_GPU_TILE_COMPOSITOR","1",1); native_scroll_gpu_tile_capability=YES;
@@ -1452,9 +1461,13 @@ int main(int argc, char** argv)
             s_resident_scroll=scroll;
             auto reference=render(true,false,draw_resident_scene,true);
             native_layer_present_frame(view,scale,(IMP)resident_ring_draw);
+            double deadline=CACurrentMediaTime()+5;
+            while (native_frame_publication_busy(view) && CACurrentMediaTime()<deadline)
+                CFRunLoopRunInMode(kCFRunLoopDefaultMode,.001,true);
+            assert(!native_frame_publication_busy(view));
             reused += native_scroll_raster.reused;
             auto published=(VoxScrollTileFrame*)objc_getAssociatedObject(view,&native_scroll_tile_frame_key);
-            assert(published && bool(published->fence)==expected_fence);
+            assert(published && bool(published->fence)==(expected_fence && !s_resident_seeded_this_frame));
             if (published->fence) {
                 auto fence=(__bridge VoxScrollGpuFence*)published->fence;
                 assert(fence->resolved && fence->ready && !fence->completion);
@@ -1468,8 +1481,10 @@ int main(int argc, char** argv)
             if (error>3) { std::cerr<<"Resident ring scroll="<<scroll<<" max error="<<error<<"\n"; return 1; }
         } }
         assert(reused>=8); native_discard_scroll_raster(); [view release];
+        if (s_resident_cpu_seed) assert(s_resident_cpu_seeds>=1);
         std::cout<<"Resident native GPU ring: max error "<<error
-            <<"; actual bridge export, wrap/reverse, fixed alpha overlay, lazy capture, "<<reused<<" reused frames\n";
+            <<"; actual bridge export, wrap/reverse, fixed alpha overlay, lazy capture, "<<reused
+            <<" reused frames, "<<s_resident_cpu_seeds<<" CPU seeds\n";
         return 0;
     } }
     if (argc==2 && !std::strcmp(argv[1],"--present-tiles")) {

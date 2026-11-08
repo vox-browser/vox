@@ -17,6 +17,7 @@ static bool tiled_frame, resident_frame;
 static bool fail_export;
 static unsigned exports;
 static bool deferred_export, schedule_ok=true;
+static bool skip_gpu_export;
 static int schedule_export(void*) { return schedule_ok; }
 
 static int cpu_present(CGContextRef context, const VoxGraphiteCanvasSurfaceRegion *regions, int count, void **completion) {
@@ -98,7 +99,7 @@ static void draw(id self, SEL selector, NSRect bounds) {
         CGContextFillRect(context, CGRectMake(bounds.size.width - 10.5, 23.25, 7.25, 73.5));
     }
     if (tiled_frame) {
-        if (resident_frame && native_scroll_raster.gpu_tiled)
+        if (resident_frame && native_scroll_raster.gpu_tiled && !skip_gpu_export)
             native_scroll_raster_export_with_schedule(cpu_present,free,deferred_export ? schedule_export : nullptr);
         native_end_scroll_raster();
     }
@@ -302,6 +303,70 @@ int main() { @autoreleasepool {
     native_scroll_gpu_tile_capability=YES;
     native_discard_scroll_raster();
     resident_frame=true; test_damage=1; deferred_export=true;
+    // Match zoomed browser startup: its first full replay has no GPU canvas.
+    // CPU seeding must preserve immutable captures and allow real later exports.
+    for (int scale : {1,2}) {
+        MyView2 *view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,97,629)];
+        view.wantsLayer=YES;
+        native_discard_scroll_raster();
+        native_scroll_gpu_tile_failed=native_scroll_gpu_tile_frame_failed=NO;
+        unsigned before=exports;
+        CGImageRef held=NULL;
+        std::vector<uint8_t> initial;
+        bool first=true;
+        for (double scroll : {0.,17.,34.,17.}) { @autoreleasepool {
+            previous_scroll=test_scroll;test_scroll=scroll;content_revision=0;
+            tiled_frame=false;
+            auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
+            auto expected=packed(reference);CGImageRelease(reference);
+            skip_gpu_export=first;tiled_frame=true;
+            present(view,scale);
+            skip_gpu_export=false;
+            auto frame=(VoxScrollTileFrame*)objc_getAssociatedObject(view,&native_scroll_tile_frame_key);
+            assert(frame && !frame->overlay);
+            assert(native_scroll_raster.valid && native_scroll_raster.tiles_current);
+            assert(!native_scroll_gpu_tile_failed && !native_scroll_gpu_tile_frame_failed);
+            assert(packed(native_layer_frame_image(view))==expected);
+            if (first) {
+                assert(exports==before && !native_scroll_raster.reused);
+                held=CGImageRetain((CGImageRef)CFArrayGetValueAtIndex(frame->images,0));
+                initial=packed(held);
+            } else assert(native_scroll_raster.reused);
+            assert(packed(held)==initial);
+            first=false;
+        } }
+        assert(exports==before+3);
+        // Failed allocation cannot establish residency from an absent export.
+        native_discard_scroll_raster();
+        previous_scroll=test_scroll;test_scroll=51;content_revision=1;
+        tiled_frame=false;
+        auto reference=native_layer_raster_frame(view,scale,(IMP)draw);
+        auto expected=packed(reference);CGImageRelease(reference);
+        tiled_frame=true;
+        skip_gpu_export=true;native_scroll_tile_test_allocation_failure=YES;
+        present(view,scale);
+        native_scroll_tile_test_allocation_failure=NO;skip_gpu_export=false;
+        assert(!native_scroll_raster.valid && !native_scroll_raster.tiles_current);
+        assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed);
+        assert(packed(native_layer_frame_image(view))==expected);
+        assert(packed(held)==initial);
+        CGImageRelease(held);
+        native_discard_scroll_raster();
+        native_scroll_gpu_tile_failed=native_scroll_gpu_tile_frame_failed=NO;
+        // Missing an export after a partial replay cannot seed the unpainted
+        // retained area from that incomplete CPU bitmap.
+        test_scroll=0;previous_scroll=0;skip_gpu_export=true;
+        present(view,scale);
+        assert(native_scroll_raster.valid && native_scroll_raster.tiles_current);
+        previous_scroll=0;test_scroll=17;
+        present(view,scale);
+        skip_gpu_export=false;
+        assert(native_scroll_raster.reused && !native_scroll_raster.valid);
+        assert(native_scroll_gpu_tile_failed && native_scroll_gpu_tile_frame_failed);
+        native_discard_scroll_raster();
+        native_scroll_gpu_tile_failed=native_scroll_gpu_tile_frame_failed=NO;
+    }
+    puts("CPU tile bootstrap: exact 1x/2x captures, three reused GPU exports, immutable providers and allocation failure passed");
     for (int scale : {1,2}) {
         MyView2 *view=[[MyView2 alloc] initWithFrame:NSMakeRect(0,0,97,629)];
         view.wantsLayer=YES;
