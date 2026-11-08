@@ -1268,3 +1268,28 @@ explicit declines. See the [resampling receipt](gg-migration/resampled-image-blu
 Source clipping, scaled shadow foregrounds, all-identity lists, near-integer
 transforms, general rotated layers, remaining spatial chains, SVG graphs,
 tiling and native browser bridges remain open. The browser still links Skia.
+
+
+### Source clipping before spatial filters (2026-11-08)
+
+Source rectangles that cross an image edge now clip before the source-to-layer
+mapping. Quick rejection retains the original draw bounds, including clearing
+blends whose clipped image has no visible pixels. This covers the previously
+supported aligned and fractional-source shadows and resampled blur chains.
+Shadow restores also reproduce FilterResult's nearest sampling within 1e-3 of
+an integer translation while preserving the original geometry. A two-pixel
+regression failed before that fix and matches the frozen native result after it.
+
+At seed 20261108, 16,855 of 20,000 attempts are supported and exact on both
+macOS and Linux. Production mode matches 16,803 at seed 20261109. All 27 CPU
+raster files, canvas integration and focused Linux production tests pass. The
+full canonical Linux browser typecheck passes with Skia available; no Skia-free
+browser compile/link/run is established. The FMA audit reports zero contracted
+operations. Counts include no-ops and explicit declines; nine new native
+fixtures and the initial failing checks are in the
+[clipping receipt](gg-migration/spatial-source-clipping-20261108.json).
+
+Scaled shadow foregrounds, all-identity and nearly integer source mappings,
+general rotated layers, remaining spatial chains, SVG graphs, intersecting
+boolean shadows, large-sigma rescaling, tiling and native browser bridges
+continue to retain Skia dependencies.
