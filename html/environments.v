@@ -385,8 +385,21 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 	global_object := settings.global_object_
 	is_window := settings.global_kind_ == .window
 	loop := settings.responsible_event_loop_
+	mut source_file := ?liburl.URL(none)
+	mut line := u32(0)
+	mut column := u32(0)
+	if provider := settings.realm().current_source_location_ {
+		if location := provider() {
+			source_file = liburl.parse(location.url)
+			line = location.line
+			column = location.column
+		}
+	}
 	return &csp.GlobalContext{
 		url: liburl.parse(global_url.serialize()) or { panic('invalid CSP global URL') }
+		source_file:source_file
+		line_number:line
+		column_number:column
 		policy_list: fetch_csp_policy_list(settings.policy_container().csp_list)
 		dispatch_violation_event: fn [global_object, is_window, loop] (event &csp.SecurityPolicyViolationEvent) {
 			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {

@@ -192,6 +192,9 @@ pub type ViolationEventDispatcher = fn (&SecurityPolicyViolationEvent)
 pub struct GlobalContext {
 pub mut:
 	url             url.URL
+	source_file ?url.URL
+	line_number u32
+	column_number u32
 	referrer        ?url.URL
 	policy_list     &PolicyList = unsafe { nil }
 	reports         []ViolationReport

@@ -186,6 +186,7 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 	event_loop.attach_embedding_vm(vm)
 	runtime.scripting_settings_ = settings
+	runtime.install_source_location_provider(realm)
 }
 
 fn (runtime &Runtime) prepare_html_script() {
