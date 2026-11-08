@@ -12,7 +12,8 @@
     "Live baseline frame 37: 251.388 ms; 44 of 46 samples inside synchronous Metal shader compilation called by Graphite Recorder.snap during a canvas flush.",
     "Live baseline frame 634: 235.443 ms; synchronous hit-test layout followed by BrowserApp.poll_javascript_tasks -> relayout and extensive native repaint/readbacks. Input ran before the frame-preparation coalescing boundary.",
     "The first image/mask warm-up still stalled for 239.536 ms. Idle cache retirement and additional analytic-clip variants remained. This failed attempt is retained.",
-    "Pipeline retention plus rounded and transformed quad preparation removed sampled Metal compilation above 25 ms in retain2-diag; that diagnostic still has a 254.112 ms layout/repaint callback. This is path evidence, not unprofiled performance acceptance."
+    "Pipeline retention plus rounded and transformed quad preparation removed sampled Metal compilation above 25 ms in retain2-diag; that diagnostic still has a 254.112 ms layout/repaint callback. This is path evidence, not unprofiled performance acceptance.",
+    "Fresh combined diagnostic on executable 135bdc55 plus final native 31b5a71a: frame 647 lasts 190.163 ms, with 14 DOM-layout and 19 native-replay samples; no sampled shell relayout or Metal compilation. Remaining expensive work and host contention prevent steady-60 acceptance."
   ],
   "implementation": {
     "frame_input": "Begin preparation before replaying queued input; preserve synchronous Document geometry/default-action updates and final paint adoption.",
@@ -33806,5 +33807,77 @@
       "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
     }
   },
-  "archive": null
+  "archive": {
+    "path": "/tmp/vox-reddit-stalls-20261108b.tar.gz",
+    "sha256": "c164aa9156c89080f85e05c70b9cc9d59699d5d38537d61907c709c70f474e70",
+    "bytes": 45459379,
+    "mode": "0o600",
+    "contains": "raw logs, publication/input series, all attempts and guard reports, private frozen fixture, native/test binaries and task drivers; profile/cache directories excluded; no app bundles copied"
+  },
+  "production_frame_boundary": {
+    "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-044551-a71d878d/frozen-compiler-inputs/0-Vox.c.i",
+    "helper_definition_sha256": "fe0a758121dbc6dbcf604e99825e4d93fb92c5d0320b5d17a7ec3d2f952ddc5f",
+    "helper_has_begin_frame_preparation": true,
+    "helper_has_queued_wheel_and_input": true,
+    "draw_input_precedes_work_scope": true,
+    "draw_has_later_begin_frame_preparation": false
+  },
+  "smoke": {
+    "command": [
+      "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "--headless-smoke"
+    ],
+    "executable_sha256": "135bdc5513af23c906f128e36927f0402c681a7b84da190f04eeda029caa9f13",
+    "exit": 0,
+    "output": "javascript DOM mutation: passed\njavascript click event: passed\nnative wheel routing and scrolling: passed\nordinary element wheel listeners: passed\nLadybird V smoke check passed\nsource: about:element-wheel-smoke\nLoaded element wheel smoke \u00b7 7 paints \u00b7 2048\u00d78000 CSS px\n"
+  },
+  "latest_production_build_observed": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "135bdc5513af23c906f128e36927f0402c681a7b84da190f04eeda029caa9f13",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-044551-a71d878d/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "c555113d073425e443872d955d13dbe9ba9ea66b36413a4ef4fb3071d4f316e1",
+      "dirty": true,
+      "head": "cc051c3ee4b852f8da7453f372ec16cdc3e9a49a",
+      "repository_sha256": "d6d62e8758e9f4d4de52152a6af0004e7de0a57250edca293b05926c21ca54d7"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "3fb343dc36623a576800370fa1b76b956b331503d4dab334d1071dd140cdadbf",
+      "dirty": true,
+      "head": "1ebbfe1bc4f0712d9e69b3b892f233d33cb4a5d6",
+      "repository_sha256": "3f9d8209c3cc596b446058dad215816159ba33e5d82fcaa22fe53b568b3b62b7"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "cc051c3ee4b852f8da7453f372ec16cdc3e9a49a",
+      "id": "da9de8702f2d47a8ad2f97aa87136a50",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "c555113d073425e443872d955d13dbe9ba9ea66b36413a4ef4fb3071d4f316e1",
+      "dirty": true,
+      "head": "1b57b97c7176a975737cc677d88a1bfcc72a2601",
+      "repository_sha256": "8ead10f1441a88246ef965d342831bf61494318be684412a15c8046a40d9e177"
+    }
+  }
 }
