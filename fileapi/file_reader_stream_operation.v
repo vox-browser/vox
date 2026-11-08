@@ -28,6 +28,8 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 		return webidl.throw_value(webidl.dom_exception_value_for_record(webidl.DOMException.create_record('InvalidStateError', 'Read already in progress')))
 	}
 	reader.state_ = .loading
+	reader.next_read_id_++
+	read_id := reader.next_read_id_
 	reader.is_aborted_ = false
 	reader.set_result(FileReaderResult{})
 	reader.error_ = none
@@ -37,15 +39,16 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 	mut state := &ReadOperationState{ reader: stream_reader }
 	owner_handle := voidptr(&reader)
 	state_handle := voidptr(state)
-	state.process_next_chunk = fn [owner_handle, state_handle, context, type_, encoding_name, blobs_type] (current_chunk_promise &webidl.Promise) {
+	state.process_next_chunk = fn [owner_handle, state_handle, context, type_, encoding_name, blobs_type, read_id] (current_chunk_promise &webidl.Promise) {
 		mut promise := unsafe { &webidl.Promise(current_chunk_promise) }
-		webidl.react_to_promise(mut promise, fn [owner_handle, state_handle, context, type_, encoding_name, blobs_type] (promise_value webidl.Value) !webidl.Value {
-			context.run_callback_steps(fn [owner_handle, state_handle, promise_value, type_, encoding_name, blobs_type] () {
+		webidl.react_to_promise(mut promise, fn [owner_handle, state_handle, context, type_, encoding_name, blobs_type, read_id] (promise_value webidl.Value) !webidl.Value {
+			context.run_callback_steps(fn [owner_handle, state_handle, promise_value, type_, encoding_name, blobs_type, read_id] () {
 				mut actual := unsafe { &FileReader(owner_handle) }
-				if actual.is_aborted_ { return }
+				if !actual.owned_read_is_active(read_id) { return }
 				mut state := unsafe { &ReadOperationState(state_handle) }
 				if state.is_first_chunk {
-					actual.queue_a_task(fn (mut reader FileReader) {
+					actual.queue_a_task(fn [read_id] (mut reader FileReader) {
+						if !reader.owned_read_is_active(read_id) { return }
 						reader.fire_event('loadstart')
 					})
 				}
@@ -73,7 +76,8 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 							enough_time_passed := file_reader_enough_progress_time_passed(state.progress_timer, now)
 							contained_data := (source.fixed_array_length() or { panic('Source VERIFY: Uint8Array requires its retained length') }) > 0
 							if enough_time_passed && contained_data {
-								actual.queue_a_task(fn (mut reader FileReader) {
+								actual.queue_a_task(fn [read_id] (mut reader FileReader) {
+									if !reader.owned_read_is_active(read_id) { return }
 									reader.fire_event('progress')
 								})
 								state.progress_timer = now
@@ -86,7 +90,8 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 				} else if done.boolean_value {
 					packaged_bytes := state.bytes
 					state.bytes = []
-					actual.queue_a_task(fn [packaged_bytes, type_, encoding_name, blobs_type] (mut reader FileReader) {
+					actual.queue_a_task(fn [packaged_bytes, type_, encoding_name, blobs_type, read_id] (mut reader FileReader) {
+						if !reader.owned_read_is_active(read_id) { return }
 						reader.state_ = .done
 						result := blob_package_data(packaged_bytes, type_, blobs_type, encoding_name) or {
 							// Source FIXME: set fr's error to the package error.
@@ -101,11 +106,12 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 				}
 			})
 			return webidl.undefined_value()
-		}, fn [owner_handle, context] (_ webidl.Value) !webidl.Value {
-			context.run_callback_steps(fn [owner_handle] () {
+		}, fn [owner_handle, context, read_id] (_ webidl.Value) !webidl.Value {
+			context.run_callback_steps(fn [owner_handle, read_id] () {
 				mut actual := unsafe { &FileReader(owner_handle) }
-				if actual.is_aborted_ { return }
-				actual.queue_a_task(fn (mut reader FileReader) {
+				if !actual.owned_read_is_active(read_id) { return }
+				actual.queue_a_task(fn [read_id] (mut reader FileReader) {
+					if !reader.owned_read_is_active(read_id) { return }
 					reader.state_ = .done
 					// Source FIXME: set fr's error to the rejection reason.
 					reader.fire_event('error')
@@ -123,4 +129,10 @@ fn (mut reader FileReader) read_owned_operation(context FileReaderGlobalContext,
 			state.process_next_chunk(chunk_promise)
 		})
 	})
+}
+
+// An abort handler may begin another read before an older, unaffiliated Blob
+// or setup task reacts. The shared abort Boolean then belongs to the new read.
+fn (reader &FileReader) owned_read_is_active(id u64) bool {
+	return reader.next_read_id_ == id && reader.state_ == .loading && !reader.is_aborted_
 }
