@@ -1,6 +1,8 @@
 import json
+from http.client import IncompleteRead
 import os
 from pathlib import Path
+import socket
 import ssl
 import tempfile
 import unittest
@@ -51,6 +53,13 @@ def main(request, response):
         (cls.root / 'template.sub.js').write_text('{{host}}|{{ports[http][0]}}|{{ports[http][1]}}|{{ports[https][0]}}')
         (cls.root / 'template.sub.js.headers').write_text('X-Upstream: real-handler\n')
         (cls.root / 'shared.sub.js').write_text('{{ports[ws][0]}}|{{ports[wss][0]}}')
+        cls.stream_body = b'self.streamed = true;\n' * 8192
+        (cls.root / 'streamed.js').write_bytes(cls.stream_body)
+        (cls.root / 'truncated.py').write_text('''
+def main(request, response):
+    response.close_connection = True
+    return [(b"Content-Length", b"100")], b"short"
+''')
         cls.observer = Observer()
         cls.server = UpstreamWPTServer(CHECKOUT, cls.root, cls.observer,
                                       {'/resources/testharnessreport.js': (b'collector', 'text/javascript')},
@@ -99,6 +108,32 @@ def main(request, response):
             self.assertEqual(json.load(response), {'next': '/next.html'})
         self.assertEqual(self.observer.payloads[-1], payload)
         self.assertEqual(self.observer.alive[-1], '/case.html')
+
+    def test_https_eof_delimited_stream_sends_a_tls_close_notify(self):
+        context = ssl.create_default_context(cafile=self.server.identity['ca_certificate'])
+        port = self.server.identity['https_ports'][0]
+        connection = context.wrap_socket(socket.create_connection(('localhost', port), timeout=3),
+                                         server_hostname='localhost', suppress_ragged_eofs=False)
+        try:
+            connection.sendall(f'GET /streamed.js HTTP/1.1\r\nHost: localhost:{port}\r\nConnection: close\r\n\r\n'.encode())
+            wire = bytearray()
+            while True:
+                chunk = connection.recv(65536)
+                if not chunk:
+                    break
+                wire.extend(chunk)
+            headers, body = bytes(wire).split(b'\r\n\r\n', 1)
+            self.assertNotIn(b'content-length:', headers.lower())
+            self.assertEqual(body, self.stream_body)
+            connection.unwrap().close()
+        finally:
+            connection.close()
+
+    def test_graceful_tls_shutdown_does_not_hide_truncated_http_bodies(self):
+        port = self.server.identity['https_ports'][0]
+        with self.client.open(f'https://localhost:{port}/truncated.py', timeout=3) as response:
+            with self.assertRaises(IncompleteRead):
+                response.read()
 
 
 if __name__ == '__main__':

@@ -6,6 +6,7 @@ import importlib.util
 import json
 from pathlib import Path
 import socket
+import ssl
 import subprocess
 import sys
 
@@ -90,9 +91,25 @@ class UpstreamWPTServer:
                         return result
                     return handle
 
+            class GracefulTLSHandler(server.Http1WebTestRequestHandler):
+                def finish(self):
+                    super().finish()
+                    # Upstream already closes CONNECT tunnels this way. Direct
+                    # HTTPS needs the same close_notify for EOF-delimited bodies;
+                    # otherwise strict TLS clients reject a complete script.
+                    connection = self.request
+                    if isinstance(connection, ssl.SSLSocket) and not self.server.encrypt_after_connect:
+                        try:
+                            connection.settimeout(1)
+                            connection.unwrap().close()
+                        except (OSError, ValueError):
+                            pass
+                        finally:
+                            connection.close()
+
             for port, secure in [(http1, False), (http2, False), (https1, True), (https2, True)]:
                 options = dict(host='127.0.0.1', port=port, doc_root=str(Path(root).resolve()),
-                               router_cls=RecordingRouter, config=actual)
+                               router_cls=RecordingRouter, handler_cls=GracefulTLSHandler, config=actual)
                 if secure:
                     options.update(use_ssl=True, key_file=actual.ssl_config['key_path'],
                                    certificate=actual.ssl_config['cert_path'])
@@ -109,6 +126,7 @@ class UpstreamWPTServer:
                 unserved_protocols={'ws': [ws], 'wss': [wss]},
                 ca_certificate=actual.ssl_config['ca_cert_path'],
                 ca_sha256=hashlib.sha256(Path(actual.ssl_config['ca_cert_path']).read_bytes()).hexdigest(),
+                tls_close_notify=True, tls_shutdown_timeout_seconds=1,
                 source_files=self.source_hashes())
         except BaseException:
             self.shutdown()
