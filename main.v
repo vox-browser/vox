@@ -2015,6 +2015,7 @@ fn javascript_bootstrap() string {
 		compact_tag_collection_bootstrap(),
 		compact_document_create_event_bootstrap(),
 		compact_select_bootstrap(),
+		compact_trusted_types_bootstrap(),
 		compact_element_names_bootstrap(),
 		browserjs.view_transition_bootstrap(),
 		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__headState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="head";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.head=__headState?__element(__headState):null;document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',

@@ -260,6 +260,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'domMatrix' { return binding.dom_matrix_query(selector) }
 	if action == 'dialog' { return binding.dialog_query(key, selector) }
 	if action == 'inputNumber' { return binding.input_number_query(key, selector) }
+	if action == 'trustedTypes' { return compact_trusted_types_query(selector) }
 	if action == 'selection' { return binding.selection_query(key, selector) }
 	if action == 'editing' { return binding.editing_query(key, selector) }
 	if action == 'compressionTransform' { return compact_compression_query(selector) }
