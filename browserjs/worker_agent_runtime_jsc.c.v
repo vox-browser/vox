@@ -54,7 +54,7 @@ fn WorkerAgentRuntime.create_kind(url dom.URL, options html.WorkerOptions, outsi
 	defer { platform.leave_persistent(persistent) }
 	// The caller can release its startup frame or scratch arena immediately.
 	owned := html.decode_serialized_environment_settings_object(html.encode_serialized_environment_settings_object(outside))!
-	entry_url := dom.URL{value: url.serialize().clone()}
+	entry_url := own_worker_entry_url(url)!
 	mut realm := &html.ScriptingRealm{}
 	mut shared_scope := ?&html.SharedWorkerGlobalScope(none)
 	mut scope := if is_shared {
