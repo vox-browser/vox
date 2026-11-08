@@ -16898,5 +16898,99 @@
       "inputs_unchanged": true
     }
   },
-  "interpretation": "No demonstrated live throughput gain: live candidate rates107.393/103.869 vs107.913/106.161 controls; first candidate deadline misses regress1.886% vs1.695%. Maximum intervals improve31.284/38.750 vs34.598/47.436ms, under changing host contention. No stall-free acceptance or instruction credit."
+  "interpretation": "No demonstrated live throughput gain: live candidate rates107.393/103.869 vs107.913/106.161 controls; first candidate deadline misses regress1.886% vs1.695%. Maximum intervals improve31.284/38.750 vs34.598/47.436ms, under changing host contention. No stall-free acceptance or instruction credit.",
+  "private_archive": {
+    "path": "/tmp/vox-reddit-float-text-stalls-20261108.tar.gz",
+    "sha256": "aeff781c74beab7fc64ab21d353969fb4f33156c2b88ab1df811f73da327155d",
+    "bytes": 102993307,
+    "mode": "0o600",
+    "verified_files": 4360,
+    "manifest_path": "/tmp/vox-reddit-float-text-stalls-20261108-files.json",
+    "manifest_sha256": "8f5e911e155276a9755cb7f2bbe148b4beaacbec1ea949869ca12d800139da5a",
+    "created_unix": 1794129931.45103
+  },
+  "archive_guard": {
+    "command": [
+      "python3",
+      "/tmp/vox-reddit-float-archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 52264960,
+    "elapsed_seconds": 7.880798875,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "final_shared_build": {
+    "observed_unix": 1794130740.1694798,
+    "guard_busy": true,
+    "latest": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "b8c5285a19472a2abaddcbe8c3bafcc232aeea611a151ee6b0b6b7f33dc6553a",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-091839-e5dbdb92/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "a66e1ce8e5ed3336ed6274a9d2cf776801ed4051b7491fb97558224547524cdc",
+        "dirty": true,
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "repository_sha256": "012e7c3414e73d0a26537e3b031772ccf6d15b616414447f25f24faaad7ebf98"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "0d4446e7e2a932ac4373f49007e527f5e3cfdb7acc7ad9a6a9ba8d9db329505d",
+        "dirty": true,
+        "head": "ca348b2df7a269ea1c5f995b29b579360f57f444",
+        "repository_sha256": "cd37310a8496548fd73c667a1a4d49f3c17b05d43a2c4f515811b53b70436265"
+      },
+      "request": {
+        "c_mode": "parallel",
+        "head": "cf043209d29d90fb805bd561accd59bc9b032fa9",
+        "id": "935663dfd904486eaf6aa135fe6a69ad",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "8b3032dc4af4bc82f5b10127c265081bc75cfbda172723dd866026d2509ed355",
+        "dirty": true,
+        "head": "74fd88caa86ae779e3d34816549d2675c0c96857",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "request": {
+      "c_mode": "parallel",
+      "head": "29c357f22ef02fe754dda24831366bd0c24a5f80",
+      "id": "af0ab4c7435545b0952db428a777794b",
+      "renderer": "gg",
+      "v_prod": false
+    }
+  },
+  "cleanup": {
+    "job_removed": true,
+    "temporary_test_directories_removed": 12,
+    "temporary_drivers_removed": 32,
+    "private_archive_retained": true,
+    "verified_files": 4360,
+    "all_own_build_locks_and_reports_removed": true
+  }
 }

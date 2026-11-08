@@ -1190,3 +1190,5 @@ all attempts, source pins, commands, guards, executed cases and the private raw
 archive identity. All 205 archived evidence files are read back and verified;
 the mode-0600 archive SHA256 is `b47195a9d837056a646d04dafd79faee47f10670b71054f5f484e8ae14eb993a`. Per-job Build output,
 locks and temporary test binaries/drivers are removed after verification.
+
+The mode-0600 raw archive SHA256 is `aeff781c74beab7fc64ab21d353969fb4f33156c2b88ab1df811f73da327155d`; all 4360 evidence files are read back and verified. The completed job, its locks/reports and temporary drivers/test binaries are removed after verification.
