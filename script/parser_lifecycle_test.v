@@ -1,11 +1,25 @@
 module main
 
+import adblock
+import browsersettings
 import dom
 import encoding.base64
 import html
+import net
+import page
+import time
+
+fn testsuite_begin() {
+	// Keep parser lifecycle fixtures independent of installed filter scriptlets.
+	adblock.set_enabled(false)
+}
 
 fn parser_lifecycle_fixture() &BrowserParserScriptHost {
-	address := dom.URL{value: 'https://parser-lifecycle.example/page'}
+	return parser_lifecycle_fixture_at('https://parser-lifecycle.example/page')
+}
+
+fn parser_lifecycle_fixture_at(url string) &BrowserParserScriptHost {
+	address := dom.URL{value: url}
 	document := create_browser_navigation_document_input_with_source('UTF-8', address,
 		none, none, none, 1_000_000, true, none)
 	images := new_browser_image_request_loader(document, {})
@@ -13,6 +27,103 @@ fn parser_lifecycle_fixture() &BrowserParserScriptHost {
 	// Tests deliver completions on the owner thread, independently of wall time.
 	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource) {}
 	return install_browser_parser_script_host(document, .javascriptcore, images, scripts, {}, none, none)
+}
+
+fn serve_parser_svg_sprite(mut listener net.TcpListener, requests chan string, stop chan bool) {
+	for {
+		select {
+			_ := <-stop { return }
+			else {}
+		}
+		mut socket := listener.accept() or { continue }
+		socket.set_read_timeout(5 * time.second)
+		mut input := []u8{len: 4096}
+		length := socket.read(mut input) or { 0 }
+		requests <- input[..length].bytestr().all_before('\r\n')
+		body := '<svg xmlns="http://www.w3.org/2000/svg"><symbol id="logo" data-owner="sprite"><path d="M0 0H10V10Z"/></symbol></svg>'
+		socket.write_string('HTTP/1.1 200 OK\r\nContent-Type: image/svg+xml\r\nCache-Control: no-store\r\nContent-Length: ${body.len}\r\nConnection: close\r\n\r\n${body}') or {}
+		socket.close() or {}
+	}
+}
+
+fn test_resumed_parser_loads_svg_use_resources_even_when_its_script_fails() {
+	$if !darwin && !linux { return }
+	for failed in [false, true] {
+		mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+		listener.set_accept_timeout(10 * time.millisecond)
+		requests := chan string{cap: 8}
+		stop := chan bool{cap: 1}
+		spawn serve_parser_svg_sprite(mut listener, requests, stop)
+		defer { stop <- true; listener.close() or {} }
+		address := 'http://${listener.addr()!}'
+		mut host := parser_lifecycle_fixture_at('${address}/page')
+		defer { parser_lifecycle_close(host) }
+		prefix := '${address}/prefix.svg'
+		host.initial_resources[prefix] = PreloadedResource{
+			url: prefix
+			body: '<svg xmlns="http://www.w3.org/2000/svg"><symbol id="logo" data-owner="prefix"/></svg>'
+		}
+		parser_lifecycle_parse(host, '<!doctype html><svg><use id=prefix href="${prefix}#logo"/></svg><script src=blocking.js></script><base href="/assets/"><svg><use id=one href="sprite.svg#logo"/><use id=two xlink:href="sprite.svg#logo"/><use href="#local"/><use href="https://other.test/sprite.svg#logo"/></svg>')
+		assert host.document.get_element_by_id('one') == none
+		assert requests.len == 0
+		// The shell installs its first, incomplete resource map while paused.
+		install_browser_svg_use_resources(host.document, host.initial_resources.clone())
+		host.scripts.results <- PreloadedResource{
+			url: '${address}/blocking.js'
+			source_url: host.document.url.serialize()
+			request_type: 'script'
+			body: 'globalThis.scriptRan=true;'
+			error: if failed { 'failed script' } else { '' }
+		}
+		host.scripts.poll(host.runtime, mut host.messages)
+		parser_lifecycle_run_tasks()
+		assert host.document.ready_state() == 'complete'
+		assert (host.runtime == unsafe { nil }) == failed
+		assert requests.len == 1
+		assert <-requests == 'GET /assets/sprite.svg HTTP/1.1'
+		assert host.svg_resources.len == 2
+		prefix_shadow := host.document.get_element_by_id('prefix')?.shadow_root()?
+		assert unsafe { &dom.Node(prefix_shadow) }.first_child()?.as_element()?.get_attribute_value('data-owner') == 'prefix'
+		for id in ['one', 'two'] {
+			element := host.document.get_element_by_id(id)?
+			shadow := element.shadow_root()?
+			instance := unsafe { &dom.Node(shadow) }.first_child()?.as_element()?
+			assert instance.get_attribute_value('data-owner') == 'sprite'
+		}
+		// Reusing the same installation cannot refetch a no-store response.
+		host.install_svg_use_resources()
+		assert requests.len == 0
+	}
+}
+
+fn test_synchronous_parser_shares_no_store_svg_responses_with_the_shell() {
+	$if !darwin && !linux { return }
+	mut listener := net.listen_tcp(.ip, '127.0.0.1:0')!
+	listener.set_accept_timeout(10 * time.millisecond)
+	requests := chan string{cap: 8}
+	stop := chan bool{cap: 1}
+	spawn serve_parser_svg_sprite(mut listener, requests, stop)
+	defer { stop <- true; listener.close() or {} }
+	address := 'http://${listener.addr()!}'
+	mut app := BrowserApp{
+		page_model: page.Page.create(1)!
+		script_policy: .enabled
+		layout_tree_only: true
+		viewport_width: 320
+		viewport_height: 200
+	}
+	defer { app.dispose_browser_tab() }
+	app.install_loaded_page(LoadedPage{
+		url: '${address}/page'
+		markup: '<!doctype html><svg><use id=target href="sprite.svg#logo"/></svg>'
+		content_type: 'text/html'
+	}, false)
+	assert requests.len == 1
+	assert <-requests == 'GET /sprite.svg HTTP/1.1'
+	shadow := app.document.get_element_by_id('target')?.shadow_root()?
+	instance := unsafe { &dom.Node(shadow) }.first_child()?.as_element()?
+	assert instance.get_attribute_value('data-owner') == 'sprite'
+	assert app.js_messages == []
 }
 
 fn parser_lifecycle_close(host &BrowserParserScriptHost) {
@@ -210,4 +321,32 @@ fn test_failed_initial_script_still_loads_suffix_images_without_a_runtime() {
 	assert suffix.event_count('load') == 1 && probe.requests == 0
 	existing.update_the_image_data(false, false)
 	assert probe.requests == 1
+}
+
+fn test_parser_time_scripts_observe_the_actual_viewport_and_restored_zoom() {
+	$if !darwin && !linux {
+		return
+	}
+	for zoom in [f64(1), 2] {
+		mut app := BrowserApp{
+			page_model:       page.Page.create(1)!
+			script_policy:    .enabled
+			layout_tree_only: true
+			viewport_width:   1200
+			viewport_height:  800
+			zoom_levels:      browsersettings.open_zoom_levels('')!
+		}
+		defer { app.dispose_browser_tab() }
+		app.zoom_levels.set_for_url('https://parser-viewport.test/', zoom)!
+		app.install_loaded_page(LoadedPage{
+			url:          'https://parser-viewport.test/page'
+			content_type: 'text/html'
+			markup:       r'<!doctype html><head><script>globalThis.parserViewport=[innerWidth,innerHeight,document.readyState,document.getElementById("later")===null];</script></head><body><p id=later>later</p>'
+		}, false)
+		assert app.js_runtime != unsafe { nil }
+		expected := '${int(1200 / zoom)}|${int(800 / zoom)}|loading|true'
+		assert app.js_runtime.evaluate_host('parserViewport.join("|")')! == expected
+		assert app.page_zoom == zoom
+		assert app.js_messages == []
+	}
 }

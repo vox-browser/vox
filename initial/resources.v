@@ -11,6 +11,13 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	for resource_url, resource in app.navigation_preloaded_resources {
 		cached[resource_url] = resource
 	}
+	// A synchronous parser may already have completed non-cacheable sprites.
+	// Share those responses with this installation's resource barrier.
+	if scripts := app.script_request_loader {
+		if host := scripts.parser_host {
+			for address, resource in host.svg_resources { cached[address] = resource }
+		}
+	}
 	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
 	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)

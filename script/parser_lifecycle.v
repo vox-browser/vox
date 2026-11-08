@@ -20,6 +20,7 @@ struct BrowserParserScriptHost {
 mut:
 	runtime           &browserjs.Runtime = unsafe { nil }
 	initial_resources map[string]PreloadedResource
+	svg_resources     map[string]PreloadedResource
 	messages          []string
 	initialized       bool
 	initialization_attempted bool
@@ -141,6 +142,7 @@ fn (mut host BrowserParserScriptHost) did_finish_parsing() {
 	// Install those before end-of-parsing tasks can publish document readiness.
 	host.messages << install_parser_external_styles(document, document.base_url().serialize(),
 		host.initial_resources)
+	host.install_svg_use_resources()
 	// Raw Window handlers need bindings before the parser queues readiness tasks,
 	// even when the document contains no script element.
 	if document_has_window_event_handlers(document) || browser_adblock_requires_runtime(document) {

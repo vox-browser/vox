@@ -187,6 +187,9 @@ fn create_browser_navigation_document_input_with_source(document_encoding ?strin
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	document.load_timing_info.navigation_start_time = highresolutiontime.coarsen_time(f64(response_time_ns) / 1.0e6,
 		settings.cross_origin_isolated_capability() == .yes)
+	// This constructor bypasses create_and_initialize(), which normally starts
+	// navigation readiness. Parser-time scripts must observe the loading state.
+	document.update_readiness(.loading)
 	document.set_document_type(.html)
 	document.set_allow_declarative_shadow_roots(true)
 	// This compact embedder creates the active navigation document directly,

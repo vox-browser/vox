@@ -4009,6 +4009,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	}
 	// External classic scripts can suspend this parser. Resource completions
 	// resume it with its stack and document.write insertion point intact.
+	// Parser-time scripts read Window dimensions directly from this rectangle.
+	app.prepare_initial_resource_viewport()
 	mut parser_resources := app.resource_cache.clone()
 	for address, resource in app.navigation_preloaded_resources { parser_resources[address] = resource }
 	mut image_loader := new_browser_image_request_loader(app.document, parser_resources)
@@ -4047,7 +4049,16 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		publish_browser_svg_resource(resource)
 	}
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
-	install_browser_svg_use_resources(app.document, preloaded_resources)
+	mut svg_resources := preloaded_resources.clone()
+	if mut host := parser_host {
+		// A paused parser needs the shell's completed responses after resumption,
+		// including resources whose no-store policy prevents disk-cache reuse.
+		if app.document.ready_state() == 'loading' {
+			for address, resource in preloaded_resources { host.initial_resources[address] = resource }
+		}
+		for address, resource in host.svg_resources { svg_resources[address] = resource }
+	}
+	install_browser_svg_use_resources(app.document, svg_resources)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
 	for address, resource in preloaded_resources { image_loader.resources[address] = resource }
