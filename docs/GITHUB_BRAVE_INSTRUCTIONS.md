@@ -96,7 +96,10 @@ The [c12 verification receipt](performance/github-vlang-instruction-validation-2
 retains commands, executable/source hashes, exits, case names, memory peaks,
 visual metrics and initial fixture failures with their corrections. No engine
 code changed after the measured c12 cohort. Scratch captures and temporary
-combined test binaries are removed after recording the durable receipts.
+combined test binaries are removed after recording the durable receipts. The
+[remaining diagnostic ledger](performance/github-vlang-instruction-diagnostics-20261108.json)
+retains quick runs, rejected prototypes, matched headless comparisons and
+memory-guard receipts; these do not replace the acceptance cohorts.
 
 ## Historical failing cohort: 2026-11-08, c11 (seven alternating pairs)
 
