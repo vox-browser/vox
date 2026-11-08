@@ -1487,3 +1487,85 @@ bindings or establish an overall rate. Other WPT types and unsupported services
 remain outside the runner's coverage. Typed FileReader error-setting FIXMEs,
 full ProgressEvent coverage and physical weak wrapper/world GC remain open.
 **The focused slice passes; full WPT and 100% remain unfinished.**
+
+## Worker FormData and lossless control values (2026-11-09)
+
+`9755deb9a` installs the existing settings-owned native FormData binding after
+File/FileList in actual classic/module dedicated and shared workers. Native
+File identity, live iterators, IDL errors and binary multipart fetch/formData()
+round trips are checked. FormDataEvent stays Window-only. The older pinned
+production prefix reports 46 FileAPI worker upload assertions failing because
+FormData is absent; all 46 pass in the final focused native checks.
+
+The initial **35 original xhr/formdata and FileAPI upload variants** report
+**208/213 assertions passing**. No cases are removed during follow-up:
+
+- `9a6928e18` preserves CRLF pairs in multipart field names and values. The
+  translated normalizer discarded an existing pair; the current upstream
+  implementation preserves it. Normalization remains idempotent, lone CR/LF
+  become CRLF and file bytes remain unchanged.
+- `af8181c46` preserves unpaired UTF-16 units in private DOM replay and compact
+  query records, including live input/textarea value replies. Valid surrogate
+  pairs and JSON grammar validation remain with json2; lone units use explicit
+  WTF-8 bytes internally and Unicode escapes on the control's return path.
+  Literal escaped text stays literal. Actual DOM strings retain their units;
+  native FormData entry creation performs the required scalar conversion.
+  Exact byte/code-unit regressions catch and reject an earlier attempt that
+  used V's scalar-replacing rune encoder. Malformed JSON remains rejected.
+- `34c9d0c64` routes range sanitization through the canonical number formatter
+  already used by numeric setters. The form constructor test then receives
+  `"11"`, rather than V's `"11.0"`, with fractions, negative zero, bounds and
+  exponent thresholds covered by focused checks.
+
+The complete selection now reports **211/213 assertions passing in both normal
+and preallocated GC-none native Page checks**, with all original bytes,
+assertions, expected counts and pinned inputs unchanged. The Worker subset is
+**86/86**, including 46 uploads; Window is **125/127**. Both remaining failures
+are retained: `constructor-submitter-coordinate.html` expects the dispatched
+image-button x coordinate 23 but receives 0, and `submitter-coordinate-value.html`
+reports `element click intercepted error`. Every harness completes, but both
+strict cohort exits remain **1**. This is a failing 35-page cohort, not 100%.
+
+Per memory mode, **32 focused integration checks, four typed CRLF checks and
+two typed range checks pass**. The integration set includes existing worker
+File/FileReader, Blob startup, native SVG replay/gradient rendering, query
+storage-lifetime and malformed-input regressions. The original 208/213 attempt,
+intermediate 210/213 attempts, failing live UTF-16 check, scalar-encoder
+diagnostic and intentionally stopped superseded compile remain retained.
+Compiles use the 12 GiB guard and V's 10 GiB limit; focused runtimes use 3 GiB.
+The broad collection, shared builds and other compiler work run concurrently
+on the 128 GiB host. These are correctness results, not timing comparisons.
+
+Raw evidence:
+`/Users/alex/.cache/vox/wpt/20261109-worker-form-data-native-raw.tar.gz`, SHA-256
+`95cd8bc85f36666984604e9881d26299037539d2c8712df24b4badba591cfb27`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-worker-form-data-native-summary.json`,
+SHA-256 `ff643e68f5549ca10fbd5eb91e85096ac99090a26f82e37ea3763c9ae2bc2a63`.
+Generated C, binaries and private profiles are excluded. The completed job,
+temporary combined test and owned locks are removed.
+
+The previous FileReader production build completed successfully, but its
+unpublished artifact was superseded before the five-second polling observer
+acquired it. It supplies compile evidence, not executed production WPT results.
+That observer is retired through its archive cleanup path; archive SHA-256
+`61b8ff10cb9cae604cb2cfa432bec10274611e372203593aa46a5d159dddc801` is recorded in
+`20261109-file-reader-production-completion.json` under the cache above. An
+intermediate observer is also retired without executing a browser collection
+when the range fix extends the required source set.
+
+The final observer pins **18 source hashes**, checks all **65 original
+FileReader/FormData variants with 328 expected assertions**, and retains the
+known image-coordinate failures with strict exits. It independently records
+the FileReader subset and runs all **11 unchanged original SVG source-switch
+and paint-server pixel comparisons** with zero tolerance. These production
+and pixel checks remain pending a matching completed shared image. The observer
+polls at 0.5 seconds and leases only the canonical bundle or the original
+completed production staging artifact; no bundle copy or private build is used.
+Status: `/Users/alex/.cache/vox/wpt/20261109-form-data-final-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261109-form-data-final-production-followup.py`,
+SHA-256 `1856a376792a78d5e2ffe8b534fc490cbbc8188f947a1e6f94ee440e4af7e1a0`.
+
+The corrected **40,139-variant official testharness collection continues on
+its original pinned executable**, without measuring these new fixes. Other
+WPT types and unsupported services retain their earlier limits. **There is no
+completed full-WPT result or overall 100% claim.**

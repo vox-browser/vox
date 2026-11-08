@@ -45,3 +45,26 @@ Historical verification at the original mapping checkpoint:
 `v -enable-globals test xhr` passed 3/3. The follow-up includes focused model,
 actual loopback transport, compact native host, DOM replay and production-build
 smoke checks.
+
+Native FormData worker exposure and serialization (2026-11-09): `9755deb9a`
+installs the existing native FormData owner after File/FileList in classic and
+module dedicated/shared worker globals. Fetch multipart bodies and formData()
+consume those native records. `9a6928e18` preserves existing CRLF pairs while
+normalizing field names/values; file bytes remain unchanged. `af8181c46`
+preserves unpaired UTF-16 units across private compact queries/replay and text
+control replies, with scalar conversion deferred to FormData entry creation.
+`34c9d0c64` uses the existing canonical number formatter for range sanitization,
+matching numeric setters and form-data entries.
+
+All **86 Worker assertions** in the selected original FormData/upload tests
+pass, including all 46 file uploads. The complete **35-variant Window/Worker
+selection passes 211/213 assertions in both normal and preallocated GC-none
+native Page checks**. Both image-button coordinate failures remain selected;
+the strict cohort exits 1. **32 integration checks, four CRLF checks and two
+range checks pass per mode**, including raw UTF-16 byte goldens, live control
+round trips, SVG replay/rendering neighbors and invalid JSON rejection.
+Production validation and the required 11 unchanged SVG pixel comparisons are
+pending a source-matching completed shared build. These focused results do not
+establish full XHR, FormData or WPT parity; see the
+[WPT progress report](../docs/WPT_CONFORMANCE_PROGRESS.md) for evidence and
+remaining failures.
