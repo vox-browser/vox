@@ -4,6 +4,7 @@ import dom
 import html
 import indexeddb
 import libjs
+import fileapi
 
 // IndexedDB's current typed storage representation supports finite value
 // trees. Unsupported clone records fail explicitly rather than being stored
@@ -42,6 +43,19 @@ fn indexed_db_value_from_projection(value dom.JSValue, mut seen map[voidptr]bool
 	}
 	seen[identity] = true
 	match object.kind {
+		.serializable_object {
+			if blob := object.blob_ {
+				mut result := indexeddb.blob_value(blob.size(), blob.type_())
+				result.bytes = blob.raw_bytes()
+				return result
+			}
+			if file := object.file_ {
+				mut result := indexeddb.file_value(file.name(), file.size(), file.type_(), f64(file.last_modified()))
+				result.bytes = file.raw_bytes()
+				return result
+			}
+			return error('DataCloneError: Unsupported IndexedDB serializable object')
+		}
 		.date { return indexeddb.date_value(object.number_data) }
 		.array_buffer { return indexeddb.binary_value(object.bytes) }
 		.array {
@@ -81,6 +95,14 @@ fn (mut runtime Runtime) indexed_db_output(value indexeddb.Value) !voidptr {
 }
 
 fn indexed_db_value_to_projection(value indexeddb.Value) !dom.JSValue {
+	if value.kind == .blob {
+		return html.structured_object_value(html.StructuredObject.create_blob(fileapi.Blob.create_utf16(value.bytes,
+			libjs.utf16_string_from_utf8_without_validation(value.mime_type))))
+	}
+	if value.kind == .file {
+		return html.structured_object_value(html.StructuredObject.create_file(fileapi.File.create(value.bytes,
+			value.file_name, value.mime_type, i64(value.last_modified))))
+	}
 	match value.kind {
 		.undefined { return dom.js_undefined() }
 		.null_ { return dom.js_null() }
