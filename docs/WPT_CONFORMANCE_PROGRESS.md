@@ -539,3 +539,11 @@ r16 as a matched regression or performance comparison to r15. The selected
 6,828 cases are still Ladybird's imported testharness subset, not the full
 132,460-variant upstream inventory. Full upstream execution and 100% passing
 remain unfinished.
+
+
+r16 started at `2026-11-08T16:01:38+0300` after the existing jobs exited.
+It selected the newer published executable `f26b41bdc7345c07…`,
+whose sealed source manifest matches all six required implementation files.
+The detached observer and aggregate guard are active. This is an in-progress
+collection, with no complete result or all-pass claim; the independent preflight
+above remains attributed to its original `91be2b76025a…` executable.
