@@ -65,9 +65,57 @@ test input hashes remain unchanged across the final checks.
 | Limit character-data properties and reflect HTML object URLs | `33e80e114` |
 | Refetch previous-page `no-store` resources on navigation | `17b743462` |
 
-The latest completed production bundle still predates these later source fixes;
-the shared build worker is already running. Production validation and a new full
-run remain pending. **100% conformance has not been reached.**
+At the end of that follow-up, the completed bundle still predated those source
+fixes. The subsequent measurements below exercise them in newer bundles.
+
+## Trusted Types integration and newer production checks
+
+The [Trusted Types follow-up manifest](performance/wpt-trusted-types-20261108.json)
+records four further fixes, source checks, both production attempts, and the
+remaining failures. **100% conformance has not been reached.**
+
+| Fix | Commit |
+|---|---|
+| Report concrete event-handler sink names to default policies and CSP | `56572251c` |
+| Preserve original JavaScript callback exception values through host transports | `334e5f9cc` |
+| Share JavaScript policies with the native owning Window factory; preserve callback conversion, mutations and retired-realm safety | `489d0ff01` |
+| Enforce `setAttribute` and `setAttributeNS` synchronously, preserving genuine trusted values | `0ebd0d881` |
+
+All 14 Trusted Types model tests pass in both allocator modes. Native host tests
+preserve nine thrown values through three transports (27 combinations), also in
+both modes. All 23 integration tests pass with ordinary allocation and production
+`-prealloc -gc none`; the latter also passes with shared node properties disabled.
+These cover policy sharing, CSP restrictions, original exceptions, callback
+lifetimes, typed attributes, namespaces, receiver checks, custom-element reactions,
+canvas sizing, and existing SVG/attribute-map behavior. The final focused input
+hashes remain unchanged across those checks.
+
+Two fresh production attempts, using `d17cb11af747…` and `843893a4a6f9…`, produce
+the same assertion counts over 60 files:
+
+| Group | r14 PASS / reported | New focused PASS / reported |
+|---|---:|---:|
+| Font shorthand validity | 271 / 315 | **315 / 315** |
+| Processing-instruction parsing | 108 / 307 | **307 / 307** |
+| SVG animated-length initial values | 124 / 130 | **130 / 130** |
+| SVG IDL | 1,027 / 1,780 | 1,093 / 1,780 |
+| Trusted Types, 56 files | 690 / 1,446 | 728 / 1,447 |
+
+That cohort gains 353 reported passes, with one additional reported subtest.
+It does not establish a new overall pass rate. Both attempts retain an iframe
+navigation crash (`block-string-assignment-to-HTMLIFrameElement-srcdoc`) and the
+`script-enforcement-001` harness timeout. Each uses a 3 GiB aggregate guard,
+2 GiB browser cap, unchanged runner deadlines, fresh processes, and executable
+and native-library identity checks. The guard and collection commands exit 0;
+that does not mean the assertions pass.
+
+Both measured bundles contain the first policy bridge. The later bundle also
+contains its persistent callback lifetime guard. Neither contains `0ebd0d881`'s
+typed, synchronous attribute transport, so that fix still needs production WPT
+validation. The shared production worker has its build request; no duplicate
+build was queued. A new full-suite result remains pending. Raw evidence is local
+at `/Users/alex/.cache/vox/wpt/20261108-trusted-types.tar.gz`, with its hash and
+per-attempt failures in the manifest.
 
 ## Full run and comparison
 

@@ -1,0 +1,4006 @@
+{
+  "scope": "Trusted Types model, native policy and synchronous Element attribute enforcement follow-up; not a full WPT run",
+  "all_wpt_tests_pass": false,
+  "last_full_run": "docs/performance/wpt-r14-20261108.json",
+  "fixes": [
+    {
+      "commit": "56572251c",
+      "change": "Use the concrete event-handler attribute name in default-policy arguments and CSP samples."
+    },
+    {
+      "commit": "334e5f9cc",
+      "change": "Preserve original JavaScript callback exception values through string host transports."
+    },
+    {
+      "commit": "489d0ff01",
+      "change": "Register JavaScript Trusted Types policies in the native owning Window factory, preserve callback semantics and guard retired realms."
+    },
+    {
+      "commit": "0ebd0d881",
+      "change": "Preserve trusted value brands and enforce Element.setAttribute and setAttributeNS synchronously with native receiver, namespace and policy checks."
+    }
+  ],
+  "source_checks": [
+    {
+      "job": "wpt-callback-exception-20261108a",
+      "note": "Test fixture supplied a pointer to the Runtime pointer instead of the Runtime; corrected in c.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-callback-exception-20261108a/host_function_exception_test",
+          "browserjs/host_function_exception_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4921868288,
+        "elapsed_seconds": 109.158480833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-callback-exception-20261108a/host_function_exception_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.5200726659999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-callback-exception-20261108b",
+      "note": "Same incorrect callback owner in the fixture; corrected in c.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-callback-exception-20261108b/host_function_exception_test",
+          "browserjs/host_function_exception_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4935139328,
+        "elapsed_seconds": 61.042179459,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-callback-exception-20261108b/host_function_exception_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.504150833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-callback-exception-20261108c",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-callback-exception-20261108c/host_function_exception_test",
+          "browserjs/host_function_exception_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4927275008,
+        "elapsed_seconds": 75.605831792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-callback-exception-20261108c/host_function_exception_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 19759104,
+        "elapsed_seconds": 0.694950334,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-callback-exception-20261108d",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-callback-exception-20261108d/focused_test",
+          "browserjs/host_function_exception_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 4955029504,
+        "elapsed_seconds": 123.50675575,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-callback-exception-20261108d/focused_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 688128,
+        "elapsed_seconds": 0.68757425,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-policy-models-20261108a",
+      "note": "Existing assertion still expected generic Element event handler sample; corrected to concrete Element onclick.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-policy-models-20261108a/policy_models_test",
+          "trustedtypes/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 492994560,
+        "elapsed_seconds": 5.965273625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-policy-models-20261108a/policy_models_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.5616234999999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "trustedtypes/factory_csp_test.v": "d8d07e80737b1cb4205db779a6d1c927c413fd970bd802b00cf87cc1b80e775b",
+          "trustedtypes/policy_test.v": "8080cdd8aebfcd2378caf6435b7e457fdca6ff30233ae4cc24fd7d807b444377",
+          "trustedtypes/attribute_sink_test.v": "452e09e7e8d918e7aba6920c0c0c4ec3b0aa11bc0a1a5dbd42e00e2ebb8c9e3f"
+        },
+        "combined_test": "trustedtypes/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "7e262056a72a9f35fece4ad79d69ef412e69adb5aafdebe52869733bb502b049",
+        "test_functions": [
+          "test_csp_policy_creation_name_duplicate_and_report_only",
+          "test_exact_csp_algorithm_entry_points",
+          "test_sink_requirement_violation_sample_and_blocking",
+          "test_factory_relevant_global_realm_and_default_policy_offset",
+          "test_attribute_and_property_type_tables",
+          "test_policy_violation_name_is_limited_to_forty_unicode_characters",
+          "test_compliant_attribute_value_uses_event_handler_and_xlink_tables",
+          "test_navigation_javascript_default_policy_conversion",
+          "test_trusted_values_policy_callbacks_and_missing_callback",
+          "test_factory_default_uniqueness_type_checks_and_empty_singletons",
+          "test_default_policy_processing_and_compliant_string",
+          "test_binding_value_helpers_and_policy_callback_invocation",
+          "test_attribute_default_policy_receives_concrete_event_handler_sink_names",
+          "test_attribute_csp_violation_sample_contains_the_actual_event_handler_name"
+        ]
+      }
+    },
+    {
+      "job": "wpt-policy-models-20261108b",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-policy-models-20261108b/policy_models_test",
+          "trustedtypes/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 555892736,
+        "elapsed_seconds": 5.223970584,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-policy-models-20261108b/policy_models_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.45297183300000005,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "trustedtypes/factory_csp_test.v": "4046a4b14b42fe26d65183173d16d24c7631b0fa9012287461ca1e783b823a07",
+          "trustedtypes/policy_test.v": "8080cdd8aebfcd2378caf6435b7e457fdca6ff30233ae4cc24fd7d807b444377",
+          "trustedtypes/attribute_sink_test.v": "452e09e7e8d918e7aba6920c0c0c4ec3b0aa11bc0a1a5dbd42e00e2ebb8c9e3f"
+        },
+        "combined_test": "trustedtypes/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "2a36c98f4488efa0361dfbc3a19b57bc3ad8951036a16a4203e122cc429ca02d",
+        "test_functions": [
+          "test_csp_policy_creation_name_duplicate_and_report_only",
+          "test_exact_csp_algorithm_entry_points",
+          "test_sink_requirement_violation_sample_and_blocking",
+          "test_factory_relevant_global_realm_and_default_policy_offset",
+          "test_attribute_and_property_type_tables",
+          "test_policy_violation_name_is_limited_to_forty_unicode_characters",
+          "test_compliant_attribute_value_uses_event_handler_and_xlink_tables",
+          "test_navigation_javascript_default_policy_conversion",
+          "test_trusted_values_policy_callbacks_and_missing_callback",
+          "test_factory_default_uniqueness_type_checks_and_empty_singletons",
+          "test_default_policy_processing_and_compliant_string",
+          "test_binding_value_helpers_and_policy_callback_invocation",
+          "test_attribute_default_policy_receives_concrete_event_handler_sink_names",
+          "test_attribute_csp_violation_sample_contains_the_actual_event_handler_name"
+        ]
+      }
+    },
+    {
+      "job": "wpt-policy-models-20261108c",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-policy-models-20261108c/policy_models_test",
+          "trustedtypes/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 510820352,
+        "elapsed_seconds": 5.124097207999999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-policy-models-20261108c/policy_models_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.43321116699999995,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-native-policies-20261108a",
+      "note": "Fixture parsed CSP before constructing a genuine Window; corrected to browser initialization order in c.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-native-policies-20261108a/native_policies_test",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5962481664,
+        "elapsed_seconds": 136.22222508299998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-native-policies-20261108a/native_policies_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 57311232,
+        "elapsed_seconds": 0.800107084,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "69eae823026bbc3c8d3db4067fa68521ac6715f411d4c54ffb873c5c161c33aa"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "5a09e3bf131eb09f14b03eab7362a57df7165dd087b9a308a05570ab76ae8506",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original"
+        ]
+      }
+    },
+    {
+      "job": "wpt-native-policies-20261108b",
+      "note": "Unrelated concurrent cpuraster change used unavailable math.nextafterf; next attempt compiled after its owner corrected it.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-native-policies-20261108b/focused_test",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2975498240,
+        "elapsed_seconds": 86.50738212499999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "ea0c5c82abe73e4fe29871eb6ba38ec0cc6664424830615cc422fef419861455"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "5991d887fc0f465872c4def5fdebd2acbb9d8dce25fe4c6015a688501b398bd1",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original"
+        ]
+      }
+    },
+    {
+      "job": "wpt-native-policies-20261108c",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-native-policies-20261108c/native_policies_test",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5673402368,
+        "elapsed_seconds": 111.729548375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-native-policies-20261108c/native_policies_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 91275264,
+        "elapsed_seconds": 0.766313792,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "ea0c5c82abe73e4fe29871eb6ba38ec0cc6664424830615cc422fef419861455"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "5991d887fc0f465872c4def5fdebd2acbb9d8dce25fe4c6015a688501b398bd1",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original"
+        ]
+      }
+    },
+    {
+      "job": "wpt-native-policies-20261108d",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-native-policies-20261108d/native_policies_test",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5968887808,
+        "elapsed_seconds": 117.66659941600001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-native-policies-20261108d/native_policies_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 91340800,
+        "elapsed_seconds": 0.743682083,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "test_files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "71f57b21be34bb4f34829b2c7aaf52243f362d6d6677cfac993b33e58984cc8b"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "faa5a9ee3bfc9148712a87d681193bb317e4bb187e4d6a836acc107df6a1f86a",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original",
+          "test_closed_native_policy_callback_outlives_document_payload_without_entering_javascript"
+        ]
+      }
+    },
+    {
+      "job": "wpt-trusted-attributes-20261108a",
+      "note": "New test helper propagated a Result without a Result return; helper corrected before b.",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/wpt-trusted-attributes-20261108a/tests",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3043540992,
+        "elapsed_seconds": 118.80803166599999,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "71f57b21be34bb4f34829b2c7aaf52243f362d6d6677cfac993b33e58984cc8b",
+          "compact/trusted_attribute_test.v": "2bbaa59c8855f158f9ada1f25f97f438ba3a360ffb55a4c8d7554ba5e6d39381",
+          "compact/element_members_test.v": "3843c7d574b745c9b939f584179ae885fb2f889f7ac6e68cf9d5260ccf9a8715",
+          "compact/custom_element_attribute_reaction_test.v": "63fe6c93b5e277780378c0458f160506c62a0800a4fc45cf9cf81bbfafca695c",
+          "compact/named_node_map_test.v": "04dbada4c8bc191e00949918204d636a6b41acbbd73f96806df27e166faa7f2e",
+          "compact/shared_properties_test.v": "392c9346ec76adf975a2e2ac1fc925571c09df70a6c6c29c19ec76da8934a6f7",
+          "compact/bootstrap_intrinsics_test.v": "e0b0a829cbea6f2bdc6c20797968f8320d01d85e1c9d7e36150252d01b0d43a7",
+          "compact/svg_interface_test.v": "e32298169f47d07daad4fb0e01009aad245bd8c98e7217c419d003ee1d9996f7",
+          "browserjs/trusted_types_policy_binding_jsc.c.v": "1537867a2ce99b5b216ad110e095f344f057b079d1fb88e67d4f998c2d57a694",
+          "compact/content.v": "6e3aa583e4d47e626e40a3b647a57a1006553af43e8d184297eef373c0fa8897",
+          "compact/trusted_types.v": "f9aa4579659dcc11213d8809525e68c3c62fc30d0be289e221f79f79d90f868e",
+          "compact/trusted_attribute.v": "5fcf3c944dac9695382c04407803e7b180ea7c17deaeb38e299f55d078fbb5c5",
+          "compact/element_members.v": "534e113e684bdd91dd222a66c085dfb7ae3fc8416b17d3a403180124bd7464c0",
+          "compact/shared_properties.v": "e30297bcd8b42fda2421a6e6db9e3acb6fc09e0deabb151f77d567b24bf094d1",
+          "dom/document.v": "59384053b0d7e250015ae1b9f853f2115c2b9b16b4b48b51eaca3b5e4026d85b",
+          "dom/element.v": "fa488a41937adf24bfc927f791586143b0f596326e9ec8cd678e6fa6ba429fa4",
+          "html/accessibility_role_bridge.v": "f2f8c5cfefb5a79b8ec2c01a0980e40536c85e8c5e2c4d4d169870b835129e26"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "e4992305413d0c5fd2f38e921af86965c01224100516013efa13ca282132931c",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original",
+          "test_closed_native_policy_callback_outlives_document_payload_without_entering_javascript",
+          "test_trusted_attribute_setters_preserve_brands_and_enforce_before_returning",
+          "test_default_attribute_policy_runs_once_with_the_actual_sink_and_refreshes_mutations",
+          "test_attribute_setters_validate_receivers_names_and_preserve_conversion_exceptions",
+          "test_attribute_setters_retain_native_state_custom_element_reactions_and_captured_apply",
+          "test_namespace_and_adjacent_members_use_the_native_dom",
+          "test_compact_custom_element_attribute_reactions_run_before_the_write_returns",
+          "test_compact_attributes_support_jquery_option_value_hook",
+          "test_compact_attributes_are_a_live_same_object_named_node_map",
+          "test_compact_attributes_keep_namespaces_and_check_receivers",
+          "test_compact_common_accessors_share_functions_and_preserve_own_descriptors",
+          "test_shared_accessors_use_registered_receivers_and_preserve_conversion_exceptions",
+          "test_shared_control_and_content_properties_replay_to_the_native_models",
+          "test_native_fragments_do_not_acquire_the_element_property_brand",
+          "test_data_is_limited_to_character_nodes_and_html_object_url_reflection",
+          "test_compact_document_bootstrap_initializes_intrinsics_without_author_scripts",
+          "test_compact_document_bootstrap_finishes_before_author_dom_queries",
+          "test_compact_svg_interface_preserves_namespace_and_vue_mount_classification",
+          "test_compact_svg_animated_attributes_reflect_their_content_attributes"
+        ],
+        "head": "91dca8af3c8068f9ec60441a227b0ffde9b6ac27",
+        "load": [
+          31.13818359375,
+          16.0185546875,
+          13.65869140625
+        ]
+      }
+    },
+    {
+      "job": "wpt-trusted-attributes-20261108b",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "/Users/alex/code/vox2/Build/wpt-trusted-attributes-20261108b/tests",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5963743232,
+        "elapsed_seconds": 130.511850208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "/Users/alex/code/vox2/Build/wpt-trusted-attributes-20261108b/tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 137936896,
+        "elapsed_seconds": 1.008427708,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "alternate-runtime": {
+        "command": [
+          "Build/wpt-trusted-attributes-20261108b/tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 140771328,
+        "elapsed_seconds": 0.680828916,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "71f57b21be34bb4f34829b2c7aaf52243f362d6d6677cfac993b33e58984cc8b",
+          "compact/trusted_attribute_test.v": "61351a9a7284d00cd60658de9249d89145f10f255ca79214d0936de095117abc",
+          "compact/element_members_test.v": "3843c7d574b745c9b939f584179ae885fb2f889f7ac6e68cf9d5260ccf9a8715",
+          "compact/custom_element_attribute_reaction_test.v": "63fe6c93b5e277780378c0458f160506c62a0800a4fc45cf9cf81bbfafca695c",
+          "compact/named_node_map_test.v": "04dbada4c8bc191e00949918204d636a6b41acbbd73f96806df27e166faa7f2e",
+          "compact/shared_properties_test.v": "392c9346ec76adf975a2e2ac1fc925571c09df70a6c6c29c19ec76da8934a6f7",
+          "compact/bootstrap_intrinsics_test.v": "e0b0a829cbea6f2bdc6c20797968f8320d01d85e1c9d7e36150252d01b0d43a7",
+          "compact/svg_interface_test.v": "e32298169f47d07daad4fb0e01009aad245bd8c98e7217c419d003ee1d9996f7",
+          "browserjs/trusted_types_policy_binding_jsc.c.v": "1537867a2ce99b5b216ad110e095f344f057b079d1fb88e67d4f998c2d57a694",
+          "compact/content.v": "6e3aa583e4d47e626e40a3b647a57a1006553af43e8d184297eef373c0fa8897",
+          "compact/trusted_types.v": "f9aa4579659dcc11213d8809525e68c3c62fc30d0be289e221f79f79d90f868e",
+          "compact/trusted_attribute.v": "5fcf3c944dac9695382c04407803e7b180ea7c17deaeb38e299f55d078fbb5c5",
+          "compact/element_members.v": "534e113e684bdd91dd222a66c085dfb7ae3fc8416b17d3a403180124bd7464c0",
+          "compact/shared_properties.v": "e30297bcd8b42fda2421a6e6db9e3acb6fc09e0deabb151f77d567b24bf094d1",
+          "dom/document.v": "59384053b0d7e250015ae1b9f853f2115c2b9b16b4b48b51eaca3b5e4026d85b",
+          "dom/element.v": "fa488a41937adf24bfc927f791586143b0f596326e9ec8cd678e6fa6ba429fa4",
+          "html/accessibility_role_bridge.v": "f2f8c5cfefb5a79b8ec2c01a0980e40536c85e8c5e2c4d4d169870b835129e26"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "c1b7e25505a0f4da828324c4c60a41dabb9191276613803316802c3ae6fdfc03",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original",
+          "test_closed_native_policy_callback_outlives_document_payload_without_entering_javascript",
+          "test_trusted_attribute_setters_preserve_brands_and_enforce_before_returning",
+          "test_default_attribute_policy_runs_once_with_the_actual_sink_and_refreshes_mutations",
+          "test_attribute_setters_validate_receivers_names_and_preserve_conversion_exceptions",
+          "test_attribute_setters_retain_native_state_custom_element_reactions_and_captured_apply",
+          "test_namespace_and_adjacent_members_use_the_native_dom",
+          "test_compact_custom_element_attribute_reactions_run_before_the_write_returns",
+          "test_compact_attributes_support_jquery_option_value_hook",
+          "test_compact_attributes_are_a_live_same_object_named_node_map",
+          "test_compact_attributes_keep_namespaces_and_check_receivers",
+          "test_compact_common_accessors_share_functions_and_preserve_own_descriptors",
+          "test_shared_accessors_use_registered_receivers_and_preserve_conversion_exceptions",
+          "test_shared_control_and_content_properties_replay_to_the_native_models",
+          "test_native_fragments_do_not_acquire_the_element_property_brand",
+          "test_data_is_limited_to_character_nodes_and_html_object_url_reflection",
+          "test_compact_document_bootstrap_initializes_intrinsics_without_author_scripts",
+          "test_compact_document_bootstrap_finishes_before_author_dom_queries",
+          "test_compact_svg_interface_preserves_namespace_and_vue_mount_classification",
+          "test_compact_svg_animated_attributes_reflect_their_content_attributes"
+        ],
+        "head": "91dca8af3c8068f9ec60441a227b0ffde9b6ac27",
+        "load": [
+          32.244140625,
+          24.10205078125,
+          17.43798828125
+        ]
+      },
+      "input-check": {
+        "compact/trusted_types_test.v": true,
+        "compact/trusted_types_native_policy_test.v": true,
+        "compact/trusted_attribute_test.v": true,
+        "compact/element_members_test.v": true,
+        "compact/custom_element_attribute_reaction_test.v": true,
+        "compact/named_node_map_test.v": true,
+        "compact/shared_properties_test.v": true,
+        "compact/bootstrap_intrinsics_test.v": true,
+        "compact/svg_interface_test.v": true,
+        "browserjs/trusted_types_policy_binding_jsc.c.v": true,
+        "compact/content.v": true,
+        "compact/trusted_types.v": true,
+        "compact/trusted_attribute.v": true,
+        "compact/element_members.v": true,
+        "compact/shared_properties.v": true,
+        "dom/document.v": true,
+        "dom/element.v": true,
+        "html/accessibility_role_bridge.v": true
+      }
+    },
+    {
+      "job": "wpt-trusted-attributes-20261108c",
+      "note": null,
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-trusted-attributes-20261108c/tests",
+          "compact/zz_wpt_policy_20261108_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5965250560,
+        "elapsed_seconds": 120.294895292,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-trusted-attributes-20261108c/tests"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 138936320,
+        "elapsed_seconds": 1.233661042,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "inputs": {
+        "files": {
+          "compact/trusted_types_test.v": "e1933640c0d4cd2207d10c15cd71ca3f9ee533ba9a6cc55f3475c8df5cfa3ae5",
+          "compact/trusted_types_native_policy_test.v": "71f57b21be34bb4f34829b2c7aaf52243f362d6d6677cfac993b33e58984cc8b",
+          "compact/trusted_attribute_test.v": "61351a9a7284d00cd60658de9249d89145f10f255ca79214d0936de095117abc",
+          "compact/element_members_test.v": "3843c7d574b745c9b939f584179ae885fb2f889f7ac6e68cf9d5260ccf9a8715",
+          "compact/custom_element_attribute_reaction_test.v": "63fe6c93b5e277780378c0458f160506c62a0800a4fc45cf9cf81bbfafca695c",
+          "compact/named_node_map_test.v": "04dbada4c8bc191e00949918204d636a6b41acbbd73f96806df27e166faa7f2e",
+          "compact/shared_properties_test.v": "392c9346ec76adf975a2e2ac1fc925571c09df70a6c6c29c19ec76da8934a6f7",
+          "compact/bootstrap_intrinsics_test.v": "e0b0a829cbea6f2bdc6c20797968f8320d01d85e1c9d7e36150252d01b0d43a7",
+          "compact/svg_interface_test.v": "e32298169f47d07daad4fb0e01009aad245bd8c98e7217c419d003ee1d9996f7",
+          "browserjs/trusted_types_policy_binding_jsc.c.v": "1537867a2ce99b5b216ad110e095f344f057b079d1fb88e67d4f998c2d57a694",
+          "compact/content.v": "6e3aa583e4d47e626e40a3b647a57a1006553af43e8d184297eef373c0fa8897",
+          "compact/trusted_types.v": "f9aa4579659dcc11213d8809525e68c3c62fc30d0be289e221f79f79d90f868e",
+          "compact/trusted_attribute.v": "5fcf3c944dac9695382c04407803e7b180ea7c17deaeb38e299f55d078fbb5c5",
+          "compact/element_members.v": "534e113e684bdd91dd222a66c085dfb7ae3fc8416b17d3a403180124bd7464c0",
+          "compact/shared_properties.v": "e30297bcd8b42fda2421a6e6db9e3acb6fc09e0deabb151f77d567b24bf094d1",
+          "dom/document.v": "59384053b0d7e250015ae1b9f853f2115c2b9b16b4b48b51eaca3b5e4026d85b",
+          "dom/element.v": "fa488a41937adf24bfc927f791586143b0f596326e9ec8cd678e6fa6ba429fa4",
+          "html/accessibility_role_bridge.v": "f2f8c5cfefb5a79b8ec2c01a0980e40536c85e8c5e2c4d4d169870b835129e26"
+        },
+        "combined_test": "compact/zz_wpt_policy_20261108_test.v",
+        "combined_sha256": "c1b7e25505a0f4da828324c4c60a41dabb9191276613803316802c3ae6fdfc03",
+        "test_functions": [
+          "test_compact_trusted_types_policies_values_and_type_tables",
+          "test_javascript_default_policy_is_shared_with_native_attribute_and_html_sinks",
+          "test_default_policy_return_conversion_and_original_exception_values",
+          "test_default_policy_callback_options_are_snapshotted_and_conversion_errors_stay_original",
+          "test_closed_native_policy_callback_outlives_document_payload_without_entering_javascript",
+          "test_trusted_attribute_setters_preserve_brands_and_enforce_before_returning",
+          "test_default_attribute_policy_runs_once_with_the_actual_sink_and_refreshes_mutations",
+          "test_attribute_setters_validate_receivers_names_and_preserve_conversion_exceptions",
+          "test_attribute_setters_retain_native_state_custom_element_reactions_and_captured_apply",
+          "test_namespace_and_adjacent_members_use_the_native_dom",
+          "test_compact_custom_element_attribute_reactions_run_before_the_write_returns",
+          "test_compact_attributes_support_jquery_option_value_hook",
+          "test_compact_attributes_are_a_live_same_object_named_node_map",
+          "test_compact_attributes_keep_namespaces_and_check_receivers",
+          "test_compact_common_accessors_share_functions_and_preserve_own_descriptors",
+          "test_shared_accessors_use_registered_receivers_and_preserve_conversion_exceptions",
+          "test_shared_control_and_content_properties_replay_to_the_native_models",
+          "test_native_fragments_do_not_acquire_the_element_property_brand",
+          "test_data_is_limited_to_character_nodes_and_html_object_url_reflection",
+          "test_compact_document_bootstrap_initializes_intrinsics_without_author_scripts",
+          "test_compact_document_bootstrap_finishes_before_author_dom_queries",
+          "test_compact_svg_interface_preserves_namespace_and_vue_mount_classification",
+          "test_compact_svg_animated_attributes_reflect_their_content_attributes"
+        ],
+        "head": "91dca8af3c8068f9ec60441a227b0ffde9b6ac27",
+        "load": [
+          32.244140625,
+          24.10205078125,
+          17.43798828125
+        ]
+      },
+      "input-check": {
+        "compact/trusted_types_test.v": true,
+        "compact/trusted_types_native_policy_test.v": true,
+        "compact/trusted_attribute_test.v": true,
+        "compact/element_members_test.v": true,
+        "compact/custom_element_attribute_reaction_test.v": true,
+        "compact/named_node_map_test.v": true,
+        "compact/shared_properties_test.v": true,
+        "compact/bootstrap_intrinsics_test.v": true,
+        "compact/svg_interface_test.v": true,
+        "browserjs/trusted_types_policy_binding_jsc.c.v": true,
+        "compact/content.v": true,
+        "compact/trusted_types.v": true,
+        "compact/trusted_attribute.v": true,
+        "compact/element_members.v": true,
+        "compact/shared_properties.v": true,
+        "dom/document.v": true,
+        "dom/element.v": true,
+        "html/accessibility_role_bridge.v": true
+      }
+    }
+  ],
+  "final_required_checks": {
+    "trusted_types_models": [
+      "wpt-policy-models-20261108b",
+      "wpt-policy-models-20261108c"
+    ],
+    "native_host_exceptions": [
+      "wpt-callback-exception-20261108c",
+      "wpt-callback-exception-20261108d"
+    ],
+    "integration": [
+      "wpt-trusted-attributes-20261108b",
+      "wpt-trusted-attributes-20261108c"
+    ],
+    "integration_test_functions": 23,
+    "alternate_runtime": "VOX_DISABLE_SHARED_NODE_PROPERTIES=1, same 23 tests, production allocator; alternate-runtime guard in wpt-trusted-attributes-20261108b"
+  },
+  "production_measurements": [
+    {
+      "job": "wpt-production-followon-20261108a",
+      "identity": {
+        "started": "2026-11-08T07:21:27+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-production-followon-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "trusted-types/",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "css/css-fonts/parsing/font-valid"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          13.2,
+          13.64,
+          18.61
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "d17cb11af747d8f9c7d3b31e606e8a51a850ebfa2f619d138e627b5cc6981330",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-065937-8a69379b/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "b2060941ef4b5cfcf02d5114a7765e94bfb730b9700dcebb5bac98a6d3e91b98",
+            "dirty": true,
+            "head": "e008064e74141105c3d311ba7c54a7e1b0902ad6",
+            "repository_sha256": "e5991db9b30690628cc1a42cfa9a194b304427cd4846803d3cbe6a29e8c2381c"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "ac2e56b4264cd1743026e8ebf9054ec8b4799e8df18911254d37726881437f70",
+            "dirty": true,
+            "head": "04881ebe40a96e7674af037943edbcafe10af1c1",
+            "repository_sha256": "6a6be33c0069fc58a31406d4f9dd66bf6f89e7595769295d75227892529c8b09"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "e008064e74141105c3d311ba7c54a7e1b0902ad6",
+            "id": "ac9f89e213a8418e82a46dc7fb6a18a2",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "b2060941ef4b5cfcf02d5114a7765e94bfb730b9700dcebb5bac98a6d3e91b98",
+            "dirty": true,
+            "head": "e008064e74141105c3d311ba7c54a7e1b0902ad6",
+            "repository_sha256": "d14dd6a5bae93a366f4d6eaf67b0100dc05323967289b4c10a09f7accf1748eb"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "d17cb11af747d8f9c7d3b31e606e8a51a850ebfa2f619d138e627b5cc6981330",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "9c3f492a5fc000a0545890fb9c127d8b6312d83b6bb434bb0964f4c639b09da2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7f188689d739afd9ff57ef9fc033db03a36ad52f4499095a0d83e40974b2f9be",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "1c2f3fe8b513d392940a00a6aec0ca88c86c61c717b033baa0f6afda3e124f61",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 10,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:60103",
+        "load_end": [
+          14.94,
+          14.0,
+          18.63
+        ],
+        "finished": "2026-11-08T07:21:46+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-production-followon-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "trusted-types/",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "css/css-fonts/parsing/font-valid"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 851001344,
+        "elapsed_seconds": 20.170125833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runner_summary": {
+        "tests": 60,
+        "browsers": {
+          "vox": {
+            "tests": 60,
+            "outcomes": {
+              "COMPLETE": 59,
+              "CRASH": 1
+            },
+            "harness": {
+              "OK": 58,
+              "TIMEOUT": 1
+            },
+            "subtests": {
+              "PASS": 2573,
+              "FAIL": 1372,
+              "TIMEOUT": 1,
+              "NOTRUN": 33
+            },
+            "subtest_total": 3979,
+            "subtest_pass_rate": 0.6466,
+            "tests_all_pass": 21
+          }
+        },
+        "wall_seconds": {
+          "vox": 18.9
+        },
+        "launches": {
+          "vox": 7
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "trusted_types_group": {
+        "files": 56,
+        "pass": 728,
+        "total": 1447
+      },
+      "files": [
+        {
+          "test": "css/css-fonts/parsing/font-valid",
+          "pass": 315,
+          "total": 315,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "html/syntax/parsing/parse-processing-instruction.tentative",
+          "pass": 307,
+          "total": 307,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "svg/idlharness.window",
+          "pass": 1093,
+          "total": 1780,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "SVGElement interface: attribute correspondingElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingElement\" expected true got false"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingUseElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingUseElement\" expected true got false"
+            }
+          ]
+        },
+        {
+          "test": "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "pass": 130,
+          "total": 130,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/DedicatedWorker-constructor.https",
+          "pass": 1,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Block Worker creation via string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => new Worker(test_url)\" did not throw"
+            },
+            {
+              "name": "Create Worker via string with default policy.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedScriptURL\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Document-write-appending-line-feed",
+          "pass": 2,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.write() with String arguments only.",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"[1234]\" but got \"1234\""
+            },
+            {
+              "name": "document.write() with TrustedHTML for all but one argument.",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"[(1)(2)3(4)]\" but got \"(1)(2)3(4)\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Element-setAttribute-setAttributeNS-sinks.tentative",
+          "pass": 4,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "HTMLIFrameElement.setAttribute('srcdoc', plain_string)",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedHTML\" but got (undefined) undefined"
+            },
+            {
+              "name": "HTMLScriptElement.setAttribute('src', plain_string)",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedScriptURL\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/HTMLElement-generic",
+          "pass": 25,
+          "total": 29,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "TT enabled: script.src\n            = TrustedScript on a\n            connected element\n            ",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => { elem[attr] = value; }\" did not throw"
+            },
+            {
+              "name": "TT enabled: script.src\n            = TrustedScript on a\n            non-connected element\n            ",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => { elem[attr] = value; }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Range-createContextualFragment",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/SharedWorker-constructor.https",
+          "pass": 0,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Create SharedWorker via ScriptTestUrl",
+              "status": "FAIL",
+              "message": "assert_unreached: SharedWorker creation failed: ReferenceError: Can't find variable: SharedWorker Reached unreachable code"
+            },
+            {
+              "name": "Block SharedWorker creation via string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => new SharedWorker(test_url)\" threw object \"ReferenceError: Can't find variable: SharedWorker\" (\"ReferenceError\") expected instance of function \"function TypeError() {\n    [native code]\n}\" (\"TypeError\")"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-CSP-no-name",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-CSP-wildcard",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-createXXX",
+          "pass": 29,
+          "total": 29,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-constants",
+          "pass": 6,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-createXYZTests",
+          "pass": 28,
+          "total": 28,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-noNamesGiven",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none-name",
+          "pass": 2,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none",
+          "pass": 2,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-skip",
+          "pass": 3,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-wildcard",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-non-tt-policy-name",
+          "pass": 5,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-unenforced",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative",
+          "pass": 70,
+          "total": 70,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-namespace",
+          "pass": 21,
+          "total": 21,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-svg",
+          "pass": 4,
+          "total": 4,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType",
+          "pass": 23,
+          "total": 23,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getPropertyType.tentative",
+          "pass": 28,
+          "total": 28,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/Window-block-eval-function-constructor",
+          "pass": 0,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Blocked eval in Window.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval(\"'42'\")\" did not throw"
+            },
+            {
+              "name": "Blocked indirect eval in Window.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval?.(\"'42'\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-DOMParser-parseFromString",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.innerText assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink DOMParser parseFromString of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Document-parseHTMLUnsafe",
+          "pass": 2,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Document.parseHTMLUnsafe assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Document.parseHTMLUnsafe is not a function. (In 'Document.parseHTMLUnsafe(html)', 'Document.parseHTMLUnsafe' is undefined)"
+            },
+            {
+              "name": "'Document.parseHTMLUnsafe(string)' assigned via default policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Document.parseHTMLUnsafe is not a function. (In 'Document.parseHTMLUnsafe(INPUTS.HTML)', 'Document.parseHTMLUnsafe' is undefined)"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Document-write",
+          "pass": 13,
+          "total": 20,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.write with html assigned via policy (successful URL transformation).",
+              "status": "FAIL",
+              "message": "Sink Document write of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "document.write with multiple trusted arguments.",
+              "status": "FAIL",
+              "message": "Sink Document write of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-insertAdjacentHTML",
+          "pass": 2,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "insertAdjacentHTML with html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element insertAdjacentHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "insertAdjacentHTML(TrustedHTML) throws SyntaxError DOMException when position invalid.",
+              "status": "FAIL",
+              "message": "assert_throws_dom: function \"_ => {\n      d.insertAdjacentHTML('invalid', p.createHTML(\"<p>Fail</p>\"));\n    }\" threw object \"TypeError: Sink Element insertAdjacentHTML of type 'script' requires a TrustedType to be used\" that is not a DOMException SyntaxError: property \"code\" is equal to undefined, e"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-outerHTML",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "outerHTML with html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element outerHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`outerHTML = TrustedHTML` throws NoModificationAllowedError when parent is a document.",
+              "status": "FAIL",
+              "message": "assert_throws_dom: function \"_ => {\n      document.documentElement.outerHTML = p.createHTML('<p>Content</p>');\n    }\" threw object \"TypeError: Sink Element outerHTML of type 'script' requires a TrustedType to be used\" that is not a DOMException NoModificationAllowedError: property \"code\" is equal to"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-setAttribute",
+          "pass": 3,
+          "total": 14,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "script.src accepts only TrustedScriptURL",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem.setAttribute(attribute, value);\n  }\" did not throw"
+            },
+            {
+              "name": "iframe.srcdoc accepts only TrustedHTML",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem.setAttribute(attribute, value);\n  }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-setHTMLUnsafe",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "element.setHTMLUnsafe(html) assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element setHTMLUnsafe of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-HTMLElement-generic",
+          "pass": 0,
+          "total": 9,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "script.src accepts only TrustedScriptURL",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem[attribute] = value;\n  }\" did not throw"
+            },
+            {
+              "name": "div.innerHTML accepts only TrustedHTML",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-HTMLIFrameElement-srcdoc",
+          "pass": 0,
+          "total": 0,
+          "outcome": "CRASH",
+          "harness": null,
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Range-createContextualFragment",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "range.createContextualFragment assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Range createContextualFragment of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-ShadowRoot-innerHTML",
+          "pass": 0,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "shadowRoot.innerHTML = html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink ShadowRoot innerHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`shadowRoot.innerHTML = string` throws.",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-ShadowRoot-setHTMLUnsafe",
+          "pass": 0,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "shadowRoot.setHTMLUnsafe(html) assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink ShadowRoot setHTMLUnsafe of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`shadowRoot.setHTMLUnsafe(string)` throws.",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/csp-block-eval",
+          "pass": 0,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval with plain string throws (both block).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            },
+            {
+              "name": "eval with TrustedScript throws (script-src blocks).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval(p.createScript('a=\"Hello transformed string\"'));\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-no-tt",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-default-policy-mutate",
+          "pass": 0,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of string where default policy mutates value throws.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval('1+1')\" did not throw"
+            },
+            {
+              "name": "indirect eval of string where default policy mutates value throws.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval?.('1+1')\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-default-policy",
+          "pass": 22,
+          "total": 24,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-no-default-policy",
+          "pass": 3,
+          "total": 13,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor-untrusted-arguments-and-applying-default-policy",
+          "pass": 8,
+          "total": 16,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "plain string at index 0 (default policy modifying the function text).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(...mixed_args)\" did not throw"
+            },
+            {
+              "name": "plain string at index 1 (default policy modifying the function text).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(...mixed_args)\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor-untrusted-arguments-and-default-policy-throwing",
+          "pass": 0,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "EvalError thrown if the callback of the default policy throws an error (eval).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval(\"1+2\")\" did not throw"
+            },
+            {
+              "name": "EvalError thrown if the callback of the default policy throws an error (new Function).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(\"return 3;\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor",
+          "pass": 1,
+          "total": 65,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Function constructor with mixed plain and trusted strings, mask #0",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new_function_with_maybe_trusted_args(mask, \"Function\")\" did not throw"
+            },
+            {
+              "name": "AsyncFunction constructor with mixed plain and trusted strings, mask #0",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new_function_with_maybe_trusted_args(mask, \"AsyncFunction\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-no-csp-no-tt-default-policy",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-no-csp-no-tt",
+          "pass": 8,
+          "total": 10,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-with-non-trusted-script-object",
+          "pass": 0,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Function constructor of stringified object and TrustedScript fails.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      // Without Trusted Types enforcement, this would return 47\n      new Function({toString() { return \"a\"; }}, \"return a + 42\")(5);\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-with-permissive-csp",
+          "pass": 4,
+          "total": 9,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval with plain string with Trusted Types and permissive CSP throws (no type).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            },
+            {
+              "name": "indirect eval with plain string with Trusted Types and permissive CSP throws (no type).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval?.('a=\"hello there\"');\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/idlharness.window",
+          "pass": 90,
+          "total": 100,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "TrustedTypePolicyFactory interface: operation createPolicy(DOMString, optional TrustedTypePolicyOptions)",
+              "status": "FAIL",
+              "message": "assert_equals: property has wrong .length expected 1 but got 2"
+            },
+            {
+              "name": "TrustedTypePolicyFactory interface: attribute emptyHTML",
+              "status": "FAIL",
+              "message": "assert_equals: getter must have the name 'get emptyHTML' expected \"get emptyHTML\" but got \"get\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/policy-without-return-value.sub",
+          "pass": 2,
+          "total": 4,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "createHTML with a policy that returns undefined DOMParser",
+              "status": "FAIL",
+              "message": "Sink DOMParser parseFromString of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "createScriptURL with a policy that returns undefined script.src",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"http://127.0.0.1:60103/trusted-types/policy-without-return-value.sub.html\" but got \"\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/require-trusted-types-for-TypeError-belongs-to-the-global-object-realm",
+          "pass": 1,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Setting innerHTML on a node adopted from a subframe.",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: document.adoptNode is not a function. (In 'document.adoptNode(iframe.contentDocument.body.firstElementChild)', 'document.adoptNode' is undefined)\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/script-enforcement-001",
+          "pass": 0,
+          "total": 34,
+          "outcome": "COMPLETE",
+          "harness": "TIMEOUT",
+          "failure_examples": [
+            {
+              "name": "The HTMLScriptElement is initially trusted.",
+              "status": "TIMEOUT",
+              "message": "Test timed out"
+            },
+            {
+              "name": "Script source set via TrustedScript sink HTMLScriptElement.innerText keeps trustworthiness.",
+              "status": "NOTRUN",
+              "message": null
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-mutations-in-callback.tentative",
+          "pass": 7,
+          "total": 248,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "assert_equals: expected 2 but got 3"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"unsafe_input\" but got \"other_value\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-require-trusted-types-default-policy",
+          "pass": 89,
+          "total": 264,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element onclick\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element ondblclick\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-require-trusted-types-no-default-policy",
+          "pass": 187,
+          "total": 264,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute throws for elementNS=http://www.w3.org/1999/xhtml, element=DIV,  attrName=onclick with a plain string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => {\n            setterData.runSetter(element, testData.attrNS, testData.attrName,\n                                 \"neverset\", testData.type);\n          }\" did not throw"
+            },
+            {
+              "name": "Element.setAttribute throws for elementNS=http://www.w3.org/2000/svg, element=g,  attrName=ondblclick with a plain string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => {\n            setterData.runSetter(element, testData.attrNS, testData.attrName,\n                                 \"neverset\", testData.type);\n          }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/tt-block-eval",
+          "pass": 0,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval blocks if the default policy rejects a value.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job": "wpt-production-followon-20261108b",
+      "identity": {
+        "started": "2026-11-08T07:42:48+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-production-followon-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "trusted-types/",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "css/css-fonts/parsing/font-valid"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          34.22,
+          19.77,
+          15.23
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-072002-e3db71fa/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+            "dirty": true,
+            "head": "34314a33e7abc687407dd2e3a6144fcc282a4e98",
+            "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+            "dirty": true,
+            "head": "93ce20867b70e54863049d3ef03479c923b3bf95",
+            "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "34314a33e7abc687407dd2e3a6144fcc282a4e98",
+            "id": "7381f22028c749599ac1b57fd2e6e79c",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "77fbf9e833717185de73858abcc491c4214ca78ecd2ea0890014503ca6bf1277",
+            "dirty": true,
+            "head": "f55a7ebc247c7704796e811c208ce9d7ca8272fc",
+            "repository_sha256": "57e6c1dc3e8f1b8a6e72fb1cc04a1ae647e9a6ba43cc7f39547fcd8ed6d3e5de"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "f43c713d230cbd14d96ce79ae80da791ba9b5ff6bf2b5404875771faf4da95b6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "7f188689d739afd9ff57ef9fc033db03a36ad52f4499095a0d83e40974b2f9be",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "d0da73a4481380c936038b92821fc6cd33ce805b2029d2dda3e0fd440619b255",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 10,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:65121",
+        "load_end": [
+          40.68,
+          22.6,
+          16.39
+        ],
+        "finished": "2026-11-08T07:43:16+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-production-followon-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "trusted-types/",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "css/css-fonts/parsing/font-valid"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 801947648,
+        "elapsed_seconds": 29.494561334,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runner_summary": {
+        "tests": 60,
+        "browsers": {
+          "vox": {
+            "tests": 60,
+            "outcomes": {
+              "COMPLETE": 59,
+              "CRASH": 1
+            },
+            "harness": {
+              "OK": 58,
+              "TIMEOUT": 1
+            },
+            "subtests": {
+              "PASS": 2573,
+              "FAIL": 1372,
+              "TIMEOUT": 1,
+              "NOTRUN": 33
+            },
+            "subtest_total": 3979,
+            "subtest_pass_rate": 0.6466,
+            "tests_all_pass": 21
+          }
+        },
+        "wall_seconds": {
+          "vox": 27.3
+        },
+        "launches": {
+          "vox": 7
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "trusted_types_group": {
+        "files": 56,
+        "pass": 728,
+        "total": 1447
+      },
+      "files": [
+        {
+          "test": "css/css-fonts/parsing/font-valid",
+          "pass": 315,
+          "total": 315,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "html/syntax/parsing/parse-processing-instruction.tentative",
+          "pass": 307,
+          "total": 307,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "svg/idlharness.window",
+          "pass": 1093,
+          "total": 1780,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "SVGElement interface: attribute correspondingElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingElement\" expected true got false"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingUseElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingUseElement\" expected true got false"
+            }
+          ]
+        },
+        {
+          "test": "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "pass": 130,
+          "total": 130,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/DedicatedWorker-constructor.https",
+          "pass": 1,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Block Worker creation via string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => new Worker(test_url)\" did not throw"
+            },
+            {
+              "name": "Create Worker via string with default policy.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedScriptURL\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Document-write-appending-line-feed",
+          "pass": 2,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.write() with String arguments only.",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"[1234]\" but got \"1234\""
+            },
+            {
+              "name": "document.write() with TrustedHTML for all but one argument.",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"[(1)(2)3(4)]\" but got \"(1)(2)3(4)\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Element-setAttribute-setAttributeNS-sinks.tentative",
+          "pass": 4,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "HTMLIFrameElement.setAttribute('srcdoc', plain_string)",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedHTML\" but got (undefined) undefined"
+            },
+            {
+              "name": "HTMLScriptElement.setAttribute('src', plain_string)",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"TrustedScriptURL\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/HTMLElement-generic",
+          "pass": 25,
+          "total": 29,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "TT enabled: script.src\n            = TrustedScript on a\n            connected element\n            ",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => { elem[attr] = value; }\" did not throw"
+            },
+            {
+              "name": "TT enabled: script.src\n            = TrustedScript on a\n            non-connected element\n            ",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => { elem[attr] = value; }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/Range-createContextualFragment",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/SharedWorker-constructor.https",
+          "pass": 0,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Create SharedWorker via ScriptTestUrl",
+              "status": "FAIL",
+              "message": "assert_unreached: SharedWorker creation failed: ReferenceError: Can't find variable: SharedWorker Reached unreachable code"
+            },
+            {
+              "name": "Block SharedWorker creation via string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => new SharedWorker(test_url)\" threw object \"ReferenceError: Can't find variable: SharedWorker\" (\"ReferenceError\") expected instance of function \"function TypeError() {\n    [native code]\n}\" (\"TypeError\")"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-CSP-no-name",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-CSP-wildcard",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicy-createXXX",
+          "pass": 29,
+          "total": 29,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-constants",
+          "pass": 6,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-createXYZTests",
+          "pass": 28,
+          "total": 28,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-noNamesGiven",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none-name",
+          "pass": 2,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none",
+          "pass": 2,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-skip",
+          "pass": 3,
+          "total": 3,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-wildcard",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-non-tt-policy-name",
+          "pass": 5,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-createPolicy-unenforced",
+          "pass": 1,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative",
+          "pass": 70,
+          "total": 70,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-namespace",
+          "pass": 21,
+          "total": 21,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType-svg",
+          "pass": 4,
+          "total": 4,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getAttributeType",
+          "pass": 23,
+          "total": 23,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/TrustedTypePolicyFactory-getPropertyType.tentative",
+          "pass": 28,
+          "total": 28,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/Window-block-eval-function-constructor",
+          "pass": 0,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Blocked eval in Window.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval(\"'42'\")\" did not throw"
+            },
+            {
+              "name": "Blocked indirect eval in Window.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval?.(\"'42'\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-DOMParser-parseFromString",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.innerText assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink DOMParser parseFromString of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Document-parseHTMLUnsafe",
+          "pass": 2,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Document.parseHTMLUnsafe assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Document.parseHTMLUnsafe is not a function. (In 'Document.parseHTMLUnsafe(html)', 'Document.parseHTMLUnsafe' is undefined)"
+            },
+            {
+              "name": "'Document.parseHTMLUnsafe(string)' assigned via default policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Document.parseHTMLUnsafe is not a function. (In 'Document.parseHTMLUnsafe(INPUTS.HTML)', 'Document.parseHTMLUnsafe' is undefined)"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Document-write",
+          "pass": 13,
+          "total": 20,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "document.write with html assigned via policy (successful URL transformation).",
+              "status": "FAIL",
+              "message": "Sink Document write of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "document.write with multiple trusted arguments.",
+              "status": "FAIL",
+              "message": "Sink Document write of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-insertAdjacentHTML",
+          "pass": 2,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "insertAdjacentHTML with html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element insertAdjacentHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "insertAdjacentHTML(TrustedHTML) throws SyntaxError DOMException when position invalid.",
+              "status": "FAIL",
+              "message": "assert_throws_dom: function \"_ => {\n      d.insertAdjacentHTML('invalid', p.createHTML(\"<p>Fail</p>\"));\n    }\" threw object \"TypeError: Sink Element insertAdjacentHTML of type 'script' requires a TrustedType to be used\" that is not a DOMException SyntaxError: property \"code\" is equal to undefined, e"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-outerHTML",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "outerHTML with html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element outerHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`outerHTML = TrustedHTML` throws NoModificationAllowedError when parent is a document.",
+              "status": "FAIL",
+              "message": "assert_throws_dom: function \"_ => {\n      document.documentElement.outerHTML = p.createHTML('<p>Content</p>');\n    }\" threw object \"TypeError: Sink Element outerHTML of type 'script' requires a TrustedType to be used\" that is not a DOMException NoModificationAllowedError: property \"code\" is equal to"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-setAttribute",
+          "pass": 3,
+          "total": 14,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "script.src accepts only TrustedScriptURL",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem.setAttribute(attribute, value);\n  }\" did not throw"
+            },
+            {
+              "name": "iframe.srcdoc accepts only TrustedHTML",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem.setAttribute(attribute, value);\n  }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Element-setHTMLUnsafe",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "element.setHTMLUnsafe(html) assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Element setHTMLUnsafe of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-HTMLElement-generic",
+          "pass": 0,
+          "total": 9,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "script.src accepts only TrustedScriptURL",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n    elem[attribute] = value;\n  }\" did not throw"
+            },
+            {
+              "name": "div.innerHTML accepts only TrustedHTML",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-HTMLIFrameElement-srcdoc",
+          "pass": 0,
+          "total": 0,
+          "outcome": "CRASH",
+          "harness": null,
+          "failure_examples": []
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-Range-createContextualFragment",
+          "pass": 4,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "range.createContextualFragment assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink Range createContextualFragment of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-ShadowRoot-innerHTML",
+          "pass": 0,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "shadowRoot.innerHTML = html assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink ShadowRoot innerHTML of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`shadowRoot.innerHTML = string` throws.",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/block-string-assignment-to-ShadowRoot-setHTMLUnsafe",
+          "pass": 0,
+          "total": 5,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "shadowRoot.setHTMLUnsafe(html) assigned via policy (successful HTML transformation).",
+              "status": "FAIL",
+              "message": "Sink ShadowRoot setHTMLUnsafe of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "`shadowRoot.setHTMLUnsafe(string)` throws.",
+              "status": "FAIL",
+              "message": "Sink Element innerHTML of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/csp-block-eval",
+          "pass": 0,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval with plain string throws (both block).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            },
+            {
+              "name": "eval with TrustedScript throws (script-src blocks).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval(p.createScript('a=\"Hello transformed string\"'));\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-no-tt",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-default-policy-mutate",
+          "pass": 0,
+          "total": 6,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of string where default policy mutates value throws.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval('1+1')\" did not throw"
+            },
+            {
+              "name": "indirect eval of string where default policy mutates value throws.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval?.('1+1')\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-default-policy",
+          "pass": 22,
+          "total": 24,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-csp-tt-no-default-policy",
+          "pass": 3,
+          "total": 13,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor-untrusted-arguments-and-applying-default-policy",
+          "pass": 8,
+          "total": 16,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "plain string at index 0 (default policy modifying the function text).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(...mixed_args)\" did not throw"
+            },
+            {
+              "name": "plain string at index 1 (default policy modifying the function text).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(...mixed_args)\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor-untrusted-arguments-and-default-policy-throwing",
+          "pass": 0,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "EvalError thrown if the callback of the default policy throws an error (eval).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => eval(\"1+2\")\" did not throw"
+            },
+            {
+              "name": "EvalError thrown if the callback of the default policy throws an error (new Function).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new Function(\"return 3;\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-function-constructor",
+          "pass": 1,
+          "total": 65,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Function constructor with mixed plain and trusted strings, mask #0",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new_function_with_maybe_trusted_args(mask, \"Function\")\" did not throw"
+            },
+            {
+              "name": "AsyncFunction constructor with mixed plain and trusted strings, mask #0",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => new_function_with_maybe_trusted_args(mask, \"AsyncFunction\")\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-no-csp-no-tt-default-policy",
+          "pass": 5,
+          "total": 7,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-no-csp-no-tt",
+          "pass": 8,
+          "total": 10,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            },
+            {
+              "name": "indirect eval of TrustedScript works.",
+              "status": "FAIL",
+              "message": "assert_equals: expected (number) 2 but got (object) object \"1+1\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-with-non-trusted-script-object",
+          "pass": 0,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Function constructor of stringified object and TrustedScript fails.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      // Without Trusted Types enforcement, this would return 47\n      new Function({toString() { return \"a\"; }}, \"return a + 42\")(5);\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/eval-with-permissive-csp",
+          "pass": 4,
+          "total": 9,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval with plain string with Trusted Types and permissive CSP throws (no type).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            },
+            {
+              "name": "indirect eval with plain string with Trusted Types and permissive CSP throws (no type).",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval?.('a=\"hello there\"');\n    }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/idlharness.window",
+          "pass": 90,
+          "total": 100,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "TrustedTypePolicyFactory interface: operation createPolicy(DOMString, optional TrustedTypePolicyOptions)",
+              "status": "FAIL",
+              "message": "assert_equals: property has wrong .length expected 1 but got 2"
+            },
+            {
+              "name": "TrustedTypePolicyFactory interface: attribute emptyHTML",
+              "status": "FAIL",
+              "message": "assert_equals: getter must have the name 'get emptyHTML' expected \"get emptyHTML\" but got \"get\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/policy-without-return-value.sub",
+          "pass": 2,
+          "total": 4,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "createHTML with a policy that returns undefined DOMParser",
+              "status": "FAIL",
+              "message": "Sink DOMParser parseFromString of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "createScriptURL with a policy that returns undefined script.src",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"http://127.0.0.1:65121/trusted-types/policy-without-return-value.sub.html\" but got \"\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/require-trusted-types-for-TypeError-belongs-to-the-global-object-realm",
+          "pass": 1,
+          "total": 2,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Setting innerHTML on a node adopted from a subframe.",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"TypeError: document.adoptNode is not a function. (In 'document.adoptNode(iframe.contentDocument.body.firstElementChild)', 'document.adoptNode' is undefined)\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/script-enforcement-001",
+          "pass": 0,
+          "total": 34,
+          "outcome": "COMPLETE",
+          "harness": "TIMEOUT",
+          "failure_examples": [
+            {
+              "name": "The HTMLScriptElement is initially trusted.",
+              "status": "TIMEOUT",
+              "message": "Test timed out"
+            },
+            {
+              "name": "Script source set via TrustedScript sink HTMLScriptElement.innerText keeps trustworthiness.",
+              "status": "NOTRUN",
+              "message": null
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-mutations-in-callback.tentative",
+          "pass": 7,
+          "total": 248,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "assert_equals: expected 2 but got 3"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "assert_equals: expected \"unsafe_input\" but got \"other_value\""
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-require-trusted-types-default-policy",
+          "pass": 89,
+          "total": 264,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element onclick\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element ondblclick\" but got (undefined) undefined"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-require-trusted-types-no-default-policy",
+          "pass": 187,
+          "total": 264,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "Element.setAttribute throws for elementNS=http://www.w3.org/1999/xhtml, element=DIV,  attrName=onclick with a plain string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => {\n            setterData.runSetter(element, testData.attrNS, testData.attrName,\n                                 \"neverset\", testData.type);\n          }\" did not throw"
+            },
+            {
+              "name": "Element.setAttribute throws for elementNS=http://www.w3.org/2000/svg, element=g,  attrName=ondblclick with a plain string",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"() => {\n            setterData.runSetter(element, testData.attrNS, testData.attrName,\n                                 \"neverset\", testData.type);\n          }\" did not throw"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/tt-block-eval",
+          "pass": 0,
+          "total": 1,
+          "outcome": "COMPLETE",
+          "harness": "OK",
+          "failure_examples": [
+            {
+              "name": "eval blocks if the default policy rejects a value.",
+              "status": "FAIL",
+              "message": "assert_throws_js: function \"_ => {\n      eval('a=\"hello there\"');\n    }\" did not throw"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "comparison_with_r14": {
+    "files": 60,
+    "r14_pass": 2220,
+    "r14_total": 3978,
+    "current_pass": 2573,
+    "current_total": 3979,
+    "raw_pass_delta": 353,
+    "files_data": {
+      "css/css-fonts/parsing/font-valid": {
+        "r14_pass": 271,
+        "r14_total": 315,
+        "current_pass": 315,
+        "current_total": 315,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "html/syntax/parsing/parse-processing-instruction.tentative": {
+        "r14_pass": 108,
+        "r14_total": 307,
+        "current_pass": 307,
+        "current_total": 307,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "svg/idlharness.window": {
+        "r14_pass": 1027,
+        "r14_total": 1780,
+        "current_pass": 1093,
+        "current_total": 1780,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "svg/types/scripted/SVGAnimatedLength-initial-values": {
+        "r14_pass": 124,
+        "r14_total": 130,
+        "current_pass": 130,
+        "current_total": 130,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/DedicatedWorker-constructor.https": {
+        "r14_pass": 1,
+        "r14_total": 3,
+        "current_pass": 1,
+        "current_total": 3,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/Document-write-appending-line-feed": {
+        "r14_pass": 0,
+        "r14_total": 0,
+        "current_pass": 2,
+        "current_total": 6,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/Element-setAttribute-setAttributeNS-sinks.tentative": {
+        "r14_pass": 0,
+        "r14_total": 7,
+        "current_pass": 4,
+        "current_total": 7,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/HTMLElement-generic": {
+        "r14_pass": 25,
+        "r14_total": 29,
+        "current_pass": 25,
+        "current_total": 29,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/Range-createContextualFragment": {
+        "r14_pass": 1,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/SharedWorker-constructor.https": {
+        "r14_pass": 0,
+        "r14_total": 3,
+        "current_pass": 0,
+        "current_total": 3,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicy-CSP-no-name": {
+        "r14_pass": 0,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicy-CSP-wildcard": {
+        "r14_pass": 1,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicy-createXXX": {
+        "r14_pass": 29,
+        "r14_total": 29,
+        "current_pass": 29,
+        "current_total": 29,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-constants": {
+        "r14_pass": 6,
+        "r14_total": 6,
+        "current_pass": 6,
+        "current_total": 6,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-createXYZTests": {
+        "r14_pass": 28,
+        "r14_total": 28,
+        "current_pass": 28,
+        "current_total": 28,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-noNamesGiven": {
+        "r14_pass": 0,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none-name": {
+        "r14_pass": 1,
+        "r14_total": 2,
+        "current_pass": 2,
+        "current_total": 2,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-none": {
+        "r14_pass": 0,
+        "r14_total": 2,
+        "current_pass": 2,
+        "current_total": 2,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-none-skip": {
+        "r14_pass": 3,
+        "r14_total": 3,
+        "current_pass": 3,
+        "current_total": 3,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-cspTests-wildcard": {
+        "r14_pass": 1,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-non-tt-policy-name": {
+        "r14_pass": 5,
+        "r14_total": 5,
+        "current_pass": 5,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-createPolicy-unenforced": {
+        "r14_pass": 1,
+        "r14_total": 1,
+        "current_pass": 1,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-getAttributeType-event-handler-content-attributes.tentative": {
+        "r14_pass": 70,
+        "r14_total": 70,
+        "current_pass": 70,
+        "current_total": 70,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-getAttributeType-namespace": {
+        "r14_pass": 21,
+        "r14_total": 21,
+        "current_pass": 21,
+        "current_total": 21,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-getAttributeType-svg": {
+        "r14_pass": 4,
+        "r14_total": 4,
+        "current_pass": 4,
+        "current_total": 4,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-getAttributeType": {
+        "r14_pass": 23,
+        "r14_total": 23,
+        "current_pass": 23,
+        "current_total": 23,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/TrustedTypePolicyFactory-getPropertyType.tentative": {
+        "r14_pass": 28,
+        "r14_total": 28,
+        "current_pass": 28,
+        "current_total": 28,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/Window-block-eval-function-constructor": {
+        "r14_pass": 0,
+        "r14_total": 6,
+        "current_pass": 0,
+        "current_total": 6,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-DOMParser-parseFromString": {
+        "r14_pass": 2,
+        "r14_total": 5,
+        "current_pass": 4,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Document-parseHTMLUnsafe": {
+        "r14_pass": 2,
+        "r14_total": 5,
+        "current_pass": 2,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Document-write": {
+        "r14_pass": 8,
+        "r14_total": 20,
+        "current_pass": 13,
+        "current_total": 20,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Element-insertAdjacentHTML": {
+        "r14_pass": 0,
+        "r14_total": 7,
+        "current_pass": 2,
+        "current_total": 7,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Element-outerHTML": {
+        "r14_pass": 3,
+        "r14_total": 7,
+        "current_pass": 5,
+        "current_total": 7,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Element-setAttribute": {
+        "r14_pass": 3,
+        "r14_total": 14,
+        "current_pass": 3,
+        "current_total": 14,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-Element-setHTMLUnsafe": {
+        "r14_pass": 2,
+        "r14_total": 5,
+        "current_pass": 4,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-HTMLElement-generic": {
+        "r14_pass": 0,
+        "r14_total": 9,
+        "current_pass": 0,
+        "current_total": 9,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-HTMLIFrameElement-srcdoc": {
+        "r14_pass": 2,
+        "r14_total": 5,
+        "current_pass": 0,
+        "current_total": 0,
+        "outcome": "CRASH",
+        "harness": null
+      },
+      "trusted-types/block-string-assignment-to-Range-createContextualFragment": {
+        "r14_pass": 2,
+        "r14_total": 5,
+        "current_pass": 4,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-ShadowRoot-innerHTML": {
+        "r14_pass": 0,
+        "r14_total": 5,
+        "current_pass": 0,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/block-string-assignment-to-ShadowRoot-setHTMLUnsafe": {
+        "r14_pass": 0,
+        "r14_total": 5,
+        "current_pass": 0,
+        "current_total": 5,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/csp-block-eval": {
+        "r14_pass": 0,
+        "r14_total": 2,
+        "current_pass": 0,
+        "current_total": 2,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-csp-no-tt": {
+        "r14_pass": 5,
+        "r14_total": 7,
+        "current_pass": 5,
+        "current_total": 7,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-csp-tt-default-policy-mutate": {
+        "r14_pass": 0,
+        "r14_total": 6,
+        "current_pass": 0,
+        "current_total": 6,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-csp-tt-default-policy": {
+        "r14_pass": 22,
+        "r14_total": 24,
+        "current_pass": 22,
+        "current_total": 24,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-csp-tt-no-default-policy": {
+        "r14_pass": 3,
+        "r14_total": 13,
+        "current_pass": 3,
+        "current_total": 13,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-function-constructor-untrusted-arguments-and-applying-default-policy": {
+        "r14_pass": 8,
+        "r14_total": 16,
+        "current_pass": 8,
+        "current_total": 16,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-function-constructor-untrusted-arguments-and-default-policy-throwing": {
+        "r14_pass": 0,
+        "r14_total": 2,
+        "current_pass": 0,
+        "current_total": 2,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-function-constructor": {
+        "r14_pass": 1,
+        "r14_total": 65,
+        "current_pass": 1,
+        "current_total": 65,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-no-csp-no-tt-default-policy": {
+        "r14_pass": 5,
+        "r14_total": 7,
+        "current_pass": 5,
+        "current_total": 7,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-no-csp-no-tt": {
+        "r14_pass": 8,
+        "r14_total": 10,
+        "current_pass": 8,
+        "current_total": 10,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-with-non-trusted-script-object": {
+        "r14_pass": 0,
+        "r14_total": 1,
+        "current_pass": 0,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/eval-with-permissive-csp": {
+        "r14_pass": 4,
+        "r14_total": 9,
+        "current_pass": 4,
+        "current_total": 9,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/idlharness.window": {
+        "r14_pass": 90,
+        "r14_total": 100,
+        "current_pass": 90,
+        "current_total": 100,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/policy-without-return-value.sub": {
+        "r14_pass": 2,
+        "r14_total": 4,
+        "current_pass": 2,
+        "current_total": 4,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/require-trusted-types-for-TypeError-belongs-to-the-global-object-realm": {
+        "r14_pass": 1,
+        "r14_total": 2,
+        "current_pass": 1,
+        "current_total": 2,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/script-enforcement-001": {
+        "r14_pass": 0,
+        "r14_total": 34,
+        "current_pass": 0,
+        "current_total": 34,
+        "outcome": "COMPLETE",
+        "harness": "TIMEOUT"
+      },
+      "trusted-types/set-attributes-mutations-in-callback.tentative": {
+        "r14_pass": 0,
+        "r14_total": 248,
+        "current_pass": 7,
+        "current_total": 248,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/set-attributes-require-trusted-types-default-policy": {
+        "r14_pass": 82,
+        "r14_total": 264,
+        "current_pass": 89,
+        "current_total": 264,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/set-attributes-require-trusted-types-no-default-policy": {
+        "r14_pass": 187,
+        "r14_total": 264,
+        "current_pass": 187,
+        "current_total": 264,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      },
+      "trusted-types/tt-block-eval": {
+        "r14_pass": 0,
+        "r14_total": 1,
+        "current_pass": 0,
+        "current_total": 1,
+        "outcome": "COMPLETE",
+        "harness": "OK"
+      }
+    },
+    "note": "Focused reported counts; one missing iframe report and one newly reported document-write report affect denominators. These results do not establish a new overall percentage."
+  },
+  "production_source_coverage": {
+    "both_bundles": [
+      "font shorthand/family fixes",
+      "SVG percentage defaults",
+      "HTML processing instructions",
+      "Element.data interface placement",
+      "SVG angle and marker-orientation bindings",
+      "shared native default policy bridge"
+    ],
+    "later_bundle": "843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2 also contains the retired-realm closed guard.",
+    "not_in_measured_bundles": "Synchronous typed Element attribute transport (0ebd0d881). Production validation remains pending.",
+    "later_bundle_generated_c_inspection": {
+      "path": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-072002-e3db71fa/frozen-compiler-inputs/0-Vox.c.i",
+      "sha256": "09350202f5a44f5530c864f498788ce74064d96544994bc8ff407ccf1f3f927a",
+      "installer_has_enter_persistent": true,
+      "installer_registers_close_handler": true,
+      "installer_has_typed_attribute_setter": false,
+      "note": "Inspected installer body in the sealed compiler input. The build has the persistent lifetime fix, and predates the typed attribute setter."
+    }
+  },
+  "limitations": [
+    "Both focused production attempts reproduce a crash while navigating after HTMLIFrameElement.srcdoc tests, at dom__Navigable__set_active_document; unresolved.",
+    "script-enforcement-001 reports harness TIMEOUT in both attempts.",
+    "The 56-file Trusted Types group remains 728/1447 PASS in both measured bundles. Attribute-node APIs and numerous property sinks still fail.",
+    "SVG IDL remains 1093/1780 PASS. WebAudio, CSS Typed OM and many other groups also remain incomplete.",
+    "The static runner lacks Python WPT handlers and full HTTPS/multi-origin capability.",
+    "Runner pins executable and native-library hashes throughout each attempt, but source checks only pin the listed focused inputs, not all concurrent shared repository edits.",
+    "Historical r14 used the previous reporter announcement protocol; see wpt-followup-20261108.json for that separate correction.",
+    "No test assertions, expected statuses, reference pixels, tolerances or deadlines were relaxed."
+  ],
+  "fixture_worktree_clean_at_end": true,
+  "runner_sha256_at_report": "10b641c8bbafb2960724475bb19b502ac046f388eed495f043f7bd3f9cf85ea1",
+  "archive": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-trusted-types.tar.gz",
+    "sha256": "7da8e3733d75af57a91d0d175e25835f3759c709b5ceca8c489ad0b1ad5cd813",
+    "bytes": 174075,
+    "members": [
+      "wpt-callback-exception-20261108a/compile-command.json",
+      "wpt-callback-exception-20261108a/compile.json",
+      "wpt-callback-exception-20261108a/compile.log",
+      "wpt-callback-exception-20261108a/runtime.json",
+      "wpt-callback-exception-20261108a/runtime.log",
+      "wpt-callback-exception-20261108b/compile-command.json",
+      "wpt-callback-exception-20261108b/compile.json",
+      "wpt-callback-exception-20261108b/compile.log",
+      "wpt-callback-exception-20261108b/runtime.json",
+      "wpt-callback-exception-20261108b/runtime.log",
+      "wpt-callback-exception-20261108c/compile-command.json",
+      "wpt-callback-exception-20261108c/compile.json",
+      "wpt-callback-exception-20261108c/compile.log",
+      "wpt-callback-exception-20261108c/runtime.json",
+      "wpt-callback-exception-20261108c/runtime.log",
+      "wpt-callback-exception-20261108d/compile-command.json",
+      "wpt-callback-exception-20261108d/compile.json",
+      "wpt-callback-exception-20261108d/compile.log",
+      "wpt-callback-exception-20261108d/runtime.json",
+      "wpt-callback-exception-20261108d/runtime.log",
+      "wpt-policy-models-20261108a/compile-command.json",
+      "wpt-policy-models-20261108a/compile.json",
+      "wpt-policy-models-20261108a/compile.log",
+      "wpt-policy-models-20261108a/inputs.json",
+      "wpt-policy-models-20261108a/runtime.json",
+      "wpt-policy-models-20261108a/runtime.log",
+      "wpt-policy-models-20261108b/compile-command.json",
+      "wpt-policy-models-20261108b/compile.json",
+      "wpt-policy-models-20261108b/compile.log",
+      "wpt-policy-models-20261108b/inputs.json",
+      "wpt-policy-models-20261108b/runtime.json",
+      "wpt-policy-models-20261108b/runtime.log",
+      "wpt-policy-models-20261108c/compile-command.json",
+      "wpt-policy-models-20261108c/compile.json",
+      "wpt-policy-models-20261108c/compile.log",
+      "wpt-policy-models-20261108c/runtime.json",
+      "wpt-policy-models-20261108c/runtime.log",
+      "wpt-native-policies-20261108a/compile-command.json",
+      "wpt-native-policies-20261108a/compile.json",
+      "wpt-native-policies-20261108a/compile.log",
+      "wpt-native-policies-20261108a/inputs.json",
+      "wpt-native-policies-20261108a/runtime.json",
+      "wpt-native-policies-20261108a/runtime.log",
+      "wpt-native-policies-20261108b/compile-command.json",
+      "wpt-native-policies-20261108b/compile.json",
+      "wpt-native-policies-20261108b/compile.log",
+      "wpt-native-policies-20261108b/inputs.json",
+      "wpt-native-policies-20261108c/compile-command.json",
+      "wpt-native-policies-20261108c/compile.json",
+      "wpt-native-policies-20261108c/compile.log",
+      "wpt-native-policies-20261108c/inputs.json",
+      "wpt-native-policies-20261108c/runtime.json",
+      "wpt-native-policies-20261108c/runtime.log",
+      "wpt-native-policies-20261108d/compile-command.json",
+      "wpt-native-policies-20261108d/compile.json",
+      "wpt-native-policies-20261108d/compile.log",
+      "wpt-native-policies-20261108d/implementation-inputs.json",
+      "wpt-native-policies-20261108d/inputs.json",
+      "wpt-native-policies-20261108d/runtime.json",
+      "wpt-native-policies-20261108d/runtime.log",
+      "wpt-trusted-attributes-20261108a/compile-command.json",
+      "wpt-trusted-attributes-20261108a/compile.json",
+      "wpt-trusted-attributes-20261108a/compile.log",
+      "wpt-trusted-attributes-20261108a/inputs.json",
+      "wpt-trusted-attributes-20261108b/alternate-runtime.json",
+      "wpt-trusted-attributes-20261108b/alternate-runtime.log",
+      "wpt-trusted-attributes-20261108b/compile-command.json",
+      "wpt-trusted-attributes-20261108b/compile.json",
+      "wpt-trusted-attributes-20261108b/compile.log",
+      "wpt-trusted-attributes-20261108b/input-check.json",
+      "wpt-trusted-attributes-20261108b/inputs.json",
+      "wpt-trusted-attributes-20261108b/runtime.json",
+      "wpt-trusted-attributes-20261108b/runtime.log",
+      "wpt-trusted-attributes-20261108c/compile-command.json",
+      "wpt-trusted-attributes-20261108c/compile.json",
+      "wpt-trusted-attributes-20261108c/compile.log",
+      "wpt-trusted-attributes-20261108c/input-check.json",
+      "wpt-trusted-attributes-20261108c/inputs.json",
+      "wpt-trusted-attributes-20261108c/runtime.json",
+      "wpt-trusted-attributes-20261108c/runtime.log",
+      "wpt-production-followon-20261108a/chunks.json",
+      "wpt-production-followon-20261108a/identity.json",
+      "wpt-production-followon-20261108a/logs/vox-000-000.log",
+      "wpt-production-followon-20261108a/logs/vox-001-000.log",
+      "wpt-production-followon-20261108a/logs/vox-002-000.log",
+      "wpt-production-followon-20261108a/logs/vox-003-000.log",
+      "wpt-production-followon-20261108a/logs/vox-003-001.log",
+      "wpt-production-followon-20261108a/logs/vox-004-000.log",
+      "wpt-production-followon-20261108a/logs/vox-005-000.log",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-000-000/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-001-000/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-002-000/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-000/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-001/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-001/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-003-001/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-004-000/profile/settings.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/profile/history.json",
+      "wpt-production-followon-20261108a/profiles/vox-005-000/profile/settings.json",
+      "wpt-production-followon-20261108a/report.md",
+      "wpt-production-followon-20261108a/requests.log",
+      "wpt-production-followon-20261108a/results.jsonl",
+      "wpt-production-followon-20261108a/summary.json",
+      "wpt-production-followon-20261108a/tests.json",
+      "wpt-production-followon-20261108a.json",
+      "wpt-production-followon-20261108b/chunks.json",
+      "wpt-production-followon-20261108b/comparison.json",
+      "wpt-production-followon-20261108b/identity.json",
+      "wpt-production-followon-20261108b/logs/vox-000-000.log",
+      "wpt-production-followon-20261108b/logs/vox-001-000.log",
+      "wpt-production-followon-20261108b/logs/vox-002-000.log",
+      "wpt-production-followon-20261108b/logs/vox-003-000.log",
+      "wpt-production-followon-20261108b/logs/vox-003-001.log",
+      "wpt-production-followon-20261108b/logs/vox-004-000.log",
+      "wpt-production-followon-20261108b/logs/vox-005-000.log",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/0f02ae273d260c28ea2de3db792afd16219aa8d5d10c9187457207a1f4999d00.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-000-000/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-001-000/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-002-000/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-000/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-003-001/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-004-000/profile/settings.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/22590559d36555c10a0506ba0bd84e0c57d447c13ee056b7add8c2bc8725bf10.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/2b9201b5572175397a6853d503c6e71051fc5c1a0724852aef39e8b34a6cb9c6.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/40a5e1b747b50fa20758e2bebc17f9141c7b30e5466396b1b23e4dfc3159f38f.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/499785029f4733f01eeeabf7f34d28a90f0301ce09b38a766fdc6fc50cb96d4c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/8289b0ce548169cb5b8c00ecc4c27a733e18541e08917f274814d7279ecffef0.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/9c5ff5b418a34df07d1a7808c1b397ab967a1be4b40b3468a72a66c7ade26921.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/a723293dce4e82523f8cc8876a9acb9f56cb41d22c438cd6dbc275376c5c4467.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/aa59383c13f3017d35128a9adfa0fbf2118a0028bcea2ab3e2b3240dc53f936c.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/bfd0ea8e1a7575a13ee488e443d5f7fd928dfe8a36f79f5d2bcfc053280a9b7b.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/c2ea652e829fdd720c6fddd7ca52a14d6a50d8f2b802fd692039b68388a9b4cc.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/e176daca0677adab56ab2737dba6d55f5bb1120f12f5f764b41737ee5c506526.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/cache/resources/fdb2a968258558666f3a95ca79c0f077f603602e0659fcc4d1186e93321b7d36.headers.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/profile/bookmarks.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/profile/history.json",
+      "wpt-production-followon-20261108b/profiles/vox-005-000/profile/settings.json",
+      "wpt-production-followon-20261108b/report.md",
+      "wpt-production-followon-20261108b/requests.log",
+      "wpt-production-followon-20261108b/results.jsonl",
+      "wpt-production-followon-20261108b/summary.json",
+      "wpt-production-followon-20261108b/tests.json",
+      "wpt-production-followon-20261108b.json",
+      "wpt-production-followon-20261108b.log"
+    ]
+  },
+  "report_time": "2026-11-08T07:52:12.418076+03:00"
+}
