@@ -57,6 +57,13 @@ V corpus checker with unavailable Rust compiler paths. Error strings remain
 normalized in the fixtures. This establishes recorded behavior, not decoder
 conformance or performance parity.
 
+A further 384 frozen hybrid-integer records compare value expansion, consumed
+bits and maximum-bit calculations for eight configurations, varied payloads
+and symbols through U32_MAX. They pass in default and no-GC modes, alongside
+invalid-configuration and truncated-input checks. Ten translated source/license
+files were verified against the checksummed crate archive. The corpus runner
+checks all completed module tests using V alone.
+
 Remaining work includes streaming/checkpoints, metadata/color headers, ANS
 entropy decoding and context maps, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
