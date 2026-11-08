@@ -751,7 +751,82 @@ const fetch_native_factory = r'(function(operate,byteString,global){
  }}).forEach);
  for(const name of ["method","url","headers","destination","referrer","referrerPolicy","mode","credentials","cache","redirect","integrity","keepalive","isReloadNavigation","isHistoryNavigation","signal","duplex"])getter(request,name,"request."+name);
  for(const name of ["type","url","redirected","status","ok","statusText","headers"])getter(response,name,"response."+name);
+ // https://fetch.spec.whatwg.org/#dom-body-formdata
+ function percentDecode(bytes){
+  const result=[];
+  for(let index=0;index<bytes.length;index++){
+   const byte=bytes[index];
+   if(byte===0x25&&index+2<bytes.length){
+    const hex=String.fromCharCode(bytes[index+1],bytes[index+2]);
+    if(/^[0-9A-Fa-f]{2}$/.test(hex)){result.push(parseInt(hex,16));index+=2;continue;}
+   }
+   result.push(byte);
+  }
+  return new Uint8Array(result);
+ }
+ function utf8(bytes){return new TextDecoder("utf-8",{ignoreBOM:true}).decode(bytes);}
+ // https://url.spec.whatwg.org/#concept-urlencoded-parser
+ function urlencoded(bytes){
+  const form=new FormData();
+  let start=0;
+  for(let index=0;index<=bytes.length;index++){
+   if(index<bytes.length&&bytes[index]!==0x26)continue;
+   const sequence=bytes.slice(start,index);start=index+1;
+   if(!sequence.length)continue;
+   const equals=sequence.indexOf(0x3D);
+   const name=(equals<0?sequence:sequence.slice(0,equals)).map(byte=>byte===0x2B?0x20:byte);
+   const value=(equals<0?new Uint8Array(0):sequence.slice(equals+1)).map(byte=>byte===0x2B?0x20:byte);
+   form.append(utf8(percentDecode(name)),utf8(percentDecode(value)));
+  }
+  return form;
+ }
+ function latin1(bytes){let text="";for(let index=0;index<bytes.length;index++)text+=String.fromCharCode(bytes[index]);return text;}
+ function multipart(bytes,boundary){
+  const form=new FormData(),text=latin1(bytes),delimiter="--"+boundary;
+  let position=text.indexOf(delimiter);
+  if(position<0)throw new typeError("Invalid multipart/form-data body");
+  for(;;){
+   position+=delimiter.length;
+   if(text.startsWith("--",position))return form;
+   if(!text.startsWith("\r\n",position))throw new typeError("Invalid multipart/form-data body");
+   position+=2;
+   const headerEnd=text.indexOf("\r\n\r\n",position);
+   if(headerEnd<0)throw new typeError("Invalid multipart/form-data body");
+   let name=null,filename=null,contentType="text/plain";
+   for(const line of text.slice(position,headerEnd).split("\r\n")){
+    const colon=line.indexOf(":");if(colon<0)throw new typeError("Invalid multipart/form-data header");
+    const field=line.slice(0,colon).trim().toLowerCase(),value=line.slice(colon+1).trim();
+    if(field==="content-disposition"){
+     if(!/^form-data\s*(;|$)/i.test(value))throw new typeError("Invalid multipart/form-data disposition");
+     const nameMatch=/;\s*name="([^"]*)"/i.exec(value),fileMatch=/;\s*filename="([^"]*)"/i.exec(value);
+     if(nameMatch)name=utf8(Uint8Array.from(nameMatch[1],character=>character.charCodeAt(0)));
+     if(fileMatch)filename=utf8(Uint8Array.from(fileMatch[1],character=>character.charCodeAt(0)));
+    }else if(field==="content-type")contentType=value;
+   }
+   if(name===null)throw new typeError("multipart/form-data part has no name");
+   const bodyStart=headerEnd+4,next=text.indexOf("\r\n"+delimiter,bodyStart);
+   if(next<0)throw new typeError("Invalid multipart/form-data body");
+   const part=bytes.slice(bodyStart,next);
+   if(filename!==null)form.append(name,new File([part],filename,{type:contentType}));
+   else form.append(name,utf8(part));
+   position=next+2;
+  }
+ }
+ function parseFormData(bytes,type){
+  const essence=type.split(";")[0].trim().toLowerCase();
+  if(essence==="application/x-www-form-urlencoded")return urlencoded(bytes);
+  if(essence==="multipart/form-data"){
+   const boundary=/;\s*boundary=(?:"([^"]*)"|([^;\s]*))/i.exec(type);
+   if(!boundary||!(boundary[1]||boundary[2]))throw new typeError("multipart/form-data has no boundary");
+   return multipart(bytes,boundary[1]||boundary[2]);
+  }
+  throw new typeError("Body is not form data");
+ }
  for(const [target,kind] of [[request,"request"],[response,"response"]]){
+  property(target,"formData",({formData(){
+   const type=String(operate(kind+".headers",this).get("Content-Type")||"");
+   return operate("body.bytes",this).then(bytes=>parseFormData(bytes,type));
+  }}).formData);
   property(target,"clone",({clone(){return operate(kind+".clone",this)}}).clone);
   for(const name of ["body","bodyUsed"])getter(target,name,"body."+name);
   for(const name of ["text","json","arrayBuffer","bytes","blob"]){const method=({[name](){return operate("body."+name,this)}})[name];property(target,name,method)}

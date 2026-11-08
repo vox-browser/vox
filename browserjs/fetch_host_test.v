@@ -205,3 +205,42 @@ fn test_native_fetch_aborts_streaming_response_after_headers_and_rejects_network
 	assert runtime.evaluate_host('streamingResponse.bodyUsed')! == 'true'
 	assert host.operations.len == 0
 }
+
+fn test_native_fetch_body_form_data_parses_urlencoded_and_multipart_bodies() {
+	$if !darwin && !linux {
+		return
+	}
+	mut document := dom.Document.create(dom.URL{ value: 'https://fetch-form.example.test/' })
+	document.set_origin(document.url.origin())
+	mut host := FetchHost.create(document, &fetch.FetchHost{
+		perform: fn (_ &fetch.Request) !&fetch.Response {
+			panic('formData tests must not perform a network request')
+		}
+	})!
+	mut runtime := source_fetch_runtime(document, mut host)
+	mut files := FileHost.create(document) or { panic(err) }
+	files.install(mut runtime) or { panic(err) }
+	files.install_constructor() or { panic(err) }
+	mut data := FormDataHost.create(document) or { panic(err) }
+	data.install(mut runtime) or { panic(err) }
+	runtime.install_text_decoder_binding() or { panic(err) }
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	runtime.evaluate_host(r'
+ globalThis.formDone=null;globalThis.formFailure=null;
+ const urlencoded=new Response("﻿a=1&b=%C3%A9+x&&c&%zz=%e2", {headers:{"Content-Type":"application/x-www-form-urlencoded;charset=shift_jis"}});
+ const body="--XyZ\r\nContent-Disposition: form-data; name=\"field\"\r\n\r\nvalue\r\n--XyZ\r\nContent-Disposition: form-data; name=\"upload\"; filename=\"a.txt\"\r\nContent-Type: text/plain\r\n\r\nfile body\r\n--XyZ--\r\n";
+ const multipart=new Request("/upload",{method:"POST",body,headers:{"Content-Type":"multipart/form-data; boundary=XyZ"}});
+ let typeRejected=false;
+ Promise.all([urlencoded.formData(),multipart.formData(),new Response("x").formData().catch(error=>{typeRejected=error instanceof TypeError;})]).then(([first,second])=>{
+  const pairs=[...first].map(([name,value])=>name+"="+value).join("|");
+  const upload=second.get("upload");
+  formDone=pairs+" "+second.get("field")+" "+(upload instanceof File)+" "+upload.name+" "+upload.size+" "+typeRejected+" "+urlencoded.bodyUsed;
+ },reason=>formFailure=String(reason));
+ ')!
+	source_fetch_until(host, runtime, 'formDone!==null||formFailure!==null')
+	result := runtime.evaluate_host('formDone===null?"failed "+formFailure:formDone')!
+	assert result == '﻿a=1|b=é x|c=|%zz=� multipart true a.txt 9 true true'.replace('multipart', 'value'), result
+}
