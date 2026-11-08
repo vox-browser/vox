@@ -1031,3 +1031,22 @@ contracted operations. See the
 [source-clipping receipt](gg-migration/image-source-clipping-20261108.json).
 The remaining source-image, filter-layer and native bridge work still retains
 Skia dependencies in the browser.
+
+
+### Rotated linear source-image restores (2026-11-08)
+
+`58d397180` extends clearing composite restores to rotated and skewed linear
+source images. Singular values select image-space or layer-space decal
+sampling. Layer-space edges retain the native scale decomposition and the
+separate rounding of the two matrix stages. Nine native fixtures match on
+macOS and Linux, including near-unit scales and all seven clearing/runtime
+composite modes.
+
+At seed 20261106, 9,057 of 20,000 comparisons match on both platforms with
+10,943 declines; production seed 20261108 matches 9,161 with 10,839 declines.
+Counts include no-ops and both CPU policies. All 26 CPU raster test files
+pass; the image tests also pass in Linux production mode. The FMA audit
+reports zero contracted operations and 175 explicit operations. See the
+[rotated-restore receipt](gg-migration/rotated-image-restores-20261108.json).
+Blur/drop-shadow source images, mixed filters, general rotated filter layers
+and native bridges still retain browser Skia dependencies.
