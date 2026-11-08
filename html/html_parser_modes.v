@@ -33,10 +33,10 @@ fn (mut p HTMLParser) handle_initial(mut token HTMLToken) {
 	if token.is_character() && token.is_parser_whitespace() {
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
-		doc_node.append_child(comment.as_node()) or {}
+		comment := p.comment_or_processing_instruction_node(token)
+		doc_node.append_child(comment) or {}
 		return
 	}
 	if token.is_doctype() {
@@ -60,10 +60,10 @@ fn (mut p HTMLParser) handle_before_html(mut token HTMLToken) {
 	if token.is_doctype() {
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
-		doc_node.append_child(comment.as_node()) or {}
+		comment := p.comment_or_processing_instruction_node(token)
+		doc_node.append_child(comment) or {}
 		return
 	}
 	if token.is_character() && token.is_parser_whitespace() {
@@ -95,7 +95,7 @@ fn (mut p HTMLParser) handle_before_head(mut token HTMLToken) {
 	if token.is_character() && token.is_parser_whitespace() {
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -129,7 +129,7 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		p.insert_character(token.code_point)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -230,7 +230,7 @@ fn (mut p HTMLParser) switch_template_insertion_mode(mode InsertionMode) {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-intemplate
 fn (mut p HTMLParser) handle_in_template(mut token HTMLToken) {
-	if token.is_character() || token.is_comment() || token.is_doctype() {
+	if token.is_character() || token.is_comment_or_processing_instruction() || token.is_doctype() {
 		p.handle_in_body(mut token)
 		return
 	}
@@ -307,7 +307,7 @@ fn (mut p HTMLParser) handle_in_head_noscript(mut token HTMLToken) {
 		p.insertion_mode = .in_head
 		return
 	}
-	if token.is_parser_whitespace() || token.is_comment() || (token.is_start_tag() && token.tag_name in [
+	if token.is_parser_whitespace() || token.is_comment_or_processing_instruction() || (token.is_start_tag() && token.tag_name in [
 		'basefont',
 		'bgsound',
 		'link',
@@ -340,7 +340,7 @@ fn (mut p HTMLParser) handle_after_head(mut token HTMLToken) {
 		p.insert_character(token.code_point)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -405,7 +405,7 @@ fn (mut p HTMLParser) handle_in_body(mut token HTMLToken) {
 		}
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -993,11 +993,11 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 		p.handle_in_body(mut token)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		mut first := p.stack_of_open_elements.first()
 		mut first_node := first.as_node()
-		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
-		first_node.append_child(comment.as_node()) or {}
+		comment := p.comment_or_processing_instruction_node(token)
+		first_node.append_child(comment) or {}
 		return
 	}
 	if token.is_doctype() {
@@ -1025,10 +1025,10 @@ fn (mut p HTMLParser) handle_after_body(mut token HTMLToken) {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#the-after-after-body-insertion-mode
 fn (mut p HTMLParser) handle_after_after_body(mut token HTMLToken) {
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		mut doc_node := p.document_as_node()
-		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
-		doc_node.append_child(comment.as_node()) or {}
+		comment := p.comment_or_processing_instruction_node(token)
+		doc_node.append_child(comment) or {}
 		return
 	}
 	if token.is_doctype() || token.is_parser_whitespace() || (token.is_start_tag() && token.tag_name == 'html') {
@@ -1050,7 +1050,7 @@ fn (mut p HTMLParser) handle_in_frameset(mut token HTMLToken) {
 		p.insert_character(token.code_point)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -1099,7 +1099,7 @@ fn (mut p HTMLParser) handle_after_frameset(mut token HTMLToken) {
 		p.insert_character(token.code_point)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -1126,10 +1126,10 @@ fn (mut p HTMLParser) handle_after_frameset(mut token HTMLToken) {
 
 // https://html.spec.whatwg.org/multipage/parsing.html#the-after-after-frameset-insertion-mode
 fn (mut p HTMLParser) handle_after_after_frameset(mut token HTMLToken) {
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		mut document_node := p.document_as_node()
-		comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
-		document_node.append_child(comment.as_node()) or {}
+		comment := p.comment_or_processing_instruction_node(token)
+		document_node.append_child(comment) or {}
 		return
 	}
 	if token.is_doctype() || token.is_parser_whitespace() || (token.is_start_tag() && token.tag_name == 'html') {

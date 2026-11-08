@@ -11,6 +11,7 @@ pub enum TokenType {
 	start_tag
 	end_tag
 	comment
+	processing_instruction
 	character
 	end_of_file
 }
@@ -65,8 +66,9 @@ pub mut:
 	// Type::StartTag and Type::EndTag (tag name)
 	tag_name string
 
-	// Type::Comment (comment data)
+	// Comment and processing-instruction data.
 	comment_data string
+	processing_instruction_target string
 
 	// Type::Character (code point)
 	code_point rune
@@ -113,6 +115,14 @@ pub fn (t &HTMLToken) is_end_tag() bool {
 
 pub fn (t &HTMLToken) is_comment() bool {
 	return t.type_ == .comment
+}
+
+pub fn (t &HTMLToken) is_processing_instruction() bool {
+	return t.type_ == .processing_instruction
+}
+
+fn (t &HTMLToken) is_comment_or_processing_instruction() bool {
+	return t.is_comment() || t.is_processing_instruction()
 }
 
 pub fn (t &HTMLToken) is_character() bool {
@@ -367,6 +377,9 @@ pub fn (t &HTMLToken) to_string() string {
 		.comment {
 			builder.write_string('Comment')
 		}
+		.processing_instruction {
+			builder.write_string('ProcessingInstruction { target: ${t.processing_instruction_target} }')
+		}
 		.character {
 			builder.write_string('Character')
 		}
@@ -389,7 +402,7 @@ pub fn (t &HTMLToken) to_string() string {
 		builder.write_string('} }')
 	}
 
-	if t.is_comment() {
+	if t.is_comment_or_processing_instruction() {
 		builder.write_string(" { data: '")
 		builder.write_string(t.comment_data)
 		builder.write_string("' }")

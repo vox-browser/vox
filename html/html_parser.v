@@ -1246,12 +1246,21 @@ fn (mut p HTMLParser) insert_an_element_at_the_adjusted_insertion_location(eleme
 	parent.insert_before(element.as_node(), location.insert_before_sibling, false)
 }
 
+fn (mut p HTMLParser) comment_or_processing_instruction_node(token &HTMLToken) &dom.Node {
+	data := p.own_tokenizer_string(token.comment())
+	if token.is_processing_instruction() {
+		return dom.ProcessingInstruction.new(p.document_, data,
+			p.own_tokenizer_string(token.processing_instruction_target)).as_node()
+	}
+	return p.document_.create_comment(data).as_node()
+}
+
 fn (mut p HTMLParser) insert_comment(token &HTMLToken) {
 	location := p.find_appropriate_place_for_inserting_node()
 	mut parent := location.parent or { return }
-	comment := p.document_.create_comment(p.own_tokenizer_string(token.comment()))
+	comment := p.comment_or_processing_instruction_node(token)
 	record_parser_insertion_location(location)
-	parent.insert_before(comment.as_node(), location.insert_before_sibling, false)
+	parent.insert_before(comment, location.insert_before_sibling, false)
 }
 
 fn (mut p HTMLParser) find_character_insertion_node() ?&dom.Text {

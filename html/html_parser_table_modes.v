@@ -17,7 +17,7 @@ fn (mut p HTMLParser) handle_in_table(mut token HTMLToken) {
 			}
 		}
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}
@@ -323,7 +323,7 @@ fn (mut p HTMLParser) handle_in_column_group(mut token HTMLToken) {
 		p.insert_character(token.code_point)
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}

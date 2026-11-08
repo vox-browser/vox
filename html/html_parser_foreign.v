@@ -235,7 +235,7 @@ fn (mut p HTMLParser) process_using_the_rules_for_foreign_content(mut token HTML
 		}
 		return
 	}
-	if token.is_comment() {
+	if token.is_comment_or_processing_instruction() {
 		p.insert_comment(token)
 		return
 	}

@@ -87,6 +87,11 @@ pub enum State {
 	cdata_section
 	cdata_section_bracket
 	cdata_section_end
+	processing_instruction_open
+	processing_instruction_target
+	after_processing_instruction_target
+	processing_instruction_data
+	processing_instruction_questionable
 	character_reference
 	named_character_reference
 	ambiguous_ampersand
@@ -427,6 +432,14 @@ fn (mut t HTMLTokenizer) create_new_token(type_ TokenType) {
 	t.current_token = HTMLToken.new(type_)
 	is_start_or_end_tag := type_ == .start_tag || type_ == .end_tag
 	t.current_token.start_position = t.nth_last_position(if is_start_or_end_tag { 1 } else { 0 })
+}
+
+fn (mut t HTMLTokenizer) processing_instruction_target_to_comment() {
+	position := t.current_token.start_position
+	t.create_new_token(.comment)
+	t.current_token.start_position = position
+	t.current_builder << `?`
+	t.current_builder << t.temporary_buffer
 }
 
 fn (mut t HTMLTokenizer) will_emit_current() {
@@ -780,10 +793,10 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 							reconsume = true
 							continue
 						} else if c == `?` {
-							t.create_new_token(.comment)
+							t.create_new_token(.processing_instruction)
 							t.current_token.start_position = t.nth_last_position(2)
-							t.state = .bogus_comment
-							reconsume = true
+							t.temporary_buffer.clear()
+							t.state = .processing_instruction_open
 							continue
 						} else {
 							t.enqueue(HTMLToken.make_character(`<`))
@@ -893,6 +906,80 @@ fn (mut t HTMLTokenizer) next_token_impl(stop StopAtInsertionPoint) ?HTMLToken {
 					t.create_new_token(.comment)
 					t.state = .bogus_comment
 					continue
+				}
+				.processing_instruction_open {
+					if c := current {
+						if is_ascii_alpha(c) || c == `_` {
+							t.state = .processing_instruction_target
+						} else {
+							t.processing_instruction_target_to_comment()
+							t.state = .bogus_comment
+						}
+						reconsume = true
+						continue
+					}
+					return t.emit_eof()
+				}
+				.processing_instruction_target {
+					if c := current {
+						if is_html_whitespace(c) || c == `?` || c == `>` {
+							target := runes_to_string(t.temporary_buffer)
+							if target.to_lower() in ['xml', 'xml-stylesheet'] {
+								t.processing_instruction_target_to_comment()
+								t.state = .bogus_comment
+							} else {
+								t.current_token.processing_instruction_target = target.to_lower()
+								t.state = .after_processing_instruction_target
+							}
+							reconsume = true
+							continue
+						}
+						if is_ascii_alpha(c) || is_ascii_digit(c) || c == `-` || c == `_` {
+							t.temporary_buffer << c
+							continue
+						}
+						t.processing_instruction_target_to_comment()
+						t.state = .bogus_comment
+						reconsume = true
+						continue
+					}
+					return t.emit_eof()
+				}
+				.after_processing_instruction_target {
+					if c := current {
+						if is_html_whitespace(c) { continue }
+					}
+					t.state = .processing_instruction_data
+					reconsume = true
+					continue
+				}
+				.processing_instruction_data {
+					if c := current {
+						if c == `?` {
+							t.state = .processing_instruction_questionable
+							continue
+						}
+						if c == `>` {
+							t.current_token.set_comment(t.consume_current_builder())
+							return t.switch_to_and_emit_current_token(.data)
+						}
+						t.current_builder << c
+						continue
+					}
+					return t.emit_eof()
+				}
+				.processing_instruction_questionable {
+					if c := current {
+						if c == `>` {
+							t.current_token.set_comment(t.consume_current_builder())
+							return t.switch_to_and_emit_current_token(.data)
+						}
+						t.current_builder << `?`
+						t.state = .processing_instruction_data
+						reconsume = true
+						continue
+					}
+					return t.emit_eof()
 				}
 				.bogus_comment {
 					if c := current {
