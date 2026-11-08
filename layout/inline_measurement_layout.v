@@ -59,7 +59,15 @@ fn inline_measurement_key(used &UsedValues, mode LayoutMode, space AvailableSpac
 }
 
 fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContext) bool {
-	if root.child_count() == 0 || !inline_layout_workspace_is_closed(root, true) {
+	return inline_measurement_root_is_closed_with_policy(root, context, false)
+}
+
+fn inline_measurement_root_is_closed_with_policy(root &Node,
+	context ?&BlockFormattingContext, extended_roots bool) bool {
+	closed := if extended_roots && !disable_extended_inline_measurement_roots {
+		measurement_inline_workspace_is_closed(root)
+	} else { inline_layout_workspace_is_closed(root, true) }
+	if root.child_count() == 0 || !closed {
 		return false
 	}
 	// A closed workspace holds only text and inline boxes. A cached answer
@@ -120,7 +128,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 		|| (committed && (disable_committed_inline_measurement_reuse || mode != .normal
 			|| width_only || !space.width.is_definite()))
 		|| pool == unsafe { nil } || pool.closed
-		|| !inline_measurement_root_is_closed(root, context) {
+		|| !inline_measurement_root_is_closed_with_policy(root, context, !committed) {
 		return run_uncached_inline_formatting_context_for_width(mut state, containing_block,
 			mut used, mode, space, context, width_only)
 	}
@@ -162,6 +170,7 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 				eprintln('Vox inline measurement: reused closed inline layout within pass')
 			}
 			if committed { report_committed_inline_measurement_reuse() }
+			report_extended_inline_measurement(root)
 			pool.note_measurement(root, true, true)
 			if !committed { retain_recent_measurement(mut previous, cache_index, root) }
 			return cached.result
@@ -185,7 +194,8 @@ fn run_inline_formatting_context_for_width(mut state LayoutState, containing_blo
 	mut retained := platform.enter_retained_allocations()
 	defer { retained.finish() }
 	mut inputs := []RetainedInlineInput{}
-	if !collect_retained_inline_inputs(root, true, mut inputs)
+	if !collect_inline_inputs_with_measurement_roots(root, true,
+		!disable_extended_inline_measurement_roots, mut inputs)
 		|| !retained_inline_text_fonts_are_current(inputs) { return result }
 	mut owned_inputs := []RetainedInlineInput{cap: inputs.len}
 	mut values := []RetainedInlineValues{}
