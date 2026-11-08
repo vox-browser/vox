@@ -245,24 +245,40 @@ def stop_process(process):
             process.wait()
 
 
-def finish_chrome_capture(client, process, report, prefix, timeout=5):
+def finish_chrome_capture(client, process, report, prefix, timeout=30):
     """Verify shutdown after freezing counters at the screenshot response.
 
     Closing the CDP socket can race a successful Browser.close. Wait for the
     actual child instead of immediately signalling it or assuming exit zero.
     Preserve the captured counters if a crash or forced cleanup invalidates it.
+    Shutdown is outside the counter endpoint. Allow a contended host enough
+    time to finish it while still requiring an observed, unforced zero exit.
     """
+    report["shutdown_forced"] = False
+    report["shutdown_timeout_seconds"] = timeout
+    shutdown_started = time.monotonic()
+    # Resource interception can leave requests paused when the screenshot is
+    # complete. Cancel page loads and release interception after freezing the
+    # counters, before asking the browser to tear its targets down.
+    report["shutdown_cleanup_methods"] = []
+    report["shutdown_cleanup_errors"] = {}
+    for method in ("Page.stopLoading", "Fetch.disable"):
+        try:
+            client.call(method)
+            report["shutdown_cleanup_methods"].append(method)
+        except (EOFError, OSError, RuntimeError) as error:
+            report["shutdown_cleanup_errors"][method] = str(error)
     try:
         client.call("Browser.close")
     except (EOFError, OSError):
         pass
-    report["shutdown_forced"] = False
     try:
         report["exit"] = process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         report["shutdown_forced"] = True
         stop_process(process)
         report["exit"] = process.poll()
+    report["shutdown_elapsed_seconds"] = time.monotonic() - shutdown_started
     if type(report["exit"]) is not int or report["exit"] != 0 or report["shutdown_forced"]:
         failure = Path(str(prefix) + ".failure.json")
         if failure.exists():

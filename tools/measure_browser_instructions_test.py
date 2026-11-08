@@ -38,6 +38,20 @@ class ProcessStopTests(unittest.TestCase):
 
 
 class ChromeCaptureExitTests(unittest.TestCase):
+    def test_shutdown_cancels_interception_after_preserving_capture_counters(self):
+        client, process = Mock(), Mock()
+        process.wait.return_value = 0
+        report = dict(instructions=123, endpoint='screenshot response')
+        measurement.finish_chrome_capture(client, process, report, Path('/unused/capture'))
+        self.assertEqual([call.args[0] for call in client.call.call_args_list],
+                         ['Page.stopLoading', 'Fetch.disable', 'Browser.close'])
+        self.assertEqual(report['instructions'], 123)
+        self.assertEqual(report['endpoint'], 'screenshot response')
+        self.assertEqual(report['shutdown_cleanup_methods'], ['Page.stopLoading', 'Fetch.disable'])
+        self.assertEqual(report['shutdown_cleanup_errors'], {})
+        self.assertEqual(report['exit'], 0)
+        self.assertFalse(report['shutdown_forced'])
+
     def test_socket_eof_can_accompany_a_verified_clean_exit_after_capture(self):
         client = Mock()
         client.call.side_effect = EOFError()
@@ -48,7 +62,9 @@ class ChromeCaptureExitTests(unittest.TestCase):
         self.assertEqual(report['exit'], 0)
         self.assertFalse(report['shutdown_forced'])
         self.assertEqual(report['instructions'], 123)
-        process.wait.assert_called_once_with(timeout=5)
+        process.wait.assert_called_once_with(timeout=30)
+        self.assertEqual(report['shutdown_timeout_seconds'], 30)
+        self.assertGreaterEqual(report['shutdown_elapsed_seconds'], 0)
 
     def test_crash_retains_the_frozen_capture_counters_and_actual_exit(self):
         with tempfile.TemporaryDirectory() as directory:
