@@ -46,6 +46,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import quote, unquote, urlsplit
 
 from browser_bundle_lease import canonical_bundle_lease
+from wpt_fixtures import export_fixtures, verify_fixture_tree
 
 REPO = Path(__file__).resolve().parents[1]
 LADYBIRD = Path(os.environ.get('LADYBIRD_SOURCE_DIR', REPO.parent / '3rd' / 'ladybird'))
@@ -768,6 +769,10 @@ def main():
     parser.add_argument('--include', action='append', default=[],
                         help='Test id prefix such as dom/nodes (repeatable)')
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--ladybird-ref', help='Read imported fixtures at this Git revision without changing the upstream checkout')
+    parser.add_argument('--fixture-cache', type=Path, default=Path.home() / '.cache/vox/wpt')
+    parser.add_argument('--require-all-pass', action='store_true',
+                        help='Exit nonzero unless every selected case and subtest passes in every requested browser')
     parser.add_argument('--browsers', default='vox,brave')
     parser.add_argument('--chunk-size', type=int, default=250)
     parser.add_argument('--vox', type=Path, default=VOX)
@@ -790,7 +795,14 @@ def main():
         parser.error('--browsers takes vox and/or brave')
     if args.output.exists():
         parser.error(f'{args.output} already exists')
-    tests = discover_tests(includes=args.include)
+    args.fixture_root = None
+    args.fixture_manifest = None
+    args.text_root = TEXT_TESTS
+    if args.ladybird_ref:
+        args.fixture_root, args.fixture_manifest = export_fixtures(
+            LADYBIRD, args.ladybird_ref, args.fixture_cache)
+        args.text_root = args.fixture_root / 'Tests/LibWeb/Text'
+    tests = discover_tests(args.text_root, includes=args.include)
     if args.limit:
         tests = tests[:args.limit]
     if not tests:
@@ -819,12 +831,13 @@ def run(args, tests, browsers, executables):
                 pinned[str(path)] = sha256(path)
     if 'brave' in browsers:
         pinned[str(executables['brave'])] = sha256(executables['brave'])
-    report_root = TEXT_TESTS / 'input' / 'wpt-import'
+    report_root = args.text_root / 'input' / 'wpt-import'
     identity = dict(
         suite_scope=SUITE_SCOPE,
         started=time.strftime('%Y-%m-%dT%H:%M:%S%z'), argv=sys.argv,
-        ladybird_head=subprocess.run(['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'],
-                                     capture_output=True, text=True).stdout.strip(),
+        ladybird_head=args.fixture_manifest['revision'] if args.fixture_manifest else subprocess.run(
+            ['git', '-C', str(LADYBIRD), 'rev-parse', 'HEAD'], capture_output=True, text=True).stdout.strip(),
+        fixture_manifest=args.fixture_manifest,
         wpt_root=str(report_root), host_cpus=os.cpu_count(),
         load_start=[round(value, 2) for value in os.getloadavg()],
         brave_version=subprocess.run([str(executables['brave']), '--version'], capture_output=True,
@@ -855,6 +868,8 @@ def run(args, tests, browsers, executables):
     aborted = None
     try:
         for chunk_index, chunk in enumerate(chunks_of(tests, args.chunk_size)):
+            if args.fixture_manifest:
+                verify_fixture_tree(args.fixture_root, args.fixture_manifest)
             order = browsers if chunk_index % 2 == 0 else list(reversed(browsers))
             for browser in order:
                 result = run_chunk(runner, browser, executables[browser],
@@ -868,7 +883,7 @@ def run(args, tests, browsers, executables):
                 print(f"[{time.strftime('%H:%M:%S')}] chunk {chunk_index + 1}/{math.ceil(len(tests) / args.chunk_size)}"
                       f" {browser}: {result['tests']} tests in {result['seconds']} s,"
                       f" {result['launches']} launch(es)", flush=True)
-    except RunAborted as error:
+    except (RunAborted, ValueError) as error:
         aborted = str(error)
         print(f'error: {aborted}; summarizing the completed chunks', file=sys.stderr)
     finally:
@@ -877,6 +892,11 @@ def run(args, tests, browsers, executables):
         results_file.close()
         server.shutdown()
         request_log.close()
+    if args.fixture_manifest:
+        try:
+            verify_fixture_tree(args.fixture_root, args.fixture_manifest)
+        except ValueError as error:
+            aborted = str(error)
     changed = [path for path, digest in pinned.items() if not Path(path).is_file() or sha256(path) != digest]
     identity['load_end'] = [round(value, 2) for value in os.getloadavg()]
     identity['finished'] = time.strftime('%Y-%m-%dT%H:%M:%S%z')
@@ -892,7 +912,11 @@ def run(args, tests, browsers, executables):
     print(report)
     if changed:
         print(f'error: inputs changed during the run: {changed}', file=sys.stderr)
-    return 1 if changed or aborted else 0
+    all_pass = all(len([record for record in records if record['browser'] == browser
+                       and record['outcome'] == 'COMPLETE' and record['harness'] == 'OK'
+                       and all(test['status'] == 'PASS' for test in record['subtests'])]) == len(tests)
+                   for browser in browsers)
+    return 1 if changed or aborted or (args.require_all_pass and not all_pass) else 0
 
 
 if __name__ == '__main__':
