@@ -20,6 +20,11 @@ fn indexed_db_binding_factory() string {
  const indexName=descriptor(constructors.IDBIndex.prototype,"name");
  define(constructors.IDBIndex.prototype,"name",{...indexName,set(value){operate("brand",this,"IDBIndex");operate("setName",this,value)}});
  for(const [type,methods] of [["IDBFactory",[["open",1],["deleteDatabase",1],["cmp",2]]],["IDBDatabase",[["createObjectStore",1],["deleteObjectStore",1],["transaction",1],["close",0]]],["IDBTransaction",[["objectStore",1],["abort",0],["commit",0]]],["IDBObjectStore",[["get",1],["put",1],["add",1],["createIndex",2]]]])for(const [name,length] of methods)method(type,name,length);
+ // Promise-returning WebIDL operations reject receiver errors. Capture the
+ // intrinsic constructor before author code can replace the global property.
+ const Promise=global.Promise;
+ const databases=({databases(){return new Promise((resolve,reject)=>{try{operate("brand",this,"IDBFactory");resolve(operate("databases",this))}catch(error){reject(error)}})}}).databases;
+ define(constructors.IDBFactory.prototype,"databases",{value:databases,writable:true,enumerable:true,configurable:true});
  for(const [type,events] of [["IDBRequest",["success","error"]],["IDBOpenDBRequest",["blocked","upgradeneeded"]],["IDBDatabase",["abort","error","close","versionchange"]],["IDBTransaction",["abort","error","complete"]]])for(const event of events){
   const name="on"+event;
   const handler=descriptor({get [name](){operate("brand",this,type);return operate("getHandler",this,event)},set [name](value){operate("brand",this,type);operate("setHandler",this,event,value)}},name);

@@ -367,6 +367,16 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 	}
 	match entry.kind {
 		.factory {
+			if method == 'databases' {
+				mut values := []indexeddb.Value{}
+				for info in entry.factory.database_infos() {
+					values << indexeddb.object_value({
+						'name': indexeddb.string_value(info.name)
+						'version': indexeddb.number_value(f64(info.version))
+					})
+				}
+				return runtime.indexed_db_output(indexeddb.array_value(values))
+			}
 			if method in ['open', 'deleteDatabase'] {
 				name := runtime.binding_dom_string(args[2])!
 				if method == 'deleteDatabase' {

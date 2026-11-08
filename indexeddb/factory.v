@@ -272,10 +272,17 @@ pub fn (mut factory IDBFactory) retry_delete(mut request IDBOpenDBRequest, name 
 pub fn (factory &IDBFactory) database_infos() []IDBDatabaseInfo {
 	mut result := []IDBDatabaseInfo{}
 	for database in DatabaseData.for_key(factory.storage_key) {
-		if database.version > 0 {
+		// Enumerate committed metadata. A new database under construction is
+		// invisible; an upgrade continues to expose the previous version.
+		version := if transaction := database.upgrade_transaction {
+			transaction.original_version
+		} else {
+			database.version
+		}
+		if version > 0 {
 			result << IDBDatabaseInfo{
 				name:    database.name
-				version: database.version
+				version: version
 			}
 		}
 	}
