@@ -47,6 +47,11 @@ pub fn (item &InlineLevelItem) border_box_width() CSSPixels {
 		item.border_end)
 }
 
+fn (item &InlineLevelItem) fitting_width() CSSPixels {
+	return item.border_box_width().plus(css_pixels_min(CSSPixels.new(0),item.margin_start))
+		.plus(css_pixels_min(CSSPixels.new(0),item.margin_end))
+}
+
 fn overflow_break_applies_to_style(style &css.ComputedProperties, available_width AvailableSize) bool {
 	if style.text_wrap_mode() != .wrap {
 		return false
@@ -442,7 +447,7 @@ pub fn (iterator &InlineLevelIterator) next_non_whitespace_sequence_width() CSSP
 				break
 			}
 		}
-		next_width = next_width.plus(next_item.border_box_width())
+		next_width = next_width.plus(next_item.fitting_width())
 	}
 	return next_width
 }
