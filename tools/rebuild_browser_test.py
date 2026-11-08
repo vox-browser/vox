@@ -1,5 +1,5 @@
 from pathlib import Path
-from contextlib import chdir
+from contextlib import contextmanager
 import hashlib
 import fcntl
 import json
@@ -12,6 +12,18 @@ import subprocess
 from unittest.mock import patch
 
 import rebuild_browser as build
+
+
+@contextmanager
+def chdir(path):
+    # Production tools use macOS's system Python as well as newer interpreters.
+    # contextlib.chdir is available only from Python 3.11 onward.
+    previous = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
 
 
 class ProductionBuildTests(unittest.TestCase):
