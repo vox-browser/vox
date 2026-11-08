@@ -1017,9 +1017,13 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 	// Declaration values borrow the immutable component stream. Growing a second
 	// vector copied every token and retained each growth buffer under prealloc.
 	start_value := input.index
-	for !input.next_token().is(.end_of_file) && !input.next_token().is(.semicolon)
-		&& !(nested == .yes && input.next_token().is(.close_curly)) {
-		input.discard_a_token()
+	if disable_borrowed_declaration_value_scan {
+		for !input.next_token().is(.end_of_file) && !input.next_token().is(.semicolon)
+			&& !(nested == .yes && input.next_token().is(.close_curly)) {
+			input.discard_a_token()
+		}
+	} else {
+		input.index = declaration_value_span_end(&input, nested)
 	}
 	declaration.value = input.values[start_value..input.index]
 
@@ -3276,6 +3280,7 @@ fn parser_component_values_to_string(values []ComponentValue) string {
 }
 
 fn parser_component_values_original_text(values []ComponentValue) string {
+	if text := exact_component_source_copy(values) { return text }
 	$if prealloc {
 		// Nested blocks and functions assemble intermediate strings. Only the
 		// final source spelling belongs to the declaration's owner.
