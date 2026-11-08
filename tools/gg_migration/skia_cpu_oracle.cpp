@@ -118,6 +118,30 @@ ORACLE void oracle_inner_shadow_path(float const* f, int* info, float* out) {
     for (auto weight : path.conicWeights()) out[info[1]*2 + n++] = weight;
 }
 
+ORACLE int oracle_text_shadow(uint8_t* pixels, int const* v, float const* f, char const* font, uint16_t const* glyphs, float const* positions) {
+    VoxShadowCommand command{};
+    command.kind = 2;
+    command.color = uint32_t(v[2]);
+    command.glyph_count = v[3];
+    command.font_smoothing = v[4];
+    command.face_index = v[5];
+    for (int i = 0; i < 6; ++i) command.transform[i] = f[i];
+    command.blur = f[6]; command.font_size = f[7];
+    command.translation[0] = f[8]; command.translation[1] = f[9];
+    command.font_path = font;
+    command.glyphs = glyphs; command.positions = positions;
+    std::vector<VoxShadowClip> clips;
+    for (int i = 0; i < v[6]; ++i) {
+        auto c = f + 10 + i*18;
+        VoxShadowClip clip{};
+        clip.shape = oracle_shadow_rect(c);
+        for (int j = 0; j < 6; ++j) clip.transform[j] = c[12+j];
+        clips.push_back(clip);
+    }
+    command.clips = clips.data(); command.clip_count = int(clips.size());
+    return vox_skia_shadow(pixels, v[0], v[1], v[0]*4, &command);
+}
+
 // skia/canvas_raster.cpp: vox_skia_canvas_read_pixels().
 static bool read_pixels(uint8_t const* source, int width, int height, int pitch, int alpha_type, uint8_t* destination, int destination_width, int destination_height, int destination_pitch, int x, int y)
 {

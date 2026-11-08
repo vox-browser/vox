@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "glyph_smoothing_probe.h"
 
 // SkFontMgr_Mac::onMakeFromFile() -> SkTypeface_Mac::MakeFromStream():
 // the file's bytes, CTFontManagerCreateFontDescriptorFromData() and
@@ -168,7 +169,7 @@ static int cpuraster_ct_glyph_metrics(void* font_ref, uint16_t glyph_id, double 
 // the glyph occupies the last height rows' first width pixels.
 static int cpuraster_ct_draw_glyph(void* font_ref, uint16_t glyph_id, double const* t, int invertible,
     double x, double y, uint32_t* pixels, int context_width, int context_height, int width, int height,
-    int color, uint32_t foreground) {
+    int color, uint32_t foreground, int smoothing) {
     CGColorSpaceRef space = CGColorSpaceCreateDeviceRGB();
     size_t row_bytes = (size_t)context_width * 4;
     CGImageAlphaInfo alpha = color ? kCGImageAlphaPremultipliedFirst : kCGImageAlphaNoneSkipFirst;
@@ -198,8 +199,10 @@ static int cpuraster_ct_draw_glyph(void* font_ref, uint16_t glyph_id, double con
     CGColorSpaceRelease(space);
     CGAffineTransform transform = cpuraster_ct_transform(t);
     CGContextSetTextMatrix(cg, transform);
-    CGContextSetShouldAntialias(cg, true);
-    CGContextSetShouldSmoothFonts(cg, false);
+    int do_smooth = !color && smoothing != 1 && smoothing != 2
+        && cpuraster_ct_smoothing_behavior() != 0;
+    CGContextSetShouldAntialias(cg, color || smoothing != 1);
+    CGContextSetShouldSmoothFonts(cg, do_smooth);
     uint32_t* image = pixels + (size_t)(context_height - height) * context_width;
     uint32_t background = color ? 0x00000000 : 0xFFFFFFFF;
     for (int row = 0; row < height; ++row)
@@ -210,6 +213,15 @@ static int cpuraster_ct_draw_glyph(void* font_ref, uint16_t glyph_id, double con
     CGGlyph glyph = (CGGlyph)glyph_id;
     CTFontDrawGlyphs((CTFontRef)font_ref, &glyph, &point, 1, cg);
     CGContextRelease(cg);
+    if (do_smooth) {
+        for (int row = 0; row < height; ++row) {
+            for (int column = 0; column < width; ++column) {
+                uint32_t* p = image + (size_t)row * context_width + column;
+                uint32_t r = *p >> 16 & 255, g = *p >> 8 & 255, b = *p & 255;
+                *p = (((r*r + 128)/255) << 16) | (((g*g + 128)/255) << 8) | ((b*b + 128)/255);
+            }
+        }
+    }
     return 1;
 }
 

@@ -1400,6 +1400,10 @@ fn main() {
 		check_portable_inner_shadow_cases(count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'text-shadows' {
+		check_portable_text_shadow_cases(count)
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'rrects' {
 		check_rounded_rect_cases(count)
 		return
@@ -3223,6 +3227,63 @@ fn check_portable_inner_shadow_cases(count int) {
 		}
 	}
 	println('${count} portable inner shadows exact (${painted} painted)')
+}
+
+type OracleTextShadow = fn (pixels &u8, values &i32, floats &f32, font &char, glyphs &u16, positions &f32) i32
+
+fn check_portable_text_shadow_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OracleTextShadow(oracle_symbol(library, 'oracle_text_shadow')) }
+	fonts := glyph_fonts(os.real_path(@VMODROOT))
+	mut painted := 0
+	for trial in 0 .. count {
+		w := rand.intn(100) or { 0 } + 1
+		h := rand.intn(90) or { 0 } + 1
+		font := fonts[rand.intn(fonts.len) or { 0 }]
+		size := if trial % 17 == 0 { f32(rand.f64()*400+200) } else { f32(rand.f64()*55+4) }
+		n := rand.intn(6) or { 0 } + 1
+		mut glyphs := []u16{}
+		mut positions := []f32{}
+		for i in 0 .. n { glyphs << u16(rand.intn(120) or { 0 }); positions << [f32(i)*size*f32(0.6), f32(rand.f64()*4)] }
+		t := [if trial%3 == 0 { f32(1) } else { f32(rand.f64()*3 - 1) }, f32(0), 0,
+			if trial%3 == 0 { f32(1) } else { f32(rand.f64()*3 - 1) },
+			f32(rand.f64()*10-5), f32(rand.f64()*10-5)]!
+		blur := match trial % 11 {
+			0 { f32(0) }
+			1 { f32(-1) }
+			2 { f32(1e-5) }
+			else { f32(rand.f64()*20) }
+		}
+		color := random_composite_color()
+		translation := [f32(rand.f64()*w-20), f32(rand.f64()*h)]!
+		mut floats := t[..].clone()
+		floats << [blur, size, translation[0], translation[1]]
+		smoothing := if only := os.getenv_opt('CPU_RASTER_TEXT_SMOOTHING') { only.int() } else { rand.intn(4) or { 0 } }
+		mut clips := []cpuraster.Path{}
+		clip_count := rand.intn(3) or { 0 }
+		for _ in 0 .. clip_count {
+			shape := random_shadow_rrect()
+			ct := random_stroke_matrix()
+			floats << shape
+			floats << ct[..]
+			clips << shadow_rrect_from_values(shape).clip_path(cpuraster.Matrix{ct[0], ct[1], ct[2], ct[3], ct[4], ct[5]})
+		}
+		values := [i32(w), h, i32(color), n, smoothing, 0, clip_count]
+		mut expected := []u8{len: w*h*4}
+		if oracle(expected.data, values.data, floats.data, font.str, glyphs.data, positions.data) == 0 { panic('native text shadow failed ${font}') }
+		if expected.any(it != 0) { painted++ }
+		run := cpuraster.CanvasGlyphRun{font_path: font, font_size: size, glyphs: glyphs, positions: positions, translation: translation, smoothing: smoothing}
+		actual := cpuraster.rasterize_text_shadow(w, h, run, t, color, blur, clips) or { panic('text shadow declined ${trial} ${font}') }
+		if actual != expected {
+			for i in 0 .. actual.len { if actual[i] != expected[i] {
+				eprintln('text shadow ${trial}: (${i % (w*4) / 4}, ${i / (w*4)}) channel ${i%4} ${actual[i]} != ${expected[i]}, ${font}, values ${values}, floats ${floats}, glyphs ${glyphs}, positions ${positions}')
+				break
+			} }
+			save_failure([]u8{len: actual.len}, expected, actual, '${font}, ${values}, ${floats}, ${glyphs}, ${positions}')
+			exit(1)
+		}
+	}
+	println('${count} portable text shadows exact (${painted} painted)')
 }
 
 fn check_rounded_rect_cases(count int) {

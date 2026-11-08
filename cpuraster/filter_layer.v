@@ -129,6 +129,11 @@ fn skif_round_out(r Rect) IRect {
 // DropShadow is Blur -> SrcIn color filter -> offset, merged under the source.
 // The color filter stays deferred until sampling, just as in FilterResult.
 fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds Rect, step CanvasFilterStep, mode BlendMode, content LayerContent) bool {
+	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type, transform,
+		clips, content_bounds, step, mode, content, none)
+}
+
+fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, step CanvasFilterStep, mode BlendMode, content LayerContent, tint ?u32) bool {
 	// An invalid DropShadow blur becomes a null child, leaving the tint,
 	// offset and merge on SourceGraphic. A lone invalid blur is discarded
 	// by new_canvas_filter().
@@ -173,8 +178,10 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 	// content's rounded-out bounds.
 	rx := skif_ceil(f32(3) * layer_sx)
 	ry := skif_ceil(f32(3) * layer_sy)
-	content_device := skif_round_out(map_rect_affine(content_bounds, Matrix{ctm.sx, 0, 0, ctm.sy, ctm.tx, ctm.ty}))
 	mut needed := skif_outset(output, rx, ry)
+	content_device := if bounds := content_bounds {
+		skif_round_out(map_rect_affine(bounds, Matrix{ctm.sx, 0, 0, ctm.sy, ctm.tx, ctm.ty}))
+	} else { needed }
 	if drop {
 		shifted := skif_outset(map_filter_bounds(output, affine_invert(mapped_offset) or { return false }), 1, 1)
 		foreground_input := output.intersect(content_device) or { IRect{} }
@@ -248,6 +255,11 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 	}
 	result := blur_filter_result(source, desired, sx, sy) or { return true }
 	if !result.has_image || desired.is_empty() {
+		return true
+	}
+	if color := tint {
+		draw_tinted_filter_result(mut pixels, pitch, result, SkAffine{}, -padded.left,
+			-padded.top, &rc, color)
 		return true
 	}
 	// FilterResult::draw(): a pixel-aligned image is a sprite at the layer

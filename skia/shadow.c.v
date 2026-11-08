@@ -84,7 +84,7 @@ pub fn rasterize_shadow(width int, height int, command ShadowCommand) ![]u8 {
 	if width <= 0 || height <= 0 {
 		return error('Invalid shadow surface dimensions')
 	}
-	if command.kind in [0, 1] {
+	if command.kind in [0, 1, 2] {
 		mut cpu_clips := []cpuraster.Path{}
 		for clip in command.clips {
 			m := clip.transform
@@ -98,9 +98,21 @@ pub fn rasterize_shadow(width int, height int, command ShadowCommand) ![]u8 {
 				cpu_shadow_rect(command.content), command.transform, command.color, command.blur, cpu_clips) {
 				return result
 			}
-		} else {
+		} else if command.kind == 1 {
 			if result := cpuraster.rasterize_inner_shadow(width, height, cpu_shadow_rect(command.outer),
 				cpu_shadow_rect(command.inner), cpu_shadow_rect(command.content), command.transform,
+				command.color, command.blur, cpu_clips) { return result }
+		} else {
+			run := cpuraster.CanvasGlyphRun{
+				font_path: command.font_path
+				face_index: command.face_index
+				font_size: command.font_size
+				glyphs: command.glyphs
+				positions: command.positions
+				translation: command.translation
+				smoothing: command.font_smoothing
+			}
+			if result := cpuraster.rasterize_text_shadow(width, height, run, command.transform,
 				command.color, command.blur, cpu_clips) { return result }
 		}
 	}
