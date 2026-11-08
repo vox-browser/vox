@@ -37,6 +37,7 @@ pub fn (d &Document) enter_native_storage() platform.RetainedArenaScope {
 // document's event-loop tasks and releases the layout publisher. Retained
 // native geometry/scenes can still keep the payload arena alive afterwards.
 pub fn (mut d Document) release_native_storage() {
+	d.rule_selector_memo_handle_ = unsafe { nil }
 	mut storage := d.native_storage_
 	d.native_storage_ = unsafe { nil }
 	if d.native_storage_borrowed_ {

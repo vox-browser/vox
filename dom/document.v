@@ -5331,6 +5331,8 @@ pub mut:
 
 	// Style
 	style_computer                      &StyleComputer = unsafe { nil }
+	// CSS selector memo owned by native_storage_; typed on the CSS side.
+	rule_selector_memo_handle_ voidptr = unsafe { nil }
 	font_computer                       &FontComputer = unsafe { nil }
 	style_sheets_                       &StyleSheetList = unsafe { nil }
 	style_update_hook_                  ?DocumentStyleUpdateHook
@@ -5893,6 +5895,7 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 	visitor.visit(d.pending_parsing_blocking_svg_script)
 	visitor.visit(d.history_)
 	visitor.visit(d.style_computer)
+	visitor.visit(d.rule_selector_memo_handle_)
 	visitor.visit(d.font_computer)
 	visitor.visit(d.adopted_css_style_sheets_handle)
 
@@ -10043,6 +10046,7 @@ pub fn (mut d Document) destroy() {
 		d.render_blocking_elements = []
 		d.script_blocking_style_sheet_set = []
 		d.style_computer = unsafe { nil }
+		d.rule_selector_memo_handle_ = unsafe { nil }
 		d.font_computer = unsafe { nil }
 		d.hovered_node = unsafe { nil }
 		d.focused_area = unsafe { nil }
