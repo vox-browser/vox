@@ -1237,3 +1237,56 @@ SHA-256 `18147e2fa95e03f07d7f2dd2b228f2e6f695e265baaae21a79f5b1ed6f64d340`.
 The completed focused production directory and locks have been removed.
 The full official-manifest collection continues on its earlier pinned image;
 these focused results do not measure its complete conformance.
+
+## Local MessagePort transfers (2026-11-08)
+
+`0b34de6b2` replaces the worker-only transfer bridge for local MessageChannel
+sends and `structuredClone()` with native transfer memory. Transferred ports
+preserve aliases in data, Map/Set entries and `MessageEvent.ports`. Transfer
+validation precedes graph getters; detached-slot checks and actual transfers
+follow them in list order, with native DOMException errors. The HTML owner
+retains scheduled messages during transfer and uses a disabled endpoint while
+in transit, preserving both-endpoint transfers and messages from the live peer.
+Receiving ports use their actual realm's native clone context, fixing File/Blob
+delivery, including shared-worker File messages. Buffer transfer records flatten
+at the existing worker wire boundary, preserving its buffer/view alias behavior.
+
+**27 focused checks pass in each of normal GC and preallocated GC-none modes**:
+16 HTML owner/messaging checks and 11 public integration checks. They exercise
+cycles/aliases, queued delivery, both endpoints, mixed port/buffer transfers,
+resizable buffers, fixed-buffer views, brand/duplicate checks, getter errors,
+partial detachment, doomed targets, closed realms, scratch lifetimes, native
+File bytes and shared-worker buffer round trips. Compile guards retain 12 GiB,
+the compiler retains `-memory-limit 10G`, and focused runtimes retain 3 GiB.
+
+**22 unchanged original official Window/Worker variants pass 564 / 564
+assertions in both native Page modes**, with exact expected counts, harness OK,
+unchanged inputs and strict runner/outer exits 0. These comprise the six earlier
+File/Blob variants plus 16 MessageChannel variants. The matched File/Blob
+selection improves from 544 / 546 to **546 / 546**, closing both FrozenArray
+MessagePort failures without changing its denominator. This is a finite focused
+selection, not a new overall WPT rate.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261108-local-ports-0b34de6b2-raw.tar.gz`,
+SHA-256 `01b9c2c151edbc1bddebb7466bbf5d63405edede4c737b382d371fc5a077f667`.
+Summary: `/Users/alex/.cache/vox/wpt/20261108-local-ports-summary.json`, SHA-256
+`485ba6e1c4c2d42e0bda7b5742cfbba51cb6bacf6dd7c3fea4d21008c72dbff1`.
+Earlier failed attempts remain in the archive. The first fixture probes the
+existing unsupported exact metadata for views over resizable buffers; final
+checks cover resizable buffers and fixed-buffer views independently. The next
+attempt catches DOMException conversion and a missing stream host in the File
+fixture. Generated C/private profiles are excluded; finished job output,
+temporary combined tests and locks are removed after archiving.
+
+The production observer requires all 14 implementation hashes from this commit
+before checking these same 22 pages with 564 expected assertions and strict
+exits. No available completed artifact contains the complete fix, so a shared
+C-backend build is required. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-local-ports-production-{status,completion}.json`.
+Observer: `/Users/alex/.cache/vox/wpt/20261108-local-ports-production-followup.py`,
+SHA-256 `de56ff8716ad872cd97a0f88c14a9d65b06d7a54146767e15d9ff39aa2c06f12`.
+Production validation remains pending at this checkpoint. The full 40,139-variant
+official testharness collection continues on its original pinned executable,
+with 1,000 case records and unchanged inputs. Other WPT types, FileReader
+exposure, exact resizable-view metadata and active/nested worker-port transfer
+support remain open. **Full WPT coverage and 100% remain unfinished.**
