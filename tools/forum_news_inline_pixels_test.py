@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_fractional_skewed_borders_snap_in_their_local_paint_space(self):
+        self.compare_fixture('fractional-skewed-border')
+
     def test_later_matching_font_faces_override_earlier_definitions_and_subsets(self):
         self.compare_fixture('font-face-source-order', settle_seconds=2)
 
