@@ -567,26 +567,36 @@ fn test_pattern_canvas_draws_match_skia() {
 // legacy, pipeline and sprite image draws and a clear must match Skia's
 // drawImageRect() and clear().
 fn test_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(false, false, false, false)
+	check_bitmap_commands_match_skia(false, false, false, .none)
 }
 
 fn test_color_filtered_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(true, false, false, false)
+	check_bitmap_commands_match_skia(true, false, false, .none)
 }
 
 fn test_spatially_filtered_source_image_matches_skia() {
-	check_bitmap_commands_match_skia(false, true, false, false)
+	check_bitmap_commands_match_skia(false, true, false, .none)
 }
 
 fn test_fractional_source_image_filter_matches_skia() {
-	check_bitmap_commands_match_skia(false, true, true, false)
+	check_bitmap_commands_match_skia(false, true, true, .none)
 }
 
 fn test_identity_blur_source_image_filters_match_skia() {
-	check_bitmap_commands_match_skia(false, true, false, true)
+	check_bitmap_commands_match_skia(false, true, false, .color)
 }
 
-fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_blurs bool) {
+fn test_identity_blurs_without_matrices_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .plain)
+}
+
+enum CpuImageIdentityTestMode {
+	none
+	color
+	plain
+}
+
+fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
 	mut pixels := []u8{len: 6 * 4 * 4}
 	for i in 0 .. 24 {
 		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
@@ -617,7 +627,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	}
 	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
 	if spatial { destinations[1] = [f64(100.25), 30.5, 24, 18] }
-	if fractional || identity_blurs { destinations[2] = [f64(140.25), 70.5, 28, 24] }
+	if fractional || identity_mode != .none { destinations[2] = [f64(140.25), 70.5, 28, 24] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
@@ -626,7 +636,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
 		context.set_filter(if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
-		else if identity_blurs && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
+		else if identity_mode == .color && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
+		else if identity_mode == .plain && i == 2 { 'blur(.001px) blur(0px)' }
 		else if spatial && i == 2 {
 			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
 		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })

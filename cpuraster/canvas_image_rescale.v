@@ -31,7 +31,7 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 	}
 	if !real_blur {
 		before << step.post_color
-		filter := new_color_filter(before) or { return false }
+		filter := new_color_filter(before)
 		source := [src.left, src.top, src.right - src.left, src.bottom - src.top]!
 		destination := [dst.left, dst.top, dst.right - dst.left, dst.bottom - dst.top]!
 		if rect_xywh(source) != src || rect_xywh(destination) != dst { return false }

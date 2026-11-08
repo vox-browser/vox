@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2461,7 +2461,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
 	identity_layers := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-layers'
-	resampled := identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	identity_sampling := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-sampling'
+	resampled := identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
 	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
@@ -2589,6 +2590,10 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			if i % 2 == 0 { filters << cpuraster.CanvasFilterStep{kind: .blur} }
 			if i % 3 == 0 { filters << random_color_filters() }
 			c = BitmapCase{...c, filters: filters}
+		}
+		if identity_sampling {
+			c = BitmapCase{...c, filters: [cpuraster.CanvasFilterStep{kind: .blur, sigma: .001},
+				cpuraster.CanvasFilterStep{kind: .blur}]}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++

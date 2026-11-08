@@ -622,6 +622,28 @@ fn test_identity_blurs_keep_source_sampling_and_color_filters_deferred() {
 	}
 }
 
+fn test_identity_blurs_preserve_images_without_color_matrices() {
+	zero := CanvasFilterStep{kind: .blur}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .001}
+	hashes := ['fac95cda665447d0', '3dc171f15c4a6337', '4ec3f389f0ccf270',
+		'41cedb613f3f59b3', 'f43245c7c409678f', '78e8496c23d32d03']
+	for i in 0 .. hashes.len {
+		mut pixels := image_test_background()
+		source := if i in [1, 2, 4] { [f32(1), 1, 5, 4]! } else { [f32(0), 0, 7, 6]! }
+		destination := if i in [1, 2] { [f32(10.25), 12.5, 2, 3]! }
+			else if i == 5 { [f32(10), 12, 7, 6]! } else { [f32(4.5), 6.25, 22, 16]! }
+		transform := if i == 4 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+			else if i == 5 { [f32(1), 0, 0, 1, .3, .7]! } else { image_test_identity }
+		steps := if i == 2 { [zero, tiny] } else if i in [1, 3, 4] { [tiny] } else { [zero] }
+		alpha := if i == 2 { f32(.7) } else if i == 3 { f32(.65) } else { f32(1) }
+		mode := match i { 2 { BlendMode.plus_lighter } 3 { .src_in } 4 { .plus_darker } else { .src_over } }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i != 3, i == 2), source, destination, true, alpha,
+			mode, image_test_clips(i in [2, 3]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'identity sampling fixture ${i}'
+	}
+}
+
 fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
 	mut pixels := []u8{len: 65 * 44 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,

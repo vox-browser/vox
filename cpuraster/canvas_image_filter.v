@@ -7,7 +7,7 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 		transform, image, source, destination, smoothing, global_alpha, mode, clips, filter, none)
 }
 
-fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ColorFilter, quick_bounds ?Rect) bool {
+fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, filter ?ColorFilter, quick_bounds ?Rect) bool {
 	mut src := rect_xywh(source)
 	mut dst := rect_xywh(destination)
 	ctm := canvas_affine(transform)
@@ -92,9 +92,9 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 			decal_bounds: decal_bounds, decal_matrix: decal_inverse}}
 	}
 	alpha := f32(u8(global_alpha * f32(255))) * inv_255
-	mut blitter := canvas_filtered_blitter(mut pixels, pitch, 0xff000000, shader, alpha, mode,
+	mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, alpha, mode,
 		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, filter,
-		canvas_rgba_uses_legacy()) or { return target.ready() }
+		canvas_rgba_uses_legacy() && alpha == 1) or { return target.ready() }
 	target.ready()
 	if unbounded || sprite {
 		fill_irect(if unbounded { rc.bounds() } else { bounds }, &rc, mut blitter)
