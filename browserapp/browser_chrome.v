@@ -90,7 +90,7 @@ fn (app &BrowserApp) browser_chrome_snapshot_path(resource_url string) string {
 	// Keep previous chrome layouts and debug-only diagnostics out of normal
 	// startup snapshots, while retaining the shared snapshots cache directory.
 	settings := browsersettings.current()
-	return cached_snapshot_path('${resource_url}\nui2-classic-chrome-v6:custom-titles=${settings.enable_custom_tab_titles}:tab-coloring=${settings.enable_tab_coloring}:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
+	return cached_snapshot_path('${resource_url}\nui2-classic-chrome-v6:build=${browserui.build_timestamp}:custom-titles=${settings.enable_custom_tab_titles}:tab-coloring=${settings.enable_tab_coloring}:${app.chrome_debug}:${app.browser_tab_snapshot_key()}:zoom=${app.page_zoom}:bookmarks=${app.bookmark_bar_visible()}:${if app.bookmarks != unsafe { nil } {
 		app.bookmarks.version
 	} else {
 		u64(0)
@@ -177,7 +177,6 @@ fn browser_address_field_width(window_width int) f64 {
 fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 	width := f64(chrome.width)
 	address_width := browser_address_field_width(chrome.width)
-	footer_width := if width > 224 { width - 224 } else { 0.0 }
 	memory := if chrome.memory != '' { chrome.memory } else { ui2.text('memory') }
 	return [
 		ui2.view('toolbar', ui2.rect(0, 0, width, tab_strip_height + browser_toolbar_height(chrome.debug) + if chrome.bookmarks_visible {
@@ -212,10 +211,8 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 				hidden: !chrome.debug
 			},
 		]),
-		ui2.view('status-bar', ui2.rect(0, f64(chrome.height) - status_bar_height, width, status_bar_height), ui2.BoxStyle{ bg: 0xececec }, [
-			ui2.label('footer', chrome.footer, ui2.rect(12, 0, footer_width, status_bar_height), ui2.TextStyle{ color: 0x555555, size: 12 }),
-			ui2.label('memory', memory, ui2.rect(width - 200, 0, 188, status_bar_height), ui2.TextStyle{ color: 0x555555, size: 12, align: .right }),
-		]),
+		browserui.status_bar(ui2.rect(0, f64(chrome.height) - status_bar_height, width,
+			status_bar_height), chrome.footer, memory),
 	]
 }
 
