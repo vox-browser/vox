@@ -2007,11 +2007,13 @@ pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value t
 	}
 
 	verified_value := e.document().trusted_types_compliant_attribute_value(&e, actual_name, none, value)!
-	// Qualified-name lookup can select a namespaced Attr. Preserve that
-	// native identity and its namespace instead of creating a null-namespace
-	// attribute with the same spelling.
-	if attribute := e.get_attribute_node(actual_name) {
-		e.set_attribute_value_ns(attribute.local_name(), verified_value, attribute.prefix(), attribute.namespace_uri())
+	// setAttribute matches the first qualified name, including a namespaced
+	// attribute. The internal set-attribute-value operation matches namespace
+	// and local name instead and would update a different duplicate here.
+	if existing := e.get_attribute_node(actual_name) {
+		old_value := existing.value_
+		unsafe { existing.value_ = verified_value }
+		existing.handle_attribute_changes(&e, old_value, verified_value)
 	} else {
 		e.set_attribute_value(actual_name, verified_value)
 	}
