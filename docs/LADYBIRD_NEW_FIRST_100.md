@@ -197,6 +197,24 @@ AES generation expectation to the upstream KeyUsage enum order. The successful
 archive identity are retained in the
 [public-key manifest](performance/ladybird-first100-public-key-20261108.json).
 
+## Algorithm support, hybrid KEMs and ML-KEM JWKs
+
+The six affected modern-crypto upstream files now pass **972/972 subtests**
+through the native JavaScriptCore shell harness, compared with 297 passing
+names in the original baseline. This supersedes the earlier 37/43 public-key
+result: `getPublicKey` now passes 43/43. Both support-query files pass 347/347,
+the encapsulation files pass 258/258, and ML-KEM import/export passes 324/324.
+Every case and subtest-name multiset matches the original cohort.
+
+The source adds parameter-aware `SubtleCrypto.supports()`, three hybrid KEMs
+with upstream fixed-vector verification, and ML-KEM public/private JWK import
+and export with metadata and public/private consistency validation. The
+[modern-crypto manifest](performance/ladybird-first100-modern-crypto-20261108.json)
+records commits, focused checks, unchanged upstream inputs, guard receipts,
+development failures and the local raw archive. These remain source checks;
+the older published browser cannot validate these changes, and the entire
+100-case batch is still incomplete.
+
 Reproduce the exact selection from the canonical Vox checkout:
 
 ```sh
