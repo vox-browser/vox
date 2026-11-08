@@ -17,7 +17,7 @@ inline void vox_retire_other_graphite_context(char const* library, char const* s
         auto retire = reinterpret_cast<int (*)()>(dlsym(handle, symbol));
         int retired = retire ? retire() : 0;
         if (retired && std::getenv("VOX_GRAPHICS_CONTEXT_DIAGNOSTICS"))
-            std::fprintf(stderr, "VOX_GRAPHICS_CONTEXT_HANDOFF retired=%s\n", symbol);
+            std::fprintf(stderr, "VOX_GRAPHICS_CONTEXT_HANDOFF released_idle=%s\n", symbol);
         dlclose(handle);
     }
 }

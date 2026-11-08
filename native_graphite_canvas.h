@@ -122,6 +122,56 @@ void canvas_local_matrix(float const* device, float* local, CanvasTile const& ti
     matrix.postTranslate(-tile.x, -tile.y);
     matrix.get9(local);
 }
+
+// Scrolling exposes clipped images and text masks that select different GPU
+// render steps from the initial full-viewport paint. Compile those bounded
+// combinations before publishing the first canvas, rather than first using
+// them in an interactive scroll. No warm-up pixels enter a document surface.
+void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
+{
+    static bool prepared = false;
+    if (prepared || std::getenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP")) return;
+    prepared = true;
+    skgpu::graphite::RecorderOptions options;
+    options.fGpuBudgetInBytes = 1024 * 1024;
+    auto recorder = gpu->makeRecorder(options);
+    if (!recorder) return;
+    std::vector<sk_sp<SkSurface>> targets;
+    uint32_t pixels[64];
+    std::fill(std::begin(pixels), std::end(pixels), 0x80808080);
+    for (bool mask : {false, true}) {
+        auto info = mask ? SkImageInfo::MakeA8(8, 8) : canvas_info(8, 8);
+        auto source = SkImages::RasterFromPixmapCopy(SkPixmap(info, pixels, mask ? 8 : 32));
+        auto image = source ? SkImages::TextureFromImage(recorder.get(), source, {}) : nullptr;
+        if (!image) return;
+        for (bool subset : {false, true}) for (int clip = 0; clip < 4; ++clip)
+            for (bool covering : {false, true}) for (bool rotated : {false, true}) {
+                auto target = vox_shared_surface(recorder.get(), canvas_info(32, 32));
+                if (!target) return;
+                auto* canvas = target->getCanvas();
+                canvas->clear(SK_ColorTRANSPARENT);
+                auto box = SkRect::MakeLTRB(2.25f, 2.25f, 29.25f, 29.25f);
+                if (clip == 1) canvas->clipRect(box, SkClipOp::kIntersect, true);
+                if (clip >= 2) canvas->clipRRect(SkRRect::MakeRectXY(box, 4, 4), SkClipOp::kIntersect, true);
+                if (clip == 3) canvas->clipRRect(SkRRect::MakeRectXY(SkRect::MakeXYWH(0, 0, 25, 20), 7, 7), SkClipOp::kIntersect, true);
+                // A transformed quad cannot fold its rounded clip into the
+                // draw geometry; warm that analytic-clip pipeline as well.
+                if (rotated) canvas->rotate(17, 16, 16);
+                SkPaint paint;
+                paint.setColor4f({.25f, .5f, .75f, 1}, SkColorSpace::MakeSRGB().get());
+                canvas->drawImageRect(image, subset ? SkRect::MakeXYWH(1, 1, 6, 6) : SkRect::MakeWH(8, 8),
+                    covering ? SkRect::MakeLTRB(-16, -16, 48, 48) : SkRect::MakeXYWH(1, 1, 12, 12),
+                    SkSamplingOptions(SkFilterMode::kNearest), &paint, SkCanvas::kStrict_SrcRectConstraint);
+                targets.push_back(std::move(target));
+            }
+    }
+    auto recording = recorder->snap();
+    if (!recording) return;
+    skgpu::graphite::InsertRecordingInfo insertion;
+    insertion.fRecording = recording.get();
+    if (gpu->insertRecording(insertion) == skgpu::graphite::InsertStatus::kSuccess)
+        gpu->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+}
 }
 
 static int canvas_begin_impl(int const* rects, int count, bool native_grid)
@@ -140,6 +190,7 @@ static int canvas_begin_impl(int const* rects, int count, bool native_grid)
     std::lock_guard lock(gpu_mutex);
     auto* gpu = context();
     if (!gpu) return 0;
+    canvas_prepare_scroll_pipelines(gpu);
     canvas_release_tiles();
     if (!canvas_recorder) {
         skgpu::graphite::RecorderOptions options;

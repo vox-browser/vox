@@ -163,9 +163,11 @@ SkSurface* region_target(skgpu::graphite::Context* gpu, SkImageInfo const& info)
 std::unique_ptr<skgpu::graphite::Context> gpu_context;
 VoxFrameMetalQueue* gpu_frame_queue;
 bool gpu_context_attempted = false;
+bool gpu_context_idle = false;
 std::chrono::steady_clock::time_point gpu_context_last_use;
 skgpu::graphite::Context* context()
 {
+    gpu_context_idle = false;
     gpu_context_last_use = std::chrono::steady_clock::now();
     if (!gpu_context_attempted) {
         // Only retire the peer backend once it has gone idle. A frame that
@@ -285,8 +287,22 @@ int vox_graphite_release_idle_graphics_memory()
 {
     if (!pthread_main_np()) return 0;
     std::lock_guard lock(gpu_mutex);
-    if (!gpu_context) return 0;
+    if (!gpu_context || gpu_context_idle) return 0;
     if (std::chrono::steady_clock::now() - gpu_context_last_use < std::chrono::seconds(2)) return -1;
+    if (!std::getenv("VOX_DISABLE_IDLE_PIPELINE_RETENTION")) {
+        // Release the large recorder/texture allocations while retaining the
+        // bounded shader dictionary and compiled pipeline cache. Destroying
+        // them after every short pause forces synchronous Metal compilation
+        // when the next wheel exposes a different clip/render-step variant.
+        image_upload_cache.clear();
+        cached_pixel_uploads.clear();
+        gpu_context->submit(skgpu::graphite::SubmitInfo(skgpu::graphite::SyncToCpu::kYes));
+        gpu_context->checkAsyncWorkCompletion();
+        clear_region_targets();
+        gpu_context->freeGpuResources();
+        gpu_context_idle = true;
+        return 1;
+    }
     return retire_graphics_context_locked();
 }
 

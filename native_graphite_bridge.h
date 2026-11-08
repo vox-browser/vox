@@ -123,8 +123,9 @@ int vox_graphite_supports_yuv422(void);
 // or destroy live paint resources; the next draw may rebuild temporary caches.
 void vox_graphite_release_unused_graphics_memory(void);
 void vox_graphite_picture_release_unused_graphics_memory(void);
-// Idle polling: -1 means a live context is still in use/recently used, 1
-// means it was released, and 0 means there is no context to retire.
+// Idle polling: -1 means recently used, 1 means idle allocations were released,
+// and 0 means no cleanup is pending. Metal retains its bounded pipeline cache;
+// explicit retirement and release_unused_graphics_memory still destroy it.
 int vox_graphite_release_idle_graphics_memory(void);
 void vox_graphite_finish_frame(void);
 int vox_graphite_picture_release_idle_graphics_memory(void);
