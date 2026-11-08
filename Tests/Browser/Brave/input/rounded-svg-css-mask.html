@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Rounded SVG CSS mask clips</title>
+<style>
+html,body{margin:0;background:#fcfdff}
+.outer{position:absolute;overflow:hidden;border-radius:100%}
+.inner{width:100%;height:100%;border-radius:100%;background:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20156%20156%22%3E%3Cpath%20fill%3D%22%23f7b259%22%20d%3D%22M0%200h156v156H0z%22%2F%3E%3C%2Fsvg%3E") center/cover no-repeat #d3d3d3}
+.legacy{-webkit-mask-image:-webkit-radial-gradient(circle,#fff 100%,#000 100%)}
+.standard{mask-image:radial-gradient(circle,#fff 100%,#000 100%)}
+.vector{mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20156%20156%22%3E%3Cpath%20fill%3D%22white%22%20d%3D%22M0%200h156v156H0z%22%2F%3E%3C%2Fsvg%3E");mask-size:100%}
+</style>
+<div id="plain-156" class="outer" style="left:24px;top:24px;width:156px;height:156px"><div class="inner"></div></div>
+<div id="legacy-156" class="outer legacy" style="left:188px;top:24px;width:156px;height:156px"><div class="inner"></div></div>
+<div id="standard-156" class="outer standard" style="left:352px;top:24px;width:156px;height:156px"><div class="inner"></div></div>
+<div id="vector-156" class="outer vector" style="left:516px;top:24px;width:156px;height:156px"><div class="inner"></div></div>
+<div id="plain-20" class="outer" style="left:24px;top:224px;width:20px;height:20px"><div class="inner"></div></div>
+<div id="legacy-20" class="outer legacy" style="left:188px;top:224px;width:20px;height:20px"><div class="inner"></div></div>
+<div id="standard-20" class="outer standard" style="left:352px;top:224px;width:20px;height:20px"><div class="inner"></div></div>
+<div id="vector-20" class="outer vector" style="left:516px;top:224px;width:20px;height:20px"><div class="inner"></div></div>
