@@ -1,10 +1,11 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **Not met yet.** Acceptance now
-requires seven complete alternating pairs and
-`10 * max(Vox) <= 8 * min(Brave)`. Regression tests remain deferred until this
-new instruction gate passes, as requested.
+**20% fewer observed instructions** than Brave. **C26 passes against the updated
+installed Brave (Chrome 157). Deferred regression checks pass after a serializer
+correction; that corrected native build still needs a new acceptance cohort.**
+Acceptance requires seven complete alternating pairs and
+`10 * max(Vox) <= 8 * min(Brave)`. Tests started only after c26 passed, as requested.
 
 The earlier 10% goal was **met for the pinned c12 frozen-page workload.** Seven
 complete alternating pairs give a conservative maximum-Vox/minimum-Brave ratio
@@ -21,7 +22,8 @@ workload cohort and supplies no fixture-change optimization credit. The first
 new cohort attempt is invalid because Brave's teardown watchdog exited nonzero;
 its counters and failure remain recorded. Separate cleanup diagnostics exit
 normally after the already-frozen capture endpoint. Parser and layout probes
-are diagnostic only; no 20% acceptance or new regression-test pass is claimed.
+are diagnostic only; the later native acceptance and regression results are
+reported separately below.
 
 The first complete 20% cohort, c13, still fails: maximum Vox **9,147,785,937**,
 minimum Brave **11,072,030,805**, ratio **0.82620669** (17.3793% fewer).
@@ -135,6 +137,41 @@ exits 0, while benchmark/guard exit 1 records the failed gate. C22 remains the
 best conservative result. [Full c24 evidence](performance/github-vlang-instructions-20261108-20pct-c24.json)
 retains the first-launch outlier and all other attempts. Regression tests remain
 deferred.
+
+The complete c26 cohort passes against the updated installed Brave:
+maximum Vox **8,965,426,938**, minimum Brave **11,318,614,571**, ratio
+**0.79209579** (**20.7904% fewer**). The exact integer gate is
+`89,654,269,380 <= 90,548,916,568`. All seven alternating pairs, including the
+first launch, retain exact per-engine pixels, complete content audits and
+normal exits; benchmark and guard exit 0. Vox/Brave medians are
+8,875,520,338 / 11,595,809,689. Executable
+`3562d544a39e4a36ab32132c78d586dd105171bd4883919ae19ef6b2294a37d4`
+uses literal V `-prod`, one C unit, O3/1500, LTO disabled and frame pointers
+omitted; its minimum macOS target is 27.2 (current packaging minimum 26.0).
+
+Brave updated between c24 and c26 from Chrome 156.0.8078.48 to
+Chrome 157.0.8103.39, with a different executable hash. C26 pins the updated
+browser throughout. Vox's median is essentially unchanged from c24, so this
+result does **not** isolate a gain from compiler tuning or establish 20% against
+the earlier Chrome 156 minimum. OS filesystem/shader caches remain retained,
+with fresh private profiles/page caches; no preparatory native13 browser run
+preceded its acceptance cohort. [Full c26 evidence](performance/github-vlang-instructions-20261108-20pct-c26.json)
+retains exact counts, both browser-version identities, input/source hashes,
+commands, host contention and exits.
+
+The deferred checks then caught a real scalar color-serialization mismatch:
+the shortcut emitted legacy `rgba()` syntax rather than ordinary `Color.serialize()`
+modern `rgb()` syntax and alpha precision. Commit `8446d7cbb` fixes it and adds
+an explicit contract case. The 236-case focused CSS, 214-case broader CSS,
+26-case additional equality/invalidation and 84-case layout batches pass in
+both Boehm and preallocation/no-GC modes with normal assertions. These are
+batch invocations with overlapping cases, not a sum of distinct tests. The
+50 build-tool checks pass (two existing skips), as do 66 benchmark-driver checks.
+The FastC filter helper compiles and passes its JavaScript/filtering/idle-release
+check after the module-directory build fix. Initial failures and fixture fixes
+remain in the [20% verification receipt](performance/github-vlang-instruction-validation-20261108-20pct.json).
+C26 predates the serializer correction; final native startup/visual checks and
+a new seven-pair cohort remain required before completing the goal.
 
 ## Workload and scope
 
