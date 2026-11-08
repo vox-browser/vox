@@ -49,7 +49,8 @@ fn (mut app BrowserApp) advance_document_animations(window_width int, content_vi
 	// task runs through the event loop, independently of native paint preparation.
 	$if macos {
 		if css.document_has_running_css_animations(document) {
-			C.native_wake_browser_after(16)
+			delay := app.site_animation_wakeup_delay_for_frame()
+			if delay >= 0 { C.native_wake_browser_after(delay) }
 		}
 	}
 }
