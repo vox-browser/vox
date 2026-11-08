@@ -592,7 +592,7 @@ integer arguments as one `i32` array.
 | `skia.draw_path` and `draw_glyph_run` color filters | Canvas 2D `filter` lists of grayscale, sepia, saturate, hue-rotate, invert, opacity, brightness and contrast on fills, strokes and `fillText()` | `cpuraster.ColorFilter`: `SkImageFilters::ColorFilter()`'s composed `SkMatrixColorFilter`s, moved into the paint by `SkCanvasPriv::ImageToColorFilter()` and folded by `SkBlitter::Choose()`'s `RemoveColorFilter()`: `filterColor4f()`'s one-pixel highp pipeline for a solid color (then the legacy blitter when it fits in bytes, else the constant pipeline, highp through `unbounded_uniform_color` when a channel exceeds alpha), `SkColorFilterShader` stages after gradients and patterns, `CheckFastPath()` and `nothingToDraw()` seeing the filter, and the filtered luminance color for glyph mask gamma; 200,000 random filtered draws over two seeds exact in both default and `-prod -gc none` builds. Filters that change transparent black decline (they need an image filter layer) |
 | `skia.draw_path` and `draw_glyph_run` blur layers | Canvas 2D `filter: blur()` on fills, strokes and `fillText()` | `cpuraster.draw_blur_layer`: `AutoLayerForImageFilter` and `internalSaveLayer()` for a scale-translate CTM (layer bounds from the clip bounds outset by the blur kernel and the paint's fast bounds rounded out with skif's epsilon, the transparent padding pixel, `SkM44::postTranslate()` for the layer matrix), `internalDrawDeviceWithFilter()` with `insetForSaveLayer()` and the layer-space sigma, SkBlurEngine's `Raster8888BlurAlgorithm` (`eval_blur_passes()`, the float Gaussian pass below sigma 2, `ThreeBoxApproxPass` with `ScaledDividerU32` up to 135) inside `Builder::blur()`'s bounds, and `FilterResult::draw()`'s sprite or image-shader draw-back with the composite operation; 60,000 random `SkImages::MakeWithFilter()` blurs and 60,000 random blurred canvas draws over two seeds exact in both default and `-prod -gc none` builds. Rotations, blenders that change transparent black, sigmas over 135, blurs mixed with other filters and fonts without typeface bounds decline |
 | Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: scaled drop shadows, mixed and rotated filter layers, SVG filter graphs, and image filters on `drawImage()` |
-| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Not started: AA clips under transforms, PathOps difference, blur mask filters, blur image filter layers, glyph masks |
+| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Outer shadows up to 8191 pixels per dimension now use V: normalized elliptical rrects, transformed AA clips and content-hole subtraction, mask blur and rounded-rectangle nine patches, rectangle scan coverage and straight-alpha readback. Inner and text shadows and larger tiled surfaces remain native |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
@@ -658,7 +658,24 @@ Linux dependency audit: `build-linux-browser.sh` still requires `skia.pc`;
 `cpuraster/glyph_scaler_linux.c.v` still declines glyphs. The macOS native text,
 Graphite and Dawn dependencies listed above also remain. No Skia-free Linux
 build has been produced. The local Linux VM failed to bring up SSH on both
-startup attempts, so no Linux compilation took place during this slice.
+startup attempts, so no Linux compilation took place during that slice.
+
+### Portable outer shadows (2026-11-08)
+
+`404906f5b` ports normalized rounded rectangles and AA clip subtraction;
+`57422172f` routes untiled portable outer shadows through `cpuraster`.
+The normalized geometry and transformed clips match 20,000 randomized pairs
+per build, and outer shadows match all 30,000 cases per build (4,938 painted),
+in both default and `-prod -gc none` modes. The corpus includes elliptical
+corners, rotated/skewed clips, content holes, and zero, negative, tiny and
+positive blur values. Focused V and native shadow tests pass; the FMA audit
+reports zero contracted operations. The tests preserved local fast-bounds
+rejection, hard clipping of nearly integral holes and the separate 24.8
+rectangle coverage algorithm. See the [verification receipt](gg-migration/portable-outer-shadow-20261108.json).
+
+Inner/text shadows, tiled surfaces and the other dependencies above remain
+open. A new Linux VM now mounts the canonical checkout and has its system
+dependencies and compiler installed; Skia-free browser linking is still pending.
 
 ## Hacker News performance (2026-11-06)
 

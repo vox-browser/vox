@@ -1,0 +1,198 @@
+{
+  "date": "2026-11-08",
+  "feature": "Rounded rectangles, AA clip subtraction and portable outer shadows",
+  "commits": [
+    "404906f5b",
+    "57422172f"
+  ],
+  "differential": {
+    "seed": 20261106,
+    "rounded_rects_and_clips_per_mode": 20000,
+    "outer_shadows_per_mode": 30000,
+    "painted_outer_shadows_per_mode": 4938,
+    "modes": [
+      "default",
+      "-prod -gc none"
+    ],
+    "byte_exact": true,
+    "declined": 0
+  },
+  "checks": {
+    "rrect8": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 593707008,
+      "elapsed_seconds": 7.894549833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "rrect-prod": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108-prod",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 795475968,
+      "elapsed_seconds": 21.544576959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "unit-final": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/rounded_rect_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 322109440,
+      "elapsed_seconds": 4.623910708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "unit-prod": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/rounded_rect_test.v",
+        "cpuraster/aaclip_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 382402560,
+      "elapsed_seconds": 18.393272875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "outer8": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "30000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 586465280,
+      "elapsed_seconds": 22.009378708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "outer-prod2": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108-prod",
+        "30000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 908558336,
+      "elapsed_seconds": 57.013414417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "outer-unit3": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/box_shadow_test.v",
+        "skia/shadow_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 856719360,
+      "elapsed_seconds": 13.740921333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "fma3": {
+      "command": [
+        "python3",
+        "tools/gg_migration/fma_audit.py",
+        "--prefix",
+        "cpuraster__",
+        "--contracted-only",
+        "/tmp/vox-gg-portable-20261108/raster.c",
+        "/tmp/vox-gg-portable-20261108/cc.txt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 394182656,
+      "elapsed_seconds": 36.671566833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "source_sha256": {
+    "404906f5b:cpuraster/aaclip.v": "017d1f1ac2f9defc030e4a95ec28e5b90a7130e39ea8ec1fca4221d113b620bc",
+    "404906f5b:cpuraster/path.v": "9cde4f1935ef7dd2fd515c0513de6a3a48aee76ca86e271d4a0eaf8eb877e1cb",
+    "404906f5b:cpuraster/rounded_rect.v": "c2b9094033da7d167601073c4e1845b43e6664cbed8c5ed43e27a028d6fc2863",
+    "404906f5b:cpuraster/rounded_rect_test.v": "9fe067a8a2cc85d4aa48736c9405fdb61f4d343d5c22336f1751b11f69b80bd8",
+    "404906f5b:tools/gg_migration/cpu_raster_check.v": "b62ff535def66a10f49595e685e994f9fdf97beba512ffc0443192c7a221003c",
+    "404906f5b:tools/gg_migration/skia_cpu_oracle.cpp": "e4e806bca23efd807198ae19df2dcc569f93da7f7c74c60936648d9477473c5d",
+    "57422172f:cpuraster/aaclip.v": "712ca60d8b77264e207e7b2f08cbc73f8a48cc7b9e95e2554b884916bc885fa2",
+    "57422172f:cpuraster/box_shadow.v": "7edc0653bbd298911c3023843048fd22ea8037dd5b6f7f2dd1ddbe53f27fe526",
+    "57422172f:cpuraster/box_shadow_test.v": "baee4a1a12861d3da7b17d468fe36bed5cd240e6d869ec5e1c522895c012b35b",
+    "57422172f:cpuraster/scan_rect.v": "de961a3596ef31d356a9036f8f696e70b26a8bcb25a35e58fe822b7eccdb3a61",
+    "57422172f:skia/shadow.c.v": "b14911fad6a0ac2b793733b84a2738ba88ca4975aaf6fe4a67889c900b238151",
+    "57422172f:tools/gg_migration/cpu_raster_check.v": "b723e0d8a7704fbbc9f55ce9fbde665e83d16802710a0f0ac767b5515fe718a3",
+    "57422172f:tools/gg_migration/skia_cpu_oracle.cpp": "5fbf3e42902d6b31284ce4f087e9ae3a8798580641aa007f7aab4594d6630f10"
+  },
+  "corrected_candidates": [
+    "Preserve known rounded-rectangle convexity for scale/translate and recompute it after rotations/skews.",
+    "Route square clipRRect through clipRect contour order.",
+    "Quick reject local shadow fast bounds before applying transformed mask blur.",
+    "Snap nearly integral rectangular content holes while the clip is hard.",
+    "Use the 24.8 rectangle scan converter for square, unblurred drawRRect.",
+    "Initialize rectangle scanline scratch storage; a bounds check caught the first candidate.",
+    "Correct the regression fixture to the oracle value 124; the first assertion mistakenly used candidate value 128.",
+    "The first native shadow unit invocation omitted -enable-globals; the final invocation includes it."
+  ],
+  "limitations": [
+    "Only untiled outer shadows (dimensions up to 8191) are routed through V; native fallback remains beyond that.",
+    "Inner/text shadows, remaining Canvas2D cases, native macOS text, Graphite and Dawn still require migration.",
+    "No production-browser or Skia-free Linux executable claim."
+  ]
+}
