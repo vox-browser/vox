@@ -88,3 +88,15 @@ immediate native-style reclamation under `-gc none`.
 See [LibRegex status](../../libregex/PORT_STATUS.md),
 [LibJS status](../../libjs/PORT_STATUS.md) and
 [JPEG XL status](../../jpegxl/PORT_STATUS.md) for remaining implementation limits.
+
+## Continuation on 2026-11-09
+
+JPEG XL now also has V ANS decoding, combined histogram/symbol readers, context
+maps, LZ77, bounded checkpoints and complete file/metadata/color/transform
+headers. The nine-file V suite passes in both GC modes through the corpus
+checker with unavailable Rust compiler paths. The package's frozen comparisons
+now cover 149,526 source cases, counting individual ANS alias transitions.
+[The entropy/header report](JPEGXL_V_ENTROPY_HEADERS.md) records the new evidence.
+Frame/pixel decoding and production integration remain, so the Rust JPEG XL
+backend, build hooks and native test tool are retained. The LibJS results above
+are historical and were not rerun for this independent JPEG XL slice.

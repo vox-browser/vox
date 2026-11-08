@@ -15,8 +15,8 @@ python3 tools/run_memory_bounded.py \
 ```
 
 Available groups are `all`, `encoding`, `replacement` (one focused encoding
-file), `regex`, `yuv`, `gb18030` and `jpegxl` (the V decoder layers completed so far). `--compiler /path/to/v` selects the test
-compiler; `V_BIN` also works. `--dry-run` validates input paths and prints the
+file), `regex`, `yuv`, `gb18030` and `jpegxl` (the V decoder layers completed
+so far). `--compiler /path/to/v` selects the test compiler; `V_BIN` also works. `--dry-run` validates input paths and prints the
 exact argv without executing tests. `--jobs 1..4` controls compilation jobs,
 with one by default. Each test invocation runs under a separate 3 GiB process
 tree guard with V's `-memory-limit 10G`. The checker removes its temporary
@@ -50,6 +50,9 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-At the Huffman checkpoint, the `jpegxl` suite also executed all four completed
-decoder-layer test files with `--gc none` and unavailable Rust compiler paths. This checks the V layers,
-not the still-Rust production image decoder.
+The `jpegxl` suite now executes nine test files covering primitives, containers,
+Huffman/ANS, context maps, LZ77, checkpoints and file/metadata/transform headers.
+It passes in default and no-GC modes with unavailable Rust compiler paths.
+[The current verification report](../docs/translation-audit/JPEGXL_V_ENTROPY_HEADERS.md)
+records the source-case coverage and limits. This checks the V layers; the
+production pixel decoder and its native developer test still require Rust.

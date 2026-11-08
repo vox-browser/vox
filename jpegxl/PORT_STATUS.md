@@ -42,8 +42,8 @@ orders, every truncation of a small container, multiple valid part permutations
 and byte-exact extraction of the existing independent RGBA container fixture.
 The extractor rejects duplicate whole codestream boxes explicitly; malformed
 container error/state parity and the source's streaming API are not claimed.
-The complete three-file module suite passes in both GC modes, including a
-no-GC run with unavailable Rust compiler paths.
+Container checks pass in both GC modes, including a no-GC run with unavailable
+Rust compiler paths.
 
 Huffman prefix decoding is now translated, including selected simple trees,
 complex code-length trees, repetitions, varint alphabet sizes, multiple context
@@ -52,9 +52,9 @@ binary tail replaces the source's two-level lookup representation. The 4,096
 frozen source cases compare decoded symbols, errors and consumed bits exactly;
 1,049 succeed (456 single-symbol alphabets, 529 simple trees and 64 complex
 trees). Separate checks decode the source's known byte histogram, exercise
-15-bit codes and reject malformed/incomplete/oversubscribed trees. At the Huffman checkpoint, all four
-module test files passed in both GC modes; the no-GC run also passes through the
-V corpus checker with unavailable Rust compiler paths. Error strings remain
+15-bit codes and reject malformed/incomplete/oversubscribed trees. The tests
+pass in both GC modes through the V corpus checker with unavailable Rust
+compiler paths. Error strings remain
 normalized in the fixtures. This establishes recorded behavior, not decoder
 conformance or performance parity.
 
@@ -124,7 +124,13 @@ with separate focused regressions.
 Remaining work includes frame headers and tables of contents, modular
 prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
-remains a broader parity task. The V package is not connected to the production image path until
+remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
+`tools/check_translation_corpora.v --suite jpegxl`, with unavailable Rust compiler
+paths. The complete package now checks 149,526 source cases, counting individual
+ANS alias transitions. [The entropy/header verification report](../docs/translation-audit/JPEGXL_V_ENTROPY_HEADERS.md)
+records the commands, limits and source-case definitions.
+
+The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
 and rejection rules. The Rust decoder and its build/test dependencies must then
 be removed together.
