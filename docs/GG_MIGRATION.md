@@ -932,3 +932,24 @@ zero contracted operations. See the
 [composite-filter receipt](gg-migration/filter-composites-20261108.json).
 Mixed filters, rotated layers, tiled draws and the native browser bridges
 remain open.
+
+
+### Filtered source images and bitmap-space policy (2026-11-08)
+
+`289bb001b` adds translated, pixel-aligned color-filtered image subsets and
+a CPU implementation of the bitmap-space blur/drop-shadow policy. Native
+image filters preserve their source transform and sampling through
+`FilterResult::MakeFromImage`; rasterizing into a layer first is not generally
+equivalent. General source-image resampling therefore remains a fallback.
+The browser preserves the existing macOS Chromium/Dawn image dispatch.
+
+`a7401d378` fixes sprite eligibility when an RGBA source enters a Linux BGRA
+filter layer. Native regression fixtures retain the differing platform rounding.
+Of 20,000 attempts, 6,123 supported comparisons match on macOS and Linux at
+seed 20261106; 6,223 match in production mode at seed 20261108. These counts
+include no-ops and both CPU policies. Image/filter/bitmap-glyph focused tests
+and HTML canvas integration pass. The FMA audit reports zero contracted
+operations. See the [filtered-image receipt](gg-migration/filtered-images-20261108.json)
+for source identities, native fixture inputs, exact declines and failures.
+This is CPU verification; Skia-free browser compilation and GPU image parity
+remain open.
