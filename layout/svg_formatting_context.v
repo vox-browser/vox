@@ -484,25 +484,25 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	if element.local_name() == 'text' {
 		context.current_text_position = svg.Point{}
 	}
-	if x := first_svg_text_position(element.get_attribute_value('x'), context.viewport_size.width()) {
+	if x := first_svg_text_position(element.get_attribute_value('x'), context.viewport_size.width(), graphics_box.computed_values().length_resolution_context()) {
 		context.current_text_position = svg.Point{
 			x: x
 			y: context.current_text_position.y
 		}
 	}
-	if y := first_svg_text_position(element.get_attribute_value('y'), context.viewport_size.height()) {
+	if y := first_svg_text_position(element.get_attribute_value('y'), context.viewport_size.height(), graphics_box.computed_values().length_resolution_context()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x
 			y: y
 		}
 	}
-	if dx := first_svg_text_position(element.get_attribute_value('dx'), context.viewport_size.width()) {
+	if dx := first_svg_text_position(element.get_attribute_value('dx'), context.viewport_size.width(), graphics_box.computed_values().length_resolution_context()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x + dx
 			y: context.current_text_position.y
 		}
 	}
-	if dy := first_svg_text_position(element.get_attribute_value('dy'), context.viewport_size.height()) {
+	if dy := first_svg_text_position(element.get_attribute_value('dy'), context.viewport_size.height(), graphics_box.computed_values().length_resolution_context()) {
 		context.current_text_position = svg.Point{
 			x: context.current_text_position.x
 			y: context.current_text_position.y + dy
@@ -511,7 +511,7 @@ fn (mut context SVGFormattingContext) layout_text_element(graphics_box &Node, el
 	text := svg_direct_text_contents(element)
 	computed := graphics_box.computed_values()
 	shaped := svg_shape_text(graphics_box, text)
-	adjustment := svg_text_length_adjustment(element, shaped, context.viewport_size.width())
+	adjustment := svg_text_length_adjustment(element, shaped, context.viewport_size.width(), computed.length_resolution_context())
 	mut x := context.current_text_position.x
 	if svg_text_box_starts_text_chunk(graphics_box) {
 		chunk := measure_svg_text_chunk(graphics_box, context.viewport_size.width())
@@ -601,7 +601,7 @@ fn (adjustment SVGTextLengthAdjustment) extent(width f64, characters int) f64 {
 	return width * adjustment.glyph_scale + adjustment.character_delta * f64(characters - 1)
 }
 
-fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewport_width CSSPixels) SVGTextLengthAdjustment {
+fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewport_width CSSPixels, resolution css.LengthResolutionContext) SVGTextLengthAdjustment {
 	attribute := element.get_attribute_value('textLength')
 	if attribute.len == 0 || shaped.runs.len == 0 {
 		return SVGTextLengthAdjustment{}
@@ -613,7 +613,7 @@ fn svg_text_length_adjustment(element &dom.Element, shaped SVGShapedText, viewpo
 			return SVGTextLengthAdjustment{}
 		}
 	}
-	text_length := first_svg_text_position(attribute, viewport_width) or {
+	text_length := first_svg_text_position(attribute, viewport_width, resolution) or {
 		return SVGTextLengthAdjustment{}
 	}
 	if text_length < 0 {
@@ -669,8 +669,8 @@ fn svg_text_box_starts_text_chunk(text_box &Node) bool {
 	if element.local_name() == 'text' {
 		return true
 	}
-	return first_svg_text_position(element.get_attribute_value('x'), CSSPixels.new(1)) != none
-		|| first_svg_text_position(element.get_attribute_value('y'), CSSPixels.new(1)) != none
+	return first_svg_text_position(element.get_attribute_value('x'), CSSPixels.new(1), text_box.computed_values().length_resolution_context()) != none
+		|| first_svg_text_position(element.get_attribute_value('y'), CSSPixels.new(1), text_box.computed_values().length_resolution_context()) != none
 }
 
 fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node, viewport_width CSSPixels,
@@ -694,7 +694,7 @@ fn measure_svg_text_chunk_subtree(node &Node, chunk_start &Node, viewport_width 
 						measurement.found_rendered_text = true
 					}
 					shaped := svg_shape_text(node, text)
-					adjustment := svg_text_length_adjustment(element, shaped, viewport_width)
+					adjustment := svg_text_length_adjustment(element, shaped, viewport_width, node.computed_values().length_resolution_context())
 					measurement.advance += measurement.pending_gap
 						+ adjustment.extent(shaped.width, svg_shaped_character_count(shaped))
 					measurement.pending_gap = adjustment.advance(shaped.width)
@@ -1026,20 +1026,31 @@ fn svg_adjusted_glyph_runs_outline_path(runs []&platform.GlyphRun, x f64, baseli
 	}
 }
 
-fn first_svg_text_position(text string, reference CSSPixels) ?f64 {
+fn first_svg_text_position(text string, reference CSSPixels, resolution css.LengthResolutionContext) ?f64 {
 	first := text.replace(',', ' ').fields()
 	if first.len == 0 {
 		return none
 	}
-	value := svg.parse_number_percentage(first[0]) or { return none }
-	// The Rust/C++ bridge carries SVG text positioning through f32 values.
-	// Quantize both the parsed scalar and its viewport basis at that boundary.
-	quantized_value := svg.NumberPercentage{
-		value: f64(f32(value.value))
-		is_percentage: value.is_percentage
+	value := svg.parse_svg_length_scalar(first[0]) or { return none }
+	// SVG text coordinates use float user-space values at the Rust/C++
+	// boundary. Resolve lengths in the element's own font context before
+	// applying the SVG transform, just like stroke and geometry lengths.
+	scalar := f64(f32(value.value))
+	resolved := match value.kind {
+		.number { scalar }
+		.percentage { scalar * f64(f32(reference.to_double())) / 100 }
+		.length {
+			unit_name := match value.unit {
+				.ems { 'em' }
+				.exs { 'ex' }
+				.inches { 'in' }
+				else { value.unit.str() }
+			}
+			unit := css.string_to_length_unit(unit_name) or { return none }
+			css.Length.new(scalar, unit).to_px_without_rounding(resolution)
+		}
 	}
-	resolved := f64(f32(quantized_value.resolve_relative_to(f64(f32(reference.to_double())))))
-	return CSSPixels.nearest_value_for(resolved).to_double()
+	return CSSPixels.nearest_value_for(f64(f32(resolved))).to_double()
 }
 
 fn svg_direct_text_contents(element &dom.Element) string {
