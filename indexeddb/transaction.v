@@ -144,21 +144,29 @@ pub fn (mut transaction IDBTransaction) abort(reason string) ! {
 	transaction.aborted_ = true
 	transaction.cleanup_event_loop_ = unsafe { nil }
 	transaction.state = .aborted
-	transaction.events << 'abort'
-	if callback := transaction.onabort_ {
-		callback()
-	}
 	for mut request in transaction.request_list_.requests() {
 		if request.ready_state == .pending {
 			request.aborted = true
-			request.fail('AbortError: transaction aborted')
+			request.processed = true
+			queue_a_database_task_for_global_scope(request.global_scope, fn [mut request] () {
+				request.result_kind = .undefined
+				request.fail('AbortError: transaction aborted')
+			})
 		}
 	}
-	transaction.finish_connection_if_needed()
-	if callback := transaction.aborted_callback_ {
-		transaction.aborted_callback_ = none
-		callback()
-	}
+	transaction.request_list_.clear_on_all_processed()
+	transaction_pointer := voidptr(&transaction)
+	queue_a_database_task_for_global_scope(transaction.relevant_global_scope(), fn [transaction_pointer] () {
+		mut transaction := unsafe { &IDBTransaction(transaction_pointer) }
+		if transaction.mode == .versionchange { transaction.database.data.upgrade_transaction = none }
+		transaction.events << 'abort'
+		if callback := transaction.onabort_ { callback() }
+		transaction.finish_connection_if_needed()
+		if callback := transaction.aborted_callback_ {
+			transaction.aborted_callback_ = none
+			callback()
+		}
+	})
 }
 
 fn (mut transaction IDBTransaction) finish_connection_if_needed() {

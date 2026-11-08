@@ -217,9 +217,9 @@ pub fn (mut request IDBOpenDBRequest) abort_upgrade(reason string) ! {
 		DatabaseData.delete_for_key_and_name(request.factory.storage_key, request.database_name)
 	}
 	request.request.transaction_ = none
-	queue_a_database_task_for_global_scope(request.request.global_scope, fn [request_ptr, reason] () {
+	queue_a_database_task_for_global_scope(request.request.global_scope, fn [request_ptr] () {
 		mut completed := unsafe { &IDBOpenDBRequest(request_ptr) }
-		completed.request.fail(if reason == '' { 'AbortError: upgrade aborted' } else { reason })
+		completed.request.fail('AbortError: upgrade aborted')
 		completed.complete_connection_request()
 	})
 }

@@ -123,7 +123,7 @@ fn test_async_upgrade_failure_rolls_back_and_finishes_the_open_request() {
 	run_database_tasks()
 	assert upgrade.state == .aborted
 	assert opening.request.ready_state == .done
-	assert opening.request.error_message.starts_with('ConstraintError:')
+	assert opening.request.error_message.starts_with('AbortError:')
 	assert opening.request.events == ['upgradeneeded', 'error']
 	assert opening.request.transaction_ == none
 	assert connection.state == .closed
