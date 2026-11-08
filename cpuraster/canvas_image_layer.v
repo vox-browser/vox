@@ -28,6 +28,7 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 		sample_source = [src.left, src.top, src.right - src.left, src.bottom - src.top]!
 		sample_destination = [dst.left, dst.top, dst.right - dst.left, dst.bottom - dst.top]!
 	}
+	geometry := CanvasImageFilterGeometry{source: sample_source, destination: sample_destination}
 	paint_alpha := f32(u8(global_alpha * f32(255))) * inv_255
 	if !sample_source[..].all(int_cast_preserves(it)) {
 		// Fractional subsets are first drawn into an AA, premultiplied sRGB
@@ -37,9 +38,9 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 		return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 			transform, clips, dst, CanvasFilterStep{...prepared, source_image: true, source_padding: true,
 				source_color_info: FilterImageInfo{alpha: paint_alpha}}, mode,
-			fn [image, sample_source, sample_destination, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
+			fn [image, geometry, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
 				return draw_canvas_image_sampled_aa(mut layer, w, h, w * 4, 2, t, image,
-					sample_source, sample_destination, smoothing, 1, .src_over, inner_clips, false, true, true)
+					geometry.source, geometry.destination, smoothing, 1, .src_over, inner_clips, false, true, true)
 			}, none)
 	}
 	if ctm.type_mask() > affine_translate_mask || !int_cast_preserves(ctm.tx) || !int_cast_preserves(ctm.ty)
@@ -53,8 +54,8 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 		transform, clips, dst, CanvasFilterStep{...prepared, source_image: true,
 			source_color_info: FilterImageInfo{premultiplied: image.premultiplied,
 				display_p3: image.display_p3, alpha: paint_alpha}}, mode,
-		fn [raw, sample_source, sample_destination, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
+		fn [raw, geometry, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
 			return draw_canvas_image_sampled(mut layer, w, h, w * 4, 2, t, raw,
-				sample_source, sample_destination, smoothing, 1, .src_over, inner_clips, false, true)
+				geometry.source, geometry.destination, smoothing, 1, .src_over, inner_clips, false, true)
 		}, none)
 }
