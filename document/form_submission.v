@@ -28,6 +28,12 @@ fn submit_browser_form(element &dom.Element, target string, submission html.Form
 	mut model := unsafe { &html.NavigableModel(host.html_model_handle_) }
 	mut manager := browser_child_document_host(document, engine)
 	mut messages := []string{}
+	// A previous submission's cleanup can remove its frame and create another
+	// with the same name in this script task, before the next host poll.
+	// Retire the removed context before resolving the new form target.
+	for mut child in manager.children {
+		if !child.closed && !child.element.as_node().is_connected() { child.close() }
+	}
 	manager.discover(document, mut messages)
 	chosen := model.choose_a_navigable(target, false)!
 	mut destination := chosen.navigable or { return }

@@ -65,7 +65,7 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 	iframe := document.get_element_by_id('frame') or { panic('frame') }
 	mut child := manager.ensure_child(iframe)!
 	observed := &SubmittedFormObservation{}
-	child.set_navigation_fetch_hook(fn [observed] (request &fetch.Request) !&fetch.Response {
+	hook := fn [observed] (request &fetch.Request) !&fetch.Response {
 		mut output := unsafe { &SubmittedFormObservation(observed) }
 		output.methods << request.method
 		output.bodies << request.body.bytes.clone()
@@ -75,7 +75,8 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 		response.header_list.append(http.Header{name: 'Content-Type', value: 'text/plain; charset=UTF-8'})
 		response.set_body_bytes('posted'.bytes())
 		return response
-	})
+	}
+	child.set_navigation_fetch_hook(hook)
 	runtime.evaluate_host('globalThis.uploadDone=false;globalThis.uploadText="";frame.onload=()=>{uploadText=frame.contentDocument.body.textContent;uploadDone=true};form.action="/echo";form.method="post";form.enctype="multipart/form-data";form.submit();')!
 	deadline := time.now().add(5 * time.second)
 	for {
@@ -89,6 +90,25 @@ fn test_form_post_navigates_the_named_child_with_its_entity_body_and_boundary() 
 	assert observed.bodies.len == 1 && observed.bodies[0].bytestr().contains('name="field"\r\n\r\nsent\r\n')
 	boundary := observed.content_types[0].all_after('boundary=')
 	assert boundary != '' && observed.bodies[0].bytestr().starts_with('--'+boundary+'\r\n')
+	assert runtime.evaluate_host('uploadText')! == 'posted'
+
+	// The cleanup and replacement happen within one task, before host.poll().
+	// A name lookup must not select the removed frame's retained context.
+	runtime.evaluate_host('frame.remove();globalThis.replacement=Object.assign(document.createElement("iframe"),{id:"replacement",name:"upload"});document.body.append(replacement);form.querySelector("input").value="again";')!
+	next_frame := document.get_element_by_id('replacement') or { panic('replacement frame') }
+	mut next_child := manager.ensure_child(next_frame)!
+	next_child.set_navigation_fetch_hook(hook)
+	runtime.evaluate_host('uploadDone=false;uploadText="";replacement.onload=()=>{uploadText=replacement.contentDocument.body.textContent;uploadDone=true};form.submit();')!
+	next_deadline := time.now().add(5 * time.second)
+	for {
+		manager.poll(mut messages)
+		html.main_thread_event_loop().process()
+		platform.pump_native_events(0.001)
+		if runtime.evaluate_host('uploadDone')! == 'true' { break }
+		assert time.now() < next_deadline, messages.join('\n')
+	}
+	assert observed.methods == ['POST','POST']
+	assert observed.bodies[1].bytestr().contains('name="field"\r\n\r\nagain\r\n')
 	assert runtime.evaluate_host('uploadText')! == 'posted'
 	model := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(document.get_element_by_id('form') or { panic('form') }) })
 	assert !model.has_submission_hook()
