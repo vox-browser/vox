@@ -1409,3 +1409,24 @@ layer crops. General spatial chains, rotations, SVG graphs, boolean shadows,
 large-sigma rescaling, tiling and native/GPU bridges remain. The browser still
 links Skia; a Skia-free Linux browser compile/link/run is unverified. See the
 [scaled-source shadow receipt](gg-migration/scaled-source-image-shadows-20261108.json).
+
+
+### Nearly integer source-image shadows (2026-11-08)
+
+Real drop shadows now share the blur's raw-subset shortcut at nearly integer
+source mappings. The shadow input can preserve unpremultiplied sRGB storage,
+while the foreground keeps its original mapping and deferred effects until
+merge. Color-converting sources retain the existing resampling path. Seven
+new native fixtures cover both routes, source subsets, requested sampling
+and factored canvas transforms. All 93 native image-filter fixtures pass on
+macOS and Linux.
+
+Of 20,000 attempts, 19,116 supported draws match on each platform; production
+mode matches 19,032 at another seed. A separately factored Linux cohort
+matches 19,075. The new raw-shadow regression fails without the change.
+Focused C/FastC tests, Linux production image tests and HTML integration pass.
+This small forwarding change reuses the preceding slice's broader checks.
+Counts include no-ops and explicit declines. Rounding-induced crops and
+identity/invalid resampled shadow blurs still decline, and the remaining
+filter graphs, native/GPU services and Skia-free browser link/run remain
+unfinished. See the [near-integer shadow receipt](gg-migration/near-integer-image-shadows-20261108.json).
