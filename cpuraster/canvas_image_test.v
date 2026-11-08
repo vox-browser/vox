@@ -246,6 +246,47 @@ fn test_filtered_image_sources_clip_before_transforming() {
 	}
 }
 
+fn test_linear_filtered_image_restores_preserve_rotated_layer_edges() {
+	modes := [BlendMode.src, .src_in, .src_out, .dst_in, .dst_atop, .plus_darker, .plus_lighter]
+	hashes := ['a9973dbbb81b55a3', 'b9ed9372ad2fa689', '4b7094d961364ddc',
+		'c014e794ae2d0531', '820e54abd9a5bdb9', '65bee32ef9751dba', '2f6d605edd08a4c8']
+	for i, mode in modes {
+		assert image_filter_test_hash(ImageTestCase{
+			premultiplied: false
+			display_p3: true
+			source: [f32(1), 1, 5, 4]!
+			destination: [f32(3.25), 4.5, 24, 18]!
+			transform: [f32(.9), .4, -.4, .9, 5, 2]!
+			alpha: .65
+			mode: mode
+			clip: true
+			smoothing: true
+		}, image_test_contrast_filter(), false) == hashes[i]
+	}
+	assert image_filter_test_hash(ImageTestCase{
+		premultiplied: false
+		display_p3: true
+		source: [f32(1), 1, 5, 4]!
+		destination: [f32(3.25), 4.5, 24, 18]!
+		transform: [f32(.7), .45, .3, 1.2, 5, 2]!
+		alpha: .65
+		mode: .plus_lighter
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == 'f3f022c3c8bcb02f'
+	// With near-unit singular values the native shader uses image-space
+	// decal sampling rather than the decomposed layer-space ramp.
+	assert image_filter_test_hash(ImageTestCase{
+		source: [f32(1), 1, 5, 4]!
+		destination: [f32(3.25), 4.5, 5, 4]!
+		transform: [f32(.96), .28, -.28, .96, 5, 2]!
+		alpha: .65
+		mode: .src_in
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == '33a4cc97cfdb1da1'
+}
+
 fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
 	assert image_filter_test_hash(ImageTestCase{
 		destination: [f32(4.25), 5.5, 30, 25]!

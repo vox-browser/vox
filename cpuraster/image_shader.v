@@ -106,6 +106,7 @@ struct ImageShader {
 	// sampling the clamped source, before the deferred color filter.
 	layer_decal bool
 	decal_bounds Rect
+	decal_matrix SkAffine
 mut:
 	// bilerp_clamp_8888_force_highp: device bounds that map outside the
 	// 16-bit range in image space.
@@ -324,7 +325,9 @@ fn fract_f32(v f32) f32 {
 fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 	sx := f32(px) + f32(0.5)
 	sy := f32(py) + f32(0.5)
-	x, y := apply_matrix(s.matrix, sx, sy, true)
+	local_x, local_y := if s.layer_decal { apply_matrix(s.decal_matrix, sx, sy, true) }
+		else { sx, sy }
+	x, y := apply_matrix(s.matrix, local_x, local_y, true)
 	mut c := s.sample_highp(x, y)
 	if s.lower != unsafe { nil } {
 		lower := s.lower.sample_highp(x * s.lower_scale_x, y * s.lower_scale_y)
@@ -345,10 +348,10 @@ fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 	mut result := [pixel.r, pixel.g, pixel.b, pixel.a]!
 	if s.layer_decal {
 		b := s.decal_bounds
-		left := sksl_saturate(-(b.left - sx) + f32(.5))
-		top := sksl_saturate(-(b.top - sy) + f32(.5))
-		right := sksl_saturate(b.right - sx + f32(.5))
-		bottom := sksl_saturate(b.bottom - sy + f32(.5))
+		left := sksl_saturate(-(b.left - local_x) + f32(.5))
+		top := sksl_saturate(-(b.top - local_y) + f32(.5))
+		right := sksl_saturate(b.right - local_x + f32(.5))
+		bottom := sksl_saturate(b.bottom - local_y + f32(.5))
 		x_weight := left * top
 		y_weight := x_weight * right
 		weight := y_weight * bottom

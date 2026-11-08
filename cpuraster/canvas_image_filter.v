@@ -34,10 +34,6 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	mut total := sk_concat(mapped, affine_translate(src.left, src.top))
 	pixel_aligned := total.type_mask() <= affine_translate_mask
 		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
-	if smoothing && !pixel_aligned && blend_affects_transparent_black(mode) && !rect_stays_rect(total) {
-		// Rotated layer-space decal edges require transform decomposition.
-		return false
-	}
 	left := int(src.left)
 	top := int(src.top)
 	bitmap := CanvasBitmap{
@@ -60,17 +56,34 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	// A clearing blender samples outside the transformed image through a
 	// decal shader. Its destination is the clip, including rotated corners.
 	unbounded := blend_affects_transparent_black(mode)
-	x_scale := if total.sx != 0 { math_abs32(total.sx) } else { math_abs32(total.ky) }
-	y_scale := if total.sy != 0 { math_abs32(total.sy) } else { math_abs32(total.kx) }
+	min_scale, max_scale := image_filter_minmax_scales(total)
 	layer_decal := unbounded && smoothing && !pixel_aligned
-		&& (math_abs32(x_scale - 1) > f32(.2) || math_abs32(y_scale - 1) > f32(.2))
+		&& (math_abs32(min_scale - 1) > f32(.2) || math_abs32(max_scale - 1) > f32(.2))
+	mut pre_decal := total
+	mut decal_inverse := SkAffine{}
+	mut decal_bounds := dev
+	if layer_decal && !rect_stays_rect(total) {
+		// Factor the column scales out of the transform. The runtime effect
+		// evaluates the decal after the scale and before the remaining affine
+		// transform, so both matrix stages keep their separate float rounding.
+		sx := point_length(total.sx, total.ky)
+		sy := point_length(total.kx, total.sy)
+		if nearly_zero(sx, scalar_nearly_zero) || nearly_zero(sy, scalar_nearly_zero) { return false }
+		ox, oy := f32(1)/sx, f32(1)/sy
+		post := SkAffine{sx: total.sx * ox, ky: total.ky * ox,
+			kx: total.kx * oy, sy: total.sy * oy, tx: total.tx, ty: total.ty}
+		decal_inverse = affine_invert(post) or { return false }
+		pre_decal = affine_scale(sx, sy)
+		decal_bounds = Rect{0, 0, f32(bitmap.width) * sx, f32(bitmap.height) * sy}
+	}
 	tile := if unbounded && !layer_decal { TileMode.decal } else { .clamp }
 	// A runtime decal effect samples its child with an invalid total-matrix
 	// record. SkImageShader therefore keeps the base mip level for that child.
-	mut shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, total, !layer_decal) }
+	mut shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, pre_decal, !layer_decal) }
 		else { new_image_shader(bitmap, tile, tile, false, total) }
 	if layer_decal {
-		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true, decal_bounds: dev}}
+		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true,
+			decal_bounds: decal_bounds, decal_matrix: decal_inverse}}
 	}
 	alpha := f32(u8(global_alpha * f32(255))) * inv_255
 	mut blitter := canvas_filtered_blitter(mut pixels, pitch, 0xff000000, shader, alpha, mode,
@@ -87,6 +100,30 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	}
 	device := rect_path(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)}).transform(affine_to_matrix(total))
 	return anti_fill_path_clip(device, false, &rc, mut blitter)
+}
+
+// SkMatrix::getMinMaxScales(): singular values of the affine 2x2 matrix.
+fn image_filter_minmax_scales(m SkAffine) (f32, f32) {
+	if m.type_mask() & affine_affine_mask == 0 {
+		return fmin_std(math_abs32(m.sx), math_abs32(m.sy)), fmax_std(math_abs32(m.sx), math_abs32(m.sy))
+	}
+	a0, a1 := m.sx * m.sx, m.ky * m.ky
+	b0, b1 := m.sx * m.kx, m.sy * m.ky
+	c0, c1 := m.kx * m.kx, m.sy * m.sy
+	a, b, c := a0 + a1, b0 + b1, c0 + c1
+	b_squared := b * b
+	mut lo, mut hi := a, c
+	if b_squared <= scalar_nearly_zero * scalar_nearly_zero {
+		lo, hi = fmin_std(a, c), fmax_std(a, c)
+	} else {
+		difference := a - c
+		mean := (a + c) * f32(.5)
+		squared := difference * difference
+		four_b := f32(4) * b_squared
+		radius := C.sqrtf(squared + four_b) * f32(.5)
+		lo, hi = mean - radius, mean + radius
+	}
+	return C.sqrtf(fmax_std(lo, 0)), C.sqrtf(fmax_std(hi, 0))
 }
 
 fn m44_image_concat(a SkAffine, b SkAffine) SkAffine {

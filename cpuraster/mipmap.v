@@ -70,7 +70,8 @@ fn new_linear_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y T
 	upper := build_image_mipmap(bitmap, index) or { bitmap }
 	mapped := post_scale(inverse, f32(upper.width)/f32(bitmap.width), f32(upper.height)/f32(bitmap.height))
 	base := image_shader_with_inverse(upper, tile_x, tile_y, true, mapped)
-	mut shader := ImageShader{...base.image, mipmap_linear: true}
+	mut shader := ImageShader{...base.image, mipmap_linear: true,
+		nearest: total_matrix_valid && base.image.nearest}
 	weight := level - f32(index)
 	if weight > 0 {
 		if lower := build_image_mipmap(bitmap, index + 1) {
