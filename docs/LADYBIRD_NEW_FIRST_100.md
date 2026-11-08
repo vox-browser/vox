@@ -215,6 +215,31 @@ development failures and the local raw archive. These remain source checks;
 the older published browser cannot validate these changes, and the entire
 100-case batch is still incomplete.
 
+## IndexedDB worker, request-order and clone continuation
+
+All **138/138 subtests in 18 affected upstream files now pass** through native
+bindings: 105 subtests across all 14 dedicated-worker cases, plus 33 subtests
+in four files checked with actual Window settings and the stock shell harness.
+All case IDs and complete subtest-name multisets match the newer browser refresh
+for the same immutable cohort. The previously failing recursive key-path test
+now passes 20/20 through source-compatible string conversion; global JavaScript
+built-ins remain unchanged.
+
+The fixes cover event capture/bubbling, queued abort notifications, ordered index
+population and reads, numeric count results, rollback metadata, closed connection
+name snapshots, raw UTF-16 names, invalid inline keys, cursor updates, and native
+Blob/File cloning. All 74 model functions across 23 files pass. A 22-function
+native regression run passes, as does the seven-function index/conversion file.
+
+These API checks use real dedicated worker globals or Window settings; they do
+not replace production navigation, worker-process transport or renderer checks.
+FastC probe builds compile but fail several native checks or crash; the accepted
+checks use the C backend. The shared production build remains busy. The
+[IndexedDB follow-up manifest](performance/ladybird-first100-idb-followup-20261108.json)
+retains successful checks, development failures, source/fixture identities and
+the local raw archive. Shared-worker exposure and the remaining non-IndexedDB
+failures still need work, and no new complete-browser pass rate is claimed.
+
 ## Published-browser refresh
 
 A newer completed shared browser, SHA-256

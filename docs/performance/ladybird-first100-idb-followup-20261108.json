@@ -1,0 +1,4603 @@
+{
+  "schema": 1,
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "same_original_first100_case_ids": true,
+  "all_100_pass": false,
+  "source_files_passing": 18,
+  "passing_subtests": 138,
+  "cases": [
+    {
+      "id": "IndexedDB/clone-before-keypath-eval.any",
+      "global": "window-settings with stock shell harness",
+      "subtests": 6,
+      "passing": 6,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Key generator and key path validity check operates on a clone",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Failing key path validity check operates on a clone",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Index key path evaluations operate on a clone",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Store and index key path evaluations operate on the same clone",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Cursor update checks and keypath evaluations operate on a clone",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Blob expando properties are stripped in the clone used for index key path evaluation",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 327680,
+        "elapsed_seconds": 0.25333429199999996,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/get-databases.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 5,
+      "passing": 5,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Ensure that databases() returns a promise.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Enumerate one database.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Enumerate multiple databases.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Make sure an empty list is returned for the case of no databases.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Ensure that databases() doesn't pick up changes that haven't commited.",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 52264960,
+        "elapsed_seconds": 2.438055584,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 3,
+      "passing": 3,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IDBCursor.key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBCursor.key 1",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBCursor.key 2",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 40550400,
+        "elapsed_seconds": 0.320934791,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 3,
+      "passing": 3,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IDBCursor.primaryKey",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBCursor.primaryKey 1",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBCursor.primaryKey 2",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.294925125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 1,
+      "passing": 1,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Properties of error event from failed open()",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.340265416,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 9,
+      "passing": 9,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IndexedDB index rename in new transaction",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index rename in the transaction where it is created",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index rename to the same name succeeds",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index rename to the name of a deleted index succeeds",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index swapping via renames succeeds",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index rename stringifies non-string names",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index can be renamed to \"\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index can be renamed to \"\\u0000\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IndexedDB index can be renamed to \"\\uDC00\\uD800\"",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 2277376,
+        "elapsed_seconds": 0.375197459,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_createIndex.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 21,
+      "passing": 21,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Returns an IDBIndex and the properties are set correctly",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Attempt to create an index that requires unique values on an object store already contains duplicates",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "The index is usable right after being made",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Event ordering for a later deleted index",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Empty keyPath",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Event order when unique constraint is triggered",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Event ordering for ConstraintError on request",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Index can be valid keys",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBObjectStore.createIndex() - empty name",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "If an index with the name name already exists in this object store, the implementation must throw a DOMException of type ConstraintError",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "If keyPath is not a valid key path, the implementation must throw a DOMException of type SyntaxError",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "If the object store has been deleted, the implementation must throw a DOMException of type InvalidStateError",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Operate out versionchange throw InvalidStateError",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "InvalidStateError(Incorrect mode) vs. TransactionInactiveError. Mode check should precede state check of the transaction.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "InvalidStateError(Deleted ObjectStore) vs. TransactionInactiveError. Deletion check should precede transaction-state check.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "TransactionInactiveError vs. ConstraintError. Transaction-state check should precede index name check.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "ConstraintError vs. SyntaxError. Index name check should precede syntax check of the key path",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "SyntaxError vs. InvalidAccessError. Syntax check should precede multiEntry check of the key path.",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Explicit Primary Key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Auto-Increment Primary Key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Auto-Increment Primary Key - invalid key values elsewhere",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 52576256,
+        "elapsed_seconds": 0.47405475,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 1,
+      "passing": 1,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IDBRequest.error throws if ready state is pending",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.25012124999999996,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 8,
+      "passing": 8,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IDBTransaction.objectStoreNames - during upgrade transaction",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - value after close",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - transaction scope",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - value after commit",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - value after abort",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - sorting",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - no duplicates",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "IDBTransaction.objectStoreNames - unusual names",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.24960979099999997,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/keygenerator.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 21,
+      "passing": 21,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Keygenerator - starts at one, and increments by one",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Keygenerator - increments by one from last set key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Keygenerator - don't increment when new key is not bigger than current",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Keygenerator ConstraintError when using same id as already generated",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key 53 bits",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key greater than 53 bits, less than 64 bits",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key greater than 53 bits, less than 64 bits (negative)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key 63 bits",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key 63 bits (negative)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key 64 bits",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key 64 bits (negative)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key greater than 64 bits, but still finite",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key greater than 64 bits, but still finite (negative)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key equal to Infinity",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key generator vs. explicit key equal to -Infinity",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key is injected into value - single segment path",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key is injected into value - multi-segment path",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key is injected into value - multi-segment path, partially populated",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "put() throws if key cannot be injected - single segment path",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "put() throws if key cannot be injected - multi-segment path",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Keygenerator overflow",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.249205417,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/keypath.any",
+      "global": "window-settings with stock shell harness",
+      "subtests": 20,
+      "passing": 20,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "undefined - my.key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - my.k\u00f8i",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - my.key_ya",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - public.key$ya",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - true.$",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - my._",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - delete.a7",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - p.p.p.p.p.p.p.p.p.p.p.p.p.p",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - str.length",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - arr.length",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - length",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - '' uses value as key",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - [''] uses value as [key]",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - ['x', 'y']",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - [['x'], 'y'] (stringifies)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - ['x', {toString->'y'}] (stringifies)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - name,type",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - name,type.name",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "undefined - list with 1 field",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Key path conversion: a self-referential array exhausts the stack",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.25367412500000003,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 24,
+      "passing": 24,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Invalid keyPath - \"j a\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \".yo\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"yo,lo\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - []",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - [\"array with space\"]",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - multidimensional array (invalid toString)",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"3m\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - {toString->3m}",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"my.1337\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"..yo\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"y..o\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"y.o.\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"y.o..\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m.*\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"\\\"m\\\"\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m%\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m/\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m/a\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m&\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"m!\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"*\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"*.*\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"^m\"",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Invalid keyPath - \"/m/\"",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.241093459,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 1,
+      "passing": 1,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "IndexedDB Request Event Propagation: Bubbling and Capturing",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.23396262500000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 6,
+      "passing": 6,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Created stores get their indexes marked as deleted after the transaction that created them aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Deleted stores get their indexes marked as not-deleted after the transaction that deleted them aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Created+deleted stores still have their indexes marked as deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Created indexes get marked as deleted after their transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Deleted indexes get marked as not-deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Created+deleted indexes are still marked as deleted after their transaction aborts",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 344064,
+        "elapsed_seconds": 0.244944125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-multiple-metadata-revert.any",
+      "global": "window-settings with stock shell harness",
+      "subtests": 3,
+      "passing": 3,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Deleted indexes in newly created stores are still marked as deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Deleted indexes in deleted stores are still marked as not-deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Deleted indexes in created+deleted stores are still marked as deleted after their transaction aborts",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.251421125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-object-store-metadata-revert.any",
+      "global": "window-settings with stock shell harness",
+      "subtests": 4,
+      "passing": 4,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Created stores get marked as deleted after their transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Deleted stores get marked as not-deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Created+deleted stores are still marked as deleted after their transaction aborts",
+            "status": 0,
+            "message": null
+          },
+          {
+            "name": "Un-instantiated deleted stores get marked as not-deleted after the transaction aborts",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.25173079200000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 1,
+      "passing": 1,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Properties of error events fired at requests when aborting a transaction",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.246349708,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.worker",
+      "global": "dedicated-worker",
+      "subtests": 1,
+      "passing": 1,
+      "names_match_browser_refresh": true,
+      "result": {
+        "harness": 0,
+        "tests": [
+          {
+            "name": "Capture and bubble",
+            "status": 0,
+            "message": null
+          }
+        ]
+      },
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 425984,
+        "elapsed_seconds": 0.2528915,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "upstream_script_hashes": {
+    "IndexedDB/clone-before-keypath-eval.any.js": "cbe3ae73ad91dbb118cc7d8d0a6f3f9be53d24c2bcc6cd7de2953dc5c7fb850f",
+    "resources/testharness.js": "b74d714183ab224df15612a6af6b65eb1ffc0d8f5501db34379308034d668622",
+    "IndexedDB/resources/support.js": "3bbc4fa7b1a4e2354a05322b4fd4e3ac1afad6ad065af746d9fc377ee28ef1a7",
+    "IndexedDB/get-databases.any.js": "d7d92168b9d2fd486c385b68e6dc585215262aa7492718d95f2dcabbbd5bac41",
+    "IndexedDB/resources/support-promises.js": "b17a508df2752a4240e898013fd47313e4742b6f195d3e1342fbb7134d5948fb",
+    "IndexedDB/idbcursor-key.any.js": "9993e4c3833e86b59fdf2576f36f3d7ea7e99a97f8cd8498895068b8556bb383",
+    "IndexedDB/idbcursor-primarykey.any.js": "46a0b85227363c13362722b5d947edb1f363f0fb867c4ce9cdaf579623137d54",
+    "IndexedDB/idbfactory-open-error-properties.any.js": "99c01403942af43fe6e78e1ec4a73f08b90f1e44f5a2844e45048061e7de4546",
+    "IndexedDB/idbindex-rename.any.js": "67501984087f2e14e07cb8ced1b1ba65874bfb6060be57730851f00ade129b94",
+    "IndexedDB/idbobjectstore_createIndex.any.js": "64db926d63c57203666845ee017afd6c6292162f53843f9382326be57c42f87e",
+    "IndexedDB/idbrequest_error.any.js": "2c924469f6d25cffa391939309dca35af37bfb961dd28c5197157c3b63d660fe",
+    "IndexedDB/idbtransaction_objectStoreNames.any.js": "396d92ead82773dbbfacaed5288b88fdabc29d4036987ec707976e4290b7d50c",
+    "IndexedDB/keygenerator.any.js": "6849c66a1e03ea7bdc556d3ea7ae34701faae6adb88671b7385a43f6e3ae7227",
+    "IndexedDB/keypath.any.js": "1c3ac8b41e6c8146a510e2a99a9f04ffb72f572ba5361a56c8c54c9f1337e650",
+    "IndexedDB/keypath_invalid.any.js": "02cad9f5430eaaea334832558af3dc592a224b9cecdbc21b211a177261874f34",
+    "IndexedDB/request_bubble-and-capture.any.js": "39ef53d84a5e094400fc46152dacd3c4264d968f122c4eeeb74cd0f6d48d6117",
+    "IndexedDB/transaction-abort-index-metadata-revert.any.js": "632b68ede75f68c74db54bbcd753c3564891fe8a9061748c437d974aedb59a6a",
+    "IndexedDB/transaction-abort-multiple-metadata-revert.any.js": "c3d4c6939e7ac0d43275b361363f2f7e86928d2f31387657feed9d4b21f6d439",
+    "IndexedDB/transaction-abort-object-store-metadata-revert.any.js": "9e0a123037f0edd3d91931dc61f867d429e6be6c8ffaa5f7462745f077e037d4",
+    "IndexedDB/transaction-abort-request-error.any.js": "2fcfb2ead5e1c76ff1c6b357b426e3ddc3e93de4f14fac94d207c1381a4c6850",
+    "IndexedDB/transaction_bubble-and-capture.any.js": "6a8a9776a7778c491d63928565fefb9afb4231d34f70866253bc6e65646c6b69"
+  },
+  "upstream_assertions_modified": false,
+  "focused_checks": {
+    "model_files": 23,
+    "model_functions": 74,
+    "model_pass": true,
+    "combined_native_functions": 22,
+    "combined_native_pass": true,
+    "additional_key_path_native_file_functions": 7,
+    "additional_key_path_native_pass": true
+  },
+  "probe": {
+    "path": "Build/first100-idb-upstream-20261108/worker-r16",
+    "sha256": "26b8c6a728bfaebbaa16e253ab4ef2e29e791b2d7882c4b0fa14588eacfedb44",
+    "compile_receipt": "first100-idb-upstream-r16-20261108-compile.json",
+    "backend": "c",
+    "allocation": "default"
+  },
+  "sources": {
+    "browserjs/indexed_db_binding.v": "e5e44c647f92093a89975a1bd6d025552aec5e3b657693968f35de1fc527177e",
+    "browserjs/indexed_db_binding_jsc.c.v": "37be3e6dde462bbc4a07a21289f9ac7bf944f1f3d33e2e7f74aa07966df3a819",
+    "browserjs/indexed_db_value_jsc.c.v": "f20a5b6c1f66354d4a26e3fc14073bb31f41aeffc11e6d54371a3c499fb2e61d",
+    "browserjs/indexed_db_string_jsc.c.v": "09cfc25ef02aaf07e3cd906dd86297050e1e383874a409ed055f17997b0364b7",
+    "browserjs/indexed_db_worker_binding_test.v": "caf759c69318fd0f43dc929301a942df3f3969215b854e4d59f26332bac756fd",
+    "browserjs/indexed_db_unicode_binding_test.v": "db6c997362d1b1aef1813ffdcafbff81126452355ad59e1d9258ec2ca5d553b1",
+    "browserjs/indexed_db_indexes_binding_test.v": "8be4757b5cc50b210b97f6b4f4cb8c939053552aa8ec7933fe54b6485464d2e0",
+    "browserjs/worker_agent_runtime_jsc.c.v": "a3b98d630f44b6416503d842799c7a788752941ee251f920caed981809acd4a8",
+    "browserjs/upstream_indexed_db_worker_test.v": "45746f85c849b162c37392be1f6a155ae9cc1c970def29e2dcc85564e9a5349b",
+    "browserjs/zz_idb_regressions_20261108_test.v": "5d55c465ac02f3c99610c049940dc3d1f0b6676c77632c2cfca2161873e5b0a0",
+    "indexeddb/index_schema_metadata_test.v": "d559f87683b626f451c9f96f99ca5116ad1bbca763b41649eb30a142bc06d149",
+    "indexeddb/index_async_test.v": "dad6a1bcb19936670acee90b45d7d22497b349b8a5537ff11d4f30a28681c4c9",
+    "indexeddb/connection_queue_test.v": "99912ad61a3b12ea9625426634b52d6c6e86bb7626b34c206a41b52c6ad15afc",
+    "indexeddb/transaction_changes_test.v": "ee6526854920dcc3d4904d4596ad09e802adacebff2fea5f3c2803ab3b5c92da",
+    "indexeddb/request.v": "385cf5ad502f7cf98ffb0e551e693f40a62821d325a42f815952f11a8466bf79",
+    "indexeddb/index_cursor_test.v": "fd68d724b80a52dc3c634001de11fdc5075aac0bf967e1b23f56babed678cef4",
+    "indexeddb/database.v": "16a97d3cc97720623f9c1f20da24ad4e3cb0ffb15dfb39a89a6ed95c35e091a4",
+    "indexeddb/database_enumeration_test.v": "2a2d5cc67d292efdfa73d7580ef82d2c806341a7e29489107a4cf08b387926aa",
+    "indexeddb/handle_operations.v": "1496bd2ddf3cf1eaeeb076c664c5323ce7a2f1678c540843b31a2d123d64e86d",
+    "indexeddb/inspection.v": "a7abd902afafaba143761a182d721b8eeb52267d382e2b06dc730081e1ddbdb5",
+    "indexeddb/algorithm_operations.v": "4a26d8f7579905776fb2001cc2140668a47511f91bf87f0e34447fe14ff5a0a3",
+    "indexeddb/transaction_completion_test.v": "3e9d92114cda6e6d189a257f79d839b3bdbef3cf8221951b4b0ea08ed6063d6a",
+    "indexeddb/object_store_async_test.v": "fea55634057f20154c8909f0f602cce79682fd5bba623fbca2745138e49a82e8",
+    "indexeddb/records.v": "afd5bcd39af5755b053fc3282e5d612521779c60309ad281101df5d778e3432f",
+    "indexeddb/factory.v": "7f93d83fee98d6b4e5ccbdfa3f7fce138704178a459501cae02d5d62af1e1e8c",
+    "indexeddb/index_async.v": "c79285f8ab0fb622bffa814800f936365d9ffbbb9ad8756be4773c752f1ba60b",
+    "indexeddb/transaction.v": "e5e9570e8057e27f17f2e7285139140e7e30d3dca22e27fd6f19755d2753a02e",
+    "indexeddb/object_store_test.v": "d89feaeba5ae28947e8c69e8eaae60fc75e31fdb13fa19f2058d2d9b7bb50a91",
+    "indexeddb/key_path_validation_test.v": "ae85ca696e135bdbe16ad58bd25db7ba4ade21acc449ca46180fef20e504b6f7",
+    "indexeddb/factory_database_test.v": "c7e1b651f036672a2617f413c51f1cca9c32602489ec720c9d7cea1630ad3974",
+    "indexeddb/inspection_test.v": "776e57db707de2a58ef7bde2c2133d84208bfe1b1b9ccc9d739ec6e404c659a8",
+    "indexeddb/closed_connection_schema_test.v": "604312efbdcfe0b0571866ff8e2b78e7057958470ccf63392c495f14154c26a0",
+    "indexeddb/index_population_async_test.v": "7dbe03dc8e35b984874af06d61105718c292f8a9a66efa5c5cd33400ce2c47b0",
+    "indexeddb/transaction_abort_tasks_test.v": "226d1cba378d6535b54b0e41205a0226d249f4d436aa82e575132f4d6b4453dd",
+    "indexeddb/key_range.v": "4448ce28c4cf8c9d39d140037985d4530919f72c2685eb353cecf0b8b5414b2c",
+    "indexeddb/cursor_async.v": "db6c3835576b40510cf9553aef660ee7e0408898d2ebde08fe469fdb57173f49",
+    "indexeddb/cursor_async_test.v": "39ab94b0137ec0711ac11c6c8184a4880f80cea2f713452da25562a658804a03",
+    "indexeddb/binding_algorithms_test.v": "b2d8956cb252f4e5ce565f72f82630f3e737a9dddbb4a270100f69d709d8850d",
+    "indexeddb/index.v": "85aad2fce5c2580e6b8be811d3f879498ef985a2ea6f466d9415a752de053c70",
+    "indexeddb/global_context.v": "0a627e4a024b6385d2f7065860143c0e4d3620c72b489b82058b96c14133169a",
+    "indexeddb/object_store_async.v": "3eb706a3ecb26b71a8563d05d27241f4192b8f01469b83e1c0ad6e79a91f930c",
+    "indexeddb/string_key_code_units_test.v": "991f6b64dd6a502f18ad486aea8fd2648e42cfecd4f5db0cfbafa2e2c953ad33",
+    "indexeddb/object_store.v": "74205ade25432314a67f829b10fd53205f4b4afdfcc29f339a95f50a1e8e857b",
+    "indexeddb/transaction_changes.v": "f8fc43d55dd382b2c928acb0d234fe3828262196d7ff1bff10349a021b69b3a5",
+    "indexeddb/upstream_entry_points_test.v": "351bf177e352cdb7e66c638f1dc88d2837f2fb99d4344fe4274ab8542d7e3f34",
+    "indexeddb/object_factories.v": "e23eaafb196f2ee4dc0b8de15aff256a44256986c49a16f1588e831a35364568",
+    "indexeddb/key.v": "8f7479740b379da4e1ddc0bc771736875129adc574d0eb096859ce6edcfca88b",
+    "indexeddb/internal_operations.v": "fe0c4a892d26f7ca511094f2994f7e8eeadd6d67bb5bfa57fba06b229a040288",
+    "indexeddb/key_range_test.v": "b1d82ef1c485a56f9e45f6b40c29e36cf6b0a787711417a4c1a219feeaabfbba",
+    "indexeddb/value.v": "cbc40c6fac5388d7c64ec7f695dd8a36e737173595ef2ea8ba1cf27bacc1a1f3",
+    "indexeddb/cursor.v": "9684a7b2b6a15df2a1255f4e63b50e8fcc7342a7819c25fe8205c6337a63848b",
+    "indexeddb/global_context_test.v": "47b34c6ad67da1d6ab42a7c0456bc32e75ff2f6bba73bf66877aff6b973dacfa",
+    "indexeddb/request_list.v": "7bc754b8dc5c8d0156e93dc8183435b3a20e3d0f39ed32100a5b5e5a5c5be16c",
+    "indexeddb/schema_metadata_test.v": "0ba713fdbda5e1ada4a53dd1fd831cae46c128ccdf6f3f01035908b1a4936257",
+    "indexeddb/record_range_test.v": "e61817ebf9eca78368d7909e6d8e5f0d9359723e7923bab1e79ea21e65c58993"
+  },
+  "guards": {
+    "first100-idb-abort-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-abort-20261108/model",
+        "indexeddb/transaction_abort_tasks_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 650149888,
+      "elapsed_seconds": 5.014454167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-abort-model-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-abort-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.386465458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-bindings-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-bindings-20261108/native",
+        "browserjs/zz_idb_regressions_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5016453120,
+      "elapsed_seconds": 74.54841750000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-bindings-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-bindings-20261108/native-r2",
+        "browserjs/zz_idb_regressions_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5017616384,
+      "elapsed_seconds": 81.254556792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-bindings-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-bindings-20261108/native-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 55148544,
+      "elapsed_seconds": 0.591279041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-bindings-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-bindings-20261108/native"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 61112320,
+      "elapsed_seconds": 0.647676042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-clone-before-keypath-eval.any-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 327680,
+      "elapsed_seconds": 0.25333429199999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-clone-before-keypath-eval.any-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.313262833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-clone-before-keypath-eval.any-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.230155042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-clone-before-keypath-eval.any-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24582783399999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-clone-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/clone-native",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2655420416,
+      "elapsed_seconds": 42.776855709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-closed-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-closed-20261108/model",
+        "indexeddb/closed_connection_schema_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 478511104,
+      "elapsed_seconds": 3.9658407499999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-closed-model-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-closed-20261108/model-r2",
+        "indexeddb/closed_connection_schema_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 679460864,
+      "elapsed_seconds": 5.416412625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-closed-model-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-closed-20261108/model-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.458360875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-code-units-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-code-units-20261108/model",
+        "indexeddb/string_key_code_units_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 648953856,
+      "elapsed_seconds": 4.995054625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-code-units-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-code-units-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.40448783299999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-cursor-update-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-index-get-20261108/cursor-update-model",
+        "indexeddb/cursor_async_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 662142976,
+      "elapsed_seconds": 7.68979725,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-cursor-update-model-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-index-get-20261108/cursor-update-model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.500384917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-events-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-events-20261108/native",
+        "browserjs/indexed_db_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5031952384,
+      "elapsed_seconds": 95.759461833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-events-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-events-20261108/native-r2",
+        "browserjs/indexed_db_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5039538176,
+      "elapsed_seconds": 88.83068458300001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-events-native-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-events-20261108/native-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.4991025,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-events-native-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-events-20261108/native"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 24100864,
+      "elapsed_seconds": 0.883939625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.937992708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 52264960,
+      "elapsed_seconds": 2.438055584,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 51380224,
+      "elapsed_seconds": 2.601397625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 51576832,
+      "elapsed_seconds": 2.6282147910000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 51789824,
+      "elapsed_seconds": 2.6085395,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 51216384,
+      "elapsed_seconds": 2.252250875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 50331648,
+      "elapsed_seconds": 2.585671084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-get-databases.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.602238875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.253146792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 40550400,
+      "elapsed_seconds": 0.320934791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 638976,
+      "elapsed_seconds": 0.30832058399999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.27178395899999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24188066700000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.224055167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 327680,
+      "elapsed_seconds": 0.2716705,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-key.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 344064,
+      "elapsed_seconds": 0.269362542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": -11,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.255970125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.294925125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 802816,
+      "elapsed_seconds": 0.314012292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.268953458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.238738917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22988,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.276158083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbcursor-primarykey.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.27156395899999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25897854099999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.340265416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.275354667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.289701917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.229546792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.21712862500000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1196032,
+      "elapsed_seconds": 0.26922037499999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbfactory-open-error-properties.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.255179625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": -11,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.260084333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2277376,
+      "elapsed_seconds": 0.375197459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.247535167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 638976,
+      "elapsed_seconds": 0.320778833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.223819458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.220214959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.276757041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-r5-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 21463040,
+      "elapsed_seconds": 0.836317791,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbindex-rename.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.258517,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25859350000000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 52576256,
+      "elapsed_seconds": 0.47405475,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.239456708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.310183416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.216067334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.218809458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 87490560,
+      "elapsed_seconds": 30.195105833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-r5-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 87293952,
+      "elapsed_seconds": 30.278264208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbobjectstore_createIndex.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 901120,
+      "elapsed_seconds": 0.139508709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.259974208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25012124999999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.23582150000000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1916928,
+      "elapsed_seconds": 0.34331825000000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.21863366600000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22401995800000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.266008667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbrequest_error.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 2211840,
+      "elapsed_seconds": 0.22955312500000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 344064,
+      "elapsed_seconds": 0.26042533300000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24960979099999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.228709125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.2717525,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.227375041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.223155083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.26821066600000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-idbtransaction_objectStoreNames.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1638400,
+      "elapsed_seconds": 0.153684625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-index-get-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-index-get-20261108/model",
+        "indexeddb/index_async_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 733184000,
+      "elapsed_seconds": 8.089015000000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-index-get-model-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-index-get-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 7667712,
+      "elapsed_seconds": 0.442287458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-index-get-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-index-get-20261108/native",
+        "browserjs/indexed_db_indexes_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5023662080,
+      "elapsed_seconds": 87.711078041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-index-get-native-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-index-get-20261108/native"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.5503638750000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-inline-key-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-population-20261108/inline-model",
+        "indexeddb/object_store_async_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 658522112,
+      "elapsed_seconds": 4.740647500000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-inline-key-model-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-population-20261108/inline-model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.363868959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-key-grammar-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-key-grammar-20261108/model",
+        "indexeddb/key_path_validation_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 653606912,
+      "elapsed_seconds": 7.967398833000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-key-grammar-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-key-grammar-20261108/model-r2",
+        "indexeddb/key_path_validation_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 686063616,
+      "elapsed_seconds": 5.007705082999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-key-grammar-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-key-grammar-20261108/model-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.376731708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-key-grammar-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-key-grammar-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.383844334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": -11,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.251151,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.249205417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.220366084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 671744,
+      "elapsed_seconds": 0.27374462499999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.227028416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 901120,
+      "elapsed_seconds": 0.22512820800000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.26787666699999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keygenerator.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 737280,
+      "elapsed_seconds": 0.328834666,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath.any-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25367412500000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath.any-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1064960,
+      "elapsed_seconds": 0.302254083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath.any-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.229494583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath.any-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 8798208,
+      "elapsed_seconds": 0.697732542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.272348541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.241093459,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22638562499999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.271536166,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.222614875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22939479200000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.284517375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-r5-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.281552625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-keypath_invalid.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1015808,
+      "elapsed_seconds": 0.332827875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-path-conversion-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-bindings-20261108/path-native",
+        "browserjs/indexed_db_indexes_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1233207296,
+      "elapsed_seconds": 3.9576759170000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-path-conversion-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-bindings-20261108/path-native-r2",
+        "browserjs/indexed_db_indexes_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5039882240,
+      "elapsed_seconds": 72.51501095799999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-path-conversion-native-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-bindings-20261108/path-native-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.524862084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-population-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-population-20261108/model",
+        "indexeddb/index_population_async_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 662700032,
+      "elapsed_seconds": 6.049555625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-population-model-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-population-20261108/model"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.478166167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-regressions-20261108.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "test",
+        "indexeddb"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2692890624,
+      "elapsed_seconds": 48.69785625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-regressions-final-20261108.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "test",
+        "indexeddb"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2727018496,
+      "elapsed_seconds": 38.753050625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-regressions-r2-20261108.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "test",
+        "indexeddb"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2689843200,
+      "elapsed_seconds": 52.505134167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-regressions-r3-20261108.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "test",
+        "indexeddb"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2692874240,
+      "elapsed_seconds": 46.094559084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.26943375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.23396262500000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24235133300000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.274269875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22930850000000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22746479200000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.27832754200000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r3-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r3"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 19824640,
+      "elapsed_seconds": 0.936288542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-r4-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r4"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.650194167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-request_bubble-and-capture.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 1343488,
+      "elapsed_seconds": 0.29102529099999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-schema-model-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-schema-20261108/model",
+        "indexeddb/schema_metadata_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 477724672,
+      "elapsed_seconds": 3.4902578749999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-schema-model-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-schema-20261108/model-r2",
+        "indexeddb/schema_metadata_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 646561792,
+      "elapsed_seconds": 7.262251625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-schema-model-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-schema-20261108/model-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.428840958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.263946458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 344064,
+      "elapsed_seconds": 0.244944125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.245501333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 344064,
+      "elapsed_seconds": 0.27731649999999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22694958299999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22707175,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.27717604100000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-r5-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r5"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.286576375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-index-metadata-revert.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 21151744,
+      "elapsed_seconds": 0.16325062499999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-multiple-metadata-revert.any-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.251421125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-multiple-metadata-revert.any-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 671744,
+      "elapsed_seconds": 0.341047834,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-multiple-metadata-revert.any-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.23038395799999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-multiple-metadata-revert.any-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.24830987499999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-object-store-metadata-revert.any-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.25173079200000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-object-store-metadata-revert.any-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 638976,
+      "elapsed_seconds": 0.28127925000000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-object-store-metadata-revert.any-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 212992,
+      "elapsed_seconds": 0.255520333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-object-store-metadata-revert.any-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 327680,
+      "elapsed_seconds": 0.248475542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 671744,
+      "elapsed_seconds": 0.28453062500000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.246349708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.26512137500000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 278528,
+      "elapsed_seconds": 0.275641125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.22784312499999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.230637625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 62324736,
+      "elapsed_seconds": 30.227933999999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction-abort-request-error.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 901120,
+      "elapsed_seconds": 0.154865667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-fastc-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.287179542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-final-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.2528915,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r10-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r10"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.259245458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r12-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r12"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.271747458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r14-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r14"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.228538708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r16-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r16"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.223071292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r2-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 671744,
+      "elapsed_seconds": 0.279087,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r3-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r3"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.44644508399999994,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-r4-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker-r4"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 425984,
+      "elapsed_seconds": 0.245742375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-transaction_bubble-and-capture.any.worker-run.json": {
+      "command": [
+        "/Users/alex/code/vox2/Build/first100-idb-upstream-20261108/worker"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 901120,
+      "elapsed_seconds": 0.41464737500000004,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-fastc-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "fastc",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-fastc",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2975531008,
+      "elapsed_seconds": 72.880813916,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-fastc-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-unicode-20261108/native-fastc"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 21807104,
+      "elapsed_seconds": 0.941851208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2657927168,
+      "elapsed_seconds": 42.256731375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r2",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5034393600,
+      "elapsed_seconds": 67.512020542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r3-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-nocache",
+        "-new-compiler",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r3",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5033738240,
+      "elapsed_seconds": 52.200984084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r4-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r4",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5028429824,
+      "elapsed_seconds": 53.590417333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r5-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-no-parallel",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r5",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5335040000,
+      "elapsed_seconds": 60.989648083999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r6-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r6",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5028888576,
+      "elapsed_seconds": 70.084962833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r6-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-unicode-20261108/native-r6"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.575490875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r7-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-unicode-20261108/native-r7",
+        "browserjs/indexed_db_unicode_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5031477248,
+      "elapsed_seconds": 60.083360207999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-unicode-native-r7-run-20261108.json": {
+      "command": [
+        "Build/first100-idb-unicode-20261108/native-r7"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.557617291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5035327488,
+      "elapsed_seconds": 76.82001858299999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-fastc-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "fastc",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-fastc",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2980167680,
+      "elapsed_seconds": 73.439299167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r10-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r10",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5054447616,
+      "elapsed_seconds": 73.362354334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r11-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r11",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1241137152,
+      "elapsed_seconds": 3.1122729160000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r12-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r12",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5028052992,
+      "elapsed_seconds": 81.36816812500001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r13-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r13",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5573804032,
+      "elapsed_seconds": 50.201997708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r14-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r14",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5023399936,
+      "elapsed_seconds": 71.302130917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r15-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r15",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1220509696,
+      "elapsed_seconds": 4.3829685,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r16-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-nocache",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r16",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4997742592,
+      "elapsed_seconds": 74.6263605,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r2",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5038784512,
+      "elapsed_seconds": 75.31229645799999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r3-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r3",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4995727360,
+      "elapsed_seconds": 95.315793958,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r4-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r4",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5009113088,
+      "elapsed_seconds": 89.200890125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r5-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r5",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5011521536,
+      "elapsed_seconds": 87.171541167,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r6-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r6",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2657943552,
+      "elapsed_seconds": 42.501163166,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r7-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r7",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5045714944,
+      "elapsed_seconds": 68.115115125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r8-20261108-compile.json": {
+      "command": [
+        "Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r8",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5045485568,
+      "elapsed_seconds": 53.986287708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-idb-upstream-r9-20261108-compile.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-no-parallel",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-idb-upstream-20261108/worker-r9",
+        "browserjs/upstream_indexed_db_worker_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5353586688,
+      "elapsed_seconds": 61.290998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-option-global-20261108.json": {
+      "command": [
+        "v",
+        "-b",
+        "c",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-o",
+        "/tmp/vox-first100-option-global",
+        "/tmp/vox-first100-option-global.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 182124544,
+      "elapsed_seconds": 0.862523625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-option-global-run-20261108.json": {
+      "command": [
+        "/tmp/vox-first100-option-global"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.42725941700000003,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-worker-idb-native-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-worker-idb-20261108/native",
+        "browserjs/indexed_db_worker_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5001805824,
+      "elapsed_seconds": 66.699119708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-worker-idb-native-r2-20261108-compile.json": {
+      "command": [
+        "v",
+        "-memory-limit",
+        "10G",
+        "-enable-globals",
+        "-cc",
+        "clang",
+        "-n",
+        "-w",
+        "-skip-running",
+        "-o",
+        "Build/first100-worker-idb-20261108/native-r2",
+        "browserjs/indexed_db_worker_binding_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5035081728,
+      "elapsed_seconds": 74.826097458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "first100-worker-idb-native-r2-run-20261108.json": {
+      "command": [
+        "Build/first100-worker-idb-20261108/native-r2"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.536212541,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "archive": {
+    "path": "/Users/alex/.cache/vox/wpt/20261108-first100-idb-followup.tar.gz",
+    "sha256": "0e2bdcd123905635e3e3444a362e4703076d6f26b994009fd0dae6a9029cdbd4"
+  },
+  "commits": [
+    "718f9719e Reuse exact GG shape rasters and packed regions",
+    "58a009730 Record live FileList checks and production WPT improvements",
+    "bb705b4fd Preserve generated WPT metadata in native global integration checks",
+    "348478cd3 IndexedDB: follow recursive source string conversion for key paths",
+    "e7534e9ed Use upstream UI2 embedding APIs directly",
+    "1809e739b Record native repeated blur verification",
+    "d321ed998 Capture native repeated blur filter fixtures",
+    "9ca6725a4 Evaluate repeated blur filters through native intermediate images",
+    "65e618385 Check capture readiness after hydration and sidebar content",
+    "0b59f08b1 Match the UI2 Objective-C superclass declaration",
+    "62d75c184 Keep GitHub raster keys on painted and decoded inputs",
+    "654b78443 Fix Windows source ZIP extraction for archived site resources",
+    "000f9c046 Record native prefiltered drop-shadow verification",
+    "e994ec8fb Capture native prefiltered drop-shadow regressions",
+    "823ae6cf6 Preserve deferred color filters before drop-shadow merges",
+    "f4834eb63 Keep DataTransfer files live with stable FileList identity",
+    "0707d7819 IndexedDB: reject present invalid inline keys before generating a key",
+    "7ecc380af Record gradient and production timer scrolling validation",
+    "98a8a709d IndexedDB: clone native Blob and File payloads without expandos",
+    "133b19bf5 IndexedDB: clone and queue cursor update values",
+    "fefefc071 IndexedDB: restore upgrade scope and prioritize deleted store errors",
+    "766bc33b7 IndexedDB: expose ordered object store counts as numeric request results"
+  ],
+  "limitations": [
+    "These checks exercise native Window settings with a shell harness and actual dedicated worker globals. They do not exercise the HTML navigation/rendering pipeline or the parent/child worker-process transport.",
+    "All names match the newer published-browser refresh for the same pinned cohort. The original browser registered fewer names in some files before missing APIs aborted setup.",
+    "FastC development probes compile but fail several native checks or crash; no FastC acceptance credit is claimed. C native checks pass.",
+    "Concurrent source edits caused several development compilation failures. Explicitly typed optional provider initializers restore C compilation; other sessions were changing CSS/raster code. No sealed whole-checkout input claim is made.",
+    "A repeated keypath r16 launch was rejected because its guard report already existed. Its old result was not used as evidence of a new run. All final-labelled runs have fresh successful guard receipts.",
+    "Initial probes omitted URLSearchParams or File fixture constructors, and default worker test titles; these fixture errors were corrected before accepted final checks.",
+    "Production browser acceptance remains 62/100 in the recorded refresh; it predates these fixes. Shared-worker exposure, compression, clipboard, form uploads and CSP still need work/validation."
+  ]
+}
