@@ -72,6 +72,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                 raise SystemExit(result.returncode)
             if Path(sys.argv[1]).name.startswith('prepare_'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
+            if Path(sys.argv[1]).name == 'browser_backend.py':
+                print('fastc')
         ''')
 
     def write_executable(self, path, body):
@@ -109,6 +111,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         recorded = json.loads(self.compiler_log.read_text())
         self.assertEqual(recorded['executable'], str(compiler))
         self.assertEqual(recorded['cwd'], str(self.repo))
+        self.assertEqual(recorded['argv'][:2], ['-b', 'fastc'])
         self.assertEqual(recorded['argv'][-3:],
                          ['-o', str(self.repo / 'Build/linux/vox'), '.'])
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]

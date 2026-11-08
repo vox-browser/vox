@@ -5,7 +5,8 @@ set -eu
 #
 # usage: build-prod-browser.sh [--no-parallel-cc | --parallel-cc] [--prod]
 #
-# By default V splits the generated C into units, compiles them concurrently
+# v.mod selects the V backend. With the C backend, V splits C into units,
+# compiles them concurrently
 # (-parallel-cc) and links them with ThinLTO, which keeps cross-unit inlining.
 # --no-parallel-cc compiles one sealed C unit instead: several times slower to
 # build, for maximum binary performance and comparisons with single-unit builds.
@@ -323,11 +324,9 @@ fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
 # it, a checkout under `modules`, `.vmodules`, `vlib` or another v.mod compiles
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
-# Pin the same complete C/Clang path used by the focused native checks. Implicit
-# compiler selection has produced a successful binary with stale imported
-# catalog constants, despite -nocache; explicit C generation retains the new
-# module initializers. Validate the resulting executable in a fresh process.
-v_backend=${VOX_BUILD_BACKEND:-c}
+# Pin the manifest's frontend and Clang for native code and C optimization.
+# V drivers without manifest defaults need the backend passed explicitly.
+v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
@@ -456,7 +455,19 @@ if [ "$gc_mode" = prealloc ]; then
 else
     cd "$repo_dir"
 fi
-if [ "$c_mode" = parallel ]; then
+if [ "$v_backend" = fastc ]; then
+    # FastC compiles its own C units and does not support -dump-c-flags or
+    # parsed-buffer manifests. The supervisor retains its whole-input identity
+    # check before publication; there is no fallback to the C frontend.
+    v_prod_json=false
+    if [ "$v_prod" = 1 ]; then v_prod_json=true; fi
+    printf '{"backend": "fastc", "mode": "fastc", "requested": "%s", "v_prod": %s}\n' \
+        "$requested_c_mode" "$v_prod_json" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
+    python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+        --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
+        --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@" \
+        -cflags "$extra_cflags" -ldflags "$extra_ldflags" -o "$compile_dir/Vox" "$repo_dir"
+elif [ "$c_mode" = parallel ]; then
     # V compiles the split units itself and links them. Without native-header
     # split support, or when native code would be duplicated in every unit, the
     # helper leaves no executable and the sealed single-unit compile below runs.
