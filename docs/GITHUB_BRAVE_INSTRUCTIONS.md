@@ -227,8 +227,20 @@ native credit: two same-image native A/B pairs show a10,170,454-instruction
 regression and a14,383,224 saving. The small net median2,106,385 saving does
 not establish a consistent full-load improvement. All four A/B captures retain
 exact reference pixels and normal exits. New bulk regression checks remain
-explicitly deferred after c29 fails. [Full c29 evidence](performance/github-vlang-instructions-20261108-20pct-c29.json)
-retains every pair and the complete A/B. Increasing the longhand cache beyond
+explicitly deferred after c29 fails. The local raw c29 receipt at
+`docs/performance/github-vlang-instructions-20261108-20pct-c29.json` retains
+every observation and the complete A/B; generated JSON remains untracked under
+the repository policy. The exact cohort counts are retained here in Git. | Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,880,773,337 | 11,343,154,934 |
+| 2 | 8,799,782,942 | 11,088,971,550 |
+| 3 | 8,815,992,971 | 11,064,384,892 |
+| 4 | 8,801,456,326 | 11,147,173,131 |
+| 5 | 8,852,112,922 | 11,100,178,243 |
+| 6 | 8,851,404,119 | 11,128,645,021 |
+| 7 | 8,878,841,686 | 11,239,274,637 |
+
+Increasing the longhand cache beyond
 256 entries executes but has only a1,032,973 median probe saving with one
 regression; that experiment is removed. Further optimization is required.
 
