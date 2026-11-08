@@ -1513,3 +1513,36 @@ Its mode-0600 raw archive contains 2,134 individually verified files, SHA256
 `ff70df5cb180534004d1651a887e6645cf48ed0705214c9f4e24349b4046bd53`.
 Completed per-job Build output, locks and temporary drivers are removed after
 verification. Existing archives, references and tolerances remain unchanged.
+
+
+## 2026-11-08: leave engine work time after cooperative host callbacks
+
+Commit `5598a9b06` moves the next cooperative host-pump deadline to 16 ms
+after callback completion. The previous start-based deadline could expire
+inside a slow callback, allowing another immediate pump before document work
+progressed. A scope generation also prevents a finished callback from
+rescheduling a replacement scope on the same preallocated record. The previous
+pacing remains available through
+`VOX_RETAIN_COOPERATIVE_YIELD_START_DEADLINE=1` for matched controls.
+
+Executed checks pass in explicit no-GC and production preallocation modes.
+The 40 ms callback regression observes one immediate pump under the fix versus
+two under the old-pacing control; scope replacement retains its own deadline.
+Ten cooperative test functions are dispatched per mode, subject to their
+existing collector/preallocation guards. Twenty additional native timer, arena
+and zero-timer cases pass in preallocation mode. All final selected compiles
+and runtimes exit zero under the required 12 GiB/3 GiB guards. The rejected
+Boehm probe and original missing-helper test compilation are retained without
+pass credit; separate commit `5d128d8e3` makes the zero-timer harness standalone.
+
+**Browser acceptance and the 60 Hz goal without stalls remain pending.** The
+shared build worker is busy; completed executable `f26b41bd...` still has the old
+cooperative-work source. It cannot validate the new scheduler, and no duplicate
+production build is queued. The unit checks receive no scrolling/FPS or
+instruction credit. Previous GPU waits and deadline misses remain unresolved.
+
+The [pacing receipt](performance/reddit-boots-cooperative-pacing-20261108.md)
+records the exact commands, modes, source pins, dispatch and local evidence
+manifest. Its mode-0600 archive has 121 individually verified files, SHA256
+`2cdb576e636f506fc3cb6a5b28be4452368e3505564585245bc00b2ba024d4a9`.
+Completed job output and temporary drivers are removed after verification.
