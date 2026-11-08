@@ -616,7 +616,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				multi_entry := runtime.event_binding_bool_property(dictionary, 'multiEntry', false)!
 				unique := runtime.event_binding_bool_property(dictionary, 'unique', false)!
 				// WebIDL converts all arguments before the native transaction checks.
-				created := store.create_index(name, path, indexeddb.IDBIndexParameters{ unique: unique, multi_entry: multi_entry })!
+				created := store.create_index_async(name, path, indexeddb.IDBIndexParameters{ unique: unique, multi_entry: multi_entry })!
 				return runtime.indexed_db_index(mut binding, created, receiver)
 			}
 			if method == 'index' {

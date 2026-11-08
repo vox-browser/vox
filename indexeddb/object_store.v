@@ -28,6 +28,8 @@ mut:
 	// The asynchronous browser entry points execute against the same request
 	// that was returned to the caller, rather than creating a second request.
 	operation_request_ ?&IDBRequest
+	operation_indexes_ []&IndexData
+	has_operation_indexes_ bool
 }
 
 fn (store &IDBObjectStore) load() !&ObjectStoreData {
@@ -154,7 +156,7 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 	if position >= 0 {
 		range := IDBKeyRange.only(key)!
 		data.remove_records_in_range(range)
-		for _, mut index in data.indexes {
+		for mut index in store.operation_indexes(data) {
 			index.remove_records_with_value_in_range(range)
 		}
 	}
@@ -162,7 +164,7 @@ fn (mut store IDBObjectStore) store_record(input Value, supplied_key ?Key, no_ov
 		key:   key
 		value: value
 	})!
-	for _, mut index in data.indexes {
+	for mut index in store.operation_indexes(data) {
 		index_keys := index_keys_for_value(index, value)
 		if index.unique {
 			for index_key in index_keys {
@@ -329,6 +331,10 @@ fn records_in_range(records []ObjectStoreRecord, range IDBKeyRange, direction ID
 }
 
 pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, parameters IDBIndexParameters) !IDBIndex {
+	return store.create_index_schema(name, key_path, parameters, true)
+}
+
+fn (mut store IDBObjectStore) create_index_schema(name string, key_path KeyPath, parameters IDBIndexParameters, populate bool) !IDBIndex {
 	mut data := store.load()!
 	if store.transaction.mode != .versionchange { return error('InvalidStateError: operation requires a versionchange transaction') }
 	store.transaction.require_active()!
@@ -352,7 +358,7 @@ pub fn (mut store IDBObjectStore) create_index(name string, key_path KeyPath, pa
 		unique:      parameters.unique
 		multi_entry: parameters.multi_entry
 	}
-	rebuild_index(data, mut index)!
+	if populate { rebuild_index(data, mut index)! }
 	index.store_name = data.name
 	index.object_store_ = data
 	mut stored_index := &index

@@ -48,7 +48,11 @@ type ObjectStoreOperation = fn (mut IDBObjectStore) !&IDBRequest
 fn (mut store IDBObjectStore) enqueue_operation(operation ObjectStoreOperation) &IDBRequest {
 	mut request := IDBRequest.create_for_global_scope(store.relevant_global_object(), store.name_)
 	request.transaction_ = store.transaction
-	handle := store
+	mut handle := store
+	if data := store.store_ {
+		handle.operation_indexes_ = data.indexes.values()
+		handle.has_operation_indexes_ = true
+	}
 	mut list := store.transaction.request_list_
 	list.enqueue(request, fn [handle, operation] (mut pending IDBRequest) {
 		if pending.aborted { return }
@@ -84,4 +88,33 @@ fn (mut store IDBObjectStore) enqueue_operation(operation ObjectStoreOperation) 
 		}
 	})
 	return request
+}
+
+fn (store &IDBObjectStore) operation_indexes(data &ObjectStoreData) []&IndexData {
+	return if store.has_operation_indexes_ { store.operation_indexes_ } else { data.indexes.values() }
+}
+
+// Schema handles exist synchronously, while population runs between the
+// transaction's earlier and later requests. A population failure aborts the
+// transaction without dispatching an error at an author-visible request.
+pub fn (mut store IDBObjectStore) create_index_async(name string, path KeyPath, parameters IDBIndexParameters) !IDBIndex {
+	index := store.create_index_schema(name, path, parameters, false)!
+	data := index.store_ or { return error('InvalidStateError: Missing store') }
+	mut actual := index.index_ or { return error('InvalidStateError: Missing index') }
+	mut transaction := store.transaction
+	mut request := IDBRequest.create_for_global_scope(store.relevant_global_object(), name)
+	request.transaction_ = transaction
+	mut list := transaction.request_list_
+	list.enqueue(request, fn [data, mut actual, mut transaction] (mut pending IDBRequest) {
+		if pending.aborted || transaction.state == .aborted { return }
+		rebuild_index(data, mut actual) or {
+			pending.fail(err.msg())
+			if transaction.state == .committing { transaction.state = .inactive }
+			transaction.abort(err.msg()) or { panic(err) }
+			return
+		}
+		pending.succeed(.undefined)
+		if transaction.state == .inactive && transaction.request_list_.is_empty() { commit_a_transaction(mut transaction) or { panic(err) } }
+	})
+	return index
 }
