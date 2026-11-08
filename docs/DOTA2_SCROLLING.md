@@ -724,3 +724,81 @@ The [durable receipt](performance/reddit-boots-scroll-20261108.json) records all
 trial commands, exact metrics, build/resource hashes, host loads, exits,
 rejected attempts and the private local raw-evidence archive identity. Per-job
 `Build/reddit-boots-scroll-20261108/` output is removed after recording.
+
+## November 8: identify the long frames
+
+The follow-up investigation uses a new opt-in, frame-correlated stack sampler
+(`tools/measure_precise_scroll.py --sample-stalls-ms 25`). It samples the actual
+main thread only while a native display callback exceeds its threshold, resumes
+that thread before resolving symbols, and records each image's actual load base.
+The driver marks these runs diagnostic. Their timings earn no performance credit.
+
+The live baseline identifies two avoidable paths. A 251.388 ms callback has
+44 of 46 samples in synchronous Metal shader compilation, reached through
+Graphite's `Recorder.snap()` during a canvas flush. A separate 235.443 ms callback
+includes synchronous wheel hit-test layout followed by
+`poll_javascript_tasks -> relayout`, then extensive native repaint and GPU
+readback work. Queued wheels ran before frame preparation began, so pending
+script effects bypassed the existing layout coalescing boundary.
+
+Commit `1ebbfe1bc` starts frame preparation before queued input replay. The new
+regression exercises accepted and cancelled wheels, synchronous geometry queries,
+a changed overflow target, one layout pass, and final paint adoption. It passes.
+The seven-case wheel executable also reports four failures in unchanged older
+cases: they expect fractional root offsets that the current physical-pixel
+snapping code rounds. Those cases do not call the new preparation helper. Their
+assertions and geometry were preserved; the complete wheel suite is not passing.
+
+Commit `38784c9f0` prepares bounded image/mask pipeline variants during the first
+canvas render and preserves compiled Metal pipelines across ordinary idle
+cleanup. Cleanup still frees upload caches, recorder caches and raster surfaces;
+explicit full retirement and unused-memory purge still destroy the context.
+Preparation uses 64 temporary 32-by-32 targets, with a 1 MiB recorder budget.
+This moves compilation into the first canvas render and retains compiled
+pipeline/driver state while idle. It cannot preclude compilation of every future
+shader or a cold restart after full retirement.
+
+The initial warm-up attempt still stalls for 239.536 ms. A subsequent attempt
+needs additional transformed, analytically clipped mask variants. Both attempts
+are retained. The final diagnostic observes no Metal compilation in its sampled
+slow callbacks, but still observes a long layout/repaint callback. This supports
+the specific pipeline path, not a claim that scrolling is stall-free.
+
+The fresh combined diagnostic narrows the remaining stall to a single
+190.163 ms callback: 14 snapshots are in synchronous DOM layout and 19 in
+native replay. None is in the redundant shell relayout or Metal compilation.
+Eliminating those two avoidable paths has not made all remaining layout and
+paint work fit the 16.67 ms budget.
+
+Optimized and ASan/UBSan focused checks pass with exact pixels, no additional
+pipeline compilation for their scrolling-mask case, idle raster release,
+compiled-pipeline reuse and full retirement. The existing native canvas checks
+pass, including 36 nested-layer scenes with zero error. Both complete frozen
+1400-by-900 Reddit captures, at scroll offsets 0 and 850, match the control with
+zero differing pixels. The 53 precise-scroll/probe tests and the real nested
+main-thread sampler check pass. Commands, source/library identities, actual
+exits, guard receipts, failures and sampled stacks are retained in
+[the stall report](performance/reddit-boots-stalls-20261108.json).
+
+The first alternating live timing attempt changes shared executable between
+pairs: each individual run and pair stays pinned, but there is only one pair
+per executable. Pair 2 regresses. Host load exceeds 100 on an 18-CPU host during
+much of the attempt, and live page bytes are not frozen. Pooling those pairs or
+attributing a throughput improvement to the change would be invalid.
+
+Two further unprofiled trials use the same newer production executable
+`135bdc55…` and the final native candidate `31b5a71a…`. Its frozen C contains the
+queued-input preparation change. Both trials complete all 1,800 inputs:
+
+| Trial | Scroll publications/s | Median interval | p95 | Maximum | Over 16.67 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Combined 1 | 93.60 | 9.527 ms | 16.913 ms | 217.595 ms | 5.708% |
+| Combined 2 | 99.65 | 9.105 ms | 15.711 ms | 208.264 ms | 3.462% |
+
+These are native frame publications, not physical display scanout. Their entire
+first-to-last input window is the throughput denominator; boundary gaps, input
+cadence, counts and host load remain in the report. **The steady 60 fps goal is
+still open.** Mean throughput above 60 does not excuse these stalls. The native
+candidate is explicitly injected for these checks; default native publication
+is pending the shared production worker. No separate production build was queued
+and no bundle was copied or replaced for the investigation.
