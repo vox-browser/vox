@@ -2,8 +2,20 @@ module main
 
 import layout
 
+fn svg_rectangular_mask_test_rectangle() []f32 {
+	stride := layout.compatibility_clip_path_segment_stride
+	mut data := []f32{len: stride * 5}
+	for i, point in [[f32(15), 16]!, [f32(141), 16]!, [f32(141), 127]!, [f32(15), 127]!] {
+		data[i * stride] = if i == 0 { f32(0) } else { f32(1) }
+		data[i * stride + 1] = point[0]
+		data[i * stride + 2] = point[1]
+	}
+	data[stride * 4] = 5
+	return data
+}
+
 fn svg_rectangular_mask_test_commands() []layout.PaintCommand {
-	data := svg_background_test_rectangle()
+	data := svg_rectangular_mask_test_rectangle()
 	clip := &layout.PaintClip{
 		is_svg_mask: true
 		cache_key: 7

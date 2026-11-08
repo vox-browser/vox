@@ -16,6 +16,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_translucent_partial_borders_share_rounded_side_coverage(self):
         self.compare_fixture('translucent-partial-rounded-border', width=1024, height=768)
 
+    def test_svg_images_retain_rectangular_clips_in_local_recordings(self):
+        self.compare_fixture('svg-image-rectangular-clips')
+
     def test_svg_stroke_width_keeps_float_user_units_before_multisampling(self):
         self.compare_fixture('fractional-svg-stroke-width')
 
