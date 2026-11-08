@@ -1,0 +1,1025 @@
+# jxl 0.7.0 passes and bracket results
+4b1ad3ba2c21ee6dc51b8e75c1ad0fd0	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 1, 3, 0, 2], downsample: [2, 4], last_pass: [2, 1] }|3,2;2,2;1,1;1,0;1,0;0,0
+37173eddec0a77c992fa5b7d893b9cc3	27	Passes { num_passes: 9, num_ds: 1, shift: [2, 3, 2, 0, 0, 3, 3, 1], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;2,1;0,1
+736cc68330e79e4d0da69cb1a8750185	34	Passes { num_passes: 8, num_ds: 3, shift: [0, 3, 2, 1, 2, 1, 0], downsample: [8, 8, 1], last_pass: [0, 2, 0] }|0,2;0,0;3,0;3,2;3,2;3,2;3,2;0,2
+1b39490d56bc21d6e74ee85956d0df6d	25	Passes { num_passes: 10, num_ds: 0, shift: [2, 0, 3, 1, 2, 0, 1, 2, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+58ac48077fba97f0bbb34e147a58d115	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e02fa6e8f4637d5b38894d71ad83e690	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4e4371ced3b9b976f897de1d7b1b724a	21	Passes { num_passes: 3, num_ds: 3, shift: [2, 2], downsample: [2, 1, 4], last_pass: [2, 0, 2] }|0,2;0,0;0,0
+f48b89a39c97f0416637e704fa5c3c71	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f284f2fc4bee70b6c20a37c3e17f00e8	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+517502b9c92154ac78aa94d1a13c2874	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+46bb7e08b3e3aadb3dc41dc61a3d079d	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 1], downsample: [8], last_pass: [2] }|3,2;3,2;0,2
+6ef37f6b7cf628a7a2bd58d3dd3a7365	27	Passes { num_passes: 3, num_ds: 3, shift: [3, 2], downsample: [2, 4, 8], last_pass: [7, 5, 1] }|3,2;3,2;0,2
+df3876fde1fd941f973c2582d3f7320d	38	Passes { num_passes: 11, num_ds: 2, shift: [1, 0, 3, 1, 0, 3, 2, 3, 2, 2], downsample: [8, 8], last_pass: [0, 2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+42b58345484f9ff4dd97484ace4995b3	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+3c13bd959b29f1fc698b833d5d1dbddf	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e5ed1164a7f2f058234f1c0d93361089	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [1] }|3,2;0,2
+e986786146b203e86a9a5ff16f991818	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [8, 4], last_pass: [1, 0] }|2,2;0,1
+a8272e333d8ca8079c7c6356e16bc27f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fb85411f5e7917c9394a45385037f7df	48	Passes { num_passes: 10, num_ds: 4, shift: [1, 1, 0, 2, 1, 0, 0, 1, 3], downsample: [8, 2, 1, 4], last_pass: [5, 2, 0, 3] }|0,2;0,0;1,0;2,0;2,1;3,1;3,2;3,2;3,2;0,2
+3da97caabfb1d6a7555f83f02fcbaf02	26	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [4, 1, 2, 2], last_pass: [1, 2, 3, 2] }|3,2;0,2
+ffe501fa305b48f2de2361449222e88e	50	Passes { num_passes: 11, num_ds: 4, shift: [1, 1, 2, 3, 1, 0, 0, 0, 2, 2], downsample: [8, 8, 1, 1], last_pass: [4, 1, 2, 0] }|0,2;3,0;0,2;0,0;3,0;3,2;3,2;3,2;3,2;3,2;0,2
+6ca8e8311002baca130de9ddd0e54e40	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+91e50c7ac651a6fee2d3c4b2d3d245f0	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+d11de728528004dd446f358c50c68435	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+51e7b3cf6d1b18bb23f6bdd1cc96a3d1	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+e68383b5b0e1153c44e4878315988adb	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 3], downsample: [8], last_pass: [0] }|3,2;3,2;0,2
+29a4e9c91862cc8e47df1174ee95d4d3	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [1, 1], last_pass: [1, 2] }|3,2;0,2
+b85c387637f2d230e9d5f7358ddc1e22	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ea096f52feaafaf06b60bbbae5397e2a	16	Passes { num_passes: 3, num_ds: 2, shift: [2, 3], downsample: [2, 4], last_pass: [0, 0] }|2,2;2,1;0,1
+e3c00b7d8acfd3b949a076720757b37b	33	Passes { num_passes: 4, num_ds: 4, shift: [0, 0, 0], downsample: [8, 8, 4, 1], last_pass: [0, 1, 7, 0] }|0,2;3,0;3,2;0,2
+d76bcf7a466c24dc4b56266906596f07	34	Passes { num_passes: 9, num_ds: 2, shift: [3, 1, 1, 3, 2, 3, 1, 2], downsample: [2, 2], last_pass: [3, 2] }|3,2;3,2;1,2;1,0;1,0;1,0;1,0;1,0;0,0
+ac1824e797f10b252ffc98b46e9e068a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7094f671f67f994232a5768e09f1c4d4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4dc8787725fe4b4bc33468a07b1c145d	19	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [1, 1, 2], last_pass: [2, 1, 0] }|1,2;0,0
+40a6637577f8eb0fa53a3551f4da6066	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4484e333c406160be58abb129802346e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+01babbe63cf776dfe556ffe15b2fbd69	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+aebb2ba7cd1f597ffeb2ae3324c253ba	24	Passes { num_passes: 3, num_ds: 3, shift: [1, 3], downsample: [2, 8, 2], last_pass: [5, 2, 0] }|1,2;1,0;0,0
+105af971150538ed0cbd8694939c91ce	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6e60185b48f999a0829cba7907c527bb	24	Passes { num_passes: 3, num_ds: 3, shift: [3, 0], downsample: [1, 1, 8], last_pass: [0, 0, 0] }|3,2;3,2;0,2
+58fabc2d928ea9a5596f8a9c4aa233f6	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+80bd7ccf12a8bc70c2aa485979138061	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ef16fd7d0510a693caac7fb584142373	39	Passes { num_passes: 7, num_ds: 4, shift: [2, 1, 1, 0, 1, 3], downsample: [8, 8, 2, 8], last_pass: [5, 2, 0, 0] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+f438431d8a258e129716c9add6266794	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7c02608a08c509ebcfeab9a72d114b1c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ba25a25f8d13d192d8afd625b445c62b	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [2, 2], last_pass: [2, 0] }|1,2;1,0;0,0
+8e4415cf7a19b0b24fda12e40d3c9e3e	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 1], downsample: [4, 1, 4], last_pass: [2, 2, 2] }|3,2;3,2;0,2
+d4cd3b3b4ac0fc9e45357796cb51188c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+037874438677063c3067152ca93d1038	13	Passes { num_passes: 4, num_ds: 0, shift: [0, 0, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+376b1b3241f3187ad57cf091b8fe7bd2	27	Passes { num_passes: 9, num_ds: 1, shift: [2, 1, 1, 3, 2, 1, 3, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+baddd6f8bf0397ad72b7c7df1026f66d	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [2, 8], last_pass: [1, 6] }|3,2;1,2;0,0
+b58c46099d66be67d07f059bf1ba4498	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [4], last_pass: [0] }|2,2;0,1
+3965696701cd47267bbad81a94128d76	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [1, 2], last_pass: [1, 2] }|3,2;0,2
+0fca9b5d41a73ef96e1afdefbbb190f3	19	Passes { num_passes: 7, num_ds: 0, shift: [0, 1, 1, 2, 3, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+d5fcb1571908dc7ff94878ca41de0348	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [8], last_pass: [0] }|3,2;0,2
+43c3d6faf1fc1b0bc4f0d0ada5ac8d82	27	Passes { num_passes: 4, num_ds: 2, shift: [2, 1, 0], downsample: [4, 2], last_pass: [2, 2] }|3,2;3,2;1,2;0,0
+e8cae5924b3e9ae9ade05e3697ff274f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6fea092bfa65855910f4d1fd04e1af94	32	Passes { num_passes: 7, num_ds: 3, shift: [2, 2, 2, 3, 1, 2], downsample: [1, 1, 8], last_pass: [2, 2, 0] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0
+ad65935595174c558189dd70c5c8fbef	22	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [8, 4, 1], last_pass: [6, 0, 1] }|2,2;0,1
+0453e2370a3b672eea7c4844a6ec0fb9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+cb857a3ab136e3f95a09c02a04f82262	28	Passes { num_passes: 6, num_ds: 2, shift: [3, 2, 0, 0, 1], downsample: [2, 8], last_pass: [4, 2] }|3,2;3,2;3,2;3,2;1,2;0,0
+eb63a5d59172bf6165287cee30762166	37	Passes { num_passes: 6, num_ds: 4, shift: [3, 0, 2, 1, 1], downsample: [2, 4, 4, 2], last_pass: [1, 1, 1, 2] }|3,2;2,2;1,1;1,0;1,0;0,0
+91196aa91895d8c8393f5c1cf8e9b971	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+6c1f921adb46ea75233d8739ddca6aba	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b46f24c2e2f7199c9449ca1153d2876b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f70901b5dfa702b0b07650ad1540b419	46	Passes { num_passes: 9, num_ds: 4, shift: [1, 2, 0, 0, 1, 0, 0, 0], downsample: [2, 2, 8, 4], last_pass: [7, 2, 3, 2] }|3,2;3,2;2,2;3,1;3,2;3,2;3,2;1,2;0,0
+cd6b20aa9d2fd232763f1bd443f68839	22	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [8, 2, 2], last_pass: [0, 0, 2] }|1,2;0,0
+7dd742b9c33b0805caf9ae0638f6c6ac	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [4, 8, 4, 4], last_pass: [1, 1, 0, 2] }|2,2;0,1
+450d647c8e99ce29bb2b4e76463f7c26	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [1] }|3,2;0,2
+e4544a5a6d300a0f8c9e522728d49e00	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e3ef1bdbc8e19b8781d3a7020fe92ed4	33	Passes { num_passes: 4, num_ds: 4, shift: [3, 3, 2], downsample: [8, 8, 4, 2], last_pass: [0, 6, 2, 1] }|3,2;1,2;2,0;0,1
+e89803ac84737bba71ee268014103cfc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+91d072db049d34a3ba51388348590016	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+5d6d6640fa54f98af1d303673f748a6e	26	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [4, 4, 2, 8], last_pass: [0, 4, 1, 0] }|3,2;0,2
+0771e6e546f6087358ffcf6cf8cc207e	15	Passes { num_passes: 5, num_ds: 0, shift: [2, 0, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+5136a8a8a4096ffb19c7405b799c92ef	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+3520245c06bc1d34e3a72bd4b665180b	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [1], last_pass: [0] }|0,2;0,0
+66883062d1dcccfe09ef79578672c4a0	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 1], downsample: [1], last_pass: [2] }|3,2;3,2;0,2
+4bc1a0c3126e9b6974750ec0e8548a93	28	Passes { num_passes: 6, num_ds: 2, shift: [2, 0, 0, 2, 1], downsample: [1, 1], last_pass: [1, 1] }|3,2;0,2;0,0;0,0;0,0;0,0
+ff60a99024633015f90a95a5542d36e6	50	Passes { num_passes: 11, num_ds: 4, shift: [0, 0, 2, 1, 1, 2, 2, 2, 0, 0], downsample: [2, 4, 1, 2], last_pass: [2, 0, 0, 0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+a284790cc4d37106f8dc9e10c98a7785	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+f3b7bfab69f5395b2dd1bee54c806209	38	Passes { num_passes: 8, num_ds: 4, shift: [3, 1, 3, 2, 3, 3, 3], downsample: [4, 8, 4, 4], last_pass: [2, 1, 2, 2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;0,1
+c2db80c2af565d581c6578c42a43db4b	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+107f508d3f1b18fd2112fa659a5e0556	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ec417b4284d7493e14fc24175eac1f3a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+62e1df0fea0662542fcb7ccd0f65249f	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+a15d2e2b0894c0cecc9db1db146aada3	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+b4ae78e63d229bebd1c10c70a12dbbb9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dd2faaca0f55ef648e370dd6ef9cdc5b	23	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [8, 8, 2, 2], last_pass: [0, 1, 1, 1] }|3,2;0,2
+f9f8305c1b13df2c514c80679f879554	17	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [8, 1], last_pass: [2, 3] }|3,2;0,2
+1e5f54700f7685a8ea4b0b3e2c33c261	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 2], downsample: [8, 8, 4, 1], last_pass: [2, 2, 2, 0] }|0,2;0,0;0,0
+a9c6633ac21951fed7e6cd6277cf7acd	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [4, 4], last_pass: [1, 0] }|2,2;0,1
+37e7a111e9217393b00dc429518beb93	27	Passes { num_passes: 9, num_ds: 1, shift: [2, 3, 0, 3, 3, 0, 0, 1], downsample: [8], last_pass: [0] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+36043f750c60e0559075dd31dba03148	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+13d3a63fdc17817c08c25198fbebd877	21	Passes { num_passes: 8, num_ds: 0, shift: [2, 1, 2, 2, 1, 3, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5b045790c8e5c78894ee1c49b8da6e34	33	Passes { num_passes: 10, num_ds: 2, shift: [0, 2, 0, 0, 2, 3, 2, 2, 0], downsample: [1, 4], last_pass: [0, 1] }|0,2;2,0;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+11ff9ba37126877942a7918f72621815	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+b85d6e490b9a9e6b526cd9549185a1e3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d7929e73f4e1a98507dd5ced89e927a5	34	Passes { num_passes: 9, num_ds: 2, shift: [1, 1, 2, 0, 1, 3, 3, 0], downsample: [8, 2], last_pass: [2, 0] }|1,2;1,0;3,0;3,2;3,2;3,2;3,2;3,2;0,2
+628a6786ad4217934165a833dc361c6f	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+a59571e0420846383aa0363b42a53d6f	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [4], last_pass: [1] }|3,2;0,2
+2de6f1d54e1d419bfcaef9ea94810164	25	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [1, 8, 1], last_pass: [3, 0, 7] }|3,2;0,2
+80efe76060e4e239935e063436a27186	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4b81b72b43e6f355315083153a8b1cd5	28	Passes { num_passes: 6, num_ds: 2, shift: [2, 0, 0, 0, 3], downsample: [8, 4], last_pass: [1, 5] }|3,2;3,2;3,2;3,2;3,2;0,2
+73d7a20c798d5508b2306a2e179a09b5	34	Passes { num_passes: 8, num_ds: 3, shift: [3, 1, 1, 3, 2, 0, 2], downsample: [4, 1, 8], last_pass: [0, 0, 1] }|0,2;3,0;3,2;3,2;3,2;3,2;3,2;0,2
+acfe922fb72f26a45e5d617c2597ba21	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+71af59039ad2d50c35f8bf0365d60df7	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+f1acfc05dddb1751651e94b6637ccc64	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+f5f277ebecad49ddf13631bab3c9618e	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [8], last_pass: [2] }|3,2;0,2
+7f6c16d957c4c0c308b16245073dd51b	40	Passes { num_passes: 11, num_ds: 3, shift: [0, 3, 2, 1, 2, 1, 1, 0, 1, 2], downsample: [2, 8, 8], last_pass: [1, 1, 1] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5573668ca520baf653ad9ff3931c18c3	13	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [2], last_pass: [4] }|3,2;0,2
+dc5638e070503d30ac92e2296002984e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+37c0815d9d8a0fce2bfb002613285f13	27	Passes { num_passes: 9, num_ds: 1, shift: [0, 0, 0, 2, 3, 0, 0, 0], downsample: [8], last_pass: [2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+ae39c1aed7303c65d3fa0956be7f1bb7	21	Passes { num_passes: 3, num_ds: 3, shift: [1, 3], downsample: [1, 8, 2], last_pass: [2, 0, 0] }|1,2;1,0;0,0
+3e070b209af3fb8c701a126857cc891c	25	Passes { num_passes: 3, num_ds: 4, shift: [1, 2], downsample: [8, 1, 1, 4], last_pass: [1, 1, 0, 0] }|2,2;0,1;0,0
+8165438864c8c06b43d21b4c81a9a53a	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+48a3780f7ddfb18e9ab7715f5645087a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7a0335076c3054b1f0b14f4f46207415	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 1], downsample: [8, 1], last_pass: [0, 0] }|0,2;0,0;0,0
+51667a91ef0831d2a3ab059825337add	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+9484284b0b9ba749215eae4d2da2f18f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1bac64ecb0958cf881ab190d1e1207bb	25	Passes { num_passes: 10, num_ds: 0, shift: [0, 2, 1, 1, 1, 2, 0, 3, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+12d64e20443ce6c9bbd3ce41a2e7a460	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+40145b2dae727f676642834394fc8df3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5d2409bc55e57b13f9ccd271b06c3a9c	23	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [1, 4, 1, 2], last_pass: [2, 0, 1, 0] }|1,2;0,0
+222063f7dcda2d7e14175c74133d1df3	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+fee421c2f5890492a142b0f8e804bc7e	25	Passes { num_passes: 3, num_ds: 4, shift: [3, 1], downsample: [4, 1, 8, 8], last_pass: [0, 0, 1, 0] }|3,2;3,2;0,2
+8d94317da24188739dee55342c01bd94	25	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [2, 4, 4], last_pass: [0, 0, 4] }|2,2;0,1
+41120448c4cf10ecd01203308297cbc5	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+9730748e4b79269ffaafb57fea3618c1	23	Passes { num_passes: 9, num_ds: 0, shift: [1, 0, 2, 1, 0, 2, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+b54146ed3fa865c62bc835e15ec15d08	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [4], last_pass: [1] }|3,2;0,2
+ba37dcd38bb96bb883d3258cc905f4d7	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [8, 2], last_pass: [0, 2] }|3,2;3,2;0,2
+475633f2feea405f24b66f03a53da5ed	23	Passes { num_passes: 5, num_ds: 2, shift: [0, 3, 2, 2], downsample: [4, 2], last_pass: [2, 1] }|3,2;1,2;2,0;2,1;0,1
+a2af3b830d2fc00b7c1dd18f046f9539	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+cc7373e091b91e14cdb767669395ddf9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1b25b575e953bae72054c38440cb1112	25	Passes { num_passes: 10, num_ds: 0, shift: [2, 2, 0, 1, 2, 2, 2, 1, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+1e227493d9741a00f0e171abc6d59152	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 0], downsample: [2, 1, 2, 1], last_pass: [2, 2, 6, 0] }|0,2;0,0;0,0
+9e5d097079f68e51219a24a14f263311	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 3], downsample: [4, 8, 4, 4], last_pass: [0, 1, 0, 0] }|2,2;3,1;0,2
+8de7cc9196076e429515cef7d241f631	28	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [8, 8, 1], last_pass: [1, 4, 0] }|0,2;0,0
+8316cfa68d01baf866cc1bdcae61b945	13	Passes { num_passes: 4, num_ds: 0, shift: [1, 3, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+c286532799de94f8f3c4ae4a02c43927	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+bcd53dc9062f3dc0d3ca5bcd74d0a40e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+84ab9e0eccddd7691a5b0182d392eadc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+cb92adf73f7afd8ffb01654c499a9f8d	28	Passes { num_passes: 6, num_ds: 2, shift: [1, 1, 2, 0, 3], downsample: [4, 2], last_pass: [1, 3] }|3,2;2,2;2,1;1,1;1,0;0,0
+b3369f75f790c12deb3b4a3920956bc0	28	Passes { num_passes: 8, num_ds: 1, shift: [1, 3, 2, 1, 2, 3, 3], downsample: [1], last_pass: [2] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0;0,0
+9e0a6176865dd0744378547c9f69b30d	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 1], downsample: [2, 2, 1, 4], last_pass: [0, 0, 4, 1] }|1,2;2,0;0,1
+2413d039fdf99d2788c0adf5d489bc27	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7673ee64590971999cb3324ff99c9c9f	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 1], downsample: [8], last_pass: [0] }|3,2;3,2;0,2
+4b6374949d78f50b0488b973f9754ee7	28	Passes { num_passes: 6, num_ds: 2, shift: [2, 1, 0, 3, 0], downsample: [4, 4], last_pass: [0, 1] }|2,2;2,1;2,1;2,1;2,1;0,1
+d1fc9a261d18bf7c535f3774ce69f054	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+dae1ce163a86dd89cece3523ce073fec	19	Passes { num_passes: 3, num_ds: 2, shift: [1, 3], downsample: [2, 1], last_pass: [2, 6] }|3,2;3,2;0,2
+108078be49d1064c0762c25ed474303b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c4f9df3b3080d264651d0b25b9dc7897	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d277214d55716b412eb4ead9336a5fe6	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+dbf079e94a9f30ea9ef1376222fb680c	36	Passes { num_passes: 10, num_ds: 2, shift: [1, 0, 2, 3, 3, 0, 3, 3, 2], downsample: [1, 2], last_pass: [5, 2] }|3,2;3,2;1,2;1,0;1,0;0,0;0,0;0,0;0,0;0,0
+01941bd26fd6bb4726bb68198a197647	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+9aeb87d6f8210c1bc713c272c7c6b44b	19	Passes { num_passes: 3, num_ds: 2, shift: [1, 2], downsample: [8, 4], last_pass: [2, 7] }|3,2;3,2;0,2
+53e24d86ad96d04a0ea27c761475a504	32	Passes { num_passes: 8, num_ds: 2, shift: [0, 1, 0, 3, 3, 2, 1], downsample: [4, 1], last_pass: [0, 2] }|2,2;2,1;0,1;0,0;0,0;0,0;0,0;0,0
+680aa4029786577ac29f0d4ba095f250	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3d586960f4adb03d603b97d3226541bf	26	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [1, 1, 8, 4], last_pass: [2, 0, 1, 0] }|2,2;0,1
+0af0fcb87deadcf2ddb961f8414c7d7a	19	Passes { num_passes: 3, num_ds: 2, shift: [0, 0], downsample: [1, 1], last_pass: [3, 2] }|3,2;3,2;0,2
+6b482111e2d1b5d8d2beb3e7c5bdaa48	30	Passes { num_passes: 6, num_ds: 3, shift: [0, 2, 0, 1, 1], downsample: [1, 4, 1], last_pass: [1, 0, 1] }|2,2;0,1;0,0;0,0;0,0;0,0
+23c4b5a5b02e344c176e0ae65d7a8029	20	Passes { num_passes: 4, num_ds: 1, shift: [0, 2, 0], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;0,1
+c8f2b0ead3827f94615324b15bb43838	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+29172e0fc18c22ffa740447670150f98	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [1, 8], last_pass: [1, 1] }|3,2;0,2
+9f1dc1ecd4bb7b028445610ecb4b5472	27	Passes { num_passes: 11, num_ds: 0, shift: [3, 2, 3, 0, 2, 0, 0, 2, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+83928771be1409d066245ebe19f7cce1	13	Passes { num_passes: 4, num_ds: 0, shift: [1, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+49da586287eb1a6cb1c4acd2f1729c15	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [2, 4], last_pass: [2, 1] }|3,2;0,2
+0ff8b465c52cfa653f21d88ed86697b6	19	Passes { num_passes: 7, num_ds: 0, shift: [0, 0, 3, 3, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+dec2df52255c3a578340c9576459a543	31	Passes { num_passes: 3, num_ds: 4, shift: [2, 1], downsample: [2, 1, 4, 8], last_pass: [3, 2, 2, 2] }|3,2;3,2;0,2
+c3e35f160425e782e49a1bf85aa4f2f8	24	Passes { num_passes: 4, num_ds: 2, shift: [3, 1, 0], downsample: [8, 8], last_pass: [3, 1] }|3,2;3,2;3,2;0,2
+c953796ac2bc23c827d56e0cc9e3ac9f	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 8], last_pass: [0, 1] }|3,2;0,2
+8a05264e0df0632933105f41a2b2aac6	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 2], downsample: [2, 2], last_pass: [0, 0] }|1,2;1,0;0,0
+9c1624d1be699caddad2b4ab55ef2185	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a197e9f245f96ab0c901af308d7aabd3	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+46e6f78715e917aadf04901e78e520a1	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 1], downsample: [4], last_pass: [1] }|3,2;2,2;0,1
+d88676f16f06375f2e63b7932725f196	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bc7c9824c4db91e8547502faaea8f8e5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+34764963c2dea8fb51d7ef736bd256e3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+05d958de4f4227737b00ac7f1e4ac1fb	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [1], last_pass: [1] }|3,2;0,2
+ac28307c14e9f6ff0d225e8b56c40d8d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+811650212aec3a26fe73caacc15ad31a	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+5908da6a823f264684098d054ef06175	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [2, 1], last_pass: [2, 0] }|0,2;0,0
+0492e418d81b1f777a26db0cde3bb682	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+cf927e8a2c7422e30b1110ac3432001c	27	Passes { num_passes: 7, num_ds: 2, shift: [1, 1, 2, 0, 1, 3], downsample: [8, 8], last_pass: [0, 1] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+37fddc9e63cc5e473488329e8c01eb24	30	Passes { num_passes: 9, num_ds: 1, shift: [2, 2, 3, 3, 1, 2, 3, 2], downsample: [2], last_pass: [3] }|3,2;3,2;3,2;1,2;1,0;1,0;1,0;1,0;0,0
+f0f93b0c25b2f2e84668d93a4f1db315	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+770efe93e17d4474e53b2e7024ab758b	36	Passes { num_passes: 9, num_ds: 3, shift: [2, 3, 0, 0, 2, 3, 3, 3], downsample: [8, 1, 2], last_pass: [2, 1, 0] }|1,2;0,0;3,0;3,2;3,2;3,2;3,2;3,2;0,2
+331f01921f89c01f21b6e282eb4d9df3	25	Passes { num_passes: 8, num_ds: 1, shift: [2, 3, 3, 0, 2, 0, 0], downsample: [1], last_pass: [0] }|0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+ec299cfa365f95b920d452002aa78366	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+0d67d81f51d0aef8b21c687e525f5454	22	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [4, 8, 1], last_pass: [0, 2, 1] }|2,2;0,1
+69411ede2c021887956f9d26430c9bcb	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [2, 2], last_pass: [0, 0] }|1,2;0,0
+103c532ac1f040d6a32b1cee85d32ec0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3a880c992a560dd42b08796e9d5d3d68	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 0], downsample: [1, 4], last_pass: [0, 2] }|0,2;0,0;0,0
+f4e8908e370099cd03f2675cdc6d7ae8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ab09b814b57ec8f2d2ce8dac6b4290c7	24	Passes { num_passes: 6, num_ds: 1, shift: [3, 0, 1, 0, 0], downsample: [1], last_pass: [5] }|3,2;3,2;3,2;3,2;3,2;0,2
+63ae8832c92ca9eb8c1a16bee364a428	26	Passes { num_passes: 4, num_ds: 3, shift: [2, 3, 2], downsample: [4, 1, 4], last_pass: [0, 2, 2] }|2,2;2,1;2,1;0,1
+0b249ebc387b548b9b6dffc7a0b91092	17	Passes { num_passes: 6, num_ds: 0, shift: [0, 2, 0, 1, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;0,2
+1945b576cb6464c59f8d0bb259800335	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [1, 2], last_pass: [1, 0] }|1,2;0,0
+99d3e6106aa9a7d98273dfb934da4e3c	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 8], last_pass: [0, 1] }|2,2;0,1
+20b57fa890ff8571cac3561b4d222058	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+32f47bccbacdf5506c89522c6564e9c0	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+2acd7617dea02ca74d4a498c2fea8d2c	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 0], downsample: [2, 8], last_pass: [0, 6] }|1,2;1,0;0,0
+b52f3e23c1044b7f895880eda7f9fe0c	13	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [4], last_pass: [3] }|3,2;0,2
+1a29ff1b812629acb0634f0c40f6b6f0	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 0], downsample: [2, 4], last_pass: [2, 0] }|2,2;2,1;0,1
+3eac50982c947b434df4aea71f03cfac	25	Passes { num_passes: 3, num_ds: 4, shift: [1, 0], downsample: [4, 2, 2, 2], last_pass: [0, 2, 2, 0] }|1,2;1,0;0,0
+ca0fc909e507d2247317886328c26c05	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 3], downsample: [8, 8], last_pass: [0, 0] }|3,2;3,2;0,2
+ffd762d2d40a81f86dabe9aeb9b0793a	47	Passes { num_passes: 11, num_ds: 4, shift: [3, 1, 1, 3, 2, 0, 2, 1, 2, 0], downsample: [2, 8, 1, 2], last_pass: [1, 2, 1, 0] }|1,2;0,0;3,0;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+dfb68449aa5858aa54d287b79d28d7a5	35	Passes { num_passes: 11, num_ds: 2, shift: [1, 3, 2, 1, 1, 2, 0, 0, 3, 0], downsample: [2, 4], last_pass: [0, 1] }|1,2;2,0;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+1f4481a66ccdecbc07b9893f542315d9	27	Passes { num_passes: 11, num_ds: 0, shift: [0, 2, 0, 2, 2, 0, 0, 0, 1, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+e54b6b35019575e0ef9904f1260059a8	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [2] }|3,2;0,2
+07f22385ee34963f868e09385b932947	15	Passes { num_passes: 5, num_ds: 0, shift: [0, 1, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+76ea76ae36fe27279a7b10ba61f443d2	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 1], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+8bc2679eb34c2e29017e8e00557ecf97	17	Passes { num_passes: 6, num_ds: 0, shift: [1, 1, 0, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;0,2
+7fac79e81fdcb39ec78c093731e32773	43	Passes { num_passes: 11, num_ds: 3, shift: [0, 3, 2, 2, 1, 2, 3, 1, 0, 2], downsample: [4, 8, 8], last_pass: [1, 0, 2] }|3,2;2,2;3,1;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+7d6cb349681bc4032f02e3cd68d504cb	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [1, 4, 2, 8], last_pass: [2, 1, 2, 1] }|3,2;0,2
+f1786511fee482b4daf7af5124e8c795	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+625ae5c8d5891ab6a037e1ef95bc021a	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+fdffee2d26b540a1fbb44cc4e0b456e5	29	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [8, 8, 8, 8], last_pass: [1, 5, 5, 1] }|3,2;0,2
+f8faf7f2508d6025d4135dd143b333e1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+98b7b938d45af6087d18729a58f09c46	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e10295a1fe6ac977f6e2704b8113d683	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+0e033633a2d924141635aa3dd73c0cb5	24	Passes { num_passes: 3, num_ds: 3, shift: [0, 2], downsample: [2, 1, 1], last_pass: [0, 6, 0] }|0,2;0,0;0,0
+e2d25daa52df10f45a2501c54c3af9e9	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+0e80ee6d878a84f2bb383ef1357f3879	27	Passes { num_passes: 3, num_ds: 3, shift: [0, 0], downsample: [1, 1, 1], last_pass: [1, 5, 5] }|3,2;0,2;0,0
+c9ca5a6d95c206b7e8d61b06da0f8b3e	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 4], last_pass: [2, 0] }|2,2;0,1
+599a2cfebc2f0b79e607c25ac992e07a	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [2, 4], last_pass: [2, 1] }|3,2;0,2
+774b68d0ef5c71754f78c65375a7ebee	42	Passes { num_passes: 9, num_ds: 3, shift: [3, 2, 0, 1, 0, 2, 2, 1], downsample: [1, 1, 2], last_pass: [7, 1, 1] }|3,2;1,2;1,0;1,0;1,0;1,0;1,0;0,0;0,0
+8f56cbeb3b5fdc667683d6181302bfe7	19	Passes { num_passes: 7, num_ds: 0, shift: [1, 3, 2, 2, 2, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+690198e8beadd3f6142d064b1d3358dc	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [2, 2], last_pass: [0, 0] }|1,2;0,0
+ead813c02eb4b91aa3258fcceecae4fa	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 3], downsample: [1, 4], last_pass: [1, 3] }|3,2;0,2;0,0
+82370c89c9fa570975d85caf98cf821c	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+e9d42d28e773c93952894f9687ad57e7	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [8, 1], last_pass: [1, 1] }|3,2;0,2
+d6cfa706077c7c10a9264a161b312978	15	Passes { num_passes: 3, num_ds: 1, shift: [1, 3], downsample: [8], last_pass: [4] }|3,2;3,2;0,2
+0c35e1f03b1a118af62f7d4559533a39	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d8c06ba335b7559e33cb239b90bc7b18	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bb3ca05759e32d33983f2aac65ead553	29	Passes { num_passes: 10, num_ds: 1, shift: [1, 2, 3, 1, 0, 0, 0, 1, 3], downsample: [8], last_pass: [2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+54beb75807ca75135c04cdb6d3d4c85e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b3758df38236e6c2ed2059fee77f20e3	28	Passes { num_passes: 8, num_ds: 1, shift: [3, 2, 2, 3, 2, 2, 1], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0
+0ca1f80abf75e429dae7e56fde4eac3a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2fdd3eb0d348b6495c7e0bcbca7a6001	23	Passes { num_passes: 7, num_ds: 1, shift: [2, 2, 3, 2, 1, 3], downsample: [8], last_pass: [1] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+51db6be80f03309e5ae64294f9c98e32	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+d270694c305485c249b816e5a3b874a8	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+0a23688443c55ff5b3aa0fb77adb0a65	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 0], downsample: [8, 1], last_pass: [2, 0] }|0,2;0,0;0,0
+7a33448304be5c31072df8944bcc8885	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 1], downsample: [8, 1], last_pass: [0, 2] }|3,2;3,2;0,2
+dee771f3a9408dbb21dec201149e868a	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 3], downsample: [8, 1, 8, 8], last_pass: [0, 2, 6, 0] }|3,2;3,2;0,2
+8a47c28d3bf3fcc6c98cadcae6a41845	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 2], downsample: [8, 2], last_pass: [0, 1] }|3,2;1,2;0,0
+41e5e38736a33f6473a455021fd9bcfa	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+b3e62c5c79492e205a103edb3b3e53ac	25	Passes { num_passes: 8, num_ds: 1, shift: [1, 3, 0, 3, 1, 2, 1], downsample: [2], last_pass: [0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+3af3a592c74265fdd7bbd17397d8b2bd	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 0], downsample: [8, 1], last_pass: [7, 2] }|3,2;3,2;0,2
+33b9ebebf8b10f5a346cc9f623431121	28	Passes { num_passes: 8, num_ds: 1, shift: [2, 0, 3, 1, 3, 1, 1], downsample: [8], last_pass: [5] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+1b177cc472543becbacdf7dc8da9e5ac	25	Passes { num_passes: 10, num_ds: 0, shift: [2, 3, 2, 0, 0, 2, 3, 3, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+e9b510843eb79bbc278dd02d9ce8cf75	17	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [8, 2], last_pass: [1, 2] }|3,2;0,2
+0ccf6ca8828a784bc9acd3c84612619e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+46144ac41efa4f92f73872f2de511087	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 1], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+59aac2d22599993b560274c943130614	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [2, 4], last_pass: [2, 2] }|3,2;0,2
+a01f7002426d783000fb26e9864d87d2	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9274879bee83e52ff8d55a456f3297a7	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+73dd43d351cb5cd4aeac2ae231c48263	37	Passes { num_passes: 8, num_ds: 3, shift: [1, 3, 1, 3, 3, 0, 0], downsample: [2, 8, 1], last_pass: [1, 1, 2] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0;0,0
+458355035773a902abf40e1ecc1c1443	13	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [0] }|1,2;0,0
+93de45bc6e05670c30e7aad801e3f069	21	Passes { num_passes: 8, num_ds: 0, shift: [1, 3, 3, 2, 3, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+03aa119005bde44b7dae559b2d3fd548	13	Passes { num_passes: 4, num_ds: 0, shift: [0, 1, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+19cf838b6791e185b7a0fe1a17e93afa	20	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [1, 8], last_pass: [4, 1] }|3,2;0,2
+e5fa387a859201f9b977f4b6edbf6e65	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [2] }|3,2;0,2
+37ffa4a8968c6e7be85c408883aeb552	27	Passes { num_passes: 9, num_ds: 1, shift: [2, 3, 3, 3, 1, 2, 0, 1], downsample: [2], last_pass: [0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+71dd585cef95946c84759d78e861545d	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+410db6f4e096bd59618664938f05ec98	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+a0b98e89c4ca1ef8c237a22957d7e199	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+be1f3ce05f152201ee40693d4e09b484	28	Passes { num_passes: 3, num_ds: 4, shift: [1, 3], downsample: [8, 8, 1, 1], last_pass: [2, 1, 0, 0] }|0,2;3,0;0,2
+78704d4df55961124cda184f1b137422	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3046754083d99792dcfcdb143e243a36	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bc90273c375f7fae522c4a077ce97e39	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b48914de97196a6553b7f0b39872f8cc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+65d71023ac7476bfb466a9e5c6e02bd4	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [2], last_pass: [5] }|3,2;0,2
+61287493496fc728b92158bfe6c6b720	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+637252af1a4f150fbe27cb297a39a685	29	Passes { num_passes: 4, num_ds: 3, shift: [2, 0, 3], downsample: [2, 4, 1], last_pass: [1, 1, 3] }|3,2;2,2;2,1;0,1
+caa68385e69a20d6e0e544916fe30ec2	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 3], downsample: [4, 2], last_pass: [2, 2] }|3,2;3,2;0,2
+aea3a6bd871490f9f44050269405ce83	24	Passes { num_passes: 3, num_ds: 3, shift: [1, 3], downsample: [2, 1, 2], last_pass: [1, 4, 2] }|3,2;1,2;0,0
+e840b80493b2254983a519914b21766e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+eed9955f96384166512579d51844ed8e	24	Passes { num_passes: 3, num_ds: 3, shift: [3, 3], downsample: [1, 8, 4], last_pass: [2, 1, 2] }|3,2;3,2;0,2
+cdb54b7e0ab6103fde74367015a219e9	22	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [8, 4, 4], last_pass: [1, 5, 0] }|2,2;0,1
+d51c84d1adc7b8b0a3e957ba38f21a6c	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [8], last_pass: [0] }|3,2;0,2
+7a079f464eb691a81d377eb942dd068f	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 1], downsample: [8, 2], last_pass: [0, 0] }|1,2;1,0;0,0
+d45d6744740251b0e8f1ee780bb946c2	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5d8e6176342f157672e5b9e45f8d766a	26	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [1, 8, 2, 1], last_pass: [0, 2, 1, 2] }|0,2;0,0
+72852a5bef333ffb29af78227ea03a0d	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+99cb43520033db276ec9dd29d993f2a9	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 8], last_pass: [2, 0] }|3,2;0,2
+3c6beea34eff0ba053e42cd0653be465	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4753ea8ee035f1521a3bfa5c9af1574a	26	Passes { num_passes: 5, num_ds: 2, shift: [2, 1, 2, 2], downsample: [1, 2], last_pass: [1, 5] }|3,2;0,2;0,0;0,0;0,0
+b08581f78add0b05b1b9ee64c52b3425	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+342b37c346abf1821b142ecf6995f894	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+219716126c5a6ac7d4d74982f7732a26	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+186adc700d05353941e0143ae33a2f90	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5eb646c1523605f08f8ddc296dfe384a	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 0], downsample: [8, 4, 2, 2], last_pass: [0, 1, 1, 0] }|1,2;1,0;0,0
+276f1f9d65a825f4c6174149a29f9e40	22	Passes { num_passes: 5, num_ds: 1, shift: [2, 3, 1, 3], downsample: [4], last_pass: [3] }|3,2;3,2;3,2;2,2;0,1
+849d298b5a9ec2df2b411d128a436fc4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+30badb6ef0c4b95c5f23548078b42916	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+979325afecb04c01206c4c4bce7297a0	23	Passes { num_passes: 9, num_ds: 0, shift: [3, 1, 2, 0, 3, 2, 0, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+d0a9beb22b63c1067f1de084d622ad3d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6d2b0aea18b06ad15436ac3d838fd58d	19	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [4, 2, 2], last_pass: [1, 0, 1] }|1,2;0,0
+ff3dfa1f60cda0e3e9e76c86e87cc2c4	47	Passes { num_passes: 11, num_ds: 4, shift: [1, 3, 3, 0, 2, 2, 3, 3, 3, 3], downsample: [2, 1, 1, 1], last_pass: [2, 1, 1, 4] }|3,2;0,2;1,0;1,0;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+1ccc509f5e06cec066f75665f4d81956	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e5338cbc2681b61d01d37833cca9c0a5	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [4] }|3,2;0,2
+cec8352e18e14f9f1adfee15787bffba	30	Passes { num_passes: 3, num_ds: 3, shift: [2, 1], downsample: [1, 2, 4], last_pass: [2, 0, 5] }|1,2;1,0;0,0
+cf90bf6d18bf8792fec10e5b8200734f	30	Passes { num_passes: 7, num_ds: 2, shift: [1, 0, 2, 0, 3, 3], downsample: [8, 2], last_pass: [6, 2] }|3,2;3,2;1,2;1,0;1,0;1,0;0,0
+fe3ebaeaca5ad2fb76129612d10e28d2	28	Passes { num_passes: 3, num_ds: 4, shift: [3, 1], downsample: [8, 8, 2, 1], last_pass: [1, 5, 2, 2] }|3,2;3,2;0,2
+4baf8965516cc1d5d3ca4945f66c471c	28	Passes { num_passes: 6, num_ds: 2, shift: [2, 3, 1, 1, 3], downsample: [1, 2], last_pass: [0, 2] }|0,2;0,0;1,0;1,0;1,0;0,0
+bada76f5df102cf0b99e25146f54c97a	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [4, 4], last_pass: [1, 6] }|3,2;2,2;0,1
+8df5995f1c9a0246062abdfe3e9c978a	22	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [8, 4, 4], last_pass: [3, 2, 1] }|3,2;0,2
+0eba3eac9a5b96e00a4b9adb1a5e9d51	24	Passes { num_passes: 3, num_ds: 3, shift: [0, 0], downsample: [2, 8, 2], last_pass: [1, 7, 0] }|1,2;1,0;0,0
+514fce72c368970313ec0dd6967b5a79	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+4740bc50e1ca51a296a85e3f38632201	26	Passes { num_passes: 5, num_ds: 2, shift: [0, 0, 0, 2], downsample: [1, 4], last_pass: [5, 0] }|2,2;2,1;2,1;2,1;0,1
+8ee984ba5ec6aec368056377a6bd1a63	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 3], downsample: [1, 2, 8], last_pass: [1, 2, 0] }|3,2;0,2;0,0
+d23b3d3024504af83a93125e430b23c8	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+1ecb84e3c6b602106cbed554b260f455	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 2], downsample: [2, 2, 4, 2], last_pass: [2, 0, 0, 1] }|2,2;1,1;0,0
+3c120da12c1df2b82d041a771f8ef028	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+8c0848a6a1e228f8387f5fb11d4fb3d0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b791e6512355d7c4c6abf778510fbabc	27	Passes { num_passes: 9, num_ds: 1, shift: [3, 0, 2, 0, 1, 3, 0, 3], downsample: [8], last_pass: [0] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+e8ded3102d1bb5317320f4ef1e03432e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e6b6cc67d48975db00c3c3c9bcaa6ebb	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 3], downsample: [4], last_pass: [1] }|3,2;2,2;0,1
+50508ba795aaca5df76bbc1e2e3acdda	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c69c0a9c30ab2e517422b51e48b0a4ed	15	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+778e40e407490991a8691fe3242ee44b	39	Passes { num_passes: 9, num_ds: 3, shift: [2, 3, 0, 2, 0, 0, 0, 1], downsample: [1, 2, 4], last_pass: [7, 0, 0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;0,1;0,0
+e701ab4681b469cf59a4a1a3da78784c	32	Passes { num_passes: 5, num_ds: 4, shift: [1, 0, 0, 0], downsample: [8, 4, 4, 4], last_pass: [2, 1, 0, 1] }|2,2;2,1;3,1;3,2;0,2
+611d38c9347363a0efc776910908c91f	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+b5976076310fd700deb067598adec614	13	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [4], last_pass: [5] }|3,2;0,2
+ac9efbc7eab21b1fbcca04ca6661b632	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fa374ec974cbb6058183339a25a94cf3	22	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [8, 2], last_pass: [0, 1] }|3,2;1,2;0,0
+f6c3859f72f15e77285b9cfc69ae97c0	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 3], downsample: [8], last_pass: [0] }|3,2;3,2;0,2
+2ac355ab5f36878fdb9a45562116595b	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 0], downsample: [8, 1], last_pass: [0, 5] }|3,2;3,2;0,2
+f0d27281c1624331cae73f7a2fa7fa72	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b7b1aaabc219070f087f632a5da5546b	27	Passes { num_passes: 9, num_ds: 1, shift: [3, 0, 2, 1, 1, 1, 1, 1], downsample: [8], last_pass: [1] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+b7c4bc893e97f45c47ddb9653c8ce2ea	27	Passes { num_passes: 9, num_ds: 1, shift: [1, 2, 0, 2, 1, 2, 3, 1], downsample: [8], last_pass: [0] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+a86973b7945b8204813d1aa4ef3b6944	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f4eaa1baae13eb4c1dc247b2a260e7c9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+768ae829c5bdf2bb5059d5ff1a40bd35	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 1], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+c015ead9b53f602c10c53c63c0e9108a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f9c88d43c536f12e07dcc9ecd27c78d9	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [8, 1], last_pass: [2, 0] }|0,2;0,0
+0abac7b29c0709d74018be7e33b349e6	22	Passes { num_passes: 3, num_ds: 2, shift: [0, 0], downsample: [4, 4], last_pass: [6, 0] }|2,2;2,1;0,1
+211b213584b42efd435c7862f43e7bce	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+8b1e1503fd35142e4dcaa831a20bb72a	17	Passes { num_passes: 6, num_ds: 0, shift: [1, 3, 3, 0, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;0,2
+261164295c46ecd5e66372f1ec74512c	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [2], last_pass: [0] }|1,2;1,0;0,0
+8e2f54dbe9085543aafd3606ab5ba468	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 3], downsample: [8, 2, 2], last_pass: [0, 2, 2] }|3,2;3,2;0,2
+952ffe809ca3e9beb3964a55addfa729	13	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [4], last_pass: [3] }|3,2;0,2
+840faa872b8e2d508dacaf1133657b8d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e3d3cc4bf60e07ea225bd931945db075	33	Passes { num_passes: 4, num_ds: 4, shift: [3, 0, 1], downsample: [8, 1, 8, 1], last_pass: [3, 1, 2, 0] }|0,2;0,0;3,0;0,2
+5fe65830fc1410dab2b443e538a80a61	35	Passes { num_passes: 11, num_ds: 2, shift: [0, 3, 0, 3, 1, 0, 3, 2, 0, 0], downsample: [4, 2], last_pass: [0, 2] }|2,2;2,1;1,1;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+1c5a74aac2cc74743c22ae3bfbf9ff2b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1aa6eda01b23b8a65781063d8433647d	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 0], downsample: [4, 2], last_pass: [2, 2] }|3,2;3,2;0,2
+4d7c4949337dd76576fd51e21539b90a	22	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [1, 4, 8], last_pass: [2, 2, 0] }|3,2;0,2
+08af031a6a68525f9f80f4492e4daa22	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+60036f9d38b037e23340fed865925cb3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2b0b76b6377661c57291baff8ae3d4b8	21	Passes { num_passes: 6, num_ds: 1, shift: [2, 1, 1, 0, 0], downsample: [8], last_pass: [2] }|3,2;3,2;3,2;3,2;3,2;0,2
+7267f752a548c3607dca7ab8babecf95	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+9835f20e97c4ab106ecacb4bbe75d13a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bb74796346728bb3bd4923805db36c08	29	Passes { num_passes: 10, num_ds: 1, shift: [1, 2, 2, 3, 2, 0, 3, 3, 2], downsample: [2], last_pass: [0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+48ca77c68d94ff2df7a6edd143d1f194	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7ff3cbf670bb870dc1b3da04ba3a7b8a	43	Passes { num_passes: 11, num_ds: 3, shift: [3, 0, 3, 3, 3, 2, 0, 3, 2, 1], downsample: [8, 8, 1], last_pass: [0, 5, 1] }|3,2;0,2;0,0;0,0;0,0;3,0;3,2;3,2;3,2;3,2;0,2
+71906a9bcf1042a99210633bc7649670	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+04b340a3189a1b092a05cc69ad0e9ab6	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+175447058cf7f46fa69f0dc1d93093d9	23	Passes { num_passes: 9, num_ds: 0, shift: [0, 2, 2, 2, 2, 3, 0, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5b1aa55ecd4fe13fc58b85dbea49f333	33	Passes { num_passes: 10, num_ds: 2, shift: [0, 1, 3, 0, 2, 2, 0, 1, 1], downsample: [8, 8], last_pass: [2, 2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+552c6365952359508717fe2e9d648e03	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [2], last_pass: [0] }|1,2;0,0
+6d2f1848bdf09e842dab7f92d111ded2	19	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [4, 8, 2], last_pass: [1, 0, 0] }|1,2;0,0
+a46f97a23395658dba5603004ea15bdc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a854803e772a5960ce6efd5b0a631132	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a72f8bc49ce3ccfb2d7a245d8ab7d011	19	Passes { num_passes: 5, num_ds: 1, shift: [3, 3, 1, 1], downsample: [4], last_pass: [1] }|3,2;2,2;2,1;2,1;0,1
+a3a0119b257ccb2ff99568e96e6fd337	20	Passes { num_passes: 4, num_ds: 1, shift: [1, 0, 0], downsample: [2], last_pass: [0] }|1,2;1,0;1,0;0,0
+a35adec17130ccdbacff7c6314a30abf	17	Passes { num_passes: 4, num_ds: 1, shift: [1, 1, 3], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;0,1
+1de16f1e49ce444730a9385e7533fcc6	26	Passes { num_passes: 2, num_ds: 4, shift: [0], downsample: [4, 1, 1, 8], last_pass: [7, 2, 1, 2] }|3,2;0,2
+32ed77108bac5865cd84c41405403cbd	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+6772d48ffd472c2e0d1983dbaa2aa468	31	Passes { num_passes: 5, num_ds: 3, shift: [2, 0, 3, 1], downsample: [1, 2, 2], last_pass: [7, 1, 0] }|1,2;1,0;1,0;1,0;0,0
+fc5b8c82056338cf40b2afb18f75aed5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ad1bb63a3c15abc053383fb4e3d57b96	22	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [8, 2, 8], last_pass: [0, 0, 6] }|1,2;0,0
+b34db30346456baa1b843cf96113bc35	28	Passes { num_passes: 8, num_ds: 1, shift: [3, 2, 1, 2, 2, 1, 2], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;1,0;1,0;0,0
+2d196ec67dfd2db397a712d17ef64c86	22	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [4, 1, 8], last_pass: [0, 0, 5] }|0,2;0,0
+e4c6bd189207ffc9ccfc748e2f02fbf0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9b15b10b3d9843bc00b576b0b984febd	25	Passes { num_passes: 10, num_ds: 0, shift: [3, 2, 2, 0, 2, 0, 2, 1, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+e64c20358c784a4193049ffdad8a4521	15	Passes { num_passes: 3, num_ds: 1, shift: [2, 3], downsample: [1], last_pass: [4] }|3,2;3,2;0,2
+832f61073e6c07b4f8fa8c2bc102ff6d	13	Passes { num_passes: 4, num_ds: 0, shift: [3, 3, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+d70304cb22c48547d493631c43227a71	31	Passes { num_passes: 9, num_ds: 2, shift: [3, 1, 0, 0, 0, 2, 0, 0], downsample: [4, 2], last_pass: [1, 2] }|3,2;2,2;1,1;1,0;1,0;1,0;1,0;1,0;0,0
+c60189cb3eb7325b4b64a15690560f9e	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [2], last_pass: [0] }|1,2;1,0;0,0
+00692038d0b0bd6e934540b124c53675	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+10a0765664431503ab015c58c7c3b5ba	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1c30d5158ae56684125bff3ff5ef038d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+949031ea75650a234d21b74652c1f30b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f4932f6e61b4b05feb18c0d30eabebd0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+40df09f4ea0339fc6cec93b2d56fda9c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+acb150eeb144dafa6d10bac9110a7818	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2911f194b1d371be5fa71e4ae02acf2b	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [1, 2], last_pass: [0, 1] }|0,2;0,0
+10b6f5fd80f9a337f2499bee0ff2385f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dc58528f5b9f3a1f730c3ce8882483e8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dcba0323f19d839fc3d398c63f297ea3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7780fc01f2b2e788cd8dde544bab5219	36	Passes { num_passes: 9, num_ds: 3, shift: [0, 0, 0, 2, 0, 3, 3, 3], downsample: [2, 1, 1], last_pass: [0, 2, 0] }|0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+6c33df5120271d15b5f15120441b2cd4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ec37649162d892047be920acfac4c2f0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+00922ce043fc2d4c634e1eb010c2da6c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+44bd1f81fa47e88278bc390d09f914ea	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4b2350b3e87a9e9c16171c37136933dd	25	Passes { num_passes: 6, num_ds: 2, shift: [2, 1, 0, 1, 0], downsample: [1, 4], last_pass: [2, 2] }|3,2;3,2;2,2;2,1;2,1;0,1
+bc4821c1a01a2fed0bee63e57bcbd368	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3eb73cad405b646477e86a675717be8c	31	Passes { num_passes: 3, num_ds: 4, shift: [1, 2], downsample: [8, 4, 2, 2], last_pass: [2, 1, 1, 2] }|3,2;1,2;0,0
+fb7ef0b35d34d1e2ca5a7a19b175fd76	45	Passes { num_passes: 10, num_ds: 4, shift: [2, 3, 3, 1, 0, 0, 3, 3, 3], downsample: [1, 8, 4, 2], last_pass: [5, 0, 2, 2] }|3,2;3,2;1,2;1,0;1,0;0,0;0,0;0,0;0,0;0,0
+d435400ce9b5c72f79e6e4ffeff71ebe	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+de937ae0dca6e15a0f277aa145394a58	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 3], downsample: [2, 4, 1, 2], last_pass: [1, 3, 0, 0] }|1,2;1,0;0,0
+269faa22558145f7cf9a3da57a138d00	15	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [8], last_pass: [1] }|3,2;3,2;0,2
+c9d4291e71e0123603916ae17538abd3	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 1], last_pass: [1, 1] }|3,2;0,2
+062876891a1a81b3e5ebacc856ab85bb	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 0], downsample: [1], last_pass: [2] }|3,2;3,2;0,2
+e5235e73faa96dafc07ee0b22e08af13	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [0] }|3,2;0,2
+0f7a7f18e5427cfb8bbaac1a329ff782	19	Passes { num_passes: 7, num_ds: 0, shift: [0, 1, 3, 3, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+f0cc618d81538b23338e0413736c4ee3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4eea25747cb297959e0fcd2172d55c49	24	Passes { num_passes: 3, num_ds: 3, shift: [2, 0], downsample: [2, 2, 8], last_pass: [2, 2, 0] }|3,2;3,2;0,2
+2d4e5ded99583d2bd1543cd8abf79a0c	19	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [1, 8, 2], last_pass: [2, 2, 2] }|3,2;0,2
+fc9ac31c1f1427c276c39aa89445070b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9c5ac0d3c9d3d40014cb1c45c1fa4830	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4788c60b0bb6245b56360ce893b7c777	23	Passes { num_passes: 5, num_ds: 2, shift: [0, 0, 1, 0], downsample: [2, 8], last_pass: [0, 2] }|1,2;1,0;3,0;3,2;0,2
+036597034bcd47385d374c6b34efb919	13	Passes { num_passes: 4, num_ds: 0, shift: [2, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+92fee4f8fc88331c40f67654cd84063d	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+45c16e01e5f496a7a8fbb6de416cc65d	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [1] }|3,2;0,2
+d30455e4f7ea4ec5082909581f95525a	29	Passes { num_passes: 8, num_ds: 2, shift: [1, 2, 0, 0, 2, 2, 2], downsample: [4, 1], last_pass: [2, 0] }|0,2;0,0;2,0;2,1;2,1;2,1;2,1;0,1
+1bbcbd74ce5c22d313b77a9495934ad8	25	Passes { num_passes: 10, num_ds: 0, shift: [0, 2, 3, 1, 3, 2, 3, 1, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5bf0b5a3ab7500ea48acc228ba4e2cda	36	Passes { num_passes: 10, num_ds: 2, shift: [0, 0, 2, 3, 3, 2, 2, 1, 3], downsample: [2, 1], last_pass: [1, 5] }|3,2;1,2;1,0;1,0;1,0;0,0;0,0;0,0;0,0;0,0
+245e066f4a4655daf14a4c877d2836de	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3a16439f3c2cc69e61f308bddd09c7bf	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 0], downsample: [4, 2], last_pass: [1, 0] }|1,2;2,0;0,1
+09268b2414965fd81b8e6af3f9cd7fc9	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [1, 4], last_pass: [1, 2] }|3,2;0,2
+7c449102161ef2a224d6c1951a675d3d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b14801fa9c6d63398f246e1adc2a8957	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+7ac288a3d72fc279cd5713594ed6ca38	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 1], downsample: [4, 1], last_pass: [0, 0] }|0,2;0,0;0,0
+3923ccc6fdb8b91afa571e180f789744	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [1, 8], last_pass: [0, 2] }|0,2;0,0
+715f2649ae974033a1a5fd1bb9655f7a	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+0d04030c145a1a9fdec2c04511fcaa5a	19	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [1, 4, 1], last_pass: [0, 2, 1] }|0,2;0,0
+f4bd5247fa92cb93d55fb8e020cc3f0e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e543a6d57d62783c7a07c4ddd281f446	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [0] }|3,2;0,2
+7e694ffca618a216a00fc982d984cf61	31	Passes { num_passes: 3, num_ds: 4, shift: [3, 2], downsample: [1, 2, 8, 4], last_pass: [1, 1, 0, 7] }|3,2;1,2;0,0
+4c2ce08c88c3a0444a61986b84aa7431	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+761c2e038b06cde11b2922c28c465bfa	15	Passes { num_passes: 3, num_ds: 1, shift: [3, 1], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+74da09e18f68ab0d0df576e8052c68f8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e6f5f93931d937737e051e4bdc9bdb39	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 3], downsample: [2], last_pass: [1] }|3,2;1,2;0,0
+67a06acff3c1e3dbc3303cf5cefa368e	31	Passes { num_passes: 5, num_ds: 3, shift: [0, 0, 2, 2], downsample: [4, 4, 4], last_pass: [1, 3, 2] }|3,2;2,2;2,1;2,1;0,1
+01b2cee31b820159f0853c994f49d772	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+0a7dcd7cb7ebb33c39ad914cbcd1c613	19	Passes { num_passes: 3, num_ds: 2, shift: [0, 0], downsample: [2, 8], last_pass: [5, 2] }|3,2;3,2;0,2
+b0f17f732f8d15b7c8492a67f19d6fd5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9ec88a2b5534c5f8c4f062b972471006	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 1], downsample: [1, 2, 4, 2], last_pass: [1, 1, 0, 5] }|2,2;1,1;0,0
+5e22f111049047d84cd43115b9236dea	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 0], downsample: [2, 1, 2, 4], last_pass: [0, 2, 3, 0] }|2,2;2,1;0,1
+eb39913d07be41330340bd8c4179c2ed	40	Passes { num_passes: 6, num_ds: 4, shift: [1, 2, 3, 0, 1], downsample: [1, 2, 4, 2], last_pass: [3, 2, 0, 0] }|1,2;1,0;1,0;0,0;0,0;0,0
+669e8c1c355eecdc23543fa709c9e4b1	15	Passes { num_passes: 3, num_ds: 1, shift: [2, 1], downsample: [4], last_pass: [1] }|3,2;2,2;0,1
+a02ba1564aa1b578636282791c58268b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bcc5f38e594f3d47fcc658737e681d50	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+74b0208ee23162810181a2546a4f14c5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c7e10697958c3714e0f18231214b2919	23	Passes { num_passes: 5, num_ds: 2, shift: [3, 0, 0, 3], downsample: [2, 8], last_pass: [0, 0] }|3,2;3,2;3,2;3,2;0,2
+2f2efe5820c36231ff4688262930414c	26	Passes { num_passes: 7, num_ds: 1, shift: [0, 3, 1, 1, 0, 3], downsample: [8], last_pass: [1] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5a663ed8d38ecaef452e7ebfb371b75d	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 1], downsample: [4, 2], last_pass: [2, 1] }|3,2;1,2;0,0
+dbf0bb52be9f1f06d02af630e854203d	33	Passes { num_passes: 10, num_ds: 2, shift: [1, 0, 2, 3, 3, 1, 3, 1, 1], downsample: [2, 4], last_pass: [2, 0] }|2,2;2,1;1,1;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+6ca685e6497f3f114b449ce0d2b62786	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+003b6fe0219d9edf24f756c2424a2e0d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+be0008fde3bd4fa17de446ce63dd97f3	25	Passes { num_passes: 3, num_ds: 4, shift: [1, 1], downsample: [1, 1, 1, 1], last_pass: [0, 1, 0, 2] }|0,2;0,0;0,0
+e1e57a90025e3fab368f98b8c24fcf6b	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+227ce71be1c3b1a7b9921f35d2157a58	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+57f085cbd7f11267ec8a5a1a5c02ff40	31	Passes { num_passes: 9, num_ds: 2, shift: [0, 0, 2, 3, 3, 2, 0, 0], downsample: [8, 2], last_pass: [1, 2] }|3,2;3,2;1,2;1,0;1,0;1,0;1,0;1,0;0,0
+bbb1549147d95c7cd2251e98516b1b30	29	Passes { num_passes: 10, num_ds: 1, shift: [3, 0, 2, 1, 1, 2, 2, 2, 2], downsample: [1], last_pass: [2] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+9a315694440b9d7b1b970e5cbcd0a716	22	Passes { num_passes: 3, num_ds: 2, shift: [1, 2], downsample: [2, 1], last_pass: [0, 2] }|1,2;1,0;0,0
+5569883091eed779b7ba1dfc0387da42	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [2], last_pass: [1] }|3,2;0,2
+8f17cc386fefdd28a4788690bc04e511	19	Passes { num_passes: 7, num_ds: 0, shift: [3, 3, 2, 0, 0, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+c36916833930f43559f3aaf56c060bee	24	Passes { num_passes: 4, num_ds: 2, shift: [3, 0, 1], downsample: [8, 1], last_pass: [2, 0] }|0,2;0,0;3,0;0,2
+2b03191223e1b9b22f2d163d0e3e4e75	24	Passes { num_passes: 6, num_ds: 1, shift: [2, 1, 0, 0, 2], downsample: [1], last_pass: [0] }|0,2;0,0;0,0;0,0;0,0;0,0
+eb4349e076e02f676ccca70e1244de27	37	Passes { num_passes: 6, num_ds: 4, shift: [3, 0, 0, 1, 1], downsample: [4, 1, 2, 1], last_pass: [0, 2, 6, 2] }|2,2;2,1;0,1;0,0;0,0;0,0
+f8299d89aa4b3ab3593b1c346258eb0c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2d931bbb21e402823b655d5aede3efb9	22	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [4, 2, 4], last_pass: [0, 5, 1] }|2,2;0,1
+e8c0b026748d4a94cd73d60e07984115	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b33853a9e4b55d2ffe33e8334f0af4b5	25	Passes { num_passes: 8, num_ds: 1, shift: [1, 0, 3, 1, 2, 1, 2], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;0,1
+16d272e4cad8300e6b8e361bb5e72838	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 0], downsample: [4], last_pass: [0] }|2,2;2,1;0,1
+cae8923293b173a617c6a61b1dd0d8d8	19	Passes { num_passes: 3, num_ds: 2, shift: [0, 3], downsample: [1, 4], last_pass: [2, 2] }|3,2;3,2;0,2
+d2e9e5450ee85590c83dc91fc07e9303	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+d0f1c30e9dc0e3fab658f5f6096d1764	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4b10597843f5dcf98cc11882851d8e36	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 0, 2, 0, 2], downsample: [1, 8], last_pass: [2, 0] }|3,2;3,2;0,2;0,0;0,0;0,0
+9f9a3309b96a16a7579c29c39f403c08	27	Passes { num_passes: 11, num_ds: 0, shift: [1, 1, 3, 0, 3, 1, 2, 1, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+9da739a06c1a3ab9803d6d627869e4b8	29	Passes { num_passes: 2, num_ds: 4, shift: [0], downsample: [8, 8, 1, 2], last_pass: [4, 0, 0, 0] }|1,2;0,0
+6954c8e16d0afc906c6e867cbb695466	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [2, 1], last_pass: [1, 1] }|3,2;0,2
+dc100c1e25f8f50c1acd7b8fd7417318	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+16c22e16464cd3dc7e03e114454b1f1c	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 0], downsample: [4], last_pass: [0] }|2,2;2,1;0,1
+7f885e9319c764095cbd1f9bff7fc15d	40	Passes { num_passes: 11, num_ds: 3, shift: [0, 2, 0, 2, 2, 3, 1, 1, 3, 0], downsample: [2, 4, 2], last_pass: [2, 1, 0] }|1,2;2,0;1,1;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+5eeb93696a5e38d13dd16b650e629d1c	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 2], downsample: [2, 2, 8, 8], last_pass: [1, 2, 0, 4] }|3,2;1,2;0,0
+1f6b9849d8f0c1a22c604c52ab28afbc	27	Passes { num_passes: 11, num_ds: 0, shift: [2, 1, 1, 3, 0, 0, 3, 0, 3, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+a46abd226d54f26455e9b3ce8d73897b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+61c9a5af5ddb4ac4155ab462164481b8	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+08612937bd94df6845e33bd7319b8dba	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1ee112703698efb8e72d67e51490d9d4	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 2], downsample: [1, 1, 8, 2], last_pass: [1, 2, 0, 0] }|1,2;0,0;0,0
+2eb5cd087a720ac655cbf3ed3fae0da8	27	Passes { num_passes: 3, num_ds: 3, shift: [1, 2], downsample: [4, 4, 2], last_pass: [6, 0, 0] }|1,2;1,0;0,0
+a90347a0247761c10325068f14081139	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [4, 8], last_pass: [0, 0] }|3,2;0,2
+fd548c483196a06c4b6267200ff9a099	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [2, 4, 4, 4], last_pass: [0, 2, 1, 0] }|2,2;0,1
+f2c341699d12e96359a675d2b8863a39	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+627abafbe0e2827c9d23ecf266b200d7	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+874fd5d68d4db6210e0ea30353a16eb2	15	Passes { num_passes: 5, num_ds: 0, shift: [3, 3, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+98cf9c7d677f72411932902b74955a8a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d56cd9ea09b29ef1f47877edf741a998	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [8], last_pass: [0] }|3,2;0,2
+ec5729ae0079d0cc14e1492a4e58b018	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+abb0b06a28f8d22d82d454072f58aaf4	21	Passes { num_passes: 6, num_ds: 1, shift: [1, 0, 2, 1, 1], downsample: [1], last_pass: [2] }|3,2;3,2;0,2;0,0;0,0;0,0
+cfb949ac9a5c7e3f1b68f0d425a9a599	27	Passes { num_passes: 7, num_ds: 2, shift: [3, 0, 3, 1, 3, 0], downsample: [2, 4], last_pass: [0, 2] }|1,2;1,0;2,0;2,1;2,1;2,1;0,1
+69af68fdafa1a7ea104020654de94943	17	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [2, 8], last_pass: [2, 1] }|3,2;0,2
+d1bafe75ea4233a1fdcbffcb2144e782	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+1de739730b49a280eb17791c1ee355e4	29	Passes { num_passes: 2, num_ds: 4, shift: [0], downsample: [4, 8, 1, 8], last_pass: [4, 4, 1, 2] }|3,2;0,2
+a3d121ca8cb1cb9450d63da61475ec83	20	Passes { num_passes: 4, num_ds: 1, shift: [3, 0, 2], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;0,1
+1e4414b812a2ecb31c003eba55715978	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 0], downsample: [4, 1, 4, 1], last_pass: [2, 2, 0, 0] }|0,2;0,0;0,0
+8915daab892cc77c07173842eaa9fc71	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [4, 2], last_pass: [1, 1] }|3,2;0,2
+122b9b3babf07220c51c80d5c49a0734	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+04bb942ac309ab0d95147037c2e91c1b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+80647235219c8318a7543465147f5adf	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2224c16be96a75cd18a2bdde816c3d40	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+dfe9e6b3a89edf024d2c89f8fb93b037	35	Passes { num_passes: 11, num_ds: 2, shift: [3, 0, 1, 3, 1, 3, 0, 3, 3, 1], downsample: [4, 2], last_pass: [1, 0] }|1,2;2,0;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+027769e14fa790d424e2a7d7e9983502	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+bca76bf21f5d99fb2db63d7ff19bda84	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3bf8532b4d6c1b1c4aaf39eb9bb384c5	29	Passes { num_passes: 10, num_ds: 1, shift: [0, 0, 3, 3, 3, 1, 2, 2, 2], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+6c9cf7724f45e6805d494a591e9d13af	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dd1d1c457506c879edc355d9db00febf	26	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [8, 4, 8, 1], last_pass: [0, 2, 0, 1] }|3,2;0,2
+48c6b40b58f5ff7776c7bf7547694ad3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+432b887c53f40d077e6765cbc8bfb0d0	21	Passes { num_passes: 4, num_ds: 2, shift: [2, 1, 1], downsample: [2, 1], last_pass: [0, 1] }|1,2;0,0;0,0;0,0
+91c00efb9d937cdba38c45891b241d6f	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+728f3e176724233ed62fe460321b726a	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+f60a9055157708c5aeea886d7a363ed8	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 3], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+cb668e91a3777d772029c47c4d9484aa	28	Passes { num_passes: 6, num_ds: 2, shift: [1, 3, 0, 3, 0], downsample: [8, 2], last_pass: [0, 0] }|1,2;1,0;1,0;1,0;1,0;0,0
+5fe2b1d3c0d1b8ceb40e50ed3cc94680	35	Passes { num_passes: 11, num_ds: 2, shift: [0, 1, 0, 3, 3, 0, 2, 1, 3, 1], downsample: [4, 4], last_pass: [1, 0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+20ebdb758c0042ee76462c1354f89aa9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e6bc76876b33693e60c4b99949a68a54	15	Passes { num_passes: 3, num_ds: 1, shift: [2, 3], downsample: [1], last_pass: [3] }|3,2;3,2;0,2
+02a66cc2692f5d670c82418aedd07eb5	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+dbd895b0417e1040021f8bb8d9032abe	36	Passes { num_passes: 10, num_ds: 2, shift: [1, 0, 3, 2, 3, 2, 2, 0, 1], downsample: [1, 4], last_pass: [1, 0] }|2,2;0,1;0,0;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+d4e4368deeec54f50c23c11d92839085	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1d94310b10c0734e8333e449c0f816ee	29	Passes { num_passes: 2, num_ds: 4, shift: [0], downsample: [1, 4, 4, 1], last_pass: [0, 4, 1, 1] }|0,2;0,0
+c8d148f7db13c00593d9ee46d7dbbe55	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+03af18ff2fd27298fc193090af01da6f	13	Passes { num_passes: 4, num_ds: 0, shift: [2, 3, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+8f04d9a5d40462977f247c7b828e3f83	19	Passes { num_passes: 7, num_ds: 0, shift: [1, 2, 0, 0, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+75297fcec83ba9aef8738add1ba0fb80	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [2], last_pass: [1] }|3,2;0,2
+1ef2bb592040e239f19951bda6036c35	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 0], downsample: [2, 4, 8, 8], last_pass: [1, 5, 1, 2] }|3,2;3,2;0,2
+a4f354a5f386ef90faa5e49f015ad40b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4b600f312503b0d294661433a12c4af7	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 0, 0, 3, 2], downsample: [8, 2], last_pass: [0, 2] }|3,2;3,2;1,2;1,0;1,0;0,0
+496f6fbee05dc446e0076fd19dbdaeed	17	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [2, 8], last_pass: [6, 2] }|3,2;0,2
+23b00f29f42e44eaaa68b69440c59418	20	Passes { num_passes: 4, num_ds: 1, shift: [0, 0, 2], downsample: [2], last_pass: [7] }|3,2;3,2;3,2;0,2
+85309045562564129f963ac762ad4d0e	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [4], last_pass: [0] }|2,2;0,1
+15b3c43b0878897ddc1234c740604813	13	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [1], last_pass: [4] }|3,2;0,2
+0805d19e7c923826546666291b1f49bc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7178bc19ad5f6fd9a2a0483eafb40682	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+8cb0f8c14bbac0a31e76ad0782b8a1bd	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+42ef4fd2d94bd2db91564c7a4ece59d6	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+c69c059f4695477fb9218fe2ab5c3576	15	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+9c668a01f49e135fd7ecdb26566c9016	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+64748308f71b69a28d02b39fb82b29af	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f69e44e69720be3e45c0b2f7278033df	15	Passes { num_passes: 3, num_ds: 1, shift: [3, 3], downsample: [4], last_pass: [1] }|3,2;2,2;0,1
+0297281ae86b370698439aad60f25f36	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+4249cb9416662f6c365327e8c3c92dc3	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+797fb1be9f1ad7965b0c251b233be514	17	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [2, 8], last_pass: [7, 2] }|3,2;0,2
+25e56955fbb1555b0f2f45ed5cc0d45b	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [1], last_pass: [1] }|3,2;0,2
+c0de2056222179b84ec58bbc023beaf4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7b6c0154633d55bd0f46c3035859c1c4	47	Passes { num_passes: 10, num_ds: 3, shift: [0, 3, 2, 1, 1, 0, 0, 0, 0], downsample: [2, 2, 2], last_pass: [0, 2, 3] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+053c27455b22e541a782ea379b7aaa5e	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [1], last_pass: [0] }|0,2;0,0
+4a2dac2b388a0945e8d58453696a8449	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 1], downsample: [2, 8], last_pass: [2, 0] }|3,2;3,2;0,2
+8ebf05cbb7593d716d8d2b33fc9b629a	24	Passes { num_passes: 3, num_ds: 3, shift: [0, 3], downsample: [8, 8, 2], last_pass: [2, 0, 0] }|1,2;1,0;0,0
+c4364fe2eda64ec16d988da6bc16e036	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+16138f6a76f00fa4af952297fb713231	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 0], downsample: [8], last_pass: [0] }|3,2;3,2;0,2
+b436c6d8f24f694a9f27d54986581544	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1ada73f5ef3116e5ede0303427ed5605	19	Passes { num_passes: 3, num_ds: 2, shift: [1, 0], downsample: [4, 4], last_pass: [1, 3] }|3,2;2,2;0,1
+29b9081036c799018d809a1cee63589d	17	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [1, 2], last_pass: [2, 2] }|3,2;0,2
+ef534367787a4f1a1132500674ace994	36	Passes { num_passes: 7, num_ds: 4, shift: [3, 0, 1, 1, 3, 0], downsample: [1, 2, 8, 2], last_pass: [2, 1, 0, 2] }|3,2;1,2;1,0;1,0;1,0;1,0;0,0
+80391528e7ba87b96f329270e9e8f2d0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b6eaa60160abf45d2e74f6edaf429dc0	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 2], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+91ec35f3625c69565c5c22599d4a5953	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+7f81ea5e7157885d907e10bf030267e8	46	Passes { num_passes: 11, num_ds: 3, shift: [1, 0, 0, 2, 2, 2, 2, 3, 2, 3], downsample: [2, 2, 2], last_pass: [0, 5, 2] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+bdae633ad2589dfe81e1dcf411dfd669	26	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [2, 8, 2, 2], last_pass: [1, 2, 1, 2] }|3,2;0,2
+7bd7058661b85f7e3dba72f4dc56c376	38	Passes { num_passes: 10, num_ds: 3, shift: [3, 1, 1, 3, 1, 1, 0, 0, 2], downsample: [2, 1, 4], last_pass: [1, 0, 2] }|0,2;1,0;2,0;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+f39bc4dd4c49436017016d46a1374444	41	Passes { num_passes: 8, num_ds: 4, shift: [3, 2, 1, 2, 0, 1, 0], downsample: [8, 2, 8, 2], last_pass: [4, 1, 2, 2] }|3,2;1,2;1,0;1,0;3,0;3,2;3,2;0,2
+ac015f8e2046ad4dfa869a75e0dd4107	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+0764305f1de31e63e63e3d07af941f75	15	Passes { num_passes: 5, num_ds: 0, shift: [0, 2, 0, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+34596fd94ea835279d2a4c6a9a5caa1c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+441e91910f85945578d47d42fef5f6e3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+097418d5b6e6ff43084869c52c95a8e4	17	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [1, 1], last_pass: [1, 1] }|3,2;0,2
+f8beef3350c776701bd9d1ac33d3c4fa	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+077f316a95fd6f135c7112faec38b199	15	Passes { num_passes: 5, num_ds: 0, shift: [2, 3, 3, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+25be5edfa513011f91d097fc9c2d156d	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [1], last_pass: [2] }|3,2;0,2
+b8f47b2e720499aa47f79cd7d3c9ce48	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5b59141ecdb9d73fe5b4fad6e50e97ec	33	Passes { num_passes: 10, num_ds: 2, shift: [2, 0, 3, 2, 0, 2, 2, 0, 0], downsample: [8, 8], last_pass: [0, 2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+77786b3e2d8d34ce4b21ceea282c61fa	39	Passes { num_passes: 9, num_ds: 3, shift: [0, 2, 3, 1, 3, 2, 2, 1], downsample: [4, 8, 8], last_pass: [0, 1, 2] }|2,2;3,1;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+cec64c4d71b5fe99f1f7ac3d9819831f	21	Passes { num_passes: 3, num_ds: 3, shift: [2, 1], downsample: [8, 1, 4], last_pass: [1, 2, 1] }|3,2;2,2;0,1
+fa772cef1af72c686c6c6be148075970	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [8, 2], last_pass: [1, 2] }|3,2;3,2;0,2
+02144bbcb4d17663e85c3e33f1072f8f	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+15e27b0cf1d8ab82930804608f237710	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [1], last_pass: [2] }|3,2;0,2
+34266b1b90865c72cc0617d360518262	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+917ab932c4b75e211fbae387fc65a62d	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+0c16a1ad3018cd660cb8842afe76c52f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+cc70154c4990db799abfbe33cb92b226	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+634c0c6f8ccb14f47007dfbcdfaec6c5	29	Passes { num_passes: 4, num_ds: 3, shift: [0, 3, 0], downsample: [2, 1, 8], last_pass: [0, 0, 3] }|0,2;0,0;0,0;0,0
+54c25baf5aba919c91c50b0d54441ccd	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a5731452ea162023aa9ebc8e7bda4dcc	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [4], last_pass: [4] }|3,2;0,2
+18a7bc0c7298d136f04b668e8041b79b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+67b38e51f891187bc5b670fc0e7f58a1	28	Passes { num_passes: 5, num_ds: 3, shift: [3, 0, 3, 2], downsample: [4, 8, 1], last_pass: [2, 1, 0] }|0,2;3,0;2,2;2,1;0,1
+aba54d350b682768dc4557209b409295	21	Passes { num_passes: 6, num_ds: 1, shift: [3, 2, 0, 1, 3], downsample: [4], last_pass: [1] }|3,2;2,2;2,1;2,1;2,1;0,1
+8e8ea0f1318a52959ed08b121b7124a7	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 1], downsample: [8, 2, 1], last_pass: [1, 0, 0] }|0,2;3,0;0,2
+aa393c274e18d0b224ac9d8749c67312	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 2], downsample: [2, 4], last_pass: [0, 2] }|1,2;1,0;0,0
+fb00ac2f22a2985dd83be741797e3d74	42	Passes { num_passes: 10, num_ds: 4, shift: [0, 0, 0, 0, 0, 3, 2, 2, 3], downsample: [8, 4, 1, 4], last_pass: [0, 2, 0, 2] }|0,2;0,0;2,0;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+b4640ef312201389080ba58306de5214	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+baa6bea7ff030b87ee6cbebdf5ff6f2a	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [4, 2], last_pass: [2, 2] }|3,2;3,2;0,2
+a9084e787d19fb9115aec8eea3909d83	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [4, 1], last_pass: [2, 0] }|0,2;0,0
+c2b53a6340cdbc0d580417417d621d45	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+83789d9e5cb351c5c11633ccc34d72cd	13	Passes { num_passes: 4, num_ds: 0, shift: [1, 0, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+b6d43d45c62386e5cedb20c73c42ddd4	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 2], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+32ee31ea0fd8ad5546896560ad91fcb7	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+00562d14908e2687b5e820bd5cf863d8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2c68eabfb01ceef09c7b8e5d945786b6	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e4126c0cf828ca01cb20fa87e8cac0e7	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+2b3ecafe01e98bdfbcf40f4355069b7f	21	Passes { num_passes: 6, num_ds: 1, shift: [0, 3, 3, 1, 0], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;0,0
+cb7277300983f6d38aea933fdc83ccd8	28	Passes { num_passes: 6, num_ds: 2, shift: [1, 1, 2, 3, 2], downsample: [8, 4], last_pass: [0, 0] }|2,2;2,1;2,1;2,1;2,1;0,1
+0f61137f89de3477699ae005f44ac4b2	19	Passes { num_passes: 7, num_ds: 0, shift: [2, 0, 0, 3, 2, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+99eac7091bd6c457a5a0ddfcbbfb8347	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 4], last_pass: [2, 2] }|3,2;0,2
+3e1a5bc7ad46cc2915ff0d33df7b37ac	31	Passes { num_passes: 3, num_ds: 4, shift: [1, 0], downsample: [2, 8, 1, 4], last_pass: [1, 2, 1, 2] }|3,2;0,2;0,0
+54a27348e8c12e13bc2dc2d28e02c27d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+26fad79e8d8c04e60cd161831cf5a809	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+5a64bc29d29c059cbcce6c075d24e2d9	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 1], downsample: [1, 2], last_pass: [2, 1] }|3,2;1,2;0,0
+edf098e0fbdbda9485b42538553d2371	22	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [2, 1, 4], last_pass: [1, 2, 1] }|3,2;0,2
+022294394638192d21c852a54c951952	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+20f876dcab30b3d8566ac0740811b13d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+51ade4954c64cc9b6c7e7398df12c355	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+811942e42a1acc1645a1d5427f43c0f0	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+facb86c0af1a13d26651bc2952804451	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [8, 4], last_pass: [0, 6] }|3,2;3,2;0,2
+e430c06516bd8656996036e837ea4f2f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+939803d1a21bca9da143917770d42fab	21	Passes { num_passes: 8, num_ds: 0, shift: [1, 0, 3, 0, 3, 1, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+914d85e6b64dbe8a181dc1b1452bc067	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+4b8820fdf8e3151bf4219bd2873c04f3	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 0, 1, 0, 1], downsample: [1, 1], last_pass: [1, 2] }|3,2;0,2;0,0;0,0;0,0;0,0
+dbf907f7b97900078d433cec2644b923	36	Passes { num_passes: 10, num_ds: 2, shift: [3, 0, 3, 3, 3, 3, 0, 0, 2], downsample: [8, 4], last_pass: [3, 2] }|3,2;3,2;2,2;3,1;3,2;3,2;3,2;3,2;3,2;0,2
+411014ef1f8eb8bdff546d54a6de514f	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+78724cfd1a1fbb0034260bc44fb9977c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+75f8f6a9abce892d78cd2379e5831333	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [2], last_pass: [0] }|1,2;0,0
+ccc35923287c2f810ed65df381733107	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fc0821ef7b84fcc68c452321df1e7542	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3a297a14bffa5b628b0c502a1cc072a6	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 0], downsample: [2, 4], last_pass: [2, 0] }|2,2;2,1;0,1
+70e5f7d16c95bba24340a893a4d1615e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+83a97fb586ad82600b932b8281f777a6	13	Passes { num_passes: 4, num_ds: 0, shift: [3, 0, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+fc51712108053b6f25a2235f54e8aa8d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4fde23fbdc813cfa1b64b58ed7736851	27	Passes { num_passes: 7, num_ds: 2, shift: [0, 3, 3, 2, 3, 1], downsample: [1, 2], last_pass: [2, 1] }|3,2;1,2;0,0;0,0;0,0;0,0;0,0
+1966faaa23db01e66c1afb08f8ca5600	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [1, 4], last_pass: [1, 2] }|3,2;0,2
+e0707ca70084213729d21cae0992d431	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7be53bffa0d30329a78597b35bab9111	38	Passes { num_passes: 10, num_ds: 3, shift: [1, 1, 2, 3, 3, 2, 3, 0, 3], downsample: [8, 8, 8], last_pass: [0, 0, 2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+a4a5c35c913e45536313792defc42270	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e89bcb9d5b239196e93a4b7c179a2dd4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+15a81c668d68d03e5d40d7fdeefb7147	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [1], last_pass: [0] }|0,2;0,0
+8dc88e526bbdbe78fddffb60c1c25599	22	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [2, 1, 2], last_pass: [2, 1, 1] }|3,2;0,2
+713fbb6324c26e3365c185c4068f6e22	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+21f38516b1b3d684c30d4cdbe816a82f	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+f0cd8e41921f9549cee0de4e0b48788c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f233b02fc93f6b5d49802aff9402e259	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+2b2620a05b1aa52f70691818e5f1aecc	21	Passes { num_passes: 6, num_ds: 1, shift: [0, 3, 0, 1, 0], downsample: [1], last_pass: [0] }|0,2;0,0;0,0;0,0;0,0;0,0
+45526086e852d1377a1cd6c02aefbf75	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [2] }|3,2;0,2
+8b15853886947142a5e472ec7a9de211	17	Passes { num_passes: 6, num_ds: 0, shift: [3, 2, 2, 0, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;0,2
+f8935da48a9301137e90dc29a0f51f23	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9e2d081dff940b0ef67a804e3b36ab4f	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 3], downsample: [4, 2, 2, 1], last_pass: [0, 1, 0, 2] }|1,2;1,0;0,0
+0694ca29ab4ea59ef02b74eeb22add06	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+9949d52c04674526db4ed9f40438292b	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 2], last_pass: [2, 0] }|1,2;0,0
+803e28f79d7aecb3583d9e8aa9278957	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+96c90b907a744fd034b51132e48a1a19	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 2], downsample: [2], last_pass: [2] }|3,2;3,2;0,2
+d308a404d59c6e7f7fd24623a7522f29	29	Passes { num_passes: 8, num_ds: 2, shift: [1, 0, 1, 0, 0, 2, 0], downsample: [2, 2], last_pass: [2, 0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+8e458a4a61774c1475b7bb06262367ed	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 3], downsample: [4, 1, 4], last_pass: [0, 1, 1] }|2,2;2,1;0,1
+fa0c3785ec9a9dc142cfc97eb83ff6c7	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [1, 8], last_pass: [0, 0] }|3,2;3,2;0,2
+37a4a08800670a48bd288161a1ffb147	27	Passes { num_passes: 9, num_ds: 1, shift: [0, 2, 0, 1, 1, 0, 0, 1], downsample: [2], last_pass: [0] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+72b1356e82ccb870c4522aa9557d3f49	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+47f557c7b72fc7f18c7afc3362460098	23	Passes { num_passes: 5, num_ds: 2, shift: [2, 2, 2, 3], downsample: [8, 8], last_pass: [2, 2] }|3,2;3,2;3,2;3,2;0,2
+132a83e9aa16f4f9a9dad3c2050e9655	21	Passes { num_passes: 8, num_ds: 0, shift: [0, 1, 1, 1, 2, 1, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+9e51896e0ff21a216bbd7fece4192598	25	Passes { num_passes: 3, num_ds: 4, shift: [0, 3], downsample: [1, 4, 4, 4], last_pass: [0, 1, 0, 1] }|2,2;2,1;0,1
+b5cb8f438fb13d20860759ab373e6fcd	13	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [4], last_pass: [2] }|3,2;0,2
+bded10d688320b45649808e0e419d8e0	23	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [8, 4, 2, 8], last_pass: [1, 0, 2, 0] }|3,2;0,2
+bcb5d01eae912c6ac736eb27d5067833	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5221fa7171e667b56662e4ec571b0441	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+d02e7705f8fce4e46a6c292861673dd8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4a738f7306dc960027e0fcd666e0034e	22	Passes { num_passes: 3, num_ds: 2, shift: [0, 1], downsample: [8, 1], last_pass: [5, 1] }|3,2;0,2;0,0
+e8c1339fc7316a08feb3ca629c657682	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ea195c6da8b4a52a654ca94eaeb075f8	16	Passes { num_passes: 3, num_ds: 2, shift: [2, 3], downsample: [2, 4], last_pass: [1, 0] }|2,2;1,1;0,0
+f1e3a2034bef8cf6abaeb954bc70a16e	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+681ab8bb8001495c06cb099ac3d21b9c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+8461002158f0dd3b4cbbab1e26b9343c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+8503aed09b43c7430b3ed2a1b13623ce	13	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [4], last_pass: [0] }|2,2;0,1
+4f295846c6f21a7435b6004f056ddddf	30	Passes { num_passes: 7, num_ds: 2, shift: [2, 0, 1, 1, 0, 0], downsample: [8, 4], last_pass: [0, 0] }|2,2;2,1;2,1;2,1;2,1;2,1;0,1
+92237e417eac341bfe137d008aeda849	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+2fc92fabfae09909ed40b8d540baf450	23	Passes { num_passes: 7, num_ds: 1, shift: [2, 0, 1, 2, 3, 3], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;1,0;0,0
+03244759b7d02420d8f2df96118ec884	13	Passes { num_passes: 4, num_ds: 0, shift: [0, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+0f760a7318dead361db18db7257f7806	19	Passes { num_passes: 7, num_ds: 0, shift: [0, 3, 2, 3, 0, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+50425e86765fd7612c4f9cb0ecf070fc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+debdab48b8a88932eee4181e17360fcd	25	Passes { num_passes: 3, num_ds: 4, shift: [2, 3], downsample: [4, 8, 2, 8], last_pass: [1, 1, 1, 1] }|3,2;3,2;0,2
+0ae74276e0c6e97599ecfda0f055cfba	19	Passes { num_passes: 3, num_ds: 2, shift: [0, 0], downsample: [8, 2], last_pass: [2, 2] }|3,2;3,2;0,2
+84ab7a3d8d3b28f98eb0615cc1d9eded	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+20880e52db97ef75b9933e6ffd7bba14	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+840184a54e8d46fe35f27e0e595975e8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+11f783f74da88caf38cd4b20a637705f	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+cb65688463d123aaa384f347af4d1b1e	28	Passes { num_passes: 6, num_ds: 2, shift: [3, 2, 0, 3, 0], downsample: [1, 2], last_pass: [0, 1] }|0,2;1,0;1,0;1,0;1,0;0,0
+44fa8a09a242fe9d76be83f25d4978e4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f0fbb82ab70e56fbfae60c5ac83a4d35	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+488d3b4745e84ffe1a0a95963a214a9b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+64ef86b4b42feb07995e4fa36342cfa1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9a5bfff0c7505937c08b6e0992eeb7a9	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 2], downsample: [8, 4], last_pass: [1, 1] }|3,2;2,2;0,1
+7c5d7414c33fa568f35b05c47a3babea	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+97ee32027d599f2c3ce66a5e1bebfec1	23	Passes { num_passes: 9, num_ds: 0, shift: [1, 3, 1, 3, 1, 1, 2, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+39c6af42fd2cd3f727a9db2d0e8cd975	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [1, 4], last_pass: [1, 0] }|2,2;0,1
+2bbf184497371b77fdf59c12da79cbc0	24	Passes { num_passes: 6, num_ds: 1, shift: [2, 3, 3, 1, 1], downsample: [1], last_pass: [0] }|0,2;0,0;0,0;0,0;0,0;0,0
+ac53b973a5f3f920f5a8066822566f9d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+015df4fbcfba44b90e2cf0cd06e3f463	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+28d70bd69fef9590ce5a617cda41bd83	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+84676bb67f3a485bf421439f63b0ddff	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+26f1baf89e62db4d29cfe8d1120c202b	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [2], last_pass: [0] }|1,2;1,0;0,0
+80c345fcdc86bab9a607bf42c65dc1be	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+19a6a45ce7ae5d67a819938bb1aa2737	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [1, 4], last_pass: [1, 2] }|3,2;0,2
+558e31e4e3a64516e1f6cbd7b59c63d8	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [2], last_pass: [2] }|3,2;0,2
+53e5aebce98a83c591be701aabca87c2	32	Passes { num_passes: 8, num_ds: 2, shift: [2, 2, 0, 3, 1, 3, 1], downsample: [2, 2], last_pass: [2, 5] }|3,2;3,2;1,2;1,0;1,0;1,0;1,0;0,0
+c92a2858455ecb3e945835f8979c7f58	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 4], last_pass: [2, 2] }|3,2;0,2
+6afb70d14406cec55747f95e3af09f9f	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 1], downsample: [8, 4], last_pass: [3, 0] }|2,2;2,1;0,1
+653e4d0250ae348d31100a56edf1bf22	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [2], last_pass: [2] }|3,2;0,2
+6cb867a93407655a1fd668c73d536660	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+996f5b339444f4291eb7a995816c4105	17	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 8], last_pass: [6, 2] }|3,2;0,2
+0e3f776557dc5434ad4a578507821063	24	Passes { num_passes: 3, num_ds: 3, shift: [0, 2], downsample: [8, 8, 2], last_pass: [2, 6, 1] }|3,2;1,2;0,0
+38296f0b1872faf11d1b562e18d2b18b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+44f324129901d56036a9bc4d3dec3977	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+be3ad4c481f0ffe063fb4d70ea7b7a7c	25	Passes { num_passes: 3, num_ds: 4, shift: [1, 1], downsample: [2, 8, 2, 1], last_pass: [2, 2, 2, 1] }|3,2;0,2;0,0
+2d787165aefaab727d5fb9fa0c6ff40a	25	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [1, 1, 8], last_pass: [2, 0, 5] }|0,2;0,0
+842d7a2ca2732e8ac72d40591a6e303d	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+8d9406d31374052d403fdbec663c593f	22	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [2, 4, 4], last_pass: [0, 1, 0] }|2,2;0,1
+ace061867a560b36194fb1aa4979c0bd	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fa3171032ee70be4a0a5403f8595215e	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [2, 1], last_pass: [4, 0] }|0,2;0,0;0,0
+1f903c46cdbba8a6cd891d20c507b176	27	Passes { num_passes: 11, num_ds: 0, shift: [0, 0, 2, 0, 1, 2, 3, 1, 0, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+b7705f3a702579c169e2784438c15c4c	27	Passes { num_passes: 9, num_ds: 1, shift: [1, 0, 2, 3, 2, 3, 3, 2], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+b9a3c1a1a42b38c59391b6ea48f3cf79	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [4, 8], last_pass: [0, 2] }|2,2;0,1
+70ebbb637d7119bc1d118519506cbcf6	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9914e99ce13c29eea3eec607b5ee3cdc	14	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [4, 1], last_pass: [1, 1] }|3,2;0,2
+8e3cb46657e5006506e571f1f88d548c	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 1], downsample: [4, 8, 2], last_pass: [0, 2, 2] }|2,2;2,1;0,1
+e20e4e9e78c1f4f0d64491b7ddfbcba2	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+d4db8c502ca189561cca67c9cc678b54	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b1c1221e66af2843d6ae7e2896aa02d9	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+7cd295c1acf6b5bff9417f25c80fb1d3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+30e2e3c8a22560fcd088fbfd1060fc33	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a43d488216378b8bc8d79d0d3e54ffff	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c112f4ccdb3266353cb5a537787d1f57	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+3ba2280b0fad8d29545d63a2c648f926	29	Passes { num_passes: 10, num_ds: 1, shift: [0, 1, 0, 1, 1, 0, 1, 1, 2], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+79e26bd920d00a5d37016f8c30b0b816	14	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [2, 4], last_pass: [0, 2] }|1,2;0,0
+94ff3b89270115277aa157b4ebd9cb37	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b7d32642a5f415be326bd3dba8cdbdda	27	Passes { num_passes: 9, num_ds: 1, shift: [3, 1, 2, 2, 1, 3, 0, 1], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+3a2f29fecbb87751cfec22428ea6ad88	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 0], downsample: [8, 8], last_pass: [2, 0] }|3,2;3,2;0,2
+258d711dd180064b22e37bd9727443b3	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [1], last_pass: [1] }|3,2;0,2
+34ca0d5e2f6c0845e59bf444a7152f9f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ea2224a0d2ac0f067fd029bbce9d489e	16	Passes { num_passes: 3, num_ds: 2, shift: [2, 3], downsample: [4, 1], last_pass: [2, 0] }|0,2;0,0;0,0
+cffbb36c40fa75eaf0d02f07c29edd32	27	Passes { num_passes: 7, num_ds: 2, shift: [3, 1, 3, 3, 3, 1], downsample: [4, 2], last_pass: [1, 2] }|3,2;2,2;1,1;1,0;1,0;1,0;0,0
+7d4c9d23fce30711f74e1e31ef0203a4	29	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [1, 4, 2, 4], last_pass: [2, 2, 4, 0] }|2,2;0,1
+68d75f51034e1d94fb58b3c58923c895	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+07d171358a1a40742eceb6fe20f839e2	15	Passes { num_passes: 5, num_ds: 0, shift: [2, 0, 2, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+75f626aa199e4d62884f9c900af60376	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [2], last_pass: [2] }|3,2;0,2
+afc2202b3e1aaceb7113b7e47abdae59	23	Passes { num_passes: 7, num_ds: 1, shift: [1, 1, 0, 2, 1, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0
+ef521b1f478acfc689b9ae1794bef1f0	39	Passes { num_passes: 7, num_ds: 4, shift: [2, 0, 1, 1, 3, 2], downsample: [2, 1, 8, 8], last_pass: [1, 0, 1, 2] }|0,2;3,0;3,2;3,2;3,2;3,2;0,2
+7c2ed346839f0de1ae7c4bb1bf6e3251	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3f32619163dc7e01edcc450022f4ee03	31	Passes { num_passes: 11, num_ds: 1, shift: [0, 1, 2, 1, 2, 0, 0, 3, 2, 0], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+13db90fbd4f539548eddff419616260d	21	Passes { num_passes: 8, num_ds: 0, shift: [2, 1, 3, 2, 1, 0, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+f115f3f672dcc751569d147720dd02db	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+62e07538b95ff52028b860e95c5eec2e	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+39b75bc5ec0de301525cf70f91b2a7e2	17	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [1, 8], last_pass: [1, 6] }|3,2;0,2
+252bfc61f86891ce16e2fb5a0b51530f	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [1], last_pass: [2] }|3,2;0,2
+e51aa606f76c9b3198321b2656169b36	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [2] }|3,2;0,2
+2b54789d9e8ba84cba04795838167972	24	Passes { num_passes: 6, num_ds: 1, shift: [0, 2, 2, 2, 0], downsample: [1], last_pass: [3] }|3,2;3,2;3,2;0,2;0,0;0,0
+45750b05cef13d88b8fc6ef1a9732b98	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [1] }|3,2;0,2
+c85a25edfffe8ea1ba23e5d00f7227c6	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a48413bb536a00e08d359eaaf41d4652	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+91ed0d02f2271265110015c037f25cfb	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+b2f1e8299e05d2aa4152be701df66dd6	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+8f5c558ebad93232b3b0bd9c8a595d96	19	Passes { num_passes: 7, num_ds: 0, shift: [1, 2, 3, 2, 2, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+6d36e7bfd7926a9032ff38ee792ba36c	22	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [1, 8, 4], last_pass: [1, 2, 4] }|3,2;0,2
+ed5f21e8a37fe09c5944d1ca7f475f66	19	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [8, 8, 8], last_pass: [2, 2, 0] }|3,2;0,2
+7deac1be132439b0d50bebfbd5f92aa9	32	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [1, 2, 2, 8], last_pass: [0, 0, 6, 5] }|1,2;0,0
+d278259339fbb0a0529098ae5ae26561	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+c00e04bd9e15d37e899e7ace15e01d6e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ca008cfc55d3ddf24b5eba96a662a4ef	16	Passes { num_passes: 3, num_ds: 2, shift: [0, 3], downsample: [1, 1], last_pass: [0, 0] }|0,2;0,0;0,0
+0885dc589defe5c50d8940f8c2eb98a4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+71bcd60242c01f6c52ac832337c26825	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+b29c17daafc133e9a3f85623d59685d0	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+b054e7058e29a415b2678518b38bbbdc	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+3da260e0c00dccb901767179f504e5a4	26	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [1, 2, 1, 2], last_pass: [1, 0, 0, 0] }|1,2;0,0
+fba48aaa0fd9c0e8517fe636ccbfe841	48	Passes { num_passes: 10, num_ds: 4, shift: [0, 1, 2, 2, 2, 2, 0, 2, 2], downsample: [4, 4, 4, 8], last_pass: [0, 2, 0, 6] }|2,2;2,1;2,1;2,1;2,1;2,1;3,1;3,2;3,2;0,2
+940313e24ad45d6db4aae205f7b95657	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+814d36135d634744890bc4f998093f7a	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+34064070d68c38560b95df3ae1bba65f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e4d130f9dc2cd257f4758724c66646c0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+88dfc86453b603138f1c416be96bb60f	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+53032627a4bb9b5cc9ffa89d104cdad1	32	Passes { num_passes: 8, num_ds: 2, shift: [2, 1, 0, 0, 0, 3, 0], downsample: [2, 4], last_pass: [4, 0] }|2,2;2,1;2,1;2,1;1,1;1,0;1,0;0,0
+335483a532b1a5186b13c9ff61b58298	28	Passes { num_passes: 8, num_ds: 1, shift: [0, 2, 2, 2, 2, 1, 0], downsample: [1], last_pass: [2] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0;0,0
+cd158e4a12678f180bbe7722639ea032	22	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [8, 4, 4], last_pass: [0, 0, 1] }|2,2;0,1
+3bee67a5cfc1d10b7d1eb66504115012	29	Passes { num_passes: 10, num_ds: 1, shift: [0, 3, 1, 3, 3, 3, 0, 3, 2], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+4c6e03b741806b19470bb8b067e8f518	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ad13592662845b9ebd23d33634105e6b	19	Passes { num_passes: 2, num_ds: 3, shift: [1], downsample: [8, 2, 4], last_pass: [0, 2, 0] }|2,2;0,1
+4bb84f0fb10917cc86f68a6b891ef56d	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 0, 3, 1, 3], downsample: [8, 2], last_pass: [2, 2] }|3,2;3,2;1,2;1,0;1,0;0,0
+a0914d234373e1c300ce83ec240e8613	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fd8ca2bed498a1654bd694b63252212f	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [2, 4, 2, 1], last_pass: [1, 1, 0, 1] }|1,2;0,0
+c6cee62413be40845a32855e6875b26a	15	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [4], last_pass: [4] }|3,2;3,2;0,2
+25bb1a41c21126d494b5853c825c040b	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [1], last_pass: [6] }|3,2;0,2
+5f2e1c6a7a87ddf973612d99f8ce76ca	35	Passes { num_passes: 11, num_ds: 2, shift: [0, 3, 1, 1, 0, 2, 3, 0, 0, 1], downsample: [2, 8], last_pass: [0, 1] }|1,2;3,0;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+1ce870eedc220dd379dcb1b22bb211f1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d741cc325e90648975fab16e6d0e7904	31	Passes { num_passes: 9, num_ds: 2, shift: [3, 0, 0, 2, 0, 2, 1, 2], downsample: [2, 2], last_pass: [2, 1] }|3,2;1,2;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+5cf83cc2d33ec07f82d8aba47f02fbea	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dff2e3b1c4d8ca0fe1b6bd855e083dfa	35	Passes { num_passes: 11, num_ds: 2, shift: [1, 1, 2, 3, 3, 1, 0, 3, 3, 0], downsample: [4, 2], last_pass: [1, 2] }|3,2;2,2;1,1;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+e99d5f4c623b2981966c86e1c74efbe3	20	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [8, 2], last_pass: [1, 7] }|3,2;0,2
+b3304efc0b9a2ba66b1192b2889e85d8	25	Passes { num_passes: 8, num_ds: 1, shift: [1, 0, 2, 1, 0, 3, 1], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+a7c24bee75b3601ff7bf4ab595d058bc	19	Passes { num_passes: 5, num_ds: 1, shift: [1, 1, 0, 2], downsample: [8], last_pass: [1] }|3,2;3,2;3,2;3,2;0,2
+7578a5a2264b156e56888724b67c1c38	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [2], last_pass: [0] }|1,2;0,0
+8e21b05906f8372f4deb89842fcea481	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 3], downsample: [1, 1, 2], last_pass: [0, 0, 2] }|0,2;0,0;0,0
+fa07c7a6721be1d7742ab65fe5a6c909	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [8, 2], last_pass: [0, 0] }|1,2;1,0;0,0
+78157d7653d290b3586d579611e32db4	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6e0d55fbade9cbaed5ab70269268a22d	21	Passes { num_passes: 3, num_ds: 3, shift: [3, 2], downsample: [4, 2, 1], last_pass: [2, 2, 2] }|3,2;3,2;0,2
+fb0a0aa6bb54f7a61af9ef63ed13a4a4	45	Passes { num_passes: 10, num_ds: 4, shift: [2, 2, 0, 0, 2, 2, 0, 0, 2], downsample: [2, 4, 4, 8], last_pass: [2, 2, 2, 2] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+c8b14f66ff2d521ca7e653b72a81b57b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+bf86f0774c56d58de853d2421dbd29e8	34	Passes { num_passes: 11, num_ds: 1, shift: [1, 3, 0, 0, 1, 0, 2, 3, 3, 3], downsample: [4], last_pass: [0] }|2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+a97253761f25bf97af110334bb35c2b0	17	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [4, 4], last_pass: [0, 5] }|2,2;0,1
+9538e5a5b5c1043133ab7b54b6c172cd	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [4], last_pass: [0] }|2,2;0,1
+79f38173051546f3936c37d844c2848c	17	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [2, 8], last_pass: [0, 7] }|1,2;0,0
+9462defca2ec8c8e026ad8e3f1485a7b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+55cf8ca954a51d679f6a4c67be97d59b	13	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [2], last_pass: [3] }|3,2;0,2
+48d387303d6b4e4b85b2d171b177f712	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5e988cff61f9b2bb48295197a686c221	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 0], downsample: [1, 8, 1, 2], last_pass: [2, 1, 0, 7] }|0,2;3,0;0,2
+225cdbfe794a69282cfb4511194d77c5	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+6c0ea1a94ff8ada66ca0ad86fe686858	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b38a916346a0434543806c480aa99bdc	28	Passes { num_passes: 8, num_ds: 1, shift: [1, 1, 1, 0, 3, 0, 2], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0
+cfb9f14f1d9a4f738f73128d73cadc5c	30	Passes { num_passes: 7, num_ds: 2, shift: [3, 0, 3, 1, 3, 0], downsample: [4, 8], last_pass: [7, 0] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+b7c6189567f302e608aba403c5beec44	27	Passes { num_passes: 9, num_ds: 1, shift: [1, 3, 0, 2, 1, 0, 3, 0], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;2,1;0,1
+ac2867e9fcda163e06e9435cadd06803	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+36d270bcee8d6b656fba445d384f78e6	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 0], downsample: [4], last_pass: [0] }|2,2;2,1;0,1
+45a4080df52372ca6686a832791596c7	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [0] }|1,2;0,0
+0ef1c09a9ba0d33d7b98e3113215491e	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 2], downsample: [1, 4, 8], last_pass: [1, 0, 0] }|3,2;0,2;0,0
+70bdec6dbf68db81a25bbe23640945b3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f9cc874e2737cdeb7efcbf94e1a05543	20	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [8, 1], last_pass: [4, 3] }|3,2;0,2
+13dc2051527c5ec39bc548cf860635e3	21	Passes { num_passes: 8, num_ds: 0, shift: [0, 2, 3, 2, 1, 0, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+5dc94087f67e5b25a8f53a9c7ee4f432	23	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [4, 1, 2, 4], last_pass: [1, 0, 0, 2] }|1,2;0,0
+d8fd91c586ee6d38d0230fbb194a3fd2	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f46da98d34fc00c43066d1818b3376f0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+fa00e2078990acf7c8329f91535398cd	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [1, 1], last_pass: [0, 0] }|0,2;0,0;0,0
+e822a70802bb619621dd12183b62a004	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+053a378c5a8aeb5b0b1c6686bcb5d54b	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [1], last_pass: [2] }|3,2;0,2
+a1274d88e41422dbfe829d34cb6aa042	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+7efabdb1ddade2678a974467403b813e	28	Passes { num_passes: 3, num_ds: 4, shift: [3, 0], downsample: [2, 8, 8, 8], last_pass: [2, 5, 1, 0] }|3,2;3,2;0,2
+65c347f92a3082feee49ec61da4047ed	13	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [2], last_pass: [0] }|1,2;0,0
+d3a4696af7af527beaae2ec8274f5664	29	Passes { num_passes: 8, num_ds: 2, shift: [1, 2, 0, 1, 3, 0, 1], downsample: [8, 1], last_pass: [1, 1] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0
+fbe6a43c47c83415048483139a1c4273	42	Passes { num_passes: 10, num_ds: 4, shift: [2, 1, 2, 3, 0, 1, 2, 2, 0], downsample: [8, 8, 1, 8], last_pass: [1, 0, 1, 0] }|3,2;0,2;0,0;0,0;0,0;0,0;0,0;0,0;0,0;0,0
+ec4dc40b67689bb9e92bcd35579a9fff	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f7b4346f9fd8517b37c93e8577f9b670	43	Passes { num_passes: 9, num_ds: 4, shift: [0, 1, 3, 2, 0, 1, 3, 0], downsample: [8, 8, 4, 2], last_pass: [7, 0, 1, 0] }|1,2;2,0;2,1;2,1;2,1;2,1;2,1;3,1;0,2
+947c59ad67d84a6f142f6635d7219924	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9e14597a6a59ee3b52a74202b392c5c7	28	Passes { num_passes: 3, num_ds: 4, shift: [0, 1], downsample: [4, 4, 1, 4], last_pass: [0, 2, 2, 2] }|2,2;2,1;0,1
+48316eac7a0604618a9f56c57e1195b9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5a58c5a20e6e011ba08c3599776a6da4	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 1], downsample: [1, 4], last_pass: [1, 1] }|3,2;2,2;0,1
+a0e3fb0a02f938b26084cf5e992d8bc0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+f740c4503733eefc05afda3b35a78a8f	43	Passes { num_passes: 9, num_ds: 4, shift: [0, 0, 0, 1, 0, 1, 0, 3], downsample: [1, 1, 2, 2], last_pass: [5, 1, 2, 1] }|3,2;1,2;1,0;1,0;1,0;0,0;0,0;0,0;0,0
+87d73480ff29d2cb65806e4c7dfcb9c0	15	Passes { num_passes: 5, num_ds: 0, shift: [3, 3, 2, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+06dee5832b6f8e9d62a08c0357804113	15	Passes { num_passes: 3, num_ds: 1, shift: [0, 0], downsample: [4], last_pass: [5] }|3,2;3,2;0,2
+50181173b529fbcae943af40e2aee193	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9c891239f7dfd938eac37be049dfdf55	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+10a85d6a88f52805aec2df8a598862a1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+eeed9ab8d09c844af686f521fc140315	24	Passes { num_passes: 3, num_ds: 3, shift: [3, 3], downsample: [4, 2, 8], last_pass: [1, 1, 4] }|3,2;1,2;0,0
+bad740f2df3e7223557a2680e452dadc	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [8, 2], last_pass: [1, 0] }|1,2;3,0;0,2
+7edc62b0c3cb26c5196fa2bbd236e545	28	Passes { num_passes: 3, num_ds: 4, shift: [3, 0], downsample: [4, 8, 4, 2], last_pass: [1, 0, 0, 0] }|1,2;2,0;0,1
+b28c6c202720e85f220061a4fc5f0f88	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+50ef6e7fae660e92a15292053cf01817	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ebbd7ea801a7a26057967b0dca306826	34	Passes { num_passes: 6, num_ds: 4, shift: [1, 3, 3, 2, 2], downsample: [8, 8, 2, 1], last_pass: [2, 2, 2, 1] }|3,2;0,2;1,0;1,0;1,0;0,0
+cec150e1beaa54f1dce8a92ee22c1bbf	21	Passes { num_passes: 3, num_ds: 3, shift: [2, 3], downsample: [1, 1, 4], last_pass: [1, 0, 2] }|0,2;0,0;0,0
+f5bf7b08c0a51831fa9f24ac75dc6f9e	13	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [8], last_pass: [7] }|3,2;0,2
+7fddac99a13fb00defa9c5cd3b1a4a65	40	Passes { num_passes: 11, num_ds: 3, shift: [1, 3, 1, 3, 0, 3, 2, 2, 1, 2], downsample: [2, 4, 2], last_pass: [0, 2, 2] }|1,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+f550355fc9602e68752c47477ebc4818	10	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [8], last_pass: [0] }|3,2;0,2
+da689bf46b76768b5d6ee377302bec32	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 3], downsample: [1, 4], last_pass: [2, 1] }|3,2;2,2;0,1
+bdb9a143e5dd7999491ae8b1f60267f7	29	Passes { num_passes: 2, num_ds: 4, shift: [1], downsample: [8, 1, 8, 2], last_pass: [0, 2, 2, 0] }|1,2;0,0
+7f2c2e232f10df455fe79bc2d4bbcdb2	43	Passes { num_passes: 11, num_ds: 3, shift: [0, 3, 2, 0, 2, 3, 2, 0, 3, 0], downsample: [4, 1, 8], last_pass: [2, 0, 0] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+50ad8c5730bee31e4922de8ea8e6f6d8	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c0a66a0bfc301260fe661903180b72ae	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+b4ca9851b3c2bd80047541d041de606b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1ac0f46fa9aeb50100bac9c0dc53f43e	19	Passes { num_passes: 3, num_ds: 2, shift: [1, 0], downsample: [1, 1], last_pass: [0, 4] }|0,2;0,0;0,0
+2b534ae2177322302c990ba4f3e0a9a5	21	Passes { num_passes: 6, num_ds: 1, shift: [2, 1, 2, 2, 0], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;1,0;0,0
+40f3d84a4fc319c190c70e4915a34446	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+718a6f6722fa294f9800ab14f57924c0	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+c6f2235beedefa120b2efce496ff29db	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [4], last_pass: [0] }|2,2;2,1;0,1
+06da54909b4e037ff9a26c47c1d07240	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 0], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+2bd3293d40536d171c6f5563bd097062	21	Passes { num_passes: 6, num_ds: 1, shift: [2, 1, 2, 2, 3], downsample: [1], last_pass: [1] }|3,2;0,2;0,0;0,0;0,0;0,0
+41c8467c695ac342cf32cc091f8340ac	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+fa78111c00e5fbe14edfecb689dfe4bb	19	Passes { num_passes: 3, num_ds: 2, shift: [3, 3], downsample: [1, 4], last_pass: [5, 0] }|2,2;2,1;0,1
+cc03e1894568bf673ec80487fe2aebde	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c7f85a631d51f6aeee60391aa3c0ca37	29	Passes { num_passes: 5, num_ds: 2, shift: [1, 0, 3, 3], downsample: [2, 2], last_pass: [2, 0] }|1,2;1,0;1,0;1,0;0,0
+03fa10e7d595d0235586aaa6121202b0	13	Passes { num_passes: 4, num_ds: 0, shift: [0, 1, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+e13c03aca639dee5a73f1a4a572ffe33	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+ebcc364f5882c0a847a18047bda154f9	40	Passes { num_passes: 6, num_ds: 4, shift: [0, 3, 0, 3, 2], downsample: [2, 8, 1, 8], last_pass: [4, 0, 0, 2] }|0,2;0,0;3,0;3,2;1,2;0,0
+a27834cbe694e9ff875aaeecf219cec0	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+d2db43fcd9d996bb8e733d1a41d9d052	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+7b128758e77ebae073837dc17d44d0cf	47	Passes { num_passes: 10, num_ds: 3, shift: [2, 0, 1, 0, 3, 1, 0, 2, 0], downsample: [4, 2, 2], last_pass: [1, 5, 7] }|3,2;2,2;2,1;2,1;2,1;1,1;1,0;1,0;1,0;0,0
+e18825eb367bb0ec106009d636d4865a	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+5692a60a479706172a2eef7e3041dad9	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 1], downsample: [4], last_pass: [0] }|2,2;2,1;0,1
+031bec62c59c8e5adb9b5db3cc61e82f	13	Passes { num_passes: 4, num_ds: 0, shift: [2, 1, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;0,2
+b1e905b56f5d4225e73117bd50482f90	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+ba423c6ba5bb06b93eee950e310085f8	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 2], downsample: [4, 1], last_pass: [0, 1] }|2,2;0,1;0,0
+76be6d35b3fb6e107135541bf9c26ab3	15	Passes { num_passes: 3, num_ds: 1, shift: [3, 1], downsample: [4], last_pass: [3] }|3,2;3,2;0,2
+819ec720a9d89ca83a046b01ecb8568b	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+fcc27ddf1062a9af8bbb4336d70d2833	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d65369888c3563b5bc518f3c15d864af	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 3], downsample: [8], last_pass: [0] }|3,2;3,2;0,2
+fef0a25ab1cc1f6909f2cacf25a88541	25	Passes { num_passes: 3, num_ds: 4, shift: [3, 1], downsample: [1, 4, 8, 2], last_pass: [1, 0, 1, 1] }|2,2;1,1;0,0
+5aa2b69c62c1339b24315656eafda2f7	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 1], downsample: [4, 1], last_pass: [2, 2] }|3,2;3,2;0,2
+fcf20bb685935696a00f0dd6f4eb2fcd	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+5499aac88864dadf7f10988a6dbacc27	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+50a491e80fd82187c6c148238d900522	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+7f263237aa2cac2d06943eeda191275a	40	Passes { num_passes: 11, num_ds: 3, shift: [2, 1, 2, 0, 2, 0, 3, 0, 3, 1], downsample: [8, 1, 4], last_pass: [2, 2, 2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+32191db1ed4e6408133e327a870c6fd4	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 0], downsample: [], last_pass: [] }|3,2;3,2;0,2
+2c368cdaa6c99946a964da091794d18e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+dc7b04ab5eef0071a108dc547dad8aa7	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+ebe6e0b770e0e1bd22ecadeef9d6d3cd	37	Passes { num_passes: 6, num_ds: 4, shift: [2, 1, 2, 3, 0], downsample: [1, 4, 8, 8], last_pass: [1, 2, 0, 2] }|3,2;0,2;3,0;3,2;3,2;0,2
+d8bc87360ac97a42116f916a921170bf	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+36eb85733536d11762fd1bdc4ff58c6a	12	Passes { num_passes: 3, num_ds: 1, shift: [3, 0], downsample: [8], last_pass: [2] }|3,2;3,2;0,2
+1cc2970213d71b95ccd1cb122b8fc9ca	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6fdbad120a2f61dd0eedaddfeecf6f36	32	Passes { num_passes: 7, num_ds: 3, shift: [3, 2, 1, 3, 1, 3], downsample: [4, 4, 4], last_pass: [0, 1, 0] }|2,2;2,1;2,1;2,1;2,1;2,1;0,1
+94c2761998e69344dc59f26f1bb430ea	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+698b9ad0b3be9bf01f37bf326f935e93	14	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [2, 8], last_pass: [2, 0] }|3,2;0,2
+482b913369263a764ae960a68f9ddd2e	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+cec8e47bf4073bdd1b0020d676a2e4d2	21	Passes { num_passes: 3, num_ds: 3, shift: [2, 1], downsample: [1, 2, 4], last_pass: [1, 2, 0] }|2,2;0,1;0,0
+cc8a1577f10f58829b23fa944818d6a1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d5ef3c2d792b357ab236908657204dda	13	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [8], last_pass: [3] }|3,2;0,2
+6cf01060e2420b94ba5ae02862ca945b	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+6168cb2984fda435aa263328c10c2313	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+01814ab9ca7de93027a0f12df354889a	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+16d11e4c6b2aaa040a9b9491ab49716b	12	Passes { num_passes: 3, num_ds: 1, shift: [1, 0], downsample: [2], last_pass: [0] }|1,2;1,0;0,0
+987524c0285451cdacbc53f87c5b67a3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+d07b48618afd6017a25ec710447b92a7	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+94a6ba917f6cc5b47198040e62b37b73	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+45653b74e90dc7d0a426fcc9035094f4	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [1] }|3,2;0,2
+0f4c62621fed573c38564d64128ba642	19	Passes { num_passes: 7, num_ds: 0, shift: [0, 2, 1, 2, 0, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+7a17eedead65b960f1a2e686a77431fc	16	Passes { num_passes: 3, num_ds: 2, shift: [3, 1], downsample: [8, 2], last_pass: [1, 0] }|1,2;3,0;0,2
+05449c3f06309c8541e9228101dda677	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [1], last_pass: [0] }|0,2;0,0
+7d61c86d1d785ab70bdff87fb852a052	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [4, 1, 1, 8], last_pass: [0, 0, 1, 2] }|0,2;0,0
+0073a5fd1da66becd92781c2e5099fc0	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9af40e3930bf5a70d72d8a9ec0dc24d2	22	Passes { num_passes: 3, num_ds: 2, shift: [1, 2], downsample: [1, 2], last_pass: [3, 1] }|3,2;1,2;0,0
+5fa64cb7cda85fb4bd62ac149377139f	38	Passes { num_passes: 11, num_ds: 2, shift: [0, 3, 0, 1, 1, 2, 1, 2, 2, 3], downsample: [4, 2], last_pass: [6, 0] }|1,2;1,0;1,0;1,0;1,0;1,0;2,0;2,1;2,1;2,1;0,1
+2342870d01e7fef080f5c17006d9cd49	17	Passes { num_passes: 4, num_ds: 1, shift: [0, 1, 0], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;0,1
+c09061eb0019813b79a9dcf84f47ae36	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+afe86fd5e00767cae21d52aac2b435dd	26	Passes { num_passes: 7, num_ds: 1, shift: [1, 0, 1, 3, 3, 3], downsample: [2], last_pass: [2] }|3,2;3,2;1,2;1,0;1,0;1,0;0,0
+c5d43822747ad27601636de4925c242d	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [8], last_pass: [0] }|3,2;0,2
+fdaebe4da065eb6a83ecf43e0fd674de	26	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [2, 8, 2, 2], last_pass: [1, 7, 2, 1] }|3,2;0,2
+e5c287043d4d67f3f57eff64d8c14df0	10	Passes { num_passes: 2, num_ds: 1, shift: [2], downsample: [8], last_pass: [2] }|3,2;0,2
+619fc4fa53f6a9bb5d7c5e85dc8e9379	6	Passes { num_passes: 2, num_ds: 0, shift: [2], downsample: [], last_pass: [] }|3,2;0,2
+456da513f8a0ab2ac0b678777dac1020	10	Passes { num_passes: 2, num_ds: 1, shift: [0], downsample: [2], last_pass: [1] }|3,2;0,2
+dd03fe8b6284077f4a84e8e2942c1b6c	29	Passes { num_passes: 2, num_ds: 4, shift: [2], downsample: [8, 2, 1, 1], last_pass: [0, 7, 3, 1] }|3,2;0,2
+f856d9f16b70ab889df4cd4df8565f34	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4c9831b1b4608561fe55006f544d3668	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+00ba5c9a5f2816e79d2eb3736fe187f2	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c936064d550d5a0ee3d2a1258b51465a	17	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 4], last_pass: [1, 0] }|2,2;0,1
+689c0c042e0068a6f42fe5cd59bca0d9	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e7e5d090b8b4f0f515bb47266802b048	32	Passes { num_passes: 5, num_ds: 4, shift: [1, 1, 2, 3], downsample: [1, 1, 2, 8], last_pass: [0, 0, 1, 2] }|0,2;1,0;3,0;3,2;0,2
+ff5dae5b28a9de1e047d8801046698b5	44	Passes { num_passes: 11, num_ds: 4, shift: [1, 3, 1, 1, 2, 3, 2, 2, 3, 2], downsample: [2, 2, 1, 4], last_pass: [2, 0, 1, 2] }|1,2;0,0;2,0;2,1;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+7d4a5bf51860bf8bae34d4949ac3c89a	26	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [1, 2, 2, 4], last_pass: [2, 1, 2, 1] }|3,2;0,2
+ed6a25d1a6a7469acf67055569d2bba5	22	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [2, 2, 2], last_pass: [2, 1, 2] }|3,2;0,2
+3bd1ea06283adcd55c8eb0a46e76ecb5	29	Passes { num_passes: 10, num_ds: 1, shift: [2, 0, 2, 2, 1, 1, 1, 3, 1], downsample: [8], last_pass: [0] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+fd4948a37c0c8b3d2e410f2e3667b47a	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [8, 1, 2, 4], last_pass: [0, 0, 1, 2] }|0,2;0,0
+e2ecc30fd07b04a17ea430a2ac454456	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+7280478bdc0685230c18610fb9c5449c	8	Passes { num_passes: 3, num_ds: 0, shift: [3, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+c6ca1ab0dd197dd616cc76e59233fda6	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 3], downsample: [4], last_pass: [2] }|3,2;3,2;0,2
+938b9783ba27fb9fd791d2cb59ab44eb	21	Passes { num_passes: 8, num_ds: 0, shift: [3, 1, 1, 0, 3, 3, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+2e2d8bdc89c814ac7e1ab6e43cfe9564	21	Passes { num_passes: 3, num_ds: 3, shift: [1, 2], downsample: [4, 2, 2], last_pass: [2, 1, 1] }|3,2;1,2;0,0
+6d01ad6a809792cc8c26939d2b8b6c1d	19	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [4, 1, 1], last_pass: [0, 2, 2] }|2,2;0,1
+007c5e93653433b53c5157018ee3d54c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+48ec84ae8a2c7bf57002983ec91d1327	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9b6d417c2ba07654fb7d1d865f4292fe	25	Passes { num_passes: 10, num_ds: 0, shift: [3, 2, 1, 3, 2, 0, 0, 2, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+defde91b36ef57e7d7df0eb7be685e4b	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 3], downsample: [4, 8, 8, 8], last_pass: [0, 1, 7, 2] }|2,2;3,1;0,2
+2a786df4d12f587f946ba475cf2d15ea	19	Passes { num_passes: 3, num_ds: 2, shift: [2, 0], downsample: [1, 4], last_pass: [5, 2] }|3,2;3,2;0,2
+5c4af6223e5f0d338e344790e9613a34	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+19ade73d579042d89eaf76ed6a26ca59	20	Passes { num_passes: 2, num_ds: 2, shift: [1], downsample: [1, 2], last_pass: [2, 3] }|3,2;0,2
+db4c3c76f9426559fbbc60b727a17df2	36	Passes { num_passes: 10, num_ds: 2, shift: [1, 2, 1, 2, 0, 2, 3, 1, 0], downsample: [8, 4], last_pass: [2, 2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;2,1;2,1;0,1
+da15f2f4742303b5c94422572217d781	16	Passes { num_passes: 3, num_ds: 2, shift: [1, 3], downsample: [2, 2], last_pass: [1, 0] }|1,2;1,0;0,0
+c90faa222611aad82157f71a041946b0	17	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [8, 8], last_pass: [0, 0] }|3,2;0,2
+7bdfcd53dc54d44fc4204e4e3f1ebe08	41	Passes { num_passes: 10, num_ds: 3, shift: [3, 3, 1, 3, 1, 3, 0, 3, 3], downsample: [1, 2, 2], last_pass: [0, 5, 1] }|0,2;1,0;1,0;1,0;1,0;1,0;1,0;1,0;1,0;0,0
+0b2975b47df33de1223ee2eb170e1f1e	17	Passes { num_passes: 6, num_ds: 0, shift: [2, 0, 1, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;0,2
+5faf83607e4f9996a1911e814f1936a5	38	Passes { num_passes: 11, num_ds: 2, shift: [2, 3, 1, 1, 3, 1, 0, 0, 1, 0], downsample: [1, 8], last_pass: [0, 7] }|0,2;0,0;0,0;0,0;0,0;0,0;0,0;3,0;3,2;3,2;0,2
+7420122e02383c86c56ba9049aec6cb5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+e2cc59c96969cc66bdd2412cd33bcf0f	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 3], downsample: [], last_pass: [] }|3,2;3,2;0,2
+a6049e5d7b7477fc9816e9bc9eeae58f	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 2], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+f4f9b34ea14038bdcae39646e1e743bd	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+484e9d3169f8c38234c8c421a25ee862	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+a2d9d87b39646e92578444b9cebfee26	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+ee5829ac1b18e294f1d5ce56226b2728	21	Passes { num_passes: 3, num_ds: 3, shift: [3, 1], downsample: [1, 8, 4], last_pass: [2, 0, 1] }|3,2;2,2;0,1
+5ea359c40d18ada7931832f9fe2e60ee	28	Passes { num_passes: 3, num_ds: 4, shift: [2, 2], downsample: [2, 1, 2, 8], last_pass: [0, 2, 0, 1] }|1,2;3,0;0,2
+fd51a82dba131aaa7ceb7871a48f9a7e	23	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [8, 1, 4, 4], last_pass: [0, 0, 1, 1] }|0,2;0,0
+1813abbea0492047db30cb562c883b2a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+07399e8f9da1180e9ba0d68b7cdadced	15	Passes { num_passes: 5, num_ds: 0, shift: [2, 0, 3, 1], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;0,2
+0d87bdb47ecd726b9436641e2fee60eb	25	Passes { num_passes: 2, num_ds: 3, shift: [0], downsample: [4, 8, 1], last_pass: [0, 6, 2] }|2,2;0,1
+b3c91a57eee3899154d499d969c6d4e3	25	Passes { num_passes: 8, num_ds: 1, shift: [3, 0, 1, 2, 1, 1, 3], downsample: [1], last_pass: [2] }|3,2;3,2;0,2;0,0;0,0;0,0;0,0;0,0
+4b190f3fc20beaf51e3941a735ea31ee	25	Passes { num_passes: 6, num_ds: 2, shift: [2, 0, 3, 0, 2], downsample: [8, 2], last_pass: [0, 2] }|3,2;3,2;1,2;1,0;1,0;0,0
+397a2c34b26afe0986db6d43fd3189c4	17	Passes { num_passes: 2, num_ds: 2, shift: [3], downsample: [1, 4], last_pass: [2, 1] }|3,2;0,2
+fd44eeccb1dc933c9b1fd3a598841990	29	Passes { num_passes: 2, num_ds: 4, shift: [3], downsample: [2, 4, 1, 4], last_pass: [0, 5, 4, 1] }|1,2;0,0
+5afb5ee13b2564e09125e8b51525963b	22	Passes { num_passes: 3, num_ds: 2, shift: [1, 1], downsample: [8, 4], last_pass: [3, 3] }|3,2;3,2;0,2
+a2a40ae54c628c5fb55bf49730002032	8	Passes { num_passes: 3, num_ds: 0, shift: [2, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+d32764374666b634788df403f869202d	32	Passes { num_passes: 8, num_ds: 2, shift: [3, 3, 0, 1, 0, 2, 0], downsample: [8, 4], last_pass: [6, 0] }|2,2;2,1;2,1;2,1;2,1;2,1;3,1;0,2
+332b4917fa2798a6db077a20b926a8d9	25	Passes { num_passes: 8, num_ds: 1, shift: [2, 1, 1, 1, 2, 0, 1], downsample: [4], last_pass: [2] }|3,2;3,2;2,2;2,1;2,1;2,1;2,1;0,1
+4de2f31840309eee8ff9c20c34527e5b	25	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [1, 2, 1], last_pass: [7, 0, 3] }|1,2;0,0
+a46605377b33deefb09a165e017acbc1	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1395fc7fca0334960f0054ffbc9455a6	21	Passes { num_passes: 8, num_ds: 0, shift: [2, 2, 2, 0, 1, 2, 3], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+353379a13aeae5a9cfe851bb34fec7e8	13	Passes { num_passes: 2, num_ds: 1, shift: [3], downsample: [1], last_pass: [4] }|3,2;0,2
+ef2937da53089ac1ed5eb945d281cfc2	39	Passes { num_passes: 7, num_ds: 4, shift: [1, 2, 2, 0, 3, 1], downsample: [8, 1, 4, 4], last_pass: [1, 3, 2, 2] }|3,2;3,2;2,2;0,1;0,0;0,0;0,0
+88e0118e984eecb78b7bccf0135d332c	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+8fbef4a111f327b590f0ee54c2dae61c	19	Passes { num_passes: 7, num_ds: 0, shift: [1, 3, 3, 1, 1, 2], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+09a88a4c5d215ea9c6c234aa2f9cf449	14	Passes { num_passes: 2, num_ds: 2, shift: [0], downsample: [1, 1], last_pass: [2, 2] }|3,2;0,2
+b01456fc3197b6acc6d00be97202e6ac	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+30760299c4b5c6227ec3bd5e024368e5	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+000333c14f2165b1d3e88de9ebbc55f2	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+27f55a01066fa1911a115ea0bdcaba71	19	Passes { num_passes: 5, num_ds: 1, shift: [2, 2, 2, 3], downsample: [2], last_pass: [1] }|3,2;1,2;1,0;1,0;0,0
+ed79832e71ff71acdbf8bc04b5ddfdbf	22	Passes { num_passes: 2, num_ds: 3, shift: [3], downsample: [8, 1, 8], last_pass: [6, 0, 0] }|3,2;0,2
+06f409df3e68d4162cb990c0149d946f	12	Passes { num_passes: 3, num_ds: 1, shift: [0, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+5284e526f920fe1a703942c734ca261e	8	Passes { num_passes: 3, num_ds: 0, shift: [1, 1], downsample: [], last_pass: [] }|3,2;3,2;0,2
+0eab285e7d0ca0ff9a04ac0e0303447d	21	Passes { num_passes: 3, num_ds: 3, shift: [0, 2], downsample: [2, 2, 2], last_pass: [1, 0, 1] }|1,2;1,0;0,0
+016b871cca8f664d048cbb81e2ed28f4	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+263ca4df6588644427aa6b6d1a785937	15	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [1], last_pass: [3] }|3,2;3,2;0,2
+9dbd0a00c25a52fbfe82ae88fe657692	23	Passes { num_passes: 2, num_ds: 4, shift: [0], downsample: [8, 4, 8, 2], last_pass: [1, 1, 1, 0] }|1,2;0,0
+a979ff17f305700d55597de83d97514b	17	Passes { num_passes: 2, num_ds: 2, shift: [2], downsample: [4, 2], last_pass: [2, 5] }|3,2;0,2
+cebd3024954c5ce6ead944586f8e0ef6	21	Passes { num_passes: 3, num_ds: 3, shift: [2, 3], downsample: [4, 8, 2], last_pass: [1, 0, 2] }|3,2;2,2;0,1
+ea1d7677c8c0160427dde5aedca1c353	16	Passes { num_passes: 3, num_ds: 2, shift: [2, 3], downsample: [2, 8], last_pass: [1, 0] }|3,2;1,2;0,0
+a71c18c476a87839008f60ff18ae8b62	19	Passes { num_passes: 5, num_ds: 1, shift: [1, 2, 3, 0], downsample: [1], last_pass: [0] }|0,2;0,0;0,0;0,0;0,0
+af721fed36b16eda1f0da9db69d177c7	23	Passes { num_passes: 7, num_ds: 1, shift: [1, 1, 2, 3, 2, 3], downsample: [8], last_pass: [0] }|3,2;3,2;3,2;3,2;3,2;3,2;0,2
+be93e4125d083fee8a8ae3a988e6c3ec	28	Passes { num_passes: 3, num_ds: 4, shift: [1, 3], downsample: [2, 4, 1, 2], last_pass: [2, 0, 5, 0] }|1,2;1,0;0,0
+4ce460f06160314084aded71ae3a7e39	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+519eef60f046af0e79b4d4eea69f0ffc	6	Passes { num_passes: 2, num_ds: 0, shift: [1], downsample: [], last_pass: [] }|3,2;0,2
+30b72dec1347e99372003585d6e403c3	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+9bf43db43565f01b39050d16375b98fd	25	Passes { num_passes: 10, num_ds: 0, shift: [1, 2, 2, 3, 3, 2, 3, 1, 0], downsample: [], last_pass: [] }|3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;3,2;0,2
+3460ba71f99a90691c333971ff0a233a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+c313addae48c57e6b6a9faaa9c506011	21	Passes { num_passes: 4, num_ds: 2, shift: [3, 1, 2], downsample: [1, 4], last_pass: [2, 1] }|3,2;2,2;0,1;0,0
+8281046c9fa294a8a80828eaacc797c4	8	Passes { num_passes: 3, num_ds: 0, shift: [0, 2], downsample: [], last_pass: [] }|3,2;3,2;0,2
+985ddfc318012dccca826634a9a7218a	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+1575b878c4cb33685d68aafb4cc767ed	10	Passes { num_passes: 2, num_ds: 1, shift: [1], downsample: [1], last_pass: [1] }|3,2;0,2
+26946d2cbc6c0dae7738c460740e18f3	12	Passes { num_passes: 3, num_ds: 1, shift: [2, 0], downsample: [1], last_pass: [1] }|3,2;0,2;0,0
+c1e0f3a168ef0777ebf71e7f2dcb8ffb	6	Passes { num_passes: 2, num_ds: 0, shift: [0], downsample: [], last_pass: [] }|3,2;0,2
+cd1e0d6fa7af07d98fac555e6550aba5	19	Passes { num_passes: 2, num_ds: 3, shift: [2], downsample: [2, 8, 8], last_pass: [0, 2, 2] }|1,2;0,0
+31d20d318d7f289436c2fa353978be72	6	Passes { num_passes: 2, num_ds: 0, shift: [3], downsample: [], last_pass: [] }|3,2;0,2
+74e04001a9549aed069619c0f85d5456	2	Passes { num_passes: 1, num_ds: 0, shift: [], downsample: [], last_pass: [] }|0,2
+4b9c11e6fda23ae7f533781f7c1f29f4	25	Passes { num_passes: 6, num_ds: 2, shift: [0, 2, 3, 0, 3], downsample: [1, 4], last_pass: [0, 0] }|2,2;2,1;2,1;2,1;2,1;0,1

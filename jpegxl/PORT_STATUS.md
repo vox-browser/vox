@@ -121,7 +121,24 @@ correctly and all eight orientations have pixel/rectangle/row-step checks.
 Truncated names and extension payloads now preserve source bit consumption,
 with separate focused regressions.
 
-Remaining work includes frame headers and tables of contents, modular
+Frame parsing now translates frame types, encoding/flags, JPEG sampling,
+upsampling and extra-channel postprocessing, multipass settings, crops,
+blending/reference state, animation timing, names and restoration parameters.
+Derived dimensions, group/LF-group rectangles, TOC counts, sampling predicates,
+visibility and smoothing flags match the source. A constructor supplies fixed
+restoration arrays to avoid the current compiler's nested-array-default C issue.
+
+Frozen comparisons add 4,134 complete raw/postprocessed frame records and
+1,024 pass/bracket records. They include all restoration setting combinations
+and the six bare browser fixtures. File/preview contexts use their own encoded
+sizes and animation/extra-channel metadata. The Guardian fixture begins with a
+non-visible modular LF frame; it is preserved as a dependency for later frames.
+Errors and consumed bits are compared, with SHA-256 over the documented full
+frame serializer. Default and no-GC focused checks pass under separate 3 GiB
+guards, including unavailable Rust compiler paths. The initial C compilation
+and test-serialization errors were corrected without changing source records.
+
+Remaining work includes tables of contents, modular
 prediction/transforms, VarDCT, filtering, pixel color conversion, oriented output
 rows, exact alpha quantization and browser integration. Container/API streaming
 remains a broader parity task. All nine module test files pass with default GC and `-gc none` through
