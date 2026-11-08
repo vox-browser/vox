@@ -17,9 +17,15 @@ fn test_freetype_masks_match_native_outline_rasterization() {
 			[f32(0.9), 0.3, -0.3, 0.9, 4, -2]!]
 		// Original canvas call, with the native FreeType face factory and the
 		// same FreeType library as the differential oracle.
-		hashes := ['ab3ae9f259306087962f757c1003cddd801aeb572ac6be36f28ca40965df2f94',
+		hashes := $if linux {
+			['bf0dab340c75632d472b66b265ec47d481bc4a6ec7b062e114e0e21dd5dd3458',
+			'92294b06864eb552d2c073da90ca539eb66f44b1e655e4c806f8f737fe46d4ec',
+			'2c0464e96cfd56d5cd22a4196f1d2bf673043d15037f30c5ba46b2f0f07d886c']
+		} $else {
+			['ab3ae9f259306087962f757c1003cddd801aeb572ac6be36f28ca40965df2f94',
 			'954a41f50d8fc61b24a2c7992e056e6e5a1634c0ab1335d0416ee7ebbd03c54e',
 			'5fb98bbdf48141884566c8c9a461d6074431010bafb42425d5b3b6fa04744b44']
+		}
 		for i, transform in transforms {
 			mut pixels := []u8{len: 48 * 40 * 4}
 			assert fill_canvas_glyphs(mut pixels, 48, 40, 192, 2, run, transform, 0xff3070c0,

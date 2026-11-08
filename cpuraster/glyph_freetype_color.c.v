@@ -78,7 +78,7 @@ $if linux || cpuraster_freetype ? {
 	// magnifying the full-size mask does not preserve the edge coverage.
 	fn fill_freetype_drawables(mut pixels []u8, pitch int,
 		run CanvasGlyphRun, routes []GlyphRoute, face GlyphFace, ctm SkAffine,
-		rc &RasterClip, color u32, alpha f32, mode BlendMode, filter ?ColorFilter) {
+		rc &RasterClip, color u32, alpha f32, mode BlendMode, filter ?ColorFilter, legacy bool) {
 		if !routes.any(it.kind == .drawable) { return }
 		mut strike := new_glyph_strike(face, glyph_path_size, SkAffine{}, 0) or { return }
 		defer { strike.release() }
@@ -103,8 +103,8 @@ $if linux || cpuraster_freetype ? {
 			layer_clip := canvas_raster_clip(w, h, [])
 			for item in layers {
 				device := item.path.transform(affine_to_matrix(shifted))
-				mut blitter := canvas_blitter(mut layer, w * 4, item.color,
-					f32(item.color >> 24) * inv_255, .src_over) or { continue }
+				mut blitter := choose_color_blitter(mut layer, w * 4, item.color,
+					f32(item.color >> 24) * inv_255, .src_over, legacy) or { continue }
 				if run.smoothing == 1 {
 					fill_path_clip(device, false, &layer_clip, mut blitter)
 				} else {
@@ -112,7 +112,7 @@ $if linux || cpuraster_freetype ? {
 				}
 			}
 			glyph := StrikeGlyph{0, 0, w, h, layer}
-			draw_glyph_sprite(mut pixels, pitch, glyph, allocation.left, allocation.top, rc, color, alpha, mode, filter)
+			draw_glyph_sprite(mut pixels, pitch, glyph, allocation.left, allocation.top, rc, color, alpha, mode, filter, legacy)
 		}
 	}
 }

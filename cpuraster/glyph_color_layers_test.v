@@ -11,10 +11,17 @@ fn test_portable_layered_color_glyph_masks_and_vector_drawables() {
 			1, 0, 0]!, [f32(.9), .3, -.3, .9, 4, -2]!]
 		// Original native FreeType canvas calls. The two large sizes replay
 		// canonical outlines through saved layers; the small ones are sprites.
-		hashes := ['1b789b902a4cf0016efa8dc1973281a4089c060755d5161d744b7554ad640113',
+		hashes := $if linux {
+			['7c6c548cde3303bdbf8f0b991b61527f8bfb59134df660a1df6696cb97b4931c',
+			'01368c964b29a477b2847958be89f8779f99f3e0904425d00022593773a100a3',
+			'240a4291f686f268712a32eaf1071fc8b32b46a1f88417abd1297b45dcf2de5d',
+			'a4dc4f28c2b8a53039f086c53d872c8f28c92e9e18f84bd599cc21063e256a04']
+		} $else {
+			['1b789b902a4cf0016efa8dc1973281a4089c060755d5161d744b7554ad640113',
 			'5bf5ff64fe62b2a085763b1c6dfb836977ca2ed31824247d64e5cd31f5fcf295',
 			'696774b726410bcfead267b3baa9d6d314f39a9bf9c4a31051bfb8a7d1cf6585',
 			'0eca60013e0df80a32d6aa5df65adca4c437d6c0248d0bafee193ea67630a8d5']
+		}
 		for i, size in sizes {
 			run := CanvasGlyphRun{
 				font_path:   font

@@ -67,30 +67,30 @@ fn blur_stroke_hash(segments []f32, transform [6]f32, line_width f32, cap Stroke
 // shadows and background (test_cpu_raster.sh compares random ones).
 fn test_blurred_masks_match_skia() {
 	// sigma 1.5: SkMaskBlurFilter's direct Gaussian kernel.
-	assert blur_fill_hash(blur_test_curve(), blur_test_identity, 0xff204080, .src_over, 3, []) == '31420421a7850a76'
+	assert blur_fill_hash(blur_test_curve(), blur_test_identity, 0xff204080, .src_over, 3, []) == fixture_hash('31420421a7850a76')
 	// sigma 6 under a scale of 1.5: three box passes.
 	assert blur_fill_hash(blur_test_curve(), [f32(1.5), 0, 0, 1.5, -10, -6]!, 0xa0e05010,
-		.src_over, 12, []) == 'dea51d8b129f7d39'
+		.src_over, 12, []) == fixture_hash('dea51d8b129f7d39')
 	// sigma 0.25 has no blur: Skia draws the shape unfiltered.
 	assert blur_fill_hash(blur_test_curve(), blur_test_identity, 0xff204080, .src_over, 0.5,
-		[]) == 'edcd6b85fed92936'
+		[]) == fixture_hash('edcd6b85fed92936')
 	// A hairline shadow is drawn into the mask with butt caps.
-	assert blur_stroke_hash(blur_test_curve(), blur_test_identity, 1, .square, 5) == '49259369cfea127b'
+	assert blur_stroke_hash(blur_test_curve(), blur_test_identity, 1, .square, 5) == fixture_hash('49259369cfea127b')
 	// Inside an anti-aliased clip, with a composite operation.
 	assert blur_fill_hash(blur_test_curve(), blur_test_identity, 0xff40c060, .multiply, 7, [
 		canvas_path(blur_test_rect(8.5, 6.25, 50.75, 41.5), false),
-	]) == '802858540a0d2a24'
+	]) == fixture_hash('802858540a0d2a24')
 }
 
 fn test_blurred_rects_match_skia() {
 	// One rect: SkBlurMask::BlurRect()'s analytic nine-patch.
 	assert blur_fill_hash(blur_test_rect(10.25, 8.5, 52.75, 44), blur_test_identity, 0xff802040,
-		.src_over, 8, []) == '727f7a3691bdb1cf'
+		.src_over, 8, []) == fixture_hash('727f7a3691bdb1cf')
 	// A stroked rect is a ring of nested rects: the blurred ring nine-patch.
-	assert blur_stroke_hash(blur_test_rect(6, 6, 58, 50), blur_test_identity, 4, .butt, 6) == '627f3ce6ef3d3aec'
+	assert blur_stroke_hash(blur_test_rect(6, 6, 58, 50), blur_test_identity, 4, .butt, 6) == fixture_hash('627f3ce6ef3d3aec')
 	// Too small for a nine-patch, so blurred as a mask.
 	assert blur_fill_hash(blur_test_rect(30, 26, 36, 31), blur_test_identity, 0xff802040,
-		.src_over, 9, []) == 'f9911f428908818f'
+		.src_over, 9, []) == fixture_hash('f9911f428908818f')
 }
 
 // A ring whose mask is more than 8191 pixels across: the anti-aliased fill
@@ -102,7 +102,7 @@ fn test_oversized_ring_mask_matches_skia() {
 	mut px := blur_test_background(64, 56)
 	assert fill_canvas_path(mut px, 64, 56, 256, 1, canvas_path(s, false), blur_test_identity,
 		0xff204080, none, 1, .src_over, 12, [], none)
-	assert sha256.sum(px).hex()[..16] == '6c7f50d0617e3740'
+	assert sha256.sum(px).hex()[..16] == fixture_hash('6c7f50d0617e3740')
 }
 
 fn test_nested_rect_contours() {

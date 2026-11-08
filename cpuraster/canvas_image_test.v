@@ -94,12 +94,12 @@ fn image_test_hash(c ImageTestCase) string {
 // the same cases (test_cpu_raster.sh compares random ones).
 fn test_clears_match_skia() {
 	// A hard rect clip, then Src of transparent black.
-	assert clear_test_hash(image_test_identity, [f32(3.5), 4.25, 30, 20]!, 0, false) == '4862b730d1fb2247'
+	assert clear_test_hash(image_test_identity, [f32(3.5), 4.25, 30, 20]!, 0, false) == fixture_hash('4862b730d1fb2247')
 	// Opaque black (alpha: false) is source-over, under a flipping scale.
 	assert clear_test_hash([f32(1.5), 0, 0, -1.2, 2, 39]!, [f32(2), 3, 20, 15]!, 0xff000000,
-		false) == '438681b38b121c8c'
+		false) == fixture_hash('438681b38b121c8c')
 	// Inside an anti-aliased clip.
-	assert clear_test_hash(image_test_identity, [f32(0), 0, 48, 40]!, 0, true) == '62b1b888837ad40a'
+	assert clear_test_hash(image_test_identity, [f32(0), 0, 48, 40]!, 0, true) == fixture_hash('62b1b888837ad40a')
 }
 
 fn test_sprite_images_match_skia() {
@@ -107,25 +107,25 @@ fn test_sprite_images_match_skia() {
 	// copy and blit_row_s32a_blend at half alpha.
 	assert image_test_hash(ImageTestCase{
 		destination: [f32(10), 12, 7, 6]!
-	}) == 'eba880bbda5f6f4a'
+	}) == fixture_hash('eba880bbda5f6f4a')
 	assert image_test_hash(ImageTestCase{
 		mode:        .src
 		destination: [f32(10), 12, 7, 6]!
-	}) == '96f513ac0f45d7a2'
+	}) == fixture_hash('96f513ac0f45d7a2')
 	assert image_test_hash(ImageTestCase{
 		alpha:       0.5
 		destination: [f32(10), 12, 7, 6]!
-	}) == '0495a4388ca940c9'
+	}) == fixture_hash('0495a4388ca940c9')
 	// Display P3: SkRasterPipelineSpriteBlitter.
 	assert image_test_hash(ImageTestCase{
 		display_p3:  true
 		destination: [f32(10), 12, 7, 6]!
-	}) == 'd4051cafcbbe1366'
+	}) == fixture_hash('d4051cafcbbe1366')
 	// An anti-aliased clip that cuts the sprite takes the shader instead.
 	assert image_test_hash(ImageTestCase{
 		destination: [f32(30), 14, 7, 6]!
 		clip:        true
-	}) == '7a1823380c32d1fe'
+	}) == fixture_hash('7a1823380c32d1fe')
 }
 
 fn test_scaled_images_match_skia() {
@@ -133,39 +133,39 @@ fn test_scaled_images_match_skia() {
 	// origin, and a source rect past the image.
 	assert image_test_hash(ImageTestCase{
 		destination: [f32(5), 5, 20, 14]!
-	}) == '3e8084e20b39a7f3'
+	}) == fixture_hash('3e8084e20b39a7f3')
 	assert image_test_hash(ImageTestCase{
 		smoothing:   true
 		destination: [f32(5), 5, 20, 14]!
-	}) == '9c725c14254b2f62'
+	}) == fixture_hash('9c725c14254b2f62')
 	assert image_test_hash(ImageTestCase{
 		smoothing:   true
 		destination: [f32(6), 4, 30, 20]!
 		source:      [f32(2), 1, 4, 3]!
-	}) == '24d847ccb95ac95d'
+	}) == fixture_hash('24d847ccb95ac95d')
 	assert image_test_hash(ImageTestCase{
 		smoothing:   true
 		destination: [f32(4), 3, 30, 25]!
 		source:      [f32(-2), -1, 6, 5]!
-	}) == '48cbeda9149b9d90'
+	}) == fixture_hash('48cbeda9149b9d90')
 	// Unpremultiplied: the raster pipeline's lowp bilerp_clamp_8888.
 	assert image_test_hash(ImageTestCase{
 		smoothing:     true
 		premultiplied: false
 		destination:   [f32(5.5), 5, 21, 14]!
-	}) == '090261b8b1015058'
+	}) == fixture_hash('090261b8b1015058')
 	// A quarter turn keeps rects rects: the nearest affine legacy procs.
 	assert image_test_hash(ImageTestCase{
 		transform:   [f32(0), 1, -1, 0, 44, 2]!
 		destination: [f32(5), 5, 20, 14]!
-	}) == 'd256feaf2557e392'
+	}) == fixture_hash('d256feaf2557e392')
 	// Multiply at partial alpha through the pipeline.
 	assert image_test_hash(ImageTestCase{
 		smoothing:   true
 		mode:        .multiply
 		alpha:       0.8
 		destination: [f32(5), 5, 20, 14]!
-	}) == '756d48e5937f902d'
+	}) == fixture_hash('756d48e5937f902d')
 }
 
 // Under a rotation both commands fill the rect's path without
@@ -178,7 +178,7 @@ fn test_rotated_commands_match_skia() {
 		smoothing:   true
 		transform:   rotation
 		destination: [f32(5), 5, 20, 14]!
-	}) == 'e05cc38cab516e92'
+	}) == fixture_hash('e05cc38cab516e92')
 	assert image_test_hash(ImageTestCase{
 		mode:          .multiply
 		premultiplied: false
@@ -187,7 +187,7 @@ fn test_rotated_commands_match_skia() {
 		destination:   [f32(5), 5, 20, 14]!
 		source:        [f32(1), 1, 5, 4]!
 		clip:          true
-	}) == 'cf98fb1fb46fb2ee'
-	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0, false) == '38711e4839a270f0'
-	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0xff000000, true) == '4524d50a45b3d820'
+	}) == fixture_hash('cf98fb1fb46fb2ee')
+	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0, false) == fixture_hash('38711e4839a270f0')
+	assert clear_test_hash(rotation, [f32(6), 5, 25, 18]!, 0xff000000, true) == fixture_hash('4524d50a45b3d820')
 }

@@ -45,7 +45,7 @@ fn test_stroke_one_pixel_polyline_with_butt_caps() {
 	s << hairline_segment(5, [])
 	s << hairline_segment(0, [f32(20), 12])
 	s << hairline_segment(1, [f32(44.5), 25.25])
-	assert stroke_hash(s, 64, 48, [f32(1), 0, 0, 1, 0, 0]!, 0xff2a60d0, 1, 1, .butt, .miter) == '3955e568dc7e51e9'
+	assert stroke_hash(s, 64, 48, [f32(1), 0, 0, 1, 0, 0]!, 0xff2a60d0, 1, 1, .butt, .miter) == fixture_hash('3955e568dc7e51e9')
 }
 
 fn test_stroke_thin_curves_scale_alpha_by_coverage() {
@@ -55,7 +55,7 @@ fn test_stroke_thin_curves_scale_alpha_by_coverage() {
 	s << hairline_segment(3, [f32(70), 50, 10, 5, 50, -10])
 	s << hairline_segment(4, [f32(20), 30, 0, 0, 0, 0, 25, 14, 0.4, 1, 0])
 	assert stroke_hash(s, 80, 60, [f32(0.9), 0.3, -0.25, 1.05, 6, -2]!, 0xc8e05020, 0.85,
-		0.5, .round, .round) == '0fa8edf3e8f321c6'
+		0.5, .round, .round) == fixture_hash('0fa8edf3e8f321c6')
 }
 
 fn test_stroke_square_caps_clip_at_the_device_edges() {
@@ -68,7 +68,7 @@ fn test_stroke_square_caps_clip_at_the_device_edges() {
 	s << hairline_segment(0, [f32(5), 35])
 	s << hairline_segment(1, [f32(5), 35.5])
 	assert stroke_hash(s, 60, 40, [f32(1), 0, 0, 1, 0, 0]!, 0xff000000, 1, 0.75, .square,
-		.bevel) == '39a45c3f5a2c4ec5'
+		.bevel) == fixture_hash('39a45c3f5a2c4ec5')
 }
 
 fn test_stroke_declines_devices_skia_tiles() {

@@ -62,7 +62,7 @@ fn test_blur_filtered_draws_match_skia() {
 	mut px := filter_layer_test_background()
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), identity, 0xc0e04010,
 		none, 1, .src_over, 0, [], blur_filter(2.5))
-	assert filter_layer_test_hash(px, 2) == '7263a58806bf8436'
+	assert filter_layer_test_hash(px, 2) == fixture_hash('7263a58806bf8436')
 	// A scaled stroke: the layer matrix carries the scale, and the sigma is
 	// mapped into layer space per axis (the Gaussian pass).
 	px = filter_layer_test_background()
@@ -74,18 +74,18 @@ fn test_blur_filtered_draws_match_skia() {
 		2,
 		4,
 	]!, 0xff3070c0, none, 1, .src_over, 0, 3, .round, .round, 10, [], 0, [], blur_filter(0.8))
-	assert filter_layer_test_hash(px, 1) == '11314abdec52c202'
+	assert filter_layer_test_hash(px, 1) == fixture_hash('11314abdec52c202')
 	// Multiply through an anti-aliased clip, which cuts the sprite: the
 	// result is drawn with an image shader.
 	px = filter_layer_test_background()
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), identity, 0xff10a040,
 		none, 1, .multiply, 0, filter_layer_test_clip(), blur_filter(4))
-	assert filter_layer_test_hash(px, 2) == '698232341bfd269c'
+	assert filter_layer_test_hash(px, 2) == fixture_hash('698232341bfd269c')
 	// A large translucent blur: the three-box pass.
 	px = filter_layer_test_background()
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(), identity, 0x80ff8000,
 		none, 0.7, .src_over, 0, [], blur_filter(12))
-	assert filter_layer_test_hash(px, 2) == '9715f8489f927c77'
+	assert filter_layer_test_hash(px, 2) == fixture_hash('9715f8489f927c77')
 	$if macos {
 		px = filter_layer_test_background()
 		run := CanvasGlyphRun{
@@ -97,7 +97,7 @@ fn test_blur_filtered_draws_match_skia() {
 		}
 		assert fill_canvas_glyphs(mut px, 48, 40, 192, 2, run, identity, 0xff203040, none, 1,
 			.src_over, [], blur_filter(1.5))
-		assert filter_layer_test_hash(px, 2) == '5dc0e6b8a4ddf089'
+		assert filter_layer_test_hash(px, 2) == fixture_hash('5dc0e6b8a4ddf089')
 	}
 }
 
@@ -155,7 +155,7 @@ fn test_drop_shadow_filter_layers_match_skia() {
 		assert fill_canvas_path(mut px, 48, 40, 192, 2, filter_layer_test_path(),
 			[f32(1), 0, 0, 1, 0, 0]!, 0xc0e04010, none, 1, modes[i], 0, clips,
 			new_canvas_filter([step]))
-		assert filter_layer_test_hash(px, 2) == hashes[i], 'drop-shadow fixture ${i}'
+		assert filter_layer_test_hash(px, 2) == fixture_hash(hashes[i]), 'drop-shadow fixture ${i}'
 	}
 }
 

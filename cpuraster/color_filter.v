@@ -144,12 +144,12 @@ fn paint_draws_nothing(mode BlendMode, alpha_byte int, filter ?ColorFilter) bool
 }
 
 // SkBlitter::Choose() for the canvas paint with or without a color filter.
-fn canvas_draw_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, filter ?ColorFilter) ?Blitter {
+fn canvas_draw_blitter_for_surface(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, filter ?ColorFilter, legacy bool) ?Blitter {
 	f := filter or {
-		return canvas_paint_blitter(mut pixels, row_bytes, color, shader, alpha, mode, device_bounds)
+		return canvas_paint_blitter_for_surface(mut pixels, row_bytes, color, shader, alpha, mode, device_bounds, legacy)
 	}
 	return canvas_filtered_blitter(mut pixels, row_bytes, color, shader, alpha, mode, device_bounds,
-		f)
+		f, legacy)
 }
 
 // SkBlitter::Choose() with a color filter. CheckFastPath() sees the
@@ -158,18 +158,18 @@ fn canvas_draw_blitter(mut pixels []u8, row_bytes int, color u32, shader ?Canvas
 // color, or wraps a shader in SkColorFilterShader: the shader, the paint
 // alpha's scale_1_float and the filter's stages, all in highp, with no
 // legacy shader context.
-fn canvas_filtered_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, filter ColorFilter) ?Blitter {
+fn canvas_filtered_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, filter ColorFilter, legacy bool) ?Blitter {
 	if mode == .dst {
 		return none
 	}
 	if mode == .clear {
 		return canvas_blitter(mut pixels, row_bytes, 0, 0, .clear)
 	}
-	s := shader or { return filtered_color_blitter(mut pixels, row_bytes, color, alpha, mode, filter) }
+	s := shader or { return filtered_color_blitter(mut pixels, row_bytes, color, alpha, mode, filter, legacy) }
 	opaque_after := filter.alpha_unchanged()
 	match s.kind {
 		.null_ {
-			return filtered_color_blitter(mut pixels, row_bytes, 0xff000000, alpha, mode, filter)
+			return filtered_color_blitter(mut pixels, row_bytes, 0xff000000, alpha, mode, filter, legacy)
 		}
 		.empty {
 			return none
@@ -230,9 +230,9 @@ fn canvas_filtered_blitter(mut pixels []u8, row_bytes int, color u32, shader ?Ca
 // A solid paint after RemoveColorFilter(): the legacy blitter for
 // source-over when the filtered color fits in bytes (rounded to an
 // SkColor), otherwise the raster pipeline's constant color.
-fn filtered_color_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, mode BlendMode, filter ColorFilter) Blitter {
+fn filtered_color_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, mode BlendMode, filter ColorFilter, legacy bool) Blitter {
 	c := filtered_paint_color(color, alpha, filter)
-	if mode == .src_over && c[..3].all(it >= 0 && it <= 1) {
+	if legacy && mode == .src_over && c[..3].all(it >= 0 && it <= 1) {
 		sk := color4f_byte(c[3]) << 24 | color4f_byte(c[0]) << 16 | color4f_byte(c[1]) << 8 | color4f_byte(c[2])
 		return new_solid_blitter(mut pixels, row_bytes, sk)
 	}

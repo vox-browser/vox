@@ -71,7 +71,8 @@ fn test_fill_inside_a_circle_and_a_fractional_rect() {
 		clip_test_circle(30, 28, 24.5),
 		canvas_path(clip_test_rect_segments(8.25, 10.5, 55.75, 49.25), false),
 	], none)
-	assert sha256.sum(pixels).hex()[..16] == 'e6089ba3774fa01a'
+	expected := $if linux { '8fa173c844dc2631' } $else { 'e6089ba3774fa01a' }
+	assert sha256.sum(pixels).hex()[..16] == expected
 }
 
 fn clipped_stroke_hash(path []f32, transform [6]f32, line_width f32, cap StrokeCap, join StrokeJoin, dashes []f32, dash_offset f32, clips []Path) string {
@@ -82,14 +83,18 @@ fn clipped_stroke_hash(path []f32, transform [6]f32, line_width f32, cap StrokeC
 }
 
 fn test_wide_stroke_inside_a_rect_and_an_even_odd_star() {
+	expected := $if linux { '52c7b8476e139e17' } $else { '21da18757af66944' }
 	assert clipped_stroke_hash(clip_test_star(), [f32(0.95), 0.2, -0.2, 0.95, 4, 2]!, 6, .round,
 		.miter, [], 0, [canvas_path(clip_test_rect_segments(6, 4, 58, 54), false),
-		canvas_path(clip_test_star(), true)]) == '21da18757af66944'
+		canvas_path(clip_test_star(), true)]) == expected
 }
 
 fn test_hairline_inside_a_circle() {
+	// Native Linux Skia uses glibc's atan2f; macOS's result at (0,-1)
+	// differs by one float ULP, changing these SVG arc conic weights.
+	expected := $if linux { '5e845a2279e0b75e' } $else { 'ca71651a5cc21f65' }
 	assert clipped_stroke_hash(clip_test_star(), [f32(1), 0, 0, 1, 0, 0]!, 1, .square, .round,
-		[], 0, [clip_test_circle(32, 30, 22.5)]) == 'ca71651a5cc21f65'
+		[], 0, [clip_test_circle(32, 30, 22.5)]) == expected
 }
 
 fn test_dashed_stroke_inside_a_fractional_rect() {
@@ -98,8 +103,9 @@ fn test_dashed_stroke_inside_a_fractional_rect() {
 	circle << [f32(4), 10, 30, 0, 0, 0, 0, 20, 20, 0, 0, 1]
 	circle << [f32(4), 50, 30, 0, 0, 0, 0, 20, 20, 0, 0, 1]
 	circle << clip_test_segment(5, [])
+	expected := $if linux { 'd07f56ff3d2369d1' } $else { '6eb1430a4af2c8b9' }
 	assert clipped_stroke_hash(circle, [f32(1), 0, 0, 1, 0, 0]!, 4, .butt, .bevel, [f32(7), 3],
-		1.5, [canvas_path(clip_test_rect_segments(10.5, 12.25, 60.75, 47.5), false)]) == '6eb1430a4af2c8b9'
+		1.5, [canvas_path(clip_test_rect_segments(10.5, 12.25, 60.75, 47.5), false)]) == expected
 }
 
 fn test_raster_clip_keeps_rects_hard_edged() {

@@ -196,7 +196,7 @@ $if linux || cpuraster_freetype ? {
 		bitmap := CanvasBitmap{ pixels: source, width: w, height: h, pitch: w * 4, premultiplied: true }
 		if !draw_canvas_image_sampled(mut image, g.width, g.height, g.width * 4, 2,
 			[positioned.sx, positioned.ky, positioned.kx, positioned.sy, positioned.tx, positioned.ty]!,
-			bitmap, [f32(0), 0, f32(w), f32(h)]!, [f32(0), 0, f32(w), f32(h)]!, true, 1, .src_over, [], true) {
+			bitmap, [f32(0), 0, f32(w), f32(h)]!, [f32(0), 0, f32(w), f32(h)]!, true, 1, .src_over, [], true, true) {
 			return StrikeGlyph{}
 		}
 		if info[4] == 0 {

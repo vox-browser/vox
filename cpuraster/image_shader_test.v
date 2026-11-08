@@ -120,32 +120,32 @@ fn test_legacy_pattern_contexts_match_skia() {
 		height:        3
 		premultiplied: true
 		transform:     pattern_test_scale()
-	}) == '6bb0bc7d52895eef'
+	}) == fixture_hash('6bb0bc7d52895eef')
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
 		height:        3
 		premultiplied: true
 		transform:     [f32(1), 0, 0, 1, 3, -2]!
-	}) == '1227ca0598e190be'
+	}) == fixture_hash('1227ca0598e190be')
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
 		height:        3
 		premultiplied: true
 		transform:     [f32(1), 0, 0, 1, 3, -2]!
 		alpha:         0.6
-	}) == 'bf0294f026fc86d2'
+	}) == fixture_hash('bf0294f026fc86d2')
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
 		height:        3
 		premultiplied: true
 		transform:     [f32(0.9), 0.4, -0.4, 0.9, 2, 1]!
-	}) == '75ee606bebbb9856'
+	}) == fixture_hash('75ee606bebbb9856')
 	assert pattern_test_hash(PatternTestCase{
 		width:         1
 		height:        1
 		premultiplied: true
 		transform:     [f32(2.5), 0, 0, 2.5, 0.3, 0]!
-	}) == 'e2b375521cc1d35b'
+	}) == fixture_hash('e2b375521cc1d35b')
 	// A partial-coverage hairline (blit_row_s32a_blend) and an
 	// anti-aliased clip.
 	assert pattern_test_hash(PatternTestCase{
@@ -155,14 +155,14 @@ fn test_legacy_pattern_contexts_match_skia() {
 		transform:     pattern_test_scale()
 		stroke:        true
 		line_width:    0.5
-	}) == 'bacdf0a331c9f7ed'
+	}) == fixture_hash('bacdf0a331c9f7ed')
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
 		height:        3
 		premultiplied: true
 		transform:     pattern_test_scale()
 		clip:          true
-	}) == 'b2f01d83fe2a4440'
+	}) == fixture_hash('b2f01d83fe2a4440')
 }
 
 fn test_pipeline_patterns_match_skia() {
@@ -171,7 +171,7 @@ fn test_pipeline_patterns_match_skia() {
 		width:     5
 		height:    3
 		transform: pattern_test_scale()
-	}) == '5163c3a3cfcc014d'
+	}) == fixture_hash('5163c3a3cfcc014d')
 	// no-repeat at an integer offset: lowp nearest decal sampling.
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
@@ -179,7 +179,7 @@ fn test_pipeline_patterns_match_skia() {
 		premultiplied: true
 		repetition:    3
 		transform:     [f32(1), 0, 0, 1, 6, 4]!
-	}) == '4e992dc0d650bf82'
+	}) == fixture_hash('4e992dc0d650bf82')
 	// Unequal tile modes under multiply.
 	assert pattern_test_hash(PatternTestCase{
 		width:         5
@@ -188,27 +188,27 @@ fn test_pipeline_patterns_match_skia() {
 		repetition:    1
 		transform:     [f32(1.2), 0, 0, 1.2, 0, 0]!
 		mode:          .multiply
-	}) == '1fcd82f3cab5ab85'
+	}) == fixture_hash('1fcd82f3cab5ab85')
 	// Display P3 to sRGB after nearest repeat sampling.
 	assert pattern_test_hash(PatternTestCase{
 		width:      5
 		height:     3
 		display_p3: true
 		transform:  [f32(1), 0, 0, 1, 2, 1]!
-	}) == 'd06cc429d83a94d1'
+	}) == fixture_hash('d06cc429d83a94d1')
 	// A one-pixel image clamps both axes: bilerp_clamp_8888 in lowp, then
 	// forced into highp by bounds outside the 16-bit image range.
 	assert pattern_test_hash(PatternTestCase{
 		width:     1
 		height:    1
 		transform: [f32(3), 0, 0, 3, 0.5, 0.5]!
-	}) == 'a3daeb0417f2e47d'
+	}) == fixture_hash('a3daeb0417f2e47d')
 	assert pattern_test_hash(PatternTestCase{
 		width:     1
 		height:    1
 		transform: [f32(0.0001), 0, 0, 0.0001, 0, 0]!
 		alpha:     0.8
-	}) == 'd57c8f2f855bebab'
+	}) == fixture_hash('d57c8f2f855bebab')
 	// A wide repeat-y stroke under a skewed canvas transform and screen.
 	assert pattern_test_hash(PatternTestCase{
 		width:      5
@@ -220,7 +220,7 @@ fn test_pipeline_patterns_match_skia() {
 		mode:       .screen
 		stroke:     true
 		line_width: 5
-	}) == 'a749f56deb311819'
+	}) == fixture_hash('a749f56deb311819')
 }
 
 // apply_style() fails the draw for an image SkBitmap cannot install.

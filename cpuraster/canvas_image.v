@@ -258,10 +258,15 @@ fn (mut b SpriteBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {}
 // load_8888, color space steps and scale_1_float are the image shader's
 // nearest sampling at that offset, scaled by the paint's float alpha.
 fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, top int, alpha_byte int, paint_alpha f32, mode BlendMode) ?Blitter {
+	return choose_sprite_for_surface(mut pixels, row_bytes, source, left, top, alpha_byte,
+		paint_alpha, mode, canvas_rgba_uses_legacy())
+}
+
+fn choose_sprite_for_surface(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, top int, alpha_byte int, paint_alpha f32, mode BlendMode, legacy bool) ?Blitter {
 	if !source.premultiplied {
 		return none
 	}
-	if !source.display_p3 {
+	if !source.display_p3 && legacy {
 		if mode == .src && alpha_byte == 255 {
 			return SpriteBlitter{
 				source:    source
@@ -305,10 +310,11 @@ fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, 
 // without changing pixels for devices Skia would tile and images it cannot
 // install.
 pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path) bool {
-	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, image, source, destination, smoothing, global_alpha, mode, clips, false)
+	rgba := CanvasBitmap{...image, native_n32: canvas_rgba_uses_legacy()}
+	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, rgba, source, destination, smoothing, global_alpha, mode, clips, false, canvas_rgba_uses_legacy())
 }
 
-fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool) bool {
+fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool, legacy bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() {
 		return false
 	}
@@ -377,8 +383,8 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 			ix := int(saturate_to_i32(floor_f32(total.tx + f32(0.5))))
 			iy := int(saturate_to_i32(floor_f32(total.ty + f32(0.5))))
 			if rc.is_bw || rc.aa.quick_contains(ix, iy, ix + bitmap.width, iy + bitmap.height) {
-				if mut sprite := choose_sprite(mut pixels, pitch, bitmap, ix, iy, alpha_byte,
-					paint_alpha, mode)
+				if mut sprite := choose_sprite_for_surface(mut pixels, pitch, bitmap, ix, iy, alpha_byte,
+					paint_alpha, mode, legacy)
 				{
 					target.ready()
 					fill_irect(IRect{ix, iy, ix + bitmap.width, iy + bitmap.height}, &rc, mut
@@ -410,8 +416,8 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 			if !irect_intersects(rc.bounds(), round_out(dev)) {
 				return true
 			}
-			mut blitter := canvas_paint_blitter(mut pixels, pitch, 0xff000000, shader, paint_alpha,
-				mode, dev) or { return true }
+			mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, paint_alpha,
+				mode, dev, legacy) or { return true }
 			// SkScan::FillRect(): an empty rect draws nothing; others are
 			// rounded.
 			if rect_is_empty(dev) {
@@ -434,8 +440,8 @@ fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, 
 	if too_big_for_math(device_bounds) {
 		return true
 	}
-	mut blitter := canvas_paint_blitter(mut pixels, pitch, 0xff000000, shader, paint_alpha, mode,
-		device_bounds) or { return true }
+	mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, paint_alpha, mode,
+		device_bounds, legacy) or { return true }
 	return fill_path_clip(device, false, &rc, mut blitter)
 }
 

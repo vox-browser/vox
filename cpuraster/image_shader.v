@@ -18,6 +18,8 @@ import math
 
 // RGBA_8888 image pixels, as skia.Style's kind 4 fields describe them.
 pub struct CanvasBitmap {
+	// Native services and filter layers use N32; public canvas images are RGBA.
+	native_n32 bool = true
 pub:
 	pixels        []u8
 	width         int
@@ -60,6 +62,7 @@ fn (p &CanvasPattern) bitmap() CanvasBitmap {
 		pitch:         p.pitch
 		premultiplied: p.premultiplied
 		display_p3:    p.display_p3
+		native_n32:    canvas_rgba_uses_legacy()
 	}
 }
 
@@ -73,6 +76,7 @@ enum TileMode {
 }
 
 struct ImageShader {
+	native_n32 bool
 	pixels []u8
 	width  int
 	height int
@@ -151,6 +155,7 @@ fn image_shader_with_inverse(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMo
 	return CanvasShader{
 		kind:  .image
 		image: ImageShader{
+			native_n32: bitmap.native_n32
 			pixels:     bitmap.pixels
 			width:      bitmap.width
 			height:     bitmap.height

@@ -94,14 +94,14 @@ fn test_color_filtered_draws_match_skia() {
 	mut px := color_filter_test_background()
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, color_filter_test_path(), identity, 0xc0e04010,
 		none, 1, .src_over, 0, [], canvas_matrix_filter([cf_grayscale]))
-	assert color_filter_test_hash(mut px) == 'b9e3807216264fee'
+	assert color_filter_test_hash(mut px) == fixture_hash('b9e3807216264fee')
 	// A thin stroke's coverage alpha, then a color outside premultiplied
 	// range: the unbounded uniform color keeps the pipeline in highp.
 	px = color_filter_test_background()
 	assert stroke_canvas_path(mut px, 48, 40, 192, 1, color_filter_test_path(), identity, 2234942615,
 		none, 0.54357654, .src_over, 0, 0.81891125, .square, .miter, 10, [], 0, [], canvas_matrix_filter([
 		cf_contrast, cf_opacity]))
-	assert color_filter_test_hash(mut px) == '981723a1df76bd4e'
+	assert color_filter_test_hash(mut px) == fixture_hash('981723a1df76bd4e')
 	// A gradient's SkColorFilterShader: the shader, its alpha, then the
 	// filter stages, under multiply.
 	px = color_filter_test_background()
@@ -114,13 +114,13 @@ fn test_color_filtered_draws_match_skia() {
 	}
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, color_filter_test_path(), identity, 0, gradient,
 		0.8, .multiply, 0, [], canvas_matrix_filter([cf_grayscale, cf_invert]))
-	assert color_filter_test_hash(mut px) == 'a3298d3c5d402d2a'
+	assert color_filter_test_hash(mut px) == fixture_hash('a3298d3c5d402d2a')
 	// A wide stroke whose brightened color leaves byte range.
 	px = color_filter_test_background()
 	assert stroke_canvas_path(mut px, 48, 40, 192, 1, color_filter_test_path(), identity, 0xff3070c0,
 		none, 1, .src_over, 0, 5, .round, .round, 10, [], 0, [], canvas_matrix_filter([cf_brightness,
 		cf_contrast]))
-	assert color_filter_test_hash(mut px) == 'd2c92fb8066b9c06'
+	assert color_filter_test_hash(mut px) == fixture_hash('d2c92fb8066b9c06')
 	// Destination-in is not skipped for a filtered paint.
 	px = color_filter_test_background()
 	assert fill_canvas_path(mut px, 48, 40, 192, 2, color_filter_test_path(), identity, 0x80ff8000,
@@ -128,7 +128,7 @@ fn test_color_filtered_draws_match_skia() {
 		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0.4, 0]!
 		clamp:  true
 	}]))
-	assert color_filter_test_hash(mut px) == '2a187525bf21fe92'
+	assert color_filter_test_hash(mut px) == fixture_hash('2a187525bf21fe92')
 	$if macos {
 		// Glyph masks with the filtered color; the mask gamma follows the
 		// filtered luminance color.
@@ -142,7 +142,7 @@ fn test_color_filtered_draws_match_skia() {
 		}
 		assert fill_canvas_glyphs(mut px, 48, 40, 192, 2, run, identity, 0xff203040, none, 1,
 			.src_over, [], canvas_matrix_filter([cf_brightness, cf_grayscale]))
-		assert color_filter_test_hash(mut px) == 'ef23d717aba8bafd'
+		assert color_filter_test_hash(mut px) == fixture_hash('ef23d717aba8bafd')
 	}
 }
 

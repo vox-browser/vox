@@ -49,6 +49,10 @@ const max_untiled_dimension = 8191
 // reduces to color matrices (color_filter.v); filters that would need an
 // image filter layer decline.
 pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, clips []Path, filter_in ?CanvasFilter) bool {
+	return fill_canvas_path_surface(mut pixels, width, height, pitch, alpha_type, path, transform, color, style, global_alpha, mode, blur_in, clips, filter_in, canvas_rgba_uses_legacy())
+}
+
+fn fill_canvas_path_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, clips []Path, filter_in ?CanvasFilter, legacy bool) bool {
 	if path.is_inverse_fill() || !untiled_device(pixels, width, height, pitch)
 		|| !canvas_style_installs(style) {
 		return false
@@ -63,8 +67,8 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 		// SkCanvas::onDrawPath(): the path's bounds are the layer content.
 		return draw_filter_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
 			path.bounds() or { Rect{} }, layer_filter, mode, fn [path, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
-				return fill_canvas_path(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
-					.src_over, 0, layer_clips, none)
+				return fill_canvas_path_surface(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
+					.src_over, 0, layer_clips, none, true)
 			})
 	}
 	filter := filter_plan.color
@@ -96,8 +100,8 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 			return false
 		}
 		target.ready()
-		mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, alpha, mode,
-			device_bounds, filter) or { return true }
+		mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode,
+			device_bounds, filter, legacy) or { return true }
 		if plan.kind == .unfiltered {
 			return anti_fill_path_convex(device, convex, &rc, mut blitter)
 		}
@@ -106,8 +110,8 @@ pub fn fill_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha
 	}
 	target.ready()
 	device := path.transform(matrix)
-	mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, alpha, mode,
-		device.bounds() or { Rect{} }, filter) or { return true }
+	mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode,
+		device.bounds() or { Rect{} }, filter, legacy) or { return true }
 	return anti_fill_path_clip(device, false, &rc, mut blitter)
 }
 
@@ -171,6 +175,10 @@ pub enum StrokeJoin {
 // draws hairlines into its mask with butt caps.
 // Returns false without changing pixels for devices Skia would tile.
 pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path, filter_in ?CanvasFilter) bool {
+	return stroke_canvas_path_surface(mut pixels, width, height, pitch, alpha_type, path, transform, color, style, global_alpha, mode, blur_in, line_width, cap, join, miter, dashes, dash_offset, clips, filter_in, canvas_rgba_uses_legacy())
+}
+
+fn stroke_canvas_path_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, path Path, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, blur_in f32, line_width f32, cap StrokeCap, join StrokeJoin, miter f32, dashes []f32, dash_offset f32, clips []Path, filter_in ?CanvasFilter, legacy bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !canvas_style_installs(style) {
 		return false
 	}
@@ -224,8 +232,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			stroke_radius}
 		return draw_filter_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
 			content, layer_filter, mode, fn [path, color, style, global_alpha, line_width, cap, join, miter, dashes, dash_offset] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
-				return stroke_canvas_path(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
-					.src_over, 0, line_width, cap, join, miter, dashes, dash_offset, layer_clips, none)
+				return stroke_canvas_path_surface(mut layer, w, h, w * 4, 2, path, t, color, style, global_alpha,
+					.src_over, 0, line_width, cap, join, miter, dashes, dash_offset, layer_clips, none, true)
 			})
 	}
 	// SkCanvas::onDrawPath(): non-finite paths, SkPaint::nothingToDraw() and
@@ -303,8 +311,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 				return false
 			}
 			target.ready()
-			mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, paint_alpha,
-				mode, device_bounds, filter) or { return true }
+			mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, paint_alpha,
+				mode, device_bounds, filter, legacy) or { return true }
 			if plan.kind == .unfiltered {
 				anti_fill_path_convex(device_path, convex, &rc, mut blitter)
 			} else {
@@ -313,8 +321,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 			return true
 		}
 		target.ready()
-		mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, paint_alpha,
-			mode, device_path.bounds() or { Rect{} }, filter) or { return true }
+		mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, paint_alpha,
+				mode, device_path.bounds() or { Rect{} }, filter, legacy) or { return true }
 		anti_fill_path_clip(device_path, known_convex, &rc, mut blitter)
 		return true
 	}
@@ -339,8 +347,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		}
 		plan := plan_blur(device_path, false, s, matrix, &rc, true)
 		target.ready()
-		mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, hair_alpha,
-			mode, device_bounds, filter) or { return true }
+		mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, hair_alpha,
+			mode, device_bounds, filter, legacy) or { return true }
 		if plan.kind == .unfiltered {
 			anti_hair_path_clip(device_path, cap, &rc, mut blitter)
 		} else {
@@ -349,8 +357,8 @@ pub fn stroke_canvas_path(mut pixels []u8, width int, height int, pitch int, alp
 		return true
 	}
 	target.ready()
-	mut blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, hair_alpha, mode,
-		device_path.bounds() or { Rect{} }, filter) or { return true }
+	mut blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, hair_alpha, mode,
+		device_path.bounds() or { Rect{} }, filter, legacy) or { return true }
 	anti_hair_path_clip(device_path, cap, &rc, mut blitter)
 	return true
 }

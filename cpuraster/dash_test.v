@@ -48,7 +48,7 @@ fn test_dashed_curves_with_round_caps_under_a_transform() {
 	s << dash_test_segment(3, [f32(70), 50, 10, 5, 50, -10])
 	s << dash_test_segment(4, [f32(20), 30, 0, 0, 0, 0, 25, 14, 0.4, 1, 0])
 	assert dashed_hash(s, 80, 60, [f32(0.9), 0.3, -0.25, 1.05, 6, -2]!, 0xc8e05020, 0.85, 4,
-		.round, .miter, 10, [f32(9), 4, 2, 4], 3.5) == '2472657d501d84e9'
+		.round, .miter, 10, [f32(9), 4, 2, 4], 3.5) == fixture_hash('2472657d501d84e9')
 }
 
 // A butt-capped line far wider than the device is trimmed to the cull rect,
@@ -58,7 +58,7 @@ fn test_dashed_line_trimmed_to_the_device() {
 	s << dash_test_segment(0, [f32(-500), 12.5])
 	s << dash_test_segment(1, [f32(900), 12.5])
 	assert dashed_hash(s, 64, 40, [f32(1), 0, 0, 1, 0, 0]!, 0xff2a60d0, 1, 3, .butt, .bevel,
-		4, [f32(6), 3], -2) == '327282a95a0d0aee'
+		4, [f32(6), 3], -2) == fixture_hash('327282a95a0d0aee')
 }
 
 // A closed rect that starts and ends in a dash gets a tiny corner so the
@@ -71,7 +71,7 @@ fn test_dashed_closed_rect_hairline() {
 	s << dash_test_segment(1, [f32(10), 36])
 	s << dash_test_segment(5, [])
 	assert dashed_hash(s, 60, 44, [f32(1), 0, 0, 1, 0, 0]!, 0xff107040, 1, 1, .square,
-		.bevel, 10, [f32(7), 5], 1) == '5e3331fed1e90d5e'
+		.bevel, 10, [f32(7), 5], 1) == fixture_hash('5e3331fed1e90d5e')
 }
 
 // A zero-length dash still draws nothing with butt caps; the rotated line
@@ -81,7 +81,7 @@ fn test_dashed_rotated_butt_line_with_a_zero_dash() {
 	s << dash_test_segment(0, [f32(6), 30])
 	s << dash_test_segment(1, [f32(60), 12])
 	assert dashed_hash(s, 64, 40, [f32(0.94), 0.34, -0.34, 0.94, 4, -6]!, 0xe0303090, 1, 5,
-		.butt, .round, 10, [f32(5), 2.5, 0, 2.5], 0) == '8cf60fb249145508'
+		.butt, .round, 10, [f32(5), 2.5, 0, 2.5], 0) == fixture_hash('8cf60fb249145508')
 }
 
 fn test_dash_parameters_follow_skia() {

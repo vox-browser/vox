@@ -98,11 +98,23 @@ fn paint_color_bytes(color u32, alpha f32) u32 {
 	return result
 }
 
-// canvas_blitter is SkBlitter::Choose() for a solid paint on the canvas
-// surface, premultiplied sRGB RGBA_8888, whose color type is never opaque:
+// canvas_blitter is SkBlitter::Choose() for a solid paint on a native N32
+// surface (stored as RGBA bytes by V), whose color type is never opaque:
 // the paint's SkColor4f has color's channels and alpha alpha. It returns none
 // for SkNullBlitter.
 fn canvas_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mode BlendMode) ?Blitter {
+	return choose_color_blitter(mut pixels, row_bytes, color, alpha, paint_mode, true)
+}
+
+// The native N32 layout is RGBA on macOS and BGRA on Linux. Canvas2D's
+// RGBA surfaces therefore take the raster pipeline on Linux, including
+// solid source-over colors; legacy blitters only handle native N32 pixels.
+fn canvas_rgba_uses_legacy() bool {
+	return $if linux { false } $else { true }
+}
+
+
+fn choose_color_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mode BlendMode, legacy bool) ?Blitter {
 	mut mode := paint_mode
 	mut rgb := color & 0xffffff
 	mut a := alpha
@@ -132,7 +144,7 @@ fn canvas_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mo
 			a = 0
 		}
 	}
-	if mode == .src_over {
+	if mode == .src_over && legacy {
 		// UseLegacyBlitter(): a source-over color in bytes.
 		return new_solid_blitter(mut pixels, row_bytes, paint_color_bytes(rgb, a))
 	}
@@ -145,10 +157,15 @@ fn canvas_blitter(mut pixels []u8, row_bytes int, color u32, alpha f32, paint_mo
 // contexts. device_bounds are the device path's bounds Draw::drawDevPath()
 // passes as the stage record's destination bounds.
 fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect) ?Blitter {
-	s := shader or { return canvas_blitter(mut pixels, row_bytes, color, alpha, mode) }
+	return canvas_paint_blitter_for_surface(mut pixels, row_bytes, color, shader, alpha, mode,
+		device_bounds, canvas_rgba_uses_legacy())
+}
+
+fn canvas_paint_blitter_for_surface(mut pixels []u8, row_bytes int, color u32, shader ?CanvasShader, alpha f32, mode BlendMode, device_bounds Rect, legacy bool) ?Blitter {
+	s := shader or { return choose_color_blitter(mut pixels, row_bytes, color, alpha, mode, legacy) }
 	match s.kind {
 		.null_ {
-			return canvas_blitter(mut pixels, row_bytes, 0xff000000, alpha, mode)
+			return choose_color_blitter(mut pixels, row_bytes, 0xff000000, alpha, mode, legacy)
 		}
 		.empty {
 			return none
@@ -169,7 +186,7 @@ fn canvas_paint_blitter(mut pixels []u8, row_bytes int, color u32, shader ?Canva
 	if s.kind == .image {
 		// UseLegacyBlitter() for source-over, then the legacy shader context
 		// when the image shader can make one.
-		if mode == .src_over {
+		if mode == .src_over && legacy {
 			if state := legacy_image_context(s.image, paint_alpha_byte(alpha)) {
 				return new_legacy_shader_blitter(mut pixels, row_bytes, state)
 			}

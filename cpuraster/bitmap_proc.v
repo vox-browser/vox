@@ -86,7 +86,7 @@ fn legacy_shader_can_handle(inv SkAffine) bool {
 // SkBitmapProcLegacyShader::MakeContext() for image at paint alpha byte
 // alpha, or none when the shader needs the raster pipeline.
 fn legacy_image_context(image ImageShader, alpha int) ?BitmapProcState {
-	if image.premul || image.display_p3 || image.tile_x != image.tile_y || image.tile_x == .decal {
+	if !image.native_n32 || image.premul || image.display_p3 || image.tile_x != image.tile_y || image.tile_x == .decal {
 		return none
 	}
 	if image.width > 32767 || image.height > 32767 || !legacy_shader_can_handle(image.matrix) {
