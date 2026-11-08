@@ -197,11 +197,48 @@ fn regex_compiler_body_zero_width(body RegexDisjunction) bool {
 
 fn regex_compiler_atom_zero_width(atom RegexAtom) bool {
 	return match atom {
+		RegexCharacterClass { regex_compiler_class_zero_width(atom) }
 		RegexGroup { regex_compiler_body_zero_width(atom.body) }
 		RegexNonCapturingGroup { regex_compiler_body_zero_width(atom.body) }
 		RegexModifierGroup { regex_compiler_body_zero_width(atom.body) }
 		RegexBackreferenceAtom, RegexLookaround, RegexAssertionKind { true }
 		else { false }
+	}
+}
+
+fn regex_compiler_class_zero_width(class RegexCharacterClass) bool {
+	if class.negated { return false }
+	body := class.body
+	if body is RegexClassSetExpression { return regex_compiler_set_zero_width(body) }
+	return false
+}
+
+fn regex_compiler_operand_zero_width(operand RegexClassSetOperand) bool {
+	return match operand {
+		RegexClassStringLiteral { operand.code_points.len == 0 }
+		RegexCharacterClass { regex_compiler_class_zero_width(operand) }
+		else { false }
+	}
+}
+
+fn regex_compiler_set_zero_width(expression RegexClassSetExpression) bool {
+	if expression.operands.len == 0 { return false }
+	match expression {
+		RegexClassSetUnion {
+			for operand in expression.operands {
+				if regex_compiler_operand_zero_width(operand) { return true }
+			}
+			return false
+		}
+		RegexClassSetIntersection {
+			for operand in expression.operands {
+				if !regex_compiler_operand_zero_width(operand) { return false }
+			}
+			return true
+		}
+		RegexClassSetSubtraction {
+			return regex_compiler_operand_zero_width(expression.operands[0])
+		}
 	}
 }
 
