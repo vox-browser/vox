@@ -51,6 +51,11 @@ for mode in ['src', 'src_in', 'src_out', 'dst_in', 'dst_atop', 'plus_darker', 'p
                    destination=[3.25,4.5,24,18],source=[1,1,5,4],alpha=.65,mode=mode,
                    clip=True,smoothing=True,transform=[.9,.4,-.4,.9,5,2],
                    filter=(2,0,0,0,0,contrast,0)))
+cases += [
+ dict(name='bitmap-color-premul',bitmap_space=True,premul=True,destination=[10,12,7,6],source=[0,0,7,6],alpha=.7,mode='src_over',filter=(2,0,0,0,0,contrast,0)),
+ dict(name='bitmap-color-rotated-p3',bitmap_space=True,premul=False,p3=True,destination=[4,6,35,24],source=[1,1,5,4],alpha=.65,mode='multiply',clip=True,smoothing=True,transform=[.9,.4,-.4,.9,5,2],filter=(2,0,0,0,0,contrast,0)),
+ dict(name='bitmap-color-downsample',bitmap_space=True,premul=True,iw=31,ih=25,destination=[6.25,5.75,8,7],source=[1,2,28,21],alpha=.85,mode='src_in',clip=True,smoothing=True,filter=(2,0,0,0,0,contrast,0)),
+]
 for c in cases:
  w,h=c.get('width',48),c.get('height',40);iw,ih=c.get('iw',7),c.get('ih',6)
  image=m.image_pixels(iw,ih,c['premul']);r.pattern_sha256=hashlib.sha256(image).hexdigest();storage=(C.c_uint8*len(image)).from_buffer(image);r.library.oracle_pattern(storage);r.filters([c['filter']])
@@ -74,6 +79,7 @@ if platform.system() == 'Darwin':
   'f00be8e39ec6bc7f', 'f3f022c3c8bcb02f', '33a4cc97cfdb1da1', 'a9973dbbb81b55a3',
   'b9ed9372ad2fa689', '4b7094d961364ddc', 'c014e794ae2d0531', '820e54abd9a5bdb9',
   '65bee32ef9751dba', '2f6d605edd08a4c8',
+  '26a3b278f9abcba9', '64abfa4e28e7d1c5', 'b5c557eb9dd295df',
  ]
  for record, digest in zip(r.records, expected):
   assert record['native_sha256'].startswith(digest), record['case']
