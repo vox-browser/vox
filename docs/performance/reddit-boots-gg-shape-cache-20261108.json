@@ -1,0 +1,2229 @@
+{
+  "schema": 1,
+  "created_unix": 1794139834.5826821,
+  "status": "Exact GG shape cache implemented and published; no isolated scrolling gain established; stall-free 60 Hz goal remains open",
+  "commits": [
+    "718f9719e"
+  ],
+  "findings": [
+    "The GG adapter bypassed the established exact native shape cache. It now reuses exact small rasters and packed requested regions, preserving original surface size and rectangle layout in keys.",
+    "Cache admission is limited to 64 KiB inputs, 64 views and 256 clip-outs; storage is bounded to 16 MiB and 512 entries. The repeat-large admission policy is unchanged. Owner replacement, explicit purge and memory release invalidate cached and pending results.",
+    "Main-thread ownership and transactional region output survive callback failures, reentrant purge or owner replacement. Invalid, oversized, disabled and worker requests keep their established fallback.",
+    "Optimized and ASan/UBSan checks pass, including 48 real native GPU direct/region scenes with exact pixels plus synthetic lifetime, key, backdrop, row-padding and failure cases. Existing raster-cache checks pass in both modes.",
+    "Unchanged frozen Reddit references at offsets 0 and 850 are exact with the cache enabled and disabled.",
+    "Live input diagnostic records 10 hits in 24 logged bounded-cache calls. Frozen input records zero hits in 22 logged calls, so no frozen cache timing credit is available.",
+    "Matched live timing varies materially: one candidate regresses and the next improves. Host load varies from roughly 19 to 49 on 18 CPUs. No isolated cache gain or causal regression is established.",
+    "A newer completed production bundle contains all four relevant native source hashes. Two fresh installed runs complete 5400 native inputs each but retain intervals exceeding the 16.67 ms goal.",
+    "The earlier live stall sample is inside AGX texture decompression called by synchronous Graphite canvas readback; the frozen sample is inside a synchronous GG shape texture upload wait. These are observed paths, not an attribution of every long interval.",
+    "GPU tile experiments remain opt-in: sidebar border pixels differ. Isolated-shape, native-resolution, GG fallback and native-grid controls do not remove the error. Changing scrollbar renderer alone is pixel exact, excluding that hypothesis for this pose. Native grid was ineligible on the measured input, so it earns no path credit.",
+    "A temporary Quartz-rectangle fallback prototype worsens pixel differences and is reverted. No experimental tile timing is accepted."
+  ],
+  "protocol": {
+    "url": "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/",
+    "endpoint": "Completed native frame installation after outer paint; not physical display scanout",
+    "viewport": [
+      1400,
+      900
+    ],
+    "chrome_height": 112,
+    "backing_scale": 2,
+    "zoom": 1.25,
+    "inputs": 5400,
+    "nominal_input_hz": 120,
+    "target_hz": 60,
+    "delta": 3,
+    "reverse_every": 300,
+    "settle_seconds": 12,
+    "readiness": "Am I the only one title",
+    "script_policy": "automatic for scrolling, disabled for fixed-pose screenshots",
+    "profile_cache": "Empty private profile/cache on every fresh process; OS filesystem/shader caches retained",
+    "network": "Live SOCKS5h route; frozen 152-response original-origin replay with external DNS/connect/connectx denied",
+    "fixture_manifest_sha256": "407a3da4f736257f4526a203bed15e88b8c42a54b475bc323eb34ce6f1d4a791",
+    "fixture_body_sha256": "aaa700ed204e811ce0a5df62465c0273044171bd7a69e6e0113843ecfb4da768",
+    "c_mode": "actual single C unit, C-O3, V-prod=false, GG default, JSC",
+    "matched_cohort": "c7079cad executable; private primary4b94760c; installed Metal d7845b10; only VOX_DISABLE_GG_SHAPE_RASTER_CACHE changes between alternating arms",
+    "installed_validation": "59de419d executable; primary c2ec42c0; Metal c3504d09; no injected renderer; no timing credit across executable identities"
+  },
+  "checks": [
+    {
+      "name": "focused",
+      "passed": true,
+      "commands": [
+        {
+          "name": "optimized-compile",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O2",
+            "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "optimized-runtime",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "sanitized-compile",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O1",
+            "-g",
+            "-fsanitize=address,undefined",
+            "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "sanitized-runtime",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "common-regression",
+      "passed": true,
+      "commands": [
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O2",
+            "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O1",
+            "-g",
+            "-fsanitize=address,undefined",
+            "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+          ],
+          "exit": 0
+        }
+      ]
+    }
+  ],
+  "cohort_rows": [
+    {
+      "name": "frozen-diagnostic/measurement",
+      "diagnostic": true,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 115.11454371518114,
+      "median_ms": 8.355166500000283,
+      "p95_ms": 11.354916000001133,
+      "max_ms": 21.335082999999635,
+      "miss_percent": 1.94954128440367,
+      "inputs": 1800,
+      "publications": 1769,
+      "first_moving_gap_ms": 36.522541,
+      "last_moving_gap_ms": 3.73075,
+      "input_delivery_hz": 118.74487622913469,
+      "window_us": 15150127.375,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.8095703125,
+          14.15673828125,
+          14.64453125
+        ],
+        "load_average_after": [
+          11.26708984375,
+          13.64794921875,
+          14.44189453125
+        ]
+      },
+      "started_unix": 1794135027.7974489,
+      "finished_unix": 1794135057.475353,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "installed-cohort/1-baseline",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 116.9129584741544,
+      "median_ms": 8.342958000000566,
+      "p95_ms": 10.3157089999998,
+      "max_ms": 22.955332999999634,
+      "miss_percent": 0.8580488714792016,
+      "inputs": 5400,
+      "publications": 5401,
+      "first_moving_gap_ms": 33.633125,
+      "last_moving_gap_ms": 0.16420900000631808,
+      "input_delivery_hz": 117.74166439133735,
+      "window_us": 45854626.125,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.11279296875,
+          22.0537109375,
+          28.53662109375
+        ],
+        "load_average_after": [
+          12.9765625,
+          20.49951171875,
+          27.44580078125
+        ]
+      },
+      "started_unix": 1794139398.943517,
+      "finished_unix": 1794139469.917264,
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "installed-cohort/2-baseline",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 116.9135041680947,
+      "median_ms": 8.358875,
+      "p95_ms": 10.3215,
+      "max_ms": 29.806541999999435,
+      "miss_percent": 0.9545199326221224,
+      "inputs": 5400,
+      "publications": 5385,
+      "first_moving_gap_ms": 25.149583,
+      "last_moving_gap_ms": 3.861667000003159,
+      "input_delivery_hz": 118.13887497726807,
+      "window_us": 45700452.125,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          12.57763671875,
+          20.2919921875,
+          27.33154296875
+        ],
+        "load_average_after": [
+          11.39111328125,
+          18.3896484375,
+          26.09423828125
+        ]
+      },
+      "started_unix": 1794139470.8375921,
+      "finished_unix": 1794139539.6196458,
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "installed-cohort/3-diagnostic",
+      "diagnostic": true,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 116.90876632448791,
+      "median_ms": 8.339042000001296,
+      "p95_ms": 10.239542000000016,
+      "max_ms": 25.077625,
+      "miss_percent": 1.283987915407855,
+      "inputs": 5400,
+      "publications": 5362,
+      "first_moving_gap_ms": 29.821834000000003,
+      "last_moving_gap_ms": 2.891832999996841,
+      "input_delivery_hz": 119.18248289008879,
+      "window_us": 45300281.292,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          11.0390625,
+          18.2001953125,
+          25.98193359375
+        ],
+        "load_average_after": [
+          9.150390625,
+          16.19873046875,
+          24.65234375
+        ]
+      },
+      "started_unix": 1794139540.611445,
+      "finished_unix": 1794139609.020289,
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "live-cohort/1-control",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 106.82126755546831,
+      "median_ms": 8.658083000000566,
+      "p95_ms": 14.469375,
+      "max_ms": 43.90545799999684,
+      "miss_percent": 2.5271433919880195,
+      "inputs": 5400,
+      "publications": 5368,
+      "first_moving_gap_ms": 34.392666,
+      "last_moving_gap_ms": 0.792375,
+      "input_delivery_hz": 107.96106767726943,
+      "window_us": 50008768.125,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          19.1455078125,
+          16.46728515625,
+          15.05029296875
+        ],
+        "load_average_after": [
+          36.74755859375,
+          21.78662109375,
+          17.142578125
+        ]
+      },
+      "started_unix": 1794135929.452769,
+      "finished_unix": 1794136005.02705,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "live-cohort/2-candidate",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 86.40803141599753,
+      "median_ms": 10.75575,
+      "p95_ms": 18.60129200000316,
+      "max_ms": 41.18204200000316,
+      "miss_percent": 8.408007626310772,
+      "inputs": 5400,
+      "publications": 5252,
+      "first_moving_gap_ms": 52.596792,
+      "last_moving_gap_ms": 0.34279200000315907,
+      "input_delivery_hz": 88.94508324403635,
+      "window_us": 60700376.042,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          36.74755859375,
+          21.78662109375,
+          17.142578125
+        ],
+        "load_average_after": [
+          41.74462890625,
+          27.2412109375,
+          19.70654296875
+        ]
+      },
+      "started_unix": 1794136007.760489,
+      "finished_unix": 1794136097.078402,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "live-cohort/3-control",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 98.90656186174297,
+      "median_ms": 9.2085,
+      "p95_ms": 16.225625,
+      "max_ms": 40.03745900000073,
+      "miss_percent": 4.351101902429836,
+      "inputs": 5400,
+      "publications": 5336,
+      "first_moving_gap_ms": 50.193125,
+      "last_moving_gap_ms": 0.4210409999936819,
+      "input_delivery_hz": 100.58326002854592,
+      "window_us": 53676923.958,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          40.8837890625,
+          27.30322265625,
+          19.7724609375
+        ],
+        "load_average_after": [
+          45.90625,
+          32.69580078125,
+          22.505859375
+        ]
+      },
+      "started_unix": 1794136099.9140549,
+      "finished_unix": 1794136177.03793,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "live-cohort/4-candidate",
+      "diagnostic": false,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 108.39850204560456,
+      "median_ms": 8.682916500002145,
+      "p95_ms": 13.51825,
+      "max_ms": 32.812875,
+      "miss_percent": 1.1877828054298643,
+      "inputs": 5400,
+      "publications": 5321,
+      "first_moving_gap_ms": 49.152375,
+      "last_moving_gap_ms": 0.354875,
+      "input_delivery_hz": 110.3400287602223,
+      "window_us": 48930565.45900001,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          45.90625,
+          32.69580078125,
+          22.505859375
+        ],
+        "load_average_after": [
+          49.2802734375,
+          36.56396484375,
+          24.822265625
+        ]
+      },
+      "started_unix": 1794136178.6107578,
+      "finished_unix": 1794136251.391954,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    },
+    {
+      "name": "live-diagnostic",
+      "diagnostic": true,
+      "valid": true,
+      "browser_exit": 0,
+      "fps": 117.9640182264573,
+      "median_ms": 8.364561999999685,
+      "p95_ms": 10.077791000000202,
+      "max_ms": 19.869042000000366,
+      "miss_percent": 0.11135857461024498,
+      "inputs": 1800,
+      "publications": 1800,
+      "first_moving_gap_ms": 30.557582999999997,
+      "last_moving_gap_ms": 0.14329100000113248,
+      "input_delivery_hz": 118.16106280033223,
+      "window_us": 15224981.541000001,
+      "host": {
+        "cpu_count": 18,
+        "load_average_before": [
+          13.5,
+          14.4365234375,
+          14.7626953125
+        ],
+        "load_average_after": [
+          12.8095703125,
+          14.15673828125,
+          14.64453125
+        ]
+      },
+      "started_unix": 1794134983.830306,
+      "finished_unix": 1794135026.304659,
+      "executable_sha256": "c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0",
+      "native_images": {
+        "libLadybirdVSkiaText.dylib": "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib",
+        "libVoxGraphite.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib",
+        "libVoxGraphiteDawn.dylib": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib"
+      }
+    }
+  ],
+  "diagnostics": [
+    {
+      "name": "live-diagnostic",
+      "cache_logged_calls": 24,
+      "cache_hits": 10,
+      "not_all_gg_calls": "Oversized/direct bypasses are not logged; only bounded cache candidates are counted.",
+      "stall_summary": [
+        "SCROLL_STALL_DIAGNOSTIC threshold_ms=16 samples=1 frames=1 dropped=0 failures=0"
+      ],
+      "input_pipeline_additions": [
+        "VOX_GRAPHICS_PIPELINE time=415782.641485 hash=2453488876 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=415782.641897 hash=3738017718 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + TessellateWedgesRenderStep[Convex] + (empty)",
+        "VOX_GRAPHICS_PIPELINE time=415784.536865 hash=3308220885 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba w/ msaa load) + CoverBoundsRenderStep[NonAAFill] + LocalMatrix[CoordNormalize[HardwareImage(0)]+PreAlpha] Src ",
+        "VOX_GRAPHICS_PIPELINE time=415784.538014 hash=334213980 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba w/ msaa load) + TessellateStrokesRenderStep[Fill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=415788.334976 hash=2114336387 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor SrcOver AnalyticClip "
+      ],
+      "performance_credit": false
+    },
+    {
+      "name": "frozen-diagnostic/measurement",
+      "cache_logged_calls": 22,
+      "cache_hits": 0,
+      "not_all_gg_calls": "Oversized/direct bypasses are not logged; only bounded cache candidates are counted.",
+      "stall_summary": [
+        "SCROLL_STALL_DIAGNOSTIC threshold_ms=16 samples=2 frames=1 dropped=0 failures=0"
+      ],
+      "input_pipeline_additions": [
+        "VOX_GRAPHICS_PIPELINE time=415811.775445 hash=3786197713 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=415811.776328 hash=1749245678 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + PerEdgeAAQuadRenderStep + LocalMatrix[CoordNormalize[HardwareImage(0)]+PreAlpha] Src ",
+        "VOX_GRAPHICS_PIPELINE time=415813.930026 hash=2453488876 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=415813.930555 hash=3738017718 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + TessellateWedgesRenderStep[Convex] + (empty)",
+        "VOX_GRAPHICS_PIPELINE time=415819.671751 hash=2114336387 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor SrcOver AnalyticClip "
+      ],
+      "performance_credit": false
+    },
+    {
+      "name": "installed-cohort/3-diagnostic",
+      "cache_logged_calls": 72,
+      "cache_hits": 29,
+      "not_all_gg_calls": "Oversized/direct bypasses are not logged; only bounded cache candidates are counted.",
+      "stall_summary": [
+        "SCROLL_STALL_DIAGNOSTIC threshold_ms=16 samples=0 frames=1 dropped=0 failures=0"
+      ],
+      "input_pipeline_additions": [
+        "VOX_GRAPHICS_PIPELINE time=420335.122389 hash=2453488876 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=420335.122880 hash=3738017718 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba) + TessellateWedgesRenderStep[Convex] + (empty)",
+        "VOX_GRAPHICS_PIPELINE time=420337.014852 hash=3308220885 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba w/ msaa load) + CoverBoundsRenderStep[NonAAFill] + LocalMatrix[CoordNormalize[HardwareImage(0)]+PreAlpha] Src ",
+        "VOX_GRAPHICS_PIPELINE time=420337.016059 hash=334213980 precompiled=0 label=RP((BGRA8+D32F_S8 x4->1).rgba w/ msaa load) + TessellateStrokesRenderStep[Fill] + SolidColor Src ",
+        "VOX_GRAPHICS_PIPELINE time=420342.639198 hash=364568988 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + CoverBoundsRenderStep[NonAAFill] + LocalMatrix[LinearGradient4+PreAlpha]+Dither SrcOver AnalyticClip ",
+        "VOX_GRAPHICS_PIPELINE time=420345.839768 hash=2114336387 precompiled=0 label=RP((BGRA8+D16 x1).rgba) + CoverBoundsRenderStep[NonAAFill] + SolidColor SrcOver AnalyticClip "
+      ],
+      "performance_credit": false
+    }
+  ],
+  "pixel_checks": [
+    {
+      "name": "pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "pixels/diff-850.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "scrollbar-renderer-pixels/diff-850.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-gg-fallback-native2-pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-gg-fallback-native2-pixels/diff-850.json",
+      "different_pixels": 2824,
+      "maximum_error": 9,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-gg-fallback-pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-gg-fallback-pixels/diff-850.json",
+      "different_pixels": 1709,
+      "maximum_error": 17,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-isolated-pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-isolated-pixels/diff-850.json",
+      "different_pixels": 1258,
+      "maximum_error": 17,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-leaf-verify-native2-pixels/diff-850.json",
+      "different_pixels": 22009,
+      "maximum_error": 25,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-native-grid-native2-pixels/diff-850.json",
+      "different_pixels": 2678,
+      "maximum_error": 9,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-native2-pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-native2-pixels/diff-850.json",
+      "different_pixels": 2678,
+      "maximum_error": 9,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-pixels/diff-0.json",
+      "different_pixels": 0,
+      "maximum_error": 0,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-pixels/diff-850.json",
+      "different_pixels": 1258,
+      "maximum_error": 17,
+      "tool_exit": 0
+    },
+    {
+      "name": "tile-quartz-rect-cpu-native2-pixels/diff-850.json",
+      "different_pixels": 23221,
+      "maximum_error": 25,
+      "tool_exit": 0
+    }
+  ],
+  "guards": [
+    {
+      "name": "common-regression/optimized-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O2",
+        "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 209829888,
+      "elapsed_seconds": 3.176761084,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "common-regression/optimized-runtime-guard.json",
+      "command": [
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 246022144,
+      "elapsed_seconds": 0.38780408299999997,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "common-regression/sanitized-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fsanitize=address,undefined",
+        "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 328974336,
+      "elapsed_seconds": 7.517124,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "common-regression/sanitized-runtime-guard.json",
+      "command": [
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 472612864,
+      "elapsed_seconds": 3.074193375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "focused/optimized-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O2",
+        "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 192036864,
+      "elapsed_seconds": 2.254798708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "focused/optimized-runtime-guard.json",
+      "command": [
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 29245440,
+      "elapsed_seconds": 0.394167625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "focused/sanitized-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O1",
+        "-g",
+        "-fsanitize=address,undefined",
+        "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 276742144,
+      "elapsed_seconds": 3.77012675,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "focused/sanitized-runtime-guard.json",
+      "command": [
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized",
+        "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 384745472,
+      "elapsed_seconds": 0.8212556249999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "frozen-diagnostic-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-frozen.py",
+        "Build/reddit-gg-shape-cache-20261108/frozen-diagnostic",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 793493504,
+      "elapsed_seconds": 31.595317041999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "installed-cohort-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-installed-cohort.py",
+        "live"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1051754496,
+      "elapsed_seconds": 211.655638208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "leaf-verify-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-leaf-verify-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 645906432,
+      "elapsed_seconds": 29.990879042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "live-cohort-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-cohort.py",
+        "live"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1085341696,
+      "elapsed_seconds": 323.882605291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "live-diagnostic-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-live.py",
+        "Build/reddit-gg-shape-cache-20261108/live-diagnostic",
+        "diagnostic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 892256256,
+      "elapsed_seconds": 43.611628667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "native-grid-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-native-grid-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 610074624,
+      "elapsed_seconds": 28.223548375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 468582400,
+      "elapsed_seconds": 35.922041792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "primary-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O3",
+        "-fno-rtti",
+        "-fPIC",
+        "-dynamiclib",
+        "-x",
+        "objective-c++",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+        "-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp",
+        "-x",
+        "none",
+        "/Users/alex/code/vox2/Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-Wl,-unexported_symbol,_libdeflate_*",
+        "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-lskia",
+        "-framework",
+        "CoreFoundation",
+        "-framework",
+        "CoreGraphics",
+        "-framework",
+        "CoreText",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "Metal",
+        "-framework",
+        "IOSurface",
+        "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/native/libLadybirdVSkiaText.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 729841664,
+      "elapsed_seconds": 18.15645175,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "rect-cpu-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-rect-cpu-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 594608128,
+      "elapsed_seconds": 27.263115833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "rect-cpu-primary-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O3",
+        "-fno-rtti",
+        "-fPIC",
+        "-dynamiclib",
+        "-x",
+        "objective-c++",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+        "-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp",
+        "-x",
+        "none",
+        "/Users/alex/code/vox2/Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-Wl,-unexported_symbol,_libdeflate_*",
+        "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-lskia",
+        "-framework",
+        "CoreFoundation",
+        "-framework",
+        "CoreGraphics",
+        "-framework",
+        "CoreText",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "Metal",
+        "-framework",
+        "IOSurface",
+        "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/rect-cpu-native/libLadybirdVSkiaText.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 729088000,
+      "elapsed_seconds": 16.553659582999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "rect-cpu-v2-primary-compile-guard.json",
+      "command": [
+        "clang++",
+        "-std=c++20",
+        "-O3",
+        "-fno-rtti",
+        "-fPIC",
+        "-dynamiclib",
+        "-x",
+        "objective-c++",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include/skia",
+        "-I/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include",
+        "-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE",
+        "-I/Users/alex/code/vox2/Build/deps/libdeflate-1.24/libdeflate-1.24",
+        "/Users/alex/code/vox2/native_skia_text_darwin.cpp",
+        "-x",
+        "none",
+        "/Users/alex/code/vox2/Build/deps/libdeflate-1.24/snapshot-build/libdeflate.a",
+        "-Wl,-unexported_symbol,_libdeflate_*",
+        "-L/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-lskia",
+        "-framework",
+        "CoreFoundation",
+        "-framework",
+        "CoreGraphics",
+        "-framework",
+        "CoreText",
+        "-framework",
+        "Foundation",
+        "-framework",
+        "Metal",
+        "-framework",
+        "IOSurface",
+        "-Wl,-rpath,/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS",
+        "-Wl,-rpath,/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib",
+        "-Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib",
+        "-o",
+        "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/rect-cpu-native-v2/libLadybirdVSkiaText.dylib"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 732561408,
+      "elapsed_seconds": 16.53109,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "scrollbar-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-scrollbar-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 470351872,
+      "elapsed_seconds": 23.88459825,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "tile-gg-native2-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-tile-gg-native2-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 576946176,
+      "elapsed_seconds": 48.3731035,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "tile-gg-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-tile-gg-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 469532672,
+      "elapsed_seconds": 39.148914416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "tile-isolated-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-tile-isolated-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 471220224,
+      "elapsed_seconds": 40.899032833999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "tile-native2-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-tile-native2-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 578584576,
+      "elapsed_seconds": 43.5696625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    {
+      "name": "tile-pixels-guard.json",
+      "command": [
+        "python3",
+        "/tmp/vox-reddit-gg-shape-tile-pixels.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 461996032,
+      "elapsed_seconds": 41.898841334,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  ],
+  "commands": [
+    {
+      "name": "common-regression/commands.json",
+      "records": [
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O2",
+            "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O1",
+            "-g",
+            "-fsanitize=address,undefined",
+            "/Users/alex/code/vox2/tools/native_graphite_raster_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+          ],
+          "exit": 0
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/common-regression/sanitized"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "focused/commands.json",
+      "records": [
+        {
+          "name": "optimized-compile",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O2",
+            "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "optimized-runtime",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/optimized",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "sanitized-compile",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-compile.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-compile-guard.json",
+            "--limit-gib",
+            "12",
+            "--",
+            "clang++",
+            "-std=c++20",
+            "-O1",
+            "-g",
+            "-fsanitize=address,undefined",
+            "/Users/alex/code/vox2/tools/native_gg_shape_cache_test.cpp",
+            "-o",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "sanitized-runtime",
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+            "--lock",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-runtime.lock",
+            "--report",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized-runtime-guard.json",
+            "--limit-gib",
+            "3",
+            "--",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/focused/sanitized",
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "installed-cohort/commands.json",
+      "records": [
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-installed-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/installed-cohort/1-baseline",
+            "baseline"
+          ],
+          "exit": 0,
+          "started": 1794139397.779072,
+          "finished": 1794139469.930281
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-installed-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/installed-cohort/2-baseline",
+            "baseline"
+          ],
+          "exit": 0,
+          "started": 1794139470.023028,
+          "finished": 1794139539.631947
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-installed-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/installed-cohort/3-diagnostic",
+            "diagnostic"
+          ],
+          "exit": 0,
+          "started": 1794139539.729293,
+          "finished": 1794139609.035645
+        }
+      ]
+    },
+    {
+      "name": "live-cohort/commands.json",
+      "records": [
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/live-cohort/1-control",
+            "control"
+          ],
+          "exit": 0,
+          "started": 1794135928.0659,
+          "finished": 1794136005.0518558
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/live-cohort/2-candidate",
+            "candidate"
+          ],
+          "exit": 0,
+          "started": 1794136005.2463691,
+          "finished": 1794136097.098228
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/live-cohort/3-control",
+            "control"
+          ],
+          "exit": 0,
+          "started": 1794136097.338954,
+          "finished": 1794136177.058798
+        },
+        {
+          "command": [
+            "/Library/Developer/CommandLineTools/usr/bin/python3",
+            "/tmp/vox-reddit-gg-shape-live.py",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/live-cohort/4-candidate",
+            "candidate"
+          ],
+          "exit": 0,
+          "started": 1794136177.219738,
+          "finished": 1794136251.412544
+        }
+      ]
+    },
+    {
+      "name": "pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "scrollbar-renderer-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/scrollbar-renderer-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/scrollbar-renderer-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-gg-fallback-native2-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-native2-pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-native2-pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-native2-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-native2-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-gg-fallback-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-gg-fallback-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-isolated-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-isolated-pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-isolated-pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-isolated-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-isolated-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-leaf-verify-native2-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-leaf-verify-native2-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-leaf-verify-native2-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-native-grid-native2-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native-grid-native2-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native-grid-native2-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-native2-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native2-pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native2-pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native2-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-native2-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-pixels/control-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-0",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "0",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-pixels/candidate-0/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    },
+    {
+      "name": "tile-quartz-rect-cpu-native2-pixels/commands.json",
+      "records": [
+        {
+          "name": "control-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-quartz-rect-cpu-native2-pixels/control-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        },
+        {
+          "name": "candidate-850",
+          "command": [
+            "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+            "--disable-javascript",
+            "--window-width",
+            "1400",
+            "--window-height",
+            "984",
+            "--screenshot-viewport-height",
+            "900",
+            "--screenshot-scroll-y",
+            "850",
+            "--screenshot",
+            "/Users/alex/code/vox2/Build/reddit-gg-shape-cache-20261108/tile-quartz-rect-cpu-native2-pixels/candidate-850/window.png",
+            "https://old.reddit.com/r/DotA2/comments/1xqhd8i/am_i_the_only_one_who_is_sick_of_10_man_boots_dota/"
+          ],
+          "exit": 0
+        }
+      ]
+    }
+  ],
+  "installed_source_verification": {
+    "receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-141949-d82a6f7d",
+    "latest": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-141949-d82a6f7d/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "3cc1e99a02a47956cee2b7156101b360e1a63880201c76546892ef17b5433ad8",
+        "dirty": true,
+        "head": "15a9f7020c786e27b24acd914f3cd702157cc101",
+        "repository_sha256": "28c5eca57052cc0f439a1c169a05c19c955259f46e3bdc61991414cad11cb196"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "365b29221f0ad2530a583e526a812b53d1aec2a2c0374e9ca2231814df773030",
+        "dirty": true,
+        "head": "8e21268f07e6843911553954ccccab17547eed03",
+        "repository_sha256": "b5ec3ce81ec80441c516c9cdd9c1c7f9ad8eebaec31870818118d8feeb2a30ae"
+      },
+      "request": {
+        "backend": "c",
+        "c_mode": "parallel",
+        "head": "15a9f7020c786e27b24acd914f3cd702157cc101",
+        "id": "3461fb18435a49daab91ce8a9b6f51e9",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "593b62d2018dd0cfbb19854df645e3f4489cbf984be3aac3b02d5a765070bacf",
+        "dirty": true,
+        "head": "a9606b4cc832a9ddae0036634dd790ac5efe5131",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "feature_source_matches": {
+      "native/include/native_gg_shape.h": {
+        "sealed": "913402ec876d16af5bba8beefa393a4433108f9072cfe366e9b58b1c1c0533f0",
+        "current": "913402ec876d16af5bba8beefa393a4433108f9072cfe366e9b58b1c1c0533f0"
+      },
+      "native/include/native_graphite_raster_cache.h": {
+        "sealed": "920666e38d51262b0a60dc3417642643597c8c7effb1905ef5e2108b95a5c54f",
+        "current": "920666e38d51262b0a60dc3417642643597c8c7effb1905ef5e2108b95a5c54f"
+      },
+      "native_skia_text_darwin.cpp": {
+        "sealed": "126b1546364a9d0f93adb03b82e3ecf830e322f2717b066099aadc591a2c020d",
+        "current": "126b1546364a9d0f93adb03b82e3ecf830e322f2717b066099aadc591a2c020d"
+      },
+      "native/include/native_graphite_canvas.h": {
+        "sealed": "a7d10d68a6b3d1c5ea7c7aa6d8bd9e6daaae0b12046e4f927708e3d55987a00b",
+        "current": "a7d10d68a6b3d1c5ea7c7aa6d8bd9e6daaae0b12046e4f927708e3d55987a00b"
+      }
+    }
+  },
+  "optimization_credit": false,
+  "instruction_credit": 0,
+  "experimental_gpu_default_changed": false,
+  "archive": {
+    "path": "/tmp/vox-reddit-gg-shape-cache-20261108.tar.gz",
+    "sha256": "1c79d99d4427eb1d1d9b640347772119d29f1a78bb8957526d03ab725b3ea36e",
+    "bytes": 130564535,
+    "files": 6451,
+    "verified_all_files": true,
+    "mode": "0o600",
+    "created_unix": 1794139911.629993,
+    "manifest": "/tmp/vox-reddit-gg-shape-cache-20261108-files.json",
+    "manifest_sha256": "f9f0a240bc426d1b56d9a4084be3dca6b5d9c6a86963775b92a86533ae05b4e9"
+  },
+  "cleanup": {
+    "job_removed": true,
+    "drivers_removed": 20,
+    "private_archive_verified": true,
+    "data_reused_by_next_job": "Build/reddit-readback-layout-20261108",
+    "retained_data": [
+      "immutable fixture",
+      "unchanged references",
+      "offline network interposer"
+    ]
+  },
+  "archive_guard": {
+    "command": [
+      "python3",
+      "/tmp/vox-reddit-gg-shape-archive.py"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 191578112,
+    "elapsed_seconds": 15.31290025,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  }
+}

@@ -1288,3 +1288,69 @@ or broad-check cadence reset. Raw evidence is archived privately before removing
 the completed job's Build output, locks and temporary drivers.
 
 The verified mode-0600 archive SHA256 is `f9ddef9674e742c1597b3ada4ec611b003352d014df64e86accfc48edfa6ff7a` (84,565,052 bytes; 4,618 files). Its Build job, locks and temporary drivers are removed. Immutable fixture/reference/interposer data and the pinned candidate Metal library are transferred to the next bounded GG shape-cache job, with no browser/source/tool copies.
+
+
+## 2026-11-08: exact GG shape reuse and remaining readback stalls
+
+Commit `718f9719e` brings the GG adapter into the exact native shape cache.
+Small direct rasters and packed requested regions reuse their pixels, with
+original surface dimensions and rectangle layout in the key. Admission stays
+bounded to 64 KiB, 64 views and 256 clip-outs; storage is 16 MiB/512 entries.
+Owner replacement, purge and graphics-memory release invalidate both retained
+and pending results. Main-thread ownership, transactional outputs, row padding,
+reentrant replacement/purge and failed callbacks retain their fallback behavior.
+
+Optimized and ASan/UBSan checks pass, including 48 real GPU direct/region scenes
+with exact pixels. The existing native raster-cache checks pass in both modes.
+The unchanged Reddit references at offsets 0 and 850 are exact with the cache
+enabled and disabled. A separate live input diagnostic records 10 hits in 24
+logged bounded-cache calls; frozen input has zero hits in 22. Oversized bypasses
+are not included in those counts. Diagnostics receive no timing credit, and the
+frozen workload cannot establish a cache gain.
+
+The matched cohort uses executable `c7079cad...`, primary `4b94760c...` and
+installed Metal `d7845b10...`; only the cache disable flag changes. Controls
+and candidates vary substantially under host load rising from about 19 to 49
+on 18 CPUs. One pair regresses and the next improves; no isolated cache gain
+or causal regression is established. A newer completed production bundle,
+`59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`,
+contains the four relevant sealed native source hashes. Its fresh installed
+validation has no renderer override. No cross-build timing earns credit.
+
+All unprofiled trials below complete 5,400 precise native inputs at nominal
+120 Hz, delta 3, reversing every 300, with title readiness and 12-second settle.
+The document is 1400×900 at 2× backing and 125% zoom; scripts are automatic,
+profiles/caches fresh, OS caches retained, and live access uses the existing
+SOCKS5h route. Throughput uses the full first-to-last input window. The endpoint
+is completed native frame installation, not physical scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| installed-cohort/1-baseline | 116.913 | 8.343 | 10.316 | 22.955 | 0.858% | 5400 / 5401 | 33.633 / 0.164 |
+| installed-cohort/2-baseline | 116.914 | 8.359 | 10.322 | 29.807 | 0.955% | 5400 / 5385 | 25.150 / 3.862 |
+| live-cohort/1-control | 106.821 | 8.658 | 14.469 | 43.905 | 2.527% | 5400 / 5368 | 34.393 / 0.792 |
+| live-cohort/2-candidate | 86.408 | 10.756 | 18.601 | 41.182 | 8.408% | 5400 / 5252 | 52.597 / 0.343 |
+| live-cohort/3-control | 98.907 | 9.209 | 16.226 | 40.037 | 4.351% | 5400 / 5336 | 50.193 / 0.421 |
+| live-cohort/4-candidate | 108.399 | 8.683 | 13.518 | 32.813 | 1.188% | 5400 / 5321 | 49.152 / 0.355 |
+
+**Stall-free 60 Hz remains open.** An earlier live stall sample is inside AGX
+texture decompression during synchronous Graphite canvas readback. The frozen
+sample is inside a synchronous GG shape texture-upload wait. These samples
+identify observed blocking work, without attributing every long interval to it.
+The longer installed diagnostic does not reproduce that sampled stack.
+
+GPU tile publication stays opt-in. Fixed-pose sidebar borders still differ, up
+to 17 channel levels at logical screenshot density and 9 at native 2× density.
+Isolated-shape and GG fallback controls do not remove the failure; the proposed
+native-grid path is ineligible here. Changing scrollbar renderer alone produces
+identical pixels, excluding that hypothesis for this pose. A temporary forced
+Quartz-rectangle fallback worsens differences and is reverted. No reference,
+tolerance or default GPU setting changes to accept these experiments.
+
+The [complete receipt](performance/reddit-boots-gg-shape-cache-20261108.json)
+retains every timing, failed pixel experiment, command, input schedule, host
+condition and browser/guard exit. Its mode-0600 raw archive contains 6,451
+verified files, SHA256
+`1c79d99d4427eb1d1d9b640347772119d29f1a78bb8957526d03ab725b3ea36e`.
+Completed job output and temporary drivers are removed after verification;
+immutable replay data and unchanged references move into the readback job.
