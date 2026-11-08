@@ -65,7 +65,9 @@ fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &Us
 	}
 	anchor_styled := anchor_layout_node.as_node_with_style() or { return none }
 	anchor_state := state.try_get(anchor_styled) or { return none }
-	anchor_border_box_origin := anchor_state.cumulative_offset().minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
+	anchor_border_box_origin := anchor_state.cumulative_offset()
+		.plus(anchor_relative_position_offset(state, anchor_layout_node, unsafe { &Node(containing_block) }))
+		.minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
 	containing_block_padding_box_origin := containing_state.cumulative_offset().minus(css.CSSPixelPoint.new(containing_state.padding_left, containing_state.padding_top))
 	origin := anchor_border_box_origin.minus(containing_block_padding_box_origin)
 	return css.CSSPixelRect{
@@ -74,6 +76,31 @@ fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &Us
 		width: anchor_state.border_box_width()
 		height: anchor_state.border_box_height()
 	}
+}
+
+// Absolute descendants are laid out before the final relative-inset pass.
+// Resolve relative offsets on the anchor's ancestor chain using the same
+// algorithm, without moving normal-flow geometry or applying the CB twice.
+fn anchor_relative_position_offset(state &LayoutState, anchor &Node, containing &Node) css.CSSPixelPoint {
+	mut offset := css.CSSPixelPoint{}
+	mut current := ?&Node(anchor)
+	for current != none {
+		node := current or { break }
+		if layout_nodes_same(node, containing) { break }
+		if node.computed_values().position() == .relative {
+			if styled := node.as_node_with_style() {
+				if used := state.try_get(styled) {
+					if basis := used.containing_block_used_values() {
+						mut relative := *used
+						compute_relative_inset_for_node(styled, mut relative, basis)
+						offset = offset.plus(css.CSSPixelPoint.new(relative.inset_left, relative.inset_top))
+					}
+				}
+			}
+		}
+		current = node.parent()
+	}
+	return offset
 }
 
 // https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
@@ -369,6 +396,8 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	}
 	containing_width := containing_rect.width
 	containing_height := containing_rect.height
+	horizontal_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, true)
+	vertical_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, false)
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
 	left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
@@ -412,7 +441,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				AvailableSize.make_definite(containing_width))
 		}
 	}
-	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper() {
+	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper() && horizontal_alignment.stretches() {
 		if left_value := left {
 			if right_value := right {
 				forced_width = css_pixels_max(CSSPixels.new(0), css_px(
@@ -438,7 +467,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				AvailableSize.make_definite(fit_available_width))
 		}
 	}
-	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper() {
+	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper() && vertical_alignment.stretches() {
 		if top_value := top {
 			if bottom_value := bottom {
 				forced_height = css_pixels_max(CSSPixels.new(0), css_px(
@@ -553,6 +582,40 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 			containing_rect.y.plus(containing_height).minus(bottom_value).minus(box_state.margin_box_bottom()).minus(box_state.content_height())
 	} else {
 		y = static_position.y().plus(box_state.margin_box_top())
+	}
+	if left_value := left {
+		if right_value := right {
+			if !horizontal_alignment.stretches() && !property_is_auto(computed, .margin_left) && !property_is_auto(computed, .margin_right) {
+				x = containing_rect.x.plus(absolute_aligned_axis_offset(horizontal_alignment, box,
+					unsafe { &Node(containing_box) }, true, left_value, right_value,
+					containing_width, box_state.margin_box_width())).plus(box_state.margin_box_left())
+			}
+		}
+	}
+	if top_value := top {
+		if bottom_value := bottom {
+			if !vertical_alignment.stretches() && !property_is_auto(computed, .margin_top) && !property_is_auto(computed, .margin_bottom) {
+				y = containing_rect.y.plus(absolute_aligned_axis_offset(vertical_alignment, box,
+					unsafe { &Node(containing_box) }, false, top_value, bottom_value,
+					containing_height, box_state.margin_box_height())).plus(box_state.margin_box_top())
+			}
+		}
+	}
+	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
+		if name := computed.position_anchor() {
+			if anchor := resolve_named_anchor_rect(state, box, containing_state, name) {
+				if horizontal_alignment.position == 'anchor-center' && !property_is_auto(computed, .margin_left) && !property_is_auto(computed, .margin_right) {
+					x = absolute_anchor_center_offset(anchor.x.minus(containing_state.padding_left), anchor.width, containing_rect.x,
+						containing_width, left or { CSSPixels.new(0) }, right or { CSSPixels.new(0) },
+						box_state.margin_box_width()).plus(box_state.margin_box_left())
+				}
+				if vertical_alignment.position == 'anchor-center' && !property_is_auto(computed, .margin_top) && !property_is_auto(computed, .margin_bottom) {
+					y = absolute_anchor_center_offset(anchor.y.minus(containing_state.padding_top), anchor.height, containing_rect.y,
+						containing_height, top or { CSSPixels.new(0) }, bottom or { CSSPixels.new(0) },
+						box_state.margin_box_height()).plus(box_state.margin_box_top())
+				}
+			}
+		}
 	}
 	box_state.set_content_offset(CSSPixelPoint.new(x, y))
 
