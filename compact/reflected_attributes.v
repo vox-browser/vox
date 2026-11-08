@@ -139,7 +139,14 @@ fn compact_reflected_attributes_bootstrap() string {
  const select=typeof HTMLSelectElement==="function"?HTMLSelectElement.prototype:null;
  if(select){boolean(select,"multiple","multiple");boolean(select,"required","required");}
  const form=typeof HTMLFormElement==="function"?HTMLFormElement.prototype:null;
- if(form){boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");}
+ if(typeof HTMLIFrameElement==="function")plainString(HTMLIFrameElement.prototype,"name","name");
+ if(form){
+  boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");
+  enumerated(form,"method","method",{get:"get",post:"post",dialog:"dialog"},"get","get");
+  enumerated(form,"enctype","enctype",{"application/x-www-form-urlencoded":"application/x-www-form-urlencoded","multipart/form-data":"multipart/form-data","text/plain":"text/plain"},"application/x-www-form-urlencoded","application/x-www-form-urlencoded");
+  define(form,"encoding",function(){return this.enctype;},function(value){this.enctype=value;});
+  define(form,"action",function(){const value=this.getAttribute("action");const address=value===null||value===""?this.ownerDocument.URL:value;try{return new URL(address,this.baseURI).href;}catch(error){return address;}},function(value){this.setAttribute("action",string(value));});
+ }
  // https://html.spec.whatwg.org/multipage/interaction.html#dom-writingsuggestions
  define(element,"writingSuggestions",function(){
   for(let current=this;current;current=current.parentElement){
