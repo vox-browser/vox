@@ -1165,3 +1165,23 @@ tests pass. The FMA audit reports zero contracted operations. See the
 [blur/color-chain receipt](gg-migration/blur-color-chains-20261108.json).
 Drop-shadow chains, general rotated layers, SVG graphs, image-space spatial
 filters and native bridges still retain browser Skia dependencies.
+
+
+### Spatial filters on pixel-aligned source images (2026-11-08)
+
+Direct source-image filters now use V for integer-aligned premultiplied sRGB
+subsets at full paint alpha, with one source pixel per device pixel. The
+port retains unknown source-image boundaries for identity shadow sampling.
+Eight native fixtures cover real and identity blur/shadow passes, subsets,
+color-filter chains and clearing composites. A canvas integration test also
+checks the direct CPU route against the native command.
+
+Of 20,000 attempts, 18,973 supported comparisons match on both platforms
+at seed 20261106, and 19,016 match in production mode at seed 20261108.
+The existing Linux filtered-image corpus matches 13,283 supported draws.
+All 27 CPU raster files, canvas integration tests and focused Linux
+production tests pass. The FMA audit reports zero contracted operations.
+See the [aligned-image receipt](gg-migration/aligned-image-layers-20261108.json).
+General source-image transforms, fractional subsets, paint alpha and color
+conversion still require work, as do the remaining filter graphs and native
+bridges. The browser retains Skia dependencies.
