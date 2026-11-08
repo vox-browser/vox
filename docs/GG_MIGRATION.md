@@ -992,3 +992,24 @@ Linux production mode. The FMA audit reports zero contracted operations and
 Clearing blends under general transforms, fractional source subsets, direct
 image-space blur/drop-shadow, mixed filters, general rotated layers, GPU
 parity and full browser dependency removal remain open.
+
+
+### Clearing composite modes on filtered source images (2026-11-08)
+
+`b5fe5ba8d` restores color-filtered images across the clip for composite
+operations that affect transparent black. Nearest sampling supports affine
+transforms; linear sampling supports rect-preserving transforms. Scaled linear
+edges use the native layer-space decal ramp. Runtime decal shader children
+retain the base image level, matching the native matrix-record policy.
+
+Sixteen new native fixtures match on macOS and Linux. At seed 20261106,
+7,523 of 20,000 comparisons match on both platforms with 12,477 declines;
+production seed 20261108 matches 7,683 with 12,317 declines. Counts include
+no-ops and both CPU policies. All 26 CPU raster test files pass on macOS,
+and the image tests pass in Linux production mode. The FMA audit reports zero
+contracted operations. The full Linux browser type check passes in 40.23
+seconds with 4.75 GB sampled peak RSS. See the
+[image-composite receipt](gg-migration/image-filter-composites-20261108.json).
+The browser still links Skia; the type check does not establish a Skia-free
+compile, link or run. Rotated linear restores, source clipping, direct image
+blur/drop-shadow, mixed filters and native browser bridges remain open.
