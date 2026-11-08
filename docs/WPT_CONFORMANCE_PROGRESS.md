@@ -427,3 +427,50 @@ no optimization or all-pass credit. Raw results, samples, guards and failed
 attempts are preserved in the external archives named by the three manifests;
 completed Build scratch is removed. Range timeouts, the remaining editing
 failures, other browser gaps and full-upstream runner integration remain open.
+
+## Whitespace-aware paragraph joins and qualified attribute updates
+
+The newer Ladybird paragraph-join behavior is translated in `29feaceb9`.
+Joining blocks now records resolved whitespace independently of formatting
+commands, preserves styles inherited from classes, and moves only the first
+line of the right paragraph. Preserved newlines and nested `<br>` elements
+split inline formatting without losing UTF-16 boundaries. Default `<pre>`
+styling remains distinct from author styles.
+
+`44732b1d3` refreshes retained element and Attr wrappers after native keyboard
+editing through the existing execCommand mutation-refresh path. Without this
+refresh, the native diagnostic reached 52 PASS / 24 FAIL because a styled
+`<b>` still exposed its old cached attributes. The selected variant now passes
+76 / 76. Expanded validation also exposed three namespace-owner regressions:
+public `setAttribute()` incorrectly selected a null-namespace attribute instead
+of the first qualified-name match. `c8a3a2b15` fixes that lookup while preserving
+attribute order, namespace, prefix and identity; all three regressions pass.
+
+The [native verification manifest](performance/wpt-paragraph-joining-20261108.json)
+records **all 60 declared variants of
+`editing/other/join-different-white-space-style-paragraphs`: 3,456 / 3,456 PASS**.
+Each variant runs in a fresh process with the unchanged imported test script,
+assertions and official harness, the original timeout, and an exact expected
+count derived from the test declarations and skip predicates. Every harness
+and process exit is clean; executable and fixture hashes remain unchanged.
+All three input methods and all five whitespace modes are covered. These are
+direct native Page checks, not production browser navigation or a new full
+cohort measurement.
+
+**34 distinct focused regressions also pass**: 19 compact keyboard, range,
+file, activation, identity and namespace cases; two qualified-name DOM cases;
+and 13 editing/undo/paste/whitespace cases. The latter pass with normal GC
+after all fixes and also passed with production allocation before the final
+qualified-name setter correction. Failed compiler, runner and regression
+attempts remain in the external evidence archive; no failures are excluded
+from an acceptance cohort.
+
+The completed `59de419d75f2…` bundle contains the paragraph translation but
+predates the keyboard refresh and qualified-name setter fix. Later shared
+production attempts fail in FastC while parsing the generic `T` parameter of
+`adblock/json_transport.v::encode_transport_json`; the successful focused
+checks use the C backend. Commit hooks use the existing coalescing build queue;
+no separate browser build was launched. Production WPT and seven SVG pixel
+checks therefore remain pending on a bundle containing both fixes. This work
+does not establish 100% for the larger imported cohort or full upstream WPT;
+the Range reporting timeout and other browser failures remain open.
