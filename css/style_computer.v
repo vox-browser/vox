@@ -662,6 +662,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	persistent := platform.enter_persistent_if(declaration.has_process_lifetime_sheet())
 	defer { platform.leave_persistent(persistent) }
 	mut result := []StyleProperty{cap: declaration.properties.len}
+	mut flow_context_properties := []StyleProperty{}
 	mut importance_mask := u8(0)
 	mut may_have_logical_aliases := false
 	for property in declaration.properties {
@@ -673,10 +674,14 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 			typed := parse_css_value_logic(property_id, property.value) or { continue }
 			value = dom_style_value_from_value_logic(typed)
 		}
-		result << StyleProperty{
+		typed_property := StyleProperty{
 			property_id: property_id
 			value: value
 			important: if property.important { Important.yes } else { Important.no }
+		}
+		result << typed_property
+		if property_id in [.writing_mode, .direction, .all] {
+			flow_context_properties << typed_property
 		}
 		importance_mask |= if property.important { u8(2) } else { u8(1) }
 		// Unexpanded shorthands are conservative: substitution can produce logical longhands.
@@ -687,6 +692,7 @@ fn declaration_style_properties(declaration &CSSStyleProperties) []StyleProperty
 	mutable_declaration.typed_properties_cache_ = result
 	mutable_declaration.typed_importance_mask_ = importance_mask
 	mutable_declaration.typed_may_have_logical_aliases_ = may_have_logical_aliases
+	mutable_declaration.typed_flow_context_properties_ = flow_context_properties
 	return result
 }
 
@@ -888,10 +894,17 @@ fn apply_property_list_to_cascade(mut cascaded_properties CascadedProperties, ab
 }
 
 fn cascade_one_declaration(mut cascaded_properties CascadedProperties, abstract_element dom.AbstractElement, declaration &CSSStyleProperties, source_shadow_root ?&dom.ShadowRoot, cascade_origin CascadeOrigin, important Important, layer_name ?string, logical_alias_mapping_context ?LogicalAliasMappingContext, properties_to_cascade []PropertyID) {
-	properties := declaration_style_properties(declaration)
+	mut properties := declaration_style_properties(declaration)
 	importance_bit := if important == .yes { u8(2) } else { u8(1) }
 	if declaration.typed_importance_mask_ & importance_bit == 0 {
 		return
+	}
+	if !disable_flow_context_declaration_index && properties_to_cascade.len == 2
+		&& properties_to_cascade[0] == .writing_mode && properties_to_cascade[1] == .direction {
+		// No other shorthand expands to either requested property. `all` stays
+		// on the normal expansion path, including unresolved substitution.
+		properties = declaration.typed_flow_context_properties_
+		if properties.len == 0 { return }
 	}
 	apply_property_list_to_cascade(mut cascaded_properties, abstract_element, properties, cascade_origin, important, layer_name, voidptr(declaration), source_shadow_root, logical_alias_mapping_context, properties_to_cascade)
 }
@@ -2157,6 +2170,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	saved_typed_properties_cache := element_inline_style.typed_properties_cache_
 	saved_typed_importance_mask := element_inline_style.typed_importance_mask_
 	saved_typed_logical_aliases := element_inline_style.typed_may_have_logical_aliases_
+	saved_typed_flow_context := element_inline_style.typed_flow_context_properties_
 	saved_custom_property_data := abstract_element.custom_property_data()
 
 	mut mutable_inline_style := unsafe { &CSSStyleProperties(element_inline_style) }
@@ -2171,6 +2185,7 @@ pub fn computed_styles_with_and_without_inline(element &dom.Element) ?ComputedSt
 	mutable_inline_style.typed_properties_cache_ = saved_typed_properties_cache
 	mutable_inline_style.typed_importance_mask_ = saved_typed_importance_mask
 	mutable_inline_style.typed_may_have_logical_aliases_ = saved_typed_logical_aliases
+	mutable_inline_style.typed_flow_context_properties_ = saved_typed_flow_context
 	mut mutable_abstract_element := abstract_element
 	mutable_abstract_element.set_custom_property_data(saved_custom_property_data)
 

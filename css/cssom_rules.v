@@ -171,6 +171,9 @@ mut:
 	deferred_declarations_ ?&DeferredStyleDeclaration
 	// Valid only with typed_properties_cache_; rebuilt after declaration changes.
 	typed_may_have_logical_aliases_ bool
+	// Ordered subset for the preliminary writing-mode/direction cascade. Valid
+	// only with typed_properties_cache_, and rebuilt from that same declaration.
+	typed_flow_context_properties_ []StyleProperty
 }
 
 pub fn CSSStyleProperties.create() &CSSStyleProperties {
