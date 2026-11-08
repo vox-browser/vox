@@ -74,6 +74,23 @@ static void libweb_v_unregister_timer(void* timer)
     CFRelease(timer);
 }
 
+// Move an existing positive timer's next deadline without removing and adding
+// it in every run-loop mode. CoreFoundation fixes the repeat interval at
+// creation, so a changed interval must still use ordinary re-registration.
+static bool libweb_v_restart_timer(void* timer, int interval_ms)
+{
+    if (!timer || interval_ms <= 0 || libweb_v_zero_timer_is_handle(timer)
+        || getenv("VOX_DISABLE_NATIVE_TIMER_RESTART"))
+        return false;
+    CFRunLoopTimerRef native = (CFRunLoopTimerRef)timer;
+    double interval = interval_ms / 1000.0;
+    if (!CFRunLoopTimerIsValid(native) || CFRunLoopTimerGetInterval(native) != interval
+        || !CFRunLoopContainsTimer(CFRunLoopGetCurrent(), native, kCFRunLoopCommonModes))
+        return false;
+    CFRunLoopTimerSetNextFireDate(native, CFAbsoluteTimeGetCurrent() + interval);
+    return true;
+}
+
 static void libweb_v_pump_native_events(double wait_seconds)
 {
     CFAbsoluteTime deadline = CFAbsoluteTimeGetCurrent() + wait_seconds;

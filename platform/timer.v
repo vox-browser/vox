@@ -77,6 +77,14 @@ pub fn (mut timer Timer) restart_with_interval(interval_ms int) {
 	mut owner := timer.allocation_owner_
 	if owner != unsafe { nil } { owner.retain() }
 	defer { if owner != unsafe { nil } { owner.release() } }
+	if timer.active_ && timer.interval_ms_ == interval_ms
+		&& restart_native_timer(timer.native_timer_, interval_ms) {
+		// Deferred callbacks belong to the previous deadline even though its
+		// native registration and activity root remain owned by this timer.
+		timer.registration_generation_++
+		timer.take_activity_root()
+		return
+	}
 	timer.stop()
 	timer.start_with_interval(interval_ms)
 }

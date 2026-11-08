@@ -11,6 +11,7 @@ $if linux || windows {
 
 fn C.libweb_v_register_timer(context voidptr, interval_ms int, timeout fn (voidptr)) voidptr
 fn C.libweb_v_unregister_timer(timer voidptr)
+fn C.libweb_v_restart_timer(timer voidptr, interval_ms i32) bool
 fn C.libweb_v_pump_native_events(wait_seconds f64)
 fn C.libweb_v_is_main_thread() bool
 
@@ -30,6 +31,15 @@ fn register_native_timer(timer &Timer, interval_ms int) voidptr {
 fn unregister_native_timer(timer voidptr) {
 	$if macos || linux || windows {
 		if timer != unsafe { nil } { C.libweb_v_unregister_timer(timer) }
+	}
+}
+
+fn restart_native_timer(timer voidptr, interval_ms int) bool {
+	$if macos {
+		if interval_ms <= 0 || interval_ms > 2_147_483_647 { return false }
+		return C.libweb_v_restart_timer(timer, i32(interval_ms))
+	} $else {
+		return false
 	}
 }
 
