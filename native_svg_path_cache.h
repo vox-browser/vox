@@ -7,7 +7,7 @@
 #include <deque>
 #include <vector>
 
-// Exact raster memoization for small solid fills. The caller owns eligibility
+// Exact raster memoization for small solid fills and strokes. The caller owns eligibility
 // policy; this service retains no document, path pointer or graphics context.
 class VoxSmallSvgPathCache {
     struct Entry { std::vector<uint8_t> key, pixels; };
@@ -29,7 +29,7 @@ public:
         if (!enabled || !pixels || !path || width <= 0 || height <= 0
             || width > 128 || height > 128 || pitch < width * 4
             || !path->segments || path->segment_count <= 0 || path->segment_count > 256
-            || path->stroke || path->gradient || path->has_clip || path->has_ancestor_clip)
+            || path->gradient || path->has_clip || path->has_ancestor_clip)
             return backend(pixels, width, height, pitch, has_background, path);
 
         std::vector<uint8_t> key;
@@ -45,6 +45,12 @@ public:
         append(path->matrix, sizeof(path->matrix));
         append(&path->segment_count, sizeof(path->segment_count));
         append(&path->even_odd, sizeof(path->even_odd));
+        append(&path->stroke, sizeof(path->stroke));
+        append(&path->line_cap, sizeof(path->line_cap));
+        append(&path->line_join, sizeof(path->line_join));
+        append(&path->non_scaling_stroke, sizeof(path->non_scaling_stroke));
+        append(&path->stroke_width, sizeof(path->stroke_width));
+        append(&path->miter_limit, sizeof(path->miter_limit));
         append(&path->red, 1); append(&path->green, 1);
         append(&path->blue, 1); append(&path->alpha, 1);
         append(&path->has_float_color, sizeof(path->has_float_color));

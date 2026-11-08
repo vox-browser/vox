@@ -8,7 +8,10 @@
 #include "native_svg_path_cache.h"
 
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
+#include <dlfcn.h>
 #include <vector>
 
 using VoxGGPathDraw = int (*)(uint8_t* pixels, int width, int height, int pitch,
@@ -90,8 +93,34 @@ static void gg_copy_path_views(VoxGraphitePixelRegion const* views, int count,
 static int gg_draw_path_pixels(uint8_t* pixels, int width, int height, int pitch,
     int has_background, VoxGraphitePath const* path)
 {
-    return s_small_svg_path_cache.draw(s_gg_path_draw, pixels, width, height,
+    // The exact descriptor, subpixel phase and backdrop bytes already govern
+    // eligibility. An explicit experiment can extend the caller's scoped
+    // cache to other documents without changing its ordinary policy. Reuse
+    // avoids allocating a GPU target and synchronously reading it back.
+    auto enabled_environment = [](char const* name) {
+        auto* value = std::getenv(name);
+        return value && *value;
+    };
+    bool previous = s_small_svg_path_cache.enabled;
+    s_small_svg_path_cache.enabled = (previous || enabled_environment("VOX_SMALL_SVG_PATH_CACHE"))
+        && !enabled_environment("VOX_DISABLE_SMALL_SVG_PATH_CACHE")
+        && !enabled_environment("VOX_DISABLE_GITHUB_SVG_PATH_CACHE");
+    auto hits = s_small_svg_path_cache.hits;
+    int result = s_small_svg_path_cache.draw(s_gg_path_draw, pixels, width, height,
         pitch, has_background, path);
+    s_small_svg_path_cache.enabled = previous;
+    if (enabled_environment("VOX_SMALL_SVG_PATH_CACHE_DIAGNOSTICS")) {
+        static unsigned logged;
+        if (logged < 4096) {
+            ++logged;
+            static auto clock = reinterpret_cast<double (*)()>(
+                dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+            std::fprintf(stderr, "VOX_SMALL_SVG_PATH_CACHE size=%dx%d stroke=%d hit=%d hits=%llu t_us=%.3f\n",
+                width, height, path ? path->stroke : 0, int(s_small_svg_path_cache.hits != hits),
+                (unsigned long long)s_small_svg_path_cache.hits, clock ? clock() : -1);
+        }
+    }
+    return result;
 }
 
 static int gg_draw_path_region_pixels(VoxGraphitePixelRegion const* region,

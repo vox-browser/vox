@@ -1,4 +1,4 @@
-#include "../native_svg_path_cache.h"
+#include "../native_gg_path.h"
 #include <cassert>
 
 static int draws;
@@ -11,7 +11,7 @@ static int render(uint8_t* pixels, int width, int height, int pitch,
     return 1;
 }
 
-int main()
+int main(int argc, char** argv)
 {
     VoxSmallSvgPathCache cache;
     float segments[24] {};
@@ -42,6 +42,13 @@ int main()
     path.green = 30; miss_then_hit();
     path.blue = 31; miss_then_hit();
     path.alpha = 127; miss_then_hit();
+    path.stroke = 1; miss_then_hit();
+    path.stroke_width = 1.5f; miss_then_hit();
+    path.stroke_width = 1.500001f; miss_then_hit();
+    path.line_cap = 1; miss_then_hit();
+    path.line_join = 2; miss_then_hit();
+    path.non_scaling_stroke = 1; miss_then_hit();
+    path.miter_limit = 4; miss_then_hit();
     path.has_float_color = 1; miss_then_hit();
     path.float_color[0] = .123456f; miss_then_hit();
     path.has_float_alpha = 1; miss_then_hit();
@@ -67,7 +74,7 @@ int main()
     pixels = backdrop; pixels[16] = 99; // Padding does not belong to the backdrop.
     draw(1); assert(draws == calls + 1 && pixels[16] == 99);
 
-    for (int* unsupported : {&path.stroke, &path.gradient, &path.has_clip, &path.has_ancestor_clip}) {
+    for (int* unsupported : {&path.gradient, &path.has_clip, &path.has_ancestor_clip}) {
         *unsupported = 1; calls = draws; draw(); draw();
         assert(draws == calls + 2); *unsupported = 0;
     }
@@ -87,4 +94,100 @@ int main()
         assert(cache.size() <= 64 && cache.bytes() <= 8u * 1024 * 1024);
     }
     assert(cache.size() < 64); // Exercise the byte budget as well as the entry limit.
+
+    // Exercise the actual registered GG bridge with an explicit opt-in. A
+    // cache hit must avoid the callback while preserving the caller's scope.
+    unsetenv("VOX_DISABLE_SMALL_SVG_PATH_CACHE");
+    unsetenv("VOX_DISABLE_GITHUB_SVG_PATH_CACHE");
+    unsetenv("VOX_SMALL_SVG_PATH_CACHE");
+    path.matrix[2] = 0;
+    ladybird_v_skia_set_gg_path_draw(render);
+    assert(!s_small_svg_path_cache.enabled);
+    auto bridge_draw = [&] {
+        return gg_draw_path_pixels(pixels.data(), 4, 4, 24, 0, &path);
+    };
+    calls = draws;
+    assert(bridge_draw() && bridge_draw() && draws == calls + 2);
+    assert(s_small_svg_path_cache.size() == 0); // No ordinary policy change.
+    setenv("VOX_SMALL_SVG_PATH_CACHE", "1", 1);
+    calls = draws;
+    assert(bridge_draw());
+    first = pixels;
+    std::fill(pixels.begin(), pixels.end(), 61);
+    assert(bridge_draw() && draws == calls + 1);
+    assert(pixels[0] == first[0] && pixels[24] == first[24] && pixels[16] == 61);
+    assert(!s_small_svg_path_cache.enabled && s_small_svg_path_cache.hits == 1);
+    unsetenv("VOX_SMALL_SVG_PATH_CACHE");
+    assert(ladybird_v_skia_set_small_svg_path_cache(1) == 0);
+    assert(bridge_draw() && draws == calls + 1 && s_small_svg_path_cache.enabled);
+    // Both controls bypass reuse, even when the caller explicitly enabled it.
+    setenv("VOX_DISABLE_SMALL_SVG_PATH_CACHE", "1", 1);
+    assert(bridge_draw() && bridge_draw() && draws == calls + 3);
+    assert(s_small_svg_path_cache.enabled);
+    unsetenv("VOX_DISABLE_SMALL_SVG_PATH_CACHE");
+    setenv("VOX_DISABLE_GITHUB_SVG_PATH_CACHE", "1", 1);
+    assert(bridge_draw() && bridge_draw() && draws == calls + 5);
+    unsetenv("VOX_DISABLE_GITHUB_SVG_PATH_CACHE");
+    assert(ladybird_v_skia_set_small_svg_path_cache(0) == 1);
+    setenv("VOX_SMALL_SVG_PATH_CACHE", "1", 1);
+    assert(bridge_draw() && draws == calls + 5);
+    // Replacing the registered backend must invalidate pixels from the old one.
+    ladybird_v_skia_set_gg_path_draw([](uint8_t* p, int w, int h, int stride, int,
+            VoxGraphitePath const*) {
+        for (int y=0; y<h; ++y) std::memset(p + y * stride, 177, size_t(w) * 4);
+        return 1;
+    });
+    assert(s_small_svg_path_cache.size() == 0);
+    assert(bridge_draw() && pixels[0] == 177);
+    ladybird_v_skia_set_gg_path_draw(nullptr);
+    assert(!bridge_draw() && s_small_svg_path_cache.size() == 0);
+    if (argc == 2) {
+        // The exact byte cache must also agree with real GPU raster output,
+        // including strokes whose caps, joins and subpixel phase change.
+        void* library = dlopen(argv[1], RTLD_NOW | RTLD_LOCAL);
+        assert(library);
+        auto backend = reinterpret_cast<VoxGGPathDraw>(
+            dlsym(library, "vox_graphite_draw_path_pixels"));
+        assert(backend);
+        ladybird_v_skia_set_gg_path_draw(backend);
+        float geometry[36] {};
+        geometry[1]=3.25f; geometry[2]=4.5f;
+        geometry[12]=1; geometry[13]=23.75f; geometry[14]=29.125f;
+        geometry[24]=1; geometry[25]=35.5f; geometry[26]=6.25f;
+        VoxGraphitePath stroke {};
+        stroke.segments=geometry; stroke.segment_count=3; stroke.stroke=1;
+        stroke.matrix[0]=stroke.matrix[4]=stroke.matrix[8]=1;
+        stroke.red=83; stroke.green=147; stroke.blue=211; stroke.alpha=173;
+        stroke.stroke_width=2.75f; stroke.miter_limit=3.5f;
+        constexpr int width=48, height=48, stride=width*4+16;
+        unsigned scenes=0;
+        for (int background : {0,1}) for (int cap : {0,1,2})
+            for (int join : {0,1,2}) for (int non_scaling : {0,1})
+                for (float phase : {.125f,.75f}) {
+            stroke.line_cap=cap; stroke.line_join=join;
+            stroke.non_scaling_stroke=non_scaling;
+            stroke.matrix[2]=phase; stroke.matrix[5]=.25f;
+            stroke.matrix[0]=stroke.matrix[4]=non_scaling ? .875f : 1.0f;
+            std::vector<uint8_t> input(stride*height,99);
+            for (int y=0;y<height;++y) for (int x=0;x<width;++x) {
+                auto* p=input.data()+y*stride+x*4;
+                p[0]=uint8_t(x*3); p[1]=uint8_t(y*3); p[2]=90; p[3]=255;
+            }
+            auto expected=input;
+            assert(backend(expected.data(),width,height,stride,background,&stroke));
+            s_small_svg_path_cache.clear();
+            for (int repeat=0;repeat<2;++repeat) {
+                auto actual=input; auto before=s_small_svg_path_cache.hits;
+                assert(gg_draw_path_pixels(actual.data(),width,height,stride,background,&stroke));
+                assert(actual==expected);
+                assert(s_small_svg_path_cache.hits==before+unsigned(repeat==1));
+            }
+            ++scenes;
+        }
+        ladybird_v_skia_set_gg_path_draw(nullptr);
+        dlclose(library);
+        std::printf("%u GPU stroke scenes: exact cached/fresh pixels, background and padded rows passed\n",scenes);
+    }
+    unsetenv("VOX_SMALL_SVG_PATH_CACHE");
+    std::puts("Exact SVG cache keys, bounds, opt-in bridge reuse, disable controls, scoped state and backend invalidation passed");
 }
