@@ -23,8 +23,14 @@ static int vox_adblock_try_lock(void) { return pthread_mutex_trylock(&vox_adbloc
 static void vox_adblock_unlock(void) { pthread_mutex_unlock(&vox_adblock_mutex); }
 static void *vox_adblock_get_context(void) { return vox_adblock_context_value; }
 static void vox_adblock_set_context(void *context) { vox_adblock_context_value = context; }
-static int vox_adblock_get_enabled(void) { return vox_adblock_enabled_value; }
-static void vox_adblock_set_enabled(int enabled) { vox_adblock_enabled_value = enabled; }
+// Reading policy must not wait behind an engine evaluation or worker IPC.
+// Writers still hold the engine mutex; every access to this scalar is atomic.
+static int vox_adblock_get_enabled(void) {
+    return __atomic_load_n(&vox_adblock_enabled_value, __ATOMIC_ACQUIRE);
+}
+static void vox_adblock_set_enabled(int enabled) {
+    __atomic_store_n(&vox_adblock_enabled_value, enabled, __ATOMIC_RELEASE);
+}
 #ifdef __APPLE__
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>

@@ -225,8 +225,6 @@ pub fn (mut engine Engine) close() {
 }
 
 pub fn is_enabled() bool {
-	C.vox_adblock_lock()
-	defer { C.vox_adblock_unlock() }
 	return C.vox_adblock_get_enabled() != 0
 }
 
