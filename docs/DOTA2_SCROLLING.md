@@ -917,3 +917,103 @@ build/resource identities, interval and boundary statistics, contention,
 correctness checks, rejected attempts and the private raw archive identity.
 The per-job `Build/reddit-stalls-next-20261108/` directory is removed after
 archiving; raw authenticated page responses remain private and outside Git.
+
+## November 8: entering GPU tile residency after a zoomed CPU frame
+
+The follow-up confirms that remaining slow samples include synchronous GPU
+readback, upload and small SVG raster work. Simply selecting
+`VOX_GPU_TILE_COMPOSITOR=1` does not exercise tile presentation on the old
+bundle at 125% zoom: its diagnostic records zero composited canvases. The first
+complete zoomed repaint intentionally uses CPU leaf raster, and the tile path
+mistakes the absent GPU export for failure, disabling itself.
+
+Commit `b015e8193` seeds immutable compositor tiles from that complete CPU
+bitmap. Later scrolling can reuse those tiles and export GPU damage. A partial
+replay, independent content, failed export or failed allocation cannot seed
+residency. The ordinary software path and the experimental tile opt-in policy
+remain unchanged. This fixes entry into the experimental path; it does not
+establish that the reported live page now scrolls without stalls.
+
+The CPU/provider fixtures pass optimized, ASan/UBSan and non-ARC checks at
+1×/2×, with ordinary and queued publication. Captures remain exact, old providers
+stay immutable, later exports reuse the ring, and allocation failure publishes
+the complete CPU bitmap. A deliberately missing export after partial replay
+still rejects residency.
+
+The real GPU bridge also passes ordinary, deferred-scheduling, queued-publication
+and sparse-clear cases, optimized and sanitized. Each run records nine reused
+frames and two complete CPU seeds. The maximum channel error is one against
+the unchanged reference and its existing tolerance of three. The original
+resident-ring mode also passes. These are native correctness fixtures, not
+scrolling FPS evidence or a live-page eligibility check.
+
+The new fixture initially expected reuse after damage coordinates became
+negative during a large jump; the existing conservative gate correctly chooses
+a complete repaint. The focused transition now uses valid positive integer
+damage, while the existing wrap/reversal cases remain. An initial real-GPU
+fixture left Chromium raster mode disabled during CPU seeding and differed by
+29 channel levels. Correcting that setup reduces the difference to one without
+changing its reference or tolerance. A separate queued-case fixture correction
+accounts for the readiness-queue option when checking its scheduling fence.
+All failures remain in the raw evidence.
+
+Commit `36b0d2520` extends the exact small-SVG cache key to solid strokes,
+including width, caps, joins, non-scaling mode and miter limit. It adds an
+explicit `VOX_SMALL_SVG_PATH_CACHE=1` experiment beyond the existing document
+scope, with both new and historical disable controls. The first fill-only
+prototype has no live input-window hits; the stroked version reuses five of
+40 input-window calls. Seventy-two real GPU stroke scenes match fresh raster
+bytes exactly, including backgrounds and row padding, in optimized and sanitized
+checks. Both complete Reddit captures at offsets 0 and 850, with caching enabled
+and disabled, retain the unchanged reference PNG hashes.
+
+The prototype timing results do not justify enabling general SVG caching or
+queued uploads by default. These two separate cohorts each contain two
+alternating unprofiled pairs on executable `843893a4…`, with matching native
+identities within the cohort. The SVG cohort uses an explicit prototype primary
+bridge with automatic caching; its control disables caching. The final committed
+bridge preserves the existing scoped default and requires the explicit opt-in
+for this page. The workload retains 1400×900 view pixels, 2× backing, 125% zoom,
+automatic scripts, the sealed original-origin replay, fresh private caches and
+profiles, and the same title-checked 12-second settle and precise input schedule.
+Upload trials complete 1,800 inputs; SVG trials complete 5,400.
+
+| Trial | Scroll publications/s | Median / p95 / maximum interval, ms | Over 16.67 ms |
+| --- | ---: | --- | ---: |
+| Upload control 1 | 98.821 | 8.979 / 17.107 / 32.678 | 6.062% |
+| Queued upload 1 | 100.366 | 9.060 / 16.416 / 30.504 | 4.705% |
+| Upload control 2 | 100.903 | 8.893 / 16.698 / 32.738 | 5.042% |
+| Queued upload 2 | 92.445 | 9.622 / 19.215 / 73.460 | 8.980% |
+| SVG control 1 | 99.391 | 9.069 / 16.627 / 31.223 | 4.909% |
+| SVG cache prototype 1 | 90.566 | 10.029 / 18.903 / 43.281 | 8.973% |
+| SVG control 2 | 88.924 | 10.312 / 19.140 / 35.371 | 10.083% |
+| SVG cache prototype 2* | 87.763 | 10.370 / 19.256 / 34.412 | 10.892% |
+
+The throughput denominator includes the entire first-to-last input window.
+Exact counts, actual cadence, leading/trailing gaps and host loads are in the
+receipt. Load reaches 87.9 on this 18-CPU host and controls vary substantially.
+The starred final candidate also overlaps approximately 6.3 seconds of our
+reference/driver extraction from the previous gzip archive; that result is
+retained and cannot supply timing-gain acceptance. Both SVG candidate means
+regress. Neither cohort earns an isolated FPS gain or a steady-60-Hz claim.
+Native publication remains distinct from physical display scanout.
+
+A final cache ownership check also rejects background callers before looking
+up or mutating cached pixels. The regression exercises a populated cache from
+a worker, verifies zero reuse and unchanged pixels/state, and repeats the 72
+real GPU scenes in both optimized and sanitized modes. The private browser
+captures above precede this guard; the guard is executed by the focused native
+tests, not claimed as installed-browser validation.
+
+**The no-stalls target remains open.** A completed production executable
+containing the tile-startup fix is still needed for live/frozen eligibility,
+unchanged-reference checks and matched timing trials. The shared worker has
+repeatedly rejected changed repository inputs, native headers or source
+membership; the latest completed bundle still predates `b015e8193`. No duplicate
+production build was queued and no app bundle was copied or replaced. No
+retired-instruction saving is claimed; the broad-check cadence is unchanged.
+
+The [GPU follow-up receipt](performance/reddit-boots-gpu-stalls-20261108.json)
+retains all eight unprofiled trials, four diagnostics, source/library identities,
+commands and actual exits, failures, contention and the private raw archive
+identity. Per-job outputs are removed after archiving.
