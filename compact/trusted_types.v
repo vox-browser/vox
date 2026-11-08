@@ -32,6 +32,8 @@ fn compact_trusted_types_query(source string) !string {
 fn compact_trusted_types_bootstrap() string {
 	return r'
 (function(){
+ const nativeCreatePolicy=globalThis.__ladybirdCreateTrustedTypePolicy;
+ delete globalThis.__ladybirdCreateTrustedTypePolicy;
  const data=new WeakMap(),policies=new WeakMap(),get=WeakMap.prototype.get,set=WeakMap.prototype.set,has=WeakMap.prototype.has;
  const call=request=>__queryElements("","trustedTypes",JSON.stringify(request),true);
  const string=value=>{if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return String(value);};
@@ -85,6 +87,7 @@ fn compact_trusted_types_bootstrap() string {
     }
    }
    if(name==="default"&&own.defaultPolicy)throw new TypeError("A default policy already exists");
+   if(typeof nativeCreatePolicy==="function")nativeCreatePolicy(name,options.createHTML,options.createScript,options.createScriptURL);
    const policy=Object.create(TrustedTypePolicy.prototype);
    __elementApply(set,policies,[policy,{name,options}]);
    own.names.push(name);

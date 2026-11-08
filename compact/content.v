@@ -43,6 +43,15 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		document: document
 		runtime:  &runtime
 	}
+	if runtime.engine == .javascriptcore {
+		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
+			state := callback_runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
+			defer { state.finish() }
+			mut messages := []string{}
+			apply_javascript_runtime_state(document, state.value, callback_runtime, mut messages)
+			if messages.len != 0 { return error(messages.join('\n')) }
+		})!
+	}
 	install_compact_mutation_observer_binding(mut binding, mut runtime)!
 	install_compact_document_binding(binding, mut runtime)!
 	if runtime.engine == .javascriptcore {
@@ -130,9 +139,10 @@ fn (mut binding CompactElementQueryBinding) query_with_temporary_reply(input str
 		binding.reply_workspace = previous_workspace
 	}
 	value := binding.query(input) or {
-		message := err.msg().clone()
+		binding.reply_workspace.leave()
+		failure := browserjs.copy_host_exception(err)
 		binding.reply_workspace.finish()
-		return error(message)
+		return failure
 	}
 	return browserjs.HostFunctionReply{value: value, workspace: binding.reply_workspace}
 }

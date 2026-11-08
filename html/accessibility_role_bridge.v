@@ -314,7 +314,7 @@ fn dom_csp_initialize_document(_ voidptr, document &dom.Document) {
 	}
 }
 
-fn trusted_types_factory_for_document(document &dom.Document) &trustedtypes.TrustedTypePolicyFactory {
+pub fn trusted_types_factory_for_document(document &dom.Document) &trustedtypes.TrustedTypePolicyFactory {
 	settings_pointer := document.relevant_settings_object()
 	if settings_pointer != unsafe { nil } {
 		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
