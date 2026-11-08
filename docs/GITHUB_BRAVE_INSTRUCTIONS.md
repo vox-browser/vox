@@ -85,6 +85,42 @@ intermediate build attempts c17/c18 produced no executable after their memory
 guards terminated compilation; they contain no browser observations and remain
 in the diagnostic ledger.
 
+
+The next completed production bundle, receipt `20261108-123227-9e5f1952`,
+was measured directly under its artifact lease in c22. It gives maximum Vox
+**9,035,649,175** / minimum Brave **11,005,526,793**, ratio **0.82101015**
+(**17.8990% fewer**). Vox/Brave medians are
+8,950,439,213 / 11,071,898,785.
+All seven alternating pairs, fourteen exact per-engine captures, complete
+content audits and normal browser exits are retained. Its integer gate still
+fails: `90,356,491,750 > 88,044,214,344`; Vox needs another **231,227,741**
+instructions removed at that Brave minimum. Benchmark/guard exit is 1 for the
+failed numerical gate, build guard exit 0. The single-C-unit O3/1500 policy
+matches c16. This is now the best complete observed ratio, but still does not
+meet 20%; median paired savings of 19.9768% do not satisfy the conservative
+gate. Regression tests remain deferred. [Full c22 evidence](performance/github-vlang-instructions-20261108-20pct-c22.json)
+retains build identity, source inputs, exact counters, commands and exits.
+The earlier private candidate9 build and c21 watcher stopped before producing
+an executable or any browser observations; their final exits were unavailable
+on resume and are not inferred to have succeeded.
+
+The following completed production cohort, c23, regresses to maximum Vox
+**9,643,702,027** / minimum Brave **11,064,029,801**, ratio **0.87162654**
+(**12.8373% fewer**). Vox/Brave medians are
+9,503,105,698 / 11,358,357,657. All seven pairs retain exact per-engine pixels,
+complete content audits and normal browser exits; benchmark/guard exit 1
+records the failed numerical gate. Executable
+`c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0`,
+receipt `20261108-132148-eb3fda13`, uses the same single-C-unit O3/1500
+policy but a newer V frontend and concurrent engine changes. It contains the
+compact singleton CSS value prototype. Inspection of its generated C reveals
+that recursive child equality compares slot addresses rather than child values;
+this source candidate requires correction before acceptance. Coarse phase
+markers place most of the extra observed work in paint and capture, without
+proving that equality caused it. C22 remains the best complete result at
+17.8990% fewer. [Full c23 evidence](performance/github-vlang-instructions-20261108-20pct-c23.json)
+retains every observation and build receipt. Regression tests remain deferred.
+
 ## Workload and scope
 
 - Input: Brave's serialized DOM of the hydrated repository page, with every
