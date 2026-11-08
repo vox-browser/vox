@@ -3941,6 +3941,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		parse_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
 	// Scripts and subresource preflight can force layout before relayout().
+	configure_site_animation_clock_demand(app.document)
 	prepare_site_document_stylesheets(app.document)
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)

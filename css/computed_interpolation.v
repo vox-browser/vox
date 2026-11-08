@@ -10961,6 +10961,7 @@ pub mut:
 	font_computer_                                       &FontComputer = unsafe { nil }
 	font_face_set_                                       &FontFaceSet = unsafe { nil }
 	animation_time_ms_                                   f64
+	animation_clock_demand_filter_                       AnimationClockDemandFilter = unsafe { nil }
 	transition_generation_                               int
 	// Arenas for animation samples (css/animation_samples.v), used while the
 	// animated-style update samples targets.
@@ -15865,7 +15866,10 @@ pub fn (mut s StyleComputer) set_animation_time_ms(time_ms f64) {
 				}
 			}
 		}
-		if has_targets { document.set_needs_animated_style_update() }
+		if has_targets && (s.animation_clock_demand_filter_ == unsafe { nil }
+			|| s.animation_clock_demand_filter_(document, s.animation_time_ms_)) {
+			document.set_needs_animated_style_update()
+		}
 	}
 }
 
