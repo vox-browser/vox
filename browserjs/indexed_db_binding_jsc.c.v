@@ -786,9 +786,3 @@ fn (mut runtime Runtime) indexed_db_key_path(value voidptr) !indexeddb.KeyPath {
 	return indexeddb.KeyPath(runtime.indexed_db_dom_string(converted)!)
 }
 
-fn (mut runtime Runtime) indexed_db_key(value voidptr) !indexeddb.Key {
-	input := runtime.indexed_db_input(value)!
-	key := indexeddb.value_to_key(input)
-	if !key.is_valid() { return error('DataError: invalid IndexedDB key') }
-	return key
-}
