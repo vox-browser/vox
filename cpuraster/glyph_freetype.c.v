@@ -23,6 +23,9 @@ $if linux || cpuraster_freetype ? {
 	fn C.cpuraster_ft_bounds(font voidptr, glyph u16, sub_x int, sub_y int, smoothing int, bounds &i32) int
 	fn C.cpuraster_ft_image(font voidptr, glyph u16, sub_x int, sub_y int, smoothing int, pixels &u8, width int, height int, pitch int) int
 	fn C.cpuraster_ft_font_bounds(font voidptr, bounds &f32) int
+	fn C.cpuraster_ft_glyph_type(font voidptr, glyph u16, smoothing int) int
+	fn C.cpuraster_ft_matrix(font voidptr, values &f32)
+	fn C.cpuraster_ft_bitmap(font voidptr, glyph u16, smoothing int, info &i32, pixels &u8) int
 	fn C.cpuraster_ft_path(font voidptr, glyph u16, values &&f64) int
 	fn C.free(ptr voidptr)
 
@@ -38,9 +41,7 @@ $if linux || cpuraster_freetype ? {
 		mut flags := i32(0)
 		font := C.cpuraster_ft_open(path.str, index, &flags)
 		if font == unsafe { nil } { return none }
-		// Bitmap and COLR strikes need their per-glyph color format and paint
-		// graph replay; preserve the native fallback until those are ported.
-		if flags & 1 != 0 || flags & 4 == 0 {
+		if flags & 12 == 0 {
 			C.cpuraster_ft_release(font)
 			return none
 		}
@@ -91,10 +92,56 @@ $if linux || cpuraster_freetype ? {
 		values := [m.text_size_x, m.text_size, r.sx, r.ky, r.kx, r.sy]
 		font := C.cpuraster_ft_strike(face.font, values.data)
 		if font == unsafe { nil } { return none }
-		return GlyphStrike{ font: font, invertible: true, table: mask_gamma_tables[luminance] }
+		mut scalar := [4]f32{}
+		C.cpuraster_ft_matrix(font, &scalar[0])
+		return GlyphStrike{
+			font:       font
+			invertible: true
+			table:      mask_gamma_tables[luminance]
+			transform:  [f64(scalar[0]), -f64(scalar[1]), -f64(scalar[2]), f64(scalar[3]), 0, 0]!
+		}
+	}
+
+	fn freetype_run_supported(s &GlyphStrike, glyphs []u16) bool {
+		if s.font == unsafe { nil } { return true }
+		for id in glyphs {
+			kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
+			if kind < 0 { return false }
+			if kind in [2, 3] {
+				bounds := freetype_glyph_bounds(s, id, 3, 3)
+				if bounds.width >= glyph_max_width || bounds.height > max_untiled_dimension {
+					return false
+				}
+			}
+		}
+		return true
+	}
+
+	fn freetype_bitmap_transform(s &GlyphStrike, info [6]i32, sub_x int, sub_y int) SkAffine {
+		m := SkAffine{ sx: f32(s.transform[0]), ky: -f32(s.transform[1]), kx: -f32(s.transform[2]), sy: f32(s.transform[3]) }
+		return if info[5] == 0 || m.type_mask() != 0 {
+			post_translate(m, f32(sub_x) / 4, f32(sub_y) / 4)
+		} else {
+			m
+		}
+	}
+
+	fn freetype_bitmap_bounds(s &GlyphStrike, info [6]i32, sub_x int, sub_y int) StrikeGlyph {
+		m := freetype_bitmap_transform(s, info, sub_x, sub_y)
+		b := map_rect_affine(Rect{f32(info[0]), f32(info[1]), f32(info[0] + info[2]), f32(info[1] + info[3])}, affine_to_matrix(m))
+		r := round_out(b)
+		return StrikeGlyph{saturate_i16(r.left), saturate_i16(r.top), saturate_u16(r.width()), saturate_u16(r.height()), []u8{}}
 	}
 
 	fn freetype_glyph_bounds(s &GlyphStrike, id u16, sub_x int, sub_y int) StrikeGlyph {
+		kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
+		if kind in [2, 3] {
+			mut info := [6]i32{}
+			if C.cpuraster_ft_bitmap(s.font, id, s.smoothing, &info[0], unsafe { nil }) == 0 {
+				return StrikeGlyph{}
+			}
+			return freetype_bitmap_bounds(s, info, sub_x, sub_y)
+		}
 		mut b := [4]i32{}
 		if C.cpuraster_ft_bounds(s.font, id, sub_x, sub_y, s.smoothing, &b[0]) == 0 {
 			return StrikeGlyph{}
@@ -103,6 +150,8 @@ $if linux || cpuraster_freetype ? {
 	}
 
 	fn freetype_make_glyph(s &GlyphStrike, id u16, sub_x int, sub_y int) StrikeGlyph {
+		kind := C.cpuraster_ft_glyph_type(s.font, id, s.smoothing)
+		if kind in [2, 3] { return freetype_make_bitmap_glyph(s, id, sub_x, sub_y) }
 		g := freetype_glyph_bounds(s, id, sub_x, sub_y)
 		if g.width == 0 || g.height == 0 || g.width >= glyph_max_width { return g }
 		pitch := if s.smoothing == 1 { (g.width + 7) / 8 } else { g.width }
@@ -119,6 +168,37 @@ $if linux || cpuraster_freetype ? {
 					s.table[raw[y * pitch + x]]
 				}
 			}
+		}
+		return StrikeGlyph{g.left, g.top, g.width, g.height, image}
+	}
+
+	fn freetype_make_bitmap_glyph(s &GlyphStrike, id u16, sub_x int, sub_y int) StrikeGlyph {
+		mut info := [6]i32{}
+		if C.cpuraster_ft_bitmap(s.font, id, s.smoothing, &info[0], unsafe { nil }) == 0 {
+			return StrikeGlyph{}
+		}
+		g := freetype_bitmap_bounds(s, info, sub_x, sub_y)
+		if g.width == 0 || g.height == 0 || g.width >= glyph_max_width { return g }
+		w, h := int(info[2]), int(info[3])
+		if w <= 0 || h <= 0 { return StrikeGlyph{} }
+		mut source := []u8{len: w * h * 4}
+		if C.cpuraster_ft_bitmap(s.font, id, s.smoothing, &info[0], source.data) == 0 {
+			return StrikeGlyph{}
+		}
+		m := freetype_bitmap_transform(s, info, sub_x, sub_y)
+		positioned := m44_pre_concat_scale_translate(post_translate(m, -f32(g.left), -f32(g.top)),
+			1, f32(info[0]), f32(info[1]))
+		mut image := []u8{len: g.width * g.height * 4}
+		bitmap := CanvasBitmap{ pixels: source, width: w, height: h, pitch: w * 4, premultiplied: true }
+		if !draw_canvas_image_sampled(mut image, g.width, g.height, g.width * 4, 2,
+			[positioned.sx, positioned.ky, positioned.kx, positioned.sy, positioned.tx, positioned.ty]!,
+			bitmap, [f32(0), 0, f32(w), f32(h)]!, [f32(0), 0, f32(w), f32(h)]!, true, 1, .src_over, [], true) {
+			return StrikeGlyph{}
+		}
+		if info[4] == 0 {
+			mut mask := []u8{len: g.width * g.height}
+			for i in 0 .. mask.len { mask[i] = s.table[image[i * 4 + 3]] }
+			return StrikeGlyph{g.left, g.top, g.width, g.height, mask}
 		}
 		return StrikeGlyph{g.left, g.top, g.width, g.height, image}
 	}

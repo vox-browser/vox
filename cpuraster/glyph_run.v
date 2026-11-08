@@ -18,12 +18,12 @@ import math
 // size, glyph IDs, x and y per glyph, and the blob's origin.
 pub struct CanvasGlyphRun {
 pub:
-	font_path   string
-	face_index  int
-	font_size   f32
-	glyphs      []u16
-	positions   []f32
-	translation [2]f32
+	font_path     string
+	face_index    int
+	font_size     f32
+	glyphs        []u16
+	positions     []f32
+	translation   [2]f32
 	baseline_snap bool
 	// Retained text's native smoothing modes: default, alias, AA, subpixel.
 	smoothing int = 2
@@ -132,11 +132,18 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		for i, id in run.glyphs {
 			if routes[i].kind == .mask {
 				mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-				if strike.glyph_bounds(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y { 0 } else { packed_subpixel(mapped.y) }).width >= glyph_max_width {
+				if strike.glyph_bounds(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+					0
+				} else {
+					packed_subpixel(mapped.y)
+				}).width >= glyph_max_width {
 					return false
 				}
 			}
 		}
+	}
+	$if linux || cpuraster_freetype ? {
+		if !freetype_run_supported(&strike, run.glyphs) { return false }
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	target.ready()
@@ -186,14 +193,18 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		return true
 	}
 	blitter := canvas_draw_blitter(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
-		filter) or { return true }
+		filter) or { Blitter(NullBlitter{}) }
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
 	for i, id in run.glyphs {
 		if routes[i].kind != .mask {
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := strike.glyph(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y { 0 } else { packed_subpixel(mapped.y) })
+		glyph := strike.glyph(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+			0
+		} else {
+			packed_subpixel(mapped.y)
+		})
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
 			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
 			// rejected to a fallback that only draws color glyphs.
@@ -205,6 +216,10 @@ pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alp
 		}
 		x := float_saturate2int(pos.x)
 		y := float_saturate2int(pos.y)
+		if glyph.image.len == glyph.width * glyph.height * 4 {
+			draw_glyph_sprite(mut pixels, pitch, glyph, glyph.left + x, glyph.top + y, &rc, paint_color, alpha, mode, filter)
+			continue
+		}
 		mask := Mask{
 			bounds:    IRect{glyph.left + x, glyph.top + y, glyph.left + x + glyph.width, glyph.top + y +
 				glyph.height}
@@ -230,7 +245,11 @@ fn fill_color_glyphs(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []Gl
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := strike.glyph(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y { 0 } else { packed_subpixel(mapped.y) })
+		glyph := strike.glyph(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+			0
+		} else {
+			packed_subpixel(mapped.y)
+		})
 		if glyph.width == 0 || glyph.height == 0 {
 			continue
 		}
@@ -437,7 +456,9 @@ fn fill_glyph_outlines(mut pixels []u8, pitch int, run CanvasGlyphRun, routes []
 		if run.smoothing == 1 {
 			mut wrapped, bounds := clip_wrapper(rc, blitter)
 			fill_path_region(device, device.convexity() != .concave, bounds, mut wrapped)
-		} else { anti_fill_path_clip(device, false, rc, mut blitter) }
+		} else {
+			anti_fill_path_clip(device, false, rc, mut blitter)
+		}
 	}
 }
 
@@ -599,10 +620,14 @@ fn paint_mask_luminance(color u32, alpha f32, shader ?CanvasShader, filter ?Colo
 	mut g := scale255_3((rgb >> 8 & 0xff) >> 5)
 	mut b := scale255_3((rgb & 0xff) >> 5)
 	if smoothing != 0 {
-		n, d := if smoothing == 1 { u32(1) } else { u32(3) }, if smoothing == 1 { u32(2) } else { u32(4) }
-		r = scale255_3((r*n/d) >> 5)
-		g = scale255_3((g*n/d) >> 5)
-		b = scale255_3((b*n/d) >> 5)
+		n, d := if smoothing == 1 { u32(1) } else { u32(3) }, if smoothing == 1 {
+			u32(2)
+		} else {
+			u32(4)
+		}
+		r = scale255_3((r * n / d) >> 5)
+		g = scale255_3((g * n / d) >> 5)
+		b = scale255_3((b * n / d) >> 5)
 	}
 	return int(compute_luminance(r, g, b) >> 5)
 }
@@ -722,9 +747,9 @@ fn copysign_f32(magnitude f32, sign f32) f32 {
 // remaining transform sA, as SkScalerContext_Mac turns it into fTransform.
 struct GlyphStrikeMatrices {
 	text_size_x f32
-	text_size  f32
-	remaining  SkAffine
-	invertible bool
+	text_size   f32
+	remaining   SkAffine
+	invertible  bool
 }
 
 fn glyph_strike_matrices(size f32, device SkAffine) GlyphStrikeMatrices {
@@ -804,9 +829,9 @@ fn glyph_strike_matrices_full(size f32, device SkAffine, full bool) GlyphStrikeM
 	}
 	return GlyphStrikeMatrices{
 		text_size_x: x_scale
-		text_size:  y_scale
-		remaining:  remaining
-		invertible: true
+		text_size:   y_scale
+		remaining:   remaining
+		invertible:  true
 	}
 }
 
@@ -832,18 +857,20 @@ struct GlyphStrike {
 	transform  [6]f64
 	invertible bool
 mut:
-	table      []u8
+	table     []u8
 	smoothing int = 2
 	// An ARGB32 strike of a color typeface, and its foreground color.
-	snap_x bool
-	snap_y bool
+	snap_x     bool
+	snap_y     bool
 	color      bool
 	foreground u32
 	glyphs     map[u32]StrikeGlyph
 }
 
 fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?GlyphStrike {
-	$if linux || cpuraster_freetype ? { return new_freetype_strike(face, size, device, luminance) }
+	$if linux || cpuraster_freetype ? {
+		return new_freetype_strike(face, size, device, luminance)
+	}
 	m := glyph_strike_matrices(size, device)
 	if !m.invertible {
 		// A singular matrix zeroes fTransform: every glyph is empty.
@@ -878,7 +905,9 @@ fn (mut s GlyphStrike) glyph(id u16, sub_x int, sub_y int) StrikeGlyph {
 // SkScalerContext::internalMakeGlyph() with SkScalerContext_Mac's
 // generateMetrics() and generateImage().
 fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? { return freetype_make_glyph(s, id, sub_x_field, sub_y_field) }
+	$if linux || cpuraster_freetype ? {
+		return freetype_make_glyph(s, id, sub_x_field, sub_y_field)
+	}
 	g := s.glyph_bounds(id, sub_x_field, sub_y_field)
 	if g.width == 0 || g.height == 0 || g.width >= glyph_max_width {
 		return g
@@ -926,7 +955,9 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 			blue := 255 - (p & 0xff)
 			image[row * g_width + column] = if s.smoothing == 1 {
 				if p & 255 < 128 { u8(255) } else { u8(0) }
-			} else { s.table[compute_luminance(red, green, blue)] }
+			} else {
+				s.table[compute_luminance(red, green, blue)]
+			}
 		}
 	}
 	return StrikeGlyph{g_left, g_top, g_width, g_height, image}
@@ -935,7 +966,9 @@ fn (s &GlyphStrike) make_glyph(id u16, sub_x_field int, sub_y_field int) StrikeG
 // generateMetrics()'s bounds, rounded out, outset and saturated; zero for
 // an empty glyph.
 fn (s &GlyphStrike) glyph_bounds(id u16, sub_x_field int, sub_y_field int) StrikeGlyph {
-	$if linux || cpuraster_freetype ? { return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field) }
+	$if linux || cpuraster_freetype ? {
+		return freetype_glyph_bounds(s, id, sub_x_field, sub_y_field)
+	}
 	metrics := glyph_metrics(s.font, id, s.transform) or { return StrikeGlyph{} }
 	// SkFixedToFloat() of the subpixel field.
 	sub_x := f32(sub_x_field) / f32(4)

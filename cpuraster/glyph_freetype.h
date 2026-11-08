@@ -5,6 +5,7 @@
 #include FT_FREETYPE_H
 #include FT_OUTLINE_H
 #include FT_MULTIPLE_MASTERS_H
+#include FT_COLOR_H
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -16,6 +17,7 @@ typedef struct {
     char* path;
     int index;
     FT_Matrix matrix;
+    float scalar[4];
     float size_x, size_y;
 } CPURasterFTFont;
 
@@ -39,7 +41,7 @@ static void* cpuraster_ft_open(const char* path, int index, int* flags) {
         return NULL;
     }
     *flags = (FT_HAS_COLOR(f->face) ? 1 : 0) | (FT_HAS_MULTIPLE_MASTERS(f->face) ? 2 : 0)
-        | (FT_IS_SCALABLE(f->face) ? 4 : 0);
+        | (FT_IS_SCALABLE(f->face) ? 4 : 0) | (FT_HAS_FIXED_SIZES(f->face) ? 8 : 0);
     if (FT_HAS_MULTIPLE_MASTERS(f->face)) {
         FT_MM_Var* axes = NULL;
         if (FT_Get_MM_Var(f->face, &axes) == 0) {
@@ -63,13 +65,28 @@ static void* cpuraster_ft_strike(void* reference, const float* values) {
     CPURasterFTFont* f = (CPURasterFTFont*)cpuraster_ft_open(base->path, base->index, &flags);
     if (!f) return NULL;
     f->size_x = values[0]; f->size_y = values[1];
-    if (!(flags & 4) || FT_Set_Char_Size(f->face, (FT_F26Dot6)(values[0]*64.0f),
-            (FT_F26Dot6)(values[1]*64.0f), 72, 72)) {
-        cpuraster_ft_release(f);
-        return NULL;
-    }
     float sx = values[2], ky = values[3], kx = values[4], sy = values[5];
-    if (values[0] < 1 || values[1] < 1) {
+    if (flags & 4) {
+        if (FT_Set_Char_Size(f->face, (FT_F26Dot6)(values[0]*64.0f),
+                (FT_F26Dot6)(values[1]*64.0f), 72, 72)) {
+            cpuraster_ft_release(f); return NULL;
+        }
+    } else {
+        FT_Pos wanted = (FT_F26Dot6)(values[1]*64.0f), chosen = 0;
+        int strike = -1;
+        for (int i = 0; i < f->face->num_fixed_sizes; ++i) {
+            FT_Pos ppem = f->face->available_sizes[i].y_ppem;
+            if (ppem == wanted) { strike = i; break; }
+            if ((chosen < wanted && chosen < ppem) || (wanted < ppem && ppem < chosen)) {
+                chosen = ppem; strike = i;
+            }
+        }
+        if (strike < 0 || FT_Select_Size(f->face, strike)) { cpuraster_ft_release(f); return NULL; }
+        float x = values[0]/(float)f->face->size->metrics.x_ppem;
+        float y = values[1]/(float)f->face->size->metrics.y_ppem;
+        sx *= x; ky *= x; kx *= y; sy *= y;
+    }
+    if ((flags & 4) && (values[0] < 1 || values[1] < 1)) {
         float upem = (float)f->face->units_per_EM;
         float ppem_x = upem * ((float)f->face->size->metrics.x_scale / 65536.0f) / 64.0f;
         float ppem_y = upem * ((float)f->face->size->metrics.y_scale / 65536.0f) / 64.0f;
@@ -80,17 +97,77 @@ static void* cpuraster_ft_strike(void* reference, const float* values) {
     f->matrix.xy = (FT_Fixed)(-kx*65536.0f);
     f->matrix.yx = (FT_Fixed)(-ky*65536.0f);
     f->matrix.yy = (FT_Fixed)(sy*65536.0f);
+    f->scalar[0] = sx; f->scalar[1] = ky; f->scalar[2] = kx; f->scalar[3] = sy;
     return f;
 }
 
-static int cpuraster_ft_load(CPURasterFTFont* f, uint16_t id, int smoothing) {
+static int cpuraster_ft_load_any(CPURasterFTFont* f, uint16_t id, int smoothing, int outline) {
     FT_Set_Transform(f->face, &f->matrix, NULL);
-    FT_Int32 flags = FT_LOAD_NO_BITMAP | FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH;
+    FT_Int32 flags = FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH;
+    // SkFont disables embedded strikes by default. Bitmap-only faces ignore
+    // this flag; a scalable face must use its outlines even at a strike size.
+    if (outline || FT_IS_SCALABLE(f->face)) flags |= FT_LOAD_NO_BITMAP;
+    if (!FT_IS_SCALABLE(f->face)) flags |= FT_LOAD_COLOR;
     // Rotated/skewed text disables hinting. Canvas text explicitly has none.
     if (smoothing == 2 || f->matrix.xy || f->matrix.yx) flags |= FT_LOAD_NO_HINTING;
     if (smoothing == 1) flags |= FT_LOAD_TARGET_MONO;
-    return FT_Load_Glyph(f->face, id, flags) == 0
+    return FT_Load_Glyph(f->face, id, flags) == 0;
+}
+
+static int cpuraster_ft_colr(CPURasterFTFont* f, uint16_t id) {
+    FT_LayerIterator iter = {0}; FT_UInt glyph, color;
+    if (FT_Get_Color_Glyph_Layer(f->face,id,&glyph,&color,&iter)) return 1;
+    FT_OpaquePaint paint = {0};
+    return FT_Get_Color_Glyph_Paint(f->face,id,FT_COLOR_INCLUDE_ROOT_TRANSFORM,&paint) != 0;
+}
+
+// 0 empty, 1 outline, 2 gray/mono bitmap, 3 color bitmap, -1 unported paint graph.
+static int cpuraster_ft_glyph_type(void* reference, uint16_t id, int smoothing) {
+    CPURasterFTFont* f = (CPURasterFTFont*)reference;
+    if (cpuraster_ft_colr(f,id)) return -1;
+    if (!cpuraster_ft_load_any(f,id,smoothing,0)) return 0;
+    if (f->face->glyph->format == FT_GLYPH_FORMAT_OUTLINE) return 1;
+    if (f->face->glyph->format == FT_GLYPH_FORMAT_BITMAP) {
+        int mode = f->face->glyph->bitmap.pixel_mode;
+        if (mode == FT_PIXEL_MODE_BGRA) return 3;
+        if (mode == FT_PIXEL_MODE_GRAY || mode == FT_PIXEL_MODE_MONO) return 2;
+    }
+    return -1;
+}
+
+static int cpuraster_ft_load(CPURasterFTFont* f, uint16_t id, int smoothing) {
+    return cpuraster_ft_load_any(f,id,smoothing,0)
         && f->face->glyph->format == FT_GLYPH_FORMAT_OUTLINE;
+}
+
+static void cpuraster_ft_matrix(void* reference, float* out) {
+    CPURasterFTFont* f = (CPURasterFTFont*)reference;
+    memcpy(out,f->scalar,4*sizeof(float));
+}
+
+static int cpuraster_ft_bitmap(void* reference, uint16_t id, int smoothing, int32_t* info, uint8_t* pixels) {
+    CPURasterFTFont* f = (CPURasterFTFont*)reference;
+    if (!cpuraster_ft_load_any(f,id,smoothing,0) || f->face->glyph->format != FT_GLYPH_FORMAT_BITMAP) return 0;
+    FT_GlyphSlot glyph = f->face->glyph;
+    FT_Bitmap* b = &glyph->bitmap;
+    info[0] = glyph->bitmap_left; info[1] = -glyph->bitmap_top;
+    info[2] = b->width; info[3] = b->rows;
+    info[4] = b->pixel_mode == FT_PIXEL_MODE_BGRA;
+    info[5] = FT_IS_SCALABLE(f->face);
+    if (!pixels) return 1;
+    for (unsigned y = 0; y < b->rows; ++y) {
+        const uint8_t* row = b->buffer + (ptrdiff_t)y*b->pitch;
+        for (unsigned x = 0; x < b->width; ++x) {
+            uint8_t* p = pixels + ((size_t)y*b->width + x)*4;
+            if (b->pixel_mode == FT_PIXEL_MODE_BGRA) {
+                p[0] = row[x*4+2]; p[1] = row[x*4+1]; p[2] = row[x*4]; p[3] = row[x*4+3];
+            } else {
+                uint8_t a = b->pixel_mode == FT_PIXEL_MODE_MONO ? ((row[x/8] & (128 >> (x%8))) ? 255 : 0) : row[x];
+                p[0] = p[1] = p[2] = p[3] = a;
+            }
+        }
+    }
+    return 1;
 }
 
 static int cpuraster_ft_bounds(void* reference, uint16_t id, int sub_x, int sub_y,
@@ -127,6 +204,9 @@ static int cpuraster_ft_image(void* reference, uint16_t id, int sub_x, int sub_y
 static int cpuraster_ft_font_bounds(void* reference, float* out) {
     CPURasterFTFont* f = (CPURasterFTFont*)reference;
     if (!FT_IS_SCALABLE(f->face) || FT_HAS_MULTIPLE_MASTERS(f->face)) return 0;
+#ifdef FT_CONFIG_OPTION_SVG
+    if (f->face->face_flags & FT_FACE_FLAG_SVG) return 0;
+#endif
     float em = (float)f->face->units_per_EM;
     out[0] = (float)f->face->bbox.xMin / em;
     out[1] = -(float)f->face->bbox.yMax / em;
@@ -166,7 +246,8 @@ static int cpuraster_ft_cubic(const FT_Vector* a, const FT_Vector* b, const FT_V
 static int cpuraster_ft_path(void* reference, uint16_t id, double** output) {
     CPURasterFTFont* f = (CPURasterFTFont*)reference;
     *output = NULL;
-    if (!cpuraster_ft_load(f,id,2)) return -1;
+    if (cpuraster_ft_colr(f,id) || !cpuraster_ft_load_any(f,id,2,1)
+        || f->face->glyph->format != FT_GLYPH_FORMAT_OUTLINE) return -1;
     CPURasterFTPath p = {0};
     FT_Outline_Funcs funcs = {cpuraster_ft_move,cpuraster_ft_line,cpuraster_ft_conic,cpuraster_ft_cubic,0,0};
     if (FT_Outline_Decompose(&f->face->glyph->outline,&funcs,&p)

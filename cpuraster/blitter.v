@@ -33,6 +33,26 @@ mut:
 	blit_anti_v2(x int, y int, a0 u8, a1 u8)
 }
 
+// A transparent/invalid paint shader can suppress A8 masks while a color
+// glyph in the same run still draws as a sprite with its own shader.
+struct NullBlitter {}
+
+fn (mut b NullBlitter) blit_h(x int, y int, width int) {}
+
+fn (mut b NullBlitter) blit_anti_h(x int, y int, mut aa []u8, mut runs []i16) {}
+
+fn (mut b NullBlitter) blit_v(x int, y int, height int, alpha u8) {}
+
+fn (mut b NullBlitter) blit_rect(x int, y int, width int, height int) {}
+
+fn (mut b NullBlitter) blit_anti_rect(x int, y int, width int, height int, left_alpha u8, right_alpha u8) {}
+
+fn (mut b NullBlitter) blit_mask(mask &Mask, clip IRect) {}
+
+fn (mut b NullBlitter) blit_anti_h2(x int, y int, a0 u8, a1 u8) {}
+
+fn (mut b NullBlitter) blit_anti_v2(x int, y int, a0 u8, a1 u8) {}
+
 fn default_blit_anti_rect(mut b Blitter, x_in int, y int, width int, height int, left_alpha u8, right_alpha u8) {
 	mut x := x_in
 	if left_alpha > 0 {
