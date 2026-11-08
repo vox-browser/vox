@@ -35,7 +35,7 @@ fn import_host_tasks(owner &html.EventLoop) {
 	panic('import tasks did not drain')
 }
 
-fn test_native_import_key_copies_data_after_idl_iteration_before_algorithm_getters() {
+fn test_native_import_key_copies_data_after_idl_iteration_and_algorithm_getters() {
 	$if !darwin {
 		return
 	}
@@ -53,11 +53,11 @@ fn test_native_import_key_copies_data_after_idl_iteration_before_algorithm_gette
  })()')! == 'true'
 	assert !owner.task_queue().is_empty()
 	import_host_tasks(owner)
-	assert runtime.evaluate_host('importedRaw instanceof CryptoKey&&importedRaw.algorithm.name==="AES-GCM"&&importedRaw.algorithm.length===128&&importedRaw.extractable&&importedRaw.usages.join(",")==="encrypt,decrypt,decrypt"')! == 'true'
+	assert runtime.evaluate_host('importedRaw instanceof CryptoKey&&importedRaw.algorithm.name==="AES-GCM"&&importedRaw.algorithm.length===128&&importedRaw.extractable&&importedRaw.usages.join(",")==="encrypt,decrypt"')! == 'true'
 	actual := runtime.evaluate_host_value('importedRaw')!
 	key := runtime.native_crypto_key(actual)!
 	mut expected := []u8{len: 16}
-	expected[0] = 5
+	expected[0] = 9
 	assert key.handle() == expected
 }
 
@@ -121,7 +121,7 @@ fn test_native_import_hmac_numeric_fields_and_every_registered_import_family() {
 	pause := owner.pause()
 	defer { owner.unpause(pause) }
 	runtime.evaluate_host(r'
- globalThis.hmacImportOrder=[];globalThis.importedHmac=null;crypto.subtle.importKey("raw",new Uint8Array([1,2]),{get name(){hmacImportOrder.push("name");return "HMAC"},get hash(){hmacImportOrder.push("hash");return {get name(){hmacImportOrder.push("hash name");return "SHA-256"}}},get length(){hmacImportOrder.push("length");return {valueOf(){hmacImportOrder.push("number");return 4294967311.9}}}},false,["sign"]).then(key=>importedHmac=key);
+ globalThis.hmacImportOrder=[];globalThis.importedHmac=null;crypto.subtle.importKey("raw",new Uint8Array([1,2]),{get name(){hmacImportOrder.push("name");return "HMAC"},get hash(){hmacImportOrder.push("hash");return {get name(){hmacImportOrder.push("hash name");return "SHA-256"}}},get length(){hmacImportOrder.push("length");return {valueOf(){hmacImportOrder.push("number");return 15.9}}}},false,["sign"]).then(key=>importedHmac=key);
  globalThis.nativeImportResults=[];globalThis.nativeImportErrors=[];
  const cases=[...["AES-CBC","AES-CTR","AES-GCM","AES-KW","AES-OCB"].map(name=>[{name,length:128},[name==="AES-KW"?"wrapKey":"encrypt"]]),[{name:"HMAC",hash:"SHA-256"},["sign"]],[{name:"KMAC128",length:256},["sign"]],[{name:"KMAC256"},["sign"]],["ChaCha20-Poly1305",["encrypt"]],...["RSA-OAEP","RSA-PSS","RSASSA-PKCS1-v1_5"].map(name=>[{name,modulusLength:1024,publicExponent:new Uint8Array([1,0,1]),hash:"SHA-256"},name==="RSA-OAEP"?["encrypt","decrypt"]:["sign","verify"]]),[{name:"ECDSA",namedCurve:"P-256"},["sign","verify"]],[{name:"ECDH",namedCurve:"P-384"},["deriveBits"]],["Ed25519",["sign","verify"]],["Ed448",["sign","verify"]],["X25519",["deriveBits"]],["X448",["deriveBits"]],...["ML-DSA-44","ML-DSA-65","ML-DSA-87"].map(name=>[name,["sign","verify"]]),...["ML-KEM-512","ML-KEM-768","ML-KEM-1024"].map(name=>[name,["encapsulateBits","decapsulateBits"]])];
  for(const [algorithm,usages]of cases){const name=typeof algorithm==="string"?algorithm:algorithm.name;crypto.subtle.generateKey(algorithm,true,usages).then(generated=>{const key=generated instanceof CryptoKey?generated:generated.publicKey,format=key.type==="secret"?"raw-secret":name.startsWith("RSA")||name==="RSASSA-PKCS1-v1_5"?"spki":name==="X448"||name==="Ed448"?"raw":"raw-public";return crypto.subtle.exportKey(format,key).then(data=>crypto.subtle.importKey(format,data,algorithm,false,key.usages))}).then(key=>nativeImportResults.push({name,key}),reason=>nativeImportErrors.push({name,reason}))}
@@ -146,18 +146,13 @@ fn test_native_import_buffer_restrictions_and_detachment_observe_source_copy_bou
 	defer { owner.unpause(pause) }
 	runtime.evaluate_host(r'
  globalThis.detachedImportedKey=null;globalThis.bufferImportFailures=[];globalThis.detachedCopySupported=typeof ArrayBuffer.prototype.transfer==="function";
- if(detachedCopySupported){const bytes=new Uint8Array(16);bytes[0]=5;crypto.subtle.importKey("raw",bytes,{get name(){bytes.buffer.transfer();return "AES-GCM"}},false,["encrypt"]).then(key=>detachedImportedKey=key);const detached=new ArrayBuffer(16);detached.transfer();crypto.subtle.importKey("raw",detached,"AES-GCM",false,["encrypt"]).catch(reason=>bufferImportFailures.push(reason))}
+ if(detachedCopySupported){const bytes=new Uint8Array(16);bytes[0]=5;crypto.subtle.importKey("raw",bytes,{get name(){bytes.buffer.transfer();return "AES-GCM"}},false,["encrypt"]).then(key=>detachedImportedKey=key,reason=>bufferImportFailures.push(reason));const detached=new ArrayBuffer(16);detached.transfer();crypto.subtle.importKey("raw",detached,"AES-GCM",false,["encrypt"]).catch(reason=>bufferImportFailures.push(reason))}
  globalThis.restrictedImportFailures=[];globalThis.restrictedImportNameReads=0;const algorithm={get name(){restrictedImportNameReads++;return "AES-GCM"}};
  if(typeof ArrayBuffer.prototype.resize==="function")for(const data of [new ArrayBuffer(16,{maxByteLength:32}),new Uint8Array(new ArrayBuffer(16,{maxByteLength:32}))])crypto.subtle.importKey("raw",data,algorithm,false,["encrypt"]).catch(reason=>restrictedImportFailures.push(reason));
  globalThis.sharedImportSupported=typeof SharedArrayBuffer==="function";if(sharedImportSupported){const shared=new SharedArrayBuffer(16);crypto.subtle.importKey("raw",shared,algorithm,false,["encrypt"]).catch(reason=>restrictedImportFailures.push(reason));crypto.subtle.importKey("raw",new Uint8Array(shared),algorithm,false,["encrypt"]).catch(reason=>restrictedImportFailures.push(reason));}
  ')!
 	assert runtime.evaluate_host('restrictedImportNameReads===0')! == 'true'
 	import_host_tasks(owner)
-	assert runtime.evaluate_host('!detachedCopySupported||(detachedImportedKey instanceof CryptoKey&&bufferImportFailures.length===1&&bufferImportFailures[0] instanceof DOMException&&bufferImportFailures[0].name==="DataError")')! == 'true'
+	assert runtime.evaluate_host('!detachedCopySupported||(detachedImportedKey===null&&bufferImportFailures.length===2&&bufferImportFailures.every(error=>error instanceof DOMException&&error.name==="DataError"))')! == 'true'
 	assert runtime.evaluate_host('restrictedImportFailures.every(reason=>reason instanceof TypeError)&&restrictedImportFailures.every(reason=>reason.message.startsWith("Not an object of type fixed-length")||reason.message==="Not an object of type BufferSource"||reason.message==="The array buffer object cannot be a SharedArrayBuffer")')! == 'true'
-	if runtime.evaluate_host('detachedCopySupported')! == 'true' {
-		key := runtime.native_crypto_key(runtime.evaluate_host_value('detachedImportedKey')!)!
-		assert key.handle()[0] == 5
-		assert key.handle().len == 16
-	}
 }

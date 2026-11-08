@@ -174,9 +174,9 @@ fn (mut host CryptoHost) import_key_operation(args []voidptr) !&webidl.Promise {
 		return error('TypeError: Not an object of type BufferSource')
 	}
 	if format == .jwk && buffer { return error('TypeError: Not an object of type JsonWebKey') }
-	if buffer { material = webidl.buffer_source_value(host.copy_crypto_buffer(args[2])!) }
-	// Import copies bytes before algorithm getters. Unlike digest normalization,
-	// those getters cannot subsequently change the imported material.
+	// Normalize before taking the import snapshot. Algorithm getters can change
+	// the BufferSource, whose final bytes belong to the deferred import work.
 	normalized := host.normalize_import(converted, is_object)!
+	if buffer { material = webidl.buffer_source_value(host.copy_crypto_buffer(args[2])!) }
 	return host.service.subtle().import_key(format, material, normalized, extractable, usages)
 }
