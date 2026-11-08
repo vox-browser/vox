@@ -102,6 +102,10 @@ struct ImageShader {
 	lower_weight f32
 	lower_scale_x f32
 	lower_scale_y f32
+	// sk_decal applies its one-pixel edge ramp in layer coordinates, after
+	// sampling the clamped source, before the deferred color filter.
+	layer_decal bool
+	decal_bounds Rect
 mut:
 	// bilerp_clamp_8888_force_highp: device bounds that map outside the
 	// 16-bit range in image space.
@@ -201,7 +205,7 @@ fn (s &ImageShader) fast_bilerp() bool {
 // Whether a stage lacks a lowp version: the bilinear sampler, the repeat
 // tiles, the color space transform and bilerp_clamp_8888_force_highp.
 fn (s &ImageShader) needs_highp() bool {
-	if s.display_p3 || s.lower != unsafe { nil } {
+	if s.display_p3 || s.layer_decal || s.lower != unsafe { nil } {
 		return true
 	}
 	if s.fast_bilerp() {
@@ -338,7 +342,19 @@ fn (s &ImageShader) shade_highp(px int, py int) [4]f32 {
 	if s.premul {
 		pixel.premul()
 	}
-	return [pixel.r, pixel.g, pixel.b, pixel.a]!
+	mut result := [pixel.r, pixel.g, pixel.b, pixel.a]!
+	if s.layer_decal {
+		b := s.decal_bounds
+		left := sksl_saturate(-(b.left - sx) + f32(.5))
+		top := sksl_saturate(-(b.top - sy) + f32(.5))
+		right := sksl_saturate(b.right - sx + f32(.5))
+		bottom := sksl_saturate(b.bottom - sy + f32(.5))
+		x_weight := left * top
+		y_weight := x_weight * right
+		weight := y_weight * bottom
+		for i in 0 .. 4 { result[i] *= weight }
+	}
+	return result
 }
 
 fn (s &ImageShader) sample_highp(x f32, y f32) [4]f32 {

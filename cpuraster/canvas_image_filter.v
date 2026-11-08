@@ -18,9 +18,8 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	mut total := sk_concat(mapped, affine_translate(src.left, src.top))
 	pixel_aligned := total.type_mask() <= affine_translate_mask
 		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
-	if !pixel_aligned && blend_affects_transparent_black(mode) {
-		// Shader-based layer-space decal edges need the remaining
-		// FilterResult sampling stages.
+	if smoothing && !pixel_aligned && blend_affects_transparent_black(mode) && !rect_stays_rect(total) {
+		// Rotated layer-space decal edges require transform decomposition.
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -37,7 +36,8 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	}
 	ix := int(saturate_to_i32(floor_f32(total.tx + f32(.5))))
 	iy := int(saturate_to_i32(floor_f32(total.ty + f32(.5))))
-	sprite := bitmap.premultiplied && treat_as_aa_sprite(total, bitmap.width, bitmap.height)
+	sprite := !blend_affects_transparent_black(mode) && bitmap.premultiplied
+		&& treat_as_aa_sprite(total, bitmap.width, bitmap.height)
 		&& (!smoothing || pixel_aligned)
 		&& (rc.is_bw || rc.aa.quick_contains(ix, iy, ix + bitmap.width, iy + bitmap.height))
 	if sprite {
@@ -45,10 +45,21 @@ fn draw_color_filtered_image(mut pixels []u8, width int, height int, pitch int, 
 	}
 	dev := InverseMatrix{total, total.type_mask()}.map_rect(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)})
 	bounds := round_out(dev)
-	unbounded := blend_affects_transparent_black(mode) && !bounds.contains(rc.bounds())
-	tile := if unbounded { TileMode.decal } else { .clamp }
-	shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, total) }
+	// A clearing blender samples outside the transformed image through a
+	// decal shader. Its destination is the clip, including rotated corners.
+	unbounded := blend_affects_transparent_black(mode)
+	x_scale := if total.sx != 0 { math_abs32(total.sx) } else { math_abs32(total.ky) }
+	y_scale := if total.sy != 0 { math_abs32(total.sy) } else { math_abs32(total.kx) }
+	layer_decal := unbounded && smoothing && !pixel_aligned
+		&& (math_abs32(x_scale - 1) > f32(.2) || math_abs32(y_scale - 1) > f32(.2))
+	tile := if unbounded && !layer_decal { TileMode.decal } else { .clamp }
+	// A runtime decal effect samples its child with an invalid total-matrix
+	// record. SkImageShader therefore keeps the base mip level for that child.
+	mut shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, total, !layer_decal) }
 		else { new_image_shader(bitmap, tile, tile, false, total) }
+	if layer_decal {
+		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true, decal_bounds: dev}}
+	}
 	alpha := f32(u8(global_alpha * f32(255))) * inv_255
 	mut blitter := canvas_filtered_blitter(mut pixels, pitch, 0xff000000, shader, alpha, mode,
 		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, filter,

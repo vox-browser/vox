@@ -171,6 +171,48 @@ fn test_linear_filtered_images_preserve_transforms_and_sampling() {
 	}
 }
 
+fn test_filtered_image_restores_cover_the_clip_with_clearing_blenders() {
+	modes := [BlendMode.src, .src_in, .src_out, .dst_in, .dst_atop, .plus_darker, .plus_lighter]
+	hashes := [
+		['46fcd61c577e37c9', '8df3a99256c17efc', 'ee3b65cf28b7c260', '52bef994eb1f0a52',
+		 '74c6cb30d370371a', '1e7ab89a4da1e16f', '5e28aece98e44f83'],
+		['6a3d3514d69c10b6', '06b178d6241aeedf', '84bb844bc9446aa4', '10b411f2added94d',
+		 '9dcb80513fcef5b6', '4137bfce1d4c56ef', '424a58d921b95596'],
+	]
+	for j, smoothing in [false, true] {
+		for i, mode in modes {
+			assert image_filter_test_hash(ImageTestCase{
+				premultiplied: false
+				display_p3: true
+				source: [f32(1), 1, 5, 4]!
+				destination: [f32(3.25), 4.5, 24, 18]!
+				transform: if smoothing { [f32(1.25), 0, 0, .75, 2, 4]! }
+					else { [f32(.9), .4, -.4, .9, 5, 2]! }
+				alpha: .65
+				mode: mode
+				clip: true
+				smoothing: smoothing
+			}, image_test_contrast_filter(), false) == hashes[j][i]
+		}
+	}
+	assert image_filter_test_hash(ImageTestCase{
+		destination: [f32(3.25), 4.5, 7, 6]!
+		transform: [f32(.9), 0, 0, 1.1, 2, 4]!
+		alpha: .65
+		mode: .src_in
+		clip: true
+		smoothing: true
+	}, image_test_contrast_filter(), false) == 'e9ae408499d06d09'
+	// A runtime decal shader invalidates the child's total-matrix record,
+	// which keeps the base mip level even when the image shrinks.
+	mut pixels := image_test_background()
+	assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, image_test_identity,
+		image_test_bitmap(11, 1, false, false), [f32(0), 0, 11, 1]!,
+		[f32(2.3826473), 7.3846455, 4.1874094, 10.494535]!, true, .999, .plus_lighter, [],
+		new_canvas_filter([image_test_contrast_filter()]), false)
+	assert sha256.sum(pixels).hex()[..16] == 'b597b38558cfdfc1'
+}
+
 fn test_bitmap_space_filtered_images_match_native_cpu_policy() {
 	assert image_filter_test_hash(ImageTestCase{
 		destination: [f32(4.25), 5.5, 30, 25]!

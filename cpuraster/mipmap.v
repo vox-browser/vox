@@ -53,13 +53,13 @@ fn new_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode
 // SkMipmapAccessor's linear mode keeps the floor level and interpolates it
 // with the next smaller image. The pipeline scales the already mapped upper
 // coordinates to reach the lower level, then lerps before alpha conversion.
-fn new_linear_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, total SkAffine) CanvasShader {
+fn new_linear_mipmap_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, total SkAffine, total_matrix_valid bool) CanvasShader {
 	inverse := affine_invert(total) or { return CanvasShader{kind: .empty} }
 	xx, xy := inverse.sx*inverse.sx, inverse.ky*inverse.ky
 	yx, yy := inverse.kx*inverse.kx, inverse.sy*inverse.sy
 	sx, sy := C.sqrtf(xx+xy), C.sqrtf(yx+yy)
 	mut level := f32(0)
-	if is_finite_f32(sx) && is_finite_f32(sy) && math_abs32(sx) > f32(1)/4096 && math_abs32(sy) > f32(1)/4096 {
+	if total_matrix_valid && is_finite_f32(sx) && is_finite_f32(sy) && math_abs32(sx) > f32(1)/4096 && math_abs32(sy) > f32(1)/4096 {
 		scale := fmin_std(f32(1)/sx, f32(1)/sy)
 		if scale > 0 && scale < 1 {
 			l := fmax_std(-C.log2f(scale)-f32(0.5), 0)
