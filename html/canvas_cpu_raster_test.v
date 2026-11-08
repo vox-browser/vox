@@ -590,10 +590,15 @@ fn test_identity_blurs_without_matrices_match_skia() {
 	check_bitmap_commands_match_skia(false, true, false, .plain)
 }
 
+fn test_nearly_integer_source_image_filters_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .near)
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
 	plain
+	near
 }
 
 fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
@@ -628,6 +633,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
 	if spatial { destinations[1] = [f64(100.25), 30.5, 24, 18] }
 	if fractional || identity_mode != .none { destinations[2] = [f64(140.25), 70.5, 28, 24] }
+	if identity_mode == .near { destinations[2] = [f64(150.0004), 70.0006, 6.0006, 3.9996] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
@@ -638,6 +644,7 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 		context.set_filter(if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
 		else if identity_mode == .color && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
 		else if identity_mode == .plain && i == 2 { 'blur(.001px) blur(0px)' }
+		else if identity_mode == .near && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(1.2px)' }
 		else if spatial && i == 2 {
 			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
 		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })

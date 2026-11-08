@@ -38,6 +38,11 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 	// its column dot products associate from the right in float precision.
 	mapped := m44_image_concat(ctm, local)
 	mut total := sk_concat(mapped, affine_translate(src.left, src.top))
+	// applyTransform() replaces the requested sampling with its default
+	// bilinear mode when the incoming transform is nearly integer. draw()
+	// further reduces that default to nearest when the final origin is, too.
+	default_sampling := filter_nearly_integer_translation(mapped)
+	sample_linear := if default_sampling { !filter_nearly_integer_translation(total) } else { smoothing }
 	pixel_aligned := total.type_mask() <= affine_translate_mask
 		&& int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
 	left := int(src.left)
@@ -50,9 +55,14 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 	}
 	ix := int(saturate_to_i32(floor_f32(total.tx + f32(.5))))
 	iy := int(saturate_to_i32(floor_f32(total.ty + f32(.5))))
-	sprite := !blend_affects_transparent_black(mode) && bitmap.premultiplied
+	unbounded := blend_affects_transparent_black(mode)
+	clip_bounds := rc.bounds()
+	covers_clip := !unbounded || filter_quad_contains_rect(total,
+		Rect{0, 0, f32(bitmap.width), f32(bitmap.height)},
+		Rect{f32(clip_bounds.left), f32(clip_bounds.top), f32(clip_bounds.right), f32(clip_bounds.bottom)}).all(it)
+	sprite := covers_clip && bitmap.premultiplied
 		&& treat_as_aa_sprite(total, bitmap.width, bitmap.height)
-		&& (!smoothing || pixel_aligned)
+		&& (!sample_linear || (int_cast_preserves(total.tx) && int_cast_preserves(total.ty)))
 		&& (rc.is_bw || rc.aa.quick_contains(ix, iy, ix + bitmap.width, iy + bitmap.height))
 	if sprite {
 		total = affine_translate(floor_f32(total.tx + f32(.5)), floor_f32(total.ty + f32(.5)))
@@ -61,9 +71,8 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 	bounds := round_out(dev)
 	// A clearing blender samples outside the transformed image through a
 	// decal shader. Its destination is the clip, including rotated corners.
-	unbounded := blend_affects_transparent_black(mode)
 	min_scale, max_scale := image_filter_minmax_scales(total)
-	layer_decal := unbounded && smoothing && !pixel_aligned
+	layer_decal := unbounded && sample_linear && !pixel_aligned
 		&& (math_abs32(min_scale - 1) > f32(.2) || math_abs32(max_scale - 1) > f32(.2))
 	mut pre_decal := total
 	mut decal_inverse := SkAffine{}
@@ -85,7 +94,10 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 	tile := if unbounded && !layer_decal { TileMode.decal } else { .clamp }
 	// A runtime decal effect samples its child with an invalid total-matrix
 	// record. SkImageShader therefore keeps the base mip level for that child.
-	mut shader := if smoothing && !pixel_aligned { new_linear_mipmap_image_shader(bitmap, tile, tile, pre_decal, !layer_decal) }
+	mut shader := if sample_linear && !pixel_aligned {
+		if default_sampling { new_image_shader(bitmap, tile, tile, true, pre_decal) }
+		else { new_linear_mipmap_image_shader(bitmap, tile, tile, pre_decal, !layer_decal) }
+	}
 		else { new_image_shader(bitmap, tile, tile, false, total) }
 	if layer_decal {
 		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true,

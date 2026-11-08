@@ -644,6 +644,48 @@ fn test_identity_blurs_preserve_images_without_color_matrices() {
 	}
 }
 
+fn test_nearly_integer_source_filters_preserve_native_sampling_shortcuts() {
+	contrast := image_test_contrast_filter()
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .001}
+	blur := CanvasFilterStep{kind: .blur, sigma: 1.2}
+	sequences := [[blur], [blur], [blur], [contrast, tiny, opacity, blur],
+		[tiny], [blur], [blur], [opacity], [tiny], [tiny], [blur], [contrast, tiny, opacity, blur]]
+	hashes := ['fa94d509cac7a3aa', 'd0e26776186b8bea', 'acc7141f085d1362', 'edddaf35caff87f0',
+		'3c3fb2d670bf7693', '60aef21c9403b4ef', '0c4068f3faaac712', '61ae453832882d02',
+		'd5ea576df832e18b', '35dc909ee4d6fb74', 'c143b26618f52631', 'f095ad3dcce7789e']
+	for i, steps in sequences {
+		mut pixels := image_test_background()
+		source := if i < 4 || i >= 10 { [f32(0), 0, 7, 6]! } else { [f32(2), 2, 4, 3]! }
+		destination := if i >= 10 { [f32(5.40032), 12.3341333333333, 5.60056, 7.9992]! }
+			else if i < 4 { [f32(10.0004), 12.0006, 7.0007, 5.9994]! }
+			else if i < 8 { [f32(6.0018), 8.0018, 4.0036, 3.0027]! } else { [f32(6), 8, 4.0024, 3.0018]! }
+		alpha := if i in [2, 9, 11] { f32(.65) } else if i in [3, 5] { f32(.7) } else { f32(1) }
+		mode := match i { 1, 3, 9, 10 { BlendMode.src_in } 2, 11 { .multiply } 5 { .plus_lighter }
+			7 { .src } else { .src_over } }
+		transform := if i >= 10 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { image_test_identity }
+		assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+			image_test_bitmap(7, 6, i in [0, 3, 5, 8], i in [2, 4, 5, 7, 8, 11]), source, destination,
+			i < 4 || i == 8 || i >= 10, alpha, mode, image_test_clips(i in [1, 3, 5, 7, 9, 10]), new_canvas_filter(steps), false)
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'near-integer image fixture ${i}'
+	}
+}
+
+fn test_linear_clearing_restore_uses_the_near_scale_sprite_inside_its_image() {
+	image := CanvasBitmap{width: 4, height: 1, pitch: 16, premultiplied: true,
+		pixels: [u8(0), 0, 0, 255, 0, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 255]}
+	mut pixels := image_test_background()
+	filter := new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: .001},
+		CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+			matrix: [f32(8), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0]!}}])
+	assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, image_test_identity, image,
+		[f32(2), 0, 2, 1]!, [f32(6), 6, 2.0018, 1]!, true, 1, .src_in,
+		[rect_path(Rect{7, 6, 8, 7})], filter, false)
+	assert pixels[(6 * 48 + 7) * 4] == 0
+	assert sha256.sum(pixels).hex() == 'a95ab159f7e63159b0dd6f593b1f26b8ef1624f145c8e45f7d010e2c278e8f93'
+}
+
 fn test_rgba_image_sprite_uses_the_native_filter_layer_layout() {
 	mut pixels := []u8{len: 65 * 44 * 4}
 	filter := new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .030803392,

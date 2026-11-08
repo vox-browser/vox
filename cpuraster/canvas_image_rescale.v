@@ -8,10 +8,9 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 	if ctm.kx != 0 || ctm.ky != 0 || step.kind != .blur
 		|| math_abs32(ctm.tx) > 1 << 20 || math_abs32(ctm.ty) > 1 << 20 { return false }
 	local := rect_to_rect(src, dst) or { return false }
-	total := sk_concat(m44_image_concat(ctm, local), affine_translate(src.left, src.top))
-	// The native rescale shortcut retains raw pixels for nearly integer
-	// translations. Those mappings still require deferred-transform support.
-	if filter_nearly_integer_translation(total) { return false }
+	mapped := m44_image_concat(ctm, local)
+	total := sk_concat(mapped, affine_translate(src.left, src.top))
+	default_sampling := filter_nearly_integer_translation(mapped)
 	mut before := step.pre_color.clone()
 	mut stages := step.blur_stages.clone()
 	mut real_blur := false
@@ -48,11 +47,15 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 	filter := new_color_filter(before)
 	bitmap := CanvasBitmap{...image, pixels: image.pixels[int(src.top) * image.pitch + int(src.left) * 4..],
 		width: int(src.right - src.left), height: int(src.bottom - src.top)}
+	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
+		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
+			transform, bitmap, src, dst, mapped, total, mode, clips, step)
+	}
 	prepared := CanvasFilterStep{...step, blur_stages: stages, pre_color: []MatrixColorFilter{},
 		source_image: true, source_padding: true, source_color_info: FilterImageInfo{}}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 		transform, clips, dst, prepared, mode,
-		fn [bitmap, image, src, ctm, total, smoothing, alpha, filter] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
+		fn [bitmap, image, src, ctm, total, smoothing, default_sampling, alpha, filter] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
 			// Build the original source mapping before translating the surface.
 			// Rebuilding it from the shifted CTM changes float association.
 			left := floor_f32(ctm.tx - t[4] + f32(.5))
@@ -65,7 +68,10 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 			covered := filter_quad_contains_rect(total, image_bounds, global).all(it)
 			// Shader tiling is only required at a subset edge that sampling
 			// crosses and that is not an edge of the backing image.
-			edges := filter_quad_contains_rect(total, Rect{.5, .5, image_bounds.right - f32(.5), image_bounds.bottom - f32(.5)},
+			x_aligned, y_aligned := filter_nearly_integer_axes(total)
+			sx := f32(.5) + if default_sampling && !x_aligned { image_filter_round_epsilon } else { f32(0) }
+			sy := f32(.5) + if default_sampling && !y_aligned { image_filter_round_epsilon } else { f32(0) }
+			edges := filter_quad_contains_rect(total, Rect{sx, sy, image_bounds.right - sx, image_bounds.bottom - sy},
 				Rect{global.left + f32(.5), global.top + f32(.5), global.right - f32(.5), global.bottom - f32(.5)})
 			strict := !(edges[0] || src.top == 0) || !(edges[1] || src.right == f32(image.width))
 				|| !(edges[2] || src.bottom == f32(image.height)) || !(edges[3] || src.left == 0)
@@ -73,7 +79,8 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 			local_matrix := if strict { total } else { sk_concat(total, affine_translate(-src.left, -src.top)) }
 			mapped := sk_concat(affine_translate(-left, -top), local_matrix)
 			tile := if covered { TileMode.clamp } else { .decal }
-			shader := if smoothing { new_linear_mipmap_image_shader(backing, tile, tile, mapped, true) }
+			shader := if default_sampling { new_image_shader(backing, tile, tile, true, mapped) }
+				else if smoothing { new_linear_mipmap_image_shader(backing, tile, tile, mapped, true) }
 				else { new_image_shader(backing, tile, tile, false, mapped) }
 			if mut blitter := canvas_draw_blitter_for_surface(mut layer, w * 4, 0xff000000,
 				shader, alpha, .src, Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)},

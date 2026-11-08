@@ -152,11 +152,17 @@ fn blur_layer_sigma(sigma f32) f32 {
 // FilterResult's pixel-alignment test intentionally allows 1e-3 of error.
 // It can reduce bilinear sampling to nearest without snapping the matrix.
 fn filter_nearly_integer_translation(m SkAffine) bool {
+	x, y := filter_nearly_integer_axes(m)
+	return x && y
+}
+
+fn filter_nearly_integer_axes(m SkAffine) (bool, bool) {
 	e := image_filter_round_epsilon
-	return math_abs32(m.sx - 1) <= e && math_abs32(m.sy - 1) <= e
-		&& math_abs32(m.kx) <= e && math_abs32(m.ky) <= e
+	x := math_abs32(m.sx - 1) <= e && math_abs32(m.kx) <= e
 		&& math_abs32(m.tx - floor_f32(m.tx + f32(.5))) <= e
+	y := math_abs32(m.sy - 1) <= e && math_abs32(m.ky) <= e
 		&& math_abs32(m.ty - floor_f32(m.ty + f32(.5))) <= e
+	return x, y
 }
 
 // SkBlurImageFilter::onFilterImage() with Builder::blur() on a decal

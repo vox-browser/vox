@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2462,7 +2462,9 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
 	identity_layers := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-layers'
 	identity_sampling := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-sampling'
-	resampled := identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	factored := os.getenv('CPU_RASTER_CHECKS') == 'near-integer-factored-images'
+	near_integer := factored || os.getenv('CPU_RASTER_CHECKS') == 'near-integer-image-layers'
+	resampled := near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
 	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
@@ -2594,6 +2596,30 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 		if identity_sampling {
 			c = BitmapCase{...c, filters: [cpuraster.CanvasFilterStep{kind: .blur, sigma: .001},
 				cpuraster.CanvasFilterStep{kind: .blur}]}
+		}
+		if near_integer {
+			sx, sy := f32(1) + f32(rand.f64() * .0018 - .0009), f32(1) + f32(rand.f64() * .0018 - .0009)
+			c = BitmapCase{...c,
+				transform: [f32(1), 0, 0, 1, 0, 0]!
+				destination: [f32(4) + c.source[0] * sx, f32(6) + c.source[1] * sy, c.source[2] * sx, c.source[3] * sy]!
+				filters: if i % 2 == 0 { [cpuraster.CanvasFilterStep{kind: .blur, sigma: 1.2}] }
+					else { [cpuraster.CanvasFilterStep{kind: .blur, sigma: .001}] }
+			}
+			if factored {
+				mx, my := f32(rand.f64() * 2.75 + .25), f32(rand.f64() * 2.75 + .25)
+				tx, ty := f32(rand.f64() * 20 - 10), f32(rand.f64() * 20 - 10)
+				lx, ly := (f32(4) - tx) / mx, (f32(6) - ty) / my
+				local_sx, local_sy := sx / mx, sy / my
+				c = BitmapCase{...c, transform: [mx, 0, 0, my, tx, ty]!,
+					destination: [lx + c.source[0] * local_sx, ly + c.source[1] * local_sy,
+						c.source[2] * local_sx, c.source[3] * local_sy]!}
+			}
+			if i % 3 == 0 {
+				mut filters := random_color_filters()
+				filters << c.filters
+				filters << random_color_filters()
+				c = BitmapCase{...c, filters: filters}
+			}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
