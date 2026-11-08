@@ -10926,6 +10926,8 @@ pub mut:
 	part_rules                   []&MatchingRule
 	other_rules                  []&MatchingRule
 	rules_by_animation_keyframes map[string]&KeyFrameSet
+	pseudo_subject_index_ready_ bool
+	pseudo_subject_rules_ map[PseudoElement]&RuleCache
 }
 
 @[heap]

@@ -306,6 +306,12 @@ fn rule_cache_bucket_has_pseudo_element(bucket []&MatchingRule, pseudo_element P
 }
 
 fn (cache &RuleCache) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	// This public coarse query also supports manually updated bucket vectors
+	// and mutable MatchingRule hints. Keep reading those live views directly.
+	return cache.has_pseudo_subject_candidate(abstract_element, pseudo_element)
+}
+
+fn (cache &RuleCache) has_pseudo_subject_candidate(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
 	element := abstract_element.element()
 	report_empty_pseudo_candidate_indexes(cache, element)
 	if retain_empty_pseudo_candidate_lookups || cache.rules_by_class.len > 0 {
@@ -765,6 +771,7 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 		}
 
 		rule_cache.add_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
+		rule_cache.index_pseudo_subject_rule(matching_rule, pseudo_element, contains_root_pseudo_class)
 	}
 	context.rule_index++
 }
@@ -2297,6 +2304,11 @@ fn style_scope_proximity(target &dom.Element, root &dom.Element) int {
 // Consume the same ordered candidate buckets as matching_rule_buckets(),
 // without allocating a temporary array of borrowed array headers.
 fn style_scope_add_cached_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, cache &RuleCache, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
+	selected := pseudo_subject_rule_cache(cache, abstract_element) or { return }
+	style_scope_add_subject_rules_to_run(style_computer, abstract_element, selected, rule_root, shadow_root, element_shadow_root, mut rules_to_run)
+}
+
+fn style_scope_add_subject_rules_to_run(style_computer &StyleComputer, abstract_element dom.AbstractElement, cache &RuleCache, rule_root ?&dom.ShadowRoot, shadow_root ?&dom.ShadowRoot, element_shadow_root ?&dom.ShadowRoot, mut rules_to_run []ScopedMatchingRule) {
 	// Empty buckets cannot contribute candidates or require element metadata.
 	element := abstract_element.element()
 	if cache.rules_by_class.len > 0 {
@@ -2379,15 +2391,26 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 		shadow_host = root.host()
 	}
 
+	primary_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name)
+	subject_node := abstract_element.element().as_node()
+	// In the ordinary document tree there are no host, slot or part scopes
+	// which could contribute a rule after an empty primary lookup.
+	if !disable_pseudo_subject_rule_index && shadow_root == none && element_shadow_root == none
+		&& subject_node.assigned_slot_internal() == none {
+		if cache := primary_cache {
+			if pseudo_subject_rule_cache(cache, abstract_element) == none { return []ScopedMatchingRule{} }
+		} else {
+			return []ScopedMatchingRule{}
+		}
+	}
 	mut candidate_buffer := style_computer.acquire_matching_rule_candidates()
 	mut rules_to_run := unsafe { candidate_buffer.rules }
 	defer {
 		style_computer.release_matching_rule_candidates(mut candidate_buffer, rules_to_run)
 	}
-	subject_node := abstract_element.element().as_node()
 	subject_is_reslotted_slot := subject_node.is_html_slot_element()
 		&& subject_node.root().is_shadow_root()
-	if rule_cache := scope.rule_cache_for_cascade_origin(cascade_origin, qualified_layer_name) {
+	if rule_cache := primary_cache {
 		style_scope_add_cached_rules_to_run(style_computer, abstract_element, rule_cache, scope_rule_root, shadow_root, element_shadow_root, mut rules_to_run)
 	}
 	// A shadow host also participates in the author scope of its own shadow
