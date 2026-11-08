@@ -4714,14 +4714,15 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					accumulated_text.write_string(' ')
 					accumulated_text.write_string(result)
 				}
-				if accumulated_text.str().trim_space().len == 0 && target == .name {
+				accumulated_name := accumulated_text.str()
+				if accumulated_name.trim_space().len == 0 && target == .name {
 					if aria_label := element.get_attribute('aria-label') {
 						if aria_label.trim_space().len > 0 {
 							return aria_label
 						}
 					}
 				}
-				return accumulated_text.str()
+				return accumulated_name
 			}
 		}
 

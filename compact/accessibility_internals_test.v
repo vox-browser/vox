@@ -17,6 +17,7 @@ const label=id=>window.internals.getComputedLabel(document.getElementById(id)),r
 if(label("plain")!=="Save file"||role("plain")!=="button")fail("button "+label("plain")+" "+role("plain"));
 if(label("labelled")!=="Close"||role("labelled")!=="button")fail("aria-label");
 if(role("field")!=="textbox")fail("textbox role "+role("field"));
+if(label("field")!=="Name")fail("aria-labelledby "+label("field"));
 if(label("image")!=="Logo"||role("image")!=="image")fail("img "+label("image")+" "+role("image"));
 if(role("navigation")!=="navigation"||role("none")!=="generic")fail("roles "+role("navigation")+" "+role("none"));
 document.getElementById("labelled").setAttribute("aria-label","Dismiss");
