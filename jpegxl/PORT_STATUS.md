@@ -95,7 +95,15 @@ no successful or error records were overridden. These comparisons also exposed
 and corrected early Huffman alphabet-size validation and overly restrictive
 hybrid selectors; their regressions are committed separately.
 
-Remaining work includes streaming/checkpoints, metadata/color headers, modular prediction/transforms, VarDCT,
+The entropy reader also has bounded checkpoints. It snapshots only the ring
+positions that speculative decoding may overwrite, then restores copy counters,
+ANS state and deferred errors. Eighty-four frozen source checkpoint/replay
+transcripts cover Huffman/ANS, LZ77, padded maps, in-flight copies and error
+states. Ring-wrap, bound and type-mismatch checks run separately. Default and
+no-GC checks pass; excessive rewinds return an error instead of slicing beyond
+the checkpoint. The BitReader cursor remains the caller's separate snapshot.
+
+Remaining work includes container/API streaming, metadata/color headers, modular prediction/transforms, VarDCT,
 filtering, color conversion, orientation, exact alpha quantization and browser
 integration. The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
