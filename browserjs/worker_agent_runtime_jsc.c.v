@@ -42,20 +42,40 @@ mut:
 // A worker owns one transport for both synchronous script loading and fetch().
 // A supplied transport is useful for deterministic replay; otherwise use Curl.
 pub fn WorkerAgentRuntime.create(url dom.URL, options html.WorkerOptions, outside html.SerializedEnvironmentSettingsObject, creation_time f64, transport ?&fetch.FetchHost) !&WorkerAgentRuntime {
+	return WorkerAgentRuntime.create_kind(url, options, outside, creation_time, transport, false)
+}
+
+pub fn WorkerAgentRuntime.create_shared(url dom.URL, options html.WorkerOptions, outside html.SerializedEnvironmentSettingsObject, creation_time f64, transport ?&fetch.FetchHost) !&WorkerAgentRuntime {
+	return WorkerAgentRuntime.create_kind(url, options, outside, creation_time, transport, true)
+}
+
+fn WorkerAgentRuntime.create_kind(url dom.URL, options html.WorkerOptions, outside html.SerializedEnvironmentSettingsObject, creation_time f64, transport ?&fetch.FetchHost, is_shared bool) !&WorkerAgentRuntime {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	// The caller can release its startup frame or scratch arena immediately.
 	owned := html.decode_serialized_environment_settings_object(html.encode_serialized_environment_settings_object(outside))!
 	entry_url := dom.URL{value: url.serialize().clone()}
 	mut realm := &html.ScriptingRealm{}
-	mut scope := html.DedicatedWorkerGlobalScope.create(entry_url, html.WorkerOptions{...options, name: options.name.clone()}, realm)
+	mut shared_scope := ?&html.SharedWorkerGlobalScope(none)
+	mut scope := if is_shared {
+		secure := match owned.global {
+			html.SerializedWindow { owned.global.associated_document.relevant_settings_object_is_secure_context }
+			html.SerializedWorkerGlobalScope { owned.global.relevant_settings_object_is_secure_context }
+		}
+		actual := html.SharedWorkerGlobalScope.create(entry_url, html.WorkerOptions{...options, name: options.name.clone()}, owned.origin.serialize(), secure, realm)
+		shared_scope = actual
+		&actual.WorkerGlobalScope
+	} else {
+		actual := html.DedicatedWorkerGlobalScope.create(entry_url, html.WorkerOptions{...options, name: options.name.clone()}, realm)
+		&actual.WorkerGlobalScope
+	}
 	scope.owner_set_ << match owned.global {
 		html.SerializedWindow { html.WorkerGlobalOwner(owned.global.associated_document) }
 		html.SerializedWorkerGlobalScope { html.WorkerGlobalOwner(owned.global) }
 	}
-	environment := html.WorkerEnvironmentSettingsObject.setup(&scope.WorkerGlobalScope, mut realm, owned, creation_time)
-	mut runtime := if options.type_ == .module_ { Runtime.create_for_module_worker() } else { Runtime.create_for_worker() }
-	mut global := WorkerGlobalHost.create(environment)!
+	environment := html.WorkerEnvironmentSettingsObject.setup(scope, mut realm, owned, creation_time)
+	mut runtime := if options.type_ == .module_ { Runtime.create_for_module_worker() } else if is_shared { Runtime.create_for_shared_worker() } else { Runtime.create_for_worker() }
+	mut global := if actual := shared_scope { WorkerGlobalHost.create_shared(environment, actual)! } else { WorkerGlobalHost.create(environment)! }
 	mut agent := &WorkerAgentRuntime{
 		environment: environment
 		options: html.WorkerOptions{...options, name: options.name.clone()}
@@ -118,7 +138,7 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 }
 
 fn (mut agent WorkerAgentRuntime) perform_script_fetch(request &fetch.Request, top html.TopLevelModule) !&fetch.Response {
-	entry := top == .yes && if destination := request.destination { destination == .worker } else { false }
+	entry := top == .yes && if destination := request.destination { destination in [.worker, .shared_worker] } else { false }
 	if agent.options.type_ == .module_ {
 		mut actual := unsafe { &fetch.Request(request) }
 		actual.credentials_mode = worker_module_credentials(agent.options.credentials)
@@ -171,7 +191,8 @@ pub fn (mut agent WorkerAgentRuntime) load_entry() ! {
 		result.script = script
 	}
 	defer { platform.release_closure(voidptr(complete)) }
-	html.fetch_classic_worker_script(agent.entry_url, agent.outside, .worker, agent.environment.settings, agent.scripts.perform_fetch, complete)!
+	destination := if agent.global.shared_scope != none { fetch.Destination.shared_worker } else { fetch.Destination.worker }
+	html.fetch_classic_worker_script(agent.entry_url, agent.outside, destination, agent.environment.settings, agent.scripts.perform_fetch, complete)!
 	actual := result.script or { return error('NetworkError: worker entry script could not be loaded') }
 	mut script := unsafe { &html.ClassicScript(actual) }
 	if reason := script.error_to_rethrow() { return error(reason) }
@@ -228,8 +249,9 @@ fn (mut agent WorkerAgentRuntime) load_module_entry() ! {
 		return agent.perform_script_fetch(request, top)
 	}
 	defer { platform.release_closure(voidptr(perform)) }
+	destination := if agent.global.shared_scope != none { fetch.Destination.shared_worker } else { fetch.Destination.worker }
 	html.fetch_module_worker_script_graph(agent.entry_url, agent.environment.settings,
-		.worker, agent.environment.settings, perform, complete)!
+		destination, agent.environment.settings, perform, complete)!
 	if actual := result.script { module_script = unsafe { &html.JavaScriptModuleScript(actual) } }
 	script := module_script or { return error('NetworkError: worker module graph could not be loaded') }
 	if script.kind != .javascript { return error('Worker entry must be a JavaScript module') }

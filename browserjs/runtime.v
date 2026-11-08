@@ -115,6 +115,10 @@ pub fn Runtime.create_for_worker() &Runtime {
 	return Runtime.create_with_global(.javascriptcore, true)
 }
 
+pub fn Runtime.create_for_shared_worker() &Runtime {
+	return Runtime.create_with_global_kind(.javascriptcore, 2)
+}
+
 // Apple's module API requires its ordinary global class. Keep the worker's
 // bindings as own properties rather than altering the realm's Object.prototype.
 pub fn Runtime.create_for_module_worker() &Runtime {
@@ -128,11 +132,17 @@ pub fn Runtime.create_with_engine(engine Engine) &Runtime {
 }
 
 fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
+	return Runtime.create_with_global_kind(engine, if worker_global { 1 } else { 0 })
+}
+
+fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin || linux || windows {
-		if engine == .javascriptcore { context = create_javascript_core_context(worker_global) }
+		if engine == .javascriptcore {
+			context = if global_kind == 2 { create_javascript_core_shared_context() } else { create_javascript_core_context(global_kind == 1) }
+		}
 	}
 	mut runtime := &Runtime{
 		engine:   engine

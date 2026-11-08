@@ -84,6 +84,8 @@ pub fn (mut host WorkerHost) install(mut runtime Runtime) ! {
 		host.close()
 		worker_host_bindings_.delete(owner)
 	})
+	mut shared_host := SharedWorkerHost.create(host.settings, host.executable)!
+	shared_host.install(mut runtime)!
 }
 
 fn (mut remote RemoteWorker) disconnect() {

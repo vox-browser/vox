@@ -100,6 +100,10 @@ fn create_javascript_core_context(worker_global bool) voidptr {
 	return C.vox_browserjs_create_agent_context(i32(worker_global))
 }
 
+fn create_javascript_core_shared_context() voidptr {
+	return C.vox_browserjs_create_agent_context(2)
+}
+
 fn release_javascript_core_context(context voidptr) {
 	C.JSGlobalContextRelease(context)
 }

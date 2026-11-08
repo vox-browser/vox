@@ -25,6 +25,7 @@ pub:
 	options html.WorkerOptions
 	outside html.SerializedEnvironmentSettingsObject
 	creation_time f64
+	is_shared bool
 }
 
 fn validate_worker_startup_time(value f64) ! {
@@ -43,7 +44,7 @@ pub fn encode_worker_startup(startup WorkerStartup) ![]u8 {
 	length := u64(26) + u64(address.len) + u64(startup.options.name.len) + u64(settings.len)
 	if length > u64(worker_message_max_bytes) { return error('Worker startup exceeds the frame limit') }
 	mut bytes := []u8{cap: int(length)}
-	bytes << 'VXS1'.bytes()
+	bytes << if startup.is_shared { 'VXS2'.bytes() } else { 'VXS1'.bytes() }
 	worker_message_write_u32(mut bytes, u32(address.len))
 	worker_message_write_u32(mut bytes, u32(startup.options.name.len))
 	worker_message_write_u32(mut bytes, u32(settings.len))
@@ -59,7 +60,8 @@ pub fn encode_worker_startup(startup WorkerStartup) ![]u8 {
 pub fn decode_worker_startup(bytes []u8) !WorkerStartup {
 	if bytes.len > worker_message_max_bytes { return error('Worker startup exceeds the frame limit') }
 	mut reader := WorkerMessageReader{bytes: bytes}
-	if reader.take(4)! != 'VXS1'.bytes() { return error('Invalid worker startup version') }
+	version := reader.take(4)!.bytestr()
+	if version !in ['VXS1', 'VXS2'] { return error('Invalid worker startup version') }
 	address_length := reader.read_u32()!
 	name_length := reader.read_u32()!
 	settings_length := reader.read_u32()!
@@ -86,5 +88,6 @@ pub fn decode_worker_startup(bytes []u8) !WorkerStartup {
 		}
 		outside: html.decode_serialized_environment_settings_object(settings)!
 		creation_time: creation_time
+		is_shared: version == 'VXS2'
 	}
 }
