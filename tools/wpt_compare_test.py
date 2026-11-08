@@ -10,7 +10,7 @@ from urllib.request import ProxyHandler, Request, build_opener
 
 from wpt_compare import (REPORT_SCRIPT, WARMUP, Limits, Runner, RunAborted, Server, Session, discover_tests,
                          group_rss, make_handler, signal_process_group, substitute, summarize,
-                         upstream_testharness, format_report)
+                         upstream_testharness, format_report, suite_passes)
 
 HARNESS = ('var settings = { output: !(globalThis.internals && globalThis.internals.headless),\n'
            'harness_timeout:{ "normal":150000, "long":300000 } };\n'
@@ -122,6 +122,19 @@ class SessionTests(unittest.TestCase):
 
 
 class SummaryTests(unittest.TestCase):
+    def test_all_pass_gate_requires_every_selected_case_with_real_passing_results(self):
+        tests = [dict(id='a'), dict(id='b')]
+        good = [record('vox', 'a', 1), record('vox', 'b', 1)]
+        self.assertTrue(suite_passes(tests, good, ['vox']))
+        for rows in (good[:1], [good[0], good[0]], good + [record('vox', 'c', 1)],
+                     [good[0], record('vox', 'b', 1, ('FAIL',))],
+                     [good[0], record('vox', 'b', 1, ())],
+                     [good[0], record('vox', 'b', 1, harness='TIMEOUT')]):
+            with self.subTest(rows=rows):
+                self.assertFalse(suite_passes(tests, rows, ['vox']))
+        self.assertFalse(suite_passes(tests, good, ['vox', 'brave']))
+        self.assertFalse(suite_passes([], [], ['vox']))
+
     def test_timing_uses_only_clean_completions_in_both_browsers(self):
         tests = [dict(id=name) for name in ('a', 'b', 'c', 'd')]
         records = [

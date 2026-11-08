@@ -636,6 +636,20 @@ def completed_cleanly(record):
         and not any(item['status'] in ('TIMEOUT', 'NOTRUN') for item in record['subtests'])
 
 
+def suite_passes(tests, records, browsers):
+    expected = {test['id'] for test in tests}
+    if not expected or len(expected) != len(tests):
+        return False
+    for browser in browsers:
+        rows = [row for row in records if row['browser'] == browser]
+        if len(rows) != len(expected) or {row['test'] for row in rows} != expected:
+            return False
+        if any(row['outcome'] != 'COMPLETE' or row['harness'] != 'OK' or not row['subtests']
+               or any(test['status'] != 'PASS' for test in row['subtests']) for row in rows):
+            return False
+    return bool(browsers)
+
+
 def same_results(left, right):
     return sorted((item['name'], item['status']) for item in left['subtests']) \
         == sorted((item['name'], item['status']) for item in right['subtests'])
@@ -912,10 +926,7 @@ def run(args, tests, browsers, executables):
     print(report)
     if changed:
         print(f'error: inputs changed during the run: {changed}', file=sys.stderr)
-    all_pass = all(len([record for record in records if record['browser'] == browser
-                       and record['outcome'] == 'COMPLETE' and record['harness'] == 'OK'
-                       and all(test['status'] == 'PASS' for test in record['subtests'])]) == len(tests)
-                   for browser in browsers)
+    all_pass = suite_passes(tests, records, browsers)
     return 1 if changed or aborted or (args.require_all_pass and not all_pass) else 0
 
 
