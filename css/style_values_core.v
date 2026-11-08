@@ -2145,6 +2145,8 @@ pub enum Keyword {
 	trim_start
 	trim_end
 	trim_both
+	last
+	anchor_center
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3052,6 +3054,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
 		.manual { 'manual' }
+		.last { 'last' }
+		.anchor_center { 'anchor-center' }
 	}
 }
 
@@ -3064,6 +3068,8 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
+	if name == 'last' { return .last }
+	if name == 'anchor-center' { return .anchor_center }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false

@@ -6265,83 +6265,77 @@ fn (mut parser Parser) parse_gap_shorthand(mut tokens ComponentValueStream) ?Sty
 // PropertyParsing.cpp: Parser::parse_place_items_value.
 fn (mut parser Parser) parse_place_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	align := parser.parse_css_value_for_properties([PropertyID.align_items], mut transaction) or {
+	align := parser.parse_align_items_value(mut transaction) or {
 		return none
 	}
 	transaction.consume_whitespace()
 	if !transaction.has_more_tokens() {
-		if !property_accepts_keyword(.justify_items, align.style_value.to_keyword()) {
-			return none
-		}
 		tokens = transaction
 		return StyleValue(ShorthandStyleValue.create(.place_items, [
 			PropertyID.align_items,
 			PropertyID.justify_items,
-		], [align.style_value, align.style_value]))
+		], [align, align]))
 	}
 
-	justify := parser.parse_css_value_for_properties([PropertyID.justify_items], mut transaction) or {
+	justify := parser.parse_justify_items_value(mut transaction) or {
 		return none
 	}
 	tokens = transaction
 	return StyleValue(ShorthandStyleValue.create(.place_items, [
 		PropertyID.align_items,
 		PropertyID.justify_items,
-	], [align.style_value, justify.style_value]))
+	], [align, justify]))
 }
 
 // PropertyParsing.cpp: Parser::parse_place_content_value.
 fn (mut parser Parser) parse_place_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	align := parser.parse_css_value_for_properties([PropertyID.align_content], mut transaction) or {
+	align := parser.parse_align_content_value(mut transaction) or {
 		return none
 	}
 	transaction.consume_whitespace()
 	if !transaction.has_more_tokens() {
-		if !property_accepts_keyword(.justify_content, align.style_value.to_keyword()) {
-			return none
-		}
+		justify := if align.to_keyword() == .baseline || align.to_string() == 'last baseline' {
+			StyleValue(KeywordStyleValue.create(.start))
+		} else { align }
 		tokens = transaction
 		return StyleValue(ShorthandStyleValue.create(.place_content, [
 			PropertyID.align_content,
 			PropertyID.justify_content,
-		], [align.style_value, align.style_value]))
+		], [align, justify]))
 	}
 
-	justify := parser.parse_css_value_for_properties([PropertyID.justify_content], mut transaction) or {
+	justify := parser.parse_justify_content_value(mut transaction) or {
 		return none
 	}
 	tokens = transaction
 	return StyleValue(ShorthandStyleValue.create(.place_content, [
 		PropertyID.align_content,
 		PropertyID.justify_content,
-	], [align.style_value, justify.style_value]))
+	], [align, justify]))
 }
 
 // PropertyParsing.cpp: Parser::parse_place_self_value.
 fn (mut parser Parser) parse_place_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	mut transaction := tokens.clone()
-	align := parser.parse_css_value_for_properties([PropertyID.align_self], mut transaction) or {
+	align := parser.parse_align_self_value(mut transaction) or {
 		return none
 	}
 	transaction.consume_whitespace()
 	if !transaction.has_more_tokens() {
-		if !property_accepts_keyword(.justify_self, align.style_value.to_keyword()) {
-			return none
-		}
 		tokens = transaction
 		return StyleValue(ShorthandStyleValue.create(.place_self, [
 			PropertyID.align_self,
 			PropertyID.justify_self,
-		], [align.style_value, align.style_value]))
+		], [align, align]))
 	}
 
-	justify := parser.parse_css_value_for_properties([PropertyID.justify_self], mut transaction) or {
+	justify := parser.parse_justify_self_value(mut transaction) or {
 		return none
 	}
 	tokens = transaction
 	return StyleValue(ShorthandStyleValue.create(.place_self, [PropertyID.align_self,
-		PropertyID.justify_self], [align.style_value, justify.style_value]))
+		PropertyID.justify_self], [align, justify]))
 }
 
 // https://drafts.csswg.org/css-overflow/#propdef-overflow  ->  <'overflow-x'> <'overflow-y'>?
@@ -8390,19 +8384,19 @@ fn (mut parser Parser) parse_object_fit_value(mut tokens ComponentValueStream) ?
 
 fn (mut parser Parser) parse_align_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['normal', 'start', 'flex-start', 'end',
-		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch'])
+	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'flex-start', 'end',
+		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'baseline', 'safe', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_align_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_align_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe'])
 }
 
@@ -8436,21 +8430,21 @@ fn (mut parser Parser) parse_image_rendering_value(mut tokens ComponentValueStre
 
 fn (mut parser Parser) parse_justify_content_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['normal', 'start', 'end', 'flex-start',
+	return parse_alignment_keyword_value(mut tokens, ['normal', 'start', 'end', 'flex-start',
 		'flex-end', 'center', 'space-between', 'space-around', 'space-evenly', 'stretch', 'left',
-		'right'])
+		'right', 'safe', 'unsafe'])
 }
 
 fn (mut parser Parser) parse_justify_items_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'legacy', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch',
 		'unsafe', 'left', 'right'])
 }
 
 fn (mut parser Parser) parse_justify_self_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_alignment_keyword_value(mut tokens, ['auto', 'baseline', 'center', 'end', 'flex-end',
+	return parse_alignment_keyword_value(mut tokens, ['anchor-center', 'auto', 'baseline', 'center', 'end', 'flex-end',
 		'flex-start', 'normal', 'safe', 'self-end', 'self-start', 'start', 'stretch', 'unsafe',
 		'left', 'right'])
 }
@@ -9573,17 +9567,54 @@ fn parse_property_keyword_value(mut tokens ComponentValueStream, allowed_keyword
 	return StyleValue(KeywordStyleValue.create(keyword))
 }
 
-// Rust value_parser.rs parse_alignment_property(): align-items, align-self, justify-items, and justify-self accept one
-// of their listed keywords, except that the overflow-position keywords `safe` and `unsafe` are not values on their
-// own.
+// Rust value_parser.rs parse_alignment_property(): preserve the overflow and
+// baseline qualifiers, and canonicalize first baseline and legacy ordering.
 fn parse_alignment_keyword_value(mut tokens ComponentValueStream, allowed_keywords []string) ?StyleValue {
 	mut transaction := tokens.clone()
-	value := parse_property_keyword_value(mut transaction, allowed_keywords) or { return none }
-	if value is KeywordStyleValue && value.keyword() in [.safe, .unsafe_] {
-		return none
+	transaction.consume_whitespace()
+	first := transaction.consume() or { return none }
+	if !first.is(.ident) { return none }
+	mut words := [first.token().ident().to_lower()]
+	if words[0] in ['safe', 'unsafe', 'first', 'last', 'legacy'] {
+		mut second_stream := transaction.clone()
+		second_stream.consume_whitespace()
+		if second := second_stream.consume() {
+			if !second.is(.ident) { return none }
+			words << second.token().ident().to_lower()
+			transaction = second_stream
+		} else if words[0] != 'legacy' { return none }
+	} else if 'legacy' in allowed_keywords && words[0] in ['left', 'right', 'center'] {
+		mut second_stream := transaction.clone()
+		second_stream.consume_whitespace()
+		if second := second_stream.consume() {
+			if second.is(.ident) && second.token().ident().to_lower() == 'legacy' {
+				words << 'legacy'
+				transaction = second_stream
+			}
+		}
+	}
+	if words.len == 1 {
+		if words[0] !in allowed_keywords || words[0] in ['safe', 'unsafe'] { return none }
+	} else if words.len == 2 {
+		if words[0] in ['first', 'last'] && words[1] == 'baseline' {
+			if 'baseline' !in allowed_keywords { return none }
+			if words[0] == 'first' { words = ['baseline'] }
+		} else if words[0] in ['safe', 'unsafe'] {
+			if words[1] !in allowed_keywords || (words[1] !in ['start', 'end', 'center',
+				'flex-start', 'flex-end', 'self-start', 'self-end', 'left', 'right']
+				&& !(words[1] == 'normal' && 'auto' in allowed_keywords)) { return none }
+		} else if 'legacy' in allowed_keywords && 'legacy' in words {
+			position := if words[0] == 'legacy' { words[1] } else { words[0] }
+			if position !in ['left', 'right', 'center'] { return none }
+			words = ['legacy', position]
+		} else { return none }
+	} else { return none }
+	mut values := []StyleValue{}
+	for word in words {
+		values << StyleValue(KeywordStyleValue.create(keyword_from_string(word) or { return none }))
 	}
 	tokens = transaction
-	return value
+	return if values.len == 1 { values[0] } else { StyleValue(StyleValueList.create(values, .space, .yes)) }
 }
 
 fn parse_property_keyword_value_from_metadata(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
