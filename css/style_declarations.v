@@ -993,6 +993,10 @@ pub fn (mut properties CSSStyleProperties) set_property(property_name string, va
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty
 pub fn (mut properties CSSStyleProperties) set_property_internal(property PropertyNameAndID, value string, priority string) ! {
 	properties.ensure_declarations_parsed()
+	if properties.is_position_try_descriptors() {
+		if property.is_custom_property() || priority != '' { return }
+		if !is_accepted_position_try_property(property.id() or { return }) { return }
+	}
 	// NB: Steps 1 and 2 only apply to the IDL method that invokes this.
 
 	// 3. If value is the empty string, invoke removeProperty() with property as argument and return.
@@ -1263,6 +1267,7 @@ pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text s
 	properties.clear_typed_properties_cache()
 	properties.properties = parsed.properties.clone()
 	properties.custom_properties = parsed.custom_properties.clone()
+	properties.filter_position_try_descriptors()
 }
 
 pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyNameAndID) ?StyleProperty {

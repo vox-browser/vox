@@ -93,6 +93,7 @@ class CSSStyleProperties extends CSSStyleDeclaration {}
 Object.defineProperty(CSSStyleDeclaration.prototype,Symbol.toStringTag,{value:"CSSStyleDeclaration",configurable:true});
 Object.defineProperty(CSSStyleProperties.prototype,Symbol.toStringTag,{value:"CSSStyleProperties",configurable:true});
 Object.defineProperties(globalThis,{CSSStyleDeclaration:{value:CSSStyleDeclaration,writable:true,configurable:true},CSSStyleProperties:{value:CSSStyleProperties,writable:true,configurable:true}});
+if(typeof CSSPositionTryDescriptors==="function"){Object.setPrototypeOf(CSSPositionTryDescriptors,CSSStyleDeclaration);Object.setPrototypeOf(CSSPositionTryDescriptors.prototype,CSSStyleDeclaration.prototype);}
 Object.defineProperty(globalThis,"getComputedStyle",{writable:true,configurable:true,enumerable:true,value:function getComputedStyle(element,pseudoElement){
  "use strict";
  if(this!==undefined&&this!==null&&this!==globalThis)throw new TypeError("Illegal Window receiver");

@@ -1199,6 +1199,9 @@ fn (mut parser RuleSelectorParser) convert_to_rule_impl(rule Rule, nested Parser
 	platform.cooperative_work_checkpoint()
 	match rule {
 		AtRule {
+			if equals_ignoring_ascii_case(rule.name, 'position-try') {
+				return parser.convert_to_position_try_rule(rule)
+			}
 			if equals_ignoring_ascii_case(rule.name, 'keyframes')
 				|| equals_ignoring_ascii_case(rule.name, '-webkit-keyframes') {
 				return parser.convert_to_keyframes_rule(rule)
@@ -3566,6 +3569,7 @@ fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(ru
 }
 
 fn rule_context_type_for_at_rule_local(name string) RuleContext {
+	if equals_ignoring_ascii_case(name,'position-try') { return .style }
 	if equals_ignoring_ascii_case(name, 'media') {
 		return .media
 	}

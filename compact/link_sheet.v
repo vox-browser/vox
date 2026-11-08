@@ -175,7 +175,7 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 			'keyText' { result = rule.key_text() }
 			'setKeyText' { rule.set_key_text(request.value.clone()) }
 			'name' {
-				result = if rule.type_ == .keyframes { rule.keyframes_name() } else { rule.layer_name() or { '' } }
+				result = if rule.type_ == .keyframes { rule.keyframes_name() } else if rule.type_ == .position_try { rule.position_try_name() } else { rule.layer_name() or { '' } }
 			}
 			'setName' { rule.set_keyframes_name(request.value.clone()) }
 			'prefix' { result = rule.namespace_rule_prefix() }
@@ -252,7 +252,9 @@ fn (mut binding CompactElementQueryBinding) css_sheet_query(source string) !stri
 					'styleRemove' { result = declaration.remove_property(request.name)! }
 					'styleReplace' { declaration.set_css_text(request.value.clone())! }
 					'supported' {
-						result = css.property_id_from_string(request.name) != none || request.name.starts_with('--')
+						result = if rule.type_ == .position_try {
+							if property := css.property_id_from_string(request.name) { css.is_accepted_position_try_property(property) } else { false }
+						} else { css.property_id_from_string(request.name) != none || request.name.starts_with('--') }
 					}
 					else { return error('Invalid CSSStyleDeclaration operation') }
 				}
@@ -355,6 +357,10 @@ __cssRuleInterface("CSSLayerStatementRule",CSSRule,{});
 __cssRuleInterface("CSSScopeRule",__cssGrouping,{});
 __cssRuleInterface("CSSPageRule",__cssGrouping,{style:__cssRuleStyle,selectorText:{get(){return __cssCall(__cssRuleId(this),"selector");},set(value){__cssCall(__cssRuleId(this),"setSelector",{value:__cssString(value)});}}});
 __cssRuleInterface("CSSFontFaceRule",CSSRule,{style:{get:__cssRuleStyle.get}});
+__cssRuleInterface("CSSPositionTryRule",CSSRule,{name:{get(){return __cssCall(__cssRuleId(this),"name");}},style:__cssRuleStyle});
+function CSSPositionTryDescriptors(){throw new TypeError("Illegal CSSPositionTryDescriptors constructor");}
+Object.defineProperty(CSSPositionTryDescriptors.prototype,Symbol.toStringTag,{value:"CSSPositionTryDescriptors",configurable:true});
+Object.defineProperty(globalThis,"CSSPositionTryDescriptors",{value:CSSPositionTryDescriptors,writable:true,configurable:true});
 __cssRuleInterface("CSSKeyframeRule",CSSRule,{style:__cssRuleStyle,keyText:{get(){return __cssCall(__cssRuleId(this),"keyText");},set(value){__cssCall(__cssRuleId(this),"setKeyText",{value:__cssString(value)});}}});
 __cssRuleInterface("CSSKeyframesRule",CSSRule,{
  name:{get(){return __cssCall(__cssRuleId(this),"name");},set(value){__cssCall(__cssRuleId(this),"setName",{value:__cssString(value)});}},
@@ -367,7 +373,7 @@ __cssRuleInterface("CSSNestedDeclarations",CSSRule,{style:{get:__cssRuleStyle.ge
 __cssRuleInterface("CSSPropertyRule",CSSRule,{});
 __cssRuleInterface("CSSCounterStyleRule",CSSRule,{});
 __cssRuleInterface("CSSFontFeatureValuesRule",CSSRule,{});
-const __cssRuleKinds={style:CSSStyleRule,media:"CSSMediaRule",supports:"CSSSupportsRule",container_rule:"CSSContainerRule",layer_block:"CSSLayerBlockRule",layer_statement:"CSSLayerStatementRule",scope:"CSSScopeRule",page:"CSSPageRule",font_face:"CSSFontFaceRule",keyframe:"CSSKeyframeRule",keyframes:"CSSKeyframesRule",namespace_rule:"CSSNamespaceRule",import_rule:"CSSImportRule",nested_declarations:"CSSNestedDeclarations",property:"CSSPropertyRule",counter_style:"CSSCounterStyleRule",font_feature_values:"CSSFontFeatureValuesRule"};
+const __cssRuleKinds={style:CSSStyleRule,media:"CSSMediaRule",supports:"CSSSupportsRule",container_rule:"CSSContainerRule",layer_block:"CSSLayerBlockRule",layer_statement:"CSSLayerStatementRule",scope:"CSSScopeRule",page:"CSSPageRule",font_face:"CSSFontFaceRule",keyframe:"CSSKeyframeRule",keyframes:"CSSKeyframesRule",namespace_rule:"CSSNamespaceRule",import_rule:"CSSImportRule",nested_declarations:"CSSNestedDeclarations",property:"CSSPropertyRule",counter_style:"CSSCounterStyleRule",font_feature_values:"CSSFontFeatureValuesRule",position_try:"CSSPositionTryRule"};
 function __cssRulePrototype(record){
  const kind=__cssRuleKinds[record.kind];
  if(kind===undefined)return record.type===1?CSSStyleRule.prototype:CSSRule.prototype;
@@ -382,7 +388,7 @@ function __cssDeclaration(id,rule){const query=(op,fields={})=>__cssCall(id,op,f
  removeProperty(name){if(!arguments.length)throw new TypeError("removeProperty requires a name");return query("styleRemove",{name:__cssString(name)});},
  item(index){if(!arguments.length)throw new TypeError("item requires an index");return query("styleItem",{index:(+index)>>>0});},
  *[Symbol.iterator](){for(let i=0;i<this.length;i++)yield this.item(i);}
- };return new Proxy(target,{get(target,key,receiver){if(Reflect.has(target,key)||typeof key!=="string")return Reflect.get(target,key,receiver);if(/^(0|[1-9][0-9]*)$/.test(key))return target.item(Number(key))||undefined;const name=__inlineStyleName(key);return query("supported",{name})?query("styleValue",{name}):undefined;},set(target,key,value,receiver){if(Reflect.has(target,key)||typeof key!=="string")return Reflect.set(target,key,value,receiver);const name=__inlineStyleName(key);if(!query("supported",{name}))return Reflect.set(target,key,value,receiver);query("styleSet",{name,value:value===null?"":__cssString(value)});return true;}});}
+ };if(rule instanceof CSSPositionTryRule)Object.setPrototypeOf(target,CSSPositionTryDescriptors.prototype);return new Proxy(target,{get(target,key,receiver){if(Reflect.has(target,key)||typeof key!=="string")return Reflect.get(target,key,receiver);if(/^(0|[1-9][0-9]*)$/.test(key))return target.item(Number(key))||undefined;const name=__inlineStyleName(key);return query("supported",{name})?query("styleValue",{name}):undefined;},set(target,key,value,receiver){if(Reflect.has(target,key)||typeof key!=="string")return Reflect.set(target,key,value,receiver);const name=__inlineStyleName(key);if(!query("supported",{name}))return Reflect.set(target,key,value,receiver);query("styleSet",{name,value:value===null?"":__cssString(value)});return true;}});}
 function MediaList(){throw new TypeError("Illegal MediaList constructor");}
 Object.defineProperties(MediaList.prototype,{
  [Symbol.toStringTag]:{value:"MediaList",configurable:true},

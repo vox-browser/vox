@@ -31,6 +31,7 @@ pub enum CSSRuleType {
 	scope
 	function_rule
 	function_declarations
+	position_try
 }
 
 // The rule types whose C++ class derives from CSSGroupingRule, i.e. the rules
@@ -55,7 +56,7 @@ pub fn (t CSSRuleType) type_for_bindings() u16 {
 		.counter_style { 11 }
 		.supports { 12 }
 		.font_feature_values { 14 }
-		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .container_rule, .function_rule, .function_declarations {
+		.layer_block, .layer_statement, .nested_declarations, .property, .scope, .container_rule, .function_rule, .function_declarations, .position_try {
 			0
 		}
 	}
@@ -83,6 +84,7 @@ pub fn (t CSSRuleType) class_name() string {
 		.scope { 'CSSScopeRule' }
 		.function_rule { 'CSSFunctionRule' }
 		.function_declarations { 'CSSFunctionDeclarations' }
+		.position_try { 'CSSPositionTryRule' }
 	}
 }
 
@@ -982,6 +984,7 @@ pub fn (rule &CSSRule) parent_layer_internal_qualified_name_slow_case() string {
 
 pub fn (rule &CSSRule) serialized() string {
 	return match rule.type_ {
+		.position_try { rule.serialized_position_try_rule() }
 		.media {
 			rule.serialized_media_rule()
 		}
@@ -2986,6 +2989,7 @@ pub enum RuleContext {
 fn rule_context_type_for_rule(rule_type CSSRuleType) RuleContext {
 	return match rule_type {
 		.style, .nested_declarations { .style }
+		.position_try { .style }
 		.counter_style { .counter_style }
 		.media { .media }
 		.font_face { .font_face }
