@@ -14,7 +14,9 @@ fn (mut app BrowserApp) complete_site_stylesheet_update() bool {
 		|| !site_batches_image_completion_layout(app.document.url.serialize()) {
 		return false
 	}
-	app.document.set_needs_full_style_update(true)
+	// Installing the link's CSSOM sheet already invalidates matching subjects,
+	// inherited descendants and any broad @rule effects. Do not replace that
+	// invalidation plan with a whole-document restyle for every lazy chunk.
 	if !app.defer_javascript_layout_to_current_frame() {
 		app.relayout(app.viewport_width, app.viewport_height + app.chrome_height())
 	}

@@ -81,3 +81,33 @@ fn test_site_stylesheet_completion_keeps_non_github_and_initial_boundaries() {
 	app.document.url = dom.URL{ value: 'https://example.org/' }
 	assert !app.complete_site_stylesheet_update()
 }
+
+fn test_github_stylesheet_completion_keeps_targeted_cssom_invalidation() {
+	mut app := github_stylesheet_layout_fixture()
+	defer { app.document.finalize() }
+	stable := app.document.get_element_by_id('stable')?
+	before := voidptr(css.computed_properties_for_element(stable)?)
+	app.document.reset_style_invalidation_counters()
+	app.frame_preparation_depth = 1
+	github_test_complete_stylesheet(mut app, 'vox-test-site-sheet-targeted', '#target{width:80px}')
+	if !disable_github_stylesheet_layout_reuse {
+		assert !app.document.needs_full_style_update()
+		assert app.document.style_invalidation_counters().full_style_invalidations == 0
+	}
+	app.finish_frame_preparation()
+	target := app.document.get_element_by_id('target')?
+	assert app.root_box.find_box(i64(target.as_node().unique_id()))?.border_box().width == 80 * app.document.layout_coordinate_scale()
+	if !disable_github_stylesheet_layout_reuse {
+		assert voidptr(css.computed_properties_for_element(stable)?) == before
+	}
+}
+
+fn test_github_stylesheet_completion_preserves_broad_layer_invalidation() {
+	mut app := github_stylesheet_layout_fixture()
+	defer { app.document.finalize() }
+	app.frame_preparation_depth = 1
+	github_test_complete_stylesheet(mut app, 'vox-test-site-sheet-layer', '@layer new-layer;')
+	if !disable_github_stylesheet_layout_reuse { assert app.document.needs_full_style_update() }
+	app.finish_frame_preparation()
+	assert app.document.layout_is_up_to_date()
+}
