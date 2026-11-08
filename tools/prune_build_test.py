@@ -1,5 +1,7 @@
 import os
 from pathlib import Path
+import subprocess
+import sys
 from tempfile import TemporaryDirectory
 import time
 import unittest
@@ -113,6 +115,20 @@ class PruneBuildTests(unittest.TestCase):
             sealed.chmod(0o555)
             self.prune(root)
             self.assertFalse((root / 'Build/copied-app').exists())
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'user-immutable flags are a macOS detail')
+    def test_user_immutable_sealed_copies_are_removed(self):
+        with TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            contents = write(root / 'Build/sealed-browser/Brave Browser.app/Contents/Info.plist').parent
+            age(root / 'Build/sealed-browser')
+            subprocess.run(['chflags', 'uchg', str(contents)], check=True)
+            try:
+                report = self.prune(root)
+            finally:
+                subprocess.run(['chflags', '-R', 'nouchg', directory], capture_output=True)
+            self.assertFalse((root / 'Build/sealed-browser').exists())
+            self.assertEqual([reason for _, _, reason in report], ['idle job output'])
 
     def test_receipts_keep_small_records_and_payloads_only_where_needed(self):
         with TemporaryDirectory() as directory:

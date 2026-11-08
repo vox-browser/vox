@@ -87,18 +87,32 @@ def remove(path):
             raise
         os.chmod(os.path.dirname(name), 0o755)
         function(name)
-    if path.is_dir() and not path.is_symlink():
-        shutil.rmtree(path, onerror=writable)
-    else:
-        path.unlink(missing_ok=True)
+    def delete():
+        if path.is_dir() and not path.is_symlink():
+            shutil.rmtree(path, onerror=writable)
+        else:
+            path.unlink(missing_ok=True)
+    try:
+        delete()
+    except PermissionError:
+        # Some jobs "sealed" copied inputs with user-immutable flags.
+        if sys.platform != 'darwin':
+            raise
+        subprocess.run(['chflags', '-R', 'nouchg,nouappnd', str(path)], capture_output=True)
+        delete()
 
 
 def retire(path, reason, dry_run, report, size=None):
     if size is None:
         size = scan(str(path))[1]
-    report.append((size, str(path), reason))
     if not dry_run:
-        remove(path)
+        try:
+            remove(path)
+        except OSError as error:
+            # macOS protects launched app bundles (App Management); keep going.
+            report.append((0, str(path), 'not removed: ' + error.strerror))
+            return
+    report.append((size, str(path), reason))
 
 
 def published_receipt(state):
@@ -184,13 +198,18 @@ def main():
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
     report = prune(ROOT, args.idle_hours, args.dry_run)
+    failed = [item for item in report if item[2].startswith('not removed')]
+    removed = [item for item in report if not item[2].startswith('not removed')]
     if args.verbose:
-        for size, path, reason in sorted(report, reverse=True):
+        for size, path, reason in sorted(removed, reverse=True):
             print(f'{size / 2**20:10.1f} MiB  {reason}: {path}')
-    total = sum(size for size, _, _ in report)
+    for _, path, reason in failed:
+        print(f'{reason}: {path}', file=sys.stderr)
+    total = sum(size for size, _, _ in removed)
     verb = 'Would remove' if args.dry_run else 'Removed'
-    print(f'{verb} {len(report)} Build/ entries ({total / 2**30:.2f} GiB)')
-    return 0
+    print(f'{verb} {len(removed)} Build/ entries ({total / 2**30:.2f} GiB)'
+          + (f'; {len(failed)} could not be removed' if failed else ''))
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
