@@ -11,7 +11,7 @@ if [ "$#" -ne 0 ]; then
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 # Match the supervisor's protocol; stale workers hand off before compiling.
-if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v6 ]; then
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v7 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -78,7 +78,9 @@ linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler"
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
-set -- -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
+v_backend=${VOX_BUILD_BACKEND:-c}
+case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
+set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
     -path "$repo_dir|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib" -gc "$gc_mode"

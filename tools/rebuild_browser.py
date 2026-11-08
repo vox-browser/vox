@@ -23,8 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v6'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v6.lock'
+BUILD_PROTOCOL = 'bundle-lease-v7'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v7.lock'
 PUBLICATION_REVIEW_GRACE_SECONDS = 5
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
@@ -102,7 +102,7 @@ def pending_c_mode(state):
     return 'parallel'
 
 
-def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None):
+def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None, backend=None):
     validate_repository(root)
     state = production_state_dir(root)
     with lock(state / 'queue.lock'):
@@ -113,9 +113,13 @@ def enqueue(root, background=True, c_mode=None, v_prod=None, renderer=None):
             renderer = prior.get('renderer', 'gg') if prior.get('id') != started.get('id') else 'gg'
         if renderer not in {'gg','skia'}:
             raise ValueError('Unknown renderer: ' + str(renderer))
+        if backend is None and prior.get('id') != started.get('id'):
+            backend = prior.get('backend')
+        if backend not in {None, 'c', 'fastc'}:
+            raise ValueError('Unknown backend: ' + str(backend))
         write_json(state / 'request.json', dict(id=uuid.uuid4().hex,
                    head=git(root, 'rev-parse', 'HEAD').decode().strip(),
-                   c_mode=c_mode or pending_c_mode(state), v_prod=prod, renderer=renderer))
+                   c_mode=c_mode or pending_c_mode(state), v_prod=prod, renderer=renderer, backend=backend))
         if background:
             with (state / 'worker.log').open('ab') as log:
                 subprocess.Popen([sys.executable, str(root / 'tools/rebuild_browser.py'), '--worker'],
@@ -287,6 +291,10 @@ def build_pending(root, runner=run_build, foreground=False):
                 environment['VOX_BUILD_C_MODE'] = request.get('c_mode') or 'parallel'
                 environment['VOX_BUILD_V_PROD'] = '1' if request.get('v_prod') else '0'
                 environment['VOX_USE_SKIA'] = '1' if request.get('renderer') == 'skia' else '0'
+                if request.get('backend'):
+                    environment['VOX_BUILD_BACKEND'] = request['backend']
+                else:
+                    environment.pop('VOX_BUILD_BACKEND', None)
                 code = runner(root, stage, receipt, environment)
                 record = dict(request=request, inputs=before, exit=code)
                 c_compile = read_json(receipt / 'c-compile.json')
@@ -348,7 +356,7 @@ def build_pending(root, runner=run_build, foreground=False):
                                 matches = (matches_compiled_checkout(root, frozen) if frozen else
                                            same_build_inputs(repository_state(root), before))
                                 same_options = all(latest.get(key) == request.get(key)
-                                                   for key in ('renderer', 'c_mode', 'v_prod'))
+                                                   for key in ('renderer', 'c_mode', 'v_prod', 'backend'))
                                 if (not matches or not same_options) and time.monotonic() - ready_time >= PUBLICATION_REVIEW_GRACE_SECONDS:
                                     record.update(superseded=True, publication_deferred='reader lease held; newer source requested')
                                     write_json(receipt / 'result.json', record)
@@ -368,7 +376,8 @@ def build_pending(root, runner=run_build, foreground=False):
             # the final request check and unlock cannot lose its wake-up.
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
-                same_renderer = latest.get('renderer','gg') == request.get('renderer','gg')
+                same_renderer = (latest.get('renderer','gg') == request.get('renderer','gg')
+                                 and latest.get('backend') == request.get('backend'))
                 from production_source_manifest import matches_compiled_checkout
                 if latest['id'] == request['id'] or (same_renderer and (
                     same_build_inputs(repository_state(root), record['verified_inputs'])
@@ -436,7 +445,11 @@ def main():
                         help='with --build: split C units, also with literal --prod')
     parser.add_argument('--prod', action='store_true',
                         help="with --build: literal V -prod, without custom C optimization flags")
+    parser.add_argument('--backend', choices=['c', 'fastc'],
+                        help='with --request or --build: explicitly select the compiler backend')
     args = parser.parse_args()
+    if args.backend and not (args.request or args.build):
+        parser.error('--backend requires --request or --build')
     if args.no_parallel_cc and not args.build:
         parser.error('--no-parallel-cc requires --build')
     if args.prod and not args.build:
@@ -449,7 +462,7 @@ def main():
         install_hook(ROOT)
         return 0
     if args.request:
-        enqueue(ROOT)
+        enqueue(ROOT, backend=args.backend)
         return 0
     if args.upgrade_worker:
         request_worker_upgrade(ROOT)
@@ -462,7 +475,7 @@ def main():
             parser.error('VOX_USE_SKIA must be 0 or 1')
         enqueue(ROOT, background=False, c_mode='parallel' if args.parallel_cc else
                 'single' if args.no_parallel_cc or args.prod else 'parallel',
-                v_prod=args.prod, renderer='skia' if legacy == '1' else 'gg')
+                v_prod=args.prod, renderer='skia' if legacy == '1' else 'gg', backend=args.backend)
     code = build_pending(ROOT, foreground=args.build)
     try:
         prune_build.prune(ROOT)

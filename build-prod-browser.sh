@@ -78,7 +78,7 @@ export MACOSX_DEPLOYMENT_TARGET
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v6 ]; then
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v7 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -327,7 +327,9 @@ fi
 # compiler selection has produced a successful binary with stale imported
 # catalog constants, despite -nocache; explicit C generation retains the new
 # module initializers. Validate the resulting executable in a fresh process.
-set -- -b c -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
+v_backend=${VOX_BUILD_BACKEND:-c}
+case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 # Verify the staged compiler's actual library too. Legacy builds are explicit;
 # unsupported default compilers must not silently produce a Skia-default app.
@@ -411,7 +413,7 @@ fi
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
-set -- -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then

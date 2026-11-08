@@ -15,6 +15,36 @@ import rebuild_browser as build
 
 
 class ProductionBuildTests(unittest.TestCase):
+    def test_explicit_backend_survives_pending_automatic_requests_then_uses_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);state=build.production_state_dir(root)
+            with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
+                build.enqueue(root,background=False,backend='c')
+                build.enqueue(root,background=False)
+                pending=json.loads((state/'request.json').read_text())
+                self.assertEqual(pending['backend'],'c')
+                build.write_json(state/'started.json',dict(id=pending['id']))
+                build.enqueue(root,background=False)
+                self.assertIsNone(json.loads((state/'request.json').read_text())['backend'])
+                with self.assertRaises(ValueError):build.enqueue(root,background=False,backend='c -evil')
+
+    @unittest.skipUnless(sys.platform=='darwin','macOS application-directory publication')
+    def test_backend_change_rebuilds_with_the_requested_environment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);self.app(root/'Build/v',b'old')
+            state=build.production_state_dir(root)
+            build.write_json(state/'request.json',dict(id='one',backend='fastc'))
+            modes=[]
+            def compile(repo,stage,receipt,environment):
+                mode=environment['VOX_BUILD_BACKEND'];modes.append(mode)
+                self.app(stage,mode.encode())
+                if len(modes)==1:build.write_json(state/'request.json',dict(id='two',backend='c'))
+                return 0
+            with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='same')):
+                self.assertEqual(build.build_pending(root,compile),0)
+            self.assertEqual(modes,['fastc','c'])
+            self.assertEqual((root/'Build/v/Vox.app/Contents/MacOS/Vox').read_bytes(),b'c')
+
     @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
     def test_completed_artifact_reader_blocks_publication_until_its_check_finishes(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -321,7 +351,7 @@ class ProductionBuildTests(unittest.TestCase):
             ]
             runtime_inputs = [
                 'main.v', 'layout/paint.v', 'layout/test_helpers.v',
-                'native_browser_tab_titles_test_darwin.h',
+                'native/include/native_browser_tab_titles_test_darwin.h',
                 'tools/test_runtime_bridge.h', 'tools/native_runtime_test.h',
                 'tools/build_mac_graphite.py',
                 'tools/prepare_ui2.py', 'tools/adblock-worker-mini/main.v',
