@@ -190,6 +190,9 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 	if element.document() != unsafe { nil } {
 		mut owner := unsafe { &Document(element.document()) }
 		owner.bump_attribute_version()
+		if a.local_name_.to_lower() in ['id', 'class'] && element.as_node().root().is_document() {
+			owner.bump_light_dom_id_class_attribute_version()
+		}
 	}
 	if new_value != none && element.document() != unsafe { nil } {
 		mut owner := unsafe { &Document(element.document()) }

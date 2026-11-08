@@ -4542,6 +4542,7 @@ pub fn (mut n Node) append_child_impl(node &Node) {
 	mutable_node.parent_ = n
 	mutable_node.index_in_parent_ = n.children.len
 	n.children << node
+	n.note_element_membership_change(node)
 }
 
 pub fn (mut n Node) insert_before_impl(node &Node, child ?&Node) {
@@ -4554,6 +4555,7 @@ pub fn (mut n Node) insert_before_impl(node &Node, child ?&Node) {
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = n
 	n.children.insert(index, node)
+	n.note_element_membership_change(node)
 	for child_index := index; child_index < n.children.len; child_index++ {
 		mut current := unsafe { &Node(n.children[child_index]) }
 		current.index_in_parent_ = child_index
@@ -4566,12 +4568,23 @@ pub fn (mut n Node) remove_child_impl(node &Node) {
 		return
 	}
 	n.children.delete(index)
+	n.note_element_membership_change(node)
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = unsafe { nil }
 	mutable_node.index_in_parent_ = -1
 	for child_index := index; child_index < n.children.len; child_index++ {
 		mut current := unsafe { &Node(n.children[child_index]) }
 		current.index_in_parent_ = child_index
+	}
+}
+
+fn (n &Node) note_element_membership_change(child &Node) {
+	if !child.is_element() && child.children.len == 0 { return }
+	if !n.root().is_document() { return }
+	document := n.document()
+	if document != unsafe { nil } {
+		mut owner := unsafe { &Document(document) }
+		owner.bump_light_dom_element_version()
 	}
 }
 

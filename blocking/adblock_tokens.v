@@ -18,16 +18,24 @@ mut:
 	document voidptr
 	tree_version u64
 	attribute_version u64
+	global_attribute_version u64
+	global_tree_version u64
+	id_class_attributes_only bool
 	valid bool
 	tokens []string
 	storage &platform.Arena = unsafe { nil }
 }
 
 fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string {
-	tree_version := document.dom_tree_version()
-	attribute_version := document.attribute_version()
+	stamp := site_cosmetic_token_attribute_stamp(document)
+	tree_version := stamp.tree_version
+	attribute_version := stamp.version
 	if !disable_adblock_token_reuse && cache.valid && cache.document == voidptr(document)
-		&& cache.tree_version == tree_version && cache.attribute_version == attribute_version {
+		&& cache.tree_version == tree_version && cache.attribute_version == attribute_version
+		&& cache.id_class_attributes_only == stamp.id_class_only {
+		report_site_cosmetic_token_reuse(stamp.id_class_only,
+			cache.global_attribute_version != document.attribute_version()
+				|| cache.global_tree_version != document.dom_tree_version())
 		if adblock_token_diagnostics && !adblock_token_reuse_reported {
 			adblock_token_reuse_reported = true
 			eprintln('Vox adblock tokens: reused unchanged light-DOM survey')
@@ -54,6 +62,9 @@ fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string 
 	cache.document = voidptr(document)
 	cache.tree_version = tree_version
 	cache.attribute_version = attribute_version
+	cache.global_attribute_version = document.attribute_version()
+	cache.global_tree_version = document.dom_tree_version()
+	cache.id_class_attributes_only = stamp.id_class_only
 	cache.valid = true
 	return cache.tokens
 }
