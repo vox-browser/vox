@@ -25,6 +25,11 @@ unchanged Rust implementation and the same translated Unicode exports as the
 old browser backend. Future checks consume the frozen records without Rust;
 see [the reference-checker guide](../tools/REFERENCE_CORPORA.md).
 
+The broad LibJS check passes 241/243 files in each GC mode, with failures in
+the existing ICU default-locale regex folding and String casing tests. All 100
+upstream AST fixtures match. [The migration report](../docs/translation-audit/RUST_TO_V_PROGRESS.md)
+retains those failures and the direct host-ICU reproduction.
+
 Ninety repeated-empty-class-string `/v` cases could not produce source
 expectations: the source exceeded the 3 GiB memory guard. They are excluded
 from the count above. Separate regression tests bound zero-progress repetition
@@ -39,8 +44,8 @@ named backreferences, buffer growth and source surrogate conversion. They pass
 in both GC modes. The HTML input-pattern caller also executes successfully with
 `-gc none` and unavailable Rust compiler paths. Windows native smoke code
 compiles and links with warnings treated as errors; it was not executed on
-Windows for this change. No production browser was rebuilt, so an older shared
-bundle is not evidence for the new V runtime.
+Windows for this change. No production browser was rebuilt or launched for this change; the executed
+library and HTML caller tests supply the new-runtime evidence.
 
 `destroy()` detaches V-owned references and is idempotent; allocation lifetime
 now follows V's collector or the caller's arena. It does not reproduce immediate

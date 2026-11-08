@@ -2172,6 +2172,12 @@ v26.8.1. See [LibRegex status](../libregex/PORT_STATUS.md) for ownership,
 limits and source-oracle boundaries. HTML input patterns use this V engine;
 regex no longer builds or links a Rust archive.
 
+The current broad check passes 241/243 files in each GC mode. The existing
+regex folding and String casing fixtures fail on this host's ICU default-locale
+Greek conversion; expectations were retained. All 100 current upstream AST
+fixtures match exactly. [The migration report](../docs/translation-audit/RUST_TO_V_PROGRESS.md)
+records the executed commands, boundaries and remaining Rust JPEG XL dependency.
+
 The frontend and supported VM execution slice are integrated into the browser;
 JavaScriptCore continues to execute scripts in the default mode. This is not a
 complete LibJS runtime migration.

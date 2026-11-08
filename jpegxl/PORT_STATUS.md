@@ -51,8 +51,8 @@ binary tail replaces the source's two-level lookup representation. The 4,096
 frozen source cases compare decoded symbols, errors and consumed bits exactly;
 1,049 succeed (456 single-symbol alphabets, 529 simple trees and 64 complex
 trees). Separate checks decode the source's known byte histogram, exercise
-15-bit codes and reject malformed/incomplete/oversubscribed trees. All four
-module test files pass in both GC modes; the no-GC run also passes through the
+15-bit codes and reject malformed/incomplete/oversubscribed trees. At the Huffman checkpoint, all four
+module test files passed in both GC modes; the no-GC run also passes through the
 V corpus checker with unavailable Rust compiler paths. Error strings remain
 normalized in the fixtures. This establishes recorded behavior, not decoder
 conformance or performance parity.

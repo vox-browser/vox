@@ -50,6 +50,6 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite also executes all four completed decoder-layer test files
-with `--gc none` and unavailable Rust compiler paths. This checks the V layers,
+At the Huffman checkpoint, the `jpegxl` suite also executed all four completed
+decoder-layer test files with `--gc none` and unavailable Rust compiler paths. This checks the V layers,
 not the still-Rust production image decoder.
