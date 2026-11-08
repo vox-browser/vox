@@ -113,11 +113,11 @@ fn compact_svg_animated_bootstrap() string {
  accessor(SVGNumber.prototype,"value",function(){const own=record(this,"SVGNumber");return own.read();},function(input){
   const own=record(this,"SVGNumber");if(own.readOnly)throw readOnlyError();own.write(finite(input,"value"));
  });
- // Default values of animated lengths that are not zero.
+ // Default animated lengths retain their specified units, including zero percentages.
  const lengthDefaults={
   SVGFilterElement:{x:"-10%",y:"-10%",width:"120%",height:"120%"},
   SVGMaskElement:{x:"-10%",y:"-10%",width:"120%",height:"120%"},
-  SVGLinearGradientElement:{x2:"100%"},
+  SVGLinearGradientElement:{x1:"0%",y1:"0%",x2:"100%",y2:"0%"},
   SVGRadialGradientElement:{cx:"50%",cy:"50%",r:"50%",fx:"50%",fy:"50%",fr:"0%"},
   SVGSVGElement:{width:"100%",height:"100%"},
   SVGMarkerElement:{markerWidth:"3",markerHeight:"3"},
