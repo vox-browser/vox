@@ -1,0 +1,619 @@
+{
+  "date": "2026-11-08",
+  "features": {
+    "mipmaps": "601709dab",
+    "portable_bitmap_glyphs": "f281b6557",
+    "font_input_receipts": "9f2a95302"
+  },
+  "scope": "FreeType bitmap strikes and image mipmaps; module evidence, not a Skia-free browser build",
+  "differential": {
+    "seed": 20261106,
+    "mixed_font_runs_per_build": 20000,
+    "mixed_exact_per_build": 19688,
+    "mixed_painted_per_build": 5441,
+    "mixed_declined_per_build": 312,
+    "fixture_runs_per_build": 10000,
+    "fixture_exact_per_build": 9793,
+    "fixture_painted_per_build": 3831,
+    "fixture_declined_per_build": 207,
+    "emoji_runs_default": 10000,
+    "emoji_exact_default": 10000,
+    "emoji_painted_default": 849,
+    "mipmap_cases_per_build": 20000,
+    "builds": [
+      "default",
+      "-prod -gc none"
+    ]
+  },
+  "corrections": [
+    "Tiny bitmap glyphs require nearest mipmap selection before bilinear sampling.",
+    "Color glyphs still draw when a singular pattern shader makes monochrome masks draw nothing.",
+    "Nonzero bitmap origins use the native 4x4 translation arithmetic, including its rounding order.",
+    "Scalable fonts disable embedded bitmaps by default; bitmap-only faces select an equal or next-larger strike."
+  ],
+  "limits": [
+    "COLRv0/v1 graphs, oversized glyph fallback, filters and tiling remain incomplete.",
+    "The standalone Linux module checks do not establish a Skia-free browser build.",
+    "The final tooling commit removes formatting-only changes from the comparison driver; random calls and their order are unchanged."
+  ],
+  "checks": {
+    "mips1": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 599375872,
+      "elapsed_seconds": 15.751876708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "mips-prod": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108-prod",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 759857152,
+      "elapsed_seconds": 29.257316208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "mips-unit": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/mipmap_test.v",
+        "cpuraster/canvas_image_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 598196224,
+      "elapsed_seconds": 6.228021625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "Summary for all V _test.v files: 2 passed, 2 total. Elapsed time: 5763 ms, on 2 parallel jobs. Comptime: 9790 ms. Runtime: 501 ms."
+      ]
+    },
+    "mips-fma": {
+      "command": [
+        "sh",
+        "-c",
+        "/Users/alex/code/v/v -memory-limit 10G -cc clang -path \"/Users/alex/code/vox2|@vlib|@vmodules\" -o /tmp/vox-gg-portable-20261108/raster.c tools/gg_migration/cpu_raster_check.v && python3 tools/gg_migration/fma_audit.py --prefix cpuraster__ --contracted-only /tmp/vox-gg-portable-20261108/raster.c /tmp/vox-gg-portable-20261108/cc.txt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 431996928,
+      "elapsed_seconds": 31.719669833999998,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "0 contracted multiply-add instructions in cpuraster__* functions (166 explicit)"
+      ]
+    },
+    "ft-bitmap1": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "10000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 599457792,
+      "elapsed_seconds": 65.0614015,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "glyph run 3942: pixel (96, 21) channel 0 is 25, Skia wrote 26, from [24, 14, 19, 255] (GlyphCase{"
+      ]
+    },
+    "ft-bitmap2": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "10000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 597557248,
+      "elapsed_seconds": 169.942801375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "canvas glyph runs: 9793 exact (3831 changed pixels), 207 declined",
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "ft-emoji1": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "2000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 643629056,
+      "elapsed_seconds": 12.352296625000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "glyph run 53: pixel (4, 0) channel 0 is 130, Skia wrote 209, from [130, 148, 144, 148] (GlyphCase{"
+      ]
+    },
+    "ft-emoji2": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "2000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 595771392,
+      "elapsed_seconds": 13.534298292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "glyph run 1840: pixel (89, 0) channel 0 is 37, Skia wrote 38, from [37, 40, 47, 56] (GlyphCase{"
+      ]
+    },
+    "ft-emoji3": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "10000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 601522176,
+      "elapsed_seconds": 28.970833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "canvas glyph runs: 10000 exact (849 changed pixels), 0 declined",
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "ft-mixed4": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 600702976,
+      "elapsed_seconds": 9.00281225,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "glyph run 547: pixel (7, 10) channel 3 is 255, Skia wrote 0, from [0, 0, 0, 0] (GlyphCase{"
+      ]
+    },
+    "ft-mixed5": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 595705856,
+      "elapsed_seconds": 35.681463834000006,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "canvas glyph runs: 19688 exact (5441 changed pixels), 312 declined",
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "ft-mixed-prod": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108-prod",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1672904704,
+      "elapsed_seconds": 50.437628667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "canvas glyph runs: 19688 exact (5441 changed pixels), 312 declined",
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "ft-bitmap-prod": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108-prod",
+        "10000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 2820128768,
+      "elapsed_seconds": 51.954634833,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "canvas glyph runs: 9793 exact (3831 changed pixels), 207 declined",
+        "cpuraster inputs unchanged"
+      ]
+    },
+    "bitmap-suite": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "test",
+        "cpuraster"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 1560756224,
+      "elapsed_seconds": 52.452470292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "Summary for all V _test.v files: 25 passed, 25 total. Elapsed time: 51755 ms, on 4 parallel jobs. Comptime: 187803 ms. Runtime: 8717 ms."
+      ]
+    },
+    "bitmap-focused": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-d",
+        "cpuraster_freetype",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/glyph_bitmap_test.v",
+        "cpuraster/glyph_freetype_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 947585024,
+      "elapsed_seconds": 22.254949125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "Summary for all V _test.v files: 2 passed, 2 total. Elapsed time: 8255 ms, on 2 parallel jobs. Comptime: 15972 ms. Runtime: 362 ms."
+      ]
+    },
+    "bitmap-fma": {
+      "command": [
+        "sh",
+        "-c",
+        "/Users/alex/code/v/v -memory-limit 10G -cc clang -d cpuraster_freetype -path \"/Users/alex/code/vox2|@vlib|@vmodules\" -o /tmp/vox-gg-portable-20261108/bitmap.c tools/gg_migration/cpu_raster_check.v > /tmp/vox-gg-portable-20261108/bitmap-gen.log 2>&1 && python3 tools/gg_migration/fma_audit.py --prefix cpuraster__ --contracted-only /tmp/vox-gg-portable-20261108/bitmap.c /tmp/vox-gg-portable-20261108/cc-ft.txt"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 432177152,
+      "elapsed_seconds": 32.982538417,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "summary": [
+        "0 contracted multiply-add instructions in cpuraster__* functions (166 explicit)"
+      ]
+    },
+    "gg-linux-bitmap-prod": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/glyph_bitmap_test.v",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 465100800,
+      "elapsed_seconds": 31.273332661000495,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "gg-linux-bitmap-unit": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/glyph_bitmap_test.v",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 528207872,
+      "elapsed_seconds": 9.996205004999865,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "mixed_input_hashes": {
+    "/Users/alex/code/vox2/cpuraster/aaclip.v": "712ca60d8b77264e207e7b2f08cbc73f8a48cc7b9e95e2554b884916bc885fa2",
+    "/Users/alex/code/vox2/cpuraster/aaclip_test.v": "2cbda12c34df80f2d7ed1b6f93e8aa57fa155a3bf5bdd86a53c3cec4fb14cd03",
+    "/Users/alex/code/vox2/cpuraster/analytic_edge.v": "2a41ddb3feb4283def2bede7759177adcf624e1d5a82f457dcb86ee8fa5c4d4f",
+    "/Users/alex/code/vox2/cpuraster/bitmap_export.v": "2aa782e09ce0410d7b916d39f6c2425a1abdcedf8cdac0540dcb683c9a2f90b0",
+    "/Users/alex/code/vox2/cpuraster/bitmap_export_test.v": "01ea9f52d9d45fec66e5315c5cf908e98373dd9c98823496277523a87f897274",
+    "/Users/alex/code/vox2/cpuraster/bitmap_proc.v": "6816b8058a4cca8772f961fb4998767fa394b0832d6428dd69774c6e06d4c7ee",
+    "/Users/alex/code/vox2/cpuraster/blitter.v": "386e3fb7edc7ab20d13d4a1b2142cdf2638129b0351570a0dd6cf9ab88780d26",
+    "/Users/alex/code/vox2/cpuraster/blitter_argb32.v": "d97f7659edb440589909b83e351c606d647f264991c709a7adf7177e34fa8ca4",
+    "/Users/alex/code/vox2/cpuraster/blur.v": "57cdf12e7f9340a71d6deb064a34c44fa76fc5a68d8524c08833538e1d437e68",
+    "/Users/alex/code/vox2/cpuraster/blur_test.v": "fe672a09e88b00cf3ebd640a9b07f625f30f382a9642cfbc6f2eadd9b0466a56",
+    "/Users/alex/code/vox2/cpuraster/box_shadow.v": "7edc0653bbd298911c3023843048fd22ea8037dd5b6f7f2dd1ddbe53f27fe526",
+    "/Users/alex/code/vox2/cpuraster/box_shadow_test.v": "baee4a1a12861d3da7b17d468fe36bed5cd240e6d869ec5e1c522895c012b35b",
+    "/Users/alex/code/vox2/cpuraster/canvas.v": "9cb1c42ed8a8c2f7e70fe124bfc57a1f43a6088e70b382308185d46c08189cf3",
+    "/Users/alex/code/vox2/cpuraster/canvas_image.v": "1ae42e7c18a028b0cc297631cf3777f83cef3ad185bcb499fcca26aa7a6aead5",
+    "/Users/alex/code/vox2/cpuraster/canvas_image_test.v": "3fdb5c431e8b74014cbc6d498ac99b8f1903c22aea9c319c85c1b7f39f040160",
+    "/Users/alex/code/vox2/cpuraster/clip.v": "0949ce66e11e86ebda01cc79f66b9305eb73c840fb0a198bc15dfcf7fdc7c55b",
+    "/Users/alex/code/vox2/cpuraster/color_filter.v": "6bbb2c5f4aafe46facf03f51cea68521f691411d24b25462865b6ce12463db0a",
+    "/Users/alex/code/vox2/cpuraster/color_filter_test.v": "ab69328a501c565b1ddf25daff1082f80bfae74fc8695357a50f197ef0745637",
+    "/Users/alex/code/vox2/cpuraster/cubics_test.v": "86e3e0397e27af3c2d185ad6f080ae47f9f53a181dac1d600da82e79fe2868da",
+    "/Users/alex/code/vox2/cpuraster/dash.v": "df8e2525d5e65a7fa661ec904c2c7d46139de25a55564fbc75be2b63bd251687",
+    "/Users/alex/code/vox2/cpuraster/dash_test.v": "b5a1def41efeaf8a5a1663b9842dd631f251350b075f85efe67b440259334703",
+    "/Users/alex/code/vox2/cpuraster/drop_shadow_test.v": "3789a1f6b26e4512bc34468aba2f0e03568d33b4d3c8c7747cec0af2f37d2e55",
+    "/Users/alex/code/vox2/cpuraster/filter_layer.v": "6509ce5fc4363534ceae5c0701ac59ac6af847968197b157f176a25aac87cb3d",
+    "/Users/alex/code/vox2/cpuraster/filter_layer_test.v": "384177e8491affd9d5742672554f62bc88f0dbd17f33379fa81f374fcfd0047b",
+    "/Users/alex/code/vox2/cpuraster/geometry.v": "4adbb78ebf774d0ecf65cd1f0866bb0bb24372fbce9f6366dca2b1d990c43825",
+    "/Users/alex/code/vox2/cpuraster/glyph_bitmap_test.v": "a738c8bd621b693ed19d8a2678748bb032d93b64da86e11cbf23937068b5fd8c",
+    "/Users/alex/code/vox2/cpuraster/glyph_coretext.h": "d931c9730e46a23de798d1f3232af8db67524da63c194ec16f4f5382384c301c",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype.c.v": "fa3c43bea7236e69fca66a1fc13b472be63eb9e2a00c9e23929273766d5d6199",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype.h": "506e24bb160f19f664f99b858c8e84504ecf71a80be39cb7ef9ad4b5ac1d7cde",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype_test.v": "5638a461f2fc26fa392c2a354aadd3d63aec7127918da7dbf5619060f62895fb",
+    "/Users/alex/code/vox2/cpuraster/glyph_run.v": "46f67b01462a565a8a1030ef8355f54e2f9a62e58c6613e566f0966f31a35351",
+    "/Users/alex/code/vox2/cpuraster/glyph_run_test.v": "f6380093820715341a9fb3a5ee2a0a2c8e1711d412a214b4e76034e4caaab752",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_darwin.c.v": "e125c4d45e4020a71c742beb2527b8a96690aa083e83bbb485e1b81140453333",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_default.c.v": "5a5eb05e81f604ac70cabd7b5db47f2084bd4729c842383fdb18cf733dd20ea7",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_linux.c.v": "c9895768f4f4079a22af2ab897adac75f638e88ec42f909557e7098964ec8eb8",
+    "/Users/alex/code/vox2/cpuraster/glyph_smoothing_probe.h": "ee1b5955e8ad33b23e3abd61c8f25f0240cfc2714e6811ee92ea5cf9cc01168a",
+    "/Users/alex/code/vox2/cpuraster/gradient.v": "e55d210ca21864d1eb31ba2ca14ab10c257b2fce212573d175d442c06b77d938",
+    "/Users/alex/code/vox2/cpuraster/gradient_test.v": "7172c58b394d20ab9b4fcd9d6589bae3ea07c4adf1450026b704a8b3751e4fed",
+    "/Users/alex/code/vox2/cpuraster/image_blur.v": "b727546f833ea7743a9cd9433ee435a9cc7328337ba1cd94a420630a43ebd1cf",
+    "/Users/alex/code/vox2/cpuraster/image_filter.v": "1e14de4407992c38b309dda32c69ff4f23bf9d3744ee8811be4bfc78b39afabe",
+    "/Users/alex/code/vox2/cpuraster/image_filter_test.v": "91351199fd7554f0815383b4edd5bbc4f67b27e1adb7a8bd91343d6b72696def",
+    "/Users/alex/code/vox2/cpuraster/image_shader.v": "99257f8faeb0fb25c3ac376016c727ead03606816226b1b31780e76655ce0e1e",
+    "/Users/alex/code/vox2/cpuraster/image_shader_test.v": "370c572fa72b868fbcc2baeb578b12d05d9f512d7342aed33b80d458b2cd16d9",
+    "/Users/alex/code/vox2/cpuraster/inner_shadow.v": "a02fc460e3d544d35c4d3d3d6d33203ccbb7a8d6584cfe97b367c292409961cd",
+    "/Users/alex/code/vox2/cpuraster/inner_shadow_test.v": "9c4fadc33fbba1295e87cf67a94ae74b92f6921b66548cda824fec98ee4854e1",
+    "/Users/alex/code/vox2/cpuraster/mipmap.v": "7530554772e52673e2d6caa6fad033e5836cc4b39819185251201b2be93d4cc3",
+    "/Users/alex/code/vox2/cpuraster/mipmap_test.v": "60c7c85ea9f03e1b3197e7a941ed0237d2fc2a1bb2b972bcc5ff61e579a13258",
+    "/Users/alex/code/vox2/cpuraster/path.v": "090926ff6bf491787d23983230c5749948dd9bd760f89790f3df8853dc0530a1",
+    "/Users/alex/code/vox2/cpuraster/path_math.h": "487b7286e0b6c1aefa83f040fb82f8e4918b0678b8813e36c6e5ab19171ba19d",
+    "/Users/alex/code/vox2/cpuraster/pipeline_blitter.v": "caec14643843a20264767ef7a3f94c70e526058827e42bcc2870485f505f657a",
+    "/Users/alex/code/vox2/cpuraster/pipeline_blitter_test.v": "cb6b89ca99c145b080d03f8ebc2ffe6694c8a75a006c7ff276a91c9b0b1218ae",
+    "/Users/alex/code/vox2/cpuraster/raster_pipeline.v": "27923692f13ea53046d568a1e4c3cb61d5cd9f11e32ddaff7966b8dffb1e94e6",
+    "/Users/alex/code/vox2/cpuraster/read_pixels.v": "db97db41437ea0e1702da7a67b439f9958be37f61be5cd59a7732968620f5cea",
+    "/Users/alex/code/vox2/cpuraster/read_pixels_test.v": "47d64050c8095c94e65b4e2c7eeca7bb6177890138156f0b9d747af8e9278bb6",
+    "/Users/alex/code/vox2/cpuraster/rounded_rect.v": "c2b9094033da7d167601073c4e1845b43e6664cbed8c5ed43e27a028d6fc2863",
+    "/Users/alex/code/vox2/cpuraster/rounded_rect_test.v": "9fe067a8a2cc85d4aa48736c9405fdb61f4d343d5c22336f1751b11f69b80bd8",
+    "/Users/alex/code/vox2/cpuraster/scan_aaa.v": "7877afe8d2bacabfc139e0e0fbbf4ddd8f336d46b953428499812255778ae08a",
+    "/Users/alex/code/vox2/cpuraster/scan_hairline.v": "7ae53af03f5e0c9375192a716602b9a65bf19005d95f12f21b7b00f6550614ba",
+    "/Users/alex/code/vox2/cpuraster/scan_hairline_test.v": "e802caa703f3e85193a64a348925b6e72994126181c3d924a6b7706f54142368",
+    "/Users/alex/code/vox2/cpuraster/scan_path.v": "b50b644ed4a6dc2cefba03742af02362805f39bbe435c63ab877dc09ce28a57c",
+    "/Users/alex/code/vox2/cpuraster/scan_rect.v": "de961a3596ef31d356a9036f8f696e70b26a8bcb25a35e58fe822b7eccdb3a61",
+    "/Users/alex/code/vox2/cpuraster/scan_test.v": "02481b8229e01780f36e5cd5ff5112b11933778cdccc485f41ae859d7d1720f0",
+    "/Users/alex/code/vox2/cpuraster/stroke.v": "d262b5322a319a567c46dffe3b4b31bde02c75f6923a87ffcd17c482528aeccb",
+    "/Users/alex/code/vox2/cpuraster/stroke_test.v": "046876a114ddd7fbe2be160f1d7deb687219fadffeb077b40f72114f55995d63",
+    "/Users/alex/code/vox2/cpuraster/text_shadow.v": "8fc560752177d5797c8683ab27a0f8d962662b5e02b685e505556d50861c9bd0",
+    "/Users/alex/code/vox2/cpuraster/text_shadow_test.v": "08683f723d6f393964b8861021d4f3a62b1991847490156ee5a0a7c8ab261850",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation.c.v": "28d7b9cf025c42709a4bfe0d0fd1042d8f89b19ae0766165fb5dac7b4b9b676f",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation.h": "9c1054a8f96fb7a721acb718286137c15ad4aafa97d14b6bcebf777586fc9c40",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation_test.v": "c485527a6382519dec2df323928f8ad3bc18ce20be92cee953ccadcf4811d8b6",
+    "/Users/alex/code/vox2/gfxfont/woff.v": "ebece9c37ab1a8504571cd227c00f894b74532bb2d1815665063e550303718fd",
+    "/Users/alex/code/vox2/gfxfont/woff2.c.v": "a2fbfd74c4cbfc371b93c3b521ed88d1193cf26fe8c9a810f0dc40c7deca4b2f",
+    "/Users/alex/code/vox2/gfxfont/woff2.h": "0bbf0b7c2c1cff6982b82f3ef90d70e8abaf6baa69f5430fb694d51564104aa9",
+    "/Users/alex/code/vox2/gfxfont/woff_test.v": "ca5863168bd2cdbe837cc739a23f5e9a0286f40258f2ea665ad1ccc854a42c61",
+    "/Users/alex/code/vox2/skia/canvas_raster.cpp": "700501ef021653e730530bfcef1ed2066d2df41ad21a074ffb8855d7ecb69caa",
+    "/Users/alex/code/vox2/skia/shadow_raster.cpp": "89a54aa501d6605d96333eb212e5f1e60820ca455fe7aa87126f128d96ec2357",
+    "/Users/alex/code/vox2/skia/canvas_chromium_raster.h": "0689784068e62573207d3cf9e52a088ab8efcadb304db9ab3bf70deaf6244a7f",
+    "/Users/alex/code/vox2/skia/canvas_raster.h": "28b8f14e24ef125ee10a02f45c17ca1687231277eed36ada2fb45032d9b067f1",
+    "/Users/alex/code/vox2/skia/shadow_raster.h": "d48aae5c03e364e52768f3042dbdfe88816771fcec7ca1a12930d762ed6d6272",
+    "/Users/alex/code/vox2/skia/shadow_typeface_cache.h": "862b3eec38b809cedc8039cc7ab8f046dc83a7f0bd39686a10e655ed1fcfedf8",
+    "/Users/alex/code/vox2/platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+    "/Users/alex/code/vox2/tools/gg_migration/cpu_raster_check.v": "d513976076d28a10829f31ee17352e180451ec2f94553e25d32ed2e8b1a2ce3b",
+    "/Users/alex/code/vox2/tools/gg_migration/skia_cpu_oracle.cpp": "00c8d2f7792282fdc6fdc1061107dd83050a178bc296f2c5248c5bdabf85bd0e",
+    "/Users/alex/code/vox2/tools/gg_migration/test_cpu_raster.sh": "4fc018d91346b9b22f0c30285ca3828554eb99de5dd2d799df13ba664d85a948",
+    "/Users/alex/code/v/v": "ddbb4e238586371d76dfa048797fc4265da2cc81c178310034ee59e4658e1a2f",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+    "/Users/alex/code/vox2/tools/gg_migration/glyph_fonts.txt": "50c8c86ef9ff88cac8b08cf8c5993c8c715586088e9a5d4d3987bf68658153d3",
+    "/Users/alex/code/vox2/cpuraster/testdata/README.md": "2e2f7a723943f1a41c4fad93b5bdedddc4c05bb01f0e5b3a4e9b79599a60645e",
+    "/Users/alex/code/vox2/cpuraster/testdata/bitmap-color.ttf": "f56d92b6908ddf8278e33053c619a95593ecd0192bfa3403da937a13f61245fa",
+    "/Users/alex/code/vox2/cpuraster/testdata/make_bitmap_font.py": "9a2325d31d9bf111aa49c4d95e55466058304f3968545c402d8dac943a69ddf0",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/Ahem.ttf": "b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/cyrillic-context.ttf": "dc9d355e69cdfa05e0a40227d8c548bdb1270d2e42a05844f0f845c1fdf14e5f",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/glyph-origin.ttf": "9438128eaeb21796c5adc70376734aaa1c47d3b955009985ab6b8c448a8afa63",
+    "/Users/alex/code/vox2/pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf": "84f56eb9546819ac3d52ea4192e4e68f67f9922732bcb044d817fe1029ba29c5",
+    "/Users/alex/code/vox2/pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Italic-subset.ttf": "e86be89341f5bf7773f7494ebe81178aadb6d77580db4cbf8c1d3f08a1dd6685",
+    "/Users/alex/code/vox2/pixel_tests/sites/jvns/cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.ttf": "d0332f52868370fd83ae7fa46470f90c8f2eab2fcf12bc4f88080b340c95a830",
+    "/System/Library/Fonts/Supplemental/Arial.ttf": "525979822591a3447cfc49d943d6f7683508e25543407871c0ed8fed05fd2bd9",
+    "/System/Library/Fonts/Supplemental/Georgia.ttf": "4f54eb299fccea7f103edeb0d92437359bfd4441811d53222b82b335369f6218",
+    "/System/Library/Fonts/Supplemental/Times New Roman.ttf": "f3b4ffff71c2a0c7227d37497683b2498fb2d0a4e8beae26f022e3ccfcaabfa3",
+    "/System/Library/Fonts/Helvetica.ttc": "658718d77497145281cb0ec45ff2fe7c6e18062b2a38f837d0d792d9be3a9ba3",
+    "/System/Library/Fonts/Menlo.ttc": "f2d400484a6aace67980730ec0a9ef24ce9e535a2604f118e6fdc2510021b85f",
+    "/System/Library/Fonts/SFNS.ttf": "44890958f3e0b997028121ed7c7a789f3f5cce227c7a93ce8f86ec0db26da571",
+    "/System/Library/Fonts/NewYork.ttf": "2f2a5b0e743cd2d954dd407a7281dc0e974d93144c0cdbbc82fee43c32caa926",
+    "/System/Library/Fonts/Geneva.ttf": "dee335fb5951cd4793e2cc6640061460d5531df578e6e987d444ffa7be4b4496",
+    "/System/Library/Fonts/LastResort.otf": "c6fd31c2d68597249258d931c88b28060b545599d4817559245db33ebea82bcb",
+    "/System/Library/Fonts/Apple Color Emoji.ttc": "12bc8221a908c5bcf05f0fce940d3c3f6e9d09d8d806ffe31a969b4ac9be8f9e"
+  },
+  "production_mixed_input_hashes": {
+    "/Users/alex/code/vox2/cpuraster/aaclip.v": "712ca60d8b77264e207e7b2f08cbc73f8a48cc7b9e95e2554b884916bc885fa2",
+    "/Users/alex/code/vox2/cpuraster/aaclip_test.v": "2cbda12c34df80f2d7ed1b6f93e8aa57fa155a3bf5bdd86a53c3cec4fb14cd03",
+    "/Users/alex/code/vox2/cpuraster/analytic_edge.v": "2a41ddb3feb4283def2bede7759177adcf624e1d5a82f457dcb86ee8fa5c4d4f",
+    "/Users/alex/code/vox2/cpuraster/bitmap_export.v": "2aa782e09ce0410d7b916d39f6c2425a1abdcedf8cdac0540dcb683c9a2f90b0",
+    "/Users/alex/code/vox2/cpuraster/bitmap_export_test.v": "01ea9f52d9d45fec66e5315c5cf908e98373dd9c98823496277523a87f897274",
+    "/Users/alex/code/vox2/cpuraster/bitmap_proc.v": "6816b8058a4cca8772f961fb4998767fa394b0832d6428dd69774c6e06d4c7ee",
+    "/Users/alex/code/vox2/cpuraster/blitter.v": "a4da565083fd5ff5939950ca42755c95eb1f6d9cfb5c64671cd0ca920d576dbd",
+    "/Users/alex/code/vox2/cpuraster/blitter_argb32.v": "d97f7659edb440589909b83e351c606d647f264991c709a7adf7177e34fa8ca4",
+    "/Users/alex/code/vox2/cpuraster/blur.v": "57cdf12e7f9340a71d6deb064a34c44fa76fc5a68d8524c08833538e1d437e68",
+    "/Users/alex/code/vox2/cpuraster/blur_test.v": "fe672a09e88b00cf3ebd640a9b07f625f30f382a9642cfbc6f2eadd9b0466a56",
+    "/Users/alex/code/vox2/cpuraster/box_shadow.v": "7edc0653bbd298911c3023843048fd22ea8037dd5b6f7f2dd1ddbe53f27fe526",
+    "/Users/alex/code/vox2/cpuraster/box_shadow_test.v": "baee4a1a12861d3da7b17d468fe36bed5cd240e6d869ec5e1c522895c012b35b",
+    "/Users/alex/code/vox2/cpuraster/canvas.v": "9cb1c42ed8a8c2f7e70fe124bfc57a1f43a6088e70b382308185d46c08189cf3",
+    "/Users/alex/code/vox2/cpuraster/canvas_image.v": "1ae42e7c18a028b0cc297631cf3777f83cef3ad185bcb499fcca26aa7a6aead5",
+    "/Users/alex/code/vox2/cpuraster/canvas_image_test.v": "3fdb5c431e8b74014cbc6d498ac99b8f1903c22aea9c319c85c1b7f39f040160",
+    "/Users/alex/code/vox2/cpuraster/clip.v": "0949ce66e11e86ebda01cc79f66b9305eb73c840fb0a198bc15dfcf7fdc7c55b",
+    "/Users/alex/code/vox2/cpuraster/color_filter.v": "6bbb2c5f4aafe46facf03f51cea68521f691411d24b25462865b6ce12463db0a",
+    "/Users/alex/code/vox2/cpuraster/color_filter_test.v": "ab69328a501c565b1ddf25daff1082f80bfae74fc8695357a50f197ef0745637",
+    "/Users/alex/code/vox2/cpuraster/cubics_test.v": "86e3e0397e27af3c2d185ad6f080ae47f9f53a181dac1d600da82e79fe2868da",
+    "/Users/alex/code/vox2/cpuraster/dash.v": "df8e2525d5e65a7fa661ec904c2c7d46139de25a55564fbc75be2b63bd251687",
+    "/Users/alex/code/vox2/cpuraster/dash_test.v": "b5a1def41efeaf8a5a1663b9842dd631f251350b075f85efe67b440259334703",
+    "/Users/alex/code/vox2/cpuraster/drop_shadow_test.v": "3789a1f6b26e4512bc34468aba2f0e03568d33b4d3c8c7747cec0af2f37d2e55",
+    "/Users/alex/code/vox2/cpuraster/filter_layer.v": "6509ce5fc4363534ceae5c0701ac59ac6af847968197b157f176a25aac87cb3d",
+    "/Users/alex/code/vox2/cpuraster/filter_layer_test.v": "384177e8491affd9d5742672554f62bc88f0dbd17f33379fa81f374fcfd0047b",
+    "/Users/alex/code/vox2/cpuraster/geometry.v": "4adbb78ebf774d0ecf65cd1f0866bb0bb24372fbce9f6366dca2b1d990c43825",
+    "/Users/alex/code/vox2/cpuraster/glyph_bitmap_test.v": "de5a144357105a67937936e47046059c9c6bbab7c7401986e5c1b830b6563222",
+    "/Users/alex/code/vox2/cpuraster/glyph_coretext.h": "d931c9730e46a23de798d1f3232af8db67524da63c194ec16f4f5382384c301c",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype.c.v": "551deeb9663472977ddf68b4d58cc4ff2320aab67d64603ce612799a212c4f65",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype.h": "506e24bb160f19f664f99b858c8e84504ecf71a80be39cb7ef9ad4b5ac1d7cde",
+    "/Users/alex/code/vox2/cpuraster/glyph_freetype_test.v": "5638a461f2fc26fa392c2a354aadd3d63aec7127918da7dbf5619060f62895fb",
+    "/Users/alex/code/vox2/cpuraster/glyph_run.v": "e10e51fddc56c2f910bf86cb84e3d2e626a19101c876f3961be2a70d539d47ea",
+    "/Users/alex/code/vox2/cpuraster/glyph_run_test.v": "f6380093820715341a9fb3a5ee2a0a2c8e1711d412a214b4e76034e4caaab752",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_darwin.c.v": "e125c4d45e4020a71c742beb2527b8a96690aa083e83bbb485e1b81140453333",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_default.c.v": "5a5eb05e81f604ac70cabd7b5db47f2084bd4729c842383fdb18cf733dd20ea7",
+    "/Users/alex/code/vox2/cpuraster/glyph_scaler_linux.c.v": "c9895768f4f4079a22af2ab897adac75f638e88ec42f909557e7098964ec8eb8",
+    "/Users/alex/code/vox2/cpuraster/glyph_smoothing_probe.h": "ee1b5955e8ad33b23e3abd61c8f25f0240cfc2714e6811ee92ea5cf9cc01168a",
+    "/Users/alex/code/vox2/cpuraster/gradient.v": "e55d210ca21864d1eb31ba2ca14ab10c257b2fce212573d175d442c06b77d938",
+    "/Users/alex/code/vox2/cpuraster/gradient_test.v": "7172c58b394d20ab9b4fcd9d6589bae3ea07c4adf1450026b704a8b3751e4fed",
+    "/Users/alex/code/vox2/cpuraster/image_blur.v": "b727546f833ea7743a9cd9433ee435a9cc7328337ba1cd94a420630a43ebd1cf",
+    "/Users/alex/code/vox2/cpuraster/image_filter.v": "1e14de4407992c38b309dda32c69ff4f23bf9d3744ee8811be4bfc78b39afabe",
+    "/Users/alex/code/vox2/cpuraster/image_filter_test.v": "91351199fd7554f0815383b4edd5bbc4f67b27e1adb7a8bd91343d6b72696def",
+    "/Users/alex/code/vox2/cpuraster/image_shader.v": "99257f8faeb0fb25c3ac376016c727ead03606816226b1b31780e76655ce0e1e",
+    "/Users/alex/code/vox2/cpuraster/image_shader_test.v": "370c572fa72b868fbcc2baeb578b12d05d9f512d7342aed33b80d458b2cd16d9",
+    "/Users/alex/code/vox2/cpuraster/inner_shadow.v": "a02fc460e3d544d35c4d3d3d6d33203ccbb7a8d6584cfe97b367c292409961cd",
+    "/Users/alex/code/vox2/cpuraster/inner_shadow_test.v": "9c4fadc33fbba1295e87cf67a94ae74b92f6921b66548cda824fec98ee4854e1",
+    "/Users/alex/code/vox2/cpuraster/mipmap.v": "7530554772e52673e2d6caa6fad033e5836cc4b39819185251201b2be93d4cc3",
+    "/Users/alex/code/vox2/cpuraster/mipmap_test.v": "60c7c85ea9f03e1b3197e7a941ed0237d2fc2a1bb2b972bcc5ff61e579a13258",
+    "/Users/alex/code/vox2/cpuraster/path.v": "090926ff6bf491787d23983230c5749948dd9bd760f89790f3df8853dc0530a1",
+    "/Users/alex/code/vox2/cpuraster/path_math.h": "487b7286e0b6c1aefa83f040fb82f8e4918b0678b8813e36c6e5ab19171ba19d",
+    "/Users/alex/code/vox2/cpuraster/pipeline_blitter.v": "caec14643843a20264767ef7a3f94c70e526058827e42bcc2870485f505f657a",
+    "/Users/alex/code/vox2/cpuraster/pipeline_blitter_test.v": "cb6b89ca99c145b080d03f8ebc2ffe6694c8a75a006c7ff276a91c9b0b1218ae",
+    "/Users/alex/code/vox2/cpuraster/raster_pipeline.v": "27923692f13ea53046d568a1e4c3cb61d5cd9f11e32ddaff7966b8dffb1e94e6",
+    "/Users/alex/code/vox2/cpuraster/read_pixels.v": "db97db41437ea0e1702da7a67b439f9958be37f61be5cd59a7732968620f5cea",
+    "/Users/alex/code/vox2/cpuraster/read_pixels_test.v": "47d64050c8095c94e65b4e2c7eeca7bb6177890138156f0b9d747af8e9278bb6",
+    "/Users/alex/code/vox2/cpuraster/rounded_rect.v": "c2b9094033da7d167601073c4e1845b43e6664cbed8c5ed43e27a028d6fc2863",
+    "/Users/alex/code/vox2/cpuraster/rounded_rect_test.v": "9fe067a8a2cc85d4aa48736c9405fdb61f4d343d5c22336f1751b11f69b80bd8",
+    "/Users/alex/code/vox2/cpuraster/scan_aaa.v": "7877afe8d2bacabfc139e0e0fbbf4ddd8f336d46b953428499812255778ae08a",
+    "/Users/alex/code/vox2/cpuraster/scan_hairline.v": "7ae53af03f5e0c9375192a716602b9a65bf19005d95f12f21b7b00f6550614ba",
+    "/Users/alex/code/vox2/cpuraster/scan_hairline_test.v": "e802caa703f3e85193a64a348925b6e72994126181c3d924a6b7706f54142368",
+    "/Users/alex/code/vox2/cpuraster/scan_path.v": "b50b644ed4a6dc2cefba03742af02362805f39bbe435c63ab877dc09ce28a57c",
+    "/Users/alex/code/vox2/cpuraster/scan_rect.v": "de961a3596ef31d356a9036f8f696e70b26a8bcb25a35e58fe822b7eccdb3a61",
+    "/Users/alex/code/vox2/cpuraster/scan_test.v": "02481b8229e01780f36e5cd5ff5112b11933778cdccc485f41ae859d7d1720f0",
+    "/Users/alex/code/vox2/cpuraster/stroke.v": "d262b5322a319a567c46dffe3b4b31bde02c75f6923a87ffcd17c482528aeccb",
+    "/Users/alex/code/vox2/cpuraster/stroke_test.v": "046876a114ddd7fbe2be160f1d7deb687219fadffeb077b40f72114f55995d63",
+    "/Users/alex/code/vox2/cpuraster/text_shadow.v": "8fc560752177d5797c8683ab27a0f8d962662b5e02b685e505556d50861c9bd0",
+    "/Users/alex/code/vox2/cpuraster/text_shadow_test.v": "08683f723d6f393964b8861021d4f3a62b1991847490156ee5a0a7c8ab261850",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation.c.v": "28d7b9cf025c42709a4bfe0d0fd1042d8f89b19ae0766165fb5dac7b4b9b676f",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation.h": "9c1054a8f96fb7a721acb718286137c15ad4aafa97d14b6bcebf777586fc9c40",
+    "/Users/alex/code/vox2/gfxfont/typeface_validation_test.v": "c485527a6382519dec2df323928f8ad3bc18ce20be92cee953ccadcf4811d8b6",
+    "/Users/alex/code/vox2/gfxfont/woff.v": "ebece9c37ab1a8504571cd227c00f894b74532bb2d1815665063e550303718fd",
+    "/Users/alex/code/vox2/gfxfont/woff2.c.v": "a2fbfd74c4cbfc371b93c3b521ed88d1193cf26fe8c9a810f0dc40c7deca4b2f",
+    "/Users/alex/code/vox2/gfxfont/woff2.h": "0bbf0b7c2c1cff6982b82f3ef90d70e8abaf6baa69f5430fb694d51564104aa9",
+    "/Users/alex/code/vox2/gfxfont/woff_test.v": "ca5863168bd2cdbe837cc739a23f5e9a0286f40258f2ea665ad1ccc854a42c61",
+    "/Users/alex/code/vox2/skia/canvas_raster.cpp": "700501ef021653e730530bfcef1ed2066d2df41ad21a074ffb8855d7ecb69caa",
+    "/Users/alex/code/vox2/skia/shadow_raster.cpp": "89a54aa501d6605d96333eb212e5f1e60820ca455fe7aa87126f128d96ec2357",
+    "/Users/alex/code/vox2/skia/canvas_chromium_raster.h": "0689784068e62573207d3cf9e52a088ab8efcadb304db9ab3bf70deaf6244a7f",
+    "/Users/alex/code/vox2/skia/canvas_raster.h": "28b8f14e24ef125ee10a02f45c17ca1687231277eed36ada2fb45032d9b067f1",
+    "/Users/alex/code/vox2/skia/shadow_raster.h": "d48aae5c03e364e52768f3042dbdfe88816771fcec7ca1a12930d762ed6d6272",
+    "/Users/alex/code/vox2/skia/shadow_typeface_cache.h": "862b3eec38b809cedc8039cc7ab8f046dc83a7f0bd39686a10e655ed1fcfedf8",
+    "/Users/alex/code/vox2/platform/native_state.h": "16d33f19ab8512c18f6e38d0be73cdf437d060b53033ba1489d615348f11eaa0",
+    "/Users/alex/code/vox2/tools/gg_migration/cpu_raster_check.v": "65cfdb91df04a0e71c558ab5a507a9e1ae8a2865713003decdab0f5b742e8625",
+    "/Users/alex/code/vox2/tools/gg_migration/skia_cpu_oracle.cpp": "00c8d2f7792282fdc6fdc1061107dd83050a178bc296f2c5248c5bdabf85bd0e",
+    "/Users/alex/code/vox2/tools/gg_migration/test_cpu_raster.sh": "4fc018d91346b9b22f0c30285ca3828554eb99de5dd2d799df13ba664d85a948",
+    "/Users/alex/code/v/v": "ddbb4e238586371d76dfa048797fc4265da2cc81c178310034ee59e4658e1a2f",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libskia.dylib": "19dedece03588619f6857b0b7936ef393d038cdc8f5c8d10f65b4c7bfe55cde5",
+    "/Users/alex/code/3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.6.20.2.dylib": "4aea9594f2ee3aabec35e7c1ef893d076f03fcb6e90a905db8f0bb8559d70b7a",
+    "/Users/alex/code/vox2/tools/gg_migration/glyph_fonts.txt": "50c8c86ef9ff88cac8b08cf8c5993c8c715586088e9a5d4d3987bf68658153d3",
+    "/Users/alex/code/vox2/cpuraster/testdata/README.md": "2e2f7a723943f1a41c4fad93b5bdedddc4c05bb01f0e5b3a4e9b79599a60645e",
+    "/Users/alex/code/vox2/cpuraster/testdata/bitmap-color.ttf": "f56d92b6908ddf8278e33053c619a95593ecd0192bfa3403da937a13f61245fa",
+    "/Users/alex/code/vox2/cpuraster/testdata/make_bitmap_font.py": "9a2325d31d9bf111aa49c4d95e55466058304f3968545c402d8dac943a69ddf0",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/Ahem.ttf": "b719ecb31c5b21fc573c03f6421c74ac63c271a5a3ff841e34f9705fb94b8448",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/cyrillic-context.ttf": "dc9d355e69cdfa05e0a40227d8c548bdb1270d2e42a05844f0f845c1fdf14e5f",
+    "/Users/alex/code/vox2/Tests/Browser/Brave/resources/glyph-origin.ttf": "9438128eaeb21796c5adc70376734aaa1c47d3b955009985ab6b8c448a8afa63",
+    "/Users/alex/code/vox2/pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Regular-subset.ttf": "84f56eb9546819ac3d52ea4192e4e68f67f9922732bcb044d817fe1029ba29c5",
+    "/Users/alex/code/vox2/pixel_tests/sites/tarsnap/www.tarsnap.com/font/NotoSans-Italic-subset.ttf": "e86be89341f5bf7773f7494ebe81178aadb6d77580db4cbf8c1d3f08a1dd6685",
+    "/Users/alex/code/vox2/pixel_tests/sites/jvns/cdn.jsdelivr.net/npm/katex@0.16.4/dist/fonts/KaTeX_Main-Regular.ttf": "d0332f52868370fd83ae7fa46470f90c8f2eab2fcf12bc4f88080b340c95a830",
+    "/System/Library/Fonts/Supplemental/Arial.ttf": "525979822591a3447cfc49d943d6f7683508e25543407871c0ed8fed05fd2bd9",
+    "/System/Library/Fonts/Supplemental/Georgia.ttf": "4f54eb299fccea7f103edeb0d92437359bfd4441811d53222b82b335369f6218",
+    "/System/Library/Fonts/Supplemental/Times New Roman.ttf": "f3b4ffff71c2a0c7227d37497683b2498fb2d0a4e8beae26f022e3ccfcaabfa3",
+    "/System/Library/Fonts/Helvetica.ttc": "658718d77497145281cb0ec45ff2fe7c6e18062b2a38f837d0d792d9be3a9ba3",
+    "/System/Library/Fonts/Menlo.ttc": "f2d400484a6aace67980730ec0a9ef24ce9e535a2604f118e6fdc2510021b85f",
+    "/System/Library/Fonts/SFNS.ttf": "44890958f3e0b997028121ed7c7a789f3f5cce227c7a93ce8f86ec0db26da571",
+    "/System/Library/Fonts/NewYork.ttf": "2f2a5b0e743cd2d954dd407a7281dc0e974d93144c0cdbbc82fee43c32caa926",
+    "/System/Library/Fonts/Geneva.ttf": "dee335fb5951cd4793e2cc6640061460d5531df578e6e987d444ffa7be4b4496",
+    "/System/Library/Fonts/LastResort.otf": "c6fd31c2d68597249258d931c88b28060b545599d4817559245db33ebea82bcb",
+    "/System/Library/Fonts/Apple Color Emoji.ttc": "12bc8221a908c5bcf05f0fce940d3c3f6e9d09d8d806ffe31a969b4ac9be8f9e"
+  }
+}

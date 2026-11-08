@@ -821,3 +821,26 @@ reports zero contracted operations. See the [outline verification receipt](gg-mi
 publication lease under `Build/linux/production-build`. Its focused Linux
 supervisor/lease run passes (37 tests, 11 platform skips), including publication
 while the macOS build lock is held. Full-browser Skia removal remains open.
+
+
+### Portable bitmap glyphs and mipmaps (2026-11-08)
+
+`601709dab` ports image mipmap construction and selection; 20,000 random levels
+match the native image sampler in each build mode. `f281b6557` adds FreeType
+bitmap-only faces, color glyph sprites, strike selection, transformed bitmap
+bounds, quarter-pixel phases, and resampling through those mipmaps. Scalable
+faces keep embedded strikes disabled, matching the native font defaults.
+An original 16-by-16 sbix fixture exercises tiny mipmapped glyphs and rotated,
+nonzero bitmap origins on Linux as well as macOS's test-only FreeType backend.
+
+Of 20,000 mixed-font runs per build, 19,688 match exactly (5,441 painted) and
+312 decline. The fixture has 9,793 exact runs per build (3,831 painted), with
+207 declines for invalid collection faces. Another 10,000 emoji-only runs
+match in the normal build (849 painted). The portable fixture's native hashes
+pass on Linux normally and with `-prod -gc none`; all 25 CPU raster test files
+pass on macOS, and the FMA audit reports zero contracted operations. The
+comparison tooling now pins font files and fixture data throughout each run.
+See the [bitmap and mipmap receipt](gg-migration/bitmap-glyphs-mipmaps-20261108.json),
+including the failed diagnostic attempts and their corrections. COLR paint
+graphs, oversized glyphs, other filters, the browser bridges and their Skia
+links still remain; this is not a completed browser dependency removal.
