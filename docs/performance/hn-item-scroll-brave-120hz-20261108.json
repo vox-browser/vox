@@ -1,0 +1,212 @@
+{
+ "date": "2026-11-08",
+ "page": "https://news.ycombinator.com/item?id=50391456 (live, ~1,980 comments)",
+ "browser": {
+  "version": "Chrome/156.0.8078.48",
+  "revision": "@52db4b25c0aa3038e9a1c6021428b136cc3cb5f",
+  "executable_sha256": "9d53e182ab59b7c430abea0233088cb452694b96843d62ccccbc6c0902b98fe5",
+  "framework_sha256": "f3c180e20cb50e055e3e4279e4663d79b457ede64f4d2f38e5b58cd92dbf6971"
+ },
+ "protocol": {
+  "tool": "tools/measure_brave_scroll.py (58822e379, unmodified)",
+  "command_template": "python3 tools/run_memory_bounded.py --lock Build/brave-hn-item120-N.lock --report Build/brave-hn-item120-N-guard.json -- python3 tools/measure_brave_scroll.py --url https://news.ycombinator.com/item?id=50391456 --require-title Cybertruck --output Build/brave-hn-item120-N --width 1701 --height 948 --inputs 600 --input-hz 120 --delta 12.6 --reverse-every 300 --settle-seconds 10 --proxy-server PROXY --network-policy ...",
+  "viewport": [
+   1701,
+   948
+  ],
+  "backing_scale": 2,
+  "inputs": 600,
+  "input_hz": 120,
+  "delta_css_px": 12.6,
+  "reverse_every": 300,
+  "settle_seconds": 10,
+  "delta_note": "Matches Vox native delta 6 at the 2.1 CSS px per native unit factor in docs/BRAVE_SCROLL_FPS.md",
+  "endpoint": "Chromium presentation feedback for damaging scroll frames; CDP wheel input; frame-event tracing enabled; not physical scanout",
+  "input_route": "CDP widget injection; Cocoa bypassed",
+  "trace_categories": "-*,input.scrolling,disabled-by-default-devtools.timeline.frame,blink.user_timing",
+  "display": "single built-in Liquid Retina XDR (ProMotion, 120 Hz), window at 624,30 extending past the 1728-point screen edge",
+  "analysis": "Counted all damaging scroll presentations inside the first-to-last input window (first is the reference). The tool rejects a trial when any scroll presentation is STATE_PRESENTED_PARTIAL (main-thread update missed that frame while the compositor scroll was presented); mean_scroll_fps_complete_only excludes those frames."
+ },
+ "comparability": "Instrumented CDP observation. Input bypasses Cocoa; Chromium presentation feedback is vsync-aligned and later than Vox native layer publication. Not a matched FPS ratio or optimization acceptance; live page bytes not frozen; trials 2-4 failed navigation before input (direct connections through the session network failed; trial 5 used the shell proxy). Vox counterpart: docs/performance/hn-item-scroll-120fps-20261107.json.",
+ "trials": [
+  {
+   "trial": 1,
+   "proxy_server": "direct://",
+   "started_unix": 1794100620.1795871,
+   "finished_unix": 1794100649.6511989,
+   "host": {
+    "cpu_count": 18,
+    "load_average_before": [
+     13.72802734375,
+     12.9541015625,
+     13.787109375
+    ],
+    "load_average_after": [
+     19.083984375,
+     14.31396484375,
+     14.25
+    ]
+   },
+   "browser_exit": 0,
+   "tool_valid": false,
+   "tool_error": "Scroll feedback lacks a complete compositor presentation",
+   "guard_reason": "completed",
+   "guard_child_exit": 1,
+   "guard_peak_rss_bytes": 1565556736,
+   "checkpoints_y": [
+    3767.5,
+    12.5
+   ],
+   "document": {
+    "url": "https://news.ycombinator.com/item?id=50391456",
+    "title": "Tesla to wind down Cybertruck production | Hacker News",
+    "width": 1701,
+    "height": 948,
+    "scale": 2,
+    "documentHeight": 173807
+   },
+   "initial_pixels_sha256": "5ee83468826961cc5cd394beff359c7163538cca77fbf3e3bfe1a8398e45f971",
+   "completed_inputs": 600,
+   "damaging_scroll_presentations": 598,
+   "presented_partial": 4,
+   "input_window_s": 5.003,
+   "input_delivery_hz": 119.73,
+   "mean_scroll_fps": 118.53,
+   "mean_scroll_fps_complete_only": 117.73,
+   "median_interval_ms": 8.34,
+   "p95_interval_ms": 9.07,
+   "max_interval_ms": 18.66,
+   "fraction_over_8_34ms": 0.204,
+   "fraction_over_16_67ms": 0.007,
+   "leading_gap_ms": 19.5,
+   "trailing_gap_ms": 7.9
+  },
+  {
+   "trial": 2,
+   "proxy_server": "direct://",
+   "started_unix": 1794100685.9119282,
+   "finished_unix": 1794100687.645392,
+   "host": {
+    "cpu_count": 18,
+    "load_average_before": [
+     17.36669921875,
+     14.4814453125,
+     14.31640625
+    ],
+    "load_average_after": [
+     17.0966796875,
+     14.47314453125,
+     14.314453125
+    ]
+   },
+   "browser_exit": 0,
+   "tool_valid": false,
+   "tool_error": "{'frameId': '9FD91450B6B41847F57BAAF7A2FB6949', 'loaderId': '29E1BA1762458182041A3A7CB095DBC6', 'errorText': 'net::ERR_SOCKET_NOT_CONNECTED', 'isDownload': False}",
+   "guard_reason": "completed",
+   "guard_child_exit": 1,
+   "guard_peak_rss_bytes": 867926016
+  },
+  {
+   "trial": 3,
+   "proxy_server": "direct://",
+   "started_unix": 1794100725.42538,
+   "finished_unix": 1794100727.116999,
+   "host": {
+    "cpu_count": 18,
+    "load_average_before": [
+     15.8544921875,
+     14.451171875,
+     14.31201171875
+    ],
+    "load_average_after": [
+     15.8544921875,
+     14.451171875,
+     14.31201171875
+    ]
+   },
+   "browser_exit": 0,
+   "tool_valid": false,
+   "tool_error": "{'frameId': 'FC1398AE2901244223B3176C0D9D7DCA', 'loaderId': '0D1F3A3B6E2834CED97165E50B846909', 'errorText': 'net::ERR_SOCKET_NOT_CONNECTED', 'isDownload': False}",
+   "guard_reason": "completed",
+   "guard_child_exit": 1,
+   "guard_peak_rss_bytes": 871497728
+  },
+  {
+   "trial": 4,
+   "proxy_server": "direct://",
+   "started_unix": 1794100793.389659,
+   "finished_unix": 1794100794.967026,
+   "host": {
+    "cpu_count": 18,
+    "load_average_before": [
+     13.2373046875,
+     14.0244140625,
+     14.1640625
+    ],
+    "load_average_after": [
+     13.2373046875,
+     14.0244140625,
+     14.1640625
+    ]
+   },
+   "browser_exit": 0,
+   "tool_valid": false,
+   "tool_error": "{'frameId': '2783379517AB8DAA3308EB03D5DECE24', 'loaderId': '3D8A4940B3DFBDCA95E80D63FA6E5C0E', 'errorText': 'net::ERR_SOCKET_NOT_CONNECTED', 'isDownload': False}",
+   "guard_reason": "completed",
+   "guard_child_exit": 1,
+   "guard_peak_rss_bytes": 935460864
+  },
+  {
+   "trial": 5,
+   "proxy_server": "http://127.0.0.1:56463",
+   "started_unix": 1794100796.111219,
+   "finished_unix": 1794100833.2383502,
+   "host": {
+    "cpu_count": 18,
+    "load_average_before": [
+     13.2373046875,
+     14.0244140625,
+     14.1640625
+    ],
+    "load_average_after": [
+     16.06884765625,
+     14.673828125,
+     14.39599609375
+    ]
+   },
+   "browser_exit": 0,
+   "tool_valid": false,
+   "tool_error": "Scroll feedback lacks a complete compositor presentation",
+   "guard_reason": "completed",
+   "guard_child_exit": 1,
+   "guard_peak_rss_bytes": 1726136320,
+   "checkpoints_y": [
+    3767.5,
+    12.5
+   ],
+   "document": {
+    "url": "https://news.ycombinator.com/item?id=50391456",
+    "title": "Tesla to wind down Cybertruck production | Hacker News",
+    "width": 1701,
+    "height": 948,
+    "scale": 2,
+    "documentHeight": 173807
+   },
+   "initial_pixels_sha256": "5ee83468826961cc5cd394beff359c7163538cca77fbf3e3bfe1a8398e45f971",
+   "completed_inputs": 600,
+   "damaging_scroll_presentations": 600,
+   "presented_partial": 5,
+   "input_window_s": 5.058,
+   "input_delivery_hz": 118.43,
+   "mean_scroll_fps": 117.64,
+   "mean_scroll_fps_complete_only": 116.65,
+   "median_interval_ms": 8.33,
+   "p95_interval_ms": 8.33,
+   "max_interval_ms": 16.68,
+   "fraction_over_8_34ms": 0.015,
+   "fraction_over_16_67ms": 0.002,
+   "leading_gap_ms": 16.83,
+   "trailing_gap_ms": 7.5
+  }
+ ]
+}

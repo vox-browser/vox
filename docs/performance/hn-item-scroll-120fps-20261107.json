@@ -12,7 +12,7 @@
     "inputs": 600,
     "input_hz": 120,
     "target_hz": 120,
-    "delta_css_px": 6,
+    "delta_native": 6,
     "reverse_every": 300,
     "settle_seconds": 10,
     "required_title": "Cybertruck",

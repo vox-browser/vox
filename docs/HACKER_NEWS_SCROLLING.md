@@ -366,3 +366,33 @@ per-frame costs, which matter under heavier host load: recording (~23%),
 the main thread waiting on the parallel ring restore (~13%), GPU-canvas
 readbacks in underline frames (~12%), glyph raster and frame keys. Receipt:
 [`docs/performance/hn-item-scroll-120fps-20261107.json`](performance/hn-item-scroll-120fps-20261107.json).
+
+### Brave on the same thread (2026-11-08)
+
+Brave 156.1.98.60 (Chromium 156.0.8078.48, executable SHA256 `9d53e182…`)
+was measured on the same live thread with `tools/measure_brave_scroll.py`:
+1701×948 CSS-pixel viewport at scale 2, 600 CDP wheels at 120 Hz, 12.6 CSS
+px each (Vox's native delta 6), reversing every 300, 10-second settle,
+fresh private profile, host load 13–14.
+
+| Trial | Network | Mean scroll FPS | Input Hz | Median / p95 / max interval (ms) | >8.34 ms | Partial frames |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | direct | 118.53 | 119.73 | 8.34 / 9.07 / 18.66 | 20.4% | 4 |
+| 5 | shell HTTP proxy | 117.64 | 118.43 | 8.33 / 8.33 / 16.68 | 1.5% | 5 |
+
+Both trials also run at the input rate. Brave's compositor thread scrolls
+HN without waiting for the main thread: 4–5 frames per trial are
+`STATE_PRESENTED_PARTIAL`, meaning the main-thread update missed that frame
+while the scroll was still presented. Excluding them gives 117.7 and 116.7
+FPS. The tool's strict check rejects a trial containing any such frame, so
+both trials report a validation error; the numbers above are recomputed
+from their retained traces. Trials 2–4 failed navigation with
+`net::ERR_SOCKET_NOT_CONNECTED` before any input (direct connections from
+this session); trial 5 loaded through the shell's proxy instead.
+
+This is an instrumented CDP observation: input bypasses Cocoa and frames are
+timed by vsync-aligned Chromium presentation feedback, while Vox's figures
+time native layer publications. Brave's tighter p95 therefore does not
+establish lower jitter than Vox's 10.5 ms, and the two FPS figures are not
+a matched ratio. Receipt:
+[`docs/performance/hn-item-scroll-brave-120hz-20261108.json`](performance/hn-item-scroll-brave-120hz-20261108.json).
