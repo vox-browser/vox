@@ -19,6 +19,7 @@ pub enum CanvasFilterKind {
 // radii are Gaussian sigmas; offsets are in canvas coordinates.
 pub struct CanvasFilterStep {
 	blur_stages []BlurFilterStage
+	source_boundary_unknown bool
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
 pub:
@@ -314,7 +315,8 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 			}
 		}
 	}
-	source := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	saved := new_filter_result(SpecialImage{layer_image, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	source := FilterResult{...saved, transparent_boundary: !step.source_boundary_unknown}
 	desired := IRect{output.left - padded.left, output.top - padded.top, output.right - padded.left, output.bottom - padded.top}
 	if drop {
 		// Preserve the source color filter for the foreground merge. A real

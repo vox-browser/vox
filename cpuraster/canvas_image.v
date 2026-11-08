@@ -337,10 +337,8 @@ pub fn draw_canvas_image_filtered(mut pixels []u8, width int, height int, pitch 
 	rgba := CanvasBitmap{...image, native_n32: canvas_rgba_uses_legacy()}
 	if step := plan.layer {
 		if !bitmap_filter {
-			// onDrawImageRect2 filters the source image directly via
-			// FilterResult::MakeFromImage(), preserving its transform and
-			// sampling. Drawing into a canvas layer first is not equivalent.
-			return false
+			return draw_aligned_image_filter(mut pixels, width, height, pitch, alpha_type,
+				transform, rgba, source, destination, smoothing, global_alpha, mode, clips, step)
 		}
 		geometry := CanvasImageFilterGeometry{source, destination, transform}
 		return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,

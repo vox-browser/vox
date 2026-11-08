@@ -567,14 +567,18 @@ fn test_pattern_canvas_draws_match_skia() {
 // legacy, pipeline and sprite image draws and a clear must match Skia's
 // drawImageRect() and clear().
 fn test_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(false)
+	check_bitmap_commands_match_skia(false, false)
 }
 
 fn test_color_filtered_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(true)
+	check_bitmap_commands_match_skia(true, false)
 }
 
-fn check_bitmap_commands_match_skia(filtered bool) {
+fn test_spatially_filtered_source_image_matches_skia() {
+	check_bitmap_commands_match_skia(false, true)
+}
+
+fn check_bitmap_commands_match_skia(filtered bool, spatial bool) {
 	mut pixels := []u8{len: 6 * 4 * 4}
 	for i in 0 .. 24 {
 		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
@@ -611,7 +615,9 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
+		context.set_filter(if spatial && i == 2 {
+			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
+		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut target := if i == 0 { bitmap.data.clone() } else { expected }
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
@@ -660,7 +666,7 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 		mut direct := target.clone()
 		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
 			command)
-		if filtered && i == 1 {
+		if (filtered && i == 1) || (spatial && i == 2) {
 			supported, filter := canvas_cpu_filter(command.filters)
 			assert supported
 			assert cpuraster.draw_canvas_image_filtered(mut direct, bitmap.width, bitmap.height,

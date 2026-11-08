@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2458,7 +2458,8 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
-	filtered := os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
+	aligned := os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
+	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
 	mut image_space := 0
 	for i in 0 .. count {
@@ -2503,7 +2504,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				random_stroke_matrix()
 			}
 		}
-		c := BitmapCase{
+		mut c := BitmapCase{
 			width:        width
 			height:       height
 			pitch:        pitch
@@ -2525,6 +2526,26 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				}
 			} else { []cpuraster.CanvasFilterStep{} }
 			chromium: filtered && (rand.intn(2) or { 0 }) == 0
+		}
+		if aligned {
+			left, top := rand.intn(image.width) or { 0 }, rand.intn(image.height) or { 0 }
+			sw := rand.intn(image.width - left) or { 0 } + 1
+			sh := rand.intn(image.height - top) or { 0 } + 1
+			c = BitmapCase{...c,
+				image: cpuraster.CanvasPattern{...image, pixels: random_premultiplied(image.width * image.height),
+					pitch: image.width * 4, premultiplied: true, display_p3: false}
+				source: [f32(left), top, sw, sh]!
+				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
+				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
+				global_alpha: 1
+				chromium: false
+				filters: match i % 4 {
+					0 { random_layer_filters() }
+					1 { random_shadow_filters() }
+					2 { random_color_blur_chain() }
+					else { random_color_shadow_filters() }
+				}
+			}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
