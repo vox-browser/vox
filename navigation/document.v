@@ -7,6 +7,9 @@ import html
 import highresolutiontime
 import mimesniff
 import processmetrics
+import adblock
+import fetch
+import http
 
 // BrowsingContext.cpp::determine_the_origin and navigation document creation.
 // Compact top-level navigation has no inherited creation sandbox flags.
@@ -112,9 +115,9 @@ fn parse_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.
 	workspace := platform.begin_thread_scratch('navigation decoded input')
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
 	workspace.leave()
-	document := parse_browser_navigation_document_input_with_source(markup, encoding_name, document_url,
+	document := parse_browser_navigation_document_input_with_response(markup, encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
-		loaded.javascript_url_source)
+		loaded.javascript_url_source, loaded.response_headers, loaded.response_status)
 	workspace.finish()
 	return document
 }
@@ -132,9 +135,9 @@ struct PreparedBrowserNavigationDocument {
 
 fn prepare_loaded_browser_navigation_document(loaded LoadedPage, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, scripting_enabled bool) PreparedBrowserNavigationDocument {
 	markup, encoding_name := loaded_browser_navigation_input(loaded)
-	document := create_browser_navigation_document_input_with_source(encoding_name, document_url,
+	document := create_browser_navigation_document_input_with_response(encoding_name, document_url,
 		initiator_origin, previous, page, loaded.monotonic_response_time_ns, scripting_enabled,
-		loaded.javascript_url_source)
+		loaded.javascript_url_source, loaded.response_headers, loaded.response_status)
 	return PreparedBrowserNavigationDocument{ document: document, markup: markup }
 }
 
@@ -145,8 +148,15 @@ fn parse_prepared_browser_navigation_document(input PreparedBrowserNavigationDoc
 }
 
 fn parse_browser_navigation_document_input_with_source(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
-	document := create_browser_navigation_document_input_with_source(document_encoding, document_url,
-		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source)
+	return parse_browser_navigation_document_input_with_response(markup, document_encoding, document_url,
+		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
+		[]adblock.ResponseHeader{}, 0)
+}
+
+fn parse_browser_navigation_document_input_with_response(markup string, document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16) &dom.Document {
+	document := create_browser_navigation_document_input_with_response(document_encoding, document_url,
+		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
+		response_headers, response_status)
 	parse_prepared_browser_navigation_document(PreparedBrowserNavigationDocument{
 		document: document
 		markup: markup
@@ -155,6 +165,12 @@ fn parse_browser_navigation_document_input_with_source(markup string, document_e
 }
 
 fn create_browser_navigation_document_input_with_source(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document) &dom.Document {
+	return create_browser_navigation_document_input_with_response(document_encoding, document_url,
+		initiator_origin, previous, page, response_time_ns, scripting_enabled, javascript_url_source,
+		[]adblock.ResponseHeader{}, 0)
+}
+
+fn create_browser_navigation_document_input_with_response(document_encoding ?string, document_url dom.URL, initiator_origin ?dom.Origin, previous ?&dom.Document, page ?&dom.Page, response_time_ns i64, scripting_enabled bool, javascript_url_source ?&dom.Document, response_headers []adblock.ResponseHeader, response_status u16) &dom.Document {
 	phase_mark := platform.arena_phase_begin()
 	defer {
 		platform.arena_phase_end('html_parse', phase_mark)
@@ -188,6 +204,13 @@ fn create_browser_navigation_document_input_with_source(document_encoding ?strin
 	}
 	document.set_scripting_enabled_by_embedder(scripting_enabled)
 	settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
+	if javascript_url_source == none && response_headers.len > 0 {
+		mut response := fetch.Response.create()
+		response.url_list = [document_url]
+		response.status = if response_status == 0 { 200 } else { response_status }
+		for header in response_headers { response.header_list.append(http.Header{name: header.name, value: header.value}) }
+		document.set_policy_container(html.create_a_policy_container_from_a_fetch_response(response, settings))
+	}
 	document.load_timing_info.navigation_start_time = highresolutiontime.coarsen_time(f64(response_time_ns) / 1.0e6,
 		settings.cross_origin_isolated_capability() == .yes)
 	// This constructor bypasses create_and_initialize(), which normally starts

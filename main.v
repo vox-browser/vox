@@ -601,6 +601,8 @@ struct LoadedPage {
 	markup       string
 	status       string
 	content_type string
+	response_headers []adblock.ResponseHeader
+	response_status u16
 	javascript_url_source ?&dom.Document
 	// Compact navigation produces a response locally; this is the source
 	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
@@ -1166,6 +1168,8 @@ fn fetch_page(address string, base string) !LoadedPage {
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
+		response_headers: browsernet.response_headers(response)
+		response_status: u16(response.status_code)
 	}
 	debug_timing_checkpoint('main_resource_cache', cache_start)
 	return loaded
