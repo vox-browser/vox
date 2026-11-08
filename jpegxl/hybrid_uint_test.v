@@ -43,3 +43,16 @@ fn test_hybrid_uint_invalid_configurations_and_truncation_are_bounded() {
 		assert false
 	}
 }
+
+fn test_hybrid_uint_retains_source_nonminimal_split_selectors() {
+	for row in [[5, 6, 9], [5, 7, 9], [6, 7, 9], [8, 15, 12]] {
+		mut input := new_bit_reader([u8(row[1]), 0])
+		config := input.read_hybrid_uint(row[0])!
+		assert config.split_exponent == u32(row[1])
+		assert config.msb_in_token == 0 && config.lsb_in_token == 0
+		assert input.position == row[2]
+		mut empty := new_bit_reader([]u8{})
+		assert config.read(31, mut empty)! == 31
+		assert empty.position == 0
+	}
+}

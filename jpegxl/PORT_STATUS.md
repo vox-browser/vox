@@ -14,8 +14,9 @@ unpacking, finite half floats, Latin-1 names, extension skipping, image/preview
 dimensions, bit-depth validation and hybrid integer configurations/values.
 The direct bounded byte reader replaces the source's refill cache. Reads after
 an error and cached-reader checkpoints are not a source-state parity claim.
-Invalid hybrid split selectors and integer-coder overflow are rejected before
-shifting or adding. Half-float decoding preserves the pinned source's subnormal
+Hybrid bit allocations and integer-coder overflow are checked before shifting
+or adding. Nonminimal split exponents above the alphabet log are accepted, as
+in the pinned source, and have focused regressions. Half-float decoding preserves the pinned source's subnormal
 exponent, which is one below IEEE binary16; it is not advertised as a general
 IEEE conversion utility.
 

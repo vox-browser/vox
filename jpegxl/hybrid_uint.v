@@ -24,9 +24,8 @@ fn ceil_log2(n int) int {
 pub fn (mut b BitReader) read_hybrid_uint(log_alpha_size int) !HybridUint {
 	if log_alpha_size < 0 || log_alpha_size > 15 { return error('Invalid JPEG XL alphabet size') }
 	split := u32(b.read(ceil_log2(log_alpha_size + 1))!)
-	// Alphabet sizes used by the codec are powers of two. Reject an invalid
-	// selector before a later token shift can overflow.
-	if split > u32(log_alpha_size) { return error('Invalid JPEG XL hybrid split') }
+	// The source accepts nonminimal split exponents beyond log_alpha_size.
+	// The selector is at most 15 here; allocation checks below still bound shifts.
 	mut msb := u32(0)
 	mut lsb := u32(0)
 	if split != u32(log_alpha_size) {
