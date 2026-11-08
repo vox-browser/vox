@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-08T09:18:31.334583+00:00",
+  "updated": "2026-11-08T09:21:59.304523+00:00",
   "goal": "20% fewer observed instructions; 10 * max(Vox) <= 8 * min(Brave)",
   "status": "unmet",
   "regression_tests_run": false,
@@ -19,7 +19,8 @@
     "Literal V-prod/O3/native-CPU/inline-3000 headless probe saves 492081653 median instructions versus its O2 headless control with exact geometry. Native c16 already uses O3/inline1500, so this is not a native predicted saving. Native candidate5 exceeded the 12-GiB sampled guard during full-LTO linking; candidate6 exceeded it during native code generation from the source-proven optimized LLVM module. Neither launched a cohort. Candidate7 retries code generation with machine outlining disabled. No regression tests executed. Review also made font-rule history sticky so last-face removal remains synchronized for every sheet owner; that later correction is absent from candidate7.",
     "Relative closed-inline measurement extension rejected: paired savings -3,787,833, -2,152,469, +17,203,733 instructions; median candidate regresses 2,926,790. Generated-inline extension also removed: combined policy median 17,913,205 is no improvement over generated FLEX/GRID-only 19,569,137. These are no-assertion diagnostic workloads, not deferred regression tests.",
     "c19 rejected experimental LLVM backend pipeline regresses (max 9,607,344,384/min 10,877,278,616). c20 fresh C/native CPU/outlining-disabled candidate also fails (max 9,290,744,836/min 11,035,100,242). All 28 captures exact with complete audits and normal browser exits. New deferred regression tests remain unrun. Source scalar intrinsic width cache is a new prototype after c20 sealing.",
-    "Scalar open-inline intrinsic width cache rejected: median saving only 672,770 instructions with two of three matched pairs regressing, so collection/key overhead supplies no useful gain. Source removed; probe retained as matching pre-compaction control with VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE=1."
+    "Scalar open-inline intrinsic width cache rejected: median saving only 672,770 instructions with two of three matched pairs regressing, so collection/key overhead supplies no useful gain. Source removed; probe retained as matching pre-compaction control with VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE=1.",
+    "Compact retained inline input representation: rare image and measurement-image payloads move to separately allocated immutable snapshots; actual live image validation unchanged. New inline input is 168 bytes. Three matched headless workload pairs save 39,182,412, 43,430,670 and 21,754,410 instructions (median totals 4,405,051,141 -> 4,369,907,193); all geometry e46d920e379fdc0e. Distinct binaries pinned: scalar-intrinsic-probe control with its proposed reuse disabled, compact-input-probe candidate. No regression tests run. Native candidate9 uses prior c16 compiler settings, not rejected c19/c20 tuning."
   ],
   "records": {
     "Build/github-20-instr/inline-capacity-counts.json": [
@@ -45905,7 +45906,281 @@
         "log": "Build/github-20-instr/scalar-intrinsic-3-candidate.log"
       }
     ],
-    "scalar-intrinsic-rejected-source-sha256": "4c896c1e9b18a074b7d16bfa6e623d9c2d88dab36e7c319777d284861431bacc"
+    "scalar-intrinsic-rejected-source-sha256": "4c896c1e9b18a074b7d16bfa6e623d9c2d88dab36e7c319777d284861431bacc",
+    "compact-input-counts": [
+      {
+        "pair": 1,
+        "control": true,
+        "exit": 0,
+        "started": "2026-11-08T09:21:19.943286+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          11.80712890625,
+          12.6298828125,
+          14.01904296875
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/scalar-intrinsic-probe",
+        "sha256": "764eb1bd337894aabc9166c73e12d9e70ad77a5c45c3be7ee298db2138a9348f",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4409839894,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 1982545,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-1-control.log"
+      },
+      {
+        "pair": 1,
+        "control": false,
+        "exit": 0,
+        "started": "2026-11-08T09:21:22.272337+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          14.78515625,
+          13.2333984375,
+          14.2236328125
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/compact-input-probe",
+        "sha256": "446ba4274c45e9208bdc385c3e6806263ee343919490ba76db29ac626865f6cd",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4370657482,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 2058792,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-1-candidate.log"
+      },
+      {
+        "pair": 2,
+        "control": false,
+        "exit": 0,
+        "started": "2026-11-08T09:21:24.172535+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          14.78515625,
+          13.2333984375,
+          14.2236328125
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/compact-input-probe",
+        "sha256": "446ba4274c45e9208bdc385c3e6806263ee343919490ba76db29ac626865f6cd",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4361620471,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 2043222,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-2-candidate.log"
+      },
+      {
+        "pair": 2,
+        "control": true,
+        "exit": 0,
+        "started": "2026-11-08T09:21:25.388160+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          14.78515625,
+          13.2333984375,
+          14.2236328125
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/scalar-intrinsic-probe",
+        "sha256": "764eb1bd337894aabc9166c73e12d9e70ad77a5c45c3be7ee298db2138a9348f",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4405051141,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 1945650,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-2-control.log"
+      },
+      {
+        "pair": 3,
+        "control": true,
+        "exit": 0,
+        "started": "2026-11-08T09:21:26.614012+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          14.40185546875,
+          13.1796875,
+          14.19873046875
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/scalar-intrinsic-probe",
+        "sha256": "764eb1bd337894aabc9166c73e12d9e70ad77a5c45c3be7ee298db2138a9348f",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4391661603,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 1910866,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-3-control.log"
+      },
+      {
+        "pair": 3,
+        "control": false,
+        "exit": 0,
+        "started": "2026-11-08T09:21:27.711333+00:00",
+        "cpu_count": 18,
+        "host_load": [
+          14.40185546875,
+          13.1796875,
+          14.19873046875
+        ],
+        "binary": "/Users/alex/code/vox2/Build/github-20-instr/compact-input-probe",
+        "sha256": "446ba4274c45e9208bdc385c3e6806263ee343919490ba76db29ac626865f6cd",
+        "flag": "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "passes": [
+          {
+            "pass_index": 0,
+            "instructions": 4369907193,
+            "geometry": "e46d920e379fdc0e"
+          },
+          {
+            "pass_index": 1,
+            "instructions": 1950966,
+            "geometry": "e46d920e379fdc0e"
+          }
+        ],
+        "parser": [],
+        "log": "Build/github-20-instr/compact-input-3-candidate.log"
+      }
+    ],
+    "scalar-intrinsic-compile-guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-prod",
+        "-cflags",
+        "-O2 -fno-lto",
+        "-ldflags",
+        "-fno-lto",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-enable-globals",
+        "-d",
+        "vox_sparse_ttf",
+        "-nocache",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-o",
+        "/Users/alex/code/vox2/Build/github-20-instr/scalar-intrinsic-probe",
+        "layout/zz_github20_layout_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4629659648,
+      "elapsed_seconds": 143.635224083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "scalar-intrinsic-runtime-guard": {
+      "command": [
+        "python3",
+        "tools/zz_github20_compare.py",
+        "Build/github-20-instr/scalar-intrinsic-probe",
+        "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "scalar-intrinsic"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 563396608,
+      "elapsed_seconds": 7.5994544159999995,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compact-input-compile-guard": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+        "-memory-limit",
+        "10G",
+        "-prod",
+        "-cflags",
+        "-O2 -fno-lto",
+        "-ldflags",
+        "-fno-lto",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-enable-globals",
+        "-d",
+        "vox_sparse_ttf",
+        "-nocache",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-o",
+        "/Users/alex/code/vox2/Build/github-20-instr/compact-input-probe",
+        "layout/zz_github20_layout_probe_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 4606459904,
+      "elapsed_seconds": 145.833675542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "compact-input-runtime-guard": {
+      "command": [
+        "python3",
+        "tools/zz_github20_compare.py",
+        "Build/github-20-instr/compact-input-probe",
+        "VOX_DISABLE_INLINE_INTRINSIC_WIDTH_REUSE",
+        "compact-input"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 557694976,
+      "elapsed_seconds": 9.246599290999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
   },
   "input_sha256": {
     "github-frozen.html": "4379cf699ec3e09b6d55d91e16690205a718d0b654ab8892271d32da9d9d6136",

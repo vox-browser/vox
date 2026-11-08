@@ -7,9 +7,11 @@ ChatGPT and GitHub retain JavaScript. Only Wikipedia defaults to static renderin
 `resources.js` is the site resource catalog consumed by the uBlock adapter.
 `chatgpt.js`, `chatgpt_builder.mjs`, and `chatgpt_basic_resources.js` contain the
 existing ChatGPT replacements. `github_builder.mjs` generates replacements for
-two reviewed GitHub chunks, suppressing five telemetry collectors while
+two reviewed GitHub chunks, suppressing six telemetry collectors while
 preserving all other factories and ES module dependencies. The core setup
-factory retains its fetch nonce and defensive DOM setup. Unknown versioned
+factory retains its fetch nonce and defensive DOM setup. Selector-observer keeps
+its registration, lifecycle and callbacks without route-metadata collection.
+Unknown versioned
 URLs fall back to the original site code. Navigation, code-view hydration,
 repository actions, Codespaces and accessibility/theme initialization remain in
 the original factories.
@@ -52,15 +54,18 @@ performance claim.
 entry sheets when the original Rspack loader asks for byte-equivalent chunk CSS.
 `initial_stylesheets.v` removes repeated reviewed Primer sheets before bootstrap,
 retaining the last owner and the original layer order. `stylesheet_layout.v`
-keeps CSS property invalidation in charge of rebuilding affected boxes after an
-asynchronous sheet completes.
+keeps CSSOM's targeted invalidation in charge after an asynchronous sheet
+completes. It preserves broad invalidation for layer changes and other rules
+that require it, without forcing unrelated elements through another style pass.
 
-`animation_wakeups.v` avoids animation-only display grants for scroll timelines
-and reviewed empty offscreen skeleton masks. Timelines and sampling remain in
-the engine; visible effects retain normal grants, and iteration listeners retain
-their next timed boundary. Visibility uses refreshed scroll and visual contexts.
-Filters, outlines, shadows, backdrop filters, finite effects and other Web
-Animations keep the conservative path.
+`animation_wakeups.v` avoids redundant animation-only display grants after
+finite CSS effects complete and for scroll timelines driven by input.
+`animation_clock_demand.v` declines redundant style invalidations when those
+effects have no new sample. Active effects retain normal grants in every
+visibility state. The engine still processes animation events and timeline
+updates; JavaScript time reads use the document clock between display callbacks.
+Seeks and changed scroll sources request another style sample. Relevant Web
+Animations and CSS transitions retain the conservative path.
 
 Additional controls are `VOX_DISABLE_GITHUB_INITIAL_STYLESHEET_DEDUP=1`,
 `VOX_DISABLE_GITHUB_STYLESHEET_LAYOUT_REUSE=1` and

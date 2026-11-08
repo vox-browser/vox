@@ -1,0 +1,898 @@
+{
+  "complete": true,
+  "acceptance": false,
+  "instruction_credit": 0,
+  "implementation_commit": "816800c9a",
+  "focused_test_functions": 83,
+  "focused_test_executions": 498,
+  "guarded_jobs": 16,
+  "checks": {
+    "complete": true,
+    "passed": true,
+    "source_before": {
+      "css/computed_interpolation.v": "1a51e97477ab9bf4a6a0ba68653977c876584646e6adb8625df992b27533a370",
+      "css/style_computer.v": "e7ca37200af181e684f67a498962308fff368db338bdb9adfbc5bb52629aed9e",
+      "processmetrics/load_stages.v": "e406a9f4ae208af617bf61395889211ab973af46b89a18c12839874bb2a081eb",
+      "processmetrics/thread_substage_test.v": "8fdb6d70ad734348441bcd02a05df2e3dff888ebfea59a44ddc62ffa21b337cb",
+      "css/style_computer_test.v": "3f3edfe8745cc822b85a6cb22b65d7318b4437a8b510d1f13d1965ca758ba258",
+      "css/computed_property_invalidation_test.v": "8b05704d52fa2c8100e13636bb8801fd5db27a0bb7a7d4fe298844772f0add61",
+      "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949"
+    },
+    "source_after": {
+      "css/computed_interpolation.v": "1a51e97477ab9bf4a6a0ba68653977c876584646e6adb8625df992b27533a370",
+      "css/style_computer.v": "e7ca37200af181e684f67a498962308fff368db338bdb9adfbc5bb52629aed9e",
+      "processmetrics/load_stages.v": "e406a9f4ae208af617bf61395889211ab973af46b89a18c12839874bb2a081eb",
+      "processmetrics/thread_substage_test.v": "8fdb6d70ad734348441bcd02a05df2e3dff888ebfea59a44ddc62ffa21b337cb",
+      "css/style_computer_test.v": "3f3edfe8745cc822b85a6cb22b65d7318b4437a8b510d1f13d1965ca758ba258",
+      "css/computed_property_invalidation_test.v": "8b05704d52fa2c8100e13636bb8801fd5db27a0bb7a7d4fe298844772f0add61",
+      "css/matching_rule_set_workspace_test.v": "46231cf25e3f5938f192eaabf56c7e09b26a8eecec5822cf7be82694474ca949"
+    },
+    "compiler_sha256": "482d0c3b5fe591e4b72c613e032c5bc212126c3a0708e18db87dc36e7d907d40",
+    "rows": [
+      {
+        "label": "compile-css-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-css-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-css-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "/Users/alex/code/vox2/css/computed_property_invalidation_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-default",
+          "/Users/alex/code/vox2/css/style_computer_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793964283.1892538,
+          "cpu_count": 18,
+          "load": [
+            3.71435546875,
+            4.427734375,
+            5.1650390625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964289.876294,
+          "load": [
+            4.05712890625,
+            4.48681640625,
+            5.181640625
+          ]
+        }
+      },
+      {
+        "label": "run-css-default-disabled",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-disabled.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-disabled-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964289.884504,
+          "cpu_count": 18,
+          "load": [
+            4.05712890625,
+            4.48681640625,
+            5.181640625
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964290.463191,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        }
+      },
+      {
+        "label": "run-css-default-process-only",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-process-only.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-process-only-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964290.471553,
+          "cpu_count": 18,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964290.688832,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        }
+      },
+      {
+        "label": "run-css-default-traced",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-traced.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-default-traced-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964290.696928,
+          "cpu_count": 18,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964290.913989,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        }
+      },
+      {
+        "label": "compile-css-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-css-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-css-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "/Users/alex/code/vox2/css/computed_property_invalidation_test.v,/Users/alex/code/vox2/css/matching_rule_set_workspace_test.v",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-none",
+          "/Users/alex/code/vox2/css/style_computer_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793964290.922167,
+          "cpu_count": 18,
+          "load": [
+            4.61279296875,
+            4.5947265625,
+            5.21533203125
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964296.927299,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-css-none-disabled",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-disabled.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-disabled-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964296.934742,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964297.380117,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-css-none-process-only",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-process-only.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-process-only-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964297.387707,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964297.587426,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-css-none-traced",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-traced.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-css-none-traced-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/css-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964297.5949829,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964297.79668,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "compile-processmetrics-default",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-processmetrics-default.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-processmetrics-default-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-file-list",
+          "",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-default",
+          "/Users/alex/code/vox2/processmetrics/thread_substage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793964297.804251,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964298.3690848,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-default-disabled",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-disabled.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-disabled-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964298.3765728,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964298.696992,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-default-process-only",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-process-only.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-process-only-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964298.7046819,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964298.782179,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-default-traced",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-traced.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-default-traced-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-default"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964298.789821,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964298.8697028,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "compile-processmetrics-none",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-processmetrics-none.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/compile-processmetrics-none-guard.json",
+          "--limit-gib",
+          "12",
+          "--",
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/modules|/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b|/Users/alex/code/vox2/Build/v/font-runtime/7d9561c5e80b2d2dc64e7d40d33c4b294b233162339df840f6bf1e08b5d2fde9|/Users/alex/code/vox2/Build/v/httpcompat/2d3a483834f4da36/modules|@vmodules|@vlib",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-nocache",
+          "-w",
+          "-keepc",
+          "-cflags",
+          "-O0",
+          "-skip-running",
+          "-gc",
+          "none",
+          "-file-list",
+          "",
+          "-o",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-none",
+          "/Users/alex/code/vox2/processmetrics/thread_substage_test.v"
+        ],
+        "environment": {},
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler",
+        "host_before": {
+          "unix": 1793964298.8771908,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964299.441612,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-none-disabled",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-disabled.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-disabled-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964299.4495502,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964299.7762759,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-none-process-only",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-process-only.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-process-only-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964299.784035,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964299.862185,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      },
+      {
+        "label": "run-processmetrics-none-traced",
+        "command": [
+          "python3",
+          "/Users/alex/code/vox2/tools/run_memory_bounded.py",
+          "--lock",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-traced.lock",
+          "--report",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/run-processmetrics-none-traced-guard.json",
+          "--limit-gib",
+          "3",
+          "--",
+          "/Users/alex/code/vox2/Build/chatgpt-style-thread-substages-checked-20261106-r1/processmetrics-none"
+        ],
+        "environment": {
+          "VOX_DIAGNOSTIC_LOAD_STAGES": "1",
+          "VOX_DIAGNOSTIC_THREAD_LOAD_STAGES": "1",
+          "VOX_PROFILE_INSTRUCTIONS": "1"
+        },
+        "compiler_environment": {
+          "VEXE": "/Users/alex/code/vox2/Build/v/prealloc-runtime/2c612ee14791044dabe73cb5e4e4d97a90a18fecb3ab2a6c624befded23b340b/compiler/v"
+        },
+        "cwd": "/Users/alex/code/vox2",
+        "host_before": {
+          "unix": 1793964299.8696342,
+          "cpu_count": 18,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        },
+        "exit": 0,
+        "host_after": {
+          "unix": 1793964299.948459,
+          "load": [
+            4.6435546875,
+            4.60107421875,
+            5.2138671875
+          ]
+        }
+      }
+    ]
+  },
+  "stage_validation": {
+    "complete": true,
+    "streams": {
+      "css-default-disabled": {
+        "Vox instruction stage": {},
+        "Vox thread instruction stage": {}
+      },
+      "css-default-process-only": {
+        "Vox instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_update": 32
+        },
+        "Vox thread instruction stage": {}
+      },
+      "css-default-traced": {
+        "Vox instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_update": 32
+        },
+        "Vox thread instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_construction": 181,
+          "style_rule_matching": 181,
+          "style_custom_properties": 181,
+          "style_logical_mapping": 181,
+          "style_cascade": 220,
+          "style_computed_properties": 182,
+          "style_invalidation": 19,
+          "style_inherited_refresh": 2,
+          "style_value_conversion": 1,
+          "style_update": 32
+        }
+      },
+      "css-none-disabled": {
+        "Vox instruction stage": {},
+        "Vox thread instruction stage": {}
+      },
+      "css-none-process-only": {
+        "Vox instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_update": 32
+        },
+        "Vox thread instruction stage": {}
+      },
+      "css-none-traced": {
+        "Vox instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_update": 32
+        },
+        "Vox thread instruction stage": {
+          "css_parsing": 30,
+          "style_computation": 91,
+          "style_construction": 181,
+          "style_rule_matching": 181,
+          "style_custom_properties": 181,
+          "style_logical_mapping": 181,
+          "style_cascade": 220,
+          "style_computed_properties": 182,
+          "style_invalidation": 19,
+          "style_inherited_refresh": 2,
+          "style_value_conversion": 1,
+          "style_update": 32
+        }
+      },
+      "processmetrics-default-disabled": {
+        "Vox instruction stage": {},
+        "Vox thread instruction stage": {}
+      },
+      "processmetrics-default-process-only": {
+        "Vox instruction stage": {
+          "thread_substage_test_outer": 1,
+          "javascript_execution_and_bindings": 1
+        },
+        "Vox thread instruction stage": {}
+      },
+      "processmetrics-default-traced": {
+        "Vox instruction stage": {
+          "thread_substage_test_outer": 1,
+          "javascript_execution_and_bindings": 1
+        },
+        "Vox thread instruction stage": {
+          "thread_substage_test_outer": 1,
+          "thread_substage_test_inner": 1,
+          "javascript_execution_and_bindings": 1
+        }
+      },
+      "processmetrics-none-disabled": {
+        "Vox instruction stage": {},
+        "Vox thread instruction stage": {}
+      },
+      "processmetrics-none-process-only": {
+        "Vox instruction stage": {
+          "thread_substage_test_outer": 1,
+          "javascript_execution_and_bindings": 1
+        },
+        "Vox thread instruction stage": {}
+      },
+      "processmetrics-none-traced": {
+        "Vox instruction stage": {
+          "thread_substage_test_outer": 1,
+          "javascript_execution_and_bindings": 1
+        },
+        "Vox thread instruction stage": {
+          "thread_substage_test_outer": 1,
+          "thread_substage_test_inner": 1,
+          "javascript_execution_and_bindings": 1
+        }
+      }
+    }
+  },
+  "evidence": [
+    {
+      "path": "docs/performance/chatgpt-style-thread-substages-checked-20261106-evidence.zip",
+      "sha256": "d56f34a83fe21f8dce7cdbe0815c48683dd0921e58d5a0463e5ba8d22b88d08d",
+      "bytes": 236444,
+      "verified_entries": 44
+    }
+  ],
+  "qualification": "Fine CSS substages poll only the calling-thread counter and share global main-thread stage identities with the existing coarser dual-stream scopes. No native token ABI change. Existing CSS plus new substage tests pass in ordinary GC and no GC with diagnostics disabled, process-only and both streams. Disabled and process-only policies emit no CSS substage; dual-stream policy emits all nine in the thread stream only. Both streams balance, and mixed JavaScript/native scopes restore state. Dynamic counter disable does not advance identity or change JavaScript state. No performance credit; default diagnostics remain disabled."
+}
