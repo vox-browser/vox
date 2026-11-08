@@ -2,8 +2,6 @@ module main
 
 import css
 import dom
-import layout
-import math
 import os
 import platform
 
@@ -22,160 +20,43 @@ fn site_animation_wakeup_fallback(reason string) int {
 	return 16
 }
 
-// This controls native display grants, never animation sampling or clocks.
-// Input, script tasks, screenshots and scrolling still grant normal rendering
-// opportunities, at which every effect samples the current document timeline.
+// Native display grants follow effects that can advance with wall time.
+// Input and script tasks still grant rendering opportunities, and HTML retains
+// timeline sampling and event delivery. Completed effects can remain registered.
 fn site_animation_wakeup_delay(document &dom.Document) int {
-	// The adopted paint vector can precede this frame's script/style changes.
-	// Inspect current layout dependencies even before that vector is replaced.
-	return site_animation_wakeup_delay_with_backdrops(document, true)
-}
-
-fn site_animation_wakeup_delay_with_backdrops(document &dom.Document, has_backdrops bool) int {
 	if disable_github_animation_wakeup_throttling
-		|| !site_batches_image_completion_layout(document.url.serialize()) {
-		return 16
-	}
-	if hook := document.animations_hook_ {
-		if hook.effect_targets != unsafe { nil } && hook.effect_targets(hook.target).len > 0 {
-			// The target registry also retains canceled animations so their old
-			// style overlays can be cleared. Only relevant effects need grants.
-			if hook.calculate_get_animations == unsafe { nil } {
-				return site_animation_wakeup_fallback('unknown Web Animation effects')
-			}
-			relevant := hook.calculate_get_animations(hook.target, document.as_node()) or {
-				return site_animation_wakeup_fallback('unavailable Web Animation effects')
-			}
-			for animation in relevant {
-				if animation.concrete_kind_ == .web_animation {
-					return site_animation_wakeup_fallback('Web Animation effect')
-				}
-			}
-		}
-	}
+		|| !site_batches_image_completion_layout(document.url.serialize()) { return 16 }
 	if !document.layout_is_up_to_date() { return site_animation_wakeup_fallback('pending layout') }
-	// Client rectangles consume the current scroll snapshot and visual contexts.
-	// A scroll can leave both stale even though layout geometry is still valid.
-	mut current_document := unsafe { &dom.Document(document) }
-	current_document.update_paint_and_hit_testing_properties_if_needed()
 	workspace := platform.begin_thread_scratch('site animation wakeups')
 	records := css.document_css_animations(document)
 	workspace.leave()
 	defer { workspace.finish() }
-	mut delay := -1
-	mut checked_backdrops := false
-	mut backdrop_regions := []layout.LayoutRect{}
 	for record in records {
 		if record.play_state != 'running' { continue }
 		if record.is_transition { return site_animation_wakeup_fallback('CSS transition') }
 		animation := unsafe { &css.CSSAnimation(record.handle) }
 		if timeline := animation.timeline_ {
-			// A scroll timeline advances with scrolling or geometry, both of
-			// which already request a display grant. Wall time cannot advance it.
 			if timeline.kind == .scroll { continue }
 		}
-		// CSS retains completed effects in its associated animation list. Their
-		// configured play state remains running, but their final phase cannot
-		// change with forward wall time. Sampling and event delivery stay owned
-		// by the engine; script seeks and style changes still request rendering.
-		if animation.effect_ != unsafe { nil } && animation.effect_.current_phase == .after
-			&& math.is_finite(animation.effect_.iteration_count) { continue }
-		if !site_offscreen_skeleton_animation(document, record, animation) {
-			return site_animation_wakeup_fallback('unreviewed CSS effect: ${record.name}')
-		}
-		if has_backdrops {
-			if !checked_backdrops {
-				backdrop_regions = layout.document_backdrop_filter_read_regions(document) or {
-					return site_animation_wakeup_fallback('unsupported backdrop dependency')
-				}
-				checked_backdrops = true
-			}
-			rect := record.element.client_rects_assuming_layout_clean()[0]
-			for region in backdrop_regions {
-				if rect.x_ < region.x + region.width && rect.x_ + rect.width_ > region.x
-					&& rect.y_ < region.y + region.height && rect.y_ + rect.height_ > region.y {
-					return site_animation_wakeup_fallback('backdrop reads animated pixels')
-				}
-			}
-		}
-		mut observed := false
-		for event_name in ['animationiteration', 'webkitAnimationIteration'] {
-			if record.element.as_node().has_inclusive_ancestor_with_event_listener(event_name) {
-				observed = true
-			}
-		}
-		if observed {
-			// The effect is infinite and already active. Its next iteration is
-			// the next observable boundary; no visual update is needed meanwhile.
-			duration := animation.effect_.specified_iteration_duration
-			current := css.document_css_animation_current_time(document, record.handle) or { return 16 }
-			active := current - animation.effect_.specified_start_delay
-			if active < 0 || !math.is_finite(active) { return 16 }
-			next := int(math.ceil(duration - math.fmod(active, duration)))
-			if next <= 16 { return 16 }
-			if delay < 0 || next < delay { delay = next }
+		current := css.document_css_animation_current_time(document, record.handle) or { return 16 }
+		if animation.needs_style_sample_from_clock(current + animation.start_time_) {
+			return site_animation_wakeup_fallback('active CSS effect: ${record.name}')
 		}
 	}
-	if github_animation_wakeup_diagnostics && delay != 16 {
-		eprintln('Vox site animation wakeup: delay_ms=${delay}')
-	}
-	return delay
+	if site_has_relevant_web_animation(document) { return site_animation_wakeup_fallback('Web Animation effect') }
+	if github_animation_wakeup_diagnostics { eprintln('Vox site animation wakeup: delay_ms=-1') }
+	return -1
 }
 
-fn site_offscreen_skeleton_animation(document &dom.Document, record css.DocumentCSSAnimation,
-	animation &css.CSSAnimation) bool {
-	if !document.layout_is_up_to_date() || record.pseudo_element != ''
-		|| record.name != 'prc-Skeleton-shimmer---lzU'
-		|| record.element.namespace_uri() or { '' } != 'http://www.w3.org/1999/xhtml'
-		|| record.element.as_node().children.len != 0
-		|| 'prc-Skeleton-SkeletonBox-e93nW' !in record.element.get_attribute_value('class').split_any(' \t\r\n') {
-		return false
-	}
-	effect := animation.effect_
-	if effect == unsafe { nil } || effect.current_phase != .active
-		|| !math.is_inf(effect.iteration_count, 1)
-		|| !math.is_finite(effect.specified_iteration_duration) || effect.specified_iteration_duration <= 0 {
-		return false
-	}
-	keyframes := effect.key_frame_set or { return false }
-	mut has_position := false
-	for _, keyframe in keyframes.keyframes_by_key {
-		if keyframe.custom_properties.len > 0 || keyframe.use_initial_custom_properties.len > 0 {
-			return false
-		}
-		for property, _ in keyframe.properties {
-			if property != .mask_position { return false }
-			has_position = true
-		}
-		for property, _ in keyframe.use_initial_properties {
-			if property != .mask_position { return false }
-			has_position = true
+fn site_has_relevant_web_animation(document &dom.Document) bool {
+	if hook := document.animations_hook_ {
+		if hook.effect_targets != unsafe { nil } && hook.effect_targets(hook.target).len > 0 {
+			if hook.calculate_get_animations == unsafe { nil } { return true }
+			relevant := hook.calculate_get_animations(hook.target, document.as_node()) or { return true }
+			for animation in relevant {
+				if animation.concrete_kind_ == .web_animation { return true }
+			}
 		}
 	}
-	if !has_position { return false }
-	style := css.computed_properties_for_element(record.element) or { return false }
-	for property in [css.PropertyID.transform, .filter, .box_shadow] {
-		value := style.property(property, .no) or { return false }
-		if value.css_text != 'none' { return false }
-	}
-	clip := style.property(.mask_clip, .no) or { return false }
-	if clip.css_text != 'border-box' { return false }
-	outline := style.property(.outline_style, .no) or { return false }
-	if outline.css_text != 'none' { return false }
-	mut ancestor := record.element.as_node().parent_element()
-	for ancestor != none {
-		parent := ancestor or { break }
-		parent_style := css.computed_properties_for_element(parent) or { return false }
-		filter := parent_style.property(.filter, .no) or { return false }
-		if filter.css_text != 'none' { return false }
-		ancestor = parent.as_node().parent_element()
-	}
-	rects := record.element.client_rects_assuming_layout_clean()
-	if rects.len != 1 || rects[0].width_ <= 0 || rects[0].height_ <= 0 { return false }
-	r := rects[0]
-	viewport := document.viewport_rect()
-	// The reviewed empty skeleton's mask is clipped to its border box. Keep a
-	// generous fringe and reject effects whose ink could escape that box.
-	return r.y_ > viewport.height + 32 || r.y_ + r.height_ < -32
-		|| r.x_ > viewport.width + 32 || r.x_ + r.width_ < -32
+	return false
 }
