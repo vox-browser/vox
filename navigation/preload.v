@@ -103,7 +103,11 @@ fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 	pending.remaining += urls.len
 	mut jobs := []ResourceFetchJob{cap: urls.len}
 	for resource_url in urls {
-		cached := if resource := cache[resource_url] { [resource] } else { []PreloadedResource{} }
+		// The map also retains the current page's rendering inputs. That does
+		// not permit replaying a no-store response into another navigation.
+		cached := if resource := cache[resource_url] {
+			if browser_response_forbids_storage(resource.response_headers) { []PreloadedResource{} } else { [resource] }
+		} else { []PreloadedResource{} }
 		jobs << ResourceFetchJob{ url: resource_url.clone(), request_type: types[resource_url] or { 'image' },
 			cached: cached }
 	}
