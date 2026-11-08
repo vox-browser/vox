@@ -36,6 +36,19 @@ V `-prod` generation, `-O3` and inline threshold 1500, unlike c12's literal
 `-prod`/`-O2` build. Concurrent engine changes are included; the cross-build
 difference cannot be assigned solely to this session's optimizations.
 
+The next complete cohort, c14, also fails: maximum Vox **9,133,086,489**,
+minimum Brave **11,044,140,373**, ratio **0.82696219** (17.3038% fewer).
+All fourteen captures remain pixel-exact with complete content audits and
+normal browser exits. The publisher's completed staging bundle was measured
+directly while another session's read lease delayed canonical publication;
+no app bundle was copied or replaced. Executable
+`207a9cc799d6020bf4c6a63d4b6cd18c06f12f60aaf63a79a49dfaa2560167f1`,
+receipt `20261108-094601-fd31969d`, has the same single-C-unit O3 compilation
+policy as c13. Benchmark/guard exit is 1 for the failed gate, with peak RSS
+1,403,207,680 bytes. [Full c14 evidence](performance/github-vlang-instructions-20261108-20pct-c14.json)
+retains every pair. Newer scalar-read, repeated-input, font-rule and line-buffer
+candidates are absent from that binary and still need native validation.
+
 ## Workload and scope
 
 - Input: Brave's serialized DOM of the hydrated repository page, with every
