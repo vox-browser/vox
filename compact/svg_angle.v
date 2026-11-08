@@ -7,6 +7,8 @@ fn compact_svg_angle_bootstrap() string {
  defineInterface("SVGAngle",null,{SVG_ANGLETYPE_UNKNOWN:0,SVG_ANGLETYPE_UNSPECIFIED:1,SVG_ANGLETYPE_DEG:2,SVG_ANGLETYPE_RAD:3,SVG_ANGLETYPE_GRAD:4});
  const angleUnits=[null,"","deg","rad","grad"];
  const angleFactors={"":1,deg:1,rad:180/Math.PI,grad:0.9,turn:360};
+ const angleString=String;
+ function angleDOMString(input){if(typeof input==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return angleString(input);}
  function svgReceiver(receiver,localName){
   const state=__elementApply(__elementRecordGet,__elementRecords,[receiver]);
   if(!state||state.namespaceURI!=="http://www.w3.org/2000/svg"||(localName&&String(state.tagName).split(":").pop()!==localName))throw new TypeError("Illegal SVG receiver");
@@ -34,7 +36,7 @@ fn compact_svg_angle_bootstrap() string {
   const own=record(this,"SVGAngle"),value=angleFloat(input);storeAngle(own,[angleValue(own)[0],value]);
  });
  accessor(SVGAngle.prototype,"valueAsString",function(){return serializeAngle(angleValue(record(this,"SVGAngle")));},function(input){
-  const own=record(this,"SVGAngle"),text=""+input;if(own.readOnly)throw readOnlyError();
+  const own=record(this,"SVGAngle"),text=angleDOMString(input);if(own.readOnly)throw readOnlyError();
   const value=parseAngle(text);if(!value)throw new DOMException("Invalid angle","SyntaxError");storeAngle(own,value);
  });
  method(SVGAngle.prototype,"newValueSpecifiedUnits",function(unitType,valueInSpecifiedUnits){
@@ -57,7 +59,7 @@ fn compact_svg_angle_bootstrap() string {
    element.setAttribute("orient",value===1?"auto":value===3?"auto-start-reverse":"0");
   }};
  }
- accessor(SVGMarkerElement.prototype,"orient",function(){return svgReceiver(this,"marker").getAttribute("orient")||"";},function(value){svgReceiver(this,"marker").setAttribute("orient",""+value);});
+ accessor(SVGMarkerElement.prototype,"orient",function(){return svgReceiver(this,"marker").getAttribute("orient")||"";},function(value){svgReceiver(this,"marker").setAttribute("orient",angleDOMString(value));});
  method(SVGMarkerElement.prototype,"setOrientToAuto",function(){svgReceiver(this,"marker").setAttribute("orient","auto");},0);
  method(SVGMarkerElement.prototype,"setOrientToAngle",function(angle){
   svgReceiver(this,"marker");if(arguments.length<1)throw new TypeError("setOrientToAngle requires an angle");

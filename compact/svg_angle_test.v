@@ -24,6 +24,7 @@ angle.convertToSpecifiedUnits(SVGAngle.SVG_ANGLETYPE_DEG);near(angle.valueInSpec
 angle.valueAsString=".5TURN";check(angle.unitType,SVGAngle.SVG_ANGLETYPE_UNKNOWN);check(angle.value,180);check(angle.valueAsString,"0.5turn");
 angle.valueInSpecifiedUnits=0.25;check(angle.value,90);check(angle.valueAsString,"0.25turn");
 angle.value=45;check(angle.valueAsString,"45");check(angle.unitType,SVGAngle.SVG_ANGLETYPE_UNSPECIFIED);
+angle.valueAsString={[Symbol.toPrimitive](hint){check(hint,"string");return "30deg";}};check(angle.value,30);
 for(const text of ["bad","1px","1 2deg","Infinity","1e100deg"])throws("SyntaxError",()=>{angle.valueAsString=text;});
 for(const value of [NaN,Infinity,1e100,1n,Symbol()])throws("TypeError",()=>{angle.value=value;});
 throws("TypeError",()=>{angle.valueAsString=Symbol();});
@@ -35,6 +36,7 @@ check(marker.orientType.baseVal,SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE);
 marker.orient="100grad";check(base.valueAsString,"100grad");near(anim.value,90);
 base.valueInSpecifiedUnits=50;check(marker.getAttribute("orient"),"50grad");near(anim.value,45);
 marker.setOrientToAuto();check(marker.orient,"auto");check(marker.orientType.animVal,SVGMarkerElement.SVG_MARKER_ORIENT_AUTO);check(base.value,0);
+marker.orient={[Symbol.toPrimitive](hint){check(hint,"string");return "auto";}};check(marker.orient,"auto");
 marker.orientType.baseVal=SVGMarkerElement.SVG_MARKER_ORIENT_AUTO_START_REVERSE;check(marker.orient,"auto-start-reverse");check(marker.orientType.baseVal,3);
 marker.orientType.baseVal=SVGMarkerElement.SVG_MARKER_ORIENT_ANGLE;check(marker.orient,"0");
 angle.valueAsString="1rad";marker.setOrientToAngle(angle);check(marker.orient,"1rad");angle.value=10;check(marker.orient,"1rad");
