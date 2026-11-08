@@ -26,6 +26,8 @@ pub:
 @[heap]
 pub struct SecurityPolicyViolationEvent {
 	dom.Event
+pub mut:
+	policy_element       ?&dom.Element
 pub:
 	document_uri_        string
 	referrer_            string

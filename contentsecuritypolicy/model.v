@@ -138,6 +138,7 @@ pub mut:
 
 pub struct ElementContext {
 pub:
+	dom_element                 ?&dom.Element
 	is_html_or_svg               bool = true
 	is_script                    bool
 	is_style                     bool

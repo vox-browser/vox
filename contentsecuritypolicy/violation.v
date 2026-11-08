@@ -317,6 +317,7 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 		sample: report.sample
 	}
 	mut event := SecurityPolicyViolationEvent.create('securitypolicyviolation', init)
+	if element := violation.element_ { event.policy_element = element.dom_element }
 	event.set_is_trusted(true)
 	global.events << *event
 	if dispatch := global.dispatch_violation_event {

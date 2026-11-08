@@ -399,6 +399,11 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 						window := unsafe { &dom.Window(global_object) }
 						if document := window.associated_document() {
 							target = unsafe { &dom.EventTarget(document) }
+							if element := event.policy_element {
+								if element.as_node().is_connected() && voidptr(element.document()) == voidptr(document) {
+									target = unsafe { &dom.EventTarget(element) }
+									}
+							}
 						}
 					}
 				}
@@ -494,7 +499,9 @@ pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer
 	// WindowEnvironmentSettingsObject.cpp:134–138 and
 	// WorkerEnvironmentSettingsObject.cpp:103–107 read the current actual owner.
 	if window := settings.window_ {
-		return window.associated_document().policy_container()
+		if document := window.Window.associated_document() {
+			return document.policy_container()
+		}
 	}
 	if worker := settings.worker_ {
 		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }
@@ -508,9 +515,11 @@ pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer
 // Source defines its setter on Document and assigns WorkerGlobalScope's field.
 pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &dom.PolicyContainer) {
 	if window := settings.window_ {
-		mut document := unsafe { &dom.Document(window.associated_document()) }
-		document.set_policy_container(container)
-		return
+		if document := window.Window.associated_document() {
+			mut owner := unsafe { &dom.Document(document) }
+			owner.set_policy_container(container)
+			return
+		}
 	}
 	if worker := settings.worker_ {
 		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }
