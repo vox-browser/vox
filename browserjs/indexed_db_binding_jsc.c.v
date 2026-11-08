@@ -49,6 +49,8 @@ mut:
 	make_list      voidptr
 	sequence       voidptr
 	key_path       voidptr
+	key_range_prototype voidptr
+	key_ranges     map[voidptr]indexeddb.IDBKeyRange
 	entries        map[voidptr]&IndexedDBBindingEntry
 	wrappers       map[voidptr]voidptr
 	stores         map[string]voidptr
@@ -140,6 +142,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	binding.sequence = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 10, &exception))!
 	binding.key_path = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 11, &exception))!
 	binding.prototypes << runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 12, &exception))!
+	binding.key_range_prototype = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, values, 13, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 	runtime.install_event_wrapper_provider(EventWrapperProvider{
 		owner:  voidptr(binding)
@@ -166,6 +169,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 		binding.stores = {}
 		binding.indexes = {}
 		binding.version_events = {}
+		binding.key_ranges = {}
 		indexed_db_bindings_.delete(owner)
 	})
 }
@@ -380,6 +384,12 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		} else {
 			C.vox_jsc_JSValueMakeNull(runtime.context)
 		}
+	}
+	if method.starts_with('keyRange:') {
+		return runtime.indexed_db_construct_key_range(mut binding, method.all_after(':'), args)
+	}
+	if range := binding.key_ranges[receiver] {
+		return runtime.indexed_db_range_operation(range, method, args)
 	}
 	mut entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal IndexedDB receiver') }
 	if method == 'brand' {
@@ -628,19 +638,19 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return undefined
 			}
 			if method in ['openCursor', 'openKeyCursor'] {
-				range, direction := runtime.indexed_db_cursor_arguments(args, entry)!
+				range, direction := runtime.indexed_db_cursor_arguments(binding, args, entry)!
 				request := store.open_cursor_async(range, direction, method == 'openKeyCursor')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
 			if method == 'count' {
 				store.require_cursor_source()!
-				range := if args.len > 2 && !C.JSValueIsUndefined(runtime.context, args[2]) && !C.JSValueIsNull(runtime.context, args[2]) { ?indexeddb.IDBKeyRange(indexeddb.IDBKeyRange.only(runtime.indexed_db_key(args[2])!)!) } else { none }
+				range := runtime.indexed_db_query_range(binding, runtime.ui_event_argument(args, 2), false)!
 				return runtime.indexed_db_request(mut binding, store.count_async(range)!, none, receiver)
 			}
 			if method == 'get' {
 				store.require_cursor_source()!
-				key := runtime.indexed_db_key(args[2])!
-				request := store.get_async(indexeddb.IDBKeyRange.only(key)!)!
+				range := runtime.indexed_db_query_range(binding, args[2], true)!
+				request := store.get_async(range)!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
 			if method in ['put', 'add'] {
@@ -659,8 +669,8 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 			mut index := entry.index
 			if method in ['get', 'getKey'] {
 				index.require_cursor_source()!
-				key := runtime.indexed_db_key(args[2])!
-				request := index.get_async(indexeddb.IDBKeyRange.only(key)!, method == 'getKey')!
+				range := runtime.indexed_db_query_range(binding, args[2], true)!
+				request := index.get_async(range, method == 'getKey')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
 			if method == 'name' { return runtime.indexed_db_string(index.name()) }
@@ -682,7 +692,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 				return C.vox_jsc_JSValueMakeBoolean(runtime.context, index.unique())
 			}
 			if method in ['openCursor', 'openKeyCursor'] {
-				range, direction := runtime.indexed_db_cursor_arguments(args, entry)!
+				range, direction := runtime.indexed_db_cursor_arguments(binding, args, entry)!
 				request := index.open_cursor_async(range, direction, method == 'openKeyCursor')!
 				return runtime.indexed_db_request(mut binding, request, none, receiver)
 			}
@@ -737,7 +747,7 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 	return runtime.event_binding_type_error('Illegal IndexedDB operation ${method}')
 }
 
-fn (mut runtime Runtime) indexed_db_cursor_arguments(args []voidptr, entry &IndexedDBBindingEntry) !(?indexeddb.IDBKeyRange, indexeddb.IDBCursorDirection) {
+fn (mut runtime Runtime) indexed_db_cursor_arguments(binding &IndexedDBBinding, args []voidptr, entry &IndexedDBBindingEntry) !(?indexeddb.IDBKeyRange, indexeddb.IDBCursorDirection) {
 	direction_text := if args.len > 3 && !C.JSValueIsUndefined(runtime.context, args[3]) { runtime.indexed_db_dom_string(args[3])! } else { 'next' }
 	direction := match direction_text {
 		'next' { indexeddb.IDBCursorDirection.next }
@@ -747,12 +757,9 @@ fn (mut runtime Runtime) indexed_db_cursor_arguments(args []voidptr, entry &Inde
 		else { return runtime.event_binding_type_error('Invalid cursor direction') }
 	}
 	if entry.kind == .object_store { entry.store.require_cursor_source()! } else { entry.index.require_cursor_source()! }
-	range := if args.len > 2 && !C.JSValueIsUndefined(runtime.context, args[2]) && !C.JSValueIsNull(runtime.context, args[2]) {
-		?indexeddb.IDBKeyRange(indexeddb.IDBKeyRange.only(runtime.indexed_db_key(args[2])!)!)
-	} else { none }
+	range := runtime.indexed_db_query_range(binding, runtime.ui_event_argument(args, 2), false)!
 	return range, direction
 }
-
 fn (mut runtime Runtime) indexed_db_error(message string) !voidptr {
 	if message == '' { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 	return runtime.javascript_dom_exception(webidl.dom_exception_value(webidl.DOMException.create(message.all_before(':'), message.all_after(':').trim_space())))
@@ -785,4 +792,3 @@ fn (mut runtime Runtime) indexed_db_key_path(value voidptr) !indexeddb.KeyPath {
 	}
 	return indexeddb.KeyPath(runtime.indexed_db_dom_string(converted)!)
 }
-
