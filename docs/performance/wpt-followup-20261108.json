@@ -1,0 +1,1997 @@
+{
+  "scope": "Focused WPT follow-up; this is not a new full-suite result",
+  "all_wpt_tests_pass": false,
+  "last_full_run": "docs/performance/wpt-r14-20261108.json",
+  "source_checks": [
+    {
+      "job": "wpt-html-pi-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-html-pi-20261108a/processing_instruction_parsing_test",
+          "html/processing_instruction_parsing_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 2948923392,
+        "elapsed_seconds": 70.739236584,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-html-pi-20261108a/processing_instruction_parsing_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.506467417,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-html-pi-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-html-pi-20261108b/processing_instruction_parsing_test",
+          "html/processing_instruction_parsing_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3002056704,
+        "elapsed_seconds": 69.178466208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-html-pi-20261108b/processing_instruction_parsing_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.574290542,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-tokenizer-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-tokenizer-20261108a/html_tokenizer_test",
+          "html/html_tokenizer_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3013066752,
+        "elapsed_seconds": 63.076460541,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-tokenizer-20261108a/html_tokenizer_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 589824,
+        "elapsed_seconds": 0.539424208,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-svg-angle-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/v/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-svg-angle-20261108a/svg_angle_test",
+          "compact/svg_angle_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5937545216,
+        "elapsed_seconds": 149.277234916,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-svg-angle-20261108a/svg_angle_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 48922624,
+        "elapsed_seconds": 0.947599666,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-svg-angle-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-svg-angle-20261108b/svg_angle_test",
+          "compact/svg_angle_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5959335936,
+        "elapsed_seconds": 234.011874333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-svg-angle-20261108b/svg_angle_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 37715968,
+        "elapsed_seconds": 1.015753875,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-iframe-storage-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-iframe-storage-20261108a/iframe_window_storage_test",
+          "compact/iframe_window_storage_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5522276352,
+        "elapsed_seconds": 179.61016579100001,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-iframe-storage-20261108a/iframe_window_storage_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 32768,
+        "elapsed_seconds": 0.978118333,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-data-members-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-data-members-20261108a/shared_properties_test",
+          "compact/shared_properties_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1467252736,
+        "elapsed_seconds": 6.448412416,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-data-members-20261108b",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-data-members-20261108b/shared_properties_test",
+          "compact/shared_properties_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5443764224,
+        "elapsed_seconds": 389.70229191600004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "runtime": {
+        "command": [
+          "Build/wpt-data-members-20261108b/shared_properties_test"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 41730048,
+        "elapsed_seconds": 1.3998265,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-data-members-20261108c",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-data-members-20261108c/shared_properties_test",
+          "compact/shared_properties_test.v"
+        ],
+        "reason": "timeout",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5318164480,
+        "elapsed_seconds": 420.303141125,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-no-store-navigation-20261108a",
+      "compile": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+          "-w",
+          "-n",
+          "-cc",
+          "clang",
+          "-memory-limit",
+          "10G",
+          "-prealloc",
+          "-gc",
+          "none",
+          "-enable-globals",
+          "-d",
+          "vox_sparse_ttf",
+          "-d",
+          "vox_ui2",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "-skip-running",
+          "-o",
+          "Build/wpt-no-store-navigation-20261108a/preload_cache_test",
+          "navigation/preload_cache_test.v"
+        ],
+        "reason": "timeout",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 5517213696,
+        "elapsed_seconds": 420.21235,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "wpt_runs": [
+    {
+      "job": "wpt-current-targets-20261108a",
+      "identity": {
+        "started": "2026-11-08T05:56:51+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-current-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "30",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "webaudio/idlharness.https.window",
+          "--include",
+          "trusted-types/set-attributes-mutations-in-callback.tentative",
+          "--include",
+          "trusted-types/set-attributes-require-trusted-types-default-policy",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "css/css-typed-om/idlharness",
+          "--include",
+          "css/cssom-view/idlharness",
+          "--include",
+          "dom/ranges/Range-insertNode"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          18.35,
+          33.91,
+          53.51
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "fa3b82a3b41d07243bc05c3dcb45a54222f1645afd2ce02b8050b9e123ab7dd6",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-054401-91d67216/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "0928282e28dff444b3962d1427b2a9e24b97621597bd09cb77955e4e5aea521d",
+            "dirty": true,
+            "head": "ea422a171d71c2954a2fbe78a5df8a37877fc4b8",
+            "repository_sha256": "d661251cdaa6dc7e0b2f4cff022f26bf36451121662a9417bd13ac42d6503d4f"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "0cd45f055144f65c893e3e95cdaad1a4ae0d17162de05dbb767759a76ad45bea",
+            "dirty": true,
+            "head": "0b55811b42209f76559d3900d6bfc975a01a242a",
+            "repository_sha256": "579ae6853e083fbaaab9a493af083f14e9f67ab1bec38006321a78578c64767b"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "ea422a171d71c2954a2fbe78a5df8a37877fc4b8",
+            "id": "034b02c9d25c4939a44dcb073c0c0037",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "0928282e28dff444b3962d1427b2a9e24b97621597bd09cb77955e4e5aea521d",
+            "dirty": true,
+            "head": "ea422a171d71c2954a2fbe78a5df8a37877fc4b8",
+            "repository_sha256": "d661251cdaa6dc7e0b2f4cff022f26bf36451121662a9417bd13ac42d6503d4f"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "fa3b82a3b41d07243bc05c3dcb45a54222f1645afd2ce02b8050b9e123ab7dd6",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "94ef19ba0a6f407da243753473055857b341ec2042c8984f0c946e7e61460117",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "d7b6fcb4ec1a9226950c277ebb83199cb0d5064de59daa01604596614c0b8f23",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "2e21413f0394a168036104b8a8aeb18f6c8ea24a5ee1ba7cf88dc49a885313e5",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "1c2f3fe8b513d392940a00a6aec0ca88c86c61c717b033baa0f6afda3e124f61",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 30,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 2.0
+        },
+        "base_url": "http://127.0.0.1:59099",
+        "load_end": [
+          17.52,
+          33.22,
+          53.04
+        ],
+        "finished": "2026-11-08T05:57:00+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "summary": {
+        "tests": 10,
+        "browsers": {
+          "vox": {
+            "tests": 10,
+            "outcomes": {
+              "COMPLETE": 9,
+              "NO_HARNESS": 1
+            },
+            "harness": {
+              "OK": 9
+            },
+            "subtests": {
+              "PASS": 1891,
+              "FAIL": 3261
+            },
+            "subtest_total": 5152,
+            "subtest_pass_rate": 0.367,
+            "tests_all_pass": 2
+          }
+        },
+        "wall_seconds": {
+          "vox": 8.4
+        },
+        "launches": {
+          "vox": 2
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-current-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "30",
+          "--browser-memory-gib",
+          "2",
+          "--include",
+          "css/css-fonts/parsing/font-valid",
+          "--include",
+          "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "--include",
+          "svg/idlharness.window",
+          "--include",
+          "webaudio/idlharness.https.window",
+          "--include",
+          "trusted-types/set-attributes-mutations-in-callback.tentative",
+          "--include",
+          "trusted-types/set-attributes-require-trusted-types-default-policy",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "css/css-typed-om/idlharness",
+          "--include",
+          "css/cssom-view/idlharness",
+          "--include",
+          "dom/ranges/Range-insertNode"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 1654095872,
+        "elapsed_seconds": 9.544694625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "files": [
+        {
+          "test": "css/css-fonts/parsing/font-valid",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 110.346,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 315
+          },
+          "failures": []
+        },
+        {
+          "test": "css/css-typed-om/idlharness",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 243.688,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 27,
+            "FAIL": 518
+          },
+          "failures": [
+            {
+              "name": "CSSStyleValue interface: existence and properties of interface object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface object length",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface object name",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface: existence and properties of interface prototype object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface: existence and properties of interface prototype object's \"constructor\" property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface: existence and properties of interface prototype object's @@unscopables property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface: stringifier",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            },
+            {
+              "name": "CSSStyleValue interface: operation parse(USVString, USVString)",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CSSStyleValue\" expected property \"CSSStyleValue\" missing"
+            }
+          ]
+        },
+        {
+          "test": "css/cssom-view/idlharness",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 223.898,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 190,
+            "FAIL": 210
+          },
+          "failures": [
+            {
+              "name": "Partial interface MouseEvent: original interface defined",
+              "status": "FAIL",
+              "message": "assert_true: Original interface should be defined expected true got false"
+            },
+            {
+              "name": "CaretPosition interface: existence and properties of interface object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface object length",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface object name",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface: existence and properties of interface prototype object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface: existence and properties of interface prototype object's \"constructor\" property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface: existence and properties of interface prototype object's @@unscopables property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            },
+            {
+              "name": "CaretPosition interface: attribute offsetNode",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"CaretPosition\" expected property \"CaretPosition\" missing"
+            }
+          ]
+        },
+        {
+          "test": "dom/ranges/Range-insertNode",
+          "harness": null,
+          "outcome": "NO_HARNESS",
+          "document_ms": null,
+          "url_matches": null,
+          "subtests": {},
+          "failures": []
+        },
+        {
+          "test": "html/syntax/parsing/parse-processing-instruction.tentative",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 111.877,
+          "url_matches": true,
+          "subtests": {
+            "FAIL": 199,
+            "PASS": 108
+          },
+          "failures": [
+            {
+              "name": "Processing instructions (fragment), markup: <?something>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (iframe), markup: <?something>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (DOMParser), markup: <?something>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (fragment), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (iframe), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (DOMParser), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something\",\"name\":\"#comment\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (fragment), markup: <?something good>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something good\",\"name\":\"#comment\"}],\"expected\":[{\"target\":\"something\",\"data\":\"good\",\"type\":7,\"name\":\"something\"}]} expected 7 but got 8"
+            },
+            {
+              "name": "Processing instructions (iframe), markup: <?something good>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"type\",\"result\":[{\"type\":8,\"data\":\"?something good\",\"name\":\"#comment\"}],\"expected\":[{\"target\":\"something\",\"data\":\"good\",\"type\":7,\"name\":\"something\"}]} expected 7 but got 8"
+            }
+          ]
+        },
+        {
+          "test": "svg/idlharness.window",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 290.717,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 1027,
+            "FAIL": 753
+          },
+          "failures": [
+            {
+              "name": "SVGElement interface: attribute ownerSVGElement",
+              "status": "FAIL",
+              "message": "assert_throws_js: getting property on prototype object must throw TypeError function \"function () {\n    [native code]\n}\" did not throw"
+            },
+            {
+              "name": "SVGElement interface: attribute viewportElement",
+              "status": "FAIL",
+              "message": "assert_throws_js: getting property on prototype object must throw TypeError function \"function () {\n    [native code]\n}\" did not throw"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingElement\" expected true got false"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingUseElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingUseElement\" expected true got false"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getBBox(optional SVGBoundingBoxOptions)",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getBBox\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getCTM()",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getCTM\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getScreenCTM()",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getScreenCTM\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: attribute requiredExtensions",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"requiredExtensions\" expected true got false"
+            }
+          ]
+        },
+        {
+          "test": "svg/types/scripted/SVGAnimatedLength-initial-values",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 72.677,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 130
+          },
+          "failures": []
+        },
+        {
+          "test": "trusted-types/set-attributes-mutations-in-callback.tentative",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 333.645,
+          "url_matches": true,
+          "subtests": {
+            "FAIL": 248
+          },
+          "failures": [
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1998/Math/MathML, element=mrow, attrName=onmousedown (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1999/xhtml, element=IFRAME, attrName=srcdoc (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink HTMLIFrameElement srcdoc of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/1999/xhtml, element=SCRIPT, attrName=src (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink HTMLScriptElement src of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttribute works for elementNS=http://www.w3.org/2000/svg, element=script, attrName=href (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink SVGScriptElement href of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttributeNS works for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttributeNS works for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick (delete other attribute before)",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "trusted-types/set-attributes-require-trusted-types-default-policy",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 88.095,
+          "url_matches": true,
+          "subtests": {
+            "FAIL": 182,
+            "PASS": 82
+          },
+          "failures": [
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element onclick\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element ondblclick\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1998/Math/MathML, element=mrow, attrName=onmousedown",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"Element onmousedown\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=IFRAME, attrName=srcdoc",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"HTMLIFrameElement srcdoc\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=SCRIPT, attrName=src",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"HTMLScriptElement src\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttribute applies default policy for elementNS=http://www.w3.org/2000/svg, element=script, attrName=href",
+              "status": "FAIL",
+              "message": "assert_equals: expected (string) \"SVGScriptElement href\" but got (undefined) undefined"
+            },
+            {
+              "name": "Element.setAttributeNS applies default policy for elementNS=http://www.w3.org/1999/xhtml, element=DIV, attrName=onclick",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            },
+            {
+              "name": "Element.setAttributeNS applies default policy for elementNS=http://www.w3.org/2000/svg, element=g, attrName=ondblclick",
+              "status": "FAIL",
+              "message": "Sink Element event handler of type 'script' requires a TrustedType to be used"
+            }
+          ]
+        },
+        {
+          "test": "webaudio/idlharness.https.window",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 264.048,
+          "url_matches": true,
+          "subtests": {
+            "FAIL": 1151,
+            "PASS": 12
+          },
+          "failures": [
+            {
+              "name": "idl_test setup",
+              "status": "FAIL",
+              "message": "promise_test: Unhandled rejection with value: object \"ReferenceError: Can't find variable: AudioContext\""
+            },
+            {
+              "name": "BaseAudioContext interface: existence and properties of interface object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface object length",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface object name",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface: existence and properties of interface prototype object",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface: existence and properties of interface prototype object's \"constructor\" property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface: existence and properties of interface prototype object's @@unscopables property",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            },
+            {
+              "name": "BaseAudioContext interface: attribute destination",
+              "status": "FAIL",
+              "message": "assert_own_property: self does not have own property \"BaseAudioContext\" expected property \"BaseAudioContext\" missing"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job": "wpt-reporter-targets-20261108a",
+      "identity": {
+        "started": "2026-11-08T06:21:49+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-reporter-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "svg/idlharness.window"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          41.74,
+          34.42,
+          33.67
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-060445-7df1d8ac/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "repository_sha256": "fe417333b1c9650acbadd53dc0c7cc170456eaa234e59450870822ae4e87e973"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "7987ab26f10e676460f513bfba3e48ce9c32ebc4f0f832813537dbbccc4e9ff4",
+            "dirty": true,
+            "head": "4b8d61ce09195fd618574e77bd3c1f80e650a832",
+            "repository_sha256": "919e75ea15e24133fe374fe9e5678fda519a0aaf08b93e60105479a777628eb8"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "id": "510ff4463ab84201a58308b41cc0b21b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "0bc9a628d0c77566a0d49036d1bc27663750b7ae",
+            "repository_sha256": "87f28e219ae2cf896ac0495c15ce24039414e987a82e12b07ba5fd4737c2fef7"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "94ef19ba0a6f407da243753473055857b341ec2042c8984f0c946e7e61460117",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "a6cbd5a6b5bc0b2adb048925a45ead7cbd2dbda249faad63c33406e384edcc46",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "9b37e4b4aee5ca2dd09e33dd15766f011049131e6d6c5ded49154f67241d056e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "1c2f3fe8b513d392940a00a6aec0ca88c86c61c717b033baa0f6afda3e124f61",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 4.0
+        },
+        "base_url": "http://127.0.0.1:61716",
+        "load_end": [
+          36.37,
+          33.71,
+          33.44
+        ],
+        "finished": "2026-11-08T06:22:08+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "summary": {
+        "tests": 3,
+        "browsers": {
+          "vox": {
+            "tests": 3,
+            "outcomes": {
+              "COMPLETE": 3
+            },
+            "harness": {
+              "OK": 3
+            },
+            "subtests": {
+              "PASS": 3171,
+              "FAIL": 756
+            },
+            "subtest_total": 3927,
+            "subtest_pass_rate": 0.8075,
+            "tests_all_pass": 1
+          }
+        },
+        "wall_seconds": {
+          "vox": 18.3
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-reporter-targets-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "html/syntax/parsing/parse-processing-instruction.tentative",
+          "--include",
+          "dom/ranges/Range-insertNode",
+          "--include",
+          "svg/idlharness.window"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 3445030912,
+        "elapsed_seconds": 19.565872625,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "files": [
+        {
+          "test": "dom/ranges/Range-insertNode",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 16548.438,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 1840
+          },
+          "failures": []
+        },
+        {
+          "test": "html/syntax/parsing/parse-processing-instruction.tentative",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 175.464,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 304,
+            "FAIL": 3
+          },
+          "failures": [
+            {
+              "name": "Processing instructions (fragment), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"data\",\"result\":[{\"type\":7,\"target\":\"something\",\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected (undefined) undefined but got (string) \"\""
+            },
+            {
+              "name": "Processing instructions (iframe), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"data\",\"result\":[{\"type\":7,\"target\":\"something\",\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected (undefined) undefined but got (string) \"\""
+            },
+            {
+              "name": "Processing instructions (DOMParser), markup: <?something><span>",
+              "status": "FAIL",
+              "message": "assert_equals: {\"key\":\"data\",\"result\":[{\"type\":7,\"target\":\"something\",\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"data\":\"\",\"name\":\"SPAN\"}],\"expected\":[{\"target\":\"something\",\"type\":7,\"data\":\"\",\"name\":\"something\"},{\"type\":1,\"name\":\"SPAN\"}]} expected (undefined) undefined but got (string) \"\""
+            }
+          ]
+        },
+        {
+          "test": "svg/idlharness.window",
+          "harness": "OK",
+          "outcome": "COMPLETE",
+          "document_ms": 305.932,
+          "url_matches": true,
+          "subtests": {
+            "PASS": 1027,
+            "FAIL": 753
+          },
+          "failures": [
+            {
+              "name": "SVGElement interface: attribute ownerSVGElement",
+              "status": "FAIL",
+              "message": "assert_throws_js: getting property on prototype object must throw TypeError function \"function () {\n    [native code]\n}\" did not throw"
+            },
+            {
+              "name": "SVGElement interface: attribute viewportElement",
+              "status": "FAIL",
+              "message": "assert_throws_js: getting property on prototype object must throw TypeError function \"function () {\n    [native code]\n}\" did not throw"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingElement\" expected true got false"
+            },
+            {
+              "name": "SVGElement interface: attribute correspondingUseElement",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"correspondingUseElement\" expected true got false"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getBBox(optional SVGBoundingBoxOptions)",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getBBox\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getCTM()",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getCTM\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: operation getScreenCTM()",
+              "status": "FAIL",
+              "message": "assert_own_property: interface prototype object missing non-static operation expected property \"getScreenCTM\" missing"
+            },
+            {
+              "name": "SVGGraphicsElement interface: attribute requiredExtensions",
+              "status": "FAIL",
+              "message": "assert_true: The prototype object must have a property \"requiredExtensions\" expected true got false"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "job": "wpt-range-datachange-20261108a",
+      "identity": {
+        "started": "2026-11-08T06:26:18+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-datachange-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "dom/ranges/Range-mutations-dataChange"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          49.09,
+          37.67,
+          34.86
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-060445-7df1d8ac/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "repository_sha256": "fe417333b1c9650acbadd53dc0c7cc170456eaa234e59450870822ae4e87e973"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "7987ab26f10e676460f513bfba3e48ce9c32ebc4f0f832813537dbbccc4e9ff4",
+            "dirty": true,
+            "head": "4b8d61ce09195fd618574e77bd3c1f80e650a832",
+            "repository_sha256": "919e75ea15e24133fe374fe9e5678fda519a0aaf08b93e60105479a777628eb8"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "id": "510ff4463ab84201a58308b41cc0b21b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "0bc9a628d0c77566a0d49036d1bc27663750b7ae",
+            "repository_sha256": "87f28e219ae2cf896ac0495c15ce24039414e987a82e12b07ba5fd4737c2fef7"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "94ef19ba0a6f407da243753473055857b341ec2042c8984f0c946e7e61460117",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "a6cbd5a6b5bc0b2adb048925a45ead7cbd2dbda249faad63c33406e384edcc46",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "9b37e4b4aee5ca2dd09e33dd15766f011049131e6d6c5ded49154f67241d056e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "1c2f3fe8b513d392940a00a6aec0ca88c86c61c717b033baa0f6afda3e124f61",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 4.0
+        },
+        "base_url": "http://127.0.0.1:62961",
+        "load_end": [
+          51.17,
+          38.29,
+          35.09
+        ],
+        "finished": "2026-11-08T06:26:25+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "summary": {
+        "tests": 1,
+        "browsers": {
+          "vox": {
+            "tests": 1,
+            "outcomes": {
+              "NO_HARNESS": 1
+            },
+            "harness": {},
+            "subtests": {},
+            "subtest_total": 0,
+            "subtest_pass_rate": null,
+            "tests_all_pass": 0
+          }
+        },
+        "wall_seconds": {
+          "vox": 6.1
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-datachange-20261108a",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "dom/ranges/Range-mutations-dataChange"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1828651008,
+        "elapsed_seconds": 8.437415541,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "files": [
+        {
+          "test": "dom/ranges/Range-mutations-dataChange",
+          "harness": null,
+          "outcome": "NO_HARNESS",
+          "document_ms": null,
+          "url_matches": null,
+          "subtests": {},
+          "failures": []
+        }
+      ]
+    },
+    {
+      "job": "wpt-range-datachange-20261108b",
+      "identity": {
+        "started": "2026-11-08T06:27:25+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-datachange-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "dom/ranges/Range-mutations-dataChange"
+        ],
+        "ladybird_head": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+        "wpt_root": "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          66.96,
+          44.8,
+          37.73
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "mode": "single",
+            "requested": "single",
+            "v_prod": true
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-060445-7df1d8ac/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "repository_sha256": "fe417333b1c9650acbadd53dc0c7cc170456eaa234e59450870822ae4e87e973"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "7987ab26f10e676460f513bfba3e48ce9c32ebc4f0f832813537dbbccc4e9ff4",
+            "dirty": true,
+            "head": "4b8d61ce09195fd618574e77bd3c1f80e650a832",
+            "repository_sha256": "919e75ea15e24133fe374fe9e5678fda519a0aaf08b93e60105479a777628eb8"
+          },
+          "request": {
+            "c_mode": "single",
+            "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+            "id": "510ff4463ab84201a58308b41cc0b21b",
+            "renderer": "gg",
+            "v_prod": true
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+            "dirty": true,
+            "head": "0bc9a628d0c77566a0d49036d1bc27663750b7ae",
+            "repository_sha256": "87f28e219ae2cf896ac0495c15ce24039414e987a82e12b07ba5fd4737c2fef7"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "94ef19ba0a6f407da243753473055857b341ec2042c8984f0c946e7e61460117",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "a6cbd5a6b5bc0b2adb048925a45ead7cbd2dbda249faad63c33406e384edcc46",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "9b37e4b4aee5ca2dd09e33dd15766f011049131e6d6c5ded49154f67241d056e",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "1c2f3fe8b513d392940a00a6aec0ca88c86c61c717b033baa0f6afda3e124f61",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 20,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 4.0
+        },
+        "base_url": "http://127.0.0.1:63195",
+        "load_end": [
+          65.0,
+          45.88,
+          38.28
+        ],
+        "finished": "2026-11-08T06:27:47+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": "vox launch vox-000-000 could not run the warm-up test (HARD_TIMEOUT)"
+      },
+      "summary": {
+        "tests": 1,
+        "browsers": {},
+        "wall_seconds": {},
+        "launches": {},
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-range-datachange-20261108b",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "20",
+          "--browser-memory-gib",
+          "4",
+          "--include",
+          "dom/ranges/Range-mutations-dataChange"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 272416768,
+        "elapsed_seconds": 22.706346292,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "files": []
+    }
+  ],
+  "reporter_checks": [
+    {
+      "job": "wpt-reporter-20261108a",
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 49627136,
+        "elapsed_seconds": 1.275384459,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    },
+    {
+      "job": "wpt-reporter-20261108b",
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare_test.py"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 3221225472,
+        "observed_peak_rss_bytes": 60784640,
+        "elapsed_seconds": 1.2322689999999998,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      }
+    }
+  ],
+  "archives": [
+    {
+      "path": "/Users/alex/.cache/vox/wpt/20261108-followup-initial.tar.gz",
+      "sha256": "7b397a51b85f46bf778adad16c36aac74ee009e52584b9d6719757bf13d19c31",
+      "bytes": 91640,
+      "files": {
+        "Build/wpt-html-pi-20261108a/runtime.json": "a0891fe5205bd6a65363ee5a3d6c37d9ac50c15dbc5993d84338996bcaaa1f2a",
+        "Build/wpt-html-pi-20261108a/compile.log": "010ce1a2122f55017e6aee01c8a4fde3ff9a2d2af1ba14781cb5b5dbc2b347a7",
+        "Build/wpt-html-pi-20261108a/compile.json": "1c60b672935521675bfc1a6bd5521c947de9612848b2f2b320b65d2417ec2b4e",
+        "Build/wpt-html-pi-20261108b/runtime.json": "682190a06166c064c16752e937cc603d52414e2bf34f487623410e045c6cfbdc",
+        "Build/wpt-html-pi-20261108b/compile.log": "0f19f77783c3165faee3d6a39a0bab2035ad598cf9fa5bc225942ec975dee8cd",
+        "Build/wpt-html-pi-20261108b/compile.json": "94f2c1b954cfbcf9222ea4c29351790e66c35b2b28cd78cd3708fd53880442c7",
+        "Build/wpt-tokenizer-20261108a/runtime.json": "cb87263b0aa52392f7d7b6b09ccbc1abdace991fa01f4bddebcfc1f80fa25ae2",
+        "Build/wpt-tokenizer-20261108a/compile.log": "47f6f2db89e84b32860157eafa1a9fcf449070e0fe215d0177830591c5b5161e",
+        "Build/wpt-tokenizer-20261108a/compile.json": "a373925061be6c147a5717abfdee0e71a4ffb36a30a2522581e306b5d5023889",
+        "Build/wpt-svg-angle-20261108a/compile-command.json": "7dce6fa965d4ffdab31f29ee28ddf3aadfcacae8abb3d24761d81dbeae76e44a",
+        "Build/wpt-svg-angle-20261108a/compile-guard.json": "90556868902795e48f8f0aee9071f8835807b278607540a58bb39792d7afe4a2",
+        "Build/wpt-svg-angle-20261108a/compile.log": "b8f945496e206952a95c076a2e54b5758b701e31284ebf62a0631358aa114b81",
+        "Build/wpt-svg-angle-20261108a/runtime-guard.json": "f993a479dc0975666ed7fc1a1bc84ee1f9c537a8e854bce6d0dc2df782aa27dc",
+        "Build/wpt-svg-angle-20261108b/compile-command.json": "56efce841466378814e8a3b913e7438488df0dcb5859bc599982f7abcb13fd56",
+        "Build/wpt-svg-angle-20261108b/compile-guard.json": "9dce002e648c37e3843eb6919aa1f3a3f7cdef1005b52395140742a3486d2e78",
+        "Build/wpt-svg-angle-20261108b/compile.log": "4d08ee215814cc66a918054e45c1494a4184bfee892000101d8ace15df219db4",
+        "Build/wpt-svg-angle-20261108b/runtime.log": "1e5e7029c78d77379c2ed6a8a79a390a679ae658e4e6478179b12a471108a433",
+        "Build/wpt-svg-angle-20261108b/runtime-guard.json": "460a5541ab5be37aa2b7046001cbaef2f41b84653111f634026c4f7846adf62c",
+        "Build/wpt-iframe-storage-20261108a/compile-command.json": "59aa91cb9403b28a02e3ca6d31a54afd34db6aedd5c007de6ac04920cd097f61",
+        "Build/wpt-iframe-storage-20261108a/compile-guard.json": "90822c0372f8b6cc87c10900af014eaefd8dce61ec0b55c4079fdf551350d615",
+        "Build/wpt-iframe-storage-20261108a/compile.log": "5dc4c251471c32cb2f23335c52981fcb6855666e6e09694cc3b9204d16d5612a",
+        "Build/wpt-iframe-storage-20261108a/runtime.log": "aa0c2b5ca4b43b41108b8161771331fae40eee95154637e8436fbd4ce534e339",
+        "Build/wpt-iframe-storage-20261108a/runtime-guard.json": "74f6079027f715220f4a3cc741beef9a93df71fad159599a16f6d763508aadd3",
+        "Build/wpt-data-members-20261108a/compile-command.json": "3f5c47d61cab2b2e260f15b3f638eeb21fca10bf56adf13ea57afcab5ebb162d",
+        "Build/wpt-data-members-20261108a/compile-guard.json": "edffc81e247450f1ea69bab6c0f44c8473010854497de6008349fc63cdbad804",
+        "Build/wpt-data-members-20261108a/compile.log": "e620ac990bbf5a273da93f70df47c55aeaaf1c0f7d2e49e9f371f5ffe4b9e7f5",
+        "Build/wpt-data-members-20261108b/compile-command.json": "4465bbe685f4f0b4849cd01eb88fcaff093a2ce9412c75bd9a2f4d3df512fdf9",
+        "Build/wpt-data-members-20261108b/compile-guard.json": "0ad95407bb292ca0a1a3f30b23ffcf37a632c769acf3b3cd1b3339a03f1a7ba5",
+        "Build/wpt-data-members-20261108b/compile.log": "405e101069d4611b9a97739bd8efb8e8a4c04c9531616e66ba16b296bb4fb3b9",
+        "Build/wpt-data-members-20261108b/runtime.log": "a7b1c50b95b5e4dc606c5c2b790e4c7811829aa372046867f4886825b5681c49",
+        "Build/wpt-data-members-20261108b/runtime-guard.json": "1388fecb57de793ef7fcaf969886c2e93589aed87f4181a02889949efcd67d60",
+        "Build/wpt-data-members-20261108c/compile-command.json": "868f6ed5c111ef56201aeb07b3bbc2d4753fcf94d77e296e324aff30efd45977",
+        "Build/wpt-data-members-20261108c/compile-guard.json": "6f34bba148beccfba434da6f75928ec926212025c61b98b8ea4e03fff9d82e6a",
+        "Build/wpt-data-members-20261108c/compile.log": "e69b271bf1c65d074d3edd940bd128d5f546742e80bb34cfb40ee9767e6323ef",
+        "Build/wpt-no-store-navigation-20261108a/compile-command.json": "2dc78a1b323d510c80cf4c9e0c9305376b924dad1f76f2d23840051e91a53229",
+        "Build/wpt-no-store-navigation-20261108a/compile-guard.json": "d9023773a90d3d4e864a65e3acd532048763ed4c08e354ab42dcea7d1a0d38a0",
+        "Build/wpt-no-store-navigation-20261108a/compile.log": "1ed769c7689793ec4f9e315ed8f071811937ae6dfb7be3be0e257d9f36dcd617",
+        "Build/wpt-current-targets-20261108a/summary.json": "7edab9f26c224e01aef8ec2eaa430344d9f57db219f06c3bb70fe520d81c84e4",
+        "Build/wpt-current-targets-20261108a/tests.json": "dc738408e3a39c4ab65461c5e6521d9660ac739eee8661ce77085c85dcee93da",
+        "Build/wpt-current-targets-20261108a/report.md": "0b688f324d0f217260fd802c3308ff76f1e4ba4db69982f634c37738cd47c27d",
+        "Build/wpt-current-targets-20261108a/results.jsonl": "9d59c6da0f2752e370e74edad27415dcb93eb754b35eda3ddde94785b2a8186e",
+        "Build/wpt-current-targets-20261108a/identity.json": "73165d5ea41b89901832265496c39b93cdb0ae6222a0982fab12d9116ac7c3fe",
+        "Build/wpt-current-targets-20261108a/requests.log": "61abb4b30413f44535d85699a05f820738b83c0fdefb765ac3eb0311268dc241",
+        "Build/wpt-current-targets-20261108a/chunks.json": "bac6710fa0191f8ee252c7eeb555b6f4c6a39e9bd0a03a1d79b95bc08fd6aeae",
+        "Build/wpt-current-targets-20261108a/logs/vox-000-001.log": "41f2a982c3f1ac8be22f60c619d235e54f0e979fd54a39a46de93d1ca0641c4e",
+        "Build/wpt-current-targets-20261108a/logs/vox-000-000.log": "71ed8d3ef44360fb28d8b38928bdf1c037155b5139a1f563bc348ffd122b71b7",
+        "Build/wpt-current-targets-20261108a.json": "b19eb8d160ac673cf17babb9d1eceb7aa9a622ba6b86fe5983018b9c21831d0e",
+        "Build/wpt-reporter-targets-20261108a/summary.json": "dc920a237b987a1216411406c109953882218aa09e666c2f04f44d21a7898328",
+        "Build/wpt-reporter-targets-20261108a/tests.json": "ae0004737555d878fabc908b9590e54416833853d2367dd2c26652ff252f803a",
+        "Build/wpt-reporter-targets-20261108a/report.md": "96439c98128d48d15d58dc14a2bbac3487c84d638198c0a7a86be82f87c56f47",
+        "Build/wpt-reporter-targets-20261108a/results.jsonl": "7fb629d2efddf01034e96eaa9b701b5be925646b394928c5aff6814d05f1fd06",
+        "Build/wpt-reporter-targets-20261108a/identity.json": "889c3ff788d853ea6ce42970eb65553a7ec497f6fe9e5e7cc95bd6e27b573396",
+        "Build/wpt-reporter-targets-20261108a/requests.log": "b3b80b32c5f3367f42d44c52ba4b3960f81c35873b81f9ff87c6e8233cd5bd3e",
+        "Build/wpt-reporter-targets-20261108a/chunks.json": "d5a3b3122c63f5157a1107b9321e7d8383f786ae47f41779f46228ff0618cf99",
+        "Build/wpt-reporter-targets-20261108a/logs/vox-000-000.log": "636456a61ac2b52e17b2668acad0e2b84ba47fa4b4cf5e4f38caf1c54d99d848",
+        "Build/wpt-reporter-targets-20261108a.json": "d71ea014d76443373cd63c62b655728123422b48634d85f5f0c07230fa25cd56",
+        "Build/wpt-range-datachange-20261108a/summary.json": "19ddcfb7b5bbdbced4a4f1c2a7868bb4623b3479852e374b7bbf4093ecaac76c",
+        "Build/wpt-range-datachange-20261108a/tests.json": "8e87c9d7e0875ac61d41f2de5a04dde16f8e00e33f606c23e2358874b93b32ab",
+        "Build/wpt-range-datachange-20261108a/report.md": "63578a3e6dad6ebf9a5b86cfc4c6c3d3d4fbda3e30fca5b38537b0392bd90153",
+        "Build/wpt-range-datachange-20261108a/results.jsonl": "92271e160b15ce0b1bf8fa656f3735480907845130cceb48a7e3f20f98d29875",
+        "Build/wpt-range-datachange-20261108a/identity.json": "9b31e9f143ab2bbe22a8b7408746605e1dea743319d34212e1efc036e56ba925",
+        "Build/wpt-range-datachange-20261108a/requests.log": "20595b0b25e4e27a7a93ce22a5d89713030399d4b1dde0f3edb33c2cf8a8a622",
+        "Build/wpt-range-datachange-20261108a/chunks.json": "16eccfccfb5d944e83d9a4db2034553b6eb631ebf423cd6d75b7f3b2de55d33d",
+        "Build/wpt-range-datachange-20261108a/logs/vox-000-000.log": "fed7aac93736c6709e03062265e380f3a1cf2a9456d60019f4ded46feba1a2b4",
+        "Build/wpt-range-datachange-20261108a.json": "dc5d35916e00d027d29627b821578235292f9ca7cde4323f081a243eedc767b1",
+        "Build/wpt-range-datachange-20261108b/summary.json": "50e0f826036ebacfc5797f8a48c3a7eb18788232d3c990debb8113eeeac74111",
+        "Build/wpt-range-datachange-20261108b/tests.json": "8e87c9d7e0875ac61d41f2de5a04dde16f8e00e33f606c23e2358874b93b32ab",
+        "Build/wpt-range-datachange-20261108b/report.md": "5707cf1453cbbccd4e9f0d5e602d2752921b168afbae9c31d7618bda48256ae7",
+        "Build/wpt-range-datachange-20261108b/results.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "Build/wpt-range-datachange-20261108b/identity.json": "6647d1272d6edb0bf846f2358caf43c2b06ce0da66e46ac6b4448755efd2de83",
+        "Build/wpt-range-datachange-20261108b/requests.log": "4e3bb6c81654ff0273ddd64d522564137448e48576c2065bb3eddede3face388",
+        "Build/wpt-range-datachange-20261108b/chunks.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+        "Build/wpt-range-datachange-20261108b/logs/vox-000-000.log": "75cc891bd10752bb739417ec6579a9e681369433b463eb59e8e548e96d566597",
+        "Build/wpt-range-datachange-20261108b.json": "c5e438d362c89d6451a11a594d5c9467390e70392eeec4ed6f4d640b56011d5a",
+        "Build/wpt-reporter-20261108a.json": "fac1870b4d5cbdf03e04392b268b950cef3b86f21161ab98f0f1061b7e29edfc",
+        "Build/wpt-reporter-20261108b.json": "371d0d6b87ba8ee6ddf7470f8256cc4fbd3c801403c3c8f5b9d954176192d7ad"
+      }
+    },
+    {
+      "path": "/Users/alex/.cache/vox/wpt/20261108-followup-final.tar.gz",
+      "sha256": "56cd7baf9cec662a964bfe912e1f1771b491712c985fdda61174248b25a502ed",
+      "bytes": 3566,
+      "files": {
+        "Build/wpt-followup-combined-20261108a/runtime-legacy-guard.json": "0fa1fc9ada9add6f775a5b9755b13bfcb261d1085b538ec541629093f1ca4daf",
+        "Build/wpt-followup-combined-20261108a/test-inputs.json": "4fbdc4a3453b5b9987ed854ad2c549ea61ef68edde28a6a02931cc4caacc2cd9",
+        "Build/wpt-followup-combined-20261108a/compile-command.json": "def638d8678ed24b4edb95cc1a0d7c8f8c6d59bc80f1a93aa82abcae74ba4bca",
+        "Build/wpt-followup-combined-20261108a/implementation-inputs.json": "f4428e0d48d9f387fcf8c201417be9235a93784d5a0b8045b435b0025ffe31f0",
+        "Build/wpt-followup-combined-20261108a/compile-guard.json": "7bd830998396982c5fc96db1846a29b3cb1bba97122aa22dabe428fd60192ccd",
+        "Build/wpt-followup-combined-20261108a/compile.log": "17c193643b1fd8e94d83b934b529a11a152214821320575453164b2004116a9d",
+        "Build/wpt-followup-combined-20261108a/runtime.log": "3f9223b42840d0320f2629740a44c11d872eb67513b437777fce03df0f6f9efc",
+        "Build/wpt-followup-combined-20261108a/runtime-guard.json": "8b0d9c6161a1f1b6952156fa402b78606bb8b289bac7b96344c4c0471c368545",
+        "Build/wpt-followup-combined-20261108a/runtime-legacy.log": "7898c87381a4cbe4ea2185e2364a5f48dba219b407bf72d279f0a2146b3aa4c3",
+        "Build/wpt-reporter-final-20261108a/guard.json": "25dd6f6ac0ded3f96b661e40fcab436adeb61100a4a7b007ba6d8ad2a758d441",
+        "Build/wpt-reporter-final-20261108a/check.log": "1be741aca960c0382f55c8c521473a94350bcc19275e50158254bf956929cad0"
+      }
+    }
+  ],
+  "limitations": [
+    "Later SVG angle, iframe replay, data placement and navigation no-store source fixes are not in executable 692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d.",
+    "The immediate asynchronous reporter cannot deliver its XHR until native queued work runs; Range-mutations-dataChange still lacks a signal.",
+    "A synchronous-XHR reporter experiment (wpt-range-datachange-20261108b) failed the warm-up and was reverted. The guard recorded exit 1; no test results were accepted.",
+    "An initially misplaced test function failed compilation; a prototype installation-order error failed the next runtime check. Both were corrected before final checks.",
+    "Two subsequent native compilations reached the 420-second time guard under host contention. Neither was an assertion result or memory-limit failure.",
+    "Subprocess exits of 0 mean collection succeeded, not that all WPT assertions passed.",
+    "Native source tests use the compiler and allocator modes in their command receipts; they do not establish production-bundle validation."
+  ],
+  "final_source_check": {
+    "job": "wpt-followup-combined-20261108a",
+    "compile": {
+      "command": [
+        "/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495/compiler/v",
+        "-w",
+        "-n",
+        "-cc",
+        "clang",
+        "-memory-limit",
+        "10G",
+        "-prealloc",
+        "-gc",
+        "none",
+        "-enable-globals",
+        "-d",
+        "vox_sparse_ttf",
+        "-d",
+        "vox_ui2",
+        "-exclude",
+        "@vlib/time/zoneinfo.native.v",
+        "-path",
+        "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/prealloc-runtime/9c93d5f7d50e8b856019f47c265457f89213a0f85618d0be92a06d200bcc7495|/Users/alex/code/vox2/Build/v/font-runtime/c5fa587b66117bf88d3028f77487d3472cbdc8b1072b9a2619aff3039c570103|/Users/alex/code/vox2/Build/v/httpcompat/f151de9719b20055/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+        "-skip-running",
+        "-o",
+        "Build/wpt-followup-combined-20261108a/followup_test",
+        "compact/zz_wpt_followup_20261108_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5802573824,
+      "elapsed_seconds": 219.70618025000002,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "runtime": {
+      "command": [
+        "Build/wpt-followup-combined-20261108a/followup_test"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 114114560,
+      "elapsed_seconds": 1.576295292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "legacy_runtime": {
+      "command": [
+        "Build/wpt-followup-combined-20261108a/followup_test"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 109199360,
+      "elapsed_seconds": 0.623836042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "legacy_environment": {
+      "VOX_DISABLE_SHARED_NODE_PROPERTIES": "1"
+    },
+    "test_inputs": {
+      "files": {
+        "compact/shared_properties_test.v": "392c9346ec76adf975a2e2ac1fc925571c09df70a6c6c29c19ec76da8934a6f7",
+        "compact/shared_node_properties_test.v": "8315735577aaf656aab1d513022969097bd79ae5ae540c7cbb72867c11e86170",
+        "compact/svg_angle_test.v": "f9a8ee759419db7ae2603d2da8ac8113db4d5371569734e0f0e5f73483723c46",
+        "compact/svg_interface_test.v": "e32298169f47d07daad4fb0e01009aad245bd8c98e7217c419d003ee1d9996f7",
+        "compact/iframe_window_storage_test.v": "764afb5ae3abd82b3a8255f6e4fcae32da0e55b44ab516c23f46d9b1851b665a",
+        "navigation/preload_cache_test.v": "e9f2c2eeb0a49d0d9ab31e238ecf8f3299c7b781816b5a1fe76141a9119ff8f5"
+      },
+      "combined_source_sha256": "71187ff17056311b5f38ba571840d9f84d4e271bb5fcae7ea4a5533fa1e897e2",
+      "test_functions": [
+        "test_compact_common_accessors_share_functions_and_preserve_own_descriptors",
+        "test_shared_accessors_use_registered_receivers_and_preserve_conversion_exceptions",
+        "test_shared_control_and_content_properties_replay_to_the_native_models",
+        "test_native_fragments_do_not_acquire_the_element_property_brand",
+        "test_data_is_limited_to_character_nodes_and_html_object_url_reflection",
+        "test_shared_node_properties_preserve_metadata_live_receivers_and_mutations",
+        "test_svg_angles_convert_units_and_reflect_marker_orientation",
+        "test_compact_svg_interface_preserves_namespace_and_vue_mount_classification",
+        "test_compact_svg_animated_attributes_reflect_their_content_attributes",
+        "test_iframe_replay_retires_snapshot_text_and_keeps_dom_writes_owned",
+        "test_navigation_refetches_no_store_inputs_retained_for_the_previous_page"
+      ]
+    },
+    "implementation_inputs": {
+      "compact/svg_animated.v": "bfdef93a3c6fcc399cb98d26b5c891b2ee0766d69df3d6b89b7a39a9bdee9d05",
+      "compact/svg_angle.v": "0a8816db44f201ee505a6ad86a2506837e4753271f85d3a98e5e4e99235a7b32",
+      "compact/shared_properties.v": "95fd3f6a6b2a2e6651d1788ade035408fb449a3374ebbd9491bccb22cb0cdd2e",
+      "compact/shared_node_properties.v": "9205384508bc042403d8cd10d33b1f91ef322bf09a559849276ac10f9a6ef268",
+      "compact/html_interfaces.v": "a6fcb5527fa623b9021a1c1601dd764e6957595bcffe9459c46fed31f712b07c",
+      "compact/iframe_window.v": "15527c9dafd23814959f0e591ffeedbd461117a0da55a6b94a1ae795b6e08987",
+      "navigation/preload.v": "2c5494cf69f4ec6b7ba9e4fcb3a492685fee27c0ec12159122c347c59f33bb88"
+    },
+    "implementation_inputs_unchanged_after_checks": true,
+    "tests_passed_each_mode": 11,
+    "combined_test_note": "Canonical temporary test file concatenates the six listed test files without changing their functions; it is removed after verification."
+  },
+  "final_reporter_check": {
+    "guard": {
+      "command": [
+        "python3",
+        "tools/wpt_compare_test.py"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 22183936,
+      "elapsed_seconds": 0.9766733329999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "tests_passed": 12,
+    "tool_sha256": {
+      "tools/wpt_compare.py": "10b641c8bbafb2960724475bb19b502ac046f388eed495f043f7bd3f9cf85ea1",
+      "tools/wpt_compare_test.py": "bb41660ff4b3efd1973be1d283f85de09046e7a95cd834c21a5b5de8d5368498"
+    }
+  },
+  "commits": {
+    "html_processing_instructions": "4b8d61ce09195fd618574e77bd3c1f80e650a832",
+    "svg_angles": "39e6060cf",
+    "reporter_startup_announcement": "4f6cb2793",
+    "iframe_temporary_replay": "a1598d082",
+    "data_interface_placement": "33e80e114",
+    "svg_string_conversion": "05d9c7808",
+    "navigation_no_store": "17b743462"
+  },
+  "final_production_receipt": {
+    "c_compile": {
+      "mode": "single",
+      "requested": "single",
+      "v_prod": true
+    },
+    "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+    "executable_sha256": "692d893aa761c77d6f8fc6eb50db183accd230bbe40edbb9e6f738b3a817ce9d",
+    "exit": 0,
+    "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-060445-7df1d8ac/frozen-compile.json",
+    "inputs": {
+      "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+      "dirty": true,
+      "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+      "repository_sha256": "fe417333b1c9650acbadd53dc0c7cc170456eaa234e59450870822ae4e87e973"
+    },
+    "renderer": {
+      "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+      "default": "gg",
+      "gg_adapters": true,
+      "skia_free": false,
+      "skia_required_for": [
+        "text preparation and fallback",
+        "canvas",
+        "shadows",
+        "bitmap export",
+        "recording and picture playback"
+      ]
+    },
+    "repository_after_build": {
+      "build_inputs_sha256": "7987ab26f10e676460f513bfba3e48ce9c32ebc4f0f832813537dbbccc4e9ff4",
+      "dirty": true,
+      "head": "4b8d61ce09195fd618574e77bd3c1f80e650a832",
+      "repository_sha256": "919e75ea15e24133fe374fe9e5678fda519a0aaf08b93e60105479a777628eb8"
+    },
+    "request": {
+      "c_mode": "single",
+      "head": "74b231aa9c688553fd111c2b53b3b6275ea977eb",
+      "id": "510ff4463ab84201a58308b41cc0b21b",
+      "renderer": "gg",
+      "v_prod": true
+    },
+    "verified_inputs": {
+      "build_inputs_sha256": "18a1de6426438cda0e18f68b4493d7593728b7374f63b8d317aea8f4b37989fb",
+      "dirty": true,
+      "head": "0bc9a628d0c77566a0d49036d1bc27663750b7ae",
+      "repository_sha256": "87f28e219ae2cf896ac0495c15ce24039414e987a82e12b07ba5fd4737c2fef7"
+    }
+  },
+  "production_source_validation_pending": true
+}

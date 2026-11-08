@@ -10,6 +10,65 @@ build identity, guard exit, comparison arithmetic, failure examples and local ra
 The [focused-check manifest](performance/wpt-fixes-20261108.json) preserves source checks,
 development failures, and the separate Range diagnostic.
 
+## Further fixes and focused measurements
+
+The later [follow-up manifest](performance/wpt-followup-20261108.json) records the
+additional checks and their exact executable identities. These focused results do
+not replace r14 or establish a new full-suite percentage.
+
+- The completed `fa3b82a3b41d…` production bundle passes all 315 font-valid and
+  all 130 SVG animated-length initial-value subtests.
+- A subsequent completed bundle, `692d893aa761…`, runs the **complete,
+  unpartitioned Range-insertNode page: 1,840 / 1,840 PASS**, harness OK. The
+  document takes 16.55 seconds to report, with the existing 60-second WPT
+  deadline and 4 GiB browser cap. The enclosing 12 GiB guard exits 0 and observes
+  3,445,030,912 bytes peak aggregate RSS. This closes the original combined-page
+  reporting failure for this pinned build and runner protocol.
+- The same bundle reports **304 / 307 PASS** for processing-instruction parsing,
+  up from 108 / 307 in the earlier focused check. Its three failures all expose
+  an erroneous `data` property on ordinary elements.
+- `svg/idlharness.window` remains **1,027 / 1,780 PASS** in that bundle, which
+  predates the newly implemented SVG angle and marker-orientation bindings.
+- Range-mutations-dataChange still reports NO_HARNESS in this bundle. Its
+  synchronous inline work can prevent even an immediately sent asynchronous
+  announcement from reaching the server before the startup deadline.
+
+The reporter now sends its harness announcement when it executes, instead of
+waiting for a 500 ms timer. Announcements carry the document path and query;
+late announcements from a previous navigation cannot start the next document's
+harness clock. The original assertion statuses, fixture bytes, harness deadlines,
+and memory caps are preserved. The protocol change affects which results can be
+collected, so it must accompany any comparison with r14. A synchronous-XHR
+announcement experiment failed the warm-up and was reverted; its failure is
+retained in the follow-up evidence.
+
+The browser's disk cache already rejects `no-store`, but navigation preloads also
+reuse a memory map of the previous page's rendering inputs. That separate path
+must reject `no-store` before passing a response to a new navigation. The current
+source fix and its loopback-server regression check address that reuse.
+
+Additional source fixes implement real SVG angle conversion and marker
+orientation, receiver checks on SVG value factories, temporary-text retirement
+for iframe replay, and interface-specific placement and conversion of `data`.
+Their focused source checks are separate from the production-bundle results
+above. **All 11 focused native regressions pass with `-prealloc -gc none`**, under
+a 3 GiB runtime guard. Repeating the same checks with shared node properties
+disabled also passes all 11. All 12 reporter unit tests pass. Implementation and
+test input hashes remain unchanged across the final checks.
+
+| Follow-up fix | Commit(s) |
+|---|---|
+| HTML processing-instruction tokens, placement and storage lifetime | `4b8d61ce0` |
+| SVG angles, marker orientation and SVG receiver checks | `39e6060cf`, `05d9c7808` |
+| Immediate, document-identified harness announcements | `4f6cb2793` |
+| Retire iframe replay's temporary text; preserve queued console output | `a1598d082` |
+| Limit character-data properties and reflect HTML object URLs | `33e80e114` |
+| Refetch previous-page `no-store` resources on navigation | `17b743462` |
+
+The latest completed production bundle still predates these later source fixes;
+the shared build worker is already running. Production validation and a new full
+run remain pending. **100% conformance has not been reached.**
+
 ## Full run and comparison
 
 | Cohort | Executions / distinct files | Passing / reported subtests | Reported pass rate |
@@ -75,12 +134,12 @@ Largest losses of previously reported PASS names:
 | Own the default animation timeline cache in its document | `dd1cf9253` | Old allocator regression fails; fixed allocator test passes across 12 document-storage lifetimes |
 | Give animation replacement tests an active navigable | `3b20d2001` | All seven existing Animatable tests pass, with additional finished-state assertions |
 
-All seven final required source checks pass. The canonical build queue has not yet published a
-bundle containing the later font-family, SVG-default and animation-cache fixes. Those fixes are
-not counted as measured r14 gains. The build receipts show repeated input-change failures during
+All seven final required source checks pass. At the end of the original r14 collection, the canonical build queue had not yet published a
+bundle containing the later font-family, SVG-default and animation-cache fixes. Those fixes were
+not counted as measured r14 gains. The subsequent focused results above use later bundles. The build receipts show repeated input-change failures during
 shared development; this session reused the latest completed bundle following the shared-build policy.
 
-## Range diagnostic
+## Original r14 Range diagnostic
 
 The complete `Range-insertNode` page still records NO_HARNESS in r14. A separate run with a
 30-second signal deadline reaches the diagnostic 2 GiB browser cap before reporting.
@@ -90,7 +149,7 @@ from the retained r13 names. **All 1,840 / 1,840 subtests pass**, with 920 harne
 19 fresh launches, no crashes, and no memory-limit outcomes. The 3 GiB guard and runner both
 exit 0; observed peak RSS is 1,508,114,432 bytes. This diagnostic separates scenarios into
 navigations and is not a replacement result for the original combined page. It is excluded from
-r14's aggregate totals. The combined page's resource/deadline failure remains open.
+r14's aggregate totals. The later combined-page result above supersedes that diagnostic's open reporting outcome.
 
 ## Remaining reported failures
 
