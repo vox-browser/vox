@@ -140,6 +140,10 @@ fn new_image_shader(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, linea
 			kind: .empty
 		}
 	}
+	return image_shader_with_inverse(bitmap, tile_x, tile_y, linear, inverse)
+}
+
+fn image_shader_with_inverse(bitmap CanvasBitmap, tile_x TileMode, tile_y TileMode, linear bool, inverse SkAffine) CanvasShader {
 	// tweak_sampling(): bilinear sampling of an integer translation is
 	// nearest-neighbor sampling.
 	nearest := !linear || (inverse.type_mask() <= affine_translate_mask

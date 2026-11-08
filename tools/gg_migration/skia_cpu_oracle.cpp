@@ -16,6 +16,22 @@
 #include "include/core/SkPath.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkCanvas.h"
+#include "include/core/SkImage.h"
+#include "include/core/SkPaint.h"
+#include "include/core/SkPixmap.h"
+#include "include/core/SkSamplingOptions.h"
+
+ORACLE void oracle_mipmap(uint8_t const* source, uint8_t* pixels, int const* v) {
+    auto info = SkImageInfo::Make(v[0], v[1], kRGBA_8888_SkColorType, kPremul_SkAlphaType);
+    auto image = SkImages::RasterFromPixmapCopy(SkPixmap(info, source, v[2]));
+    auto surface = SkSurfaces::Raster(SkImageInfo::Make(v[3], v[4], kRGBA_8888_SkColorType, kPremul_SkAlphaType));
+    auto canvas = surface->getCanvas();
+    canvas->scale(float(v[3])/v[0], float(v[4])/v[1]);
+    SkPaint paint; paint.setBlendMode(SkBlendMode::kSrc);
+    canvas->drawImage(image.get(), 0, 0, SkSamplingOptions(SkFilterMode::kNearest, SkMipmapMode::kNearest), &paint);
+    surface->readPixels(SkImageInfo::Make(v[3], v[4], kRGBA_8888_SkColorType, kPremul_SkAlphaType), pixels, v[3]*4, 0, 0);
+}
+#include "include/core/SkCanvas.h"
 
 static SkRRect oracle_rrect(float const* f) {
     SkVector radii[4];

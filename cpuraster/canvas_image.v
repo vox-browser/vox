@@ -305,6 +305,10 @@ fn choose_sprite(mut pixels []u8, row_bytes int, source CanvasBitmap, left int, 
 // without changing pixels for devices Skia would tile and images it cannot
 // install.
 pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path) bool {
+	return draw_canvas_image_sampled(mut pixels, width, height, pitch, alpha_type, transform, image, source, destination, smoothing, global_alpha, mode, clips, false)
+}
+
+fn draw_canvas_image_sampled(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, image CanvasBitmap, source [4]f32, destination [4]f32, smoothing bool, global_alpha f32, mode BlendMode, clips []Path, mipmap bool) bool {
 	if !untiled_device(pixels, width, height, pitch) || !image.installs() {
 		return false
 	}
@@ -387,7 +391,8 @@ pub fn draw_canvas_image(mut pixels []u8, width int, height int, pitch int, alph
 	// Draw::drawRect() of the destination with the clamped image shader:
 	// a fill under a CTM that keeps rects rects, unless the destination
 	// leaves the 16.16 range; otherwise draw_rect_as_path().
-	shader := new_image_shader(bitmap, .clamp, .clamp, linear, total)
+	shader := if mipmap { new_mipmap_image_shader(bitmap, .clamp, .clamp, linear, total) }
+		else { new_image_shader(bitmap, .clamp, .clamp, linear, total) }
 	if rect_stays_rect(ctm) {
 		dev := map_rect_corners(ctm, dst_rect)
 		if too_big_for_math(dev) {

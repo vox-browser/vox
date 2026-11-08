@@ -1412,6 +1412,10 @@ fn main() {
 		check_image_blur_cases(count)
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'mipmaps' {
+		check_mipmap_cases(count)
+		return
+	}
 	exhaustive := check_read_pixels_exhaustive(oracle) or {
 		eprintln(err.msg())
 		exit(1)
@@ -3337,4 +3341,34 @@ fn check_rounded_rect_cases(count int) {
 		}
 	}
 	println('${count} normalized rounded rectangles and difference clips exact')
+}
+
+type OracleMipmap = fn (source &u8, destination &u8, values &i32)
+
+fn check_mipmap_cases(count int) {
+	library := C.dlopen(os.args[1].str, 2)
+	oracle := unsafe { OracleMipmap(oracle_symbol(library, 'oracle_mipmap')) }
+	for trial in 0 .. count {
+		mut w := rand.intn(65) or { 0 } + 1
+		h := rand.intn(65) or { 0 } + 1
+		if w == 1 && h == 1 { w = 2 }
+		pitch := w*4 + 4*(rand.intn(3) or { 0 })
+		source := random_composite_bitmap(w, h, pitch, 2)
+		mut levels := 0
+		for n := math.max(w,h); n > 1; n >>= 1 { levels++ }
+		level := (rand.intn(levels) or { 0 }) + 1
+		bitmap := cpuraster.CanvasBitmap{pixels: source, width: w, height: h, pitch: pitch, premultiplied: true}
+		actual := cpuraster.build_image_mipmap(bitmap, level) or { panic('mipmap declined') }
+		mut expected := []u8{len: actual.width*actual.height*4}
+		values := [i32(w), h, pitch, actual.width, actual.height]
+		oracle(source.data, expected.data, values.data)
+		if actual.pixels != expected {
+			for i in 0 .. expected.len { if actual.pixels[i] != expected[i] {
+				eprintln('mipmap ${trial}: ${w}x${h}, level ${level}, byte ${i} = ${actual.pixels[i]}, expected ${expected[i]}')
+				break
+			} }
+			exit(1)
+		}
+	}
+	println('${count} raster mipmap levels exact')
 }
