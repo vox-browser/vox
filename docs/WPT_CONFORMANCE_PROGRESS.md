@@ -512,3 +512,30 @@ for the passing production checks. Raw evidence and failed attempts are
 archived externally as recorded in the manifest, and completed job scratch is
 removed. **100% for the larger imported cohort and full upstream WPT remains
 unachieved; these results do not establish a new full-suite percentage.**
+
+
+## Larger imported r16 scheduled with upstream server coverage
+
+The [r16 plan and preflight](performance/wpt-larger-r16-plan-20261108.json)
+retain an additional production preflight using the real upstream WPT server:
+three cases, **1,859 / 1,859 PASS**, all harnesses OK, runner and guard exits 0,
+unchanged inputs. They cover Blob text, the complete Range page and fetch
+form data. This verifies the server path before the complete imported sweep.
+
+A detached supervisor is scheduled to run **all 6,828 imported cases without
+path filters** after the already running broad validation jobs finish. It
+then selects the latest published production bundle, verifies that the required
+fixes are in its sealed source manifest, and holds its read lease through the
+actual guard completion. Browser and aggregate budgets remain 4 / 12 GiB;
+harness deadlines and strict all-pass checks remain unchanged. Tool and browser
+identities are monitored, and actual runner and guard exits will be recorded.
+The durable status and completion paths are in the manifest. No complete r16
+result or full-cohort percentage is available at this recording.
+
+Unlike r15's static server, this run uses upstream Python handlers, stash,
+substitutions, localhost aliases and HTTP/HTTPS services with a private CA.
+WebSocket services remain unavailable. This server change prevents treating
+r16 as a matched regression or performance comparison to r15. The selected
+6,828 cases are still Ladybird's imported testharness subset, not the full
+132,460-variant upstream inventory. Full upstream execution and 100% passing
+remain unfinished.
