@@ -37,9 +37,11 @@ const __compactCommonProperties={
 // Configurable, so accessors of a custom element class (such as GitHub
 // react-app name) can replace these facade members after construction.
 for(const key in __compactCommonProperties)__compactCommonProperties[key].configurable=true;
+// SVG elements inherit className, an SVGAnimatedString, from SVGElement.
+const __compactSVGCommonProperties=Object.assign({},__compactCommonProperties);delete __compactSVGCommonProperties.className;
 function __compactElementCommonProperties(object,state){
  if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
- __compactDefineCommonProperties(object,__compactCommonProperties);
+ __compactDefineCommonProperties(object,state&&state.namespaceURI==="http://www.w3.org/2000/svg"?__compactSVGCommonProperties:__compactCommonProperties);
 }
 '
 }

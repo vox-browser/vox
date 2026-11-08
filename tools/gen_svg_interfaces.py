@@ -16,10 +16,17 @@ import sys
 libweb = sys.argv[1] if len(sys.argv) > 1 else os.path.expanduser('~/code/3rd/ladybird/Libraries/LibWeb')
 
 interfaces = {}
+# Animated attributes by interface or mixin, and the mixins each includes.
+animated = {}
+includes = {}
 for path in sorted(glob.glob(os.path.join(libweb, 'SVG', '*.idl'))):
     text = re.sub(r'//[^\n]*', '', open(path).read())
+    for match in re.finditer(r'^\s*(\w+)\s+includes\s+(\w+)\s*;', text, re.M):
+        includes.setdefault(match.group(1), []).append(match.group(2))
     for match in re.finditer(r'(\[[^\]]*\]\s*)?(partial\s+)?interface\s+(mixin\s+)?(\w+)\s*(?::\s*(\w+))?\s*\{(.*?)\};', text, re.S):
         attributes, partial, mixin, name, parent, body = match.group(1) or '', match.group(2), match.group(3), match.group(4), match.group(5), match.group(6)
+        for attribute in re.finditer(r'readonly\s+attribute\s+(SVGAnimated\w+)\s+(\w+)\s*;', body):
+            animated.setdefault(name, []).append([attribute.group(2), attribute.group(1)])
         if partial or mixin or 'LegacyNoInterfaceObject' in attributes:
             continue
         if attributes and 'Exposed' in attributes and not re.search(r'Exposed=(Window|\([^)]*Window[^)]*\)|\*)', attributes):
@@ -57,7 +64,14 @@ for line in factory[start:].splitlines():
         break
 
 entries = [[name, interfaces[name]['parent'], interfaces[name]['constants']] for name in ordered]
-data = json.dumps({'interfaces': entries, 'tags': tags}, separators=(',', ':'), sort_keys=True)
+members = {}
+for name in ordered:
+    own = list(animated.get(name, []))
+    for mixin in includes.get(name, []):
+        own += animated.get(mixin, [])
+    if own:
+        members[name] = own
+data = json.dumps({'interfaces': entries, 'tags': tags, 'animated': members}, separators=(',', ':'), sort_keys=True)
 assert "'" not in data
 
 print('''module main
@@ -70,6 +84,7 @@ print('''module main
 fn compact_svg_interfaces_bootstrap() string {
 	return r\'
 const __compactSVGInterfaces=Object.create(null);
+let __compactSVGAnimatedMembers={};
 (function(){
  const data=''' + data + ''';
  for(const [name,parentName,constants] of data.interfaces){
@@ -87,6 +102,7 @@ const __compactSVGInterfaces=Object.create(null);
   Object.defineProperty(globalThis,name,{value:constructor,writable:true,configurable:true});
  }
  for(const [tag,name] of Object.entries(data.tags))if(typeof globalThis[name]==="function")__compactSVGInterfaces[tag]=globalThis[name];
+ __compactSVGAnimatedMembers=data.animated;
 })();
 \'
 }''')
