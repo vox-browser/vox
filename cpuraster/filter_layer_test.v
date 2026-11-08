@@ -197,6 +197,29 @@ fn test_color_matrices_before_and_after_filter_layers_match_native() {
 	}
 }
 
+fn test_repeated_blurs_retain_native_intermediate_images() {
+	sigmas := [[f32(.8), 2.5], [f32(0), 2.5], [f32(2.5), 0],
+		[f32(12), .8], [f32(2.5), .01, .8], [f32(0), 0]]
+	hashes := $if linux {
+		['2889dc346af37304', '7e03b4439a49e901', '748ca7b57f80635f',
+		 '60d1b6760d6fb439', '2d6eec02b544f6ed', '115c6c84bcab9406']
+	} $else {
+		['65eb7d8f1b75d1cd', '7e03b4439a49e901', '748ca7b57f80635f',
+		 'f2193c7ef46611fb', '2d6eec02b544f6ed', '115c6c84bcab9406']
+	}
+	for i, sequence in sigmas {
+		mut pixels := filter_layer_test_background()
+		transform := if i == 3 { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else { [f32(1), 0, 0, 1, 0, 0]! }
+		mode := match i { 1 { BlendMode.multiply } 2, 5 { .src_in } 4 { .plus_lighter } else { .src_over } }
+		steps := sequence.map(CanvasFilterStep{kind: .blur, sigma: it})
+		assert fill_canvas_path(mut pixels, 48, 40, 192, if i == 3 { 1 } else { 2 },
+			filter_layer_test_path(), transform, 0xc0e04010, none, .7, mode, 0,
+			filter_layer_test_clip(), new_canvas_filter(steps))
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'blur chain fixture ${i}'
+	}
+}
+
 // Byte hashes captured from vox_skia_canvas_path() in the pinned LibWeb
 // Skia, on the same path/background as the blur-layer regression tests.
 fn test_drop_shadow_filter_layers_match_skia() {

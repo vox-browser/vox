@@ -18,6 +18,7 @@ pub enum CanvasFilterKind {
 // CanvasFilterStep is one canvas filter function. Blur and drop-shadow
 // radii are Gaussian sigmas; offsets are in canvas coordinates.
 pub struct CanvasFilterStep {
+	input_blurs []f32
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
 pub:
@@ -99,6 +100,10 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 	if f.steps.len == 1 && f.steps[0].kind in [.blur, .drop_shadow] {
 		return FilterPlan{ layer: f.steps[0] }
 	}
+	if f.steps.len > 1 && f.steps.all(it.kind == .blur) {
+		return FilterPlan{layer: CanvasFilterStep{...f.steps.last(),
+			input_blurs: f.steps[..f.steps.len - 1].map(it.sigma)}}
+	}
 	mut layer_index := -1
 	for i, step in f.steps {
 		if step.kind == .matrix { continue }
@@ -157,6 +162,10 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 }
 
 fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, step CanvasFilterStep, mode BlendMode, content LayerContent, tint ?u32) bool {
+	if step.input_blurs.len > 0 {
+		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,
+			transform, clips, content_bounds, step.input_blurs, step.sigma, mode, content)
+	}
 	// An invalid DropShadow blur becomes a null child, leaving the tint,
 	// offset and merge on SourceGraphic. A lone invalid blur is discarded
 	// by new_canvas_filter().
