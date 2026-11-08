@@ -5,13 +5,26 @@ import dom
 import highresolutiontime
 import html
 import libjs
-import webidl
 
 fn (mut runtime Runtime) install_input_event_binding() ! {
 	mut binding := runtime.event_binding()!
 	if binding.input_event_prototype != unsafe { nil } { return }
 	owner := voidptr(&runtime)
-	validate_ranges := runtime.evaluate_host_value(r'(function(){const T=TypeError;return function(value){if(value===undefined)return;if(value===null||(typeof value!=="object"&&typeof value!=="function"))throw new T("targetRanges must be a sequence");for(const item of value)throw new T("Expected a native StaticRange");}})()')!
+	runtime.define_value_host_function('__ladybirdInstallStaticRange', fn [owner] (_ voidptr, args []voidptr) !voidptr {
+		mut runtime := unsafe { &Runtime(owner) }
+		if args.len != 1 || !C.JSObjectIsFunction(runtime.context, args[0]) { return runtime.event_binding_type_error('Expected AbstractRange') }
+		runtime.install_static_range_binding(args[0])!
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	})!
+	check_range := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
+		runtime := unsafe { &Runtime(owner) }
+		binding := runtime.event_binding()!
+		if args.len != 1 || args[0] !in binding.static_ranges { return runtime.event_binding_type_error('Expected a native StaticRange') }
+		return args[0]
+	})!
+	range_factory := runtime.evaluate_host_value(r'(check=>{const T=TypeError;return function(value){const result=[];if(value===undefined)return result;if(value===null||(typeof value!=="object"&&typeof value!=="function"))throw new T("targetRanges must be a sequence");for(const item of value)result.push(check(item));return result;}})')!
+	defer { runtime.release_javascript_value(range_factory) }
+	validate_ranges := runtime.retain_javascript_value(runtime.call_javascript_function(range_factory, C.vox_jsc_JSValueMakeUndefined(runtime.context), [check_range])!)!
 	construct := runtime.make_native_value_host_function('InputEvent', 1, fn [owner, validate_ranges] (receiver voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		if args.len < 2 { return runtime.event_binding_type_error('Missing InputEvent arguments') }
@@ -36,7 +49,15 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 		if !C.JSValueIsUndefined(runtime.context, input_type) { init.input_type = runtime.binding_dom_utf16(input_type)!.str() }
 		init.is_composing = runtime.event_binding_bool_property(dictionary, 'isComposing', false)!
 		ranges := runtime.ui_event_dictionary_member(dictionary, 'targetRanges')!
-		runtime.call_javascript_function(validate_ranges, C.vox_jsc_JSValueMakeUndefined(runtime.context), [ranges])!
+		converted_ranges := runtime.call_javascript_function(validate_ranges, C.vox_jsc_JSValueMakeUndefined(runtime.context), [ranges])!
+		length := runtime.ui_event_long(runtime.binding_property(converted_ranges, 'length')!)!
+		binding := runtime.event_binding()!
+		for index in 0 .. length {
+			mut exception := unsafe { nil }
+			value := C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, converted_ranges, u32(index), &exception)
+			if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
+			init.target_ranges << binding.static_ranges[value] or { return runtime.event_binding_type_error('Expected a native StaticRange') }
+		}
 		mut event := dom.InputEvent.construct_impl(type_, init)!
 		if settings := runtime.scripting_settings_ {
 			event.set_time_stamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{
@@ -74,14 +95,10 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 		event := runtime.native_event(receiver)!
 		if event.interface_ != .input_event { return runtime.event_binding_type_error('Illegal InputEvent receiver') }
 		input := unsafe { &dom.InputEvent(event) }
-		// Text controls have no target ranges. StaticRange projection remains
-		// unavailable; never silently discard ranges from contenteditable input.
-		if input.target_ranges_.len > 0 {
-			return runtime.actual_javascript_exception(runtime.javascript_dom_exception(webidl.dom_exception_value(
-				webidl.DOMException.create('NotSupportedError', 'Native StaticRange projection is not yet bound')))!)
-		}
+		mut ranges := []voidptr{cap: input.target_ranges_.len}
+		for range in input.target_ranges_ { ranges << runtime.javascript_static_range(range)! }
 		mut exception := unsafe { nil }
-		array := C.vox_jsc_JSObjectMakeArray(runtime.context, 0, unsafe { nil }, &exception)
+		array := C.vox_jsc_JSObjectMakeArray(runtime.context, usize(ranges.len), ranges.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	})!

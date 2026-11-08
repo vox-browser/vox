@@ -58,6 +58,9 @@ mut:
 	form_data_event_prototype voidptr
 	error_event_prototype voidptr
 	input_event_prototype voidptr
+	static_range_prototype voidptr
+	static_ranges map[voidptr]&dom.StaticRange
+	static_range_wrappers map[voidptr]voidptr
 	data_transfer_factory voidptr
 	data_transfer_prototype voidptr
 	data_transfer_constructor voidptr
@@ -179,6 +182,8 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 		binding.events = map[voidptr]&dom.Event{}
 		binding.event_wrappers = map[voidptr]voidptr{}
 		binding.callbacks = map[voidptr]voidptr{}
+		binding.static_ranges = {}
+		binding.static_range_wrappers = {}
 		binding.data_transfers = {}
 		binding.data_transfer_wrappers = {}
 		binding.data_transfer_types_arrays = {}

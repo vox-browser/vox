@@ -340,6 +340,7 @@ fn compact_range_selection_bootstrap() string {
  }
  for(const name of ["startContainer","endContainer","commonAncestorContainer"])Object.defineProperty(AbstractRange.prototype,name,{get:function(){return __queryElement(rangeState(this)[name]);},enumerable:true,configurable:true});
  for(const name of ["startOffset","endOffset","collapsed"])Object.defineProperty(AbstractRange.prototype,name,{get:function(){return rangeState(this)[name];},enumerable:true,configurable:true});
+ if(typeof __ladybirdInstallStaticRange==="function")__ladybirdInstallStaticRange(AbstractRange);
  const point=name=>function(target,offset){if(arguments.length<2)throw new TypeError(name+" requires a node and an offset");op(this,name,{node:node(target,"node"),offset:unsigned(offset)});};
  const boundary=name=>function(target){if(arguments.length<1)throw new TypeError(name+" requires a node");op(this,name,{node:node(target,"node")});};
  const fragment=name=>function(){const result=op(this,name).value;return result===undefined?undefined:__queryElement(result);};
