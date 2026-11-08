@@ -33,6 +33,11 @@ cases = [
     ('blur-contrast-stroke', [blur(2.5), contrast], dict(mode='overlay', stroke=(3, 1, 0, 10, [3, 2], .7))),
     ('contrast-blur-unpremul-target', [contrast, blur(1.2)], dict(
         alpha_type=1, transform=[1.25, 0, 0, .75, 2, 4])),
+    ('contrast-drop-shadow', [contrast, shadow], {}),
+    ('opacity-drop-shadow', [opacity, shadow], {}),
+    ('identity-shadow-deferred-colors', [contrast, (1, 0x805030e0, 0, 5.25, -3.75, [0]*20, 0), opacity], dict(mode='multiply')),
+    ('tiny-shadow-deferred-opacity', [opacity, (1, 0x805030e0, .01, -7.25, 4.5, [0]*20, 0), contrast], dict(mode='src_in')),
+    ('invalid-shadow-discards-only-shadow-input-filter', [opacity, (1, 0x805030e0, -1, 5.25, -3.75, [0]*20, 0)], {}),
 ]
 for name, filters, options in cases:
     reference.path(m.background(48, 40, 'image'), 48, 40, path, name, 'captured',
@@ -40,9 +45,12 @@ for name, filters, options in cases:
                    filters=filters, **options)
 expected = ['7ec1657ab2cd72b6', '4fbf747408667051', '4d8eb2b67a5444e4',
             'de2bccc7da8fbd81', '7ef6945c7b9398d3', 'f72a5c3abd3ce4d6',
-            'fe667fb7d0c8a804', 'ef47838643df8604']
+            'fe667fb7d0c8a804', 'ef47838643df8604', '5e4a0ce475763b5a',
+            'f98229fc7ce105d5', '78f5b6e1d62913b4', 'aa5bfe6fe1befdcc', '3cf70ee5009ca31f']
 if platform.system() == 'Linux':
     expected[0], expected[7] = 'd33ced999498998e', 'eaee08ab4ceff5d3'
+    expected[8], expected[9] = '6cb1cc4f7b2ba1c8', 'f0578d3f3c4cca70'
+    expected[12] = '1d4747ee62d26c1d'
 for record, digest in zip(reference.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
 assert hashlib.sha256(Path(sys.argv[1]).read_bytes()).hexdigest() == reference.reference_sha256
