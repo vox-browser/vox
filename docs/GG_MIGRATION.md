@@ -592,7 +592,7 @@ integer arguments as one `i32` array.
 | `skia.draw_path` and `draw_glyph_run` color filters | Canvas 2D `filter` lists of grayscale, sepia, saturate, hue-rotate, invert, opacity, brightness and contrast on fills, strokes and `fillText()` | `cpuraster.ColorFilter`: `SkImageFilters::ColorFilter()`'s composed `SkMatrixColorFilter`s, moved into the paint by `SkCanvasPriv::ImageToColorFilter()` and folded by `SkBlitter::Choose()`'s `RemoveColorFilter()`: `filterColor4f()`'s one-pixel highp pipeline for a solid color (then the legacy blitter when it fits in bytes, else the constant pipeline, highp through `unbounded_uniform_color` when a channel exceeds alpha), `SkColorFilterShader` stages after gradients and patterns, `CheckFastPath()` and `nothingToDraw()` seeing the filter, and the filtered luminance color for glyph mask gamma; 200,000 random filtered draws over two seeds exact in both default and `-prod -gc none` builds. Filters that change transparent black decline (they need an image filter layer) |
 | `skia.draw_path` and `draw_glyph_run` blur layers | Canvas 2D `filter: blur()` on fills, strokes and `fillText()` | `cpuraster.draw_blur_layer`: `AutoLayerForImageFilter` and `internalSaveLayer()` for a scale-translate CTM (layer bounds from the clip bounds outset by the blur kernel and the paint's fast bounds rounded out with skif's epsilon, the transparent padding pixel, `SkM44::postTranslate()` for the layer matrix), `internalDrawDeviceWithFilter()` with `insetForSaveLayer()` and the layer-space sigma, SkBlurEngine's `Raster8888BlurAlgorithm` (`eval_blur_passes()`, the float Gaussian pass below sigma 2, `ThreeBoxApproxPass` with `ScaledDividerU32` up to 135) inside `Builder::blur()`'s bounds, and `FilterResult::draw()`'s sprite or image-shader draw-back with the composite operation; 60,000 random `SkImages::MakeWithFilter()` blurs and 60,000 random blurred canvas draws over two seeds exact in both default and `-prod -gc none` builds. Rotations, blenders that change transparent black, sigmas over 135, blurs mixed with other filters and fonts without typeface bounds decline |
 | Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: scaled drop shadows, mixed and rotated filter layers, SVG filter graphs, and image filters on `drawImage()` |
-| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Outer shadows up to 8191 pixels per dimension now use V: normalized elliptical rrects, transformed AA clips and content-hole subtraction, mask blur and rounded-rectangle nine patches, rectangle scan coverage and straight-alpha readback. Nested inner shadows with rectangular outer casters also use V. Intersecting/rounded inner casters, text shadows and larger tiled surfaces remain native |
+| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Untiled outer shadows and nested inner shadows with rectangular outer casters use V. Retained text shadows on macOS also use V for scale/translate transforms, including all smoothing modes, large outlines, variable and color fonts. Intersecting/rounded inner casters, rotated/skewed text layers, sigma over 135 and tiled surfaces retain native fallback; Linux glyphs still need FreeType |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
@@ -687,6 +687,21 @@ modes, with compiler fallback disabled. The nested inner-shadow tests pass on
 Linux too. `e3e879076` supplies the GNU feature flag needed by glibc's combined
 trigonometry function. These module tests do not establish a Skia-free browser
 link; see the [nested-shadow/Linux receipt](gg-migration/nested-inner-shadow-20261108.json).
+
+`fa8188a4e` ports retained text shadows through an unbounded blur layer and one
+SrcIn tint on restore. It also adds retained-text baseline snapping, the
+CoreText smoothing probe and gamma correction, zero-contrast mask tables, and
+aliased large-glyph outlines. All 20,000 comparisons match in each build mode
+(4,163 painted), across four smoothing modes, scale/reflection, rounded clips,
+variable/color fonts, large glyphs and invalid blur. All 23 raster/native shadow
+test files pass and the FMA audit stays clean. The earlier 10,000-case AA and
+default-smoothing cohorts also passed. Headers and native oracle includes now
+join the pinned differential inputs (`b5634a8cc`). See the
+[retained-text receipt](gg-migration/retained-text-shadow-20261108.json).
+
+Linux staging now keeps UI2 under `Build/linux/modules` (`6c96821cf`); its real
+staging check preserved all 140 entries in the shared macOS UI2 tree. This avoids
+replacing host module symlinks with guest-only paths during concurrent builds.
 
 ## Hacker News performance (2026-11-06)
 
