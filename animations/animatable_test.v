@@ -132,6 +132,8 @@ fn test_document_animation_update_uses_default_timeline_and_removes_replaced_ani
 	document.set_browsing_context(&dom.BrowsingContext{
 		active_document_: document
 	})
+	document.set_navigable(&dom.Navigable{active_document_: document})
+	assert document.is_active()
 	mut html := document.create_element_ns('http://www.w3.org/1999/xhtml', 'html')!
 	mut target := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div')!
 	mut document_node := unsafe { &dom.Node(document) }
@@ -176,6 +178,8 @@ fn test_document_animation_update_uses_default_timeline_and_removes_replaced_ani
 	assert first.play_state() == .running
 	assert second.play_state() == .running
 	document.update_animations_and_send_events(200)
+	assert first.play_state() == .finished
+	assert second.play_state() == .finished
 	assert first.replace_state() == .removed
 	assert second.replace_state() == .active
 	assert first.emitted_events().last().type_name() == 'remove'
