@@ -108,3 +108,12 @@ fn test_malformed_huffman_tables_and_context_counts_are_rejected() {
 	assert codes.read(0, mut one)! == 0
 	assert one.position == 1
 }
+
+fn test_huffman_reads_all_alphabet_sizes_before_source_validation() {
+	// The first alphabet is oversized; the source still reads the second size.
+	mut input := new_bit_reader([u8(0xfd), 0xff, 7])
+	if _ := input.read_huffman_codes(2) {
+		assert false
+	}
+	assert input.position == 20
+}

@@ -227,8 +227,10 @@ pub fn (mut reader BitReader) read_huffman_codes(contexts int) !HuffmanCodes {
 	mut sizes := []int{cap: contexts}
 	for _ in 0 .. contexts {
 		size := int(reader.read_varint16()!) + 1
-		if size >= 32768 { return error('JPEG XL Huffman alphabet too large') }
 		sizes << size
+	}
+	for size in sizes {
+		if size >= 32768 { return error('JPEG XL Huffman alphabet too large') }
 	}
 	mut tables := []HuffmanTable{cap: contexts}
 	for size in sizes { tables << reader.read_huffman_table(size)! }
