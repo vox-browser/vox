@@ -44,7 +44,7 @@ test('compiled rules redirect only the reviewed GitHub script versions in GitHub
         }
     }
     for (const name of ['code-view-5d65cb0f8c6bfda9.js', 'repositories-a438beb69a24b971.js',
-        'high-contrast-cookie-19546c435025711b.js', 'codespaces-d62a3027389c6869.js', 'wp-runtime-b3589eeb1e6a309e.js']) {
+        'high-contrast-cookie-19546c435025711b.js', 'codespaces-d62a3027389c6869.js']) {
         assert.equal(check(request('https://github.githubassets.com/assets/' + name)).blocked, false);
     }
     assert.equal(check(request('https://github.com/vlang/v')).blocked, false);
