@@ -97,6 +97,25 @@ in `cases.tsv` is exceeded.
 
 ## Fixtures and references
 
+Resources with long or Windows-invalid URL filenames use short `asset-…` local
+names so Windows can extract the source ZIP. `portable_resources.json` records
+the original names, new paths, and unchanged resource SHA-256 hashes. HTML and
+CSS references use the new paths. Keep fixture paths within 180 characters
+relative to the repository root, leaving room for the extraction directory.
+Check filename portability, resource hashes, and rewritten links with:
+
+```sh
+python3 -m unittest discover -s tools -p site_fixture_paths_test.py
+```
+
+The filename migration preserves resource bytes and produces identical local
+captures for 12 of the 15 affected sites. On `libexpat`, `nghttp2`, and
+`uclibc-ng`, the renamed Google Fonts stylesheets now load: Vox's local
+stylesheet reader previously skipped their query-escaped filenames. Those
+captures therefore change text metrics. Reference PNGs and comparison ceilings
+remain unchanged; `nghttp2` exceeds its differing-pixel ceiling with the loaded
+fonts, while `libexpat` already exceeded its ceilings before this migration.
+
 - `example-com` is the static Example Domain page and is pixel exact.
 - `hacker-news` is a frozen 2026-09-09 front page. Its small allowance covers
   text and SVG antialiasing; no pixel currently differs by more than 10.

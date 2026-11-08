@@ -19,7 +19,7 @@
 @font-face {
     font-family: 'oswald';
     src: url('../fonts/oswald-regular-webfont.eot');
-    src: url('../fonts/oswald-regular-webfont.eot%3F') format('embedded-opentype'),
+    src: url('../fonts/asset-8d1a598ea62938f7.eot') format('embedded-opentype'),
          url('../fonts/oswald-regular-webfont.woff2') format('woff2'),
          url('../fonts/oswald-regular-webfont.woff') format('woff'),
          url('../fonts/oswald-regular-webfont.ttf') format('truetype'),
@@ -31,7 +31,7 @@
 @font-face {
     font-family: 'oxygen';
     src: url('../fonts/oxygen-regular-webfont.eot');
-    src: url('../fonts/oxygen-regular-webfont.eot%3F') format('embedded-opentype'),
+    src: url('../fonts/asset-59c5004bfda3fd0a.eot') format('embedded-opentype'),
          url('../fonts/oxygen-regular-webfont.woff2') format('woff2'),
          url('../fonts/oxygen-regular-webfont.woff') format('woff'),
          url('../fonts/oxygen-regular-webfont.ttf') format('truetype'),

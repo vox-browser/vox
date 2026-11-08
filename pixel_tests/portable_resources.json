@@ -1,0 +1,232 @@
+[
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!-40k!,w_2000,c_limit,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack.com%2Fimg%2Fdesign_templates%2Fthebulwark%2Fdark-texture.jpg",
+    "path": "sites/250bpm/substackcdn.com/image/asset-3ce7ea4dcb728278.jpg",
+    "sha256": "c600b5ff00a1e6e5a12d9c405e376acb19aeb0ae7877f841588d1d8ad1c21588"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!DwzE!,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8fd0308-5f11-4877-b5bd-ed9c24103bb4%2Ffavicon-16x16.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-da970f97d91a968e.png",
+    "sha256": "7ae49cb3db5f609db10e32384778129750c4ee2b41be35f2c49b0c96a10927c3"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_176,h_176,c_fill,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-c60a0b40a8257374.png",
+    "sha256": "92c988208e9a7c8f6a54a2de2c5d4164718fb444906a3426e59f2905565277f7"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_176,h_176,c_fill,f_webp,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-40820287a69e4cc7.png",
+    "sha256": "503d9ca683e31b0d012baf7cde819aa2ea0fb3d44612382cebd98fb07f70d109"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_264,h_264,c_fill,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-eecb00f73bfa1b75.png",
+    "sha256": "701a8524c0650309f95a842f2fc0d21eb63abe22943b02ca0fdd8dd702454793"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_264,h_264,c_fill,f_webp,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-2babec1b26b2fc54.png",
+    "sha256": "a657a4f0c33feb79e77c9b3231e2f64411cb107ba0f8fbda9ca1f4526ae7e7db"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_88,h_88,c_fill,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-1cb291b04dd8837d.png",
+    "sha256": "a4165e59e7a3e763878559c5f79a1857372719bc4c01a507e957a81f157f2e22"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!aIXR!,w_88,h_88,c_fill,f_webp,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2F9c7f7fbc-0264-4255-bdec-099796b51ed3_259x259.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-92349207bad94791.png",
+    "sha256": "194ea62db8033ef5b2eefa9fc2686d0c96604ef384f10b9ee1bd4b98a9c8f011"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!gaJD!,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8fd0308-5f11-4877-b5bd-ed9c24103bb4%2Ffavicon.ico",
+    "path": "sites/250bpm/substackcdn.com/image/asset-330e10c2b579893e.ico",
+    "sha256": "786dd7ec4a42df2600606e5dacf675a7f4cd9e43a51601e3c2e713a562657f82"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!op2J!,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8fd0308-5f11-4877-b5bd-ed9c24103bb4%2Ffavicon-48x48.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-1c75880099f8ddd8.png",
+    "sha256": "016e30e77f02c3c9d2891183f14313255bd1c17a142ab8a59f1d3d3461dfed26"
+  },
+  {
+    "original": "sites/250bpm/substackcdn.com/image/fetch/$s_!u_M5!,f_auto,q_auto:good,fl_progressive:steep/https:%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fe8fd0308-5f11-4877-b5bd-ed9c24103bb4%2Ffavicon-32x32.png",
+    "path": "sites/250bpm/substackcdn.com/image/asset-283d5ab713696e89.png",
+    "sha256": "a15fab6beb26e13cac43131a542d1cbed545fdc2ccdbfe513961d64fd16b0d45"
+  },
+  {
+    "original": "sites/css-zen-garden/www.csszengarden.com/214/verdemoderna.eot?",
+    "path": "sites/css-zen-garden/www.csszengarden.com/214/asset-4544aa4fd692c44f.eot",
+    "sha256": "1a3e165846a36af99c005e7721e6b9a1f4fc252b2b784664cfeb767c21940367"
+  },
+  {
+    "original": "sites/daring-fireball/daringfireball.net/graphics/favicon.ico?v=005",
+    "path": "sites/daring-fireball/daringfireball.net/graphics/asset-062fc5767bb4a6cc.ico",
+    "sha256": "0a8277b5f957d12c96a0654ee7325750d408f7b9272184dcab12331dc5eddecd"
+  },
+  {
+    "original": "sites/ffmpeg/ffmpeg.org/fonts/fontawesome-webfont.eot?",
+    "path": "sites/ffmpeg/ffmpeg.org/fonts/asset-b27b753d0afd34a7.eot",
+    "sha256": "e511891d3e01b0b27aed51a219ced5119e2c3d0460465af8242e9bff4cb61b77"
+  },
+  {
+    "original": "sites/ffmpeg/ffmpeg.org/fonts/fontawesome-webfont.eot?v=4.2.0",
+    "path": "sites/ffmpeg/ffmpeg.org/fonts/asset-580e21be48f08035.eot",
+    "sha256": "e511891d3e01b0b27aed51a219ced5119e2c3d0460465af8242e9bff4cb61b77"
+  },
+  {
+    "original": "sites/ffmpeg/ffmpeg.org/fonts/fontawesome-webfont.svg?v=4.2.0",
+    "path": "sites/ffmpeg/ffmpeg.org/fonts/asset-7075e7b4756ebc94.svg",
+    "sha256": "d5b5636ebb2e124810436200086b74a60dff9e8a8be7f4a1088bf5d3458bc3c8"
+  },
+  {
+    "original": "sites/ffmpeg/ffmpeg.org/fonts/fontawesome-webfont.ttf?v=4.2.0",
+    "path": "sites/ffmpeg/ffmpeg.org/fonts/asset-88a9cf66bf237959.ttf",
+    "sha256": "4d6eb9e9d852a2a6f74e7c428456a2f07fc63a1613d10192d8ed3401d9da5ffa"
+  },
+  {
+    "original": "sites/ffmpeg/ffmpeg.org/fonts/fontawesome-webfont.woff?v=4.2.0",
+    "path": "sites/ffmpeg/ffmpeg.org/fonts/asset-cbf41544c213248d.woff",
+    "sha256": "199411f659f41aaccb959bacb1b0de30e54f244352a48c6f9894e65ae0f8a9a1"
+  },
+  {
+    "original": "sites/kernel/www.kernel.org/theme/fonts/oswald-regular-webfont.eot?",
+    "path": "sites/kernel/www.kernel.org/theme/fonts/asset-8d1a598ea62938f7.eot",
+    "sha256": "04354b463ef14fd5fbeff0cde715aa683d0d50fe77739136f6dd6442c395dd25"
+  },
+  {
+    "original": "sites/kernel/www.kernel.org/theme/fonts/oxygen-regular-webfont.eot?",
+    "path": "sites/kernel/www.kernel.org/theme/fonts/asset-59c5004bfda3fd0a.eot",
+    "sha256": "2822df32a4e99561d62b01ee80974c1db98ac0be34fb4750a8b816d3159bbf56"
+  },
+  {
+    "original": "sites/libexpat/fonts.googleapis.com/css?family=Roboto:300,400,500,700.css",
+    "path": "sites/libexpat/fonts.googleapis.com/asset-8ef46fa6fd7bac99.css",
+    "sha256": "c4d65adc844fa4cd6d068924ab2c4a0fc1e7ee0fdd39600c48de97ebd849f400"
+  },
+  {
+    "original": "sites/libpng/sflogo.sourceforge.net/sflogo.php?group_id=32355&type=9",
+    "path": "sites/libpng/sflogo.sourceforge.net/asset-d7323568288fa626.png",
+    "sha256": "bf3ded0a4c6c1ea3b77dc6c6426ecb23918a9f25a8b417974fd69660ef3e296c"
+  },
+  {
+    "original": "sites/libtomcrypt/www.libtom.net/assets/fonts/fontawesome-webfont.eot?",
+    "path": "sites/libtomcrypt/www.libtom.net/assets/fonts/asset-333b11b0cbabd017.eot",
+    "sha256": "9f8288933d2c87ab3cdbdbda5c9fa1e1e139b01c7c1d1983f91a13be85173975"
+  },
+  {
+    "original": "sites/libtomcrypt/www.libtom.net/assets/fonts/fontawesome-webfont.eot?v=4.1.0",
+    "path": "sites/libtomcrypt/www.libtom.net/assets/fonts/asset-b271d4a46a7fdcd3.eot",
+    "sha256": "9f8288933d2c87ab3cdbdbda5c9fa1e1e139b01c7c1d1983f91a13be85173975"
+  },
+  {
+    "original": "sites/libtomcrypt/www.libtom.net/assets/fonts/fontawesome-webfont.svg?v=4.1.0",
+    "path": "sites/libtomcrypt/www.libtom.net/assets/fonts/asset-b59abbb7c01de524.svg",
+    "sha256": "4f1f9ffe01469bbd03b254ec563c304dd92276514110364148cb7ffdd75d3297"
+  },
+  {
+    "original": "sites/libtomcrypt/www.libtom.net/assets/fonts/fontawesome-webfont.ttf?v=4.1.0",
+    "path": "sites/libtomcrypt/www.libtom.net/assets/fonts/asset-f153085e02dd1390.ttf",
+    "sha256": "c2a9333b008247abd42354df966498b4c2f1aa51a10b7e178a4f5df2edea4ce1"
+  },
+  {
+    "original": "sites/libtomcrypt/www.libtom.net/assets/fonts/fontawesome-webfont.woff?v=4.1.0",
+    "path": "sites/libtomcrypt/www.libtom.net/assets/fonts/asset-ff80c683c8348dc0.woff",
+    "sha256": "66db52b456efe7e29cec11fa09421d03cb09e37ed1b567307ec0444fd605ce31"
+  },
+  {
+    "original": "sites/libuv/maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts/glyphicons-halflings-regular.eot?",
+    "path": "sites/libuv/maxcdn.bootstrapcdn.com/bootstrap/3.3.7/fonts/asset-39f51b8ce1d8d995.eot",
+    "sha256": "13634da87d9e23f8c3ed9108ce1724d183a39ad072e73e1b3d8cbf646d2d0407"
+  },
+  {
+    "original": "sites/nghttp2/fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic.css",
+    "path": "sites/nghttp2/fonts.googleapis.com/asset-5e2857f7ad94412c.css",
+    "sha256": "cdc05b69a8d5db9b170c8232d83fce506bcaa06068cbcd8a777c8db21405ee62"
+  },
+  {
+    "original": "sites/nghttp2/fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic.css",
+    "path": "sites/nghttp2/fonts.googleapis.com/asset-9df7044ac4fb3b8e.css",
+    "sha256": "e6f58525e34a83788602c54f5d0360ff9eead4e661a1dd3a9cb67c2ce7d5a12d"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/code_bg.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-a9dfff2882a5dd6c.png",
+    "sha256": "e387624162b119371814ddd9002dac30512664fd43774e5cc1c98f46ef8ed83d"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/email.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-7c7a3b9a620135a1.png",
+    "sha256": "9915acf54078d7d5329be6b9326fbec6bcd8f0a3bc3da85fd65a59a278d7fd65"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/line-tile.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-81011398d5a78c91.png",
+    "sha256": "800e5f6d9be9d67dec3206a7106ed7be09257c24240bda8ebfcc84681ba74290"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/noise.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-c84fecf4f1e75a65.png",
+    "sha256": "4ed23eedcffab565677aac0e6a13aa69b5a86b9bbb154a2be0018f2d23a308df"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/rss.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-283d8c2fb1c24e79.png",
+    "sha256": "2d0fd9132cd69b98f37a92525d0151e1dab2144886e0aea942adb8ede4b39ff8"
+  },
+  {
+    "original": "sites/nghttp2/nghttp2.org/images/search.png?1413623488",
+    "path": "sites/nghttp2/nghttp2.org/images/asset-17ac38834d87b0ce.png",
+    "sha256": "9ccbe85908746abb9b510675f3e5a020f6199244dca92c15fa1be9d6323308e5"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.eot?",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-3e58f62c0a2ba182.eot",
+    "sha256": "50bbe9192697e791e2ee4ef73917aeb1b03e727dff08a1fc8d74f00e4aa812e1"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.eot?v=4.6.3",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-4ef386b5df21dc23.eot",
+    "sha256": "50bbe9192697e791e2ee4ef73917aeb1b03e727dff08a1fc8d74f00e4aa812e1"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.svg?v=4.6.3",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-7d42ee1d400bf0f5.svg",
+    "sha256": "8e3586389bb4cd01b3f85bb3b622739bde6627f28bba63a020c223ca9cf1b9ae"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.ttf?v=4.6.3",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-33bc06bdb69e27c8.ttf",
+    "sha256": "ae19e2e4c04f2b04bf030684c4c1db8faf5c8fe3ee03d1e0c409046608b38912"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.woff2?v=4.6.3",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-cde7e590d7152335.woff2",
+    "sha256": "7dacf83f51179de8d7980a513e67ab3a08f2c6272bb5946df8fd77c0d1763b73"
+  },
+  {
+    "original": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/fontawesome-webfont.woff?v=4.6.3",
+    "path": "sites/qemu/maxcdn.bootstrapcdn.com/font-awesome/4.6.3/fonts/asset-85a1cb6fc03d47e1.woff",
+    "sha256": "adbc4f95eb6d7f2738959cf0ecbc374672fce47e856050a8e9791f457623ac2c"
+  },
+  {
+    "original": "sites/rsync/www.google.com/cse/brand?form=cse-search-box&lang=en",
+    "path": "sites/rsync/www.google.com/cse/asset-8aa86f2a6d44daf5.js",
+    "sha256": "6395e6f9f6fbcd953f0ffa40615094c565d86c265fb5028e64dd2dc872b5ce69"
+  },
+  {
+    "original": "sites/uclibc-ng/fonts.googleapis.com/css?family=Roboto.css",
+    "path": "sites/uclibc-ng/fonts.googleapis.com/asset-65166ad3a1bb29e3.css",
+    "sha256": "ba4c06dc3662909ec24a44ff9edadfd212d7b702ef86b84e73f15a4dd90e8de8"
+  },
+  {
+    "original": "sites/vim/www.google.com/coop/cse/brand?form=cse-search-box&lang=en",
+    "path": "sites/vim/www.google.com/coop/cse/asset-3caaeff065ff4155.js",
+    "sha256": "6395e6f9f6fbcd953f0ffa40615094c565d86c265fb5028e64dd2dc872b5ce69"
+  },
+  {
+    "original": "sites/w3m/sourceforge.net/sflogo.php?group_id=39518",
+    "path": "sites/w3m/sourceforge.net/asset-047d8b101f81bb1c.png",
+    "sha256": "ce9e8b1abf4182d4e0399da8e6b8e8e3251bf8f5595cd8b47384f5bee3baedea"
+  }
+]
