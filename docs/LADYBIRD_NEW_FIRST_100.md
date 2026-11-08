@@ -304,3 +304,24 @@ The [compression report](performance/ladybird-first100-compression-20261108.json
 retains successful and failed development attempts. This source check does not
 replace production browser validation. Raw evidence is archived locally and
 all completed job scratch has been removed.
+
+## Native SharedWorker continuation
+
+Commit `d67ae676b` adds native SharedWorker globals, independent worker agents,
+queued connect events and reusable connections backed by actual MessagePorts.
+The parent registry reuses the agent for same-origin URL/name keys across
+Window owners. Port identifiers remain distinct between connections; closing
+one Window preserves another owner's connection, and the final owner closes
+the agent. Native JavaScriptCore globals carry the correct SharedWorker class.
+Connect events retain their empty-string data and port source identity.
+
+All **52 subtests in the ten selected IndexedDB SharedWorker variants pass**
+through fresh native worker processes and unchanged upstream worker wrappers,
+support scripts and assertions. The upstream parent shell harness collects
+results over real process/port transport. All 23 dedicated/shared worker
+regression functions pass, and the independent two-window reuse and constructor
+checks pass. This does not replace production windowed browser validation.
+`extendedLifetime` conversion does not implement a post-owner grace lifetime,
+and the registry does not claim cross-browser persistence. See the
+[SharedWorker report](performance/ladybird-first100-shared-workers-20261108.json)
+for identities, per-case results, failed development checks and local evidence.
