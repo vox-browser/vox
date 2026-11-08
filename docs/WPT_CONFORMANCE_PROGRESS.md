@@ -329,3 +329,22 @@ The next large failure group under investigation is the imported test driver's
 missing `internals.sendText()` call (9,340 failed subtests in this baseline).
 Providing it enables native keyboard execution; it does not establish that all
 those subtests will pass.
+
+## Focused follow-up on the newer shared bundle
+
+The completed `3feee902668f…` production bundle contains the native Blob,
+input-files, typed-attribute and Element.remove changes, verified against its
+parsed-source manifest. [Focused imported WPT checks](performance/wpt-blob-input-remove-followup-20261108.json)
+pass all **174 / 174 Blob subtests** in three cases, plus the removal-unscopable
+case. Across the two focused runs, 203 subtests pass and one fails:
+`DataTransfer.files` does not preserve the FileList identity expected by the
+input-files assignment case. Both runs retain unchanged input identities and
+successful aggregate guard completion; the second runner exits 1 as required.
+This is a small selected cohort, not an updated full-cohort percentage.
+
+All [seven SVG bridge pixel regressions](performance/wpt-svg-bridge-followup-20261108.json)
+pass exactly, with zero differing pixels: same-size image source replacement,
+hidden inherited paint-server style changes, SVG/HTML ID collisions, gradient
+stop offset/moveBefore changes, and pattern attribute updates. These use fresh
+processes and the same pinned completed bundle under the publication lease.
+Later beforeinput/StaticRange source changes still require their own validation.

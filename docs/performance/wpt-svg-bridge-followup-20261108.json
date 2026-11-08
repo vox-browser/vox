@@ -1,0 +1,51 @@
+{
+  "command": [
+    "sh",
+    "compare_screenshots.sh",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/pattern-attribute-update.html"
+  ],
+  "exit": 0,
+  "identity": {
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "6349f2abe0845cdb9907dada7b1934b67f2724e8dbe08b542dced3ce9a5ec187",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2810160b0ba3b0c167374131e91e512ba45b4e2f5ed7de20f3d02eec9f7b4709",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345",
+    "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "0103cdda0576eb726095abef644af02e0508cbe70c212b08f247fd5f4321ccc8"
+  },
+  "fixture_inputs": {
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-image-source-switch-same-size.html": "00c8237fe47703896d26207dece9fdd802e4ca49b84e6b178f657d8293802f06",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg-paint-server-hidden-inherited-style-update.html": "23addb46947da1c8c28de47d7846dc002285530f1ad2bc4d104aeca52d4d337f",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-id-collision.html": "cd9e530818694384a0f141cc71a7d1705c22394ad25756d20dd1dfd5ddf7db43",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/paint-server-html-id-collision.html": "181cafc7b686ded3aa8f4444970461ea27438325a1135fde1459e5badfe1c48a",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-offset-update.html": "2064667b5de321879293c160680a9c1dc21dfd48e4f0061fab57f616f4db851e",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/gradient-stop-move-before.html": "46440e1a39e7d5761a6e5fadd2a40fcf7caa9a371c25f388d9f746872a70451d",
+    "/Users/alex/code/3rd/ladybird/Tests/LibWeb/Ref/input/svg/pattern-attribute-update.html": "ed7c196c353f92afb6a07a6e2ea8babb43f3dc3449323d50c1a8e84e251e1af5"
+  },
+  "changed_inputs": [],
+  "guard": {
+    "command": [
+      "python3",
+      "-"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 292814848,
+    "elapsed_seconds": 57.614765375000005,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-svg-bridge-followup.tar.gz",
+  "archive_sha256": "1908b59a17a5d7b0f05f2b802df6ed14ff888157a6bbee8257fa2aceb5b1f954",
+  "result": "PASS: 7/7 exact, zero differing pixels",
+  "scope": "Pinned completed bundle bridge regression checks; does not validate later beforeinput/StaticRange source changes."
+}

@@ -1,0 +1,439 @@
+{
+  "recorded_at": "2026-11-08T09:54:59.558986+00:00",
+  "scope": "Focused cases from the larger imported cohort; not a full WPT or full-cohort result.",
+  "all_selected_tests_pass": false,
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-focused-blob-input-remove.tar.gz",
+  "archive_sha256": "5e8a8b4f0ce4ce45714ef8a51984d75344142a77763ebc9a585d9793699b32cb",
+  "runs": [
+    {
+      "name": "wpt-focused-new-bundle-20261108",
+      "identity": {
+        "suite_scope": {
+          "name": "ladybird-imported-testharness",
+          "full_upstream_wpt": false,
+          "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+          "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+          "excluded_types": [
+            "reftest",
+            "print-reftest",
+            "crashtest",
+            "wdspec",
+            "test262",
+            "aamtest",
+            "manual",
+            "visual"
+          ],
+          "denominator": "reported runtime subtests in selected imported files only"
+        },
+        "started": "2026-11-08T12:46:18+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-focused-new-bundle-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--include",
+          "FileAPI/blob",
+          "--include",
+          "dom/nodes/ChildNode-remove",
+          "--require-all-pass"
+        ],
+        "ladybird_head": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "selection_baseline": null,
+        "wpt_root": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          40.17,
+          25.84,
+          18.73
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+            "mode": "single",
+            "requested": "parallel",
+            "v_prod": false
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-123227-9e5f1952/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1264ff12391e1c558f88b1db6c453b545fdf79075eecb3183d8bf79b700ed2c3",
+            "dirty": true,
+            "head": "29762be9c558d511e384c48ee536d7eb81025c06",
+            "repository_sha256": "8a48896672289131cb78376cec0f1e823d88cb25f1013721ef4c018d505ea35f"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "76380717e6be1512220bbcd49a5ae0fe099f197901c601466cbe795ed5ee545e",
+            "dirty": true,
+            "head": "9cde0033601b0eb3aa9856897664098f0c13796c",
+            "repository_sha256": "22e0ee639a46b89702775cdbecff2e2282af0fcd4de0f8bc3f4bb2438ded4d98"
+          },
+          "request": {
+            "c_mode": "parallel",
+            "head": "7033148aa1596072a347467be0f71daac933fba7",
+            "id": "134dce4eec9748df9fcde199abe7a5b0",
+            "renderer": "gg",
+            "v_prod": false
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "bb5ca7129224aebf40e397db761b3b0e5f361cdc9fe26e49ead39d07353d0502",
+            "dirty": true,
+            "head": "b244dfd024c6e3ab26220a9e63cf90c6ab3a2987",
+            "source_kind": "verified parsed buffers and sealed native inputs"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "0103cdda0576eb726095abef644af02e0508cbe70c212b08f247fd5f4321ccc8",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2810160b0ba3b0c167374131e91e512ba45b4e2f5ed7de20f3d02eec9f7b4709",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "6349f2abe0845cdb9907dada7b1934b67f2724e8dbe08b542dced3ce9a5ec187",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 10,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 4
+        },
+        "base_url": "http://127.0.0.1:55293",
+        "load_end": [
+          41.28,
+          26.31,
+          18.94
+        ],
+        "finished": "2026-11-08T12:46:24+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "summary": {
+        "suite_scope": {
+          "name": "ladybird-imported-testharness",
+          "full_upstream_wpt": false,
+          "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+          "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+          "excluded_types": [
+            "reftest",
+            "print-reftest",
+            "crashtest",
+            "wdspec",
+            "test262",
+            "aamtest",
+            "manual",
+            "visual"
+          ],
+          "denominator": "reported runtime subtests in selected imported files only"
+        },
+        "tests": 3,
+        "browsers": {
+          "vox": {
+            "tests": 3,
+            "outcomes": {
+              "COMPLETE": 3
+            },
+            "harness": {
+              "OK": 3
+            },
+            "subtests": {
+              "PASS": 174
+            },
+            "subtest_total": 174,
+            "subtest_pass_rate": 1.0,
+            "tests_all_pass": 3
+          }
+        },
+        "wall_seconds": {
+          "vox": 1.2
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-focused-new-bundle-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--include",
+          "FileAPI/blob",
+          "--include",
+          "dom/nodes/ChildNode-remove",
+          "--require-all-pass"
+        ],
+        "reason": "completed",
+        "child_exit_code": 0,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 236339200,
+        "elapsed_seconds": 12.339683375,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "results_sha256": "9d3bb6deb621ab697751d6ecc4c7ee1d6ed68136efc5d8b605a17fa13a772aab",
+      "failures": []
+    },
+    {
+      "name": "wpt-focused-input-remove-20261108",
+      "identity": {
+        "suite_scope": {
+          "name": "ladybird-imported-testharness",
+          "full_upstream_wpt": false,
+          "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+          "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+          "excluded_types": [
+            "reftest",
+            "print-reftest",
+            "crashtest",
+            "wdspec",
+            "test262",
+            "aamtest",
+            "manual",
+            "visual"
+          ],
+          "denominator": "reported runtime subtests in selected imported files only"
+        },
+        "started": "2026-11-08T12:46:52+0300",
+        "argv": [
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-focused-input-remove-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--include",
+          "html/semantics/forms/the-input-element/files",
+          "--include",
+          "dom/nodes/remove-unscopable",
+          "--require-all-pass"
+        ],
+        "ladybird_head": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "selection_baseline": null,
+        "wpt_root": "/Users/alex/.cache/vox/wpt/ladybird-imported-2919bf87a5e5dfc49a210a70bda079afa411c6c5/Tests/LibWeb/Text/input/wpt-import",
+        "host_cpus": 18,
+        "load_start": [
+          34.39,
+          26.09,
+          19.12
+        ],
+        "brave_version": null,
+        "vox_receipt": {
+          "c_compile": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+            "mode": "single",
+            "requested": "parallel",
+            "v_prod": false
+          },
+          "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+          "executable_sha256": "3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c",
+          "exit": 0,
+          "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-123227-9e5f1952/frozen-compile.json",
+          "inputs": {
+            "build_inputs_sha256": "1264ff12391e1c558f88b1db6c453b545fdf79075eecb3183d8bf79b700ed2c3",
+            "dirty": true,
+            "head": "29762be9c558d511e384c48ee536d7eb81025c06",
+            "repository_sha256": "8a48896672289131cb78376cec0f1e823d88cb25f1013721ef4c018d505ea35f"
+          },
+          "renderer": {
+            "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/70925d4452ce4b83290c0d484dece2a3c2d1404069843eed25cbcdb8c7d46ee2/compiler/v",
+            "default": "gg",
+            "gg_adapters": true,
+            "skia_free": false,
+            "skia_required_for": [
+              "text preparation and fallback",
+              "canvas",
+              "shadows",
+              "bitmap export",
+              "recording and picture playback"
+            ]
+          },
+          "repository_after_build": {
+            "build_inputs_sha256": "76380717e6be1512220bbcd49a5ae0fe099f197901c601466cbe795ed5ee545e",
+            "dirty": true,
+            "head": "9cde0033601b0eb3aa9856897664098f0c13796c",
+            "repository_sha256": "22e0ee639a46b89702775cdbecff2e2282af0fcd4de0f8bc3f4bb2438ded4d98"
+          },
+          "request": {
+            "c_mode": "parallel",
+            "head": "7033148aa1596072a347467be0f71daac933fba7",
+            "id": "134dce4eec9748df9fcde199abe7a5b0",
+            "renderer": "gg",
+            "v_prod": false
+          },
+          "verified_inputs": {
+            "build_inputs_sha256": "bb5ca7129224aebf40e397db761b3b0e5f361cdc9fe26e49ead39d07353d0502",
+            "dirty": true,
+            "head": "b244dfd024c6e3ab26220a9e63cf90c6ab3a2987",
+            "source_kind": "verified parsed buffers and sealed native inputs"
+          }
+        },
+        "pinned": {
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox": "3feee902668f98c768c03d9f745870d900d52d687cb11fff37dd47f73b8b7c5c",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/VoxAdblockWorker": "0103cdda0576eb726095abef644af02e0508cbe70c212b08f247fd5f4321ccc8",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libLadybirdVSkiaText.dylib": "2810160b0ba3b0c167374131e91e512ba45b4e2f5ed7de20f3d02eec9f7b4709",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxAVIF.dylib": "b45c37445cc8a158324d7b26fbb2a04152942016a4e833b830309cac76eb7229",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphite.dylib": "6349f2abe0845cdb9907dada7b1934b67f2724e8dbe08b542dced3ce9a5ec187",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxGraphiteDawn.dylib": "e3621ca1dabae3a453c9cd41834cb7ec8bc0b5e0f118efa8f06f4cf34406b416",
+          "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/libVoxJPEGXL.dylib": "71f5393f2ad3e80349799cdf64fb15229209bb092a979879aebd319e3f841345"
+        },
+        "width": 1024,
+        "height": 768,
+        "chunk_size": 10,
+        "limits": {
+          "startup": 30,
+          "navigation": 10,
+          "harness_start": 5,
+          "grace": 10,
+          "browser_memory_gib": 4
+        },
+        "base_url": "http://127.0.0.1:55381",
+        "load_end": [
+          34.39,
+          26.09,
+          19.12
+        ],
+        "finished": "2026-11-08T12:46:56+0300",
+        "changed_inputs": [],
+        "unexpected_posts": 0,
+        "aborted": null
+      },
+      "summary": {
+        "suite_scope": {
+          "name": "ladybird-imported-testharness",
+          "full_upstream_wpt": false,
+          "selection": "Ladybird Tests/LibWeb/Text/expected/wpt-import expectations",
+          "server": "static HTTP; no Python handlers, HTTPS, or WPT multi-origin configuration",
+          "excluded_types": [
+            "reftest",
+            "print-reftest",
+            "crashtest",
+            "wdspec",
+            "test262",
+            "aamtest",
+            "manual",
+            "visual"
+          ],
+          "denominator": "reported runtime subtests in selected imported files only"
+        },
+        "tests": 2,
+        "browsers": {
+          "vox": {
+            "tests": 2,
+            "outcomes": {
+              "COMPLETE": 2
+            },
+            "harness": {
+              "OK": 2
+            },
+            "subtests": {
+              "PASS": 29,
+              "FAIL": 1
+            },
+            "subtest_total": 30,
+            "subtest_pass_rate": 0.9667,
+            "tests_all_pass": 1
+          }
+        },
+        "wall_seconds": {
+          "vox": 0.8
+        },
+        "launches": {
+          "vox": 1
+        },
+        "both_clean": {
+          "tests": 0
+        },
+        "identical_results": {
+          "tests": 0
+        },
+        "directories": {},
+        "slowest_ratio": [],
+        "largest_difference": []
+      },
+      "guard": {
+        "command": [
+          "python3",
+          "tools/wpt_compare.py",
+          "--output",
+          "Build/wpt-focused-input-remove-20261108",
+          "--ladybird-ref",
+          "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+          "--browsers",
+          "vox",
+          "--chunk-size",
+          "10",
+          "--include",
+          "html/semantics/forms/the-input-element/files",
+          "--include",
+          "dom/nodes/remove-unscopable",
+          "--require-all-pass"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 268582912,
+        "elapsed_seconds": 6.781372833,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "results_sha256": "2e2e2a72545043b36a1e76698b19800e88b4f2fcd5f06e892982b4a10fbca738",
+      "failures": [
+        {
+          "test": "html/semantics/forms/the-input-element/files",
+          "subtest": {
+            "name": "setting <input type=file>.files from DataTransfer",
+            "status": "FAIL",
+            "message": "assert_equals: FileList can be shared across input / DataTransfer expected object \"[object FileList]\" but got object \"[object FileList]\""
+          }
+        }
+      ]
+    }
+  ]
+}
