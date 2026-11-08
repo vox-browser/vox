@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Capture pixel-aligned source-image filters, including unknown image edges."""
+"""Capture source-image filters, including deferred sampling and image edges."""
 import ctypes as C
 import hashlib
 import importlib.util
@@ -94,6 +94,25 @@ cases += [
     dict(name='fractional-alpha-color', alpha=.7, source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
          p3=True, premul=False, filters=[contrast, opacity], mode='src_in', clip=True),
 ]
+cases += [
+    dict(name='scaled-integer-source-blur', source=[0, 0, 7, 6], destination=[4, 5, 30, 25],
+         filters=[blur(2.5)]),
+    dict(name='scaled-subset-nearest-blur', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         smoothing=False, filters=[blur(.8)], mode='src_in', clip=True),
+    dict(name='scaled-p3-unpremul-prefilter', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.65, filters=[contrast, blur(.8), opacity, blur(2.5)], mode='overlay'),
+    dict(name='scaled-unpremul-blur', source=[0, 0, 7, 6], destination=[10.25, 12.5, 28, 18],
+         premul=False, filters=[blur(1.2)], mode='multiply', clip=True),
+    dict(name='flipped-integer-source-blur', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], filters=[blur(.8), contrast, blur(2.5)], mode='src_in'),
+    dict(name='downscaled-integer-source-mipmap', source=[0, 0, 7, 6], destination=[10.25, 12.5, 2, 3],
+         alpha=.7, p3=True, filters=[blur(1.2)], mode='plus_lighter', clip=True),
+    dict(name='translated-integer-source-blur', source=[0, 0, 7, 6], destination=[10, 12, 7, 6],
+         transform=[1, 0, 0, 1, .25, .75], filters=[blur(2.5)]),
+    dict(name='identity-before-scaled-source-blur', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, alpha=.7, filters=[contrast, blur(0), opacity, blur(.01), blur(2.5)],
+         mode='src_in', clip=True),
+]
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -105,7 +124,7 @@ for case in cases:
     r.pattern_sha256 = hashlib.sha256(image).hexdigest()
     r.filters(case['filters'])
     clips = [(triangle, False)] if case.get('clip') else []
-    ints = [w, h, w * 4, 2, 2, 1, len(clips),
+    ints = [w, h, w * 4, 2, 2, int(case.get('smoothing', True)), len(clips),
             *[v for p, even in clips for v in [len(p)//12, int(even)]],
             m.MODES[case.get('mode', 'src_over')], 0, iw, ih, image_pitch, 2 if premul else 1,
             int(case.get('p3', False))]
@@ -126,6 +145,8 @@ if platform.system() == 'Linux':
 expected += ['d97a0d9cd1df7e4d', '5e4ace20b1be0022', '0adcdf1ab86d62a6', '75e9b0d52e0b770b',
              'a13ffe5203eeb91e', '1c07622980ca4093', '502f0b408e262557', '62b1b888837ad40a',
              '7947909c7171a8d1', 'e31ad4c4058362b9']
+expected += ['52a21c2bac4d4259', 'e9b398034919dbd9', 'a3b2ddfab2f04556', '8dbc9961e18faaa5',
+             'a8230d732d6e0330', '0e53661aa81425c3', '7bb5c150a395bcf9', 'e126bfc9481ba799']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
