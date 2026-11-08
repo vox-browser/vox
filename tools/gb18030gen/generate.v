@@ -82,7 +82,7 @@ pub fn generate(index []IndexEntry, ranges []IndexEntry) !string {
 	mut encode := first_pointer.keys()
 	encode.sort()
 	encoded_pointers := encode.map(first_pointer[it])
-	return $embed_file('header.txt').to_string() + '// index-gb18030: the code point of each two-byte pointer.\n' +
+	return $embed_file('header.txt').to_string() + '\n// index-gb18030: the code point of each two-byte pointer.\n' +
 		'const gb18030_index = [\n${rows(hex_values(two, 'u16'))}\n]\n\n' +
 		'// index-gb18030-ranges, without pointer 7457: the pointer and code point at\n' +
 		'// which each linear four-byte range starts.\n' +
