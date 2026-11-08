@@ -14,6 +14,8 @@ pub mut:
 	store_               ?&ObjectStoreData
 	index_               ?&IndexData
 	object_store_handle_ IDBObjectStore
+mut:
+	operation_request_ ?&IDBRequest
 }
 
 fn (index &IDBIndex) load() !(&ObjectStoreData, &IndexData) {
@@ -91,6 +93,7 @@ pub fn (mut index IDBIndex) rename(name string) ! {
 }
 
 fn (mut index IDBIndex) new_request() &IDBRequest {
+	if request := index.operation_request_ { return request }
 	mut request := IDBRequest.create_for_global_scope(index.relevant_global_object(), index.name_)
 	request.transaction_ = index.transaction
 	index.transaction.request_list_.append(request)
@@ -158,7 +161,7 @@ fn (index &IDBIndex) entries(range IDBKeyRange, direction IDBCursorDirection, in
 }
 
 pub fn (mut index IDBIndex) get(range IDBKeyRange) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	store, data := index.load()!
 	mut request := index.new_request()
 	if record := data.first_in_range(range) {
@@ -171,7 +174,7 @@ pub fn (mut index IDBIndex) get(range IDBKeyRange) !&IDBRequest {
 }
 
 pub fn (mut index IDBIndex) get_key(range IDBKeyRange) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	_, data := index.load()!
 	mut request := index.new_request()
 	if record := data.first_in_range(range) {

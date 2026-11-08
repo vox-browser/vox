@@ -29,6 +29,24 @@ fn deliver_index_schema_tasks() {
 	}
 }
 
+fn test_index_get_and_get_key_are_ordered_native_requests() {
+	mut runtime, mut document := indexed_db_index_fixture()!
+	defer { runtime.close(); document.finalize() }
+	runtime.evaluate_host(r'
+ globalThis.checks=[];globalThis.opening=indexedDB.open("get-index",1);
+ opening.onupgradeneeded=()=>{
+  const store=opening.result.createObjectStore("items"),index=store.createIndex("lookup","field");
+  store.add({field:"match"},9);
+  const get=index.get("match"),key=index.getKey("match");
+  checks.push(get.source===index,get.transaction===opening.transaction,get.readyState==="pending");
+  get.onsuccess=e=>checks.push(e.target===get,get.result.field==="match",get.result===get.result);
+  key.onsuccess=()=>checks.push(key.result===9);
+ };opening.onsuccess=()=>checks.push(true);true
+ ')!
+	deliver_index_schema_tasks()
+	assert runtime.evaluate_host('checks.length===8&&checks.every(Boolean)')! == 'true', runtime.evaluate_host('JSON.stringify(checks)')!
+}
+
 fn test_index_creation_uses_native_schema_metadata_and_live_names() {
 	$if !darwin && !linux { return }
 	mut runtime, mut document := indexed_db_index_fixture()!

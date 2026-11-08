@@ -651,6 +651,12 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 		}
 		.index {
 			mut index := entry.index
+			if method in ['get', 'getKey'] {
+				index.require_cursor_source()!
+				key := runtime.indexed_db_key(args[2])!
+				request := index.get_async(indexeddb.IDBKeyRange.only(key)!, method == 'getKey')!
+				return runtime.indexed_db_request(mut binding, request, none, receiver)
+			}
 			if method == 'name' { return runtime.binding_string(index.name()) }
 			if method == 'setName' {
 				index.rename(runtime.binding_dom_string(args[2])!)!
