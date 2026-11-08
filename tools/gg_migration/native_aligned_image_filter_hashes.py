@@ -309,6 +309,38 @@ cases.append(dict(name='thin-resolved-shadow', iw=24, ih=2, width=87, height=8,
             -.14551322, -.39294574, -.6733888, .11890532, -.2589099, 0, 0, 0, .16235755, 0], 0)]))
 cases.append(dict(cases[-1], name='thin-resolved-shadow-without-postfilters',
                   filters=cases[-1]['filters'][:2], mode='src'))
+# Mixed source-image graphs: retained raw pixels or a fractional-source AA surface.
+cases += [
+    dict(name='source-chain-blur-shadow', filters=[blur(.8), shadow(2.5)]),
+    dict(name='source-chain-shadow-blur-p3', source=[1, 1, 5, 4], destination=[4, 6, 5, 4],
+         transform=[1, 0, 0, 1, 3, -2], p3=True, premul=False, alpha=.65,
+         filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
+    dict(name='source-chain-two-shadows', premul=False, alpha=.7,
+         filters=[shadow(2.5), shadow(.8, -7.25, 4.5)], mode='overlay'),
+    dict(name='source-chain-identity-colors', p3=True,
+         filters=[contrast, shadow(0), opacity, blur(.01), shadow(.8)]),
+    dict(name='source-chain-colors-alpha', alpha=.65, alpha_type=1, clip=True,
+         filters=[contrast, shadow(2.5), blur(.8), opacity], mode='src_out'),
+    dict(name='source-chain-two-identity-shadows', premul=False,
+         filters=[opacity, shadow(0), contrast, shadow(.01)], mode='multiply', clip=True),
+    dict(name='fractional-chain-blur-shadow', source=[.25, .5, 6.25, 5], destination=[10.25, 12.5, 28, 18],
+         transform=[1.25, 0, 0, .75, 2, 4], filters=[blur(.8), shadow(2.5)], mode='src_in', clip=True),
+    dict(name='fractional-chain-shadow-blur-p3', source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
+         p3=True, premul=False, filters=[shadow(2.5), blur(.8)], mode='overlay'),
+    dict(name='fractional-chain-two-shadows', source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
+         premul=False, alpha=.65, filters=[shadow(2.5), shadow(.8, -7.25, 4.5)], mode='multiply', clip=True),
+    dict(name='fractional-chain-flipped', source=[1.25, 1.5, 4.5, 3.75], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], filters=[shadow(2.5), contrast, blur(.8), shadow(.8)], mode='src_out'),
+    dict(name='fractional-chain-identity-colors', source=[.25, .5, 6.25, 5], destination=[10.25, 12.5, 28, 18],
+         transform=[1.25, 0, 0, .75, 2, 4], p3=True, premul=False, alpha=.7,
+         filters=[contrast, shadow(0), opacity, blur(.01), shadow(.8)], mode='plus_lighter', clip=True),
+    dict(name='clipped-source-chain', source=[-2, -1, 7, 6], destination=[4, 6, 7, 6],
+         filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
+    dict(name='empty-source-chain', source=[10, 10, 7, 6], destination=[4, 6, 7, 6],
+         filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
+    dict(name='zero-alpha-source-chain', alpha=0, filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
+]
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -373,6 +405,15 @@ if platform.system() == 'Linux':
 expected += ['09ffe213e3642515', 'b54173ae0d037c96']
 if platform.system() == 'Linux':
     expected[-2:] = ['aff78d507ddefba6', 'a1efef67211fbbde']
+expected += ['a6eff4e4d6d0b525', '9736c314d18243e4', '21edf031b5cad9bf', '4f87fbb4a116f74d',
+ '0a4d5b84834e14f6', '3413bb7c9b0e9950', '9aae5da5398fe1e4', '7d91d1dd5fc4ea7d',
+ 'd1881a087ec36965', 'ff49a0bb8b31af28', 'a72cc96950afdcd1', 'f68b7870dc82135b',
+ '62b1b888837ad40a', '62b1b888837ad40a']
+if platform.system() == 'Linux':
+    expected[-14:] = ['a6eff4e4d6d0b525', '9736c314d18243e4', '21edf031b5cad9bf', '4f87fbb4a116f74d',
+ '0a4d5b84834e14f6', '3413bb7c9b0e9950', '206ed0f93c797611', '7d91d1dd5fc4ea7d',
+ 'd1881a087ec36965', 'c22b2b4fdcb9c1c8', 'a72cc96950afdcd1', 'f68b7870dc82135b',
+ '62b1b888837ad40a', '62b1b888837ad40a']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
