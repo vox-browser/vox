@@ -1046,3 +1046,34 @@ At this checkpoint production and pixel validation are pending, and r18 has
 not begun collection. The official full upstream checkout remains available;
 its complete manifest is not yet integrated into execution. **Neither the
 larger imported set nor full upstream WPT has reached 100%.**
+
+The matching production image is now available, executable
+`e66ce03390efb5ef5b85d4e9009db6df414ed241d9b9b9217222e5825a767e33`,
+receipt `Build/production-build/receipts/20261108-210831-30409edf`.
+It confirms **672 / 672 MathML assertions**, with all four pages COMPLETE,
+harness OK, exact counts, unchanged pinned inputs and strict runner/outer
+exits 0. Ten of the 11 SVG reftests remain pixel-exact. The gradient
+stop-color animation case differs in 10,000 pixels; unchanged tolerance rejects
+it. The separate SVG/XML production collection reports **9,204 / 9,208 PASS**:
+all pages complete with harness OK, but four group bounding-box assertions
+fail. These production failures remain open despite the native Page result.
+
+Production MathML/pixel evidence:
+`/Users/alex/.cache/vox/wpt/20261108-mathml-clipboard-production-raw.tar.gz`,
+SHA-256 `deb57dfd80d9f322aca29c9d17e502650a13e6616edd03c3f89897758b705adb`.
+SVG/XML production evidence:
+`/Users/alex/.cache/vox/wpt/20261108-svg-xml-production-raw.tar.gz`, SHA-256
+`aec7019edb03c9695320fdec7b664e9ab81c54a129788607eb4a203a74e6a796`.
+Completed production-check directories and locks are removed after archiving.
+r18 is consequently **DEFERRED**, with no imported collection started.
+
+Commit `4c03f4713` separately integrates the official manifest's 40,139
+testharness variants, including generated worker/window URLs and HTTPS.
+All 32 tooling checks pass; five original HTTP/window/worker/HTTPS probe pages
+pass 23 assertions. Unsupported HTTP/2 cases stay in the denominator and force
+a nonzero strict result. The first unfiltered official-manifest collection is
+now **RUNNING** on the matching production executable above, after r18 ends,
+with broad suites serial. Other manifest types and unavailable server
+protocols remain explicit limitations. See [the upstream execution report](WPT_UPSTREAM_SUITE.md)
+for scope, original failed attempts, executable identity and local receipts.
+**No completed full-upstream rate or 100% result is established.**
