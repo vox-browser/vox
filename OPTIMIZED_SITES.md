@@ -369,6 +369,22 @@ its own matched measurement.
   applies to the stated CLI protocol. Live author-script behavior is checked
   separately from these instruction measurements.
 
+## GitHub full-JavaScript site-policy comparison
+
+The GitHub site policies reduce observed instructions by **29.23% between
+medians** and **22.19% conservatively** across seven matched pairs on
+`github.com/vlang/v`. Control median: **56,828,029,810**; optimized median:
+**40,219,144,070**. This is a Vox policy-on/policy-off comparison on the
+same completed build `91be2b76`, with full immediate JavaScriptCore startup,
+original-origin frozen replay, a shared Date prefix, fresh profiles/caches and
+five-second settling after Sponsor/sidebar readiness. The launch-through-document
+PNG/audit/teardown scope uses 1024×768 at 1×; all fourteen PNGs match the unchanged
+reference exactly and complete content audits pass. Counts are process-tree lower
+bounds and exclude GPU/WindowServer work. Live loading passes separately; live
+performance, isolated rendering, scrolling and comparison with Brave are outside
+this result. [Report and limitations](docs/GITHUB_SITE_OPTIMIZATIONS.md),
+[exact counts and retained attempts](docs/performance/github-raster-input-validation-20261108.json).
+
 ## Historical result awaiting raw verification
 
 | Site | Recorded date | Trials per browser | Statistic | Vox instructions | Brave observed instructions | Fewer instructions | Vox scroll FPS | Brave scroll FPS | Evidence |
