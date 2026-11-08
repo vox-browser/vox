@@ -1,6 +1,28 @@
 module cpuraster
 
 import math
+import crypto.sha256
+
+fn test_quarter_turned_rounded_clip_retains_native_convexity_metadata() {
+	values := [f32(10.405047), -12.90473, 52.73052, 3.8516319,
+		36.44262, 13.765029, 23.678234, 6.420258, 26.182846, 25.607016, 27.555897, 13.25178]
+	r := rounded_rect(Rect{values[0], values[1], values[0] + values[2], values[1] + values[3]},
+		[values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11]]!)
+	path := r.clip_path(Matrix{0, 1.7898283, -1.7898283, 0, 5.206243, 24.773052})
+	mut clip := canvas_raster_clip(79, 80, [])
+	clip.subtract_path(path)
+	mut pixels := []u8{len: 79 * 80 * 4}
+	assert fill_clipped_color(mut pixels, 79, 80, 316, 0xffffffff, clip)
+	$if linux {
+		assert path.convexity() == .convex_cw
+		assert pixels[(43 * 79 + 23) * 4 + 3] == 213
+		assert sha256.sum(pixels).hex() == '8e4c92d9e8e3d488b82c1b50fc0633cdfbcbc78d396e9b7061249ff71b52a7af'
+	} $else {
+		assert path.convexity() == .concave
+		assert pixels[(43 * 79 + 23) * 4 + 3] == 216
+		assert sha256.sum(pixels).hex() == '78ba6a7fbc0ac04cf37cca13d3c865e3c1e4fe848eccb53f96d8eea3e446cf9b'
+	}
+}
 
 fn test_rounded_rect_normalizes_corners_and_retains_known_convexity() {
 	r := rounded_rect(Rect{10, 8, 0, 0}, [f32(100), 100, 100, 100, 100, 100, 100, 100]!)
