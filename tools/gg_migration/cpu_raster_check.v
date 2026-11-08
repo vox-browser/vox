@@ -1398,7 +1398,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2461,7 +2461,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	fractional := os.getenv('CPU_RASTER_CHECKS') == 'fractional-image-layers'
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
 	resampled := os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
-	converted := fractional || alpha_layers || resampled || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
+	converted := fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
@@ -2543,7 +2544,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				source: [f32(left), top, sw, sh]!
 				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
 				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
-				global_alpha: if alpha_layers || resampled { random_composite_alpha() } else { f32(1) }
+				global_alpha: if alpha_layers || resampled || clipped { random_composite_alpha() } else { f32(1) }
 				chromium: false
 				filters: if converted { random_converted_image_blurs() } else { match i % 4 {
 					0 { random_layer_filters() }
@@ -2567,6 +2568,18 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				transform: [sx, 0, 0, sy, if sx < 0 { f32(width) * .8 } else { f32(3.25) },
 					if sy < 0 { f32(height) * .8 } else { f32(2.75) }]!
 			}
+		}
+		if clipped {
+			iw, ih := f32(image.width), f32(image.height)
+			src := match i % 4 {
+				0 { [iw + f32(2), f32(0), iw, ih]! }
+				1 { [f32(-2), -1, iw, ih]! }
+				2 { [f32(1), 1, iw, ih]! }
+				else { [f32(-.75), -.5, iw + f32(.5), ih + f32(1.25)]! }
+			}
+			c = BitmapCase{...c, source: src,
+				destination: if i % 3 == 0 { [f32(4), 5, src[2], src[3]]! } else { c.destination },
+				transform: if i % 3 == 1 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { c.transform }}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++

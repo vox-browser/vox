@@ -22,6 +22,7 @@ pub struct CanvasFilterStep {
 	source_image bool
 	source_padding bool
 	source_color_info FilterImageInfo
+	source_draw_bounds ?Rect
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
 pub:
@@ -187,9 +188,11 @@ fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_ty
 }
 
 fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, step CanvasFilterStep, mode BlendMode, content LayerContent, tint ?u32) bool {
+	mut quick_bounds := content_bounds
+	if original := step.source_draw_bounds { quick_bounds = original }
 	if step.blur_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,
-			transform, clips, content_bounds, step.blur_stages, step.post_color, step.source_color_info,
+			transform, clips, content_bounds, quick_bounds, step.blur_stages, step.post_color, step.source_color_info,
 			step.source_image, step.source_padding, mode, content)
 	}
 	// An invalid DropShadow blur becomes a null child, leaving the tint,
@@ -220,7 +223,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
-	if bounds := content_bounds {
+	if bounds := quick_bounds {
 		// The draw's quick reject precedes aboutToDraw()/saveLayer(). Its
 		// fast bounds use the parameter-space filter radius, even when the
 		// mapped blur later becomes an identity.
@@ -447,7 +450,7 @@ fn draw_tinted_filter_result_with_color(mut pixels []u8, pitch int, result Filte
 	net := sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), transformed)
 	total := pre_translate(net, -f32(pad), -f32(pad))
 	bitmap := result.color_info.bitmap(image)
-	shader := new_image_shader(bitmap, .clamp, .clamp, true, total)
+	shader := new_image_shader(bitmap, .clamp, .clamp, !filter_nearly_integer_translation(transformed), total)
 	base := new_image_blitter(mut pixels, pitch, shader.image, result.color_info.alpha, .src_over)
 	a := f32(color >> 24) * inv_255
 	tint := [f32((color >> 16) & 255) * inv_255 * a, f32((color >> 8) & 255) * inv_255 * a,

@@ -11,10 +11,7 @@ fn draw_resampled_image_blur(mut pixels []u8, width int, height int, pitch int, 
 	total := sk_concat(m44_image_concat(ctm, local), affine_translate(src.left, src.top))
 	// The native rescale shortcut retains raw pixels for nearly integer
 	// translations. Those mappings still require deferred-transform support.
-	if math_abs32(total.sx - 1) <= image_filter_round_epsilon
-		&& math_abs32(total.sy - 1) <= image_filter_round_epsilon
-		&& math_abs32(total.tx - floor_f32(total.tx + f32(.5))) <= image_filter_round_epsilon
-		&& math_abs32(total.ty - floor_f32(total.ty + f32(.5))) <= image_filter_round_epsilon { return false }
+	if filter_nearly_integer_translation(total) { return false }
 	mut before := step.pre_color.clone()
 	mut stages := step.blur_stages.clone()
 	mut real_blur := false
