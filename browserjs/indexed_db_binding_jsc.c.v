@@ -63,12 +63,19 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 	runtime.require_javascript_value_context()!
 	owner := voidptr(&runtime)
 	if owner in indexed_db_bindings_ { return }
-	runtime.install_window_event_handler_binding()!
+	settings := runtime.scripting_settings_ or { return error('IndexedDB requires an owning environment') }
+	settings.window_or_worker_global_scope()!
+	if settings.global_object().data.kind == .window {
+		runtime.install_window_event_handler_binding()!
+	} else {
+		runtime.install_event_target_binding()!
+		runtime.bind_event_target(C.JSContextGetGlobalObject(runtime.context), settings.global_object())!
+	}
 	mut binding := &IndexedDBBinding{ clone: StructuredCloneBridge.create(&runtime)! }
 	operation := runtime.make_value_host_function(fn [owner, mut binding] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		settings := runtime.scripting_settings_ or { return error('IndexedDB requires an owning environment') }
-		if settings.responsible_document() == none { return error('IndexedDB requires an owning document') }
+		settings.window_or_worker_global_scope()!
 		// Databases and connection queues are shared across navigations. Their
 		// records and later mutations must outlive this Window's DOM payload.
 		persistent := platform.enter_persistent()
@@ -302,12 +309,11 @@ fn (mut runtime Runtime) indexed_db_operation(mut binding IndexedDBBinding, args
 	if method in ['globalBrand', 'factory'] {
 		target := runtime.native_event_target(receiver)!
 		settings := runtime.scripting_settings_ or { return error('Missing IndexedDB environment') }
-		if target.data.kind != .window || voidptr(target) != voidptr(settings.global_object()) {
-			return runtime.event_binding_type_error('IndexedDB requires its owning Window')
+		if voidptr(target) != voidptr(settings.global_object()) {
+			return runtime.event_binding_type_error('IndexedDB requires its owning global')
 		}
 		if method == 'globalBrand' { return undefined }
-		mut window := unsafe { &html.WindowModel(target) }
-		mut scope := window.window_or_worker_global_scope()
+		mut scope := settings.window_or_worker_global_scope()!
 		factory := scope.indexed_db()
 		return runtime.indexed_db_wrap(mut binding, voidptr(factory), &IndexedDBBindingEntry{ kind: .factory, factory: factory })
 	}

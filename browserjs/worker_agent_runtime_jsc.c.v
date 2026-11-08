@@ -114,6 +114,7 @@ fn (mut agent WorkerAgentRuntime) install(transport ?&fetch.FetchHost) ! {
 	network.install(mut runtime)!
 	mut crypto := CryptoHost.create_for_settings(settings)!
 	crypto.install(mut runtime)!
+	runtime.install_indexed_db_binding()!
 }
 
 fn (mut agent WorkerAgentRuntime) perform_script_fetch(request &fetch.Request, top html.TopLevelModule) !&fetch.Response {
