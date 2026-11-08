@@ -4891,7 +4891,8 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['normal', 'fill', 'stroke', 'markers']
 		}
 		.pointer_events {
-			lowercase_value in ['auto', 'all', 'none']
+			lowercase_value in ['auto', 'bounding-box', 'visiblepainted', 'visiblefill',
+				'visiblestroke', 'visible', 'painted', 'fill', 'stroke', 'all', 'none']
 		}
 		.position {
 			lowercase_value in ['absolute', 'fixed', 'relative', 'static', 'sticky']

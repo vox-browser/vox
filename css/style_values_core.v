@@ -2147,6 +2147,11 @@ pub enum Keyword {
 	trim_both
 	last
 	anchor_center
+	bounding_box
+	visible_painted
+	visible_fill
+	visible_stroke
+	painted
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3056,6 +3061,11 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.manual { 'manual' }
 		.last { 'last' }
 		.anchor_center { 'anchor-center' }
+		.bounding_box { 'bounding-box' }
+		.visible_painted { 'visiblepainted' }
+		.visible_fill { 'visiblefill' }
+		.visible_stroke { 'visiblestroke' }
+		.painted { 'painted' }
 	}
 }
 
@@ -3070,6 +3080,11 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'manual' { return .manual }
 	if name == 'last' { return .last }
 	if name == 'anchor-center' { return .anchor_center }
+	if name == 'bounding-box' { return .bounding_box }
+	if name == 'visiblepainted' { return .visible_painted }
+	if name == 'visiblefill' { return .visible_fill }
+	if name == 'visiblestroke' { return .visible_stroke }
+	if name == 'painted' { return .painted }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false

@@ -2877,7 +2877,7 @@ fn (mut parser Parser) parse_overflow_wrap_value(mut tokens ComponentValueStream
 
 fn (mut parser Parser) parse_pointer_events_value(mut tokens ComponentValueStream) ?StyleValue {
 	_ = parser
-	return parse_property_keyword_value(mut tokens, ['auto', 'all', 'none'])
+	return parse_property_keyword_value_from_metadata(.pointer_events, mut tokens)
 }
 
 fn (mut parser Parser) parse_clear_value(mut tokens ComponentValueStream) ?StyleValue {

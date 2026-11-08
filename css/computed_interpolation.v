@@ -758,6 +758,14 @@ pub enum PointerEvents as u8 {
 	auto_
 	all
 	none_
+	bounding_box
+	visible_painted
+	visible_fill
+	visible_stroke
+	visible
+	painted
+	fill
+	stroke
 }
 
 pub enum VerticalAlign as u8 {
@@ -4040,6 +4048,14 @@ fn keyword_to_pointer_events_for_computed_properties(keyword Keyword) ?PointerEv
 		.auto { PointerEvents.auto_ }
 		.all { PointerEvents.all }
 		.none_ { PointerEvents.none_ }
+		.bounding_box { PointerEvents.bounding_box }
+		.visible_painted { PointerEvents.visible_painted }
+		.visible_fill { PointerEvents.visible_fill }
+		.visible_stroke { PointerEvents.visible_stroke }
+		.visible { PointerEvents.visible }
+		.painted { PointerEvents.painted }
+		.fill { PointerEvents.fill }
+		.stroke { PointerEvents.stroke }
 		else { none }
 	}
 }
