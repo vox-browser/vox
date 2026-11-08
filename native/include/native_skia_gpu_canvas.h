@@ -223,6 +223,18 @@ void gpu_canvas_time_command(char const* name, int length)
 }
 
 // Device rows of the CPU bitmap are top-down RGBA; GPU surfaces are BGRA.
+static bool gpu_canvas_direct_readback_disjoint(std::vector<SkIRect> const& rects)
+{
+    // The direct reader writes BGRA into the destination, then converts each
+    // rectangle in place. Overlap would convert the same pixels twice. Keep
+    // such batches on the staged reader, whose last writer converts its own
+    // independent BGRA buffer exactly once.
+    for (size_t index = 0; index < rects.size(); ++index)
+        for (size_t previous = 0; previous < index; ++previous)
+            if (SkIRect::Intersects(rects[index], rects[previous])) return false;
+    return true;
+}
+
 static void gpu_canvas_transfer_diagnostic(char const* direction,
     VoxRasterBufferPool::Buffer const& buffer, size_t count)
 {
@@ -307,7 +319,8 @@ void gpu_canvas_flush()
         }
         if (api && api->read_direct && data && !gpu_canvas_verify()
             && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX
-            && !gpu_canvas_partial_readback() && !verify_partial) {
+            && !gpu_canvas_partial_readback() && !verify_partial
+            && gpu_canvas_direct_readback_disjoint(frame->rects)) {
             std::vector<VoxGraphitePixelRegion> direct;
             for (size_t index = 0; index < frame->rects.size(); ++index) {
                 auto const& rect = frame->rects[index];

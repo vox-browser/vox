@@ -545,7 +545,8 @@ static void direct_read_regions(GpuCanvasApi const* api)
 static bool s_compositor, s_present_tiles, s_capture_wrapper;
 
 static std::vector<uint8_t> render(bool canvas, bool shared = false,
-    void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false, int regions = 1)
+    void (*leaves)(CGContextRef, bool) = draw_leaves, bool full = false, int regions = 1,
+    bool overlapping_damage = false)
 {
     auto pixels = backdrop();
     auto color = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
@@ -560,8 +561,12 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
         : CGRectMake(0, css_height - (strip_top + strip_height) / float(scale),
             css_width, strip_height / float(scale)));
     std::vector<CGRect> clips;
-    for (int index=0; regions>1 && index<regions; ++index)
-        clips.push_back(CGRectMake(0,css_height-(strip_top+index*2+1)/float(scale),css_width,1.f/scale));
+    assert(!overlapping_damage || regions==2);
+    for (int index=0; regions>1 && index<regions; ++index) {
+        int top=strip_top+index*(overlapping_damage?20:2);
+        int rows=overlapping_damage?strip_height-index*40:1;
+        clips.push_back(CGRectMake(0,css_height-(top+rows)/float(scale),css_width,rows/float(scale)));
+    }
     if (!clips.empty()) CGContextClipToRects(context,clips.data(),clips.size());
     ladybird_v_skia_set_chromium_painting(1);
     // Root raster layer: a frame-wide shared recording.
@@ -576,7 +581,9 @@ static std::vector<uint8_t> render(bool canvas, bool shared = false,
                 .reused=1, .context=context};
             native_scroll_repainted_count=regions;
             for (int index=0; index<regions; ++index) {
-                long damage[]={0,strip_top+index*2,width,strip_top+index*2+1};
+                int top=strip_top+index*(overlapping_damage?20:2);
+                int rows=overlapping_damage?strip_height-index*40:1;
+                long damage[]={0,top,width,top+rows};
                 std::copy_n(damage,4,native_scroll_repainted[index]);
             }
             assert(native_gpu_canvas_begin());
@@ -1390,6 +1397,23 @@ int main(int argc, char** argv)
         }
     }
     if (argc==2 && !std::strcmp(argv[1],"--check-backend")) return 0;
+    if (argc==2 && !std::strcmp(argv[1],"--direct-overlap")) {
+        auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read_direct);
+        s_backend_read=api->read;api->read=counted_read;
+        s_backend_direct_read=api->read_direct;api->read_direct=counted_direct_read;
+        unsetenv("VOX_GPU_CANVAS_DIRECT_READBACK");
+        auto expected=render(true,false,draw_leaves,false,2,true);
+        setenv("VOX_GPU_CANVAS_DIRECT_READBACK","1",1);
+        auto actual=render(true,false,draw_leaves,false,2,true);
+        assert(actual==expected);
+        assert(s_direct_reads==0); // Overlaps must retain the staged reader.
+        auto disjoint=render(true,false,draw_leaves,false,9);
+        assert(s_direct_reads>0);
+        unsetenv("VOX_GPU_CANVAS_DIRECT_READBACK");
+        assert(disjoint==render(true,false,draw_leaves,false,9));
+        puts("Direct readback: overlapping damage retains exact colors; disjoint damage stays eligible");
+        return 0;
+    }
     if (argc==2 && !std::strcmp(argv[1],"--transfer-buffers")) {
         setenv("VOX_GPU_CANVAS_ISOLATED_SHAPES","1",1);
         auto* api=const_cast<GpuCanvasApi*>(gpu_canvas_api());assert(api && api->read);
