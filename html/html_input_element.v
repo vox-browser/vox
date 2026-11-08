@@ -557,7 +557,7 @@ fn (model &HTMLInputElementModel) sanitize_value(value string) string {
 					number = maximum
 				}
 			}
-			return number.str()
+			return best_representation_of_number(number)
 		}
 		.color {
 			return if valid_simple_color(value) { ascii_lowercase_string(value) } else { '#000000' }
