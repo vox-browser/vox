@@ -143,6 +143,7 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
         bool rotated;
     };
     std::vector<Target> targets;
+    std::vector<sk_sp<SkSurface>> gradient_targets;
     auto apply_clip = [](SkCanvas* canvas, int clip, bool rotated) {
         auto box = SkRect::MakeLTRB(2.25f, 2.25f, 29.25f, 29.25f);
         if (clip == 1) canvas->clipRect(box, SkClipOp::kIntersect, true);
@@ -192,6 +193,31 @@ void canvas_prepare_scroll_pipelines(skgpu::graphite::Context* gpu)
                 canvas->restore();
                 targets.push_back(std::move(target));
             }
+    }
+    if (!std::getenv("VOX_DISABLE_SCROLL_GRADIENT_PIPELINE_WARMUP")) {
+        // Scroll-exposed CSS gradient pictures need both rounded geometry
+        // and the covering draw, with dithering and unpremultiplied stops.
+        SkColor4f colors[] {{.2f,.4f,.8f,.9f},{.7f,.2f,.6f,.7f},
+            {.8f,.5f,.3f,.6f},{.3f,.8f,.4f,.8f}};
+        float positions[] {0,.25f,.75f,1};
+        SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),
+            SkSpan<const float>(positions),SkTileMode::kClamp),{});
+        SkPoint ends[] {{0,0},{32,32}};
+        auto local=SkMatrix::Scale(.875f,1.125f);
+        SkPaint paint;paint.setAntiAlias(true);paint.setDither(true);
+        paint.setShader(SkShaders::LinearGradient(ends,gradient,&local));
+        if (!paint.getShader()) return;
+        for (bool covering : {false,true}) for (bool clipped : {false,true})
+            for (float opacity : {1.f,.8f}) {
+            auto surface=vox_shared_surface(recorder.get(),canvas_info(32,32));
+            if (!surface) return;
+            auto* canvas=surface->getCanvas();canvas->clear(SK_ColorTRANSPARENT);
+            if (clipped) apply_clip(canvas,3,true);
+            paint.setAlphaf(opacity);
+            canvas->drawRRect(SkRRect::MakeRectXY(covering ? SkRect::MakeLTRB(-16,-16,48,48)
+                : SkRect::MakeXYWH(2.25f,2.25f,24.5f,24.5f),4,4),paint);
+            gradient_targets.push_back(std::move(surface));
+        }
     }
     if (!submit()) return;
     if (!std::getenv("VOX_DISABLE_SCROLL_MSAA_PIPELINE_WARMUP")) {

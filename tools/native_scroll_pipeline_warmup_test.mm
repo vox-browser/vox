@@ -59,6 +59,44 @@ static std::vector<uint8_t> draw_scrolling_opacity_layer(bool msaa = false) {
     return backdrop;
 }
 
+// Gradient pictures reach the same clipped scroll canvas through its public
+// serialized-picture entry point. Covering and bounded rounded shapes select
+// separate render steps; changing uniforms must not compile either on scroll.
+static std::vector<uint8_t> draw_scrolling_gradient(bool covering, bool clipped, float opacity) {
+    int rects[] {0, 0, 64, 64, 0, 0, 64, 64};
+    assert(vox_graphite_canvas_begin(rects, 1));
+    std::vector<uint8_t> pixels(64*64*4, 173);
+    for (size_t i=3;i<pixels.size();i+=4) pixels[i]=255;
+    assert(vox_graphite_canvas_upload(0,pixels.data(),64*4));
+    SkPictureRecorder recording;
+    auto* canvas=recording.beginRecording(64,64);
+    SkColor4f colors[] {{.1f,.3f,.7f,.9f},{.6f,.2f,.8f,.7f},
+        {.9f,.5f,.2f,.6f},{.2f,.8f,.3f,.8f}};
+    float stops[] {0,.3f,.6f,1};
+    SkPoint ends[] {{0,0},{64,64}};
+    SkGradient gradient(SkGradient::Colors(SkSpan<const SkColor4f>(colors),SkSpan<const float>(stops),SkTileMode::kClamp),{});
+    SkPaint paint;paint.setAntiAlias(true);paint.setDither(true);paint.setAlphaf(opacity);
+    auto local=SkMatrix::Scale(.875f,1.125f);
+    paint.setShader(SkShaders::LinearGradient(ends,gradient,&local));
+    if (clipped) canvas->rotate(17,32,32);
+    canvas->drawRRect(SkRRect::MakeRectXY(covering ? SkRect::MakeLTRB(-32,-32,96,96)
+        : SkRect::MakeXYWH(4.25f,4.25f,48.5f,48.5f),4,4),paint);
+    auto picture=recording.finishRecordingAsPicture()->serialize();assert(picture);
+    float bounds[] {0,0,64,64};
+    VoxGraphiteCanvasClip clips[2] {};
+    for (int i=0;i<2;++i) {
+        clips[i].matrix[0]=clips[i].matrix[4]=clips[i].matrix[8]=1;
+        clips[i].rect[0]=i ? 0 : 2.25f;clips[i].rect[1]=i ? 0 : 2.25f;
+        clips[i].rect[2]=i ? 53 : 59;clips[i].rect[3]=i ? 44 : 59;
+        for (int corner=4;corner<12;++corner) clips[i].rect[corner]=i ? 7 : 4;
+        clips[i].antialias=1;
+    }
+    assert(vox_graphite_canvas_draw_picture(static_cast<uint8_t const*>(picture->data()),picture->size(),bounds,clipped ? clips : nullptr,clipped ? 2 : 0,0));
+    VoxGraphitePixelRegion output {0,0,64,64,64*4,pixels.data()};
+    assert(vox_graphite_canvas_read(&output,1));
+    vox_graphite_canvas_end();return pixels;
+}
+
 int main() { @autoreleasepool {
     // First retain a cold reference, using the same actual scroll-strip draw.
     setenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP","1",1);
@@ -66,6 +104,16 @@ int main() { @autoreleasepool {
     auto alpha_expected=draw_scrolling_mask(232.f/255);
     auto opacity_expected=draw_scrolling_opacity_layer();
     auto msaa_expected=draw_scrolling_opacity_layer(true);
+    std::vector<std::vector<uint8_t>> gradients_expected;
+    for (bool covering : {false,true}) for (bool clipped : {false,true})
+        for (float opacity : {1.f,.8f})
+            gradients_expected.push_back(draw_scrolling_gradient(covering,clipped,opacity));
+    auto check_gradients = [&] {
+        size_t index=0;
+        for (bool covering : {false,true}) for (bool clipped : {false,true})
+            for (float opacity : {1.f,.8f})
+                assert(draw_scrolling_gradient(covering,clipped,opacity)==gradients_expected[index++]);
+    };
     assert(vox_graphite_retire_graphics_context());
     unsetenv("VOX_DISABLE_SCROLL_PIPELINE_WARMUP");
     auto* gpu=context(); assert(gpu);
@@ -87,6 +135,7 @@ int main() { @autoreleasepool {
     assert(draw_scrolling_mask(232.f/255)==alpha_expected);
     assert(draw_scrolling_opacity_layer()==opacity_expected);
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
+    check_gradients();
     assert(additions==pipelines);
     gpu_context_last_use-=std::chrono::seconds(3);
     assert(vox_graphite_release_idle_graphics_memory()==1);
@@ -99,6 +148,7 @@ int main() { @autoreleasepool {
     assert(additions==pipelines && !gpu_context_idle);
     assert(draw_scrolling_opacity_layer()==opacity_expected);
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
+    check_gradients();
     assert(additions==pipelines);
     assert(vox_graphite_retire_graphics_context()==1);
     assert(!gpu_context && !gpu_frame_queue);
@@ -117,6 +167,7 @@ int main() { @autoreleasepool {
     assert(draw_scrolling_opacity_layer(true)==msaa_expected);
     assert(draw_scrolling_mask()==expected && additions==pipelines);
     assert(draw_scrolling_mask(232.f/255)==alpha_expected && additions==pipelines);
+    check_gradients();assert(additions==pipelines);
     assert(vox_graphite_retire_graphics_context()==1);
     std::printf("Scroll mask/opacity: exact pixels; %u prepared pipelines, no first-use compilation; idle reuse and context replacement passed\n", pipelines);
 } }
