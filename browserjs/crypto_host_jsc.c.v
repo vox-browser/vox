@@ -58,6 +58,7 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 		host.install_generate_key()!
 		host.install_export_key()!
 		host.install_get_public_key()!
+		host.install_supports()!
 		host.install_import_key()!
 		host.install_cipher_operations()!
 		host.install_signature_operations()!
