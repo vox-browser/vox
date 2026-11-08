@@ -1433,3 +1433,83 @@ The mode-0600 raw archive contains 2,990 individually verified files, SHA256
 `0810978f6fb26b4f6e32d9e7be7495b7c4f9da2976f983f536423aa4bb86c6ce`.
 Per-job Build output, locks, reports and temporary drivers are removed after
 verification. Existing references and tolerances are unchanged.
+
+
+## 2026-11-08: published readback validation and SVG cache lifetime
+
+The completed production bundle now contains the earlier readback-layout and
+GG shape-cache fixes. Executable
+`f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`
+loads installed primary `c2ec42c0...` and Metal `bce89e00...`; sealed source hashes
+match those features. Two fresh installed-default trials below complete 5,400
+native inputs each, and a fresh headless engine/JavaScript/input smoke passes.
+This resolves the earlier pending installed-bundle validation for `ee53a2fb4`;
+it does not establish smooth 60 Hz.
+
+Commit `f5d690561` fixes a cache ownership hazard found during this investigation.
+A renderer callback could clear graphics memory or replace its registered
+renderer and then return successfully; its old pixels were inserted into the
+cleared cache afterwards. A generation check now keeps that result uncached.
+Regression checks exercise both reentrant purge and replacement through the
+actual registration bridge. Optimized and ASan/UBSan checks pass, including 72
+real GPU stroke scenes per mode with exact pixels. Existing keys, admission,
+8 MiB/64-entry bounds, controls, scope and padded rows retain their behavior.
+This correctness fix receives no scrolling optimization credit.
+
+Commit `37da4ce1f` adds clip/ancestor/gradient/segment eligibility to the existing
+opt-in SVG diagnostic. The fresh live input diagnostic observes 14 hits in 42
+calls, all small unclipped four-segment strokes. The earlier zero-hit result
+remains retained; changing build/page conditions cannot be assumed equivalent.
+The new short diagnostic has no interval-budget misses, but its timings are
+instrumented and cannot supply acceptance.
+
+The matched cohort below uses the same pure installed browser and libraries in
+all four trials, with no renderer override. Only the existing experimental
+`VOX_SMALL_SVG_PATH_CACHE=1` changes in candidates. The control arms also supply
+the two installed-default validation runs. All trials complete 5,400 precise
+native inputs, nominal 120 Hz, delta 3, reversing every 300, after matching-title
+readiness and a 12-second settle. The document viewport is 1400×900 at 2× backing
+and 125% zoom. Scripts are automatic, each process has a fresh empty private
+profile/cache, OS caches remain, and live access uses the existing SOCKS5h route.
+C mode is the actual single-C fallback, C `-O3`, V `-prod=false`, GG and JSC.
+Throughput uses the full first-to-last input period; the endpoint is completed
+native frame installation, not physical scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| live-cohort/1-live-control | 113.535 | 8.409 | 12.403 | 42.480 | 1.288% | 5400 / 5384 | 37.639 / 2.451 |
+| live-cohort/2-live-candidate | 102.276 | 8.979 | 16.016 | 56.940 | 4.023% | 5400 / 5327 | 55.681 / 0.341 |
+| live-cohort/3-live-control | 95.957 | 9.587 | 17.069 | 43.428 | 5.573% | 5400 / 5246 | 35.541 / 0.337 |
+| live-cohort/4-live-candidate | 104.432 | 8.840 | 15.306 | 39.333 | 3.330% | 5400 / 5336 | 31.378 / 0.222 |
+
+The first candidate regresses and the second improves. Host load averages
+range from roughly 14 to 158 on 18 CPUs. These results do not establish a
+causal cache gain; Reddit's default cache policy is unchanged. No instruction
+savings, cross-build gain or zero-stall acceptance is claimed.
+
+A separate 5,400-input installed-default profile records 88 samples over 124
+slow frames, with zero dropped samples or sampling failures. Observations
+include GG readback/upload waits (13/3 samples), Graphite readback/submit
+(24), event-loop servicing (8) and copies. These counts overlap and are not
+time fractions or proof of a single cause for every missed budget. **The
+60 Hz goal without stalls remains open.**
+
+The final native primary containing the cache-lifetime fix remains pixel exact
+at offsets 0 and 850 with reuse disabled and enabled, against the unchanged
+references. Its actual 199 compiler inputs and static libraries are pinned
+before/after, and the compiler-derived dependency lists match. The initial
+fixture compile failure (a capturing lambda incompatible with the callback
+API) is retained with no execution credit. A separate candidate compile exits
+zero but is rejected because an all-header pin changes; the changed FFmpeg
+header is not a dependency of this translation unit. Only the later stable
+component supplies pixel validation. The shared production guard remains busy;
+no duplicate build is queued, and installed validation of the new cache-lifetime
+fix remains pending.
+
+The [full receipt](performance/reddit-boots-svg-cache-20261108.md) preserves
+all attempts, commands, source/component identities, actual input schedules,
+host conditions, sample stacks, browser/guard exits and unchanged pixel checks.
+Its mode-0600 raw archive contains 2,134 individually verified files, SHA256
+`ff70df5cb180534004d1651a887e6645cf48ed0705214c9f4e24349b4046bd53`.
+Completed per-job Build output, locks and temporary drivers are removed after
+verification. Existing archives, references and tolerances remain unchanged.
