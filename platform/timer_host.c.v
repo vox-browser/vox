@@ -11,7 +11,9 @@ $if linux || windows {
 
 fn C.libweb_v_register_timer(context voidptr, interval_ms int, timeout fn (voidptr)) voidptr
 fn C.libweb_v_unregister_timer(timer voidptr)
-fn C.libweb_v_restart_timer(timer voidptr, interval_ms i32) bool
+$if macos {
+	fn C.libweb_v_restart_timer(timer voidptr, interval_ms i32) bool
+}
 fn C.libweb_v_pump_native_events(wait_seconds f64)
 fn C.libweb_v_is_main_thread() bool
 
