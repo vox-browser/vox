@@ -377,3 +377,53 @@ completed larger cohort's 76.87% remains a baseline for its older executable.
 The DataTransfer FileList identity failure, other browser gaps, full-upstream
 runner integration and the final compiler blockers remain open; this work does
 not establish 100% for either the imported cohort or full upstream WPT.
+
+## Live DataTransfer files and completed native validation
+
+`DataTransfer.files` now returns one live native FileList per transfer. Saved
+lists observe item additions, removals, store-mode changes and disassociation;
+surviving File objects retain their identity. The internal fresh-snapshot API
+remains available. `DataTransferItemList.clear()` now removes files as well as
+strings and disables retained item owners, while `DataTransfer.clearData()`
+keeps its string-only behavior. Commits `9255ef7c2` and `f4834eb63` include the
+implementation and focused regressions.
+
+[Native verification](performance/wpt-live-filelist-native-20261108.json) passes
+**44 distinct production-allocation checks**: eight FileList, two live HTML
+model, 13 native binding/InputEvent, and 21 compact keyboard/range/input-files
+checks. The eight FileList and 13 binding checks also pass with normal Boehm
+allocation. This executes the final shared AbstractRange getter assertion and
+all three existing InputEvent tests, superseding their earlier pending status.
+The initial clear failure and the concurrent raster/CSS/UI2 compilation failures
+remain archived. After the shared UI2 integration refresh, the final 21-case
+compact suite passes with the unchanged 3 GiB runtime guard.
+
+[Production WPT follow-up](performance/wpt-live-files-production-20261108.json)
+on the pinned completed `c7079cad06a2…` bundle passes the input-files case
+**24 / 24**, confirming the FileList identity correction. Blob cases pass
+174 / 174. The selected editing variant advances from 76 missing-sendText
+failures to **12 PASS / 64 FAIL**, exposing actual whitespace-preservation
+failures. `Range-insertNode` again reaches a hard timeout without a subtest
+report. Across these same six selected cases, reported passes increase from
+163 to 210 out of 274, a gain of 47 that includes several earlier fixes.
+The archived r15 aggregate supervision gap still qualifies that old comparison.
+This is neither a new full-cohort percentage nor an all-pass result: the new
+run's gate exits 1, all six cases remain included, and the unchanged Range
+reporting failure is explicit.
+
+The bundle manifest contains the live-list/getter and final keyboard/range
+changes, but predates the later `items.clear()` correction. That correction is
+verified by native model and compact tests; production WPT coverage still needs
+a later completed bundle. No duplicate production build was queued.
+All [seven SVG bridge reftests](performance/wpt-live-files-svg-20261108.json)
+remain pixel-exact on this bundle, including same-size image replacement and
+paint-server mutations.
+
+A separate, explicitly profiled Range diagnostic retains the original fixture
+and deadlines. The five-second sample places the main thread in a load-event
+JavaScript callback, with JSC property access/enumeration among hot leaves.
+Unknown JIT frames prevent assigning the exact bridge function. It supplies
+no optimization or all-pass credit. Raw results, samples, guards and failed
+attempts are preserved in the external archives named by the three manifests;
+completed Build scratch is removed. Range timeouts, the remaining editing
+failures, other browser gaps and full-upstream runner integration remain open.
