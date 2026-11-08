@@ -1134,3 +1134,24 @@ original pinned `e66ce03390ef...` executable, with 200 case records at the last
 checkpoint and no changed inputs. Its partial counts are diagnostic only; it
 does not contain these last three commits. The imported r18 remains deferred.
 **Full upstream WPT and the larger imported set are not at 100%.**
+
+The matching production follow-up has now completed successfully:
+**9,880 / 9,880 PASS across all 13 original pages**, all COMPLETE with harness
+OK, exact expected counts and strict runner/outer exits 0. **All 11 original
+SVG reftests are pixel-exact**, including the previously failing stop-color
+animation, with unchanged zero-pixel tolerance. Executable SHA-256 is
+`4b11a1dbe4a4325a282f4ad443bba031f010428cd296c6319a6f017c33ff6f00`,
+receipt `Build/production-build/receipts/20261108-214607-1eaf91e5`.
+All 37 required implementation hashes match the frozen source manifest.
+The checks launch fresh processes from the original completed production
+artifact in place under its shared read lease; no bundle is copied. Runner,
+fixture, executable/library and pixel inputs remain unchanged, with no
+unexpected result posts or collection aborts. Pixel driver/outer exits are 0.
+
+Production raw evidence:
+`/Users/alex/.cache/vox/wpt/20261108-svg-resources-production-raw.tar.gz`,
+SHA-256 `29218650df3a24e101c2293688d1e335c9cc89f2dfd5c0f68a96c6cef6a6fc15`.
+The completed focused production directory and its locks have been removed.
+The official-manifest run remains pinned to its earlier executable and has
+500 records at this checkpoint, with no changed inputs. This focused passing
+cohort does not establish full imported or upstream conformance.
