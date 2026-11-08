@@ -6,7 +6,8 @@ import math
 // the even-odd winding rule of the boolean difference.
 pub fn rasterize_inner_shadow(width int, height int, outer RoundedRect, inner RoundedRect, content RoundedRect, transform [6]f32, color u32, blur f32, clips []Path) ?[]u8 {
 	if width <= 0 || height <= 0 || width > max_untiled_dimension || height > max_untiled_dimension { return none }
-	if !outer.radii[..].all(it == 0) || !rect_contains(outer.bounds, inner.bounds) { return none }
+	if !rect_contains(outer.bounds, inner.bounds) { return none }
+	if !outer.radii[..].all(it == 0) && !shadow_rounded_rect_contains_inner(outer, inner) { return none }
 	a, b := shadow_boolean_contour(outer), shadow_boolean_contour(inner)
 	mut verbs := a.verbs.clone()
 	mut points := a.points.clone()
@@ -40,6 +41,45 @@ pub fn rasterize_inner_shadow(width int, height int, outer RoundedRect, inner Ro
 	mut straight := []u8{len: pixels.len}
 	if !read_pixels(pixels, width, height, width * 4, 2, mut straight, width, height, width * 4, 0, 0) { return none }
 	return straight
+}
+
+// Containment follows from the inner bounding-box corners or concentric
+// smaller corner ellipses. Keep a margin at curved edges so this route only
+// handles disjoint contours; intersections and shared edges need PathOps.
+fn shadow_rounded_rect_contains_inner(outer RoundedRect, hole RoundedRect) bool {
+	inner := hole.bounds
+	b := outer.bounds
+	if rect_is_empty(inner) || inner.left <= b.left || inner.top <= b.top
+		|| inner.right >= b.right || inner.bottom >= b.bottom { return false }
+	for point_index, point in [Point{inner.left, inner.top}, Point{inner.right, inner.top},
+		Point{inner.right, inner.bottom}, Point{inner.left, inner.bottom}] {
+		for corner in 0 .. 4 {
+			rx, ry := outer.radii[corner * 2], outer.radii[corner * 2 + 1]
+			if rx == 0 || ry == 0 { continue }
+			left := corner in [0, 3]
+			top := corner in [0, 1]
+			cx := if left { b.left + rx } else { b.right - rx }
+			cy := if top { b.top + ry } else { b.bottom - ry }
+			in_x := if left { point.x < cx } else { point.x > cx }
+			in_y := if top { point.y < cy } else { point.y > cy }
+			if in_x && in_y {
+				dx, dy := (f64(point.x) - cx) / rx, (f64(point.y) - cy) / ry
+				xx, yy := dx * dx, dy * dy
+				magnitude := math.max(math.abs(cx), math.abs(cy))
+				margin := f64(1e-5) * (1 + magnitude / math.min(rx, ry))
+				if xx + yy >= 1 - margin {
+					// A concentric smaller corner ellipse is contained even
+					// when its missing bounding-box corner lies outside.
+					irx, iry := hole.radii[corner * 2], hole.radii[corner * 2 + 1]
+					icx := if left { inner.left + irx } else { inner.right - irx }
+					icy := if top { inner.top + iry } else { inner.bottom - iry }
+					if point_index != corner || irx <= 0 || iry <= 0 || icx != cx || icy != cy
+						|| f64(irx) / rx >= 1 - margin || f64(iry) / ry >= 1 - margin { return false }
+				}
+			}
+		}
+	}
+	return true
 }
 
 // The nonintersecting PathOps contours are emitted counterclockwise from

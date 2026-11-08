@@ -1418,7 +1418,7 @@ fn main() {
 		check_portable_outer_shadow_cases(count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') == 'inner-shadows' {
+	if os.getenv('CPU_RASTER_CHECKS') in ['inner-shadows', 'rounded-inner-shadows'] {
 		check_portable_inner_shadow_cases(count)
 		return
 	}
@@ -3243,14 +3243,31 @@ fn check_portable_inner_shadow_cases(count int) {
 	library := C.dlopen(os.args[1].str, 2)
 	oracle := unsafe { OracleOuterShadow(oracle_symbol(library, 'oracle_inner_shadow')) }
 	path_oracle := unsafe { OracleRoundedRect(oracle_symbol(library, 'oracle_inner_shadow_path')) }
+	rounded := os.getenv('CPU_RASTER_CHECKS') == 'rounded-inner-shadows'
 	mut painted := 0
 	for trial in 0 .. count {
 		w := rand.intn(80) or { 0 } + 1
 		h := rand.intn(80) or { 0 } + 1
-		inner := random_shadow_rrect()
-		pad := f32(rand.f64()*20 + 1)
-		outer := [inner[0] - pad, inner[1] - pad, inner[2] + pad*2, inner[3] + pad*2,
+		mut inner := random_shadow_rrect()
+		mut pad := f32(rand.f64()*20 + 1)
+		if rounded && trial % 2 == 0 {
+			// Exact integer/half-pixel centers exercise concentric insets
+			// whose bounding-box corners lie outside the outer ellipse.
+			for i in 0 .. 4 { inner[i] = f32(int(inner[i])) }
+			inner[2], inner[3] = math.max(inner[2], f32(4)), math.max(inner[3], f32(4))
+			for i in 4 .. 12 {
+				limit := inner[if i % 2 == 0 { 2 } else { 3 }] * f32(.5)
+				inner[i] = math.min(limit, math.max(f32(1), f32(int(inner[i]))))
+			}
+			pad = f32(int(pad))
+		}
+		mut outer := [inner[0] - pad, inner[1] - pad, inner[2] + pad*2, inner[3] + pad*2,
 			f32(0), 0, 0, 0, 0, 0, 0, 0]
+		if rounded {
+			for i in 4 .. 12 {
+				outer[i] = if trial % 2 == 0 { inner[i] + pad } else { pad * f32(rand.f64() * 3) }
+			}
+		}
 		content := if trial % 2 == 0 { inner } else { random_shadow_rrect() }
 		t := if trial % 3 == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
 		blur := if trial % 7 == 0 { f32(0) } else { f32(rand.f64()*20) }
