@@ -22,16 +22,19 @@
 #include "include/effects/SkImageFilters.h"
 #include "include/effects/SkRuntimeEffect.h"
 #include <cmath>
+#include <numbers>
 #include <vector>
 #ifdef __APPLE__
 #include "include/ports/SkFontMgr_mac_ct.h"
+#elif defined(_WIN32)
+#include "include/ports/SkTypeface_win.h"
 #else
 #include "include/ports/SkFontMgr_empty.h"
 #endif
 
 static SkPath make_path(VoxCanvasPath const& input)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(_WIN32)
     SkPathBuilder path;
 #else
     SkPath path;
@@ -52,11 +55,11 @@ static SkPath make_path(VoxCanvasPath const& input)
             path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]);
             break;
         case 4:
-#ifdef __linux__
-            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / float(M_PI), segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+#if defined(__linux__) || defined(_WIN32)
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
 #else
-            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / float(M_PI), segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
+            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
 #endif
             break;
@@ -66,7 +69,7 @@ static SkPath make_path(VoxCanvasPath const& input)
         }
     }
     path.setFillType(input.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-#ifdef __linux__
+#if defined(__linux__) || defined(_WIN32)
     return path.detach();
 #else
     return path;
@@ -135,7 +138,7 @@ static bool apply_style(SkPaint& paint, VoxCanvasStyle const& style)
         shader = SkGradientShader::MakeTwoPointConical({ style.x0, style.y0 }, style.r0, { style.x1, style.y1 }, style.r1, colors.data(), nullptr,
             positions.data(), int(colors.size()), SkTileMode::kClamp, interpolation, &matrix);
     } else if (style.kind == 3) {
-        float degrees = style.angle * 180.0f / float(M_PI);
+        float degrees = style.angle * 180.0f / std::numbers::pi_v<float>;
         shader = SkGradientShader::MakeSweep(style.x0, style.y0, colors.data(), nullptr, positions.data(), int(colors.size()), SkTileMode::kClamp, degrees,
             degrees + 360.0f, interpolation, &matrix);
     }
@@ -352,6 +355,8 @@ extern "C" bool vox_skia_canvas_glyphs(uint8_t* pixels, int width, int height, i
         return true;
 #ifdef __APPLE__
     static auto manager = SkFontMgr_New_CoreText(nullptr);
+#elif defined(_WIN32)
+    static auto manager = SkFontMgr_New_DirectWrite();
 #else
     static auto manager = SkFontMgr_New_Custom_Empty();
 #endif

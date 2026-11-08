@@ -14,7 +14,7 @@ fn css_namespace_binding_factory() string {
 })'
 }
 
-$if !darwin && !linux {
+$if !darwin && !linux && !windows {
 	pub fn (mut runtime Runtime) install_css_namespace_binding() ! {
 		return error('Native CSS namespace binding requires JavaScriptCore')
 	}

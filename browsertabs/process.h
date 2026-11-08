@@ -1,4 +1,7 @@
 #pragma once
+#ifdef _WIN32
+#include "process_windows.h"
+#else
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -32,6 +35,7 @@ static int vox_tabs_spawn(const char *exe, char **argv, char **env) {
 static int vox_tabs_alive(int pid) { return pid > 0 && (kill(pid, 0) == 0 || errno == EPERM); }
 static void vox_tabs_terminate(int pid) { if (pid > 0) kill(pid, SIGTERM); }
 static int vox_tabs_reap(int pid) { return waitpid(pid, NULL, WNOHANG) != 0; }
+#endif
 
 #ifdef __APPLE__
 #include <dispatch/dispatch.h>

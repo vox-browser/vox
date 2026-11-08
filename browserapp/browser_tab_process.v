@@ -66,6 +66,9 @@ fn process_tab_window_show(visible bool, frame browsertabs.Frame) {
 }
 
 fn (mut app BrowserApp) start_process_tabs() {
+	// Windows uses the shared in-process tabs until its window grouping host
+	// supports hiding, activating and detaching independently owned windows.
+	$if windows { return }
 	if app.process_tabs() || app.ctx == unsafe { nil } || !sapp.isvalid() || app.screenshot_path != '' {
 		return
 	}

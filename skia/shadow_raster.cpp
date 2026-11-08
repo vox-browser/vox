@@ -16,8 +16,11 @@
 #include "include/pathops/SkPathOps.h"
 #include "include/core/SkPathBuilder.h"
 #include <cmath>
+#include <numbers>
 #ifdef __APPLE__
 #include "include/ports/SkFontMgr_mac_ct.h"
+#elif defined(_WIN32)
+#include "include/ports/SkTypeface_win.h"
 #else
 #include "include/ports/SkFontMgr_empty.h"
 #endif
@@ -41,6 +44,8 @@ static sk_sp<SkFontMgr> shadow_font_manager()
 {
 #ifdef __APPLE__
     static auto manager = SkFontMgr_New_CoreText(nullptr);
+#elif defined(_WIN32)
+    static auto manager = SkFontMgr_New_DirectWrite();
 #else
     static auto manager = SkFontMgr_New_Custom_Empty();
 #endif
@@ -57,7 +62,7 @@ static sk_sp<SkTypeface> shadow_typeface(char const* path, int face_index)
 
 static SkPath shadow_clip_path(VoxCanvasPath const& input)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(_WIN32)
     SkPathBuilder path;
 #else
     SkPath path;
@@ -70,11 +75,11 @@ static SkPath shadow_clip_path(VoxCanvasPath const& input)
         case 2: path.quadTo(segment[3], segment[4], segment[1], segment[2]); break;
         case 3: path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]); break;
         case 4:
-#ifdef __linux__
-            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / float(M_PI), segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+#if defined(__linux__) || defined(_WIN32)
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
 #else
-            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / float(M_PI), segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
+            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
 #endif
             break;
@@ -82,7 +87,7 @@ static SkPath shadow_clip_path(VoxCanvasPath const& input)
         }
     }
     path.setFillType(input.even_odd ? SkPathFillType::kEvenOdd : SkPathFillType::kWinding);
-#ifdef __linux__
+#if defined(__linux__) || defined(_WIN32)
     return path.detach();
 #else
     return path;

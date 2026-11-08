@@ -2,9 +2,14 @@ module platform
 
 import os
 
-#include <sys/mman.h>
-#include "@DIR/arena_poison_report.h"
-#include "@DIR/arena_page_retirement.h"
+$if prealloc {
+	$if windows {
+		$compile_error('Vox scoped preallocation requires macOS or Linux; use -gc boehm or -gc none on Windows')
+	}
+	#include <sys/mman.h>
+	#include "@DIR/arena_poison_report.h"
+	#include "@DIR/arena_page_retirement.h"
+}
 
 fn C.vox_note_poisoned_range(start voidptr, end voidptr, label &char)
 fn C.vox_install_poison_fault_handler()
@@ -157,7 +162,7 @@ pub fn arena_thread_is_current() bool {
 	if arena_thread_state.initialized {
 		return arena_thread_state.owner == u64(C.pthread_self())
 	}
-	$if macos || linux {
+	$if macos || linux || windows {
 		return C.libweb_v_is_main_thread()
 	}
 	return false

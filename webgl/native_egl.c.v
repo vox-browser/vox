@@ -4,6 +4,9 @@ module webgl
 
 $if macos {
 	#pkgconfig --cflags egl glesv2
+} $else $if windows {
+	#flag @DIR/../Build/deps/windows/native/webgl.a
+	#pkgconfig angleproject
 } $else {
 	#pkgconfig egl glesv2
 }

@@ -85,7 +85,7 @@ static void libweb_v_pump_native_events(double wait_seconds)
         && CFAbsoluteTimeGetCurrent() < deadline; ++turn)
         result = CFRunLoopRunInMode(kCFRunLoopDefaultMode, 0, true);
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(_WIN32)
 #include "linux_event_context.h"
 #include <stdlib.h>
 typedef struct { void *context; void (*timeout)(void *); } LibWebVTimerContext;

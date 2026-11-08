@@ -7,9 +7,11 @@ import libjs
 
 #flag darwin @DIR/../Build/libregex/darwin/libregex_native.a
 #flag linux @DIR/../Build/libregex/linux/libregex_native.a
-#flag windows @DIR/../Build/libregex/windows/libregex_native.a
+#flag windows -Wl,@DIR/../Build/deps/windows/libregex/libregex_native.a,-lntdll,-luserenv,-lws2_32
 #flag darwin -Wl,-dead_strip
 #flag linux -Wl,--gc-sections
+#flag windows -Wl,--gc-sections
+#flag windows -lntdll -luserenv -lws2_32
 #flag linux -ldl -lpthread -lm
 #include "@DIR/native_abi.h"
 

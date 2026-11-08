@@ -52,7 +52,9 @@ $if macos {
 #flag linux -licuuc
 
 #include <hb.h>
-#include <dlfcn.h>
+$if !windows {
+	#include <dlfcn.h>
+}
 
 #include <hb-ot.h>
 

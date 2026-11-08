@@ -2,7 +2,7 @@ module browserjs
 
 import dom as _
 
-$if !darwin && !linux {
+$if !darwin && !linux && !windows {
 	pub fn (mut runtime Runtime) install_script_element_event_binding() ! {
 		return error('Script element JavaScriptCore bindings are unavailable on this platform')
 	}

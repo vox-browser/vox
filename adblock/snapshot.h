@@ -8,7 +8,12 @@
 #include <mach/mach_vm.h>
 #endif
 #include <fcntl.h>
+#ifdef _WIN32
+#include "../platform/windows_path.h"
+#endif
+#ifndef _WIN32
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <unistd.h>
 #include "runtime.h"
@@ -212,6 +217,27 @@ static int vox_adblock_install_snapshot(JSGlobalContextRef context,
 
 static int vox_adblock_install_snapshot_file(JSGlobalContextRef context, const char *path) {
     if (!context || !path) return 1;
+#ifdef _WIN32
+    // The installed ArrayBuffer owns a private copy, as with the mapped path.
+    wchar_t *wide = vox_windows_wide_path(path);
+    if (!wide) return 1;
+    FILE *file = _wfopen(wide, L"rb");
+    free(wide);
+    if (!file) return 1;
+    if (fseek(file, 0, SEEK_END)) { fclose(file); return 2; }
+    long size = ftell(file);
+    if (size < 16 || size > 128 * 1024 * 1024 + 16 || fseek(file, 0, SEEK_SET)) {
+        fclose(file); return 2;
+    }
+    void *bytes = malloc((size_t)size);
+    if (!bytes) { fclose(file); return 3; }
+    size_t read_size = fread(bytes, 1, (size_t)size, file);
+    fclose(file);
+    int result = read_size == (size_t)size
+        ? vox_adblock_install_snapshot(context, bytes, (size_t)size) : 3;
+    free(bytes);
+    return result;
+#else
     int fd = open(path, O_RDONLY | O_CLOEXEC);
     if (fd < 0) return 1;
     struct stat info;
@@ -227,6 +253,7 @@ static int vox_adblock_install_snapshot_file(JSGlobalContextRef context, const c
     // The installed private mapping owns its pages independently of this view.
     munmap(bytes, size);
     return result;
+#endif
 }
 // The callable owns immutable JSON text in its own context. Each invocation
 // parses fresh objects, so default/custom/default reinitialization never shares

@@ -694,8 +694,8 @@ fn schedule_native_screenshot(path string) {
 	$if macos {
 		C.schedule_native_screenshot(path)
 	}
-	$if linux {
-		capture_linux_screenshot(path)
+	$if linux || windows {
+		capture_portable_screenshot(path)
 	}
 }
 
@@ -7585,7 +7585,7 @@ fn (app &BrowserApp) retarget_document_frame_heap_scope(mut scope platform.Brows
 fn (mut app BrowserApp) draw() {
 	load_instruction_stage := processmetrics.begin_instruction_stage('frame')
 	defer { load_instruction_stage.finish() }
-	$if linux { pump_linux_browser_events() }
+	$if linux || windows { pump_portable_browser_events() }
 	$if macos {
 		// Sokol's parent view also ticks with no drawing context. Only the
 		// native document view owns document preparation and pixel replay.
@@ -8062,7 +8062,7 @@ fn (mut app BrowserApp) draw() {
 			schedule_native_screenshot(app.screenshot_path)
 		}
 	}
-	$if linux { finish_linux_frame() }
+	$if linux || windows { finish_portable_frame() }
 }
 
 fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Element {

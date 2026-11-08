@@ -246,6 +246,10 @@ def main():
     adapter.mkdir(exist_ok=True)
     # Remove the previous single-control adapter when refreshing an old stage.
     (adapter / "embedded_textbox_darwin.v").unlink(missing_ok=True)
+    write_if_changed(adapter / "embedded_input_windows.v",
+                     (repo / "tools/ui2/embedded_input_windows.v").read_text())
+    write_if_changed(adapter / "embedded_host_windows.v",
+                     (repo / "tools/ui2/embedded_host_windows.v").read_text())
     for name in ("embedded_browser_darwin.v", "embedded_elements_custom.c.v", "embedded_input_darwin.v", "embedded_input_darwin.h", "embedded_panel_darwin.v", "embedded_host_linux.v", "embedded_host_linux.h", "button_image.v", "button_image_darwin.v", "button_image_custom.c.v", "button_style_darwin.v", "native_visual_inputs_darwin.v", "native_visual_inputs_test.v", "vector_path.v", "vector_path_darwin.v", "vector_path_darwin.h", "vector_path_custom.c.v", "embedded_text_font_darwin.v"):
         write_if_changed(adapter / name, (repo / "tools/ui2" / name).read_text())
     write_if_changed(

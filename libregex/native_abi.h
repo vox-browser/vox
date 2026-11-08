@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#if defined(_WIN32) && (!defined(V3CACHE_NATIVE_INTERFACE) || defined(V3CACHE_NATIVE_OWNER))
+#include "rust_panic_windows.h"
+#endif
 typedef struct RustRegex RustRegex;
 typedef struct RustRegexFlags {
     bool global_, ignore_case, multiline, dot_all, unicode, unicode_sets, sticky, has_indices;

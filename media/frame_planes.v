@@ -64,27 +64,28 @@ fn (mut player BrowserMediaPlayback) update_frame_planes(pixels &u8, length int,
 }
 
 fn browser_planar_video_image(frame &painting.MediaVideoFrame) ?&gg.Image {
-	$if !macos {
+	$if macos {
+		if C.native_webp_yuv_paint_supported() == 0 || frame.color_space != .bt601
+			|| frame.bit_depth != 8 {
+			return none
+		}
+		data := frame.yuv_data or { return none }
+		if data.subsampling != .yuv420 { return none }
+		width := int(frame.width)
+		height := int(frame.height)
+		if width <= 0 || height <= 0 { return none }
+		alpha := data.a_plane.len > 0
+		expected := width * height * (if alpha { 2 } else { 1 }) +
+			((width + 1) / 2) * ((height + 1) / 2) * 2
+		if data.packed_planes.len != expected { return none }
+		return &gg.Image{
+			width:       width
+			height:      height
+			nr_channels: (if alpha { 13 } else { 8 }) + (if data.full_range { 1 } else { 0 })
+			ok:          true
+			data:        data.packed_planes.data
+		}
+	} $else {
 		return none
-	}
-	if C.native_webp_yuv_paint_supported() == 0 || frame.color_space != .bt601
-		|| frame.bit_depth != 8 {
-		return none
-	}
-	data := frame.yuv_data or { return none }
-	if data.subsampling != .yuv420 { return none }
-	width := int(frame.width)
-	height := int(frame.height)
-	if width <= 0 || height <= 0 { return none }
-	alpha := data.a_plane.len > 0
-	expected := width * height * (if alpha { 2 } else { 1 }) +
-		((width + 1) / 2) * ((height + 1) / 2) * 2
-	if data.packed_planes.len != expected { return none }
-	return &gg.Image{
-		width:       width
-		height:      height
-		nr_channels: (if alpha { 13 } else { 8 }) + (if data.full_range { 1 } else { 0 })
-		ok:          true
-		data:        data.packed_planes.data
 	}
 }

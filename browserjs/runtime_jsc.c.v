@@ -19,6 +19,9 @@ $if vox_v8 ? {
 	#flag darwin -framework JavaScriptCore
 }
 #flag darwin -framework CoreFoundation
+#flag windows -lJavaScriptCore
+#flag windows -L@DIR/../Build/deps/windows/native
+#flag windows -I@DIR/include
 $if linux {
 	#pkgconfig javascriptcoregtk-4.1
 }

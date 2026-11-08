@@ -3,6 +3,7 @@ module requestserver
 
 // macOS resolves libcurl on first use in curl_bridge.h.
 #flag linux -lcurl
+#flag windows -lcurl
 #flag darwin -framework CoreFoundation
 #include "curl_bridge.h"
 

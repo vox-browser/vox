@@ -5,6 +5,9 @@ $if linux {
 	// Static bridge references must reach the linker before Skia's libraries.
 	#flag @DIR/../Build/linux/native/skia.a
 }
+$if windows {
+	#flag -Wl,@DIR/../Build/deps/windows/native/skia.a,-lstdc++
+}
 
 $if macos {
 	$if arm64 {
@@ -25,9 +28,10 @@ $if macos {
 	#flag -lstdc++
 }
 
-$if !linux {
+$if macos {
 	#flag @DIR/canvas_raster.o
 }
+#flag windows -lstdc++
 // Older cached skia.pc files omit this direct dependency of the static library.
 #flag linux -lm
 #include "canvas_raster.h"

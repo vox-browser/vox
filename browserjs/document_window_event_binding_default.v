@@ -2,7 +2,7 @@ module browserjs
 
 import dom as _
 
-$if !darwin && !linux {
+$if !darwin && !linux && !windows {
 	pub fn (mut runtime Runtime) install_document_event_target_resolver(_ DocumentEventTargetResolver) ! {
 		return error('Document event target bindings require JavaScriptCore')
 	}

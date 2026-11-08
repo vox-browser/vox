@@ -17,6 +17,7 @@ $if linux {
 	#pkgconfig javascriptcoregtk-4.1
 }
 #flag linux -lz
+#flag windows -lz -lJavaScriptCore
 #include "@DIR/../browserjs/jsc_abi.h"
 #include "@DIR/runtime.h"
 

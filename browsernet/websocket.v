@@ -17,7 +17,7 @@ import url
 
 fn C.vox_websocket_wake_create() voidptr
 fn C.vox_websocket_wake_signal(wake voidptr)
-fn C.vox_websocket_wake_wait(wake voidptr, socket i32, timeout_ms i32) i32
+fn C.vox_websocket_wake_wait(wake voidptr, socket i64, timeout_ms i32) i32
 fn C.vox_websocket_wake_close(wake voidptr)
 fn C.mbedtls_ssl_get_bytes_avail(ssl voidptr) uint
 
@@ -534,7 +534,7 @@ fn (mut connection WebSocketConnection) exchange(mut stream WebSocketStream, ini
 				}
 				timeout = int(remaining)
 			}
-			ready := C.vox_websocket_wake_wait(connection.wake, i32(stream.handle()), i32(timeout))
+			ready := C.vox_websocket_wake_wait(connection.wake, i64(stream.handle()), i32(timeout))
 			if ready == 2 || ready == 0 { continue }
 			if ready < 0 {
 				connection.fail()

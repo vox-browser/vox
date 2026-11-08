@@ -2,6 +2,7 @@ module gfxfont
 
 // GNU ld resolves archive dependencies from left to right with --as-needed.
 #flag linux @DIR/../Build/linux/native/gfxfont.a
+#flag windows -Wl,@DIR/../Build/deps/windows/native/gfxfont.a,-lstdc++
 
 $if darwin {
 	$if arm64 {
@@ -27,7 +28,7 @@ $if !vox_filter_worker_minimal_links ? {
 	#flag -lbrotlidec
 	#flag -lbrotlicommon
 }
-$if !linux {
+$if macos {
 	#flag @DIR/woff2.o
 }
 #include "woff2.h"

@@ -1,6 +1,6 @@
 module browserjs
 
-$if !darwin && !linux {
+$if !darwin && !linux && !windows {
 	pub fn (mut host ElementWheelHost) install(mut runtime Runtime) ! {
 		_ = host
 		_ = runtime

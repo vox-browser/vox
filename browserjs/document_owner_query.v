@@ -8,7 +8,7 @@ pub type DocumentOwnerQuery = fn (key string) bool
 
 pub fn (mut runtime Runtime) install_document_owner_query(callback DocumentOwnerQuery) ! {
 	runtime.require_javascript_value_context()!
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		owner := &runtime
 		runtime.define_value_host_function('__ladybirdRootDocumentOwner', fn [owner, callback] (_ voidptr, args []voidptr) !voidptr {
 			if args.len != 1 || !C.JSValueIsString(owner.context, args[0]) {

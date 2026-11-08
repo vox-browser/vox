@@ -131,7 +131,7 @@ fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		if engine == .javascriptcore { context = create_javascript_core_context(worker_global) }
 	}
 	mut runtime := &Runtime{
@@ -141,7 +141,7 @@ fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
 		realm_context: realm_context
 		context:  context
 	}
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		if engine == .javascriptcore && context != unsafe { nil } {
 			runtime.initialize_javascript_value_intrinsics() or { panic(err) }
 		}
@@ -349,7 +349,7 @@ fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result boo
 	if runtime.closed {
 		return error('JavaScript runtime is closed')
 	}
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		if runtime.context == unsafe { nil } {
 			return error('JavaScriptCore context creation failed')
 		}
@@ -401,7 +401,7 @@ pub fn (mut runtime Runtime) close() {
 		platform.release_closure(voidptr(handler))
 	}
 	runtime.close_handlers_ = []
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		if runtime.context != unsafe { nil } {
 			for value in runtime.protected_values_ { C.JSValueUnprotect(runtime.context, value) }
 			runtime.protected_values_ = []

@@ -1,6 +1,6 @@
 module cpuraster
 
-// Linux has no CoreText scaler: glyph runs decline (LibWeb Skia draws them
+// Platforms without the CoreText scaler: glyph runs decline (LibWeb Skia draws them
 // with FreeType).
 struct GlyphFace {
 	font         voidptr

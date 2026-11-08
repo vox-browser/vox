@@ -4,6 +4,14 @@
  */
 #ifndef VOX_WEBGL_NATIVE_EGL_H
 #define VOX_WEBGL_NATIVE_EGL_H
+#if defined(_WIN32) && !defined(VOX_EGL_IMPLEMENTATION)
+#include "native_egl_api.h"
+#else
+#ifdef _WIN32
+#define VOX_EGL_LINKAGE
+#else
+#define VOX_EGL_LINKAGE static
+#endif
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -29,7 +37,7 @@ typedef struct {
     GLuint depth_buffer;
 } VoxEGLContext;
 
-static void* vox_egl_create(int version)
+VOX_EGL_LINKAGE void* vox_egl_create(int version)
 {
 #ifdef __APPLE__
     if (!vox_angle_prepare()) return NULL;
@@ -91,13 +99,13 @@ static void* vox_egl_create(int version)
     return result;
 }
 
-static int vox_egl_make_current(void* handle)
+VOX_EGL_LINKAGE int vox_egl_make_current(void* handle)
 {
     VoxEGLContext* context = handle;
     return context && eglMakeCurrent(context->display, EGL_NO_SURFACE, EGL_NO_SURFACE, context->context);
 }
 
-static void vox_egl_destroy(void* handle)
+VOX_EGL_LINKAGE void vox_egl_destroy(void* handle)
 {
     VoxEGLContext* context = handle;
     if (!context)
@@ -107,18 +115,18 @@ static void vox_egl_destroy(void* handle)
     free(context);
 }
 
-static void* vox_gl_fence_sync(unsigned condition, unsigned flags) { return glFenceSync(condition, flags); }
-static unsigned vox_gl_client_wait_sync(void* sync, unsigned flags, unsigned long long timeout) { return glClientWaitSync(sync, flags, timeout); }
-static void vox_gl_wait_sync(void* sync, unsigned flags, unsigned long long timeout) { glWaitSync(sync, flags, timeout); }
-static void vox_gl_delete_sync(void* sync) { glDeleteSync(sync); }
-static int vox_gl_get_sync_parameter(void* sync, unsigned pname)
+VOX_EGL_LINKAGE void* vox_gl_fence_sync(unsigned condition, unsigned flags) { return glFenceSync(condition, flags); }
+VOX_EGL_LINKAGE unsigned vox_gl_client_wait_sync(void* sync, unsigned flags, unsigned long long timeout) { return glClientWaitSync(sync, flags, timeout); }
+VOX_EGL_LINKAGE void vox_gl_wait_sync(void* sync, unsigned flags, unsigned long long timeout) { glWaitSync(sync, flags, timeout); }
+VOX_EGL_LINKAGE void vox_gl_delete_sync(void* sync) { glDeleteSync(sync); }
+VOX_EGL_LINKAGE int vox_gl_get_sync_parameter(void* sync, unsigned pname)
 {
     GLint result = 0;
     glGetSynciv(sync, pname, 1, NULL, &result);
     return result;
 }
-static unsigned vox_gl_get_error(void) { return glGetError(); }
-static int vox_gl_is_object(int kind, unsigned handle) {
+VOX_EGL_LINKAGE unsigned vox_gl_get_error(void) { return glGetError(); }
+VOX_EGL_LINKAGE int vox_gl_is_object(int kind, unsigned handle) {
     switch (kind) {
     case 0: return glIsBuffer(handle);
     case 1: return glIsFramebuffer(handle);
@@ -129,9 +137,9 @@ static int vox_gl_is_object(int kind, unsigned handle) {
     default: return GL_FALSE;
     }
 }
-static char const* vox_gl_string(unsigned name) { return (char const*)glGetString(name); }
-static void vox_gl_request_extension(char const* name) { glRequestExtensionANGLE(name); }
-static void vox_egl_free_surface(void* handle)
+VOX_EGL_LINKAGE char const* vox_gl_string(unsigned name) { return (char const*)glGetString(name); }
+VOX_EGL_LINKAGE void vox_gl_request_extension(char const* name) { glRequestExtensionANGLE(name); }
+VOX_EGL_LINKAGE void vox_egl_free_surface(void* handle)
 {
     VoxEGLContext* context = handle;
     if (!vox_egl_make_current(handle)) return;
@@ -140,7 +148,7 @@ static void vox_egl_free_surface(void* handle)
     if (context->depth_buffer) glDeleteRenderbuffers(1, &context->depth_buffer);
     context->framebuffer = context->color_buffer = context->depth_buffer = 0;
 }
-static int vox_egl_allocate_surface(void* handle, int width, int height, int depth, int stencil)
+VOX_EGL_LINKAGE int vox_egl_allocate_surface(void* handle, int width, int height, int depth, int stencil)
 {
     VoxEGLContext* context = handle;
     if (!vox_egl_make_current(handle)) return 0;
@@ -173,10 +181,10 @@ static int vox_egl_allocate_surface(void* handle, int width, int height, int dep
     }
     return glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
 }
-static unsigned vox_egl_default_framebuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->framebuffer : 0; }
-static unsigned vox_egl_default_renderbuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->depth_buffer : 0; }
+VOX_EGL_LINKAGE unsigned vox_egl_default_framebuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->framebuffer : 0; }
+VOX_EGL_LINKAGE unsigned vox_egl_default_renderbuffer(void* handle) { return handle ? ((VoxEGLContext*)handle)->depth_buffer : 0; }
 /* OpenGLContext::copy_default_framebuffer_to_cpu_painting_surface. */
-static int vox_egl_copy_drawing_buffer(void* handle, int width, int height, unsigned char* pixels)
+VOX_EGL_LINKAGE int vox_egl_copy_drawing_buffer(void* handle, int width, int height, unsigned char* pixels)
 {
     VoxEGLContext* context = handle;
     if (!vox_egl_make_current(handle) || !context->framebuffer || !pixels) return 0;
@@ -214,7 +222,7 @@ static int vox_egl_copy_drawing_buffer(void* handle, int width, int height, unsi
     return 1;
 }
 /* OpenGLContext::clear_buffer_to_default_values. */
-static void vox_egl_clear_drawing_buffer(void* handle)
+VOX_EGL_LINKAGE void vox_egl_clear_drawing_buffer(void* handle)
 {
     VoxEGLContext* context = handle;
     if (!vox_egl_make_current(handle) || !context->framebuffer) return;
@@ -235,7 +243,7 @@ static void vox_egl_clear_drawing_buffer(void* handle)
     glBindFramebuffer(target,original_framebuffer);
     glBindRenderbuffer(GL_RENDERBUFFER,original_renderbuffer);
 }
-static unsigned vox_gl_gen_object(int kind)
+VOX_EGL_LINKAGE unsigned vox_gl_gen_object(int kind)
 {
     GLuint result = 0;
     switch (kind) {
@@ -251,7 +259,7 @@ static unsigned vox_gl_gen_object(int kind)
     }
     return result;
 }
-static void vox_gl_delete_object(int kind, unsigned handle)
+VOX_EGL_LINKAGE void vox_gl_delete_object(int kind, unsigned handle)
 {
     switch (kind) {
     case 0: glDeleteBuffers(1, &handle); break;
@@ -265,32 +273,32 @@ static void vox_gl_delete_object(int kind, unsigned handle)
     case 8: glDeleteTransformFeedbacks(1, &handle); break;
     }
 }
-static void vox_gl_begin_query(unsigned target, unsigned handle) { glBeginQuery(target, handle); }
-static void vox_gl_end_query(unsigned target) { glEndQuery(target); }
-static unsigned vox_gl_query_parameter(unsigned handle, unsigned pname) { GLuint result = 0; glGetQueryObjectuivRobustANGLE(handle, pname, 1, NULL, &result); return result; }
-static void vox_gl_bind_sampler(unsigned unit, unsigned handle) { glBindSampler(unit, handle); }
-static void vox_gl_sampler_parameteri(unsigned handle, unsigned pname, int value) { glSamplerParameteri(handle, pname, value); }
-static void vox_gl_sampler_parameterf(unsigned handle, unsigned pname, float value) { glSamplerParameterf(handle, pname, value); }
-static float vox_gl_sampler_parameter(unsigned handle, unsigned pname) { GLfloat result = 0; glGetSamplerParameterfvRobustANGLE(handle, pname, 1, NULL, &result); return result; }
-static void vox_gl_bind_vertex_array(unsigned handle, int oes) { if (oes) glBindVertexArrayOES(handle); else glBindVertexArray(handle); }
-static int vox_gl_is_vertex_array(unsigned handle, int oes) { return oes ? glIsVertexArrayOES(handle) : glIsVertexArray(handle); }
-static int vox_gl_vertex_attrib_parameter(unsigned index, unsigned pname) { GLint result = 0; glGetVertexAttribivRobustANGLE(index,pname,1,NULL,&result); return result; }
-static void vox_gl_vertex_attrib_float_parameter(unsigned index, float* result) { glGetVertexAttribfvRobustANGLE(index,GL_CURRENT_VERTEX_ATTRIB,4,NULL,result); }
-static long long vox_gl_vertex_attrib_offset(unsigned index) { void* result = NULL; glGetVertexAttribPointervRobustANGLE(index,GL_VERTEX_ATTRIB_ARRAY_POINTER,1,NULL,&result); return (intptr_t)result; }
-static void vox_gl_bind_transform_feedback(unsigned target, unsigned handle) { glBindTransformFeedback(target,handle); }
-static void vox_gl_begin_transform_feedback(unsigned mode) { glBeginTransformFeedback(mode); }
-static void vox_gl_end_transform_feedback(void) { glEndTransformFeedback(); }
-static void vox_gl_pause_transform_feedback(void) { glPauseTransformFeedback(); }
-static void vox_gl_resume_transform_feedback(void) { glResumeTransformFeedback(); }
-static void vox_gl_transform_feedback_varyings(unsigned program, int count, void const* names, unsigned mode) { glTransformFeedbackVaryings(program,count,(char const* const*)names,mode); }
-static void vox_gl_bind_buffer_base(unsigned target, unsigned index, unsigned buffer) { glBindBufferBase(target,index,buffer); }
-static void vox_gl_bind_buffer_range(unsigned target, unsigned index, unsigned buffer, long long offset, long long size) { glBindBufferRange(target,index,buffer,(GLintptr)offset,(GLsizeiptr)size); }
-static void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
-static void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
-static void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }
-static void vox_gl_copy_buffer_sub_data(unsigned read_target, unsigned write_target, long long read_offset, long long write_offset, long long size) { glCopyBufferSubData(read_target, write_target, (GLintptr)read_offset, (GLintptr)write_offset, (GLsizeiptr)size); }
+VOX_EGL_LINKAGE void vox_gl_begin_query(unsigned target, unsigned handle) { glBeginQuery(target, handle); }
+VOX_EGL_LINKAGE void vox_gl_end_query(unsigned target) { glEndQuery(target); }
+VOX_EGL_LINKAGE unsigned vox_gl_query_parameter(unsigned handle, unsigned pname) { GLuint result = 0; glGetQueryObjectuivRobustANGLE(handle, pname, 1, NULL, &result); return result; }
+VOX_EGL_LINKAGE void vox_gl_bind_sampler(unsigned unit, unsigned handle) { glBindSampler(unit, handle); }
+VOX_EGL_LINKAGE void vox_gl_sampler_parameteri(unsigned handle, unsigned pname, int value) { glSamplerParameteri(handle, pname, value); }
+VOX_EGL_LINKAGE void vox_gl_sampler_parameterf(unsigned handle, unsigned pname, float value) { glSamplerParameterf(handle, pname, value); }
+VOX_EGL_LINKAGE float vox_gl_sampler_parameter(unsigned handle, unsigned pname) { GLfloat result = 0; glGetSamplerParameterfvRobustANGLE(handle, pname, 1, NULL, &result); return result; }
+VOX_EGL_LINKAGE void vox_gl_bind_vertex_array(unsigned handle, int oes) { if (oes) glBindVertexArrayOES(handle); else glBindVertexArray(handle); }
+VOX_EGL_LINKAGE int vox_gl_is_vertex_array(unsigned handle, int oes) { return oes ? glIsVertexArrayOES(handle) : glIsVertexArray(handle); }
+VOX_EGL_LINKAGE int vox_gl_vertex_attrib_parameter(unsigned index, unsigned pname) { GLint result = 0; glGetVertexAttribivRobustANGLE(index,pname,1,NULL,&result); return result; }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_float_parameter(unsigned index, float* result) { glGetVertexAttribfvRobustANGLE(index,GL_CURRENT_VERTEX_ATTRIB,4,NULL,result); }
+VOX_EGL_LINKAGE long long vox_gl_vertex_attrib_offset(unsigned index) { void* result = NULL; glGetVertexAttribPointervRobustANGLE(index,GL_VERTEX_ATTRIB_ARRAY_POINTER,1,NULL,&result); return (intptr_t)result; }
+VOX_EGL_LINKAGE void vox_gl_bind_transform_feedback(unsigned target, unsigned handle) { glBindTransformFeedback(target,handle); }
+VOX_EGL_LINKAGE void vox_gl_begin_transform_feedback(unsigned mode) { glBeginTransformFeedback(mode); }
+VOX_EGL_LINKAGE void vox_gl_end_transform_feedback(void) { glEndTransformFeedback(); }
+VOX_EGL_LINKAGE void vox_gl_pause_transform_feedback(void) { glPauseTransformFeedback(); }
+VOX_EGL_LINKAGE void vox_gl_resume_transform_feedback(void) { glResumeTransformFeedback(); }
+VOX_EGL_LINKAGE void vox_gl_transform_feedback_varyings(unsigned program, int count, void const* names, unsigned mode) { glTransformFeedbackVaryings(program,count,(char const* const*)names,mode); }
+VOX_EGL_LINKAGE void vox_gl_bind_buffer_base(unsigned target, unsigned index, unsigned buffer) { glBindBufferBase(target,index,buffer); }
+VOX_EGL_LINKAGE void vox_gl_bind_buffer_range(unsigned target, unsigned index, unsigned buffer, long long offset, long long size) { glBindBufferRange(target,index,buffer,(GLintptr)offset,(GLsizeiptr)size); }
+VOX_EGL_LINKAGE void vox_gl_bind_buffer(unsigned target, unsigned handle) { glBindBuffer(target, handle); }
+VOX_EGL_LINKAGE void vox_gl_buffer_data(unsigned target, long long size, void const* data, unsigned usage) { glBufferData(target, (GLsizeiptr)size, data, usage); }
+VOX_EGL_LINKAGE void vox_gl_buffer_sub_data(unsigned target, long long offset, long long size, void const* data) { glBufferSubData(target, (GLintptr)offset, (GLsizeiptr)size, data); }
+VOX_EGL_LINKAGE void vox_gl_copy_buffer_sub_data(unsigned read_target, unsigned write_target, long long read_offset, long long write_offset, long long size) { glCopyBufferSubData(read_target, write_target, (GLintptr)read_offset, (GLintptr)write_offset, (GLsizeiptr)size); }
 /* Services/Compositor/HostWebGLContext.cpp::read_buffer_sub_data. */
-static int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long long size, void* data) {
+VOX_EGL_LINKAGE int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long long size, void* data) {
     if (size == 0) return 1;
     void* mapped = glMapBufferRange(target, (GLintptr)offset, (GLsizeiptr)size, GL_MAP_READ_BIT);
     if (!mapped) return 0;
@@ -298,141 +306,141 @@ static int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long l
     glUnmapBuffer(target);
     return 1;
 }
-static int vox_gl_buffer_parameter(unsigned target, unsigned pname) {
+VOX_EGL_LINKAGE int vox_gl_buffer_parameter(unsigned target, unsigned pname) {
     GLint result = 0;
     glGetBufferParameterivRobustANGLE(target, pname, 1, NULL, &result);
     return result;
 }
-static void vox_gl_vertex_attrib_pointer(unsigned index, int size, unsigned type, int normalized, int stride, long long offset) { glVertexAttribPointer(index, size, type, normalized, stride, (void const*)(intptr_t)offset); }
-static void vox_gl_vertex_attrib_i_pointer(unsigned index, int size, unsigned type, int stride, long long offset) { glVertexAttribIPointer(index, size, type, stride, (void const*)(intptr_t)offset); }
-static void vox_gl_vertex_attrib1f(unsigned index, float x) { glVertexAttrib1f(index, x); }
-static void vox_gl_vertex_attrib2f(unsigned index, float x, float y) { glVertexAttrib2f(index, x, y); }
-static void vox_gl_vertex_attrib3f(unsigned index, float x, float y, float z) { glVertexAttrib3f(index, x, y, z); }
-static void vox_gl_vertex_attrib4f(unsigned index, float x, float y, float z, float w) { glVertexAttrib4f(index, x, y, z, w); }
-static void vox_gl_vertex_attrib1fv(unsigned index, float const* data) { glVertexAttrib1fv(index, data); }
-static void vox_gl_vertex_attrib2fv(unsigned index, float const* data) { glVertexAttrib2fv(index, data); }
-static void vox_gl_vertex_attrib3fv(unsigned index, float const* data) { glVertexAttrib3fv(index, data); }
-static void vox_gl_vertex_attrib_floats(unsigned index, float const* data) { glVertexAttrib4fv(index, data); }
-static void vox_gl_vertex_attrib_enable(unsigned index, int enabled) { if (enabled) glEnableVertexAttribArray(index); else glDisableVertexAttribArray(index); }
-static void vox_gl_vertex_attrib_divisor(unsigned index, unsigned divisor, int version) { if (version == 3) glVertexAttribDivisor(index, divisor); else glVertexAttribDivisorANGLE(index, divisor); }
-static void vox_gl_draw_arrays(unsigned mode, int first, int count) { glDrawArrays(mode, first, count); }
-static void vox_gl_draw_elements(unsigned mode, int count, unsigned type, long long offset) { glDrawElements(mode, count, type, (void const*)(intptr_t)offset); }
-static void vox_gl_draw_arrays_instanced(unsigned mode, int first, int count, int instances, int version) { if (version == 3) glDrawArraysInstanced(mode, first, count, instances); else glDrawArraysInstancedANGLE(mode, first, count, instances); }
-static void vox_gl_draw_elements_instanced(unsigned mode, int count, unsigned type, long long offset, int instances, int version) { if (version == 3) glDrawElementsInstanced(mode, count, type, (void const*)(intptr_t)offset, instances); else glDrawElementsInstancedANGLE(mode, count, type, (void const*)(intptr_t)offset, instances); }
-static void vox_gl_draw_range_elements(unsigned mode, unsigned start, unsigned end, int count, unsigned type, long long offset) { glDrawRangeElements(mode, start, end, count, type, (void const*)(intptr_t)offset); }
-static void vox_gl_bind_framebuffer(unsigned target, unsigned handle) { glBindFramebuffer(target, handle); }
-static void vox_gl_bind_renderbuffer(unsigned target, unsigned handle) { glBindRenderbuffer(target, handle); }
-static void vox_gl_bind_texture(unsigned target, unsigned handle) { glBindTexture(target, handle); }
-static unsigned vox_gl_framebuffer_status(unsigned target) { return glCheckFramebufferStatus(target); }
-static void vox_gl_framebuffer_texture(unsigned target, unsigned attachment, unsigned texture_target, unsigned texture, int level) { glFramebufferTexture2D(target, attachment, texture_target, texture, level); }
-static void vox_gl_framebuffer_renderbuffer(unsigned target, unsigned attachment, unsigned renderbuffer_target, unsigned renderbuffer) { glFramebufferRenderbuffer(target, attachment, renderbuffer_target, renderbuffer); }
-static void vox_gl_renderbuffer_storage(unsigned target, unsigned format, int width, int height) { glRenderbufferStorage(target, format, width, height); }
-static void vox_gl_tex_image2d(unsigned target, int level, int format, int width, int height, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage2DRobustANGLE(target, level, format, width, height, border, pixel_format, type, capacity, data); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_pointer(unsigned index, int size, unsigned type, int normalized, int stride, long long offset) { glVertexAttribPointer(index, size, type, normalized, stride, (void const*)(intptr_t)offset); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_i_pointer(unsigned index, int size, unsigned type, int stride, long long offset) { glVertexAttribIPointer(index, size, type, stride, (void const*)(intptr_t)offset); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib1f(unsigned index, float x) { glVertexAttrib1f(index, x); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib2f(unsigned index, float x, float y) { glVertexAttrib2f(index, x, y); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib3f(unsigned index, float x, float y, float z) { glVertexAttrib3f(index, x, y, z); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib4f(unsigned index, float x, float y, float z, float w) { glVertexAttrib4f(index, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib1fv(unsigned index, float const* data) { glVertexAttrib1fv(index, data); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib2fv(unsigned index, float const* data) { glVertexAttrib2fv(index, data); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib3fv(unsigned index, float const* data) { glVertexAttrib3fv(index, data); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_floats(unsigned index, float const* data) { glVertexAttrib4fv(index, data); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_enable(unsigned index, int enabled) { if (enabled) glEnableVertexAttribArray(index); else glDisableVertexAttribArray(index); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_divisor(unsigned index, unsigned divisor, int version) { if (version == 3) glVertexAttribDivisor(index, divisor); else glVertexAttribDivisorANGLE(index, divisor); }
+VOX_EGL_LINKAGE void vox_gl_draw_arrays(unsigned mode, int first, int count) { glDrawArrays(mode, first, count); }
+VOX_EGL_LINKAGE void vox_gl_draw_elements(unsigned mode, int count, unsigned type, long long offset) { glDrawElements(mode, count, type, (void const*)(intptr_t)offset); }
+VOX_EGL_LINKAGE void vox_gl_draw_arrays_instanced(unsigned mode, int first, int count, int instances, int version) { if (version == 3) glDrawArraysInstanced(mode, first, count, instances); else glDrawArraysInstancedANGLE(mode, first, count, instances); }
+VOX_EGL_LINKAGE void vox_gl_draw_elements_instanced(unsigned mode, int count, unsigned type, long long offset, int instances, int version) { if (version == 3) glDrawElementsInstanced(mode, count, type, (void const*)(intptr_t)offset, instances); else glDrawElementsInstancedANGLE(mode, count, type, (void const*)(intptr_t)offset, instances); }
+VOX_EGL_LINKAGE void vox_gl_draw_range_elements(unsigned mode, unsigned start, unsigned end, int count, unsigned type, long long offset) { glDrawRangeElements(mode, start, end, count, type, (void const*)(intptr_t)offset); }
+VOX_EGL_LINKAGE void vox_gl_bind_framebuffer(unsigned target, unsigned handle) { glBindFramebuffer(target, handle); }
+VOX_EGL_LINKAGE void vox_gl_bind_renderbuffer(unsigned target, unsigned handle) { glBindRenderbuffer(target, handle); }
+VOX_EGL_LINKAGE void vox_gl_bind_texture(unsigned target, unsigned handle) { glBindTexture(target, handle); }
+VOX_EGL_LINKAGE unsigned vox_gl_framebuffer_status(unsigned target) { return glCheckFramebufferStatus(target); }
+VOX_EGL_LINKAGE void vox_gl_framebuffer_texture(unsigned target, unsigned attachment, unsigned texture_target, unsigned texture, int level) { glFramebufferTexture2D(target, attachment, texture_target, texture, level); }
+VOX_EGL_LINKAGE void vox_gl_framebuffer_renderbuffer(unsigned target, unsigned attachment, unsigned renderbuffer_target, unsigned renderbuffer) { glFramebufferRenderbuffer(target, attachment, renderbuffer_target, renderbuffer); }
+VOX_EGL_LINKAGE void vox_gl_renderbuffer_storage(unsigned target, unsigned format, int width, int height) { glRenderbufferStorage(target, format, width, height); }
+VOX_EGL_LINKAGE void vox_gl_tex_image2d(unsigned target, int level, int format, int width, int height, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage2DRobustANGLE(target, level, format, width, height, border, pixel_format, type, capacity, data); }
 // This ANGLE ABI exposes core compressed entry points. Source imageSize and
 // dataSize are identical; the native imageSize remains the exact input bound.
-static void vox_gl_compressed_tex_image2d(unsigned target, int level, unsigned format, int width, int height, int border, int size, void const* data) { glCompressedTexImage2D(target, level, format, width, height, border, size, data); }
-static void vox_gl_compressed_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, int size, void const* data) { glCompressedTexSubImage2D(target, level, x, y, width, height, format, size, data); }
-static void vox_gl_compressed_tex_image3d(unsigned target, int level, unsigned format, int width, int height, int depth, int border, int size, void const* data) { glCompressedTexImage3D(target, level, format, width, height, depth, border, size, data); }
-static void vox_gl_compressed_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, int size, void const* data) { glCompressedTexSubImage3D(target, level, x, y, z, width, height, depth, format, size, data); }
-static void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
-static void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
-static void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }
-static void vox_gl_tex_storage2d(unsigned target, int levels, unsigned format, int width, int height) { glTexStorage2D(target, levels, format, width, height); }
-static void vox_gl_tex_storage3d(unsigned target, int levels, unsigned format, int width, int height, int depth) { glTexStorage3D(target, levels, format, width, height, depth); }
-static void vox_gl_tex_image3d(unsigned target, int level, int format, int width, int height, int depth, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage3DRobustANGLE(target, level, format, width, height, depth, border, pixel_format, type, capacity, data); }
-static void vox_gl_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage3DRobustANGLE(target, level, x, y, z, width, height, depth, format, type, capacity, data); }
-static void vox_gl_framebuffer_texture_layer(unsigned target, unsigned attachment, unsigned texture, int level, int layer) { glFramebufferTextureLayer(target, attachment, texture, level, layer); }
-static void vox_gl_copy_tex_image2d(unsigned target, int level, unsigned format, int x, int y, int width, int height, int border) { glCopyTexImage2D(target, level, format, x, y, width, height, border); }
-static void vox_gl_copy_tex_sub_image2d(unsigned target, int level, int x_offset, int y_offset, int x, int y, int width, int height) { glCopyTexSubImage2D(target, level, x_offset, y_offset, x, y, width, height); }
-static void vox_gl_draw_buffers(int count, unsigned const* buffers, int extension) { if (extension) glDrawBuffersEXT(count, buffers); else glDrawBuffers(count, buffers); }
-static void vox_gl_read_buffer(unsigned source) { glReadBuffer(source); }
-static void vox_gl_blit_framebuffer(int sx0, int sy0, int sx1, int sy1, int dx0, int dy0, int dx1, int dy1, unsigned mask, unsigned filter) { glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, mask, filter); }
-static void vox_gl_renderbuffer_storage_multisample(unsigned target, int samples, unsigned format, int width, int height) { glRenderbufferStorageMultisample(target, samples, format, width, height); }
-static void vox_gl_invalidate_framebuffer(unsigned target, int count, unsigned const* attachments) { glInvalidateFramebuffer(target, count, attachments); }
-static void vox_gl_invalidate_sub_framebuffer(unsigned target, int count, unsigned const* attachments, int x, int y, int width, int height) { glInvalidateSubFramebuffer(target, count, attachments, x, y, width, height); }
-static int vox_gl_tex_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetTexParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
-static float vox_gl_tex_float_parameter(unsigned target, unsigned pname) { GLfloat value = 0; glGetTexParameterfvRobustANGLE(target, pname, 1, NULL, &value); return value; }
-static int vox_gl_renderbuffer_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetRenderbufferParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
+VOX_EGL_LINKAGE void vox_gl_compressed_tex_image2d(unsigned target, int level, unsigned format, int width, int height, int border, int size, void const* data) { glCompressedTexImage2D(target, level, format, width, height, border, size, data); }
+VOX_EGL_LINKAGE void vox_gl_compressed_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, int size, void const* data) { glCompressedTexSubImage2D(target, level, x, y, width, height, format, size, data); }
+VOX_EGL_LINKAGE void vox_gl_compressed_tex_image3d(unsigned target, int level, unsigned format, int width, int height, int depth, int border, int size, void const* data) { glCompressedTexImage3D(target, level, format, width, height, depth, border, size, data); }
+VOX_EGL_LINKAGE void vox_gl_compressed_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, int size, void const* data) { glCompressedTexSubImage3D(target, level, x, y, z, width, height, depth, format, size, data); }
+VOX_EGL_LINKAGE void vox_gl_tex_sub_image2d(unsigned target, int level, int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage2DRobustANGLE(target, level, x, y, width, height, format, type, capacity, data); }
+VOX_EGL_LINKAGE void vox_gl_tex_parameteri(unsigned target, unsigned pname, int value) { glTexParameteri(target, pname, value); }
+VOX_EGL_LINKAGE void vox_gl_tex_parameterf(unsigned target, unsigned pname, float value) { glTexParameterf(target, pname, value); }
+VOX_EGL_LINKAGE void vox_gl_tex_storage2d(unsigned target, int levels, unsigned format, int width, int height) { glTexStorage2D(target, levels, format, width, height); }
+VOX_EGL_LINKAGE void vox_gl_tex_storage3d(unsigned target, int levels, unsigned format, int width, int height, int depth) { glTexStorage3D(target, levels, format, width, height, depth); }
+VOX_EGL_LINKAGE void vox_gl_tex_image3d(unsigned target, int level, int format, int width, int height, int depth, int border, unsigned pixel_format, unsigned type, int capacity, void const* data) { glTexImage3DRobustANGLE(target, level, format, width, height, depth, border, pixel_format, type, capacity, data); }
+VOX_EGL_LINKAGE void vox_gl_tex_sub_image3d(unsigned target, int level, int x, int y, int z, int width, int height, int depth, unsigned format, unsigned type, int capacity, void const* data) { glTexSubImage3DRobustANGLE(target, level, x, y, z, width, height, depth, format, type, capacity, data); }
+VOX_EGL_LINKAGE void vox_gl_framebuffer_texture_layer(unsigned target, unsigned attachment, unsigned texture, int level, int layer) { glFramebufferTextureLayer(target, attachment, texture, level, layer); }
+VOX_EGL_LINKAGE void vox_gl_copy_tex_image2d(unsigned target, int level, unsigned format, int x, int y, int width, int height, int border) { glCopyTexImage2D(target, level, format, x, y, width, height, border); }
+VOX_EGL_LINKAGE void vox_gl_copy_tex_sub_image2d(unsigned target, int level, int x_offset, int y_offset, int x, int y, int width, int height) { glCopyTexSubImage2D(target, level, x_offset, y_offset, x, y, width, height); }
+VOX_EGL_LINKAGE void vox_gl_draw_buffers(int count, unsigned const* buffers, int extension) { if (extension) glDrawBuffersEXT(count, buffers); else glDrawBuffers(count, buffers); }
+VOX_EGL_LINKAGE void vox_gl_read_buffer(unsigned source) { glReadBuffer(source); }
+VOX_EGL_LINKAGE void vox_gl_blit_framebuffer(int sx0, int sy0, int sx1, int sy1, int dx0, int dy0, int dx1, int dy1, unsigned mask, unsigned filter) { glBlitFramebuffer(sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1, mask, filter); }
+VOX_EGL_LINKAGE void vox_gl_renderbuffer_storage_multisample(unsigned target, int samples, unsigned format, int width, int height) { glRenderbufferStorageMultisample(target, samples, format, width, height); }
+VOX_EGL_LINKAGE void vox_gl_invalidate_framebuffer(unsigned target, int count, unsigned const* attachments) { glInvalidateFramebuffer(target, count, attachments); }
+VOX_EGL_LINKAGE void vox_gl_invalidate_sub_framebuffer(unsigned target, int count, unsigned const* attachments, int x, int y, int width, int height) { glInvalidateSubFramebuffer(target, count, attachments, x, y, width, height); }
+VOX_EGL_LINKAGE int vox_gl_tex_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetTexParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
+VOX_EGL_LINKAGE float vox_gl_tex_float_parameter(unsigned target, unsigned pname) { GLfloat value = 0; glGetTexParameterfvRobustANGLE(target, pname, 1, NULL, &value); return value; }
+VOX_EGL_LINKAGE int vox_gl_renderbuffer_parameter(unsigned target, unsigned pname) { GLint value = 0; glGetRenderbufferParameterivRobustANGLE(target, pname, 1, NULL, &value); return value; }
 // WebGL2RenderingContextOverloads::read_pixels numeric offset variant.
-static void vox_gl_read_pixels_to_buffer(int x, int y, int width, int height, unsigned format, unsigned type, int64_t offset)
+VOX_EGL_LINKAGE void vox_gl_read_pixels_to_buffer(int x, int y, int width, int height, unsigned format, unsigned type, int64_t offset)
 {
     glReadPixels(x,y,width,height,format,type,(void*)(intptr_t)offset);
 }
-static int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
+VOX_EGL_LINKAGE int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
 {
     GLsizei written = 0;
     glReadPixelsRobustANGLE(x, y, width, height, format, type, capacity, &written, NULL, NULL, data);
     return written;
 }
-static void vox_gl_clear_color(float r, float g, float b, float a) { glClearColor(r, g, b, a); }
-static void vox_gl_clear_depth(float value) { glClearDepthf(value); }
-static void vox_gl_clear_stencil(int value) { glClearStencil(value); }
-static void vox_gl_color_mask(int r, int g, int b, int a) { glColorMask(r, g, b, a); }
-static void vox_gl_depth_mask(int value) { glDepthMask(value); }
-static void vox_gl_clear(unsigned mask) { glClear(mask); }
-static void vox_gl_viewport(int x, int y, int w, int h) { glViewport(x, y, w, h); }
-static void vox_gl_scissor(int x, int y, int w, int h) { glScissor(x, y, w, h); }
-static void vox_gl_enable(unsigned cap) { glEnable(cap); }
-static int vox_gl_is_enabled(unsigned cap) { return glIsEnabled(cap); }
-static void vox_gl_disable(unsigned cap) { glDisable(cap); }
-static void vox_gl_pixel_storei(unsigned pname, int value) { glPixelStorei(pname, value); }
-static void vox_gl_active_texture(unsigned texture) { glActiveTexture(texture); }
-static void vox_gl_blend_color(float r, float g, float b, float a) { glBlendColor(r,g,b,a); }
-static void vox_gl_blend_equation(unsigned mode) { glBlendEquation(mode); }
-static void vox_gl_blend_equation_separate(unsigned rgb, unsigned alpha) { glBlendEquationSeparate(rgb,alpha); }
-static void vox_gl_blend_func(unsigned src, unsigned dst) { glBlendFunc(src,dst); }
-static void vox_gl_blend_func_separate(unsigned srgb, unsigned drgb, unsigned sa, unsigned da) { glBlendFuncSeparate(srgb,drgb,sa,da); }
-static void vox_gl_cull_face(unsigned mode) { glCullFace(mode); }
-static void vox_gl_depth_func(unsigned function) { glDepthFunc(function); }
-static void vox_gl_depth_range(float near_value, float far_value) { glDepthRangef(near_value,far_value); }
-static void vox_gl_finish(void) { glFinish(); }
-static void vox_gl_flush(void) { glFlush(); }
-static void vox_gl_front_face(unsigned mode) { glFrontFace(mode); }
-static void vox_gl_generate_mipmap(unsigned target) { glGenerateMipmap(target); }
-static void vox_gl_hint(unsigned target, unsigned mode) { glHint(target,mode); }
-static void vox_gl_line_width(float value) { glLineWidth(value); }
-static void vox_gl_polygon_offset(float factor, float units) { glPolygonOffset(factor,units); }
-static void vox_gl_sample_coverage(float value, int invert) { glSampleCoverage(value,invert); }
-static void vox_gl_stencil_func(unsigned function, int reference, unsigned mask) { glStencilFunc(function,reference,mask); }
-static void vox_gl_stencil_func_separate(unsigned face, unsigned function, int reference, unsigned mask) { glStencilFuncSeparate(face,function,reference,mask); }
-static void vox_gl_stencil_mask(unsigned mask) { glStencilMask(mask); }
-static void vox_gl_stencil_mask_separate(unsigned face, unsigned mask) { glStencilMaskSeparate(face,mask); }
-static void vox_gl_stencil_op(unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOp(fail,depth_fail,pass); }
-static void vox_gl_stencil_op_separate(unsigned face, unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOpSeparate(face,fail,depth_fail,pass); }
-static void vox_gl_clear_buffer_floats(unsigned buffer, int draw_buffer, float const* values) { glClearBufferfv(buffer,draw_buffer,values); }
-static void vox_gl_clear_buffer_ints(unsigned buffer, int draw_buffer, int const* values) { glClearBufferiv(buffer,draw_buffer,values); }
-static void vox_gl_clear_buffer_uints(unsigned buffer, int draw_buffer, unsigned const* values) { glClearBufferuiv(buffer,draw_buffer,values); }
-static void vox_gl_clear_buffer_depth_stencil(unsigned buffer, int draw_buffer, float depth, int stencil) { glClearBufferfi(buffer,draw_buffer,depth,stencil); }
-static void vox_gl_vertex_attrib_i4i(unsigned index, int x, int y, int z, int w) { glVertexAttribI4i(index, x, y, z, w); }
-static void vox_gl_vertex_attrib_i4ui(unsigned index, unsigned x, unsigned y, unsigned z, unsigned w) { glVertexAttribI4ui(index, x, y, z, w); }
-static void vox_gl_vertex_attrib_ints(unsigned index, int const* values) { glVertexAttribI4iv(index,values); }
-static void vox_gl_vertex_attrib_uints(unsigned index, unsigned const* values) { glVertexAttribI4uiv(index,values); }
-static void vox_gl_vertex_attrib_int_parameter(unsigned index, int* values) { glGetVertexAttribIiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
-static void vox_gl_vertex_attrib_uint_parameter(unsigned index, unsigned* values) { glGetVertexAttribIuiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
-static void vox_gl_float_parameter(unsigned pname, float* values) { glGetFloatv(pname,values); }
-static void vox_gl_int_parameter(unsigned pname, int* values) { glGetIntegerv(pname,values); }
-static unsigned vox_gl_create_shader(unsigned type) { return glCreateShader(type); }
-static unsigned vox_gl_create_program(void) { return glCreateProgram(); }
-static void vox_gl_shader_source(unsigned shader, char const* source, int length) { glShaderSource(shader, 1, &source, &length); }
-static void vox_gl_compile_shader(unsigned shader) { glCompileShader(shader); }
-static void vox_gl_attach_shader(unsigned program, unsigned shader) { glAttachShader(program, shader); }
-static void vox_gl_detach_shader(unsigned program, unsigned shader) { glDetachShader(program, shader); }
-static void vox_gl_link_program(unsigned program) { glLinkProgram(program); }
-static void vox_gl_use_program(unsigned program) { glUseProgram(program); }
-static void vox_gl_validate_program(unsigned program) { glValidateProgram(program); }
-static void vox_gl_delete_shader(unsigned shader) { glDeleteShader(shader); }
-static void vox_gl_delete_program(unsigned program) { glDeleteProgram(program); }
-static int vox_gl_shader_parameter(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderiv(shader, pname, &value); return value; }
-static int vox_gl_shader_parameter_robust(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderivRobustANGLE(shader, pname, 1, NULL, &value); return value; }
-static int vox_gl_program_parameter(unsigned program, unsigned pname) { GLint value = 0; glGetProgramiv(program, pname, &value); return value; }
-static int vox_gl_program_parameter_robust(unsigned program, unsigned pname) { GLint value = 0; glGetProgramivRobustANGLE(program, pname, 1, NULL, &value); return value; }
-static void vox_gl_shader_log(unsigned shader, int size, char* output) { glGetShaderInfoLog(shader, size, NULL, output); }
-static void vox_gl_get_shader_source(unsigned shader, int size, char* output) { glGetShaderSource(shader, size, NULL, output); }
-static void vox_gl_program_log(unsigned program, int size, char* output) { glGetProgramInfoLog(program, size, NULL, output); }
-static int vox_gl_uniform_location(unsigned program, char const* name) { return glGetUniformLocation(program, name); }
-static int vox_gl_attrib_location(unsigned program, char const* name) { return glGetAttribLocation(program, name); }
-static void vox_gl_bind_attrib_location(unsigned program, unsigned index, char const* name) { glBindAttribLocation(program, index, name); }
-static int vox_gl_active_info(unsigned program, unsigned index, int uniform, int capacity, char* name, int* size, unsigned* type)
+VOX_EGL_LINKAGE void vox_gl_clear_color(float r, float g, float b, float a) { glClearColor(r, g, b, a); }
+VOX_EGL_LINKAGE void vox_gl_clear_depth(float value) { glClearDepthf(value); }
+VOX_EGL_LINKAGE void vox_gl_clear_stencil(int value) { glClearStencil(value); }
+VOX_EGL_LINKAGE void vox_gl_color_mask(int r, int g, int b, int a) { glColorMask(r, g, b, a); }
+VOX_EGL_LINKAGE void vox_gl_depth_mask(int value) { glDepthMask(value); }
+VOX_EGL_LINKAGE void vox_gl_clear(unsigned mask) { glClear(mask); }
+VOX_EGL_LINKAGE void vox_gl_viewport(int x, int y, int w, int h) { glViewport(x, y, w, h); }
+VOX_EGL_LINKAGE void vox_gl_scissor(int x, int y, int w, int h) { glScissor(x, y, w, h); }
+VOX_EGL_LINKAGE void vox_gl_enable(unsigned cap) { glEnable(cap); }
+VOX_EGL_LINKAGE int vox_gl_is_enabled(unsigned cap) { return glIsEnabled(cap); }
+VOX_EGL_LINKAGE void vox_gl_disable(unsigned cap) { glDisable(cap); }
+VOX_EGL_LINKAGE void vox_gl_pixel_storei(unsigned pname, int value) { glPixelStorei(pname, value); }
+VOX_EGL_LINKAGE void vox_gl_active_texture(unsigned texture) { glActiveTexture(texture); }
+VOX_EGL_LINKAGE void vox_gl_blend_color(float r, float g, float b, float a) { glBlendColor(r,g,b,a); }
+VOX_EGL_LINKAGE void vox_gl_blend_equation(unsigned mode) { glBlendEquation(mode); }
+VOX_EGL_LINKAGE void vox_gl_blend_equation_separate(unsigned rgb, unsigned alpha) { glBlendEquationSeparate(rgb,alpha); }
+VOX_EGL_LINKAGE void vox_gl_blend_func(unsigned src, unsigned dst) { glBlendFunc(src,dst); }
+VOX_EGL_LINKAGE void vox_gl_blend_func_separate(unsigned srgb, unsigned drgb, unsigned sa, unsigned da) { glBlendFuncSeparate(srgb,drgb,sa,da); }
+VOX_EGL_LINKAGE void vox_gl_cull_face(unsigned mode) { glCullFace(mode); }
+VOX_EGL_LINKAGE void vox_gl_depth_func(unsigned function) { glDepthFunc(function); }
+VOX_EGL_LINKAGE void vox_gl_depth_range(float near_value, float far_value) { glDepthRangef(near_value,far_value); }
+VOX_EGL_LINKAGE void vox_gl_finish(void) { glFinish(); }
+VOX_EGL_LINKAGE void vox_gl_flush(void) { glFlush(); }
+VOX_EGL_LINKAGE void vox_gl_front_face(unsigned mode) { glFrontFace(mode); }
+VOX_EGL_LINKAGE void vox_gl_generate_mipmap(unsigned target) { glGenerateMipmap(target); }
+VOX_EGL_LINKAGE void vox_gl_hint(unsigned target, unsigned mode) { glHint(target,mode); }
+VOX_EGL_LINKAGE void vox_gl_line_width(float value) { glLineWidth(value); }
+VOX_EGL_LINKAGE void vox_gl_polygon_offset(float factor, float units) { glPolygonOffset(factor,units); }
+VOX_EGL_LINKAGE void vox_gl_sample_coverage(float value, int invert) { glSampleCoverage(value,invert); }
+VOX_EGL_LINKAGE void vox_gl_stencil_func(unsigned function, int reference, unsigned mask) { glStencilFunc(function,reference,mask); }
+VOX_EGL_LINKAGE void vox_gl_stencil_func_separate(unsigned face, unsigned function, int reference, unsigned mask) { glStencilFuncSeparate(face,function,reference,mask); }
+VOX_EGL_LINKAGE void vox_gl_stencil_mask(unsigned mask) { glStencilMask(mask); }
+VOX_EGL_LINKAGE void vox_gl_stencil_mask_separate(unsigned face, unsigned mask) { glStencilMaskSeparate(face,mask); }
+VOX_EGL_LINKAGE void vox_gl_stencil_op(unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOp(fail,depth_fail,pass); }
+VOX_EGL_LINKAGE void vox_gl_stencil_op_separate(unsigned face, unsigned fail, unsigned depth_fail, unsigned pass) { glStencilOpSeparate(face,fail,depth_fail,pass); }
+VOX_EGL_LINKAGE void vox_gl_clear_buffer_floats(unsigned buffer, int draw_buffer, float const* values) { glClearBufferfv(buffer,draw_buffer,values); }
+VOX_EGL_LINKAGE void vox_gl_clear_buffer_ints(unsigned buffer, int draw_buffer, int const* values) { glClearBufferiv(buffer,draw_buffer,values); }
+VOX_EGL_LINKAGE void vox_gl_clear_buffer_uints(unsigned buffer, int draw_buffer, unsigned const* values) { glClearBufferuiv(buffer,draw_buffer,values); }
+VOX_EGL_LINKAGE void vox_gl_clear_buffer_depth_stencil(unsigned buffer, int draw_buffer, float depth, int stencil) { glClearBufferfi(buffer,draw_buffer,depth,stencil); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_i4i(unsigned index, int x, int y, int z, int w) { glVertexAttribI4i(index, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_i4ui(unsigned index, unsigned x, unsigned y, unsigned z, unsigned w) { glVertexAttribI4ui(index, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_ints(unsigned index, int const* values) { glVertexAttribI4iv(index,values); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_uints(unsigned index, unsigned const* values) { glVertexAttribI4uiv(index,values); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_int_parameter(unsigned index, int* values) { glGetVertexAttribIiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
+VOX_EGL_LINKAGE void vox_gl_vertex_attrib_uint_parameter(unsigned index, unsigned* values) { glGetVertexAttribIuiv(index,GL_CURRENT_VERTEX_ATTRIB,values); }
+VOX_EGL_LINKAGE void vox_gl_float_parameter(unsigned pname, float* values) { glGetFloatv(pname,values); }
+VOX_EGL_LINKAGE void vox_gl_int_parameter(unsigned pname, int* values) { glGetIntegerv(pname,values); }
+VOX_EGL_LINKAGE unsigned vox_gl_create_shader(unsigned type) { return glCreateShader(type); }
+VOX_EGL_LINKAGE unsigned vox_gl_create_program(void) { return glCreateProgram(); }
+VOX_EGL_LINKAGE void vox_gl_shader_source(unsigned shader, char const* source, int length) { glShaderSource(shader, 1, &source, &length); }
+VOX_EGL_LINKAGE void vox_gl_compile_shader(unsigned shader) { glCompileShader(shader); }
+VOX_EGL_LINKAGE void vox_gl_attach_shader(unsigned program, unsigned shader) { glAttachShader(program, shader); }
+VOX_EGL_LINKAGE void vox_gl_detach_shader(unsigned program, unsigned shader) { glDetachShader(program, shader); }
+VOX_EGL_LINKAGE void vox_gl_link_program(unsigned program) { glLinkProgram(program); }
+VOX_EGL_LINKAGE void vox_gl_use_program(unsigned program) { glUseProgram(program); }
+VOX_EGL_LINKAGE void vox_gl_validate_program(unsigned program) { glValidateProgram(program); }
+VOX_EGL_LINKAGE void vox_gl_delete_shader(unsigned shader) { glDeleteShader(shader); }
+VOX_EGL_LINKAGE void vox_gl_delete_program(unsigned program) { glDeleteProgram(program); }
+VOX_EGL_LINKAGE int vox_gl_shader_parameter(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderiv(shader, pname, &value); return value; }
+VOX_EGL_LINKAGE int vox_gl_shader_parameter_robust(unsigned shader, unsigned pname) { GLint value = 0; glGetShaderivRobustANGLE(shader, pname, 1, NULL, &value); return value; }
+VOX_EGL_LINKAGE int vox_gl_program_parameter(unsigned program, unsigned pname) { GLint value = 0; glGetProgramiv(program, pname, &value); return value; }
+VOX_EGL_LINKAGE int vox_gl_program_parameter_robust(unsigned program, unsigned pname) { GLint value = 0; glGetProgramivRobustANGLE(program, pname, 1, NULL, &value); return value; }
+VOX_EGL_LINKAGE void vox_gl_shader_log(unsigned shader, int size, char* output) { glGetShaderInfoLog(shader, size, NULL, output); }
+VOX_EGL_LINKAGE void vox_gl_get_shader_source(unsigned shader, int size, char* output) { glGetShaderSource(shader, size, NULL, output); }
+VOX_EGL_LINKAGE void vox_gl_program_log(unsigned program, int size, char* output) { glGetProgramInfoLog(program, size, NULL, output); }
+VOX_EGL_LINKAGE int vox_gl_uniform_location(unsigned program, char const* name) { return glGetUniformLocation(program, name); }
+VOX_EGL_LINKAGE int vox_gl_attrib_location(unsigned program, char const* name) { return glGetAttribLocation(program, name); }
+VOX_EGL_LINKAGE void vox_gl_bind_attrib_location(unsigned program, unsigned index, char const* name) { glBindAttribLocation(program, index, name); }
+VOX_EGL_LINKAGE int vox_gl_active_info(unsigned program, unsigned index, int uniform, int capacity, char* name, int* size, unsigned* type)
 {
     GLsizei length = 0;
     if (uniform)
@@ -441,27 +449,27 @@ static int vox_gl_active_info(unsigned program, unsigned index, int uniform, int
         glGetActiveAttrib(program, index, capacity, &length, size, type, name);
     return length;
 }
-static void vox_gl_uniform_indices(unsigned program, int count, void const* names, unsigned* result) { glGetUniformIndices(program,count,(char const* const*)names,result); }
-static void vox_gl_active_uniforms(unsigned program, int count, unsigned const* indices, unsigned pname, int* result) { glGetActiveUniformsiv(program,count,indices,pname,result); }
-static unsigned vox_gl_uniform_block_index(unsigned program, char const* name) { return glGetUniformBlockIndex(program,name); }
-static void vox_gl_uniform_block_parameter(unsigned program, unsigned index, unsigned pname, int capacity, int* result) { glGetActiveUniformBlockivRobustANGLE(program,index,pname,capacity,NULL,result); }
-static void vox_gl_uniform_block_name(unsigned program, unsigned index, int capacity, char* name) { glGetActiveUniformBlockName(program,index,capacity,NULL,name); }
-static void vox_gl_uniform_block_binding(unsigned program, unsigned index, unsigned binding) { glUniformBlockBinding(program,index,binding); }
-static void vox_gl_internalformat_parameter(unsigned target, unsigned format, unsigned pname, int capacity, int* result) { glGetInternalformativRobustANGLE(target,format,pname,capacity,NULL,result); }
-static void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
-static void vox_gl_uniform1f(int location, float x) { glUniform1f(location, x); }
-static void vox_gl_uniform2f(int location, float x, float y) { glUniform2f(location, x, y); }
-static void vox_gl_uniform3f(int location, float x, float y, float z) { glUniform3f(location, x, y, z); }
-static void vox_gl_uniform4f(int location, float x, float y, float z, float w) { glUniform4f(location, x, y, z, w); }
-static void vox_gl_uniform1i(int location, int x) { glUniform1i(location, x); }
-static void vox_gl_uniform2i(int location, int x, int y) { glUniform2i(location, x, y); }
-static void vox_gl_uniform3i(int location, int x, int y, int z) { glUniform3i(location, x, y, z); }
-static void vox_gl_uniform4i(int location, int x, int y, int z, int w) { glUniform4i(location, x, y, z, w); }
-static void vox_gl_uniform1ui(int location, unsigned x) { glUniform1ui(location, x); }
-static void vox_gl_uniform2ui(int location, unsigned x, unsigned y) { glUniform2ui(location, x, y); }
-static void vox_gl_uniform3ui(int location, unsigned x, unsigned y, unsigned z) { glUniform3ui(location, x, y, z); }
-static void vox_gl_uniform4ui(int location, unsigned x, unsigned y, unsigned z, unsigned w) { glUniform4ui(location, x, y, z, w); }
-static void vox_gl_uniform_floats(int location, int width, int count, float const* data)
+VOX_EGL_LINKAGE void vox_gl_uniform_indices(unsigned program, int count, void const* names, unsigned* result) { glGetUniformIndices(program,count,(char const* const*)names,result); }
+VOX_EGL_LINKAGE void vox_gl_active_uniforms(unsigned program, int count, unsigned const* indices, unsigned pname, int* result) { glGetActiveUniformsiv(program,count,indices,pname,result); }
+VOX_EGL_LINKAGE unsigned vox_gl_uniform_block_index(unsigned program, char const* name) { return glGetUniformBlockIndex(program,name); }
+VOX_EGL_LINKAGE void vox_gl_uniform_block_parameter(unsigned program, unsigned index, unsigned pname, int capacity, int* result) { glGetActiveUniformBlockivRobustANGLE(program,index,pname,capacity,NULL,result); }
+VOX_EGL_LINKAGE void vox_gl_uniform_block_name(unsigned program, unsigned index, int capacity, char* name) { glGetActiveUniformBlockName(program,index,capacity,NULL,name); }
+VOX_EGL_LINKAGE void vox_gl_uniform_block_binding(unsigned program, unsigned index, unsigned binding) { glUniformBlockBinding(program,index,binding); }
+VOX_EGL_LINKAGE void vox_gl_internalformat_parameter(unsigned target, unsigned format, unsigned pname, int capacity, int* result) { glGetInternalformativRobustANGLE(target,format,pname,capacity,NULL,result); }
+VOX_EGL_LINKAGE void vox_gl_shader_precision(unsigned shader, unsigned precision, int* range, int* bits) { glGetShaderPrecisionFormat(shader, precision, range, bits); }
+VOX_EGL_LINKAGE void vox_gl_uniform1f(int location, float x) { glUniform1f(location, x); }
+VOX_EGL_LINKAGE void vox_gl_uniform2f(int location, float x, float y) { glUniform2f(location, x, y); }
+VOX_EGL_LINKAGE void vox_gl_uniform3f(int location, float x, float y, float z) { glUniform3f(location, x, y, z); }
+VOX_EGL_LINKAGE void vox_gl_uniform4f(int location, float x, float y, float z, float w) { glUniform4f(location, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_uniform1i(int location, int x) { glUniform1i(location, x); }
+VOX_EGL_LINKAGE void vox_gl_uniform2i(int location, int x, int y) { glUniform2i(location, x, y); }
+VOX_EGL_LINKAGE void vox_gl_uniform3i(int location, int x, int y, int z) { glUniform3i(location, x, y, z); }
+VOX_EGL_LINKAGE void vox_gl_uniform4i(int location, int x, int y, int z, int w) { glUniform4i(location, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_uniform1ui(int location, unsigned x) { glUniform1ui(location, x); }
+VOX_EGL_LINKAGE void vox_gl_uniform2ui(int location, unsigned x, unsigned y) { glUniform2ui(location, x, y); }
+VOX_EGL_LINKAGE void vox_gl_uniform3ui(int location, unsigned x, unsigned y, unsigned z) { glUniform3ui(location, x, y, z); }
+VOX_EGL_LINKAGE void vox_gl_uniform4ui(int location, unsigned x, unsigned y, unsigned z, unsigned w) { glUniform4ui(location, x, y, z, w); }
+VOX_EGL_LINKAGE void vox_gl_uniform_floats(int location, int width, int count, float const* data)
 {
     switch (width) {
     case 1: glUniform1fv(location, count, data); break;
@@ -470,7 +478,7 @@ static void vox_gl_uniform_floats(int location, int width, int count, float cons
     case 4: glUniform4fv(location, count, data); break;
     }
 }
-static void vox_gl_uniform_ints(int location, int width, int count, int const* data)
+VOX_EGL_LINKAGE void vox_gl_uniform_ints(int location, int width, int count, int const* data)
 {
     switch (width) {
     case 1: glUniform1iv(location, count, data); break;
@@ -479,7 +487,7 @@ static void vox_gl_uniform_ints(int location, int width, int count, int const* d
     case 4: glUniform4iv(location, count, data); break;
     }
 }
-static void vox_gl_uniform_uints(int location, int width, int count, unsigned const* data)
+VOX_EGL_LINKAGE void vox_gl_uniform_uints(int location, int width, int count, unsigned const* data)
 {
     switch (width) {
     case 1: glUniform1uiv(location, count, data); break;
@@ -488,7 +496,7 @@ static void vox_gl_uniform_uints(int location, int width, int count, unsigned co
     case 4: glUniform4uiv(location, count, data); break;
     }
 }
-static void vox_gl_uniform_matrix(int location, int columns, int rows, int count, int transpose, float const* data)
+VOX_EGL_LINKAGE void vox_gl_uniform_matrix(int location, int columns, int rows, int count, int transpose, float const* data)
 {
     if (columns == 2 && rows == 2) glUniformMatrix2fv(location, count, transpose, data);
     else if (columns == 3 && rows == 3) glUniformMatrix3fv(location, count, transpose, data);
@@ -500,13 +508,12 @@ static void vox_gl_uniform_matrix(int location, int columns, int rows, int count
     else if (columns == 3 && rows == 4) glUniformMatrix3x4fv(location, count, transpose, data);
     else if (columns == 4 && rows == 3) glUniformMatrix4x3fv(location, count, transpose, data);
 }
-static void vox_gl_get_uniform_floats(unsigned program, int location, float* data) { glGetUniformfv(program, location, data); }
-static void vox_gl_get_uniform_ints(unsigned program, int location, int* data) { glGetUniformiv(program, location, data); }
-static void vox_gl_get_uniform_uints(unsigned program, int location, unsigned* data) { glGetUniformuiv(program, location, data); }
-#endif
+VOX_EGL_LINKAGE void vox_gl_get_uniform_floats(unsigned program, int location, float* data) { glGetUniformfv(program, location, data); }
+VOX_EGL_LINKAGE void vox_gl_get_uniform_ints(unsigned program, int location, int* data) { glGetUniformiv(program, location, data); }
+VOX_EGL_LINKAGE void vox_gl_get_uniform_uints(unsigned program, int location, unsigned* data) { glGetUniformuiv(program, location, data); }
 
 // Source WebGLRenderingContextImpl::get_parameter native result types/counts.
-static int vox_gl_parameter_shape(unsigned pname, int version) {
+VOX_EGL_LINKAGE int vox_gl_parameter_shape(unsigned pname, int version) {
     switch (pname) {
     case GL_ACTIVE_TEXTURE:
     case GL_ALPHA_BITS:
@@ -643,7 +650,7 @@ static int vox_gl_parameter_shape(unsigned pname, int version) {
     default: return 0;
     }
 }
-static void vox_gl_parameter(unsigned pname, int shape, double* output)
+VOX_EGL_LINKAGE void vox_gl_parameter(unsigned pname, int shape, double* output)
 {
     int count = shape % 10;
     GLsizei written = 0;
@@ -654,3 +661,5 @@ static void vox_gl_parameter(unsigned pname, int shape, double* output)
     case 4: { GLint64 value = 0; glGetInteger64vRobustANGLE(pname, 1, &written, &value); output[0] = (double)value; break; }
     }
 }
+#endif // implementation
+#endif // VOX_WEBGL_NATIVE_EGL_H

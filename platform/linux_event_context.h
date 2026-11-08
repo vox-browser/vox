@@ -1,10 +1,20 @@
 #pragma once
 #include <glib.h>
 #include <stdbool.h>
+#ifdef _WIN32
+#include <windows.h>
+#include "native_state.h"
+VOX_NATIVE_STATE DWORD vox_glib_main_thread;
+__attribute__((constructor)) static void vox_glib_record_main_thread(void) {
+    vox_glib_main_thread = GetCurrentThreadId();
+}
+static bool libweb_v_is_main_thread(void) { return GetCurrentThreadId() == vox_glib_main_thread; }
+#else
 #include <unistd.h>
 #include <sys/syscall.h>
 
 static bool libweb_v_is_main_thread(void) { return syscall(SYS_gettid) == getpid(); }
+#endif
 static GMainContext *libweb_v_thread_event_context(void) {
     GMainContext *context = g_main_context_get_thread_default();
     if (context) return context;

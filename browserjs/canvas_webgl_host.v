@@ -66,7 +66,7 @@ pub fn (mut host CanvasWebGLHost) install(mut runtime Runtime) ! {
 	}, fn [mut host] (registry &CanvasElementRegistry) {
 		for key, element in host.elements { registry.set(key, element) }
 	})
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		host.install_xr(mut runtime)!
 	}
 }

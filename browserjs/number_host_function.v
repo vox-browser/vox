@@ -18,7 +18,7 @@ pub fn (mut runtime Runtime) define_number_host_function(name string, callback N
 		mut global := vm.get_global_object()
 		global.define_direct_property(libjs.PropertyName.from_str(name), libjs.Value.from_object(native.object), 0)
 	} else {
-		$if darwin || linux {
+		$if darwin || linux || windows {
 			context := runtime.context
 			runtime.define_value_host_function(name, fn [context, callback] (_ voidptr, _ []voidptr) !voidptr {
 				return C.vox_jsc_JSValueMakeNumber(context, callback())

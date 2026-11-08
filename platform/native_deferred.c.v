@@ -39,7 +39,7 @@ pub fn capture_native_deferred_invoker() ?NativeDeferredInvoker {
 // An async resource completion can run with another document's allocation
 // scope entered by a cooperative UI checkpoint. Its receiver is the owner.
 pub fn capture_native_deferred_invoker_for_storage(owner &RetainedArena) ?NativeDeferredInvoker {
-	$if macos || linux {
+	$if macos || linux || windows {
 		mut storage := unsafe { &RetainedArena(owner) }
 		if storage != unsafe { nil } { storage.retain() }
 		return NativeDeferredInvoker{
@@ -52,7 +52,7 @@ pub fn capture_native_deferred_invoker_for_storage(owner &RetainedArena) ?Native
 }
 
 pub fn (invoker NativeDeferredInvoker) deferred_invoke(callback fn ()) {
-	$if macos || linux {
+	$if macos || linux || windows {
 		$if prealloc {
 			// Neither the call record nor a shared map may live in a worker
 			// scope that ends before the native origin loop consumes it.
@@ -113,7 +113,7 @@ fn invoke_native_deferred_call(pointer voidptr) {
 }
 
 pub fn native_thread_identity() u64 {
-	$if macos || linux {
+	$if macos || linux || windows {
 		return C.vox_deferred_thread_identity()
 	} $else {
 		return 0

@@ -24,7 +24,7 @@ static uint64_t vox_deferred_thread_identity(void)
 {
     return (uint64_t)(uintptr_t)pthread_self();
 }
-#elif defined(__linux__)
+#elif defined(__linux__) || defined(_WIN32)
 #include "linux_event_context.h"
 #include <pthread.h>
 #include <stdint.h>

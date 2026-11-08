@@ -56,7 +56,7 @@ pub fn (mut host XMLHttpRequestHost) install(mut runtime Runtime) ! {
 	runtime.define_host_function('__ladybirdXHR', fn [mut host, mut runtime] (input string) !string {
 		return host.call(input, runtime)
 	})!
-	$if darwin || linux { host.install_native_blob_transport(mut runtime)! }
+	$if darwin || linux || windows { host.install_native_blob_transport(mut runtime)! }
 	runtime.add_close_handler(fn [mut host] () { host.close() })
 }
 

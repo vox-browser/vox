@@ -1,6 +1,6 @@
 module browserjs
 
-$if !darwin && !linux {
+$if !darwin && !linux && !windows {
 	pub fn (mut runtime Runtime) install_dom_rect_read_only_binding() ! {
 		return error('Native DOMRectReadOnly bindings require JavaScriptCore')
 	}

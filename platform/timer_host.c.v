@@ -4,7 +4,7 @@
 module platform
 
 #flag darwin -framework CoreFoundation
-$if linux {
+$if linux || windows {
 	#pkgconfig glib-2.0
 }
 #include "timer_host_bridge.h"
@@ -20,7 +20,7 @@ fn native_timer_timeout(context voidptr) {
 }
 
 fn register_native_timer(timer &Timer, interval_ms int) voidptr {
-	$if macos || linux {
+	$if macos || linux || windows {
 		return C.libweb_v_register_timer(voidptr(timer), interval_ms, native_timer_timeout)
 	} $else {
 		return unsafe { nil }
@@ -28,22 +28,22 @@ fn register_native_timer(timer &Timer, interval_ms int) voidptr {
 }
 
 fn unregister_native_timer(timer voidptr) {
-	$if macos || linux {
+	$if macos || linux || windows {
 		if timer != unsafe { nil } { C.libweb_v_unregister_timer(timer) }
 	}
 }
 
 pub fn native_timer_scheduling_available() bool {
-	$if macos || linux { return true } $else { return false }
+	$if macos || linux || windows { return true } $else { return false }
 }
 
 // Native sources bound to the main run loop must not be shared with workers.
 pub fn is_main_thread() bool {
-	$if macos || linux { return C.libweb_v_is_main_thread() } $else { return false }
+	$if macos || linux || windows { return C.libweb_v_is_main_thread() } $else { return false }
 }
 
 // Core::EventLoop::pump(WaitForEvents). The Cocoa host services timer and input
 // sources on the current thread's run loop, including while XHR spins.
 pub fn pump_native_events(wait_seconds f64) {
-	$if macos || linux { C.libweb_v_pump_native_events(wait_seconds) }
+	$if macos || linux || windows { C.libweb_v_pump_native_events(wait_seconds) }
 }

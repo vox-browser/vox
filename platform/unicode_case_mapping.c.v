@@ -3,6 +3,8 @@ module platform
 
 $if linux {
 	#flag @DIR/../Build/linux/native/platform.a
+} $else $if windows {
+	#flag -Wl,@DIR/../Build/deps/windows/native/platform.a,-lstdc++
 } $else {
 	#flag @DIR/unicode_case_mapping.o
 }
@@ -25,9 +27,10 @@ $if arm64 {
 }
 #flag darwin -lc++
 #flag linux -lstdc++
-$if linux {
+$if linux || windows {
 	#pkgconfig icu-uc icu-i18n
 }
+#flag windows -lstdc++
 #include "unicode_case_mapping.h"
 
 struct C.LibWebVCaseEdit {

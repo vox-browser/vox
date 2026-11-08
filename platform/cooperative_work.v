@@ -98,7 +98,7 @@ mut:
 // A browser may service native chrome during long synchronous engine work.
 // Page timers retain ordinary run-to-completion ordering until the scope ends.
 pub fn begin_cooperative_work(target voidptr, callback CooperativeWorkCallback) CooperativeWorkScope {
-	$if macos || linux {
+	$if macos || linux || windows {
 		if !C.libweb_v_is_main_thread() { return CooperativeWorkScope{} }
 	}
 	if cooperative_work_state_ != unsafe { nil } { return CooperativeWorkScope{} }
@@ -132,7 +132,7 @@ pub fn begin_cooperative_work(target voidptr, callback CooperativeWorkCallback) 
 }
 
 pub fn cooperative_work_checkpoint() {
-	$if macos || linux {
+	$if macos || linux || windows {
 		if !C.libweb_v_is_main_thread() { return }
 	}
 	if cooperative_work_state_ == unsafe { nil } { return }
@@ -182,7 +182,7 @@ $if gcboehm ? {
 }
 
 fn defer_timer_during_cooperative_work(timer &Timer) bool {
-	$if macos || linux {
+	$if macos || linux || windows {
 		if !C.libweb_v_is_main_thread() { return false }
 	}
 	mut state := cooperative_work_state_
@@ -198,7 +198,7 @@ fn defer_timer_during_cooperative_work(timer &Timer) bool {
 }
 
 fn defer_native_call_during_cooperative_work(pointer voidptr) bool {
-	$if macos || linux {
+	$if macos || linux || windows {
 		if !C.libweb_v_is_main_thread() { return false }
 	}
 	mut state := cooperative_work_state_

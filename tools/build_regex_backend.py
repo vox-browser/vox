@@ -18,6 +18,7 @@ else:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--verify-only', action='store_true')
+    parser.add_argument('--target', help='Rust target triple for cross compilation')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     source = repo / 'libregex/native'
@@ -45,11 +46,17 @@ def main():
     # The same compiler release can produce incompatible Linux/macOS or
     # x86-64/ARM archives in a shared checkout. Include rustc's host triple.
     digest.update(compiler_identity.encode())
+    digest.update((args.target or '').encode())
     fingerprint = digest.hexdigest()
     # A Linux VM can share this checkout with its macOS host, or WSL with its
     # Windows host. Keep their archives separate for the entire compile/link
     # lifetime, not just while rebuilding the archive under the lock.
-    output = repo / 'Build/libregex' / platform.system().lower()
+    target_os = platform.system().lower()
+    if args.target:
+        if 'windows' not in args.target:
+            raise SystemExit('Only Windows cross-compilation targets are supported')
+        target_os = 'windows'
+    output = repo / ('Build/deps/windows/libregex' if target_os == 'windows' else f'Build/libregex/{target_os}')
     output.mkdir(parents=True, exist_ok=True)
     lock = (output / 'build.lock').open('w')
     if os.name == 'nt':
@@ -65,6 +72,8 @@ def main():
         return
     unicode = output / 'libunicode_rust.rlib'
     common = [compiler, '--edition=2024', '-O']
+    if args.target:
+        common += ['--target', args.target]
     subprocess.run(common + ['--crate-name', 'libunicode_rust', '--crate-type', 'rlib',
                             str(source / 'unicode.rs'), '-o', str(unicode)], check=True)
     environment = dict(os.environ, CARGO_PKG_NAME='libregex_rust')

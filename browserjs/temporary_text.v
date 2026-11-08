@@ -16,7 +16,7 @@ pub fn (text TemporaryText) finish() { text.workspace.finish() }
 pub fn (runtime &Runtime) evaluate_host_temporary_text(source string) !TemporaryText {
 	if runtime.engine == .libjs { return TemporaryText{value: runtime.evaluate(source)!} }
 	if runtime.closed { return error('JavaScript runtime is closed') }
-	$if darwin || linux {
+	$if darwin || linux || windows {
 		if runtime.context == unsafe { nil } { return error('JavaScriptCore context creation failed') }
 		runtime.prepare_html_script()
 		defer { runtime.clean_up_html_script() }
