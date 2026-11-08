@@ -1091,3 +1091,21 @@ operations. See the
 [prefiltered-shadow receipt](gg-migration/prefiltered-drop-shadows-20261108.json).
 Spatial filter chains, rotated layers, SVG graphs, image-space blur/drop-shadow
 and native browser bridges still retain Skia dependencies.
+
+
+### Repeated blur filters (2026-11-08)
+
+Sequences of blur filters now share a single source layer and evaluate
+backward input-bound requests and separate quantized intermediate images.
+Six native fixtures cover Gaussian and box passes, identities on either
+side and within a chain, scaled layers, unpremultiplied targets and clearing
+composites. Intermediate dimensions are checked before touching the target.
+
+Of 20,000 attempts, 17,490 supported comparisons match on macOS at seed
+20261106, 17,435 in production mode at seed 20261108, and 18,459 on Linux
+at seed 20261106. All 26 CPU raster test files pass, the focused Linux
+production tests pass, and the FMA audit reports zero contracted operations.
+See the [repeated-blur receipt](gg-migration/repeated-blurs-20261108.json).
+Color matrices within repeated spatial chains, drop-shadow chains, rotated
+layers, SVG graphs, image-space spatial filters and native bridges remain
+open; the browser still retains Skia dependencies.
