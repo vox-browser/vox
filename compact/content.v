@@ -30,7 +30,6 @@ mut:
 	node_iterators map[string]&dom.NodeIterator
 	ranges map[string]&dom.Range
 	range_keys map[voidptr]string
-	script_writes map[voidptr]CompactScriptWrite
 	next_key int
 	scroll_promises map[string]&dom.Promise
 	next_scroll_promise int
@@ -317,6 +316,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'snapshotStates' {
 		return binding.encode_element_states(css.query_selector_all(binding.document.as_node(), '*'))
 	}
+	if action == 'namedElements' { return binding.named_elements_query(selector) }
 	// A script-created element can remain entirely in the compact realm until
 	// its first insertion. Once materialized, its live native owner also tracks
 	// subtree adoption and removal without relying on a cached parent key.

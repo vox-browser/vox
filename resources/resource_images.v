@@ -103,6 +103,7 @@ fn install_static_browser_image_fetch_hooks_with_loader(document &dom.Document,
 		if !element.is_html_element() { continue }
 		image := unsafe { &dom.HTMLImageElement(element) }
 		mut model := html.html_image_element_model_for_dom_element(image)
+		if model.has_fetch_hook() { continue }
 		if owner := image_loader {
 			model.set_model_async_fetch_hook(owner.static_callback())
 		} else {

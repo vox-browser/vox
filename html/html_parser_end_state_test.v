@@ -38,6 +38,10 @@ fn test_parser_end_avoids_fallback_layout_only_while_a_rendering_font_already_de
 		delayer.finish()
 		state.check_progress()
 		assert probe.calls > 0
+		assert state.phase() == .completion_queued
+		process_event_loop_until(fn [state] () bool {
+			return state.phase() == .completed
+		})
 		assert state.phase() == .completed
 	}
 }

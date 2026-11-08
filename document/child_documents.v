@@ -19,6 +19,7 @@ mut:
 	srcdoc   ?string
 	observed bool
 	service  ?&BrowserHostedDocument
+	prepared_service ?&BrowserHostedDocument
 	closed   bool
 	// Held on the container document from the start of a navigation until
 	// the hosted document has run its scripts and fired its load event.
@@ -45,12 +46,17 @@ struct BrowserHostedDocument {
 mut:
 	resources          map[string]PreloadedResource
 	remaining          int
+	resources_started  bool
 	initialized        bool
+	closed             bool
 	runtime            &browserjs.Runtime = unsafe { nil }
+	parser_host        ?&BrowserParserScriptHost
 	scripts            ?&BrowserScriptRequestLoader
 	images             ?&BrowserImageRequestLoader
+	resource_delay     ?dom.DocumentLoadEventDelayer
 	adblock_tokens     BrowserAdblockTokenCache
 	load_fired         bool
+	load_parser_generation u64
 	pending_navigation ?string
 }
 
@@ -102,14 +108,15 @@ fn (mut host BrowserChildDocumentHost) ensure_child(element &dom.Element) !&html
 		if !child.closed && voidptr(child.element) == voidptr(element) { return child.navigable }
 	}
 	mut navigable := html.create_child_navigable_for_element(element)!
+	child := &BrowserChildDocument{ element: element, navigable: navigable }
+	host.children << child
 	navigable.set_navigation_fetch_host(requestserver.native_resource_fetch_host())
-	navigable.set_document_created_hook(fn [host] (document &dom.Document) {
-		host.prepare_document(document)
+	navigable.set_document_created_hook(fn [host, child] (document &dom.Document) {
+		host.prepare_document(child, document)
 	})
 	if initial := navigable.active_document() {
 		browser_child_document_hosts_[voidptr(initial)] = &host
 	}
-	host.children << &BrowserChildDocument{ element: element, navigable: navigable }
 	return navigable
 }
 
@@ -124,14 +131,14 @@ fn (mut host BrowserChildDocumentHost) ensure_initial_realm(element &dom.Element
 		if !active.get_is_initial_about_blank() { return }
 		if mut service := child.service {
 			if voidptr(service.document) == voidptr(active) {
-				service.initialize(host.engine, mut messages)
+				service.ensure_initial_realm(mut messages)
 				return
 			}
 			service.close()
 		}
-		mut service := &BrowserHostedDocument{ document: active }
+		mut service := new_browser_hosted_document(active, host.engine)
 		child.service = service
-		service.initialize(host.engine, mut messages)
+		service.ensure_initial_realm(mut messages)
 		return
 	}
 }
@@ -148,7 +155,7 @@ fn retire_hosted_browser_document(document &dom.Document) {
 	owner.release_native_storage()
 }
 
-fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
+fn (host &BrowserChildDocumentHost) prepare_document(child &BrowserChildDocument, document &dom.Document) {
 	browser_child_document_hosts_[voidptr(document)] = host
 	mut owner := unsafe { &dom.Document(document) }
 	install_browser_document_font_policies(mut owner)
@@ -158,6 +165,24 @@ fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
 	owner.enable_native_storage()
 	layout.enable_native_paint_tree_storage(document)
 	layout.enable_native_static_svg_backgrounds(document)
+	// The creation hook runs before response parsing, including the streamed
+	// parser. Publish the service now so a parser-blocking fetch can be polled
+	// before the first script has created a JavaScript runtime.
+	mut frame := unsafe { &BrowserChildDocument(child) }
+	if mut previous := frame.prepared_service { previous.close() }
+	frame.prepared_service = new_browser_hosted_document(document, host.engine)
+	// Parser-time scripts can read innerWidth immediately. Commit the parent's
+	// current layout and copy the frame's content box in CSS pixels, including
+	// zero-sized/hidden frames, before the navigation activates this document.
+	parent := child.element.document()
+	viewport := parent.viewport_rect()
+	_ = layout.run_document_layout(parent, viewport.width, viewport.height)
+	if box := child.element.as_node().layout_node() {
+		scale := parent.layout_coordinate_scale()
+		owner.set_viewport_rect(dom.Rect{0, 0, box.content_width_ / scale, box.content_height_ / scale})
+	} else {
+		owner.set_viewport_rect(dom.Rect{})
+	}
 	// Close child publishers when the root document owner retires. Parent
 	// caches and scenes hold their own child-scene leases, so copied payloads
 	// remain readable until their final consumer releases them. Waiting for
@@ -170,9 +195,51 @@ fn (host &BrowserChildDocumentHost) prepare_document(document &dom.Document) {
 	}
 }
 
+fn new_browser_hosted_document(document &dom.Document, engine browserjs.Engine) &BrowserHostedDocument {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut service := &BrowserHostedDocument{ document: document }
+	mut images := new_browser_image_request_loader(document, map[string]PreloadedResource{})
+	mut scripts := new_browser_script_request_loader(document, map[string]PreloadedResource{})
+	service.images = images
+	service.scripts = scripts
+	service.parser_host = install_browser_parser_script_host(document, engine, images, scripts,
+		map[string]PreloadedResource{}, none, fn [service] (runtime &browserjs.Runtime) {
+			mut owner := unsafe { &BrowserHostedDocument(service) }
+			owner.runtime = runtime
+		})
+	install_object_image_fetch_hooks(document)
+	install_video_poster_fetch_hooks(document)
+	// Initial styles and static images are installed once parsing exposes the
+	// complete tree. Keep that work inside the parser's load-event boundary.
+	if !document.get_is_initial_about_blank() {
+		mut owner := unsafe { &dom.Document(document) }
+		service.resource_delay = dom.DocumentLoadEventDelayer.new(mut owner)
+	}
+	return service
+}
+
+fn (mut service BrowserHostedDocument) finish_resource_delay() {
+	mut delay := service.resource_delay or { return }
+	service.resource_delay = none
+	delay.finish()
+}
+
+fn (mut service BrowserHostedDocument) ensure_initial_realm(mut messages []string) {
+	if mut host := service.parser_host { host.initialize() }
+	service.initialize(mut messages)
+	if mut host := service.parser_host {
+		if destination := host.flush(mut messages) { service.pending_navigation = destination }
+	}
+}
+
 fn (mut service BrowserHostedDocument) close() {
+	if service.closed { return }
+	service.closed = true
+	if mut host := service.parser_host { host.closed = true }
 	if mut loader := service.scripts { loader.cancel() }
 	if mut loader := service.images { loader.cancel() }
+	service.finish_resource_delay()
 	service.adblock_tokens.release()
 	if service.runtime != unsafe { nil } {
 		service.runtime.close()
@@ -193,6 +260,8 @@ fn (mut child BrowserChildDocument) close() {
 		}
 	}
 	if mut service := child.service { service.close() }
+	if mut service := child.prepared_service { service.close() }
+	child.prepared_service = none
 	navigable.set_has_been_destroyed()
 	navigable.remove_from_all_navigables()
 	navigable.host_navigable().remove_from_all_navigables()
@@ -296,19 +365,45 @@ fn start_browser_child_navigations(document &dom.Document, engine browserjs.Engi
 	}
 }
 
-fn (mut service BrowserHostedDocument) start_resources() {
-	types := document_preload_resource_types(service.document, service.document.base_url().serialize())
+// Parser-time installation may already have completed a link, even when its
+// response cannot be reused from a cache. Decide which owners still need bytes
+// before deduplicating their transport URLs.
+fn browser_hosted_stylesheet_resource_jobs(document &dom.Document) []ResourceFetchJob {
+	root := document.as_node()
+	base_url := document.base_url().serialize()
+	preferred_set_name := preferred_style_sheet_set_name(root)
 	mut jobs := []ResourceFetchJob{}
-	for url in document_preload_resource_urls(service.document, service.document.base_url().serialize()) {
-		kind := types[url] or { 'image' }
-		if kind == 'image' { continue }
-		jobs << ResourceFetchJob{ url: url, request_type: kind }
+	mut seen := map[string]bool{}
+	for link in css.query_selector_all(root, 'link[rel][href]') {
+		if !link.is_html_element()
+			|| (!link_stylesheet_applies(link, preferred_set_name) && !link_is_style_preload(link)) {
+			continue
+		}
+		if unsafe { &dom.HTMLLinkElement(link) }.linked_style_sheet_ != unsafe { nil } { continue }
+		url := resolve_document_reference(link.get_attribute_value('href'), base_url)
+		if (!url.starts_with('http://') && !url.starts_with('https://')) || url in seen { continue }
+		seen[url] = true
+		jobs << ResourceFetchJob{ url: url, request_type: 'stylesheet' }
 	}
+	return jobs
+}
+
+fn (mut service BrowserHostedDocument) start_resources() {
+	if service.resources_started || service.closed { return }
+	// A blocking script may have paused the parser before later stylesheet
+	// elements exist. Its loader progresses independently in poll().
+	if service.document.ready_state() == 'loading' || service.document.has_deferred_parser_start() { return }
+	service.resources_started = true
+	// Script requests already belong to the live parser. Completed stylesheets
+	// likewise need no additional request in this installation barrier.
+	jobs := browser_hosted_stylesheet_resource_jobs(service.document)
 	service.remaining = jobs.len
 	spawn_resource_fetch_workers(jobs, service.document.url.serialize(), true, service.results)
 }
 
-fn (mut service BrowserHostedDocument) initialize(engine browserjs.Engine, mut messages []string) {
+fn (mut service BrowserHostedDocument) initialize(mut messages []string) {
+	if service.closed { return }
+	service.start_resources()
 	for service.results.len > 0 {
 		select {
 			resource := <-service.results {
@@ -320,38 +415,29 @@ fn (mut service BrowserHostedDocument) initialize(engine browserjs.Engine, mut m
 			}
 		}
 	}
-	if service.remaining != 0 || service.initialized { return }
+	if !service.resources_started || service.remaining != 0 || service.initialized { return }
 	service.initialized = true
 	document := service.document
 	base := document.base_url().serialize()
-	messages << install_external_styles(document, base, service.resources)
+	messages << install_parser_external_styles(document, base, service.resources)
 	// Each frame is a separate filtering document. The parent's user sheet
 	// cannot hide adverts inside a same-origin or cross-origin child.
 	install_browser_adblock_styles_with_tokens(document, '', mut service.adblock_tokens) or {
 		messages << 'Child adblock styles: ${err.msg()}'
 	}
-	install_object_image_fetch_hooks(document)
-	install_video_poster_fetch_hooks(document)
-	mut images := new_browser_image_request_loader(document, service.resources)
-	mut scripts := &BrowserScriptRequestLoader{ document: document }
-	service.images = images
-	service.scripts = scripts
-	sources := script_sources(document, base, service.resources, mut messages)
-	if document.as_node().is_scripting_enabled() {
-		service.runtime = create_browser_script_runtime(engine)
-		service.pending_navigation = run_document_script_sources_with_resource_loaders(document, document.url.serialize(), sources,
-			service.runtime, browser_fetch_image_request, images.callback(), scripts, mut messages)
-	} else {
+	mut images := service.images or { return }
+	if service.runtime == unsafe { nil } {
 		install_static_browser_image_fetch_hooks_with_loader(document, map[string]bool{}, images)
 	}
 	images.finish_initialization(service.runtime != unsafe { nil })
 	refresh_browser_adblock_with_tokens(document, service.runtime, mut messages,
 		mut service.adblock_tokens)
 	service.resources = map[string]PreloadedResource{}
+	service.finish_resource_delay()
 }
 
 fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
-	if !service.initialized { return false }
+	if service.closed { return false }
 	mut changed := false
 	if mut loader := service.images {
 		for loader.results.len > 0 {
@@ -379,6 +465,10 @@ fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 		}
 		loader.start_queued_fetches()
 	}
+	if mut scripts := service.scripts { scripts.poll(service.runtime, mut messages) }
+	if mut host := service.parser_host {
+		if destination := host.flush(mut messages) { service.pending_navigation = destination }
+	}
 	if service.runtime == unsafe { nil } {
 		if service.adblock_tokens.tree_version != service.document.dom_tree_version()
 			|| service.adblock_tokens.attribute_version != service.document.attribute_version() {
@@ -388,16 +478,8 @@ fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 		}
 		return changed
 	}
-	if mut scripts := service.scripts { scripts.poll(service.runtime, mut messages) }
 	mut runtime := service.runtime
-	if !service.document.anything_is_delaying_the_load_event() {
-		runtime.dispatch_document_readiness_event('load') or { messages << 'Child load: ${err.msg()}' }
-	}
 	if runtime.take_document_state_dirty() {
-		state := runtime.evaluate_host_temporary_text('__ladybirdFinalize()') or { return changed }
-		service.pending_navigation = apply_javascript_runtime_state(service.document, state.value, runtime, mut messages)
-		state.finish()
-		runtime.evaluate_host('__ladybirdClearLogs()') or {}
 		refresh_browser_adblock_with_tokens(service.document, runtime, mut messages,
 			mut service.adblock_tokens)
 		changed = true
@@ -425,23 +507,39 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 		if child.navigable.ongoing_navigation().kind == .navigation && active.get_is_initial_about_blank() {
 			continue
 		}
+		if mut prepared := child.prepared_service {
+			if voidptr(prepared.document) == voidptr(active) {
+				// Preparation happens before history activation. Keep the outgoing
+				// realm alive through navigation and retire it only after commit.
+				if mut previous := child.service { previous.close() }
+				child.service = prepared
+				child.prepared_service = none
+				changed = true
+			} else if child.navigable.ongoing_navigation().kind != .navigation {
+				prepared.close()
+				child.prepared_service = none
+			}
+		}
 		mut replace := true
 		if service := child.service { replace = voidptr(service.document) != voidptr(active) }
 		if replace {
 			if mut old := child.service { old.close() }
-			mut service := &BrowserHostedDocument{ document: active }
+			mut service := new_browser_hosted_document(active, host.engine)
 			child.service = service
-			service.start_resources()
 			changed = true
-			// Let the parent commit the iframe viewport before child scripts read
-			// innerWidth or force their first layout, including hidden zero-size frames.
-			continue
 		}
 		if mut service := child.service {
 			was_initialized := service.initialized
-			service.initialize(host.engine, mut messages)
+			service.initialize(mut messages)
 			if service.poll(mut messages) || was_initialized != service.initialized {
 				changed = true
+			}
+			parser_generation := if parser := service.parser_host { parser.parser_generation } else { u64(0) }
+			if parser_generation != service.load_parser_generation {
+				// document.open() replaces the parser without replacing the realm
+				// or document. Its new stream owns a fresh container completion.
+				service.load_fired = false
+				child.hold_load_delay()
 			}
 			if destination := service.pending_navigation {
 				service.pending_navigation = none
@@ -454,16 +552,23 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 					}
 				}
 			}
-			if service.initialized && !service.load_fired && !active.anything_is_delaying_the_load_event() {
+			if service.initialized && !service.load_fired && active.ready_state() == 'complete'
+				&& !active.anything_is_delaying_the_load_event() {
 				service.load_fired = true
+				service.load_parser_generation = parser_generation
 				src := child.src.clone()
 				srcdoc := child.srcdoc
-				html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), child.element.document(), fn [child, active, src, srcdoc] () {
+				html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), child.element.document(), fn [child, service, active, src, srcdoc, parser_generation] () {
 					mut owner := unsafe { &BrowserChildDocument(child) }
-					defer { owner.release_load_delay() }
-					if child.closed || !child.navigable.host_navigable().active_document_is(active) {
+					if child.closed || service.closed || !child.navigable.host_navigable().active_document_is(active) {
 						return
 					}
+					if parser := service.parser_host {
+						// A queued completion must not fire for a replacement stream
+						// or release the parent delay that stream now owns.
+						if parser.parser_generation != parser_generation { return }
+					}
+					defer { owner.release_load_delay() }
 					// The event belongs to the document these attributes loaded. Once
 					// script replaces them, a browser would already have fired it, so
 					// it must not reach handlers installed for the next navigation.
@@ -506,9 +611,13 @@ fn optional_strings_equal(a ?string, b ?string) bool {
 fn (host &BrowserChildDocumentHost) has_pending_work() bool {
 	for child in host.children {
 		if child.closed { continue }
+		if child.prepared_service != none { return true }
 		if child.navigable.ongoing_navigation().kind == .navigation { return true }
 		active := child.navigable.active_document() or { continue }
 		service := child.service or { return true }
+		if parser := service.parser_host {
+			if parser.parser_generation != service.load_parser_generation { return true }
+		}
 		if voidptr(service.document) != voidptr(active) || !service.initialized || !service.load_fired {
 			return true
 		}

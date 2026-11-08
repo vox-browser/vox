@@ -11,6 +11,13 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 	for resource_url, resource in app.navigation_preloaded_resources {
 		cached[resource_url] = resource
 	}
+	// A synchronous parser may already have completed non-cacheable sprites.
+	// Share those responses with this installation's resource barrier.
+	if scripts := app.script_request_loader {
+		if host := scripts.parser_host {
+			for address, resource in host.svg_resources { cached[address] = resource }
+		}
+	}
 	// Script-enabled documents retain the existing capacity hint; HTML/CSS-only
 	// documents let their managed heap grow with actual live state.
 	_ = prepare_document_render_heap(app.document)
@@ -21,12 +28,14 @@ fn (mut app BrowserApp) preload_initial_document_resources(base_url string) map[
 		// is disabled. Their native request models consume cached bytes or
 		// complete on the owning thread. Tree-only and standalone callers retain
 		// their preload path without a Page to own asynchronous requests.
-		urls := document_preload_resource_urls(app.document, base_url).filter((types[it] or { 'image' }) != 'image' || it in svg_images)
+		// Script elements own their requests through the live parser. Waiting
+		// for them here would turn async/deferred sources back into a page barrier.
+		urls := document_preload_resource_urls(app.document, base_url).filter((types[it] or { 'image' }) == 'stylesheet' || it in svg_images)
 		mut loaded := preload_document_resource_urls(app.document, base_url, urls, cached)
 		for resource_url, resource in cached {
 			if (types[resource_url] or { 'image' }) == 'image' { loaded[resource_url] = resource }
 		}
-		app.js_messages << install_external_styles(app.document, base_url, loaded)
+		app.js_messages << install_parser_external_styles(app.document, base_url, loaded)
 		return loaded
 	}
 	urls := document_preload_resource_urls(app.document, base_url)

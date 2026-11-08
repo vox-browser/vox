@@ -23,22 +23,19 @@ fn (mut binding CompactElementQueryBinding) document_write_query(key string, sou
 	// An initial about:blank document is created without the parser hooks
 	// that parsed documents receive; open() needs its scripting parser.
 	if document.html_fragment_parsing_hook() == none { html.install_document_fragment_parsing_hook(document) }
-	if op in ['write', 'writeln'] && binding.write_after_current_script(mut document, text.join('') +
-		if op == 'writeln' { '\n' } else { '' })! {
-		return json2.encode({
-			'refresh': binding.mutation_refresh(document.as_node())
-		})
-	}
 	match op {
 		// A running parser-inserted script has script nesting level > 0, so
 		// open() leaves its document alone.
-		'open' { if compact_parser_inserted_script(document) == none { document.open()! } }
+		'open' { document.open()! }
 		'write' { document.write_strings(text)! }
 		'writeln' { document.writeln_strings(text)! }
 		'close' {
 			opened := document.parser != unsafe { nil } && document.parser.is_script_created()
 			document.close()!
-			if opened && !document.has_pending_parsing_blocking_script() { compact_queue_container_load(document) }
+			if opened && !document.has_html_parser_creation_hook()
+				&& !document.has_pending_parsing_blocking_script() {
+				compact_queue_container_load(document)
+			}
 		}
 		else { return error('Invalid document write operation') }
 	}
@@ -59,53 +56,6 @@ fn compact_queue_container_load(document &dom.Document) {
 	})
 }
 
-// Pages run their parser-inserted scripts after the whole document has been
-// parsed, so a classic script's write has no insertion point left in the
-// input stream. Its output is placed where that point would have been,
-// directly after the script: everything the script has written so far is
-// reparsed in the script's parent context so markup split across write()
-// calls (`<p>` then `text</p>`) still forms one tree.
-struct CompactScriptWrite {
-	script &dom.Element
-mut:
-	markup string
-	nodes  []&dom.Node
-}
-
-// The script whose execution stands in for the parser's insertion point.
-fn compact_parser_inserted_script(document &dom.Document) ?&dom.Element {
-	if document.parser != unsafe { nil } && document.parser.is_insertion_point_defined() { return none }
-	if document.ready_state() == 'complete' { return none }
-	script := document.current_script() or { return none }
-	element := unsafe { &dom.Element(script) }
-	if !element.as_node().is_connected() || voidptr(element.document()) != voidptr(document) { return none }
-	parent := element.as_node().parent() or { return none }
-	if parent.as_element() == none { return none }
-	return element
-}
-
-fn (mut binding CompactElementQueryBinding) write_after_current_script(mut document dom.Document, markup string) !bool {
-	element := compact_parser_inserted_script(document) or { return false }
-	mut parent := element.as_node().parent() or { return false }
-	mut write := binding.script_writes[voidptr(&document)] or { CompactScriptWrite{ script: element } }
-	if voidptr(write.script) != voidptr(element) { write = CompactScriptWrite{ script: element } }
-	// Reparsing replaces the earlier output of this script.
-	for node in write.nodes {
-		if current := node.parent() {
-			mut owner := unsafe { &dom.Node(current) }
-			owner.remove_child(node) or {}
-		}
-	}
-	write.markup += markup
-	mut range := dom.Range.create(&document)
-	range.select_node(element.as_node())!
-	fragment := range.create_contextual_fragment(write.markup)!
-	write.nodes = fragment.as_node().children.clone()
-	parent.insert_before(fragment.as_node(), element.as_node().next_sibling(), false)
-	binding.script_writes[voidptr(&document)] = write
-	return true
-}
-
 fn compact_document_write_bootstrap() string {
 	return r'
 (function(){
@@ -123,10 +73,7 @@ fn compact_document_write_bootstrap() string {
   let result;
   try{result=__queryElements(state.bridgeKey,"documentWrite",JSON.stringify({op,text}),true);}catch(error){fail(error);}
   refresh(result);
-  // The main document keeps these as own properties captured at startup.
-  for(const name of ["documentElement","head","body"]){
-   if(Object.prototype.hasOwnProperty.call(receiver,name))receiver[name]=__queryElements(state.bridgeKey,"documentNode",name);
-  }
+  if(typeof globalThis.__ladybirdRefreshNamedElements==="function")globalThis.__ladybirdRefreshNamedElements();
  }
  const methods={
   open(){
@@ -141,12 +88,6 @@ fn compact_document_write_bootstrap() string {
  for(const name of Object.keys(methods)){
   Object.defineProperty(Document.prototype,name,{value:methods[name],writable:true,enumerable:true,configurable:true});
   if(Object.prototype.hasOwnProperty.call(document,name))delete document[name];
- }
- // A document without an <html> root (an XML document, say) starts with
- // placeholder objects for these; the Document getters read the real tree.
- for(const name of ["documentElement","head","body"]){
-  const own=Object.getOwnPropertyDescriptor(document,name);
-  if(own&&("value" in own)&&own.value!==null&&!(own.value instanceof Node))delete document[name];
  }
 })();
 '

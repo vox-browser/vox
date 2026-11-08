@@ -1499,69 +1499,73 @@ fn preload_document_resource_urls(document &dom.Document, base_url string, urls 
 }
 
 
-fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
-	if !browser_document_can_load_scripts(document) { return [] }
-	root := unsafe { &dom.Node(document) }
-	mut sources := []browserjs.ScriptSource{}
-	mut deferred_sources := []browserjs.ScriptSource{}
-	for script_element in css.query_selector_all(root, 'script') {
-		type_ := script_element.get_attribute_value('type').trim_space().to_lower()
-		if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
-			continue
-		}
-		if script_element.is_html_element() {
-			mut script_model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) })
-			script_model.set_already_started(true)
-		}
-		// The compact loader collects scripts after parsing. Classic inline scripts
-		// still precede deferred external scripts and non-async modules, whose
-		// relative document order must survive until DOMContentLoaded.
-		deferred := !script_element.has_attribute('async') && (type_ == 'module'
-			|| (script_element.has_attribute('src') && script_element.has_attribute('defer')))
-		mut source := browserjs.ScriptSource{}
-		if src := script_element.get_attribute('src') {
-			resolved_url := resolve_document_reference(src, base_url)
-			filtered := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'script'}) or {
-				messages << 'Script ${src}: ${err.msg()}'
+// Standalone binding tests can still supply a completed tree. Navigation uses
+// the document parser hooks and never collects initial scripts from this DOM.
+$if test {
+	fn script_sources(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, mut messages []string) []browserjs.ScriptSource {
+		if !browser_document_can_load_scripts(document) { return [] }
+		root := unsafe { &dom.Node(document) }
+		mut sources := []browserjs.ScriptSource{}
+		mut deferred_sources := []browserjs.ScriptSource{}
+		for script_element in css.query_selector_all(root, 'script') {
+			type_ := script_element.get_attribute_value('type').trim_space().to_lower()
+			if type_ != '' && type_ !in ['text/javascript', 'application/javascript', 'module'] {
 				continue
 			}
-			code := if replacement := filtered.replacement {
-				replacement.body
-			} else if resource := preloaded[resolved_url] {
-				filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'script') or {
+			if script_element.is_html_element() {
+				mut script_model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) })
+				script_model.set_already_started(true)
+			}
+			// Legacy standalone test fixtures supply sources after parsing. Inline scripts
+			// still precede deferred external scripts and non-async modules, whose
+			// relative document order must survive until DOMContentLoaded.
+			deferred := !script_element.has_attribute('async') && (type_ == 'module'
+				|| (script_element.has_attribute('src') && script_element.has_attribute('defer')))
+			mut source := browserjs.ScriptSource{}
+			if src := script_element.get_attribute('src') {
+				resolved_url := resolve_document_reference(src, base_url)
+				filtered := browsernet.filter(adblock.Request{url: resolved_url, source_url: document.url.serialize(), request_type: 'script'}) or {
 					messages << 'Script ${src}: ${err.msg()}'
 					continue
 				}
-				filtered_resource.body
+				code := if replacement := filtered.replacement {
+					replacement.body
+				} else if resource := preloaded[resolved_url] {
+					filtered_resource := filter_preloaded_resource(resource, document.url.serialize(), 'script') or {
+						messages << 'Script ${src}: ${err.msg()}'
+						continue
+					}
+					filtered_resource.body
+				} else {
+					fetch_text_resource_for_request(src, base_url, document.url.serialize(), 'script') or {
+						messages << 'Script ${src}: ${err.msg()}'
+						continue
+					}
+				}
+				source = browserjs.ScriptSource{
+					code: code
+					url: resolved_url
+					source_type: if type_ == 'module' { .module } else { .script }
+					external_element: script_element
+					element: script_element
+				}
 			} else {
-				fetch_text_resource_for_request(src, base_url, document.url.serialize(), 'script') or {
-					messages << 'Script ${src}: ${err.msg()}'
-					continue
+				source = browserjs.ScriptSource{
+					code: script_element.as_node().text_content() or { '' }
+					url: document.url.serialize()
+					source_type: if type_ == 'module' { .module } else { .script }
+					element: script_element
 				}
 			}
-			source = browserjs.ScriptSource{
-				code: code
-				url: resolved_url
-				source_type: if type_ == 'module' { .module } else { .script }
-				external_element: script_element
-				element: script_element
-			}
-		} else {
-			source = browserjs.ScriptSource{
-				code: script_element.as_node().text_content() or { '' }
-				url: document.url.serialize()
-				source_type: if type_ == 'module' { .module } else { .script }
-				element: script_element
+			if deferred {
+				deferred_sources << source
+			} else {
+				sources << source
 			}
 		}
-		if deferred {
-			deferred_sources << source
-		} else {
-			sources << source
-		}
+		sources << deferred_sources
+		return sources
 	}
-	sources << deferred_sources
-	return sources
 }
 
 
@@ -1777,6 +1781,7 @@ fn install_object_image_fetch_hooks(document &dom.Document) {
 	for element in css.query_selector_all(root, 'object') {
 		object_element := unsafe { &dom.HTMLObjectElement(element) }
 		mut model := html.html_object_element_model_for_dom_element(object_element)
+		if model.has_fetch_hook() { continue }
 		model.set_fetch_hook(fn [element] (resource_url dom.URL) !html.ObjectResourceResponse {
 			return browser_fetch_object_resource_for_document(resource_url, element.document().url.serialize())
 		})
@@ -1801,6 +1806,7 @@ fn install_video_poster_fetch_hook(element &dom.Element) {
 	if !element.is_html_element() || element.local_name() != 'video' { return }
 	video_element := unsafe { &dom.HTMLVideoElement(element) }
 	mut model := html.html_video_element_model_for_dom_element(video_element)
+	if model.has_poster_fetch_hook() { return }
 	// Native documents use their actual client and networking task queue.
 	// Standalone model adapters without settings retain the URL decoder.
 	if element.document().relevant_settings_object() != unsafe { nil } {
@@ -1814,6 +1820,7 @@ fn install_video_poster_fetch_hook(element &dom.Element) {
 	model.set_poster_fetch_hook(fn [element] (resource_url dom.URL) !&dom.Bitmap_ {
 		return browser_decode_raster_image_bytes(browser_image_resource_bytes_for_document(resource_url, element.document().url.serialize())!)
 	})
+	if poster := element.get_attribute_ns(none, 'poster') { model.set_poster(poster) }
 }
 
 fn install_video_poster_fetch_hooks(document &dom.Document) {
@@ -1821,10 +1828,6 @@ fn install_video_poster_fetch_hooks(document &dom.Document) {
 	for element in css.query_selector_all(root, 'video') {
 		if !element.is_html_element() { continue }
 		install_video_poster_fetch_hook(element)
-		if poster := element.get_attribute_ns(none, 'poster') {
-			mut model := html.html_video_element_model_for_dom_element(unsafe { &dom.HTMLVideoElement(element) })
-			model.set_poster(poster)
-		}
 	}
 }
 
@@ -2021,7 +2024,6 @@ fn javascript_bootstrap() string {
 		compact_trusted_types_bootstrap(),
 		compact_element_names_bootstrap(),
 		browserjs.view_transition_bootstrap(),
-		'const __htmlState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="html";}),__headState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="head";}),__bodyState=__elementStates().find(function(s){return s.tagName.toLowerCase()==="body";});document.documentElement=__htmlState?__element(__htmlState):{classList:{add:function(){},remove:function(){},contains:function(){return false;}}};document.head=__headState?__element(__headState):null;document.body=__bodyState?__element(__bodyState):{appendChild:function(child){return child;}};',
 		compact_document_bootstrap(),
 		// Console Standard namespace (the methods of LibJS Console.cpp). Pages
 		// call debug, trace, group and time freely; a missing method throws
@@ -2042,7 +2044,7 @@ fn javascript_bootstrap() string {
 		// Replay their pending DOM edits without copying each native bitmap through JSON.
 		// Replays inside a script call omit console output; it stays queued for the
 		// task's own consumer and is not a DOM replay failure.
-		'window.__ladybirdFinalize = function (withoutLogs) { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)},withoutLogs===true?{logs:[]}:{})); __state.operations=[]; __clearPendingElementEdits(); return snapshot; };',
+		'window.__ladybirdFinalize = function (withoutLogs) { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)},withoutLogs===true?{logs:[]}:{})); __state.operations=[]; __state.bodyHTMLDirty=false; __state.bodyTextDirty=false; __clearPendingElementEdits(); return snapshot; };',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; __clearPendingElementEdits(); };',
 		// The back/forward cache keeps a realm whose navigation request was consumed.
 		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; };',
@@ -2886,7 +2888,7 @@ fn run_document_script_sources_with_resource_loaders(document &dom.Document, cur
 		image_fetch, image_async_fetch, script_loader, none, mut messages)
 }
 
-fn run_document_script_sources_with_media_loader(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) ?string {
+fn initialize_document_script_runtime(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) bool {
 	load_instruction_stage := processmetrics.begin_instruction_stage('script_runtime_setup')
 	defer { load_instruction_stage.finish() }
 	phase_mark := platform.arena_phase_begin()
@@ -2902,17 +2904,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 			active_document_: document
 		})
 	}
-	ensure_compact_browser_navigable(document) or { return none }
-	if !compact_document_can_run_script(document) { return none }
+	ensure_compact_browser_navigable(document) or { return false }
+	if !compact_document_can_run_script(document) { return false }
 	if runtime.engine == .libjs {
 		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
-		for source in sources {
-			if !compact_document_can_run_script(document) { continue }
-			for diagnostic in runtime.run_document_scripts_collect_errors([source]) {
-				messages << 'JavaScript (LibJS): ${diagnostic}'
-			}
-		}
-		return none
+		return true
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
 	canvas_host.set_before_draw(fn [document] (callback_runtime &browserjs.Runtime) ! {
@@ -2923,56 +2919,56 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	mut navigator_host := browserjs.NavigatorHost.create(document) or {
 		messages << 'JavaScript Navigator bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	navigator_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript Navigator bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	canvas_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript canvas bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut webgl_host := browserjs.CanvasWebGLHost.create(document)
 	webgl_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript WebGL bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut readable_host := browserjs.ReadableStreamHost.create(document) or {
 		messages << 'JavaScript ReadableStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	readable_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript ReadableStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut blob_host := browserjs.BlobHost.create(document) or {
 		messages << 'JavaScript Blob bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	blob_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript Blob bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	blob_host.install_constructor() or {
 		messages << 'JavaScript Blob constructor: ${err.msg()}'
-		return none
+		return false
 	}
 	mut query_host := browserjs.URLSearchParamsHost.create(document) or {
 		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	query_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut url_host := browserjs.URLHost.create(document) or {
 		messages << 'JavaScript URL bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	url_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript URL bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	// Expose MediaSource only once a SourceBuffer decoder is connected. Its
 	// translated state machine alone makes sites choose an unplayable DASH path
@@ -2980,28 +2976,28 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	if media_loader == none {
 		mut media_source_host := browserjs.MediaSourceHost.create(document) or {
 			messages << 'JavaScript MediaSource bindings: ${err.msg()}'
-			return none
+			return false
 		}
 		media_source_host.install(mut mutable_runtime) or {
 			messages << 'JavaScript MediaSource bindings: ${err.msg()}'
-			return none
+			return false
 		}
 	}
 	mut file_host := browserjs.FileHost.create(document) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	file_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript File bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	file_host.install_constructor() or {
 		messages << 'JavaScript File constructor: ${err.msg()}'
-		return none
+		return false
 	}
 	mut form_data_host := browserjs.FormDataHost.create(document) or {
 		messages << 'JavaScript FormData bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	form_data_host.set_before_construct(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3010,67 +3006,67 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	})
 	form_data_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript FormData bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut file_list_host := browserjs.FileListHost.create(document) or {
 		messages << 'JavaScript FileList bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	file_list_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript FileList bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	file_list_host.install_constructor() or {
 		messages << 'JavaScript FileList constructor: ${err.msg()}'
-		return none
+		return false
 	}
 	mut abort_host := browserjs.AbortSignalHost.create(document) or {
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	abort_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript AbortSignal bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut writable_host := browserjs.WritableStreamHost.create(document) or {
 		messages << 'JavaScript WritableStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	writable_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript WritableStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut transform_host := browserjs.TransformStreamHost.create(document) or {
 		messages << 'JavaScript TransformStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	transform_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript TransformStream bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut strategy_host := browserjs.QueuingStrategyHost.create(document) or {
 		messages << 'JavaScript queuing strategy bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	strategy_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript queuing strategy bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut xhr_host := browserjs.XMLHttpRequestHost.create_native(document) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	xhr_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript XMLHttpRequest bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut fetch_host := browserjs.FetchHost.create_native(document) or {
 		messages << 'JavaScript Fetch bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	fetch_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript Fetch bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut transition_host := browserjs.ViewTransitionHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3080,11 +3076,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
 		messages << 'JavaScript view-transition bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	transition_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript view-transition bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut image_host := browserjs.ImageHost.create_with_request_fetch_hooks(document, image_fetch, image_async_fetch, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3092,11 +3088,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript image bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	image_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript image bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut media_element_host := browserjs.MediaElementHost.create_with_created_element_hook(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3104,11 +3100,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}, media_loader or { install_video_poster_fetch_hook }) or {
 		messages << 'JavaScript media element bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	media_element_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript media element bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut element_wheel_host := browserjs.ElementWheelHost.create_with_replay(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3116,36 +3112,36 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	element_wheel_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_script_element_event_binding() or {
 		messages << 'JavaScript script element event bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	install_compact_element_content_binding_with_policy(document, mut mutable_runtime, .roots_and_ids) or {
 		messages << 'JavaScript element content bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	install_compact_document_state_binding(document, mut mutable_runtime) or {
 		messages << 'JavaScript document state bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_history_binding() or {
 		messages << 'JavaScript History bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	processmetrics.instruction_checkpoint('javascript_native_bindings')
 	mutable_runtime.install_dom_rect_read_only_binding() or {
 		messages << 'JavaScript geometry bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_css_namespace_binding() or {
 		messages << 'JavaScript CSS namespace: ${err.msg()}'
-		return none
+		return false
 	}
 	initial_state := compact_initial_state_text(document, current_url, sources.map(it.code), .roots_and_ids)
 	defer { initial_state.workspace.finish() }
@@ -3161,99 +3157,99 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	defer { bootstrap_work.finish() }
 	mutable_runtime.initialize_host_from_json(bootstrap, initial_state_json) or {
 		messages << 'JavaScript: ${err.msg()}'
-		return none
+		return false
 	}
 	initial_state.workspace.finish()
 	bootstrap_work.finish()
 	processmetrics.instruction_checkpoint('javascript_bootstrap_evaluated')
 	install_compact_native_selector_bindings(mut mutable_runtime) or {
 		messages << 'JavaScript selector bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	document_wrapper := runtime.evaluate_host_value('document') or {
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_document_window_event_binding(document, document_wrapper) or {
 		messages << 'JavaScript Document event bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_current_event_binding() or {
 		messages << 'JavaScript Window.event bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_self_binding() or {
 		messages << 'JavaScript Window.self bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_viewport_binding() or {
 		messages << 'JavaScript Window viewport bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_screen_binding() or {
 		messages << 'JavaScript Screen bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_base64_binding() or {
 		messages << 'JavaScript base64 bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_text_encoder_binding() or {
 		messages << 'JavaScript TextEncoder bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_text_decoder_binding() or {
 		messages << 'JavaScript TextDecoder bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_message_binding() or {
 		messages << 'JavaScript Window messaging bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	install_compact_iframe_windows(document, mut mutable_runtime) or {
 		messages << 'JavaScript frame Window bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_message_channel_binding() or {
 		messages << 'JavaScript MessageChannel bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	worker_settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	worker_executable := browser_script_worker_executable() or {
 		messages << 'JavaScript Worker executable: ${err.msg()}'
-		return none
+		return false
 	}
 	mut worker_host := browserjs.WorkerHost.create(worker_settings, worker_executable) or {
 		messages << 'JavaScript Worker bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	worker_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript Worker bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_microtask_binding() or {
 		messages << 'JavaScript queueMicrotask bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_indexed_db_binding() or {
 		messages << 'JavaScript IndexedDB bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_performance_observer_binding() or {
 		messages << 'JavaScript PerformanceObserver bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_performance_binding() or {
 		messages << 'JavaScript Performance bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_custom_element_registry_binding() or {
 		messages << 'JavaScript CustomElementRegistry bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_media_query_binding() or {
 		messages << 'JavaScript media query bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	layout.install_document_layout_hook(document)
 	mutable_runtime.install_intersection_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
@@ -3262,7 +3258,7 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript IntersectionObserver bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_resize_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3270,7 +3266,7 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript ResizeObserver bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3278,28 +3274,28 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
 	}) or {
 		messages << 'JavaScript Window.find bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut font_host := browserjs.FontFaceHost.create(document)
 	font_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript font bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut timer_host := browserjs.TimerHost.create(document) or {
 		messages << 'JavaScript timer bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	timer_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript timer bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut crypto_host := browserjs.CryptoHost.create(document) or {
 		messages << 'JavaScript Crypto bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	crypto_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript Crypto bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut animation_frame_host := browserjs.AnimationFrameHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3309,11 +3305,11 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	animation_frame_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript animation-frame bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut idle_callback_host := browserjs.IdleCallbackHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
 		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
@@ -3323,16 +3319,16 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
 		messages << 'JavaScript idle-callback bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	idle_callback_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript idle-callback bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	cache_settings := unsafe { &html.EnvironmentSettingsObject(document.relevant_settings_object()) }
 	runtime.install_cache_storage_binding(cache_settings != unsafe { nil } && cache_settings.is_secure_context()) or {
 		messages << 'JavaScript CacheStorage bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	browserjs.set_websocket_wake(fn () {
 		C.native_wake_browser()
@@ -3345,27 +3341,43 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
 		messages << 'JavaScript WebSocket bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	websocket_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript WebSocket bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_engine_async_completion_binding() or {
 		messages << 'JavaScript engine completion bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	install_browser_page_storage(document, runtime) or {
 		messages << 'JavaScript storage bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	processmetrics.instruction_checkpoint('javascript_document_bindings')
 	install_browser_adblock_scriptlets(document, runtime, mut messages)
 	processmetrics.instruction_checkpoint('javascript_adblock_scriptlets')
 	install_compact_module_host(document, mut mutable_runtime) or {
 		messages << 'JavaScript module bindings: ${err.msg()}'
+		return false
+	}
+	return true
+}
+
+fn run_document_script_sources_with_media_loader(document &dom.Document, current_url string, sources []browserjs.ScriptSource, runtime &browserjs.Runtime, image_fetch browserjs.ImageRequestFetchHook, image_async_fetch ?browserjs.ImageAsyncRequestFetchHook, script_loader ?&BrowserScriptRequestLoader, media_loader ?browserjs.MediaElementCreatedHook, mut messages []string) ?string {
+	if !initialize_document_script_runtime(document, current_url, sources, runtime, image_fetch,
+		image_async_fetch, script_loader, media_loader, mut messages) { return none }
+	if runtime.engine == .libjs {
+		for source in sources {
+			if !compact_document_can_run_script(document) { continue }
+			for diagnostic in runtime.run_document_scripts_collect_errors([source]) {
+				messages << 'JavaScript (LibJS): ${diagnostic}'
+			}
+		}
 		return none
 	}
+	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	for source in sources {
 		if !compact_document_can_run_script(document) { continue }
 		run_compact_document_script(document, source, runtime) or {
@@ -3427,6 +3439,12 @@ fn compact_document_can_run_script(document &dom.Document) bool {
 fn (mut app BrowserApp) poll_javascript_tasks() {
 	load_instruction_stage := processmetrics.begin_instruction_stage('script_state_replay')
 	defer { load_instruction_stage.finish() }
+	if loader := app.script_request_loader {
+		if mut host := loader.parser_host {
+			app.js_messages << host.messages
+			host.messages = []string{}
+		}
+	}
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } { return }
 	mut runtime := app.js_runtime
 	if !runtime.take_document_state_dirty() { return }
@@ -3935,15 +3953,15 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.script_stylesheet_responses.clear()
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
 	app.adblock_tokens.release()
-	app.document = if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
+	prepared_document := if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
-		parse_loaded_browser_navigation_document(loaded, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
+		prepare_loaded_browser_navigation_document(loaded, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	} else {
-		parse_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
+		prepare_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
+	app.document = prepared_document.document
 	// Scripts and subresource preflight can force layout before relayout().
 	configure_site_animation_clock_demand(app.document)
-	prepare_site_document_stylesheets(app.document)
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)
 	// Navigation has deactivated the old document. Release its realm and
@@ -3971,7 +3989,6 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 			}
 		}
 	}
-	install_browser_adblock_styles_with_tokens(app.document, '', mut app.adblock_tokens) or { app.js_messages << 'Adblock styles: ${err.msg()}' }
 	$if vox_document_retention_diagnostics ? {
 	if replaced := previous_document {
 		if !replaced.has_been_destroyed() && voidptr(replaced) != voidptr(app.document)
@@ -3990,6 +4007,31 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 			}
 		}
 	}
+	// External classic scripts can suspend this parser. Resource completions
+	// resume it with its stack and document.write insertion point intact.
+	// Parser-time scripts read Window dimensions directly from this rectangle.
+	app.prepare_initial_resource_viewport()
+	mut parser_resources := app.resource_cache.clone()
+	for address, resource in app.navigation_preloaded_resources { parser_resources[address] = resource }
+	mut image_loader := new_browser_image_request_loader(app.document, parser_resources)
+	app.image_request_loader = image_loader
+	mut script_loader := new_browser_script_request_loader(app.document, parser_resources)
+	app.script_request_loader = script_loader
+	mut parser_host := ?&BrowserParserScriptHost(none)
+	if app.document.as_node().is_scripting_enabled() {
+		parser_host = install_browser_parser_script_host(app.document, app.js_engine,
+			image_loader, script_loader, parser_resources, fn [app] (element &dom.Element) {
+				mut owner := unsafe { &BrowserApp(app) }
+				owner.install_media_playback(element)
+			}, fn [app] (runtime &browserjs.Runtime) {
+				mut owner := unsafe { &BrowserApp(app) }
+				owner.js_runtime = unsafe { &browserjs.Runtime(runtime) }
+			})
+	}
+	parse_prepared_browser_navigation_document(prepared_document)
+	prepare_site_document_stylesheets(app.document)
+	install_browser_adblock_styles_with_tokens(app.document, '', mut app.adblock_tokens) or { app.js_messages << 'Adblock styles: ${err.msg()}' }
+
 	app.animation_epoch_ns = u64(app.document.load_timing_info.navigation_start_time * 1_000_000.0)
 	checkpoint = debug_timing_checkpoint('parse_document', checkpoint)
 	// Relative subresources use the document base URL, which may be replaced by
@@ -4007,36 +4049,25 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		publish_browser_svg_resource(resource)
 	}
 	checkpoint = debug_timing_checkpoint('install_styles', checkpoint)
-	install_browser_svg_use_resources(app.document, preloaded_resources)
+	mut svg_resources := preloaded_resources.clone()
+	if mut host := parser_host {
+		// A paused parser needs the shell's completed responses after resumption,
+		// including resources whose no-store policy prevents disk-cache reuse.
+		if app.document.ready_state() == 'loading' {
+			for address, resource in preloaded_resources { host.initial_resources[address] = resource }
+		}
+		for address, resource in host.svg_resources { svg_resources[address] = resource }
+	}
+	install_browser_svg_use_resources(app.document, svg_resources)
 	install_local_video_frames(app.document, resource_base_url, loaded.markup)
 	checkpoint = debug_timing_checkpoint('install_video_frames', checkpoint)
-	sources := script_sources(app.document, resource_base_url, preloaded_resources, mut app.js_messages)
-	mut image_loader := new_browser_image_request_loader(app.document, preloaded_resources)
-	app.image_request_loader = image_loader
-	mut script_loader := &BrowserScriptRequestLoader{document: app.document}
-	app.script_request_loader = script_loader
-	javascript_navigation := if app.document.as_node().is_scripting_enabled()
-		&& (sources.len > 0 || document_has_window_event_handlers(app.document)
-		|| browser_adblock_requires_runtime(app.document)) {
-		app.js_runtime = create_browser_script_runtime(app.js_engine)
-		run_document_script_sources_with_media_loader(app.document, loaded.url, sources, app.js_runtime,
-			browser_fetch_image_request, image_loader.callback(), script_loader, fn [app] (element &dom.Element) {
-				mut owner := unsafe { &BrowserApp(app) }
-				owner.install_media_playback(element)
-			}, mut app.js_messages)
-	} else {
-		none
-	}
+	for address, resource in preloaded_resources { image_loader.resources[address] = resource }
+	javascript_navigation := if mut host := parser_host { host.flush(mut app.js_messages) } else { none }
+
 	app.install_browser_new_tab_image_fetch_hooks()
 	app.queue_initial_style_preload_completions(preloaded_resources)
 	if debug_timing_enabled() {
-		mut source_bytes := 0
-		for source in sources { source_bytes += source.code.len }
-		mut preloaded_scripts := 0
-		for _, resource in preloaded_resources {
-			if resource.request_type == 'script' { preloaded_scripts++ }
-		}
-		eprintln('Ladybird V scripting: enabled=${app.document.as_node().is_scripting_enabled()} runtime=${app.js_runtime != unsafe { nil }} sources=${sources.len} source_bytes=${source_bytes} preloaded_scripts=${preloaded_scripts}')
+		eprintln('Ladybird V scripting: enabled=${app.document.as_node().is_scripting_enabled()} runtime=${app.js_runtime != unsafe { nil }} parser_pending=${app.document.has_pending_parsing_blocking_script()}')
 	}
 	checkpoint = debug_timing_checkpoint('run_javascript', checkpoint)
 	// Scripts can build most of a document, as 4chan's catalog does. A document

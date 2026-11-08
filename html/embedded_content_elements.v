@@ -721,6 +721,10 @@ pub fn (mut object HTMLObjectElementModel) set_fetch_hook(hook ?ObjectResourceFe
 	object.fetch_hook_ = hook
 }
 
+pub fn (object &HTMLObjectElementModel) has_fetch_hook() bool {
+	return object.fetch_hook_ != none
+}
+
 pub fn (mut object HTMLObjectElementModel) set_environment(connected bool, fully_active bool, blocked_by_ancestor bool) {
 	object.connected_ = connected
 	object.fully_active_ = fully_active

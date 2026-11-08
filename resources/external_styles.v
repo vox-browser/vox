@@ -62,6 +62,16 @@ fn link_stylesheet_applies(link &dom.Element, preferred_set_name string) bool {
 }
 
 fn install_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
+	return install_external_styles_with_existing_policy(document, base_url, preloaded, false)
+}
+
+// Keep CSSOM mutations made by an earlier parser-time script when another
+// script or the completed document needs its stylesheets installed.
+fn install_parser_external_styles(document &dom.Document, base_url string, preloaded map[string]PreloadedResource) []string {
+	return install_external_styles_with_existing_policy(document, base_url, preloaded, true)
+}
+
+fn install_external_styles_with_existing_policy(document &dom.Document, base_url string, preloaded map[string]PreloadedResource, preserve_existing bool) []string {
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
 	root := unsafe { &dom.Node(document) }
@@ -69,6 +79,9 @@ fn install_external_styles(document &dom.Document, base_url string, preloaded ma
 	preferred_set_name := preferred_style_sheet_set_name(root)
 	for link in css.query_selector_all(root, 'link[rel][href]') {
 		if !link_stylesheet_applies(link, preferred_set_name) {
+			continue
+		}
+		if preserve_existing && unsafe { &dom.HTMLLinkElement(link) }.linked_style_sheet_ != unsafe { nil } {
 			continue
 		}
 		href := link.get_attribute_value('href')

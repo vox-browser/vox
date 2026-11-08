@@ -135,6 +135,11 @@ pub fn (mut video HTMLVideoElementModel) set_poster_fetch_transport(transport ?&
 	video.poster_fetch_transport_ = transport
 }
 
+pub fn (video &HTMLVideoElementModel) has_poster_fetch_hook() bool {
+	return video.poster_fetch_hook != none || video.poster_request_fetch_hook != none
+		|| video.poster_fetch_transport_ != none
+}
+
 fn (mut video HTMLVideoElementModel) finish_poster_fetch(generation u64, frame ?&dom.Bitmap_) {
 	if generation != video.poster_fetch_generation_ { return }
 	video.poster_fetch_finished_generation_ = generation

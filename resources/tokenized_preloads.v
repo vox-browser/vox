@@ -104,8 +104,8 @@ fn collect_tokenized_navigation_preloads(markup string, base_url string) ?Tokeni
 	for address in script_type_urls {
 		if address !in types { types[address] = 'script' }
 	}
-	// Every stylesheet and script is requested before the page commits; only
-	// asynchronous images share the bounded preload budget.
+	// Preserve discovery order independently of the commit barrier. The live
+	// parser requests scripts; only stylesheets participate in that barrier.
 	for group_index, group in [styles, scripts, images] {
 		for address in group {
 			if group_index == 2 && urls.len >= max_preloaded_resources {
@@ -130,7 +130,7 @@ fn (mut app BrowserApp) start_tokenized_page_preload(loaded LoadedPage, add_hist
 		loaded:loaded, add_history:add_history, generation:app.navigation_generation,
 		results:chan PreloadedResource{cap:discovery.urls.len}
 	}
-	initial_urls := discovery.urls.filter((discovery.types[it] or { 'image' }) != 'image')
+	initial_urls := discovery.urls.filter((discovery.types[it] or { 'image' }) == 'stylesheet')
 	queue_navigation_preloads(mut pending, initial_urls, discovery.types, app.resource_cache)
 	app.pending_page_preload = pending
 	if pending.remaining == 0 { request_browser_frame() }
