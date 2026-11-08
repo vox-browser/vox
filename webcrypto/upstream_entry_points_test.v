@@ -114,7 +114,6 @@ fn test_upstream_key_pair_and_registry_entry_points() {
 	assert usage_intersection([KeyUsage.verify, .sign, .verify], [.verify, .sign]) == [
 		KeyUsage.sign,
 		.verify,
-		.verify,
 	]
 	mut registry := supported_algorithms()
 	define_an_algorithm(mut registry, 'digest', 'TEST-HASH')

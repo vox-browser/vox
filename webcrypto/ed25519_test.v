@@ -24,7 +24,7 @@ fn test_ed25519_native_source_rfc8032_vectors_and_typed_seed_handles() {
 	generated := generate_ed25519_key(false, [.verify, .sign, .sign])!
 	assert generated.public_key.extractable && !generated.private_key.extractable
 	assert generated.public_key.usages == [KeyUsage.verify]
-	assert generated.private_key.usages == [KeyUsage.sign, .sign]
+	assert generated.private_key.usages == [KeyUsage.sign]
 	assert generated.private_key.handle().len == 32 && generated.public_key.handle().len == 32
 	assert generated.public_key.handle() == native_edwards_public('Ed25519', generated.private_key.handle())!
 	assert ed25519_verify(generated.public_key, ed25519_sign(generated.private_key, [])!, [])!

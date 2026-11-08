@@ -18,7 +18,7 @@ fn test_ed448_source_import_defaults_and_common_metadata_all_formats() {
 		assert ED448.create().export_key(.pkcs8, class_key)! == private_der
 		assert ED448.create().import_key(AlgorithmParams{}, format, material, true, [])!.usages.len == 0
 		common := subtle.import_key(format, material, 'Ed448', true, [.sign, .sign], '')!
-		assert common.extractable && common.usages == [.sign, .sign]
+		assert common.extractable && common.usages == [.sign]
 		assert common.internal_handle() == class_key.internal_handle()
 		if _ := subtle.import_key(format, material, 'Ed448', true, [], '') {
 			assert false

@@ -78,10 +78,8 @@ fn normalize_key_usages_for_operation(usages []KeyUsage) []KeyUsage {
 	mut normalized := []KeyUsage{cap: usages.len}
 	for candidate in [KeyUsage.encrypt, .decrypt, .sign, .verify, .derive_key, .derive_bits, .wrap_key,
 		.unwrap_key, .encapsulate_key, .encapsulate_bits, .decapsulate_key, .decapsulate_bits] {
-		for usage in usages {
-			if usage == candidate {
-				normalized << usage
-			}
+		if candidate in usages {
+			normalized << candidate
 		}
 	}
 	return normalized

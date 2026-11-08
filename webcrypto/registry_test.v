@@ -78,9 +78,8 @@ fn test_subtle_crypto_normalizes_usages_and_operation_access_is_checked() {
 		.encrypt,
 		.decrypt,
 	], '')!
-	// SubtleCrypto normalizes its input sequence by sorting it. Like upstream,
-	// it preserves duplicates rather than treating usages as a set.
-	assert imported.usages == [KeyUsage.encrypt, .decrypt, .decrypt]
+	// The normalized usage intersection is an ordered set.
+	assert imported.usages == [KeyUsage.encrypt, .decrypt]
 
 	if _ := subtle_crypto.encrypt(AesCbcParams{
 		iv: []u8{len: 16}

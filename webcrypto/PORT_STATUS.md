@@ -6,6 +6,11 @@ Translation workspace: `~/code/vox2/webcrypto`
 Reference: Ladybird `963d46a829f3e1b79f44dba9d02afb70654300fa`
 Latest focused verification: 2026-10-04
 
+The numeric parameter and normalized key-usage slices now follow Ladybird
+`2919bf87a5e5` (2026-11-08). Integer conversions enforce their WebIDL range,
+and public generation/import results expose sorted usages without duplicates.
+The older verification notes below retain their original source pins.
+
 All six upstream Crypto `.cpp` implementation units have an audited V
 implementation mapping. The V package is named `webcrypto` so that it can
 import V's standard `crypto.*` primitives without shadowing that namespace.
@@ -65,8 +70,8 @@ primitive expandedKey encodings. DER diagnostics use the V parser's messages.
 ML-DSA-44/65/87 now perform native generation, context-aware message signing,
 verification, and raw-public/raw-seed/SPKI/PKCS8/JWK operations. Fixed upstream
 WPT signatures and seed-derived public keys pass for every parameter set.
-Its key-format bodies preserve source quirks: repeated usage entries remain
-repeated; the current JWK use equality test rejects `sig`; raw/JWK metadata is
+Its key-format bodies preserve source quirks: the JWK use equality test rejects
+`sig`; raw/JWK metadata is
 set by the SubtleCrypto import boundary; DER scope behavior matches ML-KEM.
 Native failures in source MUST-wrapped raw-seed/JWK generation become explicit
 OperationErrors rather than terminating the process.

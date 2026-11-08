@@ -379,7 +379,7 @@ pub fn AeadParams.from_value(value json2.Any) !AeadParams {
 pub fn usage_intersection(first []KeyUsage, second []KeyUsage) []KeyUsage {
 	mut result := []KeyUsage{}
 	for usage in first {
-		if usage in second {
+		if usage in second && usage !in result {
 			result << usage
 		}
 	}

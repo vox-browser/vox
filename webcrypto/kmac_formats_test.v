@@ -88,7 +88,7 @@ fn test_kmac_source_generation_usage_and_common_error_order() {
 			.sign,
 			.sign,
 		], '')!
-		assert key.extractable && key.usages == [.sign, .sign, .verify]
+		assert key.extractable && key.usages == [.sign, .verify]
 		assert key.handle() == [u8(0xab)] && (key.algorithm as KmacKeyAlgorithm).length == 9
 	}
 }

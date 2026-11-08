@@ -618,6 +618,8 @@ fn binding_key_result(realm string, generated GeneratedKey) !webidl.Value {
 		if key.type_ in [.secret, .private_key] && key.usages.len == 0 {
 			return error('SyntaxError: usages must not be empty')
 		}
+		mut normalized_key := unsafe { &CryptoKey(key) }
+		normalized_key.set_usages(normalize_key_usages(key.usages))
 		return crypto_key(realm, key)
 	}
 	pair := generated.pair or { return error('OperationError: No generated key') }
