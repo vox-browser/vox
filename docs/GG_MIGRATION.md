@@ -1334,3 +1334,32 @@ passes with Skia available. Counts include no-ops. See the
 Nearly integer deferred mappings, scaled shadow foregrounds and the previously
 listed graph/native work remain open. The browser still links Skia; a full
 Skia-free browser compile/link/run remains unverified.
+
+
+### Nearly integer source-filter mappings (2026-11-08)
+
+Source filters now reproduce applyTransform's replacement of requested
+sampling by default bilinear sampling for nearly integer incoming transforms,
+and the final restore's separate reduction to nearest. Real blurs preserve
+raw sRGB pixels when no deferred effect requires resolution, including
+unpremultiplied storage. Color effects resolve with the original transform.
+Slight scales with integer translations also use the native sprite shortcut,
+including clearing blends whose clip lies inside the image. Thirteen new
+native fixtures cover these rules and factored canvas transforms.
+
+Of 20,000 near-integer attempts, 19,217 supported draws match on each platform
+at seed 20261108; production mode matches 19,184 at seed 20261109. Factored
+transforms match 19,265 on each platform and 19,207 in production mode. The
+original Linux image-filter corpus matches 15,427 supported draws. All 27
+CPU raster files pass, as does the expanded image fixture file on macOS and
+Linux production builds. Canvas integration, the FMA audit (zero contracted
+operations) and the full canonical Linux typecheck pass. Counts include
+no-ops and explicit declines. Initial sampling/sprite failures and two
+transient, unrelated regex compile failures are retained in the
+[near-integer receipt](gg-migration/near-integer-image-filters-20261108.json).
+
+Rounding-induced layer crops, scaled shadow foregrounds, remaining spatial
+chains, rotations, SVG graphs, intersecting boolean shadows, large-sigma
+rescaling, tiling and native browser bridges remain open. The Linux typecheck
+uses Skia development files; a Skia-free browser compile/link/run remains
+unverified.
