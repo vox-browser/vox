@@ -366,7 +366,7 @@ fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result boo
 		if runtime.context == unsafe { nil } {
 			return error('JavaScriptCore context creation failed')
 		}
-		return evaluate_with_javascript_core(runtime.context, source, stringify_result, positioned_syntax_errors)
+		return evaluate_with_javascript_core(runtime, source, stringify_result, positioned_syntax_errors)
 	} $else {
 		return error('JavaScript evaluation is currently available on macOS only')
 	}
@@ -383,6 +383,8 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 	}
 	for source in sources {
 		runtime.execute_source(source, false) or {
+			mut owner := unsafe { &Runtime(runtime) }
+			owner.report_event_callback_exception(err)
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
 		}
 	}
