@@ -1770,3 +1770,50 @@ engine or automation fixes. A shared C production build is in progress after
 the default backend encountered an unrelated parser limitation. New-production
 engine validation and the earlier image/SVG follow-up remain pending. Other
 WPT types remain outside that collection. **Overall 100% is not achieved.**
+
+
+## Collection integrity restart and production observer recovery (2026-11-09)
+
+The earlier corrected official collection was stopped after **3,275 case
+records** when three pinned runner files changed:
+`wpt_compare.py`, `wpt_upstream_compare.py` and `wpt_upstream_server.py`.
+That collection is **invalid for acceptance**, with no overall pass rate.
+Its guard process was terminated (exit **-15**); no runner exit was recovered.
+All records and the changed-input list remain archived at
+`/Users/alex/.cache/vox/wpt/20261109-official-testharness-corrected-raw.tar.gz`,
+SHA-256 `f6158fd8f1d7db7d30e7d7536187d11abd8a668de329f3d39ee6d3664f25068f`.
+The completed focused accessibility cohorts predate those runner changes.
+
+A new collection starts again at offset zero for all **40,139 official
+manifest testharness variants**, now using the optional native vendor extension.
+Its supervisor checks immutable tool/browser/manifest identities every two
+seconds and terminates the runner immediately when a pin changes, allowing the
+memory guard to record the runner's actual exit. Original pages, assertions,
+stock testharness and deadlines remain unchanged. Unsupported protocols remain
+explicit records. Other WPT test types remain outside this collection.
+The selected production executable is still
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`;
+this baseline cannot establish that newer engine edits work.
+
+Supervisor: `/Users/alex/.cache/vox/wpt/20261109-official-vendor-supervisor.py`,
+SHA-256 `375c6f18e050d8b17c86cf0ae3fffefbdd92fa071c65a90fe2453a8dca4c700c`.
+Status/completion: `/Users/alex/.cache/vox/wpt/20261109-official-vendor-{status,completion}.json`.
+The collection retains a 12 GiB aggregate guard and 4 GiB browser guards.
+**It is running, not a completed full-WPT result.**
+
+The image-input production observer v2 stopped during discovery when a receipt
+was pruned, before executing WPT or pixel checks. Its retained archive is
+`/Users/alex/.cache/vox/wpt/20261109-image-input-production-v2-raw.tar.gz`,
+SHA-256 `610d41208afe5636a9617516dece99cb3a35cdecd83717b6eb564422cf338182`.
+Observer v3 tolerates disappearing/incomplete receipt metadata and repeats the
+same selection: **65 original variants, 328 expected assertions and 11 unchanged
+SVG pixel comparisons**. Five discovery checks pass, including a receipt removed
+between discovery and reading, rejection of incomplete/missing hashes, and later
+acceptance of a completed match. Exact selected frozen source hashes and the
+original completed artifact's read lease remain required.
+
+Observer: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-followup.py`,
+SHA-256 `93acce3e5fb2fde1f71ee7d61aee7bbf132b566a81e65642c1d864150d735681`.
+Checks: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-checks.json`.
+Status/completion: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-{status,completion}.json`.
+It is waiting for a matching completed production image; validation remains pending.
