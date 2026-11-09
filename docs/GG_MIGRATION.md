@@ -1854,3 +1854,35 @@ was not used to validate this slice. The complete browser still links Skia;
 full-browser Linux compile/link/run without it remains unverified.
 
 See the [baseline declines, eighteen native cases, input pins and Linux linkage](gg-migration/near-integer-blur-crops-20261109.json).
+
+### Cropped first-shadow image branches (2026-11-09)
+
+`0ab10a4cf` resolves a cropped nearly integer source separately for each
+first-shadow blur request. An interior request can retain raw source pixels
+and their alpha type; a visible crop resolves sampling and conversion first.
+The foreground remains deferred until merge. Lone cropped real shadows use
+the same graph path. The source policy requires no pending color filter,
+paint alpha, tint or color-space conversion before reusing raw pixels.
+
+Eighteen new native cases cover lone shadows, interior requests and mixed
+blur/color/multiple-shadow graphs, with both source alpha types. Every new
+case changes pixels. All 226 native fixtures verify on both platforms.
+The prior unsupported-case regression now covers a real blur before the
+first shadow, which remains a separate unported case.
+
+Default macOS and Linux each match 1,892 of 2,000 crop-focused attempts at
+seed 20261135, declining 108. Optimized macOS/no-GC matches 1,902 of 2,000
+at seed 20261136, declining 98. The existing first-shadow graph selection
+matches 4,138 of 5,000 on each platform at seed 20261137, declining 862.
+Counts include no-ops; all cohorts finish with unchanged input pins.
+
+C/FastC image and filter-layer suites, HTML canvas integration, the full
+Linux browser typecheck and the FMA audit pass (zero contracted operations,
+189 explicit). The standalone Linux production/no-GC executable runs all 47
+image tests with Skia unavailable to pkg-config and no direct or transitive
+Skia linkage; direct libraries are FreeType, libm and libc. The browser
+typecheck uses installed Skia development files, and the shared production
+bundle was not used to validate this slice. The complete browser still links
+Skia; full-browser Linux compile/link/run without it remains unverified.
+
+See the [native branch cases, source pins and Linux linkage](gg-migration/first-shadow-image-crops-20261109.json).
