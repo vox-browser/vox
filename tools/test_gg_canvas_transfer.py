@@ -20,6 +20,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--prod', action='store_true', help='Exercise literal V -prod, as automatic browser builds do')
     args = parser.parse_args()
     repo = Path(__file__).resolve().parents[1]
     output = args.output.resolve()
@@ -53,6 +54,8 @@ def main():
         for mode in ['none', 'prealloc']:
             selected = compiler if mode == 'none' else runtime / 'compiler/v'
             extra = [] if mode == 'none' else ['-prealloc']
+            if args.prod:
+                extra.append('-prod')
             binary = output / mode
             command = [str(selected), '-b', 'c', '-cc', 'clang', '-memory-limit', '10G',
                        '-enable-globals', '-gc', 'none', *extra,
