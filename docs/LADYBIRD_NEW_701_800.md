@@ -53,14 +53,15 @@ retain the default 12 GiB guard and V's `-memory-limit 10G`.
 | r13, optimized prepared runtime | 97 / 100 | 5,353 / 5,356 | 0 |
 | r15, first-line integration before storage fix | 97 / 100 | 5,310 / 5,312 | 44 |
 | r16, first-line storage fix | **98 / 100** | **5,354 / 5,356** | **0** |
+| r17, first-line emergency wrapping | **98 / 100** | **5,354 / 5,356** | **0** |
 
 The baseline's 324 missing assertions came from the Typed OM page terminating
 during setup. Every complete image from r6 onward reports and passes all
 **325/325** of that page's assertions.
 Registered-property computation passes **75/75**, and URL resolution passes
-**18/18**, including the UTF-16 stylesheet. Every r16 page completes inside its
+**18/18**, including the UTF-16 stylesheet. Every r17 page completes inside its
 unchanged harness deadline, with harness status 0 and unchanged pinned runtime
-inputs. The r16 cohort guard exits 1 because assertions remain failing; its
+inputs. The r17 cohort guard exits 1 because assertions remain failing; its
 compiler guard exits 0. Both containment pages now pass: 48/48 and 42/42;
 path interpolation passes 478/478. First-line property filtering and the nested
 highlight-inheritance page also pass completely.
@@ -70,7 +71,9 @@ It is retained as partial evidence, without an aggregate pass-rate claim. The
 r5 focused run reports 448/464 assertions across four pages, with three pages
 passing; it predates the final stylesheet-base and linked-sheet decoding fixes.
 
-The r16 executable SHA-256 is
+The r17 executable SHA-256 is
+`e90793c5314a6909906ee3a3421feaf7b5d343d8707d19bc04ea3f85f010a32e`.
+The preceding r16 image is
 `2349dc5c58f6e52176efe609641f98b61b99b0552a335c913de0be42f9beed18`.
 The r15 image with the storage regression is
 `2288bc2cb13b08f29c4d0af6370d57226b8a21db31fbfdc7c599a615ad90c41d`;
@@ -131,10 +134,10 @@ follow-up passes all nine focused test functions and restores both introduced
 regressions in the original cohort.
 
 The target remains all 100 pages and all original expected assertions passing
-together. The **two remaining r16 failures** are the mixed length/percentage
+together. The **two remaining r17 failures** are the mixed length/percentage
 iteration cases described below. Both are marked `Fail` in the pinned Ladybird
 expectations. Those expectations contain 102 recorded failures overall; Vox
-passes 100 of them in r16, together with all 5,254 assertions recorded `Pass`.
+passes 100 of them in r17, together with all 5,254 assertions recorded `Pass`.
 Expected upstream failures are still failures in this cohort. The real
 shadow-part first-line rendering gap is now fixed: the original page reports
 and passes **44/44**, including the expected 106px first-line height.
@@ -146,7 +149,7 @@ font cascade for first-line shaping, line metrics, color and paint commands.
 It restores ordinary text after soft/forced breaks while preserving DOM text
 identity and UTF-16 offsets. The initial slice handles direct text and break
 nodes in horizontal block contexts. Descendant inline inheritance, transformed
-source mappings, emergency word splitting and broader first-line property
+source mappings, automatic hyphenation and broader first-line property
 coverage remain outside this slice.
 
 All five initial focused test functions pass in the ordinary runtime, covering
@@ -163,6 +166,38 @@ runtime guards both exit 0. The fresh r16 full cohort recovers every lost
 assertion and passes the original shadow-part page completely.
 The superseded r14 compilation was stopped with exit 143 before any cohort ran;
 it receives no aggregate result.
+
+Follow-up `c39515f0f` preserves first-line styling for direct text with
+`overflow-wrap:anywhere`, `overflow-wrap:break-word` and `word-break:break-all`.
+Split fragments keep the first-line font, spacing and paint style; once the
+first line ends, the remaining text is reshaped with its ordinary cascade at
+the same UTF-16 source offset. Combining characters remain one grapheme.
+
+The two new focused functions fail before the fix with 80px block heights
+instead of the required 100px. All **eight focused functions now pass** in the
+optimized prepared prealloc runtime, including both font policies and the
+`nowrap` controls, whose single first line remains 40px high. The earlier
+native-storage ownership regression remains covered in the same run. Compiler
+and runtime guards exit 0 without changing their bounds. These focused cases
+are additional regression checks; they do not increase the imported cohort's
+5,356-assertion denominator.
+
+The new [emergency-wrap reftest](../Tests/Browser/FirstLine/emergency-wrap.html)
+compares all three wrapping policies and a combining-character case against
+explicitly styled text and line breaks. Its matching-production pixel check
+passes with **zero differing pixels and zero maximum channel error** at
+800×600. Both fresh capture processes, the exact diff and the 3 GiB guard
+exit 0. The captures contain visible first-line and ordinary glyphs, and all
+pinned inputs remain unchanged. The production image's consumed source
+manifest matches all eight pinned layout/style files, including this fix:
+
+- Receipt: `20261109-194636-c0ca4033`.
+- Executable SHA-256: `4e377a9f2203113e4cc3d7edbb04636cfdc9ce00c0df4612bb5bb902ee97a740`.
+
+The fresh r17 native runs preserve the original **98/100, 5,354/5,356** result
+and the separately labelled proposed-correction **100/100, 5,356/5,356** result,
+with no missing assertions. The wrapping checks execute on source-matched
+images; the older published bundle is not used to validate this change.
 
 ## Mixed length/percentage accumulation diagnostic
 
@@ -205,7 +240,7 @@ applies iteration increments. A zero length can take the numeric path while a
 nonzero mixed-unit pair takes the other path. This is an archived implementation
 comparison, not a measurement of current Safari behavior.
 
-Two fresh, serial full-cohort runs use the **same r16 executable** and identical
+Two fresh, serial full-cohort runs use the **same r17 executable** and identical
 common pinned input hashes:
 
 | Served fixture inputs | Passing pages | Passing / reported assertions | Missing | Guard exit |
@@ -269,7 +304,9 @@ manifests and the pixel observer receipt remain local under
 artifacts are relocated there with their receipts and compiler-consumed source
 hashes, and their temporary generated C is removed. The paired expectation
 recheck evidence is under `iteration-recheck/`. Generated measurement JSON and
-archives are not committed.
+archives are not committed. The latest focused checks, paired r17 cohorts,
+source manifests and wrapping pixel evidence are under
+`completed-evidence/wrapping/`; earlier results remain retained.
 
 After compiling the native entry point under the required guard, run:
 
@@ -280,7 +317,7 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
   python3 tools/ladybird_native_cohort.py \
   --catalog Tests/Browser/ladybird-new-701-800-20261109.txt \
   --ladybird-ref 2919bf87a5e5dfc49a210a70bda079afa411c6c5 \
-  --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/final/core/native-r16-prod \
+  --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/wrapping/core/native-r17-prod \
   --output Build/ladybird-701-800-UNIQUE
 ```
 
