@@ -11,6 +11,7 @@
 *.v3cc.*/
 /tools/layout_corpus
 /tools/check_translation_corpora
+/tools/jpegxl_group_probe.c
 
 # Compiled V test binaries dropped next to their _test.v source
 *_test

@@ -127,8 +127,8 @@ class ProductionSourceManifestTests(unittest.TestCase):
             self.assertTrue(manifest.matches_compiled_checkout(root, dict(
                 source_inventory=inventory, exact_source_manifest=combined)))
 
-    def test_explicit_tsv_inputs_and_native_testdata_headers_stay_pinned(self):
-        for name in ['embedded.tsv', 'runtime.h']:
+    def test_explicit_fixture_inputs_and_native_testdata_headers_stay_pinned(self):
+        for name in ['embedded.tsv', 'embedded.jxl', 'runtime.h']:
             with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
                 root = Path(temporary) / 'repo'
                 self.fixture(root)
@@ -146,20 +146,23 @@ class ProductionSourceManifestTests(unittest.TestCase):
                 self.assertFalse(manifest.matches_compiled_checkout(root, dict(
                     source_inventory=inventory, exact_source_manifest=combined)))
 
-    def test_embedded_tsv_is_pinned_when_compiler_reports_only_v_sources(self):
-        for form in ['relative', 'vmodroot', 'dir', 'absolute', 'expression', 'comment']:
-            with self.subTest(form=form), tempfile.TemporaryDirectory() as temporary:
+    def test_embedded_fixture_is_pinned_when_compiler_reports_only_v_sources(self):
+        forms = [(form, suffix) for form in ['relative', 'vmodroot', 'dir', 'absolute', 'expression', 'comment']
+                 for suffix in ('.tsv', '.jxl')]
+        for form, suffix in forms:
+            with self.subTest(form=form, suffix=suffix), tempfile.TemporaryDirectory() as temporary:
                 root = (Path(temporary) / 'repo').resolve()
                 self.fixture(root)
-                data = root / 'testdata/embedded.tsv'
+                relative = 'testdata/embedded' + suffix
+                data = root / relative
                 data.parent.mkdir()
                 data.write_text('compiled bytes')
-                path = {'relative': 'testdata/embedded.tsv', 'vmodroot': '@VMODROOT/testdata/embedded.tsv',
-                        'dir': '@DIR/testdata/embedded.tsv', 'absolute': str(data)}.get(form)
+                path = {'relative': relative, 'vmodroot': '@VMODROOT/' + relative,
+                        'dir': '@DIR/' + relative, 'absolute': str(data)}.get(form)
                 argument = repr(path) if path else 'fixture_path'
                 embedded = '$embed_file(' + argument + ')'
                 if form == 'comment':
-                    embedded = "$embed_file /* separated tokens */ ('testdata/embedded.tsv')"
+                    embedded = "$embed_file /* separated tokens */ ('" + relative + "')"
                 (root / 'browser.v').write_text('module main\nconst bytes = ' + embedded + '\n')
                 inventory = manifest.begin(root)
                 self.assertIn(str(data), inventory['early_inputs'])
@@ -169,6 +172,23 @@ class ProductionSourceManifestTests(unittest.TestCase):
                 data.write_text('changed payload')
                 with self.assertRaisesRegex(RuntimeError, 'input changed'):
                     manifest.combine(root, inventory, [component])
+
+    def test_unconsumed_jpegxl_fixtures_can_change_during_browser_compilation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = (Path(temporary) / 'repo').resolve()
+            self.fixture(root)
+            fixtures = root / 'jpegxl/testdata/grouped'
+            fixtures.mkdir(parents=True)
+            frame = fixtures / 'frame.jxl'
+            frame.write_bytes(b'old test image')
+            inventory = manifest.begin(root)
+            component = self.component(root, 'component', [root / 'browser.v'])
+            frame.write_bytes(b'updated test image')
+            (fixtures / 'multipass.jxl').write_bytes(b'new test image')
+            manifest.validate_inventory(root, inventory)
+            combined = manifest.combine(root, inventory, [component])
+            self.assertNotIn(str(frame), combined)
+            self.assertIn(str(root / 'native.h'), combined)
 
     def test_tsv_aliases_and_nested_module_roots_remain_pinned(self):
         with tempfile.TemporaryDirectory() as temporary:

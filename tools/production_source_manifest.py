@@ -16,7 +16,7 @@ import re
 import subprocess
 import time
 
-from rebuild_browser import git, production_embedded_tsv_inputs, production_input_path, write_json
+from rebuild_browser import git, production_embedded_fixture_inputs, production_input_path, write_json
 from freeze_browser_compile import check_fingerprints, fingerprint
 
 
@@ -49,12 +49,12 @@ def production_python_tools(root):
 def input_names(root):
     names = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split(b'\0')
     python_tools = production_python_tools(root)
-    embedded_tsv = production_embedded_tsv_inputs(root, [name.decode() for name in names if name])
+    embedded_fixtures = production_embedded_fixture_inputs(root, [name.decode() for name in names if name])
     return sorted({name.decode() for name in names if name
                    and not name.decode().endswith('.swp') and b'.v3cc.' not in name
                    and not (name.startswith(b'tools/') and name.endswith(b'.py')
                             and name.decode() not in python_tools)
-                   and (production_input_path(name.decode()) or name.decode() in embedded_tsv)})
+                   and (production_input_path(name.decode()) or name.decode() in embedded_fixtures)})
 
 
 def begin(root):

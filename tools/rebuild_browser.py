@@ -27,6 +27,7 @@ PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
 BUILD_PROTOCOL = 'bundle-lease-v8'
 WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v8.lock'
 PUBLICATION_REVIEW_GRACE_SECONDS = 5
+TEST_FIXTURE_SUFFIXES = frozenset({'.tsv', '.jxl'})
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
@@ -144,20 +145,20 @@ def production_input_path(relative):
                 # Documentation cannot alter browser/helper output by itself.
                 # Explicit compiler-reported inputs remain pinned separately.
                 or path.suffix.lower() == '.md'
-                # Package TSV corpora belong to their focused tests. A new
+                # Package corpora and JPEG XL fixtures belong to focused tests. A new
                 # translation fixture must not abort an unrelated browser
-                # build. production_embedded_tsv_inputs keeps explicitly
+                # build. production_embedded_fixture_inputs keeps explicitly
                 # embedded corpora pinned before the compiler reads them.
-                or ('testdata' in path.parts and path.suffix.lower() == '.tsv')
+                or ('testdata' in path.parts and path.suffix.lower() in TEST_FIXTURE_SUFFIXES)
                 or relative.endswith('_test.v') or test_tool
                 or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})
 
 
-def production_embedded_tsv_inputs(root, names):
-    """V's parsed-buffer manifest omits $embed_file payloads; pin TSVs early."""
+def production_embedded_fixture_inputs(root, names):
+    """V's parsed-buffer manifest omits $embed_file payloads; pin fixtures early."""
     root = root.resolve()
     corpora = {name for name in names
-               if 'testdata' in Path(name).parts and Path(name).suffix.lower() == '.tsv'}
+               if 'testdata' in Path(name).parts and Path(name).suffix.lower() in TEST_FIXTURE_SUFFIXES}
     if not corpora:
         return set()
     targets = {}
@@ -189,7 +190,7 @@ def production_embedded_tsv_inputs(root, names):
                 path = Path(expanded)
                 resolved = (path if path.is_absolute() else source.parent / path).resolve()
                 matched.update(targets.get(resolved, ()))
-            if not matched and Path(value).suffix.lower() == '.tsv':
+            if not matched and Path(value).suffix.lower() in TEST_FIXTURE_SUFFIXES:
                 # Case-insensitive filesystem aliases or an unknown module
                 # root must retain every corpus, rather than lose the payload.
                 return corpora
@@ -201,7 +202,7 @@ def repository_state(root):
     digest = hashlib.sha256()
     build_digest = hashlib.sha256()
     names = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split(b'\0')
-    embedded_tsv = production_embedded_tsv_inputs(root, [os.fsdecode(name) for name in names if name])
+    embedded_fixtures = production_embedded_fixture_inputs(root, [os.fsdecode(name) for name in names if name])
     for name in sorted(set(names) - {b''}):
         relative = os.fsdecode(name)
         if relative.endswith('.swp') or '.v3cc.' in relative:
@@ -210,7 +211,7 @@ def repository_state(root):
         # Keep the full repository receipt, but publication depends on inputs
         # consumed by the build. Site reports and agent instructions are not
         # compiler, resource, packaging, or helper inputs.
-        production_input = production_input_path(relative) or relative in embedded_tsv
+        production_input = production_input_path(relative) or relative in embedded_fixtures
         def update(data):
             digest.update(data)
             if production_input:
