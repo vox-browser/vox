@@ -3,7 +3,7 @@
 module jpegxl
 
 // Complete-file output for the currently assembled opaque 4:4:4 VarDCT subset.
-// This is not the production replacement: references, feature streams, alpha,
+// This is not the production replacement: feature streams, alpha,
 // resampling and frame composition must be preserved before switching callers.
 pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
@@ -18,19 +18,38 @@ pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 	}
 	color := prepare_srgb_output(file)!
 	context := file.frame_header_context()
-	mut frame := reader.read_frame_header(context)!
-	frame.postprocess(context)!
-	if !frame.is_last || frame.frame_type != .regular || frame.lf_level != 0 || frame.needs_blending()
-		|| frame.width != file.size.width || frame.height != file.size.height || frame.x0 != 0 || frame.y0 != 0 {
-		return error('JPEG XL VarDCT output requires one full visible frame')
-	}
-	validate_vardct_frame_subset(file, frame)!
-	toc := reader.read_toc(int(frame.num_toc_entries()))!
-	mut sections := reader.read_sections(toc)!
-	if reader.available_bits() != 0 { return error('Unhandled JPEG XL VarDCT trailing payload') }
 	storage := if metadata.modular_16bit_sufficient { ModularStorage.signed16 } else { ModularStorage.signed32 }
-	raw := decode_vardct_frame(file, frame, storage, mut sections)!
-	restored := restore_vardct_frame(raw, frame)!
+	mut references := []LfFrameReference{len: 4}
+	mut frame := FrameHeader{ restoration: RestorationFilter.default() }
+	mut restored := [3]FloatPlane{}
+	mut found := false
+	for _ in 0 .. 64 {
+		frame = reader.read_frame_header(context)!
+		frame.postprocess(context)!
+		if frame.frame_type != .lf && (!frame.is_last || frame.frame_type != .regular || frame.lf_level != 0 || frame.needs_blending()
+			|| frame.width != file.size.width || frame.height != file.size.height || frame.x0 != 0 || frame.y0 != 0) {
+			return error('JPEG XL VarDCT output requires one full visible frame')
+		}
+		reference := if frame.has_lf_frame() { references[int(frame.lf_level)].planes } else { ?[3]FloatPlane(none) }
+		if frame.frame_type == .lf {
+			validate_lf_reference_frame(file, frame)!
+		} else {
+			validate_vardct_frame_reference(file, frame, reference)!
+		}
+		toc := reader.read_toc(int(frame.num_toc_entries()))!
+		mut sections := reader.read_sections(toc)!
+		if frame.frame_type == .lf {
+			planes := decode_lf_reference_frame(file, frame, storage, reference, mut sections)!
+			references[int(frame.lf_level) - 1] = LfFrameReference{ planes: planes }
+			continue
+		}
+		raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
+		restored = restore_vardct_frame(raw, frame)!
+		found = true
+		break
+	}
+	if !found { return error('JPEG XL non-visible frame limit exceeded') }
+	if reader.available_bits() != 0 { return error('Unhandled JPEG XL VarDCT trailing payload') }
 	output := if metadata.xyb_encoded {
 		linear := xyb_to_linear(restored, color.opsin, color.intensity_target)!
 		[srgb_transfer(linear[0], .from_linear)!, srgb_transfer(linear[1], .from_linear)!, srgb_transfer(linear[2], .from_linear)!]!
