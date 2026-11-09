@@ -14,6 +14,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import signal
 import subprocess
 import sys
 import time
@@ -39,6 +40,57 @@ def cpu_work(seed):
     return value
 
 
+def run_owned_command(command, timeout, evidence):
+    """Retain evidence, terminate timed-out process groups, and reap roots."""
+    evidence.update(command=command, timeout_seconds=timeout, timed_out=False,
+                    cleanup_signals=[], stdout="", stderr="")
+    started = time.monotonic()
+    process = subprocess.Popen(command, text=True, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, start_new_session=True)
+    evidence["pid"] = process.pid
+
+    def signal_group(value):
+        try:
+            os.killpg(process.pid, value)
+            sent = True
+        except ProcessLookupError:
+            sent = False
+        evidence["cleanup_signals"].append({"signal": value.name, "sent": sent})
+
+    def retain_partial(error):
+        for name, value in (("stdout", error.stdout), ("stderr", error.stderr)):
+            evidence[name] = value.decode(errors="replace") if isinstance(value, bytes) else value or ""
+
+    try:
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired as error:
+            evidence["timed_out"] = True
+            retain_partial(error)
+            # Do not reap the root between signals: compiler descendants may
+            # ignore TERM or keep inherited output pipes open after it exits.
+            signal_group(signal.SIGTERM)
+            time.sleep(.25)
+            signal_group(signal.SIGKILL)
+            try:
+                evidence["stdout"], evidence["stderr"] = process.communicate(timeout=2)
+            except subprocess.TimeoutExpired as cleanup_error:
+                retain_partial(cleanup_error)
+                evidence["cleanup_error"] = str(cleanup_error)
+                process.stdout.close()
+                process.stderr.close()
+                raise
+            raise
+        evidence.update(stdout=stdout, stderr=stderr)
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    finally:
+        if process.returncode is None:
+            signal_group(signal.SIGKILL)
+            process.wait(timeout=2)
+        evidence.update(exit=process.returncode, root_reaped=process.returncode is not None,
+                        elapsed_seconds=time.monotonic() - started)
+
+
 def metal_probe(directory):
     """A device-availability observation, not a GPU or rendering benchmark."""
     result = {"status": "preparing", "capability_only": True, "available": None}
@@ -55,7 +107,7 @@ int main(void) {
     @autoreleasepool {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         NSDictionary *result = @{
-            @"available": @(device != nil),
+            @"available": [NSNumber numberWithBool:(device != nil)],
             @"name": device ? (id)[device name] : (id)[NSNull null]
         };
         NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:NULL];
@@ -70,14 +122,12 @@ int main(void) {
         result["source_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
         command = ["xcrun", "--sdk", "macosx", "clang", "-fobjc-arc",
                    "-framework", "Foundation", "-framework", "Metal", str(source), "-o", str(binary)]
-        compiled = subprocess.run(command, text=True, capture_output=True, timeout=20)
-        result["compile"] = {"command": command, "exit": compiled.returncode,
-                             "stdout": compiled.stdout, "stderr": compiled.stderr}
+        result["compile"] = {}
+        compiled = run_owned_command(command, 40, result["compile"])
         compiled.check_returncode()
         result["binary_sha256"] = hashlib.sha256(binary.read_bytes()).hexdigest()
-        observed = subprocess.run([str(binary)], text=True, capture_output=True, timeout=10)
-        result["run"] = {"command": observed.args, "exit": observed.returncode,
-                         "stdout": observed.stdout, "stderr": observed.stderr}
+        result["run"] = {}
+        observed = run_owned_command([str(binary)], 5, result["run"])
         observed.check_returncode()
         value = json.loads(observed.stdout)
         if type(value.get("available")) is not bool or (value["available"]
@@ -185,6 +235,7 @@ def probe(output):
                       "ram_bytes": report["host"]["ram_bytes"],
                       "metal": {key: report["metal_probe"].get(key)
                                 for key in ("status", "available", "name", "error")},
+                      "readings": report["readings"],
                       "instruction_deltas": [row["instruction_delta"] for row in report["rounds"]],
                       "errors": report["errors"]}), flush=True)
     return report["exit_code"]
