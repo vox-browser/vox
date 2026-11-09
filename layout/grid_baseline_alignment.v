@@ -107,26 +107,33 @@ fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placemen
 	}
 }
 
+fn grid_baseline_track(placement GridItemPlacement, horizontal bool, end bool) int {
+ start := if horizontal { placement.column } else { placement.row }
+ span := if horizontal { placement.column_span } else { placement.row_span }
+ return start + if end { span } else { 0 }
+}
+
 fn publish_grid_content_baselines(mut state LayoutState, container &Node, mut container_used UsedValues, placements []GridItemPlacement) {
-	if grid_is_vertical(container) || placements.len == 0 { return }
+	if placements.len == 0 { return }
+	vertical := grid_is_vertical(container)
 	mut first := placements[0]
 	mut last := placements[0]
 	for placement in placements {
-		if placement.row < first.row || (placement.row == first.row && placement.column < first.column) { first = placement }
-		if placement.row+placement.row_span > last.row+last.row_span
-			|| (placement.row+placement.row_span == last.row+last.row_span && placement.column+placement.column_span > last.column+last.column_span) { last = placement }
+		if grid_baseline_track(placement,vertical,false) < grid_baseline_track(first,vertical,false) || (grid_baseline_track(placement,vertical,false) == grid_baseline_track(first,vertical,false) && grid_baseline_track(placement,!vertical,false) < grid_baseline_track(first,!vertical,false)) { first = placement }
+		if grid_baseline_track(placement,vertical,true) > grid_baseline_track(last,vertical,true)
+			|| (grid_baseline_track(placement,vertical,true) == grid_baseline_track(last,vertical,true) && grid_baseline_track(placement,!vertical,true) > grid_baseline_track(last,!vertical,true)) { last = placement }
 	}
 	// A shared baseline in the outermost track takes precedence over a
 	// non-participating item which happens to occur earlier in grid order.
 	mut first_has_preferred,mut last_has_preferred := false,false
 	for placement in placements {
-		words := grid_alignment_text(container,placement.item,false).split(' ')
+		words := grid_alignment_text(container,placement.item,vertical).split(' ')
 		if words.len == 0 || words.last() != 'baseline' { continue }
-		if placement.row == first.row && (!first_has_preferred || words[0] != 'last') {
+		if grid_baseline_track(placement,vertical,false) == grid_baseline_track(first,vertical,false) && (!first_has_preferred || words[0] != 'last') {
 			first = placement
 			first_has_preferred = words[0] != 'last'
 		}
-		if placement.row+placement.row_span == last.row+last.row_span && (!last_has_preferred || words[0] == 'last') {
+		if grid_baseline_track(placement,vertical,true) == grid_baseline_track(last,vertical,true) && (!last_has_preferred || words[0] == 'last') {
 			last = placement
 			last_has_preferred = words[0] == 'last'
 		}
@@ -136,14 +143,15 @@ fn publish_grid_content_baselines(mut state LayoutState, container &Node, mut co
 	for index,placement in [first,last] {
 		styled := placement.item.as_node_with_style() or { continue }
 		used := state.get(styled)
-		words := grid_alignment_text(container,placement.item,false).split(' ')
+		words := grid_alignment_text(container,placement.item,vertical).split(' ')
 		preference := if words.len > 0 && words.last() == 'baseline' {
 			if words[0] == 'last' { BaselineSet.last } else { BaselineSet.first }
 		} else if index == 0 { BaselineSet.first } else { BaselineSet.last }
-		baseline := grid_baseline_from_low(state,container,placement.item,false,preference,0)
-		value := used.offset.y().plus(baseline).minus(used.margin_box_top())
+		baseline := grid_baseline_from_low(state,container,placement.item,vertical,preference,0)
+		value := if vertical { used.offset.x().plus(baseline).minus(used.margin_box_left()) } else { used.offset.y().plus(baseline).minus(used.margin_box_top()) }
 		if index == 0 { first_baseline = value }
 		else { last_baseline = value }
 	}
-	container_used.set_derived_baselines(first_baseline,last_baseline)
+	if vertical { container_used.set_derived_vertical_baselines(first_baseline,last_baseline) }
+	else { container_used.set_derived_baselines(first_baseline,last_baseline) }
 }
