@@ -27,7 +27,8 @@ jobs:
         gc: [boehm, prealloc]
     env:
       # FastC must support JSON enum attributes and dynamic-array decoding.
-      V_REVISION: 339affce1891514d11aeb7111f579845d966a138
+      # XML allocation fixes: https://github.com/vlang/v/pull/32104
+      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
