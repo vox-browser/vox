@@ -2626,3 +2626,54 @@ Local evidence under `/Users/alex/.cache/vox/wpt/`:
 Completed owned native/production scratch and five top-level locks are removed.
 The full 40,139-variant testharness collection continues independently. Other
 WPT test types remain outside that runner. **Overall 100% is not achieved.**
+
+
+## Opaque-origin Blob URLs (2026-11-09)
+
+Fix `3864eed280325ba638e6214b0132be207244fd3d` uses `blob:null/<uuid>`
+for native Blob URLs created by opaque origins, matching the interoperable
+serialization expected by the original worker tests. File API allows an
+implementation-defined value for this serialization; Vox now retains `null`.
+See [File API, §8.2](https://w3c.github.io/FileAPI/).
+The live origin nonce and settings identity still determine partition access
+and owner cleanup. The standalone legacy adapter is unchanged.
+
+Both new focused FileAPI checks fail on the original implementation and pass
+with the fix in normal, prepared `-prealloc -gc none`, and literal
+`-prod -prealloc -gc none` modes. Every candidate compile/runtime exit is **0**;
+both prepared executables contain `closure_metadata_tail`. Checks cover unique
+UUIDs, tuple-origin URLs, distinct opaque partitions despite equal serialized
+origins, and cleanup by settings identity. The existing native URL-host test's
+prefix expectation is updated to match. Compiles retain the 12 GiB memory guard
+and V `-memory-limit 10G`; focused runtimes retain the 3 GiB guard.
+
+The unchanged original `/FileAPI/BlobURL/opaque-origin.html` reports
+**2/2 PASS**, against **0/2** in the pinned collection: data-URL dedicated and
+shared workers both emit `blob:null/`. All expected names are present, runner
+and guard exits are **0**, guard reason is `completed`, and input/identity
+checks report no changes. This is focused worker coverage, not an overall WPT
+pass rate.
+
+Production executable:
+`87742e81c05d3e3524dc2fb58bdadddaafe21b025b90b1b72ce1f5d161ac1ea9`;
+receipt `20261109-123808-c2681adb`, C/single-unit/literal-`-prod`.
+The observer used the original completed artifact under a shared lease,
+verified the compiled source manifest, and launched a fresh browser. No
+additional manual production build was requested.
+
+Local evidence under `/Users/alex/.cache/vox/wpt/`:
+
+- `20261109-opaque-blob-url-native-raw.tar.gz`: both negative controls and
+  all three passing native modes, commands, guards and summaries; SHA-256
+  `9e5c1e35c53927636c4828ecd9e1601d1d549faddf4f013abf077dcbf79f9c20`.
+  Final check-summary SHA-256
+  `bdd10059aa06bddb8582cb4e8f58567a0bcd3ba7509dbdeca6069718f0457309`.
+- `20261109-opaque-blob-url-production-raw.tar.gz`: original worker WPT
+  results, commands, identities and source manifest; SHA-256
+  `218216151f28e3082aec40dec90f6195340f31b4bf1703a5e846b7e30cf38754`.
+
+Completed owned native/production output and two top-level locks are removed.
+The detached 40,139-variant collection remains active on its pinned earlier
+bundle, so that collection does not measure these two new commits. It is a
+testharness collection from the complete checkout; other WPT test types remain
+outside its runner. **Overall 100% is not achieved.**
