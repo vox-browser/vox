@@ -44,7 +44,8 @@ pub:
 }
 
 pub fn SecurityPolicyViolationEvent.create(event_name string, init SecurityPolicyViolationEventInit) &SecurityPolicyViolationEvent {
-	base := dom.Event.new_with_init(event_name, init.EventInit)
+	mut base := dom.Event.new_with_init(event_name, init.EventInit)
+	base.interface_ = .security_policy_violation_event
 	return &SecurityPolicyViolationEvent{
 		Event:                *base
 		document_uri_:        init.document_uri

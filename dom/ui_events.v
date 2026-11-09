@@ -37,6 +37,7 @@ pub enum EventInterface {
 	pop_state_event
 	hash_change_event
 	page_transition_event
+	security_policy_violation_event
 	storage_event
 	promise_rejection_event
 	navigation_current_entry_change_event
