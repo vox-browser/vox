@@ -3199,12 +3199,18 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	for row in rows {
 		used_rows << row.base_size
 	}
+	if placements.len==0 && container.computed_values().grid_template_areas().is_empty() {
+		// An empty grid has no implicit tracks. Internal one-track fallbacks
+		// used during sizing must not appear in CSSOM's resolved template.
+		if template_columns.is_empty() { used_columns=[]CSSPixels{} }
+		if template_rows.is_empty() { used_rows=[]CSSPixels{} }
+	}
  if container.display().is_grid_lanes_inside() {
   if grid_lanes_axis_is_horizontal(container) { used_rows = []CSSPixels{} } else { used_columns = []CSSPixels{} }
  }
 	container_state.set_grid_template_columns(if grid_is_vertical(container) { used_rows } else { used_columns })
 	container_state.set_grid_template_rows(if grid_is_vertical(container) { used_columns } else { used_rows })
-	container_state.set_grid_subgridded_axes(subgridded_columns, subgridded_rows)
+	container_state.set_grid_subgridded_axes(if grid_is_vertical(container) { subgridded_rows } else { subgridded_columns },if grid_is_vertical(container) { subgridded_columns } else { subgridded_rows })
 	// Only *explicit* line names are serialized, so recompute the line map
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
 	empty_areas := css.GridTemplateAreas{}

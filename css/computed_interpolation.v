@@ -15823,6 +15823,7 @@ fn required_box_type_transformation(style &ComputedProperties, abstract_element 
 
 pub fn (s &StyleComputer) transform_box_type_if_needed(mut computed_properties ComputedProperties, abstract_element dom.AbstractElement) {
 	_ = s
+	adjust_grid_lanes_subgrid_axes(mut computed_properties,abstract_element)
 	// 2.7. Automatic Box Type Transformations
 	//
 	// Some layout effects require blockification or inlinification of the box type,
