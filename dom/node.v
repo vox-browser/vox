@@ -4710,16 +4710,18 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				for id_ref in idrefs.fields() {
 					referenced_element := document.get_element_by_id(id_ref) or { continue }
 					referenced_node := referenced_element.as_node()
-					// AD-HOC: Required by WPT labelledby cases; a referenced node's own aria-label contributes.
-					if target == .name {
-						if aria_label := referenced_element.get_attribute('aria-label') {
-							if aria_label.trim_space().len > 0 {
-								accumulated_text.write_string(' ')
-								accumulated_text.write_string(aria_label)
+					if visited_nodes[referenced_node.unique_id()] {
+						// A self-reference may contribute its aria-label even though
+						// recursion is suppressed. Unvisited nodes contribute through
+						// step D below, so appending here too would duplicate the label.
+						if target == .name {
+							if aria_label := referenced_element.get_attribute('aria-label') {
+								if aria_label.trim_space().len > 0 {
+									accumulated_text.write_string(' ')
+									accumulated_text.write_string(aria_label)
+								}
 							}
 						}
-					}
-					if visited_nodes[referenced_node.unique_id()] {
 						continue
 					}
 					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, .yes)!
