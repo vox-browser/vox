@@ -9,6 +9,8 @@ import encoding.xml as vxml
 import io
 import strings
 
+// A name must resolve to a stable value within one parse. The parser caches
+// each distinct HTML name and calls the resolver only on its first occurrence.
 pub type EntityResolver = fn (string) ?string
 
 pub struct Document {
@@ -39,9 +41,9 @@ struct XMLPreparedSource {
 struct XMLReferenceContext {
 	resolve_entity EntityResolver @[required]
 mut:
-	// Empty until the first HTML name is encountered. Ordinary XML references
-	// use vlib's shared defaults without cloning the map for each document.
-	entities map[string]string
+	// Even an empty map allocates a header. Ordinary XML references need no
+	// private map; create one only when the first HTML name is encountered.
+	entities ?map[string]string
 }
 
 // Only marked attribute values are indirect. Short ordinary values stay in
@@ -141,7 +143,9 @@ fn xml_numeric_references(value string) string {
 }
 
 fn (mut context XMLReferenceContext) html_entity(name string) !string {
-	if cached := context.entities[name] { return cached }
+	if entities := context.entities {
+		if cached := entities[name] { return cached }
+	}
 	resolved := context.resolve_entity(name.clone()) or {
 		return error('unknown XML entity &${name};')
 	}
@@ -149,10 +153,11 @@ fn (mut context XMLReferenceContext) html_entity(name string) !string {
 	// conversion happens once per distinct HTML name, rather than once per
 	// occurrence, and cached replacements are never decoded recursively.
 	decoded := vxml.unescape_text(xml_numeric_references(resolved))!
-	if context.entities.len == 0 {
-		context.entities = vxml.default_entities.clone()
-	}
-	context.entities[name] = decoded
+	// This context alone owns the cache. Alias its header during insertion and
+	// restore it afterwards, avoiding an implicit map clone on each new name.
+	mut entities := unsafe { context.entities or { vxml.default_entities.clone() } }
+	entities[name] = decoded
+	context.entities = unsafe { entities }
 	return decoded
 }
 
@@ -196,8 +201,10 @@ fn expand_html_references(value string, mut context XMLReferenceContext) !string
 fn decode_references(value string, mut context XMLReferenceContext) !string {
 	if !value.contains('&') { return value }
 	prepared := prepare_references(value, mut context, false)!
-	if context.entities.len == 0 { return vxml.unescape_text(prepared) }
-	return vxml.unescape_text(prepared, entities: context.entities)
+	if entities := context.entities {
+		return vxml.unescape_text(prepared, entities: entities)
+	}
+	return vxml.unescape_text(prepared)
 }
 
 // vlib currently stops tags at the first '>', requires a quote immediately

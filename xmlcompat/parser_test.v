@@ -137,9 +137,9 @@ fn test_reference_defaults_and_uppercase_hex_keep_the_html_cache_empty() {
 	plain := 'plain 文 payload'
 	assert decode_references(plain, mut references)!.str == plain.str
 	assert decode_references('&amp;amp; &#X41; &#x1F600; &lt;', mut references)! == '&amp; A 😀 <'
-	assert references.entities.len == 0
+	assert references.entities == none
 	assert expand_html_references('&amp;amp; &#X41;', mut references)! == '&amp;amp; &#x41;'
-	assert references.entities.len == 0
+	assert references.entities == none
 }
 
 fn test_parse_validates_custom_entity_replacement_characters_with_vlib() {

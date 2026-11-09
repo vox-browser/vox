@@ -78,7 +78,7 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 	} else {
 		?string(namespace_)
 	}, xml_dom_owned_string(node.name))!
-	mut expanded_names := map[string]bool{}
+	mut expanded_names := ?map[string]bool(none)
 	for name, raw_value in node.attributes {
 		value := prepared.attribute_value(raw_value)!
 		is_declaration := name == 'xmlns' || name.starts_with('xmlns:')
@@ -105,8 +105,12 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 		if attribute_prefix !in ['', 'xml', 'xmlns'] {
 			local_name := name.substr_unsafe(attribute_colon + 1, name.len)
 			expanded_name := '${attribute_namespace}\x00${local_name}'
-			if expanded_name in expanded_names { return error('duplicate XML attribute ${name}') }
-			expanded_names[expanded_name] = true
+			// Even an empty map allocates a header. Create it only for author
+			// prefixes, aliasing and restoring our private map without cloning.
+			mut names := unsafe { expanded_names or { map[string]bool{} } }
+			if expanded_name in names { return error('duplicate XML attribute ${name}') }
+			names[expanded_name] = true
+			expanded_names = unsafe { names }
 		}
 		element.set_attribute_ns_for_bindings(if attribute_namespace == '' {
 			none
