@@ -119,6 +119,14 @@ fn anchor_relative_position_offset(state &LayoutState, anchor &Node, containing 
 	for current != none {
 		node := current or { break }
 		if layout_nodes_same(node, containing) { break }
+		if !layout_nodes_same(node,anchor) && node.is_scroll_container() {
+			if dom_node := node.dom_node() {
+				if element := dom_node.as_element() {
+					scroll := element.el_scroll_offset()
+					offset = offset.minus(css.CSSPixelPoint.new(css_px(scroll.x()),css_px(scroll.y())))
+				}
+			}
+		}
 		if node.computed_values().position() == .relative {
 			if styled := node.as_node_with_style() {
 				if used := state.try_get(styled) {

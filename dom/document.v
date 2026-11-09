@@ -9584,6 +9584,10 @@ pub fn (mut d Document) set_needs_animated_style_update() {
 }
 
 pub fn (mut d Document) invalidate_scroll_state() {
+	if d.any_anchor_names_are_registered() {
+		mut root := d.as_node()
+		root.set_needs_layout_update(.style_change)
+	}
 	// Propagate scroll state invalidation to its retained painting owner.
 	if paintable := d.unsafe_paintable() {
 		paintable.invalidate_scroll_state()
