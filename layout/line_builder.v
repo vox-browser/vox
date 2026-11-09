@@ -242,7 +242,7 @@ fn (mut builder LineBuilder) begin_new_line(increment_y bool, is_first_break_in_
 			if builder.should_advance_to_last_line_box_block_end
 				&& builder.containing_block_used_values.line_boxes.len > 1 {
 				previous_index := builder.containing_block_used_values.line_boxes.len - 2
-				builder.current_block_offset = builder.containing_block_used_values.line_boxes[previous_index].bottom()
+				builder.current_block_offset = builder.containing_block_used_values.line_boxes[previous_index].bottom_
 			} else {
 				line_height := builder.containing_block.computed_values().line_height()
 				increment := css_pixels_max(builder.max_height_on_current_line, line_height)
@@ -659,10 +659,9 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	excess_inline_space :=
 		builder.available_width_for_current_line.to_px_or_zero().minus(aligned_inline_length)
-	if builder.writing_mode != .horizontal_tb {
-		block_offset =
-			builder.available_width_for_current_line.to_px_or_zero().minus(line_box.block_length())
-	}
+	// Keep block progression logical here. The inline available size does
+	// not position a vertical line on the physical x axis; projection handles
+	// the writing mode after line metrics have been finalized.
 	if excess_inline_space.raw_value() > 0 {
 		match computed.text_align() {
 			.center, .libweb_center, .libweb_inherit_or_center {

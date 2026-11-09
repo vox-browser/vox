@@ -25,7 +25,7 @@ fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horiz
 				if line.is_empty() { continue }
 				// Vertical text shares a central baseline. Line offsets retain
 				// logical block progression, even after physical placement.
-				logical := line.bottom().minus(line.block_length()).plus(line.block_length().divided_by_float(2))
+				logical := line.bottom_.minus(line.block_length()).plus(line.block_length().divided_by_float(2))
 				physical := if grid_axis_reversed(item,true) { used.content_width().minus(logical) } else { logical }
 				return used.margin_box_left().plus(physical)
 			}

@@ -524,7 +524,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	mut content_width := CSSPixels.new(0)
 	mut content_height := CSSPixels.new(0)
 	for line_box in containing_block_used_values.line_boxes {
-		content_width = css_pixels_max(content_width, line_box.width())
+		content_width = if writing_mode == .horizontal_tb { css_pixels_max(content_width,line_box.width()) } else { content_width.plus(line_box.width()) }
 		content_height = if writing_mode == .horizontal_tb { content_height.plus(line_box.height()) } else { css_pixels_max(content_height,line_box.height()) }
 	}
 	return InlineFormattingResult{
