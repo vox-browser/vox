@@ -1356,3 +1356,47 @@ fn test_deferred_source_layer_crops_match_native_resolve_and_offsets() {
   }
  }
 }
+
+
+fn test_color_filter_layer_crop_resolves_before_clearing_composite() {
+ c := json2.decode[ImageRequestFixture]($embed_file('@VMODROOT/cpuraster/testdata/color-layer-crop.json').to_string()) or { panic(err) }
+ steps := c.filters.map(CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{it.matrix, it.clamp}})
+ mut pixels := $embed_file('@VMODROOT/cpuraster/testdata/color-layer-crop-background.rgba').to_bytes()
+ assert draw_canvas_image_filtered(mut pixels, c.width, c.height, c.pitch, c.alpha_type,
+  c.transform, CanvasBitmap{pixels: $embed_file('@VMODROOT/cpuraster/testdata/color-layer-crop-source.rgba').to_bytes(),
+   width: c.image_width, height: c.image_height, pitch: c.image_pitch,
+   premultiplied: c.image_premultiplied, display_p3: c.image_display_p3},
+  c.source, c.destination, true, c.global_alpha, canvas_blend_mode(c.composite) or { panic('mode') },
+  c.clips.map(canvas_path(it.segments, it.even_odd)), new_canvas_filter(steps), false)
+ assert pixels[8 * c.pitch + 9 * 4] == 36
+ assert sha256.sum(pixels).hex() == '7590fe0bcd5b92d16e773f434abbc90fc0209bec8c95f3de7f42a1ca058b7949'
+}
+
+fn test_cropped_color_images_preserve_gain_alpha_and_clearing_modes() {
+ bits := [[u32(1085067283), 1082968454, 1086745844, 1090940148],
+  [u32(1076837620), 1076337300, 1080834193, 1084229582],
+  [u32(1078835906), 1076337300, 1080834193, 1084229582]]
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ gain4 := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+  matrix: [f32(4), 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 1, 0]!}}
+ gain100 := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+  matrix: [f32(100), 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 1, 0]!}}
+ sequences := [[contrast, gain4], [opacity, gain100], [gain100], [opacity]]
+ hashes := ['da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1', '7f9693b40ef11387', 'f44d1959a67025ac', '44c0f31be7db0067', '8bfc2f0cbc7e43c7', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1']
+ for index in 0 .. 3 {
+  b := bits[index].map(math.f32_from_bits(it))
+  scale := math.f32_from_bits(if index == 0 { u32(1067450368) } else { u32(1074161254) })
+  for variant, steps in sequences {
+   mut pixels := image_test_background()
+   mode := [BlendMode.src_over, .src, .src_in, .plus_lighter][variant]
+   assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, [scale, f32(0), 0, scale, 2.25, 3.5]!,
+    image_test_bitmap(7, 6, variant == 0, variant in [1, 2]),
+    [if index == 1 { f32(2) } else { f32(3) }, f32(1), if index == 1 { f32(2) } else { f32(1) }, f32(5)]!,
+    [b[0], b[1], b[2]-b[0], b[3]-b[1]]!, true, .65, mode,
+    image_test_clips(variant in [1, 2]), new_canvas_filter(steps), false)
+   assert sha256.sum(pixels).hex()[..16] == hashes[index * 4 + variant], 'color crop ${index}/${variant}'
+  }
+ }
+}

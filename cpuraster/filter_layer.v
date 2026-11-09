@@ -448,6 +448,13 @@ fn union_filter_bounds(a IRect, b IRect) IRect {
 }
 
 fn map_filter_bounds(bounds IRect, m SkAffine) IRect {
+	if bounds.is_empty() { return IRect{} }
+	if m.type_mask() & affine_affine_mask != 0 {
+		// General matrices map float corners before rounding, unlike the
+		// double-precision scale/translate specialization below.
+		return skif_round_out(InverseMatrix{m, m.type_mask()}.map_rect(Rect{
+			f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}))
+	}
 	// Mapping::map<SkIRect>() preserves integer precision in doubles.
 	l0 := f64(m.sx) * bounds.left
 	r0 := f64(m.sx) * bounds.right

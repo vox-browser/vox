@@ -61,6 +61,8 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 		height: int(src.bottom - src.top)
 	}
 	view := FilterImageView{bitmap: bitmap, transform: total,
+		layer_crop: true,
+		layer_bounds: map_filter_bounds(IRect{left, top, int(src.right), int(src.bottom)}, mapped),
 		default_sampling: filter_nearly_integer_translation(mapped), smoothing: smoothing,
 		alpha: f32(u8(global_alpha * f32(255))) * inv_255, filter: filter}
 	return draw_filter_image_view(mut pixels, pitch, &rc, mode, view, 0, 0, mut target)
@@ -72,9 +74,19 @@ fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode Blend
 		clip := rc.bounds()
 		global := IRect{clip.left + origin_x, clip.top + origin_y, clip.right + origin_x, clip.bottom + origin_y}
 		if !view.layer_bounds.contains(image) && !view.layer_bounds.contains(global) {
-			// These deferred source views draw into merge/resolve surfaces.
-			// Clearing restores require resolving the crop before blending.
-			if blend_affects_transparent_black(mode) { return false }
+			// A clearing blender must still sample transparent black outside
+			// the cropped image. Resolve the crop before filling the full clip.
+			if blend_affects_transparent_black(mode) {
+				result := resolve_filter_image_view(view, global) or { return false }
+				target.ready()
+				if !result.has_image {
+					draw_empty_filter_result(mut pixels, pitch, rc, mode)
+				} else {
+					draw_filter_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()),
+						result.origin_x - origin_x, result.origin_y - origin_y, rc, mode, 1)
+				}
+				return true
+			}
 			mut clipped := *rc
 			b := view.layer_bounds
 			clipped.op_device_rect(Rect{f32(b.left - origin_x), f32(b.top - origin_y),
