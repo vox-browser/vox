@@ -252,11 +252,12 @@ fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, sou
 	type_ := match inline_type {
 		'script' { contentsecuritypolicy.InlineType.script }
 		'script-attribute' { contentsecuritypolicy.InlineType.script_attribute }
+		'navigation' { contentsecuritypolicy.InlineType.navigation }
 		'style-attribute' { contentsecuritypolicy.InlineType.style_attribute }
 		else { contentsecuritypolicy.InlineType.style }
 	}
 	return contentsecuritypolicy.should_elements_inline_type_behavior_be_blocked_by_content_security_policy(mut
-		global, element_context, type_, source) == .blocked
+		global, if type_ == .navigation { contentsecuritypolicy.ElementContext{} } else { element_context }, type_, source) == .blocked
 }
 
 fn dom_base_csp_check(document &dom.Document, base dom.URL) bool {

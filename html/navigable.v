@@ -1790,8 +1790,9 @@ pub fn (mut model NavigableModel) evaluate_javascript_url(url dom.URL, new_docum
 	if active_document.as_node().is_scripting_disabled() {
 		return none
 	}
+	if javascript_url_is_blocked_by_csp(active_document,url) { return none }
 	hook := model.javascript_url_hook_ or { return none }
-	source := url.serialize().all_after('javascript:')
+	source := javascript_url_source(url)
 	result := hook(source, active_document) or { return none }
 	mut document := dom.Document.create(active_document.url)
 	document.set_document_type(.html)

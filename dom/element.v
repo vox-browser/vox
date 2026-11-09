@@ -7,6 +7,8 @@
 // Translated from Libraries/LibWeb/DOM/Element.cpp
 module dom
 
+import url as liburl
+
 import rand
 import math
 import strings
@@ -6924,6 +6926,7 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 	// attribute value, relative to subject's node document.
 	// 5. If urlRecord is failure, then return.
 	url_record := e.document().encoding_parse_url(e.get_attribute_value('href')) or { return }
+	if url_record.scheme() == 'javascript' && e.document().should_block_inline_content(&e,'navigation',liburl.percent_decode(url_record.serialize()).bytestr()) { return }
 
 	// 6. Let noopener be the result of getting an element's noopener with subject, urlRecord, and targetAttributeValue.
 	noopener := e.get_an_elements_noopener(url_record, target_attribute_value)
