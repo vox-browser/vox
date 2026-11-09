@@ -146,6 +146,47 @@ class ProductionSourceManifestTests(unittest.TestCase):
                 self.assertFalse(manifest.matches_compiled_checkout(root, dict(
                     source_inventory=inventory, exact_source_manifest=combined)))
 
+    def test_embedded_tsv_is_pinned_when_compiler_reports_only_v_sources(self):
+        for form in ['relative', 'vmodroot', 'dir', 'absolute', 'expression', 'comment']:
+            with self.subTest(form=form), tempfile.TemporaryDirectory() as temporary:
+                root = (Path(temporary) / 'repo').resolve()
+                self.fixture(root)
+                data = root / 'testdata/embedded.tsv'
+                data.parent.mkdir()
+                data.write_text('compiled bytes')
+                path = {'relative': 'testdata/embedded.tsv', 'vmodroot': '@VMODROOT/testdata/embedded.tsv',
+                        'dir': '@DIR/testdata/embedded.tsv', 'absolute': str(data)}.get(form)
+                argument = repr(path) if path else 'fixture_path'
+                embedded = '$embed_file(' + argument + ')'
+                if form == 'comment':
+                    embedded = "$embed_file /* separated tokens */ ('testdata/embedded.tsv')"
+                (root / 'browser.v').write_text('module main\nconst bytes = ' + embedded + '\n')
+                inventory = manifest.begin(root)
+                self.assertIn(str(data), inventory['early_inputs'])
+                component = self.component(root, 'component', [root / 'browser.v'])
+                combined = manifest.combine(root, inventory, [component])
+                self.assertIn(str(data), combined)
+                data.write_text('changed payload')
+                with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                    manifest.combine(root, inventory, [component])
+
+    def test_tsv_aliases_and_nested_module_roots_remain_pinned(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = (Path(temporary) / 'repo').resolve()
+            self.fixture(root)
+            package = root / 'nested'
+            fixtures = package / 'testdata'
+            fixtures.mkdir(parents=True)
+            (package / 'v.mod').write_text('Module { name: "nested" }')
+            target = fixtures / 'data.tsv'
+            target.write_text('payload')
+            alias = fixtures / 'alias.tsv'
+            alias.symlink_to(target)
+            (package / 'main.v').write_text("module nested\nconst bytes = $embed_file('@VMODROOT/testdata/alias.tsv')\n")
+            inventory = manifest.begin(root)
+            self.assertIn(str(target), inventory['early_inputs'])
+            self.assertIn(str(alias), inventory['early_inputs'])
+
     def test_native_test_headers_remain_production_inputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'repo'

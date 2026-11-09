@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -145,17 +146,62 @@ def production_input_path(relative):
                 or path.suffix.lower() == '.md'
                 # Package TSV corpora belong to their focused tests. A new
                 # translation fixture must not abort an unrelated browser
-                # build; explicitly consumed files are pinned by the compiler
-                # manifest, just like embedded Markdown above.
+                # build. production_embedded_tsv_inputs keeps explicitly
+                # embedded corpora pinned before the compiler reads them.
                 or ('testdata' in path.parts and path.suffix.lower() == '.tsv')
                 or relative.endswith('_test.v') or test_tool
                 or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})
+
+
+def production_embedded_tsv_inputs(root, names):
+    """V's parsed-buffer manifest omits $embed_file payloads; pin TSVs early."""
+    root = root.resolve()
+    corpora = {name for name in names
+               if 'testdata' in Path(name).parts and Path(name).suffix.lower() == '.tsv'}
+    if not corpora:
+        return set()
+    targets = {}
+    for name in corpora:
+        targets.setdefault((root / name).resolve(), set()).add(name)
+    selected = set()
+    for name in names:
+        source = root / name
+        if (source.suffix not in {'.v', '.vv', '.vsh'}
+                or not production_input_path(name) or not source.is_file()):
+            continue
+        text = source.read_text(errors='replace')
+        calls = re.findall(r'\$embed_file\b', text)
+        literals = re.findall(r'\$embed_file\s*\(\s*([\'\"])(.*?)\1\s*\)', text, re.DOTALL)
+        # Unknown expressions/escaping must never silently omit an input.
+        if len(calls) != len(literals):
+            return corpora
+        for _, value in literals:
+            if '$' in value or '\\' in value:
+                return corpora
+            # A nested V module can have its own v.mod. Conservatively retain
+            # either resolution rather than assuming the browser module root.
+            bases = {root, *(p for p in source.parents if p.is_relative_to(root) and (p / 'v.mod').is_file())}
+            matched = set()
+            for base in bases:
+                expanded = value.replace('@VMODROOT', str(base)).replace('@DIR', str(source.parent))
+                if '@' in expanded:
+                    return corpora
+                path = Path(expanded)
+                resolved = (path if path.is_absolute() else source.parent / path).resolve()
+                matched.update(targets.get(resolved, ()))
+            if not matched and Path(value).suffix.lower() == '.tsv':
+                # Case-insensitive filesystem aliases or an unknown module
+                # root must retain every corpus, rather than lose the payload.
+                return corpora
+            selected.update(matched)
+    return selected
 
 
 def repository_state(root):
     digest = hashlib.sha256()
     build_digest = hashlib.sha256()
     names = git(root, 'ls-files', '-z', '--cached', '--others', '--exclude-standard').split(b'\0')
+    embedded_tsv = production_embedded_tsv_inputs(root, [os.fsdecode(name) for name in names if name])
     for name in sorted(set(names) - {b''}):
         relative = os.fsdecode(name)
         if relative.endswith('.swp') or '.v3cc.' in relative:
@@ -164,7 +210,7 @@ def repository_state(root):
         # Keep the full repository receipt, but publication depends on inputs
         # consumed by the build. Site reports and agent instructions are not
         # compiler, resource, packaging, or helper inputs.
-        production_input = production_input_path(relative)
+        production_input = production_input_path(relative) or relative in embedded_tsv
         def update(data):
             digest.update(data)
             if production_input:
