@@ -22,10 +22,12 @@ fn test_vardct_restoration_preserves_native_gaborish_words_and_excludes_padding(
 		frame := FrameHeader{ width: u32(w), height: u32(h), restoration: RestorationFilter{
 			gab: true, gab_weights: [w1,w2,w1,w2,w1,w2]!, epf_iterations: 0 } }
 		result := restore_vardct_frame(VarDctFramePlanes{ planes: [input,input,input]! }, frame)!
+		modular := restore_modular_frame([input,input,input]!, FrameHeader{ ...frame, encoding: .modular })!
 		for plane in result {
 			assert plane.width == w && plane.height == h
 			assert plane.samples.map(math.f32_bits(it).str()).join(',') == f[5], 'Restoration Gaborish ${count}'
 		}
+		for c in 0 .. 3 { assert modular[c].samples.map(math.f32_bits(it)) == result[c].samples.map(math.f32_bits(it)) }
 		count++
 	}
 	assert count == 512
