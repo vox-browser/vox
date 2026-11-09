@@ -1,8 +1,8 @@
 # JPEG XL V decoder port
 
 The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package decodes complete modular streams, small modular
-global sections and a bounded lossless subset to final RGBA. It does not replace
+builds that helper. This package decodes complete modular streams, grouped raw
+frames and a bounded lossless subset to final RGBA. It does not replace
 the production decoder or remove that final Rust dependency yet.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
@@ -253,9 +253,9 @@ is a non-visible 13x13 LF dependency; its visible VarDCT frame remains pending.
 Rotated, animated and wide-gamut fixture metadata does not establish support for
 their final pixel output.
 
-Remaining work includes grouped/tiled application, complete frame assembly,
-VarDCT, patches/noise/splines, filtering, pixel color conversion, oriented output
-rows and browser integration. Container/API streaming
+Remaining work includes partial/tiled rendering, VarDCT and frame dependencies,
+patches/noise/splines, filtering, broader pixel color conversion and browser
+integration. Container/API streaming
 remains a broader parity task.
 
 Output sample conversion now normalizes integer rows, premultiplies alpha and
@@ -282,13 +282,35 @@ and positional premultiplication. Every-byte prefixes of four valid fixtures
 are rejected in both output modes. A separate check rejects Guardian's pending
 LF/VarDCT chain rather than returning its non-visible first frame.
 
-The corpus checker discovers twenty-six test files. The preceding twenty-five
-file package passed in both GC modes at the ten-slice checkpoint; the new
-complete-file test passes focused checks in both modes with unavailable Rust
-compiler paths. JPEG XL cadence is 1/10 after that checkpoint; unrelated broader
-suites were not rerun. The package checks 202,128 source cases, counting
+`plan_modular_sections` now preserves the leading global-channel prefix, LF and
+per-pass shift brackets, tile edges, skipped empty tiles and source stream IDs.
+Its 512 frozen source records compare channel order, sampled group rectangles
+and stream identities across all group-size shifts and varied passes.
+
+`decode_modular_frame` stitches LF/HF coded tiles, applies group-local transforms,
+then reverses the global transform graph over complete planes. Every coded
+channel must have a unique section and complete sample coverage. Empty section
+payloads are ignored when there are no coded pixels, as in the pinned source;
+active entropy streams still validate their final state and bounds. Combined
+single-group sections remain supported.
+
+`decode_lossless_rgba` extends final RGBA output to grouped and multipass modular
+frames under the same static 8-bit sRGB/gray, alpha, sampling and filter limits.
+The existing small-only API retains its group limit. Thirteen independent
+fixtures have 26 exact whole-output comparisons in both modes, including local
+trees, shared global trees, squeeze transforms, LF data, reordered sections,
+odd tile edges, gray/RGB/RGBA, all orientations and a two-pass stream with coded
+HF data deferred to the final pass. SHA-256 covers every output byte; dimensions
+and pitch are compared separately. Production supports additional static images
+and continues to use Rust until those paths and integration are complete.
+
+The corpus checker discovers twenty-eight test files. The preceding twenty-five
+file package passed in both GC modes at the ten-slice checkpoint; subsequent
+work passes focused checks in both modes with unavailable Rust compiler paths.
+JPEG XL cadence is 3/10 after that checkpoint; unrelated broader
+suites were not rerun. The package checks 202,666 source cases, counting
 individual ANS alias transitions and whole weighted/property/row transcripts.
-[The small lossless report](../docs/translation-audit/JPEGXL_V_SMALL_LOSSLESS.md)
+[The grouped frame report](../docs/translation-audit/JPEGXL_V_GROUPED_FRAMES.md)
 records the current scope; [the output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
 records the preceding full checkpoint.
 

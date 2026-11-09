@@ -194,3 +194,27 @@ rejected by this entry point, rather than substituted for its pending visible
 VarDCT frame. Grouped/tiled decoding, filtering, complete static-image support
 and browser integration remain. Production JPEG XL, Cargo/CI hooks and its
 native developer test still require Rust; all-dependency removal is unfinished.
+
+## Grouped lossless frames on 2026-11-09
+
+V now assigns modular channels to global/LF/per-pass sections, decodes and
+stitches grouped coded planes, reverses global transforms and produces final
+RGBA for grouped lossless files. The existing small-only API keeps its limit.
+New reference coverage adds 512 source scheduling/rectangle/stream-ID records
+and 26 complete pixel comparisons from thirteen independent inputs. This
+includes actual LF data, squeeze transforms, reordered sections and a two-pass
+stream with HF data in the final pass. No expected pixel records changed to
+obtain a pass.
+
+Four relevant files pass in both GC modes with unavailable Rust compiler paths:
+default credit combines three unchanged passing files with a corrected frame
+fixture check, while no-GC runs all four together. This is two additional
+implementation slices, 3/10 after the preceding twenty-five-file checkpoint;
+the checker discovers twenty-eight files and 202,666 frozen cases. Formatting
+and documentation add no slice credit, and unrelated ledgers remain unchanged.
+
+[The grouped frame report](JPEGXL_V_GROUPED_FRAMES.md) records commands, source
+pins, corrected failures and limits. VarDCT/frame dependencies, filters, broader
+color conversion, streaming/partial rendering and production integration remain.
+The production Rust JPEG XL backend and its Cargo/CI/developer tools are still
+required; complete Rust dependency removal remains unfinished.
