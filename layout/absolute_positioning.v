@@ -480,6 +480,22 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 		computed, .top, containing_rect.y, containing_height, false, false)
 	mut bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .bottom, containing_rect.y, containing_height, true, false)
+	if first := left {
+		if last := right {
+			if first.plus(last).raw_value() > containing_width.raw_value() {
+				if absolute_axis_starts_low(unsafe { &Node(containing_box) },true) { right=containing_width.minus(first) }
+				else { left=containing_width.minus(last) }
+			}
+		}
+	}
+	if first := top {
+		if last := bottom {
+			if first.plus(last).raw_value() > containing_height.raw_value() {
+				if absolute_axis_starts_low(unsafe { &Node(containing_box) },false) { bottom=containing_height.minus(first) }
+				else { top=containing_height.minus(last) }
+			}
+		}
+	}
 	if zero_horizontal_auto {
 		if left == none { left = CSSPixels.new(0) }; if right == none { right = CSSPixels.new(0) }
 	}
@@ -622,8 +638,14 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 				box_state.margin_right
 			})
 			if left_auto_margin && right_auto_margin {
-				box_state.margin_left = CSSPixels.from_raw(remaining.raw_value() / 2)
-				box_state.margin_right = CSSPixels.from_raw(remaining.raw_value() / 2)
+				if remaining.raw_value() < 0 && containing_box.computed_values().writing_mode() == .horizontal_tb {
+					starts_low := absolute_axis_starts_low(unsafe { &Node(containing_box) },true)
+					box_state.margin_left = if starts_low { CSSPixels.new(0) } else { remaining }
+					box_state.margin_right = if starts_low { remaining } else { CSSPixels.new(0) }
+				} else {
+					box_state.margin_left = CSSPixels.from_raw(remaining.raw_value() / 2)
+					box_state.margin_right = CSSPixels.from_raw(remaining.raw_value() / 2)
+				}
 			} else if left_auto_margin {
 				box_state.margin_left = remaining
 			} else if right_auto_margin {
@@ -648,8 +670,14 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 				box_state.margin_bottom
 			})
 			if top_auto_margin && bottom_auto_margin {
-				box_state.margin_top = CSSPixels.from_raw(remaining.raw_value() / 2)
-				box_state.margin_bottom = CSSPixels.from_raw(remaining.raw_value() / 2)
+				if remaining.raw_value() < 0 && containing_box.computed_values().writing_mode() != .horizontal_tb {
+					starts_low := absolute_axis_starts_low(unsafe { &Node(containing_box) },false)
+					box_state.margin_top = if starts_low { CSSPixels.new(0) } else { remaining }
+					box_state.margin_bottom = if starts_low { remaining } else { CSSPixels.new(0) }
+				} else {
+					box_state.margin_top = CSSPixels.from_raw(remaining.raw_value() / 2)
+					box_state.margin_bottom = CSSPixels.from_raw(remaining.raw_value() / 2)
+				}
 			} else if top_auto_margin {
 				box_state.margin_top = remaining
 			} else if bottom_auto_margin {
