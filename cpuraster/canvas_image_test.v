@@ -1424,13 +1424,6 @@ fn test_nearly_integer_blurs_resample_visible_crops_and_keep_hidden_raw_subsets(
     assert sha256.sum(pixels).hex()[..16] == hashes[index * 6 + p * 3 + variant], 'near crop ${index}/${p}/${variant}'
    }
   }
-  // A real blur before the first shadow still needs a deferred raw-source view.
-  mut pixels := image_test_background()
-  before := pixels.clone()
-  assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
-   image_test_bitmap(13, 7, true, false), [f32(6),1,5,5]!, destination, true, 1, .src_over, [],
-   new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: .8}, CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}]), false)
-  assert pixels == before
  }
 }
 
@@ -1453,6 +1446,34 @@ fn test_nearly_integer_shadow_crops_resolve_each_blur_branch() {
      if variant == 0 { BlendMode.src_in } else { BlendMode.src_over }, clips, new_canvas_filter(filters), false),
      'near shadow crop ${index}/${p}/${variant} declined'
     assert sha256.sum(pixels).hex()[..16] == hashes[index * 6 + p * 3 + variant], 'near shadow crop ${index}/${p}/${variant}'
+   }
+  }
+ }
+}
+
+fn test_cropped_images_resolve_prior_blurs_for_each_shadow_branch() {
+ hashes := ['e17feea807275f4e', '6b3f5b0930ea912b', '33ded603650e84ff', 'd15d0cd562fd73f6', '6b3f5b0930ea912b', '32d51319e56d4777', 'd4755b4df9901c00', '1b1866138f82436d', '6349917112094de8', 'b9deba5f468ad2bc', '1b1866138f82436d', '28172c83523eb971', '4c0917d9498fd356', 'db11fb4b5d13347e', '361c2c98bc82b5dd', '1fc76ac03494d427', 'db11fb4b5d13347e', '62a3c3cdaa464561']
+ for index in 0 .. 3 {
+  scale := math.f32_from_bits(u32(1074161254))
+  transform := [scale, f32(0), 0, scale, 2.25, 3.5]!
+  destination := [math.f32_from_bits([u32(1078836904), 1080834192, 1082480956][index]),
+   math.f32_from_bits(u32(1082230297)), math.f32_from_bits(u32(1075339656)), math.f32_from_bits(u32(1075339654))]!
+  shadow := CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+  gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+  gain100 := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+   matrix: [f32(100),0,0,0,0,0,100,0,0,0,0,0,100,0,0,0,0,0,1,0]!}}
+  sequences := [[gaussian, shadow],
+   [CanvasFilterStep{...gaussian, sigma: .1}, gain100, CanvasFilterStep{...shadow, sigma: .1, offset_x: f32(-1)/scale, offset_y: 0}],
+   [gaussian, shadow, image_test_contrast_filter(), CanvasFilterStep{kind: .blur, sigma: 1.2}, CanvasFilterStep{...shadow, offset_x: -7.25, offset_y: 4.5}]]
+  for p, premul in [true, false] {
+   for variant, filters in sequences {
+    mut pixels := image_test_background()
+    clips := if variant == 1 { [rect_path(Rect{f32(11+index), 14, f32(12+index), 15})] } else { []Path{} }
+    mode := [BlendMode.src_in, .src_over, .plus_lighter][variant]
+    assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+     image_test_bitmap(13, 7, premul, false), [f32(6),1,5,5]!, destination, variant != 0, 1,
+     mode, clips, new_canvas_filter(filters), false), 'prior blur crop ${index}/${p}/${variant} declined'
+    assert sha256.sum(pixels).hex()[..16] == hashes[index * 6 + p * 3 + variant], 'prior blur crop ${index}/${p}/${variant}'
    }
   }
  }
