@@ -26,7 +26,7 @@ pub fn resolve_dominant_baseline_metric(computed_values &css.ComputedValues) css
 
 	// `auto` is alphabetic in horizontal and sideways writing modes, and
 	// central in vertical writing modes with mixed/upright text orientation.
-	// FIXME: Take text-orientation into account once it is implemented.
+	if computed_values.text_orientation() == .sideways { return .alphabetic }
 	return match computed_values.writing_mode() {
 		.horizontal_tb, .sideways_rl, .sideways_lr { css.BaselineMetric.alphabetic }
 		.vertical_rl, .vertical_lr { css.BaselineMetric.central }

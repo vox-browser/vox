@@ -25,7 +25,8 @@ fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horiz
 				if line.is_empty() { continue }
 				// Vertical text shares a central baseline. Line offsets retain
 				// logical block progression, even after physical placement.
-				logical := line.bottom_.minus(line.block_length()).plus(line.block_length().divided_by_float(2))
+				central := resolve_dominant_baseline_metric(container.computed_values()) == .central
+				logical := line.bottom_.minus(line.block_length()).plus(if central { line.block_length().divided_by_float(2) } else { line.baseline() })
 				physical := if grid_axis_reversed(item,true) { used.content_width().minus(logical) } else { logical }
 				return used.margin_box_left().plus(physical)
 			}
@@ -39,9 +40,9 @@ fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horiz
 	}
 	// An orthogonal item has no baseline along this axis. Synthesize from
 	// its border box, using the context's central or alphabetic baseline.
-	central := container.computed_values().writing_mode() != .horizontal_tb
+	central := resolve_dominant_baseline_metric(container.computed_values()) == .central
 	if horizontal {
-		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else { used.border_box_width() })
+		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else if grid_axis_reversed(container,true) { CSSPixels.new(0) } else { used.border_box_width() })
 	}
 	return used.margin_top.plus(if central { used.border_box_height().divided_by_float(2) } else { used.border_box_height() })
 }

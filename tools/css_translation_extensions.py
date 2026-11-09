@@ -1,6 +1,13 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'text-orientation': {
+        'animation-type': 'discrete',
+        'inherited': True,
+        'initial': 'mixed',
+        'requires-computation': 'never',
+        'valid-identifiers': ['mixed', 'upright', 'sideways'],
+    },
     'forced-color-adjust': {
         'animation-type': 'discrete',
         'affects-layout': False,
@@ -95,7 +102,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):

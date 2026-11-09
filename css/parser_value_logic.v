@@ -947,7 +947,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
-		.forced_color_adjust { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+		.forced_color_adjust, .text_orientation { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
 		.font_size_adjust { return parser.parse_font_size_adjust_value(mut tokens) }
 		.font_palette { return parser.parse_font_palette_value(mut tokens) }
 		.page_break_after, .page_break_before, .page_break_inside {

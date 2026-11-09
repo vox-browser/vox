@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'text-orientation' { return .text_orientation }
 	if name == 'forced-color-adjust' { return .forced_color_adjust }
 	if name == 'font-palette' { return .font_palette }
 	if name == 'font-size-adjust' { return .font_size_adjust }
@@ -3205,6 +3206,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.text_orientation { 'text-orientation' }
 		.forced_color_adjust { 'forced-color-adjust' }
 		.font_palette { 'font-palette' }
 		.font_size_adjust { 'font-size-adjust' }
@@ -3691,6 +3693,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_orientation { true }
 		.forced_color_adjust { true }
 		.font_palette { true }
 		.font_size_adjust { true }
@@ -3707,6 +3710,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.text_orientation { 'mixed' }
 		.forced_color_adjust { 'auto' }
 		.font_palette { 'normal' }
 		.font_size_adjust { 'none' }
@@ -4151,6 +4155,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.text_orientation {
+			AnimationType.discrete
+		}
 		.forced_color_adjust {
 			AnimationType.discrete
 		}
@@ -4210,6 +4217,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_orientation { true }
 		.forced_color_adjust { true }
 		.font_palette { true }
 		.font_size_adjust { true }
@@ -4261,6 +4269,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.text_orientation { true }
 		.font_size_adjust { true }
 		// SVG path data changes the path bounds stored in layout UsedValues.
 		.d { true }
@@ -4615,6 +4624,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.text_orientation {
+			lowercase_value in ['mixed', 'upright', 'sideways']
+		}
 		.forced_color_adjust {
 			lowercase_value in ['auto', 'none']
 		}

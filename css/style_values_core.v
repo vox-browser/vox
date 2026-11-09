@@ -2157,6 +2157,8 @@ pub enum Keyword {
 	visible_fill
 	visible_stroke
 	painted
+	mixed
+	sideways
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -2185,6 +2187,8 @@ pub fn is_valid_custom_ident(ident string, blacklist []string) bool {
 
 pub fn string_from_keyword(keyword Keyword) string {
 	return match keyword {
+		.mixed { 'mixed' }
+		.sideways { 'sideways' }
 		.cap { 'cap' }
 		.ex { 'ex' }
 		.trim_start { 'trim-start' }
@@ -3080,6 +3084,8 @@ pub fn string_from_keyword(keyword Keyword) string {
 
 pub fn keyword_from_string(input string) ?Keyword {
 	name := to_ascii_lowercase(input)
+	if name == 'mixed' { return .mixed }
+	if name == 'sideways' { return .sideways }
 	if name == 'cap' { return .cap }
 	if name == 'ex' { return .ex }
 	if name == 'trim-start' { return .trim_start }
