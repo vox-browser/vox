@@ -163,7 +163,7 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
    // A box wholly past the scroll origin in either axis is outside the
    // reachable overflow region. Its unshifted normal-flow alignment bounds
    // above still participate; its positioned border and descendants do not.
-   if wholly_in_unreachable_horizontal_axis || wholly_in_unreachable_vertical_axis { continue }
+   if box.is_scroll_container() && (wholly_in_unreachable_horizontal_axis || wholly_in_unreachable_vertical_axis) { continue }
 			if !overflow_rect_is_empty(child_rect) {
 				if !wholly_in_unreachable_horizontal_axis { scrollable_overflow_rect = overflow_rect_united_horizontally(scrollable_overflow_rect,child_rect) }
 				if !wholly_in_unreachable_vertical_axis { scrollable_overflow_rect = overflow_rect_united_vertically(scrollable_overflow_rect,child_rect) }

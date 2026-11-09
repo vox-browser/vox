@@ -46,3 +46,13 @@ fn test_zero_height_box_past_a_reversed_inline_scroll_origin_keeps_only_alignmen
  scroll := document.get_element_by_id('scroll') or { panic('scroll') }
  assert scroll.scroll_width()==260,'${scroll.scroll_width()}'
 }
+
+fn test_non_scroll_containers_retain_cross_axis_cssom_overflow_from_absolute_boxes() {
+ for overflow in ['visible','scroll'] {
+  mut document := html.parse_document('<!doctype html><style>body{margin:0}#box{position:relative;width:100px;height:100px;overflow:${overflow}}#child{position:absolute;left:-50px;top:0;width:10px;height:500px}</style><div id="box"><div id="child"></div></div>')
+  defer { document.finalize() }
+  _ = layout.layout_document_typed_in_viewport(document,800,600)
+  box := document.get_element_by_id('box') or { panic('box') }
+  assert box.scroll_height()==if overflow=='visible' { 500 } else { 100 },'${overflow}: ${box.scroll_height()}'
+ }
+}
