@@ -9502,7 +9502,8 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 
 fn property_requires_full_invalidation(property_id PropertyID) bool {
 	return match property_id {
-		.float_, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .position {
+		// Counter operations alter generated content throughout their scope.
+		.counter_increment, .counter_reset, .counter_set, .float_, .overflow_block, .overflow_inline, .overflow_x, .overflow_y, .position {
 			true
 		}
 		else {
