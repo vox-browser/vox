@@ -25,7 +25,7 @@ fn test_document_loader_uses_translated_html_parser_and_encoding_detection() {
 	assert document.get_element_by_id('content')?.as_node().text_content()? == 'Привет'
 }
 
-fn test_document_loader_uses_translated_xml_builder_and_mime_parameters() {
+fn test_document_loader_uses_vlib_xml_and_mime_parameters() {
 	associated := parse_document('<!doctype html>')
 	body := '<?xml version="1.0"?><root xmlns="urn:test"><item>A &amp; B</item></root>'.bytes()
 	params := loading_navigation_params(associated, 'application/xml;charset=utf-8', body)

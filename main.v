@@ -397,6 +397,7 @@ struct BrowserApp {
 	NavigationController
 	DocumentSessionRef = new_document_session()
 mut:
+	application                         &App = new_app()
 	paint_colors                        PaintColorCache
 	scroll_profile                      BrowserScrollProfile
 	paint_canvas_culling_disabled       bool
@@ -580,15 +581,6 @@ fn debug_timing_checkpoint(label string, previous u64) u64 {
 		C.fflush(C.stderr)
 	}
 	return now
-}
-
-fn schedule_native_screenshot(path string) {
-	$if macos {
-		C.schedule_native_screenshot(path)
-	}
-	$if linux || windows {
-		capture_portable_screenshot(path)
-	}
 }
 
 fn configure_browser_layout_font(configure_native_replay bool) bool {
@@ -7994,14 +7986,14 @@ fn (mut app BrowserApp) draw() {
 					f64(app.viewport_width), f64(app.viewport_height), voidptr(&app), native_document_capture_audit)
 			} $else {
 				app.write_capture_audit_if_requested()
-				schedule_native_screenshot(app.screenshot_path)
+				app.application.schedule_native_screenshot(app.screenshot_path)
 			}
 		} else {
 			app.write_capture_audit_if_requested()
-			schedule_native_screenshot(app.screenshot_path)
+			app.application.schedule_native_screenshot(app.screenshot_path)
 		}
 	}
-	$if linux || windows { finish_portable_frame() }
+	$if linux || windows { app.application.finish_portable_frame() }
 }
 
 fn (app &BrowserApp) element_at_window_point(mouse_x f32, mouse_y f32) ?&dom.Element {
@@ -8455,7 +8447,10 @@ fn main() {
 	$if macos {
 		native_paint_expected = needs_native_font_replay
 	}
+	mut application := new_app()
+	defer { application.close() }
 	mut app := &BrowserApp{
+		application: application
 		markup: markup
 		seed_optimized_bookmarks: options.screenshot == '' && !options.headless_smoke && !options.headless_layout_tree
 		restore_tab_path: options.restore_tab

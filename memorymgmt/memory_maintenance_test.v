@@ -10,6 +10,7 @@ fn test_first_native_replay_of_an_already_recorded_document_is_active_work() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	mut app := BrowserApp{document: document}
+	defer { app.application.close() }
 	app.memory_maintenance.document_changed(1_000_000_000)
 	// The display list was adopted before draw(), so its identity is unchanged.
 	app.finish_frame_memory_activity(3_000_000_000, app.paint_generation)
@@ -104,6 +105,7 @@ fn test_unchanged_document_replays_preserve_the_idle_timer_and_allow_cleanup() {
 	app.install_loaded_page(LoadedPage{url:'https://www.theverge.com/', content_type:'text/html', markup:'<!doctype html><p id="kept">retained</p>'}, false)
 	mut document := app.document
 	defer {
+		app.application.close()
 		if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() }
 		document.finalize()
 	}
@@ -163,7 +165,10 @@ fn test_changed_document_restarts_idle_timer_but_empty_frames_create_no_activity
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
 	mut app := BrowserApp{document: document, ctx: &gg.Context{}, document_presented: true}
-	defer { if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() } }
+	defer {
+		app.application.close()
+		if app.memory_maintenance.cleanup_timer != unsafe { nil } { app.memory_maintenance.cleanup_timer.stop() }
+	}
 	app.memory_maintenance.document_changed(1_000_000_000)
 	app.finish_frame_memory_activity(2_000_000_000, app.paint_generation)
 	$if gcboehm ? { app.memory_maintenance.cleanup_timer.restart_with_interval(30_000) }

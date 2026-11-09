@@ -5,6 +5,17 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 Translation workspace: `~/code/vox2`
 Audited: 2026-09-30
 
+## XML parser migration — 2026-11-09
+
+XML syntax parsing now uses V's `encoding.xml`. The pure input adapter in
+`xmlcompat/parser.v` preserves browser XML input conventions, while
+`html/xml_parser.v` maps the resulting vlib tree into DOM nodes. The translated
+`xml/` module has been removed. Document loading and XHR retain their source,
+readiness, and completion-event handling in `html/xml_document.v`; DOMParser and
+fragments share the same XML source parser. Focused tests cover the input
+adapter separately from the DOM integration in `html/`. The dated translation
+inventories below retain their original audit totals.
+
 ## Upstream delta since the V snapshot
 
 The last Ladybird commit on 2026-03-24 is

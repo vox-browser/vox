@@ -1,0 +1,54 @@
+name: macOS instruction counter capability
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - tools/probe_macos_instructions.py
+      - .github/workflows/macos-instruction-probe.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-instruction-probe-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capability:
+    name: Counter capability (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-15-intel]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Probe counters and Metal availability only
+        timeout-minutes: 2
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/vox-instruction-probe"
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-instruction-probe/probe.lock" \
+            --report "$RUNNER_TEMP/vox-instruction-probe/guard.json" \
+            --limit-gib 3 --timeout 60 -- \
+            python3 tools/probe_macos_instructions.py \
+              --output "$RUNNER_TEMP/vox-instruction-probe/probe.json" \
+            2>&1 | tee "$RUNNER_TEMP/vox-instruction-probe/probe.log"
+
+      - name: Preserve capability and failure evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-instruction-capability-${{ matrix.runner }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/vox-instruction-probe/

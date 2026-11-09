@@ -13,6 +13,21 @@ inventory, not current logic, generated-binding or browser parity. The current
 audit and fix evidence is in `docs/translation-audit/`; mapping a source name or
 a runtime hook does not establish that its complete logic was translated.
 
+## Structured storage integer codec
+
+`structured_leb128.v` uses vlib `encoding.leb128` in place of the handwritten
+AK/LEB128 translation for structured storage, File timestamps and CryptoKey
+metadata. The adapter preserves unsigned 16/32/64-bit and signed 32/64-bit
+width limits, valid padded encodings, failure cursor positions and existing
+`DataCloneError` messages. IPC continues to use its fixed-width format.
+Encoded temporary arrays are freed after their bytes are copied into the
+serialization record.
+
+`structured_leb128_test.v` covers wire bytes, padding, terminal-byte limits,
+truncation, sequential fields and IPC. The Linux CI allocator matrix also runs
+the existing storage, FileAPI and CryptoKey codec tests against the full HTML
+module.
+
 
 ## Native inherited UIEvent binding
 

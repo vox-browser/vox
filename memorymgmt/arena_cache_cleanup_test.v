@@ -52,6 +52,7 @@ fn test_arena_idle_cleanup_is_armed_by_a_finished_static_native_frame() {
 	document.update_readiness(.complete)
 	mut app := &BrowserApp{ document: document, ctx: &gg.Context{ native_rendering: true }, document_presented: true }
 	defer {
+		app.application.close()
 		if app.memory_maintenance.cleanup_timer != unsafe { nil } {
 			app.memory_maintenance.cleanup_timer.stop()
 		}
@@ -137,6 +138,7 @@ fn test_scripted_native_idle_cleanup_retires_reset_pages_and_preserves_live_java
 		document_presented: true
 	}
 	defer {
+		app.application.close()
 		if app.memory_maintenance.cleanup_timer != unsafe { nil } {
 			app.memory_maintenance.cleanup_timer.stop()
 		}

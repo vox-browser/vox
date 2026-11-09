@@ -83,9 +83,9 @@ fn (m &NamedCharacterReferenceMatcher) overconsumed_code_points() int {
 	return m.consumed.len - m.last_match.len
 }
 
-// XMLDocumentBuilder's LibXML callback resolves only complete, semicolon-
-// terminated named HTML references. Expose the generated table without
-// exposing the tokenizer's incremental matcher.
+// The XML adapter resolves complete named HTML references through the same
+// generated table as the HTML tokenizer, without exposing its incremental
+// matcher.
 pub fn resolve_named_character_reference(name string) ?string {
 	key := if name.ends_with(';') { name } else { name + ';' }
 	index := named_char_ref_lower_bound(key)
