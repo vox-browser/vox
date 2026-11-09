@@ -2907,7 +2907,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		install_grid_item_subgrid_data(mut state, placement.item, columns, rows, column_lines,
 			row_lines, placement, effective_column_gap, row_gap)
 		item_state.set_containing_block_used_values(container_state)
-		item_state.set_box_model_percentage_basis(if grid_is_vertical(container) { grid_track_range_size(rows,placement.row,placement.row_span,row_gap) } else { area_width })
+		// Vertical inline tracks may still have an intrinsic minimum here.
+		// Keep the definite basis established before column sizing until those
+		// rows have been finalized, rather than overwriting it with a zero base.
+		if !grid_is_vertical(container) { item_state.set_box_model_percentage_basis(area_width) }
 		resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
 		if subgridded_columns {
 			apply_subgrid_gap_extra_margins(container, mut item_state, placement, true, columns.len,
