@@ -175,3 +175,22 @@ ledgers were not changed or rerun.
 [The output sample report](JPEGXL_V_OUTPUT_SAMPLES.md) records the exact native
 rounding boundary, attribution, commands and memory observations. Final frame
 decoding and production/developer-tool Rust removal remain unfinished.
+
+## Small complete lossless files on 2026-11-09
+
+The new pure V `decode_small_lossless_rgba` entry point now produces final
+straight and premultiplied RGBA for its bounded single-frame, single-group,
+unfiltered 8-bit sRGB/gray modular subset. Its 498 complete-file comparisons
+match the existing pinned production helper exactly: 24 successes and 474
+rejections, including all eight orientations, containers, hidden straight colors,
+position-dependent alpha quantization and every-byte truncations of four inputs.
+The new focused file passes in both GC modes with unavailable Rust compiler
+paths. This is 1/10 after the preceding full twenty-five-file JPEG XL checkpoint;
+the checker now discovers twenty-six files and 202,128 frozen source cases.
+
+[The small lossless report](JPEGXL_V_SMALL_LOSSLESS.md) records the narrower
+acceptance boundary and commands. Guardian's non-visible first LF frame is
+rejected by this entry point, rather than substituted for its pending visible
+VarDCT frame. Grouped/tiled decoding, filtering, complete static-image support
+and browser integration remain. Production JPEG XL, Cargo/CI hooks and its
+native developer test still require Rust; all-dependency removal is unfinished.

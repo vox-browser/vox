@@ -1,9 +1,9 @@
 # JPEG XL V decoder port
 
 The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package decodes complete modular streams and the raw
-planes of small modular global sections. It does not render a complete JPEG XL image or
-remove that final Rust dependency yet.
+builds that helper. This package decodes complete modular streams, small modular
+global sections and a bounded lossless subset to final RGBA. It does not replace
+the production decoder or remove that final Rust dependency yet.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
 `6513ef8722db71eea2b3806ea71b8d9b39481f214af295788d7ceb4d3395eb9e`.
@@ -154,7 +154,7 @@ and parent positions. All checks pass in both GC modes. The source does not
 finalize the isolated permutation symbol reader's ANS/deferred-error state;
 this behavior is retained, rather than claimed as full bitstream validation.
 A separate regression preserves source EOF consumption after section splitting
-fails. The sections are located and checked, not decoded into pixels yet.
+fails. These TOC checks locate sections rather than establish final pixels.
 
 Modular group headers now parse global-tree selection, weighted-predictor
 coefficients, reversible color transforms, palettes and explicit/automatic
@@ -266,14 +266,31 @@ channel, all integer depths and constructed rounding ties. The unchanged dither
 table retains its original attribution in `DITHER_NOTICE.md`. Source scalar
 fallback tie behavior and final frame output remain separate boundaries.
 
-The corpus checker discovers twenty-five test files. The full package passes
-in both GC modes with unavailable Rust compiler paths after ten completed slices
-since the preceding fifteen-file batch. JPEG XL cadence resets to 0/10; unrelated
-broader suites were not rerun. The package checks 201,630 source cases, counting
+`decode_small_lossless_rgba` now connects container/file/frame/TOC parsing,
+small global planes, sample conversion, alpha and all eight orientations. It
+returns owned straight or premultiplied RGBA rows for one full, unfiltered,
+single-group 8-bit sRGB/gray modular frame with at most one full-size alpha
+channel. It rejects unsupported services explicitly; the production decoder
+accepts a broader set of static images. Preview/ICC/XYB/YCbCr, grouped frames,
+resampling, filters, extra-channel services, composition and unhandled trailing
+payloads are outside this entry point.
+
+The final-pixel corpus has 498 complete-file cases from the existing pinned
+production helper: 24 accepted outputs and 474 rejections. Every byte, size and
+pitch matches, including containers, all orientations, straight hidden colors
+and positional premultiplication. Every-byte prefixes of four valid fixtures
+are rejected in both output modes. A separate check rejects Guardian's pending
+LF/VarDCT chain rather than returning its non-visible first frame.
+
+The corpus checker discovers twenty-six test files. The preceding twenty-five
+file package passed in both GC modes at the ten-slice checkpoint; the new
+complete-file test passes focused checks in both modes with unavailable Rust
+compiler paths. JPEG XL cadence is 1/10 after that checkpoint; unrelated broader
+suites were not rerun. The package checks 202,128 source cases, counting
 individual ANS alias transitions and whole weighted/property/row transcripts.
-[The output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
-records the current checkpoint; [the modular stream report](../docs/translation-audit/JPEGXL_V_MODULAR_STREAMS.md)
-records the preceding coverage and limits.
+[The small lossless report](../docs/translation-audit/JPEGXL_V_SMALL_LOSSLESS.md)
+records the current scope; [the output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
+records the preceding full checkpoint.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
