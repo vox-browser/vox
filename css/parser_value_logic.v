@@ -14492,6 +14492,9 @@ fn (mut parser Parser) parse_image_value_allowing_image_set(mut tokens Component
 	if component_value.is_function_named('light-dark') {
 		return CSSImageSourceStyleValue(parser.parse_light_dark_image_function(component_value, allow_image_set)?)
 	}
+	if component_value.is_function_named('-webkit-cross-fade') {
+		return CSSImageSourceStyleValue(parser.parse_webkit_cross_fade_image(component_value,allow_image_set)?)
+	}
 	if component_value.is_function_named('image') {
 		mut inner := ComponentValueStream.new(component_value.function().value)
 		color := parser.parse_color_value(mut inner) or { return none }

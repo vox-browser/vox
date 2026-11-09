@@ -232,7 +232,7 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 			match value.name() {
 				'add' { property_id == .math_depth }
 				'fit-content' { property_accepts_type(property_id, .fit_content) }
-				'image' { property_accepts_type(property_id, .image) }
+				'image', '-webkit-cross-fade' { property_accepts_type(property_id, .image) }
 				'stylistic', 'styleset', 'character-variant', 'swash', 'ornaments', 'annotation' {
 					property_id == .font_variant_alternates
 				}
@@ -8944,7 +8944,7 @@ pub fn (style_value &StyleValue) has_color() bool {
 pub fn (style_value &StyleValue) is_abstract_image() bool {
 	return match style_value {
 		LightDarkStyleValue { style_value.image_ }
-		FunctionStyleValue { style_value.name() == 'image' }
+		FunctionStyleValue { style_value.name() in ['image','-webkit-cross-fade'] }
 		ImageStyleValue, ImageSetStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
 			true
 		}

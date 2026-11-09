@@ -420,7 +420,8 @@ pub fn (style_value FunctionStyleValue) value() StyleValue {
 }
 
 pub fn (style_value FunctionStyleValue) absolutized(context ComputationContext) StyleValue {
-	absolutized_value := style_value.value_[0].absolutized(context)
+	computed_value := style_value.value_[0].absolutized(context)
+	absolutized_value := if style_value.name_ == '-webkit-cross-fade' { compute_webkit_cross_fade(computed_value,context) } else { computed_value }
 	if absolutized_value.equals(style_value.value_[0]) {
 		return StyleValue(style_value)
 	}
