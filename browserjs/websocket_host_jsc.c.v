@@ -41,7 +41,7 @@ pub fn (mut host WebSocketHost) install(mut runtime Runtime) ! {
 			else { host.runtime.actual_webidl_value(value)! }
 		}
 	})!
-	websocket_hosts_ << &host
+	register_websocket_host(&host)
 	runtime.add_close_handler(fn [host_handle] () {
 		mut host := unsafe { &WebSocketHost(host_handle) }
 		host.close()

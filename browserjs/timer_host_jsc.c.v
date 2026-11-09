@@ -3,12 +3,28 @@ module browserjs
 
 import dom
 import html
+import platform
 import trustedtypes
 import webidl
 
 
 __global timer_host_bindings_ = map[voidptr]&TimerHost{}
 __global timer_scope_bindings_ = map[voidptr]&TimerHost{}
+
+fn register_timer_host(owner_handle voidptr, scope_handle voidptr, host &TimerHost) {
+	// Global lookup tables outlive every document that grows them.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	timer_host_bindings_[owner_handle] = host
+	timer_scope_bindings_[scope_handle] = host
+}
+
+fn unregister_timer_host(owner_handle voidptr, scope_handle voidptr) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	timer_host_bindings_.delete(owner_handle)
+	timer_scope_bindings_.delete(scope_handle)
+}
 
 pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 	runtime.require_javascript_value_context()!
@@ -65,13 +81,11 @@ pub fn (mut host TimerHost) install(mut runtime Runtime) ! {
 	installer := runtime.evaluate_host_value(timer_host_bootstrap)!
 	defer { runtime.release_javascript_value(installer) }
 	runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operation])!
-	timer_host_bindings_[owner_handle] = &host
-	timer_scope_bindings_[scope_handle] = &host
+	register_timer_host(owner_handle, scope_handle, &host)
 	runtime.add_close_handler(fn [host_handle, owner_handle, scope_handle] () {
 		mut host := unsafe { &TimerHost(host_handle) }
 		host.close()
-		timer_host_bindings_.delete(owner_handle)
-		timer_scope_bindings_.delete(scope_handle)
+		unregister_timer_host(owner_handle, scope_handle)
 	})
 }
 

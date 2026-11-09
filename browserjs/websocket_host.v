@@ -7,6 +7,7 @@ module browserjs
 import browsernet
 import dom
 import html
+import platform
 import webidl
 
 @[heap]
@@ -27,6 +28,25 @@ mut:
 
 __global websocket_hosts_ = []&WebSocketHost{}
 __global websocket_wake_ = fn () {}
+
+fn register_websocket_host(host &WebSocketHost) {
+	// The process-wide registry must survive the document/frame that installs
+	// a host. The host itself keeps its existing runtime/document ownership.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	websocket_hosts_ << host
+}
+
+fn unregister_websocket_host(host &WebSocketHost) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	for index, other in websocket_hosts_ {
+		if voidptr(other) == voidptr(host) {
+			websocket_hosts_.delete(index)
+			break
+		}
+	}
+}
 
 // Embedders wake their frame loop so poll_websocket_hosts() runs promptly.
 // The wake function is called on connection threads.
@@ -60,12 +80,7 @@ pub fn (mut host WebSocketHost) close() {
 		connection.close(1001, '')
 	}
 	host.sockets = {}
-	for index, other in websocket_hosts_ {
-		if voidptr(other) == voidptr(&host) {
-			websocket_hosts_.delete(index)
-			break
-		}
-	}
+	unregister_websocket_host(&host)
 	if host.function != unsafe { nil } && !host.runtime.closed {
 		host.runtime.release_javascript_value(host.function)
 	}
