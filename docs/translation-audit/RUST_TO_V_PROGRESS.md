@@ -651,3 +651,18 @@ focused file passes default/no-GC/optimized checks with actual exits zero and
 records source/artifact pins and checks. Noise rendering, patches/splines,
 composition and production/tool integration remain. Production JPEG XL and
 its native developer tool still require Rust.
+
+## JPEG XL noise color application on 2026-11-09
+
+Another slice applies noise to source-space color with explicit LUT precision.
+The original ARM64 stage supplies 768 records and 73,728 exact float words;
+256 exactly representable LUT cases also check full-precision lookup. The
+package has 284,991 records and 93 test files. Two focused files pass default/
+no-GC/optimized checks with actual exits zero and 662 unchanged inputs. Failed
+contraction attempts retain no whole-run pass credit; final source preserves
+unfused B rounding without changing gold. Cadence is 9/10 after the 84-file
+checkpoint; no full 93-file run is claimed.
+[The noise-application report](JPEGXL_V_NOISE_APPLICATION.md) records pins,
+precision limits and checks. Fields/convolution, whole-file noise, patches/
+splines, composition and production/tool integration remain. Production JPEG XL
+and its native developer tool still require Rust.

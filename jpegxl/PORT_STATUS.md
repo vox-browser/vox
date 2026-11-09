@@ -613,6 +613,17 @@ color application and whole-file integration remain. Cadence is 8/10; no full
 ninety-two-file run is claimed.
 See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).
 
+A further slice translates noise color application with explicit LUT precision.
+Another 768 native stage records compare all 73,728 float words exactly;
+256 exactly representable LUT cases also check the full-precision option.
+Separate B-channel expressions preserve source rounding instead of C's fused
+contraction. Two failed attempts retain no whole-run pass credit; gold remains
+unchanged. The count is 284,991 source records and ninety-three test files.
+Two focused files pass default/no-GC/optimized checks with actual exits zero
+and 662 unchanged inputs. Field construction, convolution and whole-file noise
+integration remain. Cadence is 9/10; no full ninety-three-file run is claimed.
+See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

@@ -199,3 +199,12 @@ and 659 unchanged inputs. Cadence is 8/10; no full 92-file run is claimed.
 Checked-in verification uses V alone; whole-file noise and production/native
 developer-tool replacement remain unfinished.
 See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).
+
+Noise color application adds 768 original stage records and 73,728 exact float
+words: 284,991 records and 93 JPEG XL test files total. Two focused files pass
+default/no-GC/optimized checks with actual exits zero and 662 unchanged inputs.
+Two failed attempts expose C contraction; final source keeps the unfused B
+operation, with native gold unchanged. Cadence is 9/10; no full 93-file run is
+claimed. Whole-file noise and production/native developer-tool replacement
+remain unfinished.
+See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
