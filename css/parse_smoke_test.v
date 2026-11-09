@@ -755,7 +755,7 @@ fn test_parse_as_type_covers_the_upstream_value_type_switch() {
 	assert parsed_type('circle()', .basic_shape)?.serialize(.normal).starts_with('circle(')
 	assert parsed_type('path("")', .basic_shape) == none
 	assert parsed_type('path("L 1 2")', .basic_shape) == none
-	assert parsed_type('path("M0 0L3 4")', .basic_shape)?.serialize(.normal) == 'path(nonzero, "M 0 0 L 3 4")'
+	assert parsed_type('path("M0 0L3 4")', .basic_shape)?.serialize(.normal) == 'path("M 0 0 L 3 4")'
 	assert parsed_type('counter(item)', .counter)?.serialize(.normal).starts_with('counter(')
 	assert parsed_type('decimal', .counter_style)?.serialize(.normal) == 'decimal'
 	assert parsed_type('blur(2px)', .filter_value_list)?.serialize(.normal) == 'blur(2px)'
@@ -785,7 +785,7 @@ fn test_svg_d_property_accepts_none_and_path_only() {
 	assert parse_css_value_logic(.d, 'none')?.serialize(.normal) == 'none'
 	path := parse_css_value_logic(.d, 'path("M0 0L3 4")')?
 	assert path is BasicShapeStyleValue
-	assert path.serialize(.normal) == 'path(nonzero, "M 0 0 L 3 4")'
+	assert path.serialize(.normal) == 'path("M 0 0 L 3 4")'
 	assert parse_css_value_logic(.d, 'circle(10px)') == none
 	assert parse_css_value_logic(.d, 'M0 0L3 4') == none
 }

@@ -910,18 +910,7 @@ pub fn (shape BasicShapePolygon) serialize(mode SerializationMode) string {
 pub fn (shape BasicShapePath) serialize(mode SerializationMode) string {
 	mut serialized := 'path('
 
-	// For serializing computed values, component values are computed, and omitted when possible without changing the
-	// meaning. NB: So, we don't include `nonzero` in that case.
-	if !(mode == .resolved_value && shape.fill_rule == .nonzero) {
-		match shape.fill_rule {
-			.nonzero {
-				serialized += 'nonzero, '
-			}
-			.evenodd {
-				serialized += 'evenodd, '
-			}
-		}
-	}
+	if shape.fill_rule == .evenodd { serialized += 'evenodd, ' }
 
 	serialized += serialize_a_string(shape.path_instructions)
 	serialized += ')'

@@ -7491,10 +7491,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 		}
 		RectStyleValue {
 			if to is RectStyleValue {
-				top := interpolate_style_value_impl(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
-				right := interpolate_style_value_impl(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
-				bottom := interpolate_style_value_impl(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
-				left := interpolate_style_value_impl(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
+				top := interpolate_rect_edge(calculation_context, from.top(), to.top(), delta, allow_discrete) or { return none }
+				right := interpolate_rect_edge(calculation_context, from.right(), to.right(), delta, allow_discrete) or { return none }
+				bottom := interpolate_rect_edge(calculation_context, from.bottom(), to.bottom(), delta, allow_discrete) or { return none }
+				left := interpolate_rect_edge(calculation_context, from.left(), to.left(), delta, allow_discrete) or { return none }
 				StyleValue(RectStyleValue.create(top, right, bottom, left))
 			} else {
 				none
@@ -16189,4 +16189,9 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 fn composite_rect_edge(property PropertyID,underlying StyleValue,animated StyleValue,operation CompositeOperation) ?StyleValue {
  if underlying is KeywordStyleValue && animated is KeywordStyleValue && underlying.to_keyword()==.auto && animated.to_keyword()==.auto { return underlying }
  return composite_style_value(property,underlying,animated,operation)
+}
+
+fn interpolate_rect_edge(context InterpolationCalculationContext,from StyleValue,to StyleValue,delta f64,allow_discrete AllowDiscrete) ?StyleValue {
+ if from is KeywordStyleValue && to is KeywordStyleValue && from.to_keyword()==.auto && to.to_keyword()==.auto { return from }
+ return interpolate_style_value_impl(context,from,to,delta,allow_discrete)
 }

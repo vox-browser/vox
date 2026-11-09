@@ -34,3 +34,12 @@ fn test_rect_style_value_absolutizes_each_edge() {
 	assert edges.bottom_edge.length() or { Length.make_px(0) } == Length.make_px(32)
 	assert edges.left_edge.length() or { Length.make_px(0) } == Length.make_px(4)
 }
+
+fn test_rect_interpolation_preserves_matching_auto_edges_while_interpolating_lengths() {
+ a := StyleValue(parsed_rect('rect(50px auto auto 50px)'))
+ b := StyleValue(parsed_rect('rect(100px auto auto 100px)'))
+ for progress,expected in {'-1':'rect(0px, auto, auto, 0px)','0.25':'rect(62.5px, auto, auto, 62.5px)','2':'rect(150px, auto, auto, 150px)'} {
+  value := interpolate_style_value(InterpolationCalculationContext{property:.clip},a,b,progress.f64(),.no) or { panic('interpolation') }
+  assert value.serialize(.normal)==expected
+ }
+}
