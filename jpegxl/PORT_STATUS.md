@@ -636,8 +636,10 @@ The count is 285,019 source records and ninety-four test files. Focused checks
 pass both GC modes and optimized builds with actual exits zero and 693 unchanged
 final inputs. Default coverage composes three retained passes with the corrected
 noise file; the original zero-shape failure has no whole-batch pass credit.
-This reaches 10/10 after the full eighty-four-file checkpoint. The required full
-ninety-four-file default/no-GC checks are pending; cadence has not reset.
+The full ninety-four-file corpus now passes both GC modes with actual tests,
+inner guards, drivers and outer guards exiting zero. All 701 selected input
+hashes/change times and the compiler remain unchanged. This completes the ten
+slices after the eighty-four-file checkpoint and resets cadence to 0/10.
 See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
 
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted

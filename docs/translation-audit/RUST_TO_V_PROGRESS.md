@@ -680,8 +680,10 @@ frames remain unsupported.
 Focused checks pass both GC modes and optimized builds with actual exits zero
 and 693 unchanged final inputs. Default coverage combines three retained passes
 with the corrected noise file; the original failed batch retains no whole-run
-credit. This reaches 10/10 after the 84-file checkpoint. Required full 94-file
-checks are pending; cadence has not reset.
+credit. Full 94-file corpus checks now pass both GC modes with actual tests,
+inner guards, drivers and outer guards exiting zero, and all 701 selected input
+hashes/change times unchanged. The ten-slice checkpoint completes; cadence
+resets to 0/10.
 [The whole-noise report](JPEGXL_V_NOISE_FRAMES.md) records source/tool pins,
 independent header verification, failures and checks. Patches/splines, reference
 composition, wider channels/LF combinations and production/tool integration

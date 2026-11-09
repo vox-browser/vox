@@ -215,6 +215,8 @@ verifies independently rewritten headers/TOCs; zero controls retain base pixels
 and every nonzero-LUT file changes its native image. Focused default/no-GC/
 optimized checks pass with actual exits zero and 693 unchanged final inputs;
 the original failed default batch retains no whole-run credit. This reaches
-10/10 after the 84-file checkpoint. Required full 94-file checks are pending;
-no cadence reset is claimed. Production and its native tool still use Rust.
+10/10 after the 84-file checkpoint. Full 94-file checks now pass both GC modes,
+with actual tests/inner guards/drivers/outer guards exiting zero and all 701
+selected input hashes/change times unchanged. Cadence resets to 0/10.
+Production and its native tool still use Rust.
 See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).

@@ -108,9 +108,37 @@ performance comparison.
 
 ## Required full checkpoint
 
-This is slice **10/10** after the full 84-file checkpoint. The full 94-file
-checker runs in default and no-GC modes are pending; this report does not yet
-claim a full 94-file pass or cadence reset.
+The full **94-file checkpoint passes in both GC modes**, completing the ten
+slices after the 84-file checkpoint and resetting the cadence to **0/10**.
+Actual tests, inner guards, corpus drivers and outer guards all exit zero.
+
+| Mode | Test workers | Passed | Inner peak RSS, bytes | Inner seconds | Outer peak RSS, bytes | Outer seconds |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Boehm | 1 | 94/94 | 348,028,928 | 630.407 | 612,007,936 | 635.722 |
+| No GC | 2 | 94/94 | 1,905,836,032 | 374.225 | 2,137,014,272 | 378.970 |
+
+Both modes run sequentially through `tools/check_translation_corpora.v`, with
+`--suite jpegxl --gc MODE --compiler /Users/alex/code/v/v --jobs WORKERS` and
+`V_MACOS_V3_NO_FALLBACK=1`, `VJOBS=1`, unavailable `RUSTC`/`RUST_CARGO` paths.
+The driver sets the table's worker count, retains its aggregate **3 GiB** guard,
+and executes `v -memory-limit 10G -enable-globals -b c -cc clang -gc MODE test
+jpegxl`. The outer driver compilation uses `v -memory-limit 10G -b c -cc clang
+run`, the default **12 GiB** guard and a 7,200-second timeout. Separate locks
+and reports belong to `Build/pure-v-jpegxl-noise-frame-20261109-30`.
+
+All **701 selected input hashes and change times** are unchanged throughout
+both completed modes; their identical manifest SHA-256 is
+`b3a6f210ca17ecdc30d953eb335bcec1f8f0ebd8d355b1d99a2996c85aa5ea7a`.
+The compiler remains V 0.5.2 a5bda29, executable SHA-256
+`53ae5fd6323569d6e2915db8305b3db5603b700f4e2f0f1cb8968772acd041b7`.
+Host observations: 18 CPUs; Boehm starts at 15:24:40 UTC with loads
+107.352/144.855/132.720; no GC starts at 15:35:16 UTC with loads
+54.260/61.457/91.023, on 2026-11-09. Different worker counts and contention
+make these correctness observations, not a speed comparison.
+
+An earlier Boehm attempt stopped after 38/94 files and left an empty guard
+receipt. Its inputs remained unchanged, but it receives no whole-suite pass
+credit. Both complete replacement runs above have actual completion receipts.
 
 Production JPEG XL and its native developer tool still use Rust. Patches/splines,
 frame/reference composition, wider channel/LF combinations and production/tool
