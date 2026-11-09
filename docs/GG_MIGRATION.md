@@ -1748,3 +1748,40 @@ Its direct libraries are FreeType, libm and libc. The browser typecheck uses
 installed Skia development files, and the complete browser still links Skia.
 Full-browser Linux compile/link/run without Skia remains unverified.
 See the [native branch-reset fixtures and guarded checks](gg-migration/rejected-shadow-graphs-20261109.json).
+
+
+### Cropped deferred image views (2026-11-09)
+
+`c03433aba` retains MakeFromImage's layer crop on deferred foregrounds and
+shadow source views. The renderer clips intermediate source-over draws to
+that crop. A visible crop followed by a fractional offset resolves the tinted
+input first, preserving the crop and its quantization through both sampling
+operations. Identity-first graphs bypass the raw blur-subset shortcut.
+
+A bounded geometry search found three exact float inputs whose mapped image
+extends one pixel past its stored layer bounds. The prior renderer declined
+all three identity-shadow probes. Their float bits are frozen in twelve
+independent native cases, covering identity, real and rejected shadow blurs,
+alpha matrices, P3, unpremultiplied sources and clearing composites. All 177
+native image fixtures verify on both platforms; C/FastC image and filter-layer
+regressions pass.
+
+Default macOS and Linux each match 880 of 1,000 crop-focused attempts at seed
+20261127, declining 120. Optimized macOS/no-GC matches 880 of 1,000 at seed
+20261128, also declining 120. Earlier identity/rejected-only cohorts each
+match 453 of 500 and decline 47. Counts include no-ops; all cohorts finish
+with unchanged input pins. The initial probe is diagnostic evidence, not a
+performance measurement.
+
+HTML canvas integration, the full Linux browser typecheck and zero-contraction
+FMA audit (189 explicit operations) pass. The Linux standalone production/no-GC
+image binary executes all 43 registered tests with Skia unavailable to
+pkg-config and no direct or transitive Skia linkage; direct libraries are
+FreeType, libm and libc. The browser typecheck uses installed Skia development
+files, and the complete browser still links Skia. The older shared production
+bundle predates this change.
+
+Raw near-integer real-blur crop/resampling cases and other layer crops remain,
+along with rotated layers, SVG graphs, boolean shadows, large-sigma/tiling
+paths and native/GPU services. Full-browser Linux compile/link/run without
+Skia remains unverified. See the [native crop cases, baseline probes and guarded checks](gg-migration/deferred-image-crops-20261109.json).
