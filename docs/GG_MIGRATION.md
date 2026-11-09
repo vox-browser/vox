@@ -2128,3 +2128,30 @@ The current browser typecheck stops at a CSS highlight-selector error before
 execution. The inherited FastC degenerate-gradient failure remains open.
 The complete browser still links Skia; full Linux compile/link/run without
 it remains unverified. See the [retained checks and failures](https://github.com/vox-browser/vox-tests/blob/b61c01f7326843d005cad1f3e5f9a1269da5db2f/evidence/gg-migration/external-suite-and-large-shadows-20261109.json).
+
+
+### Large source-image drop shadows (2026-11-09)
+
+`24e007856` retains original image coordinates, RGBA filtering rules and
+source alpha/color metadata through large shadow blur and merge. An eligible
+deferred foreground is drawn from its original view. This covers aligned
+sources, prescribed fractional AA surfaces and eligible near-integer sources;
+other deferred large mappings keep their guards.
+
+The baseline declines all 500 attempts at seed 20261191; the candidate matches
+395 of that same 500. Final default C cohorts match 1,563 of 2,000 on both
+macOS and Linux at seed 20261192, declining 437. Optimized macOS/no-GC matches
+777 of 1,000 at seed 20261193, declining 223. Counts include no-ops; every
+completed cohort retains unchanged input pins. Twenty-two independent native
+shadow fixtures verify on each platform. Their bulk inputs and receipts live
+in `vox-tests`; the focused V regression uses compact hashes and existing inputs.
+
+Focused C/FastC image suites, Linux HTML canvas integration, the full Linux
+browser typecheck and the C FMA audit pass (zero contracted, 189 explicit).
+The standalone Linux production/no-GC image executable explicitly runs all
+five test functions with Skia unavailable to pkg-config. Its link command,
+`readelf` and `ldd` show no direct or transitive Skia dependency. This verifies
+the component: the browser integration checks still use installed Skia, and
+full Linux browser compile/link/run without it remains open. The older shared
+bundle was not used to validate this change. See the [native cases, guarded
+cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/202eeab62636f300465f78280e3fc9e7ce9a31c3/evidence/gg-migration/large-source-image-shadows-20261109.json).
