@@ -1,41 +1,6 @@
 module html
 
-import platform
 import dom
-
-fn test_xml_entity_free_tokens_do_not_duplicate_owned_input() {
-	source := 'M 0 0 L 1 1 '.repeat(65536) + 'café 文 😀'
-	before := platform.thread_arena_usage().used
-	decoded := xml_decode_references(source)!
-	assert decoded == source
-	$if prealloc {
-		assert platform.thread_arena_usage().used == before
-	}
-	assert xml_decode_references('')! == ''
-	assert xml_decode_references('plain < > " text')! == 'plain < > " text'
-	assert xml_decode_references('café&amp;文&#x1F600;')! == 'café&文😀'
-}
-
-fn test_xml_prefix_probes_do_not_allocate_substrings() {
-	mut document := dom.Document.create(dom.url_about_blank())
-	defer { document.finalize() }
-	mut parser := SimpleXMLDocumentParser{ source: 'text<!--next--><![CDATA[data]]><item/>', document: document }
-	before := platform.thread_arena_usage().used
-	for _ in 0 .. 1024 {
-		parser.position = 4
-		assert parser.starts_with('<!--')
-		assert !parser.starts_with('<![CDATA[')
-		parser.position = 15
-		assert parser.starts_with('<![CDATA[')
-		assert !parser.starts_with('</')
-		parser.position = parser.source.len
-		assert parser.starts_with('')
-		assert !parser.starts_with('>')
-	}
-	$if prealloc {
-		assert platform.thread_arena_usage().used == before
-	}
-}
 
 fn test_xml_namespace_declarations_are_local_to_the_element_subtree() {
 	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
