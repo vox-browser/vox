@@ -48,6 +48,10 @@ pub fn unpack_signed(value u32) i32 {
 // Serialized half floats must be finite, including in fields later ignored by the caller.
 pub fn (mut b BitReader) read_f16() !f32 {
 	value := u32(b.read(16)!)
+	return finite_half_float(value)
+}
+
+fn finite_half_float(value u32) !f32 {
 	sign := (value & 0x8000) << 16
 	exponent := (value >> 10) & 31
 	mut fraction := value & 1023
