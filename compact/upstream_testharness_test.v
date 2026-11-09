@@ -51,8 +51,12 @@ fn test_upstream_testharness_in_native_document() {
 		manager.poll(mut messages)
 		html.main_thread_event_loop().process()
 		mut client := owner.client()
-		client.rendering_opportunity(time.sys_mono_now(), 16.667)
-		html.main_thread_event_loop().update_the_rendering()
+		frame_time := time.sys_mono_now()
+		client.rendering_opportunity(frame_time, 16.667)
+		// Publish the display timestamp through the same scheduler entry point as
+		// the windowed browser. Direct rendering kept document timelines at zero.
+		html.main_thread_event_loop().rendering_opportunity(f64(frame_time) / 1e6, false)
+		html.main_thread_event_loop().process()
 		platform.pump_native_events(0.001)
 		if service.runtime != unsafe { nil } {
 			if service.runtime.evaluate_host('typeof nativeWptResult!=="undefined"&&nativeWptResult!==null')! == 'true' { break }
