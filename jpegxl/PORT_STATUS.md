@@ -689,6 +689,17 @@ run is claimed. Curve generation, caching, Gaussian splats and complete
 feature/reference frames remain.
 See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
 
+Spline curves and draw caches now translate subdivision, unit spacing,
+continuous DCT evaluation and bounded row membership. The 256 native records
+include 234 accepted caches, 3,341 segments and 57,792 ordered in-bounds indices;
+all float fields match with NaN payloads explicitly normalized. Coincidence
+and area failures agree. The source's unused offscreen index tail is omitted.
+The three-file focused selection passes default/no-GC/optimized checks with
+actual exits zero and 723 unchanged inputs. The count is 305,792 records and
+101 files, cadence 7/10 after the full ninety-four-file checkpoint; no full
+101-file run is claimed. Gaussian drawing and complete feature/reference
+frames remain. See [the spline-cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

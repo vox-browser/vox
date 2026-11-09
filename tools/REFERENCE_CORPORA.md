@@ -261,3 +261,13 @@ and 100 test files, cadence 6/10 after the full 94-file checkpoint; no full
 100-file run is claimed. Curve/raster work, frame integration and production/
 native tool replacement remain.
 See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
+
+
+Spline subdivision/DCT/cache construction adds 256 native records, including
+234 accepted caches with 3,341 segments and 57,792 ordered in-bounds row
+entries. NaN payloads normalize explicitly. Three focused files pass default,
+no-GC and optimized checks with unavailable Rust compiler paths, actual exits
+zero and 723 unchanged inputs. JPEG XL has 305,792 records and 101 test files,
+cadence 7/10 after the full 94-file checkpoint; no full 101-file run is claimed.
+Gaussian drawing, frame integration and production/native tool replacement
+remain. See [the cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).

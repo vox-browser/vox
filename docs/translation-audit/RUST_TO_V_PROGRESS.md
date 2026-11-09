@@ -745,3 +745,17 @@ cadence 6/10 after the full 94-file checkpoint; no full 100-file run is claimed.
 profiles and finite-domain coverage. Curve generation, caching/rasterization,
 feature/reference frames and production/developer-tool replacement remain.
 Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL spline curve/cache continuation on 2026-11-09
+
+Subdivision, unit spacing, continuous DCTs and row caches add 256 native
+records. The 234 accepted caches compare 3,341 segments and 57,792 ordered
+in-bounds indices; NaN payloads normalize explicitly. Three focused files pass
+default/no-GC/optimized checks with actual exits zero and 723 unchanged inputs.
+JPEG XL has 305,792 records and 101 files, cadence 7/10 after the full 94-file
+checkpoint; no full 101-file run is claimed.
+[The cache report](JPEGXL_V_SPLINE_CACHE.md) records limits and pins. Gaussian
+pixel drawing, complete feature/reference frames and production/developer-tool
+replacement remain. Production JPEG XL and its native developer test still
+require Rust.
