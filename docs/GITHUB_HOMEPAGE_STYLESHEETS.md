@@ -160,6 +160,22 @@ device availability. Its workload is limited to 60 seconds and 3 GiB, and
 failed observations are retained as Actions artifacts. This workflow is
 independent of the existing browser/lifecycle gates.
 
+The [first hosted probe](https://github.com/vox-browser/vox/actions/runs/42579099929)
+recorded the following actual initial kernel readings, before the CPU-work
+rounds. Both hosts were rejected by the existing `MacCounters` availability
+check; no instruction deltas or browser measurements were produced.
+
+| Runner | Architecture | `ri_instructions` | `ri_cycles` |
+| --- | --- | ---: | ---: |
+| `macos-15` | arm64 | 0 | 0 |
+| `macos-15-intel` | x86_64 | 0 | 0 |
+
+The initial graphics probe also exposed a JSON boolean-boxing defect on arm64
+and a compiler timeout/child-cleanup issue on Intel. These separate failures
+are preserved; they do not change the retained zero instruction readings.
+The probe follow-up uses explicit boolean boxing, records samples directly in
+the log, and bounds and cleans up complete compiler/helper process groups.
+
 This is only a host-capability check. A successful Cocoa lifecycle job or a
 positive probe does not establish a working full-browser SDK, a complete
 GitHub render, or any performance improvement. A module-capable host still
