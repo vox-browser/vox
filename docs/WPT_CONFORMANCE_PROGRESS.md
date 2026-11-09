@@ -2289,3 +2289,89 @@ original official testharness collection** remains active on its older pinned
 production image; other WPT types are outside that runner. These repairs and
 focused results do not establish full WPT conformance. **Overall 100% is not
 achieved.**
+
+
+## Event-loop embedding VM registry storage (2026-11-09)
+
+`ea3f62637` keeps the event loop's embedded-VM array in persistent storage
+when runtimes attach and detach. Both operations can run inside a document
+arena; append and filter previously left the process-wide loop's backing
+array in that caller's storage. Retiring the caller could invalidate the VM
+entries still used for execution-context checks and microtask checkpoints.
+The existing runtime attachment and detachment order remains in place.
+
+Both prepared-preallocation ownership controls compile successfully and fail
+before the fix: registration uses the registering arena, and removal allocates
+surviving entries in the closing arena. Afterward, two new checks reset those
+arenas and verify remaining VM identity, duplicate registration, removal and
+observable execution-context state. Together with three unchanged checkpoint
+checks, **all five pass** in normal, prepared-preallocation and literal V
+`-prod`/prepared-preallocation C modes. All final compile/runtime exits are
+**0**. Compiles retain V `-memory-limit 10G` under 12 GiB guards; runtimes use
+3 GiB guards. Test assertions avoid formatting complete owner graphs.
+
+The rebuilt optimized combined control reproduces **two segmentation faults**
+in the original 65-variant FileReader/FormData selection, reporting **301/328**
+expected assertions, all reported assertions passing. Its strict runner/guard
+exits are **1**. One failure follows a WPT payload during later fixture work;
+another occurs before a payload. The candidate combined image completes
+**all 65 original variants and 328/328 assertions**, with every original
+name/count, harness completion and process exit required. It also passes the
+16 original standalone behavior checks plus two worker/WPT entrypoints.
+Candidate runner/guard exits are **0** and pinned runtime inputs stay unchanged.
+These results cover the combined sequence that previously crashed, rather than
+only a separate WPT-entrypoint image. The compiled registry functions and new
+fixture hashes match the commit. Other concurrent shared source changes were
+not controlled, so this does not establish sole causation for every crash,
+a clean production build or any performance result.
+
+Native evidence: `/Users/alex/.cache/vox/wpt/20261109-event-loop-vms-native-raw.tar.gz`,
+SHA-256 `d843e5c4dad2e4c339e090a272ade531b5b8f1b54b9f4cf2d9c83f5058d36b41`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-event-loop-vms-native-summary.json`,
+SHA-256 `64e6ec2c937acff5f22d1afd8999b32539c902cebe16c7c0c912c6241cbf0929`.
+Completed native scratch outputs, temporary combined tests and owned locks are
+removed after archiving.
+
+The managed hook produced C/single-unit/literal-`-prod` preallocation image
+`ae081f508e52ae4b6c88bf5adca7fbdfc2e42fda4c8d635b6a7699f8d68de1d2`,
+receipt `20261109-092720-d7232d0b`, with the protected feature hashes. Fresh
+production checks use that original completed artifact under a read lease,
+without copying a bundle or queuing an additional manual build. The 65-variant
+production cohort completes **52 variants**, with **13 hard timeouts** and
+**255/328** expected assertions reported, all passing. Both runner and guard
+exit **1**. All **11 unchanged exact SVG comparisons pass**, pixel guard exit
+**0**. The 21-variant accname follow-up completes **two variants**, with **19
+hard timeouts** and **31/500** reported assertions, all passing; runner/guard
+exits are **1**. Runtime identities remain pinned and unchanged. Missing
+assertions receive no pass credit. Production completion is still unresolved.
+
+Production FileReader/FormData evidence:
+`/Users/alex/.cache/vox/wpt/20261109-event-loop-vms-production-raw.tar.gz`,
+SHA-256 `3c1ca778679bfb9750fbc368ec24bcaf54e5ce7d0d577fd919f5c4abd67139d5`.
+Production accname evidence:
+`/Users/alex/.cache/vox/wpt/20261109-event-loop-vms-accname-production-raw.tar.gz`,
+SHA-256 `23fdc273bfd0168380ae73ac8dca3ba3295da5051531332eb2166049a15ffbdd`.
+Both observers archive and remove their completed scratch directories.
+
+Separate constructor-formelement diagnostics preserve the original test,
+assertions, harness and deadline while adding reporter phase instrumentation.
+The first HTTP markers could be hidden by reuse of the same resource URL;
+a second attempt uses document-specific URLs. A third uses synchronous,
+read-only native query markers, independent of HTTP result delivery. It
+observes the reporter's open top-level gate in the test document but no
+subsequent completion marker before the unchanged hard deadline. This points
+the next investigation toward page/harness completion or callback execution;
+it does not establish a timer, XHR or deadlock cause. Instrumented attempts
+remain failures and provide no acceptance or timing credit.
+
+Query/timer diagnostic: `/Users/alex/.cache/vox/wpt/20261109-formdata-query-diagnostic-raw.tar.gz`,
+SHA-256 `f7c3b31eeab832e2fe7be399843ac08aecc72920a5f5660e2d49b6d32976da08`.
+Reporter phase attempts: `/Users/alex/.cache/vox/wpt/20261109-formdata-report-phases-raw.tar.gz`
+(SHA-256 `a2557d4988311a5f66d20fdc96010a3c6346e4b6d580c7758fa720752d6a9d62`),
+`/Users/alex/.cache/vox/wpt/20261109-formdata-report-phases-v2-raw.tar.gz`
+(SHA-256 `979359eb15bcfdef6f7a757eeb1a3c7da4c4bdcd80f1586f90c234d0afbf2959`),
+and `/Users/alex/.cache/vox/wpt/20261109-formdata-report-phases-v3-raw.tar.gz`
+(SHA-256 `e7531350927d0fc14c26f312d69c534cbbdbfe064ecfbfcddfc18ea5c0faecf1`).
+Their completed scratch directories are removed. The independently pinned
+40,139-variant official testharness collection remains active; other WPT types
+remain outside that runner. **Overall 100% is not achieved.**
