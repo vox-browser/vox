@@ -1426,7 +1426,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains', 'rejectedlayers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains', 'rejectedlayers', 'largefilterlayers'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -1446,7 +1446,7 @@ fn main() {
 		check_rounded_rect_cases(count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') == 'imageblur' {
+	if os.getenv('CPU_RASTER_CHECKS') in ['imageblur', 'largeimageblur'] {
 		check_image_blur_cases(count)
 		return
 	}
@@ -3231,7 +3231,8 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
 	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
 	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'rejectedlayers' { random_rejected_spatial_filter_chain }
+	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'largefilterlayers' { random_large_layer_filters }
+		else if os.getenv('CPU_RASTER_CHECKS') == 'rejectedlayers' { random_rejected_spatial_filter_chain }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { random_spatial_filter_chain }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'mixedblurs' { random_color_blur_chain }
 		else if mixed { random_color_shadow_filters }
@@ -3242,6 +3243,15 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	}
 	label := if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { 'spatial-chain' } else if shadows { 'drop-shadow' } else { 'blur' }
 	println('${label}-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
+}
+
+fn random_large_layer_filters() []cpuraster.CanvasFilterStep {
+ mut steps := []cpuraster.CanvasFilterStep{}
+ if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
+ steps << cpuraster.CanvasFilterStep{kind: .blur,
+  sigma:[f32(135.01),135.2,200,270,300,532,700][rand.intn(7) or { 0 }]}
+ if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
+ return steps
 }
 
 fn random_color_shadow_filters() []cpuraster.CanvasFilterStep {
@@ -3303,10 +3313,11 @@ type OracleImageBlur = fn (pixels &u8, values &i32, floats &f32, out &u8, info &
 // disjoint), and sigmas from effectively zero through the Gaussian pass
 // and the three-box pass up to the raster algorithm's 135.
 fn check_image_blurs(blur OracleImageBlur, count int) !(int, int) {
+ large := os.getenv('CPU_RASTER_CHECKS') == 'largeimageblur'
 	mut empty := 0
 	for i in 0 .. count {
-		width := rand.intn(48) or { 0 } + 1
-		height := rand.intn(48) or { 0 } + 1
+		width := rand.intn(if large { 96 } else { 48 }) or { 0 } + 1
+		height := rand.intn(if large { 96 } else { 48 }) or { 0 } + 1
 		pixels := random_premultiplied(width * height)
 		l := rand.intn(width) or { 0 }
 		t := rand.intn(height) or { 0 }
@@ -3330,8 +3341,9 @@ fn check_image_blurs(blur OracleImageBlur, count int) !(int, int) {
 				else { f32(rand.f64() * 12) }
 			}
 		}
-		sx := sigma()
-		sy := if rand.intn(3) or { 0 } == 0 { sx } else { sigma() }
+		mut sx := if large { [f32(135.01),135.2,270,300,532,f32(136+rand.f64()*600)][i%6] } else { sigma() }
+		mut sy := if rand.intn(3) or { 0 } == 0 { sx } else { sigma() }
+		if large && i % 2 != 0 { sx,sy = sy,sx }
 		mut values := [i32(width), height]
 		values << subset.map(i32(it))
 		values << clip.map(i32(it))
