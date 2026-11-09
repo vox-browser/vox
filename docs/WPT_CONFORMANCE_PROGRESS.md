@@ -1865,3 +1865,73 @@ report **143**, rather than terminating the guard before it records the child.
 Evidence: `/Users/alex/.cache/vox/wpt/20261109-official-vendor-signal-check.json`.
 The new engine code still needs a newer completed production image. The
 image/SVG production observer v3 remains active. **Overall 100% is not achieved.**
+
+
+## Resolved CSS alternatives, counter invalidation and word boundaries (2026-11-09)
+
+The same **21 official accname variants now pass 484/500 assertions** in normal
+native Page checks and again with the prepared preallocation runtime, up from
+**464/500**. Both final cohorts preserve every assertion name and expected
+count, complete all 21 harnesses, verify recorded runtime inputs, and gain
+**20 passes with no lost passes**. Both strict cohort exits remain **1** because
+16 assertions still fail: aria-owns (3), tentative heading names (5), and
+tentative markers (8). This is a focused native result, not an overall WPT or
+production-browser percentage.
+
+- `6e05aba85` reads the resolved alternative text of generated pseudo-elements,
+  including counters and attr() content, instead of their painted text. An
+  explicit empty alternative suppresses painted text. Content snapshots belong
+  to individual layout nodes so shared styles cannot overwrite another
+  element's counter value. Only the originating element's pseudo-content
+  contributes at that step; nested generated content is not counted twice.
+- `bff7c827a` conservatively rebuilds generated content when counter reset,
+  increment or set changes. The initial live-update regression found computed
+  `cnt 228` while the label still contained `50`, including after a geometry
+  read. The invalidation repair makes the live counter check pass; equal
+  operation values do not trigger a rebuild.
+- `51c077e1e` preserves word boundaries around nonempty alternative text while
+  keeping ordinary generated strings adjacent. Empty alternatives stay empty.
+  The name-from-content page now passes **79/79**; alternate-counter invalidation
+  and per-instance isolation each pass **3/3**.
+
+The intermediate result, before the boundary fix, was **475/500** in both
+modes: 11 gains with no lost passes, retaining nine counter-boundary failures.
+A fresh headless Brave CDP accessibility-tree diagnostic observed `xlabel` for
+ordinary generated `x`, but `alt label`, `12 label` and `label alt` for the
+corresponding alternative-text cases. That measured distinction informed the
+joining rule. The diagnostic pins its executable and fixture and exits **0**
+under a 3 GiB guard. It is one diagnostic, not a WPT pass-rate or performance
+comparison. The [name-from-content draft](https://w3c.github.io/accname/#comp_name_from_content)
+continues to document ongoing whitespace work; this result does not claim
+complete draft conformance.
+
+Nine native behavioral checks pass per memory mode, plus two worker/WPT entry
+points. The same checks pass with trusted-input automation disabled. Typed
+checks pass for alternative presence/absence/empty strings, immutable per-node
+content snapshots, and counter-operation invalidation. Final compiles and
+focused runtimes exit **0** with 12 GiB compile guards, V's 10 GiB limit, and
+3 GiB runtime guards. The prepared runtime remains
+`c83469c5e6340f3dc4b81b4c60949ebf5aaaac0025e23d07cb69a0e749dc62ec`.
+Concurrent shared builds and the larger collection make these correctness
+checks unsuitable for timing claims.
+
+Failed attempts remain in the evidence: an incorrectly initialized styled-node
+fixture, both initial live-counter failures, the 475/500 intermediate cohorts,
+and a boundary cohort rejected before reporting cases when canonical V files
+changed during concurrent work. The final runs pin the completed executables
+and runtime inputs; all recorded relevant feature-source hashes match immutable
+commit `51c077e1e`. Later canonical scroll-state edits are separately recorded
+and are not validated by those fixed binaries. The private counter diagnostic
+reports harness failure and zero tests, and supplies diagnostic values only.
+No original WPT page, assertion, testharness, deadline or denominator was edited.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-generated-accessibility-native-raw.tar.gz`,
+SHA-256 `dba8f7027d5b1e444959d3dc5a6843aca9153be40281edf03083656b2cdb3522`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-generated-accessibility-native-summary.json`,
+SHA-256 `8c634008b72ebc37401105efe4b0932ee79349ba7472f9ac9ced9221d045c6b3`.
+
+The **40,139-variant official testharness collection remains active** on its
+pinned completed production image, independently of these native checks.
+New-production validation remains pending; the image/SVG observer v3 is still
+waiting for a matching completed image. Commit hooks request coalesced C builds
+with literal V `-prod` in one C unit. **Overall 100% is not achieved.**
