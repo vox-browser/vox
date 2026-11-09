@@ -35,9 +35,14 @@ fn small_modular_channel_info(file FileHeader, frame FrameHeader) ![]ModularChan
 	return infos
 }
 
-// Decode all raw planes when every coded channel belongs to the global section.
-// Color conversion, filters, orientation, later frames and grouped channels are separate.
-pub fn (mut reader BitReader) decode_small_modular_frame(file FileHeader, frame FrameHeader, storage ModularStorage) !SmallModularFrame {
+struct ModularGlobalPlan {
+	quantization LfQuantFactors
+	tree         ?ModularTree
+	header       ModularGroupHeader
+	plan         ModularTransformPlan
+}
+
+fn (mut reader BitReader) read_modular_global_plan(file FileHeader, frame FrameHeader) !ModularGlobalPlan {
 	if frame.encoding != .modular || frame.has_patches() || frame.has_noise() || frame.has_splines() {
 		return error('JPEG XL frame requires unsupported global-section services')
 	}
@@ -52,6 +57,14 @@ pub fn (mut reader BitReader) decode_small_modular_frame(file FileHeader, frame 
 	}
 	header := reader.read_modular_group_header()!
 	plan := plan_modular_transforms(infos, header, limits)!
+	return ModularGlobalPlan{ quantization: quantization, tree: global, header: header, plan: plan }
+}
+
+// Decode all raw planes when every coded channel belongs to the global section.
+// Color conversion, filters, orientation, later frames and grouped channels are separate.
+pub fn (mut reader BitReader) decode_small_modular_frame(file FileHeader, frame FrameHeader, storage ModularStorage) !SmallModularFrame {
+	global := reader.read_modular_global_plan(file, frame)!
+	plan := global.plan
 	for id in plan.coded {
 		info := plan.buffers[id]
 		if info.shift != none && (info.width > int(frame.group_dimension()) || info.height > int(frame.group_dimension())) {
@@ -59,6 +72,6 @@ pub fn (mut reader BitReader) decode_small_modular_frame(file FileHeader, frame 
 		}
 	}
 	coded_info := plan.coded.map(plan.buffers[it].allocated())
-	coded := reader.decode_modular_stream(coded_info, storage, 0, header, global)!
-	return SmallModularFrame{ quantization: quantization, channels: plan.reconstruct(coded, storage)! }
+	coded := reader.decode_modular_stream(coded_info, storage, 0, global.header, global.tree)!
+	return SmallModularFrame{ quantization: global.quantization, channels: plan.reconstruct(coded, storage)! }
 }

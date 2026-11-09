@@ -36,7 +36,7 @@ fn validate_small_lossless_frame(file FileHeader, frame FrameHeader) ! {
 	if frame.encoding != .modular || frame.frame_type != .regular || !frame.is_last || frame.lf_level != 0 || frame.needs_blending() || frame.width != file.size.width || frame.height != file.size.height || frame.x0 != 0 || frame.y0 != 0 {
 		return error('JPEG XL small lossless output requires one full modular frame')
 	}
-	if frame.upsampling != 1 || !frame.is444() || frame.extra_upsampling.any(it != 1) || frame.flags & ~u64(0x80) != 0 || frame.restoration.gab || frame.restoration.epf_iterations != 0 || frame.num_toc_entries() != 1 {
+	if frame.upsampling != 1 || !frame.is444() || frame.extra_upsampling.any(it != 1) || frame.flags & ~u64(0x80) != 0 || frame.restoration.gab || frame.restoration.epf_iterations != 0 {
 		return error('JPEG XL frame requires unsupported sampling, filters or groups')
 	}
 }
@@ -45,6 +45,16 @@ fn validate_small_lossless_frame(file FileHeader, frame FrameHeader) ! {
 // Grouped/progressive frames, XYB/YCbCr, filters and frame composition still
 // require the production decoder; callers must not treat this as its replacement.
 pub fn decode_small_lossless_rgba(input []u8, premultiply bool) !RgbaImage {
+	return decode_lossless_rgba_impl(input, premultiply, true)
+}
+
+// Full-frame lossless output, including grouped and multipass modular channels.
+// XYB/YCbCr, filters, previews and frame composition remain unsupported.
+pub fn decode_lossless_rgba(input []u8, premultiply bool) !RgbaImage {
+	return decode_lossless_rgba_impl(input, premultiply, false)
+}
+
+fn decode_lossless_rgba_impl(input []u8, premultiply bool, small_only bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
@@ -53,16 +63,18 @@ pub fn decode_small_lossless_rgba(input []u8, premultiply bool) !RgbaImage {
 	mut frame := reader.read_frame_header(context)!
 	frame.postprocess(context)!
 	validate_small_lossless_frame(file, frame)!
-	toc := reader.read_toc(1)!
+	if (small_only && frame.num_toc_entries() != 1) || frame.num_toc_entries() > u64(max_permutation_entries) {
+		return error('JPEG XL lossless frame has unsupported group count')
+	}
+	toc := reader.read_toc(int(frame.num_toc_entries()))!
 	mut sections := reader.read_sections(toc)!
 	storage := if file.metadata.modular_16bit_sufficient {
 		ModularStorage.signed16
 	} else {
 		ModularStorage.signed32
 	}
-	raw := sections[0].decode_small_modular_frame(file, frame, storage)!
-	sections[0].align_to_byte()!
-	if sections[0].available_bits() != 0 || reader.available_bits() != 0 {
+	raw := decode_modular_frame(file, frame, storage, mut sections)!
+	if reader.available_bits() != 0 {
 		return error('JPEG XL small lossless frame has unhandled payload')
 	}
 	gray := file.metadata.color_encoding.color_space == .gray

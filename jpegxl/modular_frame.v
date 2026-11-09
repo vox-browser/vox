@@ -1,0 +1,109 @@
+// Copyright (c) the JPEG XL Project Authors. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+module jpegxl
+
+pub struct ModularFramePlanes {
+pub:
+	quantization LfQuantFactors
+	channels     []ModularChannel
+}
+
+fn finish_modular_section(mut reader BitReader, index int, unused bool) ! {
+	// The pinned decoder ignores bounded section payloads when there are no
+	// coded pixels (some encoders still emit an empty entropy stream).
+	if unused {
+		reader.skip(reader.available_bits())!
+		return
+	}
+	reader.align_to_byte()!
+	if reader.available_bits() != 0 {
+		return error('JPEG XL modular section ${index} has ${reader.available_bits()} unhandled bits at ${reader.position}')
+	}
+}
+
+fn decode_modular_group_bucket(mut reader BitReader, frame FrameHeader, infos []ModularChannelInfo, indices []int, lf bool, group u64, stream u32, tree ?ModularTree, storage ModularStorage, mut coded []ModularChannel, mut written []u64) !bool {
+	mut selected := []int{}
+	mut tiles := []ModularTile{}
+	mut inputs := []ModularChannelInfo{}
+	for c in indices {
+		tile := modular_group_tile(infos[c], frame, lf, group)!
+		// Source group allocation omits empty tiles from channel numbering.
+		if tile.width == 0 && tile.height == 0 { continue }
+		selected << c
+		tiles << tile
+		inputs << ModularChannelInfo{ ...infos[c], width: tile.width, height: tile.height }
+	}
+	decoded := reader.decode_modular_stream(inputs, storage, stream, none, tree)!
+	for i, c in selected {
+		tile := tiles[i]
+		decoded[i].matches_info(inputs[i])!
+		for y in 0 .. tile.height {
+			for x in 0 .. tile.width {
+				coded[c].samples[(tile.y + y) * coded[c].width + tile.x + x] = decoded[i].samples[y * tile.width + x]
+			}
+		}
+		written[c] += u64(decoded[i].samples.len)
+	}
+	return inputs.len == 0
+}
+
+// Decode whole raw modular planes by stitching coded tiles before reversing
+// global transforms. Rendering, partial recovery and frame composition are separate.
+pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularStorage, mut sections []BitReader) !ModularFramePlanes {
+	validate_modular_group_geometry(frame)!
+	if frame.num_toc_entries() > u64(max_permutation_entries) || sections.len != int(frame.num_toc_entries()) {
+		return error('Incorrect JPEG XL modular frame section count')
+	}
+	global := sections[0].read_modular_global_plan(file, frame)!
+	plan := global.plan
+	infos := plan.coded.map(plan.buffers[it])
+	buckets := plan_modular_sections(infos, frame)!
+	mut assigned := []int{len: infos.len}
+	for bucket in buckets {
+		for c in bucket { assigned[c]++ }
+	}
+	if assigned.any(it != 1) { return error('JPEG XL coded channel has no unique section') }
+	mut coded := plan.allocate_coded_channels()!
+	mut written := []u64{len: coded.len}
+	// Whole zero-area channels retain numbering unless both logical dimensions
+	// are zero, matching source with_buffers; empty group tiles are handled above.
+	selected := buckets[0].filter(infos[it].width != 0 || infos[it].height != 0)
+	inputs := selected.map(infos[it].allocated())
+	decoded := sections[0].decode_modular_stream(inputs, storage, 0, global.header, global.tree)!
+	for i, c in selected {
+		decoded[i].matches_info(infos[c])!
+		coded[c] = decoded[i]
+		written[c] = u64(decoded[i].samples.len)
+	}
+	combined := sections.len == 1
+	if !combined {
+		finish_modular_section(mut sections[0], 0, inputs.all(it.width == 0 || it.height == 0))!
+	}
+	for group in u64(0) .. frame.num_lf_groups() {
+		index := if combined { 0 } else { 1 + int(group) }
+		unused := decode_modular_group_bucket(mut sections[index], frame, infos, buckets[1], true, group, frame.modular_lf_stream_id(group)!, global.tree, storage, mut coded, mut written)!
+		if !combined { finish_modular_section(mut sections[index], index, unused)! }
+	}
+	// Modular HF-global has no payload.
+	if !combined {
+		finish_modular_section(mut sections[1 + int(frame.num_lf_groups())], 1 + int(frame.num_lf_groups()), true)!
+	}
+	for pass in 0 .. int(frame.passes.count) {
+		for group in u64(0) .. frame.num_groups() {
+			index := if combined {
+				0
+			} else {
+				2 + int(frame.num_lf_groups()) + pass * int(frame.num_groups()) + int(group)
+			}
+			unused := decode_modular_group_bucket(mut sections[index], frame, infos, buckets[2 + pass], false, group, frame.modular_hf_stream_id(pass, group)!, global.tree, storage, mut coded, mut written)!
+			if !combined { finish_modular_section(mut sections[index], index, unused)! }
+		}
+	}
+	if combined { finish_modular_section(mut sections[0], 0, false)! }
+	for c, channel in coded {
+		if written[c] != u64(channel.samples.len) {
+			return error('Incomplete JPEG XL modular channel tiles')
+		}
+	}
+	return ModularFramePlanes{ quantization: global.quantization, channels: plan.reconstruct(coded, storage)! }
+}
