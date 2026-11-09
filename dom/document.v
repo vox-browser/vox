@@ -4951,6 +4951,10 @@ pub enum PseudoElement {
 	view_transition_new
 	view_transition_old
 	highlight
+	target_text
+	spelling_error
+	grammar_error
+	search_text
 	known_pseudo_element_count
 	unknown_webkit
 }

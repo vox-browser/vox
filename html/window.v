@@ -685,45 +685,28 @@ pub fn (window &WindowModel) prompt(message ?string, default_ ?string) ?string {
 	return none
 }
 
-fn window_pseudo_element_from_string(value string) ?dom.PseudoElement {
-	name := value.trim_left(':').to_lower()
-	return match name {
-		'before' { dom.PseudoElement.before }
-		'after' { dom.PseudoElement.after }
-		'first-line' { dom.PseudoElement.first_line }
-		'first-letter' { dom.PseudoElement.first_letter }
-		'marker' { dom.PseudoElement.marker }
-		'placeholder' { dom.PseudoElement.placeholder }
-		'selection' { dom.PseudoElement.selection }
-		'backdrop' { dom.PseudoElement.backdrop }
-		else { none }
-	}
-}
-
 // https://drafts.csswg.org/cssom/#dom-window-getcomputedstyle
 pub fn (window &WindowModel) get_computed_style(element &dom.Element, pseudo_element ?string) &css.CSSStyleProperties {
 	_ = window
 	mut object := ?dom.AbstractElement(dom.AbstractElement.new(element, none))
 	if pseudo := pseudo_element {
-		if pseudo.starts_with(':') {
-			if pseudo.to_lower().starts_with('::highlight(') {
-				object = none
-				if list := css.parse_selector_with_parser(pseudo,map[string]bool{}) {
-					if list.selectors.len == 1 {
-						selector := list.selectors[0]
-						if selector.compound_selectors().len == 1 && selector.compound_selectors()[0].simple_selectors.len == 1 {
-							if target := selector.target_pseudo_element() {
-								if target.type_ == .highlight && target.ident_list.len == 1 {
-									object = dom.AbstractElement{element_:element,pseudo_element_:.highlight,pseudo_argument:target.ident_list[0]}
-								}
+		if pseudo != '' {
+			object = none
+			if list := css.parse_selector_with_parser(pseudo, map[string]bool{}) {
+				if list.selectors.len == 1 {
+					selector := list.selectors[0]
+					compounds := selector.compound_selectors()
+					if compounds.len == 1 && compounds[0].simple_selectors.len == 1 {
+						if target := selector.target_pseudo_element() {
+							if css.is_known_pseudo_element_type(target.type_) && target.type_ !in [.part, .slotted] {
+								kind := unsafe { dom.PseudoElement(int(target.type_)) }
+								if target.type_ == .highlight {
+									if target.ident_list.len == 1 { object = dom.AbstractElement{element_:element, pseudo_element_:kind, pseudo_argument:target.ident_list[0]} }
+								} else { object = dom.AbstractElement.new(element, kind) }
 							}
 						}
 					}
 				}
-			} else if parsed := window_pseudo_element_from_string(pseudo) {
-				object = dom.AbstractElement.new(element, parsed)
-			} else {
-				object = none
 			}
 		}
 	}
