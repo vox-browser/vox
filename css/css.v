@@ -603,7 +603,7 @@ pub fn ColorResolutionContext.for_computed_properties(computed &ComputedProperti
 fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document, calculation_resolution_context CalculationResolutionContext) ColorResolutionContext {
 	preferred_scheme := preferred_color_scheme_from_string(document.preferred_color_scheme())
 	scheme := computed.color_scheme(preferred_scheme, document.supported_color_schemes())
-	initial_color := SystemColor.canvas_text(scheme)
+	initial_color := computed.highlight_originating_color_ or { SystemColor.canvas_text(scheme) }
 	initial_accent := SystemColor.accent_color(scheme)
 	base_context := ColorResolutionContext{
 		color_scheme: scheme

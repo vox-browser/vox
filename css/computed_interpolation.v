@@ -1655,6 +1655,8 @@ pub enum WithAnimationsApplied as u8 {
 
 @[heap]
 pub struct ComputedProperties {
+mut:
+	highlight_originating_color_ ?Color
 pub mut:
 	property_store_                          &ComputedPropertyStore = unsafe { nil }
 	property_important_                      [computed_property_flag_byte_count]u8
@@ -12132,6 +12134,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		record_diagnostic_instruction_scope(15, loop_scope_start)
 	}
 
+	s.compute_highlight_inherited_values(mut properties, cascaded_properties, abstract_element)
 	// The root element establishes the root font metrics used by rem/rlh for every
 	// subsequently computed descendant. This is the mutable update performed by
 	// StyleComputer::compute_properties() after its longhand computation loop.
