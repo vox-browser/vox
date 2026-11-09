@@ -1623,3 +1623,18 @@ a 27.805 ms maximum moving interval and 0.732% misses, and supplies no FPS credi
 still awaits the shared build: the completed bundle is `23d3335d...`. The jobs
 and temporary drivers were removed after their archives were verified. See
 [the complete readback results and retained failures](performance/reddit-boots-readback-20261109.md).
+
+## 2026-11-09: GG draw/read synchronization candidate
+
+Commit `e6ef20a8c` wires the staged Metal reader into GG preparation, guarded by
+`VOX_GG_JOINED_READBACK=1`. Instead of waiting for rendering and then waiting
+again for its readback copy, it appends the copy to the pending command buffer
+and waits once. The original reader remains the default pending live validation.
+
+Optimized/ASan GPU ordering checks pass 128 exact cases each. Actual GG canvas
+checks pass 64 exact AA/MSAA cases in each current-V GC-none/prealloc mode;
+bounded markers confirm that the candidate executes. These fixtures establish
+correct ordering and pixels, not scrolling FPS. The completed production bundle
+is still `23d3335d...`, so full-page pixels and matched live measurements remain
+pending. **The 60 Hz goal without stalls remains open.** See
+[the GG readback checks and build blocker](performance/reddit-boots-gg-readback-20261109.md).
