@@ -1668,3 +1668,32 @@ The **40,139-variant official testharness collection continues on its original
 pinned production executable**. It does not measure these new commits; other
 WPT types and unsupported services retain their documented limits. **Full WPT
 and an overall 100% result remain unfinished.**
+
+
+## Staged runtime capture-header repair (2026-11-09)
+
+`5f12e1f9c` resolves legacy `@VMODROOT`/`@VEXEROOT` capture-helper includes
+while preparing V's runtime. The default production compiler had expanded the
+legacy include against Vox, producing a nonexistent
+`vox2/vlib/os/execute_capture_legacy.h`. Staging now replaces that include and
+retains the unconditional declaration needed by backends compiling symlinked
+`os`. Repeated preparation remains idempotent.
+
+All **10 Python staging checks pass**. Extracting the actual staged native
+header directives and preprocessing them reproduces the missing header before
+the fix (exit **1**) and succeeds afterward (exit **0**). Native C/preallocation
+checks also pass for shell/argv output capture, stderr and nonzero child status,
+and for creating/releasing 4,096 closures before retiring an arena and invoking
+a fresh closure; both compile and runtime exits are **0**. The prepared runtime
+identity was `1500733e435e47299d24806588688217737c63aeb8778cd7c8f1e96392aa41f9`.
+Compiles used the 12 GiB guard and V's 10 GiB limit; runtimes used 3 GiB.
+
+A standalone FastC `os` fixture still stops at an existing generic parser
+error before reaching the header. That attempt and an earlier non-reproducing
+minimal header smoke remain in the evidence. These checks establish the
+staging repair, not a completed production build or a WPT gain.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-runtime-capture-raw.tar.gz`,
+SHA-256 `29784f0217b904035cae8f2cae6d9b1a874e070a3443a929bc745e955470636f`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-runtime-capture-summary.json`,
+SHA-256 `7cc697e2b2d53ded66da592da81da9e90d2d089ef545ab4bd3112148d4abbb25`.
