@@ -1414,7 +1414,7 @@ fn main() {
 		check_cropped_image_views(oracle, count) or { eprintln(err.msg()); exit(1) }
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['rejected-spatial-chains', 'identity-first-spatial-chains', 'shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows', 'large-source-image-layers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['rejected-spatial-chains', 'identity-first-spatial-chains', 'shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows', 'large-source-image-layers', 'large-near-image-layers'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2491,7 +2491,8 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	shadow_sources := identity_shadows || near_shadows || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-shadows'
 	resampled := resampled_chains || shadow_sources || near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
 	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
-	large_sources := os.getenv('CPU_RASTER_CHECKS') == 'large-source-image-layers'
+	large_near := os.getenv('CPU_RASTER_CHECKS') == 'large-near-image-layers'
+	large_sources := large_near || os.getenv('CPU_RASTER_CHECKS') == 'large-source-image-layers'
 	converted := large_sources || spatial || fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
 	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
 	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
@@ -2681,13 +2682,19 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 		}
 		if large_sources {
 			mut large_source := c.source
-			if i % 4 == 1 && large_source[2] > 1 && large_source[3] > 1 {
+			if !large_near && i % 4 == 1 && large_source[2] > 1 && large_source[3] > 1 {
 				large_source = [large_source[0]+f32(.25),large_source[1]+f32(.125),large_source[2]-f32(.5),large_source[3]-f32(.25)]!
 			}
 			c = BitmapCase{...c,source:large_source,
 				destination:[f32(5),7,large_source[2]*if i%5==4 { f32(1.25) } else { f32(1) },large_source[3]]!,
 				transform:[f32(1),0,0,1,f32(i%9-4),f32(i%7-3)]!,
 				global_alpha:random_composite_alpha(),filters:random_large_layer_filters(),chromium:false}
+		}
+		if large_near {
+			sx,sy := f32(1)+f32(rand.f64()*.0008-.0004),f32(1)+f32(rand.f64()*.0008-.0004)
+			c = BitmapCase{...c,image:cpuraster.CanvasPattern{...image,display_p3:false},global_alpha:1,
+				transform:[f32(1),0,0,1,0,0]!,destination:[f32(5),7,c.source[2]*sx,c.source[3]*sy]!,
+				filters:[cpuraster.CanvasFilterStep{kind:.blur,sigma:135.01}]}
 		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
