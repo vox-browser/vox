@@ -1,117 +1,141 @@
 # Next 200 newly imported Ladybird tests
 
-This batch continues the [first 100](LADYBIRD_NEW_FIRST_100.md): Ladybird
+This batch continues the [first 100](LADYBIRD_NEW_FIRST_100.md), using Ladybird
 `2919bf87a5e5dfc49a210a70bda079afa411c6c5`, newly imported since
 `963d46a829f3e1b79f44dba9d02afb70654300fa`, discovery positions 101–300.
-The immutable exported inputs and expectations come from the already fetched
-upstream revision; the upstream working checkout remains unchanged.
-The [200 case IDs](../Tests/Browser/ladybird-new-next200-20261108.txt) are fixed
-before execution, including distinct worker and query variants.
+The [200 case IDs](../Tests/Browser/ladybird-new-next200-20261108.txt), query
+variants, input files and upstream assertions remain unchanged. Fixtures are
+exported from the fetched revision without changing the Ladybird checkout.
 
-**The batch remains incomplete.** Final native engine validation fully passes
-**72/200 cases and 7,316/9,531 reported subtests**. The production baseline is
-10/200. The selector, parser and layout fixes are committed; 128 native cases
-still fail strict acceptance. No assertions or expectations were changed.
+**Strict acceptance remains incomplete: 194/200 pages and 9,664/9,692 reported
+subtests pass in the complete native engine run.** All 155 CSS pages pass.
+The available production browser baseline passes 72/200 pages; it predates
+these fixes and does not validate them.
 
-## Production baseline
+## Complete native engine run
 
-**The full batch does not pass.** The available production executable,
-SHA-256 `f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`,
-fully passes **10/200 cases** and **5,832/9,681 reported subtests**.
-There are 3,818 FAIL, 3 TIMEOUT and 28 NOTRUN subtests. Of 199 reporting
-documents, 174 harnesses are OK, three ERROR and 22 TIMEOUT; one further
-document never starts its harness. There are no browser crashes or browser
-memory-limit stops. The strict runner and its memory supervisor exit 1.
+The November 9 continuation uses the actual browser navigation preparation,
+parser lifecycle, native Document/DOM/CSS/layout, JavaScriptCore, child realms,
+fetch and HTML event loop. Every page launches a fresh process and profile.
+The driver supplies rendering opportunities and an 800×600 viewport without
+creating a GUI window or painting. This is imported testharness coverage,
+not screenshot conformance or the full upstream WPT suite.
 
-| Group | Cases | Fully passing | Passing subtests |
+| Group | Pages | Fully passing | Passing subtests |
 |---|---:|---:|---:|
-| Content Security Policy | 45 | 7 | 69/164 |
-| CSS2 line boxes | 1 | 0 | 7/13 |
-| CSS alignment | 80 | 2 | 882/2701 |
-| CSS anchor positioning | 74 | 1 | 4874/6803 |
+| Content Security Policy | 45 | 39 | 145/173 |
+| CSS2 line boxes | 1 | 1 | 13/13 |
+| CSS alignment | 80 | 80 | 2701/2701 |
+| CSS anchor positioning | 74 | 74 | 6805/6805 |
+| Total | 200 | 194 | 9664/9692 |
 
-All cases use upstream wptserve handlers, substitutions and supporting resources.
-The executable, libraries and fixture tree remain unchanged across 21 fresh
-browser launches with private profiles and a 1024×768 viewport. The aggregate
-3 GiB guard observes 1,655,603,200 bytes peak RSS; each browser has a 2 GiB cap.
-This is an imported testharness subset, not the entire upstream WPT suite.
+Executable SHA-256:
+`efc1a850b57b1d3f19e4ba512fe68a3fc2b997569bf50ec2ba8836dc3e6a263b`.
+The entire selection runs on this one executable. All 200 documents report;
+195 harnesses are OK and five TIMEOUT. Subtests are 9,664 PASS, three FAIL,
+five TIMEOUT and 20 NOTRUN. Uncaught author exceptions reach the stock harness,
+so a document that aborts registration does not silently receive pass credit.
+
+The controller verifies the executable, controller, server tools and immutable
+fixture tree. All pins remain unchanged. It serves original support files with
+upstream wptserve, including Python handlers, substitutions, stash and resources.
+The existing harness timeout normalization and collecting report script do not
+change assertions or expected results. Inner process guards are 2 GiB; the
+aggregate 3 GiB guard observes 349,618,176 bytes peak RSS over 185.91 seconds.
+The strict runner and supervisor exit 1 because acceptance is incomplete.
+
+Earlier failed, interrupted, diagnostic and partial runs are retained separately.
+Their results are not combined with this complete run or counted as additional
+passing pages. The earlier 72/200 native checkpoint is superseded.
 
 ## Engine fixes
 
-The continuation selector is committed as `866cd4a55`: `--offset` skips eligible
-IDs after the new-since and include filters, before applying the limit. All 24
-WPT tooling checks pass, including disjoint continuation and variant coverage.
+Alignment parsing preserves safe/unsafe and first/last baseline qualifiers,
+legacy ordering, shorthand expansion and inherited legacy alignment. Block,
+line, table-caption and absolute layout handle writing modes, overflow,
+baselines, intrinsic constraints, aspect ratios and stretch sizing.
 
-CSS parsing now preserves safe/unsafe alignment qualifiers and last-baseline
-alignment, canonicalizes first baseline and legacy ordering, and accepts
-qualified place-content/items/self shorthands. Absolute layout applies explicit
-self alignment in the containing block's writing mode and direction, honors
-self-start/end, preserves auto margins, and uses the original containing block
-for default overflow alignment. Anchor-center parsing and placement use the
-resolved live anchor and respect the inset-modified containing rectangle.
+Anchor layout resolves live anchor geometry, scroll offsets, logical sides,
+anchor sizes, invalid calculations and fallbacks. Position-area placement,
+position-try parsing, shorthand variables, fallback order/tactics, successful
+geometry and transitions now use the actual computed style and containing
+block. Applying a fallback preserves ancestor selector context. CSSOM mutation
+invalidates named fallback references even when the ordinary computed style is
+unchanged. Shadow tree scopes, exposed parts, layers and backdrop resolved
+geometry are covered. Live anchor queries interpolate as length calculations,
+and CSS animations/transitions support cancellation through Animation.cancel().
 
-The parser fix is `3e8269448`; the layout and anchor geometry fix is
-`a81d71adc`. Three parser functions and three layout functions pass in the
-final focused C builds and 3 GiB runtime guards. The layout checks cover
-42 writing-mode/direction/alignment combinations, four default-overflow
-sizes, and three live-anchor sizes. The final anchor regression exposed
-relative offsets missing before the final relative-inset pass; anchor lookup
-now applies the existing inset calculation along the anchor's ancestor chain.
+The native CSSOM exposes CSSPositionTryRule descriptors and typed computed
+values. Declarative shadow roots materialize when their template closes, so
+following parser scripts observe the correct tree. The native harness uses the
+same prepared navigation/parser order as the browser and services font-ready,
+animation and rendering waits.
 
-The first native check of the unchanged absolute-alignment pages passes
-**56/59 cases and 989/1004 subtests** on executable
-`44f6e58b03c198a8f7cfe0d05688a707b25b84f2abc7dc76f77bc3fa9bf5aa15`.
-All 56 positional, baseline, safe/unsafe and default-overflow pages pass. Three
-stretch/intrinsic-size pages retain 15 failing assertions across aspect ratios
-and orthogonal writing modes. This executable precedes the final shorthand
-and anchor-center additions; it validates the initial alignment implementation.
-These are fresh native Document/HTML/DOM/JSC processes, without GUI creation
-or painting, and do not change the production baseline above.
+CSP uses actual event targets across fragments, disconnected nodes and shadow
+trees; preserves nonce hiding for HTML/SVG; and enforces inline styles, scripts,
+javascript: navigation, Window.open, timers and string compilation. Same-origin
+Window proxies preserve native constructor identity. Timer operations are
+nonconstructable and keep their receiver realm. Browser-owned event-handler
+compilation restores the native eval gate before author code executes. Media
+created after parsing starts the initial load lifecycle, including loadeddata;
+Ogg support reflects the native decoder's real capabilities.
 
-## Final native cohort
+CSP property-store source positions map to the actual authored assignment
+target, using the active Script Record and preserving UTF-16 columns. Native
+method-call positions remain unchanged. The shadow-DOM source-column page and
+all other event-targeting pages pass together. The first broader mapping
+regressed calls and is retained as a rejected full run. The focused mapping is
+committed as `597934ac7`, with parser and native DOM regressions.
 
-Executable `5d76a6102b41ba3ebf3930b42fbe35d1be05bf6a4f960bb4bab16f135f377f2f`
-checks all 200 IDs, retaining all ten baseline-passing IDs. There are 7,316 PASS,
-2,145 FAIL, 14 TIMEOUT and 56 NOTRUN subtests; harness statuses are 154 OK,
-two ERROR and 44 TIMEOUT. Every document reports. Ten TIMEOUT reports contain
-no subtests, so those geometry assertions receive no coverage or pass credit.
-These account for 156 names present in the production baseline; the native
-cross-realm CSP case registers six additional names, yielding the different
-9,531-subtest denominator. Font-ready and animation waits remain limitations
-of this non-windowed validation.
+Focused parser, layout, CSSOM, DOM and JavaScript regressions accompany the
+committed fixes. Guarded C builds and focused runtimes are retained in the local
+evidence, including failed attempts and memory-limit stops.
 
-| Group | Cases | Fully passing | Passing subtests |
-|---|---:|---:|---:|
-| Content Security Policy | 45 | 7 | 66/170 |
-| CSS2 line boxes | 1 | 0 | 0/0 (harness TIMEOUT) |
-| CSS alignment | 80 | 61 | 2368/2565 |
-| CSS anchor positioning | 74 | 4 | 4882/6796 |
+## Remaining failures
 
-This is a disjoint composition of 158 cases and 42 remaining cases on the
-same executable and fixtures. The first controller stops when another session
-adds unrelated SVG pointer-event keywords to `css/style_values_core.v` after
-compilation (subsequently committed as `1c3591c32`). Its 158 individual case results are retained, with no whole-run
-credit. The continuation verifies the exact executable hash, immutable fixtures,
-server tools and compiled-source hash record while checking the remaining IDs.
-The later SVG changes remain unmodified and receive no validation credit.
-Both supervisors exit 1; the original stops on its source-change assertion,
-and the continuation fails its strict case gate. No all-pass result is claimed.
+Five pages time out waiting for securitypolicyviolation after native eval is
+blocked: `script-src-trusted_types_eval_with_report_only_require_trusted_types_eval`
+and all four variants of `script-src-trusted_types_eval_without_require_trusted_types_eval`
+(default, double-quoted, unquoted and uppercase). JavaScriptCore rejects eval
+and Function compilation through its [native eval switch](https://github.com/WebKit/WebKit/blob/main/Source/JavaScriptCore/API/JSContextRefPrivate.h),
+but Vox's C API integration has no unsafe-eval reporting callback for caught
+native exceptions. The first promise test times out; the remaining
+four tests on each page are NOTRUN. Native direct-eval lexical scope and dynamic
+policy gating have focused coverage. These pages still require engine integration;
+wrapping eval would change its lexical scope and is not a correct substitute.
 
-The [local manifest](performance/ladybird-new-next200-20261108.json) contains
-all selected input/expectation hashes, 200 original browser records, 200 final
-native records, scoped source identities, guards and the verified local raw
-archive. Passing focused checks and failed/interrupted attempts remain separate.
-The raw archive is `/Users/alex/.cache/vox/wpt/20261108-ladybird-new-next200.tar.gz`,
-SHA-256 `c45db5b0621fa9d1c8317faca666064a9cb0a76faaf3cd3b9cea277998eac21b`.
+`inline-style-allowed-while-cloning-objects.sub` passes 22/25 assertions. Tests 19
+and 20 compare a CSP-blocked background with a separately allowed CSSOM background;
+`non-HTML namespace` expects the original SVG style attribute to be empty.
+The pinned Ladybird expected file explicitly records these same three failures.
+A fresh Brave run of the unchanged page also gives 22/25 with the same failures.
+They remain strict failures; neither the selection nor the assertions are changed
+and Ladybird's known failures are not silently treated as passes.
 
-Other remaining failures include nonce hiding, Trusted Types evaluation,
-CSP violation dispatch, block content alignment, anchor sizes and scopes,
-position-try rules/fallbacks, CSSPositionTryRule and computedStyleMap exposure.
-Assertions and expected results are unchanged; none are skipped or weakened.
+## Production baseline and required checks
 
-## Reproduction
+The latest completed shared production receipt identifies source
+`646535154eedc675df5dd6780755983417ec7fb8` and executable SHA-256
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`.
+A fresh full-batch baseline with that executable passes 72/200 pages and
+7,362/9,664 reported subtests: 2,271 FAIL, three TIMEOUT and 28 NOTRUN. There are
+198 reporting documents and two NO_HARNESS; reporting harnesses are 173 OK,
+22 TIMEOUT and three ERROR. The original older production measurement, executable
+`f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`,
+passed 10/200 and remains historical evidence only.
 
-Run from `/Users/alex/code/vox2`:
+The managed production worker is already busy. No duplicate production build is
+queued; a matching windowed production rerun remains pending. The native results
+above validate the new engine executable, not the older installed bundle.
+
+The original Volt workspace's mandatory `v -enable-globals -o volt .` build,
+run with the existing 10 GiB compiler and 12 GiB process-tree bounds, fails when
+the compiler reaches its 10 GiB physical-footprint limit. The required `make app`
+passes. These checks do not replace Vox engine validation.
+
+## Reproduction and evidence
+
+The production runner remains:
 
 ```sh
 python3 tools/run_memory_bounded.py --limit-gib 3 \
@@ -125,10 +149,21 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
     --wpt-server-root /Users/alex/code/3rd/web-platform-tests
 ```
 
-The shared production build was already running; no duplicate was queued.
-The latest completed production bundle still predates these changes at the
-end of validation. A matching windowed production rerun remains pending.
-The original Volt workspace's required `v -enable-globals -o volt .` check
-fails in existing macOS struct declarations and then in its compatibility
-compiler fallback. `make app` passes on its first attempt. These checks do
-not validate Vox's engine or replace the required conformance results.
+The native executable is built from `compact/upstream_testharness_test.v` with
+`v -b c -memory-limit 10G -enable-globals -cc clang -w -skip-running`, under the
+12 GiB build guard. Its HTTP integration mode takes VOX_UPSTREAM_WPT_URL and
+VOX_UPSTREAM_WPT_RESULT. The local controller records all 200 case results,
+identity pins, HTTP requests, guards and unchanged fixture verification.
+
+The [local manifest](performance/ladybird-new-next200-20261108.json) and raw
+evidence remain outside Git. The original archive is
+`/Users/alex/.cache/vox/wpt/20261108-ladybird-new-next200.tar.gz`, SHA-256
+`c45db5b0621fa9d1c8317faca666064a9cb0a76faaf3cd3b9cea277998eac21b`.
+Continuation evidence is retained in
+`/Users/alex/.cache/vox/wpt/next200-20261109-work/evidence-20261109-060144/raw-evidence.tar.gz`,
+SHA-256 `7162c61a5228f8e911f2254245518300b9dd0d3ec1bcb3eecd67caa946a4a6c7`.
+All 18,667 archive members are read back successfully. The final native executable
+is retained alongside the archive with the hash recorded above. The archive
+includes completed and rejected runs, controllers, identities, guards, logs,
+fixtures metadata and the local manifest. All 795 completed session entries are
+removed from Build; shared production artifacts and other sessions' files remain.
