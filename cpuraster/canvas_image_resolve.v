@@ -22,8 +22,12 @@ fn resolve_filter_image_view(view FilterImageView, requested IRect) ?FilterResul
 // does for FilterResult::draw(). Direct image filters retain the destination
 // RGBA color type, including on Linux where native N32 would be BGRA.
 fn draw_resolved_filter_image(mut pixels []u8, pitch int, rc &RasterClip, result FilterResult, offset SkAffine, origin_x int, origin_y int) {
+	draw_resolved_filter_image_surface(mut pixels, pitch, rc, result, offset, origin_x, origin_y, canvas_rgba_uses_legacy())
+}
+
+fn draw_resolved_filter_image_surface(mut pixels []u8, pitch int, rc &RasterClip, result FilterResult, offset SkAffine, origin_x int, origin_y int, legacy bool) {
 	image := SpecialImage{result.image.backing, skif_outset(result.image.subset, 1, 1)}.bitmap()
-	bitmap := CanvasBitmap{...FilterImageInfo{}.bitmap(image), native_n32: canvas_rgba_uses_legacy()}
+	bitmap := CanvasBitmap{...FilterImageInfo{}.bitmap(image), native_n32: legacy}
 	transformed := sk_concat(offset, affine_translate(f32(result.origin_x), f32(result.origin_y)))
 	net := sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), transformed)
 	total := pre_translate(net, -1, -1)
@@ -40,7 +44,7 @@ fn draw_resolved_filter_image(mut pixels []u8, pitch int, rc &RasterClip, result
 	}
 	shader := new_image_shader(bitmap, .clamp, .clamp, linear, total)
 	if mut blitter := canvas_paint_blitter_for_surface(mut pixels, pitch, 0xff000000,
-		shader, 1, .src_over, dev, canvas_rgba_uses_legacy()) {
+		shader, 1, .src_over, dev, legacy) {
 		fill_irect(clip, rc, mut blitter)
 	}
 }

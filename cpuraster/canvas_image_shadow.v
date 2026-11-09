@@ -38,7 +38,8 @@ fn prepare_deferred_image_shadow(foreground FilterImageView, offset SkAffine, de
 
 fn draw_prepared_image_shadow(mut pixels []u8, pitch int, rc &RasterClip, shadow DeferredImageShadow, origin_x int, origin_y int, mut target CanvasTarget) bool {
 	if result := shadow.resolved {
-		draw_resolved_filter_image(mut pixels, pitch, rc, result, shadow.offset, origin_x, origin_y)
+		draw_resolved_filter_image_surface(mut pixels, pitch, rc, result, shadow.offset, origin_x, origin_y,
+			shadow.view.native_context || canvas_rgba_uses_legacy())
 		return true
 	}
 	return draw_filter_image_view(mut pixels, pitch, rc, .src_over, shadow.view, origin_x, origin_y, mut target)

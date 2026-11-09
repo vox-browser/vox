@@ -39,7 +39,8 @@ def background(case, root):
 def capture(library, fixtures, output, verify):
     cases = json.loads(fixtures.read_text())
     pins = [fixtures, library, Path(__file__), Path(__file__).with_name('native_fixture_hashes.py')]
-    pins += [fixtures.parent/c['background_file'] for c in cases['canvas'] if c.get('background_file')]
+    canvas_cases = cases['canvas'] + cases.get('shadows', [])
+    pins += [fixtures.parent/c['background_file'] for c in canvas_cases if c.get('background_file')]
     hashes = {str(p.resolve()):hashlib.sha256(p.read_bytes()).hexdigest() for p in pins}
     ref = Reference(library)
     field = 'expected_linux' if platform.system() == 'Linux' else 'expected_macos'
@@ -60,9 +61,10 @@ def capture(library, fixtures, output, verify):
         records.append(dict(case=f'image-{i}', result=expected, info=list(info), input_sha256=hashlib.sha256(src).hexdigest()))
         if verify:
             assert expected == c[field], (i, expected, c[field])
-    for i, c in enumerate(cases['canvas']):
+    for i, c in enumerate(canvas_cases):
         filters = [[2, 0, 0, 0, 0, m, 1] for m in c['pre']]
-        filters += [[0, 0, c['sigma'], 0, 0, [0]*20, 0]]
+        filters += [[1 if c.get('shadow') else 0, c.get('shadow_color', 0), c['sigma'],
+                     *c.get('offset', [0, 0]), [0]*20, 0]]
         filters += [[2, 0, 0, 0, 0, m, 1] for m in c['post']]
         ref.filters(filters)
         path, clip = c['segments'], c['clips']

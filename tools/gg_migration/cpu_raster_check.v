@@ -1426,7 +1426,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains', 'rejectedlayers', 'largefilterlayers'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains', 'rejectedlayers', 'largefilterlayers', 'largeshadowlayers'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -3248,8 +3248,9 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	glyphs := unsafe { OracleCanvasGlyphs(oracle_symbol(library, 'oracle_canvas_glyphs')) }
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
 	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
-	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'largefilterlayers' { random_large_layer_filters }
+	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') in ['dropshadows', 'largeshadowlayers']
+	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'largeshadowlayers' { random_large_shadow_filters }
+		else if os.getenv('CPU_RASTER_CHECKS') == 'largefilterlayers' { random_large_layer_filters }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'rejectedlayers' { random_rejected_spatial_filter_chain }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { random_spatial_filter_chain }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'mixedblurs' { random_color_blur_chain }
@@ -3268,6 +3269,16 @@ fn random_large_layer_filters() []cpuraster.CanvasFilterStep {
  if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
  steps << cpuraster.CanvasFilterStep{kind: .blur,
   sigma:[f32(135.01),135.2,200,270,300,532,700][rand.intn(7) or { 0 }]}
+ if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
+ return steps
+}
+
+fn random_large_shadow_filters() []cpuraster.CanvasFilterStep {
+ mut steps := []cpuraster.CanvasFilterStep{}
+ if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
+ shadow := random_shadow_filters()[0]
+ steps << cpuraster.CanvasFilterStep{...shadow,
+  sigma: [f32(135.01),135.2,200,270,300,532,700][rand.intn(7) or { 0 }]}
  if rand.intn(3) or { 0 } == 0 { steps << random_color_filters() }
  return steps
 }

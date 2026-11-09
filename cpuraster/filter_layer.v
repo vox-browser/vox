@@ -236,7 +236,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	layer_sx := blur_layer_sigma(sx)
 	layer_sy := blur_layer_sigma(sy)
 	large_blur := layer_sx > image_blur_max_sigma || layer_sy > image_blur_max_sigma
-	if large_blur && (drop || (step.source_image && !step.source_rescale_ready) || tint != none) {
+	if large_blur && ((step.source_image && (!step.source_rescale_ready || drop)) || tint != none) {
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -326,6 +326,13 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		return false
 	}
 	if large_blur {
+		if drop {
+			local := canvas_affine(layer_transform)
+			local_inverse := affine_invert(local) or { return false }
+			offset := sk_concat(local, post_translate(local_inverse, step.offset_x, step.offset_y))
+			return draw_large_shadow_layer(mut pixels, pitch, &rc, mode, BlurImage{layer_pixels, lw, lh},
+				padded.left, padded.top, layer_sx, layer_sy, offset, step, max_dim, mut target)
+		}
 		return draw_large_blur_layer(mut pixels,pitch,&rc,mode,BlurImage{layer_pixels,lw,lh},
 			padded.left,padded.top,layer_sx,layer_sy,step,mut target)
 	}

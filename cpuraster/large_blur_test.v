@@ -26,6 +26,9 @@ struct LargeBlurCanvasFixture {
 	global_alpha    f32
 	composite       int
 	sigma           f32
+	shadow          bool
+	shadow_color    u32
+	offset          [2]f32
 	stroke          bool
 	line_width      f32
 	cap             int
@@ -42,6 +45,7 @@ struct LargeBlurCanvasFixture {
 struct LargeBlurFixtures {
 	images []LargeBlurImageFixture
 	canvas []LargeBlurCanvasFixture
+	shadows []LargeBlurCanvasFixture
 }
 
 fn large_blur_fixtures() LargeBlurFixtures {
@@ -125,10 +129,19 @@ fn large_blur_matrices(matrices [][]f32) []CanvasFilterStep {
 // defer incoming color filters until after the first downsample. Four random
 // regressions cover final restore rounding, a linear gradient, and color math.
 fn test_large_canvas_blurs_match_native() {
-	for i, c in large_blur_fixtures().canvas {
+	check_large_canvas_filters(large_blur_fixtures().canvas)
+}
+
+fn test_large_canvas_shadows_match_native() {
+	check_large_canvas_filters(large_blur_fixtures().shadows)
+}
+
+fn check_large_canvas_filters(fixtures []LargeBlurCanvasFixture) {
+	for i, c in fixtures {
 		mut pixels := large_blur_background(c)
 		mut steps := large_blur_matrices(c.pre)
-		steps << CanvasFilterStep{ kind: .blur, sigma: c.sigma }
+		steps << CanvasFilterStep{ kind: if c.shadow { .drop_shadow } else { .blur }, sigma: c.sigma,
+			color: c.shadow_color, offset_x: c.offset[0], offset_y: c.offset[1] }
 		steps << large_blur_matrices(c.post)
 		clips := if c.clips.len == 0 { []Path{} } else { [canvas_path(c.clips, false)] }
 		g := c.gradient
@@ -178,7 +191,7 @@ fn test_large_blur_unsupported_layers_preserve_destination() {
 	path := b.detach()
 	identity := [f32(1), 0, 0, 1, 0, 0]!
 	for filters in [
-		[CanvasFilterStep{ kind: .drop_shadow, sigma: 300, color: 0xff203040 }],
+		[CanvasFilterStep{ kind: .blur, sigma: 2 }, CanvasFilterStep{ kind: .drop_shadow, sigma: 300, color: 0xff203040 }],
 		[CanvasFilterStep{ kind: .blur, sigma: 300 }, CanvasFilterStep{ kind: .blur, sigma: 2 }],
 	] {
 		mut pixels := large_blur_pixels(32, 28).pixels
