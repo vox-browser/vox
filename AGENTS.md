@@ -47,6 +47,12 @@
 
 ## Commits
 
+- Open browser pull requests against `vox-browser/vox`.
+- Keep the CPU raster differential suite and bulk generated migration receipts
+  in `vox-browser/vox-tests`. Pin its revision in `tools/raster_tests.json` and
+  run it with `tools/raster_tests.py` (or the existing CPU shell launcher).
+  Keep focused unit tests beside the implementation and concise results in
+  `docs/GG_MIGRATION.md`; do not add generated receipts to this repository.
 - Commit every completed feature and fix after running the relevant checks.
   Do not leave implemented work uncommitted unless the user explicitly asks.
 - Every commit must request an automatic production rebuild through the managed

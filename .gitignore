@@ -44,3 +44,6 @@
 Tests/Browser/Brave/archives/*/archive/bodies/
 Tests/Browser/Brave/archives/*/capture-watchdog/archive/bodies/
 Tests/Browser/Brave/sites/*/bodies/
+
+# Bulk raster verification receipts live in vox-browser/vox-tests.
+/docs/gg-migration/*.json
