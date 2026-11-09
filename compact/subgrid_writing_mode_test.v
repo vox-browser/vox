@@ -55,3 +55,16 @@ fn test_row_subgrid_keeps_provisional_intrinsic_tracks_during_parent_placement_c
  item := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
  assert item.y==140,'${item.y}'
 }
+
+fn test_nested_subgrids_share_baselines_through_border_padding_and_gap_edges() {
+ pair := '<div class="item first"><span></span><br><span></span></div><div class="item last"><span></span><br><span></span></div>'
+ mut document := html.parse_document('<!doctype html><style>body{margin:0}.item{inline-size:40px;box-sizing:border-box;border:5px solid;line-height:0;margin-block-start:3px;margin-block-end:5px}.small{width:30px;height:30px}.first{align-self:baseline}.last{align-self:last baseline}span{width:20px;height:20px;box-sizing:border-box;border:5px solid;display:inline-block}</style><div style="writing-mode:vertical-rl;width:600px;position:relative;display:grid;grid-template:150px 150px 150px / 100px 100px 100px 100px"><div style="display:grid;gap:10px;grid-column:1/span 2;grid-row:1/span 3;grid-template:subgrid/subgrid;margin-block-start:5px;margin-block-end:10px;border:5px solid;padding-block-start:10px;padding-block-end:20px"><div style="display:grid;gap:20px;grid-column:1/span 2;grid-row:1/span 2;grid-template:subgrid/subgrid;margin-block-start:3px;margin-block-end:7px;border:5px solid;padding-block-start:5px;padding-block-end:10px">${pair}${pair}</div>${pair}</div><div class="item small first"></div><div class="item small last"></div><div class="item small first"></div><div class="item small last"></div><div class="item small first"></div><div class="item small last"></div></div>')
+ defer { document.finalize() }
+ _ = layout.layout_document_typed_in_viewport(document,800,600)
+ expected := [514,465,387,332,242,190,534,465,407,332,262,190]
+ mut actual := []int{}
+ for item in css.query_selector_all(document.as_node(),'.item') {
+  actual << html.html_element_offset_left(unsafe { &dom.HTMLElement(item) })
+ }
+ assert actual==expected,actual.str()
+}

@@ -1284,16 +1284,9 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 		if styled := item.as_node_with_style() {
 			mut item_state := state.get_mutable(styled)
 			resolve_box_model_edges(styled.computed_values(), mut item_state, CSSPixels.new(0).to_double())
-			edge_start = edge_start.plus(if columns {
-				item_state.margin_box_left()
-			} else {
-				item_state.margin_box_top()
-			})
-			edge_end = edge_end.plus(if columns {
-				item_state.margin_box_right()
-			} else {
-				item_state.margin_box_bottom()
-			})
+			reversed := grid_axis_reversed(item,columns)
+			edge_start = edge_start.plus(if columns { if reversed { item_state.margin_box_right() } else { item_state.margin_box_left() } } else { if reversed { item_state.margin_box_bottom() } else { item_state.margin_box_top() } })
+			edge_end = edge_end.plus(if columns { if reversed { item_state.margin_box_left() } else { item_state.margin_box_right() } } else { if reversed { item_state.margin_box_top() } else { item_state.margin_box_bottom() } })
 		}
 		gap_property := grid_axis_gap(item, columns)
 		computed_gap := if item.computed_values().gap_value(gap_property).is_normal {
@@ -1444,10 +1437,11 @@ fn resolved_subgrid_tracks(data GridSubgridAxisData,values &UsedValues,horizonta
  // Provisional rows still need descendants to establish their intrinsic size.
  if !data.resolved { return data.tracks.clone() }
  mut result := []GridTrack{cap:data.tracks.len}
+ reversed := grid_axis_reversed(unsafe { &Node(values.node_) },horizontal)
  for index,track in data.tracks {
   mut size := track.base_size
-  if index==0 { size=size.minus(if horizontal { values.margin_box_left() } else { values.margin_box_top() }) }
-  if index==data.tracks.len-1 { size=size.minus(if horizontal { values.margin_box_right() } else { values.margin_box_bottom() }) }
+  if index==0 { size=size.minus(if horizontal { if reversed { values.margin_box_right() } else { values.margin_box_left() } } else { if reversed { values.margin_box_bottom() } else { values.margin_box_top() } }) }
+  if index==data.tracks.len-1 { size=size.minus(if horizontal { if reversed { values.margin_box_left() } else { values.margin_box_right() } } else { if reversed { values.margin_box_top() } else { values.margin_box_bottom() } }) }
   size=css_pixels_max(size,CSSPixels.new(0))
   result << GridTrack{base_size:size,growth_limit:size,has_growth_limit:true,fixed_max:true,fixed_max_size:size,collapsed:track.collapsed}
  }
@@ -3437,7 +3431,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
   if grid_lanes_axis_is_horizontal(container) { automatic_height = extent }
   else if width_is_intrinsic { intrinsic_container_width = extent;container_state.set_content_width(extent) }
  }
-	align_grid_baseline_subjects(mut state,container,placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
+	align_grid_baseline_subjects(mut state,container,column_sizing_placements,row_sizing_placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
 	publish_grid_content_baselines(mut state,container,mut container_state,placements)
 
  // Every abspos descendant whose containing block is this grid resolves
