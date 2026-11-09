@@ -1400,3 +1400,36 @@ fn test_cropped_color_images_preserve_gain_alpha_and_clearing_modes() {
   }
  }
 }
+
+fn test_nearly_integer_blurs_resample_visible_crops_and_keep_hidden_raw_subsets() {
+ hashes := ['633e7bfa680a5d4c', '34a6856f70dce369', '7af094b311774ce4', 'f19e7a111286ddc1', '88523b9296e4d31a', 'bba34b76b9c65bcd', 'fdf70e74ece3d570', '9e645119af2ee69c', '79d8030bcedde1b8', '3b1caa28fadde8ba', '4b2fc2c9df2fb262', '00d5da61b2dd5925', '19538cd84a4b3ba1', 'b35a046e132f0edd', '0466e63ce6feb7ad', '6ffd98323a241688', '13be7362ae8813c8', 'b39893a0f6c26b00']
+ for index in 0 .. 3 {
+  scale := math.f32_from_bits(u32(1074161254))
+  transform := [scale, f32(0), 0, scale, 2.25, 3.5]!
+  destination := [math.f32_from_bits([u32(1078836904), 1080834192, 1082480956][index]),
+   math.f32_from_bits(u32(1082230297)), math.f32_from_bits(u32(1075339656)), math.f32_from_bits(u32(1075339654))]!
+  for p, premul in [true, false] {
+   for variant in 0 .. 3 {
+    mut pixels := image_test_background()
+    filters := match variant {
+     0 { [CanvasFilterStep{kind: .blur, sigma: .8}] }
+     1 { [CanvasFilterStep{kind: .blur, sigma: .1}] }
+     else { [CanvasFilterStep{kind: .blur, sigma: .8}, image_test_contrast_filter(), CanvasFilterStep{kind: .blur, sigma: 1.2}] }
+    }
+    clips := if variant == 1 { [rect_path(Rect{f32(11+index), 14, f32(12+index), 15})] } else { []Path{} }
+    assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+     image_test_bitmap(13, 7, premul, false), [f32(6),1,5,5]!, destination, variant != 0, 1,
+     if variant == 0 { BlendMode.src_in } else { BlendMode.src_over }, clips, new_canvas_filter(filters), false),
+     'near crop ${index}/${p}/${variant} declined'
+    assert sha256.sum(pixels).hex()[..16] == hashes[index * 6 + p * 3 + variant], 'near crop ${index}/${p}/${variant}'
+   }
+  }
+  // Branched graphs still require a separate per-request raw/resolved policy.
+  mut pixels := image_test_background()
+  before := pixels.clone()
+  assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+   image_test_bitmap(13, 7, true, false), [f32(6),1,5,5]!, destination, true, 1, .src_over, [],
+   new_canvas_filter([CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}]), false)
+  assert pixels == before
+ }
+}

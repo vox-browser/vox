@@ -5,11 +5,7 @@ module cpuraster
 // In particular, unpremultiplied sRGB storage is not premultiplied here.
 fn draw_near_integer_image_blur(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, bitmap CanvasBitmap, src Rect, dst Rect, mapped SkAffine, total SkAffine, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
 	ctm := canvas_affine(transform)
-	image_bounds := IRect{0, 0, bitmap.width, bitmap.height}
 	layer_bounds := map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped)
-	// A rounding-induced layer crop can force resampling. Keep that uncommon
-	// case on the existing fallback until its desired-output analysis is ported.
-	if !layer_bounds.contains(map_filter_bounds(image_bounds, total)) { return false }
 	x, y := floor_f32(total.tx + f32(.5)), floor_f32(total.ty + f32(.5))
 	snapped := IRect{int(x), int(y), int(x) + bitmap.width, int(y) + bitmap.height}
 	tight := layer_bounds.intersect(snapped) or { return false }

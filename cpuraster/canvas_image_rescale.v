@@ -82,12 +82,27 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 			ctm, dst, foreground, mode, clips, step)
 	}
 	if real_blur && filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
-		// The blur can use the raw subset shortcut while a shadow's
-		// foreground retains its original mapping and sampling until merge.
-		near_step := CanvasFilterStep{...step, source_reset: reset,
-			source_foreground: if deferred_foreground { ?FilterImageView(foreground) } else { none }}
-		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
-			transform, bitmap, src, dst, mapped, total, mode, clips, near_step)
+		crop := !foreground.layer_bounds.contains(map_filter_bounds(
+			IRect{0, 0, bitmap.width, bitmap.height}, total))
+		if crop && (drop || stages.any(it.kind == .drop_shadow)) { return false }
+		mut reuse_pixels := !crop
+		if crop {
+			mut requested := canvas_raster_clip(width, height, clips).bounds()
+			sigmas := if stages.len == 0 { [f32(step.sigma)] } else { stages.map(f32(it.sigma)) }
+			for radius in sigmas {
+				requested = skif_outset(requested, skif_ceil(f32(3) * blur_layer_sigma(math_abs32(f32(radius) * ctm.sx))),
+					skif_ceil(f32(3) * blur_layer_sigma(math_abs32(f32(radius) * ctm.sy))))
+			}
+			reuse_pixels = foreground.layer_bounds.contains(requested)
+		}
+		if reuse_pixels {
+			// The raw subset is valid only while the layer crop is invisible
+			// to the first blur's requested input. Otherwise resample below.
+			near_step := CanvasFilterStep{...step, source_reset: reset,
+				source_foreground: if deferred_foreground { ?FilterImageView(foreground) } else { none }}
+			return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
+				transform, bitmap, src, dst, mapped, total, mode, clips, near_step)
+		}
 	}
 	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
 		source_reset: reset,
