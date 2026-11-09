@@ -84,9 +84,16 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	if real_blur && filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
 		crop := !foreground.layer_bounds.contains(map_filter_bounds(
 			IRect{0, 0, bitmap.width, bitmap.height}, total))
-		if crop && (drop || stages.any(it.kind == .drop_shadow)) { return false }
+		branched := drop || stages.any(it.kind == .drop_shadow)
+		if crop && branched && !deferred_foreground { return false }
+		if crop && drop {
+			// A lone shadow uses the same per-request source resolution as a
+			// graph: its blurred branch and deferred foreground have separate ROIs.
+			stages = [LayerFilterStage{kind: .drop_shadow, sigma: step.sigma,
+				offset_x: step.offset_x, offset_y: step.offset_y, color: step.color}]
+		}
 		mut reuse_pixels := !crop
-		if crop {
+		if crop && !branched {
 			mut requested := canvas_raster_clip(width, height, clips).bounds()
 			sigmas := if stages.len == 0 { [f32(step.sigma)] } else { stages.map(f32(it.sigma)) }
 			for radius in sigmas {

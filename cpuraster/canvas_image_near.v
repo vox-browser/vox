@@ -1,5 +1,29 @@
 module cpuraster
 
+// rescale(scale=1) can keep the original storage for one branch while a
+// sibling resolves a visible crop. None means this request needs resampling.
+fn raw_filter_image_view(view FilterImageView, requested IRect) ?FilterResult {
+	bitmap := view.bitmap
+	if !filter_nearly_integer_translation(view.transform) || view.filter != none || view.tint != none
+		|| view.alpha != 1 || bitmap.display_p3 { return none }
+	image_bounds := map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, view.transform)
+	if view.layer_crop && !view.layer_bounds.contains(image_bounds)
+		&& !view.layer_bounds.contains(requested) { return none }
+	x := int(floor_f32(view.transform.tx + f32(.5)))
+	y := int(floor_f32(view.transform.ty + f32(.5)))
+	visible := requested.intersect(view.layer_bounds) or { return FilterResult{} }
+	bounds := visible.intersect(IRect{x, y, x + bitmap.width, y + bitmap.height}) or { return FilterResult{} }
+	w, h := bounds.width(), bounds.height()
+	if w > max_untiled_dimension || h > max_untiled_dimension { return none }
+	mut pixels := []u8{len: w * h * 4}
+	for row in 0 .. h {
+		start := (bounds.top - y + row) * bitmap.pitch + (bounds.left - x) * 4
+		copy(mut pixels[row * w * 4..(row + 1) * w * 4], bitmap.pixels[start..start + w * 4])
+	}
+	return FilterResult{...new_filter_result(SpecialImage{BlurImage{pixels, w, h}, IRect{0, 0, w, h}},
+		bounds.left, bounds.top), color_info: FilterImageInfo{premultiplied: bitmap.premultiplied}}
+}
+
 // rescale(scale=1) can take a raw subset at the rounded image origin when
 // the transform is nearly integer and no pending effects need resolution.
 // In particular, unpremultiplied sRGB storage is not premultiplied here.

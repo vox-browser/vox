@@ -189,7 +189,13 @@ fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValu
 fn (g &SpatialFilterGraph) resolve_source_blur(index int, desired IRect) ?SpatialFilterValue {
 	rx, ry := skif_ceil(f32(3) * g.sx[index]), skif_ceil(f32(3) * g.sy[index])
 	output := desired.intersect(skif_outset(g.source_bounds, rx, ry)) or { return SpatialFilterValue{} }
-	visible := g.source_bounds.intersect(skif_outset(output, rx, ry)) or { return SpatialFilterValue{} }
+	requested := skif_outset(output, rx, ry)
+	if view := g.source_view {
+		if source := raw_filter_image_view(view, requested) {
+			return SpatialFilterValue{image: blur_filter_result(source, desired, g.sx[index], g.sy[index])?}
+		}
+	}
+	visible := g.source_bounds.intersect(requested) or { return SpatialFilterValue{} }
 	padded := skif_outset(visible, 1, 1)
 	w, h := padded.width(), padded.height()
 	if w > g.max_dim || h > g.max_dim || w > max_untiled_dimension || h > max_untiled_dimension { return none }
