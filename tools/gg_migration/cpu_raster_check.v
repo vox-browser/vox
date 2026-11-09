@@ -1402,7 +1402,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['identity-first-spatial-chains', 'shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['rejected-spatial-chains', 'identity-first-spatial-chains', 'shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -1414,7 +1414,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains', 'rejectedlayers'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -2462,9 +2462,10 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
+	rejected_chains := os.getenv('CPU_RASTER_CHECKS') == 'rejected-spatial-chains'
 	identity_first_chains := os.getenv('CPU_RASTER_CHECKS') == 'identity-first-spatial-chains'
 	shadow_first_chains := identity_first_chains || os.getenv('CPU_RASTER_CHECKS') == 'shadow-first-spatial-chains'
-	resampled_chains := shadow_first_chains || os.getenv('CPU_RASTER_CHECKS') == 'resampled-spatial-chains'
+	resampled_chains := rejected_chains || shadow_first_chains || os.getenv('CPU_RASTER_CHECKS') == 'resampled-spatial-chains'
 	spatial := resampled_chains || os.getenv('CPU_RASTER_CHECKS') in ['source-spatial-chains', 'fractional-spatial-chains']
 	fractional := os.getenv('CPU_RASTER_CHECKS') in ['fractional-image-layers', 'fractional-spatial-chains']
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
@@ -2653,11 +2654,14 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			mut filters := random_spatial_filter_chain()
 			if resampled_chains {
 				mut prefix := random_color_filters()
-				prefix << if shadow_first_chains {
+				prefix << if rejected_chains && i % 2 == 0 {
+					cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: -1, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+				} else if shadow_first_chains {
 					cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: if identity_first_chains { f32(.01) } else { f32(2.5) },
 						offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
 				} else { cpuraster.CanvasFilterStep{kind: .blur, sigma: .8} }
 				prefix << filters
+				if rejected_chains && i % 2 != 0 { prefix << cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: -1, offset_x: -3.75, offset_y: 5.25, color: 0x80e03050} }
 				filters = prefix.clone()
 			}
 			c = BitmapCase{...c, filters: filters}
@@ -3215,7 +3219,8 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
 	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
 	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { random_spatial_filter_chain }
+	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'rejectedlayers' { random_rejected_spatial_filter_chain }
+		else if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { random_spatial_filter_chain }
 		else if os.getenv('CPU_RASTER_CHECKS') == 'mixedblurs' { random_color_blur_chain }
 		else if mixed { random_color_shadow_filters }
 		else if shadows { random_shadow_filters } else { random_layer_filters }
@@ -3770,4 +3775,13 @@ fn check_path_geometry_hits(count int) ! {
   }
  }
  println('${if strokes { "path hits" } else { "path containment" }}: ${count} exact queries (${positive} true)')
+}
+
+fn random_rejected_spatial_filter_chain() []cpuraster.CanvasFilterStep {
+ mut filters := random_spatial_filter_chain()
+ drop := cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: -1,
+  offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ if rand.intn(2) or { 0 } == 0 { return [drop, ...filters] }
+ filters << drop
+ return filters
 }

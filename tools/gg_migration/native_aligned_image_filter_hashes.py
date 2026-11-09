@@ -414,6 +414,27 @@ for source_case in cases[-8:]:
     case['filters'] = filters
     cases.append(case)
 
+# Rejected blur nodes reset only the tinted branch to SourceGraphic.
+for source_case in cases[-8:]:
+    case = dict(source_case, name=source_case['name'].replace('identity-first', 'rejected-first'))
+    filters = list(case['filters'])
+    for i, step in enumerate(filters):
+        if step[0] == 1:
+            filters[i] = (step[0], step[1], -1, *step[3:])
+            break
+    case['filters'] = filters
+    cases.append(case)
+cases += [
+    dict(name='rejected-after-blur', destination=[4, 5, 30, 25], p3=True, premul=False,
+         alpha=.65, smoothing=False, filters=[contrast, blur(.8), opacity, shadow(-1), blur(2.5)],
+         mode='src_in', clip=True),
+    dict(name='rejected-after-shadow', destination=[4.5, 6.25, 22, 16], premul=False,
+         alpha=.7, filters=[shadow(2.5), contrast, shadow(-1), opacity], mode='src_atop'),
+]
+
+cases.append(dict(name='rejected-alpha-prefilter', destination=[4, 5, 30, 25], p3=True,
+    premul=False, alpha=.65, smoothing=False, filters=[opacity, shadow(-1), blur(.8)]))
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -497,6 +518,9 @@ expected += ['859b91c3c575de06', '27b607573de5a8ca', '5939c34188b25a0f', '09ea9f
 expected += ['184b651f07c58e73', '92bb21a535a76d83', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a']
 if platform.system() == 'Linux':
     expected[-8:] = ['184b651f07c58e73', '53fedce89798753f', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a']
+expected += ['184b651f07c58e73', '92bb21a535a76d83', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a', '5706ca183399eb51', 'b5ef1fde955a65aa', 'a30a880b43cc2f9f']
+if platform.system() == 'Linux':
+    expected[-11:] = ['184b651f07c58e73', '53fedce89798753f', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a', '94bb2e3e5122f73c', 'b5ef1fde955a65aa', '8a0bb9c29ff1424f']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
