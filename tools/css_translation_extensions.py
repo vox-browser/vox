@@ -1,6 +1,14 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'forced-color-adjust': {
+        'animation-type': 'discrete',
+        'affects-layout': False,
+        'initial': 'auto',
+        'inherited': True,
+        'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'none'],
+    },
     'font-palette': {
         'style-group': 'FontValues',
         'animation-type': 'by-computed-value',
