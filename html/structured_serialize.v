@@ -293,37 +293,6 @@ fn (mut serializer StructuredSerializer) write_optional_f64(value ?f64) {
 	if number := value { serializer.write_f64(number) }
 }
 
-fn (mut serializer StructuredSerializer) write_unsigned_leb128(input u64) {
-	// AK/LEB128.h::for_each_leb128_byte (Unsigned).
-	mut value := input
-	for {
-		mut byte := u8(value & 0x7f)
-		value >>= 7
-		if value != 0 { byte |= 0x80 }
-		serializer.write_u8(byte)
-		if value == 0 { return }
-	}
-}
-
-fn (mut serializer StructuredSerializer) write_i32(input i32) {
-	if serializer.type_ == .ipc {
-		serializer.write_u32(u32(input))
-		return
-	}
-	// AK/LEB128.h::for_each_leb128_byte (Signed).
-	mut value := input
-	for {
-		byte := u8(value & 0x7f)
-		value >>= 7
-		sign_bit_set := (byte & 0x40) != 0
-		if (value == 0 && !sign_bit_set) || (value == -1 && sign_bit_set) {
-			serializer.write_u8(byte)
-			return
-		}
-		serializer.write_u8(byte | 0x80)
-	}
-}
-
 fn (mut serializer StructuredSerializer) write_bytes(value []u8) ! {
 	if u64(value.len) > u64(4294967295) {
 		return error('DataCloneError: byte sequence is too large')
@@ -788,47 +757,6 @@ fn (mut decoder StructuredDecoder) read_optional_f64() !DecodedOptionalF64 {
 	if decoder.type_ == .storage && present > 1 { return error('DataCloneError: Invalid structured serialize bool') }
 	if present == 0 { return DecodedOptionalF64{} }
 	return DecodedOptionalF64{value: decoder.read_f64()!}
-}
-
-fn (mut decoder StructuredDecoder) read_unsigned_leb128(bits int) !u64 {
-	// AK/LEB128.h::read_from_stream (Unsigned), preserving its overflow gate.
-	mut result := u64(0)
-	mut shift := 0
-	for shift < bits {
-		byte := decoder.read_u8()!
-		masked := u64(byte & 0x7f)
-		if shift >= bits - 7 && (u64(byte) >> (bits - shift)) != 0 {
-			return error('DataCloneError: LEB128 value does not fit its source integer type')
-		}
-		result |= masked << shift
-		if (byte & 0x80) == 0 { return result }
-		shift += 7
-	}
-	return error('DataCloneError: LEB128 value exceeds its source integer width')
-}
-
-fn (mut decoder StructuredDecoder) read_i32() !i32 {
-	if decoder.type_ == .ipc { return i32(decoder.read_u32()!) }
-	// AK/LEB128.h::read_from_stream (Signed), with source i32 sign extension.
-	mut result := i32(0)
-	mut shift := 0
-	for shift < 32 {
-		byte := decoder.read_u8()!
-		result |= i32(byte & 0x7f) << shift
-		if shift >= 25 {
-			sign_and_unused := i8(byte << 1) >> (32 - shift)
-			if (byte & 0x80) != 0 || (sign_and_unused != 0 && sign_and_unused != -1) {
-				return error('DataCloneError: LEB128 value does not fit its source signed integer type')
-			}
-			return result
-		}
-		shift += 7
-		if (byte & 0x80) == 0 {
-			if shift < 32 && (byte & 0x40) != 0 { result |= ~i32(0) << shift }
-			return result
-		}
-	}
-	return error('DataCloneError: LEB128 value exceeds its source signed integer width')
 }
 
 fn (mut decoder StructuredDecoder) read_bytes() ![]u8 {

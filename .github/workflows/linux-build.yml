@@ -209,6 +209,21 @@ jobs:
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
+      - name: Check structured storage integer codecs
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 25
+        run: |
+          # Preserve storage wire bytes, integer-width errors and IPC behavior
+          # through the actual HTML, FileAPI and CryptoKey owners in both modes.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-structured-codec-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-structured-codec-$LADYBIRD_V_GC.json" --timeout 1440 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              html/structured_leb128_test.v \
+              html/structured_serialize_storage_codec_test.v \
+              html/structured_fileapi_codec_test.v \
+              html/structured_crypto_key_codec_test.v
+
       - name: Compare XML parser CPU and retained memory
         id: xml_performance
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}

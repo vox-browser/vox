@@ -5,49 +5,6 @@ module html
 
 import fileapi
 
-fn (mut serializer StructuredSerializer) write_i64(input i64) {
-	if serializer.type_ == .ipc {
-		serializer.write_fixed_u64(u64(input))
-		return
-	}
-	// AK/LEB128.h::for_each_leb128_byte (Signed<ValueType>).
-	mut value := input
-	for {
-		byte := u8(value & 0x7f)
-		value >>= 7
-		sign_bit_set := (byte & 0x40) != 0
-		if (value == 0 && !sign_bit_set) || (value == -1 && sign_bit_set) {
-			serializer.write_u8(byte)
-			return
-		}
-		serializer.write_u8(byte | 0x80)
-	}
-}
-
-fn (mut decoder StructuredDecoder) read_i64() !i64 {
-	if decoder.type_ == .ipc { return i64(decoder.read_fixed_u64()!) }
-	// AK/LEB128.h::read_from_stream (Signed<ValueType>), instantiated for i64.
-	mut result := i64(0)
-	mut shift := 0
-	for shift < 64 {
-		byte := decoder.read_u8()!
-		result |= i64(byte & 0x7f) << shift
-		if shift >= 57 {
-			sign_and_unused := i8(byte << 1) >> (64 - shift)
-			if (byte & 0x80) != 0 || (sign_and_unused != 0 && sign_and_unused != -1) {
-				return error('DataCloneError: LEB128 value does not fit its source signed integer type')
-			}
-			return result
-		}
-		shift += 7
-		if (byte & 0x80) == 0 {
-			if shift < 64 && (byte & 0x40) != 0 { result |= ~i64(0) << shift }
-			return result
-		}
-	}
-	return error('DataCloneError: LEB128 value exceeds its source signed integer width')
-}
-
 fn (mut serializer StructuredSerializer) write_blob_payload(blob &fileapi.Blob) ! {
 	// Source's SnapshotState FIXME is retained; no invented snapshot field.
 	serializer.write_utf16_string(blob.type_utf16())!
