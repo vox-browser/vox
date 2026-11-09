@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-// Combine the translated static image paths. VarDCT can carry one unscaled
-// 8-bit alpha channel; lossless modular and opaque modular XYB retain their
-// existing bounds. This remains a subset of the production decoder.
+// Combine the translated static image paths. VarDCT and modular XYB can carry
+// one unscaled 8-bit alpha channel; lossless modular retains its existing
+// bounds. This remains a subset of the production decoder.
 pub fn decode_rgba(input []u8, premultiply bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
 	mut reader := new_bit_reader(extract_codestream(input)!)

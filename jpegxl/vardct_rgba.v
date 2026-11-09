@@ -51,7 +51,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 			validate_lf_reference_frame(file, frame)!
 		} else if frame.encoding == .modular {
 			if !allow_modular_xyb { return error('JPEG XL VarDCT output requires a VarDCT visible frame') }
-			validate_modular_xyb_frame(file, frame)!
+			validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
 		} else {
 			validate_vardct_frame_reference(file, frame, reference)!
 		}
@@ -64,7 +64,8 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 		}
 		if frame.encoding == .modular {
 			raw := decode_modular_frame(file, frame, storage, mut sections)!
-			restored = render_modular_xyb_frame(raw, file, frame, storage)!
+			restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha)!
+			extra_channels = raw.channels[3..]
 		} else {
 			raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
 			restored = render_vardct_frame(raw, frame, file.transform)!
