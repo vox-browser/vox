@@ -1886,3 +1886,37 @@ bundle was not used to validate this slice. The complete browser still links
 Skia; full-browser Linux compile/link/run without it remains unverified.
 
 See the [native branch cases, source pins and Linux linkage](gg-migration/first-shadow-image-crops-20261109.json).
+
+### Cropped image graphs with prior blurs (2026-11-09)
+
+`b9ec7f034` retains a deferred source view when a real blur precedes the
+first shadow. Each request for that blur can reuse raw storage or resolve
+its visible crop independently. This removes the previous branch-order
+restriction; the guard for differing parameter/mapped layer bounds remains.
+
+Eighteen new native cases cover blur-before-shadow graphs, high-gain color
+filters between nodes, interior clips and additional blur/shadow branches,
+with both source alpha types. Every case changes pixels. The expectations
+were captured independently before the V implementation change and verified
+through the canonical fixture generator. All 244 native image fixtures verify
+on macOS and Linux, and the former unsupported regression is replaced with
+positive native expectations.
+
+Default macOS and Linux each match 1,890 of 2,000 crop-focused attempts at
+seed 20261138, declining 110. Optimized macOS/no-GC matches 1,891 of 2,000
+at seed 20261139, declining 109. The broader resampled graph selection matches
+837 of 1,000 on each platform at seed 20261140, declining 163. Counts include
+no-ops; all final cohorts finish with unchanged input pins.
+
+C/FastC image and filter-layer suites, HTML canvas integration, the full Linux
+browser typecheck and the FMA audit pass (zero contracted operations, 189
+explicit). The standalone Linux production/no-GC executable runs all 48 image
+tests with Skia unavailable to pkg-config and no direct or transitive Skia
+linkage; direct libraries are FreeType, libm and libc. The browser typecheck
+uses installed Skia development files. The shared production bundle was not
+used to validate this slice. The complete browser still links Skia, and
+full-browser Linux compile/link/run without it remains unverified.
+
+Other crop/bounds cases, rotated saved layers, SVG graphs, boolean shadows,
+large-sigma/tiling paths and native/GPU services remain. See the
+[independent native expectations, guarded checks and Linux linkage](gg-migration/prior-blur-image-crops-20261109.json).
