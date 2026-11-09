@@ -233,11 +233,25 @@ def patch_request(source):
 
 def patch_proxy(source):
     """Keep request TLS verification and origin-form targets inside proxy tunnels."""
-    source = source.replace('struct HttpProxy {', 'pub struct HttpProxy {', 1)
-    old = "pr.ssl_dial('${host_name}:${port}')"
-    if source.count(old) != 1:
+    declarations = re.findall(r'(?m)^(?:pub )?struct HttpProxy \{', source)
+    if len(declarations) != 1:
+        raise RuntimeError('Unsupported HTTP proxy declaration')
+    source = re.sub(r'(?m)^(?:pub )?struct HttpProxy \{', 'pub struct HttpProxy {', source)
+    old_call = "pr.ssl_dial('${host_name}:${port}')"
+    request_call = "pr.ssl_dial('${host_name}:${port}', req)"
+    old_signature = 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn'
+    request_signature = 'fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn'
+    if (source.count(old_call), source.count(request_call),
+            source.count(old_signature), source.count(request_signature)) == (1, 0, 1, 0):
+        signature = old_signature
+        source = source.replace(old_call, request_call, 1)
+    elif (source.count(old_call), source.count(request_call),
+            source.count(old_signature), source.count(request_signature)) == (0, 1, 0, 1):
+        # Current V already forwards Request's certificate configuration.
+        # Retain Vox's timeout and failed-handshake cleanup behavior as well.
+        signature = request_signature
+    else:
         raise RuntimeError('Unsupported HTTP proxy TLS call')
-    source = source.replace(old, "pr.ssl_dial('${host_name}:${port}', req)", 1)
     old = "'${host.scheme}://${host_name}${port_part}${path}', data, header)"
     if source.count(old) == 1:
         # Both HTTP CONNECT and SOCKS establish an end-to-end tunnel. The
@@ -249,7 +263,7 @@ def patch_proxy(source):
         source = source[:start] + source[end:]
     elif 'req.build_request_headers_with(method, host_name, port, default_port, path, data' not in source:
         raise RuntimeError('Unsupported HTTP proxy request target')
-    source = replace_function(source, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn', r'''
+    source = replace_function(source, signature, r'''
 fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
     mut ssl_conn := ssl.new_ssl_conn(
         verify: req.verify
@@ -270,7 +284,8 @@ fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn {
     ssl_conn.set_read_timeout(req.read_timeout)
     return ssl_conn
 }''')
-    return remove_unused_private_helper(source, "proxy_request_target")
+    source = remove_unused_private_helper(source, "proxy_request_target")
+    return remove_unused_private_helper(source, "request_ssl_connect_config")
 
 
 def compiler_vlib(compiler, work):
@@ -280,7 +295,10 @@ def compiler_vlib(compiler, work):
     with tempfile.TemporaryDirectory(prefix="compiler-root-", dir=work) as temporary:
         probe = Path(temporary) / "compiler_root.v"
         probe.write_text("module main\nfn main() { println(@VEXEROOT) }\n")
-        result = subprocess.run([compiler, "-memory-limit", "10G", "run", str(probe)],
+        # This introspection probe needs the checked frontend's @VEXEROOT;
+        # its location inside the checkout must not inherit v.mod's FastC
+        # application backend. The browser keeps its selected backend.
+        result = subprocess.run([compiler, "-b", "c", "-memory-limit", "10G", "run", str(probe)],
                                 capture_output=True, text=True, check=True)
     return Path(result.stdout.strip()).resolve() / "vlib"
 
