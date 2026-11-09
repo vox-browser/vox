@@ -16,6 +16,16 @@ pub:
 	response  Response
 }
 
+// Keep the version-one receipt's string fields and sorted JSON key order.
+// Encoding this fixed schema avoids json2's map-key ownership cleanup; FastC
+// with -gc none otherwise frees each cloned string key twice.
+struct DiskTimingRecord {
+	integrity     string
+	request_time  string
+	response_time string
+	version       string = '1'
+}
+
 fn disk_integrity(final_url string, status string, encoded_headers string, body string) string {
 	// Fixed-length digests make the field boundaries unambiguous without
 	// constructing another complete copy of a potentially large image body.
@@ -75,11 +85,10 @@ pub fn store_disk_response(path string, final_url string, body string, response 
 	if !write_disk_part(path + '.status', status, limit) { return false }
 	// Decimal strings preserve exact millisecond timestamps in every JSON
 	// decoder and avoid generic struct decoding's mutable field metadata.
-	record := map[string]string{
-		'version':       '1'
-		'request_time':  timing.request_time.str()
-		'response_time': timing.response_time.str()
-		'integrity':     disk_integrity(final_url, status, encoded_headers, body)
+	record := DiskTimingRecord{
+		integrity:     disk_integrity(final_url, status, encoded_headers, body)
+		request_time:  timing.request_time.str()
+		response_time: timing.response_time.str()
 	}
 	return write_disk_part(path + '.timing.json', json2.encode(record), limit)
 }

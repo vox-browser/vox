@@ -63,7 +63,7 @@ function __compactFlushDOMMutations(){
 }
 function __compactTakeTaskOutput(){
  const output=__pendingStringify({logs:__state.logs,navigate:__state.navigate||""});
- __state.logs=[];
+ __state.logs=[];__state.navigate="";
  return output;
 }'
 }

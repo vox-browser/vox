@@ -41,8 +41,8 @@ if [ ! -x "$binary" ]; then
     # This small bootstrap uses V's compiler limit. The compiled tool applies
     # the aggregate process-tree guard to production and dependency builds.
     case "$(uname -s)" in
-        Linux) "$compiler" -memory-limit 10G -gc none -cc "${CC:-clang}" -o "$temporary/vox-build" "$repo_dir/tools/voxbuild" >&2 ;;
-        *) "$compiler" -memory-limit 10G -gc none -o "$temporary/vox-build" "$repo_dir/tools/voxbuild" >&2 ;;
+        Linux) "$compiler" -b c -memory-limit 10G -gc none -cc "${CC:-clang}" -o "$temporary/vox-build" "$repo_dir/tools/voxbuild" >&2 ;;
+        *) "$compiler" -b c -memory-limit 10G -gc none -o "$temporary/vox-build" "$repo_dir/tools/voxbuild" >&2 ;;
     esac
     if [ "$(input_identity)" != "$identity" ]; then
         echo 'Build tool sources changed during compilation; retry the build.' >&2

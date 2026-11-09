@@ -148,7 +148,9 @@ fn compiler_vlib(compiler string, work string) !string {
 	defer { os.rmdir_all(temporary) or {} }
 	probe := os.join_path(temporary, 'compiler_root.v')
 	os.write_file(probe, 'module main\nfn main() { println(@VEXEROOT) }\n')!
-	mut command := [compiler, '-memory-limit', '10G', '-gc', 'none']
+	// The probe can live below Vox's v.mod. Its introspection needs the checked
+	// frontend even when the browser selects FastC.
+	mut command := [compiler, '-b', 'c', '-memory-limit', '10G', '-gc', 'none']
 	$if linux {
 		command << ['-cc', env_default('CC', 'clang')]
 	}

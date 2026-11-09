@@ -52,6 +52,13 @@ def condition_private_helpers(source, names, condition):
 
 
 def patch_module(package, source):
+    if package == "sokol/sapp":
+        # FastC's nested/global struct-default metadata currently drops the
+        # C-string prefix on this initializer, assigning a V string struct to
+        # the native const char* field. The static literal's data pointer keeps
+        # the same NUL-terminated default without allocating or changing Sokol.
+        source = re.sub(r"(?m)^(\s*canvas_selector\s+&char\s*=\s*)c'#canvas'",
+                        r"\1'#canvas'.str", source)
     if package == "stbi":
         source = source.replace("import os\n", "$if windows && clang {\n\timport os\n}\n")
     if package in {"gg", "net/openssl"}:
@@ -168,7 +175,7 @@ def main():
             target = modules / package / source.relative_to(vlib / package)
             target.parent.mkdir(parents=True, exist_ok=True)
             write_if_changed(target, text)
-    for package in ["gg", "net/openssl"]:
+    for package in ["gg", "net/openssl", "sokol/sapp"]:
         stage_module(vlib / package, modules / package, package)
     print(modules)
 

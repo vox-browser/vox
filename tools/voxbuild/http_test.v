@@ -77,6 +77,113 @@ fn test_http_request_target_preserves_raw_query_and_current_cookie_api() {
 	}
 }
 
+fn http_proxy_fixture(request_configuration bool) string {
+	arguments := if request_configuration { ', req' } else { '' }
+	parameter := if request_configuration { ', req &Request' } else { '' }
+	configuration := if request_configuration {
+		'\ttls_config := request_ssl_connect_config(req)\n'
+	} else {
+		''
+	}
+	helper := if request_configuration {
+		'\nfn request_ssl_connect_config(req &Request) ssl.SSLConnectConfig {\n' +
+			'\treturn ssl.SSLConnectConfig{\n\t\tverify: req.verify\n\t\tcert: req.cert\n' +
+			'\t\tcert_key: req.cert_key\n\t\tvalidate: req.validate\n' +
+			'\t\tin_memory_verification: req.in_memory_verification\n\t}\n}\n'
+	} else {
+		''
+	}
+	return 'module http\nstruct HttpProxy {\n}\nfn (pr &HttpProxy) http_do() {\n' +
+		'\ts := req.build_request_headers_with(method, host_name, port, default_port, path, data,\n\t\theader)!\n' +
+		"\tmut client := pr.ssl_dial('\${host_name}:\${port}'${arguments})!\n}\n" +
+		'fn (pr &HttpProxy) ssl_dial(host string${parameter}) !&ssl.SSLConn {\n' +
+		configuration + '\treturn previous_dial(host)\n}\n' + helper
+}
+
+fn test_http_proxy_tls_preserves_request_settings_for_both_upstream_apis() ! {
+	for current in [false, true] {
+		for exported in [false, true] {
+			mut source := http_proxy_fixture(current)
+			if exported {
+				source = source.replace_once('struct HttpProxy {', 'pub struct HttpProxy {')
+			}
+			patched := http_patch_proxy(source)!
+			assert patched.count('pub struct HttpProxy {') == 1
+			assert !patched.contains('pub pub struct')
+			assert patched.count("pr.ssl_dial('\${host_name}:\${port}', req)") == 1
+			for field in ['verify', 'cert', 'cert_key', 'validate', 'in_memory_verification'] {
+				assert patched.contains('${field}: req.${field}')
+			}
+			assert !patched.contains('validate: false')
+			assert patched.contains('mut tcp := pr.connect_tcp(host)!')
+			assert patched.contains('tcp.set_read_timeout(req.read_timeout)')
+			assert patched.contains('tcp.set_write_timeout(req.write_timeout)')
+			assert patched.contains("ssl_conn.connect(mut tcp, host.all_before_last(':')) or {")
+			assert patched.contains('tcp.close() or {}\n        ssl_conn.shutdown() or {}')
+			assert patched.contains('ssl_conn.owns_socket = true')
+			assert patched.contains('ssl_conn.set_read_timeout(req.read_timeout)')
+			assert !patched.contains('request_ssl_connect_config')
+			assert http_patch_proxy(patched)! == patched
+		}
+	}
+}
+
+fn test_http_proxy_retains_a_config_helper_with_another_caller() ! {
+	source := http_proxy_fixture(true) + '\nfn another_request(req &Request) ssl.SSLConnectConfig {\n' +
+		'\treturn request_ssl_connect_config(req)\n}\n'
+	patched := http_patch_proxy(source)!
+	assert patched.contains('fn request_ssl_connect_config(req &Request)')
+	assert patched.contains('return request_ssl_connect_config(req)')
+}
+
+fn test_http_proxy_rejects_mixed_missing_and_ambiguous_tls_apis() {
+	legacy := http_proxy_fixture(false)
+	current := http_proxy_fixture(true)
+	old_call := "pr.ssl_dial('\${host_name}:\${port}')"
+	request_call := "pr.ssl_dial('\${host_name}:\${port}', req)"
+	for source in [legacy.replace(old_call, request_call), current.replace(request_call, old_call),
+		legacy.replace(old_call, 'pr.other_dial(host)'),
+		current.replace('req &Request) !&ssl.SSLConn', 'config ssl.SSLConnectConfig) !&ssl.SSLConn'),
+		legacy + '\n' + old_call + '\n', current + '\n' + request_call + '\n'] {
+		http_patch_proxy(source) or {
+			assert err.msg().contains('proxy TLS call')
+			continue
+		}
+		assert false, 'Unknown or mixed proxy TLS APIs were accepted'
+	}
+}
+
+fn test_http_proxy_requires_exactly_one_top_level_declaration() {
+	source := http_proxy_fixture(false)
+	for invalid in [source.replace('struct HttpProxy {', 'struct OtherProxy {'),
+		source.replace('struct HttpProxy {', 'pub pub struct HttpProxy {'),
+		source.replace('struct HttpProxy {', '// struct HttpProxy {'),
+		source + '\npub struct HttpProxy {\n}\n'] {
+		http_patch_proxy(invalid) or {
+			assert err.msg().contains('proxy declaration')
+			continue
+		}
+		assert false, 'Missing or ambiguous proxy declaration was accepted'
+	}
+}
+
+fn test_http_proxy_tunnels_keep_origin_form_request_targets() ! {
+	for current in [false, true] {
+		source := http_proxy_fixture(current).replace('\ts := req.build_request_headers_with(method, host_name, port, default_port, path, data,\n\t\theader)!',
+			"\tport_part := ':\${port}'\n\ts := req.build_request_headers_with(method, host_name, port, default_port,\n\t\t'\${host.scheme}://\${host_name}\${port_part}\${path}', data, header)!")
+		patched := http_patch_proxy(source)!
+		assert !patched.contains('port_part')
+		assert !patched.contains("'\${host.scheme}://")
+		assert patched.contains('path, data, header)!')
+	}
+	invalid := http_proxy_fixture(true).replace('default_port, path, data', 'default_port, unsupported_target, data')
+	http_patch_proxy(invalid) or {
+		assert err.msg().contains('proxy request target')
+		return
+	}
+	assert false, 'Unknown proxy request target was accepted'
+}
+
 fn test_http_proxy_pool_keeps_proxy_identity_in_connection_keys() {
 	source := "fn transport_pool_key(req &Request) string {\n\treturn '\${req.in_memory_verification}'\n}\n" +
 		"fn (mut t Transport) dial_h1_tcp(req &Request) ! {\n\tmut client := net.dial_tcp('\${host}:\${port}')!\n}\n"

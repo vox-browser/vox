@@ -1,7 +1,5 @@
 module browsertabs
 
-import json2
-
 fn test_reopening_hidden_original_process_preserves_selected_document_and_frame() {
 	mut original := create(Frame{ x: 12, y: 34, width: 900, height: 700 })!
 	defer { original.leave() or {} }
@@ -38,6 +36,6 @@ fn test_single_tab_reopen_and_older_session_records() {
 	session.request_reopen()!
 	assert session.take_reopen_request()
 	assert !session.take_reopen_request()
-	old := json2.decode[State]('{"version":1,"tabs":[],"selected":"","frame":{}}')!
+	old := decode_session_state('{"version":1,"tabs":[],"selected":"","frame":{}}')!
 	assert old.reopen == 0
 }

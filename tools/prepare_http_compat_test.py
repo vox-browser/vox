@@ -13,7 +13,8 @@ import textwrap
 import unittest
 from unittest.mock import patch
 
-from prepare_http_compat import (compiler_vlib, patch_brotli_compressor, patch_request, patch_response,
+from prepare_http_compat import (compiler_vlib, patch_brotli_compressor, patch_proxy,
+                                 patch_request, patch_response,
                                  remove_obsolete_entries,
                                  remove_unused_private_helper, staged_modules)
 
@@ -43,6 +44,7 @@ class CompilerLibraryDiscoveryTest(unittest.TestCase):
             assert 'println(@VEXEROOT)' in probe.read_text()
             records = Path(os.environ['VOX_PROBE_TEST_RECORDS'])
             (records / (probe.parent.name + '.json')).write_text(json.dumps(arguments))
+            assert arguments[arguments.index('-b') + 1] == 'c'
             assert arguments[arguments.index('-memory-limit') + 1] == '10G'
             # Model an installation without V's bundled collector or TCC.
             assert arguments[arguments.index('-gc') + 1] == 'none'
@@ -151,6 +153,96 @@ class CompilerLibraryDiscoveryTest(unittest.TestCase):
 
 
 class HTTPCompatibilityStagingTest(unittest.TestCase):
+    def proxy_source(self, request_configuration=False):
+        arguments = ", req" if request_configuration else ""
+        parameter = ", req &Request" if request_configuration else ""
+        configuration = ("\ttls_config := request_ssl_connect_config(req)\n"
+                         if request_configuration else "")
+        helper = '''
+fn request_ssl_connect_config(req &Request) ssl.SSLConnectConfig {
+\treturn ssl.SSLConnectConfig{
+\t\tverify: req.verify
+\t\tcert: req.cert
+\t\tcert_key: req.cert_key
+\t\tvalidate: req.validate
+\t\tin_memory_verification: req.in_memory_verification
+\t}
+}
+''' if request_configuration else ""
+        return ('''module http
+struct HttpProxy {
+}
+fn (pr &HttpProxy) http_do() {
+\ts := req.build_request_headers_with(method, host_name, port, default_port, path, data,
+\t\theader)!
+\tmut client := pr.ssl_dial('${host_name}:${port}'ARGUMENTS)!
+}
+fn (pr &HttpProxy) ssl_dial(host stringPARAMETER) !&ssl.SSLConn {
+CONFIGURATION\treturn previous_dial(host)
+}
+'''.replace('ARGUMENTS', arguments).replace('PARAMETER', parameter)
+                .replace('CONFIGURATION', configuration) + helper)
+
+    def test_proxy_tls_preserves_request_configuration_and_cleanup_for_both_apis(self):
+        for current in (False, True):
+            with self.subTest(current=current):
+                patched = patch_proxy(self.proxy_source(current))
+                self.assertEqual(patched.count("pub struct HttpProxy {"), 1)
+                self.assertEqual(patched.count("pr.ssl_dial('${host_name}:${port}', req)"), 1)
+                for field in ('verify', 'cert', 'cert_key', 'validate', 'in_memory_verification'):
+                    self.assertRegex(patched, rf'\b{field}:\s+req\.{field}\b')
+                self.assertNotIn('validate: false', patched)
+                self.assertIn('mut tcp := pr.connect_tcp(host)!', patched)
+                self.assertIn('tcp.set_read_timeout(req.read_timeout)', patched)
+                self.assertIn('tcp.set_write_timeout(req.write_timeout)', patched)
+                self.assertIn("ssl_conn.connect(mut tcp, host.all_before_last(':')) or {", patched)
+                self.assertIn('tcp.close() or {}\n        ssl_conn.shutdown() or {}', patched)
+                self.assertIn('ssl_conn.owns_socket = true', patched)
+                self.assertIn('ssl_conn.set_read_timeout(req.read_timeout)', patched)
+                self.assertNotIn('request_ssl_connect_config', patched)
+                self.assertEqual(patched, patch_proxy(patched))
+
+    def test_proxy_config_helper_remains_when_another_caller_uses_it(self):
+        source = self.proxy_source(True) + '''
+fn another_request(req &Request) ssl.SSLConnectConfig {
+\treturn request_ssl_connect_config(req)
+}
+'''
+        patched = patch_proxy(source)
+        self.assertIn('fn request_ssl_connect_config(req &Request)', patched)
+        self.assertIn('return request_ssl_connect_config(req)', patched)
+
+    def test_proxy_rejects_mixed_missing_and_ambiguous_tls_apis(self):
+        legacy = self.proxy_source()
+        current = self.proxy_source(True)
+        variants = (
+            legacy.replace("pr.ssl_dial('${host_name}:${port}')",
+                           "pr.ssl_dial('${host_name}:${port}', req)"),
+            current.replace("pr.ssl_dial('${host_name}:${port}', req)",
+                            "pr.ssl_dial('${host_name}:${port}')"),
+            legacy.replace("pr.ssl_dial('${host_name}:${port}')", "pr.other_dial(host)"),
+            current.replace('req &Request) !&ssl.SSLConn', 'config ssl.SSLConnectConfig) !&ssl.SSLConn'),
+            legacy + "\npr.ssl_dial('${host_name}:${port}')\n",
+            current + "\npr.ssl_dial('${host_name}:${port}', req)\n",
+        )
+        for source in variants:
+            with self.subTest(source=source), self.assertRaisesRegex(RuntimeError, 'proxy TLS call'):
+                patch_proxy(source)
+
+    def test_proxy_tunnel_targets_remain_origin_form(self):
+        for current in (False, True):
+            with self.subTest(current=current):
+                source = self.proxy_source(current).replace(
+                    '\ts := req.build_request_headers_with(method, host_name, port, default_port, path, data,\n\t\theader)!',
+                    "\tport_part := ':${port}'\n\ts := req.build_request_headers_with(method, host_name, port, default_port,\n\t\t'${host.scheme}://${host_name}${port_part}${path}', data, header)!")
+                patched = patch_proxy(source)
+                self.assertNotIn('port_part', patched)
+                self.assertNotIn("'${host.scheme}://", patched)
+                self.assertIn('path, data, header)!', patched)
+        with self.assertRaisesRegex(RuntimeError, 'proxy request target'):
+            patch_proxy(self.proxy_source(True).replace('default_port, path, data',
+                                                       'default_port, unsupported_target, data'))
+
     def test_http_response_uses_the_pure_v_brotli_codec(self):
         source = ('module http\n\nimport compress.brotli\nimport compress.gzip\n'
                   '\nfn decode_response_body() { brotli.decompress(bytes)! }\n')

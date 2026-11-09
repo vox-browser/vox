@@ -32,7 +32,7 @@ fn test_probe_uses_compiler_reported_root_and_keeps_diagnostics() ! {
 	make_directory(library)!
 	work := os.join_path(root, 'work')
 	compiler := os.join_path(root, 'fake v')
-	os.write_file(compiler, '#!/bin/sh\ncase " $* " in *" -gc none "*) ;; *) exit 91;; esac\nprintf "%s\\n" ' + shell_quote(os.dir(library)) + '\n')!
+	os.write_file(compiler, '#!/bin/sh\ncase " $* " in *" -gc none "*) ;; *) exit 91;; esac\ncase " $* " in *" -b c "*) ;; *) exit 92;; esac\nprintf "%s\\n" ' + shell_quote(os.dir(library)) + '\n')!
 	os.chmod(compiler, 0o755)!
 	assert compiler_vlib(compiler, work)! == library
 	assert os.ls(work)!.len == 0

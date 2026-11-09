@@ -1,6 +1,5 @@
 module browsertabs
 
-import json2
 import os
 import rand
 import platform
@@ -15,43 +14,6 @@ fn C.vox_tabs_terminate(i32)
 fn C.vox_tabs_reap(i32) i32
 fn C.vox_tabs_create_directory(&char) i32
 fn C.vox_tabs_watch(&char, fn (voidptr), voidptr) i32
-
-pub struct Tab {
-pub mut:
-	id       string
-	pid      int
-	title    string = 'New Tab'
-	custom_title string
-	url      string
-	favicon  string
-	loading  bool
-	color    TabColor
-	ready    bool
-	activate bool
-	detach   bool
-}
-
-pub struct Frame {
-pub mut:
-	x      f64
-	y      f64
-	width  f64
-	height f64
-}
-
-pub struct State {
-pub mut:
-	version  int = 1
-	tabs     []Tab
-	selected string
-	// The tab whose window is on screen. A newly selected tab orders its window
-	// over the previous one before publishing itself here, and the previous
-	// tab hides only afterwards, so a switch never leaves the screen without a
-	// browser window.
-	shown    string
-	frame    Frame
-	reopen   u64
-}
 
 // Only chrome metadata crosses this boundary. Documents, JSC realms, native
 // renderers and their allocation arenas stay entirely in their owning process.
@@ -118,7 +80,7 @@ fn initialize_session_codec() ! {
 	// Both codecs cache field metadata for the lifetime of the process. Warm
 	// every nested record in the caller's persistent allocation scope before
 	// remember() can initialize the decoder in a replaceable metadata arena.
-	_ = json2.decode[State](json2.encode(State{ tabs: [Tab{}] }))!
+	_ = decode_session_state(encode_session_state(State{ tabs: [Tab{}] }))!
 }
 
 fn (session &Session) lock() !i32 {
@@ -129,7 +91,7 @@ fn (session &Session) lock() !i32 {
 }
 
 fn (session &Session) load() !State {
-	state := json2.decode[State](os.read_file(os.join_path(session.folder, 'state.json'))!)!
+	state := decode_session_state(os.read_file(os.join_path(session.folder, 'state.json'))!)!
 	if state.version != 1 { return error('unsupported tab session') }
 	return state
 }
@@ -138,7 +100,7 @@ fn (session &Session) save(state State) ! {
 	path := os.join_path(session.folder, 'state.json')
 	temporary := '${path}.${os.getpid()}'
 	defer { os.rm(temporary) or {} }
-	os.write_file(temporary, json2.encode(state))!
+	os.write_file(temporary, encode_session_state(state))!
 	os.chmod(temporary, 0o600)!
 	os.rename(temporary, path)!
 }
@@ -247,7 +209,7 @@ fn (mut session Session) poll_state(title string, address string, favicon string
 	fd := session.lock()!
 	defer { C.vox_tabs_unlock(fd) }
 	mut state := session.load()!
-	before := json2.encode(state)
+	before := encode_session_state(state)
 	for tab in state.tabs.clone() {
 		if C.vox_tabs_alive(i32(tab.pid)) == 0 { state.remove(tab.id) }
 	}
@@ -265,7 +227,7 @@ fn (mut session Session) poll_state(title string, address string, favicon string
 		}
 		state.tabs[index] = tab
 	}
-	if json2.encode(state) != before { session.save(state)! }
+	if encode_session_state(state) != before { session.save(state)! }
 	session.remember(state)
 }
 
@@ -396,12 +358,12 @@ pub fn (mut session Session) leave() ! {
 // Replace the metadata arena only when chrome changes. Idle polling allocates
 // entirely in scratch storage, including JSON decoding under -prealloc.
 fn (mut session Session) remember(state State) {
-	encoded := json2.encode(state)
+	encoded := encode_session_state(state)
 	if encoded == session.encoded { return }
 	mut storage := platform.new_retained_arena('tab session metadata')
 	mut scope := storage.enter_nested()
 	session.encoded = encoded.clone()
-	session.state = json2.decode[State](session.encoded) or { panic(err) }
+	session.state = decode_session_state(session.encoded) or { panic(err) }
 	session.revision++
 	scope.finish()
 	if session.storage != unsafe { nil } { session.storage.release() }

@@ -33,7 +33,8 @@ class GgCanvasBuildTest(unittest.TestCase):
             compiler.write_text(f'''#!{sys.executable}
 import sys
 from pathlib import Path
-assert sys.argv[1:3] == ['-memory-limit', '10G'], sys.argv
+assert sys.argv[sys.argv.index('-b') + 1] == 'c', sys.argv
+assert sys.argv[sys.argv.index('-memory-limit') + 1] == '10G', sys.argv
 assert sys.argv[sys.argv.index('-gc') + 1] == 'none', sys.argv
 assert sys.argv[-2] == 'run', sys.argv
 assert 'root' not in sys.argv and 'env' not in sys.argv, sys.argv

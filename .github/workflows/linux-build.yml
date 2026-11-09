@@ -1,4 +1,4 @@
-name: Linux build
+name: Browser build and lifecycle
 
 on:
   push:
@@ -17,26 +17,30 @@ jobs:
   browser:
     name: Browser (${{ matrix.gc }})
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    # Leave room for independent suites even when the production build uses
+    # its full timeout. Individual steps retain their tighter bounds.
+    timeout-minutes: 360
     strategy:
       # Keep evidence from both allocation models when one of them fails.
       fail-fast: false
       matrix:
         gc: [boehm, prealloc]
     env:
-      # Includes the FastC enum/JSON support used by tab state (vlang/v#31994).
-      V_REVISION: 395d574b9197e5d61a801d7e9d3f3ddb77bb0d46
+      # FastC must support JSON enum attributes and dynamic-array decoding.
+      V_REVISION: 339affce1891514d11aeb7111f579845d966a138
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        id: checkout
         with:
           fetch-depth: 1
           persist-credentials: false
 
       - name: Prepare the reviewed checkout
+        id: reviewed_checkout
         run: |
           # The supervisor requires a regular checkout on master. Keep the
           # checked-out push/PR commit; never replace it with origin/master.
@@ -55,6 +59,8 @@ jobs:
           python3 tools/test_linux_browser_test.py
 
       - name: Install Linux dependencies
+        id: system_dependencies
+        if: ${{ !cancelled() && steps.reviewed_checkout.outcome == 'success' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
@@ -71,7 +77,7 @@ jobs:
           rustc --version
 
       - name: Check tab process exit diagnostics
-        if: matrix.gc == 'boehm'
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 2
         run: |
           # A child crash during Ctrl+W must not look like successful retirement.
@@ -81,6 +87,7 @@ jobs:
             python3 tools/test_tab_process_lifecycle.py
 
       - name: Add swap for the C compilation
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
         run: |
           # Standard private-repository runners have less RAM than the large
           # single-file C build needs. The 12 GiB process-tree guard stays on.
@@ -90,6 +97,8 @@ jobs:
           sudo swapon "$RUNNER_TEMP/vox.swap"
 
       - name: Build pinned V and fetch UI2
+        id: toolchain
+        if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' }}
         timeout-minutes: 25
         run: |
           git init "$RUNNER_TEMP/v"
@@ -105,25 +114,36 @@ jobs:
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
           git -C "$RUNNER_TEMP/ui2" fetch --depth 1 origin HEAD
           git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
+          # UI2 intentionally follows upstream HEAD; preserve the exact inputs
+          # alongside the results so this run can be reproduced.
+          git -C "$RUNNER_TEMP/v" rev-parse HEAD > "$RUNNER_TEMP/vox-v-revision.txt"
+          git -C "$RUNNER_TEMP/ui2" rev-parse HEAD > "$RUNNER_TEMP/vox-ui2-revision.txt"
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
-      - name: Bootstrap and check the native build tools
+      - name: Bootstrap the native build tools
+        id: native_tool
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
+        timeout-minutes: 5
+        run: |
+          # Cache the tool separately from its tests so an unrelated test
+          # failure cannot hide the independent browser/lifecycle results.
+          sh tools/vox-build.sh --help
+
+      - name: Check the native build tools
+        if: ${{ !cancelled() && steps.native_tool.outcome == 'success' }}
         timeout-minutes: 20
         env:
           VJOBS: '1'
           VOX_BUILD_TEST_TOOL: ${{ github.workspace }}/Build/tools/vox-build
         run: |
-          # The launcher compiles and caches the tool with -gc none and the
-          # compiler memory limit. All later build guards use this native tool.
-          sh tools/vox-build.sh --help
           sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-native-tools.lock" \
             --report "$RUNNER_TEMP/vox-native-tools.json" --limit-gib 3 --timeout 1140 -- \
             "$V_BIN" -memory-limit 10G -gc none -cc clang test tools/voxbuild
 
       - name: Check resource cache and cancellation contracts
-        if: matrix.gc == 'boehm'
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && steps.native_tool.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 10
         run: |
           sh tools/vox-build.sh memory \
@@ -147,13 +167,27 @@ jobs:
             --report "$RUNNER_TEMP/vox-resource-v-prealloc.json" --limit-gib 3 --timeout 300 -- \
             python3 tools/test_resource_v_contracts.py --v "$V_BIN" --prealloc
 
+      - name: Check production FastC tab metadata
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && steps.native_tool.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
+          # This fast gate compiles the actual metadata codec with FastC in
+          # both allocation modes, before the full browser's native build.
+          sh tools/vox-build.sh memory \
+            --lock "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.json" --timeout 540 -- \
+            python3 tools/test_tab_metadata_codec.py --v "$V_BIN" --gc "$LADYBIRD_V_GC"
+
       - name: Cache pinned Skia
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: Build/deps
           key: linux-skia-native-v1-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/voxbuild/native.v', 'tools/voxbuild/common.v', 'tools/vox-build.sh') }}
 
       - name: Build Skia
+        id: skia
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && steps.native_tool.outcome == 'success' }}
         timeout-minutes: 45
         run: |
           sh tools/vox-build.sh memory \
@@ -161,7 +195,9 @@ jobs:
             --report "$RUNNER_TEMP/vox-skia-build.json" --timeout 2400 -- \
             sh tools/vox-build.sh build-linux-skia
 
-      - name: Check native Skia linking and rendering
+      - name: Build native dependencies
+        id: native_dependencies
+        if: ${{ !cancelled() && steps.skia.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
@@ -169,12 +205,19 @@ jobs:
             --lock "$RUNNER_TEMP/vox-native-build.lock" \
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
             sh tools/vox-build.sh build-native
+
+      - name: Check native Skia linking and rendering
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 10
+        run: |
           sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-skia-test.lock" \
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
       - name: Build Vox and run the headless smoke test without Python
+        id: production_build
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 50
         run: |
           # Both allocator jobs run the complete production path with every
@@ -203,6 +246,7 @@ jobs:
           test ! -e "$VOX_PYTHON_POISON_LOG"
 
       - name: Check the native window and tab lifecycle
+        if: ${{ !cancelled() && steps.production_build.outcome == 'success' }}
         timeout-minutes: 12
         run: |
           # This is the full supervised binary, including the staged prealloc
@@ -214,8 +258,11 @@ jobs:
             --limit-gib 3 --timeout 600 -- \
             python3 tools/test_linux_browser.py Build/linux/vox
 
+      # Focused C-backend suites depend on prepared native libraries, not on
+      # the FastC browser build or on preceding test results. Keep collecting
+      # failures without making the failed production/window gate optional.
       - name: Check retained storage with the production allocator
-        if: matrix.gc == 'prealloc'
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
         timeout-minutes: 15
         run: |
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
@@ -238,6 +285,7 @@ jobs:
               layout/static_svg_scene_test.v
 
       - name: Check display-list recording ownership
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 15
         run: |
           # Replay identity and buffer recycling must agree in collector and
@@ -252,6 +300,7 @@ jobs:
               layout/visual_context_memo_test.v
 
       - name: Check native DOM authority and projections
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 25
         run: |
           export VOX_ARENA_POISON=1
@@ -261,10 +310,12 @@ jobs:
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
               compact/native_attributes_test.v \
               compact/mutation_boundary_test.v \
+              compact/pending_iteration_test.v \
               dom/native_attribute_identity_test.v \
               layout/lazy_dom_visual_lines_test.v
 
       - name: Check document session lifecycles
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 40
         run: |
           # The same owner must survive suspension and retire exactly once in
@@ -284,6 +335,7 @@ jobs:
               browserapp/browser_zoom_test.v
 
       - name: Check resource consumers and navigation retirement
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 35
         run: |
           # Exercise the adapters and document owners against the full engine,
@@ -297,7 +349,7 @@ jobs:
               fetch/upstream_entry_points_test.v
 
       - name: Check parser script lifecycles
-        if: matrix.gc == 'boehm'
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 60
         run: |
           # Compile each focused case under the build budget. The runner gives
@@ -305,7 +357,7 @@ jobs:
           sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-parser-tests.lock" \
             --report "$RUNNER_TEMP/vox-parser-tests.json" --timeout 3000 -- \
-            python3 tools/test_linux_native.py \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
               html/parser_script_lifecycle_test.v \
               script/parser_lifecycle_test.v \
               document/child_parser_lifecycle_test.v \
@@ -316,7 +368,7 @@ jobs:
               compact/named_elements_test.v
 
       - name: Check parser resumption storage with the production allocator
-        if: matrix.gc == 'prealloc'
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
         timeout-minutes: 10
         run: |
           # Parser resumption can run inside a temporary frame arena. Exercise
@@ -337,6 +389,7 @@ jobs:
           temporary = Path(os.environ['RUNNER_TEMP'])
           paths = sorted(temporary.glob('vox-*.json'))
           paths.extend(temporary.glob('vox-python-invocations.log'))
+          paths.extend(sorted(temporary.glob('vox-*-revision.txt')))
           paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
@@ -361,19 +414,88 @@ jobs:
           path: |
             ${{ runner.temp }}/vox-*.json
             ${{ runner.temp }}/vox-python-invocations.log
+            ${{ runner.temp }}/vox-*-revision.txt
             Build/linux/production-build/receipts/*/*.log
             Build/linux/production-build/receipts/*/*.json
             Build/linux/tests/*/run-*/*.log
             Build/linux/tests/*/run-*/*.json
             Build/linux/browser-smoke/
 
-  # Preserve the existing required-check name and require both matrix entries.
+  # These suites compile the production Cocoa/IOSurface headers directly and
+  # need neither V nor a prebuilt app. Full macOS app/tab and Metal pixel
+  # acceptance remain separate; the standard runner is not a GPU guarantee.
+  macos_native:
+    name: macOS native lifecycle
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        id: checkout
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Check Cocoa window replacement and redraw
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 6
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p Build/macos-tests
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-window.lock" \
+            --report "$RUNNER_TEMP/vox-window.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_native_browser_window.py 2>&1 | tee Build/macos-tests/window.log
+
+      - name: Check native frame publication and retirement
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-publication.lock" \
+            --report "$RUNNER_TEMP/vox-publication.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_native_frame_publication.py --output Build/macos-tests/publication
+
+      - name: Check retained IOSurface frame pools
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-frame-pool.lock" \
+            --report "$RUNNER_TEMP/vox-frame-pool.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_native_layer_frame_pool.py --output Build/macos-tests/frame-pool
+
+      - name: Check prepared-frame wake ownership
+        if: ${{ !cancelled() && steps.checkout.outcome == 'success' }}
+        timeout-minutes: 6
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-prepared-wakes.lock" \
+            --report "$RUNNER_TEMP/vox-prepared-wakes.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_native_prepared_wakes.py --output Build/macos-tests/prepared-wakes
+
+      - name: Preserve macOS native lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: macos-native-lifecycle-receipts
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/vox-*.json
+            Build/macos-tests/**/*.log
+            Build/macos-tests/**/*.json
+
+  # Preserve the existing required-check name and require every platform gate.
   build:
-    needs: browser
+    needs: [browser, macos_native]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - name: Require both allocation models
+      - name: Require both allocation models and macOS native lifecycle
         env:
           BROWSER_RESULT: ${{ needs.browser.result }}
-        run: test "$BROWSER_RESULT" = success
+          MACOS_NATIVE_RESULT: ${{ needs.macos_native.result }}
+        run: |
+          test "$BROWSER_RESULT" = success
+          test "$MACOS_NATIVE_RESULT" = success

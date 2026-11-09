@@ -28,6 +28,7 @@ fn bootstrap_fixture() !BootstrapFixture {
 	os.write_file(compiler, [
 		'#!/bin/sh',
 		'set -eu',
+		r'[ "$1" = -b ] && [ "$2" = c ] || exit 93',
 		r'printf "%s\n" "$$" >> "$BOOTSTRAP_LOG"',
 		r'if [ "${BOOTSTRAP_BARRIER:-0}" = 1 ]; then',
 		'    attempts=0',

@@ -103,8 +103,40 @@ fn staging_openssl_pointer_copy(source string) string {
 	return result + source[offset..]
 }
 
+fn staging_sapp_canvas_selector(source string) string {
+	mut result := ''
+	mut copied := 0
+	mut search := 0
+	for search < source.len {
+		start := source.index_after('canvas_selector', search) or { break }
+		search = start + 'canvas_selector'.len
+		if source[..start].all_after_last('\n').trim_space() != '' || search >= source.len
+			|| !source[search].is_space() {
+			continue
+		}
+		mut cursor := search
+		for cursor < source.len && source[cursor].is_space() { cursor++ }
+		if !source[cursor..].starts_with('&char') { continue }
+		cursor += '&char'.len
+		for cursor < source.len && source[cursor].is_space() { cursor++ }
+		if cursor >= source.len || source[cursor] != `=` { continue }
+		cursor++
+		for cursor < source.len && source[cursor].is_space() { cursor++ }
+		if !source[cursor..].starts_with("c'#canvas'") { continue }
+		// FastC loses the C-string prefix in nested/global struct defaults.
+		// Keep the same static NUL-terminated data pointer without allocation.
+		result += source[copied..cursor] + "'#canvas'.str"
+		copied = cursor + "c'#canvas'".len
+		search = copied
+	}
+	return result + source[copied..]
+}
+
 fn patch_linux_module(package string, source string) !string {
 	mut text := source
+	if package == 'sokol/sapp' {
+		text = staging_sapp_canvas_selector(text)
+	}
 	if package == 'stbi' {
 		text = text.replace('import os\n', r'$if windows && clang {' + '\n\timport os\n}\n')
 	}
@@ -320,7 +352,7 @@ fn prepare_linux_modules(repo string, compiler string) !string {
 			write_if_changed(target, text)!
 		}
 	}
-	for package in ['gg', 'net/openssl'] {
+	for package in ['gg', 'net/openssl', 'sokol/sapp'] {
 		stage_linux_module(repo, os.join_path(vlib, package), os.join_path(modules, package), package)!
 	}
 	return modules

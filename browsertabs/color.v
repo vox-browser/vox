@@ -1,17 +1,5 @@
 module browsertabs
 
-// Session metadata follows the tab owner through selection, reordering and detach.
-pub enum TabColor {
-	none
-	red
-	orange
-	yellow
-	green
-	blue
-	purple
-	pink
-}
-
 pub fn (mut session Session) set_color(id string, color TabColor) ! {
 	fd := session.lock()!
 	defer { C.vox_tabs_unlock(fd) }

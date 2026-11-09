@@ -13,6 +13,8 @@ let enumerations=0;
 const states={a:{bridgeKey:"a"},b:{bridgeKey:"b"},c:{bridgeKey:"c"}};
 const __state={elements:new Proxy(states,{ownKeys(target){enumerations++;return Reflect.ownKeys(target);}}),operations:[],logs:[]};
 const __canvases={};
+const __elementApply=Reflect.apply;
+function __elementContent(state,name){return state[name];}
 ' + compact_pending_elements_bootstrap() + r'
 enumerations=0;
 states.b.textContentDirty=true;

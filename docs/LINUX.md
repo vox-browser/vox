@@ -35,15 +35,16 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
-CI uses V commit `395d574b9197e5d61a801d7e9d3f3ddb77bb0d46`, which includes the
-[upstream FastC enum/JSON fixes](https://github.com/vlang/v/pull/31994) needed by
-this checkout. A compiler failure mentioning `member.attrs` in `json2/encode.v`
-requires updating V to include those fixes.
+CI uses V commit `339affce1891514d11aeb7111f579845d966a138`, which includes the
+[upstream FastC enum/JSON fixes](https://github.com/vlang/v/pull/31994) and the
+dynamic-array decoding fix needed by this checkout. A compiler failure mentioning
+`member.attrs` in `json2/encode.v`, or a JSON2 type mismatch when decoding record
+arrays, requires updating V to include those fixes.
 Use the latest UI2: run `v up ui2` for an installed module, or
 `git -C "$UI2_SOURCE_DIR" pull --ff-only` for a separate checkout. The build links
 that live checkout directly without copying or pinning it. CI fetches upstream
-HEAD on every run. See the [UI2 adapter guide](../tools/ui2/README.md) for focused
-checks.
+HEAD on every run and records the resolved V and UI2 commit IDs in its receipt
+artifacts. See the [UI2 adapter guide](../tools/ui2/README.md) for focused checks.
 Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
 helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
 when Cargo is available, the build compiles that helper from its lockfile.
@@ -146,7 +147,26 @@ before either browser build.
 The prealloc job uses
 `-prealloc -gc none` and `VOX_ARENA_POISON=1`, so arena retirement is checked
 without a collector keeping stale payloads alive. The existing `build` check
-requires both jobs to pass; one failing configuration does not cancel the other.
+requires both allocation jobs and the macOS native lifecycle job to pass; one
+failing configuration does not cancel the others.
+
+Focused suites run once native dependencies have built successfully, even when
+the FastC production build, window smoke, or an earlier suite fails. The window
+smoke still requires the newly built production binary, and any failure still
+fails the aggregate gate. Parser script lifecycle and `document.write()` cases
+run with both Boehm and prealloc. This keeps an application compiler error from
+hiding parser, DOM, recording, and document-owner regressions. A separate fast
+preflight compiles the actual tab metadata codec with FastC in both allocation
+modes before Skia or the full browser build; it does not substitute the C
+backend for the production compiler. Native-tool bootstrap readiness is checked
+separately from native-tool tests, so a failed test does not prevent independent
+gates from using the already built tool.
+
+The pinned V revision supports the enum-attribute reflection and dynamic-array
+type matching used by JSON2. The earlier pin failed first when compiling `TabColor`, then
+rejected record arrays at runtime when the enum path was isolated. The preflight
+round-trips the production typed metadata, including colors, record arrays,
+older defaults and invalid input; the stored version-1 JSON schema is unchanged.
 
 To run the native build tool tests locally:
 
@@ -247,8 +267,24 @@ through the parent's retained frame, and require both arenas to release when the
 last reader retires. Session cases cover blocked response producers and stale
 completion rejection. The window smoke complements those ownership assertions
 with actual process-tab and UI teardown. Linux prealloc coverage exercises the
-shared ownership model and Linux backend; it does not establish macOS Cocoa or
-Metal integration behavior.
+shared ownership model and Linux backend.
+
+The independent macOS job compiles the production Cocoa and IOSurface headers
+through the existing native tests. It checks browser-view replacement and
+redraw, retained frame buffers, asynchronous publication and retirement, and
+preparation wake ownership. The suites exercise ARC and manual retain/release;
+the publication suite also runs AddressSanitizer and UndefinedBehaviorSanitizer.
+Each suite has a 3 GiB process-tree guard and a five-minute deadline, and all
+failures remain required. The job preserves its logs and guard receipts even
+when a suite fails.
+
+This native-header gate does not build the full macOS browser, exercise its
+process-tab lifecycle, or validate Metal pixel presentation. Those still require
+a production macOS bundle and a suitable display/GPU host. The existing
+`tools/test_native_browser_resize.py`, `tools/test_native_browser_keyboard.py`,
+`tools/test_native_browser_tab_processes.py`, and
+`tools/test_native_layer_surface.py` provide those separate checks; Linux or
+Cocoa-header success must not be reported as their acceptance.
 
 The native test runner also honors `CC`. To check the CSS color interpolation,
 DOM range extraction, and WOFF2 font decoding regressions with GCC:

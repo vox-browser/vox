@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browsernet
 import dom
 import html
 import page
@@ -69,7 +70,7 @@ fn child_parser_lifecycle_control_fetch(mut host BrowserChildDocumentHost, mut m
 		host.prepare_document(child, document)
 		mut service := child.prepared_service or { panic('missing prepared child service') }
 		mut loader := service.scripts or { panic('missing child script loader') }
-		loader.fetch = fn (_ string, _ string, _ chan PreloadedResource) {}
+		loader.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	})
 }
 

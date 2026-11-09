@@ -8,6 +8,27 @@ fn test_linux_module_adapters_preserve_pointer_width_and_platform_guards() {
 	assert patch_linux_module('net/openssl', 'unsafe {\n\tmut ptr_base := bytes\n\tptr := ptr_base + offset\n}')! == 'mut ptr_base := unsafe { bytes }\nunsafe {\n\tptr := ptr_base + offset\n}'
 }
 
+fn test_sapp_canvas_default_keeps_static_pointer_and_original_source() {
+	temporary := make_temp_directory(os.temp_dir(), 'vox-sapp-stage-test-')!
+	defer { os.rmdir_all(temporary) or {} }
+	source := os.join_path(temporary, 'compiler/sokol/sapp')
+	target := os.join_path(temporary, 'modules/sokol/sapp')
+	make_directory(source)!
+	original := "module sapp\n@[typedef]\npub struct C.sapp_html5_desc {\npub:\n    canvas_selector &char = c'#canvas' // default CSS selector\n    canvas_resize bool\n}\npub type Html5Desc = C.sapp_html5_desc\nconst another_c_string = c'#canvas'\n"
+	os.write_file(os.join_path(source, 'sapp_structs.c.v'), original)!
+	stage_linux_module('', source, target, 'sokol/sapp')!
+	patched := os.read_file(os.join_path(target, 'sapp_structs.c.v'))!
+	assert patched.contains("canvas_selector &char = '#canvas'.str // default CSS selector")
+	assert patched.contains("const another_c_string = c'#canvas'")
+	assert patch_linux_module('sokol/sapp', patched)! == patched
+	stage_linux_module('', source, target, 'sokol/sapp')!
+	assert os.read_file(os.join_path(target, 'sapp_structs.c.v'))! == patched
+	assert os.read_file(os.join_path(source, 'sapp_structs.c.v'))! == original
+	assert patch_linux_module('gg', original)! == original
+	spaced := "\tcanvas_selector\n\t&char\t=\n\tc'#canvas'\ncanvas_selector_extra &char = c'#canvas'\n// canvas_selector &char = c'#canvas'\n"
+	assert patch_linux_module('sokol/sapp', spaced)! == spaced.replace_once("c'#canvas'", "'#canvas'.str")
+}
+
 fn test_optional_gg_helpers_keep_their_conditions_and_live_callbacks() {
 	source := "module gg\nconst err_multiwindow_render_nil_callback = 'nil callback'\nconst err_multiwindow_render_device_lost = 'device lost'\nfn gg_poison_gfx_render_owner(owner int) {\n    poison(owner)\n}\nfn gg_fail_fn(msg string) {\n    println(msg)\n}\n// fail_userdata_cb: gg_fail_fn\n"
 	patched := patch_linux_module('gg', source)!

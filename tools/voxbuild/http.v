@@ -258,9 +258,41 @@ fn http_patch_request(source string) !string {
 }
 
 fn http_patch_proxy(source string) !string {
-	mut patched := source.replace_once('struct HttpProxy {', 'pub struct HttpProxy {')
-	patched = http_replace_once(patched, "pr.ssl_dial('\${host_name}:\${port}')",
-		"pr.ssl_dial('\${host_name}:\${port}', req)", 'Unsupported HTTP proxy TLS call')!
+	mut declaration_count := 0
+	mut declaration_start := 0
+	mut declaration := ''
+	mut offset := 0
+	for line in source.split('\n') {
+		for candidate in ['struct HttpProxy {', 'pub struct HttpProxy {'] {
+			if line.starts_with(candidate) {
+				declaration_count++
+				declaration_start = offset
+				declaration = candidate
+			}
+		}
+		offset += line.len + 1
+	}
+	if declaration_count != 1 {
+		return error('Unsupported HTTP proxy declaration')
+	}
+	mut patched := source[..declaration_start] + 'pub struct HttpProxy {' +
+		source[declaration_start + declaration.len..]
+	old_call := "pr.ssl_dial('\${host_name}:\${port}')"
+	request_call := "pr.ssl_dial('\${host_name}:\${port}', req)"
+	old_signature := 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn'
+	request_signature := 'fn (pr &HttpProxy) ssl_dial(host string, req &Request) !&ssl.SSLConn'
+	counts := [patched.count(old_call), patched.count(request_call), patched.count(old_signature),
+		patched.count(request_signature)]
+	mut signature := old_signature
+	if counts == [1, 0, 1, 0] {
+		patched = patched.replace_once(old_call, request_call)
+	} else if counts == [0, 1, 0, 1] {
+		// Newer V already forwards the request's certificate configuration. Keep
+		// Vox's timeout and failed-handshake cleanup behavior as well.
+		signature = request_signature
+	} else {
+		return error('Unsupported HTTP proxy TLS call')
+	}
 	old := "'\${host.scheme}://\${host_name}\${port_part}\${path}', data, header)"
 	if patched.count(old) == 1 {
 		patched = patched.replace_once(old, 'path, data, header)')
@@ -270,9 +302,10 @@ fn http_patch_proxy(source string) !string {
 	} else if !patched.contains('req.build_request_headers_with(method, host_name, port, default_port, path, data') {
 		return error('Unsupported HTTP proxy request target')
 	}
-	patched = replace_function(patched, 'fn (pr &HttpProxy) ssl_dial(host string) !&ssl.SSLConn',
+	patched = replace_function(patched, signature,
 		$embed_file('@VMODROOT/httpassets/proxy_ssl_dial.v.inc').to_string())!
-	return remove_unused_private_helper(patched, 'proxy_request_target')
+	patched = remove_unused_private_helper(patched, 'proxy_request_target')!
+	return remove_unused_private_helper(patched, 'request_ssl_connect_config')
 }
 
 fn http_patch_transport_tls(source string, http2 bool) !string {
