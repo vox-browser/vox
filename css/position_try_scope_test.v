@@ -49,3 +49,35 @@ fn test_position_try_rule_lookup_survives_cssom_rule_replacement() {
 		assert rule.style()?.get_property_value('left') == '${200+index}px'
 	}
 }
+
+fn test_position_try_part_rule_keeps_the_exposing_document_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	document.set_browsing_context(&dom.BrowsingContext{})
+	mut root := document.create_element_ns('http://www.w3.org/1999/xhtml','html')!
+	document.as_node().append_child(root.as_node())!
+	mut host := document.create_element_ns('http://www.w3.org/1999/xhtml','div')!
+	host.set_attribute_value('id','host')
+	root.as_node().append_child(host.as_node())!
+	shadow := host.attach_shadow(dom.ShadowRootInit{mode:.open})!
+	mut part := document.create_element_ns('http://www.w3.org/1999/xhtml','div')!
+	part.set_attribute_value('id','part')
+	part.set_attribute_value('part','label')
+	shadow.as_node().append_child(part.as_node())!
+	add_document_author_style_sheet(document,'#host::part(label){position-try-fallbacks:--a}@position-try --a{left:1px}')
+	add_shadow_root_author_style_sheet(shadow,'#part{position:absolute;left:999999px}@position-try --a{left:2px}')
+	computer := css_style_computer_for(document)
+	assert part.has_part_names()
+	selector := parse_selector_with_parser('#host::part(label)',map[string]bool{})?
+	mut match_context := MatchContext{}
+	assert matches(selector.selectors[0],part,host,mut match_context,none,none,.normal,none)
+	mut root_element := dom.AbstractElement.new(root,none)
+	computer.recompute_style(mut root_element)
+	mut host_element := dom.AbstractElement.new(host,none)
+	computer.recompute_style(mut host_element)
+	mut element := dom.AbstractElement.new(part,none)
+	computed := computer.recompute_style(mut element)
+	assert computed.property(.position_try_fallbacks,.yes)?.css_text == '--a'
+	rule := position_try_rule_for_element(element,'--a') or { panic('a') }
+	assert rule.style()?.get_property_value('left') == '1px'
+}

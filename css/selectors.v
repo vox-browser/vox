@@ -1510,6 +1510,7 @@ pub fn matches(selector Selector, element &dom.Element, shadow_host ?&dom.Elemen
 }
 
 fn matches_selector_at(selector Selector, component_list_index int, initial_element &dom.Element, shadow_host ?&dom.Element, mut context MatchContext, scope ?&dom.ParentNode, selector_kind SelectorKind, anchor ?&dom.Element) bool {
+	mut matching_shadow_host := shadow_host
 	compound_selectors := selector.compound_selectors()
 	if component_list_index < 0 || component_list_index >= compound_selectors.len {
 		return false
@@ -1526,12 +1527,17 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 	for i := compound_selector.simple_selectors.len - 1; i >= 0; i-- {
 		// The immutable selector owns this array throughout the bounded reverse loop.
 		simple_selector := unsafe { &SimpleSelector(compound_selector.simple_selectors.data) + i }
-		if !matches_simple(simple_selector, element_for_compound_matching, shadow_host, mut context, scope, selector_kind, anchor) {
+		if !matches_simple(simple_selector, element_for_compound_matching, matching_shadow_host, mut context, scope, selector_kind, anchor) {
 			return false
 		}
 		if part_owning_parent := context.part_owning_parent {
 			// Match the rest of the compound selector against the shadow host that element is a part of.
 			element_for_compound_matching = part_owning_parent
+			if !context.for_host_part_matching {
+				// The remaining selector addresses the exposing host in the rule
+				// tree. Its own shadow boundary no longer limits matching.
+				matching_shadow_host = if root := context.rule_shadow_root { root.host() } else { none }
+			}
 			context.part_owning_parent = none
 		}
 	}
@@ -1550,7 +1556,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			if component_list_index == 0 {
 				return false
 			}
-			mut ancestor := traverse_up(element.as_node(), shadow_host)
+			mut ancestor := traverse_up(element.as_node(), matching_shadow_host)
 			for ancestor != none {
 				ancestor_node := ancestor or { break }
 				if ancestor_element := ancestor_node.as_element() {
@@ -1564,11 +1570,11 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 						mut mutable_ancestor := unsafe { &dom.Element(ancestor_element) }
 						mutable_ancestor.set_in_has_scope(true)
 					}
-					if matches_selector_at(selector, component_list_index - 1, ancestor_element, shadow_host, mut context, scope, selector_kind, anchor) {
+					if matches_selector_at(selector, component_list_index - 1, ancestor_element, matching_shadow_host, mut context, scope, selector_kind, anchor) {
 						return true
 					}
 				}
-				ancestor = traverse_up(ancestor_node, shadow_host)
+				ancestor = traverse_up(ancestor_node, matching_shadow_host)
 			}
 			return false
 		}
@@ -1576,14 +1582,14 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 			if component_list_index == 0 {
 				return false
 			}
-			parent := traverse_up(element.as_node(), shadow_host) or { return false }
+			parent := traverse_up(element.as_node(), matching_shadow_host) or { return false }
 			ancestor_element := parent.as_element() or { return false }
 			if context.inside_has_argument_match
 				&& context.collect_per_element_selector_involvement_metadata {
 				mut mutable_parent := unsafe { &dom.Element(ancestor_element) }
 				mutable_parent.set_in_has_scope(true)
 			}
-			return matches_selector_at(selector, component_list_index - 1, ancestor_element, shadow_host, mut context, scope, selector_kind, anchor)
+			return matches_selector_at(selector, component_list_index - 1, ancestor_element, matching_shadow_host, mut context, scope, selector_kind, anchor)
 		}
 		.next_sibling {
 			if context.collect_per_element_selector_involvement_metadata {
@@ -1610,7 +1616,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 					mut mutable_sibling := unsafe { &dom.Element(sibling) }
 					mutable_sibling.set_in_has_scope(true)
 				}
-				return matches_selector_at(selector, component_list_index - 1, sibling, shadow_host, mut context, scope, selector_kind, anchor)
+				return matches_selector_at(selector, component_list_index - 1, sibling, matching_shadow_host, mut context, scope, selector_kind, anchor)
 			}
 			return false
 		}
@@ -1637,7 +1643,7 @@ fn matches_selector_at(selector Selector, component_list_index int, initial_elem
 					mut mutable_sibling := unsafe { &dom.Element(sibling_element) }
 					mutable_sibling.set_in_has_scope(true)
 				}
-				if matches_selector_at(selector, component_list_index - 1, sibling_element, shadow_host, mut context, scope, selector_kind, anchor) {
+				if matches_selector_at(selector, component_list_index - 1, sibling_element, matching_shadow_host, mut context, scope, selector_kind, anchor) {
 					return true
 				}
 				sibling = previous_element_sibling(sibling_element)
