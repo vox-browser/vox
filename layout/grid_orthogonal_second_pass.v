@@ -58,3 +58,10 @@ fn update_orthogonal_grid_column_contributions(mut state LayoutState, container 
 	}
 	return changed
 }
+
+fn grid_has_orthogonal_children(container &Node) bool {
+ for item in ordered_grid_items(container) {
+  if grid_is_vertical(container)!=grid_is_vertical(item) { return true }
+ }
+ return false
+}

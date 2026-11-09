@@ -2626,7 +2626,7 @@ fn measure_grid_intrinsic_width(mut state LayoutState, container &Node,
 	if container.has_size_containment() {
 		return container.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 	}
-	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1' && !(container.display().is_grid_lanes_inside() && !grid_lanes_axis_is_horizontal(container))
+	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1' && !(container.display().is_grid_lanes_inside() && !grid_lanes_axis_is_horizontal(container)) && !grid_has_orthogonal_children(container)
 	if width_only && os.getenv('VOX_GRID_WIDTH_ONLY_DIAGNOSTICS') == '1' {
 		eprintln('Vox grid intrinsic width: columns only')
 	}
@@ -3298,6 +3298,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
    final_item_width=clamp_layout_content_size(placement.item,css_pixels_min(area_width.minus(edges),natural),area_width,item_state,true)
   }
 		mut forced_item_height := ?CSSPixels(none)
+  if orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container) && grid_is_vertical(placement.item)
+   && placement.item.computed_values().size_value(.height).is_auto() {
+   // The second sizing pass resolved this orthogonal inline size. Relayout
+   // its contents even when block self-alignment is start instead of stretch.
+   forced_item_height=item_state.content_height()
+  }
 		if (block_alignment == .stretch || (block_alignment == .normal
 			&& !placement.item.is_replaced_box()))
 			&& placement.item.computed_values().size_value(.height).is_auto() && !top_margin_auto
@@ -3324,6 +3330,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			// basis changes. Reuse that geometry when nothing depends on the new
 			// definite height, just as flex stretching does.
 			if clamped_height == item_state.content_height() && final_item_width == item_state.content_width()
+    && !(orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container))
 				&& !subgridded_columns && !subgridded_rows
 				&& !placement.item.is_replaced_box() && !node_uses_button_layout(placement.item)
 				&& (item_state.has_definite_height()
