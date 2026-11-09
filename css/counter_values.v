@@ -1183,6 +1183,33 @@ fn counter_style_definition_is_part_of_extends_cycle(name string, definitions ma
 	return false
 }
 
+fn collect_author_counter_style_definitions(scope &StyleScope, context ComputationContext, definitions_ptr &map[string]CounterStyleDefinition) {
+ mut mutable_scope := unsafe { &StyleScope(scope) }
+ mutable_scope.build_qualified_layer_names_cache()
+ layers := scope.qualified_layer_names_in_order
+ mut priorities := map[string]int{}
+ priorities_ptr := &priorities
+ for sheet in scope.stylesheets_for_cascade_origin(.author) {
+  sheet.for_each_effective_counter_style_at_rule(fn [context,definitions_ptr,priorities_ptr,layers] (rule &CSSRule) {
+   counter_rule := rule.counter_style_rule_value() or { return }
+   definition := CounterStyleDefinition.from_counter_style_rule(counter_rule,context) or { return }
+   mut mutable_rule := unsafe { &CSSRule(rule) }
+   layer := mutable_rule.qualified_layer_name()
+   // Unlayered normal rules outrank every named or anonymous layer.
+   rank := if layer == '' { layers.len } else { layers.index(layer) }
+   unsafe {
+    mut priorities := *priorities_ptr
+    if previous := priorities[definition.name()] { if previous > rank { return } }
+    priorities[definition.name()] = rank
+    *priorities_ptr = priorities
+    mut definitions := *definitions_ptr
+    definitions[definition.name()] = definition
+    *definitions_ptr = definitions
+   }
+  })
+ }
+}
+
 fn build_registered_counter_styles_for_scope(scope &StyleScope) map[string]CounterStyle {
 	document := scope.document() or { return map[string]CounterStyle{} }
 	mut definitions := map[string]CounterStyleDefinition{}
@@ -1203,9 +1230,7 @@ fn build_registered_counter_styles_for_scope(scope &StyleScope) map[string]Count
 			collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
 		}
 	}
-	for sheet in scope.stylesheets_for_cascade_origin(.author) {
-		collect_counter_style_definitions_from_sheet(sheet, context, definitions_ptr)
-	}
+	collect_author_counter_style_definitions(scope,context,definitions_ptr)
 
 	// Default.css defines these in the document scope. Retain the spec fallback
 	// when a reduced embedding omits that stylesheet; descendant scopes inherit
