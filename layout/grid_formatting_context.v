@@ -2182,6 +2182,9 @@ fn grid_track_base_size_sum(tracks []GridTrack, gap CSSPixels) CSSPixels {
 // definite grid-container maximum, LibWeb restores the pre-maximization bases
 // and repeats using that maximum as the available grid space.
 fn maximize_grid_tracks(mut tracks []GridTrack, available_size AvailableSize, gap CSSPixels, maximum_size ?CSSPixels) {
+	// A track frozen while distributing one item's intrinsic contribution
+	// can still grow toward its completed growth limit during maximization.
+	for index in 0..tracks.len { tracks[index].base_size_frozen=false }
 	mut saved_base_sizes := []CSSPixels{cap: tracks.len}
 	for track in tracks {
 		saved_base_sizes << track.base_size
@@ -2378,7 +2381,9 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	preferred := item.computed_values().size_value(.height)
 	preferred_behaves_as_auto := grid_item_preferred_block_size_behaves_as_auto(item, item_state, available_height_is_definite)
 	mut inner := CSSPixels.new(0)
-	if preferred_behaves_as_auto || (constraint == .max_content && preferred.is_fit_content()) {
+	if height := grid_orthogonal_baseline_intrinsic_height(mut state,item,item_state) {
+		inner=height
+	} else if preferred_behaves_as_auto || (constraint == .max_content && preferred.is_fit_content()) {
 		inner = if constraint == .min_content {
 			calculate_min_content_height(mut state, box, item_state.content_width())
 		} else {
@@ -2564,7 +2569,9 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 	// measurement applies it twice, and cyclic percentage minimums can then grow
 	// an intrinsic track from the grid container's already-resolved width.
 	mut inner := CSSPixels.new(0)
-	if constraint == .min_content && preferred_behaves_as_auto
+	if width := grid_orthogonal_baseline_intrinsic_width(mut state,item) {
+		inner=width
+	} else if constraint == .min_content && preferred_behaves_as_auto
 		&& flex_item_is_scroll_container(item) {
 		// Scroll containers contribute no content to a column min-content size.
 	} else if preferred_behaves_as_auto {
@@ -2996,7 +3003,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		}
 	}
 	row_sizing_placements = grid_lanes_sizing_placements(container,row_sizing_placements,rows.len,false)
-	baseline_row_shims := grid_row_baseline_shims(state,container,placements,rows)
+	baseline_row_shims := grid_row_baseline_shims(mut state,container,placements,rows)
 	mut maximum_row_span := 1
 	for placement in row_sizing_placements {
 		if placement.row_span > maximum_row_span {
@@ -3139,7 +3146,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			item_state := state.get(styled)
 			contribution := grid_item_outer_block_content_contribution(mut state, placement.item,
 				item_state, .max_content, container_state.has_definite_height(), row_basis,
-				grid_track_range_size(rows, placement.row, placement.row_span, row_gap)).plus(placement.sizing_extra(false))
+				grid_track_range_size(rows, placement.row, placement.row_span, row_gap)).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
 			candidate := grid_flex_fraction_for_range(rows, placement.row, placement.row_span, contribution, row_gap)
 			if candidate.compare(flex_fraction) > 0 {
 				flex_fraction = candidate

@@ -33,7 +33,7 @@ fn grid_baseline_group_reversed(container &Node,item &Node,horizontal bool) bool
 fn grid_alignment_baseline_from_low(state &LayoutState,container &Node,item &Node,horizontal bool,set BaselineSet,reversed bool) CSSPixels {
  if horizontal && !grid_is_vertical(item) && resolve_dominant_baseline_metric(container.computed_values())!=.central {
   used := state.get(item.as_node_with_style() or { return CSSPixels.new(0) })
-  return used.margin_left.plus(if reversed { used.border_box_width() } else { CSSPixels.new(0) })
+  return used.margin_left
  }
  return grid_baseline_from_low(state,container,item,horizontal,set,0)
 }
