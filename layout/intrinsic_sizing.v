@@ -269,12 +269,14 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	}
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
+	height_basis := intrinsic_width_inline_height_basis(state,box)
 	if cached := cache.min_content_width {
-		return cached
+		if cache.min_content_width_height_ == height_basis { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .min_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.min_content_width = result
+	cache.min_content_width_height_ = height_basis
 	return result
 }
 
@@ -363,12 +365,14 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	}
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
+	height_basis := intrinsic_width_inline_height_basis(state,box)
 	if cached := cache.max_content_width {
-		return cached
+		if cache.max_content_width_height_ == height_basis { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.max_content_width = result
+	cache.max_content_width_height_ = height_basis
 	return result
 }
 
@@ -1299,4 +1303,14 @@ fn collect_inline_flow_interrupting_blocks(node &Node, mut blocks []&Node) {
 			collect_inline_flow_interrupting_blocks(child, mut blocks)
 		}
 	}
+}
+
+// A vertical flow's intrinsic physical width depends on its available inline
+// height. Reusing the unconstrained width after a grid row resolves is stale.
+fn intrinsic_width_inline_height_basis(state &LayoutState,box &Box) ?CSSPixels {
+ node := unsafe { &Node(box) }
+ if node.computed_values().writing_mode() == .horizontal_tb { return none }
+ values := state.try_get(node.as_node_with_style() or { return none }) or { return none }
+ if values.has_definite_height() { return values.content_height() }
+ return none
 }

@@ -134,6 +134,12 @@ fn intrinsic_inline_width_is_independent(node &Node) bool {
 fn measure_disposable_inline_width(mut state LayoutState, containing_block &BlockContainer,
 	mut used UsedValues, space AvailableSpace) CSSPixels {
 	root := unsafe { &Node(containing_block) }
+ if root.computed_values().writing_mode() != .horizontal_tb && line_clamp_is_active(root.computed_values()) {
+  // Physical width measures the block axis here, so explicit line breaks
+  // must honor clamping even when the inline extent is unconstrained.
+  mut context := BlockFormattingContext.for_root(root,.intrinsic_sizing,true)
+  return context.run_inline_formatting_context_with_floats(mut state,containing_block,mut used,.intrinsic_sizing,space).automatic_content_width
+ }
 	if (!space.width.is_min_content() && !space.width.is_max_content())
 		|| !inline_layout_workspace_is_closed(root, true)
 		|| !intrinsic_inline_width_is_independent(root) {

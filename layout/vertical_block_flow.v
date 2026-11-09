@@ -13,7 +13,7 @@ fn layout_vertical_block_children(mut state LayoutState, container &NodeWithStyl
 	for child in root.children() {
 		if child.as_box() == none || child.is_absolutely_positioned() { continue }
 		styled := child.as_node_with_style() or { continue }
-		mut context := BlockFormattingContext.for_root(root,mode,used.has_definite_width())
+		mut context := BlockFormattingContext.for_root(root,mode,has_definite_inline_size(root,used))
 		_ = context.layout_block_level_box(mut state,styled,container,content_width,available_height)
 		mut child_values := state.get_mutable(styled)
 		computed := styled.computed_values()

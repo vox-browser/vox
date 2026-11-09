@@ -6,7 +6,7 @@ module layout
 
 fn run_fieldset_formatting_context(mut state LayoutState, fieldset &FieldSetBox, mut fieldset_state UsedValues, available_space AvailableSpace) FormattingContextResult {
 	legend := fieldset.rendered_legend() or {
-		mut ordinary_context := BlockFormattingContext.for_root(unsafe { &Node(fieldset) }, .normal, fieldset_state.has_definite_width())
+		mut ordinary_context := BlockFormattingContext.for_root(unsafe { &Node(fieldset) }, .normal, has_definite_inline_size(unsafe { &Node(fieldset) },fieldset_state))
 		height := ordinary_context.layout_block_level_children(mut state, unsafe { &Node(fieldset) }.as_node_with_style() or { return FormattingContextResult{} }, fieldset_state.content_width().to_double(), if available_space.height.is_definite() {
 			available_space.height.to_px_or_zero().to_double()
 		} else {
@@ -23,7 +23,7 @@ fn run_fieldset_formatting_context(mut state LayoutState, fieldset &FieldSetBox,
 	legend_styled := unsafe { &Node(legend) }.as_node_with_style() or {
 		return FormattingContextResult{}
 	}
-	mut context := BlockFormattingContext.for_root(unsafe { &Node(fieldset) }, .normal, fieldset_state.has_definite_width())
+	mut context := BlockFormattingContext.for_root(unsafe { &Node(fieldset) }, .normal, has_definite_inline_size(unsafe { &Node(fieldset) },fieldset_state))
 	context.y_offset_of_current_block_container = 0
 	_ = context.layout_block_level_box(mut state, legend_styled, fieldset_styled, fieldset_state.content_width().to_double(), if available_space.height.is_definite() {
 		available_space.height.to_px_or_zero().to_double()

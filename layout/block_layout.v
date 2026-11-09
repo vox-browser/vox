@@ -307,7 +307,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 			} else {
 				AvailableSize.make_indefinite()
 			}
-			mut inline_context := BlockFormattingContext.for_root(box_as_node, .normal, used_values.has_definite_width())
+			mut inline_context := BlockFormattingContext.for_root(box_as_node, .normal, has_definite_inline_size(box_as_node,used_values))
 			inline_result := inline_context.run_inline_formatting_context_with_floats(mut state, block_container, mut used_values, .normal, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 			_ = inline_result
 			content_height_from_children = if used_values.line_boxes.len > 0 {
@@ -322,7 +322,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 		// Block formatting context: lay out the block children, collapsing adjacent-sibling and parent-child
 		// vertical margins (CSS 2.1 §8.3.1). `box` is treated as the BFC root, whose own margins (per §8.3.1)
 		// do not collapse with its children — that is handled per-child inside the context.
-		mut block_formatting_context := BlockFormattingContext.for_root(box_as_node, .normal, used_values.has_definite_width())
+		mut block_formatting_context := BlockFormattingContext.for_root(box_as_node, .normal, has_definite_inline_size(box_as_node,used_values))
 		content_height_from_children = block_formatting_context.layout_block_level_children(mut state,
 			box, content_width, children_containing_block_height)
 	}
@@ -436,7 +436,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 	}
 	if box_has_inline_content(box) {
 		if block_container := box.as_block_container() {
-			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
+			mut inline_block_context := BlockFormattingContext.for_root(box, layout_mode, has_definite_inline_size(box,box_state))
 			inline_block_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
 			// A multi-column container lays its lines out at the column width.
 			multicol := multicol_columns_for_content(box, box_state, layout_mode)
@@ -486,7 +486,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 		return multicol
 	}
 	styled := box.as_node_with_style() or { return FormattingContextResult{} }
-	mut child_context := BlockFormattingContext.for_root(box, layout_mode, box_state.has_definite_width())
+	mut child_context := BlockFormattingContext.for_root(box, layout_mode, has_definite_inline_size(box,box_state))
 	child_context.layout_marker_of_list_item_root(mut state, box, mut box_state)
 	mut child_containing_block_height := ?f64(none)
 	if (box_state.has_definite_height() || box.is_button_content_box_)

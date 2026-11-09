@@ -17,3 +17,16 @@ fn test_clamped_content_exports_the_last_visible_line_baseline() {
  }
 }
 
+fn test_vertical_clamped_content_uses_the_visible_lines_for_intrinsic_width() {
+ for mode in ['vertical-rl','vertical-lr'] {
+  for preference in ['first','last'] {
+   mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{display:grid;grid-auto-flow:column;inline-size:100px;writing-mode:${mode};align-items:${preference} baseline;line-height:0;font-size:30px}span{display:inline-block;width:1em;height:1em}#inner{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3 no-ellipsis;border:10px solid;font-size:40px;overflow:hidden}</style><div id="outer"><div id="a"><span></span></div><div id="inner"><span></span><br><span></span><br><span></span><br><span></span><br><span></span></div></div>')
+   defer { document.finalize() }
+   _ = layout_document_typed_in_viewport(document,800,600)
+   x := (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect().x
+   expected := if (mode == 'vertical-rl') == (preference == 'first') { 95.0 } else { 15.0 }
+   assert x == expected, '${mode} ${preference}: ${x}'
+   assert (document.get_element_by_id('inner') or { panic('inner') }).get_bounding_client_rect().width == 140
+  }
+ }
+}

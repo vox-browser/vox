@@ -1657,6 +1657,8 @@ pub struct IntrinsicSizes {
 pub mut:
 	min_content_width         ?CSSPixels
 	max_content_width         ?CSSPixels
+	min_content_width_height_ ?CSSPixels
+	max_content_width_height_ ?CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
 mut:
 	font_generation_ u64
