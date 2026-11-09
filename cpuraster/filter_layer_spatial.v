@@ -84,7 +84,7 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	mut resolve_at := -1
 	if source_per_request {
 		for i in 0 .. stages.len {
-			if sx[i] != 0 || sy[i] != 0 { resolve_at = i; break }
+			if stages[i].kind == .drop_shadow || sx[i] != 0 || sy[i] != 0 { resolve_at = i; break }
 		}
 	}
 	graph := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
@@ -164,7 +164,7 @@ fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValu
 	offset := g.offsets[index]
 	shadow_desired := skif_outset(map_filter_bounds(desired, affine_invert(offset) or { return none }), 1, 1)
 	needed := skif_outset(shadow_desired, rx, ry)
-	shadow := if index == g.resolve_at {
+	shadow := if index == g.resolve_at && (g.sx[index] != 0 || g.sy[index] != 0) {
 		g.resolve_source_blur(index, shadow_desired)?
 	} else {
 		child := spatial_filter_apply_color(g.evaluate(index - 1, needed)?, stage.pre_color, needed)
@@ -217,7 +217,11 @@ fn spatial_filter_blur(value SpatialFilterValue, desired IRect, sx f32, sy f32) 
 
 fn spatial_filter_merge(foreground SpatialFilterValue, shadow SpatialFilterValue, offset SkAffine, desired IRect, color u32, max_dim int) ?SpatialFilterValue {
 	// applyTransform() drops nonintersecting shadow results before merge.
-	shadow_bounds := if shadow.image.has_image { map_filter_bounds(shadow.image.layer_bounds, offset) } else { IRect{} }
+	deferred := if view := shadow.view {
+		?DeferredImageShadow(prepare_deferred_image_shadow(view, offset, desired, color, true)?)
+	} else { none }
+	shadow_bounds := if view := deferred { view.bounds }
+		else if shadow.image.has_image { map_filter_bounds(shadow.image.layer_bounds, offset) } else { IRect{} }
 	has_shadow := irect_intersects(shadow_bounds, desired)
 	foreground_bounds := if view := foreground.view {
 		if view.filter == none || irect_intersects(view.layer_bounds, desired) { view.layer_bounds } else { IRect{} }
@@ -231,8 +235,13 @@ fn spatial_filter_merge(foreground SpatialFilterValue, shadow SpatialFilterValue
 	mut pixels := []u8{len: w * h * 4}
 	rc := canvas_raster_clip(w, h, [rect_path(Rect{1, 1, f32(w - 1), f32(h - 1)})])
 	if has_shadow {
-		draw_tinted_filter_result_with_color(mut pixels, w * 4, shadow.image, offset, padded.left, padded.top,
-			&rc, color, shadow.color)
+		if view := deferred {
+			mut target := new_canvas_target(mut pixels, w, h, w * 4, 2)
+			if !draw_prepared_image_shadow(mut pixels, w * 4, &rc, view, padded.left, padded.top, mut target) { return none }
+		} else {
+			draw_tinted_filter_result_with_color(mut pixels, w * 4, shadow.image, offset, padded.left, padded.top,
+				&rc, color, shadow.color)
+		}
 	}
 	if view := foreground.view {
 		mut target := new_canvas_target(mut pixels, w, h, w * 4, 2)

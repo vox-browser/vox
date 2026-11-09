@@ -18,13 +18,12 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	mut stages := step.layer_stages.clone()
 	mut deferred_foreground := drop
 	if stages.any(it.kind != .blur) {
-		// A first real shadow resolves only its blur input. Its foreground
+		// A first shadow resolves only a real blur input. Its foreground
 		// keeps MakeFromImage's original mapping until the merge.
 		for stage in stages {
 			real := blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
 				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0
 			if stage.kind == .drop_shadow {
-				if !real { return false }
 				deferred_foreground = true
 				break
 			}
@@ -46,9 +45,10 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 				real_blur = true
 				break
 			}
+			if stage.kind == .drop_shadow { break }
 		}
 	}
-	if !real_blur && !drop {
+	if !real_blur && !drop && !stages.any(it.kind == .drop_shadow) {
 		before << step.post_color
 		filter := new_color_filter(before)
 		source := [src.left, src.top, src.right - src.left, src.bottom - src.top]!

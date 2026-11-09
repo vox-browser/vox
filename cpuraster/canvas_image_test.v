@@ -1092,8 +1092,8 @@ fn test_resampled_source_chains_resolve_at_first_real_blur() {
  }
 }
 
-fn test_resampled_source_identity_shadow_before_real_blur_preserves_destination() {
- shadow := CanvasFilterStep{kind: .drop_shadow, sigma: .01,
+fn test_resampled_source_rejected_shadow_before_real_blur_preserves_destination() {
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: -1,
   offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
  blur := CanvasFilterStep{kind: .blur, sigma: .8}
  tiny := CanvasFilterStep{kind: .blur, sigma: .01}
@@ -1195,6 +1195,48 @@ fn test_resampled_source_chains_preserve_first_shadow_foreground() {
  ]
  hashes := ['859b91c3c575de06', '27b607573de5a8ca', '5939c34188b25a0f', '09ea9f3247a7e8b5',
   '4db99a1307529684', '31f259ec5a598801', '8978f9869cd65823', 'cf7733c7326d8f00']
+ for i, steps in sequences {
+  mut pixels := image_test_background()
+  source := if i in [1, 2, 6] { [f32(1), 1, 5, 4]! }
+   else if i == 7 { [f32(-2), -1, 7, 6]! } else { [f32(0), 0, 7, 6]! }
+  destination := match i {
+   0 { [f32(4), 5, 30, 25]! }
+   1, 6, 7 { [f32(4.25), 6.5, 25, 18]! }
+   3 { [f32(10.0004), 12.0006, 7.0007, 5.9994]! }
+   4 { [f32(10.25), 12.5, 2, 3]! }
+   else { [f32(4.5), 6.25, 22, 16]! }
+  }
+  transform := if i == 2 { [f32(-1.1), 0, 0, .8, 42, 3]! }
+   else if i in [4, 7] { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { image_test_identity }
+  mode := match i { 1, 7 { BlendMode.src_in } 2 { .src_out } 4 { .multiply }
+   5 { .src_atop } 6 { .src } else { .src_over } }
+  alpha := if i == 1 { f32(.65) } else if i in [2, 4, 5] { f32(.7) } else { f32(1) }
+  assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2, transform,
+   image_test_bitmap(7, 6, i !in [1, 4, 5], i in [1, 4]), source, destination,
+   i != 1, alpha, mode, image_test_clips(i in [1, 4, 6, 7]), new_canvas_filter(steps), false),
+   'resampled chain ${i} declined'
+  assert sha256.sum(pixels).hex()[..16] == hashes[i], 'resampled chain ${i}'
+ }
+}
+
+fn test_resampled_source_chains_merge_first_identity_shadow() {
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+ tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: .01,
+  offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ small := CanvasFilterStep{...shadow, sigma: .8}
+ sequences := [
+  [shadow, gaussian], [contrast, shadow, opacity, small], [shadow, contrast, box],
+  [CanvasFilterStep{...shadow, sigma: .01}, gaussian],
+  [contrast, tiny, shadow, opacity, gaussian],
+  [shadow, CanvasFilterStep{...small, offset_x: -7.25, offset_y: 4.5}],
+  [shadow, contrast, gaussian], [shadow, gaussian],
+ ]
+ hashes := $if linux { ['184b651f07c58e73', '53fedce89798753f', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a'] } $else { ['184b651f07c58e73', '92bb21a535a76d83', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a'] }
  for i, steps in sequences {
   mut pixels := image_test_background()
   source := if i in [1, 2, 6] { [f32(1), 1, 5, 4]! }
