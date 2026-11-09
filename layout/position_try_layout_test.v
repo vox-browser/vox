@@ -77,3 +77,16 @@ fn test_position_try_origin_overrides_inline_and_preserves_important() {
 	r := (document.get_element_by_id('target') or { panic('target') }).get_bounding_client_rect()
 	assert r.x == 20 && r.y == 30 && r.width == 40
 }
+
+fn test_last_successful_anchor_function_fallback_uses_current_anchor_geometry() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#container{position:relative;width:400px;height:400px}#anchor{position:relative;left:100px;top:100px;width:100px;height:100px;anchor-name:--a}#target{position:absolute;position-anchor:--a;width:100px;height:200px;bottom:anchor(top);left:anchor(left);position-try-fallbacks:flip-block}</style><div id="container"><div id="anchor"></div><div id="target"></div></div>')
+	defer { document.finalize() }
+	mut style := css.element_style(document.get_element_by_id('anchor') or { panic('anchor') })
+	for top, expected in {100:200.0,150:250.0} {
+		style.set_property('top','${top}px','')!
+		result := run_document_layout(document,500,500) or { panic('layout') }
+		r := (document.get_element_by_id('target') or { panic('target') }).get_bounding_client_rect()
+		assert r.y == expected,'${top}: ${r.y}'
+		commit_position_try_options_in_subtree(unsafe { &Node(result.root) })
+	}
+}

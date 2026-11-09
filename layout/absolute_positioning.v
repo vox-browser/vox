@@ -438,6 +438,7 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 				containing_state.padding_top.plus(containing_state.content_height()).plus(containing_state.padding_bottom).to_double())
 		}
 	}
+	original_containing_rect := containing_rect
 	position_area := resolved_position_area(state, box, containing_state, computed, containing_rect)
 	if area := position_area {
 		containing_rect = area.rect
@@ -720,6 +721,16 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 						containing_height, top or { CSSPixels.new(0) }, bottom or { CSSPixels.new(0) },
 						box_state.margin_box_height()).plus(box_state.margin_box_top())
 				}
+		}
+	}
+	if position_area != none {
+		// Default overflow alignment uses the union with the original containing
+		// block, even when position-area reduced the alignment container.
+		if horizontal_alignment.overflow == '' {
+			x = position_area_default_overflow_offset(x,box_state.margin_box_left(),box_state.margin_box_width(),original_containing_rect.x,original_containing_rect.width,containing_rect.x,containing_rect.width,absolute_axis_starts_low(unsafe { &Node(containing_box) },true))
+		}
+		if vertical_alignment.overflow == '' {
+			y = position_area_default_overflow_offset(y,box_state.margin_box_top(),box_state.margin_box_height(),original_containing_rect.y,original_containing_rect.height,containing_rect.y,containing_rect.height,absolute_axis_starts_low(unsafe { &Node(containing_box) },false))
 		}
 	}
 	box_state.set_content_offset(CSSPixelPoint.new(x, y))

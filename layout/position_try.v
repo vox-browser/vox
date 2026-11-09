@@ -137,7 +137,9 @@ fn position_try_declaration(target dom.AbstractElement, text string) ?&css.CSSSt
 		}
 	}
 	if text.contains('flip-') { return css.CSSStyleProperties.create() }
-	return css.parse_css_property_declaration_block(css.ParsingParams{document:target.element().document()},'position-area:${text}')
+	mut declaration := css.CSSStyleProperties.create()
+	declaration.set_property('position-area',text,'') or { return none }
+	return declaration
 }
 
 fn position_try_start_side(node &Node, horizontal bool) int {
@@ -296,11 +298,8 @@ fn layout_with_position_try_fallbacks(mut state LayoutState, node &Node) bool {
   retained.current_option = best_option
   retained.current_success = true
  } else if retained.last_success {
-  // No current option fits. Retry the last successful option against the
-  // anchor geometry recorded with it, while retaining the current box style.
-  retained.use_last_anchors = true
+  // Retain the successful option, resolving it against the current anchors.
   _ = position_try_layout_option(mut state,node,mut target,mut retained,retained.last_option)
-  retained.use_last_anchors = false
  } else {
   _ = position_try_layout_option(mut state,node,mut target,mut retained,'')
  }

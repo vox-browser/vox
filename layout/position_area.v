@@ -78,3 +78,11 @@ fn position_area_alignment(alignment AbsoluteSelfAlignment, tracks PositionAreaR
 		else if tracks.first == 0 { 'right' } else { 'left' }
 	return AbsoluteSelfAlignment{position:position}
 }
+
+fn position_area_default_overflow_offset(offset CSSPixels, margin CSSPixels, size CSSPixels, original_start CSSPixels, original_extent CSSPixels, area_start CSSPixels, area_extent CSSPixels, starts_low bool) CSSPixels {
+	if size.raw_value() <= area_extent.raw_value() { return offset }
+	low := css_pixels_min(original_start,area_start)
+	high := css_pixels_max(original_start.plus(original_extent),area_start.plus(area_extent))
+	if size.raw_value() > high.minus(low).raw_value() { return (if starts_low { low } else { high.minus(size) }).plus(margin) }
+	return css_pixels_max(low,css_pixels_min(offset.minus(margin),high.minus(size))).plus(margin)
+}
