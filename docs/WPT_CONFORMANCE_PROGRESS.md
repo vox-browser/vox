@@ -2090,3 +2090,58 @@ SHA-256 `e081bd979b495443d338d8ca98b5c020db003de17086b4a343a5219b42fca9c1`.
 Completion: `/Users/alex/.cache/vox/wpt/20261109-marker-production-completion.json`.
 The independent 40,139-variant official testharness collection remains active
 on its pinned production image. **Overall 100% is not achieved.**
+
+
+## Timer and WebSocket registry storage lifetime (2026-11-09)
+
+`9001c7e05` keeps the process-wide WebSocket host array and both timer lookup
+maps in persistent storage when hosts register or unregister. Their backing
+storage previously followed the document/frame arena active during a write;
+retiring that owner could leave a process-wide registry pointing into retired
+storage. Host objects retain their existing runtime/document ownership.
+
+Two separate prepared-preallocation controls reproduce the defect before the
+allocation fix. The WebSocket probe finds arena-owned array backing and exits
+**1**. The timer-only probe records **8,704 bytes** allocated by registry growth
+inside the disposable arena and exits **1**. Both control binaries compiled
+successfully before execution. The timer probe measures arena growth because
+the current compiler's opaque map header alone does not expose its backing
+storage ownership.
+
+After the fix, **seven focused checks pass** in normal mode, prepared
+preallocation mode, and prepared preallocation with literal V `-prod`, all with
+the C backend. Two checks verify registry survival across arena resets and
+correct host lookup/removal. Four unchanged selected timer checks cover
+callback realm/arguments, cancellation/intervals, conversion/string execution,
+and close/abort behavior; one unchanged WebSocket check opens a local server,
+exchanges text/binary frames and closes the connection. Their original
+assertions and fixture behavior are preserved in temporary test-only dependency
+support; names and Result-return signatures adapt the test entrypoints. The
+unrelated timer CSP case requiring a private HTML test hook is not part of this
+selection and receives no execution credit.
+
+All final compiles and runtime checks exit **0**, including fresh final runs
+that verify executable, Node, OpenSSL and server-fixture hashes before and
+after execution. Compiles retain V's 10 GiB limit and the 12 GiB process-tree
+guard; runtimes use 3 GiB guards. Two earlier direct-library compile attempts
+hit the memory guard before executing tests. Those attempts and fixture
+compilation errors remain in the archive; the successful checks use the
+application's normal test module without increasing any limit. Completed
+scratch outputs, locks and temporary source adapters are removed after archiving.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-host-registry-storage-raw.tar.gz`,
+SHA-256 `d5d96804b2e49a348ca0c0685125dd17a0761db0056a65bca769a9013a615591`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-host-registry-storage-summary.json`,
+SHA-256 `9c94deb14cc81dd19848ef353f54e132f58c7dd314bc0b413365ff5133a4b449`.
+
+The controls establish these registry lifetime bugs and their repair. They do
+not establish that every windowed production crash is repaired. A separate
+background observer waits for a completed browser with the ownership and
+registry fixes, then runs all **21 original accname variants (500 expected
+assertions)** and **11 unchanged exact SVG comparisons** under a pinned bundle
+or original completed artifact lease. No browser bundle is copied or extra
+production build queued; managed commit hooks request coalesced C builds with
+literal V `-prod` in one C unit. Status:
+`/Users/alex/.cache/vox/wpt/20261109-host-registries-production-status.json`.
+The larger official testharness collection continues independently on its
+pinned baseline. **Overall 100% is not achieved.**
