@@ -68,6 +68,7 @@ pub fn (a LCHColorStyleValue) == (b LCHColorStyleValue) bool {
 		&& style_value_slots_equal(a.alpha_, b.alpha_)
 		&& a.relative_origin_ == b.relative_origin_
 		&& a.relative_alpha_ == b.relative_alpha_
+		&& a.computed_coordinates_ == b.computed_coordinates_
 }
 
 pub fn (a OKLCHColorStyleValue) == (b OKLCHColorStyleValue) bool {
@@ -77,6 +78,7 @@ pub fn (a OKLCHColorStyleValue) == (b OKLCHColorStyleValue) bool {
 		&& style_value_slots_equal(a.alpha_, b.alpha_)
 		&& a.relative_origin_ == b.relative_origin_
 		&& a.relative_alpha_ == b.relative_alpha_
+		&& a.computed_coordinates_ == b.computed_coordinates_
 }
 
 pub fn (a ColorFunctionStyleValue) == (b ColorFunctionStyleValue) bool {

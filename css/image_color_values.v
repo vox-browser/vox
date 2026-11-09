@@ -786,6 +786,7 @@ pub fn (style_value LabColorStyleValue) serialize(mode SerializationMode) string
 
 pub struct LCHColorStyleValue {
 pub mut:
+	computed_coordinates_ bool
 	l_     &StyleValueSlot = &StyleValueSlot{}
 	c_     &StyleValueSlot = &StyleValueSlot{}
 	h_     &StyleValueSlot = &StyleValueSlot{}
@@ -797,6 +798,7 @@ pub mut:
 
 pub struct OKLCHColorStyleValue {
 pub mut:
+	computed_coordinates_ bool
 	l_     &StyleValueSlot = &StyleValueSlot{}
 	c_     &StyleValueSlot = &StyleValueSlot{}
 	h_     &StyleValueSlot = &StyleValueSlot{}
@@ -825,11 +827,11 @@ pub fn OKLCHColorStyleValue.create(l StyleValue, c StyleValue, h StyleValue, alp
 }
 
 pub fn (style_value LCHColorStyleValue) absolutized(context ComputationContext) LCHColorStyleValue {
-	return LCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
+	return LCHColorStyleValue{...LCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context)),computed_coordinates_:style_value.computed_coordinates_}
 }
 
 pub fn (style_value OKLCHColorStyleValue) absolutized(context ComputationContext) OKLCHColorStyleValue {
-	return OKLCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context))
+	return OKLCHColorStyleValue{...OKLCHColorStyleValue.create(style_value.l_.value.absolutized(context), style_value.c_.value.absolutized(context), style_value.h_.value.absolutized(context), style_value.alpha_.value.absolutized(context)),computed_coordinates_:style_value.computed_coordinates_}
 }
 
 pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorResolutionContext) ?Color {
@@ -848,7 +850,7 @@ pub fn (style_value LCHColorStyleValue) to_color(color_resolution_context ColorR
 		return none
 	}
 
-	l_val := image_color_clamp(raw_l_val, 0, 100)
+	l_val := if style_value.computed_coordinates_ { raw_l_val } else { image_color_clamp(raw_l_val, 0, 100) }
 	h_val := raw_h_val * math.pi / 180.0
 
 	return Color.from_lab(l_val, c_val * math.cos(h_val), c_val * math.sin(h_val), alpha_val)
@@ -861,7 +863,7 @@ pub fn (style_value LCHColorStyleValue) serialize(mode SerializationMode) string
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'lch('
-	result += serialize_color_component(style_value.l_.value, mode, 100, 0, 100)
+	result += serialize_color_component(style_value.l_.value, mode, 100, if style_value.computed_coordinates_ { ?f64(none) } else { ?f64(0) }, if style_value.computed_coordinates_ { ?f64(none) } else { ?f64(100) })
 	result += ' '
 	result += serialize_color_component(style_value.c_.value, mode, 150, 0, none)
 	result += ' '
@@ -890,7 +892,7 @@ pub fn (style_value OKLCHColorStyleValue) to_color(color_resolution_context Colo
 		return none
 	}
 
-	l_val := image_color_clamp(raw_l_val, 0, 1)
+	l_val := if style_value.computed_coordinates_ { raw_l_val } else { image_color_clamp(raw_l_val, 0, 1) }
 	c_val := math.max(raw_c_val, 0)
 	h_val := raw_h_val * math.pi / 180.0
 
@@ -904,7 +906,7 @@ pub fn (style_value OKLCHColorStyleValue) serialize(mode SerializationMode) stri
 		return serialize_relative_color(parts, mode)
 	}
 	mut result := 'oklch('
-	result += serialize_color_component(style_value.l_.value, mode, 1.0, 0, 1)
+	result += serialize_color_component(style_value.l_.value, mode, 1.0, if style_value.computed_coordinates_ { ?f64(none) } else { ?f64(0) }, if style_value.computed_coordinates_ { ?f64(none) } else { ?f64(1) })
 	result += ' '
 	result += serialize_color_component(style_value.c_.value, mode, 0.4, 0, none)
 	result += ' '

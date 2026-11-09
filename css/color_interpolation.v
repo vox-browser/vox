@@ -657,8 +657,8 @@ fn style_value_from_polar_color_space(components InterpolationColorComponents, s
 			srgb := ci_hwb_to_srgb(components)
 			StyleValue(ColorFunctionStyleValue.create('srgb', number_or_none(srgb.component(0), false), number_or_none(srgb.component(1), false), number_or_none(srgb.component(2), false), alpha))
 		}
-		.lch { StyleValue(LCHColorStyleValue.create(number_or_none(components.component(0), missing.components[0]), number_or_none(components.component(1), missing.components[1]), number_or_none(components.component(2), missing.components[2]), alpha)) }
-		.oklch { StyleValue(OKLCHColorStyleValue.create(number_or_none(components.component(0), missing.components[0]), number_or_none(components.component(1), missing.components[1]), number_or_none(components.component(2), missing.components[2]), alpha)) }
+		.lch { StyleValue(LCHColorStyleValue{...LCHColorStyleValue.create(number_or_none(components.component(0), missing.components[0]), number_or_none(components.component(1), missing.components[1]), number_or_none(components.component(2), missing.components[2]), alpha),computed_coordinates_:true}) }
+		.oklch { StyleValue(OKLCHColorStyleValue{...OKLCHColorStyleValue.create(number_or_none(components.component(0), missing.components[0]), number_or_none(components.component(1), missing.components[1]), number_or_none(components.component(2), missing.components[2]), alpha),computed_coordinates_:true}) }
 	}
 }
 
