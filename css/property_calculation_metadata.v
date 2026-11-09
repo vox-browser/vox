@@ -5208,6 +5208,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]AcceptedTypeRange {
 	mut ranges := map[ValueType]AcceptedTypeRange{}
 	match property_id {
+		.contain_intrinsic_width, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_block_size {
+			ranges[.length] = AcceptedTypeRange{min:0, max:math.max_f32}
+		}
 		.fit_tolerance {
             ranges[.length] = AcceptedTypeRange{min:0,max:math.max_f32}
             ranges[.percentage] = AcceptedTypeRange{min:0,max:math.max_f32}
