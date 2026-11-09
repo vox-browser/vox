@@ -136,8 +136,7 @@ pub fn (plan ModularTransformPlan) reconstruct(coded []ModularChannel, storage M
 					// needs their logical width/height to validate a singleton axis.
 					average_info := plan.buffers[step.inputs[0]]
 					residual_info := plan.buffers[step.inputs[1]]
-					buffers[id] = inverse_modular_squeeze(
-						ModularChannel{ ...average, width: average_info.width, height: average_info.height },
+					buffers[id] = inverse_modular_squeeze(ModularChannel{ ...average, width: average_info.width, height: average_info.height },
 						ModularChannel{ ...residual, width: residual_info.width, height: residual_info.height },
 						step.kind == .horizontal_squeeze, storage, output_info.shift)!
 				}

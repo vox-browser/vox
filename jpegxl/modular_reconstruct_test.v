@@ -74,13 +74,21 @@ fn test_transform_graph_checks_bad_identities_before_reconstruction() {
 fn test_singleton_squeeze_reconstruction_preserves_the_logical_empty_residual_shape() {
 	for horizontal in [false, true] {
 		for empty in [false, true] {
-			width := if empty { 0 } else if horizontal { 1 } else { 3 }
+			width := if empty {
+				0
+			} else if horizontal {
+				1
+			} else {
+				3
+			}
 			height := if horizontal { 3 } else { 1 }
-			info := ModularChannelInfo{width: width, height: height, shift: ModularShift{}}
-			header := ModularGroupHeader{transforms: [ModularTransform{
-				id: .squeeze
-				squeezes: [SqueezeParams{horizontal: horizontal, in_place: true, num_channels: 1}]
-			}]}
+			info := ModularChannelInfo{ width: width, height: height, shift: ModularShift{} }
+			header := ModularGroupHeader{
+				transforms: [ModularTransform{
+					id:       .squeeze
+					squeezes: [SqueezeParams{ horizontal: horizontal, in_place: true, num_channels: 1 }]
+				}]
+			}
 			plan := plan_modular_transforms([info], header, ModularPlanLimits{})!
 			mut coded := plan.allocate_coded_channels()!
 			assert coded.len == 2
