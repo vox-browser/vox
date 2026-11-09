@@ -235,6 +235,20 @@ static bool gpu_canvas_direct_readback_disjoint(std::vector<SkIRect> const& rect
     return true;
 }
 
+static void gpu_canvas_readback_diagnostic(char const* kind, size_t regions)
+{
+    static bool const enabled = std::getenv("VOX_GPU_CANVAS_READBACK_DIAGNOSTICS") != nullptr;
+    if (!enabled) return;
+    using Clock = double (*)();
+    static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+    double time = clock ? clock() : -1;
+    if (clock && time < 0) return;
+    static unsigned logged;
+    if (logged++ >= 128) return;
+    std::fprintf(stderr, "VOX_GPU_CANVAS_READBACK kind=%s regions=%zu t_us=%.3f\n",
+        kind, regions, time);
+}
+
 static void gpu_canvas_transfer_diagnostic(char const* direction,
     VoxRasterBufferPool::Buffer const& buffer, size_t count)
 {
@@ -330,6 +344,7 @@ void gpu_canvas_flush()
             }
             CGContextFlush(frame->destination);
             if (api->read_direct(direct.data(), int(direct.size()))) {
+                gpu_canvas_readback_diagnostic("frame", direct.size());
                 if (gpu_canvas_diagnostics())
                     std::fprintf(stderr, "VOX_GPU_CANVAS_DIRECT_READBACK rects=%zu\n", direct.size());
                 for (auto const& view : direct)
