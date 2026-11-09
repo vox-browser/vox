@@ -540,51 +540,51 @@ fn invalidate_owners_for_inserted_style_rule(mut style_sheet CSSStyleSheet, styl
 }
 
 fn invalidate_trees_affected_by_keyframes(root &dom.Node, include_host bool,
-	include_light_dom_under_shadow_host bool, animation_name string) {
-	invalidate_elements_affected_by_inserted_keyframes_rule(root, animation_name)
+	include_light_dom_under_shadow_host bool, animation_names map[string]bool) {
+	invalidate_elements_affected_by_inserted_keyframes_rule(root, animation_names)
 	if shadow_root := root.as_shadow_root() {
 		host := shadow_root.host() or { return }
 		if include_host && include_light_dom_under_shadow_host {
 			invalidate_elements_affected_by_inserted_keyframes_rule(host.as_node().root(),
-				animation_name)
+				animation_names)
 		} else if include_host || include_light_dom_under_shadow_host {
-			invalidate_elements_affected_by_inserted_keyframes_rule(host.as_node(), animation_name)
+			invalidate_elements_affected_by_inserted_keyframes_rule(host.as_node(), animation_names)
 		}
 	}
 }
 
-fn style_value_references_animation_name(value StyleValue, animation_name string) bool {
+fn style_value_references_animation_names(value StyleValue, animation_names map[string]bool) bool {
 	if value is CustomIdentStyleValue {
-		return value.custom_ident() == animation_name
+		return value.custom_ident() in animation_names
 	}
 	if value is StringStyleValue {
-		return value.string_value() == animation_name
+		return value.string_value() in animation_names
 	}
 	if value !is StyleValueList {
 		return false
 	}
 	list := value as StyleValueList
 	for item in list.values() {
-		if item is CustomIdentStyleValue && item.custom_ident() == animation_name {
+		if item is CustomIdentStyleValue && item.custom_ident() in animation_names {
 			return true
 		}
-		if item is StringStyleValue && item.string_value() == animation_name {
+		if item is StringStyleValue && item.string_value() in animation_names {
 			return true
 		}
 	}
 	return false
 }
 
-fn computed_properties_reference_animation_name(computed &ComputedProperties, animation_name string) bool {
+fn computed_properties_reference_animation_names(computed &ComputedProperties, animation_names map[string]bool) bool {
 	value := computed.property(.animation_name, .no) or { return false }
 	typed := style_value_logic_from_dom(.animation_name, value) or { return false }
-	return style_value_references_animation_name(typed, animation_name)
+	return style_value_references_animation_names(typed, animation_names)
 }
 
-fn element_or_pseudo_references_animation_name(element &dom.Element, animation_name string) bool {
+fn element_or_pseudo_references_animation_names(element &dom.Element, animation_names map[string]bool) bool {
 	if placeholder := element.computed_properties_for_pseudo(none) {
 		if computed := computed_properties_from_dom(placeholder) {
-			if computed_properties_reference_animation_name(computed, animation_name) {
+			if computed_properties_reference_animation_names(computed, animation_names) {
 				return true
 			}
 		}
@@ -597,7 +597,7 @@ fn element_or_pseudo_references_animation_name(element &dom.Element, animation_n
 	for pseudo := 0; pseudo < int(dom.PseudoElement.known_pseudo_element_count); pseudo++ {
 		if placeholder := element.computed_properties_for_pseudo(pseudo) {
 			if computed := computed_properties_from_dom(placeholder) {
-				if computed_properties_reference_animation_name(computed, animation_name) {
+				if computed_properties_reference_animation_names(computed, animation_names) {
 					return true
 				}
 			}
@@ -606,38 +606,36 @@ fn element_or_pseudo_references_animation_name(element &dom.Element, animation_n
 	return false
 }
 
-fn invalidate_elements_affected_by_inserted_keyframes_rule(root &dom.Node, animation_name string) {
-	invalidate_animation_name_subtree(root, animation_name, root.is_document())
+fn invalidate_elements_affected_by_inserted_keyframes_rule(root &dom.Node, animation_names map[string]bool) {
+	invalidate_animation_name_subtree(root, animation_names, root.is_document())
 }
 
-fn invalidate_animation_name_subtree(node &dom.Node, animation_name string, include_shadow bool) {
+fn invalidate_animation_name_subtree(node &dom.Node, animation_names map[string]bool, include_shadow bool) {
 	if element := node.as_element() {
-		if element_or_pseudo_references_animation_name(element, animation_name) {
+		if element_or_pseudo_references_animation_names(element, animation_names) {
 			mark_style_sheet_invalidation_element(element)
 		}
 		if include_shadow {
 			if shadow_root := element.shadow_root() {
 				invalidate_animation_name_subtree(unsafe { &dom.Node(shadow_root) },
-					animation_name, true)
+					animation_names, true)
 			}
 		}
 	}
 	for child in node.children {
-		invalidate_animation_name_subtree(child, animation_name, include_shadow)
+		invalidate_animation_name_subtree(child, animation_names, include_shadow)
 	}
 }
 
 struct StyleSheetKeyframesInvalidationContext {
-	root                                &dom.Node
-	include_host                        bool
-	include_light_dom_under_shadow_host bool
+mut:
+ names map[string]bool
 }
 
 fn invalidate_style_sheet_keyframes_rule(context voidptr, rule &CSSRule) {
 	if rule.type_ != .keyframes { return }
-	state := unsafe { &StyleSheetKeyframesInvalidationContext(context) }
-	invalidate_trees_affected_by_keyframes(state.root, state.include_host,
-		state.include_light_dom_under_shadow_host, rule.keyframes_name())
+	mut state := unsafe { &StyleSheetKeyframesInvalidationContext(context) }
+	state.names[rule.keyframes_name()] = true
 }
 
 fn invalidate_root_for_keyframes_rules_in_sheet(root &dom.Node, sheet &CSSStyleSheet) {
@@ -656,13 +654,14 @@ fn invalidate_root_for_keyframes_rules_in_sheet(root &dom.Node, sheet &CSSStyleS
 		include_host = effects.may_match_shadow_host
 		include_light_dom_under_shadow_host = effects.may_match_light_dom_under_shadow_host
 	}
-	state := StyleSheetKeyframesInvalidationContext{
-		root:                                root
-		include_host:                        include_host
-		include_light_dom_under_shadow_host: include_light_dom_under_shadow_host
-	}
+	mut state := StyleSheetKeyframesInvalidationContext{}
 	sheet.for_each_effective_rule_with_context(.preorder, voidptr(&state),
 		invalidate_style_sheet_keyframes_rule)
+	// A growing sheet can contain hundreds of keyframes. Match their name
+	// union in one tree traversal rather than traversing once for every rule.
+	if state.names.len > 0 {
+		invalidate_trees_affected_by_keyframes(root,include_host,include_light_dom_under_shadow_host,state.names)
+	}
 }
 
 fn style_sheet_selector_may_affect_assigned_nodes_via_slot_inheritance(selector Selector, slots []&dom.Element, style_sheet &CSSStyleSheet, shadow_root &dom.ShadowRoot) bool {
@@ -824,6 +823,10 @@ fn invalidate_owners_for_inserted_keyframes_rule(mut style_sheet CSSStyleSheet, 
 		}
 		animation_name := keyframes_rule.keyframes_name()
 		invalidate_trees_affected_by_keyframes(owner, include_host,
-			include_light_dom_under_shadow_host, animation_name)
+			include_light_dom_under_shadow_host, {animation_name:true})
 	}
+}
+
+fn element_or_pseudo_references_animation_name(element &dom.Element,animation_name string) bool {
+ return element_or_pseudo_references_animation_names(element,{animation_name:true})
 }

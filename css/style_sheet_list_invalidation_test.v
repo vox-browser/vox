@@ -180,28 +180,33 @@ fn test_keyframes_sheet_add_and_remove_target_animation_name_users() {
 	mut root := style_sheet_list_invalidation_element(document, 'html')
 	mut target := style_sheet_list_invalidation_element(document, 'div')
 	mut bystander := style_sheet_list_invalidation_element(document, 'div')
+ mut second := style_sheet_list_invalidation_element(document,'div')
 	document_node.append_child(root.as_node()) or { panic(err) }
 	mut root_node := root.as_node()
 	root_node.append_child(target.as_node()) or { panic(err) }
 	root_node.append_child(bystander.as_node()) or { panic(err) }
+ root_node.append_child(second.as_node()) or { panic(err) }
 	set_style_sheet_list_invalidation_animation_name(mut target, 'fade')
 	set_style_sheet_list_invalidation_animation_name(mut bystander, 'other')
+ set_style_sheet_list_invalidation_animation_name(mut second,'spin')
 
 	mut list := StyleSheetList.create(document_node)
-	keyframes_sheet := parse_css_stylesheet_with_parser('@keyframes fade { from { opacity: 0 } }', none)
+	keyframes_sheet := parse_css_stylesheet_with_parser('@keyframes fade { from { opacity: 0 } } @keyframes spin { to { opacity: 1 } } @keyframes unused { to { opacity: 0.5 } }', none)
 	assert !stylesheet_requires_broad_add_or_remove_invalidation(keyframes_sheet)
 
-	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node(),second.as_node())
 	document.set_needs_full_style_update(false)
 	list.add_sheet(keyframes_sheet)
 	assert target.needs_style_update()
+ assert second.needs_style_update()
 	assert !bystander.needs_style_update()
 	assert !document.needs_full_style_update()
 
-	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node())
+	clear_style_sheet_list_invalidation_flags(document_node, root.as_node(), target.as_node(), bystander.as_node(),second.as_node())
 	document.set_needs_full_style_update(false)
 	list.remove_sheet(keyframes_sheet)
 	assert target.needs_style_update()
+ assert second.needs_style_update()
 	assert !bystander.needs_style_update()
 	assert !document.needs_full_style_update()
 }
