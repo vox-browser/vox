@@ -585,7 +585,7 @@ fn (script &HTMLScriptElementModel) execute_source(source string) ! {
 		if script.script_type_ == .classic {
 			if element := script.element_ {
 				if !script_dom_element(element).as_node().root().is_shadow_root() {
-					document.set_current_script(element)
+					document.set_current_script(script_dom_element(element))
 				}
 			}
 		}

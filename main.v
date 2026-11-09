@@ -2972,7 +2972,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	mutable_runtime.install_file_reader_binding() or {
 		messages << 'JavaScript FileReader bindings: ${err.msg()}'
-		return none
+		return false
 	}
 	mut query_host := browserjs.URLSearchParamsHost.create(document) or {
 		messages << 'JavaScript URLSearchParams bindings: ${err.msg()}'
@@ -3139,7 +3139,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return values[0]
 	}) or {
 		messages << 'JavaScript synthetic click binding: ${err.msg()}'
-		return none
+		return false
 	}
 	mutable_runtime.install_script_element_event_binding() or {
 		messages << 'JavaScript script element event bindings: ${err.msg()}'
