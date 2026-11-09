@@ -3,7 +3,9 @@ module layout
 // Baselines follow the laid-out flex lines and visual item order. DOM child
 // order alone loses row/column reversal and wrap-reverse line progression.
 fn publish_flex_content_baselines(mut state LayoutState, container &Node, mut values UsedValues, lines []FlexLine, row_axis bool) {
- if container.computed_values().writing_mode() != .horizontal_tb || lines.len == 0 { return }
+ if lines.len == 0 { return }
+ vertical := grid_is_vertical(container)
+ reversed_block := vertical && grid_axis_reversed(container,true)
  mut selected := [0,0]
  mut cross_edges := [CSSPixels.max(),CSSPixels.min()]
  for index,line in lines {
@@ -19,10 +21,12 @@ fn publish_flex_content_baselines(mut state LayoutState, container &Node, mut va
   if low.raw_value() < cross_edges[0].raw_value() { selected[0] = index; cross_edges[0] = low }
   if high.raw_value() >= cross_edges[1].raw_value() { selected[1] = index; cross_edges[1] = high }
  }
+ if reversed_block && !row_axis { selected.reverse_in_place() }
  mut results := [?CSSPixels(none),?CSSPixels(none)]
  for side,index in selected {
   mut candidate := ?&Node(none)
-  mut edge := if side == 0 { CSSPixels.max() } else { CSSPixels.min() }
+  low_edge := (side == 0) != (reversed_block && row_axis)
+  mut edge := if low_edge { CSSPixels.max() } else { CSSPixels.min() }
   mut has_aligned := false
   for item in lines[index].items {
    styled := item.as_node_with_style() or { continue }
@@ -30,17 +34,20 @@ fn publish_flex_content_baselines(mut state LayoutState, container &Node, mut va
    aligned := row_axis && flex_item_participates_in_baseline_alignment(container,item)
    if has_aligned && !aligned { continue }
    coordinate := if row_axis { used.offset.x() } else { used.offset.y() }
-   if candidate == none || (aligned && !has_aligned) || (if side == 0 { coordinate.raw_value() < edge.raw_value() } else { coordinate.raw_value() >= edge.raw_value() }) {
+   if candidate == none || (aligned && !has_aligned) || (if low_edge { coordinate.raw_value() < edge.raw_value() } else { coordinate.raw_value() >= edge.raw_value() }) {
     candidate = item; edge = coordinate; has_aligned = aligned
    }
   }
   if item := candidate {
    used := state.get(item.as_node_with_style() or { continue })
    preference := if has_aligned { flex_baseline_preference(container,item) } else if side == 0 { BaselineSet.first } else { BaselineSet.last }
-   results[side] = used.offset.y().minus(used.margin_box_top()).plus(layout_box_baseline(state,item,preference))
+   results[side] = if vertical {
+    used.offset.x().minus(used.margin_box_left()).plus(grid_baseline_from_low(state,container,item,true,preference,0))
+   } else { used.offset.y().minus(used.margin_box_top()).plus(layout_box_baseline(state,item,preference)) }
   }
  }
- values.set_derived_baselines(results[0],results[1])
+ if vertical { values.set_derived_vertical_baselines(results[0],results[1]) }
+ else { values.set_derived_baselines(results[0],results[1]) }
 }
 
 fn flex_baseline_preference(container &Node, item &Node) BaselineSet {

@@ -901,7 +901,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 	if items.len == 0 {
 		return CSSPixels.new(0)
 	}
-	if container.computed_values().effective_flex_direction() in [.column, .column_reverse] {
+	if flex_physical_direction(container) in [.column, .column_reverse] {
 		return calculate_intrinsic_column_flex_width(mut state, container, items, constraint)
 	}
 	if constraint == .min_content && container.computed_values().flex_wrap() != .nowrap {

@@ -59,15 +59,24 @@ fn css_clamp(value CSSPixels, minimum CSSPixels, maximum CSSPixels) CSSPixels {
 	return css_pixels_max(minimum, css_pixels_min(value, maximum))
 }
 
-// FlexFormattingContext::is_direction_reverse(). In a right-to-left container the physical
-// meaning of `row` and `row-reverse` swaps, so there it is plain `row` that counts as
-// reversed and `row-reverse` that does not.
+// The row and column layout algorithms operate on physical X and Y axes.
+// Project the authored logical direction once, including its start edge.
+fn flex_physical_direction(container &Node) css.FlexDirection {
+ computed := container.computed_values()
+ logical := computed.effective_flex_direction()
+ inline_main := logical in [.row,.row_reverse]
+ horizontal := layout_inline_axis_is_horizontal(computed.writing_mode()) == inline_main
+ mut reversed := if inline_main {
+  layout_inline_axis_is_reverse(computed.writing_mode(),computed.direction())
+ } else { layout_block_axis_is_reverse(computed.writing_mode()) }
+ if logical in [.row_reverse,.column_reverse] { reversed = !reversed }
+ return if horizontal {
+  if reversed { css.FlexDirection.row_reverse } else { css.FlexDirection.row }
+ } else { if reversed { css.FlexDirection.column_reverse } else { css.FlexDirection.column } }
+}
+
 fn flex_direction_is_reverse(container &Node) bool {
-	direction := container.computed_values().effective_flex_direction()
-	if container.computed_values().direction() == .rtl {
-		return direction == .column_reverse || direction == .row
-	}
-	return direction == .column_reverse || direction == .row_reverse
+ return flex_physical_direction(container) in [.row_reverse,.column_reverse]
 }
 
 fn ordered_flex_items(container &Node) []&Node {
@@ -137,12 +146,14 @@ fn ordered_flex_items(container &Node) []&Node {
 // the corresponding inner dimension of the flex container, not unconditionally
 // against its inline size.
 fn flex_formatting_context_main_gap(container &Node, inner_main_size CSSPixels, row_axis bool) CSSPixels {
-	property_id := if row_axis { css.PropertyID.column_gap } else { css.PropertyID.row_gap }
+	property_id := if container.computed_values().effective_flex_direction() in [.row,.row_reverse] { css.PropertyID.column_gap } else { css.PropertyID.row_gap }
+	_ = row_axis
 	return resolve_layout_gap(container, property_id, inner_main_size)
 }
 
 fn flex_formatting_context_cross_gap(container &Node, inner_cross_size CSSPixels, row_axis bool) CSSPixels {
-	property_id := if row_axis { css.PropertyID.row_gap } else { css.PropertyID.column_gap }
+	property_id := if container.computed_values().effective_flex_direction() in [.row,.row_reverse] { css.PropertyID.row_gap } else { css.PropertyID.column_gap }
+	_ = row_axis
 	return resolve_layout_gap(container, property_id, inner_cross_size)
 }
 
@@ -892,37 +903,17 @@ fn flex_physical_leading_offset(container &Node, justify css.JustifyContent, fre
 	if auto_margins_absorbed {
 		return CSSPixels.new(0)
 	}
-	if row_axis {
-		rtl := container.computed_values().direction() == .rtl
-		match justify {
-			.start {
-				return if rtl { free_space } else { CSSPixels.new(0) }
-			}
-			.end_ {
-				return if rtl { CSSPixels.new(0) } else { free_space }
-			}
-			.left {
-				return CSSPixels.new(0)
-			}
-			.right {
-				return free_space
-			}
-			else {}
-		}
-	} else {
-		match justify {
-			// CSS Box Alignment's physical left/right keywords only select a
-			// horizontal side. On a column main axis both use the left cursor in
-			// FlexFormattingContext::distribute_any_remaining_free_space().
-			.start, .left, .right {
-				return CSSPixels.new(0)
-			}
-			.end_ {
-				return free_space
-			}
-			else {}
-		}
-	}
+ computed := container.computed_values()
+ inline_main := computed.effective_flex_direction() in [.row,.row_reverse]
+ flow_reversed := if inline_main { layout_inline_axis_is_reverse(computed.writing_mode(),computed.direction()) } else { layout_block_axis_is_reverse(computed.writing_mode()) }
+ match justify {
+  .start { return if flow_reversed { free_space } else { CSSPixels.new(0) } }
+  .end_ { return if flow_reversed { CSSPixels.new(0) } else { free_space } }
+  .left { return CSSPixels.new(0) }
+  .right { return if row_axis { free_space } else { CSSPixels.new(0) } }
+  else {}
+ }
+
 	if !reversed || (justify == .center
 		&& container.document().font_rendering_policy() == .chromium) {
 		// Blink centers from the physical start using the truncated LayoutUnit
@@ -1181,7 +1172,7 @@ fn flex_line_max_baseline(state &LayoutState, container &Node, line FlexLine) CS
 }
 
 fn flex_item_participates_in_baseline_alignment(container &Node, item &Node) bool {
-	row_axis := container.computed_values().effective_flex_direction() in [.row, .row_reverse]
+	row_axis := flex_physical_direction(container) in [.row, .row_reverse]
 	return effective_flex_cross_alignment(container, item) == .baseline
 		&& item.computed_values().writing_mode() == .horizontal_tb
 		&& !property_is_auto(item.computed_values(), if row_axis { .margin_top } else { .margin_left })
@@ -1205,11 +1196,7 @@ fn flex_line_row_baseline_cross_size(state &LayoutState, container &Node, line F
 }
 
 fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection) StaticPositionAlignment {
-	reversed := if direction in [.column, .column_reverse] {
-		direction == .column_reverse
-	} else {
-		(direction == .row_reverse) != (container.computed_values().direction() == .rtl)
-	}
+	reversed := direction in [.row_reverse,.column_reverse]
 	return match container.computed_values().justify_content() {
 		.start, .left {
 			StaticPositionAlignment.start
@@ -1403,7 +1390,8 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	mut geometry_scratch := begin_nested_geometry_scratch(container.document(), layout_mode)
 	defer { geometry_scratch.finish() }
 	container_state.set_derived_baselines(none, none)
-	direction := container.computed_values().effective_flex_direction()
+	container_state.set_derived_vertical_baselines(none,none)
+	direction := flex_physical_direction(container)
 	if direction in [.column, .column_reverse] {
 		result := run_column_flex_formatting_context(mut state, container, mut container_state, layout_mode, available_space)
 		cache_intrinsic_flex_baselines(mut state, container, container_state, layout_mode)
@@ -1597,11 +1585,10 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	if placement.iterate_lines_backwards {
 		line_order.reverse_in_place()
 	}
-	main_reversed := (direction == .row_reverse) != (container.computed_values().direction() == .rtl)
+	main_reversed := direction == .row_reverse
 	for visual_line_index, line_index in line_order {
 		current_line := lines[line_index]
 		cross_size := line_cross_sizes[line_index]
-		max_baseline := flex_line_max_baseline(state, container, current_line)
 		mut total_main := column_gap.scaled(f64(if current_line.items.len > 0 {
 			current_line.items.len - 1
 		} else {
@@ -1930,10 +1917,10 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	for index in 0 .. items.len {
 		indexes << index
 	}
-	if container.computed_values().effective_flex_direction() == .column_reverse {
+	if flex_physical_direction(container) == .column_reverse {
 		indexes.reverse_in_place()
 	}
-	main_reversed := container.computed_values().effective_flex_direction() == .column_reverse
+	main_reversed := flex_physical_direction(container) == .column_reverse
 	mut cursor := flex_physical_leading_offset(container, container.computed_values().justify_content(), main_free_space, leading, distributed_gap, items.len, false, main_reversed, absorbed_main_space)
 	max_baseline := flex_line_max_baseline(state, container, line)
 	for visual_index, item_index in indexes {
@@ -1982,7 +1969,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		}
 	}
 	publish_flex_content_baselines(mut state,container,mut container_state,[FlexLine{items:items}],false)
-	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
+	set_flex_abspos_static_positions(mut state, container, container_state, flex_physical_direction(container))
 	return FormattingContextResult{
 		automatic_content_width: container_width
 		automatic_content_height: if container_height != none { main_size } else { total_main }
@@ -2101,7 +2088,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		line_indexes.reverse_in_place()
 	}
 
-	main_reversed := container.computed_values().effective_flex_direction() == .column_reverse
+	main_reversed := flex_physical_direction(container) == .column_reverse
 	for visual_line_index, line_index in line_indexes {
 		current_line := lines[line_index]
 		cross_size := line_cross_sizes[line_index]
@@ -2222,7 +2209,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		_ = visual_line_index
 	}
 	publish_flex_content_baselines(mut state,container,mut container_state,lines,false)
-	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
+	set_flex_abspos_static_positions(mut state, container, container_state, flex_physical_direction(container))
 	return FormattingContextResult{
 		automatic_content_width: if layout_mode == .intrinsic_sizing {
 			total_cross_size

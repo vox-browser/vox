@@ -62,6 +62,8 @@ mut:
 	is_invisible_for_line_clamp_  bool
 	derived_first_baseline_       ?CSSPixels
 	derived_last_baseline_        ?CSSPixels
+	derived_vertical_first_baseline_ ?CSSPixels
+	derived_vertical_last_baseline_ ?CSSPixels
 }
 
 // Empty zero-capacity arrays have no writable backing storage to escape
@@ -104,6 +106,8 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
 		derived_first_baseline_: rare.derived_first_baseline_
 		derived_last_baseline_: rare.derived_last_baseline_
+		derived_vertical_first_baseline_: rare.derived_vertical_first_baseline_
+		derived_vertical_last_baseline_: rare.derived_vertical_last_baseline_
 	}
 }
 
@@ -170,6 +174,18 @@ fn (u &UsedValues) derived_first_baseline() ?CSSPixels {
 fn (u &UsedValues) derived_last_baseline() ?CSSPixels {
 	rare := u.rare_ or { return none }
 	return rare.derived_last_baseline_
+}
+
+fn (mut u UsedValues) set_derived_vertical_baselines(first ?CSSPixels, last ?CSSPixels) {
+ if first == none && last == none && u.rare_ == none { return }
+ mut rare := u.ensure_rare_data()
+ rare.derived_vertical_first_baseline_ = first
+ rare.derived_vertical_last_baseline_ = last
+}
+
+fn (u &UsedValues) derived_vertical_baseline(set BaselineSet) ?CSSPixels {
+ rare := u.rare_ or { return none }
+ return if set == .first { rare.derived_vertical_first_baseline_ } else { rare.derived_vertical_last_baseline_ }
 }
 
 fn (mut u UsedValues) ensure_rare_data() &UsedValuesRareData {

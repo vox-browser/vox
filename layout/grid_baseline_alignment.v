@@ -16,6 +16,9 @@ fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horiz
 	styled := item.as_node_with_style() or { return CSSPixels.new(0) }
 	used := state.get(styled)
 	item_horizontal := item.computed_values().writing_mode() == .horizontal_tb
+	if horizontal && !item_horizontal && !item.has_size_containment() {
+		if baseline := used.derived_vertical_baseline(set) { return used.margin_box_left().plus(baseline) }
+	}
 	if !horizontal && item_horizontal { return layout_box_baseline(state,item,set) }
 	if horizontal && !item_horizontal && !item.has_size_containment() && depth < 64 {
 		if used.line_boxes.len > 0 {
