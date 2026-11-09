@@ -38,6 +38,13 @@ fn (mut iterator InlineLevelIterator) prepare_first_line_items() ?&Node {
 	if children.len == 0 || children.any(!it.is_text_node() && !it.is_break_node()) {
 		return none
 	}
+	// Fragments retain these style sources after the closed-inline workspace
+	// retires. Allocate the proxy tree with its document, like cached fonts and
+	// published line geometry, rather than in the iterator's scratch storage.
+	use_document := cache_uses_entered_document_storage(root.document())
+	mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
+	persistent := platform.enter_persistent_if(!use_document)
+	defer { platform.leave_persistent(persistent); retained.finish() }
 	mut styled_root := BlockContainer.new(root.document(), none, style)
 	styled_root.set_children_are_inline(true)
 	mut originals := map[u64]&Node{}

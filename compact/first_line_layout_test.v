@@ -4,6 +4,7 @@ import css
 import dom
 import html
 import layout
+import platform
 
 fn test_first_line_shapes_and_paints_its_font_before_a_forced_break() {
 	for policy in [dom.FontRenderingPolicy.libweb, .chromium] {
@@ -88,4 +89,30 @@ fn test_first_line_recomputes_after_an_inherited_font_change() {
 	commands := root.paint_commands().filter(it.kind == 'draw_text' && it.text == 'X')
 	assert commands.len == 2
 	assert commands[0].font_size == 60 && commands[1].font_size == 30
+}
+
+fn test_first_line_style_sources_survive_native_geometry_workspace_retirement() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	mut owner := document.enter_native_storage()
+	defer {
+		document.finalize()
+		owner.finish()
+		document.release_native_storage()
+	}
+	html.parse_html_from_a_string(document, '<!doctype html><style>body{margin:0}#target{font:20px/1 monospace}#target::first-line{font-size:86px}</style><div id="target">X<br>X</div>')
+	_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+	target := document.get_element_by_id('target') or { panic('target') }
+	node := unsafe { &layout.Node((target.as_node().unsafe_layout_node() or { panic('layout') }).real_layout_handle()) }
+	result := layout.document_layout_result(document) or { panic('result') }
+	used := result.state.try_get(node.as_node_with_style() or { panic('style') }) or { panic('geometry') }
+	source := used.line_boxes[0].fragments()[0].style_source()
+	$if prealloc { assert document.native_storage().arena.contains(source) }
+	mut churn := platform.begin_thread_scratch('overwrite retired first-line workspace')
+	bytes := []u8{len: 1024 * 1024, init: 0xa5}
+	assert bytes[bytes.len - 1] == 0xa5
+	churn.finish()
+	assert source.computed_values().font_size().to_double() == 86
+	assert source.parent() != none
+	assert target.get_bounding_client_rect().height == 106
 }
