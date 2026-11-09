@@ -73,9 +73,11 @@ fn test_modular_prediction_checks_properties_before_mutation() {
 		compute_modular_properties(PredictionData{}, pos[0], pos[1], [], WeightedPrediction{}, mut props) or { rejected = true }
 		assert rejected && props.all(it == 7)
 	}
-	tree := ModularTree{ nodes: [ModularTreeNode{ threshold: 1, left: 1, right: 2 },
-		ModularTreeNode{ is_leaf: true, predictor: .west, offset: -2, multiplier: 3, context: 7 },
-		ModularTreeNode{ is_leaf: true, predictor: .weighted, offset: 1, multiplier: 5, context: 9 }] }
+	tree := ModularTree{
+		nodes: [ModularTreeNode{ threshold: 1, left: 1, right: 2 },
+			ModularTreeNode{ is_leaf: true, predictor: .west, offset: -2, multiplier: 3, context: 7 },
+			ModularTreeNode{ is_leaf: true, predictor: .weighted, offset: 1, multiplier: 5, context: 9 }]
+	}
 	assert tree.predict_modular(PredictionData{ left: 42 }, 0, [i32(2)])! == ModularPrediction{ guess: 40, multiplier: 3, context: 7 }
 	assert tree.predict_modular(PredictionData{}, 9223372036854775807, [i32(1)])!.guess == i64(-9223372036854775807 - 1)
 }
