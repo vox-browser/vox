@@ -283,16 +283,16 @@ jobs:
             --lock "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.json" --timeout 2340 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              capture/portable_screenshot_test.v \
+              browserapp/application_test.v \
+              browserapp/browser_tabs_test.v \
               document/session_test.v \
               document/child_storage_test.v \
               navigation/controller_test.v \
               navigation/back_forward_cache_test.v \
               navigation/blob_url_cache_lifetime_test.v \
               navigation/retire_before_styles_test.v \
-              browserapp/application_test.v \
-              browserapp/browser_tabs_test.v \
-              browserapp/browser_zoom_test.v \
-              capture/portable_screenshot_test.v
+              browserapp/browser_zoom_test.v
 
       - name: Check resource consumers and navigation retirement
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
