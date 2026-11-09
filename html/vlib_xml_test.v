@@ -165,9 +165,12 @@ fn vlib_xml_churn_parser_scratch() {
 	// poison setting, retiring this label also makes stale parser bytes fault.
 	for index in 0 .. 8 {
 		scratch := platform.begin_thread_scratch('XML parse tree')
-		bytes := []u8{len: 256 * 1024, init: u8(index + 17)}
-		assert bytes[0] == u8(index + 17)
-		assert bytes[bytes.len - 1] == u8(index + 17)
+		// Array initializers expose their own index. Capture the round's fill
+		// value first so the entire allocation receives the same byte.
+		fill := u8(index + 17)
+		bytes := []u8{len: 256 * 1024, init: fill}
+		assert bytes[0] == fill
+		assert bytes[bytes.len - 1] == fill
 		scratch.finish()
 	}
 }
