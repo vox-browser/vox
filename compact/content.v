@@ -8,6 +8,7 @@ import platform
 import strconv
 import trustedtypes
 import x.json2
+import os
 
 @[heap]
 struct CompactElementQueryBinding {
@@ -558,14 +559,28 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 // Reads flush pending compact mutations through the same native query boundary
 // as selectors. A saved collection therefore stays live without maintaining a
 // second JavaScript tree or escaping class names into a selector.
+// Same-binary control for the class collection member cache below.
+const uncached_class_collections = os.getenv('VOX_UNCACHED_CLASS_COLLECTIONS') != ''
+
 fn compact_class_collection_bootstrap() string {
 	return r'
+const __classContentVersion=globalThis.__ladybirdDOMContentVersion,__classCacheMembers=' + (if uncached_class_collections { 'false' } else { 'typeof __classContentVersion==="function"' }) + r';
 function __classCollection(key, classNames, reader, namedReader) {
  // Length, indexed and iterated reads wrap only the elements they return;
  // getElementsByClassName(name)[0] no longer builds a facade for every match.
  // A reply carries the full state of an element once; retain every state
  // it introduces so later replies may refer to it by key alone.
- const states=reader?null:(()=>{const list=__queryElements(key,"getElementsByClassName",classNames,true);for(const value of list)if(value!==null&&!__state.elements[value.bridgeKey])__state.elements[value.bridgeKey]=value;return list;});
+ // Membership changes only with the tree or an attribute, and pending script
+ // writes reach the tree through the query itself. While neither happened,
+ // a length or indexed read reuses the last reply instead of matching and
+ // encoding every member again, which made a counted loop quadratic.
+ let cachedVersion=-1,cachedStates=null;
+ const states=reader?null:(()=>{
+  if(cachedStates!==null&&__classCacheMembers&&!__compactHasPendingDOMState()&&__classContentVersion()===cachedVersion)return cachedStates;
+  const list=__queryElements(key,"getElementsByClassName",classNames,true);for(const value of list)if(value!==null&&!__state.elements[value.bridgeKey])__state.elements[value.bridgeKey]=value;
+  if(__classCacheMembers){cachedStates=list;cachedVersion=__classContentVersion();}
+  return list;
+ });
  const read=reader||(()=>states().map(__queryElement));
  const count=()=>states?states().length:read().length;
  const at=index=>{if(!states)return read()[index];const state=states()[index];return state===undefined?undefined:__queryElement(state);};
