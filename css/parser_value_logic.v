@@ -14415,7 +14415,8 @@ fn image_set_image_from_css_image_source(value CSSImageSourceStyleValue) ?ImageS
 		ImageStyleValue { ImageSetImageStyleValue(value) }
 		LinearGradientStyleValue { ImageSetImageStyleValue(value) }
 		RadialGradientStyleValue { ImageSetImageStyleValue(value) }
-		ImageSetStyleValue, StyleValue { none }
+		ImageSetStyleValue { none }
+		StyleValue { if value.is_abstract_image() { ImageSetImageStyleValue(value) } else { none } }
 	}
 }
 
@@ -14472,6 +14473,16 @@ fn (mut parser Parser) parse_image_value(mut tokens ComponentValueStream) ?CSSIm
 fn (mut parser Parser) parse_image_value_allowing_image_set(mut tokens ComponentValueStream, allow_image_set bool) ?CSSImageSourceStyleValue {
 	tokens.consume_whitespace()
 	component_value := tokens.consume() or { return none }
+	if component_value.is_function_named('light-dark') {
+		return CSSImageSourceStyleValue(parser.parse_light_dark_image_function(component_value, allow_image_set)?)
+	}
+	if component_value.is_function_named('image') {
+		mut inner := ComponentValueStream.new(component_value.function().value)
+		color := parser.parse_color_value(mut inner) or { return none }
+		inner.consume_whitespace()
+		if inner.has_more_tokens() { return none }
+		return CSSImageSourceStyleValue(StyleValue(FunctionStyleValue.create('image',color)))
+	}
 	if component_value.is(.url) {
 		return CSSImageSourceStyleValue(ImageStyleValue.create_from_url_string(component_value.token().url()))
 	}

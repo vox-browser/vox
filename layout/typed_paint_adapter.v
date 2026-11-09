@@ -1477,6 +1477,13 @@ fn resolve_conic_gradient_data(resolution_context css.LengthResolutionContext,
 pub fn resolve_background_gradient(source css.StyleValue, width f64, height f64,
 	resolution_context css.LengthResolutionContext,
 	color_context css.ColorResolutionContext) ?LinearGradient {
+	if source is css.FunctionStyleValue && source.name() == 'image' {
+		gradient := css_color_image_as_gradient(source)
+		if gradient is css.LinearGradientStyleValue {
+			return resolve_linear_gradient_data(resolution_context,gradient,width,height,color_context)
+		}
+		return none
+	}
 	if gradient := source.as_linear_gradient() {
 		return resolve_linear_gradient_data(resolution_context, gradient, width, height, color_context)
 	}
@@ -1584,8 +1591,10 @@ fn computed_background_image_layers(node &Node, element &dom.Element, computed &
 				css.ImageStyleValue { css.StyleValue(selected) }
 				css.LinearGradientStyleValue { css.StyleValue(selected) }
 				css.RadialGradientStyleValue { css.StyleValue(selected) }
+				css.StyleValue { selected }
 			}
 		}
+		effective_item = css_color_image_as_gradient(effective_item)
 		mut computed_layer := ?css.BackgroundLayerData(none)
 		if !(item.is_keyword() && item.to_keyword() == .none_) {
 			if computed_layer_index < computed_layers.len {
@@ -1667,8 +1676,10 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 				css.ImageStyleValue { css.StyleValue(selected) }
 				css.LinearGradientStyleValue { css.StyleValue(selected) }
 				css.RadialGradientStyleValue { css.StyleValue(selected) }
+				css.StyleValue { selected }
 			}
 		}
+		effective_item = css_color_image_as_gradient(effective_item)
 		if effective_item is css.LinearGradientStyleValue || effective_item is css.RadialGradientStyleValue {
 			colors := color_resolution_context_for_typed_node(node, node.computed_values().color())
 			// Generated mask images use the same snapped paint origin as CSS

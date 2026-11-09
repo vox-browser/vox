@@ -1079,6 +1079,12 @@ pub fn (mut style_value ContentStyleValue) set_style_sheet(style_sheet ?&CSSStyl
 	}
 }
 
+pub fn (style_value ContentStyleValue) absolutized(context ComputationContext) StyleValue {
+	content := style_value.content_.absolutized(context)
+	alt_text := if value := style_value.alt_text_ { ?StyleValueList(value.absolutized(context) as StyleValueList) } else { none }
+	return StyleValue(ContentStyleValue.create(content as StyleValueList,alt_text))
+}
+
 pub fn (style_value ContentStyleValue) serialize(mode SerializationMode) string {
 	mut serialized := style_value.content_.serialize(mode)
 	if alt_text := style_value.alt_text_ {

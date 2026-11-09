@@ -71,3 +71,11 @@ fn test_gradient_mask_cache_identity_tracks_alpha_geometry_and_stops() {
 	translated := gradient_mask_test_mask('mask-image:radial-gradient(circle,white,transparent)', painting.Rect{8, 9, 120, 60})
 	assert base.cache_key != translated.cache_key
 }
+
+fn test_color_only_image_preserves_transparent_mask_group() {
+ assert css.parse_css_value_logic(.mask_image,'light-dark(none,image(white))') != none
+ mask := gradient_mask_test_mask('color-scheme:light;mask-image:light-dark(none,image(white))',painting.Rect{7,9,120,60})
+ assert mask.operations.len == 1
+ gradient := mask.operations[0].fill_linear_gradient or { panic('color mask') }
+ assert gradient.gradient.color_stops.all(it.color.a == 0)
+}

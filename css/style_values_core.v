@@ -232,6 +232,7 @@ fn property_accepts_style_value(property_id PropertyID, value StyleValue) bool {
 			match value.name() {
 				'add' { property_id == .math_depth }
 				'fit-content' { property_accepts_type(property_id, .fit_content) }
+				'image' { property_accepts_type(property_id, .image) }
 				'stylistic', 'styleset', 'character-variant', 'swash', 'ornaments', 'annotation' {
 					property_id == .font_variant_alternates
 				}
@@ -8695,7 +8696,7 @@ pub fn (style_value &StyleValue) type_() StyleValueType {
 		LabColorStyleValue { .color }
 		LCHColorStyleValue { .color }
 		LengthStyleValue { .length }
-		LightDarkStyleValue { .color }
+		LightDarkStyleValue { if style_value.image_ { .image } else { .color } }
 		LinearGradientStyleValue { .linear_gradient }
 		NumberStyleValue { .number }
 		OKLabColorStyleValue { .color }
@@ -8930,7 +8931,8 @@ pub fn (style_value &StyleValue) has_color() bool {
 		KeywordStyleValue {
 			style_value.has_color()
 		}
-		ColorFunctionStyleValue, ColorMixStyleValue, ColorStyleValue, HSLColorStyleValue, HWBColorStyleValue, LabColorStyleValue, LCHColorStyleValue, LightDarkStyleValue, OKLabColorStyleValue, OKLCHColorStyleValue, RGBColorStyleValue {
+		LightDarkStyleValue { !style_value.image_ }
+		ColorFunctionStyleValue, ColorMixStyleValue, ColorStyleValue, HSLColorStyleValue, HWBColorStyleValue, LabColorStyleValue, LCHColorStyleValue, OKLabColorStyleValue, OKLCHColorStyleValue, RGBColorStyleValue {
 			true
 		}
 		else {
@@ -8941,6 +8943,8 @@ pub fn (style_value &StyleValue) has_color() bool {
 
 pub fn (style_value &StyleValue) is_abstract_image() bool {
 	return match style_value {
+		LightDarkStyleValue { style_value.image_ }
+		FunctionStyleValue { style_value.name() == 'image' }
 		ImageStyleValue, ImageSetStyleValue, LinearGradientStyleValue, ConicGradientStyleValue, RadialGradientStyleValue {
 			true
 		}
@@ -8964,6 +8968,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		ColorFunctionStyleValue { absolutize_relative_color(style_value, context) or { style_value.absolutized(context) } }
 		ColorInterpolationMethodStyleValue { StyleValue(style_value.absolutized(context)) }
 		ColorMixStyleValue { style_value.absolutized(context) }
+		ContentStyleValue { style_value.absolutized(context) }
 		ConicGradientStyleValue { StyleValue(style_value.absolutized(context)) }
 		CursorStyleValue { style_value.absolutized(context) }
 		EasingStyleValue { style_value.absolutized(context) }

@@ -1502,6 +1502,7 @@ pub fn (style_value ColorMixStyleValue) absolutized(context ComputationContext) 
 pub struct LightDarkStyleValue {
 pub mut:
 	light []StyleValue = [StyleValue(KeywordStyleValue{})]
+	image_ bool
 	dark  []StyleValue = [StyleValue(KeywordStyleValue{})]
 }
 
@@ -1525,12 +1526,21 @@ pub fn (style_value LightDarkStyleValue) to_color(color_resolution_context Color
 pub fn (style_value LightDarkStyleValue) absolutized(context ComputationContext) StyleValue {
 	if scheme := context.color_scheme {
 		if scheme == .dark {
-			return style_value.dark[0].absolutized(context)
+			return style_value.compute_image_or_color(style_value.dark[0], context)
 		}
-		return style_value.light[0].absolutized(context)
+		return style_value.compute_image_or_color(style_value.light[0], context)
 	}
 
 	return StyleValue(style_value)
+}
+
+fn (style_value LightDarkStyleValue) compute_image_or_color(selected StyleValue, context ComputationContext) StyleValue {
+	if style_value.image_ && selected.to_keyword() == .none_ {
+		// Color 5 defines 'none' in an image branch as a transparent image,
+		// retaining its image layer rather than removing the layer.
+		return StyleValue(FunctionStyleValue.create('image', StyleValue(ColorStyleValue.create_from_color(Color.rgba(0,0,0,0),.legacy,none))))
+	}
+	return selected.absolutized(context)
 }
 
 pub fn (style_value LightDarkStyleValue) serialize(mode SerializationMode) string {
@@ -1695,6 +1705,7 @@ pub type ImageSetImageStyleValue = ConicGradientStyleValue
 	| ImageStyleValue
 	| LinearGradientStyleValue
 	| RadialGradientStyleValue
+	| StyleValue
 
 pub type ImageSetResolutionStyleValue = CalculatedStyleValue | ResolutionStyleValue
 
@@ -1724,6 +1735,7 @@ fn (image ImageSetImageStyleValue) serialize(mode SerializationMode) string {
 		ImageStyleValue { image.serialize(mode) }
 		LinearGradientStyleValue { image.serialize(mode) }
 		RadialGradientStyleValue { image.serialize(mode) }
+		StyleValue { image.serialize(mode) }
 	}
 }
 
@@ -1733,6 +1745,16 @@ fn (image ImageSetImageStyleValue) absolutized(context ComputationContext) Image
 		ImageStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
 		LinearGradientStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
 		RadialGradientStyleValue { ImageSetImageStyleValue(image.absolutized(context)) }
+		StyleValue {
+			resolved := image.absolutized(context)
+			match resolved {
+				ConicGradientStyleValue { ImageSetImageStyleValue(resolved) }
+				ImageStyleValue { ImageSetImageStyleValue(resolved) }
+				LinearGradientStyleValue { ImageSetImageStyleValue(resolved) }
+				RadialGradientStyleValue { ImageSetImageStyleValue(resolved) }
+				else { ImageSetImageStyleValue(resolved) }
+			}
+		}
 	}
 }
 
@@ -1881,6 +1903,7 @@ pub fn (style_value ImageSetStyleValue) is_paintable() bool {
 	return match image {
 		ImageStyleValue { image.is_paintable() }
 		ConicGradientStyleValue, LinearGradientStyleValue, RadialGradientStyleValue { true }
+		StyleValue { image.is_abstract_image() }
 	}
 }
 

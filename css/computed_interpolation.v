@@ -16103,6 +16103,7 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				?&LengthQueryContainerCache(none)
 			}
 		}
+		color_scheme: computed_properties.color_scheme(preferred_color_scheme_from_string(s.document_.preferred_color_scheme()),s.document_.supported_color_schemes())
 		abstract_element: abstract_element
 	}
 	mut mutable_s := unsafe { &StyleComputer(s) }
