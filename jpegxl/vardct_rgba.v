@@ -27,7 +27,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 	}
 	for extra in metadata.extra_channels {
 		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point || extra.bit_depth.bits_per_sample != 8 {
-			return error('JPEG XL output requires one unscaled 8-bit alpha channel')
+			return error('JPEG XL output requires one 8-bit alpha channel')
 		}
 	}
 	color := prepare_srgb_output(file)!
@@ -77,11 +77,10 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 	if !found { return error('JPEG XL non-visible frame limit exceeded') }
 	if reader.available_bits() != 0 { return error('Unhandled JPEG XL VarDCT trailing payload') }
 	if extra_channels.len != metadata.extra_channels.len { return error('Incorrect JPEG XL output extra channel count') }
-	for channel in extra_channels {
-		channel.validate()!
-		if channel.width != int(file.size.width) || channel.height != int(file.size.height) {
-			return error('JPEG XL output alpha requires unsupported resampling')
-		}
+	mut alpha_samples := []f32{}
+	if extra_channels.len == 1 {
+		alpha_plane := render_alpha_plane(extra_channels[0], file, frame, storage)!
+		alpha_samples = alpha_plane.samples
 	}
 	output := if metadata.xyb_encoded {
 		linear := xyb_to_linear(restored, color.opsin, color.intensity_target)!
@@ -102,7 +101,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 	for y in 0 .. int(file.size.height) {
 		start := y * int(file.size.width)
 		end := start + int(file.size.width)
-		alpha := if has_alpha { modular_integer_row_to_f32(extra_channels[0].samples[start..end], 8, storage)! } else { []f32{} }
+		alpha := if has_alpha { alpha_samples[start..end] } else { []f32{} }
 		alpha_bytes := if has_alpha { quantize_output_row(alpha, 0, u32(y), 3, 8)! } else { []u8{} }
 		mut rows := [][]u8{cap: 3}
 		for c in 0 .. 3 {

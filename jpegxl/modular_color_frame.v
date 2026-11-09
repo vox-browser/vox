@@ -16,8 +16,9 @@ fn validate_modular_xyb_frame_alpha(file FileHeader, frame FrameHeader, allow_al
 	}
 	for i, extra in file.metadata.extra_channels {
 		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point
-			|| extra.bit_depth.bits_per_sample != 8 || frame.extra_upsampling[i] != 1 || frame.upsampling != 1 {
-			return error('JPEG XL modular XYB requires one unscaled 8-bit alpha channel')
+			|| extra.bit_depth.bits_per_sample != 8 || frame.extra_upsampling[i] !in [u32(1), 2, 4, 8]
+			|| frame.extra_upsampling[i] < frame.upsampling {
+			return error('JPEG XL modular XYB requires one supported 8-bit alpha channel')
 		}
 	}
 	size := frame.size()
@@ -34,11 +35,14 @@ pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame F
 
 fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, allow_alpha bool) ![3]FloatPlane {
 	validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
-	size := frame.size()
 	if raw.channels.len != 3 + file.metadata.extra_channels.len { return error('Invalid JPEG XL modular XYB channel count') }
-	for channel in raw.channels {
+	for c, channel in raw.channels {
 		channel.validate()!
-		if channel.width != int(size.width) || channel.height != int(size.height) {
+		factor := if c < 3 { frame.upsampling } else { frame.extra_upsampling[c - 3] }
+		full := frame.size_upsampled()
+		width := (full.width + factor - 1) / factor
+		height := (full.height + factor - 1) / factor
+		if channel.width != int(width) || channel.height != int(height) {
 			return error('Incorrect JPEG XL modular XYB frame geometry')
 		}
 	}

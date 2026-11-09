@@ -26,8 +26,9 @@ fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference
 	}
 	for i,extra in file.metadata.extra_channels {
 		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point
-			|| extra.bit_depth.bits_per_sample != 8 || frame.extra_upsampling[i] != 1 || frame.upsampling != 1 {
-			return error('JPEG XL VarDCT extra channels require one unscaled 8-bit alpha plane')
+			|| extra.bit_depth.bits_per_sample != 8 || frame.extra_upsampling[i] !in [u32(1), 2, 4, 8]
+			|| frame.upsampling !in [u32(1), 2, 4, 8] || frame.extra_upsampling[i] < frame.upsampling {
+			return error('JPEG XL VarDCT extra channels require one supported 8-bit alpha plane')
 		}
 	}
 	if frame.has_lf_frame() != (reference != none) { return error('Missing or unexpected JPEG XL LF reference') }

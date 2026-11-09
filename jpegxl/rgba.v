@@ -3,7 +3,7 @@
 module jpegxl
 
 // Combine the translated static image paths. VarDCT and modular XYB can carry
-// one unscaled 8-bit alpha channel; lossless modular retains its existing
+// one 8-bit alpha channel with 1x/2x/4x/8x sampling; lossless modular retains its existing
 // bounds. This remains a subset of the production decoder.
 pub fn decode_rgba(input []u8, premultiply bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }

@@ -54,7 +54,7 @@ fn test_modular_xyb_alpha_validation_preserves_opaque_renderer_and_rejects_resam
 		bad := FileHeader{ ...file, metadata: ImageMetadata{ ...file.metadata, extra_channels: [extra] } }
 		if _ := validate_modular_xyb_frame_alpha(bad, frame, true) { assert false }
 	}
-	for bad in [FrameHeader{ ...frame, extra_upsampling: []u32{} }, FrameHeader{ ...frame, extra_upsampling: [u32(2)] },
+	for bad in [FrameHeader{ ...frame, extra_upsampling: []u32{} }, FrameHeader{ ...frame, extra_upsampling: [u32(3)] },
 		FrameHeader{ ...frame, upsampling: 2 }] {
 		if _ := validate_modular_xyb_frame_alpha(file, bad, true) { assert false }
 	}
