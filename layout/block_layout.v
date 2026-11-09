@@ -142,7 +142,15 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	}
 	// HTML button layout: an auto inline size is fit-content instead of the
 	// normal fill-available size of a block-level box.
-	if computed_width.is_auto() && box.computed_values().writing_mode() != .horizontal_tb {
+ mut orthogonal_inline_size := false
+ if containing := box_node.containing_block() {
+  orthogonal_inline_size = box.computed_values().writing_mode()==.horizontal_tb && unsafe { &Node(containing) }.computed_values().writing_mode()!=.horizontal_tb
+ }
+ if computed_width.is_auto() && orthogonal_inline_size {
+  // The inline size of an orthogonal block is shrink-to-fit; applying the
+  // horizontal normal-flow fill equation can erase all of its content width.
+  intrinsic_width=calculate_fit_content_width(mut state,box_as_box,available_width)
+ } else if computed_width.is_auto() && box.computed_values().writing_mode() != .horizontal_tb {
 		// A vertical flow's automatic block size is content based. The
 		// horizontal block width equation would stretch it across the viewport.
 		intrinsic_width = calculate_max_content_width(mut state,box_as_box)
