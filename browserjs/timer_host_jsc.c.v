@@ -97,6 +97,16 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 	if host.closed { return error('Timer binding is closed') }
 	op := host.runtime.binding_dom_string(host.argument(arguments, 0))!
 	if arguments.len > 4 && host.settings.fetch_request_client_is_window() {
+		// Same-origin WindowProxy reads expose the other realm's actual global.
+		// Its EventTarget wrapper belongs to that realm, rather than this one.
+		for _, candidate in timer_host_bindings_ {
+			if candidate.closed || C.JSContextGetGroup(candidate.runtime.context) != C.JSContextGetGroup(host.runtime.context) { continue }
+			if C.JSValueIsStrictEqual(host.runtime.context,arguments[4],C.JSContextGetGlobalObject(candidate.runtime.context)) {
+				if voidptr(candidate) == voidptr(&host) { return host.operate(arguments[..4]) }
+				mut target := unsafe { &TimerHost(candidate) }
+				return target.operate(arguments[..4])
+			}
+		}
 		window := host.runtime.message_window(arguments[4])!
 		settings := window.associated_document().relevant_settings_object()
 		if settings != unsafe { nil } {
