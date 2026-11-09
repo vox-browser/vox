@@ -1,5 +1,10 @@
 module css
 
+fn test_conic_gradient_omits_default_zero_angle() {
+	value := parse_css_value_logic(.background_image, 'conic-gradient(from 0deg, red, blue)') or { panic('gradient') }
+	assert value.serialize(.normal) == 'conic-gradient(red, blue)'
+}
+
 // Validates parsing + serialization of radial/conic gradient prefixes
 // (`[<shape> || <size>]? [at <position>]?` for radial, `[from <angle>]? [at
 // <position>]?` for conic) and that the serialized css_text re-parses to the

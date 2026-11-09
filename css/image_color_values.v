@@ -2560,7 +2560,7 @@ pub fn (style_value ConicGradientStyleValue) serialize(mode SerializationMode) s
 	}
 	result += 'conic-gradient('
 
-	has_from_angle := style_value_from_optional_storage(style_value.from_angle_) != none
+	has_from_angle := if angle := style_value_from_optional_storage(style_value.from_angle_) { angle_from_style_value(angle).to_degrees() != 0 } else { false }
 	has_at_position := !style_value.position_.is_center(mode)
 	has_color_space := if color_interpolation_method := style_value.color_interpolation_method_ {
 		color_interpolation_method.color_interpolation_method() != ColorInterpolationMethodStyleValue.default_color_interpolation_method(style_value.color_syntax_)
@@ -2569,8 +2569,10 @@ pub fn (style_value ConicGradientStyleValue) serialize(mode SerializationMode) s
 	}
 
 	if from_angle := style_value_from_optional_storage(style_value.from_angle_) {
-		result += 'from '
-		result += from_angle.serialize(mode)
+		if has_from_angle {
+			result += 'from '
+			result += from_angle.serialize(mode)
+		}
 	}
 	if has_at_position {
 		if has_from_angle {
