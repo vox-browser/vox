@@ -9107,6 +9107,9 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 	if operation == .replace {
 		return none
 	}
+	if underlying.type_() == .color && animated.type_() == .color {
+		return composite_colors(underlying, animated, ColorResolutionContext{})
+	}
 	if underlying.type_() != animated.type_() || underlying.is_calculated() || animated.is_calculated() {
 		return composite_mixed_style_value(property_id, underlying, animated)
 	}
