@@ -11,19 +11,19 @@ fn test_pending_finalization_and_clearing_do_not_enumerate_clean_facades() {
 	assert runtime.evaluate_host(r'
 let enumerations=0;
 const states={a:{bridgeKey:"a"},b:{bridgeKey:"b"},c:{bridgeKey:"c"}};
-const __state={elements:new Proxy(states,{ownKeys(target){enumerations++;return Reflect.ownKeys(target);}})};
+const __state={elements:new Proxy(states,{ownKeys(target){enumerations++;return Reflect.ownKeys(target);}}),operations:[],logs:[]};
 const __canvases={};
 ' + compact_pending_elements_bootstrap() + r'
 enumerations=0;
 states.b.textContentDirty=true;
 if(Object.keys(__pendingElementStates(true)).join()!=="b")throw new Error("missing dirty element");
-__clearPendingElementEdits();
+__compactTakePendingDOMState(false,false,true);
 if(__dirtyElementStates.size||Object.keys(__pendingElementStates(true)).length)throw new Error("edits were not drained");
 states.c.attributesDirty=true;states.c.attributesDirty=false;
 if(Object.keys(__pendingElementStates(false)).length||__dirtyElementStates.size)throw new Error("cancelled edit retained");
 __state.elements.d={bridgeKey:"d",checkedDirty:true};
 if(Object.keys(__pendingElementStates(true)).join()!=="d")throw new Error("new state untracked");
-__clearPendingElementEdits();
+__compactTakePendingDOMState(false,false,true);
 __canvases.paint={state:states.a};states.a.canvasNative=true;
 if(Object.keys(__pendingElementStates(true)).join()!=="a")throw new Error("canvas lost");
 if(Object.keys(__pendingElementStates(false)).length)throw new Error("canvas leaked into query replay");
@@ -33,7 +33,7 @@ true;
 }
 
 fn test_pending_finalization_covers_removed_and_created_content_and_control_edits_once() {
-	$if !darwin {
+	$if !darwin && !linux {
 		return
 	}
 	mut document := html.parse_document('<!doctype html><p id="text">before</p><input id="control" type="checkbox"><div id="parent"></div>')
@@ -52,7 +52,7 @@ fn test_pending_finalization_covers_removed_and_created_content_and_control_edit
 	assert unsafe { &dom.HTMLInputElement(control) }.indeterminate()
 	second := json2.decode[map[string]json2.Any](runtime.evaluate_host('__ladybirdFinalize()')!)!
 	assert (second['elements'] or { panic('missing pending map') }).as_map().len == 0
-	runtime.evaluate_host('added.textContent="discarded";__ladybirdClearLogs()')!
+	runtime.evaluate_host('added.textContent="preserved";__ladybirdClearLogs()')!
 	third := json2.decode[map[string]json2.Any](runtime.evaluate_host('__ladybirdFinalize()')!)!
-	assert (third['elements'] or { panic('missing pending map') }).as_map().len == 0
+	assert (third['elements'] or { panic('missing pending map') }).as_map().len == 1
 }

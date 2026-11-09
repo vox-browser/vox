@@ -182,6 +182,21 @@ jobs:
                 layout/visual_context_memo_test.v
           done
 
+      - name: Check native DOM authority and projections
+        timeout-minutes: 45
+        run: |
+          export VOX_ARENA_POISON=1
+          for gc in boehm prealloc; do
+            python3 tools/run_memory_bounded.py \
+              --lock "$RUNNER_TEMP/vox-dom-authority-$gc.lock" \
+              --report "$RUNNER_TEMP/vox-dom-authority-$gc.json" --timeout 1200 -- \
+              python3 tools/test_linux_native.py --gc "$gc" \
+                compact/native_attributes_test.v \
+                compact/mutation_boundary_test.v \
+                dom/native_attribute_identity_test.v \
+                layout/lazy_dom_visual_lines_test.v
+          done
+
       - name: Check resource consumers and navigation retirement
         timeout-minutes: 35
         run: |
@@ -234,6 +249,7 @@ jobs:
                                                     'vox-ownership-tests.json',
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json',
                                                     'vox-recording-boehm.json', 'vox-recording-prealloc.json',
+                                                    'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json',
                                                     'vox-resource-cache.json', 'vox-resource-cache-nogc.json',
                                                     'vox-resource-lifecycle.json', 'vox-resource-v.json',
                                                     'vox-resource-v-prealloc.json', 'vox-resource-integration.json')]

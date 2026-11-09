@@ -12,6 +12,35 @@ import sys
 from prepare_http_compat import compiler_vlib, remove_unused_private_helper, write_if_changed
 
 
+def patch_fontstash_callbacks(source):
+    """Adapt the pinned GG callbacks without relaxing native C diagnostics."""
+    declarations = {
+        'fn fons_render_update(uptr voidptr, rect &i32, data &u8) {':
+            "@[export: 'vox_gg_fontstash_render_update']",
+        'fn fons_render_draw(uptr voidptr, verts &f32, tcoords &f32, colors &u32, nverts i32) {':
+            "@[export: 'vox_gg_fontstash_render_draw']",
+    }
+    marker = '#include "@DIR/vox_fontstash_callbacks.h"'
+    assignment = re.compile(
+        r'(?m)^(\t+)params\.renderUpdate = fons_render_update\n'
+        r'\1params\.renderDraw = fons_render_draw$')
+    if marker in source:
+        if source.count(marker) != 1 or source.count('C.vox_gg_fontstash_callbacks(&params)') != 2 \
+                or any(source.count(annotation) != 1 for annotation in declarations.values()) \
+                or assignment.search(source):
+            raise RuntimeError('Incomplete GG Fontstash callback adapter')
+        return source
+    if source.count('module gg\n') != 1 or any(source.count(signature) != 1 for signature in declarations):
+        raise RuntimeError('Unsupported GG Fontstash callback signatures')
+    source, count = assignment.subn(r'\1C.vox_gg_fontstash_callbacks(&params)', source)
+    if count != 2:
+        raise RuntimeError(f'Expected two GG Fontstash callback assignments, found {count}')
+    for signature, annotation in declarations.items():
+        source = source.replace(signature, annotation + '\n' + signature, 1)
+    return source.replace('module gg\n', 'module gg\n\n' + marker + '\n', 1) \
+        + '\nfn C.vox_gg_fontstash_callbacks(params &C.FONSparams)\n'
+
+
 def condition_private_helpers(source, names, condition):
     """Compile optional helpers with their callers, retaining test access."""
     for name in names:
@@ -65,6 +94,7 @@ def stage_module(source, target, package):
         target.unlink()
     target.mkdir(parents=True, exist_ok=True)
     expected = set()
+    fontstash_adapter = False
     for path in source.rglob("*"):
         if not path.is_file() or path.name.endswith("_test.v"):
             continue
@@ -80,10 +110,21 @@ def stage_module(source, target, package):
                 parent.unlink()
             parent.mkdir(exist_ok=True)
         if path.suffix == ".v":
-            write_if_changed(destination, patch_module(package, path.read_text()))
+            text = patch_module(package, path.read_text())
+            if package == 'gg' and relative == Path('text_rendering.c.v'):
+                text = patch_fontstash_callbacks(text)
+                fontstash_adapter = True
+            write_if_changed(destination, text)
         elif not destination.is_symlink() or destination.resolve() != path.resolve():
             destination.unlink(missing_ok=True)
             destination.symlink_to(path.resolve())
+    if fontstash_adapter:
+        header = Path('vox_fontstash_callbacks.h')
+        expected.add(header)
+        destination = target / header
+        if destination.is_symlink():
+            destination.unlink()
+        write_if_changed(destination, Path(__file__).with_name('linux_fontstash_callbacks.h').read_text())
     if target.exists():
         for path in sorted(target.rglob("*"), reverse=True):
             if path.is_dir() and not path.is_symlink():

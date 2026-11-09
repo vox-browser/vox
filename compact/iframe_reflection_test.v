@@ -6,7 +6,9 @@ import html
 // 4chan's ad loader builds its frames from IDL properties. They must reach the
 // DOM as content attributes: frameborder="0" removes the default inset border.
 fn test_compact_iframe_reflects_presentational_properties() {
-	$if !darwin { return }
+	$if !darwin && !linux {
+		return
+	}
 	document := html.parse_document('<!doctype html><html><body><div id="slot"></div><iframe id="parsed" frameborder="0" loading="LAZY" referrerpolicy="bogus"></iframe></body></html>')
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }

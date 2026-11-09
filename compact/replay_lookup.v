@@ -103,23 +103,38 @@ fn compact_replay_element_keys(state map[string]json2.Any) []string {
 	return keys.keys()
 }
 
-fn apply_javascript_runtime_state(document &dom.Document, encoded string,
-	runtime &browserjs.Runtime, mut messages []string) ?string {
+struct CompactDOMReplayResult {
+	elements map[string]&dom.Element
+	navigation ?string
+}
+
+// Queries and native host/task boundaries replay through this one owner. The
+// caller may register materialized element identities before settling reactions.
+fn replay_compact_dom_snapshot(document &dom.Document, encoded string,
+	runtime &browserjs.Runtime, mut messages []string) CompactDOMReplayResult {
 	mut storage := document.native_storage()
 	mut owner := platform.RetainedArenaScope{}
 	if storage != unsafe { nil } { owner = storage.enter_nested() }
-	defer { owner.finish() }
-	replay := compact_query_replay_snapshot(document, encoded, mut messages) or { return none }
+	persistent := platform.enter_persistent_if(storage == unsafe { nil } && platform.transient_arena_entered())
+	defer { platform.leave_persistent(persistent); owner.finish() }
+	replay := compact_query_replay_snapshot(document, encoded, mut messages) or {
+		return CompactDOMReplayResult{}
+	}
 	defer { replay.workspace.finish() }
 	state := replay.state
 	note_compact_replay_effects(state, runtime)
 	elements := runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
 	navigation := apply_decoded_javascript_state(document, state, elements, mut messages)
-	// Deliver reactions queued by this replay; callback writes mark the
-	// runtime's document state dirty for the next task replay.
-	mut reaction_document := unsafe { &dom.Document(document) }
-	reaction_document.invoke_custom_element_reactions()
-	return navigation
+	return CompactDOMReplayResult{elements: elements, navigation: navigation}
+}
+
+fn apply_javascript_runtime_state(document &dom.Document, encoded string,
+	runtime &browserjs.Runtime, mut messages []string) ?string {
+	result := replay_compact_dom_snapshot(document, encoded, runtime, mut messages)
+	settle_compact_dom_reactions(document, runtime, mut messages) or {
+		messages << 'JavaScript DOM synchronization: ${err.msg()}'
+	}
+	return result.navigation
 }
 
 fn note_compact_replay_effects(state map[string]json2.Any, runtime &browserjs.Runtime) {

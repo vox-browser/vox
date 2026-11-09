@@ -4,11 +4,11 @@ import browserjs
 import html
 
 fn test_native_parent_cache_uses_mutation_versions_and_replays_pending_writes() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close() }
 	_ = runtime.evaluate_host(r'
-const __state={operations:[]},__dirtyElementStates=new Set();
+const __state={elements:{},operations:[]},__canvases={};
 const __elementApply=Reflect.apply,__elementRecordGet=WeakMap.prototype.get,__elementRecordSet=WeakMap.prototype.set;
 let version=1,queries=0,cacheable=true,parent={name:"first"};
 globalThis.__ladybirdDOMTreeVersion=()=>version;
@@ -19,7 +19,7 @@ function __queryElements(key,action){
 }
 function __queryElement(value){return value;}
 ')!
-	_ = runtime.evaluate_host(compact_native_parent_bootstrap())!
+	_ = runtime.evaluate_host(compact_pending_elements_bootstrap()+compact_native_parent_bootstrap())!
 	assert runtime.evaluate_host(r'
 const target={bridgeKey:"target"};
 __compactNativeParent(target)===parent&&__compactNativeParent(target)===parent&&queries===1
@@ -45,7 +45,7 @@ __compactNativeParent(target)===null&&__compactNativeParent(target)===null&&quer
 }
 
 fn test_native_parent_cache_tracks_native_moves_pending_appends_text_and_disconnected_owners() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut document := html.parse_document('<!doctype html><div id="first"><span id="target">text</span></div><div id="second"></div>')
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close(); document.finalize() }

@@ -149,7 +149,7 @@ const __compactTrustedTypes=(function(){
   const result=JSON.parse(nativeAttribute(state.bridgeKey,namespace,name,converted.kind,converted.value,namespaced,state.created?JSON.stringify(state):""));
   refresh(result);
   state.src=state.attributes.src||"";state.styleText=state.attributes.style||"";state.disabled=Object.prototype.hasOwnProperty.call(state.attributes,"disabled");
-  if((namespace===null||namespace==="")&&state.tagName==="canvas"&&(name==="width"||name==="height")){state[name]=converted.value;__canvasResize(state);}
+  if((namespace===null||namespace==="")&&state.tagName==="canvas"&&(name==="width"||name==="height")){state[name]=converted.value;}
   __compactCustomElementFlush(state);
  }
  Object.defineProperty(Element.prototype,"setAttribute",{value:{setAttribute(name,value){

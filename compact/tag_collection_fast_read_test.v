@@ -4,7 +4,8 @@ import browserjs
 
 fn tag_collection_fast_read_fixture() string {
 	return r'
-const __state={operations:[]},__dirtyElementStates=new Set();
+const __state={elements:{},operations:[]},__canvases={};
+' + compact_pending_elements_bootstrap() + r'
 const __elementRecords=new WeakMap(),__elementRecordGet=WeakMap.prototype.get,__elementApply=Reflect.apply;
 function Element(){};const document={};
 let nativeVersion="1",members=[{id:"first"}],queries=0,versionReads=0;

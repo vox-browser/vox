@@ -50,7 +50,7 @@ fn can_owner_balance(app &BrowserApp, document &dom.Document, runtime &browserjs
 }
 
 fn test_compact_attribute_owner_keeps_duplicate_order_identity_and_public_remove_set_sequences() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut app, mut document, mut runtime := can_owner_fixture('<!doctype html><body><div id="can-first"></div><div id="can-second"></div>')!
 	defer { runtime.close(); document.finalize() }
 	first := can_owner_element(document, 'can-first')!
@@ -115,7 +115,7 @@ fn test_compact_attribute_owner_keeps_duplicate_order_identity_and_public_remove
 }
 
 fn test_compact_attribute_owner_preserves_svg_case_and_xlink_identity_through_public_mutations() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut app, mut document, mut runtime := can_owner_fixture('<!doctype html><body><svg id="can-svg" width="20" height="20"></svg>')!
 	defer { runtime.close(); document.finalize() }
 	mut element := can_owner_element(document, 'can-svg')!
@@ -151,7 +151,7 @@ fn test_compact_attribute_owner_preserves_svg_case_and_xlink_identity_through_pu
 }
 
 fn test_compact_attribute_owner_hydrates_late_nodes_and_retains_created_disconnected_reordered_identity() {
-	$if !darwin { return }
+	$if !darwin && !linux { return }
 	mut app, mut document, mut runtime := can_owner_fixture('<!doctype html><body><div id="can-parent"></div><div id="can-other"></div>')!
 	defer { runtime.close(); document.finalize() }
 	parent := can_owner_element(document, 'can-parent')!

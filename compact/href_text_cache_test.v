@@ -7,6 +7,11 @@ fn href_text_cache_fixture(script string) !string {
 	defer { runtime.close() }
 	return runtime.evaluate_host(r'(function(){
 const __elementApply=Reflect.apply,document={},__state={location:"https://base.test/a/"};
+const __compactNativeAttributes={
+ read(state,name){return Object.prototype.hasOwnProperty.call(state.attributes,name)?state.attributes[name]:null;},
+ contains(state,name){return Object.prototype.hasOwnProperty.call(state.attributes,name);},
+ write(state,name,value){state.attributes[name]=value;}
+};
 let owner=document,ownerReads=0,nativeReads=0,constructorReads=0,reports=0,failed=false;
 function NativeURL(value,base){this.value=value;this.base=base;}
 const getter=function(){return "fallback:"+this.base+"|"+this.value;};

@@ -30,6 +30,9 @@ mut:
 	node_iterators map[string]&dom.NodeIterator
 	ranges map[string]&dom.Range
 	range_keys map[voidptr]string
+	attribute_handles map[string]CompactNativeAttribute
+	attribute_keys map[voidptr]string
+	next_attribute_key int
 	next_key int
 	scroll_promises map[string]&dom.Promise
 	next_scroll_promise int
@@ -48,11 +51,7 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 			return binding.input_files(key, state, write, value)
 		})!
 		runtime.install_trusted_types_policy_binding(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-			state := callback_runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
-			defer { state.finish() }
-			mut messages := []string{}
-			apply_javascript_runtime_state(document, state.value, callback_runtime, mut messages)
-			if messages.len != 0 { return error(messages.join('\n')) }
+			flush_compact_dom_mutations(document, callback_runtime)!
 		}, fn [mut binding] (key string, namespace ?string, name string, input trustedtypes.TrustedTypeOrString, namespaced bool, state string) !string {
 			return binding.set_trusted_attribute(key, namespace, name, input, namespaced, state)
 		})!
@@ -122,10 +121,7 @@ fn install_compact_element_content_binding_with_policy(document &dom.Document, m
 		mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
 		return runtime.javascript_event_target(unsafe { &dom.EventTarget(element) }, none)
 	}, fn [binding] () ! {
-		state := binding.runtime.evaluate_host('__ladybirdFinalize(true)')!
-		mut messages := []string{}
-		apply_javascript_runtime_state(binding.document, state, binding.runtime, mut messages)
-		if messages.len != 0 { return error(messages.join('\n')) }
+		flush_compact_dom_mutations(binding.document, binding.runtime)!
 	})!
 	runtime.install_document_name_collection_binding(fn [mut binding] (element &dom.Element) !voidptr {
 		_ = binding.element_key(element)
@@ -220,14 +216,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	defer { request.workspace.finish() }
 	if snapshot := request.snapshot {
 		mut messages := []string{}
-		mut elements := map[string]&dom.Element{}
-		if replay := compact_query_replay_snapshot(binding.document, snapshot, mut messages) {
-			defer { replay.workspace.finish() }
-			state := replay.state
-			note_compact_replay_effects(state, binding.runtime)
-			elements = binding.runtime.canvas_elements_for_keys(compact_replay_element_keys(state))
-			apply_decoded_javascript_state(binding.document, state, elements, mut messages)
-		}
+		result := replay_compact_dom_snapshot(binding.document, snapshot, binding.runtime, mut messages)
 		// Console output stays in the script snapshot for its normal consumer;
 		// only DOM replay failures can reject this selector operation.
 		mut log_count := request.log_count
@@ -236,7 +225,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 		if messages.len > log_count {
 			return error(messages[..messages.len - log_count].join('\n'))
 		}
-		for key, element in elements {
+		for key, element in result.elements {
 			binding.elements[key] = element
 			binding.keys[voidptr(element)] = key
 		}
@@ -244,13 +233,16 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	// Replayed writes, and earlier native actions, may have queued custom
 	// element reactions. Run them before this operation observes the tree;
 	// the request's own writes are already applied, preserving their order.
-	mut reaction_document := unsafe { &dom.Document(binding.document) }
-	reaction_document.invoke_custom_element_reactions()
+	mut reaction_messages := []string{}
+	settle_compact_dom_reactions(binding.document, binding.runtime, mut reaction_messages)!
+	if reaction_messages.len != 0 { return error(reaction_messages.join('\n')) }
 	selector := request.selector or {
 		return error('Invalid selector request')
 	}
 	action := request.action or { return error('Invalid selector action') }
 	key := request.key
+	if action == 'flushDOM' { return 'null' }
+	if action == 'nativeAttribute' { return binding.native_attribute_query(key, selector) }
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
@@ -575,7 +567,7 @@ function __classCollection(key, classNames, reader, namedReader) {
   if(name==="")return null;
   for(const element of elements){
    const state=__elementApply(__elementRecordGet,__elementRecords,[element]);
-   if(state.id===name||(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&state.attributes.name===name))return element;
+   if(__compactNativeAttributes.read(state,"id",true)===name||(state.namespaceURI==="http://www.w3.org/1999/xhtml"&&__compactNativeAttributes.read(state,"name",true)===name))return element;
   }
   return null;
  }
@@ -599,7 +591,7 @@ function __classCollection(key, classNames, reader, namedReader) {
   ownKeys(target){
    const elements=read(),keys=Reflect.ownKeys(target);
    for(let index=0;index<elements.length;index++)keys.push(String(index));
-   for(const element of elements){const state=__elementApply(__elementRecordGet,__elementRecords,[element]);for(const name of [state.id,state.namespaceURI==="http://www.w3.org/1999/xhtml"?state.attributes.name:""])if(name&&name!=="length"&&!Reflect.has(target,name)&&!keys.includes(name))keys.push(name);}
+   for(const element of elements){const state=__elementApply(__elementRecordGet,__elementRecords,[element]);for(const name of [__compactNativeAttributes.read(state,"id",true),state.namespaceURI==="http://www.w3.org/1999/xhtml"?__compactNativeAttributes.read(state,"name",true):""])if(name&&name!=="length"&&!Reflect.has(target,name)&&!keys.includes(name))keys.push(name);}
    return keys;
   },
   getOwnPropertyDescriptor(target,property){

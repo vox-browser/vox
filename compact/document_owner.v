@@ -33,10 +33,9 @@ fn (binding &CompactElementQueryBinding) has_root_document_owner(key string) boo
 fn compact_document_owner_bootstrap() string {
 	return r'
 const __rootDocumentOwner=globalThis.__ladybirdRootDocumentOwner;
-const __ownerDirtySize=Object.getOwnPropertyDescriptor(Set.prototype,"size").get;
 function __compactOwnerDocument(object){
  const key=__compactNodeState(object).bridgeKey;
- if(typeof __rootDocumentOwner==="function"&&typeof key==="string"&&!__state.operations.length&&__elementApply(__ownerDirtySize,__dirtyElementStates,[])===0&&__rootDocumentOwner(key)===true)return document;
+ if(typeof __rootDocumentOwner==="function"&&typeof key==="string"&&!__compactHasPendingDOMState()&&__rootDocumentOwner(key)===true)return document;
  return __queryElements(key,"ownerDocument","");
 }'
 }

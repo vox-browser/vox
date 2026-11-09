@@ -6,6 +6,29 @@
 module dom
 
 import math
+import platform
+
+pub type LayoutVisualLinesCallback = fn (voidptr, voidptr) []VisualLine
+
+// A read-only projection provider binds one committed geometry state. Copies
+// of a live LayoutNode keep that state even if its typed layout tree is reused
+// by a later pass. This is geometry ownership, not a snapshot of DOM semantics.
+// The layout owner shares one provider across all text nodes in a commit.
+// Providers follow the document storage lifetime; copying a projection does
+// not independently retain a native document arena.
+pub struct LayoutVisualLinesProvider {
+pub:
+	context  voidptr
+	@[required]
+	callback LayoutVisualLinesCallback
+}
+
+pub fn LayoutVisualLinesProvider.new(context voidptr,
+	callback LayoutVisualLinesCallback) &LayoutVisualLinesProvider {
+	mut allocations := platform.enter_retained_allocations()
+	defer { allocations.finish() }
+	return &LayoutVisualLinesProvider{ context: context, callback: callback }
+}
 
 pub struct CursorLinePosition {
 pub:
@@ -14,13 +37,13 @@ pub:
 }
 
 pub fn (node &LayoutNode) visual_lines() []VisualLine {
-	provider := node.visual_lines_callback
+	provider := node.visual_lines_provider_
 	if provider != unsafe { nil } {
 		mut current := unsafe { &LayoutNode(node) }
-		// A callback is consumed once per committed attachment. Clear it before
+		// A provider is consumed once per committed attachment. Clear it before
 		// entering the provider so reentrant readers see the existing snapshot.
-		current.visual_lines_callback = unsafe { nil }
-		current.set_visual_lines(provider(current.layout_handle))
+		current.visual_lines_provider_ = unsafe { nil }
+		current.set_visual_lines(provider.callback(current.layout_handle, provider.context))
 	}
 	return node.cached_visual_lines()
 }

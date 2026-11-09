@@ -41,7 +41,7 @@ function __compactHrefText(value,base){
 // through the URL setters and stores the serialization in the href attribute.
 const __hyperlinkURL=globalThis.URL,__hyperlinkParts=["protocol","username","password","host","hostname","port","pathname","search","hash"];
 function __compactHyperlinkParse(object,state){
- if(!__hrefTextHasOwn.call(state.attributes,"href"))return null;
+ if(!__compactNativeAttributes.contains(state,"href",true))return null;
  try{return new __hyperlinkURL(object.href);}catch(error){return null;}
 }
 function __compactHyperlinkBindings(object,state){
@@ -52,7 +52,7 @@ function __compactHyperlinkBindings(object,state){
   set:function(value){
    const url=__compactHyperlinkParse(this,state);if(!url)return;
    if(typeof value==="symbol")throw new TypeError("Cannot convert a Symbol to a string");
-   url[name]=String(value);__setAttribute(state,"href",url.href);
+   url[name]=String(value);__compactNativeAttributes.write(state,"href",url.href,true);
   }});
  if(!__hrefTextHasOwn.call(object,"toString"))__hrefTextDefine(object,"toString",{configurable:true,enumerable:true,writable:true,value:function toString(){return this.href;}});
 }
@@ -66,8 +66,8 @@ function __compactHrefTextBindings(object,state){
  if(typeof __hrefTextNative!=="function"||state.namespaceURI!=="http://www.w3.org/1999/xhtml"||!["a","area","link","base"].includes(state.tagName))return;
  const original=__hrefTextDescriptor(object,"href");if(!original||typeof original.get!=="function")return;
  __hrefTextDefine(object,"href",{configurable:original.configurable,enumerable:original.enumerable,set:original.set,get:function(){
-  if(!Object.prototype.hasOwnProperty.call(state.attributes,"href"))return "";
-  const value=String(state.attributes.href);
+  const raw=__compactNativeAttributes.read(state,"href",true);if(raw===null)return "";
+  const value=String(raw);
   // A document in a legacy encoding encodes the query with it; only the
   // native URL parser knows that encoding.
   if(__compactOwnerDocument(object)!==document||__compactLegacyEncodedDocument())return __queryElements(state.bridgeKey,"elementURL","href");

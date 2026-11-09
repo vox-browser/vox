@@ -37,7 +37,7 @@ function __compactRunEventHandlers(s, name, event, path, replay) {
   // Native dispatch already ran the content attributes and on* properties of these elements.
   const nativeHandlers = current && !nativeMedia && __compactNativeInlineHandlers(receiver);
   const raw = current === s && replay && Object.prototype.hasOwnProperty.call(replay, "raw") ? replay.raw :
-   (current && !nativeMedia && !nativeHandlers ? (current.attributes["on" + name] || "") : "");
+   (current && !nativeMedia && !nativeHandlers ? (__compactNativeAttributes.read(current,"on" + name,true) || "") : "");
   if (!event.immediateStopped) {
    try {
     if (current && !nativeHandlers) {
@@ -59,8 +59,9 @@ function __compactRunEventHandlers(s, name, event, path, replay) {
  event.currentTarget = null;
 }
 window.__ladybirdDispatch = function (name, id, replay) {
+ const element = replay || String(id) === "" ? null : __queryElements("","getElementById",String(id));
  const s = replay ? __resolveElementState(replay.key) :
-  (String(id) === "" ? null : (__elementStates().find(item => item.id === String(id)) || null));
+  (element ? __elementApply(__elementRecordGet,__elementRecords,[element]) : null);
  if (replay && !s) return window.__ladybirdFinalize();
  const target = s ? __element(s) : document;
  const bubbles = name === "click" || name === "input" || name === "change";

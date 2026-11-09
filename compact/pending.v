@@ -5,6 +5,11 @@ module main
 fn compact_pending_elements_bootstrap() string {
 	return r'
 const __dirtyElementStates=new Set(),__trackedElementStates=new WeakSet();
+const __pendingKeys=Object.keys,__pendingAssign=Object.assign,__pendingStringify=JSON.stringify;
+const __pendingApply=Reflect.apply,__pendingSetSize=Object.getOwnPropertyDescriptor(Set.prototype,"size").get;
+function __compactHasPendingDOMState(){
+ return __state.operations.length!==0||__pendingApply(__pendingSetSize,__dirtyElementStates,[])!==0||!!__state.bodyHTMLDirty||!!__state.bodyTextDirty;
+}
 function __trackElementEdits(state){
  if(__trackedElementStates.has(state))return state;
  __trackedElementStates.add(state);
@@ -29,10 +34,35 @@ function __pendingElementStates(includeCanvases){
  }
  return pending;
 }
-function __clearPendingElementEdits(){
- for(const state of __dirtyElementStates){
+// One handoff owns the pending journal for queries, native host calls and task
+// completion. Drain it before entering native code: reentrant callbacks then
+// write into a new batch, which an outer completion must never clear.
+function __compactTakePendingDOMState(includeCanvases,includeLogs,force){
+ if(includeCanvases)for(const key of __pendingKeys(__canvases)){
+  const canvas=__canvases[key];
+  if(canvas.context&&canvas.kind==="2d")canvas.state.canvasNative=true;
+ }
+ const pending=__pendingElementStates(includeCanvases);
+ if(!force&&!__state.operations.length&&!__pendingKeys(pending).length&&!__state.bodyHTMLDirty&&!__state.bodyTextDirty)return null;
+ const snapshot=__pendingAssign({},__state,{elements:pending,logs:includeLogs?__state.logs:[]});
+ // Decoded video data is an input to the facade, never a DOM mutation.
+ delete snapshot.videoSources;
+ const encoded=__pendingStringify(snapshot);
+ __state.operations=[];__state.bodyHTMLDirty=false;__state.bodyTextDirty=false;
+ for(const key of __pendingKeys(pending)){
+  const state=pending[key];
   state.innerHTMLDirty=false;state.textContentDirty=false;state.attributesDirty=false;state.checkedDirty=false;state.indeterminateDirty=false;
   __dirtyElementStates.delete(state);
  }
+ if(includeLogs)__state.logs=[];
+ return encoded;
+}
+function __compactFlushDOMMutations(){
+ return __queryElements("","flushDOM","",true);
+}
+function __compactTakeTaskOutput(){
+ const output=__pendingStringify({logs:__state.logs,navigate:__state.navigate||""});
+ __state.logs=[];
+ return output;
 }'
 }
