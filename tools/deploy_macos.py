@@ -106,9 +106,12 @@ def guarded(command, root, reports, name, limit_gib=12, **kwargs):
 def deploy(root=ROOT, output=None, package_only=False):
     if not package_only:
         # The canonical supervisor supplies the memory guard and build receipts.
+        # Pin the C backend as automatic production builds do: v.mod may select
+        # FastC for development, which cannot supply the single-C release build.
         # Drop inherited supervision/profiling overrides before entering it. The
         # build targets Info.plist's LSMinimumSystemVersion itself.
-        run(['sh', root / 'build-prod-browser.sh', '--prod', '--no-parallel-cc'],
+        run([sys.executable, root / 'tools/rebuild_browser.py', '--build', '--backend', 'c',
+             '--prod', '--no-parallel-cc'],
             root, env=production_environment(os.environ))
 
     source = root / 'Build/v/Vox.app'

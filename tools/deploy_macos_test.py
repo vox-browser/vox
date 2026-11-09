@@ -6,6 +6,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -85,18 +86,31 @@ class MacOSDeployTests(unittest.TestCase):
             self.assertIn('--entitlements', command)
         self.assertEqual(operations[6][-1], '--headless-smoke')
         self.assertEqual(operations[-1][:2], ['/usr/bin/hdiutil', 'verify'])
-        self.assertFalse(any('build-prod-browser.sh' in part for c in operations for part in c))
+        self.assertFalse(any('rebuild_browser.py' in part for c in operations for part in c))
 
-    def test_default_build_requests_literal_prod_and_single_unit_without_inherited_overrides(self):
-        with patch.dict(os.environ, VOX_BUILD_SUPERVISED='1', LADYBIRD_V_PROFILE='profile'):
+    def test_default_build_requests_c_backend_literal_prod_and_single_unit_without_overrides(self):
+        with patch.dict(os.environ, VOX_BUILD_SUPERVISED='1', VOX_BUILD_BACKEND='fastc',
+                        LADYBIRD_V_PROFILE='profile'):
             self.package(package_only=False)
-        self.assertEqual(self.commands[0], ['sh', str(self.root / 'build-prod-browser.sh'),
+        self.assertEqual(self.commands[0], [sys.executable, str(self.root / 'tools/rebuild_browser.py'),
+                                           '--build', '--backend', 'c',
                                            '--prod', '--no-parallel-cc'])
         self.assertNotIn('VOX_BUILD_SUPERVISED', self.environments[0])
+        self.assertNotIn('VOX_BUILD_BACKEND', self.environments[0])
         self.assertNotIn('LADYBIRD_V_PROFILE', self.environments[0])
 
+    def test_failed_release_build_stops_before_staging_or_using_an_older_bundle(self):
+        before = deploy.bundle_identity(self.app)
+        self.fail = str(self.root / 'tools/rebuild_browser.py')
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.package(package_only=False)
+        self.assertEqual(len(self.commands), 1)
+        self.assertEqual(deploy.bundle_identity(self.app), before)
+        self.assertFalse(self.output.exists())
+
     def test_wrong_build_mode_or_changed_executable_never_produces_a_release(self):
-        for mode in [dict(mode='parallel', requested='parallel', v_prod=True),
+        for mode in [dict(backend='fastc', mode='fastc', requested='single', v_prod=True),
+                     dict(mode='parallel', requested='parallel', v_prod=True),
                      dict(mode='single', requested='parallel', v_prod=True),
                      dict(mode='single', requested='single', v_prod=False)]:
             self.receipt_path.write_text(json.dumps(dict(self.receipt, c_compile=mode)))
