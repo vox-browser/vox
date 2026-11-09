@@ -1725,6 +1725,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		}
 		_ = visual_line_index
 	}
+	publish_flex_content_baselines(mut state,container,mut container_state,lines,true)
 	chromium_align_text_control_placeholder(mut state, container)
 	set_flex_abspos_static_positions(mut state, container, container_state, direction)
 	result := FormattingContextResult{
@@ -1973,6 +1974,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 			}
 		}
 	}
+	publish_flex_content_baselines(mut state,container,mut container_state,[FlexLine{items:items}],false)
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
 	return FormattingContextResult{
 		automatic_content_width: container_width
@@ -2212,6 +2214,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		}
 		_ = visual_line_index
 	}
+	publish_flex_content_baselines(mut state,container,mut container_state,lines,false)
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
 	return FormattingContextResult{
 		automatic_content_width: if layout_mode == .intrinsic_sizing {

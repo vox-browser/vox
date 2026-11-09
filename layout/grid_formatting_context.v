@@ -3295,6 +3295,9 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		set_grid_abspos_descendant_rects(mut state, container, placement.item, grid_area_rect)
 	}
 
+	align_grid_baseline_subjects(mut state,container,placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
+	publish_grid_content_baselines(mut state,container,mut container_state,placements)
+
 	// CSS Grid 2 absolute-positioned grid children use their resolved grid area
 	// as the containing rectangle. An auto grid axis contributes the grid
 	// container's padding edges instead of participating in auto-placement.
