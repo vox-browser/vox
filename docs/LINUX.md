@@ -35,7 +35,11 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
-The build stages UI2 with Vox's embedding adapter without changing its checkout.
+Use the latest UI2: run `v up ui2` for an installed module, or
+`git -C "$UI2_SOURCE_DIR" pull --ff-only` for a separate checkout. The build links
+that live checkout directly without copying or pinning it. CI fetches upstream
+HEAD on every run. See the [UI2 adapter guide](../tools/ui2/README.md) for focused
+checks.
 Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
 helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
 when Cargo is available, the build compiles that helper from its lockfile.
@@ -91,10 +95,11 @@ its GN/Ninja build and dependency options.
 ## Run and check
 
 The [Linux build workflow](../.github/workflows/linux-build.yml) installs the
-system dependencies on Ubuntu 24.04 and builds pinned V/UI2 and Skia sources on
-pushes to `master` and on pull requests. Independent Boehm and prealloc jobs
-each build the full browser through the normal supervisor, run its headless
-smoke, and exercise its actual X11 window under Xvfb. The prealloc job uses
+system dependencies on Ubuntu 24.04 and builds pinned V and Skia sources with
+current upstream UI2 on pushes to `master` and on pull requests. Independent
+Boehm and prealloc jobs each build the full browser through the normal
+supervisor, run its headless smoke, and exercise its actual X11 window under Xvfb.
+The prealloc job uses
 `-prealloc -gc none` and `VOX_ARENA_POISON=1`, so arena retirement is checked
 without a collector keeping stale payloads alive. The existing `build` check
 requires both jobs to pass; one failing configuration does not cancel the other.

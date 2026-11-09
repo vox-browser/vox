@@ -4,7 +4,6 @@ import unittest
 
 from prepare_linux_modules import stage_module
 from prepare_ui2 import prepare_gg_gradient, prepare_ui2_source
-from prepare_linux_modules import stage_module
 
 
 class GGGradientCompatibilityTests(unittest.TestCase):
@@ -68,30 +67,66 @@ class GGGradientCompatibilityTests(unittest.TestCase):
 
 
 class UpstreamUI2Tests(unittest.TestCase):
-    def test_old_dependency_fails_with_an_update_instruction(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            source = root / 'source'
-            source.mkdir()
-            with self.assertRaisesRegex(RuntimeError, 'v up ui2'):
-                prepare_ui2_source(source, root / 'modules/ui2')
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name).resolve()
+        self.source = self.root / 'current-ui2'
+        self.target = self.root / 'modules/ui2'
+        (self.source / 'ui').mkdir(parents=True)
+        (self.source / 'v.mod').write_text("Module { name: 'ui2', subdirs: ['ui'] }\n")
+        (self.source / 'ui/ui.v').write_text('module ui2\npub fn draw() {}\n')
+        (self.source / 'ui/embedding.v').write_text(
+            'module ui2\npub const embedded_controls_version = 1\n')
 
-    def test_upstream_checkout_replaces_the_private_patch_tree_and_is_not_modified(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory).resolve()
-            source, target = root / 'source', root / 'modules/ui2'
-            (source / 'ui').mkdir(parents=True)
-            (source / 'ui/embedding.v').write_text('module ui2\npub const embedded_controls_version = 1\n')
-            target.mkdir(parents=True)
-            (target / 'private.v').write_text('old generated implementation')
-            before = (source / 'ui/embedding.v').read_bytes()
-            prepare_ui2_source(source, target)
-            self.assertTrue(target.is_symlink())
-            self.assertEqual(target.resolve(), source)
-            self.assertFalse((target / 'private.v').exists())
-            self.assertEqual((source / 'ui/embedding.v').read_bytes(), before)
-            prepare_ui2_source(source, target)
-            self.assertEqual(target.resolve(), source)
+    def test_uses_live_checkout_without_git_or_copied_sources(self):
+        prepare_ui2_source(self.source, self.target)
+        self.assertTrue(self.target.is_symlink())
+        self.assertEqual(self.target.resolve(), self.source)
+        changed = 'module ui2\npub fn latest_draw() {}\n'
+        (self.source / 'ui/ui.v').write_text(changed)
+        (self.source / 'ui/new.v').write_text('module ui2\n')
+        self.assertEqual((self.target / 'ui/ui.v').read_text(), changed)
+        self.assertTrue((self.target / 'ui/new.v').is_file())
+        self.assertEqual(list(self.target.parent.iterdir()), [self.target])
+
+    def test_accepts_new_embedding_generations_without_a_revision_lock(self):
+        (self.source / 'ui/embedding.v').write_text(
+            'module ui2\npub const embedded_controls_version = 2\n')
+        prepare_ui2_source(self.source, self.target)
+        self.assertEqual(self.target.resolve(), self.source)
+
+    def test_replaces_old_private_copy_and_retargets_an_existing_link(self):
+        self.target.mkdir(parents=True)
+        (self.target / 'private.v').write_text('obsolete copy')
+        prepare_ui2_source(self.source, self.target)
+        self.assertFalse((self.target / 'private.v').exists())
+        newer = self.root / 'latest-ui2'
+        self.source.rename(newer)
+        prepare_ui2_source(newer, self.target)
+        self.assertEqual(self.target.resolve(), newer)
+
+    def test_repeated_preparation_preserves_checkout_contents(self):
+        before = {p.relative_to(self.source): (p.read_bytes(), p.stat().st_mtime_ns)
+                  for p in self.source.rglob('*') if p.is_file()}
+        for _ in range(2):
+            prepare_ui2_source(self.source, self.target)
+        after = {p.relative_to(self.source): (p.read_bytes(), p.stat().st_mtime_ns)
+                 for p in self.source.rglob('*') if p.is_file()}
+        self.assertEqual(after, before)
+
+    def test_missing_dependency_reports_installation_instructions(self):
+        with self.assertRaisesRegex(RuntimeError, 'v install ui2 / v up ui2'):
+            prepare_ui2_source(self.root / 'missing', self.target)
+        self.assertFalse(self.target.exists())
+
+    def test_incomplete_checkout_preserves_an_existing_link(self):
+        prepare_ui2_source(self.source, self.target)
+        incomplete = self.root / 'incomplete'
+        incomplete.mkdir()
+        with self.assertRaisesRegex(RuntimeError, 'embedding API'):
+            prepare_ui2_source(incomplete, self.target)
+        self.assertEqual(self.target.resolve(), self.source)
 
 
 class GgCacheTests(unittest.TestCase):

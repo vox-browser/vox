@@ -25,7 +25,6 @@ jobs:
         gc: [boehm, prealloc]
     env:
       V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
-      UI2_REVISION: 846659299558061cf0de063f029a9f9b941ff9a1
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
@@ -48,6 +47,7 @@ jobs:
           python3 tools/build_linux_browser_test.py
           python3 tools/rebuild_browser_test.py
           python3 tools/prepare_ui2_test.py
+          python3 tools/ci_stackoverflow_instructions_test.py
           python3 tools/prepare_linux_modules_test.py
           python3 tools/test_linux_browser_test.py
 
@@ -100,7 +100,7 @@ jobs:
           "$RUNNER_TEMP/v/v" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
-          git -C "$RUNNER_TEMP/ui2" fetch --depth 1 origin "$UI2_REVISION"
+          git -C "$RUNNER_TEMP/ui2" fetch --depth 1 origin HEAD
           git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Select upstream UI2 and prepare the compiler compatibility modules."""
+"""Use the current upstream UI2 checkout and prepare compiler compatibility modules."""
 
+import argparse
 import os
 import re
 from pathlib import Path
@@ -88,32 +89,28 @@ def prepare_gg_gradient(modules, vlib):
 
 
 def prepare_ui2_source(source, target):
-    """Expose the installed upstream module without copying or patching its sources."""
-    api = source / 'ui/embedding.v'
-    version = re.search(r'embedded_controls_version\s*=\s*(\d+)', api.read_text()) if api.is_file() else None
-    if version is None or int(version[1]) < 1:
-        raise RuntimeError('UI2 is missing its embedding API. Update vlang/ui2 (v up ui2) '
-                           'or set UI2_SOURCE_DIR to a current checkout.')
-    if target.is_dir() and not target.is_symlink():
-        shutil.rmtree(target)
+    """Link the installed UI2 checkout directly, without pinning or copying it."""
+    source = Path(source).resolve()
+    if not all((source / name).is_file() for name in ('v.mod', 'ui/ui.v', 'ui/embedding.v')):
+        raise RuntimeError('UI2 is missing its embedding API. Install or update the latest '
+                           'UI2 with v install ui2 / v up ui2, or set UI2_SOURCE_DIR '
+                           'to your current UI2 checkout.')
     target.parent.mkdir(parents=True, exist_ok=True)
     link_to(target, source)
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('compiler', nargs='?', help='V compiler used for compatibility modules')
+    args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
     modules = Path(os.environ.get('VMODULES', str(Path.home() / '.vmodules')))
     source = Path(os.environ.get('UI2_SOURCE_DIR', str(modules / 'ui2'))).resolve()
-    if not (source / 'ui/ui.v').is_file():
-        raise SystemExit('UI2 not found. Set UI2_SOURCE_DIR to your UI2 checkout.')
     platform_dir = 'linux' if sys.platform.startswith('linux') else 'windows' if os.name == 'nt' else 'v'
     target = repo / 'Build' / platform_dir / 'modules'
     target.mkdir(parents=True, exist_ok=True)
-    try:
-        prepare_ui2_source(source, target / 'ui2')
-    except RuntimeError as error:
-        raise SystemExit(str(error))
-    compiler_name = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
+    prepare_ui2_source(source, target / 'ui2')
+    compiler_name = args.compiler or os.environ.get(
         'V_BIN', shutil.which('v') or str(Path.home() / 'code/v/v'))
     compiler = Path(compiler_name).resolve()
     prepare_gg_gradient(target, compiler.parent / 'vlib')
@@ -129,4 +126,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except (RuntimeError, OSError) as error:
+        raise SystemExit(str(error))

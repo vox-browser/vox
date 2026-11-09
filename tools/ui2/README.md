@@ -34,10 +34,37 @@ UI2 RAM label; it stops on unmount. It does not invalidate the document painter.
 
 The vector, icon, native/custom embedding and input APIs live in
 [upstream UI2](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
-Update that dependency with `v up ui2` before building. `tools/prepare_ui2.py`
-selects the installed checkout and prepares compiler compatibility modules; it
-no longer patches UI2 or copies a private UI implementation. Stable UI2 IDs are
-exposed as native view identifiers for accessibility/testing tools.
+Vox uses the latest upstream UI2 directly. Install it with `v install ui2` and
+update an existing installation with `v up ui2`. To use a separate checkout:
+
+```sh
+git clone --depth 1 https://github.com/vlang/ui2.git ../ui2
+export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
+# Refresh that checkout later:
+git -C "$UI2_SOURCE_DIR" pull --ff-only
+```
+
+`tools/prepare_ui2.py` links the selected checkout into the compiler module path.
+It creates no UI2 source snapshots, copies, revision locks or process leases.
+Local edits and updates are visible through the link immediately. Local builds
+use `UI2_SOURCE_DIR`, or `~/.vmodules/ui2` (`$VMODULES/ui2`) by default. CI fetches
+upstream HEAD for each run. The instruction benchmark uses that same fetched
+checkout for both variants and records the actual revision in its evidence.
+
+The script prints the module search path containing UI2 and the separate V/GG
+compiler compatibility modules. Keep it ahead of other shared module caches.
+Preparation checks for the UI2 module and embedding API files; the V compiler
+checks the APIs used by Vox. UI2 APIs are consumed directly without private
+source rewrites. Stable UI2 IDs are exposed as native view identifiers for
+accessibility/testing tools.
+
+Check dependency selection and the Linux module-search contract without compiling
+the browser:
+
+```sh
+python3 tools/prepare_ui2_test.py
+python3 tools/build_linux_browser_test.py
+```
 
 Linux uses the same element tree through UI2's custom renderer in the existing
 GG pass. `embedded_elements_custom.c.v` handles event delivery and text editing;
@@ -65,16 +92,17 @@ The same runner accepts `VOX_CHROME_TEST_FILE` for
 `browserapp/browser_window_state_test.v`, and `browserapp/history_swipe_test.v`.
 Sources are linked from the canonical checkout, including for the settings test.
 
-Small component checks avoid compiling the document engine. Prepare compatibility modules with
-`python3 tools/prepare_ui2.py`; use its printed directory in `-path`:
+Small component checks avoid compiling the document engine. Use the preparation
+script's complete printed search path in `-path`:
 
 ```sh
+ui2_modules=$(python3 tools/prepare_ui2.py)
 v -enable-globals -memory-limit 10G -cc clang \
-  -path 'Build/v/modules|.|@vmodules|@vlib' test browserui
+  -path "$ui2_modules|.|@vmodules|@vlib" test browserui
 v -enable-globals -memory-limit 10G -cc clang -d vox_ui2 \
-  -path 'Build/v/modules|.|@vmodules|@vlib' browserui/mounted_darwin_test.v
+  -path "$ui2_modules|.|@vmodules|@vlib" browserui/mounted_darwin_test.v
 v -enable-globals -memory-limit 10G -cc clang -d ui2_custom_rendering \
-  -path 'Build/v/modules|.|@vmodules|@vlib' browserui/custom_test.v
+  -path "$ui2_modules|.|@vmodules|@vlib" browserui/custom_test.v
 ```
 
 The mounted test drives real UI2 controls through AppKit. The custom test uses a

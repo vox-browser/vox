@@ -72,13 +72,13 @@ python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
-module_paths="$repo_dir|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
+module_paths="$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 if [ "$gc_mode" = prealloc ]; then
     # Use the production bounded realloc and persistent closure metadata;
     # allocator flags alone do not provide those ownership guarantees.
     prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
-    module_paths="$repo_dir|$prealloc_modules|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
+    module_paths="$repo_dir|$prealloc_modules|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 fi
 # The compiler qualifies packages from the nearest `modules`,
 # `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.

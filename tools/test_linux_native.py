@@ -67,7 +67,8 @@ def main():
         ui2_modules = subprocess.check_output(
             [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
             cwd=repo, env=environment, text=True).strip()
-        module_paths.append(ui2_modules)
+        # Select the current UI2 checkout before other shared module caches.
+        module_paths.insert(1, ui2_modules)
     if args.gc == "prealloc":
         # Match the production allocator, including bounded realloc and the
         # persistent closure directory. Flags alone leave global runtime
