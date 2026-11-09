@@ -33,7 +33,9 @@ pub fn prepare_srgb_output(file FileHeader) !SrgbOutputColor {
 	if color.color_space == .gray {
 		luminances := [f32(0.2126), 0.7152, 0.0722]!
 		for column in 0 .. 3 {
-			mut sum := f64(0)
+			// Rust's floating-point iterator sum starts with -0.0, preserving
+			// the sign when every product in a column is negative zero.
+			mut sum := math.f64_from_bits(0x8000000000000000)
 			for k in 0 .. 3 { sum += f64(luminances[k]) * f64(opsin.inverse_matrix[k * 3 + column]) }
 			if !math.is_finite(sum) { return error('Nonfinite JPEG XL grayscale matrix') }
 			for row in 0 .. 3 { matrix[row * 3 + column] = f32(sum) }

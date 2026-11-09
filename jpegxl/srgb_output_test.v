@@ -26,7 +26,7 @@ fn test_srgb_output_matrix_and_intensity_match_source_header_planning() {
 		assert words == f[5].split(',').map(it.u32()), 'sRGB output color ${count}'
 		count++
 	}
-	assert count == 128
+	assert count == 136
 }
 
 fn test_srgb_output_rejects_profiles_outside_supported_boundary() {
