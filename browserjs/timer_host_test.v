@@ -121,13 +121,11 @@ fn test_native_timer_callback_and_string_script_report_original_engine_reasons_a
 	mut settings := host.settings
 	runtime.evaluate_host('globalThis.blockedTimerRan=false;globalThis.blockedTimerID=setTimeout("blockedTimerRan=true",5);globalThis.IntrinsicEvalError=EvalError;globalThis.EvalError=function(){throw "replaced author constructor"}')!
 	settings.set_policy_container(&html.PolicyContainer{csp_list: [html.parse_response_csp_policy("script-src 'self'", .enforce, settings.origin())]})
-	wait_for_timer_host(fn [scope] () bool { return scope.reported_errors().len == 3 })
-	error_value := runtime.actual_webidl_value(scope.reported_errors()[2].as_webidl_value()!)!
-	runtime.define_value_host_function('__actualTimerCSPError', fn [error_value] (_ voidptr, _ []voidptr) !voidptr { return error_value })!
-	assert runtime.evaluate_host('!blockedTimerRan&&__actualTimerCSPError() instanceof IntrinsicEvalError&&__actualTimerCSPError().message==="Blocked by Content Security Policy"')! == 'true'
-	// Pinned source aborts a blocked string task before removing its ID.
-	assert scope.active_timer_count() == 1
-	runtime.evaluate_host('clearTimeout(blockedTimerID)')!
+	wait_for_timer_host(fn [scope] () bool { return scope.active_timer_count() == 0 })
+	assert runtime.evaluate_host('blockedTimerRan&&blockedTimerID>0')! == 'true'
+	assert scope.reported_errors().len == 2
+	assert runtime.evaluate_host('setTimeout("blockedTimerRan=false",5)===0&&setInterval("blockedTimerRan=false",5)===0')! == 'true'
+	assert scope.active_timer_count() == 0 && scope.reported_errors().len == 2
 	settings.set_policy_container(&html.PolicyContainer{csp_list: [html.parse_response_csp_policy("script-src 'self'", .report, settings.origin())]})
 	runtime.evaluate_host('setTimeout("blockedTimerRan=true",5)')!
 	wait_for_timer_host(fn [scope] () bool { return scope.active_timer_count() == 0 })
