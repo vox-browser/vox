@@ -1197,6 +1197,11 @@ struct InheritedStyleOldValue {
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
+	if s.target_animation_uses_inherited_endpoints(*abstract_element) {
+		mut changed_custom_properties := false
+		invalidation,_ := s.recompute_style_with_invalidation(mut abstract_element,&changed_custom_properties)
+		return invalidation
+	}
 	load_instruction_stage := processmetrics.begin_thread_instruction_substage('style_inherited_refresh')
 	defer { load_instruction_stage.finish() }
 	s.begin_computed_property_page_batch()
