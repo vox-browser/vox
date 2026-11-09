@@ -27,7 +27,11 @@ def load_expectation_errata(path, root, revision, cases):
         case = selected.get(entry['case'])
         if case is None:
             raise ValueError('Erratum is outside the selected cohort: ' + entry['case'])
-        url = urlsplit(case['url']).path
+        address = urlsplit(case['url'])
+        url = address.path
+        if (address.query or address.fragment
+                or sum(urlsplit(item['url']).path == url for item in cases) != 1):
+            raise ValueError('Errata cannot implicitly modify other query variants')
         source = (root / unquote(url).lstrip('/')).resolve()
         if not source.is_relative_to(root) or source.suffix != '.html' or url in overrides:
             raise ValueError('Errata require distinct test HTML paths inside the fixture root')

@@ -109,6 +109,14 @@ class ExpectationErrataTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.load()
 
+    def test_query_variants_cannot_receive_unlisted_corrections(self):
+        self.manifest.write_text(json.dumps(self.data))
+        for cases in [[dict(id='test', url='/test.html?variant=1')],
+                      [dict(id='test', url='/test.html'),
+                       dict(id='other', url='/test.html?variant=2')]]:
+            with self.assertRaises(ValueError):
+                load_expectation_errata(self.manifest, self.root, 'pinned', cases)
+
 
 if __name__ == '__main__':
     unittest.main()
