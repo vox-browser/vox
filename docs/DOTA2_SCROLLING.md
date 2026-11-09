@@ -1638,3 +1638,18 @@ correct ordering and pixels, not scrolling FPS. The completed production bundle
 is still `23d3335d...`, so full-page pixels and matched live measurements remain
 pending. **The 60 Hz goal without stalls remains open.** See
 [the GG readback checks and build blocker](performance/reddit-boots-gg-readback-20261109.md).
+
+## 2026-11-09: literal production checks and TSV build invalidation
+
+Commit `4624ca1c6` checks the joined reader with literal V `-prod`: both
+GC-none/prealloc modes pass 64 exact AA/MSAA cases and input-independent
+eligibility checks each. These are functional fixtures, with no FPS credit.
+
+Commits `c77be3b86`/`9f9d5eaff` stop unrelated package TSV test corpora from
+aborting rebuilds while retaining early fingerprints for explicitly embedded
+TSVs. A real compiler probe found those payloads missing from its source
+manifest; the new inventory detects their mutation. Nineteen manifest checks
+and 36 rebuild checks pass, with two platform-specific skips. The shared
+rebuild remains pending and the published executable is still `23d3335d...`.
+**The stall-free 60 Hz goal remains open.** See
+[production checks, resource coverage and retained build failures](performance/reddit-boots-prod-validation-20261109.md).
