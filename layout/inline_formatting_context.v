@@ -446,24 +446,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 		removed_marker_lines << containing_block_used_values.line_boxes.last()
 	}
 	line_builder.remove_last_line_if_empty()
-	// Final text and baseline alignment must reach atomic inline used values:
-	// escaping abspos descendants convert their static position through them.
 	line_builder.update_last_line()
-	for line_index in 0 .. containing_block_used_values.line_boxes.len {
-		mut line_box := &containing_block_used_values.line_boxes[line_index]
-		for fragment_index in 0 .. line_box.fragments_.len {
-			fragment := line_box.fragments_[fragment_index]
-			if fragment.layout_node_.is_inline_block() || fragment.layout_node_.is_list_item_marker_box() {
-				if styled := fragment.layout_node_.as_node_with_style() {
-					mut box_state := state.get_mutable(styled)
-					if fragment.layout_node_.is_list_item_marker_box() {
-						box_state.set_containing_block_used_values(containing_block_used_values)
-					}
-					box_state.set_content_offset(fragment.offset())
-				}
-			}
-		}
-	}
 	containing_block_used_values.set_inline_end_static_position_rect(calculate_inline_end_static_position_rect(containing_block,
 		containing_block_used_values))
 	apply_line_clamp(containing_block, mut containing_block_used_values, mut state, layout_mode, available_space, parent_block_context)
@@ -479,6 +462,24 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 			apply_justification_to_line(containing_block.computed_values().text_justify(), mut containing_block_used_values.line_boxes[index], is_last_line)
 		}
 	}
+ // Line metrics keep logical block progression. Publish physical fragment
+ // positions only after clamping and alignment have finalized that extent.
+ for line_index in 0 .. containing_block_used_values.line_boxes.len {
+  mut line := &containing_block_used_values.line_boxes[line_index]
+  for fragment_index in 0 .. line.fragments_.len {
+   mut fragment := &line.fragments_[fragment_index]
+   if writing_mode in [.vertical_rl,.sideways_rl] && !line.has_block_level_box() {
+    fragment.block_offset_ = containing_block_used_values.content_width().minus(fragment.block_offset_).minus(fragment.block_length())
+   }
+   if fragment.layout_node_.is_inline_block() || fragment.layout_node_.is_list_item_marker_box() {
+    if styled := fragment.layout_node_.as_node_with_style() {
+     mut box_state := state.get_mutable(styled)
+     if fragment.layout_node_.is_list_item_marker_box() { box_state.set_containing_block_used_values(containing_block_used_values) }
+     box_state.set_content_offset(fragment.offset())
+    }
+   }
+  }
+ }
 	// Rust InlineContent finalization publishes both the packed glyph replay
 	// data and conservative CSS-pixel bounds after ellipsis, clamping, merging,
 	// and justification have made their last changes to the line fragments.
@@ -530,7 +531,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	mut content_width := CSSPixels.new(0)
 	mut content_height := CSSPixels.new(0)
 	for line_box in containing_block_used_values.line_boxes {
-		content_width = if writing_mode == .horizontal_tb { css_pixels_max(content_width,line_box.width()) } else { content_width.plus(line_box.width()) }
+		content_width = if writing_mode == .horizontal_tb { css_pixels_max(content_width,line_box.width()) } else { css_pixels_max(content_width,line_box.bottom_) }
 		content_height = if writing_mode == .horizontal_tb { content_height.plus(line_box.height()) } else { css_pixels_max(content_height,line_box.height()) }
 	}
 	return InlineFormattingResult{

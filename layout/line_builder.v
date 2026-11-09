@@ -72,7 +72,7 @@ fn LineBuilder.new_with_block_context(mut layout_state LayoutState, containing_b
 		mut context :=
 			css.LengthResolutionContext.for_document(unsafe { &Node(containing_block) }.document())
 		font_size := computed.font_size()
-		font_metrics := layout_font_metrics_for_node(unsafe { &Node(containing_block) })
+		font_metrics := line_relative_font_metrics_for_node(unsafe { &Node(containing_block) },writing_mode)
 		context.font_metrics.font_size = font_size
 		context.font_metrics.x_height = CSSPixels.nearest_value_for(f64(font_metrics.x_height))
 		context.font_metrics.cap_height = font_size.scaled(0.75)
@@ -550,7 +550,7 @@ fn aligned_subtree_index(subtrees []LineRelativeAlignedSubtree, root &Node) int 
 
 fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseline CSSPixels, container_font_metrics platform.FontPixelMetrics, container_font_size CSSPixels) CSSPixels {
 	computed := node.computed_values()
-	font_metrics := layout_font_metrics_for_node(node)
+	font_metrics := line_relative_font_metrics_for_node(node,builder.writing_mode)
 	baseline := font_baseline_for_line_height(font_metrics, computed.line_height())
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := builder.layout_state.try_get(styled) or { return CSSPixels.new(0) }
@@ -565,7 +565,7 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 		match computed.vertical_align() {
 			.middle {
 				parent_metrics := if parent := node.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else { container_font_metrics }
 				aligned = builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
 					node, box_top, box_bottom, computed.line_height(), parent_metrics.x_height))
@@ -578,7 +578,7 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 			}
 			.text_top {
 				parent_metrics := if parent := node.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else {
 					container_font_metrics
 				}
@@ -586,7 +586,7 @@ fn (builder &LineBuilder) inline_box_alignment_delta(node &Node, line_box_baseli
 			}
 			.text_bottom {
 				parent_metrics := if parent := node.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else {
 					container_font_metrics
 				}
@@ -610,7 +610,7 @@ fn (builder &LineBuilder) chromium_middle_baseline_shift(fragment &LineBoxFragme
 	if fragment.layout_node_.is_text_node() && computed.vertical_align() == .middle
 		&& computed.vertical_align_length_percentage() == none {
 		parent_metrics := if parent := source.parent() {
-			layout_font_metrics_for_node(parent)
+			line_relative_font_metrics_for_node(parent,builder.writing_mode)
 		} else { container_font_metrics }
 		shift = baseline.plus(middle_alignment_offset(fragment.layout_node_, CSSPixels.new(0),
 			CSSPixels.new(0), computed.line_height(), parent_metrics.x_height))
@@ -699,7 +699,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 
 	container_font_size := computed.font_size()
 	container_font_metrics :=
-		layout_font_metrics_for_node(unsafe { &Node(builder.containing_block) })
+		line_relative_font_metrics_for_node(unsafe { &Node(builder.containing_block) },builder.writing_mode)
 	// Quirks documents omit the block's zero-width inline strut. Actual
 	// text and atomic inline boxes still supply their own line metrics.
 	// https://quirks.spec.whatwg.org/#the-blocks-ignore-line-height-quirk
@@ -732,7 +732,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		// with line-height: normal can raise the line's baseline above it.
 		mut used_font_baseline := CSSPixels.new(0)
 		if fragment.layout_node_.is_text_node() {
-			primary_metrics := layout_font_metrics_for_node(fragment.layout_node_)
+			primary_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
 			fragment_baseline = font_baseline_for_line_height(primary_metrics, fragment_computed.line_height())
 			if primary_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
 				if run := fragment.glyph_run() {
@@ -744,7 +744,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			fragment_baseline = if builder.writing_mode == .horizontal_tb {
 				layout_box_baseline_for_inline(builder.layout_state,fragment.layout_node_)
 			} else {
-				from_low := grid_baseline_from_low(builder.layout_state,unsafe { &Node(builder.containing_block) },fragment.layout_node_,true,.last,0)
+				preference := if fragment.layout_node_.display().is_grid_inside() || fragment.layout_node_.display().is_flex_inside() { BaselineSet.first } else { BaselineSet.last }
+    from_low := grid_baseline_from_low(builder.layout_state,unsafe { &Node(builder.containing_block) },fragment.layout_node_,true,preference,0)
 				if builder.writing_mode in [.vertical_rl,.sideways_rl] {
 					if styled := fragment.layout_node_.as_node_with_style() { builder.layout_state.get(styled).margin_box_width().minus(from_low) } else { from_low }
 				} else { from_low }
@@ -764,7 +765,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				// when that baseline does not participate in alignment.
 				alignment_source := fragment_alignment_style_source(fragment)
 				parent_metrics := if parent := alignment_source.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else {
 					container_font_metrics
 				}
@@ -847,7 +848,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 			.middle {
 				parent_metrics := if parent := alignment_style_source.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else { container_font_metrics }
 				fragment_block_offset =
 					builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
@@ -864,7 +865,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 			.text_top {
 				parent_font_metrics := if parent := alignment_style_source.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else {
 					container_font_metrics
 				}
@@ -873,7 +874,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			}
 			.text_bottom {
 				parent_font_metrics := if parent := alignment_style_source.parent() {
-					layout_font_metrics_for_node(parent)
+					line_relative_font_metrics_for_node(parent,builder.writing_mode)
 				} else {
 					container_font_metrics
 				}
@@ -925,7 +926,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				bottom_of_inline_box = fragment.block_offset().plus(if builder.writing_mode == .horizontal_tb { fragment_box_state.content_height() } else { fragment_box_state.content_width() }).plus(effective_box_bottom_offset)
 			}
 		} else {
-			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
+			font_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
 			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 			leading := fragment_computed.line_height().minus(typographic_height)
 			half_leading := inline_half_leading(leading, font_metrics)
@@ -982,7 +983,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		// the selected font's normal metrics afterwards, matching upstream's
 		// horizontal-writing-mode fragment geometry.
 		if fragment.layout_node_.is_text_node() && builder.writing_mode == .horizontal_tb {
-			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
+			font_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
 			font_box_height := normal_line_height_for_font_metrics(font_metrics)
 			font_baseline := font_baseline_for_line_height(font_metrics, font_box_height)
 			fragment.set_block_offset(fragment.block_offset().plus(fragment.baseline()).minus(font_baseline))
@@ -1242,4 +1243,15 @@ fn css_pixels_min(a CSSPixels, b CSSPixels) CSSPixels {
 
 fn css_pixels_max(a CSSPixels, b CSSPixels) CSSPixels {
 	return if a.raw_value() > b.raw_value() { a } else { b }
+}
+
+// Clockwise sideways text has its alphabetic baseline at the physical left
+// edge. In vertical-lr, line-relative over/under therefore exchange the font
+// ascent and descent, including the zero-height inline strut.
+fn line_relative_font_metrics_for_node(node &Node,writing_mode css.WritingMode) platform.FontPixelMetrics {
+ metrics := layout_font_metrics_for_node(node)
+ if writing_mode == .vertical_lr && node.computed_values().text_orientation() == .sideways {
+  return platform.FontPixelMetrics{...metrics,ascent:metrics.descent,descent:metrics.ascent}
+ }
+ return metrics
 }

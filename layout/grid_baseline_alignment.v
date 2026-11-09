@@ -56,7 +56,7 @@ fn grid_content_baseline_from_low(state &LayoutState, container &Node, item &Nod
 	// its border box, using the context's central or alphabetic baseline.
 	central := resolve_dominant_baseline_metric(container.computed_values()) == .central
 	if horizontal {
-		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else if grid_axis_reversed(container,true) { CSSPixels.new(0) } else { used.border_box_width() })
+		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else if (grid_is_vertical(container) && container.computed_values().writing_mode() != .sideways_lr) || grid_axis_reversed(container,true) { CSSPixels.new(0) } else { used.border_box_width() })
 	}
 	return used.margin_top.plus(if central { used.border_box_height().divided_by_float(2) } else { used.border_box_height() })
 }
