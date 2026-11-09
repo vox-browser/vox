@@ -490,3 +490,21 @@ Production JPEG XL and its Cargo/CI/native developer tool still need Rust.
 Wider reference composition, alpha/extra channels, sampling/resampling, feature
 streams, large entropy maps and production integration remain. Removing every
 Rust dependency, including developer tools, remains unfinished.
+
+## JPEG XL upsampling on 2026-11-09
+
+Two further V slices add 2x/4x/8x image upsampling and connect it before color
+conversion and LF saving. Native references add 384 complete float-plane cases
+and 15 complete images; all 246,656 float words and 1,933,816 RGBA bytes compare
+exactly. The package now has 282,753 source records and 80 test files. Across
+the whole-file cohorts, 40 images compare 3,547,772 native RGBA bytes exactly.
+
+The final five-file selection passes both GC modes and optimized checks with
+320 unchanged inputs and actual test/guard exits zero. A compiler change
+invalidated an earlier regression run; the final modes pin its replacement.
+Cadence is 6/10, with no full 80-file run claimed.
+[The upsampling report](JPEGXL_V_UPSAMPLING.md) records source/oracle pins,
+compiler identities, failed/rejected attempts, executed checks and bounds.
+Production JPEG XL and its Cargo/CI/native developer tool still use Rust;
+wider reference composition, alpha/extra channels, whole-frame chroma sampling,
+feature streams, large entropy maps and production integration remain.

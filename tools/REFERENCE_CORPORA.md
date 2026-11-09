@@ -111,3 +111,12 @@ compiler paths, actual test/guard exits zero and 299 unchanged inputs. Cadence
 is 4/10; the full 78-file selection has not run. Frozen verification uses V
 alone. Production JPEG XL and its native developer test still use Rust.
 See [the LF reference report](../docs/translation-audit/JPEGXL_V_LF_REFERENCES.md).
+
+Image upsampling adds 384 source stage records and 15 complete native image
+references: 282,753 source records and 80 test files total. All 246,656 float
+words and 1,933,816 new RGBA bytes compare exactly. The final five-file
+selection passes default/no-GC/optimized checks with 320 unchanged inputs and
+test/guard exits zero. An earlier shared compiler change invalidated one
+regression run; all final modes use the new pinned compiler. Cadence is 6/10;
+no full 80-file run is claimed. Production and its native developer test still
+require Rust. See [the upsampling report](../docs/translation-audit/JPEGXL_V_UPSAMPLING.md).

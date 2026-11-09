@@ -498,8 +498,20 @@ seven-file focused selection passes both GC modes and `-prod`, with tests and
 the full seventy-four-file checkpoint; no full seventy-eight-file run is
 claimed. See [the LF reference report](../docs/translation-audit/JPEGXL_V_LF_REFERENCES.md).
 
-Wider reference composition, extra channels/alpha, sampling/resampling, feature
-streams, large entropy maps and production integration remain.
+Two further slices add 2x/4x/8x image upsampling, including source FMA order,
+reflected borders, neighborhood clamping and custom kernels. Frame rendering
+filters at coded resolution and upsamples before color conversion/LF saving.
+Another 384 source cases compare 246,656 complete float words exactly, and 15
+native whole-image references compare 1,933,816 RGBA bytes exactly. The count
+is now 282,753 source records and eighty test files. The final five-file
+selection passes both GC modes and optimized checks with 320 unchanged inputs
+and actual test/guard exits zero. A shared compiler change invalidated an
+earlier regression run; final checks use the new pinned compiler throughout.
+Cadence is 6/10; no full eighty-file run is claimed.
+See [the upsampling report](../docs/translation-audit/JPEGXL_V_UPSAMPLING.md).
+
+Wider reference composition, extra channels/alpha, whole-frame chroma sampling,
+feature streams, large entropy maps and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
