@@ -2267,3 +2267,32 @@ validates that winner and still rejects dirty checkouts and unrelated I/O
 errors. All six Python tests pass on both platforms. The [guarded evidence,
 cache race and full-browser link failure](https://github.com/vox-browser/vox-tests/blob/6f101eac79a7d6a1157d427be98c8d964801d48c/evidence/gg-migration/large-identity-source-rescale-20261109.json)
 remain in vox-tests; passing V checks disable compatibility fallback.
+
+
+### Deferred sources in large-filter downsampling (2026-11-09)
+
+`4afcb4d89` combines image sampling, source conversion, paint alpha and incoming
+color effects with the first downsample when native rescale keeps the source
+transform deferred. Subset bounds analysis selects the original backing store
+or a strict bitmap subset before nearest or mipmapped sampling. Progressive
+passes retain their own quantized surfaces; outgoing effects and the original
+shadow foreground remain deferred.
+
+At seed 20270111 the baseline accepts 233 of 500 requests; the candidate
+matches 479 of the same cohort. Final macOS and Linux C cohorts each match
+1,919 of 2,000 at seed 20270112, declining 81. Optimized macOS/no-GC matches
+955 of 1,000 at seed 20270113, declining 45. Counts include no-ops, and completed
+cohorts retain unchanged inputs under the 3 GiB guard. Twenty-three independent
+native fixtures verify on both platforms, including flips, source clipping,
+P3/alpha effects, an offscreen shadow and a rejected negative blur. Enlarged
+source, scaled-CTM and neighboring step-boundary declines now have positive
+native expectations; unsupported near-integer and skewed controls stay atomic.
+
+Focused C suites on both platforms, macOS FastC, Linux browser typechecking
+and HTML canvas integration pass. The C FMA audit finds zero contracted
+operations (189 explicit). The standalone Linux production/no-GC executable
+runs all ten registered image test functions with Skia unavailable to
+pkg-config; link/readelf/ldd checks find no Skia dependency, with FreeType,
+libm and libc as direct libraries. Full-browser integration still uses Skia;
+its canvas/shadow bridges remain compiled. See the [native cases, guarded
+comparisons and component dependency proof](https://github.com/vox-browser/vox-tests/blob/b230c6245b878cb5cfaac64b1ed5c2debb8c20da/evidence/gg-migration/large-direct-source-rescale-20261109.json).
