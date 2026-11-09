@@ -19,3 +19,13 @@ fn test_uncaught_document_script_errors_dispatch_error_and_continue_with_the_nex
 	assert runtime.evaluate_host('failures.length===1&&failures[0]===true')! == 'true'
 	assert messages.last() == '1 true'
 }
+
+fn test_javascript_result_string_conversion_failure_returns_an_error() {
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close() }
+	runtime.evaluate_host('({toString(){throw new Error("cannot stringify")}})') or {
+		assert err.msg().contains('could not be converted to a string')
+		return
+	}
+	assert false,'string conversion must fail'
+}

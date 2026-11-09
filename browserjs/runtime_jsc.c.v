@@ -189,7 +189,7 @@ fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify
 		workspace.leave()
 		message := err.msg().clone()
 		workspace.finish()
-		return owner.actual_javascript_exception(exception)
+		return error(message)
 	}
 	workspace.leave()
 	return TemporaryText{value: text, workspace: workspace}
