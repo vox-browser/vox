@@ -11,7 +11,11 @@ pub fn inverse_dct_plane(rows int, columns int, coefficients []f32) !FloatPlane 
 		2 { columns == 2 }
 		4 { columns == 4 || columns == 8 }
 		8 { columns == 4 || columns == 8 || columns == 16 || columns == 32 }
-		16, 32 { columns == 8 || columns == 16 || columns == 32 }
+		16 { columns == 8 || columns == 16 || columns == 32 }
+		32 { columns == 8 || columns == 16 || columns == 32 || columns == 64 }
+		64 { columns == 32 || columns == 64 || columns == 128 }
+		128 { columns == 64 || columns == 128 || columns == 256 }
+		256 { columns == 128 || columns == 256 }
 		else { false }
 	}
 	if !valid || coefficients.len != rows * columns {
@@ -26,25 +30,25 @@ pub fn inverse_dct_plane(rows int, columns int, coefficients []f32) !FloatPlane 
 		for x in 0 .. rows {
 			mut vector := []f32{len: columns}
 			for y in 0 .. columns { vector[y] = coefficients[y * rows + x] }
-			values := inverse_dct_small(vector)!
+			values := inverse_dct_values(vector)!
 			for y in 0 .. columns { output[x * columns + y] = values[y] }
 		}
 		for x in 0 .. columns {
 			mut vector := []f32{len: rows}
 			for y in 0 .. rows { vector[y] = output[y * columns + x] }
-			values := inverse_dct_small(vector)!
+			values := inverse_dct_values(vector)!
 			for y in 0 .. rows { output[y * columns + x] = values[y] }
 		}
 	} else {
 		// Wide output transforms rows before columns, without a final transpose.
 		for y in 0 .. rows {
-			values := inverse_dct_small(coefficients[y * columns..(y + 1) * columns])!
+			values := inverse_dct_values(coefficients[y * columns..(y + 1) * columns])!
 			for x in 0 .. columns { output[y * columns + x] = values[x] }
 		}
 		for x in 0 .. columns {
 			mut vector := []f32{len: rows}
 			for y in 0 .. rows { vector[y] = output[y * columns + x] }
-			values := inverse_dct_small(vector)!
+			values := inverse_dct_values(vector)!
 			for y in 0 .. rows { output[y * columns + x] = values[y] }
 		}
 	}

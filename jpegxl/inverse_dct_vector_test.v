@@ -30,7 +30,7 @@ fn test_inverse_dct_vectors_match_original_source_kernels() {
 }
 
 fn test_inverse_dct_vectors_reject_invalid_sizes_and_nonfinite_inputs() {
-	for n in [0, 1, 3, 6, 31, 33, 64] {
+	for n in [0, 1, 3, 6, 31, 33, 65, 257] {
 		if _ := inverse_dct_vector([]f32{len: n}) { assert false }
 	}
 	for bits in [u32(0x7f800000), 0xff800000, 0x7fc00000] {

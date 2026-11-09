@@ -10,16 +10,17 @@ pub fn inverse_dct_vector(input []f32) ![]f32 {
 	for value in input {
 		if !math.is_finite(value) { return error('Nonfinite JPEG XL DCT input') }
 	}
-	return inverse_dct_small(input)
+	return inverse_dct_values(input)
 }
 
-fn inverse_dct_small(input []f32) ![]f32 {
+fn inverse_dct_values(input []f32) ![]f32 {
 	return match input.len {
 		2 { inverse_dct_2(input) }
 		4 { inverse_dct_4(input) }
 		8 { inverse_dct_8(input) }
 		16 { inverse_dct_16(input) }
 		32 { inverse_dct_32(input) }
+		64, 128, 256 { inverse_dct_large_owned(input) }
 		else { return error('Unsupported JPEG XL DCT vector length') }
 	}
 }

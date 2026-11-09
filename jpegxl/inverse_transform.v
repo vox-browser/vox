@@ -21,7 +21,9 @@ pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32)
 	output[0] = lf[0]
 	match transform {
 		.dct { return inverse_dct_plane(8, 8, output) }
-		.dct16x16, .dct32x32, .dct16x8, .dct8x16, .dct32x8, .dct8x32, .dct32x16, .dct16x32 {
+		.dct16x16, .dct32x32, .dct16x8, .dct8x16, .dct32x8, .dct8x32, .dct32x16, .dct16x32,
+		.dct64x64, .dct64x32, .dct32x64, .dct128x128, .dct128x64, .dct64x128,
+		.dct256x256, .dct256x128, .dct128x256 {
 			injected := inject_dct_lf(transform, lf, coefficients)!
 			return inverse_dct_plane(blocks[1] * 8, blocks[0] * 8, injected)
 		}
