@@ -66,6 +66,9 @@ mut:
 	nesting_level    u32
 	throttling_class TimerThrottlingClass = .delayed
 	clock_           ?&Timer
+	// Time left until the timer is due when its document was frozen; none
+	// while its clock runs.
+	frozen_remaining_ms ?f64
 }
 
 pub struct PerformanceEntry {
@@ -182,6 +185,8 @@ mut:
 	chained_timers_intensively_throttled_       bool
 	last_chained_timer_wake_up_ms_              ?f64
 	intensive_timer_grace_timer_                ?&platform.Timer
+	// The document is kept in the back/forward cache: no timer clock runs.
+	timers_frozen_                              bool
 }
 
 pub fn WindowOrWorkerGlobalScopeMixin.create(origin dom.Origin, secure_context bool, cross_origin_isolated bool) &WindowOrWorkerGlobalScopeMixin {
@@ -300,6 +305,10 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_hidden_document_intensive_
 }
 
 fn (mut scope WindowOrWorkerGlobalScopeMixin) realign_timers(now_ms f64) {
+	// A frozen document's deadlines are recomputed when it is thawed. Its
+	// document is not fully active, so it is never throttled: restarting a
+	// repeating clock at its old deadline would give it a zero interval.
+	if scope.timers_frozen_ { return }
 	for id, timer in scope.active_timers_ {
 		mut realigned := timer
 		realigned.due_time_ms = scope.timer_due_time(timer.throttling_class, timer.deadline_ms, now_ms)
@@ -509,6 +518,49 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_interval(id i32) { scope
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) clear_map_of_active_timers() {
 	for id in scope.active_timers_.keys() { scope.clear_timeout(id) }
+}
+
+// A document kept in the back/forward cache is not fully active, so the tasks
+// its timers queue cannot run until it is shown again. Its clocks stop while it
+// is cached, as WebKit suspends a cached page's timers and Chromium freezes its
+// task queues. A running repeating clock would queue another unrunnable task
+// on every tick, and every later event-loop turn scans those tasks.
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) freeze_timers() {
+	if scope.timers_frozen_ { return }
+	scope.timers_frozen_ = true
+	if mut grace_timer := scope.intensive_timer_grace_timer_ { grace_timer.stop() }
+	now_ms := scope.timer_now_ms()
+	for id, timer in scope.active_timers_ {
+		mut clock := timer.clock_ or { continue }
+		// A fired one-shot has its task queued and is done with the clock.
+		if !clock.is_active() { continue }
+		clock.stop()
+		mut frozen := timer
+		frozen.frozen_remaining_ms = math.max(timer.due_time_ms - now_ms, 0)
+		scope.active_timers_[id] = frozen
+	}
+}
+
+// Restart every frozen clock with the time it had left; a repeating timer then
+// returns to its own interval.
+pub fn (mut scope WindowOrWorkerGlobalScopeMixin) thaw_timers() {
+	if !scope.timers_frozen_ { return }
+	scope.timers_frozen_ = false
+	now_ms := scope.timer_now_ms()
+	for id, timer in scope.active_timers_ {
+		remaining := timer.frozen_remaining_ms or { continue }
+		mut clock := timer.clock_ or { continue }
+		mut thawed := timer
+		thawed.frozen_remaining_ms = none
+		thawed.deadline_ms = now_ms + remaining
+		thawed.due_time_ms = scope.timer_due_time(timer.throttling_class, thawed.deadline_ms, now_ms)
+		scope.active_timers_[id] = thawed
+		clock.restart_once(timer_delay_from(thawed.due_time_ms - now_ms), i32(timer.timeout_ms))
+	}
+}
+
+pub fn (scope &WindowOrWorkerGlobalScopeMixin) timers_frozen() bool {
+	return scope.timers_frozen_
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) active_timer_count() int {
@@ -904,6 +956,7 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) arm_timeout(timeout i32, completio
 	owner_handle := voidptr(&scope)
 	completion := fn [owner_handle, throttling_class, completion_step] () {
 		mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
+		if owner.timers_frozen_ { return }
 		if throttling_class == .chained && owner.timers_are_throttled() {
 			owner.last_chained_timer_wake_up_ms_ = owner.timer_now_ms()
 		}
@@ -935,6 +988,12 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) arm_timeout(timeout i32, completio
 		repeat:           repeat
 		throttling_class: throttling_class
 		clock_:           clock
+		frozen_remaining_ms: if scope.timers_frozen_ { ?f64(due_time_ms - now_ms) } else { none }
+	}
+	if scope.timers_frozen_ {
+		// Script in another window can still install a timer here.
+		clock.stop()
+		return
 	}
 	// Keep repeating timers on their existing schedule, as upstream does.
 	if previous.clock_ == none { clock.start() }

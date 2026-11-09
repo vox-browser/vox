@@ -52,6 +52,13 @@ fn create_html_timer(scope voidptr, milliseconds i32, callback fn (), id i32, re
 pub fn (mut timer Timer) start() { timer.timer_.start() }
 pub fn (mut timer Timer) stop() { timer.timer_.stop() }
 pub fn (mut timer Timer) restart(milliseconds i32) { timer.timer_.restart_with_interval(int(milliseconds)) }
+
+// Fire after `first_milliseconds`; a repeating timer then fires every
+// `period_milliseconds` instead of keeping the first delay as its interval.
+pub fn (mut timer Timer) restart_once(first_milliseconds i32, period_milliseconds i32) {
+	timer.timer_.restart_with_interval(int(first_milliseconds))
+	if !timer.timer_.is_single_shot() { timer.timer_.set_interval(int(period_milliseconds)) }
+}
 pub fn (mut timer Timer) set_callback(callback fn ()) { timer.timer_.on_timeout = callback }
 
 // HTML::Timer::set_interval restarts when the interval changes, unlike the
