@@ -11,6 +11,8 @@ fn test_auto_repeat_maximum_border_box_counts_use_resolved_inline_percentage_pad
 		grid := (document.get_element_by_id('grid') or { panic('grid') }).get_bounding_client_rect()
 		item := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
 		assert grid.height == 160, '${size}: height ${grid.height}'
+		assert grid.width == if size=='auto' { 300 } else { 260 }, '${size}: width ${grid.width}'
+		assert item.x-grid.x==130,'${size}: item x ${item.x-grid.x}'
 		assert item.y - grid.y == 80, '${size}: item y ${item.y - grid.y}'
 	}
 }

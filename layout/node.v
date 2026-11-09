@@ -1668,6 +1668,8 @@ pub mut:
 	max_content_width         ?CSSPixels
 	min_content_width_height_ ?CSSPixels
 	max_content_width_height_ ?CSSPixels
+	min_content_width_repeat_adjustment_ CSSPixels
+	max_content_width_repeat_adjustment_ CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
 mut:
 	font_generation_ u64

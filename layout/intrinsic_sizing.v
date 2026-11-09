@@ -277,13 +277,15 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	height_basis := intrinsic_width_inline_height_basis(state,box)
+	repeat_adjustment := intrinsic_width_repeat_adjustment(state,box)
 	if cached := cache.min_content_width {
-		if cache.min_content_width_height_ == height_basis { return cached }
+		if cache.min_content_width_height_ == height_basis && cache.min_content_width_repeat_adjustment_==repeat_adjustment { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .min_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.min_content_width = result
 	cache.min_content_width_height_ = height_basis
+	cache.min_content_width_repeat_adjustment_=repeat_adjustment
 	return result
 }
 
@@ -373,13 +375,15 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	height_basis := intrinsic_width_inline_height_basis(state,box)
+	repeat_adjustment := intrinsic_width_repeat_adjustment(state,box)
 	if cached := cache.max_content_width {
-		if cache.max_content_width_height_ == height_basis { return cached }
+		if cache.max_content_width_height_ == height_basis && cache.max_content_width_repeat_adjustment_==repeat_adjustment { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.max_content_width = result
 	cache.max_content_width_height_ = height_basis
+	cache.max_content_width_repeat_adjustment_=repeat_adjustment
 	return result
 }
 
@@ -493,6 +497,12 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
+	if source := source_state.try_get(box_styled) {
+		if basis := source.box_model_percentage_basis() { box_state.set_box_model_percentage_basis(basis) }
+	}
+	if containing := box_node.containing_block() {
+		box_state.set_containing_block_used_values(throwaway.get_mutable(unsafe { &NodeWithStyle(containing) }))
+	}
 	if containing := box_state.containing_block_used_values() {
 		resolve_box_model_edges(box_node.computed_values(), mut box_state, containing.content_width().to_double())
 	} else {
@@ -1207,7 +1217,7 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 	box := unsafe { &Node(node) }.as_box() or {
 		return resolve_definite_content_height(computed, containing_block_height)
 	}
-	if size.is_stretch() && containing_block_height != none {
+	if size.is_stretch() && containing_block_height != none && used_values.height_constraint == .none {
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(containing_block_height), false).to_double()
 	}
 	if size.is_auto() || size.is_stretch() {
@@ -1295,6 +1305,7 @@ fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, use
 	computed := node.computed_values()
 	size := computed.size_value(property)
 	if size.is_stretch() {
+		if used_values.height_constraint != .none { return none }
 		basis := containing_block_height or { return none }
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(basis), false)
 	}
@@ -1349,4 +1360,10 @@ fn intrinsic_width_inline_height_basis(state &LayoutState,box &Box) ?CSSPixels {
  values := state.try_get(node.as_node_with_style() or { return none }) or { return none }
  if values.has_definite_height() { return values.content_height() }
  return none
+}
+
+fn intrinsic_width_repeat_adjustment(state &LayoutState,box &Box) CSSPixels {
+ node := unsafe { &Node(box) }
+ if !node.display().is_grid_inside() { return CSSPixels.new(0) }
+ return grid_repeat_used_box_adjustment(state,node,true)
 }
