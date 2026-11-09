@@ -1486,14 +1486,14 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 	gap_count := grid_gutter_count(tracks, 0, tracks.len - 1)
 	mut effective_gap := computed_gap
 	if gap_count > 0 {
-		total_gap_space := css_pixels_max(container_width.minus(tracks_size), CSSPixels.new(0))
+		total_gap_space := css_pixels_max(container_width.minus(tracks_size).minus(computed_gap.scaled(f64(gap_count))), CSSPixels.new(0))
 		distributed_gap := match grid_axis_content_alignment(container, true) {
 			.space_between { CSSPixels.from_raw(total_gap_space.raw_value() / gap_count) }
 			.space_around { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 1)) }
 			.space_evenly { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 2)) }
 			else { CSSPixels.new(0) }
 		}
-		effective_gap = css_pixels_max(effective_gap, distributed_gap)
+		effective_gap = effective_gap.plus(distributed_gap)
 	}
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_width.minus(used_size), CSSPixels.new(0))
@@ -1537,14 +1537,14 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 	gap_count := grid_gutter_count(tracks, 0, tracks.len - 1)
 	mut effective_gap := computed_gap
 	if gap_count > 0 {
-		total_gap_space := css_pixels_max(container_height.minus(tracks_size), CSSPixels.new(0))
+		total_gap_space := css_pixels_max(container_height.minus(tracks_size).minus(computed_gap.scaled(f64(gap_count))), CSSPixels.new(0))
 		distributed_gap := match grid_axis_content_alignment(container, false) {
 			.space_between { CSSPixels.from_raw(total_gap_space.raw_value() / gap_count) }
 			.space_around { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 1)) }
 			.space_evenly { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 2)) }
 			else { CSSPixels.new(0) }
 		}
-		effective_gap = css_pixels_max(effective_gap, distributed_gap)
+		effective_gap = effective_gap.plus(distributed_gap)
 	}
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_height.minus(used_size), CSSPixels.new(0))
