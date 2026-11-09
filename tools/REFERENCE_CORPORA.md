@@ -241,3 +241,13 @@ credit. Cadence is 4/10 after the full 94-file checkpoint; no full 98-file run i
 claimed. Spline rendering, frame integration and production/native tool
 replacement remain.
 See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).
+
+
+Spline dequantization adds 896 native records, including 244 successful calls
+comparing 33,664 float words plus exact U64 area/coincidence results. Both
+spline files pass default/no-GC/optimized checks with unavailable Rust compiler
+paths, actual exits zero and 716 unchanged inputs. JPEG XL totals 291,175
+records and 99 test files, cadence 5/10 after the full 94-file checkpoint;
+no full 99-file run is claimed. Spline rasterization, frame integration and
+production/native tool replacement remain.
+See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).

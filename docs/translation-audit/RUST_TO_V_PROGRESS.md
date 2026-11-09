@@ -718,3 +718,17 @@ full 94-file checkpoint; no full 98-file run is claimed.
 Dequantization, subdivision/rendering, feature/reference frame integration and
 production/developer-tool replacement remain. Production JPEG XL and its
 native developer test still require Rust.
+
+
+## JPEG XL spline dequantization on 2026-11-09
+
+Control reconstruction, DCT scaling/correlation, area estimation and adjacent
+coincidence add 896 native records. The 244 successful cases compare 33,664
+float words and exact area/coincidence results; range and distance failures
+match. Both spline files pass default/no-GC/optimized checks with actual exits
+zero and 716 unchanged inputs. The package has 291,175 records and 99 files,
+cadence 5/10 after the full 94-file checkpoint; no full 99-file run is claimed.
+[The dequantization report](JPEGXL_V_SPLINE_DEQUANT.md) records source/fixture
+pins and checked API limits. Subdivision, caching/rasterization, feature and
+reference frames, and production/developer-tool replacement remain.
+Production JPEG XL and its native developer test still require Rust.

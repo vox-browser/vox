@@ -667,6 +667,17 @@ ninety-four-file checkpoint. No full ninety-eight-file run is claimed.
 Spline dequantization, subdivision, rendering and frame integration remain.
 See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).
 
+Spline dequantization now reconstructs control points, scales/correlates the
+four DCTs, estimates area and checks adjacent coincidence. The 896 native
+records include 244 successful calls comparing 33,664 float words, exact U64
+area and coincidence results. Source release integer/cast behavior is explicit;
+nonfinite context is rejected before coordinate conversion. Both spline files
+pass default/no-GC/optimized checks with actual exits zero and 716 unchanged
+inputs. The package has 291,175 records and ninety-nine test files, cadence
+5/10 after the full ninety-four-file checkpoint; no full ninety-nine-file run
+is claimed. Curve subdivision, caching, rasterization and frame integration
+remain. See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production
