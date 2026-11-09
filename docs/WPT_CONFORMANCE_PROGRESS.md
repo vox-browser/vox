@@ -1978,3 +1978,60 @@ deadlines, and explicit unsupported-protocol records. Live status is
 `/Users/alex/.cache/vox/wpt/20261109-official-vendor-prod-status.json`.
 Other manifest test types remain outside this runner. **Overall 100% is not
 achieved.**
+
+## List-marker names and summary disclosure regression (2026-11-09)
+
+The same **21 official accname variants now pass 492/500 assertions** in normal
+native Page checks and again with the prepared preallocation runtime, up from
+**484/500**. Both cohorts complete all 21 harnesses and preserve every assertion
+name and expected count. They gain **eight passes with no lost passes**. The
+tentative marker page passes **10/10**, and the tooltip page remains **22/22**.
+Both strict cohort exits remain **1**: aria-owns still fails three assertions,
+and tentative heading names fail five. This is a focused native result, not a
+production or overall WPT percentage.
+
+`b3d355ef7` includes generated marker text in name-from-content computation.
+Default bullets and ordinals come from the actual marker box; authored marker
+content retains its resolved per-node snapshot, including alternative text and
+explicit empty alternatives. Native checks cover live list-start and CSSOM
+alternative changes as well as marker ownership.
+
+The first full cohort exposed a regression: **491/500**, with eight gains and
+one lost summary assertion. `1464658f0` repairs it by excluding summary markers
+from summary names while retaining their subtree content. Tests cover closed,
+open, and authored-marker summaries. This follows the
+[HTML summary naming mapping](https://www.w3.org/TR/html-aam-1.0/#summary-element-accessible-name-computation).
+A fresh, pinned headless Brave accessibility diagnostic also names those
+summaries from their contents, including an authored marker and decimal list
+style. It is a single diagnostic, not a WPT percentage or browser comparison.
+The initial regression and failed compile attempts remain in the evidence.
+
+Ten native behavioral checks pass per memory mode, plus two worker/WPT entry
+points. Trusted-input-disabled invocations also exit **0**. Typed marker and
+summary checks pass. Compiles use V's 10 GiB limit under 12 GiB process-tree
+guards; focused runtimes use 3 GiB guards. Required final compile and focused
+test exits are **0**. The current compiler remains
+`baf5f3b4328f77b9dd8c49d2dc3b837b5c710d47d474ddd93ba3ad7a9d81591f`,
+with prepared runtime
+`c83469c5e6340f3dc4b81b4c60949ebf5aaaac0025e23d07cb69a0e749dc62ec`.
+The fixed executable and runtime inputs are pinned. Recorded feature-function
+and fixture hashes match commit `1464658f0`; other shared-checkout changes are
+recorded separately. These are correctness checks of the compiled native test
+images, not clean production builds or timing measurements.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-marker-accessibility-native-raw.tar.gz`,
+SHA-256 `35823172ed811b5388638e98da710487dbd2be86783616d3c6f181a44755dd68`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-marker-accessibility-native-summary.json`,
+SHA-256 `94ed57fe6ce322916d94922624210e87d2b7eb0841bd4fb32d35e1eb95c16ca5`.
+
+The restarted **40,139-variant official testharness collection remains active**
+on production executable `f14f71f6…`, independently of these native checks.
+The managed hooks request coalesced C builds with literal V `-prod` in one
+C unit. A separate background observer waits for a completed production image
+containing the marker and summary fixes, then runs the same 21 original
+variants with all 500 expected assertions. It uses the canonical bundle or the
+original completed artifact under a read lease, without copying a bundle.
+Status: `/Users/alex/.cache/vox/wpt/20261109-marker-production-status.json`.
+The native job's scratch outputs and temporary combined test are removed after
+archiving; active collection/observer directories remain in use.
+**Overall 100% is not achieved.**
