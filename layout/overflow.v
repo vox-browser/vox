@@ -124,7 +124,8 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 					}
 				}
 			}
-			child_rect := overflow_box_border_rect(child, state) or { continue }
+			raw_child_rect := overflow_box_border_rect(child, state) or { continue }
+			child_rect := overflow_transformed_border_rect(child, state, raw_child_rect)
 			wholly_in_unreachable_horizontal_axis := if overflow_directions.horizontal_axis_is_positive {
 				child_rect.right().raw_value() < padding_box.left().raw_value()
 			} else {
@@ -135,14 +136,28 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 			} else {
 				child_rect.top().raw_value() > padding_box.bottom().raw_value()
 			}
-			if wholly_in_unreachable_horizontal_axis || wholly_in_unreachable_vertical_axis {
-				continue
-			}
-			if !overflow_rect_is_empty(child_rect) {
-				scrollable_overflow_rect = overflow_rect_united(scrollable_overflow_rect, child_rect)
-				if !child.is_absolutely_positioned() {
-					in_flow_and_floated_content_bounds = overflow_rect_united(in_flow_and_floated_content_bounds, child_rect)
+			// Alignment bounds use the normal-flow margin box, before relative
+			// positioning, and remain relevant outside the reachable scroll area.
+			if !child.is_absolutely_positioned() {
+				if child_style := child.as_node_with_style() {
+					if child_used := state.try_get(child_style) {
+						dx := if child.computed_values().position() == .relative { child_used.inset_left } else { CSSPixels.new(0) }
+						dy := if child.computed_values().position() == .relative { child_used.inset_top } else { CSSPixels.new(0) }
+						bounds := css.CSSPixelRect{
+							x:raw_child_rect.x.minus(dx).minus(child_used.margin_left)
+							y:raw_child_rect.y.minus(dy).minus(child_used.margin_top)
+							width:raw_child_rect.width.plus(child_used.margin_left).plus(child_used.margin_right)
+							height:raw_child_rect.height.plus(child_used.margin_top).plus(child_used.margin_bottom)
+						}
+						in_flow_and_floated_content_bounds = overflow_rect_united(in_flow_and_floated_content_bounds,bounds)
+					}
 				}
+			}
+			// An unreachable box in one axis can still enlarge the other axis.
+			// Zero area in one dimension likewise preserves the other extent.
+			if !overflow_rect_is_empty(child_rect) {
+				if !wholly_in_unreachable_horizontal_axis { scrollable_overflow_rect = overflow_rect_united_horizontally(scrollable_overflow_rect,child_rect) }
+				if !wholly_in_unreachable_vertical_axis { scrollable_overflow_rect = overflow_rect_united_vertically(scrollable_overflow_rect,child_rect) }
 			}
 			if child.has_layout_containment() || child.has_paint_containment() {
 				continue
@@ -151,10 +166,10 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 				|| child.computed_values().overflow_y() == .visible {
 				child_overflow := measure_scrollable_overflow(mut state, child, contained_boxes)
 				if !overflow_rect_is_empty(child_overflow) {
-					if child.computed_values().overflow_x() == .visible {
+					if child.computed_values().overflow_x() == .visible && !wholly_in_unreachable_horizontal_axis {
 						scrollable_overflow_rect = overflow_rect_united_horizontally(scrollable_overflow_rect, child_overflow)
 					}
-					if child.computed_values().overflow_y() == .visible {
+					if child.computed_values().overflow_y() == .visible && !wholly_in_unreachable_vertical_axis {
 						scrollable_overflow_rect = overflow_rect_united_vertically(scrollable_overflow_rect, child_overflow)
 					}
 				}
@@ -313,7 +328,7 @@ fn overflow_box_border_rect(node &Node, state &LayoutState) ?css.CSSPixelRect {
 }
 
 fn overflow_rect_is_empty(rect css.CSSPixelRect) bool {
-	return rect.width.raw_value() <= 0 || rect.height.raw_value() <= 0
+	return rect.width.raw_value() <= 0 && rect.height.raw_value() <= 0
 }
 
 fn overflow_rect_contains(outer css.CSSPixelRect, inner css.CSSPixelRect) bool {
@@ -356,4 +371,26 @@ fn overflow_rect_united_vertically(a css.CSSPixelRect, b css.CSSPixelRect) css.C
 		width: a.width
 		height: bottom.minus(top)
 	}
+}
+
+// Transform overflow includes both the pre-transform and transformed bounds.
+fn overflow_transformed_border_rect(node &Node, state &LayoutState, rect css.CSSPixelRect) css.CSSPixelRect {
+ computed := node.computed_values()
+ if computed_transform_is_none(computed) { return rect }
+ styled := node.as_node_with_style() or { return rect }
+ used := state.try_get(styled) or { return rect }
+ position := layout_offset_in_svg_user_space(node,state,used)
+ reference := paintable_box_transform_reference_box(node,computed,used,position,state)
+ matrix := resolved_computed_transform_4x4_matrix(computed,reference.x,reference.y,reference.width,reference.height)
+ affine := css.project_plane_to_affine_transform(matrix) or { return rect }
+ mut left,mut right := rect.left().to_double(),rect.right().to_double()
+ mut top,mut bottom := rect.top().to_double(),rect.bottom().to_double()
+ for x in [rect.left().to_double(),rect.right().to_double()] {
+  for y in [rect.top().to_double(),rect.bottom().to_double()] {
+   tx,ty := affine[0]*x+affine[2]*y+affine[4],affine[1]*x+affine[3]*y+affine[5]
+   if tx<left { left=tx };if tx>right { right=tx }
+   if ty<top { top=ty };if ty>bottom { bottom=ty }
+  }
+ }
+ return css.CSSPixelRect.new(left,top,right-left,bottom-top)
 }

@@ -683,6 +683,15 @@ fn materialize_dom_paintables(box &Node, state &LayoutState, mut placeholder dom
 					}
 				}
 			}
+			// Reconstructed paintables retain element scroll offsets. Clamp them
+			// to the new geometry, and discard offsets on overflow:clip axes.
+			computed := box.computed_values()
+			previous_offset := paintable_box.scroll_offset()
+			requested_offset := dom.CSSPixelPoint_{
+				x_:if computed.overflow_x() == .clip { 0.0 } else { previous_offset.x() }
+				y_:if computed.overflow_y() == .clip { 0.0 } else { previous_offset.y() }
+			}
+			paintable_box.set_scroll_offset_without_snapping(requested_offset)
 			paintable = unsafe { &dom.Paintable(paintable_box) }
 		} else {
 			if previous != unsafe { nil } && !previous.is_box && previous.layout_handle == voidptr(box) {
