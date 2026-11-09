@@ -9,10 +9,11 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	sigmas := stages.map(it.sigma)
 	mut sx := []f32{cap: sigmas.len}
 	mut sy := []f32{cap: sigmas.len}
-	for sigma in sigmas {
+	for i, sigma in sigmas {
 		x := blur_layer_sigma(math_abs32(sigma * ctm.sx))
 		y := blur_layer_sigma(math_abs32(sigma * ctm.sy))
-		if x > image_blur_max_sigma || y > image_blur_max_sigma { return false }
+		if (x > image_blur_max_sigma || y > image_blur_max_sigma)
+			&& (i != sigmas.len - 1 || source_image) { return false }
 		sx << x
 		sy << y
 	}
@@ -72,6 +73,22 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	mut pending := []MatrixColorFilter{}
 	for i, desired_global in requested {
 		pending << stages[i].pre_color
+		desired := if source_image { desired_global } else {
+			IRect{desired_global.left - padded.left, desired_global.top - padded.top,
+				desired_global.right - padded.left, desired_global.bottom - padded.top} }
+		if sx[i] > image_blur_max_sigma || sy[i] > image_blur_max_sigma {
+			// Keep color effects in the first downsample rather than resolving
+			// them into an extra 8-bit image. The upscale stays deferred.
+			input := FilterResult{...result, initialized_boundary: true}
+			view := scaled_blur_filter_view(input, desired, sx[i], sy[i], new_color_filter(pending), true) or { return false }
+			if view.bitmap.width == 0 {
+				target.ready()
+				draw_empty_filter_result(mut pixels, pitch, &rc, mode)
+				return true
+			}
+			return draw_filter_image_view(mut pixels, pitch, &rc, mode,
+				FilterImageView{...view, filter: new_color_filter(post_color)}, -base_x, -base_y, mut target)
+		}
 		if result.has_image && (sx[i] != 0 || sy[i] != 0) {
 			incoming_color := new_color_filter(pending)
 			if incoming_color != none || result.color_info.display_p3 || result.color_info.alpha != 1 {
@@ -83,9 +100,6 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 			}
 			pending.clear()
 		}
-		desired := if source_image { desired_global } else {
-			IRect{desired_global.left - padded.left, desired_global.top - padded.top,
-				desired_global.right - padded.left, desired_global.bottom - padded.top} }
 		result = blur_filter_result(result, desired, sx[i], sy[i]) or { return false }
 	}
 	target.ready()

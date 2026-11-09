@@ -48,7 +48,7 @@ fn rescale_filter_shader(image FilterResult, transform SkAffine, destination IRe
 	} else {
 		image_filter_round_epsilon
 	}
-	pad := if image.transparent_boundary { f32(1) } else { f32(0) }
+	pad := if image.transparent_boundary || image.initialized_boundary { f32(1) } else { f32(0) }
 	safe := Rect{f32(.5) + ex - pad, f32(.5) + ey - pad, f32(w) - f32(.5) - ex + pad, f32(h) - f32(.5) - ey + pad}
 	centers := Rect{output.left + f32(.5), output.top + f32(.5), output.right - f32(.5), output.bottom - f32(.5)}
 	edges := filter_quad_contains_rect(net, safe, centers)

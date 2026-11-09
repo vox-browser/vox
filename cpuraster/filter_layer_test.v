@@ -529,3 +529,137 @@ fn test_spatial_chain_work_limit_preserves_unpremultiplied_destination() {
   filter_layer_test_clip(), new_canvas_filter(steps))
  assert pixels == before
 }
+
+// Frozen inputs for native chains; color matrices on either side of identity
+// blurs must stay pending until the next real sampling pass.
+fn terminal_blur_chain_test_filters(index int) []CanvasFilterStep {
+	base := if index >= 24 { index - 24 } else { index }
+	contrast := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!}}
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	sequences := [[f32(.8), 135.01], [f32(2.5), 135.2], [f32(0), .01, 300],
+		[f32(12), 0, 532], [f32(.8), 2.5, 270], [f32(0), 0, 700],
+		[f32(6), .01, 200], [f32(12), .8, 135.2]]
+	mut steps := []CanvasFilterStep{}
+	for j, sigma in sequences[base % 8] {
+		if (base + j) % 3 == 0 { steps << contrast }
+		if (base + j) % 4 == 1 { steps << opacity }
+		steps << CanvasFilterStep{kind: .blur, sigma: sigma}
+	}
+	steps << if base % 2 == 0 { opacity } else { contrast }
+	if index >= 24 {
+		matrices := steps.filter(it.kind == .matrix)
+		steps = [CanvasFilterStep{kind: .blur, sigma: .8}]
+		steps << matrices[..matrices.len - 1]
+		steps << CanvasFilterStep{kind: .blur, sigma: [f32(135.2), 200, 270, 300][index - 24]}
+		steps << matrices.last()
+	}
+	return steps
+}
+
+fn test_large_terminal_blur_chains_match_native() {
+	macos := [
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'62cea4a16ecb51ad1c809526f32a969f1255b2d003004aaf87895a6eaa4fbeb8',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'62cea4a16ecb51ad1c809526f32a969f1255b2d003004aaf87895a6eaa4fbeb8',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'a136bd1493ddaa627bd62a99628c03441de5bee6482e75bb9d4b1d83f6761bfe',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'b827517e205d6914ba40a284edef363714d54b6a0043a7dde40e57b5d1ecb495',
+		'54ac08e557d084447e66d971b7a6154703dc17d628acf128ac1e40b2972983a9',
+		'89eab1219d5f708c1bfbced60997b70ee082b48369b13241eaad6613e4a5cc9a',
+		'd075ce7a4e5e47fdfa0ce90c1f3c23a62554f818bd066912e77679b1efcceca9',
+		'888cc7e483fa30db295d60f5abe38eeaa023dbff51b752d5948748c206323fdb',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'2d69d84d736288c7f1b1a44fa1317ee4f0a5a62d24bf79a634ebf762bf0139e7',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'260346c2414aaa19221eeecd3c641c9e8fe3a363c91ea9a0310440e180129468',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'052e579749bb28870d5a6486a363d24c54f2763468afb632393b12bbae5565f4',
+		'7532dd2f320942fbdc28a25b8ec58bee3416af2ef244d4f345b913ade90e4deb',
+		'f563dfbdadea8586e8fe40d06c55bdff54f07dc3fd8fd314994c1c5d39eb3c34',
+		'6b24599580daacc5f4b09e3ad37810c0d12c4099f7026545d150f5ce55fa2838',
+	]
+	linux := [
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'62cea4a16ecb51ad1c809526f32a969f1255b2d003004aaf87895a6eaa4fbeb8',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'62cea4a16ecb51ad1c809526f32a969f1255b2d003004aaf87895a6eaa4fbeb8',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'a136bd1493ddaa627bd62a99628c03441de5bee6482e75bb9d4b1d83f6761bfe',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'b827517e205d6914ba40a284edef363714d54b6a0043a7dde40e57b5d1ecb495',
+		'54ac08e557d084447e66d971b7a6154703dc17d628acf128ac1e40b2972983a9',
+		'89eab1219d5f708c1bfbced60997b70ee082b48369b13241eaad6613e4a5cc9a',
+		'd075ce7a4e5e47fdfa0ce90c1f3c23a62554f818bd066912e77679b1efcceca9',
+		'888cc7e483fa30db295d60f5abe38eeaa023dbff51b752d5948748c206323fdb',
+		'c88f74bf3bd0396aca8beb6360464e01096a8fe5c383e61a0561453f191f7654',
+		'2d69d84d736288c7f1b1a44fa1317ee4f0a5a62d24bf79a634ebf762bf0139e7',
+		'f6e28ad1753237d42be72be187a88f09a269097eeda24bcf12908db6bd361246',
+		'260346c2414aaa19221eeecd3c641c9e8fe3a363c91ea9a0310440e180129468',
+		'f00be8e39ec6bc7f43235343e37285116618eb45a806d76d7afaecea98bdb6a2',
+		'052e579749bb28870d5a6486a363d24c54f2763468afb632393b12bbae5565f4',
+		'7532dd2f320942fbdc28a25b8ec58bee3416af2ef244d4f345b913ade90e4deb',
+		'f563dfbdadea8586e8fe40d06c55bdff54f07dc3fd8fd314994c1c5d39eb3c34',
+		'6b24599580daacc5f4b09e3ad37810c0d12c4099f7026545d150f5ce55fa2838',
+	]
+	for i in 0 .. macos.len {
+		base := if i >= 24 { i - 24 } else { i }
+		mut pixels := filter_layer_test_background()
+		shape := if i >= 24 { rect_path(Rect{-1024, -1024, 1024, 1024}) } else {
+			scale := if i >= 12 { f32(8) } else { f32(1) }
+			filter_layer_test_path().transform(Matrix{a: scale, d: scale})
+		}
+		transform := if i >= 24 || base % 4 !in [1, 2] { [f32(1), 0, 0, 1, 0, 0]! }
+			else if base % 4 == 1 { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else { [f32(-.75), 0, 0, 1.25, 42, 3]! }
+		alpha_type := if base % 3 == 1 { 1 } else { 2 }
+		mode := [BlendMode.src_over, .src_in, .multiply, .src, .plus_lighter, .plus_darker][base % 6]
+		style := if base % 5 == 3 { ?CanvasPaintStyle(filter_layer_test_color_pattern()) } else { none }
+		clips := if base % 3 != 0 { filter_layer_test_clip() } else { []Path{} }
+		filter := new_canvas_filter(terminal_blur_chain_test_filters(i))
+		if i < 24 && base % 2 != 0 {
+			assert stroke_canvas_path(mut pixels, 48, 40, 192, alpha_type, shape, transform,
+				0xc0e04010, style, .7, mode, 0, 3, .round, .round, 10, [f32(3), 2], .7, clips, filter)
+		} else {
+			assert fill_canvas_path(mut pixels, 48, 40, 192, alpha_type, shape, transform,
+				0xc0e04010, style, .7, mode, 0, clips, filter)
+		}
+		expected := $if linux { linux[i] } $else { macos[i] }
+		assert sha256.sum(pixels).hex() == expected, 'terminal blur fixture ${i}'
+	}
+}
+
+fn test_unsupported_large_chain_positions_preserve_destination() {
+	for sigmas in [[f32(300), .8], [f32(.8), 300, 2.5]] {
+		mut pixels := filter_layer_test_background()
+		original := pixels.clone()
+		assert !fill_canvas_path(mut pixels, 48, 40, 192, 1, filter_layer_test_path(),
+			[f32(1), 0, 0, 1, 0, 0]!, 0xc0e04010, none, .7, .src_over, 0, [],
+			new_canvas_filter(sigmas.map(CanvasFilterStep{kind: .blur, sigma: it})))
+		assert pixels == original
+	}
+	mut pixels := filter_layer_test_background()
+	original := pixels.clone()
+	image := CanvasBitmap{pixels: []u8{len: 24, init: 255}, width: 3, height: 2, pitch: 12, premultiplied: true}
+	assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, [f32(1), 0, 0, 1, 0, 0]!,
+		image, [f32(0), 0, 3, 2]!, [f32(10), 8, 3, 2]!, true, 1, .src_over, [],
+		new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: .8}, CanvasFilterStep{kind: .blur, sigma: 300}]), false)
+	assert pixels == original
+}
