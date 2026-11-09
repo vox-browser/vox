@@ -18,8 +18,7 @@ set -eu
 #   VOX_USE_SKIA=1             build the explicit legacy renderer (default: GG adapters)
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
 #   LADYBIRD_V_GC            default: prealloc on macOS, boehm on Linux
-#                            Linux accepts boehm, boehm_full, or none
-#                            macOS also accepts prealloc
+#                            accepts boehm, boehm_full, prealloc, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
 #   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
