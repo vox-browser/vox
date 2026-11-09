@@ -1817,3 +1817,51 @@ SHA-256 `93acce3e5fb2fde1f71ee7d61aee7bbf132b566a81e65642c1d864150d735681`.
 Checks: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-checks.json`.
 Status/completion: `/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-{status,completion}.json`.
 It is waiting for a matching completed production image; validation remains pending.
+
+
+## Wrapped native form labels (2026-11-09)
+
+`ba89516aa` preserves text inside ordinary label descendants instead of dropping
+wrapping spans and similar elements. A tree-order walk excludes the labelled
+control at any depth and keeps the existing live-value handling for other
+embedded controls. Layout is current before visibility checks: hidden
+unreferenced descendants stay excluded, visible descendants of a
+visibility-hidden wrapper can contribute, and a hidden associated label still
+supplies its alternative text.
+
+The unchanged **21 official accname variants now pass 464/500 assertions** in
+normal native Page checks and again with the prepared preallocation runtime,
+up from **461/500**. The tentative host-language-label page improves from
+**6/9 to 9/9**. All names and expected counts match; every harness completes;
+inputs stay unchanged; **three new passes and no lost passes** are recorded.
+The **36 remaining failures** stay in the results and both strict cohort exits
+remain **1**: aria-owns (3), generated-content counters (14), counter
+invalidation (3), multiple counter instances (3), tentative heading names (5),
+and tentative markers (8). This is a focused native result, not a production
+or overall WPT percentage.
+
+Both new typed regressions fail before the fix (runtime exit **1**) and pass
+afterward (exit **0**). Seven native behavioral checks pass in each memory
+mode, plus two worker/WPT entry points. Launches without the trusted-input opt-in
+pass too. The tests exercise nested self-exclusion, deep wrappers, live embedded
+values, hidden labels and visibility overrides. All final compiles and focused
+runtimes exit **0**, using 12 GiB compile guards with V's 10 GiB limit and 3 GiB
+runtime guards. Compiler SHA-256:
+`baf5f3b4328f77b9dd8c49d2dc3b837b5c710d47d474ddd93ba3ad7a9d81591f`;
+prepared runtime:
+`c83469c5e6340f3dc4b81b4c60949ebf5aaaac0025e23d07cb69a0e749dc62ec`.
+Concurrent shared builds and the broad collection make these correctness
+checks unsuitable for timing claims.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-label-subtree-native-raw.tar.gz`,
+SHA-256 `c77ae605b05fd3110433ecd4282225d32bb7a3932e2a6ee585160e5c32c40a86`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-label-subtree-native-summary.json`,
+SHA-256 `ffb1cb13c13e21aa1e11f08ca540876cd8feb6451aa3e25b1f3ee11510adab3a`.
+
+The new official collection continues independently on its pinned completed
+production browser. Its supervisor termination path also passes a real child
+process check: SIGTERM reaches the runner and both runner and memory guard
+report **143**, rather than terminating the guard before it records the child.
+Evidence: `/Users/alex/.cache/vox/wpt/20261109-official-vendor-signal-check.json`.
+The new engine code still needs a newer completed production image. The
+image/SVG production observer v3 remains active. **Overall 100% is not achieved.**
