@@ -18,7 +18,7 @@ pub fn decode_hf_channel(params HfChannelParameters, permutation Permutation, hi
 	num_blocks := blocks[0] * blocks[1]
 	num_coefficients := num_blocks * 64
 	if params.shift > 31 || params.nonzeros > u32(num_coefficients - num_blocks)
-		|| params.histogram_offset < 0 || params.histogram_offset > histograms.context_map.len - 474
+		|| params.histogram_offset < 0 || params.histogram_offset > histograms.context_map.len - zero_density_context_limit
 		|| permutation.values.len != num_coefficients || coefficients.len != num_coefficients {
 		return error('Invalid JPEG XL HF coefficient parameters')
 	}
