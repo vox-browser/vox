@@ -31,7 +31,7 @@ The canonical build script retains the useful experimental switches:
 | `VOX_CSS_DIAGNOSTICS=1` | Collect and report CSS instruction and invalidation counters. |
 | `VOX_DOCUMENT_RETENTION_DIAGNOSTICS=1` | Enable experimental document teardown tracing and navigation retention probes. |
 | `VOX_KEEP_C=1` | Retain the generated C compilation output. |
-| `VOX_PRIVATE_GRAPHITE_HELPER=/path/to/helper.py` | Use the diagnostic Graphite helper interface (`--repo`, `--skia-root`, `--output`). |
+| `VOX_PRIVATE_GRAPHITE_HELPER=/path/to/helper` | Execute a diagnostic Graphite helper directly (`--repo`, `--skia-root`, `--output`); the helper must be executable and provide its own interpreter when needed. |
 
 The retention probe is macOS/Boehm-only and diagnoses reachability; it does
 not establish that every document is collected. Its legacy closure-layout

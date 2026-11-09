@@ -13,7 +13,7 @@ On Ubuntu 24.04 or newer, install the following packages:
 ```sh
 sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
-    python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
+    git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
     libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
     libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
@@ -22,12 +22,12 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
 ```
 
 You also need current [V](https://github.com/vlang/v) and
-[UI2](https://github.com/vlang/ui2) checkouts and Python 3.12 or newer. For a fresh
-setup, run these commands from the Vox checkout:
+[UI2](https://github.com/vlang/ui2) checkouts. Python is not required by the normal
+Vox build. For a fresh setup, run these commands from the Vox checkout:
 
 ```sh
 git clone --depth 1 https://github.com/vlang/v.git ../v
-make -C ../v
+make -C ../v VFLAGS='-memory-limit 10G'
 git clone --depth 1 https://github.com/vlang/ui2.git ../ui2
 export V_BIN="$(cd ../v && pwd)/v"
 export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
@@ -35,6 +35,10 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
+CI uses V commit `395d574b9197e5d61a801d7e9d3f3ddb77bb0d46`, which includes the
+[upstream FastC enum/JSON fixes](https://github.com/vlang/v/pull/31994) needed by
+this checkout. A compiler failure mentioning `member.attrs` in `json2/encode.v`
+requires updating V to include those fixes.
 Use the latest UI2: run `v up ui2` for an installed module, or
 `git -C "$UI2_SOURCE_DIR" pull --ff-only` for a separate checkout. The build links
 that live checkout directly without copying or pinning it. CI fetches upstream
@@ -53,12 +57,27 @@ local files; animation, embedded ICC profiles and image transformations remain
 unsupported. The initial decoder checks ran on macOS; Linux runtime conformance
 for this path remains unverified.
 
+Skia is a separate native dependency. Its pinned upstream
+[GN configuration](https://github.com/google/skia/blob/ee20d565acb08dece4a32e3f209cdd41119015ca/.gn)
+uses Python 3 for its generators. Install `python3` for the explicit source
+bootstrap below, or provide a compatible prebuilt Skia through `PKG_CONFIG_PATH`.
+Once those libraries are prepared, the normal Vox build does not invoke Python.
+
 ```sh
 # Builds pinned Skia 144 under Build/deps; subsequent runs reuse it.
-python3 tools/build_linux_skia.py
+sh tools/vox-build.sh memory \
+    --lock Build/linux-skia-setup.lock --report Build/linux-skia-setup.json \
+    --timeout 2400 -- sh tools/vox-build.sh build-linux-skia
 sh build-prod-browser.sh
 Build/linux/vox https://example.com
 ```
+
+[`tools/vox-build.sh`](../tools/vox-build.sh) bootstraps the native V build tool
+with `-memory-limit 10G -gc none` and caches immutable executables under
+`Build/tools/`. It rebuilds the tool when its compiler, source files, or bootstrap
+inputs change. The tool handles supervision, memory guards, module staging,
+native helpers, input receipts, and publication. The build tool's collector
+setting is independent of the browser's allocation model.
 
 The build selects Linux or macOS automatically. `build-linux-browser.sh` can
 also be called directly. Both builds use the current V compiler without falling
@@ -85,8 +104,8 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 CC=gcc sh build-prod-browser.sh
 ```
 
-If the build stops in `tools/prepare_http_compat.py`, check the compiler root
-probe's command, exit status, stdout and stderr in the build log. This probe
+If the build reports a compiler root probe failure, check the probe's command,
+exit status, stdout and stderr in the build log. This probe
 asks the selected V compiler for its active standard library before staging
 the HTTP modules. It uses `CC` (Clang by default) and `-gc none`, so discovery
 does not require V's bundled collector. The browser still uses the allocator
@@ -98,7 +117,7 @@ modules have not been staged yet. To retry preparation with the selected
 compiler and see its diagnostics directly, run:
 
 ```sh
-python3 tools/prepare_http_compat.py "${V_BIN:-v}"
+sh tools/vox-build.sh prepare-http "${V_BIN:-v}"
 ```
 
 If V rejects a compiler option, check `"${V_BIN:-v}" version` and point `V_BIN`
@@ -120,13 +139,32 @@ system dependencies on Ubuntu 24.04 and builds pinned V and Skia sources with
 current upstream UI2 on pushes to `master` and on pull requests. Independent
 Boehm and prealloc jobs each build the full browser through the normal
 supervisor, run its headless smoke, and exercise its actual X11 window under Xvfb.
+Both production builds place failing Python command stubs first on `PATH`,
+including versioned interpreter names, and fail if any are invoked. Native build
+tool tests cover the supervisor, guards, staging, cache identity, and publication
+before either browser build.
 The prealloc job uses
 `-prealloc -gc none` and `VOX_ARENA_POISON=1`, so arena retirement is checked
 without a collector keeping stale payloads alive. The existing `build` check
 requires both jobs to pass; one failing configuration does not cancel the other.
 
-The workflow also runs the Linux entrypoint and smoke-harness regressions,
-which can be checked without a V compiler or native development packages:
+To run the native build tool tests locally:
+
+```sh
+sh tools/vox-build.sh --help
+VJOBS=1 VOX_BUILD_TEST_TOOL="$PWD/Build/tools/vox-build" \
+    sh tools/vox-build.sh memory \
+    --lock Build/native-tools-test.lock --report Build/native-tools-test.json \
+    --limit-gib 3 --timeout 1140 -- \
+    "${V_BIN:-v}" -memory-limit 10G -gc none -cc "${CC:-clang}" test tools/voxbuild
+```
+
+### Optional developer test harnesses
+
+The remaining Python test runners require Python 3.12 or newer. They are optional
+developer and CI checks; the production build does not invoke them. The Linux
+entrypoint and smoke-harness regressions can be checked without a V compiler or
+native development packages:
 
 ```sh
 python3 tools/build_linux_browser_test.py
@@ -140,7 +178,7 @@ Build/linux/vox --headless-smoke
 Build/linux/vox --headless=layout-tree ./page.html
 
 sudo apt-get install xvfb xauth xdotool scrot
-python3 tools/run_memory_bounded.py \
+sh tools/vox-build.sh memory \
     --lock Build/linux-window-smoke.lock --report Build/linux-window-smoke.json \
     --limit-gib 3 --timeout 600 -- \
     python3 tools/test_linux_browser.py
@@ -179,7 +217,7 @@ the production build, run without a collector, and poison released storage to
 expose stale borrowed payloads:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/vox-build.sh memory \
     --lock Build/linux-ownership-tests.lock --report Build/linux-ownership-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     platform/closure_metadata_arena_test.v \
@@ -196,7 +234,7 @@ resource cancellation against both allocation models. These are the focused
 application boundary checks:
 
 ```sh
-VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+VOX_ARENA_POISON=1 sh tools/vox-build.sh memory \
     --lock Build/linux-session-tests.lock --report Build/linux-session-tests.json -- \
     python3 tools/test_linux_native.py --gc prealloc \
     document/session_test.v document/child_storage_test.v \

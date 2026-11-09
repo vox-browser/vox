@@ -14,7 +14,7 @@
   output. Never copy V sources, tools, generated C or app bundles into it: try
   candidate changes in the canonical checkout, then commit or revert them.
   Delete a job's directory, lock and guard report when the job finishes.
-  `tools/prune_build.py` runs after each production build and removes entries
+  The native `tools/vox-build.sh prune` runs after each production build and removes entries
   idle for 12 hours; production receipts keep generated C only for the
   published and newest builds.
 - Do not copy browser app bundles or snapshot repository tools into session or
@@ -61,8 +61,8 @@
 - Never commit evidence or measurement archives (`.tar.gz`, `.zip`, `.gz`) or
   force-add ignored files under `docs/`; keep archives local and commit the
   report or manifest that describes them. The pre-commit hook
-  (`tools/pre_commit_check.py`, installed by
-  `python3 tools/rebuild_browser.py --install-hook`) rejects archives outside
+  (`sh tools/vox-build.sh pre-commit`, installed by
+  `sh tools/vox-build.sh supervise --install-hook`) rejects archives outside
   `adblock/`, `tools/adblock/fixtures/` and `Tests/Browser/Brave/candidates/`,
   anything under `Build/`, and files over 32 MiB. Do not bypass it with
   `--no-verify`.
@@ -133,7 +133,7 @@
   build identity for comparisons.
 
 - Run expensive builds, test binaries and benchmarks through
-  `python3 tools/run_memory_bounded.py --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.
+  `sh tools/vox-build.sh memory --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.
   Keep its default 12 GiB aggregate process-tree RSS budget; use `--limit-gib 3`
   for focused runtime tests. Use a separate lock per independent job; a busy
   shared lock must not queue unrelated work. Independent capped jobs may run
@@ -154,6 +154,11 @@
 
 - `build-prod-browser.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
   `~/code/v/v`. It writes `Build/v/Vox.app` and ad-hoc signs the bundle.
+  Production orchestration, input staging, guards and publication use the
+  native V tool bootstrapped by `tools/vox-build.sh`; Python is not a production
+  build dependency. `Build/tools/` holds immutable cached tool executables and
+  is retained by pruning. Prepare upstream Skia/Dawn dependencies separately;
+  see [macOS setup](docs/MACOS_BUILD.md) and [Linux setup](docs/LINUX.md).
 - By default the build compiles the generated C with V's `-parallel-cc` (split
   units linked with ThinLTO). `sh build-prod-browser.sh --no-parallel-cc`
   compiles one sealed C unit for maximum binary performance; it is several
@@ -291,7 +296,7 @@ and an existing verified pixel-diff binary, for example:
 ```sh
 env -u ALL_PROXY -u HTTP_PROXY -u HTTPS_PROXY \
     -u all_proxy -u http_proxy -u https_proxy \
-  python3 tools/run_memory_bounded.py \
+  sh tools/vox-build.sh memory \
     --lock Build/hn-brave-UNIQUE.lock \
     --report Build/hn-brave-UNIQUE-guard.json \
     --adopt-pids-from Build/hn-brave-UNIQUE-pids.json -- \

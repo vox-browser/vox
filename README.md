@@ -2,7 +2,7 @@
 
 https://vox-browser.org
 
-[Windows build instructions](docs/WINDOWS.md)
+[Linux build instructions](docs/LINUX.md) · [macOS build instructions](docs/MACOS_BUILD.md) · [Windows build instructions](docs/WINDOWS.md)
 
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
@@ -13,6 +13,12 @@ With the native dependencies installed, use a current V compiler:
 ```sh
 v -enable-globals .
 ```
+
+For a supervised Linux or macOS production build, run `sh build-prod-browser.sh`.
+Vox's build tools are written in V and bootstrap with the same V compiler; the
+production build does not require Python. Building third-party dependencies
+from source can require their upstream generators, as described in the platform
+instructions.
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
