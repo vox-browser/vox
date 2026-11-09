@@ -354,3 +354,16 @@ fn test_child_stylesheet_jobs_keep_unloaded_owners_and_deduplicate_their_urls() 
 	assert preloads.len == 1
 	assert preloads[0].url == preload_url
 }
+
+fn test_same_origin_frame_without_scripts_installs_global_bindings_on_window_access() {
+	mut host, mut parent := child_parser_lifecycle_fixture()
+	defer { child_parser_lifecycle_close(mut host,mut parent) }
+	mut frame := parent.get_element_by_id('frame') or { panic('frame') }
+	frame.set_attribute_value('srcdoc','<!doctype html><meta http-equiv="Content-Security-Policy" content="script-src \'self\' \'unsafe-inline\'">')
+	mut messages := []string{}
+	child_parser_lifecycle_pump(mut host,mut messages)
+	host.ensure_initial_realm(frame,mut messages)
+	service := host.children[0].service or { panic('service') }
+	assert service.runtime != unsafe { nil },messages.join('\n')
+	assert service.runtime.evaluate_host('typeof setTimeout==="function"&&setTimeout("void 0",0)===0')! == 'true'
+}
