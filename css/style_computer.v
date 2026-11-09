@@ -571,15 +571,15 @@ fn map_logical_alias_to_physical_property(property_id PropertyID, context Logica
 }
 
 fn is_pseudo_font_property(name string) bool {
-	return name in ['font', 'font-family', 'font-feature-settings', 'font-language-override',
-		'font-size', 'font-style', 'font-variant', 'font-variant-alternates', 'font-variant-caps',
+	return name in ['font', 'font-family', 'font-feature-settings', 'font-language-override', 'font-kerning',
+		'font-size', 'font-size-adjust', 'font-style', 'font-variant', 'font-variant-alternates', 'font-variant-caps',
 		'font-variant-east-asian', 'font-variant-emoji', 'font-variant-ligatures',
 		'font-variant-numeric', 'font-variant-position', 'font-variation-settings', 'font-weight',
 		'font-width']
 }
 
 fn is_pseudo_background_property(name string) bool {
-	return name in ['background', 'background-attachment', 'background-clip', 'background-color',
+	return name in ['background', 'background-attachment', 'background-blend-mode', 'background-clip', 'background-color',
 		'background-image', 'background-origin', 'background-position', 'background-position-x',
 		'background-position-y', 'background-repeat', 'background-size']
 }
@@ -637,7 +637,8 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 	name := string_from_property_id(property_id)
 	return match pseudo_element {
 		.first_line {
-			pseudo_element_supports_common_text_properties(name, true)
+			name != 'word-break' && (pseudo_element_supports_common_text_properties(name, true)
+				|| name in ['text-shadow', 'text-underline-position'])
 		}
 		.placeholder {
 			pseudo_element_supports_common_text_properties(name, false)

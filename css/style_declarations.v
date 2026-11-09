@@ -1461,6 +1461,15 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 				}
 			}
 			value := computed.property(property_id, .yes) or { return none }
+			if property_id in [.border_top_width, .border_right_width, .border_bottom_width, .border_left_width] {
+				style_id := match property_id {
+					.border_top_width { PropertyID.border_top_style }
+					.border_right_width { PropertyID.border_right_style }
+					.border_bottom_width { PropertyID.border_bottom_style }
+					else { PropertyID.border_left_style }
+				}
+				return StyleProperty{property_id:property_id,value:cssom_resolved_border_width(computed, property_id, style_id)}
+			}
 			if property_id in [.background_color, .border_bottom_color, .border_left_color, .border_right_color,
 				.border_top_color, .caret_color, .color, .column_rule_color, .outline_color,
 				.text_decoration_color, .webkit_text_fill_color] {
