@@ -1920,3 +1920,40 @@ full-browser Linux compile/link/run without it remains unverified.
 Other crop/bounds cases, rotated saved layers, SVG graphs, boolean shadows,
 large-sigma/tiling paths and native/GPU services remain. See the
 [independent native expectations, guarded checks and Linux linkage](gg-migration/prior-blur-image-crops-20261109.json).
+
+### Original source-image layer bounds (2026-11-09)
+
+`bab7f6d56` preserves the integer layer bounds produced by MakeFromImage's
+concatenated source transform. Single blur/shadow layers and blur/spatial
+graphs use those bounds instead of re-mapping the parameter-space destination.
+Raw near-integer subsets retain their actual snapped bounds. This removes
+the guards that declined deferred shadows when the two calculations differed.
+
+A bounded search found twelve declined geometries. Four distinct inputs,
+including bounds that grow and shrink, are frozen in twenty-four native cases
+covering identity/real shadows, prior blurs, color filters, P3, source alpha,
+clips and clearing blends. The random baseline also exposed a real bug at
+case 3: alpha 4 instead of 3 at pixel (25, 7). Its exact source, background
+and filter request are saved; native recapture on both platforms reproduces
+the original full expected SHA-256. All 269 native image fixtures verify.
+
+Default macOS and Linux each match 1,920 of 2,000 bounds-focused attempts at
+seed 20261141, declining 80. Optimized macOS/no-GC matches 1,935 of 2,000 at
+seed 20261142, declining 65. Broader resampled graphs match 811 of 1,000 on
+each platform at seed 20261143, declining 189; near-integer image layers match
+955 of 1,000 at seed 20261144, declining 45. Counts include no-ops; every final
+cohort finishes with unchanged input pins.
+
+C/FastC image and filter-layer suites, HTML canvas integration and the FMA
+audit pass (zero contracted operations, 189 explicit). The standalone Linux
+production/no-GC executable runs all 50 image tests with Skia unavailable to
+pkg-config and no direct or transitive Skia linkage; direct libraries are
+FreeType, libm and libc. The initial full-browser typecheck hit an unavailable
+method in concurrent SVG geometry work. After that source was corrected in
+the shared checkout, the same check passed. The initial failure is retained;
+no foreign source edits are included in this slice.
+
+The browser typecheck uses installed Skia development files. The shared
+production bundle was not used to validate this change. The complete browser
+still links Skia; full-browser Linux compile/link/run without it remains
+unverified. See the [original failure, native cases, source pins and Linux linkage](gg-migration/source-image-layer-bounds-20261109.json).
