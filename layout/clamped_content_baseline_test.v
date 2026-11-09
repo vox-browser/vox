@@ -44,3 +44,18 @@ fn test_clamping_counts_inline_lines_before_an_interrupting_block() {
   }
  }
 }
+
+fn test_vertical_clamp_measures_wrapped_block_content_and_an_early_interrupt() {
+ for mode in ['vertical-rl','vertical-lr'] {
+  for content in ['<div><span></span><br><span></span><br><span></span><br><span></span><br><span></span></div>','<span></span><div><span></span><br><span></span><br><span></span><br><span></span></div>'] {
+   for preference in ['first','last'] {
+    mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{display:grid;grid-auto-flow:column;inline-size:100px;writing-mode:${mode};align-items:${preference} baseline;line-height:0;font-size:30px}span{display:inline-block;width:1em;height:1em}#inner{display:-webkit-box;-webkit-box-orient:vertical;line-clamp:3 no-ellipsis;border:10px solid;font-size:40px;overflow:hidden}</style><div id="outer"><div id="a"><span></span></div><div id="inner">${content}</div></div>')
+    defer { document.finalize() }
+    _ = layout_document_typed_in_viewport(document,800,600)
+    x := (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect().x
+    expected := if (mode == 'vertical-rl') == (preference == 'first') { 95.0 } else { 15.0 }
+    assert x == expected, '${mode} ${preference} ${content}: ${x}'
+   }
+  }
+ }
+}
