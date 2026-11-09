@@ -2459,3 +2459,62 @@ The independently pinned **40,139-variant official testharness collection**
 continues on its older production executable; other WPT types remain outside
 that runner. These focused results supply no overall WPT percentage.
 **Overall 100% is not achieved.**
+
+
+## Device-layout counter names (2026-11-09)
+
+`45375fcc5` resolves ordinary and marker counter operations
+from the layout-coordinate computed style. Device layout resolves a projected
+copy while retaining the original CSS-coordinate style for CSSOM. Reading the
+original style's unresolved derived-value cache previously dropped reset, set
+and increment operations, so generated counter alternatives became zero in the
+windowed browser. Counter inheritance and value algorithms are unchanged.
+
+The initial BrowserApp control passes with typed layout and fails with paint
+projection enabled. An expanded control compile encounters temporary errors
+in a concurrently edited inline-hit-region file; that failed attempt is
+retained. Three final focused checks pass in normal, prepared-preallocation
+and literal V `-prod`/prepared-preallocation C modes. Coverage includes separate
+pseudo-element owners, reset/set/increment operations, nested counter scopes,
+list markers, CSSOM changes to 228, and explicit **1x/2x/3x** layout coordinates.
+All final compiler/runtime/guard exits are **0**. Prepared modes explicitly
+include the runtime overlay and verify linked closure metadata. Compiles keep
+V `-memory-limit 10G` under 12 GiB guards; runtimes use 3 GiB guards.
+
+A fresh managed C/single-unit/literal-`-prod` production artifact,
+`6e5783b820be22788b62f7af6d9404ecc8398603ffe8b33abef8d1572f4abcbe`,
+receipt `20261109-111250-d7d09f3c`, contains the protected counter and
+registry function hashes from the commits. It completes **all 21 original
+accname variants and all 500 expected assertions, with 495 passing and five
+failing**, up from 483 passing on the preceding pinned artifact. All 12
+previously failing generated-counter assertions now pass; the five failures
+remain in `comp_name_from_heading.tentative.html`. Every original subtest name
+and count is retained. Harness completion is successful for all 21 variants,
+but strict runner/guard exits remain **1** because of those failures. **All 11
+unchanged SVG comparisons remain pixel-exact**, pixel guard exit **0**. Inputs
+stay unchanged. Other shared source changes were not controlled; these are
+results for that pinned production artifact, without a performance claim.
+
+The remaining file explicitly links a tentative heading-name proposal. The
+[current AccName editor's draft](https://w3c.github.io/accname/#computation-steps)
+does not include that additional computation step. This repair does not add
+that fallback, and its five failures remain counted.
+
+Native evidence: `/Users/alex/.cache/vox/wpt/20261109-counter-names-native-raw.tar.gz`,
+SHA-256 `3ccbb7a2372884bd880310db57d46b4ec07a837c76270060a1c4cb55c27d45ff`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-counter-names-native-summary.json`,
+SHA-256 `b5ee93a5b72cdeac778a77a7f449cac0e02f5f394ea3fbbebeb570177ac2ffad`.
+Production accname/SVG evidence:
+`/Users/alex/.cache/vox/wpt/20261109-counter-names-production-raw.tar.gz`,
+SHA-256 `280555e8787c33d34c040b8ebe542f3ea25dd4c8de8b21016938d81be028fb70`.
+Completed owned scratch directories and five top-level locks are removed.
+
+A new full-collection supervisor is prepared at
+`/Users/alex/.cache/vox/wpt/20261109-official-current-supervisor.py`, with status
+`20261109-official-current-status.json` in the same cache. It waits for a
+completed production artifact containing both committed fixes, preserves the
+partial older collection, and then selects the same **40,139 official manifest
+testharness variants** on the freshly published bundle. It retains original
+harnesses/assertions/deadlines and fail-fast input identity checks. Other WPT
+types remain outside that runner. This is a pending collection, not an overall
+pass-rate result. **Overall 100% is not achieved.**
