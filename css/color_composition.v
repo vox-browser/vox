@@ -12,5 +12,13 @@ fn composite_colors(from StyleValue, to StyleValue, context ColorResolutionConte
 	if alpha != 0 {
 		for index in 0 .. 3 { components.set_component(index, (first.component(index) + second.component(index)) / alpha) }
 	}
+	if base.policy.use_legacy_output {
+		value := RGBColorStyleValue.create(
+			StyleValue(NumberStyleValue.create(components.component(0) * 255)),
+			StyleValue(NumberStyleValue.create(components.component(1) * 255)),
+			StyleValue(NumberStyleValue.create(components.component(2) * 255)),
+			StyleValue(NumberStyleValue.create(alpha)), .legacy, none)
+		return StyleValue(RGBColorStyleValue{...value, unclamped_animation_channels_:true})
+	}
 	return style_value_for_interpolated_color(InterpolatedColor{...base, components:components})
 }

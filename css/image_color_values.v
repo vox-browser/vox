@@ -274,6 +274,9 @@ pub mut:
 	// HSL conversion retains its float alpha in Chromium even when the
 	// computed RGB value uses the legacy serialization syntax.
 	preserve_float_alpha_ bool
+	// Intermediate animation sums can exceed the display gamut. Retain those
+	// channels until interpolation produces the sampled color.
+	unclamped_animation_channels_ bool
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
@@ -372,7 +375,7 @@ pub fn (style_value RGBColorStyleValue) to_color(color_resolution_context ColorR
 
 pub fn (style_value RGBColorStyleValue) absolutized(context ComputationContext) RGBColorStyleValue {
 	value := RGBColorStyleValue.create(style_value.r_.value.absolutized(context), style_value.g_.value.absolutized(context), style_value.b_.value.absolutized(context), style_value.alpha_.value.absolutized(context), style_value.color_syntax(), none)
-	return RGBColorStyleValue{ ...value, preserve_float_alpha_: style_value.preserve_float_alpha_ }
+	return RGBColorStyleValue{ ...value, preserve_float_alpha_: style_value.preserve_float_alpha_, unclamped_animation_channels_: style_value.unclamped_animation_channels_ }
 }
 
 // https://www.w3.org/TR/css-color-4/#serializing-sRGB-values
