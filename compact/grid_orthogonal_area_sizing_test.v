@@ -20,3 +20,13 @@ fn test_orthogonal_grid_intrinsic_width_includes_distributed_row_gaps() {
  item := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
  assert item.width==40 && item.height==200,'${item.width}x${item.height}'
 }
+
+fn test_orthogonal_grid_intrinsic_columns_use_fixed_row_inline_constraints() {
+ for width in ['min-content','max-content','fit-content'] {
+  mut document := html.parse_document('<!doctype html><style>body{margin:0;font-size:0;line-height:0}#grid{display:grid;width:${width};grid-template-rows:50px;grid-template-columns:auto auto}#vertical{writing-mode:vertical-lr}span{display:inline-block;width:25px;height:25px}</style><div id="grid"><div id="vertical"><span></span><span></span><span></span></div><div><span></span><span></span><span></span></div></div>')
+  defer { document.finalize() }
+  _ = layout.layout_document_typed_in_viewport(document,800,600)
+  vertical := (document.get_element_by_id('vertical') or { panic('vertical') }).get_bounding_client_rect()
+  assert vertical.width==50 && vertical.height==50,'${width}: ${vertical.width}x${vertical.height}'
+ }
+}

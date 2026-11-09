@@ -2768,7 +2768,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			placement_result.implicit_columns_before, required_columns)
 	}
 	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
-
+	if grid_has_orthogonal_items(container,placements) {
+		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,if required_rows>0 { required_rows } else { 1 })
+		initialize_orthogonal_grid_inline_sizes(mut state,container,placements,initial_rows,row_gap)
+	}
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements,columns)

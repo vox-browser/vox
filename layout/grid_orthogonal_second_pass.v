@@ -7,6 +7,35 @@ fn grid_has_orthogonal_items(container &Node, placements []GridItemPlacement) bo
 	return false
 }
 
+// A fixed row range already constrains a vertical item's inline size before
+// column sizing. Seeding it now avoids measuring that item with an unbounded
+// inline axis, then retaining an oversized column in the second pass.
+fn initialize_orthogonal_grid_inline_sizes(mut state LayoutState, container &Node, placements []GridItemPlacement, rows []GridTrack, gap CSSPixels) {
+ mut parent := state.get_mutable(container.as_node_with_style() or { return })
+ for placement in placements {
+  item := placement.item
+  if !grid_is_vertical(item) || grid_is_vertical(container) || placement.row<0 || placement.row+placement.row_span>rows.len { continue }
+  mut definite := true
+  for track in rows[placement.row..placement.row+placement.row_span] {
+   if track.intrinsic || track.flexible || track.flex>0 { definite=false;break }
+  }
+  if !definite { continue }
+  styled := item.as_node_with_style() or { continue }
+  mut used := state.get_mutable(styled)
+  used.set_containing_block_used_values(parent)
+  resolve_box_model_edges(item.computed_values(),mut used,parent.content_width().to_double())
+  area := grid_track_range_size(rows,placement.row,placement.row_span,gap)
+  if height := resolve_layout_content_size(item,item.computed_values().size_value(.height),area,used,false) {
+   used.set_content_height(height)
+   used.set_has_definite_height(true)
+  } else if item.computed_values().size_value(.height).is_auto() && grid_block_alignment(container,item) in [.normal,.stretch]
+   && !property_is_auto(item.computed_values(),.margin_top) && !property_is_auto(item.computed_values(),.margin_bottom) {
+   used.set_content_height(css_pixels_max(CSSPixels.new(0),area.minus(flex_or_grid_item_outer_block_edges(used))))
+   used.set_has_definite_height(true)
+  }
+ }
+}
+
 // Resolving rows can give an orthogonal item's inline axis its first definite
 // constraint. Recompute content-sized columns from that constraint before
 // distributing their remaining space. Flexible/subgrid axes retain their
