@@ -482,7 +482,7 @@ fn (mut p HTMLParser) prepare_and_execute_parser_inserted_script(element &dom.El
 fn (mut p HTMLParser) register_parser_inserted_svg_script(element &dom.Element, token &HTMLToken) &SVGScriptElementModel {
 	svg_element := unsafe { &dom.SVGScriptElement(element) }
 	mut script := svg_script_element_model_for_dom_element(svg_element)
-	script.set_parser_inserted()
+	if p.scripting_mode != .fragment { script.set_parser_inserted() }
 	script.set_source_line_number(uint(token.start_position().line + 1))
 	script.set_fetch_hook(p.script_fetch_hook)
 	script.set_execute_hook(p.script_execute_hook)

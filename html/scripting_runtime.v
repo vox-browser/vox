@@ -54,6 +54,8 @@ pub:
 	column u32
 }
 
+pub type ScriptElementEvaluator = fn (ScriptElementType, string, string, int, ?&dom.Element) !
+
 @[heap]
 pub struct ScriptingRealm {
 pub mut:
@@ -72,6 +74,7 @@ pub mut:
 	active_classic_script_                  ?&ClassicScript
 	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
 	current_source_location_                ?fn () ?ScriptSourceLocation
+	evaluate_script_element_ ?ScriptElementEvaluator
 mut:
 	embedding_vm_                            ?&libjs.VM
 	embedding_realm_execution_context_       ?&libjs.ExecutionContext

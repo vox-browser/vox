@@ -609,7 +609,14 @@ fn (script &HTMLScriptElementModel) invoke_execute_hook(source string) ! {
 			return
 		}
 	}
-	if execute := script.execute_hook_ { execute(script.script_type_, source, source_url)! }
+	if execute := script.execute_hook_ {
+		execute(script.script_type_, source, source_url)!
+		return
+	}
+	if document := script.preparation_time_document_ {
+		element := if owner := script.element_ { ?&dom.Element(script_dom_element(owner)) } else { none }
+		_ = execute_bound_script_element(document, script.script_type_, source, int(script.source_line_number_), element)!
+	}
 }
 
 pub fn (mut script HTMLScriptElementModel) parser_execute_ready_script() {
@@ -727,6 +734,7 @@ pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
 	if model.is_parser_inserted() {
 		return
 	}
+	model.set_connected(script_dom_element(element).as_node().is_connected())
 	model.prepare_script(script_dom_element(element).document())
 }
 

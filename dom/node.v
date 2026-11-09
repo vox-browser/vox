@@ -3446,7 +3446,14 @@ pub fn (mut n Node) set_has_child_affected_by_backward_structural_changes(value 
 	n.has_child_affected_by_backward_structural_changes_ = value
 }
 
-pub fn (mut n Node) post_connection() {}
+pub fn (mut n Node) post_connection() {
+	if element := n.as_element() {
+		if element.local_name() != 'script' { return }
+		if hook := n.document().lifecycle_hook_ {
+			if hook.script_element_post_connection != unsafe { nil } { hook.script_element_post_connection(hook.target,element) }
+		}
+	}
+}
 
 pub fn (mut n Node) inserted() {
 	// Insertion visits shadow-including inclusive descendants in tree order, so
@@ -4608,6 +4615,7 @@ pub fn (n &Node) is_child_allowed(node &Node) bool {
 }
 
 pub fn (mut n Node) children_changed(metadata ChildrenChangedMetadata) {
+	defer { if n.is_connected() && metadata.type_ == .inserted { n.post_connection() } }
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.children_changed(metadata)
@@ -4631,7 +4639,7 @@ pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
 		if element.is_html_element() && element.local_name() == 'template' {
 			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!
 		}
-		if element.is_html_element() && dom_element_cloning_steps != unsafe { nil } {
+		if (element.is_html_element() || element.is_svg_element()) && dom_element_cloning_steps != unsafe { nil } {
 			dom_element_cloning_steps(element, copy, subtree)!
 		}
 	}

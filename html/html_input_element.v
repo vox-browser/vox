@@ -2661,6 +2661,21 @@ pub fn (mut model HTMLInputElementModel) handle_return_key(_ string) ! {
 
 // The cloning steps of the HTML elements whose state lives in their models.
 fn html_element_cloning_steps(source &dom.Element, copy &dom.Node, subtree bool) ! {
+	if source.local_name() == 'script' {
+		copy_element := copy.as_element() or { return }
+		if source.is_svg_element() && copy_element.is_svg_element() {
+			model := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(source) })
+			mut copy_model := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(copy_element) })
+			copy_model.set_already_processed(model.already_processed())
+		} else if source.is_html_element() && copy_element.is_html_element() {
+			model := html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(source) })
+			mut copy_model := html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(copy_element) })
+			copy_model.set_already_started(model.has_already_started())
+		}
+		return
+	}
+	if !source.is_html_element() { return }
+
 	if source.local_name() != 'input' {
 		return
 	}

@@ -1725,6 +1725,7 @@ pub type DocumentQueueElementTaskCallback = fn (voidptr, &Element, TaskSource, f
 
 pub struct DocumentLifecycleHook {
 pub:
+	script_element_post_connection fn (voidptr, &Element) = unsafe { nil }
 	target                           voidptr = unsafe { nil }
 	register_document                DocumentLifecycleCallback = unsafe { nil }
 	unregister_document              DocumentLifecycleCallback = unsafe { nil }
@@ -5491,7 +5492,7 @@ pub mut:
 	scripts_to_execute_when_parsing_has_finished    []&HTMLScriptElement
 	scripts_to_execute_in_order_as_soon_as_possible []&HTMLScriptElement
 	scripts_to_execute_as_soon_as_possible          []&HTMLScriptElement
-	current_script                                  &HTMLScriptElement = unsafe { nil }
+	current_script                                  &Element = unsafe { nil }
 	custom_element_reaction_backup_queue            []&Element
 	custom_element_construction_hook_               ?CustomElementConstructionHook
 	processing_custom_element_reaction_backup_queue bool
@@ -8894,7 +8895,7 @@ pub fn (mut d Document) implementation() &DOMImplementation {
 }
 
 // --- Scripting ---
-pub fn (d &Document) current_script() ?&HTMLScriptElement {
+pub fn (d &Document) current_script() ?&Element {
 	if d.current_script == unsafe { nil } {
 		return none
 	}
