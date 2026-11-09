@@ -459,6 +459,29 @@ for i, (left, width, dst_bits, scale_bits) in enumerate(crop_geometries):
             filters=filters, p3=variant != 1, premul=variant == 2, alpha=.65,
             mode='src_in' if variant == 1 else 'src_over', clip=variant == 1))
 
+name = 'color-layer-crop'
+f = json.loads((fixture_root / (name + '.json')).read_text())
+cases.append(dict(name=name, width=f['width'], height=f['height'], pitch=f['pitch'],
+    alpha_type=f['alpha_type'], iw=f['image_width'], ih=f['image_height'],
+    pixel_pitch=f['image_pitch'], premul=f['image_premultiplied'], p3=f['image_display_p3'],
+    pixels=list((fixture_root / (name + '-source.rgba')).read_bytes()),
+    initial=list((fixture_root / (name + '-background.rgba')).read_bytes()),
+    transform=f['transform'], source=f['source'], destination=f['destination'],
+    alpha=f['global_alpha'], mode=list(m.MODES)[f['composite']], clips=f['clips'],
+    filters=[(x['kind'], x['color'], x['sigma'], x['offset_x'], x['offset_y'], x['matrix'], int(x['clamp']))
+             for x in f['filters']]))
+
+for i, (left, width, dst_bits, scale_bits) in enumerate(crop_geometries):
+    l, t, rr, bb = map(scalar_bits, dst_bits)
+    scale = scalar_bits(scale_bits)
+    gain4 = (2, 0, 0, 0, 0, [4,0,0,0,0, 0,4,0,0,0, 0,0,4,0,0, 0,0,0,1,0], 0)
+    gain100 = (2, 0, 0, 0, 0, [100,0,0,0,0, 0,100,0,0,0, 0,0,100,0,0, 0,0,0,1,0], 0)
+    for variant, filters in enumerate([[contrast, gain4], [opacity, gain100], [gain100], [opacity]]):
+        cases.append(dict(name=f'cropped-color-{i}-{variant}', source=[left, 1, width, 5],
+            destination=[l,t,scalar(rr-l),scalar(bb-t)], transform=[scale,0,0,scale,2.25,3.5],
+            filters=filters, p3=variant in [1,2], premul=variant == 0, alpha=.65,
+            mode=['src_over','src','src_in','plus_lighter'][variant], clip=variant in [1,2]))
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -548,6 +571,7 @@ if platform.system() == 'Linux':
 expected += ['4df34ad3170908fa', '8e7893ef665e07b6', 'eacd8fde217cf3fe', '030f88d9d77c6cc2', '925ff7120103e699', '62bbcb7ecc229498', '8f76dc9ca3585f3c', '4e47f5b286c15049', '65c6352c1aadf86d', 'e227f114505d2ce6', 'e4f3f15a9d09e674', '4e345290a5870197']
 if platform.system() == 'Linux':
     expected[-12:] = ['7fa25b3afcf70974', 'ff202711441f1425', 'e9a48b9a15b48098', '030f88d9d77c6cc2', '5d8c9b12bd871571', '13e21e9efa7637f4', '454694f8f486415c', '4e47f5b286c15049', '03803f2bfe8fd947', 'e227f114505d2ce6', '428717f06c4023fc', '4e345290a5870197']
+expected += ['7590fe0bcd5b92d1', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1', '7f9693b40ef11387', 'f44d1959a67025ac', '44c0f31be7db0067', '8bfc2f0cbc7e43c7', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
