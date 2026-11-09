@@ -1849,7 +1849,9 @@ fn grid_content_based_minimum_from_outer_contribution(item &Node, item_state &Us
 	} else {
 		item_state.has_definite_height()
 	}
-	if has_definite_preferred_size {
+	// Non-replaced percentage heights are cyclic during row sizing. Table
+	// wrappers retain their separate table height and ratio-sizing rules.
+	if has_definite_preferred_size && !(!columns && preferred.contains_percentage() && !item.is_replaced_box() && !item.is_table_wrapper()) {
 		if specified := resolve_layout_size(item, preferred, grid_track_range_size(tracks, start, span, gap)) {
 			content_minimum = specified
 		}
@@ -2656,7 +2658,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	// size after min-height clamps its used size. That constraint participates
 	// in align-content/auto-track stretching without making percentage row
 	// sizes definite (the container's computed height is still auto).
-	grid_alignment_height := if container_state.has_definite_height() {
+	mut grid_alignment_height := if container_state.has_definite_height() {
 		?CSSPixels(container_state.content_height())
 	} else if available_space.height.is_definite() {
 		?CSSPixels(available_space.height.to_px_or_zero())
@@ -2874,6 +2876,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			expand_flexible_grid_tracks(mut columns, container_width, column_gap)
 		}
 	}
+ orthogonal_column_tracks := if grid_has_orthogonal_items(container,placements) { columns.clone() } else { []GridTrack{} }
 	mut columns_before_alignment := column_gap.scaled(f64(grid_gutter_count(columns, 0,
 		columns.len - 1)))
 	for column in columns {
@@ -2882,7 +2885,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	if grid_axis_content_alignment(container, true) in [.normal, .stretch] {
 		stretch_auto_grid_tracks(mut columns, container_width.minus(columns_before_alignment))
 	}
-	column_leading_space, effective_column_gap := grid_inline_content_geometry(container, container_width, columns, column_gap)
+	mut column_leading_space, mut effective_column_gap := grid_inline_content_geometry(container, container_width, columns, column_gap)
 	mut intrinsic_container_width := effective_column_gap.scaled(f64(grid_gutter_count(columns, 0,
 		columns.len - 1)))
 	for column in columns {
@@ -3118,6 +3121,15 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			}
 		}
 	}
+ mut cyclic_percentage_auto_height := ?CSSPixels(none)
+ if grid_alignment_height == none && !subgridded_rows {
+  mut intrinsic_height := row_gap.scaled(f64(grid_gutter_count(rows,0,rows.len-1)))
+  for track in rows { intrinsic_height = intrinsic_height.plus(track.base_size) }
+  if resolve_cyclic_percentage_grid_rows(mut state,container,mut rows,intrinsic_height,row_gap,placement_result.implicit_rows_before,if required_rows > 0 { required_rows } else { 1 }) {
+   cyclic_percentage_auto_height = intrinsic_height
+   grid_alignment_height = intrinsic_height
+  }
+ }
 	if alignment_height := grid_alignment_height {
 		if grid_axis_content_alignment(container, false) in [.normal, .stretch] {
 			mut rows_before_alignment := row_gap.scaled(f64(grid_gutter_count(rows, 0,
@@ -3129,6 +3141,21 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		}
 	}
 
+ mut orthogonal_columns_changed := false
+ if orthogonal_column_tracks.len > 0 && !subgridded_columns {
+  mut updated_columns := orthogonal_column_tracks.clone()
+  if update_orthogonal_grid_column_contributions(mut state,container,mut updated_columns,rows,placements,row_gap,column_gap,available_space.width) {
+   orthogonal_columns_changed = true
+   columns = updated_columns.clone()
+   mut total := column_gap.scaled(f64(grid_gutter_count(columns,0,columns.len-1)))
+   for track in columns { total = total.plus(track.base_size) }
+   if grid_axis_content_alignment(container,true) in [.normal,.stretch] { stretch_auto_grid_tracks(mut columns,container_width.minus(total)) }
+   column_leading_space,effective_column_gap = grid_inline_content_geometry(container,container_width,columns,column_gap)
+   intrinsic_container_width = effective_column_gap.scaled(f64(grid_gutter_count(columns,0,columns.len-1)))
+   for track in columns { intrinsic_container_width = intrinsic_container_width.plus(track.base_size) }
+   if width_is_intrinsic { container_state.set_content_width(intrinsic_container_width) }
+  }
+ }
 	mut row_leading_space := CSSPixels.new(0)
 	mut effective_row_gap := row_gap
 	if alignment_height := grid_alignment_height {
@@ -3138,6 +3165,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	for row in rows {
 		automatic_height = automatic_height.plus(row.base_size)
 	}
+	if intrinsic_height := cyclic_percentage_auto_height { automatic_height = intrinsic_height }
 	if layout_mode == .intrinsic_sizing {
 		if available_space.height.is_intrinsic_sizing_constraint() {
 			container_state.set_content_height(automatic_height)
@@ -3215,6 +3243,11 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		mut block_alignment := grid_block_alignment(container, placement.item)
 		top_margin_auto := property_is_auto(placement.item.computed_values(), .margin_top)
 		bottom_margin_auto := property_is_auto(placement.item.computed_values(), .margin_bottom)
+  mut final_item_width := item_state.content_width()
+  if orthogonal_columns_changed && placement.item.computed_values().size_value(.width).is_auto()
+   && inline_alignment in [.normal,.stretch] && !left_margin_auto && !right_margin_auto && !placement.item.is_replaced_box() {
+   final_item_width = clamp_layout_content_size(placement.item,area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)),area_width,item_state,true)
+  }
 		mut forced_item_height := ?CSSPixels(none)
 		if (block_alignment == .stretch || (block_alignment == .normal
 			&& !placement.item.is_replaced_box()))
@@ -3241,7 +3274,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			// When stretching preserves its content height, only the percentage
 			// basis changes. Reuse that geometry when nothing depends on the new
 			// definite height, just as flex stretching does.
-			if clamped_height == item_state.content_height()
+			if clamped_height == item_state.content_height() && final_item_width == item_state.content_width()
 				&& !subgridded_columns && !subgridded_rows
 				&& !placement.item.is_replaced_box() && !node_uses_button_layout(placement.item)
 				&& (item_state.has_definite_height()
@@ -3252,7 +3285,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 					container_state.content_height()
 				} else {
 					none
-				}, item_state.content_width(), clamped_height)
+				}, final_item_width, clamped_height)
 			}
 		} else if placement.item.is_replaced_box()
 			&& (placement.item.computed_values().size_value(.height).contains_percentage()

@@ -383,7 +383,7 @@ fn (mut builder LineBuilder) remaining_width_on_current_line() ?CSSPixels {
 	if !builder.available_width_for_current_line.is_definite() {
 		return none
 	}
-	return builder.available_width_to_fit().minus(builder.ensure_last_line_box().width())
+	return builder.available_width_to_fit().minus(builder.ensure_last_line_box().inline_length())
 }
 
 // Chromium accepts content that overflows the line by one LayoutUnit (1/64
@@ -477,7 +477,7 @@ fn (mut builder LineBuilder) should_break(next_item_width CSSPixels) bool {
 			return false
 		}
 	}
-	current_line_width := builder.ensure_last_line_box().width()
+	current_line_width := builder.ensure_last_line_box().inline_length()
 	if builder.available_width_for_current_line.is_definite() {
 		return builder.available_width_to_fit().raw_value() < current_line_width.plus(next_item_width).raw_value()
 	}
