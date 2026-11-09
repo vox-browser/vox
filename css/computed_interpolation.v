@@ -7674,6 +7674,11 @@ fn interpolate_font_style_property(calculation_context InterpolationCalculationC
 	parsed_to := style_value_logic_from_dom(.font_style, to) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
+	if parsed_from is FontStyleStyleValue && parsed_to is FontStyleStyleValue {
+		if parsed_from.font_style() == .italic || parsed_to.font_style() == .italic {
+			return interpolate_discrete(from,to,delta,allow_discrete)
+		}
+	}
 	normalized_from := interpolation_font_style_with_normal_as_oblique_zero(parsed_from) or {
 		return interpolate_discrete(from, to, delta, allow_discrete)
 	}
