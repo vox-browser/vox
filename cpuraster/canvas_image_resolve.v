@@ -11,8 +11,8 @@ fn resolve_filter_image_view(view FilterImageView, requested IRect) ?FilterResul
 	mut pixels := []u8{len: w * h * 4}
 	rc := canvas_raster_clip(w, h, [rect_path(Rect{1, 1, f32(w - 1), f32(h - 1)})])
 	mut target := new_canvas_target(mut pixels, w, h, w * 4, 2)
-	if !draw_filter_image_view(mut pixels, w * 4, &rc, .src_over, view,
-		padded.left, padded.top, mut target) { return none }
+	if !draw_filter_image_view_surface(mut pixels, w * 4, &rc, .src_over, view,
+		padded.left, padded.top, mut target,view.native_context || canvas_rgba_uses_legacy()) { return none }
 	return new_filter_result(SpecialImage{BlurImage{pixels, w, h}, IRect{0, 0, w, h}},
 		padded.left, padded.top).inset_for_save_layer()
 }

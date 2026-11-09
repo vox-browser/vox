@@ -233,7 +233,8 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	sy := f32(math_abs32(sigma * ctm.sy))
 	layer_sx := blur_layer_sigma(sx)
 	layer_sy := blur_layer_sigma(sy)
-	if layer_sx > image_blur_max_sigma || layer_sy > image_blur_max_sigma {
+	large_blur := layer_sx > image_blur_max_sigma || layer_sy > image_blur_max_sigma
+	if large_blur && (drop || step.source_image || tint != none) {
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -321,6 +322,10 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	inner_clip := rect_path(Rect{1, 1, f32(lw - 1), f32(lh - 1)})
 	if !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) {
 		return false
+	}
+	if large_blur {
+		return draw_large_blur_layer(mut pixels,pitch,&rc,mode,BlurImage{layer_pixels,lw,lh},
+			padded.left,padded.top,layer_sx,layer_sy,step,mut target)
 	}
 	target.ready()
 	// internalDrawDeviceWithFilter(): the layer without its padding, the

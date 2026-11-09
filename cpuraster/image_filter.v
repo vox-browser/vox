@@ -224,10 +224,18 @@ fn blur_filter_result(source FilterResult, desired IRect, sigma_x_in f32, sigma_
 // on the subset of src, inside clip: the result's pixels and offset, none
 // for an empty result.
 pub fn image_with_blur_filter(src BlurImage, subset IRect, clip IRect, sigma_x f32, sigma_y f32) ?(BlurImage, int, int) {
-	if clip.is_empty() {
+	if clip.is_empty() || sigma_x < 0 || sigma_y < 0 || !is_finite_f32(sigma_x) || !is_finite_f32(sigma_y) {
 		return none
 	}
 	source := new_filter_result(SpecialImage{src, subset}, subset.left, subset.top)
+	sx,sy := blur_layer_sigma(sigma_x),blur_layer_sigma(sigma_y)
+	if sx > image_blur_max_sigma || sy > image_blur_max_sigma {
+		view := scaled_blur_filter_view(source,clip,sx,sy,none,false)?
+		if view.bitmap.width == 0 { return none }
+		resolved := resolve_filter_image_view(view,clip)?
+		if !resolved.has_image { return none }
+		return resolved.image.bitmap(),resolved.layer_bounds.left,resolved.layer_bounds.top
+	}
 	result := blur_filter_result(source, clip, sigma_x, sigma_y)?
 	resolved := result.resolve(clip)
 	if !resolved.has_image {

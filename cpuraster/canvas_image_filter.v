@@ -4,6 +4,10 @@ module cpuraster
 // filter restore. Its transform and bounds are in the original layer space.
 struct FilterImageView {
 	bitmap CanvasBitmap
+	// Keep initialized blur padding available to the image sampler.
+	special_image ?SpecialImage
+	// Saved-layer filtering uses native N32 intermediate surfaces.
+	native_context bool
 	transform SkAffine
 	layer_bounds IRect
 	layer_crop bool
@@ -69,6 +73,10 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 }
 
 fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget) bool {
+	return draw_filter_image_view_surface(mut pixels,pitch,rc,mode,view,origin_x,origin_y,mut target,canvas_rgba_uses_legacy())
+}
+
+fn draw_filter_image_view_surface(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget, legacy bool) bool {
 	if view.layer_crop {
 		image := map_filter_bounds(IRect{0, 0, view.bitmap.width, view.bitmap.height}, view.transform)
 		clip := rc.bounds()
@@ -82,7 +90,7 @@ fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode Blend
 				if !result.has_image {
 					draw_empty_filter_result(mut pixels, pitch, rc, mode)
 				} else {
-					draw_filter_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()),
+					draw_filter_bitmap(mut pixels, pitch, CanvasBitmap{...result.color_info.bitmap(result.image.bitmap()),native_n32:view.native_context || canvas_rgba_uses_legacy()},
 						result.origin_x - origin_x, result.origin_y - origin_y, rc, mode, 1)
 				}
 				return true
@@ -92,13 +100,13 @@ fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode Blend
 			clipped.op_device_rect(Rect{f32(b.left - origin_x), f32(b.top - origin_y),
 				f32(b.right - origin_x), f32(b.bottom - origin_y)}, true)
 			if clipped.is_empty { return target.ready() }
-			return draw_filter_image_view_unclipped(mut pixels, pitch, &clipped, mode, view, origin_x, origin_y, mut target)
+			return draw_filter_image_view_unclipped(mut pixels, pitch, &clipped, mode, view, origin_x, origin_y, mut target,legacy)
 		}
 	}
-	return draw_filter_image_view_unclipped(mut pixels, pitch, rc, mode, view, origin_x, origin_y, mut target)
+	return draw_filter_image_view_unclipped(mut pixels, pitch, rc, mode, view, origin_x, origin_y, mut target,legacy)
 }
 
-fn draw_filter_image_view_unclipped(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget) bool {
+fn draw_filter_image_view_unclipped(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget, legacy bool) bool {
 	mut total := if origin_x == 0 && origin_y == 0 { view.transform } else {
 		sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), view.transform) }
 	// The default-sampling decision belongs to applyTransform(), before the
@@ -124,14 +132,34 @@ fn draw_filter_image_view_unclipped(mut pixels []u8, pitch int, rc &RasterClip, 
 	}
 	dev := InverseMatrix{total, total.type_mask()}.map_rect(Rect{0, 0, f32(bitmap.width), f32(bitmap.height)})
 	bounds := round_out(dev)
+	// A filtered image with initialized padding follows drawSpecial() when
+	// its safe sampling bounds cover the clip, including clearing blenders.
+	mut shader_fill := unbounded
+	if view.special_image != none && unbounded {
+		x_aligned, y_aligned := filter_nearly_integer_axes(total)
+		ex := if x_aligned { f32(0) } else { image_filter_round_epsilon }
+		ey := if y_aligned { f32(0) } else { image_filter_round_epsilon }
+		inset := if sample_linear && !pixel_aligned { f32(.5) } else { f32(0) }
+		safe := Rect{inset+ex,inset+ey,f32(bitmap.width)-inset-ex,f32(bitmap.height)-inset-ey}
+		shader_fill = !filter_quad_contains_rect(total,safe,Rect{f32(clip_bounds.left),f32(clip_bounds.top),
+			f32(clip_bounds.right),f32(clip_bounds.bottom)}).all(it)
+	}
 	// A clearing blender samples outside the transformed image through a
 	// decal shader. Its destination is the clip, including rotated corners.
 	min_scale, max_scale := image_filter_minmax_scales(total)
-	layer_decal := unbounded && sample_linear && !pixel_aligned
+	layer_decal := shader_fill && sample_linear && !pixel_aligned
 		&& (math_abs32(min_scale - 1) > f32(.2) || math_abs32(max_scale - 1) > f32(.2))
 	mut pre_decal := total
 	mut decal_inverse := SkAffine{}
 	mut decal_bounds := dev
+	if layer_decal && view.special_image != none && rect_stays_rect(total) && (origin_x != 0 || origin_y != 0) {
+		// The runtime effect applies the inverse surface translation before
+		// its child image matrix. Preserve that separate float rounding.
+		pre_decal = view.transform
+		decal_inverse = affine_translate(f32(origin_x),f32(origin_y))
+		decal_bounds = InverseMatrix{pre_decal,pre_decal.type_mask()}.map_rect(Rect{0,0,f32(bitmap.width),f32(bitmap.height)})
+	}
+
 	if layer_decal && !rect_stays_rect(total) {
 		// Factor the column scales out of the transform. The runtime effect
 		// evaluates the decal after the scale and before the remaining affine
@@ -146,23 +174,44 @@ fn draw_filter_image_view_unclipped(mut pixels []u8, pitch int, rc &RasterClip, 
 		pre_decal = affine_scale(sx, sy)
 		decal_bounds = Rect{0, 0, f32(bitmap.width) * sx, f32(bitmap.height) * sy}
 	}
-	tile := if unbounded && !layer_decal { TileMode.decal } else { .clamp }
+	tile := if shader_fill && !layer_decal { TileMode.decal } else { .clamp }
 	// A runtime decal effect samples its child with an invalid total-matrix
 	// record. SkImageShader therefore keeps the base mip level for that child.
-	mut shader := if sample_linear && !pixel_aligned {
-		if default_sampling { new_image_shader(bitmap, tile, tile, true, pre_decal) }
-		else { new_linear_mipmap_image_shader(bitmap, tile, tile, pre_decal, !layer_decal) }
+	mut sampled_bitmap := bitmap
+	mut sampled_matrix := if sample_linear && !pixel_aligned { pre_decal } else { total }
+	if special := view.special_image {
+		// Initialized pixels around a filtered subset remain sampleable unless
+		// bounds analysis requires a strict shader subset.
+		w, h := special.width(), special.height()
+		x_aligned, y_aligned := filter_nearly_integer_axes(total)
+		ex := if x_aligned { f32(0) } else { image_filter_round_epsilon }
+		ey := if y_aligned { f32(0) } else { image_filter_round_epsilon }
+		safe := Rect{f32(-.5)+ex,f32(-.5)+ey,f32(w)+f32(.5)-ex,f32(h)+f32(.5)-ey}
+		centers := Rect{f32(clip_bounds.left)+f32(.5),f32(clip_bounds.top)+f32(.5),
+			f32(clip_bounds.right)-f32(.5),f32(clip_bounds.bottom)-f32(.5)}
+		edges := filter_quad_contains_rect(total,safe,centers)
+		ss := special.subset
+		strict := unbounded && (!(edges[0] || ss.top == 0) || !(edges[1] || ss.right == special.backing.width)
+			|| !(edges[2] || ss.bottom == special.backing.height) || !(edges[3] || ss.left == 0))
+		if !strict && shader_fill {
+			sampled_bitmap = CanvasBitmap{...FilterImageInfo{}.bitmap(special.backing), native_n32: bitmap.native_n32}
+			sampled_matrix = pre_translate(sampled_matrix,-f32(ss.left),-f32(ss.top))
+		}
 	}
-		else { new_image_shader(bitmap, tile, tile, false, total) }
+	mut shader := if sample_linear && !pixel_aligned {
+		if default_sampling { new_image_shader(sampled_bitmap, tile, tile, true, sampled_matrix) }
+		else { new_linear_mipmap_image_shader(sampled_bitmap, tile, tile, sampled_matrix, !layer_decal) }
+	}
+		else { new_image_shader(sampled_bitmap, tile, tile, false, sampled_matrix) }
 	if layer_decal {
 		shader = CanvasShader{...shader, image: ImageShader{...shader.image, layer_decal: true,
 			decal_bounds: decal_bounds, decal_matrix: decal_inverse}}
 	}
 	mut blitter := filter_image_view_blitter(mut pixels, pitch, shader, mode,
-		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, view) or { return target.ready() }
+		Rect{f32(bounds.left), f32(bounds.top), f32(bounds.right), f32(bounds.bottom)}, view,legacy) or { return target.ready() }
 	target.ready()
-	if unbounded || sprite {
-		fill_irect(if unbounded { rc.bounds() } else { bounds }, rc, mut blitter)
+	if shader_fill || sprite {
+		fill_irect(if shader_fill { rc.bounds() } else { bounds }, rc, mut blitter)
 		return true
 	}
 	if rect_stays_rect(total) {
@@ -228,10 +277,10 @@ fn treat_as_aa_sprite(m SkAffine, width int, height int) bool {
 
 // A deferred SrcIn shadow color follows the image's alpha and matrix filters.
 // Keep these stages in one pipeline rather than tinting an 8-bit intermediate.
-fn filter_image_view_blitter(mut pixels []u8, pitch int, shader CanvasShader, mode BlendMode, bounds Rect, view FilterImageView) ?Blitter {
+fn filter_image_view_blitter(mut pixels []u8, pitch int, shader CanvasShader, mode BlendMode, bounds Rect, view FilterImageView, legacy bool) ?Blitter {
 	color := view.tint or {
 		return canvas_draw_blitter_for_surface(mut pixels, pitch, 0xff000000, shader, view.alpha,
-			mode, bounds, view.filter, canvas_rgba_uses_legacy() && view.alpha == 1)
+			mode, bounds, view.filter, legacy && view.alpha == 1)
 	}
 	mut image := shader.image
 	image.check_device_bounds(bounds)
