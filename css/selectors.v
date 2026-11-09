@@ -2809,6 +2809,15 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S
 			}
 			pseudo_class.is_forgiving = pseudo_class_type in [.is_, .where]
 			pseudo_class.argument_selector_list = selector_list_from_text(argument, false)
+			if pseudo_class_type == .not_ {
+				for argument_selector in pseudo_class.argument_selector_list.selectors {
+					for compound in argument_selector.compound_selectors() {
+						for simple in compound.simple_selectors {
+							if simple.type_ == .pseudo_element { return invalid_simple_selector(':${name}(${argument})') }
+						}
+					}
+				}
+			}
 		}
 		.nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type {
 			has_of_selector := top_level_ascii_word_index(argument, 'of') != none
