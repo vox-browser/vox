@@ -8,12 +8,19 @@ pub:
 	channels     []ModularChannel
 }
 
-fn small_modular_channel_info(file FileHeader, frame FrameHeader) ![]ModularChannelInfo {
-	colors := if !frame.do_ycbcr && !file.metadata.xyb_encoded && file.metadata.color_encoding.color_space == .gray {
+fn frame_color_channels(file FileHeader, frame FrameHeader) int {
+	return if !frame.do_ycbcr && !file.metadata.xyb_encoded && file.metadata.color_encoding.color_space == .gray {
 		1
 	} else {
 		3
 	}
+}
+
+fn small_modular_channel_info(file FileHeader, frame FrameHeader) ![]ModularChannelInfo {
+	return modular_frame_channel_info(file, frame, frame_color_channels(file, frame))
+}
+
+fn modular_frame_channel_info(file FileHeader, frame FrameHeader, colors int) ![]ModularChannelInfo {
 	if frame.upsampling == 0 || frame.extra_upsampling.len != file.metadata.extra_channels.len {
 		return error('Invalid JPEG XL modular frame sampling metadata')
 	}
