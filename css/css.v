@@ -453,6 +453,7 @@ pub enum PropertyID {
 	text_box_edge
 	animation_range_start
 	animation_range_end
+	font_size_adjust
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

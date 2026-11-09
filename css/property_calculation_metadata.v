@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'font-size-adjust' { return .font_size_adjust }
 	if name == 'position-try' { return .position_try }
 	if name == 'animation-range' { return .animation_range }
 	if name == 'animation-range-end' { return .animation_range_end }
@@ -3202,6 +3203,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.font_size_adjust { 'font-size-adjust' }
 		.animation_range { 'animation-range' }
 		.animation_range_start { 'animation-range-start' }
 		.animation_range_end { 'animation-range-end' }
@@ -3685,6 +3687,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.font_size_adjust { true }
 		.text_box_edge { true }
 		.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
@@ -3698,6 +3701,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.font_size_adjust { 'none' }
 		.animation_range { 'normal' }
 		.animation_range_start { 'normal' }
 		.animation_range_end { 'normal' }
@@ -4139,6 +4143,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.font_size_adjust {
+			AnimationType.by_computed_value
+		}
 		.animation_range_start, .animation_range_end {
 			AnimationType.none_
 		}
@@ -4189,6 +4196,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.font_size_adjust { true }
 		.text_box_trim, .text_box_edge { true }
 		.font_synthesis, .font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
 		.hyphens { true }
@@ -4237,6 +4245,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.font_size_adjust { true }
 		// SVG path data changes the path bounds stored in layout UsedValues.
 		.d { true }
 		.text_box_trim, .text_box_edge { true }
@@ -4293,6 +4302,7 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.font_size_adjust { true }
 		.animation_range_start, .animation_range_end { true }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			true
@@ -4395,6 +4405,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.font_size_adjust {
+			value_type == .number
+		}
 		.animation_range_start, .animation_range_end {
 			value_type in [.length, .percentage]
 		}
@@ -4582,6 +4595,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.font_size_adjust {
+			lowercase_value in ['none']
+		}
 		.animation_range_start, .animation_range_end {
 			lowercase_value in ['normal']
 		}
@@ -5060,6 +5076,12 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]AcceptedTypeRange {
 	mut ranges := map[ValueType]AcceptedTypeRange{}
 	match property_id {
+		.font_size_adjust {
+			ranges[.number] = AcceptedTypeRange{
+				min: 0
+				max: math.max_f32
+			}
+		}
 		.animation_delay {
 			ranges[.time] = AcceptedTypeRange{
 				min: -math.max_f32
@@ -5275,6 +5297,9 @@ pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 
 pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 	return match property_id {
+		.font_size_adjust {
+			value >= 0
+		}
 		.animation_iteration_count, .border_image_outset, .border_image_slice, .border_image_width, .flex_grow, .flex_shrink, .line_height, .stroke_dashoffset, .stroke_miterlimit, .stroke_width, .tab_size {
 			value >= 0
 		}

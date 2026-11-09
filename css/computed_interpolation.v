@@ -6498,11 +6498,12 @@ fn with_keyword_values_resolved_boundary(element &dom.Element, property_id Prope
 			return computed_interpolation_property_initial_value(property_id)
 		}
 	}
+	unset := computed_interpolation_style_value_is_unset(value)
 	if computed_interpolation_style_value_is_initial(value)
-		|| computed_interpolation_style_value_is_unset(value) {
+		|| (unset && !is_inherited_property(property_id)) {
 		return computed_interpolation_property_initial_value(property_id)
 	}
-	if computed_interpolation_style_value_is_inherit(value) {
+	if computed_interpolation_style_value_is_inherit(value) || unset {
 		return StyleComputer.get_non_animated_inherit_value(property_id, dom.AbstractElement.new(element, none))
 	}
 	return unsafe { value }
@@ -8890,6 +8891,11 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 	}
 	underlying := style_value_logic_from_dom(property_id, underlying_value) or { return none }
 	animated := style_value_logic_from_dom(property_id, animated_value) or { return none }
+	if property_id == .font_size_adjust {
+		if result := composite_font_size_adjust_metric(underlying,animated,composite_operation) {
+			return dom_style_value_from_value_logic(result)
+		}
+	}
 	composited := composite_style_value(property_id, underlying, animated, composite_operation) or {
 		return none
 	}

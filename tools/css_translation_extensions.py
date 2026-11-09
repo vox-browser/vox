@@ -1,6 +1,15 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'font-size-adjust': {
+        'style-group': 'FontValues',
+        'animation-type': 'by-computed-value',
+        'inherited': True,
+        'initial': 'none',
+        'requires-computation': 'cascaded-value',
+        'valid-types': ['number [0,∞]'],
+        'valid-identifiers': ['none'],
+    },
     # Ladybird 2919bf87: position-try shorthand, absent from the older working snapshot.
     'position-try': {
         'initial': 'normal none',
@@ -81,12 +90,19 @@ def extend_properties(properties):
         if name not in animation['longhands']:
             animation['longhands'].append(name)
     result['animation'] = animation
+    font = dict(result['font'])
+    font['longhands'] = list(font['longhands'])
+    if 'font-size-adjust' not in font['longhands']:
+        font['longhands'].append('font-size-adjust')
+    result['font'] = font
     return result
 
 
 def extend_shorthand_tables(tables):
     for table in ['longhands_for_shorthand', 'expanded_longhands_for_shorthand']:
         for shorthand, values in tables[table]:
+            if shorthand == 'font' and 'font_size_adjust' not in values:
+                values.append('font_size_adjust')
             if shorthand == 'animation':
                 for name in ['animation_range_start', 'animation_range_end']:
                     if name not in values:
@@ -120,5 +136,7 @@ def extend_shorthand_tables(tables):
                           if name in value.get('longhands', [])]
             if name in ['animation-range-start', 'animation-range-end']:
                 shorthands.insert(0, 'animation')
+            if name == 'font-size-adjust':
+                shorthands.insert(0, 'font')
             tables['shorthands_for_longhand'].append((identifier, shorthands + ['all']))
     return tables

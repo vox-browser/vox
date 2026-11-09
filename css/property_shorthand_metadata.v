@@ -4,6 +4,9 @@ module css
 
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font {
+			[.font_family, .font_size, .font_width, .font_style, .font_variant, .font_weight, .line_height, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variation_settings, .font_size_adjust]
+		}
 		.position_try { [.position_try_order,.position_try_fallbacks] }
 		.animation_range {
 			[.animation_range_start, .animation_range_end]
@@ -96,7 +99,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -223,11 +226,6 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 		}
 		.flex_flow {
 			[.flex_direction, .flex_wrap]
-		}
-		.font {
-			[.font_family, .font_size, .font_width, .font_style, .font_variant, .font_weight,
-				.line_height, .font_feature_settings, .font_kerning, .font_language_override,
-				.font_optical_sizing, .font_variation_settings]
 		}
 		.font_variant {
 			[.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
@@ -368,6 +366,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font {
+			[.font_family, .font_size, .font_width, .font_style, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_weight, .line_height, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variation_settings, .font_size_adjust]
+		}
 		.position_try { [.position_try_order,.position_try_fallbacks] }
 		.animation_range {
 			[.animation_range_start, .animation_range_end]
@@ -460,7 +461,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -594,13 +595,6 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 		}
 		.flex_flow {
 			[.flex_direction, .flex_wrap]
-		}
-		.font {
-			[.font_family, .font_size, .font_width, .font_style, .font_variant_alternates,
-				.font_variant_caps, .font_variant_east_asian, .font_variant_emoji,
-				.font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_weight,
-				.line_height, .font_feature_settings, .font_kerning, .font_language_override,
-				.font_optical_sizing, .font_variation_settings]
 		}
 		.font_variant {
 			[.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
@@ -741,6 +735,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font_size_adjust {
+			[.font, .all]
+		}
 		.animation_range_start {
 			[.animation, .animation_range, .all]
 		}

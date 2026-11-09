@@ -947,6 +947,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
+		.font_size_adjust { return parser.parse_font_size_adjust_value(mut tokens) }
 		.page_break_after, .page_break_before, .page_break_inside {
 			return parser.parse_page_break_legacy_shorthand(property_id, mut tokens)
 		}
@@ -4652,7 +4653,7 @@ const font_shorthand_longhands = [PropertyID.font_family, PropertyID.font_size,
 	PropertyID.font_width, PropertyID.font_style, PropertyID.font_variant, PropertyID.font_weight,
 	PropertyID.line_height, PropertyID.font_feature_settings, PropertyID.font_kerning,
 	PropertyID.font_language_override, PropertyID.font_optical_sizing,
-	PropertyID.font_variation_settings]
+	PropertyID.font_variation_settings, PropertyID.font_size_adjust]
 
 // https://drafts.csswg.org/css-fonts/#font-prop
 // [ [ <'font-style'> || <font-variant-css2> || <'font-weight'> || <font-width-css3> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'># ]
@@ -4777,6 +4778,7 @@ fn (mut parser Parser) parse_font_value(mut tokens ComponentValueStream) ?StyleV
 		parser.longhand_initial_typed_value(.font_language_override) or { return none },
 		parser.longhand_initial_typed_value(.font_optical_sizing) or { return none },
 		parser.longhand_initial_typed_value(.font_variation_settings) or { return none },
+		parser.longhand_initial_typed_value(.font_size_adjust) or { return none },
 	]
 
 	tokens = transaction

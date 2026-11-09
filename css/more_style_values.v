@@ -3320,44 +3320,43 @@ fn serialize_border_radius_corners(top_left string, top_right string, bottom_rig
 fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?string {
 	// Index layout must match `font_shorthand_longhands`:
 	// 0 family, 1 size, 2 width, 3 style, 4 nested font-variant,
-	// 5 weight, 6 line-height, 7..11 reset-only longhands.
-	if style_value.shorthand_ != .font || style_value.values_.len != 12 {
-		return none
-	}
+	// 5 weight, 6 line-height, 7.. reset-only longhands.
+	if style_value.shorthand_ != .font { return none }
+	if style_value.values_.len != font_shorthand_longhands.len { return '' }
 	mut ser := []string{cap: 12}
 	for value in style_value.values_ {
 		ser << value.serialize(mode)
 	}
 	// The reset-only sub-properties must all be at their initial value.
-	for i in 7 .. 12 {
+	for i in 7 .. ser.len {
 		if ser[i] != computed_interpolation_property_initial_value(style_value.sub_properties_[i]).css_text {
-			return none
+			return ''
 		}
 	}
 
 	variant_value := style_value.values_[4]
 	if variant_value !is ShorthandStyleValue {
-		return none
+		return ''
 	}
 	variant_shorthand := variant_value as ShorthandStyleValue
 	if variant_shorthand.shorthand_ != .font_variant {
-		return none
+		return ''
 	}
 	// <font-variant-css2> = normal | small-caps: only font-variant-caps may differ.
 	mut variant := 'normal'
 	for id in [PropertyID.font_variant_alternates, .font_variant_caps, .font_variant_east_asian,
 		.font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position] {
-		value := variant_shorthand.longhand(id) or { return none }
+		value := variant_shorthand.longhand(id) or { return '' }
 		serialized := value.serialize(mode)
 		initial := computed_interpolation_property_initial_value(id).css_text
 		if id == .font_variant_caps {
 			if serialized == 'small-caps' {
 				variant = 'small-caps'
 			} else if serialized != initial {
-				return none
+				return ''
 			}
 		} else if serialized != initial {
-			return none
+			return ''
 		}
 	}
 	// <font-width-css3> is a keyword. A computed width is a percentage, which
@@ -3376,7 +3375,7 @@ fn (style_value ShorthandStyleValue) serialize_font(mode SerializationMode) ?str
 	}
 	if ser[2] !in ['normal', 'ultra-condensed', 'extra-condensed', 'condensed', 'semi-condensed',
 		'semi-expanded', 'expanded', 'extra-expanded', 'ultra-expanded'] {
-		return none
+		return ''
 	}
 	mut parts := []string{}
 	if ser[3] != 'normal' {
