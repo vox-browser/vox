@@ -183,6 +183,10 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'alignment-baseline' { return .alignment_baseline }
+	if name == 'baseline-shift' { return .baseline_shift }
+	if name == 'baseline-source' { return .baseline_source }
+
 	if name == 'border-shape' { return .border_shape }
 	if name == 'text-orientation' { return .text_orientation }
 	if name == 'forced-color-adjust' { return .forced_color_adjust }
@@ -3207,6 +3211,10 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.alignment_baseline { 'alignment-baseline' }
+		.baseline_shift { 'baseline-shift' }
+		.baseline_source { 'baseline-source' }
+
 		.border_shape { 'border-shape' }
 		.text_orientation { 'text-orientation' }
 		.forced_color_adjust { 'forced-color-adjust' }
@@ -3712,6 +3720,10 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.alignment_baseline { 'baseline' }
+		.baseline_shift { '0px' }
+		.baseline_source { 'auto' }
+
 		.border_shape { 'none' }
 		.text_orientation { 'mixed' }
 		.forced_color_adjust { 'auto' }
@@ -4158,6 +4170,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.alignment_baseline, .baseline_source { AnimationType.discrete }
+		.baseline_shift { AnimationType.by_computed_value }
+
 		.border_shape {
 			AnimationType.by_computed_value
 		}
@@ -4223,6 +4238,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.alignment_baseline, .baseline_shift, .baseline_source { true }
+
 		.border_shape { true }
 		.text_orientation { true }
 		.forced_color_adjust { true }
@@ -4276,6 +4293,8 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.alignment_baseline, .baseline_shift, .baseline_source { true }
+
 		.text_orientation { true }
 		.font_size_adjust { true }
 		// SVG path data changes the path bounds stored in layout UsedValues.
@@ -4334,6 +4353,8 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.baseline_shift { true }
+
 		.border_shape { true }
 		.font_palette { true }
 		.font_size_adjust { true }
@@ -4424,6 +4445,8 @@ pub fn resolve_legacy_value_alias(property_id PropertyID, keyword Keyword) ?Keyw
 
 pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueType {
 	return match property_id {
+		.baseline_shift { ValueType.length }
+
 		.animation_range_start, .animation_range_end {
 			ValueType.length
 		}
@@ -4439,6 +4462,8 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.baseline_shift { value_type in [.length,.percentage] }
+
 		.font_palette {
 			value_type == .string
 		}
@@ -4632,6 +4657,10 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.alignment_baseline { lowercase_value in ['baseline','text-bottom','alphabetic','ideographic','middle','central','mathematical','hanging','text-top'] }
+		.baseline_source { lowercase_value in ['auto','first','last'] }
+		.baseline_shift { lowercase_value in ['sub','super','top','center','bottom'] }
+
 		.border_shape {
 			lowercase_value in ['none']
 		}
@@ -5325,6 +5354,8 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
+		.baseline_shift { true }
+
 		.animation_range_start, .animation_range_end {
 			true
 		}
@@ -5364,6 +5395,8 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
+		.baseline_shift { true }
+
 		.animation_range_start, .animation_range_end {
 			true
 		}

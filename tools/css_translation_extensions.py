@@ -1,6 +1,23 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'alignment-baseline': {
+        'animation-type': 'discrete', 'initial': 'baseline',
+        'requires-computation': 'never',
+        'valid-identifiers': ['baseline', 'text-bottom', 'alphabetic', 'ideographic',
+                              'middle', 'central', 'mathematical', 'hanging', 'text-top'],
+    },
+    'baseline-shift': {
+        'animation-type': 'by-computed-value', 'initial': '0px',
+        'requires-computation': 'cascaded-value',
+        'valid-types': ['length [-∞,∞]', 'percentage [-∞,∞]'],
+        'valid-identifiers': ['sub', 'super', 'top', 'center', 'bottom'],
+        'percentages-resolve-to': 'length',
+    },
+    'baseline-source': {
+        'animation-type': 'discrete', 'initial': 'auto',
+        'requires-computation': 'never', 'valid-identifiers': ['auto','first','last'],
+    },
     'border-shape': {
         'animation-type': 'by-computed-value',
         'affects-layout': False,
@@ -109,7 +126,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):
