@@ -12080,7 +12080,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		compute_transitioned_properties(properties, abstract_element, mut transition_storage)
 		if old_dom_style := abstract_element.computed_properties() {
 			if old_style := computed_properties_from_dom(old_dom_style) {
-				s.start_needed_transitions(old_style, mut properties, abstract_element)
+				initial_fallback := s.position_try_override_ != none && !position_try_target_has_geometry(abstract_element)
+				if !initial_fallback { s.start_needed_transitions(old_style, mut properties, abstract_element) }
 			}
 		}
 	}

@@ -67,3 +67,9 @@ fn position_try_reference_scope(element dom.AbstractElement, cascaded &CascadedP
 	}
 	return style_scope_for_abstract_element(element)
 }
+
+fn position_try_target_has_geometry(target dom.AbstractElement) bool {
+	styled := target.layout_node() or { return false }
+	layout := styled.layout_node_ or { return false }
+	return layout.has_geometry_
+}
