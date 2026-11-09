@@ -143,6 +143,11 @@ def production_input_path(relative):
                 # Documentation cannot alter browser/helper output by itself.
                 # Explicit compiler-reported inputs remain pinned separately.
                 or path.suffix.lower() == '.md'
+                # Package TSV corpora belong to their focused tests. A new
+                # translation fixture must not abort an unrelated browser
+                # build; explicitly consumed files are pinned by the compiler
+                # manifest, just like embedded Markdown above.
+                or ('testdata' in path.parts and path.suffix.lower() == '.tsv')
                 or relative.endswith('_test.v') or test_tool
                 or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})
 

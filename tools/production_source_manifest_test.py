@@ -102,6 +102,50 @@ class ProductionSourceManifestTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'input changed'):
                     manifest.combine(root, inventory, [component])
 
+    def test_package_tsv_corpora_do_not_change_browser_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = (Path(temporary) / 'repo').resolve()
+            self.fixture(root)
+            fixtures = root / 'jpegxl/testdata'
+            fixtures.mkdir(parents=True)
+            corpus = fixtures / 'modular.tsv'
+            corpus.write_text('old fixture')
+            inventory = manifest.begin(root)
+            component = self.component(root, 'component', [root / 'browser.v'])
+            before = manifest.fingerprint([root / 'browser.v', root / 'native.h'])
+            from rebuild_browser import repository_state, same_build_inputs
+            subprocess.run(['git', '-C', str(root), '-c', 'user.name=Fixture',
+                            '-c', 'user.email=fixture@example.com', 'commit',
+                            '--allow-empty', '-qm', 'Initialize test repository'], check=True)
+            state = repository_state(root)
+            corpus.write_text('new fixture')
+            (fixtures / 'new.tsv').write_text('another focused test')
+            manifest.validate_inventory(root, inventory)
+            self.assertTrue(same_build_inputs(state, repository_state(root)))
+            combined = manifest.combine(root, inventory, [component])
+            self.assertEqual(combined, before)
+            self.assertTrue(manifest.matches_compiled_checkout(root, dict(
+                source_inventory=inventory, exact_source_manifest=combined)))
+
+    def test_explicit_tsv_inputs_and_native_testdata_headers_stay_pinned(self):
+        for name in ['embedded.tsv', 'runtime.h']:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary) / 'repo'
+                self.fixture(root)
+                fixtures = root / 'jpegxl/testdata'
+                fixtures.mkdir(parents=True)
+                data = fixtures / name
+                data.write_text('compiled bytes')
+                inventory = manifest.begin(root)
+                component = self.component(root, 'component', [root / 'browser.v', data])
+                combined = manifest.combine(root, inventory, [component])
+                self.assertIn(str(data), combined)
+                data.write_text('changed compiled bytes')
+                with self.assertRaisesRegex(RuntimeError, 'input changed'):
+                    manifest.combine(root, inventory, [component])
+                self.assertFalse(manifest.matches_compiled_checkout(root, dict(
+                    source_inventory=inventory, exact_source_manifest=combined)))
+
     def test_native_test_headers_remain_production_inputs(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary) / 'repo'
