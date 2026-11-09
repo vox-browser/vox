@@ -4,26 +4,31 @@ module jpegxl
 
 // Complete-file output for the assembled opaque 4:4:4 VarDCT subset.
 pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
-	return decode_opaque_rgba_impl(input, false)
+	return decode_image_rgba_impl(input, premultiply, false, false)
 }
 
 // Opaque 4:4:4 VarDCT and modular XYB output, including LF frames and image
 // upsampling. Extra channels, feature streams and wider frame composition must
 // be preserved before this can replace the production decoder.
 pub fn decode_opaque_rgba(input []u8, premultiply bool) !RgbaImage {
-	return decode_opaque_rgba_impl(input, true)
+	return decode_image_rgba_impl(input, premultiply, true, false)
 }
 
-fn decode_opaque_rgba_impl(input []u8, allow_modular_xyb bool) !RgbaImage {
+fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, allow_alpha bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
 	metadata := file.metadata
-	if metadata.animation != none || metadata.extra_channels.len != 0
+	if metadata.animation != none || metadata.extra_channels.len > 1 || (!allow_alpha && metadata.extra_channels.len != 0)
 		|| metadata.bit_depth.floating_point || metadata.bit_depth.bits_per_sample != 8
 		|| file.size.width == 0 || file.size.height == 0 || file.size.width > 65536 || file.size.height > 65536
 		|| u64(file.size.width) * u64(file.size.height) > 67108864 / 4 {
 		return error('JPEG XL file requires unsupported VarDCT output services')
+	}
+	for extra in metadata.extra_channels {
+		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point || extra.bit_depth.bits_per_sample != 8 {
+			return error('JPEG XL output requires one unscaled 8-bit alpha channel')
+		}
 	}
 	color := prepare_srgb_output(file)!
 	reader.skip_preview(file)!
@@ -32,6 +37,7 @@ fn decode_opaque_rgba_impl(input []u8, allow_modular_xyb bool) !RgbaImage {
 	mut references := []LfFrameReference{len: 4}
 	mut frame := FrameHeader{ restoration: RestorationFilter.default() }
 	mut restored := [3]FloatPlane{}
+	mut extra_channels := []ModularChannel{}
 	mut found := false
 	for _ in 0 .. 64 {
 		frame = reader.read_frame_header(context)!
@@ -62,12 +68,20 @@ fn decode_opaque_rgba_impl(input []u8, allow_modular_xyb bool) !RgbaImage {
 		} else {
 			raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
 			restored = render_vardct_frame(raw, frame, file.transform)!
+			extra_channels = raw.extra_channels
 		}
 		found = true
 		break
 	}
 	if !found { return error('JPEG XL non-visible frame limit exceeded') }
 	if reader.available_bits() != 0 { return error('Unhandled JPEG XL VarDCT trailing payload') }
+	if extra_channels.len != metadata.extra_channels.len { return error('Incorrect JPEG XL output extra channel count') }
+	for channel in extra_channels {
+		channel.validate()!
+		if channel.width != int(file.size.width) || channel.height != int(file.size.height) {
+			return error('JPEG XL output alpha requires unsupported resampling')
+		}
+	}
 	output := if metadata.xyb_encoded {
 		linear := xyb_to_linear(restored, color.opsin, color.intensity_target)!
 		[srgb_transfer(linear[0], .from_linear)!, srgb_transfer(linear[1], .from_linear)!, srgb_transfer(linear[2], .from_linear)!]!
@@ -82,18 +96,24 @@ fn decode_opaque_rgba_impl(input []u8, allow_modular_xyb bool) !RgbaImage {
 	display := metadata.orientation.map_size(file.size)
 	pitch := int(display.width) * 4
 	mut pixels := []u8{len: pitch * int(display.height)}
+	has_alpha := extra_channels.len == 1
+	should_premultiply := has_alpha && premultiply && !metadata.extra_channels[0].alpha_associated
 	for y in 0 .. int(file.size.height) {
+		start := y * int(file.size.width)
+		end := start + int(file.size.width)
+		alpha := if has_alpha { modular_integer_row_to_f32(extra_channels[0].samples[start..end], 8, storage)! } else { []f32{} }
+		alpha_bytes := if has_alpha { quantize_output_row(alpha, 0, u32(y), 3, 8)! } else { []u8{} }
 		mut rows := [][]u8{cap: 3}
 		for c in 0 .. 3 {
-			start := y * int(file.size.width)
-			rows << quantize_output_row(output[c].samples[start..start + int(file.size.width)], 0, u32(y), u32(c), 8)!
+			color_row := output[c].samples[start..end]
+			row := if should_premultiply { premultiply_output_row(color_row, alpha)! } else { color_row }
+			rows << quantize_output_row(row, 0, u32(y), u32(c), 8)!
 		}
 		for x in 0 .. int(file.size.width) {
 			dx, dy := metadata.orientation.display_pixel(u32(x), u32(y), file.size)!
 			index := int(dy) * pitch + int(dx) * 4
 			for c in 0 .. 3 { pixels[index + c] = rows[c][x] }
-			// With no alpha channel straight and premultiplied output coincide.
-			pixels[index + 3] = 255
+			pixels[index + 3] = if has_alpha { alpha_bytes[x] } else { 255 }
 		}
 	}
 	return RgbaImage{ width: int(display.width), height: int(display.height), pitch: pitch, pixels: pixels }
