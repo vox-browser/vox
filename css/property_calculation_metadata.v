@@ -183,6 +183,12 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'overscroll-behavior-x' { return .overscroll_behavior_x }
+	if name == 'overscroll-behavior-y' { return .overscroll_behavior_y }
+	if name == 'overscroll-behavior-inline' { return .overscroll_behavior_inline }
+	if name == 'overscroll-behavior-block' { return .overscroll_behavior_block }
+	if name == 'overscroll-behavior' { return .overscroll_behavior }
+
 	if name == 'alignment-baseline' { return .alignment_baseline }
 	if name == 'baseline-shift' { return .baseline_shift }
 	if name == 'baseline-source' { return .baseline_source }
@@ -3211,6 +3217,12 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.overscroll_behavior_x { 'overscroll-behavior-x' }
+		.overscroll_behavior_y { 'overscroll-behavior-y' }
+		.overscroll_behavior_inline { 'overscroll-behavior-inline' }
+		.overscroll_behavior_block { 'overscroll-behavior-block' }
+		.overscroll_behavior { 'overscroll-behavior' }
+
 		.alignment_baseline { 'alignment-baseline' }
 		.baseline_shift { 'baseline-shift' }
 		.baseline_source { 'baseline-source' }
@@ -3720,6 +3732,8 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { 'auto' }
+
 		.alignment_baseline { 'baseline' }
 		.baseline_shift { '0px' }
 		.baseline_source { 'auto' }
@@ -4170,6 +4184,8 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { AnimationType.discrete }
+
 		.alignment_baseline, .baseline_source { AnimationType.discrete }
 		.baseline_shift { AnimationType.by_computed_value }
 
@@ -4238,6 +4254,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { true }
+
 		.alignment_baseline, .baseline_shift, .baseline_source { true }
 
 		.border_shape { true }
@@ -4378,6 +4396,8 @@ pub fn property_requires_computation_with_cascaded_value(property_id PropertyID)
 
 fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 	return match property_id {
+		.overscroll_behavior { true }
+
 		.contain_intrinsic_size { true }
 		.border_block_color, .border_block_style, .border_block_width, .border_color, .border_inline_color, .border_inline_style, .border_inline_width, .border_style, .border_width, .corner_block_end_shape, .corner_block_start_shape, .corner_bottom_shape, .corner_inline_end_shape, .corner_inline_start_shape, .corner_left_shape, .corner_right_shape, .corner_shape, .corner_top_shape, .gap, .inset, .inset_block, .inset_inline, .margin, .margin_block, .margin_inline, .overflow, .padding, .padding_block, .padding_inline, .scroll_margin, .scroll_margin_block, .scroll_margin_inline, .scroll_padding, .scroll_padding_block, .scroll_padding_inline {
 			true
@@ -4388,6 +4408,8 @@ fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 
 pub fn property_maximum_value_count(property_id PropertyID) uint {
 	return match property_id {
+		.overscroll_behavior { 2 }
+
 		.background_position, .border_image_outset, .border_image_width, .grid_template_columns, .grid_template_rows {
 			4
 		}
@@ -4657,6 +4679,8 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { lowercase_value in ['auto','contain','none','chain'] }
+
 		.alignment_baseline { lowercase_value in ['baseline','text-bottom','alphabetic','ideographic','middle','central','mathematical','hanging','text-top'] }
 		.baseline_source { lowercase_value in ['auto','first','last'] }
 		.baseline_shift { lowercase_value in ['sub','super','top','center','bottom'] }

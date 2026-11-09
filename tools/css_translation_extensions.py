@@ -1,6 +1,14 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'overscroll-behavior': {
+        'initial': 'auto', 'longhands': ['overscroll-behavior-x','overscroll-behavior-y'],
+        'positional-value-list-shorthand': True,
+    },
+    **{'overscroll-behavior-'+axis: {
+        'initial': 'auto', 'animation-type': 'discrete', 'affects-layout': False,
+        'requires-computation': 'never', 'valid-identifiers': ['auto','contain','none','chain'],
+    } for axis in ['x','y','inline','block']},
     'alignment-baseline': {
         'animation-type': 'discrete', 'initial': 'baseline',
         'requires-computation': 'never',
@@ -126,7 +134,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):

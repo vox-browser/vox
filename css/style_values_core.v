@@ -2146,6 +2146,7 @@ pub enum Keyword {
 	trim_start
 	trim_end
 	trim_both
+	chain
 	first
 	last
 	anchor_center
@@ -3069,6 +3070,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
 		.manual { 'manual' }
+		.chain { 'chain' }
 		.first { 'first' }
 		.last { 'last' }
 		.anchor_center { 'anchor-center' }
@@ -3095,6 +3097,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
+	if name == 'chain' { return .chain }
 	if name == 'first' { return .first }
 	if name == 'last' { return .last }
 	if name == 'anchor-center' { return .anchor_center }

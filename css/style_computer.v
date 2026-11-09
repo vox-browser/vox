@@ -12,6 +12,8 @@ import platform
 // Generated from Properties.json's `logical-alias-for` entries.
 fn property_is_logical_alias(property_id PropertyID) bool {
 	return property_id in [
+		.overscroll_behavior_inline,
+		.overscroll_behavior_block,
 		.block_size,
 		.contain_intrinsic_block_size,
 		.contain_intrinsic_inline_size,
@@ -70,6 +72,7 @@ fn property_is_logical_alias(property_id PropertyID) bool {
 }
 
 enum LogicalPropertyGroup {
+	overscroll_behavior
 	border_color
 	border_radius
 	border_style
@@ -94,6 +97,7 @@ enum LogicalPropertyGroup {
 // their relative order.
 fn logical_property_group_for_property(property_id PropertyID) ?LogicalPropertyGroup {
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { .overscroll_behavior }
 		.border_top_color, .border_right_color, .border_bottom_color, .border_left_color, .border_block_start_color, .border_block_end_color, .border_inline_start_color, .border_inline_end_color {
 			LogicalPropertyGroup.border_color
 		}
@@ -356,6 +360,8 @@ fn map_corner_shape(corner PhysicalCorner) PropertyID {
 // Generated from Properties.json and LogicalPropertyGroups.json.
 fn map_logical_alias_to_physical_property(property_id PropertyID, context LogicalAliasMappingContext) PropertyID {
 	return match property_id {
+		.overscroll_behavior_inline { if context.writing_mode == .horizontal_tb { PropertyID.overscroll_behavior_x } else { PropertyID.overscroll_behavior_y } }
+		.overscroll_behavior_block { if context.writing_mode == .horizontal_tb { PropertyID.overscroll_behavior_y } else { PropertyID.overscroll_behavior_x } }
 		.block_size {
 			if context.writing_mode == .horizontal_tb {
 				PropertyID.height

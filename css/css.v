@@ -461,9 +461,14 @@ pub enum PropertyID {
 	alignment_baseline
 	baseline_shift
 	baseline_source
+	overscroll_behavior_x
+	overscroll_behavior_y
+	overscroll_behavior_inline
+	overscroll_behavior_block
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
+	overscroll_behavior
 	gap
 	place_items
 	place_content

@@ -4,6 +4,7 @@ module css
 
 pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.overscroll_behavior { [.overscroll_behavior_x,.overscroll_behavior_y] }
 		.font {
 			[.font_family, .font_size, .font_width, .font_style, .font_variant, .font_weight, .line_height, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variation_settings, .font_size_adjust]
 		}
@@ -99,7 +100,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -366,6 +367,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 
 pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.overscroll_behavior { [.overscroll_behavior_x,.overscroll_behavior_y] }
 		.font {
 			[.font_family, .font_size, .font_width, .font_style, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .font_weight, .line_height, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variation_settings, .font_size_adjust]
 		}
@@ -461,7 +463,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -735,6 +737,8 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.overscroll_behavior_x, .overscroll_behavior_y { [.overscroll_behavior,.all] }
+		.overscroll_behavior_inline, .overscroll_behavior_block { [.all] }
 		.alignment_baseline, .baseline_shift, .baseline_source { [.all] }
 		.border_shape {
 			[.all]

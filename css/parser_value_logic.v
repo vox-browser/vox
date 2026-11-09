@@ -935,7 +935,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// Inset components also accept anchor(). The generated positional type
 	// metadata only describes their numeric values, so use the inset grammar.
 	if property_is_positional_value_list_shorthand(property_id)
-		&& property_id !in [.inset,.inset_block,.inset_inline] {
+		&& property_id !in [.inset,.inset_block,.inset_inline,.overscroll_behavior] {
 		return parser.parse_positional_value_list_shorthand(property_id, mut tokens)
 	}
 	if property_multiplicity(property_id) == .coordinating_list
@@ -947,7 +947,14 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
-		.forced_color_adjust, .text_orientation, .alignment_baseline, .baseline_source { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+		.forced_color_adjust, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+        .overscroll_behavior {
+            x := parse_property_keyword_value_from_metadata(.overscroll_behavior_x,mut tokens) or { return none }
+            mut y := x
+            tokens.consume_whitespace()
+            if tokens.has_more_tokens() { y = parse_property_keyword_value_from_metadata(.overscroll_behavior_y,mut tokens) or { return none } }
+            return StyleValue(ShorthandStyleValue.create(.overscroll_behavior,[PropertyID.overscroll_behavior_x,.overscroll_behavior_y],[x,y]))
+        }
         .baseline_shift {
             mut attempt := tokens.clone()
             if value := parse_property_keyword_value_from_metadata(property_id,mut attempt) {
