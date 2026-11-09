@@ -308,10 +308,11 @@ fn flex_base_width(mut state LayoutState, item &Node, container_width CSSPixels,
 				return flex_base_size_after_cross_constraints(item, item_state, calculate_stretch_fit_width(box, AvailableSize.make_definite(container_width)), true)
 			}
 		}
-		if basis.size.is_min_content() {
+		intrinsic_basis := if basis.size.is_auto() && !basis.is_content { computed.size_value(.width) } else { basis.size }
+		if intrinsic_basis.is_min_content() {
 			return flex_base_size_after_cross_constraints(item, item_state, calculate_min_content_width(mut state, box), true)
 		}
-		if basis.size.is_fit_content() {
+		if intrinsic_basis.is_fit_content() {
 			return flex_base_size_after_cross_constraints(item, item_state, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(container_width)), true)
 		}
 		return flex_base_size_after_cross_constraints(item, item_state, calculate_max_content_width(mut state, box), true)

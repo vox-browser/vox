@@ -687,6 +687,7 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 // min- and max-content measures from that same state.
 fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutState, box &Box, constraint SizeConstraint, values &UsedValues, containing_width CSSPixels) CSSPixels {
 	node := unsafe { &Node(box) }
+	if inline_measurement_marker_is_external(node) { return CSSPixels.new(0) }
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	preferred_width := definite_preferred_intrinsic_width(node, values, containing_width)
 	mut inner := if width := preferred_width {
