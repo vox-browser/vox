@@ -2391,3 +2391,34 @@ still uses installed Skia. The optimized random cohort is deliberately small;
 it does not resolve the preceding saved-canvas long-run no-GC resource failure
 or the inherited FastC saved-canvas degenerate-gradient failure. See the
 [native cases, guarded comparisons and component dependency proof](https://github.com/vox-browser/vox-tests/blob/d7e7e7609c0388c6491c3664c8daf7fd187ac32a/evidence/gg-migration/large-terminal-image-blurs-20261109.json).
+
+
+### Exact-zero stages around one nonzero blur (2026-11-09)
+
+`d181cc992` normalizes pure blur/matrix chains with exactly one nonzero-radius
+blur by removing exact-zero blur stages. The remaining blur keeps its layer
+semantics, with color matrices combined in their existing order. This lets
+zero-prefixed and zero-suffixed image chains use the existing large-blur source
+sampling path. All-zero chains retain their layer behavior; tiny nonzero
+stages are never dropped and multiple nonzero blurs keep the chain path.
+
+At seed 20270301 the baseline declines all 500 requests; the candidate matches
+417 and declines 83. Final macOS and Linux C cohorts each match 858 of 1,000
+at seed 20270302, declining 142. Optimized macOS/no-GC matches 86 of 100 at seed
+20270303, declining 14. A separate saved-canvas mixed-blur regression matches
+818 of 1,000 at seed 20270304, declining 182. Counts include no-ops; completed
+cohorts retain unchanged inputs under the 3 GiB guard. Twenty-six independent
+native fixtures verify on both platforms, all changing the background, with
+zero stages before and after the blur, P3/alpha/color effects, clips, fractional
+subsets, scaling, reflection, near-integer mapping and larger source content.
+
+Focused C suites on both platforms, selected macOS FastC tests, Linux browser
+typechecking and HTML canvas integration pass. The FMA audit finds zero
+contracted operations (189 explicit). The standalone Linux production/no-GC
+executable runs all 13 registered source-image test functions with Skia
+unavailable to pkg-config; link/readelf/ldd checks find no Skia dependency,
+with FreeType, libm and libc as direct libraries. Full-browser integration
+still uses installed Skia. Short optimized comparisons do not resolve the
+retained long-run no-GC resource failure or the inherited FastC saved-canvas
+degenerate-gradient failure. See the [native cases, guarded comparisons and
+component dependency proof](https://github.com/vox-browser/vox-tests/blob/80233f56cec916a70526a4af6628b51a20a892e7/evidence/gg-migration/zero-stage-image-blurs-20261109.json).
