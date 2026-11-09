@@ -2518,3 +2518,42 @@ testharness variants** on the freshly published bundle. It retains original
 harnesses/assertions/deadlines and fail-fast input identity checks. Other WPT
 types remain outside that runner. This is a pending collection, not an overall
 pass-rate result. **Overall 100% is not achieved.**
+
+
+## Fresh full-collection handoff (2026-11-09)
+
+The superseded production collection is retained after **1,480 case
+records**, with runner/guard exits **143**, unchanged input identities and
+state **INTERRUPTED**. Its browser predates the two registry/counter fixes;
+these partial records do not establish a complete-suite percentage.
+Archive: `/Users/alex/.cache/vox/wpt/20261109-official-vendor-prod-raw.tar.gz`,
+SHA-256 `13be56a2f10a3c9e9aca635a015534b8546097a629b4b86269546c1b2040ba71`.
+
+The published production browser is now
+`db8acd8538ffa9db2ed78617e018362d1b96c0150e1d0e6784b6f0bac2391337`,
+receipt `20261109-112648-d0d016af`, C/single-unit/literal-`-prod` with the prepared runtime.
+The supervisor verifies the protected function hashes from `57ab68d28` and
+`45375fcc5` against the compiled receipt. An initial startup collection is
+preserved after **2 case records**, runner/guard exits **143**, before
+relaunching with a detached supervisor so the job survives the one-shot
+headless CLI. That attempt is also interrupted, without acceptance credit.
+Archive: `/Users/alex/.cache/vox/wpt/20261109-official-current-raw.tar.gz`,
+SHA-256 `29238ac8e94afd70d9e6162906fedc0c50bb99092d15f818aaf338179a08cab9`.
+
+The detached supervisor **PID 99444**, independently parented by PID 1,
+is **RUNNING** all **40,139 official manifest testharness variants** from the
+same WPT revision `57bbaa12ff3515848cc0b3d3791791086a563047` and manifest
+SHA-256 `58335f893bf910636d5452015275cf529938a7539f36cd4afc8794b3d507fc11`.
+It pins the canonical bundle/libraries, runner/vendor/server tools, configuration,
+and manifest, launches fresh browsers, retains unsupported-protocol records,
+and requires all selected cases plus clean integrity/harness/subtest results
+for success. The per-browser 4 GiB and aggregate 12 GiB limits, original
+assertions/harness/deadlines, chunk size 25 and 172,800-second aggregate guard
+remain in place. The two broad collections do not overlap.
+
+Controller: `/Users/alex/.cache/vox/wpt/20261109-official-fresh-supervisor.py`.
+Status: `/Users/alex/.cache/vox/wpt/20261109-official-fresh-status.json`.
+Active output: `Build/wpt-official-fresh-20261109-1130`.
+The controller archives and removes its output when it finishes. This is a
+live collection, not a completed pass result. Other WPT types remain outside
+this runner. **Overall 100% is not achieved.**
