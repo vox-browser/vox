@@ -131,7 +131,8 @@ static long long vox_curl_queue_time(void* handle) {
 #if LIBCURL_VERSION_NUM >= 0x080600
     return vox_curl_time(handle, CURLINFO_QUEUE_TIME_T);
 #else
-    /* Older macOS SDK curl cannot expose the source's queue timestamp. */
+    /* Older libcurl versions cannot expose the source's queue timestamp. */
+    (void)handle;
     return 0;
 #endif
 }
