@@ -53,7 +53,6 @@ fn chromium_auto_svg_transfers_block_size(node &Node) bool {
 
 fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
 	node := unsafe { &Node(box) }
-	computed := node.computed_values()
 	width_basis := available_space.width.to_px_or_zero()
 	height_basis := available_space.height.to_px_or_zero()
 	computed_width := replaced_size_value(node, box_model, .width)
@@ -304,7 +303,6 @@ fn apply_replaced_block_axis_constraints(node &Node, minimum css.Size, maximum c
 // the table compares them with the tentative content size.
 fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height CSSPixels, aspect_ratio css.CSSPixelFraction, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
 	node := unsafe { &Node(box) }
-	computed := node.computed_values()
 	min_width, max_width := replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_width), replaced_size_value(node, box_model, .max_width), input_width, available_space.width, box_model, true)
 	min_height, max_height := replaced_axis_constraints(node, replaced_size_value(node, box_model, .min_height), replaced_size_value(node, box_model, .max_height), input_height, available_space.height, box_model, false)
 
