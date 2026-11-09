@@ -69,6 +69,13 @@ static VoxMediaPlayback *native_media_for_handle(void *handle) {
 #endif
 }
 
+static int32_t native_media_can_play_type(const char *mime) {
+    if (!mime || !vox_prepare_avfoundation()) return 0;
+    Class asset = NSClassFromString(@"AVURLAsset");
+    NSString *type = [NSString stringWithUTF8String:mime];
+    return asset && type && [(id)asset isPlayableExtendedMIMEType:type] ? 1 : 0;
+}
+
 static void *native_media_open(const char *url) {
     NSURL *source = [NSURL URLWithString:[NSString stringWithUTF8String:url]];
     if (!source || ![@[@"https", @"http", @"file"] containsObject:source.scheme.lowercaseString]) return NULL;

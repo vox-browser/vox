@@ -26,6 +26,7 @@ $if macos {
 #flag darwin -framework CoreMedia
 
 fn C.native_media_open(&char) voidptr
+fn C.native_media_can_play_type(&char) i32
 fn C.native_media_open_webm(&char) voidptr
 fn C.native_media_supports_webm() i32
 fn C.native_media_close(voidptr)
@@ -87,6 +88,10 @@ mut:
 
 fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
 	essence := type_.all_before(';').trim_space().to_lower()
+	if essence in ['audio/ogg','application/ogg'] {
+		$if macos { if C.native_media_can_play_type(type_.str) != 0 { return .maybe } }
+		return .empty
+	}
 	if essence == 'video/webm' {
 		$if macos {
 			if C.native_media_supports_webm() != 0 && browser_webm_video_codecs_supported(type_) {
