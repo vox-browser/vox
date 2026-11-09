@@ -708,6 +708,15 @@ mut:
 
 fn collect_shadow_sheet_rule_effects(context voidptr, rule &CSSRule) {
 	mut state := unsafe { &ShadowSheetEffectsContext(context) }
+	if rule.type_ == .position_try {
+		// Named rules can be referenced by host, slotted and part styles from
+		// another sheet. Their effect cannot be inferred from local selectors.
+		state.effects.may_match_shadow_host = true
+		state.effects.may_match_light_dom_under_shadow_host = true
+		state.effects.may_match_light_dom_outside_shadow_host = true
+		state.effects.may_affect_assigned_nodes_via_slots = true
+		return
+	}
 	if state.effects.all_set() || rule.type_ != .style { return }
 	mut mutable_rule := unsafe { &CSSRule(rule) }
 	for selector in mutable_rule.absolutized_selectors().selectors {

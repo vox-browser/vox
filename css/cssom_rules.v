@@ -2342,6 +2342,12 @@ pub fn (mut sheet CSSStyleSheet) invalidate_shared_style_cache() {
 }
 
 fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.StyleInvalidationReason, should_invalidate_rule_cache ShouldInvalidateRuleCache, previous_sheet_effects ?ShadowRootStylesheetEffects) {
+	if rule_list_contains_position_try(sheet.rules) {
+		if document := sheet.owning_document() {
+			mut owner := unsafe { &dom.Document(document) }
+			owner.set_needs_full_layout_tree_update(true)
+		}
+	}
 	for owner in sheet.owning_documents_or_shadow_roots {
 		mut scope := css_style_scope_for_node(owner)
 		if should_invalidate_rule_cache == .yes {
@@ -2361,6 +2367,16 @@ fn invalidate_style_for_style_sheet_owners(sheet &CSSStyleSheet, reason dom.Styl
 			}
 		}
 	}
+}
+
+fn rule_list_contains_position_try(list &CSSRuleList) bool {
+	for rule in list.rules {
+		if rule.type_ == .position_try { return true }
+		if children := rule.css_rules() {
+			if rule_list_contains_position_try(children) { return true }
+		}
+	}
+	return false
 }
 
 pub fn (sheet &CSSStyleSheet) for_each_owning_style_scope(callback fn (&StyleScope)) {
@@ -2800,7 +2816,7 @@ fn rule_requires_broad_add_or_remove_invalidation(rule &CSSRule) bool {
 	// @keyframes only affects elements that reference its animation name; the sheet add/remove paths
 	// apply targeted invalidation for those elements after processing ordinary style rules.
 	return rule.type_ in [.property, .font_feature_values, .counter_style, .layer_block,
-		.layer_statement]
+		.layer_statement, .position_try]
 }
 
 fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bool {
@@ -2818,6 +2834,10 @@ fn stylesheet_requires_broad_add_or_remove_invalidation(sheet &CSSStyleSheet) bo
 }
 
 fn (mut list StyleSheetList) add_sheet(sheet &CSSStyleSheet) {
+	if rule_list_contains_position_try(sheet.rules) {
+		mut document := unsafe { &dom.Document(list.document()) }
+		document.set_needs_full_layout_tree_update(true)
+	}
 	mut mutable_sheet := unsafe { &CSSStyleSheet(sheet) }
 	mutable_sheet.add_owning_document_or_shadow_root(list.document_or_shadow_root)
 
