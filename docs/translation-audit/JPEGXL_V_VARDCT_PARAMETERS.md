@@ -1,5 +1,8 @@
 # JPEG XL V VarDCT parameters and orders, 2026-11-09
 
+This report retains the initial four-slice results. The LF continuation below
+records six later slices and their forty-five-file checkpoint.
+
 Four additional slices execute in pure V:
 
 | Slice | Implementation commit |
@@ -169,7 +172,7 @@ the managed, coalesced production rebuild; no separate browser build was queued.
 Standalone codec tests supply this validation, without a production-browser
 execution claim.
 
-## Remaining dependency work
+## Dependency work after the initial four slices
 
 VarDCT coefficient reconstruction and transforms, quantization matrices,
 VarDCT EPF sigma generation, XYB/transfer conversion, frame dependencies and
@@ -182,3 +185,195 @@ The tracked Rust source/manifests are still under `native_jpegxl_rust/`.
 Cargo helper, `tools/test_jpegxl.py` rebuilds that helper for native testing,
 and CI still checks the Rust toolchain. Those dependencies must be removed
 together after V preserves the production static 8-bit sRGB/gray contract.
+
+## LF continuation and non-raw quantization headers
+
+Six more slices follow the initial 4/10 continuation:
+
+| Slice | Commit | Source cases |
+| --- | --- | ---: |
+| Twenty-seven transform mappings | `609362130` | 258 |
+| Adaptive LF smoothing | `8f2a074a9` | 512 |
+| VarDCT EPF sigma maps | `16e446290` | 512 |
+| DCT distance-band parameters | `8e4d3e6a7` | 4,096 |
+| LF dequantization, sampling and context planes | `161049e7d` | 512 |
+| Non-raw quantization encodings | `22b090115` | 4,096 |
+
+The **9,986** additional cases bring the package to **267,769** and forty-five
+test files. Each complete plane, transcript or encoding counts once, as before.
+All forty-five test files pass in both GC modes, completing the ten-slice
+checkpoint and resetting JPEG XL cadence to **0/10**.
+
+### Source boundary
+
+The archive pins above remain unchanged. Adaptive LF smoothing, EPF sigma,
+quantization weights, half conversion, modular LF reconstruction and transform
+mapping source were verified byte-for-byte against their cached source
+archives. Cached `jxl`/`jxl_transforms` artifact hashes still match the identities
+recorded above. The temporary reference programs use Rust 1.97.1 with those
+cached dependencies directly; they do not build with Cargo or supply a lasting
+developer-tool dependency.
+
+Transform references call the original twenty-seven-value enum, geometry and
+shape functions, plus the unchanged private quantization-table enum/mapping
+extracted from `quant_weights.rs`. Every valid mapping and IDs -2 through 255
+are checked. Invalid signed IDs are rejected at the V API boundary.
+
+LF smoothing references execute the unchanged source constants,
+`compute_pixel_channel` helper and original scalar interior calculation, with
+cached Image rows. The wrapper supplies outer-border copies and whole-plane
+iteration. It does not test the source's parallel runner or group scheduler.
+All **328,098** output words match, including signed zeros, shared per-pixel
+channel gaps, varied positive LF scales, impulses, high contrast and constant
+planes. There are sixteen planes wider than 256 blocks, including one 257-by-257
+plane. V preserves scalar unfused rounding with separate operations; smoothing
+is independent of its invocation's tiling and leaves outer borders unchanged.
+
+Sigma references include the original `features/epf.rs` unchanged. Thin metadata
+adapters supply the fields read by that source constructor; cached Image,
+QuantizerParams, transform lookup and Arc implementations remain in use. All
+twenty-seven transforms occur in complete, nonoverlapping maps. The **28,581**
+visible inverse-sigma words match, including 674 negative zeros, finite custom
+scales/LUTs, ignored follower-block values and the `inf * 0` minimum-cutoff case.
+V excludes the source's two unused SIMD padding columns. It additionally rejects
+invalid public storage, anchor quantization, sharpness indices, overlap, holes
+and out-of-bounds coverage; malformed-map acceptance parity is not claimed.
+
+DCT-band references execute the original parameter struct and implementation.
+There are **1,163** accepted records and **2,933** source rejections, comparing
+every parameter and cursor. Row-zero validation follows reading the whole row,
+then the initial weight is multiplied by 64. Quantization uses `util::f16`,
+which retains infinities and quiet NaNs; 656 accepted records contain NaNs.
+Finite/Inf words compare exactly, while NaN payloads compare by class. Ordinary
+metadata's finite-only half reader keeps its separate rejection behavior.
+Parsing these values does not establish that a later weight matrix is valid.
+
+LF reconstruction references execute the unchanged generic `dequant_lf_impl`
+from `frame/modular/mod.rs`, source SHA-256
+`8c1e521cd0343d6d55b6f7d8f203c3c5655d5a98eb0229a501b7424f03bab853`.
+The wrapper provides typed output buffers and sampling/context metadata; source
+ImageRect, integer conversions, quantizer and color-correlation types are used.
+The cohort has 256 i16 and 256 i32 groups, including 109 with 4:4:4 and 403 with
+subsampling. Every one of **60,716** float words and **35,781** LF context indices
+matches. Encoded Y/X/B channel order, precision shifts, strict threshold
+comparisons and X/B/Y bucket strides are retained. The source divides by the
+rounded product of global scale and LF quantization here; its general inverse
+LF helper instead performs two divisions. Color correlation is unfused and
+applies only to 4:4:4. V checks aligned geometry, metadata bounds and complete
+source planes before allocating output.
+
+Non-raw encoding references execute the original enum and decoder for modes
+0–6. Raw-mode dependencies are inert stubs and guarded against execution;
+mode 7 is excluded from source comparisons and rejected by the bounded V API.
+All seventeen table dimensions, complete weights/parameters and consumed bits
+match. Accepted counts are 586 library, 481 identity, 475 DCT2, 89 DCT4, 88
+DCT4x8, 20 AFV and 106 DCT; **2,251** records reject. There are no source cursor
+overreads. Source per-mode size restrictions, multiplier checks, AFV's first six
+scaled weights and both AFV band sets are preserved. These are encoding records,
+not generated or validated dequantization matrices.
+
+Final oracle and frozen corpus identities:
+
+| Oracle | SHA-256 |
+| --- | --- |
+| Transform mappings | `82273fb6e103752e4c69cbe911b99c4701ffb0ea45eefdfe55975ee225b0efda` |
+| LF smoothing | `0b1f57bb7bfa832e63c0ae351172e70b7db1f9db88f4cf462cf284bc5fab9639` |
+| EPF sigma | `a4daaba9573e2766a15e349fad61b900eef3c378c48b0fe26b6f389e4531b9aa` |
+| DCT bands | `ddf23805b31093f86a31af95ecea6631da4b3a55c4288c5e62d10e75766b6baf` |
+| LF reconstruction | `92262cc645e66e53ea169f79898d5800af33c443989c23e7d331dadf7479912a` |
+| Non-raw encodings | `03817ffb0828d262013f59d3a7565c05271e3c9177a852161e8302eb60746301` |
+
+| File under `jpegxl/testdata/` | SHA-256 |
+| --- | --- |
+| `hf-transform.tsv` | `49dfce5be45602665479c868204b8ed5ef18a9015fd8463b8ae1f3d5a6a29183` |
+| `lf-smoothing.tsv` | `89bbffab2b4e90ac9e8c12e90cee844d03af3cc94f952a33762a2dc2e266a951` |
+| `epf-sigma.tsv` | `91156d4e216343a193acf6ec664f9d3d0ab20d18db4ecb9f1de050fd0896b33f` |
+| `quant-bands.tsv` | `01bf27e31b59fe6542aba1678a44a5c09670c8763718c673c79471ec2d58113c` |
+| `vardct-lf.tsv` | `5db7664ddf0790af1df9e3fa093a3cdd30f6d6891cf6fad2d3b908752ade0e4a` |
+| `quant-encoding.tsv` | `0e03e256bf419616759f83c88d6d5ab47cc3815fb012ac7de49e1fe922719b5e` |
+
+### LF validation
+
+The six new focused files pass in default GC and no GC. Optimized evidence is
+the unchanged five-file LF selection followed by the additional encoding file.
+All actual tests and guards exit zero. Each uses the environment and 3 GiB
+memory guard described above, with unavailable Rust compiler paths and current
+V's C/Clang backend. The complete checkpoint is selected through the V corpus
+checker, not a list that can silently omit new files.
+
+| Focused default / no-GC job | Default RSS peak, bytes | No-GC RSS peak, bytes |
+| --- | ---: | ---: |
+| Transform mapping | 249,544,704 | 232,357,888 |
+| LF smoothing | 276,365,312 | 268,288,000 |
+| EPF sigma | 254,459,904 | 249,151,488 |
+| DCT bands | 276,611,072 | 267,747,328 |
+| LF reconstruction | 276,561,920 | 271,695,872 |
+| Non-raw encoding | 328,810,496 | 333,070,336 |
+
+The optimized five-file job peaks at 637,992,960 bytes and takes 39.00 seconds;
+the encoding-only job peaks at 455,163,904 bytes and takes 9.07 seconds. These
+are guarded test measurements, not performance comparisons or browser builds.
+
+| Full checkpoint | Files passed | Test / inner guard / driver / outer guard exit | Outer sampled RSS peak, bytes | Outer seconds |
+| --- | ---: | --- | ---: | ---: |
+| Boehm | 45 | 0 / 0 / 0 / 0 | 590,086,144 | 216.88 |
+| No GC | 45 | 0 / 0 / 0 / 0 | 1,750,450,176 | 165.58 |
+
+Inner guards peak at 332,169,216 and 1,494,237,184 bytes, taking 213.14 and
+162.18 seconds. Both complete selections report 45 passed and 45 total; no
+compile-only result or retained subset supplies full-checkpoint credit.
+
+The compiler remains `V 0.5.2 a3892ac`, SHA-256
+`baf5f3b4328f77b9dd8c49d2dc3b837b5c710d47d474ddd93ba3ad7a9d81591f`.
+The intermediate 183-input manifest before the final LF no-GC and optimized
+five-file checks is
+`1de71a0ddda82fd5843949538317b494037af3ef8551d57994298449d08010d0`;
+those identities stayed unchanged. Adding encoding source, test and corpus
+produces a 186-input checkpoint manifest:
+`dd2c93dbb1b5787c333430d2e302c09f27ce043a4432170c85d4b206b190ebd7`.
+It covers the same path categories as the preceding manifests.
+All 186 selected files and the compiler were checked before, between and after
+the complete selections and remained unchanged. The manifest excludes
+`jpegxl/data/dither_32x32.bin`; that embedded input is verified separately
+against its pinned source hash and Git bytes:
+`6247b14297fdc698d699d1e1fa2331e4da69215d852e2493af27009b9effc93e`.
+Its inode change time, 1794192268030376430 ns since the epoch, predates both
+full-run logs and is unchanged after the no-GC run. This separate identity
+check is not represented as an entry in the 186-file manifest.
+
+The first smoothing oracle compile exited 1 because cached output-row methods
+are private and FrameHeader has no public default constructor. Its replacement
+uses the original scalar helper/interior excerpt with a whole-plane wrapper;
+no candidate output or expected result changed. A later receipt collector tried
+to read a running job's empty JSON report and exited 1; receipt collection was
+deferred until completion. No test pass was credited from that failed collector.
+The encoding oracle was extended before V comparisons to include all seventeen
+source table dimensions; both reference runs exited zero. All frozen candidate
+comparisons passed on their first run.
+
+The full checkpoint commands use the shared environment above and separate
+outer 3 GiB guards with 900-second timeouts:
+
+```sh
+/Users/alex/code/v/v -memory-limit 10G -b c -cc clang run \
+  tools/check_translation_corpora.v --suite jpegxl --gc boehm \
+  --compiler /Users/alex/code/v/v --jobs 1
+# The second command replaces boehm with none after the first job completes.
+```
+
+The checker creates its own 3 GiB inner guard and reports its actual test exit;
+outer logs retain both guard receipts while the job runs. Every implementation
+commit requests the shared coalesced production rebuild. No manual browser build
+or production-browser validation is claimed. Unrelated broad suites and
+LibJS/DOM/performance ledgers remain unchanged.
+
+All temporary oracle inputs, programs, logs, lock files and guard receipts were
+removed after their final exits and this report were recorded. No frozen result
+was changed to obtain a passing candidate comparison.
+
+LF global/entropy assembly, raw quantization streams and matrix generation,
+HF entropy coefficients/inverse transforms, frame dependencies, XYB/transfer
+conversion and rendering pipeline integration remain. Complete-file V APIs keep
+their existing lossless limits. The production Rust JPEG XL helper and its
+Cargo/CI/native developer tests remain until the complete supported contract
+can be preserved by V.

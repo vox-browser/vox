@@ -289,3 +289,32 @@ failures. VarDCT coefficient reconstruction, quantization matrices, sigma-map
 generation, XYB/transfer conversion, frame dependencies and rendering pipeline
 assembly remain. Production JPEG XL and its Cargo/CI/native developer tests still
 require Rust; removal of all Rust dependencies remains unfinished.
+
+## VarDCT LF processing on 2026-11-09
+
+Six additional pure V slices cover all twenty-seven transform mappings,
+adaptive LF smoothing, VarDCT EPF sigma generation, DCT quantization bands,
+LF plane/context reconstruction and non-raw quantization encodings. The 9,986 new frozen source cases compare
+328,098 smoothing words, 28,581 sigma words, 60,716 reconstructed LF words and
+35,781 context indices, along with parsed parameters, mappings and positions.
+LF references cover both integer storage widths, chroma subsampling, all extra
+precision values and strict threshold buckets. These are standalone decoder
+stages; LF entropy/frame assembly and HF reconstruction remain open.
+
+All forty-five test files pass through the V corpus checker in both GC modes
+with unavailable Rust compiler paths. Actual tests, inner guards, drivers and
+outer guards exit zero. This completes the ten-slice checkpoint and resets JPEG
+XL cadence to 0/10. The package has 267,769 source cases; focused optimized
+checks also pass. Compiler and selected input hashes remain unchanged, and the
+embedded dither table is separately verified against its pinned hash and Git.
+Broader unrelated suites and historical ledgers were not changed or rerun.
+Temporary migration oracles use pinned source and cached artifacts; frozen
+developer checks need V alone.
+
+The LF continuation in [the VarDCT report](JPEGXL_V_VARDCT_PARAMETERS.md) records
+the source and adapter boundaries, commands, memory results and harness
+corrections. Raw quantization streams, generated matrices, HF coefficients/inverse transforms,
+frame dependencies, XYB/transfer conversion and production pipeline integration
+remain. Production JPEG XL and its Cargo/CI/native developer tools still depend
+on Rust; removal of all Rust dependencies remains unfinished. No
+production-browser validation is claimed for these standalone decoder stages.

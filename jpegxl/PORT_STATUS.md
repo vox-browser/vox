@@ -254,7 +254,7 @@ Rotated, animated and wide-gamut fixture metadata does not establish support for
 their final pixel output.
 
 Remaining work includes partial/tiled rendering, VarDCT and frame dependencies,
-patches/noise/splines, VarDCT EPF sigma-map generation, XYB/transfer conversion, frame color/filter
+patches/noise/splines, XYB/transfer conversion, frame color/filter
 pipeline assembly and browser
 integration. Container/API streaming
 remains a broader parity task.
@@ -324,8 +324,8 @@ forward weight sums and pass-specific output accumulation. Constant or 8x8-block
 inverse sigma, block-border scales, exact threshold comparisons and per-pixel
 bypass match native source outputs. There are 512 frozen planes per pass, with
 229,311 output f32 words in total. Modular positive sigma has a checked conversion
-helper; deriving VarDCT sigma from quantization/transform/sharpness maps remains
-pending. These stages also remain separate from complete-file rendering.
+helper. VarDCT sigma is now derived from quantization/transform/sharpness maps
+as described below. These stages remain separate from complete-file rendering.
 
 VarDCT quantizer and color-correlation parameters now preserve source selectors,
 binary32 arithmetic, signed LF factors, half-float behavior and error positions.
@@ -337,11 +337,33 @@ The four slices add 17,165 frozen source cases, including 131,328 natural indice
 and complete hashes of all 39 component orders for each accepted decoding case.
 They do not yet decode VarDCT coefficients or enable VarDCT complete-file output.
 
-The corpus checker discovers thirty-nine test files. The preceding full
-thirty-five-file package passed in both GC modes; the four additional focused
-files pass both modes with unavailable Rust compiler paths. JPEG XL cadence is
-now 4/10 after that checkpoint. Focused optimized checks also cover the new
-files. Unrelated broader suites were not rerun. The package checks 257,783 source
+All twenty-seven transform IDs now have source geometry, coefficient shape and
+quantization-table mappings. Adaptive LF smoothing preserves scalar rounding,
+shared channel gaps and unchanged outer borders. VarDCT EPF sigma generation
+uses whole transform coverage, raw quantization and per-block sharpness, and
+returns the existing filter stages' inverse-sigma plane without SIMD padding.
+The checked V API rejects incomplete/overlapping/out-of-bounds maps.
+
+DCT distance-band parsing retains complete-row validation and the quantization
+half converter's nonfinite classes; weight-matrix validation remains a later
+step. LF reconstruction accepts already-decoded modular Y/X/B integer channels,
+applies source dequantization and extra precision, performs color correlation
+only for 4:4:4, and derives full-size LF context buckets for all sampling modes.
+These five slices add 5,890 source cases, including 328,098 smoothing words,
+28,581 sigma words, 60,716 LF words and 35,781 LF context indices. VarDCT global
+and LF stream assembly, HF coefficient decoding/inverse transforms,
+quantization matrices and complete-file pipeline integration remain pending.
+
+Non-raw quantization encodings now parse library, identity, DCT2, DCT4, DCT4x8,
+AFV and DCT modes with source table-size restrictions and per-mode scaling.
+Their 4,096 additional source cases compare all seventeen table dimensions,
+complete records and cursors. Raw modular quantization streams and matrix
+generation remain separate pending work.
+
+The full forty-five-file package passes through the V corpus checker in both
+GC modes with unavailable Rust compiler paths, completing the next ten-slice
+checkpoint and resetting JPEG XL cadence to 0/10. Focused optimized checks also
+cover the new files. Unrelated broader suites were not rerun. The package checks 267,769 source
 cases, counting individual ANS alias transitions and whole stateful/map/order
 transcripts as before. [The VarDCT parameter/order report](../docs/translation-audit/JPEGXL_V_VARDCT_PARAMETERS.md)
 records current validation and boundaries; [the EPF report](../docs/translation-audit/JPEGXL_V_EPF.md)

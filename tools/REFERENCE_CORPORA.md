@@ -50,7 +50,7 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects thirty-nine test files covering primitives,
+The `jpegxl` suite now selects forty-five test files covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
@@ -59,12 +59,14 @@ streams, LF quant factors, small-frame raw planes, output row conversion and
 complete small lossless files, group scheduling and complete grouped lossless
 output, fused binary32 arithmetic, Gaborish, chroma upsampling, YCbCr and all
 three EPF passes, VarDCT quantizer/color-correlation parameters, block and
-zero-density contexts, natural coefficient orders and entropy permutations.
-Its 257,783 source cases include whole stateful predictor/property/map/order
+zero-density contexts, natural coefficient orders and entropy permutations,
+transform metadata, adaptive LF smoothing, VarDCT EPF sigma, DCT quantization
+bands, LF reconstruction/context planes and non-raw quantization encodings.
+Its 267,769 source cases include whole stateful predictor/property/map/order
 transcripts and individual ANS alias transitions.
-The preceding full thirty-five-file group passed in both GC modes with
-unavailable Rust compiler paths. The four added focused files pass both GC
-modes and optimized checks; JPEG XL cadence is 4/10 after that checkpoint.
+The full forty-five-file group passed in both GC modes with unavailable Rust
+compiler paths, completing the next ten-slice checkpoint and resetting JPEG XL
+cadence to 0/10. The added focused files also pass optimized checks.
 [The current verification report](../docs/translation-audit/JPEGXL_V_VARDCT_PARAMETERS.md)
 records the source-case coverage and limits. This checks the V layers; the
 production pixel decoder and its native developer test still require Rust.
