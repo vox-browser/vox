@@ -28,7 +28,7 @@ fn test_lf_reference_frame_validates_ownership_before_reading_streams() {
 	for invalid in [FrameHeader{ ...base, frame_type: .regular }, FrameHeader{ ...base, lf_level: 0 },
 		FrameHeader{ ...base, lf_level: 5 }, FrameHeader{ ...base, is_last: true },
 		FrameHeader{ ...base, width: 97 }, FrameHeader{ ...base, have_crop: true },
-		FrameHeader{ ...base, upsampling: 2 }, FrameHeader{ ...base, encoding: .modular }] {
+		FrameHeader{ ...base, upsampling: 3 }, FrameHeader{ ...base, encoding: .modular }] {
 		mut sections := [new_bit_reader([u8(255)])]
 		if _ := decode_lf_reference_frame(file, invalid, .signed16, none, mut sections) { assert false }
 		assert sections[0].position == 0

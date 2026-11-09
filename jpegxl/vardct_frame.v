@@ -10,7 +10,7 @@ pub:
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
-	if frame.has_lf_frame() || frame.lf_level != 0 {
+	if frame.has_lf_frame() || frame.lf_level != 0 || frame.upsampling != 1 {
 		return error('JPEG XL VarDCT frame requires explicit LF reference ownership')
 	}
 	validate_vardct_frame_reference(file, frame, none)!
@@ -18,7 +18,7 @@ fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
 
 fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference ?[3]FloatPlane) ! {
 	checked_vardct_lf_rect(frame, 0)!
-	if !frame.is444() || frame.upsampling != 1 || file.metadata.extra_channels.len != 0
+	if !frame.is444() || file.metadata.extra_channels.len != 0
 		|| frame.extra_upsampling.len != 0 || (frame.lf_level != 0 && frame.frame_type != .lf)
 		|| (frame.has_lf_frame() && frame.lf_level >= 4) {
 		return error('JPEG XL VarDCT frame requires unsupported sampling or extra channels')

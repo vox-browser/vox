@@ -10,7 +10,7 @@ fn validate_lf_reference_frame(file FileHeader, frame FrameHeader) ! {
 	validate_modular_group_geometry(frame)!
 	if frame.frame_type != .lf || frame.lf_level < 1 || frame.lf_level > 4 || frame.is_last
 		|| frame.have_crop || frame.x0 != 0 || frame.y0 != 0 || frame.width != file.size.width
-		|| frame.height != file.size.height || frame.upsampling != 1 || !frame.is444()
+		|| frame.height != file.size.height || !frame.is444()
 		|| file.metadata.extra_channels.len != 0 || frame.extra_upsampling.len != 0 {
 		return error('Unsupported JPEG XL LF reference frame geometry')
 	}
@@ -29,8 +29,9 @@ fn decode_lf_reference_frame(file FileHeader, frame FrameHeader, storage Modular
 		if reference != none { return error('Unexpected JPEG XL modular LF dependency') }
 		raw := decode_modular_frame(file, frame, storage, mut sections)!
 		planes := modular_xyb_planes(raw.channels, raw.quantization, storage)!
-		return restore_modular_frame(planes, frame)
+		restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
+		return upsample_frame_planes(restored, frame, file.transform)
 	}
 	raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
-	return restore_vardct_frame(raw, frame)
+	return render_vardct_frame(raw, frame, file.transform)
 }

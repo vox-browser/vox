@@ -44,7 +44,7 @@ pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 			continue
 		}
 		raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
-		restored = restore_vardct_frame(raw, frame)!
+		restored = render_vardct_frame(raw, frame, file.transform)!
 		found = true
 		break
 	}
