@@ -1821,3 +1821,36 @@ was not used to validate this fix; its parsed source manifest predates it.
 Raw near-integer real-blur crops, rotated saved layers, SVG graphs, boolean
 shadows, large-sigma/tiling paths and native/GPU services remain. See the
 [original mismatch, native fixtures, input pins and Linux linkage](gg-migration/color-image-crops-20261109.json).
+
+### Nearly integer blur source crops (2026-11-09)
+
+`66151b4db` handles rounding-induced source crops in single image blurs and
+blur/color-filter chains. When a crop is visible to the requested blur input,
+the source resolves sampling and alpha conversion first. A request wholly
+inside the logical layer retains the native raw subset shortcut, including
+unpremultiplied storage. Cropped near-integer shadow graphs still decline
+without changing the destination; their branches need independent decisions.
+
+A geometry search found three distinct float inputs that previously declined.
+Eighteen new native regressions cover visible crops, interior requests,
+premultiplied/unpremultiplied images, clearing restores and blur/color chains.
+Every new native case changes pixels; all 208 fixtures verify on macOS and
+Linux. The diagnostic search output retains duplicate hits explicitly, and
+compiler failures from initial probe setups receive no comparison credit.
+
+At seed 20261132, macOS and Linux each match 1,954 of 2,000 crop-focused
+attempts, declining 46. Optimized macOS/no-GC matches 1,948 of 2,000 at seed
+20261133, declining 52. The existing near-integer image selection matches
+4,807 of 5,000 on each platform at seed 20261134, declining 193. Counts
+include no-ops; all final cohorts finish with unchanged input pins.
+
+C/FastC image and filter-layer tests, HTML canvas integration, the full Linux
+browser typecheck and the FMA audit pass (zero contracted operations, 189
+explicit). A standalone Linux production/no-GC executable runs all 46 image
+tests with Skia unavailable to pkg-config and no direct or transitive Skia
+linkage; direct libraries remain FreeType, libm and libc. The browser
+typecheck uses installed Skia development files. The shared production bundle
+was not used to validate this slice. The complete browser still links Skia;
+full-browser Linux compile/link/run without it remains unverified.
+
+See the [baseline declines, eighteen native cases, input pins and Linux linkage](gg-migration/near-integer-blur-crops-20261109.json).
