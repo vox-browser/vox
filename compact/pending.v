@@ -63,6 +63,8 @@ function __compactFlushDOMMutations(){
 }
 function __compactTakeTaskOutput(){
  const output=__pendingStringify({logs:__state.logs,navigate:__state.navigate||""});
+ // The shell consumes a script navigation once. Reporting it again from every
+ // later task restarted the pending load on each timer tick, so it never finished.
  __state.logs=[];__state.navigate="";
  return output;
 }'
