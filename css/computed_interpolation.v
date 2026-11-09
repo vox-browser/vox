@@ -11611,7 +11611,8 @@ fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element do
 	}
 	computation_context := s.get_computation_context_for_property(.width, computed_properties,
 		abstract_element)
-	return dom_style_value_from_value_logic(typed_value.absolutized(computation_context))
+	colors := ColorResolutionContext.for_computed_properties(computed_properties, abstract_element.document())
+	return dom_style_value_from_value_logic(compute_registered_typed_value(typed_value, computation_context, colors))
 }
 
 fn interpolate_animated_custom_property(document &dom.Document, name string, from &dom.StyleValue, to &dom.StyleValue, delta f64) &dom.StyleValue {
@@ -15690,8 +15691,15 @@ pub fn (s &StyleComputer) compute_custom_properties(mut computed_properties Comp
 	mut resolved_own := map[string]dom.CSSCustomProperty_{}
 	for name, property in data.own_values {
 		mut guarded_contexts := GuardedSubstitutionContexts{}
-		computed_value := resolve_computed_custom_property_value(abstract_element, name,
+		mut computed_value := resolve_computed_custom_property_value(abstract_element, name,
 			mut guarded_contexts)
+		// Registered declarations have computed typed values, just like animated
+		// declarations. Publish them before descendants inherit their data.
+		if abstract_element.document().get_registered_custom_property(name) != none {
+			value := s.compute_animated_custom_property_value(abstract_element, computed_properties,
+				name, computed_value.materialize())
+			computed_value = ComputedCustomPropertyValue{existing_value: value}
+		}
 		mut serialized_value := ?&dom.CSSStyleValue_(none)
 		if parent := parent_data {
 			if parent_property := parent.get_property(name) {
