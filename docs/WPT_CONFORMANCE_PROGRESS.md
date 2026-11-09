@@ -1697,3 +1697,76 @@ Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-runtime-capture-raw.tar.gz`,
 SHA-256 `29784f0217b904035cae8f2cae6d9b1a874e070a3443a929bc745e955470636f`.
 Summary: `/Users/alex/.cache/vox/wpt/20261109-runtime-capture-summary.json`,
 SHA-256 `7cc697e2b2d53ded66da592da81da9e90d2d089ef545ab4bd3112148d4abbb25`.
+
+
+## Native WPT accessibility backend and name computation (2026-11-09)
+
+The same **21 official `/accname/` variants report 500 assertions** throughout.
+The pinned broad-run prefix had **0/500**, all blocked by missing
+`get_computed_label`. `43cd604f2` connects WPT's standard vendor extension to
+Vox's existing native accessible-name and role queries. Readonly queries work
+independently of the optional trusted pointer capability; captured native
+functions preserve receiver checks and resist later author replacement.
+
+With that vendor extension, the latest completed production browser reports
+**439/500**. This is automation wiring evidence against the existing calculator,
+not 439 newly implemented engine behaviors. Its executable SHA-256 is
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`,
+receipt `20261108-233251-1703525c`. The native accessibility bridge's source hash
+matches that receipt. All counts, tool pins and production identities remain
+unchanged; the strict exit stays **1** because genuine naming failures remain.
+
+Current-source native Page checks now report **461/500**, in normal mode and
+again with the prepared preallocation runtime. All 21 harnesses complete with
+identical expected counts and subtest names. **22 formerly failing assertions
+pass, with no lost passes** relative to the production-with-vendor cohort:
+
+- `b89e7950f` removes the duplicate contribution of another element's
+  `aria-label` during labelledby traversal, retaining self-label and empty
+  reference fallbacks. Its new regression fails before the fix; all three
+  reference-label checks pass afterward.
+- `0637587c9` preserves inline text adjacency: unstyled TextNodes have no
+  computed display in their DOM layout mirror and must not acquire a space.
+  The original text-node page improves from **40/50 to 50/50**, and the
+  name-from-content page from **59/79 to 65/79**.
+- `fc7669bdd` includes rendered text from `display: contents` elements, whose
+  lack of a principal box does not make them hidden. CSS hidden ancestors,
+  visibility and ARIA hiding still apply. That original page improves from
+  **0/4 to 4/4**.
+- The earlier range-value serialization repair also contributes one pass in
+  this newer native cohort. Together with the labelledby fix, the embedded
+  control page improves from **27/29 to 29/29**.
+
+The intermediate native cohort was **457/500** in both memory modes; the final
+`display: contents` fix adds four. Both final strict cohort exits remain **1**.
+The **39 remaining failures** are: aria-owns (3), tentative wrapped native
+labels (3), generated-content counters (14), counter invalidation (3), multiple
+counter instances (3), tentative heading names (5), and tentative markers (8).
+These failures are retained in full, not excluded from the denominator.
+
+Six native behavioral checks pass per memory mode, plus two worker/WPT entry
+points. Trusted-input-disabled launches pass too. All **38 existing DOM API
+checks**, three reference-label checks and three Python adapter checks pass.
+Normal and prepared compiles and focused runtimes exit **0**. Compiler SHA-256:
+`fa57f9d6b086f86a289a1d312391378cdec2a121ca74fdeda3d8981dbb9f0633`;
+prepared runtime:
+`12e060b0c53eeee1642874dca722af16fd6520d19c11ba032c063083c17506d3`.
+Compiles retain 12 GiB aggregate guards and V's 10 GiB limit; focused runtimes
+retain 3 GiB. These are correctness results, not timing comparisons.
+
+Retained failed attempts include concurrent CSP/renderer compilation conflicts
+and a cohort rejected after a test-file whitespace edit changed an input hash.
+That file was restored before the complete final cohorts, which verify unchanged
+inputs. No original WPT page, assertion, stock harness or deadline was edited.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-accessibility-native-raw.tar.gz`,
+SHA-256 `c3d369f84d4f0a00591f1d395fe8ae4140f7dab6681d6b889c5d0e4f5fc1da7c`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-accessibility-native-summary.json`,
+SHA-256 `4efd8e494f37bf97a27d2a66a449184b84a506b9a2e0a2993e8ced8707bf2453`.
+
+The corrected **40,139-variant official testharness collection continues on its
+pinned older production executable**. It does not retroactively measure these
+engine or automation fixes. A shared C production build is in progress after
+the default backend encountered an unrelated parser limitation. New-production
+engine validation and the earlier image/SVG follow-up remain pending. Other
+WPT types remain outside that collection. **Overall 100% is not achieved.**
