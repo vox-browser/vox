@@ -47,14 +47,17 @@ retain the default 12 GiB guard and V's `-memory-limit 10G`.
 | r10, optimized prepared runtime | 93 / 100 | 5,340 / 5,356 | 0 |
 | r11, optimized prepared runtime | 95 / 100 | 5,349 / 5,356 | 0 |
 | r12, optimized prepared runtime | 96 / 100 | 5,351 / 5,356 | 0 |
-| r13, optimized prepared runtime | **97 / 100** | **5,353 / 5,356** | **0** |
+| r13, optimized prepared runtime | 97 / 100 | 5,353 / 5,356 | 0 |
+| r15, first-line integration before storage fix | 97 / 100 | 5,310 / 5,312 | 44 |
+| r16, first-line storage fix | **98 / 100** | **5,354 / 5,356** | **0** |
 
-The missing assertions came from the Typed OM page terminating during setup.
-The r6–r13 images report and pass all **325/325** of that page's assertions.
+The baseline's 324 missing assertions came from the Typed OM page terminating
+during setup. Every complete image from r6 onward reports and passes all
+**325/325** of that page's assertions.
 Registered-property computation passes **75/75**, and URL resolution passes
-**18/18**, including the UTF-16 stylesheet. Every r13 page completes inside its
+**18/18**, including the UTF-16 stylesheet. Every r16 page completes inside its
 unchanged harness deadline, with harness status 0 and unchanged pinned runtime
-inputs. The r13 cohort guard exits 1 because assertions remain failing; its
+inputs. The r16 cohort guard exits 1 because assertions remain failing; its
 compiler guard exits 0. Both containment pages now pass: 48/48 and 42/42;
 path interpolation passes 478/478. First-line property filtering and the nested
 highlight-inheritance page also pass completely.
@@ -64,8 +67,11 @@ It is retained as partial evidence, without an aggregate pass-rate claim. The
 r5 focused run reports 448/464 assertions across four pages, with three pages
 passing; it predates the final stylesheet-base and linked-sheet decoding fixes.
 
-The r13 executable SHA-256 is
-`f2bf011a660391394a0d6e51b83299ce4de40d4d7b385c639d0158d1b9fb6802`.
+The r16 executable SHA-256 is
+`2349dc5c58f6e52176efe609641f98b61b99b0552a335c913de0be42f9beed18`.
+The r15 image with the storage regression is
+`2288bc2cb13b08f29c4d0af6370d57226b8a21db31fbfdc7c599a615ad90c41d`;
+r13 is `f2bf011a660391394a0d6e51b83299ce4de40d4d7b385c639d0158d1b9fb6802`.
 Intermediate images are r12
 `516b4fd17689e788f9ac155097aba122e9523eab0c214c3fe7f99fd36e8703b1`,
 r11 `ae8e8be3028984b29b160c8aa889959dfd5e51f60fa8a308f83776a856b118a3`,
@@ -76,7 +82,7 @@ The earlier r8 image is
 The earlier r7 image is
 `1f2a1a53d81325c26f70faf637ecfab601f83cc53e2587d9c13511122cb3deae`;
 r6 is `9f754b9de64698545774c1e984fdc58b9124ae441d4e1c57597ee0d75d3bcec7`.
-It uses C, literal `-prod`, one C unit, and the prepared prealloc runtime with
+These optimized images use C, literal `-prod`, one C unit, and the prepared prealloc runtime with
 `-gc none`. Its compiler SHA-256 is
 `baf5f3b4328f77b9dd8c49d2dc3b837b5c710d47d474ddd93ba3ad7a9d81591f`.
 Compiler-consumed source manifests distinguish each image from later shared
@@ -122,13 +128,38 @@ follow-up passes all nine focused test functions and restores both introduced
 regressions in the original cohort.
 
 The target remains all 100 pages and all original expected assertions passing
-together. The **three remaining r13 failures** are also marked `Fail` in the
-pinned Ladybird expectations: the two mixed length/percentage iteration cases
-and shadow-part first-line rendering. Those upstream expectations contain 102
-recorded failures overall; Vox passes 99 of them in r13. Expected upstream
-failures are still failures in this cohort. The first-line case is a real
-rendering implementation gap; its expected height is 106px and r13 produces
-40px.
+together. The **two remaining r16 failures** are the mixed length/percentage
+iteration cases described below. Both are marked `Fail` in the pinned Ladybird
+expectations. Those expectations contain 102 recorded failures overall; Vox
+passes 100 of them in r16, together with all 5,254 assertions recorded `Pass`.
+Expected upstream failures are still failures in this cohort. The real
+shadow-part first-line rendering gap is now fixed: the original page reports
+and passes **44/44**, including the expected 106px first-line height.
+
+## First-line integration
+
+`5473d9d33` installs first-line styles during style updates and uses a separate
+font cascade for first-line shaping, line metrics, color and paint commands.
+It restores ordinary text after soft/forced breaks while preserving DOM text
+identity and UTF-16 offsets. The initial slice handles direct text and break
+nodes in horizontal block contexts. Descendant inline inheritance, transformed
+source mappings, emergency word splitting and broader first-line property
+coverage remain outside this slice.
+
+All five initial focused test functions pass in the ordinary runtime, covering
+both font policies, wrapping and viewport changes, shadow parts, empty lines,
+preserved newlines, and inherited font changes. The optimized prepared-runtime
+r15 run exposes a lifetime bug: the shadow-part page panics during paint
+projection after temporary geometry storage retires, losing all 44 assertions.
+That regression remains in the table. Follow-up `f64a625e7` moves the retained style
+sources into document-owned storage, excludes pseudo styles from caches whose
+input signatures do not record them, and adds a prepared-runtime ownership and
+scratch-churn regression check. All **six focused test functions pass** with
+the same optimized prepared prealloc compiler and `-gc none`; compile and
+runtime guards both exit 0. The fresh r16 full cohort recovers every lost
+assertion and passes the original shadow-part page completely.
+The superseded r14 compilation was stopped with exit 143 before any cohort ran;
+it receives no aggregate result.
 
 ## Mixed length/percentage accumulation diagnostic
 
@@ -138,7 +169,10 @@ assertion. Their original expectation contains `calc(25% + 50px)`; Vox produces
 interpolating the interval endpoints appears to require the latter result under
 the [Web Animations iteration-composition procedure](https://drafts.csswg.org/web-animations-2/#iteration-composition)
 and [CSS numeric accumulation](https://drafts.csswg.org/css-values-4/#combining-values).
-This is a suspected expectation inconsistency, not a passing result.
+This is a suspected expectation inconsistency, not a passing result. For the second list
+item, the accumulated endpoints are `calc(50% + 200px)` and `300px`;
+their midpoint is `calc(25% + 250px)`. The original 50px component omits
+the two accumulated 100px contributions.
 
 A separate fresh-process diagnostic on the same two unchanged imported pages
 in installed **Brave 157.1.99.55** also reports 10/12 assertions, with both
@@ -162,13 +196,21 @@ contains the exact Typed OM/computed-style bridge sources being checked:
 - Executable SHA-256: `b794166cf036ebdeca48b7c69b27fe4e5a7a7158076bd8d531a8a728aac742e9`.
 - Pixel guard: completed, browser/capture/diff/guard exits 0.
 
-This painting result is separate from the native cohort and does not validate
-later highlight or path changes absent from that production image. The three
-original selection reftests remain pending on a matching completed production
-image. Recent automatic builds (receipts `20261109-171656-fd6c144a` and
-`20261109-172639-3b3bad04`) failed input verification because the shared
-`tools/raster_tests.json` changed during compilation. No manual duplicate
-production build was queued.
+The three original selection reftests also pass with **zero differing pixels**
+at 800×600, including focus changes, insertion between boundaries, and movement
+between subtrees. Each input/reference capture and exact diff exits 0; the
+3 GiB guard exits 0 and all pinned inputs remain unchanged.
+
+- Receipt: `20261109-185423-29c286ec`.
+- Executable SHA-256: `d582a08966a8006580040af3e834ca84aa3a75e5530f8a91f27a1a533757dd0f`.
+
+These are separate painting cohorts. The earlier SVG image contains the
+Typed OM/computed-style bridge fixes; the later selection image contains the
+highlight-inheritance and first-line integration sources. The selection
+fixtures do not exercise first-line styling or its subsequent storage fix.
+Earlier observer attempts and automatic build failures remain retained; the
+matching completed build was leased directly without copying an app bundle or
+queuing a manual production build.
 
 ## Local evidence and reproduction
 
@@ -189,6 +231,6 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
   python3 tools/ladybird_native_cohort.py \
   --catalog Tests/Browser/ladybird-new-701-800-20261109.txt \
   --ladybird-ref 2919bf87a5e5dfc49a210a70bda079afa411c6c5 \
-  --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/round3/core/native-r13-prod \
+  --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/final/core/native-r16-prod \
   --output Build/ladybird-701-800-UNIQUE
 ```
