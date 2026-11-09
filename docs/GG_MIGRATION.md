@@ -1682,3 +1682,37 @@ Skia unavailable to pkg-config and no direct or transitive Skia linkage.
 Its direct libraries are FreeType, libm and libc. The complete browser still
 links Skia, and full-browser Linux compile/link/run without it remains open.
 See the [source identities, fixtures and guarded check results](gg-migration/shadow-first-spatial-chains-20261109.json).
+
+
+### Resampled chains beginning with an identity shadow (2026-11-09)
+
+`290baeab8` extends the source-view graph to identity shadows. The shadow
+keeps its tint, color filters and image sampling deferred through merge. A
+nearest source followed by a fractional linear offset resolves the tinted
+input first, preserving both sampling operations. The lone-shadow renderer
+uses the same preparation helper. Matrix prefixes stop folding at the first
+shadow, so later matrices apply to its merged image.
+
+Eight new regressions bring the independently verified native source-image
+corpus to 154 cases per platform. The nearest/P3 case retains different
+macOS and Linux native expectations. Random comparisons, including no-ops:
+
+| Platform/build | Seed | Attempts | Exact | Declined |
+| --- | --- | ---: | ---: | ---: |
+| macOS, identity-first graph | 20261121 | 1,000 | 844 | 156 |
+| Linux, identity-first graph | 20261121 | 2,000 | 1,661 | 339 |
+| macOS, production/no-GC graph | 20261122 | 2,000 | 1,676 | 324 |
+| Linux, existing nearest-source shadows | 20261123 | 2,000 | 1,921 | 79 |
+
+Every cohort ends with unchanged input pins. C/FastC image and filter-layer
+regressions, HTML canvas integration, the full Linux browser typecheck and
+zero-contraction FMA audit (189 explicit operations) pass. The Linux standalone
+production/no-GC image-test binary runs all 40 registered tests with Skia
+unavailable to pkg-config and no direct or transitive Skia dependency. Its
+direct libraries remain FreeType, libm and libc. The browser typecheck uses
+Skia development files; the complete browser still links Skia.
+
+Rejected mixed-graph blur nodes, rounding-induced crops, rotated layers, SVG
+filters, boolean shadows, large-sigma/tiling paths and native/GPU bridges
+remain. A full Skia-free Linux browser compile/link/run is still unverified.
+See the [native platform expectations, checks and retained setup failures](gg-migration/identity-first-spatial-chains-20261109.json).
