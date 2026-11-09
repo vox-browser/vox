@@ -30,10 +30,10 @@ fn (mut app BrowserApp) schedule_native_observation() bool {
 		if delay <= 0 { return true }
 	}
 	screenshot := os.getenv('VOX_NATIVE_OBSERVATION_SCREENSHOT')
-	mut timer := platform.Timer.create_single_shot(delay, fn [app, screenshot] () {
+	mut timer := platform.Timer.create_single_shot(delay, fn [mut app, screenshot] () {
 		active := app.active_browser_tab()
 		active.write_capture_audit_if_requested()
-		if screenshot != '' { schedule_native_screenshot(screenshot) }
+		if screenshot != '' { app.application.schedule_native_screenshot(screenshot) }
 	})
 	timer.start()
 	return true

@@ -133,6 +133,7 @@ fn (mut app BrowserApp) activate_tab_chrome(action string) {
 			mut client := owner.client()
 			client.set_event_recording(false)
 			mut tab := &BrowserApp{
+				application:                    app.application
 				seed_optimized_bookmarks:       current.seed_optimized_bookmarks
 				tabs:                           app.tabs
 				zoom_levels:                    current.zoom_levels
@@ -342,6 +343,7 @@ fn (mut app BrowserApp) poll_background_browser_tab() {
 }
 
 fn (mut app BrowserApp) cleanup_browser_tabs() {
+	defer { app.application.close() }
 	if app.process_tabs() {
 		if app.tabs.process_timer != unsafe { nil } { app.tabs.process_timer.stop() }
 		if app.tabs.closing_process {

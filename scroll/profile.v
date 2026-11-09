@@ -165,7 +165,7 @@ fn (mut app BrowserApp) finish_scroll_profile_frame() {
 		}
 		if app.screenshot_path != '' {
 			app.screenshot_scheduled = true
-			schedule_native_screenshot(app.screenshot_path)
+			app.application.schedule_native_screenshot(app.screenshot_path)
 			profile.enabled = false
 		} else {
 			exit(0)
