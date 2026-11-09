@@ -434,10 +434,16 @@ pub fn (mut event_loop EventLoop) attach_embedding_vm(vm &libjs.VM) {
 	for attached in event_loop.embedding_vms_ {
 		if voidptr(attached) == voidptr(vm) { return }
 	}
+	// A window loop outlives each document realm attached to it. Keep the
+	// registry backing outside the realm arena active during initialization.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.embedding_vms_ << vm
 }
 
 pub fn (mut event_loop EventLoop) detach_embedding_vm(vm &libjs.VM) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	event_loop.embedding_vms_ = event_loop.embedding_vms_.filter(voidptr(it) != voidptr(vm))
 }
 
