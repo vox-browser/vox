@@ -31,6 +31,9 @@ mut:
 	// KeyframeEffects created by script, by key.
 	web_effects map[string]voidptr
 	node_iterators map[string]&dom.NodeIterator
+	highlights map[string]&CompactHighlight
+	highlight_ranges map[string]CompactHighlightRange
+	highlight_registry []CompactHighlightRegistration
 	ranges map[string]&dom.Range
 	range_keys map[voidptr]string
 	attribute_handles map[string]CompactNativeAttribute
@@ -283,6 +286,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'xpath' { return binding.xpath_query(key, selector) }
 	if action == 'textSelection' { return binding.text_selection_query(key, selector) }
 	if action == 'range' { return binding.range_query(key, selector) }
+	if action == 'highlight' { return binding.highlight_query(selector) }
 	if action == 'svgGeometry' { return binding.svg_geometry_query(key, selector) }
 	if action == 'documentWrite' { return binding.document_write_query(key, selector) }
 	if action == 'outerHTML' { return binding.outer_html_query(key, selector) }

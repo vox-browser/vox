@@ -311,6 +311,7 @@ fn compact_range_selection_bootstrap() string {
  }
  function adopt(object,state){__elementApply(set,records,[object,state.key]);wrappers.set(state.key,object);return object;}
  function wrap(state){if(state===null||state===undefined)return null;const existing=wrappers.get(state.key);return existing||adopt(Object.create(Range.prototype),state);}
+ globalThis.__compactRangeKey=key;
  function key(receiver){const own=__elementApply(get,records,[receiver]);if(!own)throw new TypeError("Illegal Range receiver");return own;}
  // Range state stays valid until another range, selection or editing
  // operation, or a DOM change, which the content version reflects.
