@@ -1,6 +1,13 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'border-shape': {
+        'animation-type': 'by-computed-value',
+        'affects-layout': False,
+        'initial': 'none',
+        'requires-computation': 'cascaded-value',
+        'valid-identifiers': ['none'],
+    },
     'text-orientation': {
         'animation-type': 'discrete',
         'inherited': True,

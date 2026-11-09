@@ -457,6 +457,7 @@ pub enum PropertyID {
 	font_palette
 	forced_color_adjust
 	text_orientation
+	border_shape
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

@@ -777,6 +777,7 @@ pub mut:
 
 pub type BasicShape = BasicShapeCircle
 	| BasicShapeEllipse
+	| BasicShapeCommands
 	| BasicShapeInset
 	| BasicShapePath
 	| BasicShapePolygon
@@ -924,6 +925,7 @@ pub fn (shape BasicShapePath) serialize(mode SerializationMode) string {
 pub fn (style_value BasicShapeStyleValue) serialize(mode SerializationMode) string {
 	shape := style_value.basic_shape_[0]
 	return match shape {
+		BasicShapeCommands { shape.serialize(mode) }
 		BasicShapeInset { shape.serialize(mode) }
 		BasicShapeXywh { shape.serialize(mode) }
 		BasicShapeRect { shape.serialize(mode) }
@@ -994,6 +996,7 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 	// - All <basic-shape-rect> functions compute to the equivalent inset() function.
 	shape := style_value.basic_shape_[0]
 	absolutized_shape := match shape {
+		BasicShapeCommands { BasicShape(shape.absolutized(context)) }
 		BasicShapeInset {
 			BasicShape(BasicShapeInset{
 				top: shape.top.absolutized(context)

@@ -1028,6 +1028,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.border_image_repeat {
 			return parser.parse_border_image_repeat_value(mut tokens)
 		}
+		.border_shape { return parser.parse_border_shape_value(mut tokens) }
 		.border_image_slice {
 			return parser.parse_border_image_slice_value(mut tokens)
 		}
@@ -3372,6 +3373,11 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 	function_values := component_value.function().value
 	zero_radius := StyleValue(BorderRadiusRectStyleValue.create_zero())
 
+	if function_name == 'shape' {
+		value := parser.parse_linear_shape_function(function_values) or { return none }
+		tokens = transaction
+		return StyleValue(BasicShapeStyleValue.create(BasicShape(value)))
+	}
 	if function_name == 'inset' {
 		// inset( <length-percentage>{1,4} [ round <'border-radius'> ]? )
 		mut args := ComponentValueStream.new(function_values)

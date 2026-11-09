@@ -8467,6 +8467,7 @@ pub enum StyleValueType {
 	angle
 	background_size
 	basic_shape
+	border_shape
 	border_image_slice
 	border_radius
 	border_radius_rect
@@ -8547,6 +8548,7 @@ pub type StyleValue = KeywordStyleValue
 	| CalculatedStyleValue
 	| BackgroundSizeStyleValue
 	| BasicShapeStyleValue
+	| BorderShapeStyleValue
 	| BorderImageSliceStyleValue
 	| BorderRadiusRectStyleValue
 	| BorderRadiusStyleValue
@@ -8663,6 +8665,7 @@ pub fn (style_value &StyleValue) type_() StyleValueType {
 		AngleStyleValue { .angle }
 		BackgroundSizeStyleValue { .background_size }
 		BasicShapeStyleValue { .basic_shape }
+		BorderShapeStyleValue { .border_shape }
 		BorderImageSliceStyleValue { .border_image_slice }
 		BorderRadiusRectStyleValue { .border_radius_rect }
 		BorderRadiusStyleValue { .border_radius }
@@ -8968,6 +8971,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 	return match style_value {
 		BackgroundSizeStyleValue { style_value.absolutized(context) }
 		BasicShapeStyleValue { style_value.absolutized(context) }
+		BorderShapeStyleValue { style_value.absolutized(context) }
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
 		BorderImageSliceStyleValue { style_value.absolutized(context) }
 		BorderRadiusStyleValue { style_value.absolutized(context) }
@@ -9049,6 +9053,7 @@ pub fn (style_value StyleValue) serialize(mode SerializationMode) string {
 		AngleStyleValue { style_value.serialize(mode) }
 		BackgroundSizeStyleValue { style_value.serialize(mode) }
 		BasicShapeStyleValue { style_value.serialize(mode) }
+		BorderShapeStyleValue { style_value.serialize(mode) }
 		BorderImageSliceStyleValue { style_value.serialize(mode) }
 		BorderRadiusRectStyleValue { style_value.serialize(mode) }
 		BorderRadiusStyleValue { style_value.serialize(mode) }

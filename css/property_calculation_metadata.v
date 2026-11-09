@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'border-shape' { return .border_shape }
 	if name == 'text-orientation' { return .text_orientation }
 	if name == 'forced-color-adjust' { return .forced_color_adjust }
 	if name == 'font-palette' { return .font_palette }
@@ -3206,6 +3207,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.border_shape { 'border-shape' }
 		.text_orientation { 'text-orientation' }
 		.forced_color_adjust { 'forced-color-adjust' }
 		.font_palette { 'font-palette' }
@@ -3710,6 +3712,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.border_shape { 'none' }
 		.text_orientation { 'mixed' }
 		.forced_color_adjust { 'auto' }
 		.font_palette { 'normal' }
@@ -4155,6 +4158,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.border_shape {
+			AnimationType.by_computed_value
+		}
 		.text_orientation {
 			AnimationType.discrete
 		}
@@ -4217,6 +4223,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.border_shape { true }
 		.text_orientation { true }
 		.forced_color_adjust { true }
 		.font_palette { true }
@@ -4327,6 +4334,7 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.border_shape { true }
 		.font_palette { true }
 		.font_size_adjust { true }
 		.animation_range_start, .animation_range_end { true }
@@ -4624,6 +4632,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.border_shape {
+			lowercase_value in ['none']
+		}
 		.text_orientation {
 			lowercase_value in ['mixed', 'upright', 'sideways']
 		}

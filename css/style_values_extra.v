@@ -650,6 +650,7 @@ pub fn (mut style_value CursorStyleValue) make_image_cursor(node &dom.LayoutNode
 pub fn (style_value BasicShapeStyleValue) to_path(reference_box CSSPixelRect, node &dom.LayoutNode) StyleValuePath {
 	shape := style_value.basic_shape_[0]
 	return match shape {
+		BasicShapeCommands { shape.to_path(reference_box,node) }
 		BasicShapeInset {
 			style_values_extra_inset_to_path(shape, reference_box, node)
 		}
