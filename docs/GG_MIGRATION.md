@@ -2009,3 +2009,43 @@ was not used to validate it. The complete browser still links Skia; full
 Linux browser compilation, linking and execution without it remain open.
 
 See the [native fixtures, failed attempts, final checks and Linux linkage](gg-migration/large-blur-rescaling-20261109.json).
+
+### Large aligned and fractional source-image blurs (2026-11-09)
+
+`bfa0951df` sends large single-blur image filters through the CPU rescaling
+engine when the original pixels are aligned or MakeFromImage prescribes an
+AA surface for a fractional source subset. Exactly aligned factored mappings
+also work. Image filters retain their original layer coordinates and RGBA
+intermediate buffers. When the near-identity downsample is skipped, the blur
+retains the source's alpha type instead of treating unpremultiplied pixels as
+premultiplied. Other deferred source transforms keep their existing guard.
+
+Thirty-five supported fixtures match independent native expectations on macOS
+and Linux, covering P3, both source alpha types, paint alpha, color filters,
+clips, clearing modes, clipped sources and asymmetric/scaled fractional
+surfaces. Four further controls retain native reference hashes and verify that
+unsupported transforms decline without changing the destination. The final
+fixture explicitly checks raw unpremultiplied storage through a skipped
+resample; final focused suites and the Linux component executable include it.
+
+At seed 20261161, the baseline declines all 500 attempts. The new code matches
+392 of those same attempts on each platform, declining 108. Default C builds
+match 1,573 of 2,000 at seed 20261162 on each platform, declining 427. Optimized
+macOS/no-GC matches 1,560 of 2,000 at seed 20261163, declining 440. The existing
+converted-image control also passes. Counts include no-ops and every completed
+cohort finishes with unchanged input pins.
+
+The C source/image/filter suites, the corresponding FastC source/image/filter
+suites, HTML canvas integration, Linux browser typecheck and C FMA audit pass
+(zero contracted operations, 189 explicit). The earlier FastC saved-canvas
+large-blur gradient failure remains separate. A standalone Linux production/
+no-GC executable compiles with Skia unavailable to pkg-config and explicitly
+runs all three new test functions under the 3 GiB guard. Its link command,
+`readelf` and `ldd` show no direct or transitive Skia dependency; direct libraries
+are FreeType, libm and libc.
+
+These checks verify the component. The browser typecheck uses installed Skia
+development files, and the older production bundle was not used to validate
+this slice. Complete Linux browser compilation, linking and execution without
+Skia remain open. See the [native expectations, baseline, guarded cohorts and
+Linux linkage](gg-migration/large-source-image-blurs-20261109.json).
