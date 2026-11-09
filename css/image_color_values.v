@@ -2110,6 +2110,8 @@ pub fn (style_value ImageStyleValue) absolutized(context ComputationContext) Ima
 		}
 	} else if document := style_value.document_ {
 		base_url = document.base_url().to_string()
+	} else if element := context.abstract_element {
+		base_url = element.document().base_url().to_string()
 	}
 
 	if base := base_url {

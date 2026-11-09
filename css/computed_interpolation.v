@@ -11624,7 +11624,9 @@ fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element do
 	computation_context := s.get_computation_context_for_property(.width, computed_properties,
 		abstract_element)
 	colors := ColorResolutionContext.for_computed_properties(computed_properties, abstract_element.document())
-	return dom_style_value_from_value_logic(compute_registered_typed_value(typed_value, computation_context, colors))
+	base := value.base_url or { abstract_element.document().base_url().to_string() }
+	with_urls := resolve_registered_property_urls(typed_value, base)
+	return dom_style_value_from_value_logic(compute_registered_typed_value(with_urls, computation_context, colors))
 }
 
 fn interpolate_animated_custom_property(document &dom.Document, name string, from &dom.StyleValue, to &dom.StyleValue, delta f64) &dom.StyleValue {
@@ -12626,14 +12628,17 @@ struct ComputedCustomPropertyValue {
 	kind           ComputedCustomPropertyValueKind
 	existing_value &dom.StyleValue = unsafe { nil }
 	tokens         []ComponentValue
+	base_url       ?string
 }
 
 fn (value ComputedCustomPropertyValue) materialize() &dom.StyleValue {
 	return match value.kind {
 		.existing { value.existing_value }
 		.substituted {
-			dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(
+			mut result := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(
 				value.tokens, SubstitutionFunctionsPresence{}, none)))
+			result.base_url = value.base_url
+			result
 		}
 		.guaranteed_invalid {
 			dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
@@ -12699,12 +12704,19 @@ fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, 
 	if contains_guaranteed_invalid_value(result) {
 		return ComputedCustomPropertyValue{kind: .guaranteed_invalid}
 	}
-	return ComputedCustomPropertyValue{kind: .substituted, tokens: result}
+	return ComputedCustomPropertyValue{kind: .substituted, tokens: result, base_url:value.base_url}
 }
 
 fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
-	return resolve_computed_custom_property_value(abstract_element, custom_property,
+	value := resolve_computed_custom_property_value(abstract_element, custom_property,
 		mut guarded_contexts).materialize()
+	registration := abstract_element.document().get_registered_custom_property(custom_property) or { return value }
+	syntax := style_query_registration_syntax(registration) or { return value }
+	if syntax.type() == .universal { return value }
+	mut typed := typed_style_value_logic_from_dom(value) or { return value }
+	if typed is UnresolvedStyleValue { typed = parse_with_a_syntax(typed.tokenize(), syntax) }
+	base := value.base_url or { abstract_element.document().base_url().to_string() }
+	return dom_style_value_from_value_logic(resolve_registered_property_urls(typed, base))
 }
 
 pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
