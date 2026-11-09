@@ -12682,6 +12682,7 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 	}
 
 	return match property_id {
+		.animation_range_start, .animation_range_end { compute_animation_range_endpoint(absolutized_value, property_id == .animation_range_start) }
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)
 		}

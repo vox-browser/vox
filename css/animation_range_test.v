@@ -80,3 +80,8 @@ fn test_animation_range_computes_viewport_lengths_and_preserves_percentages() {
 	assert (style.property(.animation_range_start, .yes) or { panic('start') }).css_text == '20px, entry calc(100% - 20px)'
 	assert (style.property(.animation_range_end, .yes) or { panic('end') }).css_text == '400px, exit'
 }
+
+fn test_animation_range_default_end_percentage_is_omitted_in_shorthand() {
+	value := parse_css_value_logic(.animation_range, '0% 100%') or { panic('range') }
+	assert value.serialize(.normal) == '0%'
+}

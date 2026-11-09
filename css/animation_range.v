@@ -2,6 +2,8 @@
 // https://drafts.csswg.org/scroll-animations-1/#animation-range.
 module css
 
+import dom
+
 const animation_range_names = ['cover', 'contain', 'entry', 'exit', 'entry-crossing', 'exit-crossing']
 
 fn animation_range_name(value StyleValue) ?string {
@@ -93,9 +95,30 @@ fn (value ShorthandStyleValue) serialize_animation_range(mode SerializationMode)
 		if name := animation_range_name(start) {
 			omit_end = end is CustomIdentStyleValue && end.custom_ident() == name
 		} else {
-			omit_end = end.to_keyword() == .normal
+			omit_end = end.to_keyword() == .normal || (end is PercentageStyleValue && end.percentage().value() == 100)
 		}
 		entries << if omit_end { start.serialize(mode) } else { start.serialize(mode) + ' ' + end.serialize(mode) }
 	}
 	return entries.join(', ')
+}
+
+fn compute_animation_range_endpoint(value &dom.StyleValue, start bool) &dom.StyleValue {
+	typed := typed_style_value_logic_from_dom(value) or { return unsafe { value } }
+	if typed !is StyleValueList { return unsafe { value } }
+	mut entries := []StyleValue{}
+	for index in 0 .. typed.size() {
+		entry := typed.value_at(index, false)
+		if entry is StyleValueList && entry.size() == 2 {
+			offset := entry.value_at(1, false)
+			percentage := if offset is PercentageStyleValue { offset.percentage().value() }
+				else if offset is CalculatedStyleValue { (offset.resolve_percentage(CalculationResolutionContext{}) or { Percentage{value_: -1} }).value() }
+				else { -1.0 }
+			if percentage == (if start { 0.0 } else { 100.0 }) {
+				entries << entry.value_at(0, false)
+				continue
+			}
+		}
+		entries << entry
+	}
+	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(entries, .comma, .yes)))
 }
