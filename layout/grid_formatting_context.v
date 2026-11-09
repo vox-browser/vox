@@ -1099,9 +1099,7 @@ fn place_grid_items(container &Node, physical_column_lines [][]css.GridLineName,
 		row := row_position.start
 		mut column := implicit_minimum_column
 		if !auto_flow.dense {
-			for occupied_row in row..row+row_span {
-				if cursor := row_cursors[occupied_row] { if cursor>column { column=cursor } }
-			}
+			if cursor := row_cursors[row] { if cursor>column { column=cursor } }
 		}
 		for column < column_count
 			&& !grid_area_is_free(occupied, row, column, row_span, column_span) {
@@ -1110,7 +1108,7 @@ fn place_grid_items(container &Node, physical_column_lines [][]css.GridLineName,
 		if column + column_span > column_count {
 			column_count = column + column_span
 		}
-		for occupied_row in row..row+row_span { row_cursors[occupied_row]=column+column_span }
+		row_cursors[row]=column+column_span
 		mut placement := GridItemPlacement{
 			item: item
 			row: row
