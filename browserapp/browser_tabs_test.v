@@ -37,7 +37,33 @@ fn browser_tabs_test_app() &BrowserApp {
 }
 
 fn browser_tabs_test_cleanup(mut app BrowserApp) {
+	defer { app.application.close() }
 	for mut tab in app.tabs.pages { tab.dispose_browser_tab() }
+}
+
+fn test_tabs_share_application_services_until_the_window_closes() {
+	mut app := browser_tabs_test_app()
+	defer { browser_tabs_test_cleanup(mut app) }
+	app.application.arm_filter_memory_cleanup()
+	timer := app.application.filter_cleanup_timer or { panic('missing application timer') }
+	app.application.portable_screenshot.schedule('shared-window.png', 10, 5)
+	app.activate_tab_chrome('tab-new')
+	second := app.active_browser_tab()
+	assert voidptr(second.application) == voidptr(app.application)
+	assert second.application.portable_screenshot.ready_path(15)? == 'shared-window.png'
+	app.activate_tab_chrome('tab-select:0')
+	app.activate_tab_chrome('tab-close:0')
+	assert voidptr(app.active_browser_tab()) == voidptr(second)
+	assert !second.application.closed
+	assert timer.is_active()
+	assert second.application.portable_screenshot.ready_path(15)? == 'shared-window.png'
+
+	app.cleanup_browser_tabs()
+	assert app.tabs.pages.len == 0
+	assert second.application.closed
+	assert !timer.is_active()
+	assert !timer.has_activity_root()
+	assert second.application.portable_screenshot.ready_path(15) == none
 }
 
 fn test_tab_reordering_preserves_owners_selection_and_live_page_state() {

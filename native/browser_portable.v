@@ -8,20 +8,17 @@ import time
 $if linux || windows {
 	#include "@VMODROOT/native/include/native_browser_portable.h"
 
-	__global (
-		portable_screenshot_path string
-		portable_screenshot_due i64
-	)
-
-	fn capture_portable_screenshot(path string) {
-		portable_screenshot_path = path
+	fn (mut app App) capture_portable_screenshot(path string) {
 		seconds := os.getenv_opt('SCREENSHOT_SETTLE_SECONDS') or { '2' }
-		portable_screenshot_due = time.sys_mono_now() + i64(seconds.f64() * time.second)
+		// A request made during a frame must survive the frame's scratch arena.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		app.portable_screenshot.schedule(path, time.sys_mono_now(), i64(seconds.f64() * time.second))
 	}
 
-	fn finish_portable_frame() {
-		if portable_screenshot_path == '' || time.sys_mono_now() < portable_screenshot_due { return }
-		sapp.screenshot_png(portable_screenshot_path) or {
+	fn (app &App) finish_portable_frame() {
+		path := app.portable_screenshot.ready_path(time.sys_mono_now()) or { return }
+		sapp.screenshot_png(path) or {
 			eprintln('Vox screenshot: ${err.msg()}')
 			exit(1)
 		}

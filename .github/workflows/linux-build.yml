@@ -289,8 +289,10 @@ jobs:
               navigation/back_forward_cache_test.v \
               navigation/blob_url_cache_lifetime_test.v \
               navigation/retire_before_styles_test.v \
+              browserapp/application_test.v \
               browserapp/browser_tabs_test.v \
-              browserapp/browser_zoom_test.v
+              browserapp/browser_zoom_test.v \
+              capture/portable_screenshot_test.v
 
       - name: Check resource consumers and navigation retirement
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
