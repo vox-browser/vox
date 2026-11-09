@@ -9,10 +9,11 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	sigmas := stages.map(it.sigma)
 	mut sx := []f32{cap: sigmas.len}
 	mut sy := []f32{cap: sigmas.len}
-	mut last_real_stage := -1
 	for i, sigma in sigmas {
 		x := blur_layer_sigma(math_abs32(sigma * ctm.sx))
 		y := blur_layer_sigma(math_abs32(sigma * ctm.sy))
+		if (x > image_blur_max_sigma || y > image_blur_max_sigma)
+			&& (i != sigmas.len - 1 || source_image) { return false }
 		sx << x
 		sy << y
 		if x != 0 || y != 0 { last_real_stage = i }
@@ -86,19 +87,14 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 			// Keep color effects in the first downsample rather than resolving
 			// them into an extra 8-bit image. The upscale stays deferred.
 			input := FilterResult{...result, initialized_boundary: true}
-			view := scaled_blur_filter_view(input, desired, sx[i], sy[i], new_color_filter(pending), !source_image) or { return false }
+			view := scaled_blur_filter_view(input, desired, sx[i], sy[i], new_color_filter(pending), true) or { return false }
 			if view.bitmap.width == 0 {
 				target.ready()
 				draw_empty_filter_result(mut pixels, pitch, &rc, mode)
 				return true
 			}
-			// Later identity kernels return this view without sampling it.
-			// Their incoming color effects remain deferred until restoration.
-			mut after := []MatrixColorFilter{}
-			for tail in stages[i + 1..] { after << tail.pre_color }
-			after << post_color
 			return draw_filter_image_view(mut pixels, pitch, &rc, mode,
-				FilterImageView{...view, filter: new_color_filter(after)}, -base_x, -base_y, mut target)
+				FilterImageView{...view, filter: new_color_filter(post_color)}, -base_x, -base_y, mut target)
 		}
 		if result.has_image && (sx[i] != 0 || sy[i] != 0) {
 			incoming_color := new_color_filter(pending)
