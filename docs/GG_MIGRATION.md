@@ -2049,3 +2049,38 @@ development files, and the older production bundle was not used to validate
 this slice. Complete Linux browser compilation, linking and execution without
 Skia remain open. See the [native expectations, baseline, guarded cohorts and
 Linux linkage](gg-migration/large-source-image-blurs-20261109.json).
+
+### Near-integer large blurs with skipped downsampling (2026-11-09)
+
+`e51a070aa` admits near-integer source mappings when the native downscale-step
+calculation omits both resampling passes. The original pixels and snapped
+origin then follow the same path as a smaller blur. Existing eligibility
+checks still exclude incoming color/alpha effects and visible source crops
+that require resolution. Near-integer mappings that need actual resampling
+retain their guard.
+
+The baseline declines all 500 requests at seed 20261165. The new default C
+builds match all 2,000 requests at that seed on macOS and Linux, including that
+same 500-request prefix. Optimized macOS/no-GC matches all 2,000 at seed
+20261166. All final cohorts finish with unchanged input pins. Two additional
+native fixtures cover both source alpha types and fractional near-integer
+origins; source-image coverage now includes 37 supported native fixtures and
+four decline controls on each platform.
+
+Focused C/FastC source/image/filter suites, Linux browser typechecking and the
+C FMA audit pass (zero contracted operations, 189 explicit). The standalone
+Linux production/no-GC source-image executable runs all four registered test
+functions under the 3 GiB guard with Skia unavailable to pkg-config. Its link
+command, `readelf` and `ldd` show no direct or transitive Skia dependency.
+
+HTML integration remains pending. The pinned comparison compiler exceeded
+the unchanged 12 GiB aggregate guard twice. A fresh attempt with the production
+browser's compiler reached invalid `to_keyword()` and `StyleValueList.create()`
+calls in concurrent, uncommitted CSS parser edits. Those edits were preserved;
+all three unsuccessful attempts are retained. The earlier integration result
+predates this near-integer change and cannot validate it.
+
+The Linux typecheck uses installed Skia development files. The shared bundle
+was not used to validate this slice, and complete browser compilation, linking
+and execution without Skia remain open. See the [native fixtures, guarded
+checks and integration failures](gg-migration/large-near-integer-image-blurs-20261109.json).
