@@ -384,8 +384,12 @@ fn test_document_open_resets_readiness_and_ignores_previous_stream_tasks() {
 			assert document.readiness() == .complete
 			assert document.is_completely_loaded()
 		} else {
-			// Leave both the first stream's DCL and load tasks queued.
+			// Leave both the first stream's DCL and load tasks queued. The first
+			// check queues DOMContentLoaded and schedules its own continuation;
+			// run that continuation directly, ahead of the queued DCL task.
 			mut old_end := unsafe { &HTMLParserEndState(document.html_parser_end_state()) }
+			old_end.check_progress()
+			assert old_end.phase() == .waiting_for_asap_scripts
 			old_end.check_progress()
 			assert old_end.phase() == .completion_queued
 		}

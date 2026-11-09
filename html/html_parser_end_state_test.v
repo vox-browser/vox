@@ -126,3 +126,37 @@ fn test_parser_end_state_resumes_each_async_phase() {
 	})
 	assert document.readiness() == .complete
 }
+
+// The load-event readiness check flushes layout so lazily selected fonts can
+// delay the load event. It runs after DOMContentLoaded listeners, so the flush
+// includes their DOM changes instead of preceding them with a separate layout.
+fn test_parser_end_flushes_readiness_layout_after_dom_content_loaded_listeners() {
+	mut document := dom.Document.create(dom.URL{ value: 'https://example.test/listeners-first' })
+	_ = WindowModel.create_top_level(document, none, 'parser-end-listener-order')!
+	document.set_ready_to_run_scripts()
+	probe := &ParserEndLayoutProbe{}
+	document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{target:probe,callback:parser_end_count_layout})
+	at_listener := &ParserEndLayoutProbe{calls: -1}
+	unsafe { &dom.EventTarget(document) }.add_event_listener_without_options('DOMContentLoaded',
+		dom.IDLEventListener.create(&dom.CallbackType{
+		handle_event: fn [probe, at_listener] (_ &dom.Event, _ ?&dom.EventTarget) dom.JSValue {
+			mut seen := unsafe { &ParserEndLayoutProbe(at_listener) }
+			seen.calls = probe.calls
+			return dom.js_undefined()
+		}
+	}))
+	mut load_delayer := dom.DocumentLoadEventDelayer.new(mut document)
+	HTMLParser.the_end(document, none)
+	state := unsafe { &HTMLParserEndState(document.html_parser_end_state()) }
+	process_event_loop_until(fn [state] () bool {
+		return state.phase() == .waiting_for_load_event_delay
+	})
+	assert state.phase() == .waiting_for_load_event_delay
+	assert at_listener.calls == 0
+	assert probe.calls > 0
+	load_delayer.finish()
+	process_event_loop_until(fn [document] () bool {
+		return document.readiness() == .complete
+	})
+	assert document.readiness() == .complete
+}

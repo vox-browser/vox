@@ -1,6 +1,7 @@
 @[has_globals]
 module html
 
+import os
 import dom
 import css
 import encoding
@@ -690,6 +691,9 @@ fn (mut p HTMLParser) stop_the_speculative_html_parser() {
 	p.active_speculative_html_parser = none
 }
 
+// Same-binary control: flush the readiness layout before DOMContentLoaded runs.
+const eager_parser_end_layout = os.getenv('VOX_EAGER_PARSER_END_LAYOUT') != ''
+
 pub enum HTMLParserEndPhase {
 	waiting_for_deferred_scripts
 	waiting_for_asap_scripts
@@ -741,8 +745,9 @@ pub fn (mut state HTMLParserEndState) schedule_progress_check() {
 	queue_a_task_with_storage(.unspecified, main_thread_event_loop(), none, fn [state_pointer] () {
 		perform_a_microtask_checkpoint()
 		mut mutable_state := unsafe { &HTMLParserEndState(state_pointer) }
-		mutable_state.check_progress()
+		// Cleared first: a check can schedule its own continuation.
 		mutable_state.check_pending = false
+		mutable_state.check_progress()
 	}, state.document.native_storage())
 }
 
@@ -780,6 +785,14 @@ fn (mut state HTMLParserEndState) check_progress() {
 		}
 		if state.document.pending_module_readiness_scripts > 0 { return }
 		state.advance_to_asap_scripts_phase()
+		// DOMContentLoaded is queued now, and the remaining steps spin the event
+		// loop. Let its listeners run before the layout flush below, so that
+		// flush includes their DOM changes; flushing first laid out the whole
+		// document once before the listeners and again for their changes.
+		if !eager_parser_end_layout {
+			state.schedule_progress_check()
+			return
+		}
 	}
 	if state.phase_ == .waiting_for_asap_scripts {
 		if state.document.has_scripts_to_execute_as_soon_as_possible() {
