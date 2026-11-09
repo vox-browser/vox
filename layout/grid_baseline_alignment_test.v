@@ -35,3 +35,11 @@ fn test_grid_nested_baselines_prefer_shared_track_and_visual_flex_order() {
  _ = layout_document_typed_in_viewport(document,800,600)
  assert (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect().y == 25.0
 }
+
+fn test_grid_exports_shared_first_baseline_from_its_last_row() {
+ mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{display:grid;grid-auto-flow:column;align-items:last baseline;line-height:0;font-size:20px}span{display:inline-block;width:1em;height:1em}#inner{display:grid;grid-template:50px 50px / 50px 50px 50px;gap:10px;align-items:first baseline;border:5px solid;padding:10px}#inner>div:first-child,#inner>div:last-child{align-self:start}</style><div id="outer"><div id="a"><span></span></div><div id="inner"><div><span></span></div><div style="font-size:10px"><span></span></div><div style="font-size:30px"><span></span></div><div style="font-size:15px"><span></span></div><div style="font-size:35px"><span></span></div><div style="font-size:25px"><span></span></div></div></div>')
+ defer { document.finalize() }
+ _ = layout_document_typed_in_viewport(document,800,600)
+ y := (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect().y
+ assert y == 90, '${y}'
+}

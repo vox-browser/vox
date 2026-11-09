@@ -115,18 +115,29 @@ fn publish_grid_content_baselines(mut state LayoutState, container &Node, mut co
 	}
 	// A shared baseline in the outermost track takes precedence over a
 	// non-participating item which happens to occur earlier in grid order.
+	mut first_has_preferred,mut last_has_preferred := false,false
 	for placement in placements {
 		words := grid_alignment_text(container,placement.item,false).split(' ')
 		if words.len == 0 || words.last() != 'baseline' { continue }
-		if words[0] != 'last' && placement.row == first.row { first = placement }
-		if words[0] == 'last' && placement.row+placement.row_span == last.row+last.row_span { last = placement }
+		if placement.row == first.row && (!first_has_preferred || words[0] != 'last') {
+			first = placement
+			first_has_preferred = words[0] != 'last'
+		}
+		if placement.row+placement.row_span == last.row+last.row_span && (!last_has_preferred || words[0] == 'last') {
+			last = placement
+			last_has_preferred = words[0] == 'last'
+		}
 	}
 	mut first_baseline := ?CSSPixels(none)
 	mut last_baseline := ?CSSPixels(none)
 	for index,placement in [first,last] {
 		styled := placement.item.as_node_with_style() or { continue }
 		used := state.get(styled)
-		baseline := grid_baseline_from_low(state,container,placement.item,false,if index == 0 { .first } else { .last },0)
+		words := grid_alignment_text(container,placement.item,false).split(' ')
+		preference := if words.len > 0 && words.last() == 'baseline' {
+			if words[0] == 'last' { BaselineSet.last } else { BaselineSet.first }
+		} else if index == 0 { BaselineSet.first } else { BaselineSet.last }
+		baseline := grid_baseline_from_low(state,container,placement.item,false,preference,0)
 		value := used.offset.y().plus(baseline).minus(used.margin_box_top())
 		if index == 0 { first_baseline = value }
 		else { last_baseline = value }
