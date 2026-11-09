@@ -7416,6 +7416,7 @@ enum GridTrackKind {
 	fixed_size_or_repeat
 	track_size_only
 	fixed_size_only
+	intrinsic_or_fixed_size_only
 }
 
 fn (mut parser Parser) parse_grid_track_for_kind(mut tokens ComponentValueStream, kind GridTrackKind) ?ExplicitGridTrack {
@@ -7437,6 +7438,17 @@ fn (mut parser Parser) parse_grid_track_for_kind(mut tokens ComponentValueStream
 		}
 		.fixed_size_only {
 			return parser.parse_grid_fixed_size(mut tokens)
+		}
+		.intrinsic_or_fixed_size_only {
+			mut fixed := tokens.clone()
+			if result := parser.parse_grid_fixed_size(mut fixed) { tokens=fixed;return result }
+			mut intrinsic := tokens.clone()
+			result := parser.parse_grid_track_size(mut intrinsic) or { return none }
+			if result.is_minmax() {
+				if result.minmax().min_grid_size().is_flexible_length() || result.minmax().max_grid_size().is_flexible_length() { return none }
+			} else if result.grid_size().is_flexible_length() { return none }
+			tokens=intrinsic
+			return result
 		}
 	}
 }
@@ -7584,7 +7596,9 @@ fn (mut parser Parser) parse_grid_fixed_repeat(mut tokens ComponentValueStream) 
 
 // <auto-repeat> = repeat( [ auto-fill | auto-fit ] , [ <line-names>? <fixed-size> ]+ <line-names>? )
 fn (mut parser Parser) parse_grid_auto_repeat(mut tokens ComponentValueStream) ?GridRepeat {
-	return parser.parse_grid_track_repeat_impl(mut tokens, .auto, .fixed_size_only)
+	// CSS Grid 3 permits intrinsic repeat tracks in addition to fixed sizes.
+	// Flexible tracks still require the fixed minimum from the older grammar.
+	return parser.parse_grid_track_repeat_impl(mut tokens, .auto, .intrinsic_or_fixed_size_only)
 }
 
 // <name-repeat> = repeat( [ <integer [1,infinity]> | auto-fill ] , <line-names>+ )
