@@ -85,8 +85,7 @@ fn grid_item_physical_alignment(container &Node, item &Node, horizontal bool) Gr
    if same_start == (word == 'self-start') { .start } else { .end }
   }
   'left','right' {
-   if !horizontal { .start }
-   else if grid_axis_reversed(container,true) == (word == 'right') { .start } else { .end }
+   if grid_axis_reversed(container,horizontal) == (word == 'right') { .start } else { .end }
   }
   'start','flex-start' { .start }
   'end','flex-end' { .end }
