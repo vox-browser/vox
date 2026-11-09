@@ -41,6 +41,13 @@ pub fn invalidate_descendant_styles_depending_on_size_container_query(query_cont
 	}
 
 	mut document := unsafe { &dom.Document(query_container.document()) }
+	// A pseudo-element may use its originating element as its container.
+	// Its dependency is recorded on that element, outside the descendant walk.
+	if query_container.style_depends_on_size_container_query()
+		&& (query_container.needs_style_update() || !size_query_results_unchanged(query_container)) {
+		mut origin := unsafe { &dom.Element(query_container) }
+		origin.set_needs_style_update(true)
+	}
 	mut stack := []&dom.Node{}
 	append_flat_tree_children(query_container.as_node(), mut stack)
 	for stack.len > 0 {

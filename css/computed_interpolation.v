@@ -12129,6 +12129,15 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	if abstract_element.pseudo_element() == none {
 		adjust_element_computed_style(mut properties, abstract_element.element())
 	}
+	if pseudo := abstract_element.pseudo_element() {
+		if pseudo in [.before,.after] {
+			if content := properties.property(.content,.no) {
+				if computed_interpolation_style_value_keyword(content) or { Keyword.invalid } == .normal {
+					properties.set_property_without_modifying_flags(.content,dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_))))
+				}
+			}
+		}
+	}
 	adjust_chromium_input_placeholder_style(mut properties, abstract_element)
 
 	if s.css_transition_storage_ != unsafe { nil } {

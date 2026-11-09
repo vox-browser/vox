@@ -1423,7 +1423,8 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		}
 
 		style_computer.materialize_hidden_styles_for_query(element)
-		layout_node_with_style := owner.layout_node() or {
+		layout_owner := if owner.computed_properties() != none { owner.layout_node() } else { ?&dom.LayoutNodeWithStyle_(none) }
+		layout_node_with_style := layout_owner or {
 			// Ordinary elements retain their completed style even without a box.
 			// A flush callback can dirty that record again, and synthetic pseudos
 			// still need the one-off computation with their ancestor chain seeded.

@@ -2460,6 +2460,13 @@ fn logical_axis_to_physical_axis(inline_axis_horizontal bool, logical_axis Conta
 fn query_container_is_eligible_for_axis(container &dom.Element, axis ContainerRelativeAxis) bool {
 	dom_style := container.el_computed_properties() or { return false }
 	style := computed_properties_from_dom(dom_style) or { return false }
+	display := style.display()
+	if display.is_none() || display.is_contents() || display.is_table_inside() || display.is_internal_table() { return false }
+	if display.is_inline_outside() && display.is_flow_inside() && !container.is_svg_element() {
+		if node := container.as_node().unsafe_layout_node() { if !node.is_replaced_box_ { return false } }
+		else { return false }
+	}
+	if container.is_svg_element() && !is_outermost_svg_element_for_css_box_layout(container) { return false }
 	container_type := style.container_type()
 	container_inline_axis_is_horizontal := inline_axis_is_horizontal(style.writing_mode())
 	if axis == .width {
