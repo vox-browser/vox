@@ -2557,3 +2557,72 @@ Active output: `Build/wpt-official-fresh-20261109-1130`.
 The controller archives and removes its output when it finishes. This is a
 live collection, not a completed pass result. Other WPT types remain outside
 this runner. **Overall 100% is not achieved.**
+
+
+## Detached-frame Blob methods (2026-11-09)
+
+Fix `a95805979a56dc6ec089e008470ff0e335829f66` makes borrowed Blob
+methods recognize genuine receivers in other contexts of the same JavaScriptCore
+context group. Results and file-reading tasks use the receiver's owner. A
+stateless native resolver selects that owner's operation, so methods retained
+from a removed iframe continue working after its embedding runtime closes.
+Argument conversion and brand errors retain the method's JavaScript realm;
+forged objects and proxies are rejected without consulting author properties.
+The Blob constructor also accepts genuine foreign Blob parts.
+
+The two focused checks cover an explicitly closed method runtime, slice/result
+realm identity, conversion order and exception identity, rejected read promises,
+forged receivers, cross-realm construction and copied data after source closure.
+Both checks pass in normal, prepared `-prealloc -gc none`, and literal
+`-prod -prealloc -gc none` modes: every compile/runtime exit is **0**. Prepared
+runs use the staged compiler and explicit prepared-runtime module path, with
+`closure_metadata_tail` verified in both executables. Compiles retain the
+12 GiB guard and `-memory-limit 10G`; focused runtimes retain the 3 GiB guard.
+One compilation initially stopped on two concurrent CSS parser errors; that
+attempt is retained, and the shared parser was corrected before these checks.
+
+The unchanged original `/FileAPI/Blob-methods-from-detached-frame.html` now
+reports **5/5 PASS**, against **0/5** in the pinned full-run baseline. The
+adjacent cohort retains exactly the same **29 cases and 633 named assertions**:
+**629 PASS, 4 FAIL**, versus baseline **624 PASS, 9 FAIL**. Remaining failures
+are the two DOM collection constructor cases and the Window/Worker BYOB reader
+cases. Runner/guard exits are **1**, with guard reason `completed`, because
+these four failures remain; this is not an all-pass cohort. All **11 unchanged
+SVG source-switch/paint-server mutation reftests are pixel-exact**, with
+800x600 native document captures and zero tolerance, pixel guard exit **0**.
+Input checks report no changes.
+
+Production evidence uses a fresh process from the original completed artifact,
+held under its shared artifact lease without copying the app. Executable:
+`cb95acae5770bf75fda0655b97e13c30562466928306d83d3758c1c77072d90b`;
+receipt `20261109-123020-57f68038`, C/single-unit/literal-`-prod`. The compiled
+source manifest contains the exact committed Blob changes. The canonical
+bundle remains leased by the independent full collection.
+
+The unsuccessful first candidate is preserved. Its focused tests passed before
+the fixture exercised explicit source-runtime closure, but its production
+result was only **625/633**: `slice()` passed and the other four detached-frame
+methods reported a closed runtime. The corrected fixture and stateless resolver
+address that lifetime gap. The original negative native control also remains;
+it panicked at the first cross-realm operation, so it does not establish that
+both negative checks executed.
+
+Local evidence under `/Users/alex/.cache/vox/wpt/`:
+
+- `20261109-blob-realms-native-raw.tar.gz`: all native attempts, commands,
+  guards and summaries; SHA-256
+  `efeaf719333fd5a4e2d6a27ccdd09014e8248451b731c22712e6825faf9020dd`.
+  Final check-summary SHA-256
+  `28c37e761be17ee5da20e068ce79007dc9f8fc1f8234a1701c9a8aa621223f7d`.
+- `20261109-blob-realms-production-raw.tar.gz`: first candidate's original
+  WPT/SVG results; SHA-256
+  `a2c2606db7e1ad12f66e0af982b7a31860635795cd9ee0f48246d6f31bbade40`.
+  Executable `c08b819f526fad9f3825040a12baa69eafad2236dd75a0c22948655c3fe733b7`,
+  receipt `20261109-120202-309d2a19`.
+- `20261109-blob-realms-v2-production-raw.tar.gz`: corrected production WPT
+  and SVG results; SHA-256
+  `2fe8be52b410d56fe14058b724d4f265721ea2bc38ebb59f0bc09f6ad0c19dda`.
+
+Completed owned native/production scratch and five top-level locks are removed.
+The full 40,139-variant testharness collection continues independently. Other
+WPT test types remain outside that runner. **Overall 100% is not achieved.**
