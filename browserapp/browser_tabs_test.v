@@ -1,5 +1,7 @@
 module main
 
+import adblock
+import browsertabs
 import gg
 import dom
 import html
@@ -546,6 +548,49 @@ fn test_tab_detach_launch_options_and_session_validation() {
 	if _ := read_detached_tab_session(path) {
 		assert false, 'invalid window dimensions must not start a detached window'
 	}
+	os.write_file(path, '{"url":"https://tabs.example/invalid-color","width":800,"height":600,"history_index":-1,"color":"ultraviolet"}')!
+	if _ := read_detached_tab_session(path) {
+		assert false, 'invalid tab colors must not start a detached window'
+	}
+	os.write_file(path, '{"url":"https://tabs.example/older","width":800,"height":600,"history_index":-1}')!
+	assert read_detached_tab_session(path)!.color == .none
+}
+
+fn test_tab_detach_metadata_roundtrips_nested_records_and_colors() {
+	for color in [browsertabs.TabColor.none, .red, .orange, .yellow, .green, .blue, .purple, .pink] {
+		session := DetachedTabSession{
+			url:           'https://tabs.example/metadata'
+			markup:        '<input value="資料">'
+			content_type:  'text/html'
+			history:       [HistoryEntry{
+				url:              'https://tabs.example/previous'
+				markup:           '<p>Previous</p>'
+				response_headers: [
+					adblock.ResponseHeader{ name: 'Set-Cookie', value: 'a=1' },
+					adblock.ResponseHeader{ name: 'Set-Cookie', value: 'b=2' },
+				]
+				response_status:  206
+				scroll_y:         125.5
+			}, HistoryEntry{ url: 'https://tabs.example/next' }]
+			history_index: 0
+			scroll_y:      125.5
+			zoom:          1.25
+			width:         900
+			height:        700
+			forms:         [DetachedTabFormValue{
+				index:         3
+				tag:           'input'
+				id:            'quoted'
+				value:         'line 1\n"line 2"'
+				checked:       true
+				indeterminate: true
+			}, DetachedTabFormValue{ index: 4, tag: 'textarea', id: 'empty' }]
+			color:         color
+			custom_title:  'Research — 資料'
+		}
+		restored := json2.decode[DetachedTabSession](json2.encode(session))!
+		assert restored == session
+	}
 }
 
 fn test_tab_detach_restores_history_zoom_scroll_and_form_values() {
@@ -570,6 +615,8 @@ fn test_tab_detach_restores_history_zoom_scroll_and_form_values() {
 	html.html_option_element_set_selected(unsafe { &dom.HTMLOptionElement(chosen) }, true)
 	app.page_zoom = 1.25
 	app.scroll_y = 125
+	mut ui_state := app.browser_ui()
+	ui_state.tab_color = .blue
 	// Retain forward history, too.
 	app.history << HistoryEntry{url: 'https://tabs.example/forward', markup: '<p>Forward</p>'}
 	session := json2.decode[DetachedTabSession](json2.encode(app.detached_tab_session()))!
@@ -580,6 +627,7 @@ fn test_tab_detach_restores_history_zoom_scroll_and_form_values() {
 	assert restored.history == app.history
 	assert restored.history_index == app.history_index
 	assert restored.page_zoom == 1.25 && restored.scroll_y == 125
+	assert restored.browser_ui().tab_color == .blue
 	assert restored.page_model.client().zoom_level_ == 1.25
 	restored_session := restored.detached_tab_session()
 	assert restored_session.forms == session.forms

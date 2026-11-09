@@ -3438,9 +3438,9 @@ fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[stri
 			processed = event.did_process_click_handler(target)
 		}
 	}
-	// Apply callback mutations before reading the raw slot. Finalize drains the
-	// operation queue; the later snapshot still carries pending navigation.
-	commit_compact_dom_task(app.document, app.js_runtime, mut app.js_messages)!
+	// Apply callback mutations before reading the raw slot. This is a host
+	// read within the click task: its final dispatch still owns logs/navigation.
+	flush_compact_dom_mutations(app.document, app.js_runtime)!
 	mut key := ''
 	for candidate_key, candidate in app.js_runtime.canvas_elements_for_binding() {
 		if voidptr(candidate) == voidptr(element) {

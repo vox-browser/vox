@@ -9,6 +9,31 @@ from prepare_linux_modules import patch_fontstash_callbacks, patch_module, stage
 
 
 class LinuxModuleStagingTest(unittest.TestCase):
+    def test_sapp_default_retains_static_canvas_pointer_without_rewriting_upstream(self):
+        original = '''module sapp
+@[typedef]
+pub struct C.sapp_html5_desc {
+pub:
+    canvas_selector &char = c'#canvas' // default CSS selector
+    canvas_resize bool
+}
+pub type Html5Desc = C.sapp_html5_desc
+const another_c_string = c'#canvas'
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / 'vlib/sokol/sapp', Path(directory) / 'modules/sokol/sapp'
+            source.mkdir(parents=True)
+            (source / 'sapp_structs.c.v').write_text(original)
+            stage_module(source, target, 'sokol/sapp')
+            patched = (target / 'sapp_structs.c.v').read_text()
+            self.assertIn("canvas_selector &char = '#canvas'.str // default CSS selector", patched)
+            self.assertIn("const another_c_string = c'#canvas'", patched)
+            self.assertEqual(patch_module('sokol/sapp', patched), patched)
+            stage_module(source, target, 'sokol/sapp')
+            self.assertEqual((target / 'sapp_structs.c.v').read_text(), patched)
+            self.assertEqual((source / 'sapp_structs.c.v').read_text(), original)
+            self.assertEqual(patch_module('gg', original), original)
+
     @staticmethod
     def fontstash_source():
         return '''module gg

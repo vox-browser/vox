@@ -1,5 +1,12 @@
 #import <Cocoa/Cocoa.h>
 #include <assert.h>
+#include "../native/include/native_layer_presentation_darwin.h"
+// The full browser's Sokol view supplies this class. The redraw fixture uses
+// its class identity to distinguish the document canvas from sibling controls.
+@interface MyView2 : NSView
+@end
+@implementation MyView2
+@end
 static NSView *native_cached_browser_view;
 #include "browser_view_functions.inc"
 #include "native_browser_view_cache_test.h"

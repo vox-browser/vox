@@ -113,3 +113,24 @@ fn test_disk_snapshot_preserves_bytes_timing_and_accumulated_age() {
 	}
 	assert !evaluate(Request{}, entry.response, ReuseOptions{ storage: .disk }, timing.response_time + 59_900).can_reuse()
 }
+
+fn test_disk_receipt_preserves_version_one_json_string_schema() {
+	path := disk_test_path('schema')
+	defer { os.rmdir_all(os.dir(path)) or {} }
+	response := disk_test_response('schema')
+	timing := response.timing?
+	url := 'https://cache.example/schema'
+	for sequence in 0 .. 4 {
+		body := 'body-${sequence}'
+		assert store_disk_response(path, url, body, response, disk_test_limit)
+		encoded_headers := os.read_file(path + '.headers.json')!
+		integrity := disk_integrity(url, '200', encoded_headers, body)
+		// Existing map receipts sort these keys and encode timestamps as decimal
+		// strings. Preserve the complete record, including repeated replacements.
+		expected := '{"integrity":"${integrity}","request_time":"${timing.request_time}","response_time":"${timing.response_time}","version":"1"}'
+		assert os.read_file(path + '.timing.json')! == expected
+		entry := read_disk_entry(path, disk_test_limit) or { panic('version-one receipt') }
+		assert entry.body == body
+		assert entry.response.timing? == timing
+	}
+}

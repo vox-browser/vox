@@ -12,6 +12,7 @@ def main():
     for signature in (
         "static void native_consider_largest_view(",
         "static NSView *native_browser_view(",
+        "static void native_mark_browser_redraw(",
         "static void native_request_browser_redraw(",
         "void native_wake_browser(",
     ):
@@ -21,7 +22,6 @@ def main():
     with tempfile.TemporaryDirectory(prefix="vox-browser-window-") as directory:
         output = Path(directory)
         (output / "browser_view_functions.inc").write_text(
-            "static uint64_t native_layer_redraw_generation;\n"
             "static void native_trace_browser_redraw(const char *point) {}\n"
             + "\n\n".join(functions)
         )
@@ -29,6 +29,7 @@ def main():
             binary = output / "tests"
             subprocess.run([
                 "clang", mode, "-fblocks", "-framework", "Cocoa",
+                "-framework", "QuartzCore", "-framework", "IOSurface",
                 "-I", str(output), str(repo / "tools/native_browser_window_test.m"),
                 "-o", str(binary),
             ], check=True)

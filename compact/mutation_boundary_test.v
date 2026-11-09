@@ -13,6 +13,8 @@ let enumerations=0;
 const clean={a:{bridgeKey:"a"},b:{bridgeKey:"b"}};
 const __state={elements:new Proxy(clean,{ownKeys(target){enumerations++;return Reflect.ownKeys(target);}}),operations:[],logs:[],videoSources:{large:"decoded pixels"}};
 const __canvases={};
+const __elementApply=Reflect.apply;
+function __elementContent(state,name){return state[name];}
 ' + compact_pending_elements_bootstrap() + r'
 enumerations=0;
 clean.a.textContent="first";clean.a.textContentDirty=true;
@@ -38,6 +40,18 @@ if(__compactTakePendingDOMState(false,false,false)!==null)throw Error("canvas le
 const canvas=JSON.parse(__compactTakePendingDOMState(true,false,true));
 if(!canvas.elements.a.canvasNative)throw Error("native canvas handoff");
 if(__compactHasPendingDOMState()||enumerations)throw Error("clean facade traversal");
+const output=JSON.parse(__compactTakeTaskOutput());
+if(output.logs.length||output.navigate)throw Error("unexpected task output");
+__state.navigate="#once";__state.logs.push("navigation output");
+const navigation=JSON.parse(__compactTakeTaskOutput());
+if(navigation.navigate!=="#once"||navigation.logs.join()!=="navigation output")throw Error("navigation handoff");
+const consumed=JSON.parse(__compactTakeTaskOutput());
+if(consumed.navigate||consumed.logs.length)throw Error("task output replayed twice");
+__state.navigate="#retained";__state.logs.push(cycle);
+let outputFailed=false;try{__compactTakeTaskOutput();}catch(error){outputFailed=error instanceof TypeError;}
+if(!outputFailed||__state.navigate!=="#retained"||__state.logs.length!==1)throw Error("serialization failure consumed task output");
+__state.logs=[];
+if(JSON.parse(__compactTakeTaskOutput()).navigate!=="#retained")throw Error("navigation lost after serialization failure");
 true;
 ')! == 'true'
 }
@@ -54,13 +68,15 @@ fn test_compact_native_host_boundary_replays_controls_without_consuming_console_
 		'globalThis.boundaryControl=document.getElementById("control");',
 	], runtime, mut messages)
 	assert messages == []string{}
-	runtime.evaluate_host('boundaryControl.checked=true;boundaryControl.indeterminate=true;console.log("native boundary");')!
+	runtime.evaluate_host('boundaryControl.checked=true;boundaryControl.indeterminate=true;location.href="#native-boundary";console.log("native boundary");')!
 	flush_compact_dom_mutations(document, runtime)!
 	control := unsafe { &dom.HTMLInputElement(document.get_element_by_id('control')?) }
 	assert control.checked()
 	assert control.indeterminate()
-	commit_compact_dom_task(document, runtime, mut messages)!
-	commit_compact_dom_task(document, runtime, mut messages)!
+	commit := commit_compact_dom_task(document, runtime, mut messages)!
+	assert commit.navigation? == '#native-boundary'
+	next := commit_compact_dom_task(document, runtime, mut messages)!
+	assert next.navigation == none
 	assert messages == ['native boundary']
 	// Clearing output is not an instruction to discard semantic mutations.
 	runtime.evaluate_host('boundaryControl.checked=false;__ladybirdClearLogs();')!
@@ -99,10 +115,36 @@ customElements.define("x-boundary",Boundary);
 	assert document.get_element_by_id('result')?.as_node().text_content()? == 'reaction'
 	assert !document.has_pending_custom_element_reactions()
 	assert messages == ['task output', 'reaction output']
-	commit_compact_dom_task(document, runtime, mut messages)!
-	commit_compact_dom_task(document, runtime, mut messages)!
+	for _ in 0 .. 2 {
+		next := commit_compact_dom_task(document, runtime, mut messages)!
+		assert next.navigation == none
+	}
 	assert messages == ['task output', 'reaction output']
 	assert runtime.evaluate_host('__ladybirdTakePendingDOMMutations()')! == 'null'
+}
+
+fn test_compact_media_click_preflush_keeps_navigation_for_the_task_owner() {
+	mut document := html.parse_document('<!doctype html><video id="media"></video><p id="result">before</p>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://dom-boundary.test/media', []string{}, runtime, mut messages)
+	assert messages == []string{}
+	mut app := BrowserApp{ document: document, js_runtime: runtime }
+	runtime.evaluate_host('document.getElementById("result").textContent="click";location.href="#after-click";console.log("click output");')!
+	media := document.get_element_by_id('media')?
+	_ = app.media_click_replay_state(media)!
+	assert document.get_element_by_id('result')?.as_node().text_content()? == 'click'
+	assert app.js_messages == []string{}
+	commit := commit_compact_dom_task(document, runtime, mut app.js_messages)!
+	assert commit.navigation? == '#after-click'
+	assert app.js_messages == ['click output']
+	next := commit_compact_dom_task(document, runtime, mut app.js_messages)!
+	assert next.navigation == none
+	assert app.js_messages == ['click output']
 }
 
 fn test_compact_native_query_settles_reaction_writes_before_its_read() {

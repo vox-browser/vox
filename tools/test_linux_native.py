@@ -55,18 +55,22 @@ def main():
     http_modules = subprocess.check_output(
         [sys.executable, str(repo / "tools/prepare_http_compat.py"), compiler],
         cwd=repo, env=environment, text=True).strip()
-    linux_modules = subprocess.check_output(
-        [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
-        cwd=repo, env=environment, text=True).strip()
-    module_paths = [str(repo), linux_modules, http_modules]
     # Application tests compile all of module main, including browser chrome.
     # Use the production UI2 adapter only for those cases so engine-only tests
     # retain their existing dependency set.
+    ui2_modules = None
     if any(re.search(r"(?m)^\s*module\s+main\s*$", (repo / case).read_text())
            for case in args.cases):
         ui2_modules = subprocess.check_output(
             [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
             cwd=repo, env=environment, text=True).strip()
+    # UI2 and Linux share the module tree. UI2 links GG's compiler sources, so
+    # apply Linux's native callback adapters afterwards, as production does.
+    linux_modules = subprocess.check_output(
+        [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
+        cwd=repo, env=environment, text=True).strip()
+    module_paths = [str(repo), linux_modules, http_modules]
+    if ui2_modules:
         # Select the current UI2 checkout before other shared module caches.
         module_paths.insert(1, ui2_modules)
     if args.gc == "prealloc":
