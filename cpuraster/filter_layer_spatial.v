@@ -2,7 +2,7 @@ module cpuraster
 
 // Mixed blur and shadow nodes share the saved source device. Request bounds
 // propagate backwards; each shadow merge and real blur retains its own pixels.
-fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, source_foreground ?FilterImageView, source_reset ?FilterImageView, mode BlendMode, content LayerContent) bool {
+fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, source_foreground ?FilterImageView, source_reset ?FilterImageView, source_layer_bounds ?IRect, mode BlendMode, content LayerContent) bool {
 	// Bound both backwards requests and evaluation of the branching graph.
 	mut work := 1
 	for stage in stages {
@@ -50,9 +50,7 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	}
 	if rc.is_empty || ctm.sx == 0 || ctm.sy == 0 || !affine_is_finite(ctm) { return target.ready() }
 	output := rc.bounds()
-	device_bounds := if bounds := content_bounds {
-		?IRect(skif_round_out(map_rect_affine(bounds, affine_to_matrix(ctm))))
-	} else { none }
+	device_bounds := filter_layer_source_bounds(content_bounds, source_layer_bounds, ctm)
 	requests := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
 		content_bounds: device_bounds}
 	layer := requests.input_bounds(stages.len - 1, output) or { return false }

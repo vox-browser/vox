@@ -1478,3 +1478,46 @@ fn test_cropped_images_resolve_prior_blurs_for_each_shadow_branch() {
   }
  }
 }
+
+fn test_image_filter_layers_keep_original_mapped_source_bounds() {
+ bits := [[u32(1077936128), 1065353216, 1087289116, 1092033650, 1079041252, 1085392669, 1063675494],
+  [u32(1086324736), 1084227584, 1090977388, 1082230297, 1064818416, 1075339655, 1074161254],
+  [u32(1077936128), 1073741824, 1082837017, 1088002458, 1079881758, 1082130432, 1067450368],
+  [u32(1065353216), 1073741824, 1100432407, 1092033650, 1078092616, 1085392669, 1063675494]]
+ hashes := ['d15516096f7cb138', 'f38341cca526f022', '20074853e1bd5ef4', '138d90d8c8203388', 'e5ca68c7f5c37a9d', 'fece479f36a16b52', '3bf1384ad86614dd', 'cce7bc5559c5bf69', '4775678bf4a69452', 'a574fecdc9a39a1d', '162fa9d087ccaed5', 'aa15641cbc1de486', 'bc66e05fda02db3c', '4e4ddc977d812f5e', '6b44fa2dbcc25967', 'af380c1f673005ab', '8019ae2a77afb984', '18e6bb27b53e1f7b', '535f901724f7a12f', '90d05f5910c5cf7b', '3d454cb4ccca3b9e', 'ea4400defab0438f', '01d51c5342ef2f0a', '5d6ca6a037a78108']
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1),0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,.65,0]!}}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ second := CanvasFilterStep{kind: .blur, sigma: 1.2}
+ sequences := [[CanvasFilterStep{...shadow, sigma: .01}], [shadow],
+  [contrast, shadow, opacity, second], [gaussian, shadow, contrast, second],
+  [gaussian], [gaussian, contrast, second]]
+ for index, row in bits {
+  b := row.map(math.f32_from_bits(it))
+  for variant, filters in sequences {
+   mut pixels := image_test_background()
+   assert draw_canvas_image_filtered(mut pixels, 48,40,192,2,[b[6],f32(0),0,b[6],2.25,3.5]!,
+    image_test_bitmap(13,7,variant in [0,4],variant in [1,2,5]),[b[0],f32(1),b[1],f32(5)]!,[b[2],b[3],b[4],b[5]]!,
+    variant != 1, if variant in [1,5] { f32(.65) } else if variant == 2 { f32(.7) } else { f32(1) },
+    [BlendMode.src_over,.src_in,.multiply,.plus_lighter,.src_in,.overlay][variant],
+    image_test_clips(variant in [1,2,5]),new_canvas_filter(filters),false), 'source bounds ${index}/${variant} declined'
+   assert sha256.sum(pixels).hex()[..16] == hashes[index * 6 + variant], 'source bounds ${index}/${variant}'
+  }
+ }
+}
+
+fn test_source_image_bounds_fix_saved_blur_shadow_request() {
+ c := json2.decode[ImageRequestFixture]($embed_file('@VMODROOT/cpuraster/testdata/image-layer-bounds-failure.json').to_string()) or { panic(err) }
+ steps := c.filters.map(CanvasFilterStep{kind: match it.kind { 0 { CanvasFilterKind.blur } 1 { CanvasFilterKind.drop_shadow } else { CanvasFilterKind.matrix } },
+  matrix: MatrixColorFilter{it.matrix,it.clamp},sigma: it.sigma,offset_x: it.offset_x,offset_y: it.offset_y,color: it.color})
+ mut pixels := $embed_file('@VMODROOT/cpuraster/testdata/image-layer-bounds-failure-background.rgba').to_bytes()
+ assert draw_canvas_image_filtered(mut pixels,c.width,c.height,c.pitch,c.alpha_type,c.transform,
+  CanvasBitmap{pixels: $embed_file('@VMODROOT/cpuraster/testdata/image-layer-bounds-failure-source.rgba').to_bytes(),
+   width: c.image_width,height: c.image_height,pitch: c.image_pitch,premultiplied: c.image_premultiplied,display_p3: c.image_display_p3},
+  c.source,c.destination,true,c.global_alpha,canvas_blend_mode(c.composite) or { panic('mode') },
+  c.clips.map(canvas_path(it.segments,it.even_odd)),new_canvas_filter(steps),false)
+ assert pixels[7 * c.pitch + 25 * 4 + 3] == 3
+ assert sha256.sum(pixels).hex() == 'c16fc97d78aad7f53fc046a59bca3125b6d56ec7b045a072591da7e9df096145'
+}

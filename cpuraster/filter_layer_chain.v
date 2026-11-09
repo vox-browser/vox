@@ -3,7 +3,7 @@ module cpuraster
 // A sequence of raster blurs shares one source layer. Each filter requests
 // its input bounds from the preceding filter and retains its own quantized
 // intermediate image, as the native image-filter graph does.
-fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
+fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_layer_bounds ?IRect, mode BlendMode, content LayerContent) bool {
 	ctm := canvas_affine(transform)
 	if ctm.kx != 0 || ctm.ky != 0 { return false }
 	sigmas := stages.map(it.sigma)
@@ -35,8 +35,7 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		needed = skif_outset(needed, skif_ceil(f32(3) * sx[i]), skif_ceil(f32(3) * sy[i]))
 	}
 	mut layer := needed
-	if bounds := content_bounds {
-		device := skif_round_out(map_rect_affine(bounds, affine_to_matrix(ctm)))
+	if device := filter_layer_source_bounds(content_bounds, source_layer_bounds, ctm) {
 		layer = layer.intersect(device) or {
 			target.ready()
 			draw_empty_filter_result(mut pixels, pitch, &rc, mode)

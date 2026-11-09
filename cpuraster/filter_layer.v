@@ -24,6 +24,7 @@ pub struct CanvasFilterStep {
 	source_per_request bool
 	source_color_info FilterImageInfo
 	source_draw_bounds ?Rect
+	source_layer_bounds ?IRect
 	source_foreground ?FilterImageView
 	source_reset ?FilterImageView
 	pre_color []MatrixColorFilter
@@ -202,12 +203,12 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		return draw_spatial_filter_chain(mut pixels, width, height, pitch, alpha_type,
 			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color,
 			step.source_color_info, step.source_image, step.source_padding, step.source_per_request,
-			step.source_foreground, step.source_reset, mode, content)
+			step.source_foreground, step.source_reset, step.source_layer_bounds, mode, content)
 	}
 	if step.layer_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,
 			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color, step.source_color_info,
-			step.source_image, step.source_padding, mode, content)
+			step.source_image, step.source_padding, step.source_layer_bounds, mode, content)
 	}
 	// An invalid DropShadow blur becomes a null child, leaving the tint,
 	// offset and merge on SourceGraphic. A lone invalid blur is discarded
@@ -269,16 +270,15 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	rx := skif_ceil(f32(3) * layer_sx)
 	ry := skif_ceil(f32(3) * layer_sy)
 	mut needed := skif_outset(output, rx, ry)
-	content_device := if bounds := content_bounds {
-		skif_round_out(map_rect_affine(bounds, Matrix{ctm.sx, 0, 0, ctm.sy, ctm.tx, ctm.ty}))
-	} else { needed }
+	device_bounds := filter_layer_source_bounds(content_bounds, step.source_layer_bounds, ctm)
+	content_device := device_bounds or { needed }
 	if drop {
 		shifted := skif_outset(map_filter_bounds(output, affine_invert(mapped_offset) or { return false }), 1, 1)
-		foreground_input := if content_bounds == none { output } else {
+		foreground_input := if device_bounds == none { output } else {
 			output.intersect(content_device) or { IRect{} }
 		}
 		shadow_needed := skif_outset(shifted, rx, ry)
-		shadow_input := if content_bounds == none { shadow_needed } else {
+		shadow_input := if device_bounds == none { shadow_needed } else {
 			shadow_needed.intersect(content_device) or { IRect{} }
 		}
 		// A deferred source-image foreground draws from the original image
@@ -288,7 +288,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 			shadow_input
 		} else { union_filter_bounds(foreground_input, shadow_input) }
 	}
-	layer := if content_bounds == none { needed } else { needed.intersect(content_device) or {
+	layer := if device_bounds == none { needed } else { needed.intersect(content_device) or {
 		// An empty source still restores through a transparency-affecting
 		// blender (internalSaveLayer's null-source filter evaluation).
 		target.ready()
@@ -431,6 +431,15 @@ fn draw_empty_filter_result(mut pixels []u8, pitch int, rc &RasterClip, mode Ble
 		mut blitter := canvas_blitter(mut pixels, pitch, 0, 0, mode) or { return }
 		fill_irect(rc.bounds(), rc, mut blitter)
 	}
+}
+
+// MakeFromImage maps its integer source bounds through the concatenated
+// source transform. Re-mapping the parameter-space destination can round to
+// a different pixel, so image filters retain the original integer bounds.
+fn filter_layer_source_bounds(content ?Rect, source ?IRect, ctm SkAffine) ?IRect {
+ if bounds := source { return bounds }
+ if bounds := content { return skif_round_out(map_rect_affine(bounds, affine_to_matrix(ctm))) }
+ return none
 }
 
 fn union_filter_bounds(a IRect, b IRect) IRect {

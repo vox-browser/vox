@@ -76,7 +76,6 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	reset := if stages.any(it.kind == .drop_shadow && (it.sigma < 0 || !is_finite_f32(it.sigma))) {
 		?FilterImageView(FilterImageView{...foreground, filter: none})
 	} else { none }
-	if deferred_foreground && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
 	if drop && !real_blur {
 		return draw_deferred_image_shadow(mut pixels, width, height, pitch, alpha_type,
 			ctm, dst, foreground, mode, clips, step)
@@ -85,7 +84,6 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		crop := !foreground.layer_bounds.contains(map_filter_bounds(
 			IRect{0, 0, bitmap.width, bitmap.height}, total))
 		branched := drop || stages.any(it.kind == .drop_shadow)
-		if crop && branched && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
 		if crop && drop {
 			// A lone shadow uses the same per-request source resolution as a
 			// graph: its blurred branch and deferred foreground have separate ROIs.
@@ -114,7 +112,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	// A first real blur can precede a shadow. Keep its source view available
 	// so each branch can choose raw storage or resolve its own visible crop.
 	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
-		source_reset: reset,
+		source_reset: reset, source_layer_bounds: foreground.layer_bounds,
 		source_image: true, source_padding: true, source_per_request: stages.any(it.kind == .drop_shadow), source_color_info: FilterImageInfo{},
 		source_foreground: if deferred_foreground || stages.any(it.kind == .drop_shadow) { ?FilterImageView(foreground) } else { none }}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,

@@ -39,7 +39,7 @@ fn draw_near_integer_image_blur(mut pixels []u8, width int, height int, pitch in
 	fast := step.source_draw_bounds or { dst }
 	raw := CanvasBitmap{...bitmap, premultiplied: true, display_p3: false}
 	prepared := CanvasFilterStep{...step, source_image: true, source_padding: false,
-		source_draw_bounds: fast, source_color_info: FilterImageInfo{premultiplied: bitmap.premultiplied}}
+		source_draw_bounds: fast, source_layer_bounds: tight, source_color_info: FilterImageInfo{premultiplied: bitmap.premultiplied}}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 		transform, clips, bounds, prepared, mode,
 		fn [raw, ctm, x, y] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
