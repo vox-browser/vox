@@ -1685,6 +1685,7 @@ pub mut:
 	root_font_metrics_depend_on_viewport_metrics_ bool
 	subject_element_                              ?&dom.Element
 	position_try_reference_scope_ ?&StyleScope
+	position_try_was_rendered_ bool
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -11818,6 +11819,12 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	properties.subject_element_ = abstract_element.element()
 	properties.position_try_reference_scope_ = position_try_reference_scope(abstract_element,cascaded_properties)
+	properties.position_try_was_rendered_ = position_try_target_has_geometry(abstract_element)
+	if old_dom := abstract_element.computed_properties() {
+		if old := computed_properties_from_dom(old_dom) {
+			properties.position_try_was_rendered_ = properties.position_try_was_rendered_ || old.position_try_was_rendered_
+		}
+	}
 	mut recascaded_font_size_depends_on_viewport_metrics := false
 	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties, &recascaded_font_size_depends_on_viewport_metrics)
 	// Only unchanged, context-independent specified values can keep their style
@@ -12080,7 +12087,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		compute_transitioned_properties(properties, abstract_element, mut transition_storage)
 		if old_dom_style := abstract_element.computed_properties() {
 			if old_style := computed_properties_from_dom(old_dom_style) {
-				initial_fallback := s.position_try_override_ != none && !position_try_target_has_geometry(abstract_element)
+				initial_fallback := s.position_try_override_ != none && !properties.position_try_was_rendered_
 				if !initial_fallback { s.start_needed_transitions(old_style, mut properties, abstract_element) }
 			}
 		}

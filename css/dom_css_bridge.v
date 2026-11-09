@@ -1284,6 +1284,23 @@ pub fn document_css_animation_set_current_time(document &dom.Document, handle vo
 	return true
 }
 
+pub fn document_css_animation_cancel(document &dom.Document, handle voidptr) bool {
+	bridge := document.style_computer
+	if bridge == unsafe { nil } || bridge.css_handle == unsafe { nil } { return false }
+	computer := unsafe { &StyleComputer(bridge.css_handle) }
+	if found := document_css_transition_for_handle(computer,handle) {
+		mut transition := unsafe { &CSSTransition(found) }
+		transition.cancel()
+		return true
+	}
+	if found := document_css_animation_for_handle(computer,handle) {
+		mut animation := unsafe { &CSSAnimation(found) }
+		animation.cancel()
+		return true
+	}
+	return false
+}
+
 // Whether the browser host needs to schedule another rendering update for a
 // running CSS animation or transition owned by this document.
 pub fn document_has_running_css_animations(document &dom.Document) bool {

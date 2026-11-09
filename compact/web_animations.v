@@ -333,13 +333,20 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 		}
 		return json2.encode(items)
 	}
-	if op == 'cssCurrentTime' {
+	if op == 'cssCurrentTime' || op == 'cssCancel' {
 		css_key := json_string_property(request, 'animation') or { return error('TypeError: Illegal Animation receiver') }
 		mut handle := unsafe { nil }
 		for record in css.document_css_animations(binding.document) {
 			if compact_css_animation_key(record.handle) == css_key { handle = record.handle }
 		}
 		if handle == unsafe { nil } {
+			return json2.encode({ 'value': json2.Any(json2.Null{}) })
+		}
+		if op == 'cssCancel' {
+			if css.document_css_animation_cancel(binding.document,handle) {
+				mut owner := unsafe { &dom.Document(binding.document) }
+				owner.needs_animated_style_update = true
+			}
 			return json2.encode({ 'value': json2.Any(json2.Null{}) })
 		}
 		if value := request['value'] {
@@ -538,7 +545,7 @@ fn compact_web_animations_bootstrap() string {
   (typeof requestAnimationFrame==="function"?requestAnimationFrame:setTimeout)(step,16);
  }
  const methods={
-  play(){operate(this,"play");},pause(){operate(this,"pause");},cancel(){operate(this,"cancel");},
+  play(){operate(this,"play");},pause(){operate(this,"pause");},cancel(){const css=__elementApply(get,cssStates,[this]);if(css){call("",{op:"cssCancel",animation:css.key});css.playState="idle";return;}operate(this,"cancel");},
   finish(){operate(this,"finish");},reverse(){operate(this,"reverse");},persist(){operate(this,"persist");},
   updatePlaybackRate(rate){operate(this,"updatePlaybackRate",Number(rate));},commitStyles(){record(this);}
  };
