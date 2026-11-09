@@ -1461,6 +1461,12 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 				}
 			}
 			value := computed.property(property_id, .yes) or { return none }
+			if property_id in [.background_color, .border_bottom_color, .border_left_color, .border_right_color,
+				.border_top_color, .caret_color, .color, .column_rule_color, .outline_color,
+				.text_decoration_color, .webkit_text_fill_color] {
+				return StyleProperty{property_id:property_id,
+					value:cssom_resolve_color_style_value(value, ColorResolutionContext.for_computed_properties(computed, document))}
+			}
 			if property_id == .column_rule_width {
 				return StyleProperty{property_id:property_id,value:StyleComputer.compute_border_or_outline_width(value,document.device_pixels_per_css_pixel(),ComputationContext{})}
 			}
