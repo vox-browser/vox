@@ -18,6 +18,7 @@ input::placeholder, textarea::placeholder { color:#757575; }
 input:not([type=submit i], input[type=button i], input[type=image i], input[type=reset i], input[type=color i], input[type=checkbox i], input[type=file i], input[type=radio i], input[type=range i]) { border: 2px inset ButtonBorder; min-height: auto; }
 input:is([type=submit i], [type=button i], [type=reset i]), button { border: 2px outset ButtonBorder; padding: 1px 6px; background-color: ButtonFace; }
 textarea { border-color: ButtonBorder; }
+input[type=color] { border: 2px solid ButtonBorder; background-color: ButtonFace; }
 select { border: 1px solid ButtonBorder; padding: 0; }
 select:not(:disabled), select:not(:disabled):hover { background-color: white; color: black; }
 input[type=checkbox i] { margin: 3px 3px 3px 4px; }
