@@ -23,7 +23,7 @@ fn new_app() &App {
 }
 
 fn (mut app App) arm_filter_memory_cleanup() {
-	if app.closed || app.filter_cleanup_timer != none {
+	if app.filter_cleanup_timer != none || app.closed {
 		return
 	}
 	persistent := platform.enter_persistent()

@@ -17,6 +17,8 @@ $if linux || windows {
 	}
 
 	fn (app &App) finish_portable_frame() {
+		// Ordinary frames need neither a capture deadline nor a clock sample.
+		if app.portable_screenshot.pending == none { return }
 		path := app.portable_screenshot.ready_path(time.sys_mono_now()) or { return }
 		sapp.screenshot_png(path) or {
 			eprintln('Vox screenshot: ${err.msg()}')
