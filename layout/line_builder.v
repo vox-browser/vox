@@ -743,6 +743,11 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		} else {
 			fragment_baseline = if builder.writing_mode == .horizontal_tb {
 				layout_box_baseline_for_inline(builder.layout_state,fragment.layout_node_)
+			} else if fragment_computed.vertical_align() == .middle {
+    parent_metrics := if parent := fragment.layout_node_.parent() { line_relative_font_metrics_for_node(parent,builder.writing_mode) } else { container_font_metrics }
+    used := builder.layout_state.get(fragment.layout_node_.as_node_with_style() or { continue })
+    x_height := if builder.writing_mode == .vertical_lr { -parent_metrics.x_height } else { parent_metrics.x_height }
+    used.margin_box_width().divided_by_float(2).plus(CSSPixels.nearest_value_for(f64(x_height)/2))
 			} else {
 				preference := if fragment.layout_node_.display().is_grid_inside() || fragment.layout_node_.display().is_flex_inside() { BaselineSet.first } else { BaselineSet.last }
     from_low := grid_baseline_from_low(builder.layout_state,unsafe { &Node(builder.containing_block) },fragment.layout_node_,true,preference,0)
@@ -853,7 +858,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset =
 					builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
 						fragment.layout_node_, effective_box_top_offset, effective_box_bottom_offset,
-						fragment.block_length(), parent_metrics.x_height))
+						fragment.block_length(), if builder.writing_mode == .vertical_lr { -parent_metrics.x_height } else { parent_metrics.x_height }))
 			}
 			.sub {
 				fragment_block_offset =
@@ -1250,6 +1255,10 @@ fn css_pixels_max(a CSSPixels, b CSSPixels) CSSPixels {
 // ascent and descent, including the zero-height inline strut.
 fn line_relative_font_metrics_for_node(node &Node,writing_mode css.WritingMode) platform.FontPixelMetrics {
  metrics := layout_font_metrics_for_node(node)
+ if writing_mode != .horizontal_tb && resolve_dominant_baseline_metric(node.computed_values()) == .central {
+  half := (metrics.ascent+metrics.descent)/2
+  return platform.FontPixelMetrics{...metrics,ascent:half,descent:half,floor_inline_leading:false}
+ }
  if writing_mode == .vertical_lr && node.computed_values().text_orientation() == .sideways {
   return platform.FontPixelMetrics{...metrics,ascent:metrics.descent,descent:metrics.ascent}
  }
