@@ -220,3 +220,14 @@ fn test_first_letter_skips_markers_and_floating_inline_subtrees() {
  first := wrappers[0].children()[0].as_text_node() or { panic('missing letter') }
  assert first.text_for_rendering() == 'A'
 }
+
+fn test_first_letter_stops_before_atomic_inline_flex_and_grid_content() {
+ for display in ['inline-flex','inline-grid','flex','grid','inline-block'] {
+  mut document := html.parse_document('<!doctype html><style>#outer::first-letter{font-size:200px}#inner{display:${display}}#inner::first-letter{font-size:300px}</style><div id="outer"><div id="inner"><span>Text</span></div><div id="later">Later text</div></div>')
+  defer { document.finalize() }
+  root := build_layout_tree(document) or { panic('tree') }
+  wrappers := first_letter_wrappers(root)
+  if display == 'inline-block' { assert wrappers.len == 1 }
+  else { assert wrappers.len == 0 }
+ }
+}

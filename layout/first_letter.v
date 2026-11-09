@@ -95,7 +95,7 @@ fn find_first_letter_in_inline_subtree(node &Node) (?FirstLetterTarget, bool) {
 		}
 		return none, false
 	}
-	if !node.is_inline_node() { return none, true }
+	if !node.is_inline_node() || node.is_atomic_inline() { return none, true }
 	for child in node.children() {
 		target, stop := find_first_letter_in_inline_subtree(child)
 		if stop { return target, true }
@@ -104,31 +104,34 @@ fn find_first_letter_in_inline_subtree(node &Node) (?FirstLetterTarget, bool) {
 }
 
 fn find_first_letter_in_block(block &Node) ?FirstLetterTarget {
+	target,_ := find_first_letter_in_block_until_boundary(block)
+	return target
+}
+
+fn find_first_letter_in_block_until_boundary(block &Node) (?FirstLetterTarget,bool) {
+	if block.display().is_flex_inside() || block.display().is_grid_inside() || block.display().is_table_inside() { return none,true }
 	if block.children_are_inline() {
 		for child in block.children() {
-			target, stop := find_first_letter_in_inline_subtree(child)
-			if stop { return target }
+			target,stop := find_first_letter_in_inline_subtree(child)
+			if stop { return target,true }
 		}
-		return none
+		return none,false
 	}
 	for child in block.children() {
-		if first_letter_marker_content(child) || !child.is_in_flow() { continue
-		 }
-		if !child.is_block_container() { break
-		 }
+		if first_letter_marker_content(child) || !child.is_in_flow() { continue }
+		if !child.is_block_container() { return none,true }
 		if !child.is_anonymous() {
 			if dom_node := child.dom_node() {
 				if element := dom_node.as_element() {
-					if css.computed_properties_for_pseudo_element(element, .first_letter) != none { break
-					 }
+					if css.computed_properties_for_pseudo_element(element,.first_letter) != none { return none,true }
 				}
 			}
 		}
-		if target := find_first_letter_in_block(child) { return target }
-		if !child.is_anonymous() { break
-		 }
+		target,stop := find_first_letter_in_block_until_boundary(child)
+		if stop { return target,true }
+		if !child.is_anonymous() { return none,true }
 	}
-	return none
+	return none,false
 }
 
 fn create_first_letter_boxes(document &dom.Document, element &dom.Element, target FirstLetterTarget, style &css.ComputedProperties) {

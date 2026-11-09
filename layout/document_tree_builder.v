@@ -1365,7 +1365,9 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	if marker := list_item_marker {
 		attach_list_item_marker(mut box_node, marker, document, computed)
 	}
-	if box_node.is_block_container() {
+	if box_node.is_block_container()
+		&& !box_node.display().is_flex_inside() && !box_node.display().is_grid_inside()
+		&& !box_node.display().is_table_inside() {
 		if first_letter_style := css.computed_properties_for_pseudo_element(element, .first_letter) {
 			if !first_letter_style.display().is_none() {
 				if target := find_first_letter_in_block(box_node) {
