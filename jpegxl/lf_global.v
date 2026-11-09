@@ -9,6 +9,7 @@ pub:
 	tree           ?ModularTree
 	modular_header ?ModularGroupHeader
 	modular_plan   ModularTransformPlan
+	noise          ?NoiseParams
 }
 
 // Parse the common LFGlobal state through modular transform planning. The owner
@@ -16,12 +17,13 @@ pub:
 // streams and incremental recovery are not supported by this entry point yet.
 pub fn (mut reader BitReader) read_lf_global(file FileHeader, frame FrameHeader) !LfGlobalState {
 	validate_modular_group_geometry(frame)!
-	if frame.has_patches() || frame.has_splines() || frame.has_noise() {
+	if frame.has_patches() || frame.has_splines() || (frame.has_noise() && frame.encoding != .vardct) {
 		return error('JPEG XL LF global requires unsupported feature streams')
 	}
 	colors := frame_color_channels(file, frame)
 	infos := modular_frame_channel_info(file, frame, if frame.encoding == .vardct { 0 } else { colors })!
 	limits := modular_stream_limits(infos)!
+	noise := if frame.has_noise() { ?NoiseParams(reader.read_noise()!) } else { ?NoiseParams(none) }
 	quantization := reader.read_lf_quant_factors()!
 	mut context := ?VarDctLfContext(none)
 	if frame.encoding == .vardct {
@@ -45,5 +47,5 @@ pub fn (mut reader BitReader) read_lf_global(file FileHeader, frame FrameHeader)
 	header := if infos.len == 0 { ?ModularGroupHeader(none) } else { ?ModularGroupHeader(reader.read_modular_group_header()!) }
 	plan := plan_modular_transforms(infos, header or { ModularGroupHeader{} }, limits)!
 	return LfGlobalState{ quantization: quantization, vardct: context, tree: tree,
-		modular_header: header, modular_plan: plan }
+		modular_header: header, modular_plan: plan, noise: noise }
 }

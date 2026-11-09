@@ -8,6 +8,8 @@ pub:
 	epf_maps  VarDctEpfMaps
 	quantizer QuantizerParams
 	extra_channels []ModularChannel
+	noise          ?NoiseParams
+	color_correlation ColorCorrelationParams
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
@@ -32,6 +34,9 @@ fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference
 		if frame.hshift(c)! > 1 || frame.vshift(c)! > 1 {
 			return error('Unsupported JPEG XL chroma sampling factor')
 		}
+	}
+	if frame.has_noise() && (!file.metadata.xyb_encoded || frame.frame_type != .regular) {
+		return error('JPEG XL noise output requires a visible XYB VarDCT frame')
 	}
 	for i,extra in file.metadata.extra_channels {
 		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point
@@ -192,5 +197,6 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 	for c in 0 .. 3 { planes[c] = FloatPlane{ width: w >> hs[c], height: h >> vs[c], samples: samples[c] } }
 	return VarDctFramePlanes{ planes: planes,
 		epf_maps: VarDctEpfMaps{ width: bw, height: bh, raw_quant: raw_quant, transform_ids: transforms, sharpness: sharpness },
-		quantizer: context.quantizer, extra_channels: modular.reconstruct(storage)! }
+		quantizer: context.quantizer, extra_channels: modular.reconstruct(storage)!, noise: global.noise,
+		color_correlation: context.color_correlation }
 }

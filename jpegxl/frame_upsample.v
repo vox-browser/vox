@@ -25,5 +25,16 @@ fn upsample_frame_planes(input [3]FloatPlane, frame FrameHeader, transform Custo
 
 fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform CustomTransformData) ![3]FloatPlane {
 	restored := restore_vardct_frame(raw, frame_filter_geometry(frame))!
-	return upsample_frame_planes(restored, frame, transform)
+	upsampled := upsample_frame_planes(restored, frame, transform)!
+	if noise := raw.noise {
+		if noise.lut == [8]f32{} { return upsampled }
+		size := frame.size_upsampled()
+		random := generate_noise_fields(int(size.width), int(size.height), 1, 0)!
+		mut convolved := [3]FloatPlane{}
+		for c in 0 .. 3 { convolved[c] = convolve_noise_plane(random[c])! }
+		// Fix the verified reference profile across hosts. The explicit full
+		// precision color-stage API remains available for other source profiles.
+		return add_noise_planes(upsampled, convolved, noise, raw.color_correlation, .bfloat16)
+	}
+	return upsampled
 }

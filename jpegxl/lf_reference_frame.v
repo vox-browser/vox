@@ -10,7 +10,7 @@ fn validate_lf_reference_frame(file FileHeader, frame FrameHeader) ! {
 	validate_modular_group_geometry(frame)!
 	if frame.frame_type != .lf || frame.lf_level < 1 || frame.lf_level > 4 || frame.is_last
 		|| frame.have_crop || frame.x0 != 0 || frame.y0 != 0 || frame.width != file.size.width
-		|| frame.height != file.size.height || !frame.is444()
+		|| frame.height != file.size.height || !frame.is444() || frame.has_noise()
 		|| file.metadata.extra_channels.len > 1 || frame.extra_upsampling.len != file.metadata.extra_channels.len {
 		return error('Unsupported JPEG XL LF reference frame geometry')
 	}
