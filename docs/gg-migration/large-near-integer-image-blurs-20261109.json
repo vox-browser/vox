@@ -9394,7 +9394,7 @@
       "/home/alex.guest/code/v/v": "a6f1725568c223bb6134bc222b3e7e8d577fb8d26f57194a33b33591d98ec427"
     }
   },
-  "integration_status": "Pending: HTML integration compilation still exceeds the unchanged 12 GiB guard with both comparison and production compilers after concurrent CSS API errors were corrected. Plain error-message formatting did not help and was reverted. Raster and Linux component checks pass.",
+  "integration_status": "Pending: macOS HTML integration compilation exceeds the unchanged 12 GiB guard with both pinned compilers after earlier CSS API errors were corrected. A separate Linux attempt fails before running tests at another uncommitted CSS change that iterates SelectorList instead of its selectors array. Foreign edits were preserved. Raster and standalone Linux component checks pass.",
   "failed_integration_checks": [
     {
       "name": "gg-srcnear-html",
@@ -9568,6 +9568,50 @@
         "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
       },
       "errors": []
+    },
+    {
+      "name": "gg-srcnear-html-linux",
+      "guard": {
+        "command": [
+          "/home/alex.guest/code/v/v",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-exclude",
+          "@vlib/time/zoneinfo.native.v",
+          "-path",
+          "/Users/alex/code/vox2|Build/linux/modules|Build/v/httpcompat/9bd9c5749090dee0/modules|@vmodules|@vlib",
+          "test",
+          "html/canvas_cpu_raster_test.v"
+        ],
+        "reason": "completed",
+        "child_exit_code": 1,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 1044258816,
+        "elapsed_seconds": 98.23949035900296,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "errors": [
+        "css/selectors.v:2813:30: error: for in: cannot index `css.SelectorList`",
+        "css/selectors.v:2814:40: error: `argument_selector` does not return a value",
+        "css/selectors.v:2815:30: error: `compound` does not return a value",
+        "css/selectors.v:2816:18: error: `simple` does not return a value"
+      ],
+      "summary": [
+        "Summary for all V _test.v files: 1 failed, 1 total. Elapsed time: 94621 ms, on 1 job. Comptime: 94536 ms. Runtime: 0 ms."
+      ],
+      "compiler": {
+        "path": "/home/alex.guest/code/v/v",
+        "version": "V 0.5.2 4460fc9",
+        "sha256": "a6f1725568c223bb6134bc222b3e7e8d577fb8d26f57194a33b33591d98ec427"
+      },
+      "note": "Compilation failed before tests ran; runtime is zero. The error is in another session's uncommitted CSS selector loop, which was preserved."
     }
   ],
   "integration_alternate_compiler": {
@@ -12384,5 +12428,11 @@
     "sha256": "cc932a3801c2daaad4f2c08ad7c0834ff89d390387fbc2ec6b6b9cc0034006ad",
     "note": "Snapshot before retry after the invalid CSS calls were corrected"
   },
-  "diagnostic_note": "Only panic(err) diagnostic formatting was experimentally changed in the HTML test. Every assertion remained enabled, the compile still exceeded the memory guard, and the formatting change was fully reverted."
+  "diagnostic_note": "Only panic(err) diagnostic formatting was experimentally changed in the HTML test. Every assertion remained enabled, the compile still exceeded the memory guard, and the formatting change was fully reverted.",
+  "linux_integration_css_snapshot": {
+    "path": "css/selectors.v",
+    "sha256": "6322de314c3fa4713872c768f69db3da4d6214a8c8df12af4add36d6ac077f27",
+    "git_diff": "diff --git a/css/selectors.v b/css/selectors.v\nindex fddf05fdc..a7bfdf8fe 100644\n--- a/css/selectors.v\n+++ b/css/selectors.v\n@@ -2809,6 +2809,15 @@ fn parse_pseudo_class_selector(name string, argument string, is_function bool) S\n \t\t\t}\n \t\t\tpseudo_class.is_forgiving = pseudo_class_type in [.is_, .where]\n \t\t\tpseudo_class.argument_selector_list = selector_list_from_text(argument, false)\n+\t\t\tif pseudo_class_type == .not_ {\n+\t\t\t\tfor argument_selector in pseudo_class.argument_selector_list {\n+\t\t\t\t\tfor compound in argument_selector.compound_selectors {\n+\t\t\t\t\t\tfor simple in compound.simple_selectors {\n+\t\t\t\t\t\t\tif simple.type_ == .pseudo_element { return invalid_simple_selector(':${name}(${argument})') }\n+\t\t\t\t\t\t}\n+\t\t\t\t\t}\n+\t\t\t\t}\n+\t\t\t}\n \t\t}\n \t\t.nth_child, .nth_last_child, .nth_of_type, .nth_last_of_type {\n \t\t\thas_of_selector := top_level_ascii_word_index(argument, 'of') != none\n",
+    "note": "Read-only snapshot after failure; not a sealed parsed-buffer receipt."
+  }
 }

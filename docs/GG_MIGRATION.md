@@ -2081,8 +2081,11 @@ the unsuccessful attempts are retained. After those API calls were corrected,
 both compilers still exceeded the same guard. An experiment using plain error
 messages instead of formatting error objects also exceeded it and was reverted;
 every assertion remained enabled. Integration validation therefore remains
-limited by compilation memory. The earlier integration result predates this
-near-integer change and cannot validate it.
+limited by compilation memory on macOS. A separate Linux attempt fails before
+running any tests at another concurrent, uncommitted CSS edit: a `:not()` loop
+iterates `SelectorList` instead of its `.selectors` array. That edit was also
+preserved. The earlier integration result predates this near-integer change
+and cannot validate it.
 
 The Linux typecheck uses installed Skia development files. The shared bundle
 was not used to validate this slice, and complete browser compilation, linking
