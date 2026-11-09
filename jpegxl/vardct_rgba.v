@@ -10,13 +10,14 @@ pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
 	metadata := file.metadata
-	if metadata.animation != none || metadata.preview != none || metadata.extra_channels.len != 0
+	if metadata.animation != none || metadata.extra_channels.len != 0
 		|| metadata.bit_depth.floating_point || metadata.bit_depth.bits_per_sample != 8
 		|| file.size.width == 0 || file.size.height == 0 || file.size.width > 65536 || file.size.height > 65536
 		|| u64(file.size.width) * u64(file.size.height) > 67108864 / 4 {
 		return error('JPEG XL file requires unsupported VarDCT output services')
 	}
 	color := prepare_srgb_output(file)!
+	reader.skip_preview(file)!
 	context := file.frame_header_context()
 	storage := if metadata.modular_16bit_sufficient { ModularStorage.signed16 } else { ModularStorage.signed32 }
 	mut references := []LfFrameReference{len: 4}

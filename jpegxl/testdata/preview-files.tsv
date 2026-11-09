@@ -1,0 +1,3 @@
+# pinned native jxl 0.7.0; default skip_preview behavior
+default-preview.jxl	33	25	72d727e0d5bd1dd1fcc7123ded59df41f3d6d7cceb89a7528bc0e41e32575b03	a2a307479d9ffa15762e243faa0c7e2524d00205f8dafc887a41b3ff2b0cf7d5
+poisoned-preview.jxl	33	25	6da48029a7fa3ab012f6e9238abb57401a703cfefdc5ea3f2eae3d7a079ac1d1	a2a307479d9ffa15762e243faa0c7e2524d00205f8dafc887a41b3ff2b0cf7d5
