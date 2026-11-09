@@ -93,11 +93,11 @@ pub fn (mut host SharedWorkerHost) install(mut runtime Runtime) ! {
 	}
 	runtime.own_closure(voidptr(callback))
 	host.timer = platform.Timer.create_repeating(5, callback)
-	shared_worker_hosts_[owner] = &host
+	register_runtime_binding(mut shared_worker_hosts_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &SharedWorkerHost(handle) }
 		host.close()
-		shared_worker_hosts_.delete(owner)
+		unregister_runtime_binding(mut shared_worker_hosts_, owner)
 	})
 }
 

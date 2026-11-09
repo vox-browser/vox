@@ -68,7 +68,7 @@ pub fn (mut runtime Runtime) install_performance_observer_binding() ! {
 		operation,
 		global,
 	])!)!
-	performance_observer_bindings_[owner] = binding
+	register_runtime_binding(mut performance_observer_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		for _, mut observer in binding.observers { observer.disconnect() }
@@ -77,7 +77,7 @@ pub fn (mut runtime Runtime) install_performance_observer_binding() ! {
 		binding.lists = {}
 		binding.entries = {}
 		binding.mark_details = {}
-		performance_observer_bindings_.delete(owner)
+		unregister_runtime_binding(mut performance_observer_bindings_, owner)
 	})
 }
 

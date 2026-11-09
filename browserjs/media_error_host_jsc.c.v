@@ -47,14 +47,14 @@ pub fn (mut runtime Runtime) install_media_error_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.vox_jsc_JSValueMakeUndefined(runtime.context), [array, C.JSContextGetGlobalObject(runtime.context)])!)!
-	media_error_bindings_[owner] = binding
+	register_runtime_binding(mut media_error_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, binding] () {
 		mut retained := unsafe { &MediaErrorBinding(binding) }
 		retained.closed = true
 		retained.records = {}
 		retained.by_wrapper = {}
 		retained.prototype = unsafe { nil }
-		media_error_bindings_.delete(owner)
+		unregister_runtime_binding(mut media_error_bindings_, owner)
 	})
 }
 

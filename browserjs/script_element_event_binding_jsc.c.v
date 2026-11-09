@@ -59,8 +59,8 @@ pub fn (mut runtime Runtime) install_script_element_event_binding() ! {
 		return runtime.event_binding_type_error('Unknown script event handler operation')
 	})!
 	runtime.evaluate_host(script_element_event_binding_factory())!
-	script_element_event_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { script_element_event_bindings_.delete(owner) })
+	register_runtime_binding(mut script_element_event_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut script_element_event_bindings_, owner) })
 }
 
 // HTMLScriptElement::execute_script_block fires load after running an external

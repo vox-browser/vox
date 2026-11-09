@@ -37,11 +37,11 @@ pub fn (mut host FileListHost) install(mut runtime Runtime) ! {
 	factory := runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(factory, 'prototype')!)!
 	host.wrap_function = runtime.retain_javascript_value(runtime.binding_property(factory, 'wrap')!)!
-	file_list_bindings_[owner] = &host
+	register_runtime_binding(mut file_list_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &FileListHost(handle) }
 		host.close()
-		file_list_bindings_.delete(owner)
+		unregister_runtime_binding(mut file_list_bindings_, owner)
 	})
 }
 

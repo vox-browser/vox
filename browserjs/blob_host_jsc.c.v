@@ -44,11 +44,11 @@ pub fn (mut host BlobHost) install(mut runtime Runtime) ! {
 	installer := runtime.evaluate_host_value(blob_native_prototype_factory)!
 	defer { runtime.release_javascript_value(installer) }
 	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!)!
-	blob_bindings_[owner] = &host
+	register_runtime_binding(mut blob_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &BlobHost(handle) }
 		host.close()
-		blob_bindings_.delete(owner)
+		unregister_runtime_binding(mut blob_bindings_, owner)
 	})
 }
 

@@ -59,11 +59,11 @@ pub fn (mut host URLSearchParamsHost) install(mut runtime Runtime) ! {
 		'constructor')!)!
 	host.iterator_result = runtime.retain_javascript_value(runtime.binding_property(installed,
 		'iteratorResult')!)!
-	url_search_params_bindings_[owner] = &host
+	register_runtime_binding(mut url_search_params_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &URLSearchParamsHost(handle) }
 		host.close()
-		url_search_params_bindings_.delete(owner)
+		unregister_runtime_binding(mut url_search_params_bindings_, owner)
 	})
 }
 

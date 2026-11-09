@@ -30,11 +30,11 @@ pub fn (mut host WorkerEnvironmentHost) install(mut runtime Runtime) ! {
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(installer, global, [operation, global,
 		C.vox_jsc_JSValueMakeBoolean(runtime.context, host.settings.is_secure_context())])!
-	worker_environment_bindings_[owner] = &host
+	register_runtime_binding(mut worker_environment_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerEnvironmentHost(handle) }
 		host.close()
-		worker_environment_bindings_.delete(owner)
+		unregister_runtime_binding(mut worker_environment_bindings_, owner)
 	})
 }
 

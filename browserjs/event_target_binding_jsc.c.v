@@ -138,7 +138,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 	}
 	runtime.install_dom_exception_binding()!
 	mut binding := &EventTargetBinding{}
-	event_target_bindings_[owner] = binding
+	register_runtime_binding(mut event_target_bindings_, owner, binding)
 	native := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
 		if args.len < 2 {
@@ -210,7 +210,7 @@ pub fn (mut runtime Runtime) install_event_target_binding() ! {
 			// releases the engine context; already queued tasks observe closed.
 			items.string_callbacks = {}
 		}
-		event_target_bindings_.delete(owner)
+		unregister_runtime_binding(mut event_target_bindings_, owner)
 	})
 	if settings := runtime.scripting_settings_ {
 		if document := settings.responsible_document() {

@@ -140,7 +140,7 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 	binding.enqueue = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 0, &exception))!
 	binding.deactivate = runtime.retain_javascript_value(C.vox_jsc_JSObjectGetPropertyAtIndex(runtime.context, functions, 1, &exception))!
 	if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
-	microtask_bindings_[owner] = binding
+	register_runtime_binding(mut microtask_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		mut runtime := unsafe { &Runtime(owner) }
@@ -148,6 +148,6 @@ pub fn (mut runtime Runtime) install_microtask_binding() ! {
 		// engine directly while its context and host records still exist.
 		runtime.call_engine_function(binding.deactivate, []) or {}
 		binding.pending = {}
-		microtask_bindings_.delete(owner)
+		unregister_runtime_binding(mut microtask_bindings_, owner)
 	})
 }

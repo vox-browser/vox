@@ -42,6 +42,6 @@ pub fn (mut runtime Runtime) install_window_event_handler_binding() ! {
 	})!
 	factory := runtime.evaluate_host_value(window_event_handler_bootstrap())!
 	runtime.call_javascript_function(factory, global, [global])!
-	window_event_handler_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { window_event_handler_bindings_.delete(owner) })
+	register_runtime_binding(mut window_event_handler_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut window_event_handler_bindings_, owner) })
 }

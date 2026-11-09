@@ -75,11 +75,11 @@ pub fn (mut host FetchHost) install(mut runtime Runtime) ! {
 		host.prototypes[kind] = runtime.retain_javascript_value(runtime.binding_property(installed, name)!)!
 	}
 	host.header_pairs = runtime.retain_javascript_value(runtime.binding_property(installed, 'pairs')!)!
-	fetch_bindings_[owner] = &host
+	register_runtime_binding(mut fetch_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &FetchHost(handle) }
 		host.close()
-		fetch_bindings_.delete(owner)
+		unregister_runtime_binding(mut fetch_bindings_, owner)
 	})
 }
 

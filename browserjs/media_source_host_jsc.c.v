@@ -75,11 +75,11 @@ pub fn (mut host MediaSourceHost) install(mut runtime Runtime) ! {
 	host.constructor = runtime.retain_javascript_value(runtime.binding_property(installed,
 		'constructor')!)!
 	host.install_buffer_bindings()!
-	media_source_bindings_[owner] = &host
+	register_runtime_binding(mut media_source_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &MediaSourceHost(handle) }
 		host.close()
-		media_source_bindings_.delete(owner)
+		unregister_runtime_binding(mut media_source_bindings_, owner)
 	})
 }
 

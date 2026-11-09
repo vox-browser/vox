@@ -74,11 +74,11 @@ pub fn (mut host URLHost) install(mut runtime Runtime) ! {
 		'prototype')!)!
 	host.constructor = runtime.retain_javascript_value(runtime.binding_property(installed,
 		'constructor')!)!
-	url_bindings_[owner] = &host
+	register_runtime_binding(mut url_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &URLHost(handle) }
 		host.close()
-		url_bindings_.delete(owner)
+		unregister_runtime_binding(mut url_bindings_, owner)
 	})
 	// The scalar helper belongs to the document bridge, which captures it for
 	// href serialization. A worker has no bridge and must not inherit its

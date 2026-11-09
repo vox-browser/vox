@@ -63,13 +63,13 @@ pub fn (mut runtime Runtime) install_custom_element_registry_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	binding.read_metadata = runtime.retain_javascript_value(runtime.call_javascript_function(factory, global, [operation, global])!)!
-	custom_element_registry_bindings_[owner] = binding
+	register_runtime_binding(mut custom_element_registry_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		// Runtime.close releases all actual engine roots, including pending
 		// capabilities. Native upgrade queues remain owned by their documents.
 		binding.registries = {}
 		binding.constructor_ids = {}
-		custom_element_registry_bindings_.delete(owner)
+		unregister_runtime_binding(mut custom_element_registry_bindings_, owner)
 	})
 }
 

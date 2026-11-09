@@ -52,7 +52,7 @@ pub fn (mut runtime Runtime) install_html_element_constructor_binding(wrap HTMLE
 			return runtime.actual_javascript_exception(runtime.html_constructor_exception(err))
 		}
 	})!
-	html_element_constructor_bindings_[owner] = binding
+	register_runtime_binding(mut html_element_constructor_bindings_, owner, binding)
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_custom_element_construction_hook(dom.CustomElementConstructionHook{
 		target: owner
@@ -64,7 +64,7 @@ pub fn (mut runtime Runtime) install_html_element_constructor_binding(wrap HTMLE
 	runtime.add_close_handler(fn [owner, document] () {
 		mut mutable_document := unsafe { &dom.Document(document) }
 		mutable_document.clear_custom_element_construction_hook(owner)
-		html_element_constructor_bindings_.delete(owner)
+		unregister_runtime_binding(mut html_element_constructor_bindings_, owner)
 	})
 }
 

@@ -40,8 +40,8 @@ pub fn (mut runtime Runtime) install_window_screen_binding() ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		runtime.bind_event_target(wrapper, unsafe { &dom.EventTarget(native) })!
 	}
-	window_screen_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { window_screen_bindings_.delete(owner) })
+	register_runtime_binding(mut window_screen_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut window_screen_bindings_, owner) })
 }
 
 fn (mut runtime Runtime) screen_operation(screen &css.Screen, orientation &css.ScreenOrientation, args []voidptr) !voidptr {

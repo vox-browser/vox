@@ -13,8 +13,8 @@ fn (mut runtime Runtime) register_native_clone_font_face_host(host &FontFaceHost
 		if voidptr(previous) == voidptr(host) { return }
 		return error('Native FontFace clone identity already belongs to another installed host')
 	}
-	native_clone_font_face_hosts_[owner] = host
-	runtime.add_close_handler(fn [owner] () { native_clone_font_face_hosts_.delete(owner) })
+	register_runtime_binding(mut native_clone_font_face_hosts_, owner, host)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut native_clone_font_face_hosts_, owner) })
 }
 
 fn (runtime &Runtime) native_clone_font_face_host() ?&FontFaceHost {

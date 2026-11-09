@@ -49,10 +49,10 @@ pub fn (mut runtime Runtime) install_window_media_query_binding() ! {
 				[runtime.binding_string('event'), binding.event_prototype])
 		}
 	})!
-	window_media_query_bindings_[owner] = binding
+	register_runtime_binding(mut window_media_query_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.lists = {}
-		window_media_query_bindings_.delete(owner)
+		unregister_runtime_binding(mut window_media_query_bindings_, owner)
 	})
 }
 

@@ -62,7 +62,7 @@ pub fn (mut runtime Runtime) install_mutation_observer_binding(resolve MutationO
 			return runtime.actual_javascript_exception(runtime.binding_exception_value(err))
 		}
 	})!
-	mutation_observer_bindings_[owner] = binding
+	register_runtime_binding(mut mutation_observer_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		binding.queue.retire()
@@ -76,7 +76,7 @@ pub fn (mut runtime Runtime) install_mutation_observer_binding(resolve MutationO
 			observer.callback_ = none
 		}
 		binding.observers = {}
-		mutation_observer_bindings_.delete(owner)
+		unregister_runtime_binding(mut mutation_observer_bindings_, owner)
 	})
 }
 

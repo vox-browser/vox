@@ -79,7 +79,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 	owner := voidptr(&runtime)
 	if _ := dom_exception_bindings_[owner] { return }
 	mut binding := &DOMExceptionBinding{}
-	dom_exception_bindings_[owner] = binding
+	register_runtime_binding(mut dom_exception_bindings_, owner, binding)
 	construct := runtime.make_value_host_function(fn [owner, mut binding] (receiver voidptr, args []voidptr) !voidptr {
 		runtime := unsafe { &Runtime(owner) }
 		message := if args.len > 0 && !C.JSValueIsUndefined(runtime.context, args[0]) {
@@ -113,7 +113,7 @@ pub fn (mut runtime Runtime) install_dom_exception_binding() ! {
 		}
 	})!
 	runtime.add_close_handler(fn [owner] () {
-		dom_exception_bindings_.delete(owner)
+		unregister_runtime_binding(mut dom_exception_bindings_, owner)
 	})
 	bootstrap := runtime.evaluate_host_value('(function(__ladybirdDOMExceptionConstruct,__ladybirdDOMExceptionGet){' + dom_exception_bootstrap() + '})')!
 	defer { runtime.release_javascript_value(bootstrap) }

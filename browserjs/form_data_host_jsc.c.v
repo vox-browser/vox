@@ -51,11 +51,11 @@ pub fn (mut host FormDataHost) install(mut runtime Runtime) ! {
 	host.prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'prototype')!)!
 	host.iterator_prototype = runtime.retain_javascript_value(runtime.binding_property(installed, 'iteratorPrototype')!)!
 	host.iterator_result = runtime.retain_javascript_value(runtime.binding_property(installed, 'iteratorResult')!)!
-	form_data_bindings_[owner] = &host
+	register_runtime_binding(mut form_data_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &FormDataHost(handle) }
 		host.close()
-		form_data_bindings_.delete(owner)
+		unregister_runtime_binding(mut form_data_bindings_, owner)
 	})
 	if host.settings.global_object().data.kind == .window {
 		runtime.install_form_data_event_binding()!

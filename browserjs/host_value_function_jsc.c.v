@@ -116,9 +116,9 @@ pub fn (mut runtime Runtime) make_native_value_host_function(name string, length
 	if function == unsafe { nil } { return error('JavaScriptCore native function creation failed') }
 	runtime.retain_javascript_value(function)!
 	runtime.call_engine_function(runtime.value_function_metadata_intrinsic_, [function, C.vox_jsc_JSValueMakeString(runtime.context, actual_name), C.vox_jsc_JSValueMakeNumber(runtime.context, f64(length))])!
-	native_value_host_functions_[function] = record
+	register_runtime_binding(mut native_value_host_functions_, function, record)
 	runtime.value_host_functions_ << record
-	runtime.add_close_handler(fn [function] () { native_value_host_functions_.delete(function) })
+	runtime.add_close_handler(fn [function] () { unregister_runtime_binding(mut native_value_host_functions_, function) })
 	return function
 }
 

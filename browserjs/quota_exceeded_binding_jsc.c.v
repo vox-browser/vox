@@ -29,7 +29,7 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 	owner := voidptr(&runtime)
 	if _ := quota_exceeded_error_bindings_[owner] { return }
 	mut binding := &QuotaExceededErrorBinding{}
-	quota_exceeded_error_bindings_[owner] = binding
+	register_runtime_binding(mut quota_exceeded_error_bindings_, owner, binding)
 	binding.to_number = runtime.evaluate_host_value('(function(value){return +value})')!
 	construct := runtime.make_value_host_function(fn [owner] (_ voidptr, args []voidptr) !voidptr {
 		mut runtime := unsafe { &Runtime(owner) }
@@ -54,7 +54,7 @@ pub fn (mut runtime Runtime) install_quota_exceeded_error_binding() ! {
 	defer { runtime.release_javascript_value(bootstrap) }
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(bootstrap,
 		C.vox_jsc_JSValueMakeUndefined(runtime.context), [construct, get])!)!
-	runtime.add_close_handler(fn [owner] () { quota_exceeded_error_bindings_.delete(owner) })
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut quota_exceeded_error_bindings_, owner) })
 }
 
 struct QuotaOptionalDouble {

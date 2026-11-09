@@ -55,7 +55,7 @@ pub fn (mut runtime Runtime) install_intersection_observer_binding(before_observ
 		operation,
 		global,
 	])!)!
-	intersection_observer_bindings_[owner] = binding
+	register_runtime_binding(mut intersection_observer_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		for _, mut observer in binding.observers {
@@ -67,7 +67,7 @@ pub fn (mut runtime Runtime) install_intersection_observer_binding(before_observ
 		binding.thresholds = {}
 		binding.entries = {}
 		binding.wrappers = {}
-		intersection_observer_bindings_.delete(owner)
+		unregister_runtime_binding(mut intersection_observer_bindings_, owner)
 	})
 }
 

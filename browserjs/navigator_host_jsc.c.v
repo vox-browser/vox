@@ -26,11 +26,11 @@ pub fn (mut host NavigatorHost) install(mut runtime Runtime) ! {
 	defer { runtime.release_javascript_value(installer) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(installer, global, [operation, global])!
-	navigator_host_bindings_[owner] = &host
+	register_runtime_binding(mut navigator_host_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &NavigatorHost(handle) }
 		host.close()
-		navigator_host_bindings_.delete(owner)
+		unregister_runtime_binding(mut navigator_host_bindings_, owner)
 	})
 }
 

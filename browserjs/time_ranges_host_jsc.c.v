@@ -54,12 +54,12 @@ pub fn (mut runtime Runtime) install_time_ranges_binding() ! {
 	binding.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(factory,
 		C.vox_jsc_JSValueMakeUndefined(runtime.context),
 		[array, C.JSContextGetGlobalObject(runtime.context)])!)!
-	time_ranges_bindings_[owner] = binding
+	register_runtime_binding(mut time_ranges_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, binding] () {
 		mut retained := unsafe { &TimeRangesBinding(binding) }
 		retained.records = {}
 		retained.by_wrapper = {}
-		time_ranges_bindings_.delete(owner)
+		unregister_runtime_binding(mut time_ranges_bindings_, owner)
 	})
 }
 

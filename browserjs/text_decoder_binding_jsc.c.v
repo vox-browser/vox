@@ -38,10 +38,10 @@ pub fn (mut runtime Runtime) install_text_decoder_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	_ = runtime.call_javascript_function(factory, global, [operation, intrinsics, global])!
-	text_decoder_bindings_[owner] = binding
+	register_runtime_binding(mut text_decoder_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.decoders = {}
-		text_decoder_bindings_.delete(owner)
+		unregister_runtime_binding(mut text_decoder_bindings_, owner)
 	})
 }
 

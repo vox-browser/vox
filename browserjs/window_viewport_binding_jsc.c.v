@@ -36,6 +36,6 @@ pub fn (mut runtime Runtime) install_window_viewport_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(factory, global, [read, global])!
-	window_viewport_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { window_viewport_bindings_.delete(owner) })
+	register_runtime_binding(mut window_viewport_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut window_viewport_bindings_, owner) })
 }

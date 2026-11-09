@@ -85,11 +85,11 @@ pub fn (mut host WorkerGlobalHost) install(mut runtime Runtime) ! {
 	runtime.call_javascript_function(factory, global, [operation, global,
 		C.vox_jsc_JSValueMakeBoolean(runtime.context, runtime.worker_module_global),
 		C.vox_jsc_JSValueMakeBoolean(runtime.context, host.shared_scope != none)])!
-	worker_global_bindings_[owner] = &host
+	register_runtime_binding(mut worker_global_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &WorkerGlobalHost(handle) }
 		host.close()
-		worker_global_bindings_.delete(owner)
+		unregister_runtime_binding(mut worker_global_bindings_, owner)
 	})
 }
 

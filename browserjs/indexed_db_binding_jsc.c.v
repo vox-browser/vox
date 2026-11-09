@@ -159,7 +159,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 			])
 		}
 	})!
-	indexed_db_bindings_[owner] = binding
+	register_runtime_binding(mut indexed_db_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		persistent := platform.enter_persistent()
 		defer { platform.leave_persistent(persistent) }
@@ -174,7 +174,7 @@ pub fn (mut runtime Runtime) install_indexed_db_binding() ! {
 		binding.version_events = {}
 		binding.key_ranges = {}
 		binding.records = {}
-		indexed_db_bindings_.delete(owner)
+		unregister_runtime_binding(mut indexed_db_bindings_, owner)
 	})
 }
 

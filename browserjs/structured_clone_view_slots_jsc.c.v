@@ -33,10 +33,10 @@ fn (mut runtime Runtime) retain_native_clone_view_slots(value voidptr, slots Nat
 	identity := voidptr(&runtime)
 	mut owner := native_clone_view_slot_owners_[identity] or {
 		mut record := &NativeCloneViewSlotsOwner{}
-		native_clone_view_slot_owners_[identity] = record
+		register_runtime_binding(mut native_clone_view_slot_owners_, identity, record)
 		runtime.add_close_handler(fn [identity, mut record] () {
 			record.by_actual.clear()
-			native_clone_view_slot_owners_.delete(identity)
+			unregister_runtime_binding(mut native_clone_view_slot_owners_, identity)
 		})
 		record
 	}

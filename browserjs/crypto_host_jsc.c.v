@@ -66,11 +66,11 @@ pub fn (mut host CryptoHost) install(mut runtime Runtime) ! {
 		host.install_wrapping_operations()!
 		host.install_kem_operations()!
 	}
-	crypto_bindings_[owner] = &host
+	register_runtime_binding(mut crypto_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &CryptoHost(handle) }
 		host.close()
-		crypto_bindings_.delete(owner)
+		unregister_runtime_binding(mut crypto_bindings_, owner)
 	})
 }
 

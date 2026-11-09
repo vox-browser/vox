@@ -46,6 +46,6 @@ pub fn (mut runtime Runtime) install_window_find_binding(before_search ?WindowFi
 	factory := runtime.evaluate_host_value(window_find_binding_factory())!
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(factory, global, [global])!
-	window_find_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { window_find_bindings_.delete(owner) })
+	register_runtime_binding(mut window_find_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut window_find_bindings_, owner) })
 }

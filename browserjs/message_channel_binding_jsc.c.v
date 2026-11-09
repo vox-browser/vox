@@ -46,7 +46,7 @@ pub fn (mut runtime Runtime) install_message_channel_binding() ! {
 		operation,
 		global,
 	])!)!
-	message_channel_bindings_[owner] = binding
+	register_runtime_binding(mut message_channel_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		// Already scheduled posted-message tasks must not enter a closed realm.
 		for _, pointer in binding.ports {
@@ -56,7 +56,7 @@ pub fn (mut runtime Runtime) install_message_channel_binding() ! {
 		}
 		binding.ports = {}
 		binding.channels = {}
-		message_channel_bindings_.delete(owner)
+		unregister_runtime_binding(mut message_channel_bindings_, owner)
 	})
 }
 

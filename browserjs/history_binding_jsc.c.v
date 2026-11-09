@@ -61,10 +61,10 @@ pub fn (mut runtime Runtime) install_history_binding() ! {
 	runtime.call_javascript_function(factory, global, [operation, global])!
 	mut history := binding.window.history()
 	history.set_deserialization_context(runtime.native_clone_deserialization_context())
-	history_bindings_[owner] = binding
+	register_runtime_binding(mut history_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut history] () {
 		history.set_deserialization_context(html.StructuredDeserializationContext{})
-		history_bindings_.delete(owner)
+		unregister_runtime_binding(mut history_bindings_, owner)
 	})
 }
 

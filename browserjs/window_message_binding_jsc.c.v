@@ -71,10 +71,10 @@ pub fn (mut runtime Runtime) install_message_event_binding() ! {
 			])
 		}
 	})!
-	window_message_bindings_[owner] = binding
+	register_runtime_binding(mut window_message_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.data = {}
-		window_message_bindings_.delete(owner)
+		unregister_runtime_binding(mut window_message_bindings_, owner)
 	})
 }
 

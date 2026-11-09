@@ -69,7 +69,7 @@ pub fn (mut runtime Runtime) install_trusted_types_policy_binding(document &dom.
 		owner.factory = runtime.retain_javascript_value(args[0])!
 		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	})!
-	trusted_types_policy_bindings_[runtime.context] = binding
+	register_runtime_binding(mut trusted_types_policy_bindings_, runtime.context, binding)
 	// This bootstrap property is configurable so the compact closure can take
 	// ownership and remove it before any author script executes.
 	installer := runtime.evaluate_host_value('(function(operation,attribute,getter,register){Object.defineProperty(globalThis,"__ladybirdCreateTrustedTypePolicy",{value:operation,configurable:true});Object.defineProperty(globalThis,"__ladybirdSetTrustedAttribute",{value:attribute,configurable:true});Object.defineProperty(globalThis,"__ladybirdTrustedTypesFactoryGetter",{value:getter,configurable:true});Object.defineProperty(globalThis,"__ladybirdRegisterTrustedTypesFactory",{value:register,configurable:true});})')!
@@ -78,7 +78,7 @@ pub fn (mut runtime Runtime) install_trusted_types_policy_binding(document &dom.
 	runtime.add_close_handler(fn [binding] () {
 		mut owner := unsafe { &TrustedTypesPolicyBinding(binding) }
 		owner.closed = true
-		trusted_types_policy_bindings_.delete(binding.runtime.context)
+		unregister_runtime_binding(mut trusted_types_policy_bindings_, binding.runtime.context)
 	})
 }
 

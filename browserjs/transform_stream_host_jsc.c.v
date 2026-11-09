@@ -54,11 +54,11 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
-	transform_stream_bindings_[owner_handle] = &host
+	register_runtime_binding(mut transform_stream_bindings_, owner_handle, &host)
 	runtime.add_close_handler(fn [host_handle, owner_handle] () {
 		mut host := unsafe { &TransformStreamHost(host_handle) }
 		host.close()
-		transform_stream_bindings_.delete(owner_handle)
+		unregister_runtime_binding(mut transform_stream_bindings_, owner_handle)
 	})
 	runtime.install_compression_stream_binding()!
 }

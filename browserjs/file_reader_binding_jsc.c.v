@@ -50,7 +50,7 @@ pub fn (mut runtime Runtime) install_file_reader_binding() ! {
 		operate,
 		methods,
 	])!
-	file_reader_bindings_[owner] = binding
+	register_runtime_binding(mut file_reader_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		// EventTarget's close handler has already disabled native callbacks.
@@ -60,7 +60,7 @@ pub fn (mut runtime Runtime) install_file_reader_binding() ! {
 			reader.abort()
 		}
 		binding.readers = {}
-		file_reader_bindings_.delete(owner)
+		unregister_runtime_binding(mut file_reader_bindings_, owner)
 	})
 }
 

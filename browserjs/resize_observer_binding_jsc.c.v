@@ -52,7 +52,7 @@ pub fn (mut runtime Runtime) install_resize_observer_binding(before_observe ?Res
 		operation,
 		global,
 	])!)!
-	resize_observer_bindings_[owner] = binding
+	register_runtime_binding(mut resize_observer_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.closed = true
 		for _, mut observer in binding.observers {
@@ -64,7 +64,7 @@ pub fn (mut runtime Runtime) install_resize_observer_binding(before_observe ?Res
 		binding.entries = {}
 		binding.entry_arrays = {}
 		binding.sizes = {}
-		resize_observer_bindings_.delete(owner)
+		unregister_runtime_binding(mut resize_observer_bindings_, owner)
 	})
 }
 

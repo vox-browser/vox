@@ -29,6 +29,6 @@ pub fn (mut runtime Runtime) install_css_namespace_binding() ! {
 		operation,
 		C.JSContextGetGlobalObject(runtime.context),
 	])!
-	css_namespace_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { css_namespace_bindings_.delete(owner) })
+	register_runtime_binding(mut css_namespace_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut css_namespace_bindings_, owner) })
 }

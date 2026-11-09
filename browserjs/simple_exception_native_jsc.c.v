@@ -25,8 +25,8 @@ pub fn (mut runtime Runtime) javascript_simple_exception(value webidl.Value) !vo
 	owner := voidptr(&runtime)
 	mut binding := simple_exception_bindings_[owner] or {
 		new_binding := &SimpleExceptionBinding{}
-		simple_exception_bindings_[owner] = new_binding
-		runtime.add_close_handler(fn [owner] () { simple_exception_bindings_.delete(owner) })
+		register_runtime_binding(mut simple_exception_bindings_, owner, new_binding)
+		runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut simple_exception_bindings_, owner) })
 		new_binding
 	}
 	if wrapper := binding.wrappers[voidptr(native)] { return wrapper.object }

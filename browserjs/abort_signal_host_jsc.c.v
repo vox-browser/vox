@@ -44,12 +44,12 @@ pub fn (mut host AbortSignalHost) install(mut runtime Runtime) ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
-	abort_signal_bindings_[voidptr(&runtime)] = &host
+	register_runtime_binding(mut abort_signal_bindings_, voidptr(&runtime), &host)
 	owner_handle := voidptr(&runtime)
 	runtime.add_close_handler(fn [host_handle, owner_handle] () {
 		mut owner := unsafe { &AbortSignalHost(host_handle) }
 		owner.close()
-		abort_signal_bindings_.delete(owner_handle)
+		unregister_runtime_binding(mut abort_signal_bindings_, owner_handle)
 	})
 }
 

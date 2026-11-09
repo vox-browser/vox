@@ -40,6 +40,6 @@ pub fn (mut runtime Runtime) install_window_current_event_binding() ! {
 	factory := runtime.evaluate_host_value(window_current_event_binding_factory())!
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(factory, global, [global])!
-	window_current_event_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { window_current_event_bindings_.delete(owner) })
+	register_runtime_binding(mut window_current_event_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut window_current_event_bindings_, owner) })
 }

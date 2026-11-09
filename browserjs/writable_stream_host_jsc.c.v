@@ -48,11 +48,11 @@ pub fn (mut host WritableStreamHost) install(mut runtime Runtime) ! {
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		host.prototypes[kind] = runtime.retain_javascript_value(prototype)!
 	}
-	writable_stream_bindings_[owner_handle] = &host
+	register_runtime_binding(mut writable_stream_bindings_, owner_handle, &host)
 	runtime.add_close_handler(fn [host_handle, owner_handle] () {
 		mut host := unsafe { &WritableStreamHost(host_handle) }
 		host.close()
-		writable_stream_bindings_.delete(owner_handle)
+		unregister_runtime_binding(mut writable_stream_bindings_, owner_handle)
 	})
 }
 

@@ -51,12 +51,12 @@ pub fn (mut runtime Runtime) install_dom_rect_read_only_binding() ! {
 		operation,
 		global,
 	])!)!
-	dom_rect_read_only_bindings_[owner] = binding
+	register_runtime_binding(mut dom_rect_read_only_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.rects = {}
 		binding.mutable_rects = {}
 		binding.wrappers = {}
-		dom_rect_read_only_bindings_.delete(owner)
+		unregister_runtime_binding(mut dom_rect_read_only_bindings_, owner)
 	})
 }
 

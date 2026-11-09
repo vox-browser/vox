@@ -44,13 +44,13 @@ pub fn (mut runtime Runtime) install_compression_stream_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	runtime.call_javascript_function(factory, global, [operation, intrinsics, global])!
-	compression_bindings_[owner] = binding
+	register_runtime_binding(mut compression_bindings_, owner, binding)
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		for _, mut record in binding.records {
 			if mut decoder := record.decoder { decoder.close() }
 		}
 		binding.records = {}
-		compression_bindings_.delete(owner)
+		unregister_runtime_binding(mut compression_bindings_, owner)
 	})
 }
 

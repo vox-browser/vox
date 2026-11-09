@@ -36,11 +36,11 @@ pub fn (mut host FileHost) install(mut runtime Runtime) ! {
 		blobs.prototype,
 		operate,
 	])!)!
-	file_bindings_[owner] = &host
+	register_runtime_binding(mut file_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &FileHost(handle) }
 		host.close()
-		file_bindings_.delete(owner)
+		unregister_runtime_binding(mut file_bindings_, owner)
 	})
 }
 

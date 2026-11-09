@@ -61,11 +61,11 @@ pub fn (mut host QueuingStrategyHost) install(mut runtime Runtime) ! {
 		host.functions[voidptr(callback)] = actual
 		return callback
 	})!
-	queuing_strategy_bindings_[owner_handle] = &host
+	register_runtime_binding(mut queuing_strategy_bindings_, owner_handle, &host)
 	runtime.add_close_handler(fn [host_handle, owner_handle] () {
 		mut host := unsafe { &QueuingStrategyHost(host_handle) }
 		host.close()
-		queuing_strategy_bindings_.delete(owner_handle)
+		unregister_runtime_binding(mut queuing_strategy_bindings_, owner_handle)
 	})
 }
 

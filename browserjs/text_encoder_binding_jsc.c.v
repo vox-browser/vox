@@ -24,8 +24,8 @@ pub fn (mut runtime Runtime) install_text_encoder_binding() ! {
 	defer { runtime.release_javascript_value(factory) }
 	global := C.JSContextGetGlobalObject(runtime.context)
 	_ = runtime.call_javascript_function(factory, global, [operation, global])!
-	text_encoder_bindings_[owner] = true
-	runtime.add_close_handler(fn [owner] () { text_encoder_bindings_.delete(owner) })
+	register_runtime_binding(mut text_encoder_bindings_, owner, true)
+	runtime.add_close_handler(fn [owner] () { unregister_runtime_binding(mut text_encoder_bindings_, owner) })
 }
 
 fn (mut runtime Runtime) text_encoder_operation(encoder &encoding.TextEncoder, args []voidptr) !voidptr {
