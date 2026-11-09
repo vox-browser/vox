@@ -126,3 +126,34 @@ fn test_vertical_inline_tables_export_row_baselines_with_side_captions() {
   }
  }
 }
+
+fn test_vertical_clamped_inline_baselines_fit_the_retained_line_box() {
+ for mode in ['vertical-lr','vertical-rl'] {
+  for source in ['first','last'] {
+   mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{inline-size:200px;padding:10px;border:3px solid;position:relative;line-height:0;font-size:20px;writing-mode:${mode}}#inner{display:-webkit-inline-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3 no-ellipsis;overflow:hidden;border:5px solid;padding:10px;baseline-source:${source};font-size:30px}span{display:inline-block;width:1em;height:1em}</style><div id="outer"><span id="reference"></span><div id="inner"><span></span><br><span></span><br><span></span><br><span></span><br></div></div>')
+   defer { document.finalize() }
+   result := layout.run_document_layout(document,800,600) or { panic("layout") }
+   reference := document.get_element_by_id('reference') or { panic('reference') }
+   inner := document.get_element_by_id('inner') or { panic('inner') }
+   actual_reference := html.html_element_offset_left(unsafe { &dom.HTMLElement(reference) })
+   actual_inner := html.html_element_offset_left(unsafe { &dom.HTMLElement(inner) })
+   expected := if (source=='first')==(mode=='vertical-rl') { 90.0 } else { 30.0 }
+   assert actual_reference==expected && actual_inner==10,'${mode} ${source}: ${actual_reference},${actual_inner}; '+inline_baseline_case_metrics(result.root,result.state,'outer')+'; '+inline_baseline_case_metrics(result.root,result.state,'inner')
+  }
+ }
+}
+
+fn inline_baseline_case_metrics(node &layout.Node,state &layout.LayoutState,id string) string {
+ if owner := node.dom_node() {
+  if element := owner.as_element() {
+   if element.get_attribute_value('id')==id {
+    used := state.try_get(node.as_node_with_style() or { return '' }) or { return '' }
+    mut lines := []string{}
+    for line in used.line_boxes { lines << '${line.bottom_.to_double()}/${line.block_length().to_double()}/${line.baseline().to_double()}' }
+    return '${id} ${used.content_width().to_double()}x${used.content_height().to_double()} lines '+lines.join(',')
+   }
+  }
+ }
+ for child in node.children() { value := inline_baseline_case_metrics(child,state,id);if value!='' { return value } }
+ return ''
+}

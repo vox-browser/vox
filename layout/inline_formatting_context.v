@@ -928,7 +928,9 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 fn apply_line_clamp(containing_block &BlockContainer, mut used UsedValues,
 	mut state LayoutState, layout_mode LayoutMode, available_space AvailableSpace,
 	parent_block_context ?&BlockFormattingContext) {
-	if layout_mode == .intrinsic_sizing || !line_clamp_is_active(containing_block.computed_values()) {
+	// A vertical flow's intrinsic physical width is its block extent. Keep the
+	// same retained lines for that measurement and its exported baselines.
+	if (layout_mode == .intrinsic_sizing && containing_block.computed_values().writing_mode()==.horizontal_tb) || !line_clamp_is_active(containing_block.computed_values()) {
 		if context := parent_block_context {
 			mut mutable_context := unsafe { &BlockFormattingContext(context) }
 			if mutable_context.has_line_clamp() {
