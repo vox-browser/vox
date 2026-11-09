@@ -16,6 +16,7 @@ pub:
 
 pub struct LayoutNodeRareData {
 pub:
+	is_table_wrapper bool
 	continuation_of_node     ?&LayoutNode
 	continuation_next        ?&LayoutNode
 	pseudo_element_generator ?&Element
@@ -55,7 +56,7 @@ pub fn (mut node LayoutNode) set_visual_lines(values []VisualLine) {
 
 pub fn (mut node LayoutNode) set_rare_data(data LayoutNodeRareData) {
 	if data.continuation_of_node == none && data.continuation_next == none
-		&& data.pseudo_element_generator == none && data.generated_for == none {
+		&& data.pseudo_element_generator == none && data.generated_for == none && !data.is_table_wrapper {
 		node.rare_data_ = unsafe { nil }
 		return
 	}
@@ -91,4 +92,9 @@ pub fn (node &LayoutNode) pseudo_element_generator() ?&Element {
 pub fn (node &LayoutNode) generated_for_pseudo_element() ?PseudoElement {
 	if node.rare_data_ == unsafe { nil } { return none }
 	return node.rare_data_.generated_for
+}
+
+pub fn (node &LayoutNode) is_table_wrapper() bool {
+ if node.rare_data_ == unsafe { nil } { return false }
+ return node.rare_data_.is_table_wrapper
 }

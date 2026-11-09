@@ -2501,6 +2501,16 @@ fn (e &Element) client_size_uses_viewport() bool {
 		|| (e.local_name() == 'body' && e.document().in_quirks_mode()))
 }
 
+fn (e &Element) client_dimensions_layout_box() ?&LayoutNode {
+ layout := e.as_node().layout_node() or { return none }
+ if parent := layout.parent() {
+  // A table's wrapper contains the principal table box, including its
+  // borders, while the principal box retains CSSOM's table used values.
+  if parent.is_table_wrapper() { return parent }
+ }
+ return layout
+}
+
 // https://drafts.csswg.org/cssom-view/#dom-element-clientwidth
 pub fn (e &Element) client_width() int {
 	if e.client_size_uses_viewport() {
@@ -2508,7 +2518,7 @@ pub fn (e &Element) client_width() int {
 	}
 	mut document := unsafe { &Document(e.document()) }
 	document.update_layout(.element_client_width)
-	layout := e.as_node().layout_node() or { return 0 }
+	layout := e.client_dimensions_layout_box() or { return 0 }
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
@@ -2522,7 +2532,7 @@ pub fn (e &Element) client_height() int {
 	}
 	mut document := unsafe { &Document(e.document()) }
 	document.update_layout(.element_client_height)
-	layout := e.as_node().layout_node() or { return 0 }
+	layout := e.client_dimensions_layout_box() or { return 0 }
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}

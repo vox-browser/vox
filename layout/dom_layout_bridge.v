@@ -417,6 +417,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	placeholder.is_replaced_box_ = box.is_replaced_box()
 	placeholder.display_ = layout_node_display(box)
 	mut rare := dom.LayoutNodeRareData{
+		is_table_wrapper: box.is_table_wrapper()
 		pseudo_element_generator: box.pseudo_element_generator()
 		generated_for: dom_pseudo_element_for_layout_node(box.generated_for_pseudo_element())
 	}
