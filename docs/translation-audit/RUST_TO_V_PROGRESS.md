@@ -341,3 +341,29 @@ assembly, XYB/transfer conversion, frame dependencies and production image-path
 integration remain. Production JPEG XL, Cargo/CI hooks and the native developer
 test still depend on Rust. Removal of all Rust dependencies remains unfinished;
 no production-browser validation is claimed for these standalone stages.
+
+## Inverse DCT and fifty-five-file JPEG XL checkpoint on 2026-11-09
+
+Four more slices translate 2/4/8/16/32-point inverse DCT kernels, thirteen
+two-dimensional plane geometries, DCT4X4/DCT4X8/DCT8X4 block reconstruction and
+LF injection. Every ordinary DCT kind has LF injection through 256x256;
+complete ordinary transforms currently reach 32x32. Together with earlier
+Hornuss/DCT2X2 work, fourteen of twenty-seven transform kinds reconstruct.
+The added 5,504 records compare 705,728 exact output words. The package now
+has 276,409 records and fifty-five test files.
+
+All fifty-five files pass through the V corpus checker in both GC modes with
+unavailable Rust compiler paths. Tests, inner guards, drivers and outer guards
+exit zero. The four new focused files also pass optimized checks. Compiler and
+all 219 selected source/fixture/driver/guard hashes and change times remain
+unchanged across the full selections, including the embedded dither table.
+This completes the ten-slice continuation after the forty-five-file checkpoint
+and resets JPEG XL cadence to 0/10. Other suites and ledgers were not changed
+or rerun. [The inverse DCT report](JPEGXL_V_INVERSE_DCT.md) records the source
+pins, exact arithmetic/transpose boundaries, harness correction and full checks.
+
+Large inverse DCTs, AFV transforms, HF entropy decoding, LF/global/frame
+assembly, XYB/transfer conversion, frame dependencies and production integration
+remain. Production JPEG XL and its Cargo/CI/native developer tools still need
+Rust. Removing all Rust dependencies remains unfinished, with no
+production-browser validation claimed for these standalone stages.

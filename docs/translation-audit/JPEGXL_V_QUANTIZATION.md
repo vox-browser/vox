@@ -1,5 +1,9 @@
 # JPEG XL V quantization and initial inverse transforms, 2026-11-09
 
+[The subsequent inverse DCT continuation](JPEGXL_V_INVERSE_DCT.md) records four
+later slices and their fifty-five-file checkpoint. This report retains the
+preceding six-slice evidence.
+
 Six more decoder slices execute in pure V:
 
 | Slice | Implementation commit |

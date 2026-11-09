@@ -375,9 +375,8 @@ calibrations, distance-band interpolation, identity/DCT2/DCT4/DCT4x8/AFV placeme
 raw matrices, local/global modular stream integration and full matrix-set parsing.
 All twenty-seven transform lookups return independently owned channel slices.
 HF coefficient dequantization preserves signed 16/32-bit storage, quantization
-bias, channel scales and fused color correlation. The initial inverse-transform
-API reconstructs Hornuss identity and DCT2X2 blocks from LF/HF coefficients;
-other transform kinds still reject explicitly.
+bias, channel scales and fused color correlation. The first inverse-transform
+slice reconstructed Hornuss identity and DCT2X2 blocks from LF/HF coefficients.
 
 These six slices add 3,136 independent source records, bringing the package to
 270,905 records and fifty-one test files. Every new focused file passes in both
@@ -386,7 +385,25 @@ GC modes and under `-prod`, with unavailable Rust compiler paths. This is
 claimed. [The quantization report](../docs/translation-audit/JPEGXL_V_QUANTIZATION.md)
 records exact comparison boundaries, source pins and executed checks. HF
 entropy decoding, remaining inverse transforms, LF/global/frame assembly,
-XYB/transfer conversion, frame dependencies and production integration remain.
+XYB/transfer conversion, frame dependencies and production integration remained.
+
+Four later slices translate every 2/4/8/16/32-point inverse DCT kernel, all
+thirteen source plane geometries, DCT4X4/DCT4X8/DCT8X4 subblock reconstruction,
+and LF injection for all eighteen ordinary DCT kinds. Complete inverse output
+now covers fourteen transform kinds, including ordinary DCTs through 32x32.
+LF coefficient injection reaches 256x256; large inverse DCTs and AFV transforms
+still reject explicitly. Axis order, transpose rules, coefficient placement and
+source scalar/fused arithmetic choices are preserved.
+
+These four slices add 5,504 independent records and compare 705,728 exact output
+words, bringing the package to 276,409 records and fifty-five test files.
+[The inverse DCT report](../docs/translation-audit/JPEGXL_V_INVERSE_DCT.md) records
+the focused checks, full checkpoint and remaining production work.
+All fifty-five files pass through the V corpus checker in both GC modes with
+unavailable Rust compiler paths. Actual tests, inner guards, drivers and outer
+guards exit zero, completing the ten-slice continuation and resetting JPEG XL
+cadence to 0/10. Focused optimized checks also pass. Compiler and all 219
+selected input hashes/change times remain unchanged across the full selections.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
