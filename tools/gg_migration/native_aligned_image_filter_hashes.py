@@ -379,6 +379,30 @@ for tag in ['prod', 'default']:
         filters=[(x['kind'], x['color'], x['sigma'], x['offset_x'], x['offset_y'], x['matrix'], int(x['clamp']))
                  for x in f['filters']]))
 
+# A first real shadow retains the scaled source foreground through merge.
+cases += [
+    dict(name='shadow-first-chain', destination=[4, 5, 30, 25],
+         filters=[shadow(2.5), blur(.8)]),
+    dict(name='shadow-first-nearest-p3', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         p3=True, premul=False, alpha=.65, smoothing=False,
+         filters=[contrast, shadow(2.5), opacity, shadow(.8)], mode='src_in', clip=True),
+    dict(name='shadow-first-flipped', source=[1, 1, 5, 4], destination=[4.5, 6.25, 22, 16],
+         transform=[-1.1, 0, 0, .8, 42, 3], alpha=.7,
+         filters=[shadow(2.5), contrast, blur(2.5)], mode='src_out'),
+    dict(name='shadow-first-nearly-integer', destination=[10.0004, 12.0006, 7.0007, 5.9994],
+         filters=[shadow(1.2), blur(.8)]),
+    dict(name='shadow-first-identity-prefix-minified', destination=[10.25, 12.5, 2, 3],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75], p3=True, premul=False, alpha=.7,
+         filters=[contrast, blur(.01), shadow(.8), opacity, blur(.8)], mode='multiply', clip=True),
+    dict(name='shadow-first-two-shadows', destination=[4.5, 6.25, 22, 16],
+         premul=False, alpha=.7, filters=[shadow(2.5), shadow(.8, -7.25, 4.5)], mode='src_atop'),
+    dict(name='shadow-first-copy', source=[1, 1, 5, 4], destination=[4.25, 6.5, 25, 18],
+         filters=[shadow(2.5), contrast, blur(.8)], mode='src', clip=True),
+    dict(name='shadow-first-clipped-source', source=[-2, -1, 7, 6], destination=[4.25, 6.5, 25, 18],
+         transform=[1.25, 0, 0, .75, 3.25, 2.75],
+         filters=[shadow(2.5), blur(.8)], mode='src_in', clip=True),
+]
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -458,6 +482,7 @@ expected += ['96377cc5e9c1be3b', '5a943a8884b2705e', 'd6368e170d652582', '7376c5
 expected += ['647ddc0897133c6d', 'f893a84730298ea1']
 if platform.system() == 'Linux':
     expected[-2:] = ['647ddc0897133c6d', '9e770877597b62d4']
+expected += ['859b91c3c575de06', '27b607573de5a8ca', '5939c34188b25a0f', '09ea9f3247a7e8b5', '4db99a1307529684', '31f259ec5a598801', '8978f9869cd65823', 'cf7733c7326d8f00']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']

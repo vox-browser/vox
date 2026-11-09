@@ -1402,7 +1402,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -2462,7 +2462,8 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
-	resampled_chains := os.getenv('CPU_RASTER_CHECKS') == 'resampled-spatial-chains'
+	shadow_first_chains := os.getenv('CPU_RASTER_CHECKS') == 'shadow-first-spatial-chains'
+	resampled_chains := shadow_first_chains || os.getenv('CPU_RASTER_CHECKS') == 'resampled-spatial-chains'
 	spatial := resampled_chains || os.getenv('CPU_RASTER_CHECKS') in ['source-spatial-chains', 'fractional-spatial-chains']
 	fractional := os.getenv('CPU_RASTER_CHECKS') in ['fractional-image-layers', 'fractional-spatial-chains']
 	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
@@ -2651,7 +2652,10 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			mut filters := random_spatial_filter_chain()
 			if resampled_chains {
 				mut prefix := random_color_filters()
-				prefix << cpuraster.CanvasFilterStep{kind: .blur, sigma: .8}
+				prefix << if shadow_first_chains {
+					cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: 2.5,
+						offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+				} else { cpuraster.CanvasFilterStep{kind: .blur, sigma: .8} }
 				prefix << filters
 				filters = prefix.clone()
 			}
