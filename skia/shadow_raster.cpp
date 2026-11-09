@@ -9,6 +9,7 @@
 #include "include/core/SkFontMgr.h"
 #include "include/core/SkPaint.h"
 #include "include/core/SkRRect.h"
+#include "include/core/SkScalar.h"
 #include "include/core/SkSurface.h"
 #include "include/core/SkTextBlob.h"
 #include "include/effects/SkBlurMaskFilter.h"
@@ -16,7 +17,6 @@
 #include "include/pathops/SkPathOps.h"
 #include "include/core/SkPathBuilder.h"
 #include <cmath>
-#include <numbers>
 #ifdef __APPLE__
 #include "include/ports/SkFontMgr_mac_ct.h"
 #elif defined(_WIN32)
@@ -76,10 +76,10 @@ static SkPath shadow_clip_path(VoxCanvasPath const& input)
         case 3: path.cubicTo(segment[3], segment[4], segment[5], segment[6], segment[1], segment[2]); break;
         case 4:
 #if defined(__linux__) || defined(_WIN32)
-            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / SK_ScalarPI, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
 #else
-            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
+            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / SK_ScalarPI, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
 #endif
             break;

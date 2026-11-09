@@ -15,6 +15,7 @@
 #include "include/core/SkPath.h"
 #include "include/core/SkPathBuilder.h"
 #include "include/core/SkPathUtils.h"
+#include "include/core/SkScalar.h"
 #include "include/core/SkShader.h"
 #include "include/core/SkSurface.h"
 #include "include/effects/SkBlurMaskFilter.h"
@@ -23,7 +24,6 @@
 #include "include/effects/SkImageFilters.h"
 #include "include/effects/SkRuntimeEffect.h"
 #include <cmath>
-#include <numbers>
 #include <vector>
 #ifdef __APPLE__
 #include "include/ports/SkFontMgr_mac_ct.h"
@@ -57,10 +57,10 @@ static SkPath make_path(VoxCanvasPath const& input)
             break;
         case 4:
 #if defined(__linux__) || defined(_WIN32)
-            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
+            path.arcTo(SkPoint{segment[7], segment[8]}, segment[9] * 180.0f / SK_ScalarPI, segment[10] ? SkPathBuilder::kLarge_ArcSize : SkPathBuilder::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, SkPoint{segment[1], segment[2]});
 #else
-            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / std::numbers::pi_v<float>, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
+            path.arcTo(segment[7], segment[8], segment[9] * 180.0f / SK_ScalarPI, segment[10] ? SkPath::kLarge_ArcSize : SkPath::kSmall_ArcSize,
                 segment[11] ? SkPathDirection::kCW : SkPathDirection::kCCW, segment[1], segment[2]);
 #endif
             break;
@@ -139,7 +139,7 @@ static bool apply_style(SkPaint& paint, VoxCanvasStyle const& style)
         shader = SkGradientShader::MakeTwoPointConical({ style.x0, style.y0 }, style.r0, { style.x1, style.y1 }, style.r1, colors.data(), nullptr,
             positions.data(), int(colors.size()), SkTileMode::kClamp, interpolation, &matrix);
     } else if (style.kind == 3) {
-        float degrees = style.angle * 180.0f / std::numbers::pi_v<float>;
+        float degrees = style.angle * 180.0f / SK_ScalarPI;
         shader = SkGradientShader::MakeSweep(style.x0, style.y0, colors.data(), nullptr, positions.data(), int(colors.size()), SkTileMode::kClamp, degrees,
             degrees + 360.0f, interpolation, &matrix);
     }

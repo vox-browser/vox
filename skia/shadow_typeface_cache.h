@@ -19,7 +19,12 @@ class VoxShadowTypefaceCache {
         int64_t modified_seconds, changed_seconds;
         int64_t modified_nanoseconds, changed_nanoseconds;
 
-        bool operator==(FileIdentity const&) const = default;
+        bool operator==(FileIdentity const& other) const
+        {
+            return device == other.device && inode == other.inode && size == other.size
+                && modified_seconds == other.modified_seconds && changed_seconds == other.changed_seconds
+                && modified_nanoseconds == other.modified_nanoseconds && changed_nanoseconds == other.changed_nanoseconds;
+        }
     };
     struct Entry {
         std::string path;
