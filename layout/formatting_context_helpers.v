@@ -491,7 +491,7 @@ fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node, basel
 	mut index := if baseline_set == .first { 0 } else { children.len - 1 }
 	for index >= 0 && index < children.len {
 		child := children[index]
-		if !child.is_box() || child.is_out_of_flow() {
+		if !child.is_box() || child.is_out_of_flow() || (box.is_fieldset_box() && child.is_legend_box()) {
 			index += if baseline_set == .first { 1 } else { -1 }
 			continue
 		}
@@ -630,10 +630,19 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	// rows. Inline tables export their first row through the wrapper; other
 	// table parts export the baseline set requested by their consumer.
 	if box.is_table_wrapper() {
-  if source == 'last' { if baseline := box_state.derived_last_baseline() { return box_state.margin_box_top().plus(baseline) } }
-		if baseline := box_state.derived_first_baseline() {
-			return box_state.margin_box_top().plus(baseline)
+		selected := if source == 'first' || (source == 'auto' && display.is_inline_outside()) { BaselineSet.first } else { baseline_set }
+		// Caption placement can update the table's offset after its baseline
+		// cache is published. Read the final offset of the native table box.
+		for child in box.children() {
+			if !child.display().is_table_inside() { continue }
+			if child_styled := child.as_node_with_style() {
+				if child_values := state.try_get(child_styled) {
+					baseline := if selected == .first { child_values.derived_first_baseline() } else { child_values.derived_last_baseline() }
+					if value := baseline { return box_state.margin_box_top().plus(child_values.offset.y()).plus(value) }
+				}
+			}
 		}
+		if baseline := box_state.derived_first_baseline() { return box_state.margin_box_top().plus(baseline) }
 	} else if baseline_set == .first {
 		if baseline := box_state.derived_first_baseline() {
 			return box_state.margin_box_top().plus(baseline)
@@ -647,7 +656,7 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	// CSS Align's legacy bottom-edge baseline applies to scroll containers.
 	// `overflow: clip` is non-visible but does not establish one, so it keeps
 	// the same content-derived baseline as visible overflow.
-	derive_from_content := baseline_set == .first || is_flex_or_grid_container || line_clamp_is_active(computed)
+	derive_from_content := source != 'auto' || baseline_set == .first || is_flex_or_grid_container || line_clamp_is_active(computed)
 		|| ignores_overflow || !box.is_scroll_container()
 	if derive_from_content && box_state.line_boxes.len > 0 {
 		mut line_index := if baseline_set == .first { 0 } else { box_state.line_boxes.len - 1 }

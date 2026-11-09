@@ -3216,7 +3216,7 @@ fn last_anonymous_inline_wrapper_or_new(mut parent Node, document &dom.Document,
 	// that wrap every inline run (fieldsets, foreignObject, flex and grid); an
 	// ordinary mixed-content wrapper is created once a block child arrives.
 	wraps_inline_block := wraps_every_inline_run && parent.display().is_inline_block()
-		&& parent.first_child() == none
+		&& !parent.is_fieldset_box() && parent.first_child() == none
 	mut wrapper := create_anonymous_block_wrapper(document, parent_computed)
 	if wraps_inline_block {
 		if styled := wrapper.as_node_with_style() {
