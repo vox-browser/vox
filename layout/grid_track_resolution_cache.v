@@ -65,7 +65,7 @@ fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, col
 	list := grid_axis_template(container, columns)
 	implicit := grid_axis_implicit_tracks(container, columns)
 	mut pool := state.measurement_chunk_pool_
-	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed {
+	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed || grid_lanes_repeat_reads_items(container,list,available) {
 		return resolve_grid_tracks_for_axis(container, list, implicit, available, gap, definite, implicit_before, required, columns)
 	}
 	key := GridTrackResolutionKey{
