@@ -29,7 +29,7 @@ class MacOSDeployTests(unittest.TestCase):
             (binaries / name).write_bytes(b'synthetic Mach-O fixture with symbols')
             (binaries / name).chmod(0o755)
         (self.app / 'Contents/Info.plist').write_bytes(plistlib.dumps(
-            dict(CFBundleShortVersionString='0.1', LSMinimumSystemVersion='26.0')))
+            dict(CFBundleShortVersionString='0.1', LSMinimumSystemVersion='15.0')))
         (self.app / 'Contents/link').symlink_to('MacOS/Vox')
         packaging = self.root / 'packaging'
         packaging.mkdir()
@@ -149,11 +149,11 @@ class MacOSDeployTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
 
     def test_bundle_requiring_newer_than_its_declared_macos_is_rejected(self):
-        with patch.object(deploy, 'minimum_macos', return_value=(26, 0)):
+        with patch.object(deploy, 'minimum_macos', return_value=(15, 0)):
             self.package()
         self.output.unlink()
-        with patch.object(deploy, 'minimum_macos', return_value=(26, 1)):
-            with self.assertRaisesRegex(RuntimeError, 'requires macOS 26.1; the release declares macOS 26.0'):
+        with patch.object(deploy, 'minimum_macos', return_value=(15, 1)):
+            with self.assertRaisesRegex(RuntimeError, 'requires macOS 15.1; the release declares macOS 15.0'):
                 self.package()
         self.assertFalse(self.output.exists())
 

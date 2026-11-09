@@ -148,7 +148,7 @@ class ReleaseFlowTests(unittest.TestCase):
         # The release checkout builds the committed bump; the DMG lands in the canonical Build/.
         self.assertEqual(self.calls[4][1], (self.checkout, '0.1.1', dmg, False))
         self.assertEqual(dmg, self.root / 'Build/deploy' / ('Vox-0.1.1-%s.dmg' % release.platform.machine()))
-        self.assertEqual(self.calls[5][1], (release.REPOSITORY, '0.1.1', dmg, '26.0'))
+        self.assertEqual(self.calls[5][1], (release.REPOSITORY, '0.1.1', dmg, '15.0'))
         self.assertEqual(self.calls[6][1], ('0.1.1', release.WEBSITE_HOST))
         self.assertEqual(self.calls[7][1], (release.REPOSITORY, '0.1.1', dmg.name))
 
@@ -294,7 +294,7 @@ class GitTests(unittest.TestCase):
         # An interrupted attempt's uncommitted bump is reused; other plist edits are not committed.
         (self.root / release.INFO_PLIST).write_text(info_plist('0.1.2', '7'))
         self.assertNotEqual(release.commit_version(self.root, '0.1.2'), commit)
-        edited = info_plist('0.1.2', '3').replace('<string>26.0</string>', '<string>27.0</string>')
+        edited = info_plist('0.1.2', '3').replace('<string>15.0</string>', '<string>27.0</string>')
         (self.root / release.INFO_PLIST).write_text(edited)
         head = git(self.root, 'rev-parse', 'HEAD')
         with self.assertRaisesRegex(RuntimeError, 'uncommitted changes besides the version'):
@@ -363,11 +363,11 @@ class PublishingTests(unittest.TestCase):
                 return self.completed(stdout=json.dumps(dict(assets=[dict(name=dmg.name, digest=digest)])))
 
             with patch.object(release.subprocess, 'run', side_effect=run), redirect_stdout(io.StringIO()):
-                release.publish_release('owner/repo', '0.1.1', dmg, '26.0')
+                release.publish_release('owner/repo', '0.1.1', dmg, '15.0')
                 self.assertEqual(commands[0][:6], ['gh', 'release', 'create', '0.1.1', str(dmg), '-R'])
-                self.assertIn('macOS 26.0 or later', commands[0][commands[0].index('--notes') + 1])
+                self.assertIn('macOS 15.0 or later', commands[0][commands[0].index('--notes') + 1])
                 with self.assertRaisesRegex(RuntimeError, 'does not carry'):
-                    release.publish_release('owner/repo', '0.1.1', dmg, '26.0')
+                    release.publish_release('owner/repo', '0.1.1', dmg, '15.0')
 
     def test_site_download_must_redirect_to_the_uploaded_dmg(self):
         uploaded = 'https://github.com/owner/repo/releases/download/0.1.1/Vox-0.1.1-arm64.dmg'
