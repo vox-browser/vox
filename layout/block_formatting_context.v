@@ -1176,7 +1176,7 @@ fn (mut bfc BlockFormattingContext) introduce_clearance(clear css.Clear, directi
 	}
 	current_y := css_px(bfc.y_offset_of_current_block_container)
 	hypothetical_y := if chromium {
-		current_y.plus(css_px(bfc.margin_state.current_collapsed_margin()))
+		current_y.plus(css_px(bfc.margin_state.pending_margin_for_next_box()))
 	} else {
 		current_y
 	}
