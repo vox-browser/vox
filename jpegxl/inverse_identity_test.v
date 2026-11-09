@@ -24,7 +24,7 @@ fn test_inverse_identity_matches_complete_source_blocks() {
 	assert count == 512
 }
 
-fn test_inverse_transform_validates_input_buffers_and_rejects_unsupported_modes() {
+fn test_inverse_transform_validates_input_buffers() {
 	for transform in [HfTransform.identity, .afv0] {
 		if _ := inverse_hf_transform(transform, []f32{}, []f32{len: 64}) { assert false }
 		if _ := inverse_hf_transform(transform, [f32(0)], []f32{len: 63}) { assert false }
@@ -35,5 +35,4 @@ fn test_inverse_transform_validates_input_buffers_and_rejects_unsupported_modes(
 		samples[63] = math.f32_from_bits(bits)
 		if _ := inverse_hf_transform(.identity, [f32(0)], samples) { assert false }
 	}
-	if _ := inverse_hf_transform(.afv0, [f32(0)], []f32{len: 64}) { assert false }
 }

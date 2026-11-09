@@ -31,7 +31,7 @@ pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32)
 		.dct4x8, .dct8x4 { inverse_rectangular_dct_blocks(transform, mut output)! }
 		.identity { inverse_identity(mut output) }
 		.dct2x2 { inverse_dct2x2(mut output) }
-		else { return error('Unsupported JPEG XL inverse transform') }
+		.afv0, .afv1, .afv2, .afv3 { inverse_afv(transform, mut output)! }
 	}
 	return FloatPlane{ width: blocks[0] * 8, height: blocks[1] * 8, samples: output }
 }
