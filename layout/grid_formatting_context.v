@@ -2323,7 +2323,7 @@ fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_t
 
 fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedValues, available_height_is_definite bool) bool {
 	preferred := item.computed_values().size_value(.height)
-	if preferred.is_auto() {
+	if preferred.is_auto() || preferred.is_stretch() {
 		if box := item.as_box() {
 			if _ := box.preferred_aspect_ratio() {
 				return !item_state.has_definite_width()
@@ -2418,13 +2418,13 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	}
 	mut contribution := inner.plus(edges)
 	maximum := item.computed_values().size_value(.max_height)
-	if !maximum.is_none() && !(maximum.contains_percentage() && (!available_height_is_definite || !item.is_replaced_box())) {
+	if !maximum.is_none() && !maximum.is_stretch() && !(maximum.contains_percentage() && (!available_height_is_definite || !item.is_replaced_box())) {
 		if maximum_size := resolve_layout_content_size(item, maximum, percentage_basis,item_state,false) {
 			contribution = css_pixels_min(contribution, maximum_size.plus(edges))
 		}
 	}
 	minimum := item.computed_values().size_value(.min_height)
-	if !minimum.is_auto() && !(minimum.contains_percentage() && !available_height_is_definite) {
+	if !minimum.is_auto() && !minimum.is_stretch() && !(minimum.contains_percentage() && !available_height_is_definite) {
 		if minimum_size := resolve_layout_content_size(item,minimum,percentage_basis,item_state,false) { contribution=css_pixels_max(contribution,minimum_size.plus(edges)) }
 	}
 	return contribution
@@ -3349,7 +3349,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 					|| !flex_subtree_depends_on_definite_height(mut state, placement.item)) {
 				item_state.set_has_definite_height(true)
 			} else {
-				item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
+				item_state = layout_independent_child_with_resolved_height(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
 					container_state.content_height()
 				} else {
 					none
