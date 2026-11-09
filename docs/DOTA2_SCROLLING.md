@@ -1602,7 +1602,7 @@ See [the transfer-pool measurements, retained regressions and evidence](performa
 
 Commit `20d2a9a69` protects the opt-in direct-frame reader from overlapping
 CPU destinations: converting each rectangle in place had swapped some pixels
-twice. The old path changes 616 pixels/max38 at offset850 and fails the new
+twice. The old path changes 616 pixels, with maximum error 38, at offset 850 and fails the new
 actual-GPU regression. The guarded path preserves exact reference pixels at
 0/850 and passes optimized/ASan overlap, eligibility and failure checks.
 
@@ -1613,12 +1613,13 @@ regress; that prototype and its test mode are removed. Default transport remains
 unchanged. Every timing attempt completes 5,400 inputs with stable identities;
 no isolated performance gain is accepted.
 
-A separate 456.780ms diagnostic callback blocks writing the general GPU dump.
-Commit `35e0f9875` adds a dedicated input-window logger capped at128markers;
+A separate 456.780 ms diagnostic callback blocks writing the general GPU dump.
+Commit `35e0f9875` adds a dedicated input-window logger capped at 128 markers;
 the wheel/frame probe already buffers its own records. Final native code passes
 fresh GPU/sanitizer checks and exact captures. Its bounded diagnostic still has
-a27.805ms maximum moving interval and0.732% misses, and supplies no FPS credit.
+a 27.805 ms maximum moving interval and 0.732% misses, and supplies no FPS credit.
 
-**The 60Hz goal without stalls remains open.** Installed worker/pool validation
-still awaits the shared build: the completed bundle is23d3335d. See
+**The 60 Hz goal without stalls remains open.** Installed worker/pool validation
+still awaits the shared build: the completed bundle is `23d3335d...`. The jobs
+and temporary drivers were removed after their archives were verified. See
 [the complete readback results and retained failures](performance/reddit-boots-readback-20261109.md).
