@@ -2,7 +2,7 @@ module cpuraster
 
 // Mixed blur and shadow nodes share the saved source device. Request bounds
 // propagate backwards; each shadow merge and real blur retains its own pixels.
-fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, source_foreground ?FilterImageView, mode BlendMode, content LayerContent) bool {
+fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, source_foreground ?FilterImageView, source_reset ?FilterImageView, mode BlendMode, content LayerContent) bool {
 	// Bound both backwards requests and evaluation of the branching graph.
 	mut work := 1
 	for stage in stages {
@@ -16,8 +16,10 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	mut offsets := []SkAffine{cap: stages.len}
 	inverse := affine_invert(ctm) or { SkAffine{} }
 	for stage in stages {
-		if stage.sigma < 0 || !is_finite_f32(stage.sigma) { return false }
-		x, y := blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)), blur_layer_sigma(math_abs32(stage.sigma * ctm.sy))
+		valid := stage.sigma >= 0 && is_finite_f32(stage.sigma)
+		if !valid && stage.kind != .drop_shadow { return false }
+		x := if valid { blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) } else { f32(0) }
+		y := if valid { blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) } else { f32(0) }
 		if x > image_blur_max_sigma || y > image_blur_max_sigma { return false }
 		offset := sk_concat(ctm, post_translate(inverse, stage.offset_x, stage.offset_y))
 		if !affine_is_finite(offset) || math_abs32(offset.tx) > 1 << 24 || math_abs32(offset.ty) > 1 << 24 { return false }
@@ -30,8 +32,10 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	if bounds := quick_bounds {
 		mut fast := bounds
 		for stage in stages {
-			pad := f32(3) * stage.sigma
-			mut expanded := Rect{fast.left - pad, fast.top - pad, fast.right + pad, fast.bottom + pad}
+			valid := stage.sigma >= 0 && is_finite_f32(stage.sigma)
+			pad := if valid { f32(3) * stage.sigma } else { f32(0) }
+			base := if valid { fast } else { bounds }
+			mut expanded := Rect{base.left - pad, base.top - pad, base.right + pad, base.bottom + pad}
 			if stage.kind == .drop_shadow {
 				expanded = Rect{expanded.left + stage.offset_x, expanded.top + stage.offset_y,
 					expanded.right + stage.offset_x, expanded.bottom + stage.offset_y}
@@ -89,7 +93,8 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	}
 	graph := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
 		source: result, max_dim: max_dim, resolve_at: resolve_at, content: content,
-		source_transform: transform, source_bounds: device_bounds or { layer }, source_view: source_foreground}
+		source_transform: transform, source_bounds: device_bounds or { layer }, source_view: source_foreground,
+		reset_view: source_reset}
 	value := graph.evaluate(stages.len - 1, desired) or { return false }
 	result = value.image
 	mut pending := value.color.clone()
@@ -133,6 +138,7 @@ struct SpatialFilterGraph {
 	source_transform [6]f32
 	source_bounds IRect
 	source_view ?FilterImageView
+	reset_view ?FilterImageView
 }
 
 // Known content bounds apply at each SourceGraphic leaf before unions.
@@ -145,8 +151,9 @@ fn (g &SpatialFilterGraph) input_bounds(index int, desired IRect) ?IRect {
 	rx, ry := skif_ceil(f32(3) * g.sx[index]), skif_ceil(f32(3) * g.sy[index])
 	if stage.kind == .blur { return g.input_bounds(index - 1, skif_outset(desired, rx, ry)) }
 	shadow := skif_outset(map_filter_bounds(desired, affine_invert(g.offsets[index]) or { return none }), 1, 1)
+	child_index := if stage.sigma < 0 || !is_finite_f32(stage.sigma) { -1 } else { index - 1 }
 	return union_filter_bounds(g.input_bounds(index - 1, desired)?,
-		g.input_bounds(index - 1, skif_outset(shadow, rx, ry))?)
+		g.input_bounds(child_index, skif_outset(shadow, rx, ry))?)
 }
 
 fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValue {
@@ -164,7 +171,11 @@ fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValu
 	offset := g.offsets[index]
 	shadow_desired := skif_outset(map_filter_bounds(desired, affine_invert(offset) or { return none }), 1, 1)
 	needed := skif_outset(shadow_desired, rx, ry)
-	shadow := if index == g.resolve_at && (g.sx[index] != 0 || g.sy[index] != 0) {
+	shadow := if stage.sigma < 0 || !is_finite_f32(stage.sigma) {
+		// Blur() rejects this node and its input; the tint then reads
+		// SourceGraphic while the foreground still evaluates earlier nodes.
+		SpatialFilterValue{image: g.source, view: g.reset_view}
+	} else if index == g.resolve_at && (g.sx[index] != 0 || g.sy[index] != 0) {
 		g.resolve_source_blur(index, shadow_desired)?
 	} else {
 		child := spatial_filter_apply_color(g.evaluate(index - 1, needed)?, stage.pre_color, needed)

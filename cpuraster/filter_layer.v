@@ -25,6 +25,7 @@ pub struct CanvasFilterStep {
 	source_color_info FilterImageInfo
 	source_draw_bounds ?Rect
 	source_foreground ?FilterImageView
+	source_reset ?FilterImageView
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
 pub:
@@ -201,7 +202,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		return draw_spatial_filter_chain(mut pixels, width, height, pitch, alpha_type,
 			transform, clips, content_bounds, quick_bounds, step.layer_stages, step.post_color,
 			step.source_color_info, step.source_image, step.source_padding, step.source_per_request,
-			step.source_foreground, mode, content)
+			step.source_foreground, step.source_reset, mode, content)
 	}
 	if step.layer_stages.len > 0 {
 		return draw_blur_filter_chain(mut pixels, width, height, pitch, alpha_type,

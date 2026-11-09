@@ -21,8 +21,9 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		// A first shadow resolves only a real blur input. Its foreground
 		// keeps MakeFromImage's original mapping until the merge.
 		for stage in stages {
-			real := blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
-				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0
+			real := stage.sigma >= 0 && is_finite_f32(stage.sigma)
+				&& (blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
+				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0)
 			if stage.kind == .drop_shadow {
 				deferred_foreground = true
 				break
@@ -40,8 +41,9 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		for i, stage in stages {
 			before << stage.pre_color
 			stages[i] = LayerFilterStage{...stage, pre_color: []MatrixColorFilter{}}
-			if blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
-				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0 {
+			if stage.sigma >= 0 && is_finite_f32(stage.sigma)
+				&& (blur_layer_sigma(math_abs32(stage.sigma * ctm.sx)) != 0
+				|| blur_layer_sigma(math_abs32(stage.sigma * ctm.sy)) != 0) {
 				real_blur = true
 				break
 			}
@@ -70,6 +72,9 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	foreground := FilterImageView{bitmap: bitmap, transform: total,
 		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
+	reset := if stages.any(it.kind == .drop_shadow && (it.sigma < 0 || !is_finite_f32(it.sigma))) {
+		?FilterImageView(FilterImageView{...foreground, filter: none})
+	} else { none }
 	if deferred_foreground && foreground.layer_bounds != skif_round_out(map_rect_affine(dst, affine_to_matrix(ctm))) { return false }
 	if drop && !real_blur {
 		return draw_deferred_image_shadow(mut pixels, width, height, pitch, alpha_type,
@@ -78,11 +83,13 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
 		// The blur can use the raw subset shortcut while a shadow's
 		// foreground retains its original mapping and sampling until merge.
-		near_step := if deferred_foreground { CanvasFilterStep{...step, source_foreground: foreground} } else { step }
+		near_step := CanvasFilterStep{...step, source_reset: reset,
+			source_foreground: if deferred_foreground { ?FilterImageView(foreground) } else { none }}
 		return draw_near_integer_image_blur(mut pixels, width, height, pitch, alpha_type,
 			transform, bitmap, src, dst, mapped, total, mode, clips, near_step)
 	}
 	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
+		source_reset: reset,
 		source_image: true, source_padding: true, source_per_request: stages.any(it.kind == .drop_shadow), source_color_info: FilterImageInfo{},
 		source_foreground: if deferred_foreground { ?FilterImageView(foreground) } else { none }}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,

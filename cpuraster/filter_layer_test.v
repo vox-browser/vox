@@ -334,12 +334,19 @@ fn test_unsupported_drop_shadow_layers_preserve_destination() {
 	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
 		[f32(0.9), 0.4, -0.4, 0.9, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([step]))
 	assert px == before
-	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
-		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([
-			step,
-			CanvasFilterStep{...step, sigma: -1},
-		]))
-	assert px == before
+}
+
+fn test_rejected_drop_shadow_branch_matches_native_layers() {
+	step := CanvasFilterStep{kind: .drop_shadow, sigma: 2, offset_x: 3.5,
+		offset_y: -1.25, color: 0x80000000}
+	hashes := ['d15d6f0deb8e3adc', '92397e22e3517d7e']
+	for i, alpha_type in [1, 2] {
+		mut pixels := filter_layer_test_background()
+		assert fill_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),
+			[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [],
+			new_canvas_filter([step, CanvasFilterStep{...step, sigma: -1}]))
+		assert sha256.sum(pixels).hex()[..16] == hashes[i]
+	}
 }
 
 fn test_filter_restore_composites_fill_outside_the_image() {
