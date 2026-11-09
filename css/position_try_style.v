@@ -54,17 +54,16 @@ fn position_try_rule_in_scope(scope &StyleScope, name string) ?&CSSRule {
 pub fn position_try_rule_for_element(target dom.AbstractElement, name string) ?&CSSRule {
 	properties := target.computed_properties() or { return none }
 	computed := computed_properties_from_dom(properties) or { return none }
-	scope := if root := computed.position_try_reference_scope_ { css_style_scope_for_scope_node(root) }
-		else { style_scope_for_abstract_element(target) }
+	scope := computed.position_try_reference_scope_ or { style_scope_for_abstract_element(target) }
 	return position_try_rule_in_scope(scope,name)
 }
 
-fn position_try_reference_scope(element dom.AbstractElement, cascaded &CascadedProperties) &dom.Node {
-	if shadow := cascaded.property_source_shadow_root(.position_try_fallbacks) { return unsafe { &dom.Node(shadow) } }
+fn position_try_reference_scope(element dom.AbstractElement, cascaded &CascadedProperties) &StyleScope {
+	if shadow := cascaded.property_source_shadow_root(.position_try_fallbacks) { return css_style_scope_for_shadow_root(shadow) }
 	source := cascaded.property_source(.position_try_fallbacks)
 	if source != unsafe { nil } {
 		declaration := unsafe { &CSSStyleProperties(source) }
-		if declaration.parent_rule != none { return element.document().as_node() }
+		if declaration.parent_rule != none { return css_style_scope_for_document(element.document()) }
 	}
-	return element.element().as_node().root()
+	return style_scope_for_abstract_element(element)
 }

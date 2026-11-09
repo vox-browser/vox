@@ -1684,7 +1684,7 @@ pub mut:
 	root_line_height_px_                          f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
 	subject_element_                              ?&dom.Element
-	position_try_reference_scope_ ?&dom.Node
+	position_try_reference_scope_ ?&StyleScope
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
