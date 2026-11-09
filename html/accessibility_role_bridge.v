@@ -7,6 +7,7 @@ import aria
 import contentsecuritypolicy
 import dom
 import strings
+import svg
 import trustedtypes
 import url as liburl
 
@@ -24,6 +25,20 @@ fn html_element_role_resolver(element &dom.Element) ?aria.Role {
 }
 
 fn html_default_role_for_element(element &dom.Element) ?aria.Role {
+	if element.is_svg_element() {
+		mut model := svg.new_element(element.local_name())
+		for name in ['href','xlink:href','aria-label','aria-labelledby','aria-describedby'] {
+			if element.has_attribute(name) { model.attributes[name] = element.get_attribute_value(name) }
+		}
+		for child in element.as_node().children {
+			if child_element := child.as_element() {
+				if child_element.is_svg_element() && child_element.local_name() in ['title','desc'] {
+					model.children << svg.Element{tag:child_element.local_name(),text:child.text_content() or { '' }}
+				}
+			}
+		}
+		return aria.role_from_string(model.default_role() or { return none })
+	}
 	if !element.is_html_element() {
 		return none
 	}

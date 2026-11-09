@@ -59,3 +59,13 @@ fn test_accessible_name_embedded_control_step_uses_html_control_values() {
 	target := role_bridge_element(document, 'target')
 	assert target.as_node().accessible_name(document, .yes)! == 'Amount 42'
 }
+
+fn test_named_svg_groups_resolve_default_roles_through_the_shared_svg_model() {
+ document := parse_document('<!doctype html><svg><g id="named" style="display:contents"><title>Group label</title><path/></g><g id="plain"/><g id="labelled" aria-label="Group"/><g id="override" role="img"><title>Override</title></g><a id="link" href="/"/></svg>')
+ defer { document.finalize() }
+ assert html_element_role_or_default(role_bridge_element(document,'named'))? == .group
+ assert html_element_role_or_default(role_bridge_element(document,'plain'))? == .generic
+ assert html_element_role_or_default(role_bridge_element(document,'labelled'))? == .group
+ assert html_element_role_or_default(role_bridge_element(document,'override'))? == .image
+ assert html_element_role_or_default(role_bridge_element(document,'link'))? == .link
+}
