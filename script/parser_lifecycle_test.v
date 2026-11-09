@@ -1,6 +1,7 @@
 module main
 
 import adblock
+import browsernet
 import browsersettings
 import dom
 import encoding.base64
@@ -25,7 +26,7 @@ fn parser_lifecycle_fixture_at(url string) &BrowserParserScriptHost {
 	images := new_browser_image_request_loader(document, {})
 	mut scripts := new_browser_script_request_loader(document, {})
 	// Tests deliver completions on the owner thread, independently of wall time.
-	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource) {}
+	scripts.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	return install_browser_parser_script_host(document, .javascriptcore, images, scripts, {}, none, none)
 }
 
