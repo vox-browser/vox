@@ -9,10 +9,11 @@ Four more focused slices extend [the quantization continuation](JPEGXL_V_QUANTIZ
 | DCT4X4, DCT4X8 and DCT8X4 block reconstruction | `bf13d6f84` |
 | LF injection and complete ordinary DCTs through 32x32 | `dd1d90b94` |
 
-The V package now reconstructs fourteen of the twenty-seven transform kinds.
+At this checkpoint the V package reconstructs fourteen of the twenty-seven transform kinds.
 All eighteen ordinary DCT kinds have LF injection, including the largest
 256x256 transform. Large inverse DCT kernels and the four AFV inverse transforms
 remain; these stages are still separate from production complete-file output.
+The two-slice continuation below subsequently completes all twenty-seven kinds.
 
 The four new files add **5,504** independent source records, bringing the
 package to **276,409** records and **55** test files. Together with the preceding
@@ -180,7 +181,7 @@ completes the ten-slice continuation after the forty-five-file baseline and
 resets JPEG XL cadence to **0/10**. Other broad suites and their ledgers were
 not changed or rerun.
 
-## Remaining work
+## Remaining work at the checkpoint
 
 Large inverse DCTs, AFV inverse transforms, HF entropy decoding,
 LF/global/frame assembly, XYB/transfer conversion, frame dependencies and
@@ -193,3 +194,92 @@ Feature commits request the shared managed production rebuild; no duplicate
 manual build was queued or awaited. Unrelated suites and historical ledgers
 were not changed or rerun. Temporary reference inputs, sources, binaries,
 logs, locks and guard receipts were removed after recording this report.
+
+## Large DCT and AFV continuation
+
+Two subsequent focused commits complete inverse-transform coverage:
+
+| Slice | Commit |
+| --- | --- |
+| 64/128/256-point kernels and all nine large DCT geometries | `1478c03b8` |
+| All four AFV orientations | `6976a9242` |
+
+All **27** transform kinds now reconstruct from typed LF/HF coefficient input.
+Ordinary DCT output reaches 256x256. This does not decode frame entropy or enable
+production complete-file VarDCT output. The two new files add **2,486** source
+records and **1,220,608** exact output words, bringing the package to **278,895**
+records and **57** test files. JPEG XL cadence is **2/10** after the fifty-five-file
+checkpoint; no newer full-package checkpoint is claimed.
+
+The original `idct_large.rs` is byte-verified against the same pinned archive;
+its SHA-256 is
+`8cd6d49703f56265443abaa2430dd43fac4266589551fa9d341a0609786af600`.
+AFV translates the previously pinned `transform.rs`, source SHA-256
+`477937cc290c4d078cdbe15ef41cce55ff71eed725f3cf033cdded143d062af5`.
+The large oracle includes the original constants and recursive vector routine
+unchanged, and imports the original 32-point kernel. Cached native public
+functions produce the plane and complete-transform expectations. AFV calls the
+original cached `transform_to_pixels_impl` directly. Cached artifacts and archive
+pins remain those above. No Cargo rebuild, network access or candidate-generated
+expectation is involved. Reference checks run under the same 3 GiB guards.
+
+| Reference | Records | Complete output words |
+| --- | ---: | ---: |
+| Large vector kernels | 384 | 57,344 |
+| Nine large plane geometries | 27 | 516,096 |
+| Nine complete large LF/HF transforms | 27 | 516,096 |
+| Four complete AFV orientations | 2,048 | 131,072 |
+
+Large kernels retain recursive even/odd splitting, reverse prefix sums, exact
+Wang-Chen weights and fused output combination. Disjoint scratch slices borrow
+their allocation throughout recursion; the public input remains unchanged.
+Positive/negative impulses, signed zeros, subnormals and dense finite vectors
+compare bit-for-bit. Plane and complete-transform records cover every large
+orientation, with complete LF injection and spatial placement compared separately.
+AFV retains the complete 256-value basis, deliberately unfused dot-product order,
+three DC constructions, corner flips and both constituent DCT placements. Every
+coefficient impulse and all four orientations occur in its reference cohort.
+All hashes serialize every output f32 word little endian, without tolerances.
+
+| Oracle / frozen corpus | SHA-256 |
+| --- | --- |
+| Large oracle source | `93d2433d45888221337cad4fa18edd47036abdeb0d3f00bda48041c19b8c6d6b` |
+| AFV oracle source | `bbecd2046dbdeb3b3efdee07c666b62cfc7088ecb48ea44a9d2a26a55d5bcceb` |
+| `inverse-dct-large.tsv` | `0389dad607407fa8860bcacb86be961b90ec2f80b73c3402a92acbd67b907353` |
+| `inverse-afv.tsv` | `784f77de0a6daecce14cb3950f6de5f3df27579f86a59a181dfed2b78f195f91` |
+
+The large and AFV reference runs peak at 44,187,648 and 19,103,744 sampled RSS
+bytes and take 1.47 and 0.72 seconds. Both actual source runs and guards exit zero.
+Focused V checks use the environment, compiler flags and guard described above:
+
+| Successful job | Files | Sampled peak RSS, bytes | Seconds | Test / guard exit |
+| --- | ---: | ---: | ---: | --- |
+| Large + vector + plane + LF, initial default | 4 | 325,271,552 | 14.57 | 0 / 0 |
+| Same selection, initial no GC | 4 | 317,177,856 | 15.09 | 0 / 0 |
+| Large, final default | 1 | 325,353,472 | 5.50 | 0 / 0 |
+| Large, final no GC | 1 | 316,653,568 | 5.33 | 0 / 0 |
+| AFV + Hornuss, default | 2 | 324,567,040 | 7.69 | 0 / 0 |
+| AFV + Hornuss, no GC | 2 | 317,849,600 | 7.91 | 0 / 0 |
+| Large + AFV + Hornuss, optimized | 3 | 800,784,384 | 30.07 | 0 / 0 |
+
+The initial four-file large selections passed before an implicit scratch-slice
+copy was replaced with an explicit disjoint borrow. The corrected source is
+covered by the final large-only checks and optimized selection; unchanged
+vector/plane/LF regression credit is retained. No gold data changed. All actual
+tests and guards exit zero. These are correctness checks, not performance or
+allocation-limit claims. Concurrent unrelated host work existed.
+
+V and its executable hash remain unchanged. A final **225-input** sorted
+`path<TAB>SHA256<LF>` manifest, with the same recursive source/data categories,
+has SHA-256
+`3795c63cdf8d2088e1a352a0a48022fb45c950be8e7b10f58eefa3a829fffd71`.
+All content hashes and change times, and the compiler hash, remain unchanged
+before the final AFV no-GC check and after optimized validation. Temporary
+oracle sources, binaries, input files, locks and guard receipts were removed
+after recording these results.
+
+HF entropy decoding, LF/global/frame assembly, XYB/transfer conversion, frame
+dependencies and production integration remain. The Rust decoder, Cargo/CI
+hooks and native JPEG XL developer tool remain until the V path preserves the
+production behavior and limits. The shared managed build hook runs on each
+commit; no separate manual production build or browser validation is claimed.

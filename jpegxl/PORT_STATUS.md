@@ -389,10 +389,9 @@ XYB/transfer conversion, frame dependencies and production integration remained.
 
 Four later slices translate every 2/4/8/16/32-point inverse DCT kernel, all
 thirteen source plane geometries, DCT4X4/DCT4X8/DCT8X4 subblock reconstruction,
-and LF injection for all eighteen ordinary DCT kinds. Complete inverse output
-now covers fourteen transform kinds, including ordinary DCTs through 32x32.
-LF coefficient injection reaches 256x256; large inverse DCTs and AFV transforms
-still reject explicitly. Axis order, transpose rules, coefficient placement and
+and LF injection for all eighteen ordinary DCT kinds. At that checkpoint,
+complete inverse output covered fourteen transform kinds through 32x32, with
+LF coefficient injection through 256x256. Axis order, transpose rules, coefficient placement and
 source scalar/fused arithmetic choices are preserved.
 
 These four slices add 5,504 independent records and compare 705,728 exact output
@@ -404,6 +403,18 @@ unavailable Rust compiler paths. Actual tests, inner guards, drivers and outer
 guards exit zero, completing the ten-slice continuation and resetting JPEG XL
 cadence to 0/10. Focused optimized checks also pass. Compiler and all 219
 selected input hashes/change times remain unchanged across the full selections.
+
+Two subsequent slices complete the large 64/128/256-point kernels, all nine
+large plane geometries and all four AFV orientations. All twenty-seven transform
+kinds now reconstruct from typed LF/HF coefficients, including ordinary DCTs
+through 256x256. The 2,486 added records compare 1,220,608 output words; the
+package now has 278,895 records and fifty-seven test files. Focused checks pass
+in both GC modes and under `-prod`. This is 2/10 after the fifty-five-file
+checkpoint; no full fifty-seven-file pass is claimed. The continuation in
+[the inverse DCT report](../docs/translation-audit/JPEGXL_V_INVERSE_DCT.md#large-dct-and-afv-continuation)
+records the source and ownership boundaries, input identities and checks.
+HF entropy decoding, LF/global/frame assembly, XYB/transfer conversion, frame
+dependencies and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
