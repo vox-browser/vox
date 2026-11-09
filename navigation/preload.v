@@ -6,6 +6,7 @@ import html
 import platform
 import layout
 import mimesniff
+import browsernet
 
 // Resource requests must not block the native event callback that commits a
 // navigation. Discover them on the owning thread, then wait through the frame
@@ -15,6 +16,7 @@ struct PendingPagePreload {
 	add_history bool
 	generation  int
 	results     chan PreloadedResource
+	requests    &browsernet.RequestScope = browsernet.new_request_scope()
 mut:
 	remaining          int
 	resources          map[string]PreloadedResource
@@ -23,10 +25,11 @@ mut:
 }
 
 fn (mut app BrowserApp) cancel_page_preload() {
-	if mut pending := app.pending_page_preload {
-		if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
-	}
+	pending := app.pending_page_preload or { return }
 	app.pending_page_preload = none
+	pending.requests.cancel()
+	pending.requests.release()
+	if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
 }
 
 fn (mut app BrowserApp) commit_preloaded_page(loaded LoadedPage, add_history bool) {
@@ -116,14 +119,16 @@ fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 	mut jobs := []ResourceFetchJob{cap: urls.len}
 	for resource_url in urls {
 		// The map also retains the current page's rendering inputs. That does
-		// not permit replaying a no-store response into another navigation.
+		// not permit replaying stale or non-storable bytes into a navigation.
 		cached := if resource := cache[resource_url] {
-			if browser_response_forbids_storage(resource.response_headers) { []PreloadedResource{} } else { [resource] }
+			if reusable_browser_resource(resource, types[resource_url] or { 'image' }) {
+				[resource]
+			} else { []PreloadedResource{} }
 		} else { []PreloadedResource{} }
 		jobs << ResourceFetchJob{ url: resource_url.clone(), request_type: types[resource_url] or { 'image' },
 			cached: cached }
 	}
-	spawn_resource_fetch_workers(jobs, pending.loaded.url, true, pending.results)
+	spawn_resource_fetch_workers_with_scope(jobs, pending.loaded.url, true, pending.results, pending.requests)
 }
 
 fn fetch_navigation_preload(resource_url string, source_url string, request_type string,
@@ -249,6 +254,7 @@ fn (mut app BrowserApp) poll_page_preload() {
 		}
 	}
 	app.pending_page_preload = none
+	pending.requests.release()
 	// Keep failures too: installation must consume the completed failure rather
 	// than retrying the same slow request synchronously on the UI thread. This
 	// per-install cache is independent of the bounded reusable resource cache.

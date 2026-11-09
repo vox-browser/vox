@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import browsernet
 import dom
 import html
 
@@ -17,7 +18,7 @@ fn parser_script_request_fixture(markup string, resources map[string]PreloadedRe
 	document.set_ready_to_run_scripts()
 	mut loader := new_browser_script_request_loader(document, resources)
 	// Deliver responses explicitly so fetch completion order is deterministic.
-	loader.fetch = fn (_ string, _ string, _ chan PreloadedResource) {}
+	loader.fetch = fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	observations := &ParserScriptRequestObservations{}
 	mut parser := html.HTMLParser.create(document, markup)
 	parser.set_script_hooks(none, fn [document, observations] (_ html.ScriptElementType,
@@ -146,6 +147,12 @@ fn test_parser_loader_cancellation_releases_delays_and_ignores_late_responses() 
 	mut messages := []string{}
 	parser.run()
 	assert document.anything_is_delaying_the_load_event()
+	scope := loader.request_scope
+	scope.retain()
+	defer { scope.release() }
+	loader.cancel()
+	assert scope.is_cancelled()
+	assert !publish_resource_result(PreloadedResource{}, loader.results, scope)
 	loader.cancel()
 	assert !document.anything_is_delaying_the_load_event()
 	assert !document.has_scripts_to_execute_as_soon_as_possible()

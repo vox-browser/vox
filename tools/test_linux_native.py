@@ -4,6 +4,7 @@
 import argparse
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -58,6 +59,15 @@ def main():
         [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
         cwd=repo, env=environment, text=True).strip()
     module_paths = [str(repo), linux_modules, http_modules]
+    # Application tests compile all of module main, including browser chrome.
+    # Use the production UI2 adapter only for those cases so engine-only tests
+    # retain their existing dependency set.
+    if any(re.search(r"(?m)^\s*module\s+main\s*$", (repo / case).read_text())
+           for case in args.cases):
+        ui2_modules = subprocess.check_output(
+            [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
+            cwd=repo, env=environment, text=True).strip()
+        module_paths.append(ui2_modules)
     if args.gc == "prealloc":
         # Match the production allocator, including bounded realloc and the
         # persistent closure directory. Flags alone leave global runtime

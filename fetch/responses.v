@@ -120,6 +120,13 @@ pub mut:
 	javascript_bytecode_cache_memory_cache_request_headers_ ?&http.HeaderList
 	internal_response                                       ?&Response
 	request_server_request_                                 ?RequestServerRequest
+mut:
+	// Cache enrollment belongs to this producer. Filtered views resolve to it;
+	// Response.clone() deliberately does not copy the enrollment.
+	cache_entry_token_      u64
+	cache_entry_key_        string
+	cache_body_pending_     bool
+	cache_storage_retired_  bool
 }
 
 // https://fetch.spec.whatwg.org/#concept-response-clone (allocation only).
