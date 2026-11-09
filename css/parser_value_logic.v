@@ -13334,6 +13334,9 @@ fn (mut parser Parser) parse_color_mix_function(component_value ComponentValue) 
 
 	first_component := parser.parse_color_mix_component(mut function_tokens) or { return none }
 	function_tokens.consume_whitespace()
+	if !function_tokens.has_more_tokens() {
+		return single_color_mix_value(color_interpolation_method,first_component)
+	}
 	comma := function_tokens.consume() or { return none }
 	if !comma.is(.comma) {
 		return none

@@ -1253,6 +1253,7 @@ struct ColorMixNormalizedPercentagePair {
 
 pub struct ColorMixStyleValue {
 pub mut:
+	single_component []ColorMixComponent
 	color_interpolation_method ?ColorInterpolationMethodStyleValue
 	first_component            []ColorMixComponent = [ColorMixComponent{}]
 	second_component           []ColorMixComponent = [ColorMixComponent{}]
@@ -1269,6 +1270,13 @@ pub fn ColorMixStyleValue.create(color_interpolation_method ?ColorInterpolationM
 // https://drafts.csswg.org/css-color-5/#serial-color-mix
 pub fn (style_value ColorMixStyleValue) serialize(mode SerializationMode) string {
 	mut result := 'color-mix('
+	if style_value.single_component.len == 1 {
+		if method := style_value.color_interpolation_method { result += method.serialize(mode) + ', ' }
+		component := style_value.single_component[0]
+		result += component.color.serialize(mode)
+		if percentage := component.percentage { result += ' ' + percentage.serialize(mode) }
+		return result + ')'
+	}
 
 	if color_interpolation_method := style_value.color_interpolation_method {
 		if color_interpolation_method.color_interpolation_method() != ColorInterpolationMethod(RectangularColorSpace.oklab) {

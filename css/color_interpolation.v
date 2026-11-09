@@ -178,14 +178,14 @@ fn ci_xyz65_to_xyz50(c InterpolationColorComponents) InterpolationColorComponent
 	x := c.component(0)
 	y := c.component(1)
 	z := c.component(2)
-	return interpolation_color_components(1.0479298208 * x + 0.0229468746 * y - 0.0501922295 * z, 0.0296278156 * x + 0.9904344482 * y - 0.0170738250 * z, -0.0092430581 * x + 0.0150551448 * y + 0.7518742814 * z, c.alpha())
+	return interpolation_color_components(1.0479297925449969 * x + 0.022946870601609652 * y - 0.05019226628920524 * z, 0.02962780877005599 * x + 0.9904344267538799 * y - 0.017073799063418826 * z, -0.009243040646204504 * x + 0.015055191490298152 * y + 0.7518742814281371 * z, c.alpha())
 }
 
 fn ci_xyz50_to_xyz65(c InterpolationColorComponents) InterpolationColorComponents {
 	x := c.component(0)
 	y := c.component(1)
 	z := c.component(2)
-	return interpolation_color_components(0.9554734528 * x - 0.0230985368 * y + 0.0632593086 * z, -0.0283697094 * x + 1.0099954580 * y + 0.0210415381 * z, 0.0123140016 * x - 0.0205076964 * y + 1.3303659366 * z, c.alpha())
+	return interpolation_color_components(0.955473421488075 * x - 0.02309845494876471 * y + 0.06325924320057072 * z, -0.0283697093338637 * x + 1.0099953980813041 * y + 0.021041441191917323 * z, 0.012314014864481998 * x - 0.020507649298898964 * y + 1.330365926242124 * z, c.alpha())
 }
 
 fn ci_xyz65_to_oklab(c InterpolationColorComponents) InterpolationColorComponents {
@@ -277,8 +277,8 @@ fn ci_srgb_to_hsl(c InterpolationColorComponents) InterpolationColorComponents {
 	lightness := (minimum + maximum) / 2
 	mut hue := 0.0
 	mut saturation := 0.0
-	if chroma != 0 {
-		if lightness != 0 && lightness != 1 {
+	if math.abs(chroma) > 1e-14 {
+		if math.abs(lightness) > 1e-14 && math.abs(lightness-1) > 1e-14 {
 			saturation = (maximum - lightness) / math.min(lightness, 1 - lightness)
 		}
 		if maximum == r {
@@ -316,7 +316,9 @@ fn ci_srgb_to_hwb(c InterpolationColorComponents) InterpolationColorComponents {
 	hsl := ci_srgb_to_hsl(c)
 	maximum := math.max(c.component(0), math.max(c.component(1), c.component(2)))
 	minimum := math.min(c.component(0), math.min(c.component(1), c.component(2)))
-	return interpolation_color_components(hsl.component(0), minimum, 1 - maximum, c.alpha())
+	// HWB uses the RGB hue, before HSL reverses negative saturation.
+	hue := if hsl.component(2) < 0 || hsl.component(2) > 1 { math.fmod(hsl.component(0)+180,360) } else { hsl.component(0) }
+	return interpolation_color_components(hue, minimum, 1 - maximum, c.alpha())
 }
 
 fn ci_hwb_to_srgb(c InterpolationColorComponents) InterpolationColorComponents {
@@ -342,7 +344,7 @@ fn ci_linear_display_p3_to_xyz65(c InterpolationColorComponents) InterpolationCo
 	r := c.component(0)
 	g := c.component(1)
 	b := c.component(2)
-	return interpolation_color_components(0.48657095 * r + 0.26566769 * g + 0.19821729 * b, 0.22897456 * r + 0.69173852 * g + 0.07928691 * b, 0.04511338 * g + 1.04394437 * b, c.alpha())
+	return interpolation_color_components(0.4865709486482162 * r + 0.26566769316909306 * g + 0.1982172852343625 * b, 0.2289745640697488 * r + 0.6917385218365064 * g + 0.079286914093745 * b, 0.04511338185890264 * g + 1.043944368900976 * b, c.alpha())
 }
 
 fn ci_a98_to_linear(c InterpolationColorComponents) InterpolationColorComponents {
@@ -642,10 +644,16 @@ fn style_value_from_polar_color_space(components InterpolationColorComponents, s
 	alpha := number_or_none(components.alpha(), missing.alpha)
 	return match space {
 		.hsl {
+			if missing.components.any(it) || missing.alpha {
+				return StyleValue(HSLColorStyleValue{...HSLColorStyleValue.create(number_or_none(components.component(0),missing.components[0]),number_or_none(components.component(1)*100,missing.components[1]),number_or_none(components.component(2)*100,missing.components[2]),alpha,.modern),missing_component_form_:true})
+			}
 			srgb := ci_hsl_to_srgb(components)
 			StyleValue(ColorFunctionStyleValue.create('srgb', number_or_none(srgb.component(0), false), number_or_none(srgb.component(1), false), number_or_none(srgb.component(2), false), alpha))
 		}
 		.hwb {
+			if missing.components.any(it) || missing.alpha {
+				return StyleValue(HWBColorStyleValue{...HWBColorStyleValue.create(number_or_none(components.component(0),missing.components[0]),number_or_none(components.component(1)*100,missing.components[1]),number_or_none(components.component(2)*100,missing.components[2]),alpha,.modern),missing_component_form_:true})
+			}
 			srgb := ci_hwb_to_srgb(components)
 			StyleValue(ColorFunctionStyleValue.create('srgb', number_or_none(srgb.component(0), false), number_or_none(srgb.component(1), false), number_or_none(srgb.component(2), false), alpha))
 		}
@@ -789,6 +797,17 @@ fn convert_color_to_rectangular(style_value StyleValue, mut prepared PreparedInt
 			if color_type_matches_rectangular_space(color_type, space) {
 				return native
 			}
+			mut converted_source := native
+			relative_make_powerless_hue_missing(color_type,mut converted_source,mut prepared.missing_components)
+			prepared.native_components = converted_source
+			target := match space {
+				.srgb { ConcreteColorType.srgb } .srgb_linear { ConcreteColorType.srgb_linear }
+				.display_p3 { ConcreteColorType.display_p3 } .display_p3_linear { ConcreteColorType.display_p3_linear }
+				.a98_rgb { ConcreteColorType.a98_rgb } .prophoto_rgb { ConcreteColorType.pro_photo_rgb }
+				.rec2020 { ConcreteColorType.rec2020 } .lab { ConcreteColorType.lab } .oklab { ConcreteColorType.oklab }
+				.xyz,.xyz_d65 { ConcreteColorType.xyzd65 } .xyz_d50 { ConcreteColorType.xyzd50 }
+			}
+			return convert_native_color_components(converted_source,color_type,target)
 		}
 	}
 	srgb := resolve_interpolation_color_to_srgb(style_value, mut prepared, context) or { return InterpolationColorComponents{} }
@@ -801,6 +820,11 @@ fn convert_color_to_polar(style_value StyleValue, mut prepared PreparedInterpola
 			if color_type_matches_polar_space(color_type, space) {
 				return native
 			}
+			mut converted_source := native
+			relative_make_powerless_hue_missing(color_type,mut converted_source,mut prepared.missing_components)
+			prepared.native_components = converted_source
+			target := match space { .hsl { ConcreteColorType.hsl } .hwb { ConcreteColorType.hwb } .lch { ConcreteColorType.lch } .oklch { ConcreteColorType.oklch } }
+			return convert_native_color_components(converted_source,color_type,target)
 		}
 	}
 	srgb := resolve_interpolation_color_to_srgb(style_value, mut prepared, context) or { return InterpolationColorComponents{} }
@@ -808,27 +832,13 @@ fn convert_color_to_polar(style_value StyleValue, mut prepared PreparedInterpola
 }
 
 fn mark_powerless_hue_after_conversion(components InterpolationColorComponents, mut missing MissingColorComponents, style_value StyleValue, space PolarColorSpace, categories ColorComponentCategories) {
-	if color_type := concrete_color_type(style_value) {
-		if color_type_matches_polar_space(color_type, space) {
-			return
-		}
+	if type_ := concrete_color_type(style_value) {
+		if color_type_matches_polar_space(type_,space) { return }
 	}
-	mut zero_colorfulness := false
-	for index in 0 .. 3 {
-		if categories.components[index] == .colorfulness && math.abs(components.component(index)) < 0.02 {
-			zero_colorfulness = true
-		}
-	}
-	if space == .hwb && components.component(1) + components.component(2) >= 0.98 {
-		zero_colorfulness = true
-	}
-	if zero_colorfulness {
-		for index in 0 .. 3 {
-			if categories.components[index] == .hue {
-				missing.components[index] = true
-			}
-		}
-	}
+	_ = categories
+	mut converted := components
+	type_ := match space { .hsl { ConcreteColorType.hsl } .hwb { ConcreteColorType.hwb } .lch { ConcreteColorType.lch } .oklch { ConcreteColorType.oklch } }
+	relative_make_powerless_hue_missing(type_,mut converted,mut missing)
 }
 
 fn substitute_missing_components(mut from InterpolationColorComponents, mut to InterpolationColorComponents, from_missing MissingColorComponents, to_missing MissingColorComponents) {

@@ -368,16 +368,13 @@ fn relative_color_channels(origin StyleValue, target ConcreteColorType, context 
 	}
 	if same_space {
 		components := native or { return none }
-		// Missing components of an rgb(), hsl() or hwb() origin stay missing;
-		// the other functions resolve them to zero.
-		carries_missing := target in [ConcreteColorType.rgb, .hsl, .hwb]
 		origin_missing := extract_missing_components(origin)
 		for index in 0 .. 3 {
 			values[index] = components.component(index)
-			missing[index] = carries_missing && origin_missing.components[index]
+			missing[index] = origin_missing.components[index]
 		}
 		alpha = components.alpha()
-		alpha_missing = carries_missing && origin_missing.alpha
+		alpha_missing = origin_missing.alpha
 		// The origin contributes its computed value.
 		match target {
 			.lab, .lch {
@@ -393,23 +390,29 @@ fn relative_color_channels(origin StyleValue, target ConcreteColorType, context 
 		}
 	} else {
 		mut srgb := InterpolationColorComponents{}
+		mut converted_native := ?InterpolationColorComponents(none)
+		mut converted_missing := MissingColorComponents{}
 		if components := native {
 			source := origin_type or { return none }
-			srgb = native_components_to_srgb(components, source)
+			mut source_components := components
+			mut source_missing := extract_missing_components(origin)
+			relative_make_powerless_hue_missing(source,mut source_components,mut source_missing)
+			converted_missing = carry_forward_missing_components(source_missing,categories_for_color_type(source),categories_for_color_type(target))
+			srgb = native_components_to_srgb(source_components, source)
+			converted_native = convert_native_color_components(source_components,source,target)
 		} else {
 			color := origin.to_color(context) or { return none }
 			srgb = interpolation_color_components(f64(color.r) / 255, f64(color.g) / 255,
 				f64(color.b) / 255, f64(color.a) / 255)
 		}
-		converted := srgb_to_relative_color_target(srgb, target)
+		mut converted := converted_native or { srgb_to_relative_color_target(srgb, target) }
+		relative_make_powerless_hue_missing(target,mut converted,mut converted_missing)
 		for index in 0 .. 3 {
 			values[index] = relative_finite(converted.component(index))
+			missing[index] = converted_missing.components[index]
 		}
 		alpha = srgb.alpha()
-		// An achromatic color has no hue in a polar space.
-		if (target == .lch || target == .oklch) && values[1] < 0.0001 {
-			missing[2] = true
-		}
+		alpha_missing = converted_missing.alpha
 	}
 	match target {
 		.rgb {
@@ -573,6 +576,7 @@ fn resolve_relative_color_parts(parts RelativeColorParts, origin StyleValue, con
 fn absolutize_relative_color(style_value StyleValue, context ComputationContext) ?StyleValue {
 	// Every computed color passes through here; absolute ones leave at once.
 	if !is_relative_color(style_value) {
+		if preserved := preserve_missing_polar_color(style_value,context) { return preserved }
 		if is_missing_component_form(style_value) {
 			return style_value
 		}
@@ -626,6 +630,7 @@ fn serialize_missing_component_form(function_name string, components []StyleValu
 			result += ' '
 		}
 		result += component.serialize(mode)
+		if function_name in ['hsl','hwb'] && index in [1,2] && component is NumberStyleValue { result += '%' }
 	}
 	if style_value_is_none_keyword(alpha) || alpha_needs_serialization(alpha) {
 		result += ' / ' + alpha.serialize(mode)

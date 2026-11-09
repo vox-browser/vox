@@ -54,8 +54,8 @@ fn test_relative_color_computed_values_resolve_in_the_target_space() {
 	assert relative_computed('rgb(from rgb(none none none) r g b)') == 'color(srgb none none none)'
 	assert relative_computed('rgb(from rebeccapurple calc(r) calc(g) calc(b))') == 'color(srgb 0.4 0.2 0.6)'
 	assert relative_computed('hsl(from rebeccapurple h s l)') == 'color(srgb 0.4 0.2 0.6)'
-	assert relative_computed('hsl(from rebeccapurple h s none)') == 'hsl(270 50 none)'
-	assert relative_computed('hsl(from hsl(120deg 20% 50% / .5) none s l / alpha)') == 'hsl(none 20 50 / 0.5)'
+	assert relative_computed('hsl(from rebeccapurple h s none)') == 'hsl(270 50% none)'
+	assert relative_computed('hsl(from hsl(120deg 20% 50% / .5) none s l / alpha)') == 'hsl(none 20% 50% / 0.5)'
 	assert relative_computed('lab(from lab(25 20 50 / 40%) l a b / alpha)') == 'lab(25 20 50 / 0.4)'
 	assert relative_computed('lab(from lab(200 300 400 / 500%) l a b / alpha)') == 'lab(100 300 400)'
 	assert relative_computed('lch(from lch(-200 -300 -400 / -500%) l c h / alpha)') == 'lch(0 0 320 / 0)'
@@ -63,15 +63,15 @@ fn test_relative_color_computed_values_resolve_in_the_target_space() {
 }
 
 fn test_relative_color_missing_origin_components_and_current_color() {
-	// Only rgb(), hsl() and hwb() carry an origin's missing components.
-	assert relative_computed('lch(from lch(none none none) l c h)') == 'lch(0 0 0)'
-	assert relative_computed('lch(from lch(0.7 45 30 / none) l c h / alpha)') == 'lch(0.7 45 30 / 0)'
-	assert relative_computed('color(from color(srgb none none none) srgb r g b)') == 'color(srgb 0 0 0)'
+	// Missing components survive in the same space and carry to analogous channels.
+	assert relative_computed('lch(from lch(none none none) l c h)') == 'lch(none none none)'
+	assert relative_computed('lch(from lch(0.7 45 30 / none) l c h / alpha)') == 'lch(0.7 45 30 / none)'
+	assert relative_computed('color(from color(srgb none none none) srgb r g b)') == 'color(srgb none none none)'
 	assert relative_computed('hsl(from hsl(none none none) h s l)') == 'hsl(none none none)'
 	// The missing-component form survives a second computation.
 	hsl := relative_color_value('hsl(from rebeccapurple h s none)') or { panic('invalid') }
 	twice := hsl.absolutized(ComputationContext{}).absolutized(ComputationContext{})
-	assert twice.serialize(.normal) == 'hsl(270 50 none)'
+	assert twice.serialize(.normal) == 'hsl(270 50% none)'
 	// currentcolor is resolved where the color is used.
 	assert relative_computed('rgb(from currentcolor r g b)') == 'rgb(from currentcolor r g b)'
 	current := relative_color_value('rgb(from currentcolor r g calc(b / 2))') or { panic('invalid') }
