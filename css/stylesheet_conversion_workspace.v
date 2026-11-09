@@ -12,6 +12,29 @@ import platform
 fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location ?string, media_list ?&MediaList, deferred bool) &CSSStyleSheet {
 	load_instruction_stage := processmetrics.begin_instruction_stage('css_parsing')
 	defer { load_instruction_stage.finish() }
+	// The raw syntax grammar depends on the initial rule context. Only
+	// top-level stylesheets share a template; all conversion context is fresh.
+	cache_rules := !disable_stylesheet_rule_cache && params.rule_context.len == 0
+		&& stylesheet_rule_cache_.eligible(text)
+	if cache_rules {
+		if entry := stylesheet_rule_cache_.lookup(text) {
+			defer { entry.release() }
+			mut parser := RuleSelectorParser{
+				document: params.document
+				mode: params.mode
+				value_context: params.value_context.clone()
+				rule_context: params.rule_context.clone()
+				declared_namespaces: params.declared_namespaces.clone()
+				is_ua_style_sheet: params.is_ua_style_sheet
+				defer_style_declarations: deferred
+				raw_rules_transient: true
+				component_input_transient: true
+			}
+			rules := CSSRuleList.create(parser.convert_rules(entry.rules))
+			media := media_list or { MediaList.create_empty() }
+			return CSSStyleSheet.create(rules, media, location)
+		}
+	}
 	$if prealloc {
 		scratch := platform.begin_thread_scratch('stylesheet conversion input')
 		mut parser := RuleSelectorParser{
@@ -27,6 +50,7 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 		raw := parser.parse_a_stylesheet(location)
 		scratch.leave()
 		defer { scratch.finish() }
+		if cache_rules { stylesheet_rule_cache_.store(text, raw.rules) }
 		parser.raw_rules_transient = true
 		parser.component_input_transient = true
 		parser.token_stream = ParserTokenStream{}
@@ -39,6 +63,13 @@ fn parse_css_stylesheet_in_workspace(params ParsingParams, text string, location
 	}
 	mut parser := RuleSelectorParser.create_for_stylesheet(params, text)
 	parser.defer_style_declarations = deferred
+	if cache_rules {
+		raw := parser.parse_a_stylesheet(location)
+		stylesheet_rule_cache_.store(text, raw.rules)
+		rules := CSSRuleList.create(parser.convert_rules(raw.rules))
+		media := media_list or { MediaList.create_empty() }
+		return CSSStyleSheet.create(rules, media, location)
+	}
 	return parser.parse_as_css_stylesheet(location, media_list)
 }
 
@@ -55,7 +86,7 @@ fn own_transient_rule_prelude(rule Rule) Rule {
 			// These grouping converters serialize the prelude or build selectors
 			// from independently owned source. Ignored rules retain no prelude.
 			if name in ['media', 'supports', 'scope']
-				|| (name !in ['container', 'import', 'layer', 'namespace']
+				|| (name !in ['container', 'import', 'layer', 'namespace', 'position-try']
 					&& !is_margin_rule_name(name)) {
 				return rule
 			}

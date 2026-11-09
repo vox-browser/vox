@@ -50,6 +50,7 @@ fn (mut cache StylesheetSyntaxCache) release_unused() {
 
 pub fn release_unused_stylesheet_syntax() {
 	stylesheet_syntax_cache_.release_unused()
+	stylesheet_rule_cache_.release_unused()
 }
 
 fn stylesheet_syntax_node_count(values []ComponentValue) int {
