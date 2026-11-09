@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -280,9 +281,28 @@ def compiler_vlib(compiler, work):
     with tempfile.TemporaryDirectory(prefix="compiler-root-", dir=work) as temporary:
         probe = Path(temporary) / "compiler_root.v"
         probe.write_text("module main\nfn main() { println(@VEXEROOT) }\n")
-        result = subprocess.run([compiler, "-memory-limit", "10G", "run", str(probe)],
-                                capture_output=True, text=True, check=True)
-    return Path(result.stdout.strip()).resolve() / "vlib"
+        # Discovery needs no collector. On Linux, use the same C compiler as
+        # the browser instead of depending on V's bundled TCC/GC installation.
+        command = [str(compiler), "-memory-limit", "10G", "-gc", "none"]
+        if sys.platform.startswith("linux"):
+            command += ["-cc", os.environ.get("CC") or "clang"]
+        command += ["run", str(probe)]
+        result = subprocess.run(command, capture_output=True, text=True)
+    diagnostics = (f"Command: {shlex.join(command)}\n"
+                   f"stdout:\n{result.stdout.rstrip() or '(empty)'}\n"
+                   f"stderr:\n{result.stderr.rstrip() or '(empty)'}")
+    if result.returncode:
+        raise RuntimeError(
+            f"V compiler root probe failed (exit {result.returncode}).\n{diagnostics}\n"
+            "Check that V_BIN selects a current V compiler and its C toolchain is available.")
+    root = result.stdout.strip()
+    if len(root.splitlines()) != 1 or not Path(root).is_absolute():
+        raise RuntimeError(f"V compiler root probe did not report one absolute root.\n{diagnostics}")
+    vlib = Path(root).resolve() / "vlib"
+    if not vlib.is_dir():
+        raise RuntimeError(f"V compiler root probe reported a root without a vlib directory: {vlib}\n"
+                           f"{diagnostics}")
+    return vlib
 
 
 def staged_modules(work, vlib):
@@ -395,4 +415,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (RuntimeError, OSError) as error:
+        raise SystemExit(str(error))

@@ -85,6 +85,27 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 CC=gcc sh build-prod-browser.sh
 ```
 
+If the build stops in `tools/prepare_http_compat.py`, check the compiler root
+probe's command, exit status, stdout and stderr in the build log. This probe
+asks the selected V compiler for its active standard library before staging
+the HTTP modules. It uses `CC` (Clang by default) and `-gc none`, so discovery
+does not require V's bundled collector. The browser still uses the allocator
+selected by `LADYBIRD_V_GC`.
+
+An empty `Build/v/httpcompat/` after this failure is expected: the temporary
+`compiler-root-*` directory is removed even when the probe fails, and HTTP
+modules have not been staged yet. To retry preparation with the selected
+compiler and see its diagnostics directly, run:
+
+```sh
+python3 tools/prepare_http_compat.py "${V_BIN:-v}"
+```
+
+If V rejects a compiler option, check `"${V_BIN:-v}" version` and point `V_BIN`
+at a current V checkout as shown above. If it reports a C compiler or linker
+error, check the named tool and the installed development packages; an explicit
+`CC=gcc` also applies to the probe.
+
 The Skia bootstrap verifies its archive checksum and uses system codec/font
 libraries. Rerun it after updating the checkout to refresh the generated
 `skia.pc` link dependencies; unchanged compiled libraries are reused.
