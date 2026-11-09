@@ -161,3 +161,10 @@ exits zero and 404 unchanged inputs. Test authoring failures retain no
 whole-run pass credit; native gold remains unchanged. Cadence is 3/10, with
 no full 87-file run claimed. Production and its native tool still use Rust.
 See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).
+
+LF alpha adds twenty progressive native records and 1,800,640 exact
+straight/paint RGBA bytes: 282,841 records and 88 JPEG XL test files total.
+The three-file focused selection passes default/no-GC/optimized checks with
+actual exits zero and 426 unchanged inputs. Cadence is 4/10; no full 88-file
+run is claimed. Production and its native developer tool still require Rust.
+See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).

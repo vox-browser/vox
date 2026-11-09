@@ -584,3 +584,16 @@ Cadence is 3/10 after the 84-file checkpoint; no full 87-file run is claimed.
 geometry verification, failures and checks. LF alpha dependencies, resampling,
 chroma sampling, feature streams, composition and production/tool integration
 remain. Production JPEG XL and its native developer tool still require Rust.
+
+## JPEG XL LF alpha on 2026-11-09
+
+One additional slice decodes alpha-bearing progressive LF references without
+premultiplying the saved source colors. Twenty new native files compare
+1,800,640 straight/paint RGBA bytes exactly, bringing JPEG XL to 282,841 source
+records and 88 test files. Three focused files pass default/no-GC/optimized
+checks with actual exits zero and 426 unchanged inputs. Cadence is 4/10 after
+the 84-file checkpoint; no full 88-file run is claimed.
+[The LF-alpha report](JPEGXL_V_LF_ALPHA.md) records source/tool pins, reference
+ownership and checks. Resampling, chroma sampling, feature streams, composition,
+larger entropy maps and production/tool integration remain; production JPEG XL
+and its native developer tool still use Rust.

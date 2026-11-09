@@ -564,8 +564,17 @@ assertions were corrected without changing native gold. Cadence is 3/10;
 no full eighty-seven-file run is claimed.
 See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).
 
+One additional slice preserves one unscaled 8-bit alpha channel across LF
+reference decoding. Twenty native progressive files compare all 1,800,640
+straight/paint RGBA bytes exactly. LF storage saves only restored source-color
+planes before conversion/premultiplication; the visible frame owns its alpha.
+The count is 282,841 source records and eighty-eight test files. Three focused
+files pass default/no-GC/optimized checks, with actual exits zero and 426
+unchanged inputs. Cadence is 4/10, with no full eighty-eight-file run claimed.
+See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).
+
 Non-visible preview dependencies, wider reference composition, wider/resampled
-alpha and LF dependencies, non-XYB modular rendering beyond the existing lossless path,
+alpha, non-XYB modular rendering beyond the existing lossless path,
 whole-frame chroma sampling, feature streams, large entropy maps and production
 integration remain.
 
