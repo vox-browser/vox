@@ -413,8 +413,37 @@ in both GC modes and under `-prod`. This is 2/10 after the fifty-five-file
 checkpoint; no full fifty-seven-file pass is claimed. The continuation in
 [the inverse DCT report](../docs/translation-audit/JPEGXL_V_INVERSE_DCT.md#large-dct-and-afv-continuation)
 records the source and ownership boundaries, input identities and checks.
-HF entropy decoding, LF/global/frame assembly, XYB/transfer conversion, frame
-dependencies and production integration remain.
+At that point, HF entropy decoding, LF/global/frame assembly, XYB/transfer
+conversion, frame dependencies and production integration remained.
+
+Eight further slices decode actual HF channel entropy, HFGlobal pass orders and
+histograms, nonzero maps and complete progressive group coefficient buffers;
+they also reconstruct group pixel planes, convert XYB to linear RGB, apply both
+sRGB transfer directions and prepare sRGB/gray output matrices. All twenty-seven
+transform kinds, both coefficient widths, normalized chroma modes, partial pass
+lists and per-tile color correlation occur in the independent reference cases.
+
+The 2,658 new records bring this checkpoint to 281,553 source records and
+sixty-five test files. All eight new files pass focused default/no-GC and
+optimized checks with unavailable Rust compiler paths. The full selections pass
+all sixty-five files in both GC modes, with actual test, inner guard, driver and
+outer guard exits zero. All 249 selected input hashes/change times and the
+compiler pin stay unchanged. This completes the ten-slice checkpoint and resets
+JPEG XL cadence to 0/10. [The HF/color report](../docs/translation-audit/JPEGXL_V_HF_ENTROPY.md)
+records complete transcript comparisons, source adapters, error/EOF boundaries
+and the remaining 65,536-entry entropy context budget.
+
+A subsequent signed-zero fix preserves Rust's negative-zero identity in gray
+matrix sums. Eight additional source cases leave the original 128 output-color
+records unchanged. The corrected file passes both GC modes and `-prod`; all
+other full-checkpoint inputs remain unchanged. The package now has 281,561
+records and sixty-five files, at cadence 1/10 after that checkpoint. The report
+distinguishes the prior full selections from these focused correction checks.
+
+LF/HF metadata entropy and global/frame assembly, feature streams, frame
+dependencies/composition, final resampling and production integration remain.
+Typed-stage reconstruction does not establish complete-file VarDCT pixels or
+preserve every source-supported image yet.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

@@ -50,7 +50,7 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects fifty-seven test files covering primitives,
+The `jpegxl` suite now selects sixty-five test files covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
@@ -66,15 +66,22 @@ quantization matrices and raw modular matrix streams, matrix-set/transform
 lookups, HF coefficient dequantization, Hornuss/DCT2X2 inverse transforms, small
 inverse DCT kernels/planes, DCT subblocks and LF injection through 256x256.
 All twenty-seven inverse-transform kinds now reconstruct, including large DCTs
-through 256x256 and every AFV orientation.
-Its 278,895 source cases include whole stateful predictor/property/map/order
+through 256x256 and every AFV orientation. Further stages decode HF channel and
+group entropy, HFGlobal passes and nonzero maps, reconstruct subsampled group
+pixels, convert XYB to linear RGB, apply sRGB transfer curves and prepare
+sRGB/gray output matrices.
+Its 281,561 source cases include whole stateful predictor/property/map/order
 transcripts and individual ANS alias transitions.
-The fifty-five-file checkpoint passed in both GC modes with unavailable Rust compiler paths,
-completing the ten-slice checkpoint and resetting JPEG XL cadence to 0/10.
-Two later slices pass focused checks in both modes and under `-prod`, bringing
-cadence to 2/10; a newer full-package checkpoint is not claimed.
-The current checkpoint's executed results are recorded in
-[the inverse DCT report](../docs/translation-audit/JPEGXL_V_INVERSE_DCT.md),
-along with focused optimized checks, source coverage and remaining limits.
+The prior fifty-five-file checkpoint passed in both GC modes. Ten subsequent
+slices pass focused checks in both modes and under `-prod`. The full sixty-five-
+file selections pass in both GC modes with unavailable Rust compiler paths.
+Tests, inner guards, drivers and outer guards exit zero; the ten-slice checkpoint
+resets JPEG XL cadence to 0/10. Results and source
+boundaries are recorded in [the HF/color report](../docs/translation-audit/JPEGXL_V_HF_ENTROPY.md)
+and [the inverse DCT report](../docs/translation-audit/JPEGXL_V_INVERSE_DCT.md).
+That full checkpoint contains 281,553 records. A subsequent grayscale signed-zero
+fix adds eight source cases and passes focused default/no-GC/optimized checks,
+bringing cadence to 1/10; the prior full selections are not claimed on its three
+changed paths.
 This checks the V layers; the production pixel decoder and its native developer
 test still require Rust.

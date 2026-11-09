@@ -387,3 +387,38 @@ HF entropy decoding, LF/global/frame assembly, XYB/transfer conversion, frame
 dependencies and production integration remain. Production JPEG XL and its
 Cargo/CI/native developer tools still require Rust; removing all Rust
 dependencies remains unfinished. No production-browser validation is claimed.
+
+## HF decoding, color output and sixty-five-file checkpoint on 2026-11-09
+
+Eight more pure V slices decode HF channels, HFGlobal passes, nonzero prediction
+maps and progressive group coefficients, reconstruct group pixels, convert XYB
+to linear RGB, apply both sRGB transfer directions and prepare sRGB/gray output
+matrices. All twenty-seven transform kinds, both storage widths, chroma sampling,
+per-tile color correlation and progressive accumulation occur in the source
+comparisons. The 2,658 added cases bring this checkpoint to 281,553 records and
+sixty-five files. Complete state transcripts include 72,592,755 exact words,
+including repeated orders/maps and metadata rather than that many unique pixels.
+
+All sixty-five files pass through the V corpus checker in both GC modes, with
+unavailable Rust compiler paths. Actual tests, inner guards, drivers and outer
+guards exit zero. All eight new files also pass optimized checks. Compiler and
+all 249 selected source/data/checker/guard hashes and change times remain
+unchanged across these checks. This completes ten slices after the fifty-five-
+file checkpoint and resets JPEG XL cadence to 0/10.
+
+A subsequent source diagnostic exposed negative-zero matrix summation. Eight
+new independent cases reproduce the difference before the focused fix. The
+corrected file passes in both GC modes and under `-prod`; only its three paths
+change from the full checkpoint. The package now has **281,561 records and
+65 files**, at cadence **1/10**. The full selections precede that correction;
+they were not rerun or claimed on changed source. [The HF/color report](JPEGXL_V_HF_ENTROPY.md)
+records source pins, adapter/error boundaries, exact comparisons, failures,
+commands, input identities and memory results. Temporary Rust migration oracles
+are removed; frozen developer checks continue to use V alone.
+
+LF/HF metadata entropy and global/frame assembly, feature streams, frame
+dependencies/composition, final resampling and production integration remain.
+The entropy context-map bound also remains. Production JPEG XL, its Cargo/CI
+hooks and native developer test still require Rust. Removing all Rust dependencies
+remains unfinished; these standalone stages do not establish complete-file
+VarDCT output or production-browser validation.
