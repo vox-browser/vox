@@ -3573,8 +3573,26 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		}
 		mut fill_rule := FillRule.nonzero
 		mut point_arguments := call_arguments.clone()
-		if parsed_fill_rule := basic_shape_fill_rule_from_components(call_arguments[0]) {
-			fill_rule = parsed_fill_rule
+		mut round_radius := StyleValue(LengthStyleValue.create(Length.make_px(0)))
+		mut header := ComponentValueStream.new(call_arguments[0])
+		header.consume_whitespace()
+		mut has_header := false
+		if first := header.peek() {
+			if first.is(.ident) && first.token().ident().to_lower() in ['evenodd','nonzero'] {
+				fill_rule = if first.token().ident().to_lower() == 'evenodd' { .evenodd } else { .nonzero }
+				header.consume();header.consume_whitespace();has_header=true
+			}
+		}
+		if first := header.peek() {
+			if first.is(.ident) && first.token().ident().to_lower() == 'round' {
+				header.consume();header.consume_whitespace();has_header=true
+				round_radius = parser.parse_length_value(mut header) or { return none }
+				if style_value_numeric_component_is_negative_for_value_logic(round_radius) { return none }
+			}
+		}
+		if has_header {
+			header.consume_whitespace()
+			if header.has_more_tokens() { return none }
 			point_arguments = call_arguments[1..].clone()
 		}
 		if point_arguments.len < 1 {
@@ -3599,6 +3617,7 @@ fn (mut parser Parser) parse_basic_shape_value(mut tokens ComponentValueStream) 
 		tokens = transaction
 		return StyleValue(BasicShapeStyleValue.create(BasicShape(BasicShapePolygon{
 			fill_rule: fill_rule
+			round_radius:round_radius
 			points: points
 		})))
 	}
@@ -3689,7 +3708,29 @@ fn (mut parser Parser) parse_clip_path_value(mut tokens ComponentValueStream) ?S
 		tokens = url_attempt
 		return StyleValue(URLStyleValue.create(url))
 	}
-	return parser.parse_basic_shape_value(mut tokens)
+	mut transaction := tokens.clone()
+	mut shape := ?StyleValue(none)
+	mut geometry := ?StyleValue(none)
+	for {
+		transaction.consume_whitespace()
+		if !transaction.has_more_tokens() { break }
+		mut attempt := transaction.clone()
+		if value := parser.parse_basic_shape_value(mut attempt) {
+			if shape != none { return none };shape=value;transaction=attempt;continue
+		}
+		if value := parse_property_keyword_value(mut transaction,['margin-box','border-box','padding-box','content-box','fill-box','stroke-box','view-box']) {
+			if geometry != none { return none };geometry=value;continue
+		}
+		return none
+	}
+	tokens = transaction
+	if value := shape {
+		if box := geometry {
+			if box.to_keyword() != .border_box { return StyleValue(StyleValueList.create([value,box],.space,.no)) }
+		}
+		return value
+	}
+	return geometry
 }
 
 // https://drafts.csswg.org/css-shapes/#propdef-shape-outside  ->  none | [ <basic-shape> || <shape-box> ] | <image>

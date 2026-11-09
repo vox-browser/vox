@@ -474,6 +474,8 @@ fn style_values_extra_ellipse_to_path(shape BasicShapeEllipse, reference_box CSS
 fn style_values_extra_polygon_to_path(shape BasicShapePolygon, reference_box CSSPixelRect, node &dom.LayoutNode) StyleValuePath {
 	context := style_values_extra_length_context(node)
 	mut commands := []StyleValuePathCommand{}
+	radius := style_values_extra_length_percentage_to_px(shape.round_radius,context,reference_box.width).to_double()
+	if radius > 0 && shape.points.len >= 3 { return rounded_polygon_to_path(shape,reference_box,node,radius) }
 	for index, point in shape.points {
 		x := style_values_extra_length_percentage_to_px(point.x, context, reference_box.width)
 		y := style_values_extra_length_percentage_to_px(point.y, context, reference_box.height)
@@ -929,4 +931,40 @@ pub fn (style_value UnresolvedStyleValue) includes_var_function() bool {
 
 pub fn (style_value UnresolvedStyleValue) includes_env_function() bool {
 	return style_value.substitution_functions_presence().env
+}
+
+fn rounded_polygon_to_path(shape BasicShapePolygon,box CSSPixelRect,node &dom.LayoutNode,radius f64) StyleValuePath {
+ context := style_values_extra_length_context(node)
+ mut points := []CSSPixelPoint{}
+ for point in shape.points {
+  points << CSSPixelPoint.new(box.x.plus(style_values_extra_length_percentage_to_px(point.x,context,box.width)),box.y.plus(style_values_extra_length_percentage_to_px(point.y,context,box.height)))
+ }
+ mut entries := []CSSPixelPoint{}
+ mut exits := []CSSPixelPoint{}
+ mut radii := []f64{}
+ mut sweeps := []bool{}
+ for i,point in points {
+  previous,next := points[(i+points.len-1)%points.len],points[(i+1)%points.len]
+  px,py := previous.x().minus(point.x()).to_double(),previous.y().minus(point.y()).to_double()
+  nx,ny := next.x().minus(point.x()).to_double(),next.y().minus(point.y()).to_double()
+  a,b := math.hypot(px,py),math.hypot(nx,ny)
+  if a == 0 || b == 0 { entries << point;exits << point;radii << 0;sweeps << false;continue }
+  ux,uy,vx,vy := px/a,py/a,nx/b,ny/b
+  tangent := math.tan(math.acos(math.max(-1.0,math.min(1.0,ux*vx+uy*vy)))/2)
+  distance := if tangent == 0 { 0.0 } else { math.min(radius/tangent,math.min(a,b)/2) }
+  entries << CSSPixelPoint.new(point.x().plus(CSSPixels.nearest_value_for(ux*distance)),point.y().plus(CSSPixels.nearest_value_for(uy*distance)))
+  exits << CSSPixelPoint.new(point.x().plus(CSSPixels.nearest_value_for(vx*distance)),point.y().plus(CSSPixels.nearest_value_for(vy*distance)))
+  radii << distance*tangent
+  sweeps << uy*vx-ux*vy >= 0
+ }
+ mut commands := [style_values_extra_move_to(entries[0])]
+ for i in 0..points.len {
+  if i > 0 { commands << style_values_extra_line_to(entries[i]) }
+  if radii[i] > 0 {
+   r := CSSPixels.nearest_value_for(radii[i])
+   commands << style_values_extra_elliptical_arc_to(exits[i],CSSPixelSize{width_:r,height_:r},false,sweeps[i])
+  } else { commands << style_values_extra_line_to(exits[i]) }
+ }
+ commands << style_values_extra_close_path()
+ return StyleValuePath{commands:commands,fill_rule:shape.fill_rule}
 }

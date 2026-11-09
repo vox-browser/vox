@@ -465,6 +465,7 @@ pub type ClipPathReferenceValue = BasicShapeStyleValue | URL
 pub struct ClipPathReference {
 pub mut:
 	value_ ClipPathReferenceValue
+	reference_box string = 'border-box'
 }
 
 pub fn ClipPathReference.from_url(url URL) ClipPathReference {
@@ -6552,6 +6553,11 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 			return dom_style_value_from_value_logic(value)
 		}
 	}
+	if property_id == .clip_path {
+		first := style_value_logic_from_dom(property_id,from) or { return none }
+		last := style_value_logic_from_dom(property_id,to) or { return none }
+		if clip_path_reference_box(first) != clip_path_reference_box(last) { return interpolate_discrete(from,to,delta,allow_discrete) }
+	}
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
 	match animation_type_from_longhand_property(property_id) {
@@ -7005,12 +7011,6 @@ fn interpolate_mixed_style_value(calculation_context InterpolationCalculationCon
 	if from_type != to_type {
 		return none
 	}
-	if delta == 0 {
-		return from
-	}
-	if delta == 1 {
-		return to
-	}
 	if from is PercentageStyleValue && to.is_dimension() && to !is PercentageStyleValue {
 		dimension_component := to.as_dimension().raw_value() * delta
 		if dimension_component == 0 {
@@ -7188,10 +7188,16 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				}
 				from_basic_shape := from as BasicShapeStyleValue
 				to_basic_shape := to as BasicShapeStyleValue
-				from_shape := from_basic_shape.basic_shape()
-				to_shape := to_basic_shape.basic_shape()
+				mut from_shape := from_basic_shape.basic_shape()
+				mut to_shape := to_basic_shape.basic_shape()
+				if from_shape is BasicShapeCommands && to_shape is BasicShapePath { to_shape=BasicShape(shape_commands_from_svg_path(to_shape) or { return none }) }
+				if from_shape is BasicShapePath && to_shape is BasicShapeCommands { from_shape=BasicShape(shape_commands_from_svg_path(from_shape) or { return none }) }
 				mut interpolated_shape := ?BasicShape(none)
 				match from_shape {
+					BasicShapeCommands {
+						if to_shape !is BasicShapeCommands { return none }
+						interpolated_shape = BasicShape(interpolate_shape_commands(basic_shape_context,from_shape,to_shape,delta) or { return none })
+					}
 					BasicShapeInset {
 						if to_shape !is BasicShapeInset {
 							return none
@@ -7251,6 +7257,7 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 						}
 						interpolated_shape = BasicShape(BasicShapePolygon{
 							fill_rule: from_polygon.fill_rule
+							round_radius:interpolate_style_value(basic_shape_context,from_polygon.round_radius,to_polygon.round_radius,delta,allow_discrete) or { return none }
 							points: points
 						})
 					}
@@ -9173,6 +9180,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 						}
 						composited_shape = BasicShape(BasicShapePolygon{
 							fill_rule: underlying_polygon.fill_rule
+							round_radius:composite_style_value(property_id,underlying_polygon.round_radius,animated_polygon.round_radius,operation) or { return none }
 							points: points
 						})
 					}
@@ -9273,6 +9281,15 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 			} else {
 				none
 			}
+		}
+		RectStyleValue {
+			if animated is RectStyleValue {
+				top := composite_rect_edge(property_id,underlying.top(),animated.top(),operation) or { return none }
+				right := composite_rect_edge(property_id,underlying.right(),animated.right(),operation) or { return none }
+				bottom := composite_rect_edge(property_id,underlying.bottom(),animated.bottom(),operation) or { return none }
+				left := composite_rect_edge(property_id,underlying.left(),animated.left(),operation) or { return none }
+				StyleValue(RectStyleValue.create(top,right,bottom,left))
+			} else { none }
 		}
 		BorderRadiusStyleValue {
 			if animated is BorderRadiusStyleValue {
@@ -16159,4 +16176,9 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		mutable_s.cached_generic_computation_context = context
 	}
 	return context
+}
+
+fn composite_rect_edge(property PropertyID,underlying StyleValue,animated StyleValue,operation CompositeOperation) ?StyleValue {
+ if underlying is KeywordStyleValue && animated is KeywordStyleValue && underlying.to_keyword()==.auto && animated.to_keyword()==.auto { return underlying }
+ return composite_style_value(property,underlying,animated,operation)
 }

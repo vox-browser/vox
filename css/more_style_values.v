@@ -766,6 +766,7 @@ pub mut:
 pub struct BasicShapePolygon {
 pub mut:
 	fill_rule FillRule
+	round_radius StyleValue = StyleValue(LengthStyleValue.create(Length.make_px(0)))
 	points    []BasicShapePolygonPoint
 }
 
@@ -890,6 +891,11 @@ pub fn (shape BasicShapePolygon) serialize(mode SerializationMode) string {
 		}
 	}
 
+	if shape.round_radius.serialize(mode) != '0px' {
+		if !first { serialized += ' ' }
+		serialized += 'round '+shape.round_radius.serialize(mode)
+		first = false
+	}
 	for point in shape.points {
 		if !first {
 			serialized += ', '
@@ -1053,6 +1059,7 @@ pub fn (style_value BasicShapeStyleValue) absolutized(context ComputationContext
 			}
 			BasicShape(BasicShapePolygon{
 				fill_rule: shape.fill_rule
+				round_radius:shape.round_radius.absolutized(context)
 				points: points
 			})
 		}

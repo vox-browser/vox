@@ -2848,7 +2848,18 @@ fn basic_shape_clip_path_for_box(node &Node, computed &css.ComputedValues,
 	}
 	dom_node := node.dom_node() or { return none }
 	dom_layout_node := dom_node.layout_node() or { return none }
-	style_path := reference.basic_shape().to_path(css.CSSPixelRect.new(0, 0, border_rect.width, border_rect.height), dom_layout_node)
+	model := dom_layout_node.box_model()
+	mut left,mut top,mut right,mut bottom := 0.0,0.0,0.0,0.0
+	if reference.reference_box in ['padding-box','content-box','fill-box'] {
+		left=model.border_left;top=model.border_top;right=model.border_right;bottom=model.border_bottom
+	}
+	if reference.reference_box in ['content-box','fill-box'] {
+		left+=model.padding_left;top+=model.padding_top;right+=model.padding_right;bottom+=model.padding_bottom
+	}
+	if reference.reference_box == 'margin-box' {
+		left = -model.margin_left;top = -model.margin_top;right = -model.margin_right;bottom = -model.margin_bottom
+	}
+	style_path := reference.basic_shape().to_path(css.CSSPixelRect.new(left,top,math.max(0.0,border_rect.width-left-right),math.max(0.0,border_rect.height-top-bottom)), dom_layout_node)
 	local_path := html.canvas_gfx_path_from_style_value_path(style_path)
 	path := local_path.copy_transformed(html.CanvasAffineTransform{
 		e: border_rect.x

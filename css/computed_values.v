@@ -309,12 +309,22 @@ fn computed_values_mask_image(style &ComputedProperties) ?ImageStyleValue {
 }
 
 fn computed_values_clip_path(style &ComputedProperties) ?ClipPathReference {
-	value := computed_values_first_style_value(style, .clip_path) or { return none }
-	return match value {
-		URLStyleValue { ClipPathReference.from_url(value.url()) }
-		BasicShapeStyleValue { ClipPathReference.from_basic_shape(value) }
-		else { none }
+	raw := style.property(.clip_path,.yes) or { return none }
+	value := style_value_logic_from_dom(.clip_path,raw) or { return none }
+	box := clip_path_reference_box(value)
+	mut shape := ?BasicShapeStyleValue(none)
+	if value is URLStyleValue { return ClipPathReference.from_url(value.url()) }
+	if value is BasicShapeStyleValue { shape=value }
+	if value is StyleValueList {
+		for entry in value.values() { if entry is BasicShapeStyleValue { shape=entry } }
 	}
+	if basic := shape { return ClipPathReference{value_:basic,reference_box:box} }
+	if value is KeywordStyleValue && value.to_keyword() != .none_ {
+		zero := StyleValue(LengthStyleValue.create(Length.make_px(0)))
+		basic := BasicShapeStyleValue.create(BasicShapeInset{top:zero,right:zero,bottom:zero,left:zero,border_radius:StyleValue(BorderRadiusRectStyleValue.create_zero())})
+		return ClipPathReference{value_:basic,reference_box:box}
+	}
+	return none
 }
 
 fn computed_values_shadow(style &ComputedProperties, property_id PropertyID, context ColorResolutionContext) []ShadowData {
@@ -2806,4 +2816,12 @@ fn (mut values MutableComputedValues) set_cached_clip_path(value ?ClipPathRefere
 	// The initial value is none.
 	if cache.rare_data_ == unsafe { nil } && value == none { return }
 	cache.ensure_rare_data().computed_values_clip_path_ = value
+}
+
+fn clip_path_reference_box(value StyleValue) string {
+ if value is StyleValueList {
+  for entry in value.values() { if entry is KeywordStyleValue { return entry.serialize(.normal) } }
+ }
+ if value is KeywordStyleValue && value.to_keyword() != .none_ { return value.serialize(.normal) }
+ return 'border-box'
 }
