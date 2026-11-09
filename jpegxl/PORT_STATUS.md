@@ -582,9 +582,19 @@ Five focused files pass default/no-GC/optimized checks, with actual exits zero
 and 501 unchanged inputs. Cadence is 5/10; no full eighty-nine-file run is claimed.
 See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
 
+One further slice stitches subsampled component planes and expands chroma
+before restoration. Twenty JPEG-recompressed native records compare all
+1,660,864 straight/paint RGBA bytes exactly across 4:4:4, 4:2:2, 4:4:0 and
+4:2:0, including tiny/odd dimensions and multiple LF groups. Subsampled LF
+references and adaptive smoothing remain unsupported. The count is 282,933
+source records and ninety test files. Four focused files pass default/no-GC/
+optimized checks with actual exits zero and 524 unchanged inputs. Cadence is
+6/10; no full ninety-file run is claimed.
+See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, non-XYB modular rendering beyond the existing lossless path,
-whole-frame chroma sampling, feature streams, large entropy maps and production
+wider chroma combinations, feature streams, large entropy maps and production
 integration remain.
 
 The V package is not connected to the production image path until

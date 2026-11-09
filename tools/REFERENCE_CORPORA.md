@@ -175,3 +175,10 @@ selection passes default/no-GC/optimized checks with actual exits zero and
 501 unchanged inputs. Cadence is 5/10; no full 89-file run is claimed.
 Production and its native developer tool still use Rust.
 See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
+
+Subsampled YCbCr assembly adds twenty native JPEG-recompressed records and
+1,660,864 exact straight/paint RGBA bytes: 282,933 records and 90 test files
+total. Four focused files pass default/no-GC/optimized checks with actual
+exits zero and 524 unchanged inputs. Cadence is 6/10; no full 90-file run is
+claimed. Production and its native developer tool still use Rust.
+See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).

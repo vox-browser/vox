@@ -610,3 +610,17 @@ Cadence is 5/10 after the 84-file checkpoint; no full 89-file run is claimed.
 checks. Resampled LF alpha, wider extra channels, chroma sampling, feature
 streams, composition and production/tool integration remain. Production JPEG XL
 and its native developer tool still require Rust.
+
+## JPEG XL subsampled YCbCr frames on 2026-11-09
+
+A further slice preserves component dimensions while stitching LF/HF planes
+and expands chroma before restoration. Twenty native JPEG-recompressed files
+compare 1,660,864 straight/paint RGBA bytes exactly across four sampling modes.
+The package has 282,933 source records and 90 test files. Four focused files
+pass default/no-GC/optimized checks with actual exits zero and 524 unchanged
+inputs. Cadence is 6/10 after the 84-file checkpoint; no full 90-file run is
+claimed. [The chroma-frame report](JPEGXL_V_CHROMA_FRAMES.md) records pins,
+limits and checks. Wider chroma combinations, original-profile modular
+rendering, extra-channel combinations, feature streams, frame composition and
+production/tool integration remain. Production JPEG XL and its native developer
+tool still require Rust.
