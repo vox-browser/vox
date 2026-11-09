@@ -1596,3 +1596,29 @@ prealloc capture/exit-code smoke pass. The completed production bundle is still
 `23d3335d...`; installed validation of the worker and transfer fixes is pending.
 
 See [the transfer-pool measurements, retained regressions and evidence](performance/reddit-boots-transfer-pool-20261109.md).
+
+
+## 2026-11-09: direct-reader color fix; transport changes rejected
+
+Commit `20d2a9a69` protects the opt-in direct-frame reader from overlapping
+CPU destinations: converting each rectangle in place had swapped some pixels
+twice. The old path changes 616 pixels/max38 at offset850 and fails the new
+actual-GPU regression. The guarded path preserves exact reference pixels at
+0/850 and passes optimized/ASan overlap, eligibility and failure checks.
+
+Its matched native-input cohort has one regression and one improvement, so it
+remains opt-in. A second prototype reading directly into pooled staging buffers
+passes pixels and 24 actual-GPU cases/mode, but both unprofiled candidates
+regress; that prototype and its test mode are removed. Default transport remains
+unchanged. Every timing attempt completes 5,400 inputs with stable identities;
+no isolated performance gain is accepted.
+
+A separate 456.780ms diagnostic callback blocks writing the general GPU dump.
+Commit `35e0f9875` adds a dedicated input-window logger capped at128markers;
+the wheel/frame probe already buffers its own records. Final native code passes
+fresh GPU/sanitizer checks and exact captures. Its bounded diagnostic still has
+a27.805ms maximum moving interval and0.732% misses, and supplies no FPS credit.
+
+**The 60Hz goal without stalls remains open.** Installed worker/pool validation
+still awaits the shared build: the completed bundle is23d3335d. See
+[the complete readback results and retained failures](performance/reddit-boots-readback-20261109.md).

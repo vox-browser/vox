@@ -73,6 +73,10 @@ remain. The frozen diagnostic retains a 170.912 ms callback sampled in upload
 and readback waits, followed by a 63.458 ms callback sampled copying the visible
 raster. Diagnostic timing supplies no optimization credit.
 
+These two diagnostic jobs ran concurrently with focused GPU checks, so their
+timings can include that contention. The unprofiled cohorts ran after those
+checks completed; their timing results are separate.
+
 ## Queued uploads remain an experiment
 
 `VOX_GPU_CANVAS_STAGED_UPLOAD=1` replaces the synchronous CPU texture write
