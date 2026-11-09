@@ -11,6 +11,21 @@ fn stretch_fit_content_size(node &Node, used &UsedValues, available CSSPixels, w
 		for side in if width { [css.PropertyID.left, .right] } else { [css.PropertyID.top, .bottom] } {
 			space = space.minus(css_px(computed.length_percentage_to_px(side, available.to_double()) or { 0 }))
 		}
+		first_inset := if width { css.PropertyID.left } else { css.PropertyID.top }
+		last_inset := if width { css.PropertyID.right } else { css.PropertyID.bottom }
+		if property_is_auto(computed, first_inset) && property_is_auto(computed, last_inset) {
+			if containing := used.containing_block_used_values_ {
+				position := used.static_position()
+				point := if width { position.x() } else { position.y() }
+				padding := if width { containing.padding_left } else { containing.padding_top }
+				extent := if width { used.margin_box_width() } else { used.margin_box_height() }
+				starts_low := if containing.node_ != unsafe { nil } {
+					absolute_axis_starts_low(unsafe { &Node(containing.node_) }, width)
+				} else { true }
+				offset := if starts_low { point.plus(padding) } else { available.minus(padding).minus(point).minus(extent) }
+				space = space.minus(offset)
+			}
+		}
 	}
 	start := if width { css.PropertyID.margin_left } else { css.PropertyID.margin_top }
 	end := if width { css.PropertyID.margin_right } else { css.PropertyID.margin_bottom }
