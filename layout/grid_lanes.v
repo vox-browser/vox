@@ -68,10 +68,16 @@ fn pack_grid_lanes(mut state LayoutState, container &Node, mut container_state U
 	}
 	reverse_tracks := direction.contains('track-reverse')
 	reverse_fill := direction.contains('fill-reverse')
+	dense := if value := container.computed_values().property(.grid_lanes_pack,.yes) { value.css_text == 'dense' } else { false }
+	mut intervals := [][]GridLaneInterval{len:tracks.len}
+	mut by_node := map[voidptr]GridItemPlacement{}
+	for placement in placements { by_node[voidptr(placement.item)] = placement }
+	mut ordered := []GridItemPlacement{}
+	for item in ordered_grid_items(container) { if placement := by_node[voidptr(item)] { ordered << placement } }
 	mut running := []CSSPixels{len: tracks.len}
 	mut cursor := 0
 	mut extent := CSSPixels.new(0)
-	for placement in placements {
+	for placement in ordered {
 		item := placement.item
 		styled := item.as_node_with_style() or { continue }
 		mut values := state.get_mutable(styled)
@@ -89,13 +95,18 @@ fn pack_grid_lanes(mut state LayoutState, container &Node, mut container_state U
 			mut positions := []CSSPixels{}
 			mut shortest := CSSPixels.max()
 			for start in 0 .. tracks.len - span + 1 {
+				physical := if reverse_tracks { tracks.len-start-span } else { start }
 				mut position := CSSPixels.new(0)
-				for j in start .. start + span { position = css_pixels_max(position, running[j]) }
+				if dense {
+					position = grid_lane_gap_position(intervals,physical,span,if horizontal { values.margin_box_height() } else { values.margin_box_width() })
+				} else {
+					for j in physical .. physical + span { position = css_pixels_max(position, running[j]) }
+				}
 				positions << position
 				shortest = css_pixels_min(shortest, position)
 			}
 			lane = -1
-			for start in cursor .. positions.len {
+			for start in if dense { 0 } else { cursor } .. positions.len {
 				if positions[start].raw_value() <= shortest.plus(tolerance).raw_value() {
 					lane = start
 					break
@@ -115,7 +126,8 @@ fn pack_grid_lanes(mut state LayoutState, container &Node, mut container_state U
 		lane = grid_lanes_max_int(0, grid_lanes_min_int(lane, tracks.len - span))
 		if reverse_tracks { lane = tracks.len - lane - span }
 		mut stack_start := CSSPixels.new(0)
-		for j in lane .. lane + span { stack_start = css_pixels_max(stack_start, running[j]) }
+		if dense { stack_start = grid_lane_gap_position(intervals,lane,span,if horizontal { values.margin_box_height() } else { values.margin_box_width() }) }
+		else { for j in lane .. lane + span { stack_start = css_pixels_max(stack_start, running[j]) } }
 		area := grid_track_range_size(tracks, lane, span, lane_gap)
 		if horizontal && property_is_auto(item.computed_values(), .width) && grid_inline_alignment(container, item) in [
 			.normal,
@@ -141,7 +153,10 @@ fn pack_grid_lanes(mut state LayoutState, container &Node, mut container_state U
 		}
 		size := if horizontal { values.margin_box_height() } else { values.margin_box_width() }
 		end := stack_start.plus(css_pixels_max(CSSPixels.new(0), size))
-		for j in lane .. lane + span { running[j] = end.plus(stack_gap) }
+		for j in lane .. lane + span {
+			running[j] = css_pixels_max(running[j],end.plus(stack_gap))
+			intervals[j] << GridLaneInterval{start:stack_start,end:end.plus(stack_gap)}
+		}
 		extent = css_pixels_max(extent, end)
 		lane_start := if horizontal {
 			grid_physical_column_offset(container, width, tracks, lane, span, lane_gap, column_leading)
@@ -173,3 +188,20 @@ fn pack_grid_lanes(mut state LayoutState, container &Node, mut container_state U
 fn grid_lanes_min_int(a int, b int) int { return if a < b { a } else { b } }
 
 fn grid_lanes_max_int(a int, b int) int { return if a > b { a } else { b } }
+
+struct GridLaneInterval { start CSSPixels end CSSPixels }
+
+fn grid_lane_gap_position(intervals [][]GridLaneInterval,lane int,span int,size CSSPixels) CSSPixels {
+ mut position := CSSPixels.new(0)
+ for {
+  mut next := position
+  for j in lane..lane+span {
+   for interval in intervals[j] {
+    if position.raw_value() < interval.end.raw_value() && position.plus(size).raw_value() > interval.start.raw_value() { next = css_pixels_max(next,interval.end) }
+   }
+  }
+  if next == position { return position }
+  position = next
+ }
+ return position
+}

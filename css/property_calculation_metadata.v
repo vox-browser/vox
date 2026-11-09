@@ -175,6 +175,7 @@ fn canonical_property_name_from_metadata(name string) string {
 		'grid-row-gap' {
 			'row-gap'
 		}
+		'flow-tolerance' { 'fit-tolerance' }
 		'word-wrap' {
 			'overflow-wrap'
 		}
@@ -185,6 +186,7 @@ fn canonical_property_name_from_metadata(name string) string {
 fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'grid-lanes-direction' { return .grid_lanes_direction }
 	if name == 'fit-tolerance' { return .fit_tolerance }
+	if name == 'grid-lanes-pack' { return .grid_lanes_pack }
 
 	if name == 'overscroll-behavior-x' { return .overscroll_behavior_x }
 	if name == 'overscroll-behavior-y' { return .overscroll_behavior_y }
@@ -3222,6 +3224,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
 		.grid_lanes_direction { 'grid-lanes-direction' }
 		.fit_tolerance { 'fit-tolerance' }
+		.grid_lanes_pack { 'grid-lanes-pack' }
 
 		.overscroll_behavior_x { 'overscroll-behavior-x' }
 		.overscroll_behavior_y { 'overscroll-behavior-y' }
@@ -3738,7 +3741,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
-		.grid_lanes_direction, .fit_tolerance { 'normal' }
+		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { 'normal' }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { 'auto' }
 
@@ -4192,7 +4195,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
-		.grid_lanes_direction { AnimationType.discrete }
+		.grid_lanes_direction, .grid_lanes_pack { AnimationType.discrete }
 		.fit_tolerance { AnimationType.by_computed_value }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { AnimationType.discrete }
@@ -4265,7 +4268,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
-		.grid_lanes_direction, .fit_tolerance { true }
+		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { true }
 
@@ -4324,7 +4327,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
-		.grid_lanes_direction, .fit_tolerance { true }
+		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
 		.alignment_baseline, .baseline_shift, .baseline_source { true }
 
@@ -4704,6 +4707,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	return match property_id {
 		.grid_lanes_direction { lowercase_value in ['normal','row','column','fill-reverse','track-reverse'] }
 		.fit_tolerance { lowercase_value in ['normal','infinite'] }
+		.grid_lanes_pack { lowercase_value in ['normal','dense'] }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { lowercase_value in ['auto','contain','none','chain'] }
 

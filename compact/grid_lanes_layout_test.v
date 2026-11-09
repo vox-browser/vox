@@ -31,3 +31,19 @@ fn test_grid_lanes_display_and_direction_grammar() {
 	assert css.parse_css_value_logic(.fit_tolerance, '-10px') == none
 	_ = css.parse_css_value_logic(.fit_tolerance, '10%') or { panic('tolerance') }
 }
+
+fn test_grid_lanes_track_reversal_named_placement_and_dense_gaps_keep_item_order() {
+ for reverse in [false,true] {
+  mut document := html.parse_document('<!doctype html><style>body{margin:0}#lanes{display:grid-lanes;grid-template-columns:50px 50px 50px;grid-lanes-direction:column ${if reverse { 'track-reverse' } else { '' }};flow-tolerance:0}#a{height:40px}#b{height:20px}#c{height:30px}#d{height:60px}#e{height:30px}</style><div id="lanes"><div id="a"></div><div id="b"></div><div id="c"></div><div id="d"></div><div id="e"></div></div>')
+  defer { document.finalize() }
+  _ = layout.layout_document_typed_in_viewport(document,800,600)
+  rect := (document.get_element_by_id('e') or { panic('e') }).get_bounding_client_rect()
+  expected := if reverse { 0.0 } else { 100.0 }
+  assert rect.x == expected && rect.y == 30,'${rect.x},${rect.y}'
+ }
+ mut document := html.parse_document('<!doctype html><style>body{margin:0}#lanes{display:grid-lanes;grid-template-columns:50px 50px;grid-lanes-pack:dense}#lanes>div{height:50px}.span{grid-column:span 2}</style><div id="lanes"><div class="span"></div><div></div><div class="span"></div><div id="gap"></div></div>')
+ defer { document.finalize() }
+ _ = layout.layout_document_typed_in_viewport(document,800,600)
+ rect := (document.get_element_by_id('gap') or { panic('gap') }).get_bounding_client_rect()
+ assert rect.x == 50 && rect.y == 50,'${rect.x},${rect.y}'
+}

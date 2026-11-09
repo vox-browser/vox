@@ -2150,6 +2150,7 @@ pub enum Keyword {
 	inline_grid_lanes
 	fill_reverse
 	track_reverse
+	dense
 	chain
 	first
 	last
@@ -3078,6 +3079,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.inline_grid_lanes { 'inline-grid-lanes' }
 		.fill_reverse { 'fill-reverse' }
 		.track_reverse { 'track-reverse' }
+		.dense { 'dense' }
 		.chain { 'chain' }
 		.first { 'first' }
 		.last { 'last' }
@@ -3105,6 +3107,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
+	if name == 'dense' { return .dense }
 	if name == 'grid-lanes' { return .grid_lanes }
 	if name == 'inline-grid-lanes' { return .inline_grid_lanes }
 	if name == 'fill-reverse' { return .fill_reverse }

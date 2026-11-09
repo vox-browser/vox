@@ -1,6 +1,11 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'grid-lanes-pack': {
+        'initial':'normal','animation-type':'discrete','requires-computation':'never',
+        'valid-identifiers':['normal','dense'],
+    },
+    'flow-tolerance': {'legacy-alias-for':'fit-tolerance'},
     'grid-lanes-direction': {
         'initial': 'normal', 'animation-type': 'discrete', 'requires-computation': 'never',
         'max-values': 3, 'valid-identifiers': ['normal','row','column','fill-reverse','track-reverse'],
@@ -143,7 +148,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):
