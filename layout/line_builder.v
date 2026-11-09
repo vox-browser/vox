@@ -749,7 +749,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
     x_height := if builder.writing_mode == .vertical_lr { -parent_metrics.x_height } else { parent_metrics.x_height }
     used.margin_box_width().divided_by_float(2).plus(CSSPixels.nearest_value_for(f64(x_height)/2))
 			} else {
-				preference := if fragment.layout_node_.display().is_grid_inside() || fragment.layout_node_.display().is_flex_inside() { BaselineSet.first } else { BaselineSet.last }
+				source := inline_baseline_source(fragment.layout_node_)
+    preference := if source == 'first' || (source == 'auto' && (fragment.layout_node_.display().is_grid_inside() || fragment.layout_node_.display().is_flex_inside())) { BaselineSet.first } else { BaselineSet.last }
     from_low := grid_baseline_from_low(builder.layout_state,unsafe { &Node(builder.containing_block) },fragment.layout_node_,true,preference,0)
 				if builder.writing_mode in [.vertical_rl,.sideways_rl] {
 					if styled := fragment.layout_node_.as_node_with_style() { builder.layout_state.get(styled).margin_box_width().minus(from_low) } else { from_low }

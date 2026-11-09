@@ -559,9 +559,14 @@ fn layout_box_baseline(state &LayoutState, box &Node, requested_baseline_set Bas
 // Blink's inline-block baseline propagation uses a descendant flex/grid box's
 // first baseline as the enclosing block's last baseline. Ordinary flex/grid
 // alignment still requests its own first or last set explicitly.
+fn inline_baseline_source(box &Node) string {
+ if value := box.computed_values().property(.baseline_source,.yes) { return value.css_text }
+ return 'auto'
+}
+
 fn layout_box_baseline_for_inline(state &LayoutState, box &Node) CSSPixels {
-	return layout_box_baseline_in_context(state, box, .last, false,
-		box.document().font_rendering_policy() == .chromium)
+ source := inline_baseline_source(box)
+ return layout_box_baseline_in_context(state,box,if source == 'first' { .first } else { .last },false,source == 'auto' && box.document().font_rendering_policy() == .chromium)
 }
 
 // Chromium's text controls ignore the overflow of their internal editor when
@@ -607,7 +612,8 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	mut baseline_set := requested_baseline_set
 	display := box.display()
 	is_flex_or_grid_container := display.is_flex_inside() || display.is_grid_inside()
-	if is_flex_or_grid_container && (display.is_inline_outside() || inline_block_algorithm) {
+	source := inline_baseline_source(box)
+	if source == 'auto' && is_flex_or_grid_container && (display.is_inline_outside() || inline_block_algorithm) {
 		baseline_set = .first
 	}
 
@@ -615,6 +621,7 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	// rows. Inline tables export their first row through the wrapper; other
 	// table parts export the baseline set requested by their consumer.
 	if box.is_table_wrapper() {
+  if source == 'last' { if baseline := box_state.derived_last_baseline() { return box_state.margin_box_top().plus(baseline) } }
 		if baseline := box_state.derived_first_baseline() {
 			return box_state.margin_box_top().plus(baseline)
 		}
