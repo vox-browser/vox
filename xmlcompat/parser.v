@@ -328,7 +328,10 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 			special_nodes << SpecialNode{ doctype: parsed.doctype }
 			saw_doctype = true
 		} else {
-			tag := source[position..end + 1]
+			// The tag is used only during normalization. Attribute payloads take
+			// their own copies, so borrowing this scan avoids duplicating a large
+			// SVG path before extracting its owning value.
+			tag := source.substr_unsafe(position, end + 1)
 			if tag.starts_with('<!') { return error('unsupported XML declaration') }
 			if tag.len < 3 || xml_is_space(tag[1]) { return error('invalid XML opening tag') }
 			if !tag.ends_with('/>') && tag[..tag.len - 1].trim_right(' \t\r\n').ends_with('/') {
