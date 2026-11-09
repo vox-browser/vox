@@ -83,6 +83,13 @@ fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_i
 			CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 	}
 	context := c.length_resolution_context()
+	if typed is CalculatedStyleValue {
+		length := typed.resolve_length(CalculationResolutionContext{
+			percentage_basis:Length.make_css_px(CSSPixels.nearest_value_for(percentage_basis_px))
+			length_resolution_context:context
+		}) or { return none }
+		return c.absolute_layout_length_to_px(length).to_double()
+	}
 	return LengthPercentage.from_style_value_logic(typed).to_px(context,
 		CSSPixels.nearest_value_for(percentage_basis_px)).to_double()
 }

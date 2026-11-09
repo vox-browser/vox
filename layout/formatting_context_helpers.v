@@ -86,6 +86,14 @@ fn resolve_layout_size(node &Node, size css.Size, percentage_basis CSSPixels) ?C
 	if !size.is_length() && !size.is_percentage() && !size.is_calculated() {
 		return none
 	}
+	if size.is_calculated() {
+		context := layout_length_resolution_context(node)
+		length := size.calculated().resolve_length(css.CalculationResolutionContext{
+			percentage_basis:css.Length.make_css_px(percentage_basis)
+			length_resolution_context:context
+		}) or { return none }
+		return css_px(length.to_px_without_rounding(context))
+	}
 	// Absolute lengths and plain percentages do not read font or viewport
 	// metrics. Keep the existing size resolver and its payload/rounding rules.
 	if value := size.length_percentage_ {

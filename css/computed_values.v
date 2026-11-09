@@ -1088,6 +1088,9 @@ pub fn (values &ComputedValues) length_percentage_to_px(property_id PropertyID, 
 		}
 	}
 	resolved := length_percentage or { return none }
+	if resolved.is_calculated() {
+		return computed_properties_length_percentage_to_px(unsafe { &ComputedProperties(values) },property_id,percentage_basis_px)
+	}
 	// Absolute lengths and percentages do not consume font, viewport or
 	// container-query state. Preserve the shared fixed-point conversion while
 	// avoiding a context and its query-cache allocation for these common cases.

@@ -498,7 +498,13 @@ fn resolve_definite_size(node &NodeWithStyle, computed &css.ComputedProperties, 
 	} else {
 		CSSPixels.new(0)
 	}
-	resolved := size.to_px(context, reference_value)
+	resolved := if size.is_calculated() {
+		length := size.calculated().resolve_length(css.CalculationResolutionContext{
+			percentage_basis:css.Length.make_css_px(reference_value)
+			length_resolution_context:context
+		}) or { return none }
+		css_px(length.to_px_without_rounding(context))
+	} else { size.to_px(context, reference_value) }
 	return clamp_to_max_dimension_value(adjust_size_for_box_sizing(computed, size, resolved, width, containing_block_used_values, context))
 }
 
