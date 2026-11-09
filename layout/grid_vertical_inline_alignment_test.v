@@ -17,3 +17,18 @@ fn test_vertical_grid_left_right_keywords_align_on_the_inline_axis() {
   }
  }
 }
+
+fn test_vertical_grid_content_left_right_use_line_left_and_line_right() {
+ for writing_mode in ['vertical-lr','vertical-rl'] {
+  for direction in ['ltr','rtl'] {
+   for alignment in ['left','right'] {
+    mut document := html.parse_document('<!doctype html><style>body{margin:0}#grid{display:grid;writing-mode:${writing_mode};direction:${direction};width:100px;height:200px;grid-template:100px / 50px 50px;justify-content:${alignment}}#item{grid-row:1;grid-column:1;height:20px;justify-self:start}</style><div id="grid"><div id="item"></div></div>')
+    defer { document.finalize() }
+    _ = layout_document_typed_in_viewport(document,800,600)
+    y := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect().y
+    expected := (if alignment == 'right' { 100.0 } else { 0.0 }) + (if direction == 'rtl' { 80.0 } else { 0.0 })
+    assert y == expected, '${writing_mode} ${direction} ${alignment}: ${y}'
+   }
+  }
+ }
+}

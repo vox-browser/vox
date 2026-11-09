@@ -1548,8 +1548,8 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_height.minus(used_size), CSSPixels.new(0))
 	positional_free_space := grid_positional_free_space(container, container_height.minus(used_size), free_space)
-	leading := match grid_axis_content_alignment(container, false) {
-		.end_, .flex_end {
+	mut leading := match grid_axis_content_alignment(container, false) {
+		.end_, .flex_end, .right {
 			positional_free_space
 		}
 		.center {
@@ -1560,6 +1560,13 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 		}
 		else {
 			CSSPixels.new(0)
+		}
+	}
+	if grid_axis_reversed(container,false) {
+		match grid_axis_content_alignment(container,false) {
+			.left { leading = positional_free_space }
+			.right { leading = CSSPixels.new(0) }
+			else {}
 		}
 	}
 	return leading, effective_gap
