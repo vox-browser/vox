@@ -264,3 +264,28 @@ filter pipeline assembly, VarDCT/frame dependencies, XYB/transfer conversion and
 production integration remain. The complete-file APIs retain their existing
 filter/YCbCr restrictions. Production JPEG XL, Cargo/CI hooks and native developer
 tests still require Rust; complete dependency removal remains unfinished.
+
+## VarDCT parameters and coefficient orders on 2026-11-09
+
+Four more JPEG XL slices now execute in pure V: quantizer parameters,
+color-correlation parameters, block/zero-density contexts, and natural/entropy
+coefficient orders. The 17,165 added source cases preserve float words,
+threshold wrapping, context identities, complete natural vectors and hashes of
+all 39 decoded component orders. The frozen tests need no Rust compiler or
+Cargo; temporary migration oracles used unchanged pinned source and cached
+dependencies and were removed after recording the results.
+
+The four focused files pass in both GC modes and optimized checks with
+unavailable Rust compiler paths. Shared half-float parsing also retains the
+preceding exhaustive primitive and bit-reader checks in both modes. The corpus
+checker now discovers thirty-nine files and 257,783 frozen source cases. The
+preceding full checkpoint covers thirty-five files; this continuation advances
+JPEG XL cadence to 4/10 without claiming a new full checkpoint. Unrelated
+LibJS/DOM/performance ledgers and historical broad results remain unchanged.
+
+[The VarDCT parameter/order report](JPEGXL_V_VARDCT_PARAMETERS.md) records the
+source pins, exact comparison boundaries, commands and corrected harness
+failures. VarDCT coefficient reconstruction, quantization matrices, sigma-map
+generation, XYB/transfer conversion, frame dependencies and rendering pipeline
+assembly remain. Production JPEG XL and its Cargo/CI/native developer tests still
+require Rust; removal of all Rust dependencies remains unfinished.

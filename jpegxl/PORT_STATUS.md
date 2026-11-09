@@ -327,15 +327,25 @@ bypass match native source outputs. There are 512 frozen planes per pass, with
 helper; deriving VarDCT sigma from quantization/transform/sharpness maps remains
 pending. These stages also remain separate from complete-file rendering.
 
-The corpus checker discovers thirty-five test files. The full package passes
-in both GC modes with unavailable Rust compiler paths at the ten-slice JPEG XL
-checkpoint, resetting its cadence to 0/10. The arithmetic/color stages and EPF
-focused files also pass optimized checks. Unrelated broader suites were not
-rerun. The package checks 240,618 source cases, counting
-individual ANS alias transitions and whole weighted/property/row transcripts.
-[The EPF report](../docs/translation-audit/JPEGXL_V_EPF.md) records the current
-checkpoint and boundaries; [the filter/color stage report](../docs/translation-audit/JPEGXL_V_FILTER_COLOR_STAGES.md)
-records the preceding stage coverage.
+VarDCT quantizer and color-correlation parameters now preserve source selectors,
+binary32 arithmetic, signed LF factors, half-float behavior and error positions.
+Block contexts parse LF/QF thresholds and entropy maps, preserve wrapping LF
+threshold encodings and channel ordering, and calculate nonzero/zero-density
+contexts. All thirteen natural coefficient orders and their three-component
+entropy permutations are translated, with independent owned output arrays.
+The four slices add 17,165 frozen source cases, including 131,328 natural indices
+and complete hashes of all 39 component orders for each accepted decoding case.
+They do not yet decode VarDCT coefficients or enable VarDCT complete-file output.
+
+The corpus checker discovers thirty-nine test files. The preceding full
+thirty-five-file package passed in both GC modes; the four additional focused
+files pass both modes with unavailable Rust compiler paths. JPEG XL cadence is
+now 4/10 after that checkpoint. Focused optimized checks also cover the new
+files. Unrelated broader suites were not rerun. The package checks 257,783 source
+cases, counting individual ANS alias transitions and whole stateful/map/order
+transcripts as before. [The VarDCT parameter/order report](../docs/translation-audit/JPEGXL_V_VARDCT_PARAMETERS.md)
+records current validation and boundaries; [the EPF report](../docs/translation-audit/JPEGXL_V_EPF.md)
+retains the preceding full checkpoint.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
