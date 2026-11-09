@@ -524,6 +524,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		result := layout_inside_independent_formatting_context(mut throwaway, box_node, mut box_state, AvailableSpace.new(available_width, available_height))
 		return clamp_to_max_dimension_value(result.automatic_content_width)
 	}
+	if multicol := layout_vertical_multicol_atomic_blocks(mut throwaway,box_node,mut box_state,.intrinsic_sizing,AvailableSpace.new(available_width,available_height)) { return multicol.automatic_content_width }
 	if box_node.children_are_inline() {
 		if block_container := box_node.as_block_container() {
 			measured_width := measure_disposable_inline_width(mut throwaway, block_container, mut box_state, AvailableSpace.new(available_width, available_height))

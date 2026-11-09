@@ -481,6 +481,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 			}
 		}
 	}
+	if multicol := layout_vertical_multicol_atomic_blocks(mut state,box,mut box_state,layout_mode,available_space) { return multicol }
 	if multicol := layout_multicol_atomic_blocks(mut state, box, mut box_state, layout_mode,
 		available_space) {
 		return multicol
