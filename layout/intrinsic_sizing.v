@@ -493,6 +493,11 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
+	if containing := box_state.containing_block_used_values() {
+		resolve_box_model_edges(box_node.computed_values(), mut box_state, containing.content_width().to_double())
+	} else {
+		resolve_box_model_edges(box_node.computed_values(), mut box_state, 0)
+	}
 	// The measured inline axis is indefinite; the independently resolved
 	// block axis remains a valid input to percentage and aspect-ratio sizing.
 	if source := source_state.try_get(box_styled) {
@@ -522,7 +527,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		}
 		return calculate_table_grid_intrinsic_width(mut throwaway, box_node, percentage_basis, constraint)
 	}
-	if box_node.display().is_flex_inside() {
+	if box_node.display().is_flex_inside() && !(box_node.is_fieldset_box() && grid_is_vertical(box_node)) {
 		return calculate_intrinsic_flex_width(mut throwaway, box_node, constraint)
 	}
 	if box_node.display().is_grid_inside() {

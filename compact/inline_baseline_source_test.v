@@ -81,3 +81,27 @@ fn test_inline_table_transfers_explicit_baseline_source_to_its_anonymous_wrapper
   assert reference.y-target.y==expected,'${source}: ${reference.y-target.y}'
  }
 }
+
+fn test_vertical_fieldset_baselines_reserve_the_side_legend_and_skip_its_baseline() {
+ mut failures := []string{}
+ for policy in [dom.FontRenderingPolicy.libweb,.chromium] {
+  for mode in ['vertical-lr','vertical-rl'] {
+   for display in ['inline-block','inline-flex'] {
+    for source in ['first','last'] {
+     mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{inline-size:200px;padding:10px;position:relative;line-height:0;font-size:20px;writing-mode:${mode}}#inner{display:${display};flex-direction:column;border:5px solid;padding:10px;baseline-source:${source};font-size:30px}span{display:inline-block;width:1em;height:1em}</style><div id="outer"><span id="reference"></span><fieldset id="inner"><span></span><br><span></span><legend id="legend"><span></span></legend></fieldset></div>')
+     defer { document.finalize() }
+     document.set_font_rendering_policy(policy)
+     _ = layout.layout_document_typed_in_viewport(document,800,600)
+     reference := (document.get_element_by_id('reference') or { panic('reference') }).get_bounding_client_rect()
+     inner := (document.get_element_by_id('inner') or { panic('inner') }).get_bounding_client_rect()
+     expected := if mode=='vertical-lr' { if source=='first' { 45.0 } else { 75.0 } } else { if source=='first' { 50.0 } else { 20.0 } }
+     if reference.x-inner.x!=expected {
+      legend := (document.get_element_by_id('legend') or { panic('legend') }).get_bounding_client_rect()
+      failures << '${policy} ${mode} ${display} ${source}: ${reference.x-inner.x} expected ${expected}; inner ${inner.width} legend ${legend.width} at ${legend.x-inner.x}'
+     }
+    }
+   }
+  }
+ }
+ assert failures.len==0,failures.join('\n')
+}
