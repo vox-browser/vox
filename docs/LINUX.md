@@ -35,7 +35,11 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
-The build stages UI2 with Vox's embedding adapter without changing its checkout.
+Use the latest UI2: run `v up ui2` for an installed module, or
+`git -C "$UI2_SOURCE_DIR" pull --ff-only` for a separate checkout. The build links
+that live checkout directly without copying or pinning it. CI fetches upstream
+HEAD on every run. See the [UI2 adapter guide](../tools/ui2/README.md) for focused
+checks.
 Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
 helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
 when Cargo is available, the build compiles that helper from its lockfile.

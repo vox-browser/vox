@@ -68,9 +68,9 @@ picker and hover input, highlights, keys, actions and relayout after edits.
 ## Tests
 
 ```sh
-python3 tools/prepare_ui2.py
+ui2_modules=$(python3 tools/prepare_ui2.py)
 v -enable-globals -memory-limit 10G -cc clang \
-  -path 'Build/v/modules|.|@vmodules|@vlib' test devtools
+  -path "$ui2_modules|.|@vmodules|@vlib" test devtools
 VOX_CHROME_TEST_FILE=browserapp/devtools_test.v sh tools/test_address_bar.sh \
   -memory-limit 10G -skip-running -o Build/devtools-main-test
 ```
