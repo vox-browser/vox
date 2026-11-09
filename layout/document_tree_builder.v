@@ -1305,6 +1305,9 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 		}
 	}
 	if computed.display().is_contents() {
+		// Unboxing also removes the old principal-box attachment. A retained
+		// box from the previous display value must not supply CSSOM geometry.
+		element.as_node().clear_layout_node_and_paintable()
 		// Keep a transient node only while recursively collecting this element's
 		// children. The caller unboxes these children into the actual layout parent.
 		for child in children {
