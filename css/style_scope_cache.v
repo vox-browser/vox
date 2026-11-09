@@ -1948,6 +1948,7 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.view_transition_image_pair { .view_transition_image_pair }
 		.view_transition_new { .view_transition_new }
 		.view_transition_old { .view_transition_old }
+		.highlight { .highlight }
 		.known_pseudo_element_count { .known_pseudo_element_count }
 		.unknown_webkit { .unknown_webkit }
 	}
@@ -2485,6 +2486,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 		candidate_buffer.context = MatchContext{
 			style_sheet_for_rule: rule_to_run.sheet
 			subject: abstract_element.element()
+			pseudo_argument: abstract_element.pseudo_argument
 			rule_shadow_root: rule_shadow_root_for_context
 			collect_per_element_selector_involvement_metadata: true
 			has_result_cache: style_scope_has_result_cache_boundary(style_computer)

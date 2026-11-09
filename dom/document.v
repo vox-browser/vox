@@ -4955,6 +4955,7 @@ pub enum PseudoElement {
 	view_transition_image_pair
 	view_transition_new
 	view_transition_old
+	highlight
 	known_pseudo_element_count
 	unknown_webkit
 }

@@ -4187,6 +4187,7 @@ pub struct AbstractElement {
 pub mut:
 	element_             &Element = unsafe { nil }
 	pseudo_element_      ?PseudoElement
+	pseudo_argument      string
 	inheritance_override ?&Element
 }
 
@@ -4499,6 +4500,7 @@ pub fn pseudo_element_name(pseudo PseudoElement) string {
 		.view_transition_image_pair { 'view-transition-image-pair' }
 		.view_transition_new { 'view-transition-new' }
 		.view_transition_old { 'view-transition-old' }
+		.highlight { 'highlight' }
 		.known_pseudo_element_count, .unknown_webkit { '' }
 	}
 }

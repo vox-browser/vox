@@ -34,6 +34,7 @@ pub struct MatchContext {
 pub mut:
 	style_sheet_for_rule                              ?&CSSStyleSheet
 	subject                                           ?&dom.Element
+	pseudo_argument                                   string
 	slotted_element                                   ?&dom.Element // Only set when matching a ::slotted() pseudo-element
 	part_owning_parent                                ?&dom.Element // Only set temporarily when matching a ::part() pseudo-element
 	rule_shadow_root                                  ?&dom.ShadowRoot // Shadow root the matched rule belongs to
@@ -161,6 +162,7 @@ pub enum PseudoElement {
 	view_transition_image_pair
 	view_transition_new
 	view_transition_old
+	highlight
 	known_pseudo_element_count
 	unknown_webkit
 	// V uses a sentinel where C++'s pseudo_element_from_string() returns Optional{}.
@@ -348,6 +350,7 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 		.view_transition_image_pair { 'view-transition-image-pair' }
 		.view_transition_new { 'view-transition-new' }
 		.view_transition_old { 'view-transition-old' }
+		.highlight { 'highlight' }
 		.known_pseudo_element_count, .unknown { '' }
 		.unknown_webkit { '-webkit-unknown' }
 	}
@@ -355,6 +358,7 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 
 pub fn pseudo_element_from_string(name string) PseudoElement {
 	return match name.to_lower() {
+		'highlight' { .highlight }
 		'after' {
 			.after
 		}
@@ -1739,6 +1743,10 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 			return matches_pseudo_class(component.pseudo_class(), element, shadow_host, mut context, scope, selector_kind)
 		}
 		.pseudo_element {
+			if component.pseudo_element().type_ == .highlight {
+				names := component.pseudo_element().ident_list
+				return names.len == 1 && names[0] == context.pseudo_argument
+			}
 			if component.pseudo_element().type_ == .slotted {
 				slotted_element := context.slotted_element or { return false }
 				compound_selector := component.pseudo_element().compound_selector or { return false }
@@ -2703,6 +2711,14 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 	}
 	if is_function {
 		match pseudo_element {
+			.highlight {
+				arg := argument.trim_space()
+				if !is_valid_selector_identifier(arg) { return invalid_simple_selector('::${name}(${argument})') }
+				ident,consumed := parse_identifier(arg,0)
+				if consumed != arg.len || ident.to_lower() in ['initial','inherit','unset','revert','revert-layer','default'] { return invalid_simple_selector('::${name}(${argument})') }
+				selector.value_kind = .ident_list
+				selector.ident_list = [ident]
+			}
 			.slotted {
 				if !selector_text_is_valid_compound(argument.trim_space()) {
 					return invalid_simple_selector('::${name}(${argument})')
@@ -2853,12 +2869,12 @@ fn pseudo_class_valid_as_identifier(pseudo_class PseudoClass) bool {
 }
 
 fn pseudo_element_valid_as_function(pseudo_element PseudoElement) bool {
-	return pseudo_element in [.part, .slotted, .view_transition_group, .view_transition_image_pair,
+	return pseudo_element in [.highlight, .part, .slotted, .view_transition_group, .view_transition_image_pair,
 		.view_transition_old, .view_transition_new]
 }
 
 fn pseudo_element_valid_as_identifier(pseudo_element PseudoElement) bool {
-	if pseudo_element in [.unknown, .part, .slotted, .view_transition_group,
+	if pseudo_element in [.unknown, .highlight, .part, .slotted, .view_transition_group,
 		.view_transition_image_pair, .view_transition_old, .view_transition_new] {
 		return false
 	}

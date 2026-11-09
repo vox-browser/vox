@@ -706,7 +706,21 @@ pub fn (window &WindowModel) get_computed_style(element &dom.Element, pseudo_ele
 	mut object := ?dom.AbstractElement(dom.AbstractElement.new(element, none))
 	if pseudo := pseudo_element {
 		if pseudo.starts_with(':') {
-			if parsed := window_pseudo_element_from_string(pseudo) {
+			if pseudo.to_lower().starts_with('::highlight(') {
+				object = none
+				if list := css.parse_selector_with_parser(pseudo,map[string]bool{}) {
+					if list.selectors.len == 1 {
+						selector := list.selectors[0]
+						if selector.compound_selectors().len == 1 && selector.compound_selectors()[0].simple_selectors.len == 1 {
+							if target := selector.target_pseudo_element() {
+								if target.type_ == .highlight && target.ident_list.len == 1 {
+									object = dom.AbstractElement{element_:element,pseudo_element_:.highlight,pseudo_argument:target.ident_list[0]}
+								}
+							}
+						}
+					}
+				}
+			} else if parsed := window_pseudo_element_from_string(pseudo) {
 				object = dom.AbstractElement.new(element, parsed)
 			} else {
 				object = none

@@ -1408,6 +1408,11 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		// Cascade first: it records size-query and container-unit dependencies
 		// that a first CSSOM read must consider before deciding to flush layout.
 		if document.element_needs_style_update(element) { document.update_style() }
+		if owner.pseudo_element() != none {
+			// Pseudos without a rendered box (including named highlights) can
+			// introduce dependencies that the origin's ordinary cascade cannot.
+			_ = style_computer.compute_style_with_seeded_ancestors(owner)
+		}
 		property_id := property.id() or { return none }
 		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id) || property_id in [.min_width,.min_height,.max_width,.max_height]
 		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
