@@ -220,3 +220,14 @@ with actual tests/inner guards/drivers/outer guards exiting zero and all 701
 selected input hashes/change times unchanged. Cadence resets to 0/10.
 Production and its native tool still use Rust.
 See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
+
+
+Patch dictionaries, blending and row application add 2,216 frozen native
+records, bringing JPEG XL to 287,235 records and 97 test files. All three new
+files pass default/no-GC/optimized checks with unavailable Rust compiler paths,
+actual test/guard exits zero and 710 unchanged selected inputs. Native metadata,
+32,640 blend float words and 3,121,152 application words compare exactly,
+including full/irregular chunk equality. Cadence is 3/10 after the full 94-file
+checkpoint; a full 97-file run has not been performed. Encoded patch frames
+and production/native developer-tool replacement remain unfinished.
+See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).

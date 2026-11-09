@@ -642,6 +642,19 @@ hashes/change times and the compiler remain unchanged. This completes the ten
 slices after the eighty-four-file checkpoint and resets cadence to 0/10.
 See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
 
+Patch dictionaries, blending and clipped row application are now translated in
+three further slices. The 678 dictionary records compare metadata, accepted
+consumption and ordered row IDs; 1,024 blending records compare 32,640 float
+words, and 514 whole applications compare 3,121,152 words. Full rows and
+irregular chunks agree exactly in both implementations. Checked V APIs bound
+allocations and finite row inputs; source panic/allocation-limit parity is not
+claimed. The package has 287,235 source records and ninety-seven test files.
+All three new files pass default/no-GC/optimized checks with actual test/guard
+exits zero and 710 unchanged inputs. Cadence is 3/10 after the completed
+ninety-four-file checkpoint; no full ninety-seven-file run is claimed.
+Encoded patch frames still need reference ownership and pipeline integration.
+See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

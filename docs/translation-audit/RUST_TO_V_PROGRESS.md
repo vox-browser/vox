@@ -688,3 +688,19 @@ resets to 0/10.
 independent header verification, failures and checks. Patches/splines, reference
 composition, wider channels/LF combinations and production/tool integration
 remain. Production JPEG XL and its native developer tool still require Rust.
+
+
+## JPEG XL patch primitives and rows on 2026-11-09
+
+Three separately committed slices translate patch dictionaries and ordered row
+lookup, color/extra-channel blending, and clipped row application. They add
+2,216 native records: 287,235 records and 97 test files total. Dictionaries,
+32,640 blend float words and 3,121,152 application float words match exactly;
+full rows and irregular chunks agree in both implementations. All three new
+files pass default/no-GC/optimized checks with actual test/guard exits zero
+and 710 unchanged selected inputs. Cadence is 3/10 after the full 94-file
+checkpoint; no full 97-file run is claimed.
+[The patch report](JPEGXL_V_PATCHES.md) records pins, checked API limits and
+verification. Encoded patch frames, stored references/composition, splines,
+wider channel/LF combinations and production/tool integration remain.
+Production JPEG XL and its native developer test still require Rust.
