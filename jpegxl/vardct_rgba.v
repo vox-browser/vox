@@ -4,17 +4,19 @@ module jpegxl
 
 // Complete-file output for the assembled opaque VarDCT subset.
 pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
-	return decode_image_rgba_impl(input, premultiply, false, false)
+	return decode_image_rgba_impl(input, premultiply, .vardct_only)
 }
 
 // Opaque VarDCT and modular XYB output, including LF frames and image
 // upsampling. Extra channels, feature streams and wider frame composition must
 // be preserved before this can replace the production decoder.
 pub fn decode_opaque_rgba(input []u8, premultiply bool) !RgbaImage {
-	return decode_image_rgba_impl(input, premultiply, true, false)
+	return decode_image_rgba_impl(input, premultiply, .opaque)
 }
 
-fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, allow_alpha bool) !RgbaImage {
+fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !RgbaImage {
+	allow_alpha := mode == .all_static
+	allow_modular_xyb := mode != .vardct_only
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
@@ -51,7 +53,11 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 			validate_lf_reference_frame(file, frame)!
 		} else if frame.encoding == .modular {
 			if !allow_modular_xyb { return error('JPEG XL VarDCT output requires a VarDCT visible frame') }
-			validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
+			if !metadata.xyb_encoded && mode == .all_static {
+				validate_modular_rgb_frame(file, frame)!
+			} else {
+				validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
+			}
 		} else {
 			validate_vardct_frame_reference(file, frame, reference)!
 		}
@@ -64,8 +70,14 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, allow_modular_xyb bool, 
 		}
 		if frame.encoding == .modular {
 			raw := decode_modular_frame(file, frame, storage, mut sections)!
-			restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha)!
-			extra_channels = raw.channels[3..]
+			if metadata.xyb_encoded {
+				restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha)!
+				extra_channels = raw.channels[3..]
+			} else {
+				restored = render_modular_rgb_frame(raw, file, frame, storage)!
+				colors := if metadata.color_encoding.color_space == .gray { 1 } else { 3 }
+				extra_channels = raw.channels[colors..]
+			}
 		} else {
 			raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
 			restored = render_vardct_frame(raw, frame, file.transform)!
