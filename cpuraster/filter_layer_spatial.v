@@ -2,7 +2,7 @@ module cpuraster
 
 // Mixed blur and shadow nodes share the saved source device. Request bounds
 // propagate backwards; each shadow merge and real blur retains its own pixels.
-fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, mode BlendMode, content LayerContent) bool {
+fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, source_per_request bool, source_foreground ?FilterImageView, mode BlendMode, content LayerContent) bool {
 	// Bound both backwards requests and evaluation of the branching graph.
 	mut work := 1
 	for stage in stages {
@@ -89,7 +89,7 @@ fn draw_spatial_filter_chain(mut pixels []u8, width int, height int, pitch int, 
 	}
 	graph := SpatialFilterGraph{stages: stages, sx: sx, sy: sy, offsets: offsets,
 		source: result, max_dim: max_dim, resolve_at: resolve_at, content: content,
-		source_transform: transform, source_bounds: device_bounds or { layer }}
+		source_transform: transform, source_bounds: device_bounds or { layer }, source_view: source_foreground}
 	value := graph.evaluate(stages.len - 1, desired) or { return false }
 	result = value.image
 	mut pending := value.color.clone()
@@ -117,6 +117,7 @@ fn spatial_filter_resolve_color(result FilterResult, filter ?ColorFilter) Filter
 struct SpatialFilterValue {
 	image FilterResult
 	color []MatrixColorFilter
+	view ?FilterImageView
 }
 
 struct SpatialFilterGraph {
@@ -131,6 +132,7 @@ struct SpatialFilterGraph {
 	content LayerContent = unsafe { nil }
 	source_transform [6]f32
 	source_bounds IRect
+	source_view ?FilterImageView
 }
 
 // Known content bounds apply at each SourceGraphic leaf before unions.
@@ -149,9 +151,9 @@ fn (g &SpatialFilterGraph) input_bounds(index int, desired IRect) ?IRect {
 
 fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValue {
 	if desired.is_empty() { return SpatialFilterValue{} }
-	if index < 0 { return SpatialFilterValue{image: g.source} }
-	if index == g.resolve_at { return g.resolve_source_blur(index, desired) }
+	if index < 0 { return SpatialFilterValue{image: g.source, view: g.source_view} }
 	stage := g.stages[index]
+	if index == g.resolve_at && stage.kind == .blur { return g.resolve_source_blur(index, desired) }
 	rx, ry := skif_ceil(f32(3) * g.sx[index]), skif_ceil(f32(3) * g.sy[index])
 	if stage.kind == .blur {
 		needed := skif_outset(desired, rx, ry)
@@ -162,8 +164,12 @@ fn (g &SpatialFilterGraph) evaluate(index int, desired IRect) ?SpatialFilterValu
 	offset := g.offsets[index]
 	shadow_desired := skif_outset(map_filter_bounds(desired, affine_invert(offset) or { return none }), 1, 1)
 	needed := skif_outset(shadow_desired, rx, ry)
-	child := spatial_filter_apply_color(g.evaluate(index - 1, needed)?, stage.pre_color, needed)
-	shadow := spatial_filter_blur(child, shadow_desired, g.sx[index], g.sy[index])?
+	shadow := if index == g.resolve_at {
+		g.resolve_source_blur(index, shadow_desired)?
+	} else {
+		child := spatial_filter_apply_color(g.evaluate(index - 1, needed)?, stage.pre_color, needed)
+		spatial_filter_blur(child, shadow_desired, g.sx[index], g.sy[index])?
+	}
 	return spatial_filter_merge(foreground, shadow, offset, desired, stage.color, g.max_dim)
 }
 
@@ -213,7 +219,10 @@ fn spatial_filter_merge(foreground SpatialFilterValue, shadow SpatialFilterValue
 	// applyTransform() drops nonintersecting shadow results before merge.
 	shadow_bounds := if shadow.image.has_image { map_filter_bounds(shadow.image.layer_bounds, offset) } else { IRect{} }
 	has_shadow := irect_intersects(shadow_bounds, desired)
-	bounds := union_filter_bounds(if foreground.image.has_image { foreground.image.layer_bounds } else { IRect{} },
+	foreground_bounds := if view := foreground.view {
+		if view.filter == none || irect_intersects(view.layer_bounds, desired) { view.layer_bounds } else { IRect{} }
+	} else if foreground.image.has_image { foreground.image.layer_bounds } else { IRect{} }
+	bounds := union_filter_bounds(foreground_bounds,
 		if has_shadow { shadow_bounds } else { IRect{} })
 	merged_bounds := bounds.intersect(desired) or { return SpatialFilterValue{} }
 	padded := skif_outset(merged_bounds, 1, 1)
@@ -225,7 +234,11 @@ fn spatial_filter_merge(foreground SpatialFilterValue, shadow SpatialFilterValue
 		draw_tinted_filter_result_with_color(mut pixels, w * 4, shadow.image, offset, padded.left, padded.top,
 			&rc, color, shadow.color)
 	}
-	if foreground.image.has_image {
+	if view := foreground.view {
+		mut target := new_canvas_target(mut pixels, w, h, w * 4, 2)
+		if !foreground_bounds.is_empty() && !draw_filter_image_view(mut pixels, w * 4, &rc,
+			.src_over, view, padded.left, padded.top, mut target) { return none }
+	} else if foreground.image.has_image {
 		image := foreground.image
 		draw_color_filtered_bitmap(mut pixels, w * 4, image.color_info.bitmap(image.image.bitmap()),
 			image.origin_x - padded.left, image.origin_y - padded.top, &rc, .src_over, foreground.color,
