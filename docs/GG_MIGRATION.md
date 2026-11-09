@@ -2208,3 +2208,28 @@ find no direct or transitive Skia dependency. Its direct libraries are
 FreeType, libm and libc. Browser integration still uses installed Skia;
 full-browser Linux compile/link/run without it remains open. See the
 [native cases, setup error, cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/655628b3d28da2c41312f5af653c2071b22f294b/evidence/gg-migration/large-minified-image-shadows-20261109.json).
+
+
+### Large filters of minified source subsets (2026-11-09)
+
+`fb9c8e5af` extends initial source resolution to cropped images when native
+rescale requires it before progressive downsampling. The extracted bitmap
+keeps its original row stride and layer crop. Fractional subsets retain their
+AA surface; shadow merge retains the original deferred foreground.
+
+At seed 20261221 the baseline accepts 47 of 500 requests; the candidate accepts
+336 of the same cohort. Final default C cohorts on macOS and Linux both match
+1,418 of 2,000 requests at seed 20261222, declining 582. Optimized macOS/no-GC
+matches 686 of 1,000 at seed 20261223, declining 314. Counts include no-ops;
+all completed cohorts finish with unchanged input pins. Fourteen independent
+native regressions verify on each platform, covering integer, fractional,
+clipped and flipped source subsets across blur and shadow filters.
+
+Focused C/FastC suites, Linux browser typechecking, Linux HTML canvas
+integration and the C FMA audit pass (zero contracted, 189 explicit). The
+standalone Linux production/no-GC executable runs all eight registered image
+test functions with Skia unavailable to pkg-config. Link/readelf/ldd checks
+find no direct or transitive Skia dependency; direct libraries are FreeType,
+libm and libc. Browser integration still uses installed Skia development
+files. Full-browser Linux compile/link/run without Skia remains open. See the
+[guarded comparisons and dependency proof](https://github.com/vox-browser/vox-tests/blob/a0a230fb6b113ac5935d7a758a6805add64031c3/evidence/gg-migration/large-minified-source-subsets-20261109.json).
