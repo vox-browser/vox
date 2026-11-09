@@ -2145,3 +2145,53 @@ literal V `-prod` in one C unit. Status:
 `/Users/alex/.cache/vox/wpt/20261109-host-registries-production-status.json`.
 The larger official testharness collection continues independently on its
 pinned baseline. **Overall 100% is not achieved.**
+
+
+## UTF-16 through native attribute transport (2026-11-09)
+
+`aff93ae3e` preserves DOMString code units through native attribute writes,
+refresh replies and insertion of newly created elements. The Trusted Types
+transport now reads namespace, name and value as UTF-16 rather than truncating
+at a lone surrogate. Private JSON state preserves those units on input and
+escapes them before a UTF-8 reply crosses back into JavaScript. FormData still
+converts names and values to scalar strings at its own USVString boundary.
+Existing replay fixtures now explicitly check map-key presence so they also
+compile with literal V `-prod`; their expected values remain unchanged.
+
+The normal baseline reproduces corrupted native reads and truncated reflected
+input names. An intermediate fix repairs reads but exposes another rejection
+when insertion decodes the element's attribute state. Both failures, the
+intermediate attempts, and a preallocated baseline compile interrupted by a
+concurrent SVG API change remain in the evidence. After the complete fix,
+**26 focused behavior checks plus two worker/WPT entrypoints pass** in normal,
+prepared preallocation, and prepared preallocation with literal V `-prod`,
+using the C backend. Coverage includes native/retained Attr round trips,
+namespaces, conversion/exception identity, insertion, Trusted Types policies,
+and DOMString preservation until FormData conversion. All final focused
+compile/runtime exits are **0**, with V's 10 GiB limit, 12 GiB compile guards
+and 3 GiB runtime guards.
+
+Both fresh **65-variant original FileReader/FormData native cohorts report
+327/328 assertions**, including a passing constructor-formelement surrogate
+case. Every original assertion name/count is preserved and all harnesses
+complete. The remaining image-submitter coordinate assertion reports `-6`
+instead of `23` in both modes; strict runner/guard exits remain **1**. A
+separate diagnostic finds a zero-sized image input and no image request in
+that page's original cohort. These source epochs therefore do not reproduce
+the earlier native 328/328 result. No missing result or changed assertion is
+counted as a pass. Executables, runtime inputs, WPT checkout and manifest are
+pinned; feature hashes match the commit and shared source changes are recorded.
+These native test images do not establish a windowed production result.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-attribute-utf16-native-raw.tar.gz`,
+SHA-256 `bc477d58694eb24dce5e671a2a9c243e6e301d0bc464aace349a5d587cda0eda`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-attribute-utf16-native-summary.json`,
+SHA-256 `141b8c9e1decb5ebcf999870f0c443f570c210910a8a492b9520ee208e7f233d`.
+
+The managed commit hook requests the coalesced production rebuild. A separate
+observer waits for a completed original artifact containing the full UTF-16
+and registry fixes, then runs the exact 65 variants and 11 unchanged exact SVG
+comparisons under a read lease, without copying a browser bundle. Status:
+`/Users/alex/.cache/vox/wpt/20261109-attribute-utf16-production-status.json`.
+The independently pinned 40,139-variant official testharness collection remains
+active. **Overall 100% is not achieved.**
