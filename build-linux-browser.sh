@@ -11,8 +11,8 @@ if [ "$#" -ne 0 ]; then
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 # Match the supervisor's protocol; stale workers hand off before compiling.
-if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v7 ]; then
-    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != native-build-v8 ]; then
+    "$repo_dir/tools/vox-build.sh" supervise --upgrade-worker
     exit 75
 fi
 v_compiler=${V_BIN:-}
@@ -35,7 +35,7 @@ esac
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
     V_BIN=$v_compiler
     export V_BIN
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+    exec "$repo_dir/tools/vox-build.sh" supervise --build
 fi
 build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
 cache_dir="$repo_dir/Build/linux"
@@ -64,19 +64,19 @@ if command -v cargo >/dev/null 2>&1; then
     cp "$cache_dir/rust-jpegxl/release/libvox_jpegxl.so" "$build_dir/libVoxJPEGXL.so"
 fi
 if pkg-config --exists libavif; then
-    python3 "$repo_dir/tools/build_native_avif.py" --output "$build_dir/libVoxAVIF.so"
+    "$repo_dir/tools/vox-build.sh" build-avif --output "$build_dir/libVoxAVIF.so"
 else
     rm -f "$build_dir/libVoxAVIF.so"
 fi
-python3 "$repo_dir/tools/build_linux_native.py"
-http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
-linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
+"$repo_dir/tools/vox-build.sh" build-native
+http_modules=$("$repo_dir/tools/vox-build.sh" prepare-http "$v_compiler")
+ui2_modules=$("$repo_dir/tools/vox-build.sh" prepare-ui2 "$v_compiler")
+linux_modules=$("$repo_dir/tools/vox-build.sh" prepare-linux-modules "$v_compiler")
 module_paths="$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 if [ "$gc_mode" = prealloc ]; then
     # Use the production bounded realloc and persistent closure metadata;
     # allocator flags alone do not provide those ownership guarantees.
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
+    prealloc_modules=$("$repo_dir/tools/vox-build.sh" prepare-prealloc "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
     module_paths="$repo_dir|$prealloc_modules|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 fi
@@ -85,7 +85,7 @@ fi
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
 # `vox2.encoding` while its imports still name vlib's `encoding` directory.
 # Listing the repository first keeps its packages unqualified wherever it lives.
-v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
+v_backend=${VOX_BUILD_BACKEND:-$("$repo_dir/tools/vox-build.sh" backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl \

@@ -1,6 +1,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -8,7 +9,10 @@ import tempfile
 import textwrap
 import unittest
 
-from rebuild_browser import BUILD_PROTOCOL
+REPO = Path(__file__).resolve().parent.parent
+(BUILD_PROTOCOL,) = re.findall(
+    r"(?m)^const build_protocol = '([^']+)'$",
+    (REPO / 'tools/voxbuild/supervisor.v').read_text())
 
 
 class LinuxCompilerSelectionTest(unittest.TestCase):
@@ -17,8 +21,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         # The shell uses pwd -P; macOS exposes /var through /private/var.
         self.root = Path(self.temporary.name).resolve()
-        self.repo = self.root / 'project'
-        self.caller = self.root / 'caller'
+        self.repo = self.root / 'project with spaces'
+        self.caller = self.root / 'caller with spaces'
         self.helpers = self.root / 'helpers'
         self.test_home = self.root / 'home'
         for directory in (self.repo, self.caller, self.helpers, self.test_home):
@@ -29,7 +33,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             executable = shutil.which(command)
             self.assertIsNotNone(executable)
             (self.helpers / command).symlink_to(executable)
-        shutil.copyfile(Path(__file__).resolve().parent.parent / 'build-linux-browser.sh',
+        shutil.copyfile(REPO / 'build-linux-browser.sh',
                         self.repo / 'build-linux-browser.sh')
         self.compiler_log = self.root / 'compiler.json'
         self.helper_log = self.root / 'helpers.jsonl'
@@ -45,10 +49,10 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             VOX_BUILD_COMPILE_PROTOCOL=BUILD_PROTOCOL,
             VOX_BUILD_TEST_COMPILER_LOG=str(self.compiler_log),
             VOX_BUILD_TEST_HELPER_LOG=str(self.helper_log),
-            VOX_BUILD_TEST_MODULES=str(self.root / 'modules'),
+            VOX_BUILD_TEST_MODULES=str(self.root / 'compatibility modules'),
             VOX_BUILD_TEST_PREALLOC_MODULES=str(self.root / 'prealloc runtime'),
             VOX_BUILD_TEST_PREALLOC_FAILURE='0',
-            VOX_BUILD_TEST_LINUX_MODULES=str(self.root / 'linux-modules'),
+            VOX_BUILD_TEST_LINUX_MODULES=str(self.root / 'linux modules'),
             VOX_BUILD_TEST_SHELL=self.shell,
             VOX_BUILD_TEST_REENTER='0',
             CC='clang',
@@ -56,9 +60,11 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         )
         # Run the real shell entrypoint, replacing only its external tools.
         # No native dependencies, compiler installation, or browser build is needed.
+        # Test doubles use this harness's absolute interpreter. The build cannot
+        # find Python by command name: those PATH entries fail deliberately.
         self.write_executable(self.helpers / 'uname', "print('Linux')")
         self.write_executable(self.helpers / 'pkg-config', 'pass')
-        self.write_executable(self.helpers / 'python3', '''
+        self.build_tool = self.write_executable(self.repo / 'tools/vox-build.sh', '''
             import json
             import os
             from pathlib import Path
@@ -66,30 +72,38 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             import sys
 
             with open(os.environ['VOX_BUILD_TEST_HELPER_LOG'], 'a') as log:
-                log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd(),
+                log.write(json.dumps({'executable': sys.argv[0], 'argv': sys.argv[1:], 'cwd': os.getcwd(),
                                       'v_bin': os.environ.get('V_BIN')}) + '\\n')
-            if (Path(sys.argv[1]).name == 'rebuild_browser.py'
+            if (sys.argv[1] == 'supervise'
                     and sys.argv[2:] == ['--build']
                     and os.environ['VOX_BUILD_TEST_REENTER'] == '1'):
                 # Model the supervisor's reentry from the repository directory.
-                repo = Path(sys.argv[1]).parent.parent
+                repo = Path(sys.argv[0]).parent.parent
                 result = subprocess.run(
                     [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
                     cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
                 raise SystemExit(result.returncode)
-            if Path(sys.argv[1]).name == 'prepare_prealloc_runtime.py':
+            if sys.argv[1] == 'prepare-prealloc':
                 failure = int(os.environ['VOX_BUILD_TEST_PREALLOC_FAILURE'])
                 if failure:
                     print('Unsupported V allocator', file=sys.stderr)
                     raise SystemExit(failure)
                 print(os.environ['VOX_BUILD_TEST_PREALLOC_MODULES'])
-            elif Path(sys.argv[1]).name == 'prepare_linux_modules.py':
+            elif sys.argv[1] == 'prepare-linux-modules':
                 print(os.environ['VOX_BUILD_TEST_LINUX_MODULES'])
-            elif Path(sys.argv[1]).name.startswith('prepare_'):
+            elif sys.argv[1] in ('prepare-http', 'prepare-ui2'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
-            if Path(sys.argv[1]).name == 'browser_backend.py':
+            elif sys.argv[1] == 'backend':
                 print('fastc')
+            elif sys.argv[1] not in ('supervise', 'build-avif', 'build-native'):
+                raise SystemExit('Unexpected native build command: ' + sys.argv[1])
         ''')
+        for name in ('python', 'python3'):
+            self.write_executable(self.helpers / name, '''
+                import sys
+                print('Unexpected Python invocation from the build entrypoint', file=sys.stderr)
+                raise SystemExit(97)
+            ''')
 
     def write_executable(self, path, body):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -134,10 +148,11 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertNotIn('-prealloc', recorded['argv'])
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
         preparations = [item for item in helpers
-                        if Path(item['argv'][0]).name.startswith('prepare_')]
-        self.assertEqual([Path(item['argv'][0]).name for item in preparations],
-                         ['prepare_http_compat.py', 'prepare_ui2.py', 'prepare_linux_modules.py'])
+                        if item['argv'][0].startswith('prepare-')]
+        self.assertEqual([item['argv'][0] for item in preparations],
+                         ['prepare-http', 'prepare-ui2', 'prepare-linux-modules'])
         for preparation in preparations:
+            self.assertEqual(preparation['executable'], str(self.build_tool))
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
             self.assertEqual(preparation['argv'][2:], [])
@@ -165,11 +180,12 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertEqual(paths[-2:], ['@vmodules', '@vlib'])
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
         preparations = [item for item in helpers
-                        if Path(item['argv'][0]).name.startswith('prepare_')]
-        self.assertEqual([Path(item['argv'][0]).name for item in preparations],
-                         ['prepare_http_compat.py', 'prepare_ui2.py',
-                          'prepare_linux_modules.py', 'prepare_prealloc_runtime.py'])
+                        if item['argv'][0].startswith('prepare-')]
+        self.assertEqual([item['argv'][0] for item in preparations],
+                         ['prepare-http', 'prepare-ui2',
+                          'prepare-linux-modules', 'prepare-prealloc'])
         for preparation in preparations:
+            self.assertEqual(preparation['executable'], str(self.build_tool))
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
         self.assertEqual(preparations[-1]['argv'][2],
@@ -220,7 +236,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertFalse(self.compiler_log.exists())
         helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
         self.assertEqual([item['argv'] for item in helpers],
-                         [[str(self.repo / 'tools/rebuild_browser.py'), '--build']])
+                         [['supervise', '--build']])
         self.assertEqual(helpers[0]['v_bin'], str(compiler))
 
     def test_current_ui2_precedes_a_stale_linux_module(self):
@@ -275,7 +291,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                 self.assertFalse(self.compiler_log.exists())
                 helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
                 self.assertEqual([item['argv'] for item in helpers],
-                                 [[str(self.repo / 'tools/rebuild_browser.py'), '--upgrade-worker']])
+                                 [['supervise', '--upgrade-worker']])
 
     def test_current_supervisor_protocol_reaches_compiler(self):
         compiler = self.compiler(self.helpers / 'v')
@@ -312,6 +328,23 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         compiler = self.compiler(self.root / 'compiler directory/v executable')
         self.assert_compiler_selected(self.run_build(v_bin=compiler), compiler)
 
+    def test_native_build_tool_preserves_spaced_repository_and_argument_paths(self):
+        compiler = self.compiler(self.root / 'selected toolchain/v compiler')
+        self.assert_compiler_selected(self.run_build(v_bin=compiler), compiler)
+        helpers = [json.loads(line) for line in self.helper_log.read_text().splitlines()]
+        self.assertTrue(all(item['executable'] == str(self.build_tool) for item in helpers))
+        self.assertEqual([item['argv'][0] for item in helpers],
+                         ['build-avif', 'build-native', 'prepare-http', 'prepare-ui2',
+                          'prepare-linux-modules', 'backend'])
+        self.assertEqual(helpers[0]['argv'],
+                         ['build-avif', '--output', str(self.repo / 'Build/linux/libVoxAVIF.so')])
+        self.assertEqual(helpers[-1]['argv'], ['backend', str(self.repo)])
+        arguments = json.loads(self.compiler_log.read_text())['argv']
+        paths = arguments[arguments.index('-path') + 1].split('|')
+        self.assertEqual(paths[:4], [str(self.repo), self.environment['VOX_BUILD_TEST_MODULES'],
+                                     self.environment['VOX_BUILD_TEST_LINUX_MODULES'],
+                                     self.environment['VOX_BUILD_TEST_MODULES']])
+
     def test_compiler_symlink_is_not_dereferenced(self):
         target = self.compiler(self.root / 'compiler-target')
         compiler = self.caller / 'toolchain/v'
@@ -336,6 +369,17 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertIn('V compiler not found', result.stdout)
         self.assertFalse(self.compiler_log.exists())
         self.assertFalse(self.helper_log.exists())
+
+
+class NativeBuildEntrypointTest(unittest.TestCase):
+    def test_normal_build_entrypoints_do_not_invoke_python(self):
+        for name in ('build-linux-browser.sh', 'build-prod-browser.sh',
+                     'tools/vox-build.sh', 'build_browser.vsh'):
+            with self.subTest(entrypoint=name):
+                code = '\n'.join(line for line in (REPO / name).read_text().splitlines()
+                                 if not line.lstrip().startswith(('#', '//')))
+                self.assertNotRegex(code, r'(?i)\bpython(?:[23](?:\.\d+)*)?\b')
+                self.assertNotRegex(code, r'[\w/.-]+\.py\b')
 
 
 if __name__ == '__main__':

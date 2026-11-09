@@ -24,7 +24,8 @@ jobs:
       matrix:
         gc: [boehm, prealloc]
     env:
-      V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
+      # Includes the FastC enum/JSON support used by tab state (vlang/v#31994).
+      V_REVISION: 395d574b9197e5d61a801d7e9d3f3ddb77bb0d46
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
@@ -42,7 +43,7 @@ jobs:
           git checkout -B master
           git rev-parse HEAD
 
-      - name: Check the Linux build entrypoint
+      - name: Check optional Python regression harnesses
         run: |
           python3 tools/build_linux_browser_test.py
           python3 tools/rebuild_browser_test.py
@@ -98,7 +99,7 @@ jobs:
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
-            make -C "$RUNNER_TEMP/v" -j2 VFLAGS='-memory-limit 10G'
+            make -C "$RUNNER_TEMP/v" -j2 VEXE="$RUNNER_TEMP/v/v" VFLAGS='-memory-limit 10G'
           "$RUNNER_TEMP/v/v" version
           git init "$RUNNER_TEMP/ui2"
           git -C "$RUNNER_TEMP/ui2" remote add origin https://github.com/vlang/ui2.git
@@ -107,27 +108,41 @@ jobs:
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
+      - name: Bootstrap and check the native build tools
+        timeout-minutes: 20
+        env:
+          VJOBS: '1'
+          VOX_BUILD_TEST_TOOL: ${{ github.workspace }}/Build/tools/vox-build
+        run: |
+          # The launcher compiles and caches the tool with -gc none and the
+          # compiler memory limit. All later build guards use this native tool.
+          sh tools/vox-build.sh --help
+          sh tools/vox-build.sh memory \
+            --lock "$RUNNER_TEMP/vox-native-tools.lock" \
+            --report "$RUNNER_TEMP/vox-native-tools.json" --limit-gib 3 --timeout 1140 -- \
+            "$V_BIN" -memory-limit 10G -gc none -cc clang test tools/voxbuild
+
       - name: Check resource cache and cancellation contracts
         if: matrix.gc == 'boehm'
         timeout-minutes: 10
         run: |
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-cache.lock" \
             --report "$RUNNER_TEMP/vox-resource-cache.json" --limit-gib 3 --timeout 300 -- \
             "$V_BIN" -memory-limit 10G test cachepolicy
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-cache-nogc.lock" \
             --report "$RUNNER_TEMP/vox-resource-cache-nogc.json" --limit-gib 3 --timeout 300 -- \
             "$V_BIN" -memory-limit 10G -gc none test cachepolicy
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-lifecycle.lock" \
             --report "$RUNNER_TEMP/vox-resource-lifecycle.json" --limit-gib 3 --timeout 300 -- \
             python3 tools/test_resource_lifecycle.py
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-v.lock" \
             --report "$RUNNER_TEMP/vox-resource-v.json" --limit-gib 3 --timeout 300 -- \
             python3 tools/test_resource_v_contracts.py --v "$V_BIN"
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-v-prealloc.lock" \
             --report "$RUNNER_TEMP/vox-resource-v-prealloc.json" --limit-gib 3 --timeout 300 -- \
             python3 tools/test_resource_v_contracts.py --v "$V_BIN" --prealloc
@@ -136,36 +151,56 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
           path: Build/deps
-          key: linux-skia-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/build_linux_skia.py') }}
+          key: linux-skia-native-v1-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/voxbuild/native.v', 'tools/voxbuild/common.v', 'tools/vox-build.sh') }}
 
       - name: Build Skia
         timeout-minutes: 45
         run: |
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-skia-build.lock" \
             --report "$RUNNER_TEMP/vox-skia-build.json" --timeout 2400 -- \
-            python3 tools/build_linux_skia.py
+            sh tools/vox-build.sh build-linux-skia
 
       - name: Check native Skia linking and rendering
         timeout-minutes: 10
         run: |
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-native-build.lock" \
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
-            python3 tools/build_linux_native.py
-          python3 tools/run_memory_bounded.py \
+            sh tools/vox-build.sh build-native
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-skia-test.lock" \
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
-      - name: Build Vox and run the headless smoke test
+      - name: Build Vox and run the headless smoke test without Python
         timeout-minutes: 50
         run: |
+          # Both allocator jobs run the complete production path with every
+          # standard Python command name poisoned, including versioned names.
+          poison="$RUNNER_TEMP/vox-no-python"
+          mkdir -p "$poison"
+          export VOX_PYTHON_POISON_LOG="$RUNNER_TEMP/vox-python-invocations.log"
+          cat > "$poison/python" <<'SH'
+          #!/bin/sh
+          printf '%s\n' "$0 $*" >> "$VOX_PYTHON_POISON_LOG"
+          printf 'Unexpected Python invocation during the Vox build: %s\n' "$0" >&2
+          exit 97
+          SH
+          chmod +x "$poison/python"
+          for major in 2 3; do
+            ln -s python "$poison/python$major"
+            for minor in {0..20}; do
+              ln -s python "$poison/python$major.$minor"
+            done
+          done
+          export PATH="$poison:$PATH"
           # The normal supervisor applies the build memory guard and runs
           # --headless-smoke before publishing Build/linux/vox.
           sh build-prod-browser.sh
           test -x Build/linux/vox
+          test ! -e "$VOX_PYTHON_POISON_LOG"
 
       - name: Check the native window and tab lifecycle
         timeout-minutes: 12
@@ -173,7 +208,7 @@ jobs:
           # This is the full supervised binary, including the staged prealloc
           # runtime in that matrix entry. Xvfb exercises window/UI startup,
           # input, native redraw, process tabs and graceful teardown.
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.json" \
             --limit-gib 3 --timeout 600 -- \
@@ -187,7 +222,7 @@ jobs:
           # Poison released arenas so stale borrowed payloads fault rather
           # than surviving accidentally in a reusable allocation block.
           export VOX_ARENA_POISON=1
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-ownership-tests.lock" \
             --report "$RUNNER_TEMP/vox-ownership-tests.json" --timeout 840 -- \
             python3 tools/test_linux_native.py --gc prealloc \
@@ -209,7 +244,7 @@ jobs:
           # production arena builds. Each executable has a 3 GiB runtime guard.
           # Poison released arenas to expose any stale recording readers.
           export VOX_ARENA_POISON=1
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-recording-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-recording-$LADYBIRD_V_GC.json" --timeout 840 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
@@ -220,7 +255,7 @@ jobs:
         timeout-minutes: 25
         run: |
           export VOX_ARENA_POISON=1
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.json" --timeout 1200 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
@@ -235,7 +270,7 @@ jobs:
           # The same owner must survive suspension and retire exactly once in
           # collector and production arena builds, including external frames.
           export VOX_ARENA_POISON=1
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.lock" \
             --report "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.json" --timeout 2340 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
@@ -253,7 +288,7 @@ jobs:
         run: |
           # Exercise the adapters and document owners against the full engine,
           # in addition to the fast cache and native transport contracts above.
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-resource-integration.lock" \
             --report "$RUNNER_TEMP/vox-resource-integration.json" --timeout 1980 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
@@ -267,7 +302,7 @@ jobs:
         run: |
           # Compile each focused case under the build budget. The runner gives
           # each executable its own 3 GiB runtime guard and preserves its log.
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-parser-tests.lock" \
             --report "$RUNNER_TEMP/vox-parser-tests.json" --timeout 3000 -- \
             python3 tools/test_linux_native.py \
@@ -286,7 +321,7 @@ jobs:
         run: |
           # Parser resumption can run inside a temporary frame arena. Exercise
           # its retained document storage with the production allocator too.
-          python3 tools/run_memory_bounded.py \
+          sh tools/vox-build.sh memory \
             --lock "$RUNNER_TEMP/vox-parser-storage-tests.lock" \
             --report "$RUNNER_TEMP/vox-parser-storage-tests.json" --timeout 480 -- \
             python3 tools/test_linux_native.py --gc prealloc \
@@ -301,6 +336,7 @@ jobs:
 
           temporary = Path(os.environ['RUNNER_TEMP'])
           paths = sorted(temporary.glob('vox-*.json'))
+          paths.extend(temporary.glob('vox-python-invocations.log'))
           paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
@@ -324,6 +360,7 @@ jobs:
           if-no-files-found: warn
           path: |
             ${{ runner.temp }}/vox-*.json
+            ${{ runner.temp }}/vox-python-invocations.log
             Build/linux/production-build/receipts/*/*.log
             Build/linux/production-build/receipts/*/*.json
             Build/linux/tests/*/run-*/*.log

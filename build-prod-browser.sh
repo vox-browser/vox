@@ -60,7 +60,7 @@ done
 if [ -n "$v_prod_flag" ] && [ "$seen_single_option" = 0 ]; then single_c_unit_flag=--no-parallel-cc; fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build $single_c_unit_flag $parallel_c_unit_flag $v_prod_flag
+    exec "$repo_dir/tools/vox-build.sh" supervise --build $single_c_unit_flag $parallel_c_unit_flag $v_prod_flag
 fi
 
 case "$(uname -s)" in
@@ -78,12 +78,12 @@ export MACOSX_DEPLOYMENT_TARGET
 # A worker already running when the build protocol changes must finish its
 # current job, then hand off before starting another compiler. The successor
 # uses the same queued request and guard; no process is interrupted.
-if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v7 ]; then
-    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+if [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != native-build-v8 ]; then
+    "$repo_dir/tools/vox-build.sh" supervise --upgrade-worker
     exit 75
 fi
 : "${VOX_BUILD_RECEIPT_DIR:?production build receipt directory is required}"
-python3 "$repo_dir/tools/production_source_manifest.py" begin --root "$repo_dir" \
+"$repo_dir/tools/vox-build.sh" manifest begin --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json"
 
 c_mode=${VOX_BUILD_C_MODE:-parallel}
@@ -124,7 +124,7 @@ fi
 # V_BIN is authoritative: fail if it cannot compile the requested renderer.
 explicit_v_flag=
 if [ -n "${V_BIN:-}" ]; then explicit_v_flag=--explicit; fi
-v_compiler=$(python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" \
+v_compiler=$("$repo_dir/tools/vox-build.sh" renderer "$v_compiler" \
     --skia "${VOX_USE_SKIA:-0}" $explicit_v_flag --fallback "$HOME/code/v-gg/v")
 
 # The browser owns temporary and retained allocations through scoped arenas.
@@ -215,7 +215,7 @@ fi
 avif_library=""
 if [ -f "$skia_root/lib/libavif.dylib" ] && [ -f "$skia_root/include/avif/avif.h" ]; then
     avif_library="$build_dir/libVoxAVIF.dylib"
-    python3 "$repo_dir/tools/build_native_avif.py" --sdk-root "$skia_root" --output "$avif_library"
+    "$repo_dir/tools/vox-build.sh" build-avif --sdk-root "$skia_root" --output "$avif_library"
 fi
 bridge_library=""
 graphite_library=""
@@ -223,17 +223,17 @@ dawn_library=""
 if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
     graphite_library="$build_dir/libVoxGraphite.dylib"
     if [ -n "${VOX_PRIVATE_GRAPHITE_HELPER:-}" ]; then
-        python3 "$VOX_PRIVATE_GRAPHITE_HELPER" --repo "$repo_dir" \
+        "$VOX_PRIVATE_GRAPHITE_HELPER" --repo "$repo_dir" \
             --skia-root "$skia_root" --output "$graphite_library"
     else
-        python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
+        "$repo_dir/tools/vox-build.sh" build-graphite --skia-root "$skia_root" \
             --output "$graphite_library"
     fi
     dawn_library="$build_dir/libVoxGraphiteDawn.dylib"
-    python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
+    "$repo_dir/tools/vox-build.sh" build-graphite-dawn --skia-root "$skia_root" \
         --output "$dawn_library"
     bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
-    snapshot_deflate=$(python3 "$repo_dir/tools/build_snapshot_deflate.py")
+    snapshot_deflate=$("$repo_dir/tools/vox-build.sh" build-snapshot-deflate)
     cp "$snapshot_deflate/libdeflate-1.24/COPYING" "$resources_dir/libdeflate-LICENSE.txt"
     clang++ -std=c++20 -O3 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
 		-I"$skia_root/include/skia" -I"$skia_root/include" \
@@ -300,15 +300,15 @@ export V_MACOS_V3_NO_FALLBACK
 # graph while leaving pointer-free buffers atomic. Optimized forced-GC tests
 # cover nested token strings, CSSOM values and arena records. boehm_full
 # remains available as an ownership diagnostic.
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
-http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
+ui2_modules=$("$repo_dir/tools/vox-build.sh" prepare-ui2 "$v_compiler")
+http_modules=$("$repo_dir/tools/vox-build.sh" prepare-http "$v_compiler")
 prealloc_modules=""
 # Every collector uses glyph-index lookup in the platform font bridge. Avoid
 # decoding x.ttf's dense Unicode vectors only to discard them after each face
 # initialization. Stage the same checked initializer for every browser build.
-font_modules=$(python3 "$repo_dir/tools/prepare_font_runtime.py" "$v_compiler")
+font_modules=$("$repo_dir/tools/vox-build.sh" prepare-font "$v_compiler")
 if [ "$gc_mode" = prealloc ]; then
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
+    prealloc_modules=$("$repo_dir/tools/vox-build.sh" prepare-prealloc "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
 fi
 # Anchor package names at the repository; see build-linux-browser.sh. Without
@@ -316,13 +316,13 @@ fi
 # `encoding` as `vox2.encoding` while imports still resolve to vlib's name.
 # Pin the manifest's frontend and Clang for native code and C optimization.
 # V drivers without manifest defaults need the backend passed explicitly.
-v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
+v_backend=${VOX_BUILD_BACKEND:-$("$repo_dir/tools/vox-build.sh" backend "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
 set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 # Verify the staged compiler's actual library too. Legacy builds are explicit;
 # unsupported default compilers must not silently produce a Skia-default app.
-python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" --explicit \
+"$repo_dir/tools/vox-build.sh" renderer "$v_compiler" --explicit \
     --skia "${VOX_USE_SKIA:-0}" --receipt "$VOX_BUILD_RECEIPT_DIR/renderer.json" >/dev/null
 if [ "${VOX_USE_SKIA:-0}" != 1 ]; then
     set -- "$@" -d vox_gg_canvas
@@ -425,7 +425,7 @@ export V_MACOS_V3_SOURCE_MANIFEST=1
 export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
 # Compile the module directory so FastC enables full language support, including
 # the generic JSON transport. Its single-file mode uses a restricted parser.
-python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+"$repo_dir/tools/vox-build.sh" manifest compile --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
@@ -455,7 +455,7 @@ if [ "$v_backend" = fastc ]; then
     if [ "$v_prod" = 1 ]; then v_prod_json=true; fi
     printf '{"backend": "fastc", "mode": "fastc", "requested": "%s", "v_prod": %s}\n' \
         "$requested_c_mode" "$v_prod_json" > "$VOX_BUILD_RECEIPT_DIR/c-compile.json"
-    python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+    "$repo_dir/tools/vox-build.sh" manifest compile --root "$repo_dir" \
         --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
         --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@" \
         -cflags "$extra_cflags" -ldflags "$extra_ldflags" -o "$compile_dir/Vox" "$repo_dir"
@@ -464,11 +464,11 @@ elif [ "$c_mode" = parallel ]; then
     # split support, or when native code would be duplicated in every unit, the
     # helper leaves no executable and the sealed single-unit compile below runs.
     if [ "$v_prod" = 1 ]; then
-        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        "$repo_dir/tools/vox-build.sh" parallel --receipt "$VOX_BUILD_RECEIPT_DIR" \
             --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
             -cflags "$extra_cflags" -ldflags "$extra_ldflags" "$repo_dir"
     else
-        python3 "$repo_dir/tools/parallel_browser_compile.py" --receipt "$VOX_BUILD_RECEIPT_DIR" \
+        "$repo_dir/tools/vox-build.sh" parallel --receipt "$VOX_BUILD_RECEIPT_DIR" \
             --output "$compile_dir/Vox" -- "$v_compiler" "$@" \
             -cflags "$extra_cflags -flto=thin" \
             -ldflags "$extra_ldflags -flto=thin${parallel_lto_ldflags:-}" "$repo_dir"
@@ -484,7 +484,7 @@ if [ ! -f "$compile_dir/Vox" ]; then
     export V_MACOS_V3_SOURCE_MANIFEST=1
     export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/browser-sources"
     compile_browser_v() {
-        python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
+        "$repo_dir/tools/vox-build.sh" manifest compile --root "$repo_dir" \
             --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
             --component-dir "$VOX_BUILD_RECEIPT_DIR/browser-sources" --command "$v_compiler" "$@"
     }
@@ -503,7 +503,7 @@ if [ ! -f "$compile_dir/Vox" ]; then
        [ -f "$VOX_BUILD_RECEIPT_DIR/browser-sources/v_sources" ]; then
         # A compiler without manifest support retains the whole-tree check.
         # Partial manifests fail in combine rather than weakening verification.
-        python3 "$repo_dir/tools/production_source_manifest.py" combine --parsed --root "$repo_dir" \
+        "$repo_dir/tools/vox-build.sh" manifest combine --parsed --root "$repo_dir" \
             --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
             --component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
             --component "$VOX_BUILD_RECEIPT_DIR/browser-sources" \
@@ -513,10 +513,10 @@ if [ ! -f "$compile_dir/Vox" ]; then
             --parsed-component "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
             --parsed-component "$VOX_BUILD_RECEIPT_DIR/browser-sources"
     fi
-    python3 "$repo_dir/tools/freeze_browser_compile.py" "$@"
+    "$repo_dir/tools/vox-build.sh" freeze "$@"
 fi
 mv -f "$compile_dir/Vox" "$binary_dir/Vox"
-python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
+"$repo_dir/tools/vox-build.sh" localize-rpaths "$binary_dir/Vox" "$build_dir"
 
 
 if [ -n "${jpegxl_library:-}" ]; then
