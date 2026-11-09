@@ -802,16 +802,17 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 	iterator.dimension_box_on_line(box)
 	styled := current.as_node_with_style() or { return none }
 	box_state := iterator.state.get(styled)
+	horizontal := iterator.containing_block.computed_values().writing_mode() == .horizontal_tb
 	mut item := InlineLevelItem{
 		type_: .element
 		node: current
-		width: box_state.content_width()
-		padding_start: box_state.padding_left
-		padding_end: box_state.padding_right
-		border_start: box_state.border_left
-		border_end: box_state.border_right
-		margin_start: box_state.margin_left
-		margin_end: box_state.margin_right
+		width: if horizontal { box_state.content_width() } else { box_state.content_height() }
+		padding_start: if horizontal { box_state.padding_left } else { box_state.padding_top }
+		padding_end: if horizontal { box_state.padding_right } else { box_state.padding_bottom }
+		border_start: if horizontal { box_state.border_left } else { box_state.border_top }
+		border_end: if horizontal { box_state.border_right } else { box_state.border_bottom }
+		margin_start: if horizontal { box_state.margin_left } else { box_state.margin_top }
+		margin_end: if horizontal { box_state.margin_right } else { box_state.margin_bottom }
 	}
 	iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
 	if current.is_list_item_marker_box() {

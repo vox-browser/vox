@@ -312,7 +312,7 @@ pub fn layout_block_flow(mut state LayoutState, box &NodeWithStyle, containing_b
 			inline_result := inline_context.run_inline_formatting_context_with_floats(mut state, block_container, mut used_values, .normal, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 			_ = inline_result
 			content_height_from_children = if used_values.line_boxes.len > 0 {
-				used_values.line_boxes.last().bottom().to_double()
+				physical_height_of_inline_lines(used_values.line_boxes,box.computed_values().writing_mode()).to_double()
 			} else {
 				0.0
 			}
@@ -396,6 +396,16 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 	return result
 }
 
+// Horizontal line boxes stack in y; vertical lines share the inline y axis.
+// Their last line can be shorter than an earlier one.
+fn physical_height_of_inline_lines(lines []LineBox, writing_mode css.WritingMode) CSSPixels {
+ if lines.len == 0 { return CSSPixels.new(0) }
+ if writing_mode == .horizontal_tb { return lines.last().bottom() }
+ mut height := CSSPixels.new(0)
+ for line in lines { height = css_pixels_max(height,line.height()) }
+ return height
+}
+
 fn layout_inside_independent_formatting_context_without_containment_override(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	return run_retaining_independent_formatting_context(mut state, box, mut box_state, layout_mode, available_space)
 }
@@ -450,7 +460,7 @@ fn layout_uncached_independent_formatting_context(mut state LayoutState, box &No
 			mut automatic_height := if block_size := column_block_size {
 				block_size
 			} else if box_state.line_boxes.len > 0 {
-				box_state.line_boxes.last().bottom()
+				physical_height_of_inline_lines(box_state.line_boxes,box.computed_values().writing_mode())
 			} else {
 				CSSPixels.new(0)
 			}

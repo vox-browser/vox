@@ -804,7 +804,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 				inline_result := bfc.run_inline_formatting_context_with_floats(mut state, inline_container, mut box_state, bfc.layout_mode, AvailableSpace.new(AvailableSize.make_definite(css_px(content_width)), available_height))
 				_ = inline_result
 				content_height_from_children = if box_state.line_boxes.len > 0 {
-					box_state.line_boxes.last().bottom().to_double()
+					physical_height_of_inline_lines(box_state.line_boxes,computed.writing_mode()).to_double()
 				} else {
 					0.0
 				}

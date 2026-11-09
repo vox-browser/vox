@@ -309,8 +309,15 @@ pub fn (mut builder LineBuilder) append_box(box &Box, leading_size CSSPixels, tr
 	styled := unsafe { &NodeWithStyle(box) }
 	mut box_state := builder.layout_state.get_mutable(styled)
 	mut line_box := builder.ensure_last_line_box()
-	line_box.add_fragment(unsafe { &Node(box) }, 0, 0, leading_size, trailing_size, leading_margin, trailing_margin, box_state.content_width(), box_state.content_height(), box_state.border_box_top(), box_state.border_box_bottom(), none)
-	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line, box_state.margin_box_height())
+	horizontal := builder.writing_mode == .horizontal_tb
+	reversed := builder.writing_mode in [.vertical_rl,.sideways_rl]
+	block_start := if horizontal { box_state.border_box_top() } else if reversed { box_state.border_box_right() } else { box_state.border_box_left() }
+	block_end := if horizontal { box_state.border_box_bottom() } else if reversed { box_state.border_box_left() } else { box_state.border_box_right() }
+	line_box.add_fragment(unsafe { &Node(box) }, 0, 0, leading_size, trailing_size, leading_margin, trailing_margin,
+		if horizontal { box_state.content_width() } else { box_state.content_height() },
+		if horizontal { box_state.content_height() } else { box_state.content_width() },block_start,block_end,none)
+	builder.max_height_on_current_line = css_pixels_max(builder.max_height_on_current_line,
+		if horizontal { box_state.margin_box_height() } else { box_state.margin_box_width() })
 	box_state.containing_line_box_fragment = LineBoxFragmentCoordinate{
 		line_box_index: builder.containing_block_used_values.line_boxes.len - 1
 		fragment_index: line_box.fragments_.len - 1
@@ -734,7 +741,14 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				}
 			}
 		} else {
-			fragment_baseline = layout_box_baseline_for_inline(builder.layout_state, fragment.layout_node_)
+			fragment_baseline = if builder.writing_mode == .horizontal_tb {
+				layout_box_baseline_for_inline(builder.layout_state,fragment.layout_node_)
+			} else {
+				from_low := grid_baseline_from_low(builder.layout_state,unsafe { &Node(builder.containing_block) },fragment.layout_node_,true,.last,0)
+				if builder.writing_mode in [.vertical_rl,.sideways_rl] {
+					if styled := fragment.layout_node_.as_node_with_style() { builder.layout_state.get(styled).margin_box_width().minus(from_low) } else { from_low }
+				} else { from_low }
+			}
 		}
 		fragment.set_baseline(fragment_baseline)
 		if builder.line_relative_aligned_subtree_root(fragment_alignment_style_source(fragment)) != none {
@@ -757,7 +771,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_baseline = if fragment_computed.vertical_align() == .text_top {
 					CSSPixels.nearest_value_for(f64(parent_metrics.ascent))
 				} else {
-					fragment.height().minus(CSSPixels.nearest_value_for(f64(parent_metrics.descent)))
+					fragment.block_length().minus(CSSPixels.nearest_value_for(f64(parent_metrics.descent)))
 				}
 				used_font_baseline = CSSPixels.new(0)
 			}
@@ -805,8 +819,10 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		if fragment.is_atomic_inline() {
 			if styled := fragment.layout_node_.as_node_with_style() {
 				fragment_box_state := builder.layout_state.get(styled)
-				effective_box_top_offset = fragment_box_state.margin_box_top()
-				effective_box_bottom_offset = fragment_box_state.margin_box_bottom()
+				horizontal := builder.writing_mode == .horizontal_tb
+				reversed := builder.writing_mode in [.vertical_rl,.sideways_rl]
+				effective_box_top_offset = if horizontal { fragment_box_state.margin_box_top() } else if reversed { fragment_box_state.margin_box_right() } else { fragment_box_state.margin_box_left() }
+				effective_box_bottom_offset = if horizontal { fragment_box_state.margin_box_bottom() } else if reversed { fragment_box_state.margin_box_left() } else { fragment_box_state.margin_box_right() }
 			}
 		}
 		alphabetic_baseline :=
@@ -836,7 +852,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				fragment_block_offset =
 					builder.current_block_offset.plus(line_box_baseline).plus(middle_alignment_offset(
 						fragment.layout_node_, effective_box_top_offset, effective_box_bottom_offset,
-						fragment.height(), parent_metrics.x_height))
+						fragment.block_length(), parent_metrics.x_height))
 			}
 			.sub {
 				fragment_block_offset =
@@ -862,7 +878,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					container_font_metrics
 				}
 				fragment_block_offset = builder.current_block_offset.plus(line_box_baseline).plus(CSSPixels.nearest_value_for(f64(parent_font_metrics.descent))).minus(
-					fragment.height()).minus(effective_box_bottom_offset)
+					fragment.block_length()).minus(effective_box_bottom_offset)
 			}
 			else {}
 		}
@@ -905,10 +921,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		if fragment.is_atomic_inline() {
 			if styled := fragment.layout_node_.as_node_with_style() {
 				fragment_box_state := builder.layout_state.get(styled)
-				top_of_inline_box =
-					fragment.block_offset().minus(fragment_box_state.margin_box_top())
-				bottom_of_inline_box =
-					fragment.block_offset().plus(fragment_box_state.content_height()).plus(fragment_box_state.margin_box_bottom())
+				top_of_inline_box = fragment.block_offset().minus(effective_box_top_offset)
+				bottom_of_inline_box = fragment.block_offset().plus(if builder.writing_mode == .horizontal_tb { fragment_box_state.content_height() } else { fragment_box_state.content_width() }).plus(effective_box_bottom_offset)
 			}
 		} else {
 			font_metrics := layout_font_metrics_for_node(fragment.layout_node_)
