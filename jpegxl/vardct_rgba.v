@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-// Complete-file output for the assembled opaque 4:4:4 VarDCT subset.
+// Complete-file output for the assembled opaque VarDCT subset.
 pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 	return decode_image_rgba_impl(input, premultiply, false, false)
 }
 
-// Opaque 4:4:4 VarDCT and modular XYB output, including LF frames and image
+// Opaque VarDCT and modular XYB output, including LF frames and image
 // upsampling. Extra channels, feature streams and wider frame composition must
 // be preserved before this can replace the production decoder.
 pub fn decode_opaque_rgba(input []u8, premultiply bool) !RgbaImage {
