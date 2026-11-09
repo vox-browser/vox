@@ -4835,7 +4835,11 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 			mut mutable_document := unsafe { &Document(document) }
 			mutable_document.update_layout(.node_name_or_description)
 			mut accumulated_text := strings.new_builder(0)
-			accumulated_text.write_string(generated_content_text(element, .marker))
+			// A summary's marker conveys its disclosure state. Its name comes
+			// from the summary subtree, without the marker (HTML-AAM).
+			if !element.is_html_element() || element.local_name() != 'summary' {
+				accumulated_text.write_string(generated_content_text(element, .marker))
+			}
 			accumulated_text.write_string(generated_content_text(element, .before))
 			mut child_nodes := n.children.clone()
 			if element.is_shadow_host() {
