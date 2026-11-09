@@ -255,17 +255,25 @@ their final pixel output.
 
 Remaining work includes grouped/tiled application, complete frame assembly,
 VarDCT, patches/noise/splines, filtering, pixel color conversion, oriented output
-rows, exact alpha quantization and browser integration. Container/API streaming
+rows and browser integration. Container/API streaming
 remains a broader parity task.
 
-The corpus checker discovers twenty-four test files. The preceding full batch
-ran the then-fifteen files in both GC modes; the subsequent nine files pass
-focused default and no-GC batches with unavailable Rust compiler paths. This is
-nine completed slices after that JPEG XL baseline; broader suites were not
-rerun. The package now checks 196,704 source cases, counting individual ANS alias
-transitions and whole weighted/property transcripts.
-[The modular stream report](../docs/translation-audit/JPEGXL_V_MODULAR_STREAMS.md)
-records commands, limits and the source-case definitions.
+Output sample conversion now normalizes integer rows, premultiplies alpha and
+quantizes floats with the source's positional blue-noise dither. Native
+round-to-nearest-even, clamping and RGBA channel offsets are preserved. The
+4,926 whole-row comparisons include all 65,536 color/alpha pairs for each RGB
+channel, all integer depths and constructed rounding ties. The unchanged dither
+table retains its original attribution in `DITHER_NOTICE.md`. Source scalar
+fallback tie behavior and final frame output remain separate boundaries.
+
+The corpus checker discovers twenty-five test files. The full package passes
+in both GC modes with unavailable Rust compiler paths after ten completed slices
+since the preceding fifteen-file batch. JPEG XL cadence resets to 0/10; unrelated
+broader suites were not rerun. The package checks 201,630 source cases, counting
+individual ANS alias transitions and whole weighted/property/row transcripts.
+[The output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
+records the current checkpoint; [the modular stream report](../docs/translation-audit/JPEGXL_V_MODULAR_STREAMS.md)
+records the preceding coverage and limits.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

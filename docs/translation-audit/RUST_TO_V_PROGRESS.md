@@ -158,3 +158,20 @@ orientation, animation and wide-gamut metadata are not final rendering support.
 source, exact coverage, commands and corrected failures. Grouped/tiled decoding,
 complete frames, VarDCT, filters and final pixel output remain. Production JPEG
 XL, Cargo/CI hooks and its developer test continue to require Rust.
+
+## Output samples and JPEG XL checkpoint on 2026-11-09
+
+V now converts integer rows to f32, premultiplies alpha and quantizes output
+with the source's positional blue-noise dither. The 4,926 new source row cases
+include every 8-bit color/alpha pair for each RGB channel, all integer depths and
+rounding ties. The package now checks 201,630 frozen cases in twenty-five files.
+
+The complete twenty-five-file JPEG XL suite passes through the V corpus checker
+in both GC modes with unavailable Rust compiler paths. Compiler and all 110
+selected input hashes stayed unchanged across both batches. Both tests, inner
+guards, drivers and outer guards exited zero. This resets the JPEG XL cadence
+to 0/10 after the ten-slice continuation; unrelated LibJS/DOM/performance
+ledgers were not changed or rerun.
+[The output sample report](JPEGXL_V_OUTPUT_SAMPLES.md) records the exact native
+rounding boundary, attribution, commands and memory observations. Final frame
+decoding and production/developer-tool Rust removal remain unfinished.
