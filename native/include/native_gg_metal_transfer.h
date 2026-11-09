@@ -1,10 +1,27 @@
 // Included inside Sokol's Metal transfer implementation by prepare_gg_metal.py.
 // Keep the synchronous public contract: the caller owns readable pixels when
 // this returns. Pending rendering and its readback share one command buffer.
+#include <dlfcn.h>
+static void vox_gg_metal_readback_diagnostic(bool joined) {
+    static unsigned reported;
+    if (!getenv("VOX_GG_READBACK_DIAGNOSTICS") || reported >= 128) return;
+    typedef double (*Clock)(void);
+    static Clock clock;
+    static bool resolved;
+    if (!resolved) {
+        clock = (Clock)dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time");
+        resolved = true;
+    }
+    double time = clock ? clock() : -1;
+    if (clock && time < 0) return;
+    ++reported;
+    fprintf(stderr, "VOX_GG_READBACK joined=%d t_us=%.3f\n", (int)joined, time);
+}
+
 _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
     int width, int height, void* pixels, int pitch, bool write) {
     // Keep writes and the old reader available for matched comparisons.
-    if (write || getenv("VOX_GG_SEPARATE_READBACK")) {
+    if (write || !getenv("VOX_GG_JOINED_READBACK") || getenv("VOX_GG_SEPARATE_READBACK")) {
         return _sg_v_mtl_transfer_separate(img, x, y, width, height, pixels, pitch, write);
     }
     if (nil != _sg.mtl.cmd_encoder) return false;
@@ -12,6 +29,9 @@ _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
         id<MTLTexture> texture = _sg_mtl_id(img->mtl.tex[img->cmn.active_slot]);
         const NSUInteger row_bytes = (NSUInteger)(width * _sg_pixelformat_bytesize(img->cmn.pixel_format));
         const NSUInteger total = row_bytes * (NSUInteger)height;
+#ifdef VOX_TEST_GG_METAL_TRANSFER
+        if (vox_test_gg_metal_fail_allocation) return false;
+#endif
         id<MTLBuffer> staging = [_sg.mtl.device newBufferWithLength:total
             options:MTLResourceStorageModeShared];
         if (nil == staging) return false;
@@ -20,6 +40,9 @@ _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
         id<MTLCommandBuffer> commands = _sg.mtl.cmd_buffer;
         bool joined = nil != commands;
         if (!joined) commands = [_sg.mtl.cmd_queue commandBuffer];
+#ifdef VOX_TEST_GG_METAL_TRANSFER
+        if (vox_test_gg_metal_fail_encoder) { _SG_OBJC_RELEASE(staging); return false; }
+#endif
         id<MTLBlitCommandEncoder> blit = [commands blitCommandEncoder];
         if (nil == blit) { _SG_OBJC_RELEASE(staging); return false; }
         [blit copyFromTexture:texture sourceSlice:0 sourceLevel:0
@@ -43,6 +66,7 @@ _SOKOL_PRIVATE bool _sg_v_mtl_transfer(_sg_image_t* img, int x, int y,
             for (int row = 0; row < height; ++row)
                 memcpy((uint8_t*)pixels + (size_t)row * (size_t)pitch,
                     source + (size_t)row * row_bytes, row_bytes);
+            vox_gg_metal_readback_diagnostic(joined);
         }
         _SG_OBJC_RELEASE(staging);
         return ok;

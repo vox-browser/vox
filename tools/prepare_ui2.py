@@ -115,6 +115,8 @@ def main():
     compiler = Path(compiler_name).resolve()
     prepare_gg_gradient(target, compiler.parent / 'vlib')
     if sys.platform == 'darwin':
+        from prepare_gg_metal import prepare_sokol_metal
+        prepare_sokol_metal(target, compiler.parent / 'vlib')
         macos_source = compiler.parent / 'vlib/macos'
         if not (macos_source / 'objc_bridge.h').is_file():
             raise SystemExit('UI2 requires a current V checkout with vlib/macos.')

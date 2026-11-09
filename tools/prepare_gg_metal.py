@@ -5,7 +5,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import tempfile
 
 
@@ -42,7 +41,7 @@ def prepare_sokol_metal(modules, vlib, output_root=None):
     target = root / 'sokol_gfx.h'
     text = original.replace(include, '#include ' + json.dumps(str(target.resolve())))
     # Retain real cache directories; later module staging may write into them.
-    from prepare_ui2 import link_directory_files, write_if_changed
+    from prepare_ui2 import link_directory_files
     root.parent.mkdir(parents=True, exist_ok=True)
     with (root.parent / (root.name + '.lock')).open('w') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
