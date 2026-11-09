@@ -457,6 +457,7 @@ fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, toke
 	script.set_language(p.own_tokenizer_optional_string(token.attribute('language')))
 	script.set_async(token.has_attribute('async'))
 	script.set_nomodule(token.has_attribute('nomodule'))
+	script.set_source_line_number(uint(token.start_position().line + 1))
 	script.set_fetch_hook(p.script_fetch_hook)
 	script.set_async_fetch_hook(p.script_async_fetch_hook)
 	script.set_execute_hook(p.script_execute_hook)
