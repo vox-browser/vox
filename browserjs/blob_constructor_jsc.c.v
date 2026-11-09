@@ -50,7 +50,7 @@ fn (host &BlobHost) is_buffer_part(value voidptr) !bool {
 }
 
 fn (mut host BlobHost) convert_part(value voidptr) !voidptr {
-	if _ := host.by_wrapper[value] { return value }
+	if _ := host.record(value) { return value }
 	if host.is_buffer_part(value)! {
 		// The union first selects the actual concrete buffer family, then its
 		// generated restrictions reject shared or resizable backing records.
@@ -130,7 +130,7 @@ fn (mut host BlobHost) converted_parts(sequence voidptr) ![]fileapi.BlobPart {
 		if exception != unsafe { nil } {
 			return host.runtime.actual_javascript_exception(exception)
 		}
-		if record := host.by_wrapper[value] {
+		if record := host.record(value) {
 			parts << fileapi.BlobPart.from_blob(record.blob)
 		} else if C.JSValueIsString(host.runtime.context, value) {
 			parts << fileapi.BlobPart.from_string(host.runtime.native_utf16_string(value)!.str())

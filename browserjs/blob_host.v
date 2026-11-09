@@ -24,6 +24,7 @@ mut:
 	runtime           &Runtime            = unsafe { nil }
 	readable          &ReadableStreamHost = unsafe { nil }
 	prototype         voidptr
+	operation         voidptr
 	records           map[voidptr]&BlobHostRecord
 	by_wrapper        map[voidptr]&BlobHostRecord
 	to_dom_string     voidptr
@@ -52,6 +53,7 @@ pub fn BlobHost.create_for_settings(settings &html.EnvironmentSettingsObject) !&
 pub fn (mut host BlobHost) close() {
 	if host.closed { return }
 	host.closed = true
+	host.operation = unsafe { nil }
 	host.records = {}
 	host.by_wrapper = {}
 }

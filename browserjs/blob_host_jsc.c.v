@@ -9,6 +9,19 @@ import fileapi
 import libjs
 import webidl
 
+#include "@DIR/blob_operation.h"
+fn C.vox_make_blob_operation_resolver(context voidptr) voidptr
+
+@[export: 'vox_jsc_blob_operation_resolver']
+fn javascript_core_blob_operation_resolver(context voidptr, _function voidptr,
+	_receiver voidptr, count uint, arguments &voidptr, _exception &voidptr) voidptr {
+	if count > 0 {
+		if record := blob_record_for_context(context, unsafe { arguments[0] }) {
+			return record.host.operation
+		}
+	}
+	return C.vox_jsc_JSValueMakeUndefined(context)
+}
 
 __global blob_bindings_ = map[voidptr]&BlobHost{}
 
@@ -30,7 +43,7 @@ pub fn (mut host BlobHost) install(mut runtime Runtime) ! {
 	host.readable = readable
 	host.to_dom_string = runtime.evaluate_host_value(r'(function(value){return `${value}`})')!
 	handle := voidptr(&host)
-	operate := runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
+	host.operation = runtime.make_value_host_function(fn [handle] (_ voidptr, args []voidptr) !voidptr {
 		mut host := unsafe { &BlobHost(handle) }
 		name := host.runtime.binding_dom_string(host.argument(args, 0))!
 		return host.operate(name, args) or {
@@ -41,9 +54,10 @@ pub fn (mut host BlobHost) install(mut runtime Runtime) ! {
 			return host.runtime.actual_javascript_exception(host.runtime.binding_exception_value(err))
 		}
 	})!
+	resolver := runtime.retain_javascript_value(C.vox_make_blob_operation_resolver(runtime.context))!
 	installer := runtime.evaluate_host_value(blob_native_prototype_factory)!
 	defer { runtime.release_javascript_value(installer) }
-	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [operate])!)!
+	host.prototype = runtime.retain_javascript_value(runtime.call_javascript_function(installer, C.vox_jsc_JSValueMakeUndefined(runtime.context), [resolver])!)!
 	register_runtime_binding(mut blob_bindings_, owner, &host)
 	runtime.add_close_handler(fn [handle, owner] () {
 		mut host := unsafe { &BlobHost(handle) }
@@ -59,11 +73,27 @@ fn (host &BlobHost) argument(args []voidptr, index int) voidptr {
 
 fn (host &BlobHost) record(value voidptr) !&BlobHostRecord {
 	if host.closed { return error('TypeError: Blob binding is closed') }
-	record := host.by_wrapper[value] or { return error('TypeError: Not an object of type Blob') }
-	if voidptr(record.host) != voidptr(host) {
+	if record := host.by_wrapper[value] {
+		if voidptr(record.host) == voidptr(host) { return record }
 		return error('TypeError: Not an object of type Blob')
 	}
-	return record
+	// A method can come from another frame, including a detached frame.
+	// Recognize the actual receiver without consulting author-visible properties.
+	if record := blob_record_for_context(host.runtime.context, value) { return record }
+	return error('TypeError: Not an object of type Blob')
+}
+
+fn blob_record_for_context(context voidptr, value voidptr) ?&BlobHostRecord {
+	if !C.JSValueIsObject(context, value) { return none }
+	group := C.JSContextGetGroup(context)
+	for _, host in blob_bindings_ {
+		if host.closed || host.runtime.closed || host.runtime.context == unsafe { nil }
+			|| C.JSContextGetGroup(host.runtime.context) != group { continue }
+		if record := host.by_wrapper[value] {
+			if voidptr(record.host) == voidptr(host) { return record }
+		}
+	}
+	return none
 }
 
 fn (mut host BlobHost) wrap(blob &fileapi.Blob) !voidptr {
@@ -102,8 +132,12 @@ fn (host &BlobHost) clamped_i64(value voidptr) !i64 {
 }
 
 fn (mut host BlobHost) operate(name string, args []voidptr) !voidptr {
-	blob := host.record(host.argument(args, 1))!.blob
-	realm := host.readable.read_loop_realm()
+	record := host.record(host.argument(args, 1))!
+	blob := record.blob
+	// Allocate results and queue file-reading tasks in the receiver's realm.
+	// The JavaScript entrypoint converts arguments in the method's realm.
+	mut owner := record.host
+	realm := owner.readable.read_loop_realm()
 	match name {
 		'size' { return C.vox_jsc_JSValueMakeNumber(host.runtime.context, f64(blob.size())) }
 		'type' { return host.runtime.javascript_utf16_string(blob.type_utf16()) }
@@ -120,19 +154,19 @@ fn (mut host BlobHost) operate(name string, args []voidptr) !voidptr {
 			if !C.JSValueIsUndefined(host.runtime.context, host.argument(args, 4)) {
 				type_ = host.dom_string(host.argument(args, 4))!.str()
 			}
-			return host.wrap(blob.slice_blob(start, end, type_))
+			return owner.wrap(blob.slice_blob(start, end, type_))
 		}
 		'stream' {
-			stream := host.settings.get_blob_stream_in_realm(blob, realm)
-			return host.runtime.javascript_readable_stream(stream)
+			stream := owner.settings.get_blob_stream_in_realm(blob, realm)
+			return owner.runtime.javascript_readable_stream(stream)
 		}
 		'textStream' {
-			stream := host.settings.blob_text_stream_in_realm(blob, realm)!
-			return host.runtime.javascript_readable_stream(stream)
+			stream := owner.settings.blob_text_stream_in_realm(blob, realm)!
+			return owner.runtime.javascript_readable_stream(stream)
 		}
-		'text' { return host.promise(host.settings.blob_text_in_realm(blob, realm)) }
-		'arrayBuffer' { return host.promise(host.settings.blob_array_buffer_in_realm(blob, realm)) }
-		'bytes' { return host.promise(host.settings.blob_bytes_in_realm(blob, realm)) }
+		'text' { return owner.promise(owner.settings.blob_text_in_realm(blob, realm)) }
+		'arrayBuffer' { return owner.promise(owner.settings.blob_array_buffer_in_realm(blob, realm)) }
+		'bytes' { return owner.promise(owner.settings.blob_bytes_in_realm(blob, realm)) }
 		else { return error('TypeError: Unknown Blob operation') }
 	}
 }
@@ -154,13 +188,15 @@ fn (mut host BlobHost) promise(promise &webidl.Promise) !voidptr {
 	})
 }
 
-const blob_native_prototype_factory = r'(function(operate){
- const define=Object.defineProperty,create=Object.create,get=Object.getOwnPropertyDescriptor;
+const blob_native_prototype_factory = r'(function(resolve){
+ const define=Object.defineProperty,create=Object.create,get=Object.getOwnPropertyDescriptor,T=TypeError,reject=Promise.reject.bind(Promise);
+ const operation=self=>{const result=resolve(self);if(result===undefined)throw new T("Not an object of type Blob");return result};
  const prototype=create(Object.prototype);
- for(const name of ["size","type"]){const getter=get({get [name](){return operate(name,this)}},name).get;define(prototype,name,{get:getter,enumerable:true,configurable:true})}
- const slice=({slice(){return operate("slice",this,arguments[0],arguments[1],arguments[2])}}).slice;
+ for(const name of ["size","type"]){const getter=get({get [name](){return operation(this)(name,this)}},name).get;define(prototype,name,{get:getter,enumerable:true,configurable:true})}
+ const slice=({slice(){const call=operation(this),start=arguments[0]===undefined?undefined:+arguments[0],end=arguments[1]===undefined?undefined:+arguments[1],type=arguments[2]===undefined?undefined:`${arguments[2]}`;return call("slice",this,start,end,type)}}).slice;
  define(prototype,"slice",{value:slice,writable:true,enumerable:true,configurable:true});
- for(const name of ["stream","text","arrayBuffer","bytes","textStream"]){const method=({[name](){return operate(name,this)}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
+ for(const name of ["stream","textStream"]){const method=({[name](){return operation(this)(name,this)}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
+ for(const name of ["text","arrayBuffer","bytes"]){const method=({[name](){try{return operation(this)(name,this)}catch(reason){return reject(reason)}}})[name];define(prototype,name,{value:method,writable:true,enumerable:true,configurable:true})}
  define(prototype,Symbol.toStringTag,{value:"Blob",configurable:true});
  return prototype;
 })'
