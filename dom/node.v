@@ -4840,7 +4840,9 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				mutable_document.update_layout(.node_name_or_description)
 				if layout_node := child_node.layout_node() {
 					display := layout_node.display()
-					if display.is_inline_outside() && display.is_flow_inside() {
+					// Unstyled TextNodes participate in inline flow. Their DOM
+					// layout mirrors have no computed display to consult.
+					if layout_node.is_text_node() || (display.is_inline_outside() && display.is_flow_inside()) {
 						should_add_space = false
 					}
 				}
