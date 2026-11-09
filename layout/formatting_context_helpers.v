@@ -494,6 +494,10 @@ fn layout_box_child_to_derive_baseline_from(state &LayoutState, box &Node, basel
 			index += if baseline_set == .first { 1 } else { -1 }
 			continue
 		}
+		if child_state.is_invisible_for_line_clamp() {
+			index += if baseline_set == .first { 1 } else { -1 }
+			continue
+		}
 		if child_state.line_boxes.len > 0
 			|| child_state.derived_first_baseline() != none
 			|| child_state.derived_last_baseline() != none
@@ -627,7 +631,7 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	// CSS Align's legacy bottom-edge baseline applies to scroll containers.
 	// `overflow: clip` is non-visible but does not establish one, so it keeps
 	// the same content-derived baseline as visible overflow.
-	derive_from_content := baseline_set == .first || is_flex_or_grid_container
+	derive_from_content := baseline_set == .first || is_flex_or_grid_container || line_clamp_is_active(computed)
 		|| ignores_overflow || !box.is_scroll_container()
 	if derive_from_content && box_state.line_boxes.len > 0 {
 		mut line_index := if baseline_set == .first { 0 } else { box_state.line_boxes.len - 1 }
