@@ -1957,3 +1957,55 @@ The browser typecheck uses installed Skia development files. The shared
 production bundle was not used to validate this change. The complete browser
 still links Skia; full-browser Linux compile/link/run without it remains
 unverified. See the [original failure, native cases, source pins and Linux linkage](gg-migration/source-image-layer-bounds-20261109.json).
+
+### Large single-blur layers (2026-11-09)
+
+`4115cd979` ports progressive resampling for sigmas beyond the raster blur
+engine's 135 limit. Each pass keeps floating-point logical bounds and padded
+integer surfaces. The low-resolution blur retains its final upscale until
+restore. Single saved canvas blur layers support this path, including incoming
+and outgoing color matrices and clearing blends. The standalone image blur API
+also supports large, asymmetric sigmas. Native sigma clamping still applies.
+Large direct source-image filters, spatial chains, drop-shadows, rotated layers
+and tiled surfaces retain their guards.
+
+Thirty-six independent native fixtures cover image subsets, threshold sigmas,
+progressive rescaling, asymmetric axes, clips, color filters, strokes and
+clearing restores. Four captured macOS mismatches freeze initialized padding,
+color-filter ordering, logical bitmap subsets and clearing draw selection.
+A narrow Linux fixture also exposed an intermediate-surface distinction:
+saved canvas filters use N32 buffers, whereas the standalone image API keeps
+RGBA. All thirty-six fixtures now match native expectations on each platform.
+
+Default C builds match 2,000 large image-filter attempts on each platform at
+seed 20261147 (147 empty results). The optimized macOS/no-GC image run matches
+1,000 at seed 20261154 (69 empty). Default canvas runs at seed 20261146 match
+2,539 of 3,000 attempts on macOS and 2,657 on Linux, declining 461 and 343.
+The broader resampled graph control matches 846 of 1,000 on macOS at seed
+20261155, declining 154. Counts include no-ops. All completed final cohorts
+finish with unchanged input pins.
+
+The first 2,000-attempt optimized/no-GC canvas run reached the unchanged 3 GiB
+memory guard and supplies no passing result. Eight separate 128-attempt
+processes, with seeds 20261153 through 20261160, subsequently matched 840 of
+1,024 attempts, declining 184, within that same budget. The failed larger
+attempt remains recorded. These bounded no-GC diagnostics do not establish
+bounded allocation over a long-running no-GC process.
+
+The focused C suites, HTML canvas integration, Linux browser typecheck and C
+FMA audit pass (zero contracted operations, 189 explicit). The earlier three
+image/filter suites also pass FastC. The new FastC large-blur suite fails the
+captured degenerate linear-gradient fixture: an emitted-C probe shows a fully
+transparent source layer. A capacity-initialization exploration also failed
+and was reverted. No FastC canvas parity is claimed for this slice.
+
+A separate Linux production/no-GC executable compiles with Skia unavailable
+to pkg-config and runs all four new test functions, including the thirty-six
+fixtures, under the 3 GiB guard. Its link command, `readelf` and `ldd` show no
+direct or transitive Skia dependency; direct libraries are FreeType, libm and
+libc. This verifies the component. The browser typecheck uses installed Skia
+development files. The older shared bundle does not contain this change and
+was not used to validate it. The complete browser still links Skia; full
+Linux browser compilation, linking and execution without it remain open.
+
+See the [native fixtures, failed attempts, final checks and Linux linkage](gg-migration/large-blur-rescaling-20261109.json).
