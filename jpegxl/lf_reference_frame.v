@@ -28,9 +28,7 @@ fn decode_lf_reference_frame(file FileHeader, frame FrameHeader, storage Modular
 	if frame.encoding == .modular {
 		if reference != none { return error('Unexpected JPEG XL modular LF dependency') }
 		raw := decode_modular_frame(file, frame, storage, mut sections)!
-		planes := modular_xyb_planes(raw.channels, raw.quantization, storage)!
-		restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
-		return upsample_frame_planes(restored, frame, file.transform)
+		return render_modular_xyb_frame(raw, file, frame, storage)
 	}
 	raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
 	return render_vardct_frame(raw, frame, file.transform)
