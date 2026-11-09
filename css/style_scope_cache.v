@@ -1949,6 +1949,10 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.view_transition_new { .view_transition_new }
 		.view_transition_old { .view_transition_old }
 		.highlight { .highlight }
+		.target_text { .target_text }
+		.spelling_error { .spelling_error }
+		.grammar_error { .grammar_error }
+		.search_text { .search_text }
 		.known_pseudo_element_count { .known_pseudo_element_count }
 		.unknown_webkit { .unknown_webkit }
 	}
