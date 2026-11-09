@@ -39,20 +39,12 @@ fn grid_named_span_line(lines [][]css.GridLineName, name string, anchor int, cou
 	for remaining > 0 {
 		if forward && index>=lines.len-1 { return index+remaining }
 		if !forward && index<=0 { return index-remaining }
-		if forward && index < -1 {
-			distance := if -index-1<remaining { -index-1 } else { remaining }
-			index+=distance
-			remaining-=distance
-			continue
-		}
-		if !forward && index>lines.len {
-			distance := if index-lines.len<remaining { index-lines.len } else { remaining }
-			index-=distance
-			remaining-=distance
-			continue
-		}
+		// A named span assumes names only on the implicit side in its
+		// search direction. Opposite-side implicit lines are skipped.
+		if forward && index < -1 { index = -1 }
+		if !forward && index > lines.len { index = lines.len }
 		index += step
-		if index < 0 || index >= lines.len || grid_line_has_name(lines, index, name) { remaining-- }
+		if (forward && index>=lines.len) || (!forward && index<0) || grid_line_has_name(lines,index,name) { remaining-- }
 	}
 	return index
 }
