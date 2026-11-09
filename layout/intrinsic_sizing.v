@@ -1071,7 +1071,7 @@ fn calculate_fit_content_width(mut state LayoutState, box &Box, available_width 
 // boxes the min-content block size is the max-content block size.
 fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels) CSSPixels {
 	node := unsafe { &Node(box) }
-	if node.is_block_container() || node.display().is_table_inside() {
+	if (node.is_block_container() && node.computed_values().writing_mode() == .horizontal_tb) || node.display().is_table_inside() {
 		return calculate_max_content_height(mut state, box, width)
 	}
 	if auto_size := box.auto_content_box_size().height {
