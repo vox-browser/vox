@@ -2,10 +2,19 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-// Complete-file output for the currently assembled opaque 4:4:4 VarDCT subset.
-// This is not the production replacement: feature streams, alpha,
-// resampling and frame composition must be preserved before switching callers.
+// Complete-file output for the assembled opaque 4:4:4 VarDCT subset.
 pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
+	return decode_opaque_rgba_impl(input, false)
+}
+
+// Opaque 4:4:4 VarDCT and modular XYB output, including LF frames and image
+// upsampling. Extra channels, feature streams and wider frame composition must
+// be preserved before this can replace the production decoder.
+pub fn decode_opaque_rgba(input []u8, premultiply bool) !RgbaImage {
+	return decode_opaque_rgba_impl(input, true)
+}
+
+fn decode_opaque_rgba_impl(input []u8, allow_modular_xyb bool) !RgbaImage {
 	if input.len < 2 || input.len > 67108864 { return error('Invalid JPEG XL input size') }
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
@@ -34,6 +43,9 @@ pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 		reference := if frame.has_lf_frame() { references[int(frame.lf_level)].planes } else { ?[3]FloatPlane(none) }
 		if frame.frame_type == .lf {
 			validate_lf_reference_frame(file, frame)!
+		} else if frame.encoding == .modular {
+			if !allow_modular_xyb { return error('JPEG XL VarDCT output requires a VarDCT visible frame') }
+			validate_modular_xyb_frame(file, frame)!
 		} else {
 			validate_vardct_frame_reference(file, frame, reference)!
 		}
@@ -44,8 +56,13 @@ pub fn decode_vardct_rgba(input []u8, premultiply bool) !RgbaImage {
 			references[int(frame.lf_level) - 1] = LfFrameReference{ planes: planes }
 			continue
 		}
-		raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
-		restored = render_vardct_frame(raw, frame, file.transform)!
+		if frame.encoding == .modular {
+			raw := decode_modular_frame(file, frame, storage, mut sections)!
+			restored = render_modular_xyb_frame(raw, file, frame, storage)!
+		} else {
+			raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
+			restored = render_vardct_frame(raw, frame, file.transform)!
+		}
 		found = true
 		break
 	}

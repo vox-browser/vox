@@ -2,9 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-// Render opaque modular XYB planes in source color space, before the final
-// color conversion. LF saving and visible output share this stage ordering.
-pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage) ![3]FloatPlane {
+fn validate_modular_xyb_frame(file FileHeader, frame FrameHeader) ! {
 	validate_modular_group_geometry(frame)!
 	if frame.encoding != .modular || !file.metadata.xyb_encoded || file.metadata.extra_channels.len != 0
 		|| frame.extra_upsampling.len != 0 || !frame.is444() || frame.has_lf_frame()
@@ -12,9 +10,17 @@ pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame F
 		return error('Unsupported JPEG XL modular XYB rendering services')
 	}
 	size := frame.size()
-	if raw.channels.len != 3 || u64(size.width)*u64(size.height) > 67108864 / 3 {
+	if u64(size.width)*u64(size.height) > 67108864 / 3 {
 		return error('Invalid JPEG XL modular XYB frame planes')
 	}
+}
+
+// Render opaque modular XYB planes in source color space, before the final
+// color conversion. LF saving and visible output share this stage ordering.
+pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage) ![3]FloatPlane {
+	validate_modular_xyb_frame(file, frame)!
+	size := frame.size()
+	if raw.channels.len != 3 { return error('Invalid JPEG XL modular XYB channel count') }
 	for channel in raw.channels {
 		if channel.width != int(size.width) || channel.height != int(size.height) {
 			return error('Incorrect JPEG XL modular XYB frame geometry')
