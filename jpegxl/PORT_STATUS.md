@@ -510,8 +510,22 @@ earlier regression run; final checks use the new pinned compiler throughout.
 Cadence is 6/10; no full eighty-file run is claimed.
 See [the upsampling report](../docs/translation-audit/JPEGXL_V_UPSAMPLING.md).
 
-Wider reference composition, extra channels/alpha, whole-frame chroma sampling,
-feature streams, large entropy maps and production integration remain.
+Two additional slices skip one visible final embedded preview before VarDCT
+or lossless output, matching the native API's default policy. Header/TOC and
+sample bounds are checked while preview entropy remains undecoded. Eight new
+native files cover valid/poisoned preview payloads, straight/premultiplied alpha,
+gray and orientation. The count is now 282,761 source records and eighty-two
+test files. Focused checks pass both GC modes and optimized builds. The final
+lossless four-file selection has 333 unchanged inputs and test/guard exits
+zero. A corrected option assertion contributes a fresh default preview-file
+pass to the three retained image-file passes; the original failed default
+batch receives no whole-run pass credit. Cadence is 8/10, with no full
+eighty-two-file run claimed.
+See [the preview report](../docs/translation-audit/JPEGXL_V_PREVIEWS.md).
+
+Non-visible preview dependencies, wider reference composition, extra channels/
+alpha in VarDCT, whole-frame chroma sampling, feature streams, large entropy
+maps and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

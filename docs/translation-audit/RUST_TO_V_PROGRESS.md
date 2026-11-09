@@ -508,3 +508,24 @@ compiler identities, failed/rejected attempts, executed checks and bounds.
 Production JPEG XL and its Cargo/CI/native developer tool still use Rust;
 wider reference composition, alpha/extra channels, whole-frame chroma sampling,
 feature streams, large entropy maps and production integration remain.
+
+## Embedded JPEG XL previews on 2026-11-09
+
+Two further V slices skip visible final previews before VarDCT and lossless
+decoding, preserving native default behavior without decoding preview entropy.
+Eight independent native file records cover valid/poisoned preview payloads,
+alpha in straight/paint output, gray and rotated dimensions. The package now
+has 282,761 source records and 82 test files.
+
+Focused default/no-GC/optimized checks pass. The last four-file selection has
+333 unchanged inputs and actual test/guard exits zero. Default VarDCT-preview
+coverage combines three retained image-file passes and the corrected preview
+file's fresh standalone pass; the original failed batch has no whole-run pass
+credit. Cadence is 8/10, with no full 82-file run claimed.
+[The preview report](JPEGXL_V_PREVIEWS.md) records source and oracle pins,
+fixture provenance, the test repair and executed results.
+
+Production JPEG XL, its Cargo/CI integration and native developer test still
+need Rust. Non-visible preview dependencies, wider reference composition,
+VarDCT extra channels/alpha, whole-frame chroma sampling, feature streams,
+large entropy maps and production integration remain unfinished.

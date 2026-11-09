@@ -120,3 +120,13 @@ test/guard exits zero. An earlier shared compiler change invalidated one
 regression run; all final modes use the new pinned compiler. Cadence is 6/10;
 no full 80-file run is claimed. Production and its native developer test still
 require Rust. See [the upsampling report](../docs/translation-audit/JPEGXL_V_UPSAMPLING.md).
+
+Embedded preview skipping adds eight native file records, bringing JPEG XL
+to 282,761 records and 82 test files. Normal/poisoned previews preserve VarDCT,
+lossless alpha, gray and rotated output exactly. Focused checks pass both GC
+modes and optimized builds; the last four-file selection has 333 unchanged
+inputs and actual test/guard exits zero. One default preview assertion needed
+an option unwrap; its corrected standalone pass combines with three retained
+image-file passes, without whole-run credit for the failed original batch.
+Cadence is 8/10; no full 82-file run is claimed. Production and its native
+developer tool still need Rust. See [the preview report](../docs/translation-audit/JPEGXL_V_PREVIEWS.md).
