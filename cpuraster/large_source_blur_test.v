@@ -98,7 +98,7 @@ fn test_large_pixel_aligned_image_blurs_match_native() {
 fn test_large_fractional_and_clipped_image_blurs_match_native() {
 	fixtures := large_source_blur_fixtures()
 	for i in 16 .. 28 { check_large_source_blur_fixture(fixtures[i], i) }
-	for i in 32 .. fixtures.len { check_large_source_blur_fixture(fixtures[i], i) }
+	for i in 32 .. 39 { check_large_source_blur_fixture(fixtures[i], i) }
 }
 
 fn test_large_deferred_source_transforms_preserve_destination() {
@@ -110,4 +110,11 @@ fn test_large_deferred_source_transforms_preserve_destination() {
 		assert !large_source_blur_draw(mut pixels, c)
 		assert pixels == original
 	}
+}
+
+// A skipped near-identity downsample reuses the original pixels and snaps
+// the nearly integer transform before blur, for either source alpha type.
+fn test_large_near_integer_image_blurs_keep_unscaled_pixels() {
+	fixtures := large_source_blur_fixtures()
+	for i in 39 .. fixtures.len { check_large_source_blur_fixture(fixtures[i], i) }
 }

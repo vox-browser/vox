@@ -2087,5 +2087,85 @@
     "supported": true,
     "expected_macos": "7ada84cd9796c7d3b5b5de86d0974db6acf2780327d3de19a515fd697df13046",
     "expected_linux": "7ada84cd9796c7d3b5b5de86d0974db6acf2780327d3de19a515fd697df13046"
+  },
+  {
+    "width": 137,
+    "height": 111,
+    "pitch": 556,
+    "alpha_type": 2,
+    "image_width": 129,
+    "image_height": 97,
+    "image_premultiplied": true,
+    "image_display_p3": false,
+    "source": [
+      0,
+      0,
+      64,
+      64
+    ],
+    "destination": [
+      5.0002,
+      7.0003,
+      64.032,
+      63.9744
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "smoothing": true,
+    "global_alpha": 1,
+    "composite": 0,
+    "sigma": 135.01,
+    "pre": [],
+    "post": [],
+    "clip": false,
+    "supported": true,
+    "expected_macos": "267bd320c80f3c99e90959c1ea685640f42b9373f922714ddb0a6198d095d9b1",
+    "expected_linux": "267bd320c80f3c99e90959c1ea685640f42b9373f922714ddb0a6198d095d9b1"
+  },
+  {
+    "width": 137,
+    "height": 111,
+    "pitch": 556,
+    "alpha_type": 2,
+    "image_width": 129,
+    "image_height": 97,
+    "image_premultiplied": false,
+    "image_display_p3": false,
+    "source": [
+      0,
+      0,
+      64,
+      64
+    ],
+    "destination": [
+      5.0002,
+      7.0003,
+      64.032,
+      63.9744
+    ],
+    "transform": [
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "smoothing": true,
+    "global_alpha": 1,
+    "composite": 0,
+    "sigma": 135.01,
+    "pre": [],
+    "post": [],
+    "clip": false,
+    "supported": true,
+    "expected_macos": "b2189ca1431e1d3c3c2577ea0b4f474a555247e439e4edd066cfc99e25feb206",
+    "expected_linux": "b2189ca1431e1d3c3c2577ea0b4f474a555247e439e4edd066cfc99e25feb206"
   }
 ]

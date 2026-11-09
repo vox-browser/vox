@@ -38,8 +38,15 @@ fn draw_near_integer_image_blur(mut pixels []u8, width int, height int, pitch in
 		Rect{f32(tight.left), f32(tight.top), f32(tight.right), f32(tight.bottom)})
 	fast := step.source_draw_bounds or { dst }
 	raw := CanvasBitmap{...bitmap, premultiplied: true, display_p3: false}
+	// rescale() also reuses the original subset when its near-identity
+	// downsample is omitted. In that case the original near-integer matrix
+	// is snapped before blur, just as for smaller sigmas.
+	sx,sy := blur_layer_sigma(math_abs32(step.sigma*ctm.sx)),blur_layer_sigma(math_abs32(step.sigma*ctm.sy))
+	rx := if sx > image_blur_max_sigma { image_blur_max_sigma/sx } else { f32(1) }
+	ry := if sy > image_blur_max_sigma { image_blur_max_sigma/sy } else { f32(1) }
+	keep_pixels := filter_downscale_steps(rx)==0 && filter_downscale_steps(ry)==0
 	prepared := CanvasFilterStep{...step, source_image: true, source_padding: false,
-		source_rescale_ready: total.sx == 1 && total.sy == 1 && int_cast_preserves(total.tx) && int_cast_preserves(total.ty),
+		source_rescale_ready: keep_pixels || (total.sx == 1 && total.sy == 1 && int_cast_preserves(total.tx) && int_cast_preserves(total.ty)),
 		source_draw_bounds: fast, source_layer_bounds: tight, source_color_info: FilterImageInfo{premultiplied: bitmap.premultiplied}}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
 		transform, clips, bounds, prepared, mode,
