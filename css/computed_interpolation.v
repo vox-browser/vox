@@ -6525,6 +6525,13 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from &dom.StyleValue, a_to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	from := with_keyword_values_resolved_boundary(element, property_id, a_from)
 	to := with_keyword_values_resolved_boundary(element, property_id, a_to)
+	if property_id == .font_palette {
+		if delta <= 0 { return from }
+		if delta >= 1 { return to }
+		first := style_value_logic_from_dom(property_id,from) or { return none }
+		second := style_value_logic_from_dom(property_id,to) or { return none }
+		return dom_style_value_from_value_logic(font_palette_mix_value(first,second,delta*100,ColorInterpolationMethodStyleValue.create(ColorInterpolationMethod(RectangularColorSpace.oklab))))
+	}
 	// Anchor functions produce lengths at used-value time. Retain both live
 	// queries in the interpolated calculation instead of treating them as
 	// discrete keywords or freezing their current geometry.

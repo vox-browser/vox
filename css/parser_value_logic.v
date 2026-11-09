@@ -948,6 +948,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// property grammar tables are not available in this V port yet.
 	match property_id {
 		.font_size_adjust { return parser.parse_font_size_adjust_value(mut tokens) }
+		.font_palette { return parser.parse_font_palette_value(mut tokens) }
 		.page_break_after, .page_break_before, .page_break_inside {
 			return parser.parse_page_break_legacy_shorthand(property_id, mut tokens)
 		}

@@ -99,7 +99,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -461,7 +461,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -735,6 +735,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
+		.font_palette {
+			[.all]
+		}
 		.font_size_adjust {
 			[.font, .all]
 		}

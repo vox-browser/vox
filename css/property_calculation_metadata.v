@@ -183,6 +183,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'font-palette' { return .font_palette }
 	if name == 'font-size-adjust' { return .font_size_adjust }
 	if name == 'position-try' { return .position_try }
 	if name == 'animation-range' { return .animation_range }
@@ -3203,6 +3204,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.font_palette { 'font-palette' }
 		.font_size_adjust { 'font-size-adjust' }
 		.animation_range { 'animation-range' }
 		.animation_range_start { 'animation-range-start' }
@@ -3687,6 +3689,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.font_palette { true }
 		.font_size_adjust { true }
 		.text_box_edge { true }
 		.font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
@@ -3701,6 +3704,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.font_palette { 'normal' }
 		.font_size_adjust { 'none' }
 		.animation_range { 'normal' }
 		.animation_range_start { 'normal' }
@@ -4143,6 +4147,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.font_palette {
+			AnimationType.by_computed_value
+		}
 		.font_size_adjust {
 			AnimationType.by_computed_value
 		}
@@ -4196,6 +4203,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.font_palette { true }
 		.font_size_adjust { true }
 		.text_box_trim, .text_box_edge { true }
 		.font_synthesis, .font_synthesis_weight, .font_synthesis_style, .font_synthesis_small_caps, .font_synthesis_position { true }
@@ -4302,6 +4310,7 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.font_palette { true }
 		.font_size_adjust { true }
 		.animation_range_start, .animation_range_end { true }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
@@ -4405,6 +4414,9 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.font_palette {
+			value_type == .string
+		}
 		.font_size_adjust {
 			value_type == .number
 		}
@@ -4595,6 +4607,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.font_palette {
+			lowercase_value in ['normal', 'light', 'dark']
+		}
 		.font_size_adjust {
 			lowercase_value in ['none']
 		}
