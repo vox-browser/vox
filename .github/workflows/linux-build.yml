@@ -269,6 +269,7 @@ jobs:
       # the FastC browser build or on preceding test results. Keep collecting
       # failures without making the failed production/window gate optional.
       - name: Check XML DOM and document integration
+        id: xml_integration
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 45
         run: |
@@ -285,6 +286,23 @@ jobs:
               html/xml_namespace_test.v \
               xhr/document_response_test.v \
               html/document_loading_bridge_test.v
+
+      - name: Preserve XML integration evidence immediately
+        if: ${{ always() && !cancelled() && (steps.xml_integration.outcome == 'success' || steps.xml_integration.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: xml-integration-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/vox-xml-integration-${{ matrix.gc }}.json
+            Build/linux/tests/${{ matrix.gc }}/run-*/vlib_xml_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/dom_parser_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_document_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_fragment_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_namespace_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/document_response_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/document_loading_bridge_test.*
 
       - name: Check retained storage with the production allocator
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
