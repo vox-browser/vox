@@ -553,8 +553,19 @@ check has no pass credit and was rerun successfully. Cadence is 2/10 after the
 full eighty-four-file checkpoint; no full eighty-six-file run is claimed.
 See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
 
+One further slice extends `decode_rgba` to modular XYB with one unscaled 8-bit
+alpha channel. Twenty new native files compare all 1,800,640 straight/paint
+RGBA bytes exactly, including eight grouped files, four multiple-LF-group
+files, associated alpha and orientation. The opaque renderer retains its
+contract. The count is 282,821 source records and eighty-seven test files.
+Final focused default/no-GC/optimized checks pass all four selected files,
+with actual test/guard exits zero and 404 unchanged inputs. Two failed test
+assertions were corrected without changing native gold. Cadence is 3/10;
+no full eighty-seven-file run is claimed.
+See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).
+
 Non-visible preview dependencies, wider reference composition, wider/resampled
-alpha and LF dependencies, modular XYB alpha, non-XYB modular rendering beyond the existing lossless path,
+alpha and LF dependencies, non-XYB modular rendering beyond the existing lossless path,
 whole-frame chroma sampling, feature streams, large entropy maps and production
 integration remain.
 

@@ -153,3 +153,11 @@ raw optimized check has no pass credit; a fresh check passes. Cadence is 2/10
 after the 84-file checkpoint, with no full 86-file run claimed. Production and
 its native developer tool still require Rust.
 See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
+
+Modular XYB alpha adds twenty native records and 1,800,640 exact straight/paint
+RGBA bytes, bringing JPEG XL to 282,821 records and 87 test files. The final
+four-file selection passes default/no-GC/optimized checks, with actual
+exits zero and 404 unchanged inputs. Test authoring failures retain no
+whole-run pass credit; native gold remains unchanged. Cadence is 3/10, with
+no full 87-file run claimed. Production and its native tool still use Rust.
+See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).

@@ -570,3 +570,17 @@ limits and executed results. Wider/resampled alpha, LF alpha dependencies,
 modular XYB alpha, whole-frame chroma sampling, feature streams, composition,
 larger entropy maps and production integration remain. Production JPEG XL and
 its Cargo/native developer tool still use Rust; removing all Rust is unfinished.
+
+## Modular XYB JPEG XL alpha on 2026-11-09
+
+One further slice adds modular XYB alpha to the unified V output path. Twenty
+new native files compare 1,800,640 straight/paint RGBA bytes exactly, including
+grouped data, associated alpha and orientation. The package has 282,821 source
+records and 87 test files. Four focused files pass default/no-GC/optimized
+checks with actual exits zero and 404 unchanged inputs. Two test authoring
+failures have no whole-run pass credit; native gold remains unchanged.
+Cadence is 3/10 after the 84-file checkpoint; no full 87-file run is claimed.
+[The modular-alpha report](JPEGXL_V_MODULAR_ALPHA.md) records source/tool pins,
+geometry verification, failures and checks. LF alpha dependencies, resampling,
+chroma sampling, feature streams, composition and production/tool integration
+remain. Production JPEG XL and its native developer tool still require Rust.
