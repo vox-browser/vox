@@ -183,6 +183,9 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'grid-lanes-direction' { return .grid_lanes_direction }
+	if name == 'fit-tolerance' { return .fit_tolerance }
+
 	if name == 'overscroll-behavior-x' { return .overscroll_behavior_x }
 	if name == 'overscroll-behavior-y' { return .overscroll_behavior_y }
 	if name == 'overscroll-behavior-inline' { return .overscroll_behavior_inline }
@@ -3217,6 +3220,9 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.grid_lanes_direction { 'grid-lanes-direction' }
+		.fit_tolerance { 'fit-tolerance' }
+
 		.overscroll_behavior_x { 'overscroll-behavior-x' }
 		.overscroll_behavior_y { 'overscroll-behavior-y' }
 		.overscroll_behavior_inline { 'overscroll-behavior-inline' }
@@ -3732,6 +3738,8 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.grid_lanes_direction, .fit_tolerance { 'normal' }
+
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { 'auto' }
 
 		.alignment_baseline { 'baseline' }
@@ -4184,6 +4192,9 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.grid_lanes_direction { AnimationType.discrete }
+		.fit_tolerance { AnimationType.by_computed_value }
+
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { AnimationType.discrete }
 
 		.alignment_baseline, .baseline_source { AnimationType.discrete }
@@ -4254,6 +4265,8 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.grid_lanes_direction, .fit_tolerance { true }
+
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { true }
 
 		.alignment_baseline, .baseline_shift, .baseline_source { true }
@@ -4311,6 +4324,8 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.grid_lanes_direction, .fit_tolerance { true }
+
 		.alignment_baseline, .baseline_shift, .baseline_source { true }
 
 		.text_orientation { true }
@@ -4371,6 +4386,8 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.fit_tolerance { true }
+
 		.baseline_shift { true }
 
 		.border_shape { true }
@@ -4408,6 +4425,8 @@ fn property_is_positional_value_list_shorthand(property_id PropertyID) bool {
 
 pub fn property_maximum_value_count(property_id PropertyID) uint {
 	return match property_id {
+		.grid_lanes_direction { 3 }
+
 		.overscroll_behavior { 2 }
 
 		.background_position, .border_image_outset, .border_image_width, .grid_template_columns, .grid_template_rows {
@@ -4467,6 +4486,8 @@ pub fn resolve_legacy_value_alias(property_id PropertyID, keyword Keyword) ?Keyw
 
 pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueType {
 	return match property_id {
+		.fit_tolerance { ValueType.length }
+
 		.baseline_shift { ValueType.length }
 
 		.animation_range_start, .animation_range_end {
@@ -4484,6 +4505,8 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.fit_tolerance { value_type in [.length,.percentage] }
+
 		.baseline_shift { value_type in [.length,.percentage] }
 
 		.font_palette {
@@ -4679,6 +4702,9 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.grid_lanes_direction { lowercase_value in ['normal','row','column','fill-reverse','track-reverse'] }
+		.fit_tolerance { lowercase_value in ['normal','infinite'] }
+
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { lowercase_value in ['auto','contain','none','chain'] }
 
 		.alignment_baseline { lowercase_value in ['baseline','text-bottom','alphabetic','ideographic','middle','central','mathematical','hanging','text-top'] }
@@ -5178,6 +5204,11 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]AcceptedTypeRange {
 	mut ranges := map[ValueType]AcceptedTypeRange{}
 	match property_id {
+		.fit_tolerance {
+            ranges[.length] = AcceptedTypeRange{min:0,max:math.max_f32}
+            ranges[.percentage] = AcceptedTypeRange{min:0,max:math.max_f32}
+        }
+
 		.font_size_adjust {
 			ranges[.number] = AcceptedTypeRange{
 				min: 0
@@ -5378,6 +5409,8 @@ pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 
 pub fn property_accepts_length(property_id PropertyID, value Length) bool {
 	return match property_id {
+		.fit_tolerance { value.raw_value() >= 0 }
+
 		.baseline_shift { true }
 
 		.animation_range_start, .animation_range_end {
@@ -5419,6 +5452,8 @@ pub fn property_accepts_number(property_id PropertyID, value f64) bool {
 
 pub fn property_accepts_percentage(property_id PropertyID, value Percentage) bool {
 	return match property_id {
+		.fit_tolerance { value.value() >= 0 }
+
 		.baseline_shift { true }
 
 		.animation_range_start, .animation_range_end {

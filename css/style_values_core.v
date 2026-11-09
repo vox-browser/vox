@@ -2146,6 +2146,10 @@ pub enum Keyword {
 	trim_start
 	trim_end
 	trim_both
+	grid_lanes
+	inline_grid_lanes
+	fill_reverse
+	track_reverse
 	chain
 	first
 	last
@@ -3070,6 +3074,10 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
 		.manual { 'manual' }
+		.grid_lanes { 'grid-lanes' }
+		.inline_grid_lanes { 'inline-grid-lanes' }
+		.fill_reverse { 'fill-reverse' }
+		.track_reverse { 'track-reverse' }
 		.chain { 'chain' }
 		.first { 'first' }
 		.last { 'last' }
@@ -3097,6 +3105,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
+	if name == 'grid-lanes' { return .grid_lanes }
+	if name == 'inline-grid-lanes' { return .inline_grid_lanes }
+	if name == 'fill-reverse' { return .fill_reverse }
+	if name == 'track-reverse' { return .track_reverse }
 	if name == 'chain' { return .chain }
 	if name == 'first' { return .first }
 	if name == 'last' { return .last }

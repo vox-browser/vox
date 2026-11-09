@@ -465,6 +465,8 @@ pub enum PropertyID {
 	overscroll_behavior_y
 	overscroll_behavior_inline
 	overscroll_behavior_block
+	grid_lanes_direction
+	fit_tolerance
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

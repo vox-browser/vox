@@ -1,6 +1,15 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'grid-lanes-direction': {
+        'initial': 'normal', 'animation-type': 'discrete', 'requires-computation': 'never',
+        'max-values': 3, 'valid-identifiers': ['normal','row','column','fill-reverse','track-reverse'],
+    },
+    'fit-tolerance': {
+        'initial': 'normal', 'animation-type': 'by-computed-value', 'requires-computation': 'cascaded-value',
+        'valid-types': ['length [0,∞]','percentage [0,∞]'],
+        'valid-identifiers': ['normal','infinite'], 'percentages-resolve-to': 'length',
+    },
     'overscroll-behavior': {
         'initial': 'auto', 'longhands': ['overscroll-behavior-x','overscroll-behavior-y'],
         'positional-value-list-shorthand': True,
@@ -134,7 +143,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):

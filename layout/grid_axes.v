@@ -16,6 +16,7 @@ fn grid_axis_reversed(node &Node, horizontal bool) bool {
 }
 
 fn grid_axis_template(node &Node, horizontal bool) css.GridTrackSizeList {
+ if node.display().is_grid_lanes_inside() && grid_lanes_axis_is_horizontal(node) != horizontal { return css.GridTrackSizeList.make_none() }
  style := node.computed_values()
  return if horizontal != grid_is_vertical(node) { style.grid_template_columns() } else { style.grid_template_rows() }
 }
@@ -26,6 +27,7 @@ fn grid_axis_implicit_tracks(node &Node, horizontal bool) css.GridTrackSizeList 
 }
 
 fn grid_axis_placement(container &Node, style &css.ComputedValues, horizontal bool, start bool) css.GridTrackPlacement {
+ if container.display().is_grid_lanes_inside() && grid_lanes_axis_is_horizontal(container) != horizontal { return css.GridTrackPlacement.make_auto() }
  if horizontal != grid_is_vertical(container) {
   return if start { style.grid_column_start() } else { style.grid_column_end() }
  }
@@ -76,6 +78,7 @@ fn grid_item_physical_alignment(container &Node, item &Node, horizontal bool) Gr
  words := grid_alignment_text(container,item,horizontal).split(' ')
  if words.len == 0 { return .normal }
  word := words.last()
+ if word == 'normal' && container.display().is_grid_lanes_inside() && grid_lanes_axis_is_horizontal(container) != horizontal { return .start }
  return match word {
   'center' { .center }
   'stretch' { .stretch }

@@ -948,6 +948,27 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// property grammar tables are not available in this V port yet.
 	match property_id {
 		.forced_color_adjust, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+        .grid_lanes_direction {
+            first := parse_property_keyword_value(mut tokens,['normal','row','column']) or { return none }
+            if first.to_keyword() == .normal { return first }
+            mut values := [first]
+            mut reverse := []Keyword{}
+            for _ in 0 .. 2 {
+                tokens.consume_whitespace()
+                if !tokens.has_more_tokens() { break }
+                value := parse_property_keyword_value(mut tokens,['fill-reverse','track-reverse']) or { return none }
+                keyword := value.to_keyword()
+                if keyword in reverse { return none }
+                reverse << keyword
+            }
+            for keyword in [Keyword.fill_reverse,.track_reverse] { if keyword in reverse { values << StyleValue(KeywordStyleValue.create(keyword)) } }
+            return StyleValue(StyleValueList.create(values,.space,.no))
+        }
+        .fit_tolerance {
+            mut attempt := tokens.clone()
+            if value := parse_property_keyword_value(mut attempt,['normal','infinite']) { tokens = attempt;return value }
+            return parser.parse_nonnegative_length_percentage_value(mut tokens)
+        }
         .overscroll_behavior {
             x := parse_property_keyword_value_from_metadata(.overscroll_behavior_x,mut tokens) or { return none }
             mut y := x

@@ -1157,7 +1157,7 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 
 	// Step 4: place every item whose row is still auto-positioned. Row flow
 	// advances columns inside rows; column flow performs the transposed search.
-	logical_flow := container.computed_values().grid_auto_flow()
+	logical_flow := if container.display().is_grid_lanes_inside() { css.GridAutoFlow{row:grid_lanes_columns(container)} } else { container.computed_values().grid_auto_flow() }
  auto_flow := css.GridAutoFlow{row:logical_flow.row != grid_is_vertical(container),dense:logical_flow.dense}
 	mut cursor_row := implicit_minimum_row
 	mut cursor_column := implicit_minimum_column
@@ -2624,7 +2624,7 @@ fn measure_grid_intrinsic_width(mut state LayoutState, container &Node,
 	if container.has_size_containment() {
 		return container.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 	}
-	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1'
+	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1' && !(container.display().is_grid_lanes_inside() && !grid_lanes_axis_is_horizontal(container))
 	if width_only && os.getenv('VOX_GRID_WIDTH_ONLY_DIAGNOSTICS') == '1' {
 		eprintln('Vox grid intrinsic width: columns only')
 	}
@@ -2727,9 +2727,9 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	placement_result := place_grid_items(container, column_lines, row_lines, subgridded_columns,
 		subgridded_rows)
 	placements := placement_result.placements
-	column_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
+	mut column_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
 		column_lines, row_lines, true, column_gap)
-	row_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
+	mut row_sizing_placements := grid_track_sizing_placements(mut state, container, placements,
 		column_lines, row_lines, false, row_gap)
 	mut required_columns := if explicit_column_count + placement_result.implicit_columns_before > 0 {
 		explicit_column_count + placement_result.implicit_columns_before
@@ -2758,6 +2758,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			container_width, column_gap, !width_is_intrinsic,
 			placement_result.implicit_columns_before, required_columns)
 	}
+	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements)
 
@@ -2967,6 +2968,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			eprintln('Vox grid intrinsic block reuse: width=${item_state.content_width().raw_value()} height=${item_state.content_height().raw_value()}')
 		}
 	}
+	row_sizing_placements = grid_lanes_sizing_placements(container,row_sizing_placements,rows.len,false)
 	mut maximum_row_span := 1
 	for placement in row_sizing_placements {
 		if placement.row_span > maximum_row_span {
@@ -3190,6 +3192,9 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	for row in rows {
 		used_rows << row.base_size
 	}
+ if container.display().is_grid_lanes_inside() {
+  if grid_lanes_axis_is_horizontal(container) { used_rows = []CSSPixels{} } else { used_columns = []CSSPixels{} }
+ }
 	container_state.set_grid_template_columns(if grid_is_vertical(container) { used_rows } else { used_columns })
 	container_state.set_grid_template_rows(if grid_is_vertical(container) { used_columns } else { used_rows })
 	container_state.set_grid_subgridded_axes(subgridded_columns, subgridded_rows)
@@ -3366,6 +3371,11 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	}
 
 	align_grid_baseline_subjects(mut state,container,placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
+ if container.display().is_grid_lanes_inside() {
+  extent := pack_grid_lanes(mut state,container,mut container_state,placements,columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space,container_width,grid_alignment_height or { automatic_height })
+  if grid_lanes_axis_is_horizontal(container) { automatic_height = extent }
+  else if width_is_intrinsic { intrinsic_container_width = extent;container_state.set_content_width(extent) }
+ }
 	publish_grid_content_baselines(mut state,container,mut container_state,placements)
 
  // Every abspos descendant whose containing block is this grid resolves

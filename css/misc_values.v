@@ -17,6 +17,7 @@ pub enum DisplayInside as u8 {
 	table
 	flex
 	grid
+	grid_lanes
 	ruby
 	math
 	webkit_box
@@ -68,6 +69,8 @@ pub enum DisplayShort {
 	inline_flex
 	grid
 	inline_grid
+	grid_lanes
+	inline_grid_lanes
 	ruby
 	table
 	inline_table
@@ -188,6 +191,8 @@ pub fn Display.from_short(short_ DisplayShort) Display {
 		.inline_grid {
 			Display.from_outside_inside(.inline_, .grid)
 		}
+        .grid_lanes { Display.from_outside_inside(.block,.grid_lanes) }
+        .inline_grid_lanes { Display.from_outside_inside(.inline_,.grid_lanes) }
 		.ruby {
 			Display.from_outside_inside(.inline_, .ruby)
 		}
@@ -255,6 +260,8 @@ pub fn (d Display) to_keyword() ?Keyword {
 			if d == Display.from_short(.inline_flex) {
 				return .inline_flex
 			}
+			if d == Display.from_short(.grid_lanes) { return .grid_lanes }
+			if d == Display.from_short(.inline_grid_lanes) { return .inline_grid_lanes }
 			if d == Display.from_short(.grid) {
 				return .grid
 			}
@@ -399,8 +406,12 @@ pub fn (d Display) is_webkit_box_inside() bool {
 	return d.is_outside_and_inside() && d.inside() == .webkit_box
 }
 
+pub fn (d Display) is_grid_lanes_inside() bool {
+ return d.is_outside_and_inside() && d.inside_ == .grid_lanes
+}
+
 pub fn (d Display) is_grid_inside() bool {
-	return d.is_outside_and_inside() && d.inside() == .grid
+	return d.is_outside_and_inside() && d.inside() in [.grid,.grid_lanes]
 }
 
 pub fn (d Display) is_ruby_inside() bool {
@@ -426,6 +437,7 @@ pub fn display_inside_to_string(value DisplayInside) string {
 		.table { 'table' }
 		.flex { 'flex' }
 		.grid { 'grid' }
+		.grid_lanes { 'grid-lanes' }
 		.ruby { 'ruby' }
 		.math { 'math' }
 		.webkit_box { '-webkit-box' }
@@ -472,6 +484,7 @@ fn display_inside_from_keyword_string(value string) ?DisplayInside {
 		'table' { DisplayInside.table }
 		'flex' { DisplayInside.flex }
 		'grid' { DisplayInside.grid }
+		'grid-lanes' { DisplayInside.grid_lanes }
 		'ruby' { DisplayInside.ruby }
 		'math' { DisplayInside.math }
 		else { none }
@@ -499,6 +512,7 @@ fn display_internal_from_keyword_string(value string) ?DisplayInternal {
 // https://drafts.csswg.org/css-display/#typedef-display-legacy and the single
 // <display-outside> / <display-inside> / <display-internal> / <display-box> keywords.
 pub fn display_from_single_keyword_string(value string) ?Display {
+ if value == 'inline-grid-lanes' { return Display.from_short(.inline_grid_lanes) }
 	if value == 'list-item' {
 		return Display.from_short(.list_item)
 	}
@@ -516,6 +530,7 @@ pub fn display_from_single_keyword_string(value string) ?Display {
 			.table { Display.from_short(.table) }
 			.flex { Display.from_short(.flex) }
 			.grid { Display.from_short(.grid) }
+			.grid_lanes { Display.from_short(.grid_lanes) }
 			.ruby { Display.from_short(.ruby) }
 			.math { Display.from_short(.math) }
 			.webkit_box { Display.from_outside_inside(.block, .webkit_box) }
