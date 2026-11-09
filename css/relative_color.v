@@ -261,8 +261,12 @@ fn relative_color_parts(style_value StyleValue) ?RelativeColorParts {
 				style_value.h_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		ColorFunctionStyleValue {
-			relative_parts(style_value.color_type_, style_value.relative_origin_, style_value.channels_,
-				style_value.alpha_.value, style_value.relative_alpha_)
+			if style_value.alpha_function_ && style_value.relative_origin_.len > 0 {
+				alpha_color_parts(style_value, style_value.relative_origin_[0])
+			} else {
+				relative_parts(style_value.color_type_, style_value.relative_origin_, style_value.channels_,
+					style_value.alpha_.value, style_value.relative_alpha_)
+			}
 		}
 		else {
 			none
@@ -574,7 +578,7 @@ fn absolutize_relative_color(style_value StyleValue, context ComputationContext)
 		}
 		return none
 	}
-	parts := relative_color_parts(style_value) or { return none }
+	mut parts := relative_color_parts(style_value) or { return none }
 	// hsl() and hwb() compute to 8-bit rgb(); their channels come from the
 	// specified components instead.
 	origin := if (parts.origin is HSLColorStyleValue || parts.origin is HWBColorStyleValue)
@@ -582,6 +586,9 @@ fn absolutize_relative_color(style_value StyleValue, context ComputationContext)
 		parts.origin
 	} else {
 		parts.origin.absolutized(context)
+	}
+	if style_value is ColorFunctionStyleValue && style_value.alpha_function_ {
+		parts = alpha_color_parts(style_value, origin)
 	}
 	color_context := ColorResolutionContext{
 		color_scheme:                   context.color_scheme
@@ -594,6 +601,9 @@ fn absolutize_relative_color(style_value StyleValue, context ComputationContext)
 		if resolved := resolve_relative_color_parts(parts, origin, color_context) {
 			return resolved
 		}
+	}
+	if style_value is ColorFunctionStyleValue && style_value.alpha_function_ {
+		return StyleValue(ColorFunctionStyleValue{...style_value,relative_origin_:[origin],alpha_:style_value_slot(parts.alpha.absolutized(context))})
 	}
 	return relative_color_style_value(RelativeColorParts{
 		...parts

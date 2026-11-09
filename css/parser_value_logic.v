@@ -13400,6 +13400,8 @@ fn (mut parser Parser) parse_color_from_component_value(component_value Componen
 			parser.pop_temporary_value_parsing_context()
 		}
 
+		if alpha := parser.parse_alpha_color_function(component_value) { return alpha }
+
 		if relative := parser.parse_relative_color_function(component_value) {
 			return relative
 		}

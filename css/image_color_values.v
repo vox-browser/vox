@@ -933,6 +933,7 @@ pub mut:
 	// A relative color's origin (css-color-5) and whether its alpha was given.
 	relative_origin_ []StyleValue
 	relative_alpha_  bool
+	alpha_function_ bool
 }
 
 fn color_type_from_color_space(color_space string) ConcreteColorType {
@@ -1032,6 +1033,9 @@ pub fn (style_value ColorFunctionStyleValue) absolutized(context ComputationCont
 
 // https://www.w3.org/TR/css-color-4/#serializing-color-function-values
 pub fn (style_value ColorFunctionStyleValue) serialize(mode SerializationMode) string {
+	if style_value.alpha_function_ {
+		return 'alpha(from ${style_value.relative_origin_[0].serialize(mode)} / ${style_value.alpha_.value.serialize(mode)})'
+	}
 	if style_value.relative_origin_.len > 0 {
 		parts := relative_color_parts(StyleValue(style_value)) or { return '' }
 		return serialize_relative_color(parts, mode)
