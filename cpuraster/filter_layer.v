@@ -188,9 +188,8 @@ fn skif_round_out(r Rect) IRect {
 // draw_filter_layer draws content through a blur or drop-shadow
 // layer: content_bounds are the draw's local fast bounds. Returns false,
 // before touching the pixels, for what is not ported: transforms that
-// are not a scale and translation, sigmas above the raster blur's 135,
-// layers past the maximum
-// dimension and content the inner draw declines.
+// are not a scale and translation, deferred source mappings that still need
+// large-sigma resampling, oversized layers and content the inner draw declines.
 // DropShadow is Blur -> SrcIn color filter -> offset, merged under the source.
 // The color filter stays deferred until sampling, just as in FilterResult.
 fn draw_filter_layer(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds Rect, step CanvasFilterStep, mode BlendMode, content LayerContent) bool {
@@ -236,7 +235,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	layer_sx := blur_layer_sigma(sx)
 	layer_sy := blur_layer_sigma(sy)
 	large_blur := layer_sx > image_blur_max_sigma || layer_sy > image_blur_max_sigma
-	if large_blur && ((step.source_image && (!step.source_rescale_ready || drop)) || tint != none) {
+	if large_blur && ((step.source_image && !step.source_rescale_ready) || tint != none) {
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
@@ -329,7 +328,8 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		if drop {
 			local := canvas_affine(layer_transform)
 			local_inverse := affine_invert(local) or { return false }
-			offset := sk_concat(local, post_translate(local_inverse, step.offset_x, step.offset_y))
+			offset := if step.source_image { mapped_offset } else {
+				sk_concat(local, post_translate(local_inverse, step.offset_x, step.offset_y)) }
 			return draw_large_shadow_layer(mut pixels, pitch, &rc, mode, BlurImage{layer_pixels, lw, lh},
 				padded.left, padded.top, layer_sx, layer_sy, offset, step, max_dim, mut target)
 		}
