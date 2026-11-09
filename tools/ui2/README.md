@@ -58,11 +58,28 @@ accessibility/testing tools.
 
 Preparation rejects unsupported revisions, modified or untracked checkout
 files, and unsupported embedding API generations. Ignored build artifacts are
-excluded. Each snapshot under `Build/<platform>/ui2-snapshots/<digest>` has a
-`manifest.json` recording the revision, tree, API generation and every file's
-SHA-256 and Git mode. Reuse verifies those files; a damaged snapshot fails
-instead of being rewritten under active consumers. Remove an obsolete or
-damaged snapshot only after builds using it have finished.
+excluded. Snapshots live outside `Build/`, under
+`${XDG_CACHE_HOME:-$HOME/.cache}/vox/ui2-snapshots/<digest>` (Windows uses
+`LOCALAPPDATA` when available). Set `VOX_UI2_CACHE_DIR` to choose another cache;
+paths resolving inside this checkout's `Build/` are rejected, including symlink
+aliases. Each snapshot has a `manifest.json` recording the revision, tree, API
+generation and every file's SHA-256 and Git mode. Reuse verifies those files;
+a damaged snapshot fails instead of being rewritten under active consumers.
+
+Every successful preparation retires snapshots beyond the two most recently
+used, preserving any snapshot leased by a live build or test process regardless
+of age. The drivers pass `--lease-pid` with their own PID and keep running through
+compilation. Standalone preparation defaults to its parent process; when using a
+shell command substitution, pass `--lease-pid "$$"` explicitly as below. Keep that
+process alive for as long as the returned path is needed; detached consumers
+must register their own PID before their parent exits. Leases for exited owners
+and interrupted preparation directories are removed on the next successful
+preparation. PID reuse may conservatively retain an extra snapshot until the
+replacement process exits. A cache lock serializes publication, registration
+and cleanup, so another preparation cannot retire inputs before their consumer
+is registered. Remove a damaged snapshot only after its consumers have exited.
+Legacy `Build/<platform>/ui2-snapshots` directories are no longer written; remove
+them after any consumers of those old paths have finished.
 
 To update UI2, review its embedding API and behavior, update `dependency.json`,
 and run the preparation and UI tests below before committing the new lock.
@@ -107,7 +124,7 @@ Small component checks avoid compiling the document engine. Use the preparation
 script's complete printed search path in `-path`:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(python3 tools/prepare_ui2.py --lease-pid "$$")
 v -enable-globals -memory-limit 10G -cc clang \
   -path "$ui2_modules|.|@vmodules|@vlib" test browserui
 v -enable-globals -memory-limit 10G -cc clang -d vox_ui2 \

@@ -3,7 +3,7 @@ set -eu
 
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 v_compiler=${V_BIN:-$(command -v v || printf '%s' "$HOME/code/v/v")}
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
+ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler" --lease-pid "$$")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 test_dir="$repo_dir/Build/v/address-bar-tests"
 test_file=${VOX_CHROME_TEST_FILE:-browserapp/address_bar_test.v}

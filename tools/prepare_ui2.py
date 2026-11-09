@@ -12,6 +12,9 @@ import subprocess
 import sys
 import tempfile
 
+from ui2_snapshot_cache import (process_alive, retain_snapshot, snapshot_cache_lock,
+                                snapshot_cache_path)
+
 
 UI2_LOCK = Path(__file__).with_name('ui2') / 'dependency.json'
 
@@ -222,10 +225,22 @@ def prepare_gg_gradient(modules, vlib):
             link_to(canvas / entry.name, entry)
 
 
-def prepare_ui2_source(source, cache, lock=None):
+def prepare_ui2_source(source, cache, lock=None, *, lease_pid=None):
     """Publish unmodified UI2 blobs at a stable, content-identified module path."""
     lock = load_ui2_lock() if lock is None else lock
     files = checked_ui2_files(Path(source).resolve(), lock)
+    cache = snapshot_cache_path(Path(__file__).resolve().parent.parent, cache)
+    owner = os.getpid() if lease_pid is None else lease_pid
+    if not process_alive(owner):
+        raise RuntimeError('UI2 snapshot lease must name a live build/test process')
+    with snapshot_cache_lock(cache):
+        modules = _publish_ui2_source(files, cache, lock)
+        retain_snapshot(cache, modules.parent, owner)
+        return modules
+
+
+def _publish_ui2_source(files, cache, lock):
+    """Publish while holding the cache lock, before registering the consumer."""
     manifest = {
         'schema_version': 1,
         'dependency': lock,
@@ -234,15 +249,13 @@ def prepare_ui2_source(source, cache, lock=None):
     }
     serialized = json.dumps(manifest, indent=2, sort_keys=True) + '\n'
     identity = hashlib.sha256(serialized.encode()).hexdigest()
-    cache = Path(cache).resolve()
-    cache.mkdir(parents=True, exist_ok=True)
     stage = cache / identity
     if stage.exists() or stage.is_symlink():
         verify_ui2_stage(stage, manifest)
         return stage / 'modules'
 
-    # A compiler only sees complete stages. Concurrent preparations may race
-    # to publish the same bytes, but never change a previously returned path.
+    # Publication and lease registration share a lock with retirement. A
+    # compiler only sees complete stages at paths that remain leased to it.
     temporary = Path(tempfile.mkdtemp(prefix='.ui2-', dir=cache))
     try:
         for name, (mode, data) in files.items():
@@ -252,12 +265,7 @@ def prepare_ui2_source(source, cache, lock=None):
             destination.chmod(0o755 if mode == '100755' else 0o644)
         (temporary / 'manifest.json').write_text(serialized)
         verify_ui2_stage(temporary, manifest)
-        try:
-            temporary.rename(stage)
-        except OSError:
-            if not (stage.exists() or stage.is_symlink()):
-                raise
-            verify_ui2_stage(stage, manifest)
+        temporary.rename(stage)
     finally:
         if temporary.exists():
             shutil.rmtree(temporary)
@@ -269,6 +277,8 @@ def main():
     parser.add_argument('compiler', nargs='?', help='V compiler used for compatibility modules')
     parser.add_argument('--print-revision', action='store_true',
                         help='print the reviewed UI2 revision without staging')
+    parser.add_argument('--lease-pid', type=int, default=os.getppid(),
+                        help='consumer process kept alive through compilation (default: parent)')
     args = parser.parse_args()
     lock = load_ui2_lock()
     if args.print_revision:
@@ -282,7 +292,8 @@ def main():
     platform_dir = 'linux' if sys.platform.startswith('linux') else 'windows' if os.name == 'nt' else 'v'
     target = repo / 'Build' / platform_dir / 'modules'
     target.mkdir(parents=True, exist_ok=True)
-    ui2_modules = prepare_ui2_source(source, target.parent / 'ui2-snapshots', lock)
+    ui2_modules = prepare_ui2_source(source, snapshot_cache_path(repo), lock,
+                                    lease_pid=args.lease_pid)
     compiler_name = args.compiler or os.environ.get(
         'V_BIN', shutil.which('v') or str(Path.home() / 'code/v/v'))
     compiler = Path(compiler_name).resolve()

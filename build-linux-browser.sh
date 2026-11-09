@@ -70,7 +70,7 @@ else
 fi
 python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
+ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler" --lease-pid "$$")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
 # The compiler qualifies packages from the nearest `modules`,
 # `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.

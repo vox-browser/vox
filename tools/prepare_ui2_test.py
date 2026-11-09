@@ -1,7 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -9,6 +11,7 @@ from unittest.mock import patch
 from prepare_linux_modules import stage_module
 from prepare_ui2 import (load_ui2_lock, prepare_gg_gradient, prepare_ui2_source,
                          validate_embedding_api)
+from ui2_snapshot_cache import process_alive, snapshot_cache_path
 
 
 class GGGradientCompatibilityTests(unittest.TestCase):
@@ -98,6 +101,34 @@ class EmbeddingAPIContractTests(unittest.TestCase):
                 validate_embedding_api(declaration)
 
 
+class SnapshotCacheLocationTests(unittest.TestCase):
+    def test_default_and_override_paths_are_outside_build_scratch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            repo = root / 'project'
+            with patch.dict(os.environ, {'XDG_CACHE_HOME': str(root / 'user-cache')}, clear=True):
+                self.assertEqual(snapshot_cache_path(repo),
+                                 root / 'user-cache/vox/ui2-snapshots')
+                with patch.dict(os.environ, {'VOX_UI2_CACHE_DIR': str(root / 'override')}):
+                    self.assertEqual(snapshot_cache_path(repo), root / 'override')
+            with patch.dict(os.environ, {}, clear=True), patch.object(Path, 'home', return_value=root):
+                self.assertEqual(snapshot_cache_path(repo), root / '.cache/vox/ui2-snapshots')
+
+    def test_build_paths_and_symlink_aliases_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            repo = root / 'project'
+            (repo / 'Build').mkdir(parents=True)
+            alias = root / 'alias'
+            alias.symlink_to(repo / 'Build', target_is_directory=True)
+            for path in (repo / 'Build', repo / 'Build/v/ui2-snapshots', alias / 'ui2'):
+                with self.subTest(path=path), self.assertRaisesRegex(RuntimeError, 'outside Build/'):
+                    snapshot_cache_path(repo, path)
+            with patch.dict(os.environ, {'VOX_UI2_CACHE_DIR': str(alias / 'ui2')}):
+                with self.assertRaisesRegex(RuntimeError, 'outside Build/'):
+                    snapshot_cache_path(repo)
+
+
 class UpstreamUI2Tests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
@@ -137,8 +168,29 @@ class UpstreamUI2Tests(unittest.TestCase):
             'embedding_api': 1,
         }
 
-    def stage(self, lock=None):
-        return prepare_ui2_source(self.source, self.cache, self.lock if lock is None else lock)
+    def stage(self, lock=None, **kwargs):
+        return prepare_ui2_source(self.source, self.cache, self.lock if lock is None else lock,
+                                  **kwargs)
+
+    def snapshots(self):
+        return sorted(path for path in self.cache.glob('*') if len(path.name) == 64)
+
+    def owner_process(self):
+        owner = subprocess.Popen([sys.executable, '-c', 'import sys; sys.stdin.read()'],
+                                 stdin=subprocess.PIPE)
+        self.addCleanup(self.stop_owner, owner)
+        return owner
+
+    @staticmethod
+    def stop_owner(owner):
+        if not owner.stdin.closed:
+            owner.stdin.close()
+        owner.wait(timeout=10)
+
+    def next_revision(self, owner_pid):
+        self.git('commit', '--quiet', '--allow-empty', '-m', 'Next reviewed fixture')
+        self.lock = dict(self.lock, revision=self.git('rev-parse', 'HEAD'))
+        return self.stage(lease_pid=owner_pid)
 
     def assert_contents(self, modules, expected):
         dependency = modules / 'ui2'
@@ -203,7 +255,7 @@ class UpstreamUI2Tests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             self.stage()
         self.assert_contents(modules, self.contents)
-        self.assertEqual(len(list(self.cache.iterdir())), 1)
+        self.assertEqual(len(self.snapshots()), 1)
 
     def test_wrong_tree_fails_before_publication(self):
         with self.assertRaises(RuntimeError):
@@ -307,7 +359,7 @@ class UpstreamUI2Tests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=4) as executor:
             modules = list(executor.map(lambda _: self.stage(), range(4)))
         self.assertEqual(len(set(modules)), 1)
-        self.assertEqual(len(list(self.cache.iterdir())), 1)
+        self.assertEqual(len(self.snapshots()), 1)
         self.assert_contents(modules[0], self.contents)
 
     def test_failed_write_does_not_publish_or_leave_a_partial_stage(self):
@@ -321,9 +373,56 @@ class UpstreamUI2Tests(unittest.TestCase):
         with patch.object(Path, 'write_bytes', failed_write):
             with self.assertRaisesRegex((OSError, RuntimeError), 'Injected staging failure'):
                 self.stage()
-        self.assertFalse(self.cache.exists() and any(self.cache.iterdir()))
+        self.assertEqual(self.snapshots(), [])
+        self.assertEqual(list(self.cache.glob('.ui2-*')), [])
         self.assertEqual(self.git('status', '--porcelain', '--untracked-files=all'), '')
         self.assert_contents(self.stage(), self.contents)
+
+    def test_retention_reaps_exited_consumers_and_keeps_two_recent_snapshots(self):
+        owner = self.owner_process()
+        previous = [self.stage(lease_pid=owner.pid)]
+        previous.extend(self.next_revision(owner.pid) for _ in range(3))
+        self.assertEqual(len(self.snapshots()), 4)
+        self.stop_owner(owner)
+        self.assertFalse(process_alive(owner.pid))
+        current = self.stage()
+        self.assertEqual(self.snapshots(), sorted(path.parent for path in previous[-2:]))
+        self.assertEqual(current, previous[-1])
+        self.assert_contents(current, self.contents)
+        self.assertFalse((self.cache / '.leases' / previous[0].parent.name).exists())
+
+    def test_old_snapshot_survives_until_all_of_its_consumers_exit(self):
+        first, second, recent = (self.owner_process() for _ in range(3))
+        old = self.stage(lease_pid=first.pid)
+        self.assertEqual(self.stage(lease_pid=second.pid), old)
+        self.next_revision(recent.pid)
+        self.next_revision(recent.pid)
+        newest = self.next_revision(recent.pid)
+        self.stop_owner(recent)
+        self.stop_owner(first)
+        self.stage()
+        self.assertEqual(len(self.snapshots()), 3)
+        self.assert_contents(old, self.contents)
+        self.stop_owner(second)
+        self.stage()
+        self.assertEqual(len(self.snapshots()), 2)
+        self.assertFalse(old.exists())
+        self.assert_contents(newest, self.contents)
+
+    def test_invalid_lease_is_rejected_before_publication(self):
+        for pid in (0, -1):
+            with self.subTest(pid=pid), self.assertRaisesRegex(RuntimeError, 'live build/test'):
+                self.stage(lease_pid=pid)
+        self.assertFalse(self.cache.exists())
+
+    def test_crashed_preparation_scratch_is_removed_under_the_cache_lock(self):
+        modules = self.stage()
+        incomplete = self.cache / '.ui2-interrupted'
+        incomplete.mkdir()
+        (incomplete / 'partial.v').write_text('partial source')
+        self.assertEqual(self.stage(), modules)
+        self.assertFalse(incomplete.exists())
+        self.assert_contents(modules, self.contents)
 
     def test_non_checkout_source_fails_with_an_actionable_error(self):
         source = self.root / 'not-a-checkout'

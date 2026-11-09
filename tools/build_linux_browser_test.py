@@ -15,7 +15,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix='vox-linux-build-')
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        # The shell uses pwd -P; macOS exposes /var through /private/var.
+        self.root = Path(self.temporary.name).resolve()
         self.repo = self.root / 'project'
         self.caller = self.root / 'caller'
         self.helpers = self.root / 'helpers'
@@ -61,7 +62,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
 
             with open(os.environ['VOX_BUILD_TEST_HELPER_LOG'], 'a') as log:
                 log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd(),
-                                      'v_bin': os.environ.get('V_BIN')}) + '\\n')
+                                      'v_bin': os.environ.get('V_BIN'),
+                                      'parent_pid': os.getppid()}) + '\\n')
             if (Path(sys.argv[1]).name == 'rebuild_browser.py'
                     and sys.argv[2:] == ['--build']
                     and os.environ['VOX_BUILD_TEST_REENTER'] == '1'):
@@ -126,6 +128,9 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
+            if Path(preparation['argv'][0]).name == 'prepare_ui2.py':
+                self.assertEqual(preparation['argv'][2:],
+                                 ['--lease-pid', str(preparation['parent_pid'])])
 
     def test_unsupervised_build_delegates_to_supervisor(self):
         compiler = self.compiler(self.helpers / 'v')

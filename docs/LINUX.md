@@ -42,7 +42,9 @@ and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`
 Use the separate checkout above to preserve an existing UI2 development branch
 and local edits. The build validates the dependency lock and stages unchanged
 UI2 Git contents into a content-identified snapshot; later source edits cannot
-alter a running build. See the [UI2 adapter guide](../tools/ui2/README.md) for
+alter a running build. Snapshots use a user cache outside `Build/`; preparation
+keeps the two most recently used plus those leased by live build/test processes.
+See the [UI2 adapter guide](../tools/ui2/README.md) for cache configuration,
 dependency updates and focused checks.
 Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
 helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;

@@ -95,7 +95,7 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py)
+ui2_modules=$(python3 tools/prepare_ui2.py --lease-pid "$$")
 v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \
