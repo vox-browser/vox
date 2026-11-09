@@ -1,8 +1,10 @@
 module main
 
 import browserjs
+import dom
 import html
 import layout
+import page
 
 fn test_native_listbox_keeps_intrinsic_axes_without_containment_overrides() {
  for rows in [2,4,10] {
@@ -32,6 +34,31 @@ fn test_select_size_reflects_unsigned_values_and_mutations_to_its_content_attrib
  }
  select.setAttribute("size","  +12px");if(select.size!==12)throw Error("attribute parsing");
  select.removeAttribute("size");if(select.size!==0)throw Error("missing size");
+ '],runtime,mut messages)
+ assert messages==[]string{},messages.str()
+}
+
+fn test_select_size_writes_synchronously_update_client_geometry() {
+ url := dom.URL{value:'https://select-geometry.test/'}
+ mut owner := page.Page.create(1)!
+ mut document := html.create_navigation_document_for_page(url,url.origin(),none,unsafe { &dom.Page(owner) })!
+ document.set_viewport_rect(dom.Rect{0,0,800,600})
+ document.set_font_rendering_policy(.chromium)
+ html.parse_html_from_a_string(document,'<!doctype html><style>select{padding:0}</style><select id="select" multiple size="2"></select>')
+ owner.set_local_root_navigable(document.navigable() or { panic('navigable') })!
+ _ = layout.layout_document_typed_in_viewport(document,800,600)
+ mut runtime := browserjs.Runtime.create()
+ defer { runtime.close();document.finalize() }
+ mut messages := []string{}
+ run_document_javascript(document,url.value,[r'
+ const select=document.getElementById("select"),row=select.clientHeight/2;
+ if(row<=0)throw Error("initial row height");
+ for(const size of [4,10,2]){
+  select.size=size;
+  if(select.clientHeight!==row*size)throw Error("size "+size+": "+select.clientHeight+" expected "+row*size);
+ }
+ select.removeAttribute("size");
+ if(select.clientHeight!==row*4)throw Error("default rows");
  '],runtime,mut messages)
  assert messages==[]string{},messages.str()
 }

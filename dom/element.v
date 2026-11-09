@@ -6061,6 +6061,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		return
 	}
+	// Select control dimensions and internal children depend on these HTML
+	// attributes even when recomputing CSS produces an identical style.
+	if e.is_html_element() && e.local_name() == 'select' && local_name in ['size', 'multiple']
+		&& !option_string_equal(old_value, value) {
+		mut node := e.as_node()
+		node.set_needs_layout_tree_update(true, .style_change)
+	}
 
 	value_or_empty := value or { '' }
 	if local_name == 'nonce' && (e.is_html_element() || e.is_svg_element()) {
