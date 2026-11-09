@@ -67,7 +67,9 @@ def main():
         ui2_modules = subprocess.check_output(
             [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
             cwd=repo, env=environment, text=True).strip()
-        module_paths.append(ui2_modules)
+        # The first path selects the immutable UI2 dependency. Put it before
+        # shared compatibility modules, which can retain an older UI2 stage.
+        module_paths.insert(1, ui2_modules)
     if args.gc == "prealloc":
         # Match the production allocator, including bounded realloc and the
         # persistent closure directory. Flags alone leave global runtime

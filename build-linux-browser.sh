@@ -82,7 +82,7 @@ case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backen
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
-    -path "$repo_dir|$linux_modules|$http_modules|$ui2_modules|@vmodules|@vlib" -gc "$gc_mode"
+    -path "$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
 if [ "$gc_mode" = none ]; then
     set -- "$@" -prod
 else

@@ -25,7 +25,6 @@ PINS = {
     "v": ("vlang/v", "a629e6ca3364e9729ce5e043ec7cebddf3823731"),
     "v/vc": ("vlang/vc", "b83fa19d76b8f19977543da4bb7ccbb9455733d6"),
     "v/thirdparty/tcc": ("vlang/tccbin", "60d606e37e6afe1ac5801fd88c55036a56b7caae"),
-    "ui2": ("vlang/ui2", "96f5924d73f69c0302de3c5c31d9964d4d11f573"),
 }
 
 
@@ -130,6 +129,11 @@ class Run:
         candidate = os.environ.get("VOX_CI_CANDIDATE_SHA", "")
         runner_bytes = (ROOT / SCRIPT).read_bytes()
         self.select(baseline, runner_bytes)
+        # Read the selected source's lock only after switching the checkout.
+        # The candidate comparison below also requires identical build tools,
+        # including tools/ui2/dependency.json.
+        pins = dict(PINS, ui2=("vlang/ui2", read([
+            sys.executable, "tools/prepare_ui2.py", "--print-revision"])))
         if candidate:
             if not re.fullmatch(r"[0-9a-f]{40}", candidate) or candidate == baseline:
                 raise ValueError("A candidate must be a distinct full SHA")
@@ -140,7 +144,7 @@ class Run:
                          "Tests/Browser/Brave/sites/stackoverflow", "native_jpegxl_rust")
             if shared:
                 raise ValueError("Build/observer/workload inputs differ:\n" + shared)
-        state = {"baseline": baseline, "candidate": candidate, "dependencies": PINS, "builds": {}}
+        state = {"baseline": baseline, "candidate": candidate, "dependencies": pins, "builds": {}}
         if (self.output / "state.json").exists():
             raise RuntimeError("Do not reuse an earlier attempt's evidence directory")
         save(self.output / "state.json", state)
@@ -155,7 +159,7 @@ class Run:
         ):
             self.command(name, command, bounded=False)
         deps = ROOT / "Build/ci-dependencies"
-        for relative, (repository, sha) in PINS.items():
+        for relative, (repository, sha) in pins.items():
             path = deps / relative
             if path.exists():
                 raise RuntimeError(f"Fresh dependency checkout required: {path}")

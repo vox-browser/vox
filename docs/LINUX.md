@@ -21,21 +21,29 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
     fonts-liberation2 fonts-dejavu-core
 ```
 
-You also need current [V](https://github.com/vlang/v) and
-[UI2](https://github.com/vlang/ui2) checkouts and Python 3.12 or newer. For a fresh
-setup, run these commands from the Vox checkout:
+You also need current [V](https://github.com/vlang/v), the reviewed
+[UI2](https://github.com/vlang/ui2) revision in
+[`tools/ui2/dependency.json`](../tools/ui2/dependency.json), and Python 3.12 or
+newer. For a fresh setup, run these commands from the Vox checkout:
 
 ```sh
 git clone --depth 1 https://github.com/vlang/v.git ../v
 make -C ../v
-git clone --depth 1 https://github.com/vlang/ui2.git ../ui2
+ui2_revision=$(python3 tools/prepare_ui2.py --print-revision)
+git clone --no-checkout https://github.com/vlang/ui2.git ../vox-ui2
+git -C ../vox-ui2 fetch --depth 1 origin "$ui2_revision"
+git -C ../vox-ui2 checkout --detach "$ui2_revision"
 export V_BIN="$(cd ../v && pwd)/v"
-export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
+export UI2_SOURCE_DIR="$(cd ../vox-ui2 && pwd)"
 ```
 
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
-The build stages UI2 with Vox's embedding adapter without changing its checkout.
+Use the separate checkout above to preserve an existing UI2 development branch
+and local edits. The build validates the dependency lock and stages unchanged
+UI2 Git contents into a content-identified snapshot; later source edits cannot
+alter a running build. See the [UI2 adapter guide](../tools/ui2/README.md) for
+dependency updates and focused checks.
 Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
 helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
 when Cargo is available, the build compiles that helper from its lockfile.

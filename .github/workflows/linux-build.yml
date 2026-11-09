@@ -19,7 +19,6 @@ jobs:
     timeout-minutes: 180
     env:
       V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
-      UI2_REVISION: 846659299558061cf0de063f029a9f9b941ff9a1
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
     steps:
@@ -69,6 +68,7 @@ jobs:
       - name: Build pinned V and fetch UI2
         timeout-minutes: 25
         run: |
+          UI2_REVISION=$(python3 tools/prepare_ui2.py --print-revision)
           git init "$RUNNER_TEMP/v"
           git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
           git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"

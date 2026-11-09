@@ -44,6 +44,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             VOX_BUILD_TEST_COMPILER_LOG=str(self.compiler_log),
             VOX_BUILD_TEST_HELPER_LOG=str(self.helper_log),
             VOX_BUILD_TEST_MODULES=str(self.root / 'modules'),
+            VOX_BUILD_TEST_UI2_MODULES=str(self.root / 'ui2-dependency/modules'),
             VOX_BUILD_TEST_SHELL=self.shell,
             VOX_BUILD_TEST_REENTER='0',
         )
@@ -70,7 +71,10 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                     [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
                     cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
                 raise SystemExit(result.returncode)
-            if Path(sys.argv[1]).name.startswith('prepare_'):
+            if Path(sys.argv[1]).name == 'prepare_ui2.py':
+                print(os.environ['VOX_BUILD_TEST_UI2_MODULES'] + '|'
+                      + os.environ['VOX_BUILD_TEST_MODULES'])
+            elif Path(sys.argv[1]).name.startswith('prepare_'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
             if Path(sys.argv[1]).name == 'browser_backend.py':
                 print('fastc')
@@ -132,6 +136,21 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         self.assertEqual([item['argv'] for item in helpers],
                          [[str(self.repo / 'tools/rebuild_browser.py'), '--build']])
         self.assertEqual(helpers[0]['v_bin'], str(compiler))
+
+    def test_ui2_snapshot_precedes_a_stale_shared_module(self):
+        compiler = self.compiler(self.helpers / 'v')
+        selected = Path(self.environment['VOX_BUILD_TEST_UI2_MODULES']) / 'ui2/ui.v'
+        stale = Path(self.environment['VOX_BUILD_TEST_MODULES']) / 'ui2/ui.v'
+        for path, content in ((selected, 'reviewed UI2'), (stale, 'obsolete UI2')):
+            path.parent.mkdir(parents=True)
+            path.write_text(content)
+        result = self.run_build()
+        self.assert_compiler_selected(result, compiler)
+        arguments = json.loads(self.compiler_log.read_text())['argv']
+        paths = arguments[arguments.index('-path') + 1].split('|')
+        resolved = next(Path(path) / 'ui2/ui.v' for path in paths
+                        if (Path(path) / 'ui2/ui.v').is_file())
+        self.assertEqual(resolved, selected)
 
     def test_unsupervised_relative_compiler_survives_supervisor_directory_change(self):
         compiler = self.compiler(self.caller / 'toolchain/v')
