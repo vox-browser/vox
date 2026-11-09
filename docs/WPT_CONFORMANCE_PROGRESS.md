@@ -2375,3 +2375,87 @@ and `/Users/alex/.cache/vox/wpt/20261109-formdata-report-phases-v3-raw.tar.gz`
 Their completed scratch directories are removed. The independently pinned
 40,139-variant official testharness collection remains active; other WPT types
 remain outside that runner. **Overall 100% is not achieved.**
+
+
+## Binding registries across document retirement (2026-11-09)
+
+`57ab68d28` keeps the backing storage of process-wide
+JavaScript binding registries outside document arenas. A shared generic
+insertion/removal helper now guards 59 binding implementations, including
+EventTarget, Blob, native host functions and constructor-installation markers.
+Per-runtime entries retain their existing keys and close-time removal. The
+already guarded timer tables remain in place.
+
+The original constructor-formelement diagnostic records a passing synchronous
+assertion and an `interactive` event after warm-up navigation, then observes
+`readyState === complete` without the DOMContentLoaded/load callbacks or WPT
+completion. Its phase-prefix check accidentally labels the warm-up and test
+sequences alike; their order, rather than their prefix, distinguishes them.
+The original assertions, harness and deadline remain unchanged, and this
+instrumented timeout supplies no acceptance or timing credit. A native
+BrowserApp control reproduces replacement-page binding initialization errors
+for EventTarget or Blob. The default-preallocation ownership control allocates
+**4,352 bytes** of global-registry backing in a disposable arena.
+
+Three final focused checks cover registry growth, removal with surviving
+entries, and complete readiness delivery after retiring a previous BrowserApp
+session. They reset the allocation arenas and verify pointer identities,
+removed entries, browsing-context reuse, old/new activity, successful FormData
+construction and the ordered interactive/DOMContentLoaded/complete/load
+callbacks through the native run loop. **All three pass** in normal,
+prepared-preallocation and literal V `-prod`/prepared-preallocation C modes.
+All accepted compile/runtime/guard exits are **0**, with V `-memory-limit 10G`,
+12 GiB compile guards and 3 GiB runtime guards.
+
+**Compiler-path correction:** the first preallocation commands selected the
+staged compiler but used `-path '.|@vlib'`, omitting the staged builtin overlay.
+The optimized attempt lacked `closure_metadata_tail` and crashed in closure
+release while constructing an input shadow tree. No DOM change was made for
+that failed attempt. Corrected commands explicitly include the prepared
+runtime directory and verify the metadata symbol before execution; both
+corrected modes pass. Archived native commands in the preceding event-loop
+and parser-input-image sections also use `.|@vlib`. Their preallocation results
+remain recorded, but do not establish coverage of the production prepared
+closure runtime. Production receipts independently record that runtime's
+actual source inputs. The failed compile that exceeded the 12 GiB guard,
+initial failed runtimes and subsequent corrected checks are all retained.
+
+A managed C/single-unit/literal-`-prod` completed production artifact,
+`c4a80abfa780869d99816064f982c153f20ebc8c26995a4ff4fbbf3aa22f5398`,
+receipt `20261109-102836-154cbcd3`, contains the protected binding/helper
+source hashes from the commit. Fresh processes exercise that original artifact
+under a shared read lease, without copying a bundle or requesting another
+manual build. **All 65 original FileReader/FormData variants complete, with
+328/328 passing assertions**, every expected name/count, successful harness
+completion and runner/guard exits **0**. **All 11 unchanged SVG comparisons are
+pixel-exact**, guard exit **0**. The sequential production accname cohort also
+completes **all 21 original variants and all 500 assertions**, with **483 passing
+and 17 failing**: 12 generated-counter alternative-name assertions and five
+tentative heading-derived-name assertions. Its strict runner/guard exits are
+**1**. Input identities remain unchanged in both cohorts; missing results and
+failing assertions receive no pass credit. Other concurrent shared source
+changes were not controlled, so these are results for the pinned artifact,
+without a sole-cause or performance claim.
+
+Native evidence: `/Users/alex/.cache/vox/wpt/20261109-runtime-binding-registry-native-raw.tar.gz`,
+SHA-256 `26f32e71131fc5b8db9a27bf88c5856994c1b94633c1aa07200caa73081d012a`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-runtime-binding-registry-native-summary.json`,
+SHA-256 `3477402ef57aa0b7af6c027134d3a9ee0c7307c437bde6ba48cf52eaa271b0ae`.
+Production FileReader/FormData and SVG evidence:
+`/Users/alex/.cache/vox/wpt/20261109-runtime-binding-registry-production-raw.tar.gz`,
+SHA-256 `f54c908d3949af9334e1031010a911755d452042f3c71f7660d1a1bd0da36950`.
+Production accname evidence:
+`/Users/alex/.cache/vox/wpt/20261109-runtime-binding-registry-accname-production-raw.tar.gz`,
+SHA-256 `13f50a3d8f4d8a2db07f0e03ef1134448a345b996fb119d6442b571208e9f35f`.
+Load-phase diagnostic:
+`/Users/alex/.cache/vox/wpt/20261109-formdata-load-phases-raw.tar.gz`,
+SHA-256 `0b9e5706dc9c58d1f9b7d92e9a62ea2af371cf5263cdc5f4c004ef52185ce1c0`.
+Two waiting observers were interrupted before browser checks and retained as
+`20261109-event-target-registry-{production,accname-production}-raw.tar.gz`
+in the same cache; the nonblocking-lease observers supply the completed cohorts.
+Completed owned scratch directories and nine top-level locks are removed.
+
+The independently pinned **40,139-variant official testharness collection**
+continues on its older production executable; other WPT types remain outside
+that runner. These focused results supply no overall WPT percentage.
+**Overall 100% is not achieved.**
