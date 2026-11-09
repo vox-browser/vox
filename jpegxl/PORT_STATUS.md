@@ -254,7 +254,8 @@ Rotated, animated and wide-gamut fixture metadata does not establish support for
 their final pixel output.
 
 Remaining work includes partial/tiled rendering, VarDCT and frame dependencies,
-patches/noise/splines, filtering, broader pixel color conversion and browser
+patches/noise/splines, EPF filtering, XYB/transfer conversion, frame color/filter
+pipeline assembly and browser
 integration. Container/API streaming
 remains a broader parity task.
 
@@ -304,13 +305,28 @@ HF data deferred to the final pass. SHA-256 covers every output byte; dimensions
 and pitch are compared separately. Production supports additional static images
 and continues to use Rust until those paths and integration are complete.
 
-The corpus checker discovers twenty-eight test files. The preceding twenty-five
+Floating-point stages now have a pure V binary32 fused multiply-add helper. It
+uses binary64 for ordinary cases and exact fixed stack limbs at binary32
+midpoints, avoiding double rounding without a native FMA call. All 35,008 source
+records match, including signed zeros, subnormals, overflow, cancellation and
+512 constructed midpoint cases. NaN payloads are normalized to a class check.
+
+Whole-plane Gaborish filtering, horizontal/vertical chroma upsampling and YCbCr
+to RGB now preserve native source arithmetic order and fused rounding. Their
+512, 384 and 512 frozen plane records compare every f32 output word. Border
+replication, doubled extents, Cb/Y/Cr input order and unclipped RGB are retained.
+Output samples are independent; shape/weight/size limits have focused checks.
+These stages are not connected to the complete-file rendering path yet, and do
+not lift its filter, resampling or YCbCr restrictions.
+
+The corpus checker discovers thirty-two test files. The preceding twenty-five
 file package passed in both GC modes at the ten-slice checkpoint; subsequent
 work passes focused checks in both modes with unavailable Rust compiler paths.
-JPEG XL cadence is 3/10 after that checkpoint; unrelated broader
-suites were not rerun. The package checks 202,666 source cases, counting
+JPEG XL cadence is 7/10 after that checkpoint; unrelated broader
+suites were not rerun. The four new arithmetic/stage files pass default GC,
+no-GC and optimized checks. The package checks 239,082 source cases, counting
 individual ANS alias transitions and whole weighted/property/row transcripts.
-[The grouped frame report](../docs/translation-audit/JPEGXL_V_GROUPED_FRAMES.md)
+[The filter/color stage report](../docs/translation-audit/JPEGXL_V_FILTER_COLOR_STAGES.md)
 records the current scope; [the output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
 records the preceding full checkpoint.
 

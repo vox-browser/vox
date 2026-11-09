@@ -50,18 +50,20 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects twenty-eight test files covering primitives,
+The `jpegxl` suite now selects thirty-two test files covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
 and scalar squeeze planes, transform planning/reconstruction, complete modular
 streams, LF quant factors, small-frame raw planes, output row conversion and
 complete small lossless files, group scheduling and complete grouped lossless
-output. Its 202,666 source cases include whole stateful
+output, fused binary32 arithmetic, Gaborish, chroma upsampling and YCbCr planes.
+Its 239,082 source cases include whole stateful
 predictor/property transcripts and individual ANS alias transitions.
 The preceding twenty-five-file group passed in both GC modes at the ten-slice
-JPEG XL checkpoint. Subsequent small/grouped work passes focused checks in both
-modes with unavailable Rust compiler paths; the full group was not rerun at 3/10.
-[The current verification report](../docs/translation-audit/JPEGXL_V_GROUPED_FRAMES.md)
+JPEG XL checkpoint. Subsequent work passes focused checks in both modes with
+unavailable Rust compiler paths; the full group was not rerun at 7/10. The four
+new arithmetic/stage files also pass an optimized build.
+[The current verification report](../docs/translation-audit/JPEGXL_V_FILTER_COLOR_STAGES.md)
 records the source-case coverage and limits. This checks the V layers; the
 production pixel decoder and its native developer test still require Rust.

@@ -218,3 +218,26 @@ pins, corrected failures and limits. VarDCT/frame dependencies, filters, broader
 color conversion, streaming/partial rendering and production integration remain.
 The production Rust JPEG XL backend and its Cargo/CI/developer tools are still
 required; complete Rust dependency removal remains unfinished.
+
+## Floating-point filter/color stages on 2026-11-09
+
+Pure V binary32 FMA, Gaborish filtering, chroma upsampling and YCbCr conversion
+now match 36,416 new independent source cases. FMA covers random finite triples,
+constructed double-rounding midpoints and special-value combinations; native
+stage comparisons check every float word from whole finite-sample planes.
+No expected result comes from V. Frozen tests require V alone; migration oracles
+are temporary and do not restore a Rust developer-tool dependency.
+
+The four new focused files pass in default GC, no-GC and optimized configurations
+with unavailable Rust compiler paths. This is four additional implementation
+slices, bringing JPEG XL cadence to 7/10 after the preceding full checkpoint.
+The corpus checker discovers thirty-two files and 239,082 frozen source cases.
+Unrelated LibJS/DOM/performance ledgers and prior broad results remain unchanged.
+
+[The filter/color stage report](JPEGXL_V_FILTER_COLOR_STAGES.md) records source
+pins, arithmetic boundaries, commands, formatting and harness corrections.
+These stages still need frame-pipeline integration; existing complete-file
+entry points retain their filter/resampling/YCbCr restrictions. EPF, VarDCT,
+XYB/transfer conversion, frame dependencies and production integration remain.
+The production Rust JPEG XL backend and its Cargo/CI/developer tools are still
+required; all-dependency removal remains unfinished.
