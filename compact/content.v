@@ -268,6 +268,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'xpath' { return binding.xpath_query(key, selector) }
 	if action == 'textSelection' { return binding.text_selection_query(key, selector) }
 	if action == 'range' { return binding.range_query(key, selector) }
+	if action == 'svgGeometry' { return binding.svg_geometry_query(key, selector) }
 	if action == 'documentWrite' { return binding.document_write_query(key, selector) }
 	if action == 'outerHTML' { return binding.outer_html_query(key, selector) }
 	if action == 'innerText' { return binding.inner_text_query(key, selector) }
