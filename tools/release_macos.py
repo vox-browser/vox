@@ -26,6 +26,8 @@ import urllib.error
 import urllib.request
 
 from rebuild_browser import repository_state
+from freeze_browser_compile import PROTOCOL as FROZEN_COMPILE_PROTOCOL, check_fingerprints
+from production_source_manifest import matches_compiled_checkout
 
 REPOSITORY = 'vox-browser/vox'
 WEBSITE_HOST = 'vpm'
@@ -275,6 +277,36 @@ def publish_website_version(version, host=WEBSITE_HOST, path=WEBSITE_VERSION_FIL
                            'support, then run: v run deploy.vsh --website-only' % (url, served, version))
 
 
+def verify_release_inputs(checkout, build, commit, expected):
+    """Bind the consumed compiler inputs to the clean release checkout."""
+    failure = 'The build did not compile the release commit %s; run deploy.vsh again' % commit
+    compiled = build.get('verified_inputs', {})
+    frozen_path = build.get('frozen_compilation')
+    # Parsed-buffer receipts hash a file manifest, not repository_state's byte
+    # stream. Validate that proof and compare its consumed files with checkout;
+    # comparing the two different digest formats rejects every parsed build.
+    inputs = build.get('inputs', {}) if frozen_path else compiled
+    if inputs.get('head') != commit or inputs.get('build_inputs_sha256') != expected:
+        raise RuntimeError(failure)
+    if frozen_path:
+        frozen = json.loads(Path(frozen_path).read_text())
+        if (frozen.get('protocol') != FROZEN_COMPILE_PROTOCOL
+                or frozen.get('complete') is not True or frozen.get('compiler_exit') != 0
+                or not frozen.get('sealed_inputs')):
+            raise RuntimeError(failure)
+        # The supervisor checked live linker/staging inputs before publication.
+        # Those staging paths are removed afterwards; the packaged executable
+        # is pinned separately. Recheck the retained compiler proof and sources.
+        check_fingerprints(frozen['sealed_inputs'])
+        current = repository_state(checkout)
+        if (frozen.get('source_inputs') != inputs
+                or frozen.get('source_inputs_at_sealing', inputs) != compiled
+                or current.get('head') != commit or current.get('dirty') is not False
+                or current.get('build_inputs_sha256') != expected
+                or not matches_compiled_checkout(checkout, frozen)):
+            raise RuntimeError(failure)
+
+
 def release(root, deploy, output=None, package_only=False, requested=None,
             repository=REPOSITORY, host=WEBSITE_HOST, checkout=None):
     """Bump, build the committed sources, package and publish; return the DMG path."""
@@ -304,10 +336,7 @@ def release(root, deploy, output=None, package_only=False, requested=None,
         manifest = json.loads(dmg.with_suffix('.dmg.json').read_text())
         if manifest['version'] != version:
             raise RuntimeError('The DMG contains Vox %s, not %s' % (manifest['version'], version))
-        compiled = manifest.get('source_build', {}).get('verified_inputs', {})
-        if compiled.get('head') != commit or compiled.get('build_inputs_sha256') != expected:
-            raise RuntimeError('The build did not compile the release commit %s; run deploy.vsh '
-                               'again' % commit)
+        verify_release_inputs(checkout, manifest.get('source_build', {}), commit, expected)
         minimum = plistlib.loads((checkout / INFO_PLIST).read_bytes())['LSMinimumSystemVersion']
         publish_release(repository, version, dmg, minimum)
         publish_website_version(version, host)

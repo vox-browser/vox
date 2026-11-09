@@ -202,6 +202,61 @@ class ReleaseFlowTests(unittest.TestCase):
         self.assertEqual(self.calls, [])
 
 
+class ReleaseInputTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory(prefix='vox-release-inputs-')
+        self.addCleanup(temporary.cleanup)
+        self.checkout = Path(temporary.name)
+        self.proof = self.checkout / 'sealed.c'
+        self.proof.write_text('consumed compiler input')
+        self.inputs = dict(head='release-commit', build_inputs_sha256='repository bytes', dirty=False)
+        self.compiled = dict(head='release-commit', build_inputs_sha256='parsed manifest', dirty=True,
+                             source_kind='verified parsed buffers and sealed native inputs')
+        self.frozen = dict(protocol=release.FROZEN_COMPILE_PROTOCOL, complete=True, compiler_exit=0,
+                           sealed_inputs={str(self.proof): release.sha256(self.proof)},
+                           source_inputs=self.inputs, source_inputs_at_sealing=self.compiled)
+        self.receipt = self.checkout / 'frozen-compile.json'
+        self.receipt.write_text(json.dumps(self.frozen))
+        self.build = dict(inputs=self.inputs, verified_inputs=self.compiled,
+                          frozen_compilation=str(self.receipt))
+
+    def verify(self):
+        release.verify_release_inputs(self.checkout, self.build, 'release-commit', 'repository bytes')
+
+    def test_parsed_buffer_hash_is_bound_to_the_clean_checkout_by_its_frozen_proof(self):
+        with patch.object(release, 'matches_compiled_checkout', return_value=True) as matches, \
+                patch.object(release, 'repository_state', return_value=self.inputs):
+            self.verify()
+        matches.assert_called_once_with(self.checkout, self.frozen)
+
+    def test_changed_checkout_or_consumed_files_are_never_released(self):
+        for current, matching in [(dict(self.inputs, head='another-commit'), True),
+                                  (dict(self.inputs, build_inputs_sha256='changed bytes'), True),
+                                  (dict(self.inputs, dirty=True), True),
+                                  (self.inputs, False)]:
+            with self.subTest(current=current, matching=matching), \
+                    patch.object(release, 'matches_compiled_checkout', return_value=matching), \
+                    patch.object(release, 'repository_state', return_value=current):
+                with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+                    self.verify()
+
+    def test_unvalidated_or_mismatched_frozen_receipts_are_never_released(self):
+        self.proof.write_text('changed sealed input')
+        with self.assertRaisesRegex(RuntimeError, 'Frozen build input changed'):
+            self.verify()
+        self.proof.write_text('consumed compiler input')
+        for frozen in [dict(self.frozen, complete=False), dict(self.frozen, compiler_exit=1),
+                       dict(self.frozen, protocol='unknown'), dict(self.frozen, sealed_inputs={}),
+                       dict(self.frozen, source_inputs=dict(self.inputs, head='other')),
+                       dict(self.frozen, source_inputs_at_sealing=dict(self.compiled, build_inputs_sha256='other'))]:
+            self.receipt.write_text(json.dumps(frozen))
+            with self.subTest(frozen=frozen), \
+                    patch.object(release, 'matches_compiled_checkout', return_value=True), \
+                    patch.object(release, 'repository_state', return_value=self.inputs):
+                with self.assertRaisesRegex(RuntimeError, 'did not compile the release commit'):
+                    self.verify()
+
+
 class GitTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory(prefix='vox-release-git-')
