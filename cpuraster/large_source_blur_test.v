@@ -110,7 +110,7 @@ fn test_large_fractional_and_clipped_image_blurs_match_native() {
 
 fn test_large_deferred_source_transforms_preserve_destination() {
 	fixtures := large_source_blur_fixtures()
-	for i in [30] {
+	for i in [29, 30] {
 		c := fixtures[i]
 		mut pixels := large_source_blur_pixels(c, false)
 		original := pixels.clone()
@@ -310,7 +310,7 @@ fn test_large_minified_source_subset_filters_match_native() {
 }
 
 // An identity rescale still samples the source shader and resolves paint
-// effects before the blur. Stay atomic beyond that rounding boundary.
+// effects before the blur.
 fn test_large_identity_rescale_image_filters_match_native() {
 	fixtures := large_source_blur_fixtures()
 	indices := [0, 1, 2, 3, 4, 5, 6, 7, 16, 17, 24, 25, 0, 1, 2, 3]
@@ -359,11 +359,77 @@ fn test_large_identity_rescale_image_filters_match_native() {
 			expected_macos: macos[i], expected_linux: linux[i]}
 		check_large_source_blur_fixture(c, i)
 	}
-	base := fixtures[0]
-	unsupported := LargeSourceBlurFixture{...base, sigma: 135.14,
-		destination: [f32(5.25), 7.75, base.source[2] * f32(.5), base.source[3] * f32(.75)]!}
-	mut pixels := large_source_blur_pixels(unsupported, false)
-	original := pixels.clone()
-	assert !large_source_blur_draw(mut pixels, unsupported)
-	assert pixels == original
+}
+
+// Native sampling, source conversion and incoming effects share the first
+// downsample. Include former declines, flipped/clipped sources, and an invalid
+// blur node whose shadow must still sample SourceGraphic.
+fn test_large_direct_source_rescale_filters_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 24, 25, 28, 31, 0, 1, 1]
+	macos := [
+		'7d80be1fece0a4168cc94cbebfa06d09205a3413096bfb2ccc80fbc81076bb4d',
+		'76eb08acbb83f2525d2c7c1b4e6332cd1bf1d652d3cf206fd258a7e7748cc98c',
+		'682cf4123cfd144c64feaebf7ac6748205d629ea7c46526597e05c31e48b21c0',
+		'5af31dab7380ebf9704dded28423aa7325e8c8929539a10a205ad2b7b249062d',
+		'8045f4d2eec0e03618c081236d11b9447083a8451bea98b10db61608cef1c293',
+		'6a3f24a4db26dd70cfee029cdbc5ec072ae5184f5251aa9783ad58a92ad78eb5',
+		'519279c1a2eb6e6d79af835a1533e856cafd6e5bd27722160b004cfc2847535f',
+		'9493a3db3ccc6d25ab55cdc695542a333140875095584a36253741f3627491e6',
+		'7d80be1fece0a4168cc94cbebfa06d09205a3413096bfb2ccc80fbc81076bb4d',
+		'f0c89868f7c31ccaa374c24a0e7708731eeb1f2e0d84983b294f435d8371789a',
+		'682cf4123cfd144c64feaebf7ac6748205d629ea7c46526597e05c31e48b21c0',
+		'6a1a82a627d72ca834b353b50dbf2e8120273a097a703ac867b335c4a9a8484c',
+		'8045f4d2eec0e03618c081236d11b9447083a8451bea98b10db61608cef1c293',
+		'be5a9066b6b9a8226b4f8405e77d7e283ba44fb7e021e5cc6eaf81a9876977eb',
+		'519279c1a2eb6e6d79af835a1533e856cafd6e5bd27722160b004cfc2847535f',
+		'0dc89417500e36089ac1c8015a895f7b23e49164dff1f4d458a8d0599006cdbe',
+		'957e547449a8b4f3db0377d4191a1f1942151530d9f78243ff388f93979e7ffa',
+		'af2fbf6e3a4982d577826747bd772b238e5025d8fe78dc2088fdb8c864e3412d',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'2010356bfa03ec5b99d8e161f971196f29969e7cef54308782bf3e59ad6e0542',
+		'03743ea674376c1ebbbdce486c63beaf13daf7ed6d2e43154ffe98d1c32dcb0d',
+		'b8d9c734aba8c5e2a504a43e91f371fb7e511665b2bd920b8999e7dda2e78c67',
+		'69628f453a4875ca8cc77647e6a0952cb17b677f75aa3aa3e0e93ae86454642d',
+	]
+	linux := [
+		'0738951d7d84126af0692d76cf09052e99342d0a40e8b2423941c0d98a4085dc',
+		'76eb08acbb83f2525d2c7c1b4e6332cd1bf1d652d3cf206fd258a7e7748cc98c',
+		'682cf4123cfd144c64feaebf7ac6748205d629ea7c46526597e05c31e48b21c0',
+		'5af31dab7380ebf9704dded28423aa7325e8c8929539a10a205ad2b7b249062d',
+		'8045f4d2eec0e03618c081236d11b9447083a8451bea98b10db61608cef1c293',
+		'6a3f24a4db26dd70cfee029cdbc5ec072ae5184f5251aa9783ad58a92ad78eb5',
+		'519279c1a2eb6e6d79af835a1533e856cafd6e5bd27722160b004cfc2847535f',
+		'9493a3db3ccc6d25ab55cdc695542a333140875095584a36253741f3627491e6',
+		'0738951d7d84126af0692d76cf09052e99342d0a40e8b2423941c0d98a4085dc',
+		'f0c89868f7c31ccaa374c24a0e7708731eeb1f2e0d84983b294f435d8371789a',
+		'682cf4123cfd144c64feaebf7ac6748205d629ea7c46526597e05c31e48b21c0',
+		'6a1a82a627d72ca834b353b50dbf2e8120273a097a703ac867b335c4a9a8484c',
+		'8045f4d2eec0e03618c081236d11b9447083a8451bea98b10db61608cef1c293',
+		'be5a9066b6b9a8226b4f8405e77d7e283ba44fb7e021e5cc6eaf81a9876977eb',
+		'519279c1a2eb6e6d79af835a1533e856cafd6e5bd27722160b004cfc2847535f',
+		'0dc89417500e36089ac1c8015a895f7b23e49164dff1f4d458a8d0599006cdbe',
+		'ad146ab2e6946f86ec4e30cb61286c1f1419240b517f46f39405b580911fef85',
+		'af2fbf6e3a4982d577826747bd772b238e5025d8fe78dc2088fdb8c864e3412d',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'2010356bfa03ec5b99d8e161f971196f29969e7cef54308782bf3e59ad6e0542',
+		'a62e52dffb37d90a01f59ffb07b0300a31eefe11520183ddc864ed46c533d675',
+		'b8d9c734aba8c5e2a504a43e91f371fb7e511665b2bd920b8999e7dda2e78c67',
+		'26da05733f5dab5516a830e81afa54ef07c9eb6dfe3f1faeac52399678f69d65',
+	]
+	for i, index in indices {
+		base := fixtures[index]
+		sx, sy := if i == 20 { f32(.5) } else { f32(1.25) }, if i == 20 { f32(.75) } else { f32(1.4) }
+		c := LargeSourceBlurFixture{...base,
+			destination: if i < 18 || i >= 20 {
+				[f32(5.25), 7.75, base.source[2] * sx, base.source[3] * sy]!
+			} else { base.destination },
+			transform: if i >= 8 && i < 16 { [f32(-1.25), 0, 0, .75, 137, 2]! } else { base.transform },
+			sigma: if i < 18 || i == 21 { f32(300) } else if i == 20 { f32(135.14) }
+				else if i == 22 { f32(-300) } else { base.sigma },
+			shadow: (i < 18 && i % 2 != 0) || i >= 21, shadow_color: 0x9d70d020,
+			offset: if i == 21 { [f32(4096), -4096]! } else { [f32(9.25), -13.75]! },
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
 }
