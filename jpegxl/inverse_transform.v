@@ -21,6 +21,8 @@ pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32)
 	output[0] = lf[0]
 	match transform {
 		.dct { return inverse_dct_plane(8, 8, output) }
+		.dct4x4 { inverse_dct4x4_blocks(mut output)! }
+		.dct4x8, .dct8x4 { inverse_rectangular_dct_blocks(transform, mut output)! }
 		.identity { inverse_identity(mut output) }
 		.dct2x2 { inverse_dct2x2(mut output) }
 		else { return error('Unsupported JPEG XL inverse transform') }
