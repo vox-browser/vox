@@ -64,14 +64,17 @@ The build selects Linux or macOS automatically. `build-linux-browser.sh` can
 also be called directly. Both builds use the current V compiler without falling
 back to the compatibility compiler. The shell entrypoint prepares the native
 archives, exports the local Skia package path, and stages the compiler modules
-needed by the browser. Linux uses the distribution's threaded Boehm
-collector; `LADYBIRD_V_GC=none` remains available for ownership diagnostics. Native
+needed by the browser. Linux defaults to the distribution's threaded Boehm
+collector. `LADYBIRD_V_GC=prealloc sh build-prod-browser.sh` builds the full browser
+with the production arena allocator and no collector, using the same staged
+bounded-realloc and closure runtime as macOS. `LADYBIRD_V_GC=none` remains
+available for ownership diagnostics, but does not enable those arenas. Native
 bridges and image-codec archives stay under `Build/linux/native`, separate from macOS
 objects. The browser embeds its adblock assets and needs no Ladybird checkout.
 Run the production entrypoint from a regular Git checkout on `master`, as
 required by the shared build supervisor. It runs `--headless-smoke` before
 publishing the executable and records compiler and smoke logs under
-`Build/production-build/receipts/`.
+`Build/linux/production-build/receipts/`.
 The default build optimizes with `-O2`; use `VOX_LINUX_CFLAGS=-O0` for a faster
 diagnostic build. Allow at least 8 GB of RAM or additional swap for the large
 single-file C compilation.
@@ -92,13 +95,21 @@ its GN/Ninja build and dependency options.
 ## Run and check
 
 The [Linux build workflow](../.github/workflows/linux-build.yml) installs the
-system dependencies on Ubuntu 24.04, builds pinned V/UI2 and Skia sources, and
-runs the normal supervised build and headless smoke test on pushes to `master`
-and on pull requests. It also runs the Linux entrypoint regression tests, which
-can be checked without a compiler or native development packages:
+system dependencies on Ubuntu 24.04 and builds pinned V and Skia sources with
+current upstream UI2 on pushes to `master` and on pull requests. Independent
+Boehm and prealloc jobs each build the full browser through the normal
+supervisor, run its headless smoke, and exercise its actual X11 window under Xvfb.
+The prealloc job uses
+`-prealloc -gc none` and `VOX_ARENA_POISON=1`, so arena retirement is checked
+without a collector keeping stale payloads alive. The existing `build` check
+requires both jobs to pass; one failing configuration does not cancel the other.
+
+The workflow also runs the Linux entrypoint and smoke-harness regressions,
+which can be checked without a V compiler or native development packages:
 
 ```sh
 python3 tools/build_linux_browser_test.py
+python3 tools/test_linux_browser_test.py
 ```
 
 ```sh
@@ -107,8 +118,11 @@ Build/linux/vox '<h1>Hello from Linux</h1>'
 Build/linux/vox --headless-smoke
 Build/linux/vox --headless=layout-tree ./page.html
 
-sudo apt-get install xvfb xauth xdotool
-python3 tools/test_linux_browser.py
+sudo apt-get install xvfb xauth xdotool scrot
+python3 tools/run_memory_bounded.py \
+    --lock Build/linux-window-smoke.lock --report Build/linux-window-smoke.json \
+    --limit-gib 3 --timeout 600 -- \
+    python3 tools/test_linux_browser.py
 ```
 
 Ctrl+L edits the address and Enter navigates. Back/forward, reload, page input,
@@ -116,9 +130,17 @@ and scrolling use the portable shell. JavaScriptCore remains the default engine.
 The explicit `--js-engine=libjs` option keeps its existing documented limits.
 
 The smoke test exercises startup, JavaScript DOM/events, local documents, HTTPS
-with trusted and untrusted certificates, HTTP redirects, an actual X11 window
-under Xvfb, and Ctrl+L/Enter navigation with
-xdotool. It writes `Build/linux/smoke.png`.
+with trusted and untrusted certificates, HTTP redirects, and an actual X11
+window under Xvfb. It drives Ctrl+L/Enter navigation, resizes the window and
+checks repainted pixels, creates and switches process tabs, closes a child tab,
+and requires that child's recorded exit status to be zero. It then closes the
+main window while a sibling is alive and verifies the main process exits normally
+and the whole process group retires. The interactive
+launch uses a private profile and ordinary window mode because screenshot mode
+does not start process tabs. Missing Xvfb/input/capture tools fail the test.
+It writes `Build/linux/browser-smoke/smoke.png` and the interactive logs and
+captures alongside it. CI preserves these with the build receipts and
+focused-test logs in separate allocator-specific artifacts, including on failure.
 `--screenshot=PATH` also captures Linux windows, including browser chrome, and
 exits after settling. `--screenshot-viewport-height=N` sets the document layout
 viewport independently of the window height. The Cocoa-based
@@ -146,6 +168,28 @@ VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
     layout/navigable_fallback_storage_test.v layout/svg_document_storage_test.v \
     layout/static_svg_scene_test.v
 ```
+
+The normal gate also runs document replacement, BFCache suspension/restoration,
+retained-frame release, child-document cleanup, tab-owner retirement, and pending
+resource cancellation against both allocation models. These are the focused
+application boundary checks:
+
+```sh
+VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
+    --lock Build/linux-session-tests.lock --report Build/linux-session-tests.json -- \
+    python3 tools/test_linux_native.py --gc prealloc \
+    document/session_test.v document/child_storage_test.v \
+    navigation/controller_test.v navigation/back_forward_cache_test.v \
+    navigation/preload_cancellation_test.v browserapp/browser_tabs_test.v
+```
+
+The child-storage cases close a real hosted document, keep its commands readable
+through the parent's retained frame, and require both arenas to release when the
+last reader retires. Session cases cover blocked response producers and stale
+completion rejection. The window smoke complements those ownership assertions
+with actual process-tab and UI teardown. Linux prealloc coverage exercises the
+shared ownership model and Linux backend; it does not establish macOS Cocoa or
+Metal integration behavior.
 
 The native test runner also honors `CC`. To check the CSS color interpolation,
 DOM range extraction, and WOFF2 font decoding regressions with GCC:

@@ -14,13 +14,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  browser:
+    name: Browser (${{ matrix.gc }})
     runs-on: ubuntu-24.04
     timeout-minutes: 180
+    strategy:
+      # Keep evidence from both allocation models when one of them fails.
+      fail-fast: false
+      matrix:
+        gc: [boehm, prealloc]
     env:
       V_REVISION: 4460fc9de18bdc7b2b77ee5ef7e4ab44ab99a28e
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
+      LADYBIRD_V_GC: ${{ matrix.gc }}
+      VOX_ARENA_POISON: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -41,6 +49,7 @@ jobs:
           python3 tools/prepare_ui2_test.py
           python3 tools/ci_stackoverflow_instructions_test.py
           python3 tools/prepare_linux_modules_test.py
+          python3 tools/test_linux_browser_test.py
 
       - name: Install Linux dependencies
         run: |
@@ -52,10 +61,21 @@ jobs:
             libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
             libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev \
-            libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core
+            libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core \
+            xvfb xauth xdotool scrot
           pkg-config --modversion javascriptcoregtk-4.1
           rustup toolchain install stable --profile minimal --no-self-update
           rustc --version
+
+      - name: Check tab process exit diagnostics
+        if: matrix.gc == 'boehm'
+        timeout-minutes: 2
+        run: |
+          # A child crash during Ctrl+W must not look like successful retirement.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-tab-process.lock" \
+            --report "$RUNNER_TEMP/vox-tab-process.json" --limit-gib 3 --timeout 60 -- \
+            python3 tools/test_tab_process_lifecycle.py
 
       - name: Add swap for the C compilation
         run: |
@@ -86,6 +106,7 @@ jobs:
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
       - name: Check resource cache and cancellation contracts
+        if: matrix.gc == 'boehm'
         timeout-minutes: 10
         run: |
           python3 tools/run_memory_bounded.py \
@@ -134,9 +155,30 @@ jobs:
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-skia-test.lock" \
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
-            python3 tools/test_linux_native.py skia/shadow_test.v
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
+
+      - name: Build Vox and run the headless smoke test
+        timeout-minutes: 50
+        run: |
+          # The normal supervisor applies the build memory guard and runs
+          # --headless-smoke before publishing Build/linux/vox.
+          sh build-prod-browser.sh
+          test -x Build/linux/vox
+
+      - name: Check the native window and tab lifecycle
+        timeout-minutes: 12
+        run: |
+          # This is the full supervised binary, including the staged prealloc
+          # runtime in that matrix entry. Xvfb exercises window/UI startup,
+          # input, native redraw, process tabs and graceful teardown.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-window-$LADYBIRD_V_GC.json" \
+            --limit-gib 3 --timeout 600 -- \
+            python3 tools/test_linux_browser.py Build/linux/vox
 
       - name: Check retained storage with the production allocator
+        if: matrix.gc == 'prealloc'
         timeout-minutes: 15
         run: |
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
@@ -158,63 +200,51 @@ jobs:
               layout/svg_document_storage_test.v \
               layout/static_svg_scene_test.v
 
-      - name: Build Vox and run the headless smoke test
-        timeout-minutes: 50
-        run: |
-          # The normal supervisor applies the build memory guard and runs
-          # --headless-smoke before publishing Build/linux/vox.
-          sh build-prod-browser.sh
-          test -x Build/linux/vox
-
       - name: Check display-list recording ownership
-        timeout-minutes: 30
+        timeout-minutes: 15
         run: |
           # Replay identity and buffer recycling must agree in collector and
           # production arena builds. Each executable has a 3 GiB runtime guard.
           # Poison released arenas to expose any stale recording readers.
           export VOX_ARENA_POISON=1
-          for gc in boehm prealloc; do
-            python3 tools/run_memory_bounded.py \
-              --lock "$RUNNER_TEMP/vox-recording-$gc.lock" \
-              --report "$RUNNER_TEMP/vox-recording-$gc.json" --timeout 840 -- \
-              python3 tools/test_linux_native.py --gc "$gc" \
-                layout/display_list_recording_test.v \
-                layout/visual_context_memo_test.v
-          done
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-recording-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-recording-$LADYBIRD_V_GC.json" --timeout 840 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              layout/display_list_recording_test.v \
+              layout/visual_context_memo_test.v
 
       - name: Check native DOM authority and projections
-        timeout-minutes: 45
+        timeout-minutes: 25
         run: |
           export VOX_ARENA_POISON=1
-          for gc in boehm prealloc; do
-            python3 tools/run_memory_bounded.py \
-              --lock "$RUNNER_TEMP/vox-dom-authority-$gc.lock" \
-              --report "$RUNNER_TEMP/vox-dom-authority-$gc.json" --timeout 1200 -- \
-              python3 tools/test_linux_native.py --gc "$gc" \
-                compact/native_attributes_test.v \
-                compact/mutation_boundary_test.v \
-                dom/native_attribute_identity_test.v \
-                layout/lazy_dom_visual_lines_test.v
-          done
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-dom-authority-$LADYBIRD_V_GC.json" --timeout 1200 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              compact/native_attributes_test.v \
+              compact/mutation_boundary_test.v \
+              dom/native_attribute_identity_test.v \
+              layout/lazy_dom_visual_lines_test.v
 
       - name: Check document session lifecycles
-        timeout-minutes: 60
+        timeout-minutes: 40
         run: |
           # The same owner must survive suspension and retire exactly once in
           # collector and production arena builds, including external frames.
           export VOX_ARENA_POISON=1
-          for gc in boehm prealloc; do
-            python3 tools/run_memory_bounded.py \
-              --lock "$RUNNER_TEMP/vox-session-$gc.lock" \
-              --report "$RUNNER_TEMP/vox-session-$gc.json" --timeout 1740 -- \
-              python3 tools/test_linux_native.py --gc "$gc" \
-                document/session_test.v \
-                navigation/controller_test.v \
-                navigation/back_forward_cache_test.v \
-                navigation/blob_url_cache_lifetime_test.v \
-                navigation/retire_before_styles_test.v \
-                browserapp/browser_zoom_test.v
-          done
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-session-$LADYBIRD_V_GC.json" --timeout 2340 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              document/session_test.v \
+              document/child_storage_test.v \
+              navigation/controller_test.v \
+              navigation/back_forward_cache_test.v \
+              navigation/blob_url_cache_lifetime_test.v \
+              navigation/retire_before_styles_test.v \
+              browserapp/browser_tabs_test.v \
+              browserapp/browser_zoom_test.v
 
       - name: Check resource consumers and navigation retirement
         timeout-minutes: 35
@@ -224,13 +254,13 @@ jobs:
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-resource-integration.lock" \
             --report "$RUNNER_TEMP/vox-resource-integration.json" --timeout 1980 -- \
-            python3 tools/test_linux_native.py \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
               resources/cache_reuse_test.v \
               navigation/preload_cancellation_test.v \
-              navigation/back_forward_cache_test.v \
               fetch/upstream_entry_points_test.v
 
       - name: Check parser script lifecycles
+        if: matrix.gc == 'boehm'
         timeout-minutes: 60
         run: |
           # Compile each focused case under the build budget. The runner gives
@@ -247,6 +277,11 @@ jobs:
               resources/external_scripts_test.v \
               compact/document_write_test.v \
               compact/named_elements_test.v
+
+      - name: Check parser resumption storage with the production allocator
+        if: matrix.gc == 'prealloc'
+        timeout-minutes: 10
+        run: |
           # Parser resumption can run inside a temporary frame arena. Exercise
           # its retained document storage with the production allocator too.
           python3 tools/run_memory_bounded.py \
@@ -263,16 +298,8 @@ jobs:
           from pathlib import Path
 
           temporary = Path(os.environ['RUNNER_TEMP'])
-          paths = [temporary / name for name in ('vox-v-build.json', 'vox-skia-build.json',
-                                                    'vox-native-build.json', 'vox-skia-test.json',
-                                                    'vox-ownership-tests.json',
-                                                    'vox-parser-tests.json', 'vox-parser-storage-tests.json',
-                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json',
-                                                    'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json',
-                                                    'vox-session-boehm.json', 'vox-session-prealloc.json',
-                                                    'vox-resource-cache.json', 'vox-resource-cache-nogc.json',
-                                                    'vox-resource-lifecycle.json', 'vox-resource-v.json',
-                                                    'vox-resource-v-prealloc.json', 'vox-resource-integration.json')]
+          paths = sorted(temporary.glob('vox-*.json'))
+          paths.extend(Path('Build/linux/browser-smoke').glob('*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))
@@ -285,3 +312,29 @@ jobs:
                   print(path.read_text(errors='replace')[-30000:])
                   print('::endgroup::')
           PY
+
+      - name: Preserve build and lifecycle evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-${{ matrix.gc }}-receipts
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            ${{ runner.temp }}/vox-*.json
+            Build/linux/production-build/receipts/*/*.log
+            Build/linux/production-build/receipts/*/*.json
+            Build/linux/tests/*/run-*/*.log
+            Build/linux/tests/*/run-*/*.json
+            Build/linux/browser-smoke/
+
+  # Preserve the existing required-check name and require both matrix entries.
+  build:
+    needs: browser
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require both allocation models
+        env:
+          BROWSER_RESULT: ${{ needs.browser.result }}
+        run: test "$BROWSER_RESULT" = success

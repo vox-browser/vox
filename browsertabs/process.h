@@ -6,7 +6,9 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <spawn.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/file.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -34,7 +36,22 @@ static int vox_tabs_spawn(const char *exe, char **argv, char **env) {
 }
 static int vox_tabs_alive(int pid) { return pid > 0 && (kill(pid, 0) == 0 || errno == EPERM); }
 static void vox_tabs_terminate(int pid) { if (pid > 0) kill(pid, SIGTERM); }
-static int vox_tabs_reap(int pid) { return waitpid(pid, NULL, WNOHANG) != 0; }
+static int vox_tabs_reap(int pid) {
+    int status = 0;
+    pid_t result = waitpid(pid, &status, WNOHANG);
+    if (result > 0 && result == pid) {
+        const char *diagnostics = getenv("VOX_TAB_EXIT_DIAGNOSTICS");
+        if (diagnostics && strcmp(diagnostics, "1") == 0) {
+            // Window integration checks must distinguish completed cleanup
+            // from a child crashing after it removed its tab metadata.
+            fprintf(stderr, "VOX_TAB_EXIT pid=%d code=%d signal=%d\n", pid,
+                    WIFEXITED(status) ? WEXITSTATUS(status) : -1,
+                    WIFSIGNALED(status) ? WTERMSIG(status) : 0);
+            fflush(stderr);
+        }
+    }
+    return result != 0;
+}
 #endif
 
 #ifdef __APPLE__

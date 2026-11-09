@@ -41,8 +41,8 @@ build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
 cache_dir="$repo_dir/Build/linux"
 gc_mode=${LADYBIRD_V_GC:-boehm}
 case "$gc_mode" in
-    boehm|boehm_full|none) ;;
-    *) echo "LADYBIRD_V_GC must be boehm, boehm_full, or none" >&2; exit 2 ;;
+    boehm|boehm_full|prealloc|none) ;;
+    *) echo "LADYBIRD_V_GC must be boehm, boehm_full, prealloc, or none" >&2; exit 2 ;;
 esac
 
 # Use the current frontend, matching the macOS production build. The driver's
@@ -72,6 +72,14 @@ python3 "$repo_dir/tools/build_linux_native.py"
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
+module_paths="$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
+if [ "$gc_mode" = prealloc ]; then
+    # Use the production bounded realloc and persistent closure metadata;
+    # allocator flags alone do not provide those ownership guarantees.
+    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
+    v_compiler="$prealloc_modules/compiler/v"
+    module_paths="$repo_dir|$prealloc_modules|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
+fi
 # The compiler qualifies packages from the nearest `modules`,
 # `.vmodules`, `vlib` or lookup-path-named directory, or from an ancestor v.mod.
 # A checkout such as ~/.vmodules/vox2 would compile `encoding` as
@@ -82,16 +90,29 @@ case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backen
 set -- -b "$v_backend" -memory-limit 10G -enable-globals -cc "${CC:-clang}" \
     -d vox_production -d use_openssl \
     -exclude '@vlib/time/zoneinfo.native.v' \
-    -path "$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib" -gc "$gc_mode"
-if [ "$gc_mode" = none ]; then
-    set -- "$@" -prod
+    -path "$module_paths"
+if [ "$gc_mode" = prealloc ]; then
+    # Match macOS production: -prealloc alone leaves the default collector
+    # selected. Keep the compiler's imported graph within its memory budget.
+    set -- "$@" -w -n -nocache -prealloc -gc none
+elif [ "$gc_mode" = none ]; then
+    set -- "$@" -prod -gc none
 else
     # Use the distribution's threaded collector, rather than building V's
     # bundled collector through its object-file cache.
-    set -- "$@" -d dynamic_boehm
+    set -- "$@" -gc "$gc_mode" -d dynamic_boehm
 fi
-cd "$repo_dir"
+if [ "$gc_mode" = prealloc ]; then
+    # V resolves builtin relative to its compiler root, not just -path.
+    # Compile from the staged view, with the application source made absolute.
+    cd "$prealloc_modules/compiler"
+    browser_source="$repo_dir"
+else
+    cd "$repo_dir"
+    browser_source=.
+fi
+echo "Building Vox ($gc_mode) with: $*"
 # glibc exposes pthread_setname_np and pthread_getattr_np only with GNU extensions.
-"$v_compiler" "$@" -show-c-output -cflags "-D_GNU_SOURCE=1 ${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" .
+"$v_compiler" "$@" -show-c-output -cflags "-D_GNU_SOURCE=1 ${VOX_LINUX_CFLAGS:--O2}" -o "$build_dir/vox" "$browser_source"
 echo "Built Vox: $build_dir/vox"
 echo "Run: '$build_dir/vox' https://example.com"

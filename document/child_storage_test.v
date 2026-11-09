@@ -9,8 +9,9 @@ import time
 fn test_closing_a_rendered_hosted_child_reclaims_storage_after_the_parent_reader() {
 	$if !prealloc { return }
 	page_owner := page.Page.create(1)!
+	// Keep the lifetime probe's payload independent of platform font wrapping.
 	mut root := parse_browser_navigation_document_for_page_with_response_time(
-		'<!doctype html><iframe id="frame" srcdoc="<p>hosted child payload</p>" style="width:180px;height:80px"></iframe>',
+		'<!doctype html><iframe id="frame" srcdoc="<p style=white-space:nowrap>hosted child payload</p>" style="width:180px;height:80px"></iframe>',
 		dom.URL{value: 'https://rendered-host.example/'}, none, none,
 		unsafe { &dom.Page(page_owner) }, time.sys_mono_now())
 	root.set_scripting_enabled_by_embedder(false)
