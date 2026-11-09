@@ -13,7 +13,7 @@ fn test_generated_content_snapshots_are_per_node_and_keep_explicit_empty_alterna
 	assert second.content()?.alt_text == '2'
 	assert first.content()?.has_alt_text
 	assert layout_generated_accessible_text(voidptr(first))? == ''
-	assert layout_generated_accessible_text(voidptr(second))? == '2'
+	assert layout_generated_accessible_text(voidptr(second))? == ' 2 '
 	first.set_content(css.ContentData{ type_:.list, text:'painted' })
 	assert layout_generated_accessible_text(voidptr(first))? == 'painted'
 }

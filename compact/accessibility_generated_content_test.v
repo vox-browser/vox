@@ -4,7 +4,7 @@ import browserjs
 import html
 
 fn test_accessible_generated_alternatives_replace_visual_text_and_stay_with_their_owner() {
-	mut document := html.parse_document('<!doctype html><style>.alt::before{content:"visual" / "before "}.alt::after{content:"visual" / " after"}.empty::before{content:"visual" / ""}.child::before{content:"visual" / "child "}</style><button id="alt" class="alt">label</button><button id="empty" class="empty">label</button><button id="parent"><span class="child">label</span></button>')
+	mut document := html.parse_document('<!doctype html><style>.alt::before{content:"visual" / "before"}.alt::after{content:"visual" / "after"}.empty::before{content:"visual" / ""}.child::before{content:"visual" / "child "}</style><button id="alt" class="alt">label</button><button id="empty" class="empty">label</button><button id="parent"><span class="child">label</span></button>')
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close(); document.finalize() }
 	mut messages := []string{}
@@ -19,7 +19,7 @@ console.log("generated alternatives passed");
 }
 
 fn test_accessible_counter_alternatives_are_isolated_and_follow_cssom_updates() {
-	mut document := html.parse_document('<!doctype html><style>:root{counter-reset:seq}.seq::before{counter-increment:seq;content:"" / counter(seq) " "}.changed::before{counter-set:cnt 50;content:"" / counter(cnt) " "}</style><button id="one" class="seq">label</button><button id="two" class="seq">label</button><button id="three" class="seq">label</button><button id="changed" class="changed">label</button>')
+	mut document := html.parse_document('<!doctype html><style>:root{counter-reset:seq}.seq::before{counter-increment:seq;content:"" / counter(seq)}.changed::before{counter-set:cnt 50;content:"" / counter(cnt)}</style><button id="one" class="seq">label</button><button id="two" class="seq">label</button><button id="three" class="seq">label</button><button id="changed" class="changed">label</button>')
 	mut runtime := browserjs.Runtime.create()
 	defer { runtime.close(); document.finalize() }
 	mut messages := []string{}
