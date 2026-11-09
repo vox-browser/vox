@@ -14,6 +14,7 @@ fn install_parser_document_resources(document &dom.Document, images &BrowserImag
 		|| voidptr(images.document) != voidptr(document) { return }
 	mut allocations := document.enter_native_storage()
 	defer { allocations.finish() }
+	install_browser_input_image_fetch_hooks(document)
 	for element in css.query_selector_all(document.as_node(), 'img') {
 		if !element.is_html_element() { continue }
 		mut model := html.html_image_element_model_for_dom_element(unsafe { &dom.HTMLImageElement(element) })
