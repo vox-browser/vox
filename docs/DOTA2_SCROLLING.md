@@ -1716,3 +1716,63 @@ and layout rebuild) runs once while the first scroll is in progress. With a
 queries, `opGetByIdSlow` property reads) is the next lever for the first
 scroll; GPU canvas transfer cost is the next lever for fling frames under
 load.
+
+## 2026-11-09: the first-scroll hitch is Old Reddit's DOMContentLoaded work
+
+Scrolling the thread as soon as it appears stalled for 400–650 ms once. Stack
+samples put the stall in the page's `DOMContentLoaded` listeners. A local
+replay of the thread (its HTML and redditstatic scripts/styles on loopback,
+author scripts enabled) reproduces it: the listeners took 330–480 ms.
+`VOX_COMPACT_QUERY_DIAGNOSTICS=1` and `VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1`
+(`355a47db6`) showed 39,316 compact bridge calls inside them: per element two
+`class` reads and an `offsetWidth` read, over 30 `getElementsByTagName("*")`
+scans, plus one forced layout.
+
+That is Sizzle, jQuery 2.1.1's selector engine, on its slowest path. It
+enables its `getElementsByClassName` finder and native `contains`/
+`compareDocumentPosition` only for functions whose source matches
+`/\{\s*\[native \w/`, and the compact engine's JavaScript implementations
+printed their source.
+
+- `6236058f7` makes every function reachable from the global object,
+  `document` and the global constructors at the end of the bootstrap print as
+  `function name() { [native code] }`; page functions keep their source.
+  Control: `VOX_PLAIN_BRIDGE_FUNCTION_SOURCE=1`.
+- `7dc0a0b67` lets a live class collection reuse its last reply while
+  `__ladybirdDOMContentVersion` is unchanged and no script edit is pending.
+  Sizzle copies each collection with `push.apply`, which read every member
+  through a fresh native query. Control: `VOX_UNCACHED_CLASS_COLLECTIONS=1`.
+
+Same private build, 1701×948 at 150% zoom, host load 10–33:
+
+| Replay, same binary | Both controls set | Default |
+| --- | ---: | ---: |
+| DOMContentLoaded listeners, 3 alternating pairs | 477 / 460 / 426 ms | 176 / 166 / 146 ms |
+| Bridge calls inside the listeners | 39,316 | 2,146 |
+| Class queries (cache off / on, both with native sources) | 423, 78 ms | 66, 10 ms |
+| Worst gap while scrolling through it, 3 pairs | 80* / 649 / 603 ms | 144 / 255 / 90 ms |
+
+\*Its listeners ran before the first input. A DOM fingerprint after the
+listeners (3,778 elements, class text length 51,158, 7,626 attributes, class
+hash) is identical in both arms. On the live page (logged in, 1,500 inputs
+at 120 Hz from 8 s after the title) the worst mid-scroll gaps were
+487/503/432 ms with the controls set and 234/355/326 ms by default; one
+default run with stack sampling had none above 20 ms because the listeners
+ran before scrolling began.
+
+What remains of the hitch: the listeners' single forced layout (about
+55 ms, a full layout-tree rebuild that also builds the paint tree),
+interpreted JavaScript and the remaining native subtree walks, then the next
+frame's full layout and full-viewport repaint. While the page is still
+loading, every parser append or image arrival also forces that layout and
+repaint (100–270 ms frames in both arms). Faster full layout and repaint are
+the next levers; a local replay can check them without the network.
+
+Focused tests: `compact/native_function_source_test.v` and
+`compact/class_collection_cache_test.v`, plus the existing clone-node, native
+attribute, element serialization and task-navigation tests, pass.
+`compact/tag_collection_fast_read_test.v` fails identically before these
+changes: since `3fa67a181` its stub fixture lacks `__elementContent`.
+The production build tooling also needed `a15e9f5c5`: the shared compiler
+now defaults to the fastc backend and current vlib already passes the
+request to `HttpProxy.ssl_dial`, which broke HTTP module preparation.
