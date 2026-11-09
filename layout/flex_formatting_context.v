@@ -686,6 +686,8 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 			}
 		}
 		if use_grow_factor {
+			mut cumulative_factor := 0.0
+			mut assigned := CSSPixels.new(0)
 			for index, item in line.items {
 				if frozen[index] {
 					continue
@@ -695,7 +697,10 @@ fn resolve_flexible_lengths(mut state LayoutState, line FlexLine, container_main
 				} else {
 					0.0
 				}
-				targets[index] = line.bases[index].plus(remaining_free_space.scaled(ratio))
+				cumulative_factor += ratio
+				cumulative := remaining_free_space.scaled(cumulative_factor)
+				targets[index] = line.bases[index].plus(cumulative.minus(assigned))
+				assigned = cumulative
 			}
 		} else {
 			mut scaled_shrink_sum := 0.0
@@ -1610,15 +1615,17 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		main_free_space := container_width.minus(total_main)
 		mut absorbed_main_space := false
 		if main_free_space.raw_value() > 0 && auto_main_margin_count > 0 {
-			each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
+			mut margin_index := 0
 			for item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
 				mut item_state := state.mutable_internal_box_values(styled)
 				if property_is_auto(item.computed_values(), .margin_left) {
-					item_state.margin_left = each_margin
+					item_state.margin_left = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+					margin_index++
 				}
 				if property_is_auto(item.computed_values(), .margin_right) {
-					item_state.margin_right = each_margin
+					item_state.margin_right = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+					margin_index++
 				}
 			}
 			absorbed_main_space = true
@@ -1702,12 +1709,19 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 			}
 			if visual_index + 1 < indexes.len {
 				cursor = cursor.plus(column_gap).plus(distributed_gap)
+				if !absorbed_main_space {
+					cursor = cursor.plus(flex_distribution_remainder(container.computed_values().justify_content(),main_free_space,indexes.len,visual_index,distributed_gap))
+				}
 			}
 		}
 		if placement.place_items_backwards {
 			placement.start_of_current_line = placement.start_of_current_line.minus(cross_size).minus(distributed_cross_space).minus(row_gap)
 		} else {
 			placement.start_of_current_line = placement.start_of_current_line.plus(cross_size).plus(distributed_cross_space).plus(row_gap)
+		}
+		if container.computed_values().align_content() == .space_between && visual_line_index+1 < lines.len {
+			adjustment := flex_distribution_remainder(.space_between,available_cross_size.minus(total_cross_size),lines.len,visual_line_index,distributed_cross_space)
+			placement.start_of_current_line = if placement.place_items_backwards { placement.start_of_current_line.minus(adjustment) } else { placement.start_of_current_line.plus(adjustment) }
 		}
 		_ = visual_line_index
 	}
@@ -1733,7 +1747,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mut container_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	items := ordered_flex_items(container)
 	container_width := container_state.content_width()
-	container_height := if container_state.has_definite_height() {
+	mut container_height := if container_state.has_definite_height() {
 		?CSSPixels(container_state.content_height())
 	} else if available_space.height.is_definite() {
 		?CSSPixels(available_space.height.to_px_or_zero())
@@ -1741,6 +1755,13 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		?CSSPixels(none)
 	}
 	if container.computed_values().flex_wrap() != .nowrap {
+		if container_height == none {
+			// A definite max-height bounds line collection even when height is auto.
+			maximum := container.computed_values().size_value(.max_height)
+			if maximum.is_length() || (maximum.is_calculated() && !maximum.contains_percentage()) {
+				container_height = resolve_flex_main_size(container,maximum,none,container_state,false)
+			}
+		}
 		if definite_height := container_height {
 			return run_wrapping_column_flex_formatting_context(mut state, container, mut container_state, items, container_width, definite_height, layout_mode)
 		}
@@ -1877,15 +1898,17 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	main_free_space := main_size.minus(total_main)
 	mut absorbed_main_space := false
 	if main_free_space.raw_value() > 0 && auto_main_margin_count > 0 {
-		each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
+		mut margin_index := 0
 		for item in items {
 			styled := item.as_node_with_style() or { continue }
 			mut item_state := state.mutable_internal_box_values(styled)
 			if property_is_auto(item.computed_values(), .margin_top) {
-				item_state.margin_top = each_margin
+				item_state.margin_top = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+				margin_index++
 			}
 			if property_is_auto(item.computed_values(), .margin_bottom) {
-				item_state.margin_bottom = each_margin
+				item_state.margin_bottom = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+				margin_index++
 			}
 		}
 		absorbed_main_space = true
@@ -1945,6 +1968,9 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 		}
 		if visual_index + 1 < indexes.len {
 			cursor = cursor.plus(row_gap).plus(distributed_gap)
+			if !absorbed_main_space {
+				cursor = cursor.plus(flex_distribution_remainder(container.computed_values().justify_content(),main_free_space,indexes.len,visual_index,distributed_gap))
+			}
 		}
 	}
 	set_flex_abspos_static_positions(mut state, container, container_state, container.computed_values().effective_flex_direction())
@@ -2092,15 +2118,17 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		main_free_space := main_size.minus(total_main)
 		mut absorbed_main_space := false
 		if main_free_space.raw_value() > 0 && auto_main_margin_count > 0 {
-			each_margin := flex_divide_by_integer(main_free_space, auto_main_margin_count)
+			mut margin_index := 0
 			for item in current_line.items {
 				styled := item.as_node_with_style() or { continue }
 				mut item_state := state.mutable_internal_box_values(styled)
 				if property_is_auto(item.computed_values(), .margin_top) {
-					item_state.margin_top = each_margin
+					item_state.margin_top = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+					margin_index++
 				}
 				if property_is_auto(item.computed_values(), .margin_bottom) {
-					item_state.margin_bottom = each_margin
+					item_state.margin_bottom = flex_fractional_share(main_free_space,margin_index,auto_main_margin_count)
+					margin_index++
 				}
 			}
 			absorbed_main_space = true
@@ -2168,12 +2196,19 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			}
 			if visual_item_index + 1 < item_indexes.len {
 				main_cursor = main_cursor.plus(row_gap).plus(distributed_main)
+				if !absorbed_main_space {
+					main_cursor = main_cursor.plus(flex_distribution_remainder(container.computed_values().justify_content(),main_free_space,item_indexes.len,visual_item_index,distributed_main))
+				}
 			}
 		}
 		if placement.place_items_backwards {
 			placement.start_of_current_line = placement.start_of_current_line.minus(cross_size).minus(distributed_cross).minus(column_gap)
 		} else {
 			placement.start_of_current_line = placement.start_of_current_line.plus(cross_size).plus(distributed_cross).plus(column_gap)
+		}
+		if container.computed_values().align_content() == .space_between && visual_line_index+1 < lines.len {
+			adjustment := flex_distribution_remainder(.space_between,container_width.minus(total_cross_size),lines.len,visual_line_index,distributed_cross)
+			placement.start_of_current_line = if placement.place_items_backwards { placement.start_of_current_line.minus(adjustment) } else { placement.start_of_current_line.plus(adjustment) }
 		}
 		_ = visual_line_index
 	}
