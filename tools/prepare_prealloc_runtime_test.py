@@ -144,6 +144,23 @@ class PreallocAllocatorCompatibilityTest(unittest.TestCase):
                 (vlib / 'os/execute_capture_legacy.h').write_text('int changed_capture_helper(void);\n')
                 self.assertNotEqual(prepare(compiler, base / 'output'), staged)
 
+    def test_capture_header_is_resolved_in_both_legacy_and_current_backends(self):
+        header = Path('/resolved/v source/vlib/os/execute_capture_legacy.h')
+        declaration = '#include "' + str(header) + '"'
+        for token in ['@VMODROOT', '@VEXEROOT']:
+            with self.subTest(token=token):
+                compat = ('module builtin\n$if !v3_c_extern_declarations ? {\n'
+                          '\t#include <stdlib.h>\n'
+                          '\t#include "' + token + '/vlib/os/execute_capture_legacy.h"\n}\n')
+                declared = declare_capture_helpers(compat, header)
+                self.assertNotIn(token, declared)
+                # Legacy backends see the guarded include; current C backends
+                # still need the unconditional declaration for the linked os.
+                self.assertIn('\t' + declaration, declared)
+                self.assertTrue(declared.endswith(declaration + '\n'))
+                self.assertIn('\n}\n', declared[:declared.rindex(declaration)])
+                self.assertEqual(declare_capture_helpers(declared, header), declared)
+
     def test_the_same_compiler_installed_at_another_path_reuses_its_runtime(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
