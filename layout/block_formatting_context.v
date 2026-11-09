@@ -314,7 +314,7 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 // parent's content height.
 fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(mut state LayoutState, box &NodeWithStyle) CSSPixels {
 	box_node := unsafe { &Node(box) }
-	if box_node.has_size_containment() {
+	if box_node.has_size_containment_in_axis(false) {
 		return box_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 	}
 	box_state := state.get(box)
@@ -856,7 +856,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.unregister_block_container_y_position_update()
 		}
 	}
-	if definite_content_height == none && box_as_node.has_size_containment() {
+	if definite_content_height == none && box_as_node.has_size_containment_in_axis(false) {
 		intrinsic_height := box_as_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		content_height_from_children = intrinsic_height.to_double()
 	}

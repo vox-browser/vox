@@ -410,6 +410,12 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 			automatic_content_width: box.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 			automatic_content_height: box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
+	} else if box.has_inline_size_containment() {
+		if box.computed_values().writing_mode() == .horizontal_tb {
+			result = FormattingContextResult{...result, automatic_content_width:box.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }}
+		} else {
+			result = FormattingContextResult{...result, automatic_content_height:box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }}
+		}
 	}
 	return result
 }
