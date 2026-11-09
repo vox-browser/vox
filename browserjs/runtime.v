@@ -104,6 +104,7 @@ mut:
 	document_replay_effects_pending_ bool
 	scripting_settings_ ?&html.EnvironmentSettingsObject
 	module_host_ ?&ModuleHost
+	source_location_sources_ map[voidptr]SourceLocationSource
 }
 
 pub fn Runtime.create() &Runtime {
@@ -459,6 +460,7 @@ pub fn (mut runtime Runtime) close() {
 	runtime.canvas_element_providers_ = []
 	runtime.canvas_element_registry_ = unsafe { nil }
 	runtime.media_element_hosts_ = []
+	runtime.source_location_sources_ = {}
 	if settings := runtime.scripting_settings_ {
 		mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 		event_loop.detach_embedding_vm(runtime.agent_vm)
