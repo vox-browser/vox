@@ -538,8 +538,23 @@ and current compiler. This completes the ten-slice checkpoint and resets
 cadence to 0/10 at `16b9843ac`.
 See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
 
-Non-visible preview dependencies, wider reference composition, extra channels/
-alpha in VarDCT, non-XYB modular rendering beyond the existing lossless path,
+Two more slices share modular state with VarDCT and add `decode_rgba` for the
+existing lossless, opaque modular XYB and VarDCT paths, including one unscaled
+8-bit VarDCT alpha channel. Twenty independent native records compare all
+1,800,640 straight/paint RGBA bytes and 225,080 raw alpha bytes exactly. Global
+and grouped alpha, nonzero HF, multiple LF owners, associated alpha and rotated
+output execute. The unified entry point also preserves 62 opaque references,
+26 grouped-lossless records, six preview files and 498 small-image records.
+
+The count is now 282,801 source records and eighty-six test files. Focused
+checks pass default/no-GC/optimized modes with actual test/guard exits zero;
+all 382 final selected inputs remain unchanged. An interrupted raw optimized
+check has no pass credit and was rerun successfully. Cadence is 2/10 after the
+full eighty-four-file checkpoint; no full eighty-six-file run is claimed.
+See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
+
+Non-visible preview dependencies, wider reference composition, wider/resampled
+alpha and LF dependencies, modular XYB alpha, non-XYB modular rendering beyond the existing lossless path,
 whole-frame chroma sampling, feature streams, large entropy maps and production
 integration remain.
 

@@ -551,3 +551,22 @@ VarDCT extra channels/alpha, whole-frame chroma sampling, feature streams,
 wider reference composition, non-visible preview dependencies, larger entropy
 maps and production integration remain. Removing all Rust dependencies remains
 unfinished.
+
+## VarDCT JPEG XL alpha on 2026-11-09
+
+Two further V slices share modular state with VarDCT and add a unified RGBA
+entry point, including one unscaled 8-bit alpha channel. Twenty independent
+native records compare 1,800,640 straight/paint RGBA bytes exactly, including
+global/grouped alpha, multiple LF owners, nonzero HF, associated alpha and
+orientation. The package has 282,801 source records and 86 test files; reusing
+older references adds no records.
+
+Final focused default/no-GC/optimized checks pass with actual test/guard exits
+zero and 382 unchanged inputs. An interrupted raw optimized check has no pass
+credit and was rerun successfully. Cadence is 2/10 after the full 84-file
+checkpoint; no full 86-file run is claimed.
+[The alpha report](JPEGXL_V_VARDCT_ALPHA.md) records provenance, failed attempts,
+limits and executed results. Wider/resampled alpha, LF alpha dependencies,
+modular XYB alpha, whole-frame chroma sampling, feature streams, composition,
+larger entropy maps and production integration remain. Production JPEG XL and
+its Cargo/native developer tool still use Rust; removing all Rust is unfinished.

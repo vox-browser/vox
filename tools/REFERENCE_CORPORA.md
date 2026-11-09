@@ -141,3 +141,15 @@ drivers and outer guards exiting zero and 358 unchanged selected inputs. The
 ten-slice checkpoint resets cadence to 0/10 at `16b9843ac`.
 See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
 Production JPEG XL and its native developer tool still require Rust.
+
+VarDCT alpha adds twenty independent native files, bringing JPEG XL to 282,801
+source records and 86 test files. Shared modular state preserves alpha through
+LF/HF sections; unified `decode_rgba` output compares 1,800,640 straight/paint
+RGBA bytes exactly, including associated alpha and orientation. It also
+preserves 62 opaque references, 26 grouped-lossless records, six preview files
+and 498 small-image records. Final focused default/no-GC/optimized checks pass
+with actual test/guard exits zero and 382 unchanged inputs. The interrupted
+raw optimized check has no pass credit; a fresh check passes. Cadence is 2/10
+after the 84-file checkpoint, with no full 86-file run claimed. Production and
+its native developer tool still require Rust.
+See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
