@@ -285,20 +285,24 @@ fn flex_base_size_for_definite_basis(item &Node, item_state &UsedValues, base CS
 fn flex_base_width(mut state LayoutState, item &Node, container_width CSSPixels, item_state &UsedValues) CSSPixels {
 	computed := item.computed_values()
 	basis := computed.flex_basis()
-	if !basis.is_content && !basis.size.is_auto() {
+	if !basis.is_content && !basis.size.is_auto()
+		&& (!basis.size.is_stretch() || flex_stretch_basis_is_definite(item_state, true)) {
 		if value := resolve_layout_content_size(item, basis.size, container_width, item_state, true) {
 			return flex_base_size_for_definite_basis(item, item_state, value, true)
 		}
 	}
 	if basis.size.is_auto() {
 		width := computed.size_value(.width)
-		if value := resolve_layout_content_size(item, width, container_width, item_state, true) {
-			return flex_base_size_for_definite_basis(item, item_state, value, true)
+		if !width.is_stretch() || flex_stretch_basis_is_definite(item_state, true) {
+			if value := resolve_layout_content_size(item, width, container_width, item_state, true) {
+				return flex_base_size_for_definite_basis(item, item_state, value, true)
+			}
 		}
 	}
 	if box := item.as_box() {
 		used_basis_is_content := basis.is_content
 			|| (basis.size.is_auto() && computed.size_value(.width).is_auto())
+			|| (basis.size.is_stretch() && !flex_stretch_basis_is_definite(item_state, true))
 		if used_basis_is_content {
 			if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, true) {
 				return flex_base_size_after_cross_constraints(item, item_state, transferred, true)
@@ -323,7 +327,8 @@ fn flex_base_width(mut state LayoutState, item &Node, container_width CSSPixels,
 fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixels, laid_out_height CSSPixels, item_state &UsedValues) CSSPixels {
 	computed := item.computed_values()
 	basis := computed.flex_basis()
-	if !basis.is_content && !basis.size.is_auto() {
+	if !basis.is_content && !basis.size.is_auto()
+		&& (!basis.size.is_stretch() || flex_stretch_basis_is_definite(item_state, false)) {
 		if height := container_height {
 			if value := resolve_layout_content_size(item, basis.size, height, item_state, false) {
 				return flex_base_size_for_definite_basis(item, item_state, value, false)
@@ -349,6 +354,7 @@ fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixe
 	used_basis_is_content := basis.is_content
 		|| (basis.size.is_auto() && computed.size_value(.height).is_auto())
 		|| (basis.size.contains_percentage() && container_height == none)
+		|| (basis.size.is_stretch() && !flex_stretch_basis_is_definite(item_state, false))
 	if used_basis_is_content {
 		if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, false) {
 			return flex_base_size_after_cross_constraints(item, item_state, transferred, false)
@@ -400,6 +406,7 @@ fn flex_fit_content_cross_width(mut state LayoutState, item &Node, available_wid
 }
 
 fn resolve_flex_main_size(item &Node, size css.Size, percentage_basis ?CSSPixels, item_state &UsedValues, row_axis bool) ?CSSPixels {
+	if size.is_stretch() && !flex_stretch_basis_is_definite(item_state, row_axis) { return none }
 	if size.contains_percentage() && percentage_basis == none {
 		return none
 	}
@@ -593,6 +600,7 @@ fn flex_formatting_context_automatic_minimum_size(mut state LayoutState, item &N
 fn flex_used_main_minimum(mut state LayoutState, item &Node, item_state &UsedValues, row_axis bool, available_main_size ?CSSPixels, skip_automatic_minimum bool) CSSPixels {
 	min_property := if row_axis { css.PropertyID.min_width } else { css.PropertyID.min_height }
 	min_size := item.computed_values().size_value(min_property)
+	if min_size.is_stretch() && !flex_stretch_basis_is_definite(item_state, row_axis) { return CSSPixels.new(0) }
 	if !min_size.is_auto() {
 		if minimum := flex_main_size_for_constraint(mut state, item, min_size, item_state, row_axis, available_main_size) {
 			return minimum

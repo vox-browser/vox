@@ -1218,7 +1218,8 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 	box := unsafe { &Node(node) }.as_box() or {
 		return resolve_definite_content_height(computed, containing_block_height)
 	}
-	if size.is_stretch() && containing_block_height != none && used_values.height_constraint == .none {
+	if size.is_stretch() && containing_block_height != none && used_values.height_constraint == .none
+		&& (!unsafe { &Node(node) }.is_flex_item() || flex_stretch_basis_is_definite(used_values, false)) {
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(containing_block_height), false).to_double()
 	}
 	if size.is_auto() || size.is_stretch() {
@@ -1307,6 +1308,7 @@ fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, use
 	size := computed.size_value(property)
 	if size.is_stretch() {
 		if used_values.height_constraint != .none { return none }
+		if unsafe { &Node(node) }.is_flex_item() && !flex_stretch_basis_is_definite(used_values, false) { return none }
 		basis := containing_block_height or { return none }
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(basis), false)
 	}

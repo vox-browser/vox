@@ -2,6 +2,11 @@ module layout
 
 import css
 
+fn flex_stretch_basis_is_definite(used &UsedValues, width bool) bool {
+	containing := used.containing_block_used_values() or { return false }
+	return if width { containing.has_definite_width() } else { containing.has_definite_height() }
+}
+
 // CSS Sizing: stretch fits the margin box, regardless of box-sizing. Auto
 // margins contribute zero; computed margins are used before margin collapse.
 fn stretch_fit_content_size(node &Node, used &UsedValues, available CSSPixels, width bool) CSSPixels {
