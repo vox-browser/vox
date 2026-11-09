@@ -35,7 +35,8 @@ fn test_custom_names_survive_processing_installation_copy_and_boundary_generatio
 		properties: {'--MixedCase': 'red', '--': 'ignored', 'opacity': '0.4'}
 	}], 100)!
 	frames := effect.get_keyframes()
-	assert frames[0].parsed_custom_properties['--MixedCase'].css_text == 'red'
+	custom := frames[0].parsed_custom_properties['--MixedCase'] or { panic('missing custom keyframe') }
+	assert custom.css_text == 'red'
 	assert '--' !in frames[0].parsed_custom_properties
 	assert '--MixedCase' in effect.target_custom_properties()
 	assert effect.key_frame_set_.keyframes_by_key[0].custom_properties['--MixedCase'].use_initial
@@ -200,4 +201,107 @@ fn test_registered_angle_list_neutral_add_and_iteration_accumulation() {
    assert actual == expected,actual
   }
  }
+}
+
+fn iteration_animation(target &dom.Element, timeline &AnimationTimeline, frames []BaseKeyframe, composite css.CompositeOperation) !&Animation {
+	mut effect := KeyframeEffect.construct_impl(target, frames, KeyframeEffectOptions{
+		timing: OptionalEffectTiming{duration: IterationDuration(1000.0), iterations: 10, fill: .both}
+		composite: match composite { .replace { CompositeOperation.replace } .add { CompositeOperation.add } .accumulate { CompositeOperation.accumulate } }
+		iteration_composite_accumulate: true
+	})!
+	mut animation := Animation.create(effect.as_animation_effect(), timeline)
+	animation.start_time_ = TimeValue.milliseconds(0)
+	return animation
+}
+
+fn test_iteration_composition_accumulates_ordinary_numeric_properties() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'margin-left': '10px', 'flex-grow': '0', 'opacity': '0'}},
+		BaseKeyframe{properties: {'margin-left': '20px', 'flex-grow': '10', 'opacity': '0.4'}},
+	], .replace)!
+	for index, sample in [500.0, 2000, 2500] {
+		timeline.set_current_time(TimeValue.milliseconds(sample))
+		animation.update()
+		document.update_animated_style_if_needed()
+		assert animated_style_value(target, .margin_left) == ['15px', '50px', '55px'][index]
+		assert animated_style_value(target, .flex_grow) == ['5', '20', '25'][index]
+		assert animated_style_value(target, .opacity).f64() == [0.2, 0.8, 1.0][index]
+	}
+}
+
+fn test_iteration_composition_preserves_unresolved_percentage_components() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'margin-left': 'calc(10% + 5px)'}},
+		BaseKeyframe{properties: {'margin-left': 'calc(20% + 10px)'}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(2500))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .margin_left) == 'calc(55% + 27.5px)'
+}
+
+fn test_iteration_composition_keeps_color_endpoints_unclamped_until_sampling() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'color': 'rgb(0, 120, 0)'}},
+		BaseKeyframe{properties: {'color': 'rgb(60, 60, 60)'}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(2500))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .color) == 'rgb(150, 210, 150)'
+}
+
+fn test_iteration_composition_adds_after_underlying_keyframe_composition() {
+	mut document, target := connected_animation_target('margin-left:5px')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'margin-left': '10px'}},
+		BaseKeyframe{properties: {'margin-left': '20px'}},
+	], .add)!
+	timeline.set_current_time(TimeValue.milliseconds(2500))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .margin_left) == '60px'
+}
+
+fn test_iteration_composition_keeps_discrete_values_and_filter_identity() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'border-top-style': 'solid', 'filter': 'brightness(0)'}},
+		BaseKeyframe{properties: {'border-top-style': 'dashed', 'filter': 'brightness(1)'}},
+	], .replace)!
+	for index, sample in [2000.0, 2500] {
+		timeline.set_current_time(TimeValue.milliseconds(sample))
+		animation.update()
+		document.update_animated_style_if_needed()
+		assert animated_style_value(target, .border_top_style) == ['solid', 'dashed'][index]
+		assert animated_style_value(target, .filter) == ['brightness(0)', 'brightness(0.5)'][index]
+	}
+}
+
+fn test_iteration_composition_uses_the_final_keyframe_for_interior_intervals() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{offset: 0, properties: {'margin-left': '0px'}},
+		BaseKeyframe{offset: 0.5, properties: {'margin-left': '100px'}},
+		BaseKeyframe{offset: 1, properties: {'margin-left': '10px'}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(2250))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .margin_left) == '70px'
 }

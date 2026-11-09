@@ -11685,18 +11685,8 @@ fn composite_animated_custom_property(underlying &dom.StyleValue, animated &dom.
 	return dom_style_value_from_value_logic(composited)
 }
 
-// Accumulation repeats the final keyframe once per completed iteration. Binary
-// doubling bounds the work even for very large iteration counts.
 fn accumulate_custom_property_iterations(value &dom.StyleValue, final_value &dom.StyleValue, count f64) &dom.StyleValue {
- mut remaining := u64(math.min(math.floor(count),9007199254740991.0))
- mut result := unsafe { value }
- mut increment := unsafe { final_value }
- for remaining > 0 {
-  if remaining & 1 != 0 { result = composite_animated_custom_property(result,increment,.accumulate) or { return result } }
-  remaining >>= 1
-  if remaining > 0 { increment = composite_animated_custom_property(increment,increment,.accumulate) or { return result } }
- }
- return result
+	return accumulate_animation_iterations(none, value, final_value, count)
 }
 
 pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractElement, animation voidptr, mut computed_properties ComputedProperties) {
@@ -11755,6 +11745,11 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 
 	start_values := s.compute_keyframe_values(abstract_element, start_keyframe, computed_properties)
 	end_values := s.compute_keyframe_values(abstract_element, end_keyframe, computed_properties)
+	mut final_values := map[PropertyID]&dom.StyleValue{}
+	if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
+		final_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
+		final_values = s.compute_keyframe_values(abstract_element, final_keyframe, computed_properties)
+	}
 	s.clear_computation_context_caches()
 	for property_id, initial_start in start_values {
 		mut start := unsafe { initial_start }
@@ -11775,6 +11770,10 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		}
 		if composited := composite_value(property_id, underlying, end, end_operation) {
 			end = composited
+		}
+		if final_value := final_values[property_id] {
+			start = accumulate_animation_iterations(property_id, start, final_value, effect.current_iteration)
+			end = accumulate_animation_iterations(property_id, end, final_value, effect.current_iteration)
 		}
 		if interpolated := interpolate_property(abstract_element.element(), property_id, start, end, interval_progress, .yes) {
 			installed := samples.adopt(interpolated)
@@ -11831,18 +11830,18 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		// Applying add again would count that underlying value twice.
 		start_operation := if name in start_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { start_keyframe.composite or { effect.composite } }
 		end_operation := if name in end_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { end_keyframe.composite or { effect.composite } }
-		if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
-			last_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
-			last_specified := last_keyframe.custom_properties[name] or { base_underlying }
-			last := s.compute_animated_custom_property_value(abstract_element,computed_properties,name,last_specified)
-			start = accumulate_custom_property_iterations(start,last,effect.current_iteration)
-			end = accumulate_custom_property_iterations(end,last,effect.current_iteration)
-		}
 		if composited := composite_animated_custom_property(underlying, start, start_operation) {
 			start = composited
 		}
 		if composited := composite_animated_custom_property(underlying, end, end_operation) {
 			end = composited
+		}
+		if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
+			last_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
+			last_specified := last_keyframe.custom_properties[name] or { base_underlying }
+			last := s.compute_animated_custom_property_value(abstract_element, computed_properties, name, last_specified)
+			start = accumulate_custom_property_iterations(start, last, effect.current_iteration)
+			end = accumulate_custom_property_iterations(end, last, effect.current_iteration)
 		}
 		interpolated := interpolate_animated_custom_property(abstract_element.document(), name,
 			start, end, interval_progress)
