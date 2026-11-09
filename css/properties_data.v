@@ -226,7 +226,7 @@ pub struct CascadedProperties {
 pub mut:
 	contained_properties_cache_ []u8
 mut:
-	entry_heads_           map[PropertyID]int
+	entry_heads_           CascadedPropertyHeads
 	entry_chunks_          []&CascadedPropertiesEntryChunk
 	allocated_entry_count_ int
 	free_entry_index_      int = -1
@@ -234,8 +234,8 @@ mut:
 }
 
 pub fn CascadedProperties.new() &CascadedProperties {
+	assert cascaded_property_head_count <= 32767
 	return &CascadedProperties{
-		entry_heads_: map[PropertyID]int{}
 		// V puts shorthands after the contiguous longhands. Keep presence bits
 		// for the complete PropertyID range, including unresolved shorthands.
 		contained_properties_cache_: []u8{len: int(PropertyID.container) + 1}
@@ -269,7 +269,7 @@ fn (c &CascadedProperties) winning_entry_index(property_id PropertyID) int {
 	if c.contained_properties_cache_[cascaded_property_index(property_id)] == 0 {
 		return -1
 	}
-	return c.entry_heads_[property_id] or { -1 }
+	return c.entry_heads_.get(property_id)
 }
 
 fn cascaded_property_index(property_id PropertyID) int {
@@ -290,7 +290,8 @@ pub fn (mut c CascadedProperties) revert_layer_property(property_id PropertyID, 
 }
 
 fn (mut c CascadedProperties) revert_entries(property_id PropertyID, important Important, origin CascadeOrigin, layer_name ?string, layer_only bool) {
-	mut index := c.entry_heads_[property_id] or { return }
+	if !c.entry_heads_.contains(property_id) { return }
+	mut index := c.entry_heads_.get(property_id)
 	mut first_kept := -1
 	mut last_kept := -1
 	for index >= 0 {
@@ -320,13 +321,13 @@ fn (mut c CascadedProperties) revert_entries(property_id PropertyID, important I
 		index = previous
 	}
 	if last_kept < 0 {
-		if c.scratch_arena_ != unsafe { nil } { c.entry_heads_[property_id] = -1 }
+		if c.scratch_arena_ != unsafe { nil } { c.entry_heads_.set(property_id, -1) }
 		else { c.entry_heads_.delete(property_id) }
 		c.contained_properties_cache_[cascaded_property_index(property_id)] = 0
 	} else {
 		mut last := c.entry_node(last_kept)
 		last.previous = -1
-		c.entry_heads_[property_id] = first_kept
+		c.entry_heads_.set(property_id, first_kept)
 	}
 }
 
@@ -412,7 +413,7 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 	if entered { entry = c.scratch_arena_.enter() }
 	defer { if entered { c.scratch_arena_.leave(entry) } }
 	c.contained_properties_cache_[cascaded_property_index(property_id)] = 1
-	head := c.entry_heads_[property_id] or { -1 }
+	head := c.entry_heads_.get(property_id)
 	mut index := head
 	for index >= 0 {
 		mut node := c.entry_node(index)
@@ -445,14 +446,14 @@ pub fn (mut c CascadedProperties) set_property(property_id PropertyID, value &do
 		source_shadow_root: source_shadow_root
 	}
 	if !entered && c.set_recycled_entry_without_allocation(property_id, new_entry, head) { return }
-	// A missing map key or exhausted chunk capacity can allocate. Keep that
+	// An exhausted active-ID vector or entry chunk can allocate. Keep that
 	// growth in the bookkeeping owner; retained slots above need no new scope.
 	if !entered && c.scratch_arena_ != unsafe { nil } {
 		entry = c.scratch_arena_.enter()
 		entered = true
 	}
 	index = c.allocate_entry(new_entry, head)
-	c.entry_heads_[property_id] = index
+	c.entry_heads_.set(property_id, index)
 }
 
 struct TypedLonghandExpansionCallback {

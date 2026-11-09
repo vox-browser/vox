@@ -513,7 +513,7 @@ fn computed_longhand_cascade_key(cascaded &CascadedProperties, parent &ComputedP
 	mut count := 0
 	mut hash := u64(0)
 	mut font_size_units := false
-	for id, _ in cascaded.entry_heads_ {
+	for id in cascaded.entry_heads_.active {
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		count++
@@ -546,7 +546,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	}
 	if s.longhand_reuse_cache_ != unsafe { nil }
 		&& s.longhand_reuse_cache_.font_size_unit_environment_changed {
-		for id, _ in cascaded.entry_heads_ {
+		for id in cascaded.entry_heads_.active {
 			property := cascaded.style_property(id) or { continue }
 			if font_size_unit_longhand_is_reusable(property.value) { return none }
 		}
@@ -711,7 +711,7 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 	}
 	if owner.longhand_reuse_cache_.entries.len >= 256 { return }
 	mut inputs := []ComputedLonghandReuseInput{cap: key.count}
-	for id, _ in cascaded.entry_heads_ {
+	for id in cascaded.entry_heads_.active {
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		inputs << ComputedLonghandReuseInput{ id: id, value: property.value, typed_handle: property.value.css_value_handle, snapshot: computed_longhand_reuse_snapshot(property.value), semantic: true, important: property.important }
@@ -741,7 +741,7 @@ fn (s &StyleComputer) remember_computed_longhands(key ComputedLonghandReuseKey,
 	}
 	// Only explicit declarations can add non-inherited parent dependencies.
 	// Do not query the cascade once for every absent longhand property.
-	for id, _ in cascaded.entry_heads_ {
+	for id in cascaded.entry_heads_.active {
 		if !computed_interpolation_is_longhand_property(id) { continue }
 		property := cascaded.style_property(id) or { continue }
 		if !longhand_has_explicit_noninherited_parent(property) { continue }

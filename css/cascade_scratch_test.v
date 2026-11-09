@@ -95,3 +95,93 @@ fn test_computed_styles_keep_their_values_after_cascade_scratch_is_reused() {
 	assert left.property(.margin_right, .no)?.css_text == '12px'
 	assert right.property(.margin_left, .no)?.css_text == '4px'
 }
+
+fn test_cascade_scratch_reset_clears_payloads_and_visits_only_current_heads() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	defer { document.release_native_storage() }
+	mut host := document.create_element_ns(dom.namespace_html_uri, 'div')!
+	shadow := host.attach_shadow(dom.ShadowRootInit{mode: .open})!
+	computer := StyleComputer.new(document)
+	value := &dom.StyleValue{css_text: 'retained value'}
+	mut lease := computer.acquire_cascade_scratch()
+	mut properties := lease.properties
+	for index in 0 .. int(PropertyID.container) + 1 {
+		id := unsafe { PropertyID(index) }
+		properties.set_property(id, value, .no, .author, 'retained-layer', voidptr(value), shadow)
+	}
+	snapshot := properties.entry_node(properties.winning_entry_index(.width)).entry
+	allocated := properties.allocated_entry_count_
+	chunks := properties.entry_chunks_.len
+	capacity := properties.entry_heads_.active.cap
+	buffer := properties.entry_heads_.active.data
+	// Public stale presence must also clear, including a now-empty head.
+	properties.revert_property(.height, .no, .author)
+	properties.contained_properties_cache_[int(PropertyID.height)] = 1
+	lease.finish()
+	assert properties.entry_heads_.active.len == 0
+	assert properties.entry_heads_.active.cap == capacity
+	assert properties.entry_heads_.active.data == buffer
+	assert properties.allocated_entry_count_ == 0
+	assert properties.free_entry_index_ == -1
+	for index in 0 .. allocated {
+		node := properties.entry_node(index)
+		assert node.entry.property.value == unsafe { nil }
+		assert node.entry.source == unsafe { nil }
+		assert node.entry.source_shadow_root == none
+		assert node.entry.layer_name == none
+		assert node.previous == -1
+	}
+	for bit in properties.contained_properties_cache_ { assert bit == 0 }
+	assert voidptr(snapshot.property.value) == voidptr(value)
+	assert snapshot.source == voidptr(value)
+	assert snapshot.layer_name? == 'retained-layer'
+	assert voidptr(snapshot.source_shadow_root?) == voidptr(shadow)
+
+	mut next := computer.acquire_cascade_scratch()
+	mut current := next.properties
+	assert voidptr(current) == voidptr(properties)
+	current.set_property(.color, value, .yes, .user, none, unsafe { nil }, none)
+	current.set_property(.container, value, .no, .author, none, unsafe { nil }, none)
+	assert current.entry_heads_.active.len == 2
+	assert PropertyID.color in current.entry_heads_.active
+	assert PropertyID.container in current.entry_heads_.active
+	assert current.entry_chunks_.len == chunks
+	assert current.entry_heads_.active.cap == capacity
+	assert current.entry_heads_.active.data == buffer
+	assert current.property(.width) == none
+	next.finish()
+}
+
+fn test_cascade_scratch_growing_known_empty_active_ids_stays_in_bookkeeping_owner() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.enable_native_storage()
+	defer { document.release_native_storage() }
+	computer := StyleComputer.new(document)
+	value := &dom.StyleValue{css_text: 'value'}
+	mut first := computer.acquire_cascade_scratch()
+	mut properties := first.properties
+	mut arena := computer.cascade_scratch_.slots[0].arena
+	entry := arena.enter()
+	properties.entry_heads_.active = []PropertyID{cap: 1}
+	arena.leave(entry)
+	properties.set_property(.width, value, .no, .author, none, unsafe { nil }, none)
+	first.finish()
+	mut second := computer.acquire_cascade_scratch()
+	mut second_properties := second.properties
+	second_properties.set_property(.height, value, .no, .author, none, unsafe { nil }, none)
+	second.finish()
+	assert properties.entry_heads_.contains(.width)
+	assert properties.entry_heads_.contains(.height)
+	assert properties.entry_heads_.active.cap == 1
+
+	mut third := computer.acquire_cascade_scratch()
+	mut current := third.properties
+	current.set_property(.width, value, .no, .author, none, unsafe { nil }, none)
+	assert !current.entry_heads_.can_set_without_allocation(.height)
+	current.set_property(.height, value, .no, .author, none, unsafe { nil }, none)
+	assert current.entry_heads_.active.len == 2
+	assert current.entry_heads_.active.cap >= 2
+	$if prealloc { assert arena.contains(current.entry_heads_.active.data) }
+	third.finish()
+}
