@@ -208,6 +208,24 @@ jobs:
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
+      - name: Compare XML parser CPU and retained memory
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
+        timeout-minutes: 45
+        env:
+          # Used only for exact-SHA fetches; checkout retains no credentials.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # Three optimized C builds share this checkout's DOM engine and
+          # native libraries. The driver fetches exact historical parser blobs
+          # when absent from the shallow checkout, then restores source files.
+          # Allocator poisoning remains enabled for all correctness steps;
+          # only the measured subprocesses disable poison and no-reuse modes.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-xml-performance.lock" \
+            --report "$RUNNER_TEMP/vox-xml-performance.json" --timeout 2640 -- \
+            python3 tools/benchmark_xml_parser.py --gc prealloc --pairs 7 \
+              --output "Build/linux/tests/prealloc/run-xml-performance-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
       - name: Build Vox and run the headless smoke test
         id: production_build
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
