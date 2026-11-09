@@ -898,3 +898,48 @@ fn test_longhand_shapes_keep_context_dependent_and_malformed_inputs_uncached() {
 		assert !computed_longhand_reuse_typed_value_is_simple(&StyleValue(radius))
 	}
 }
+
+fn test_longhand_reuse_is_independent_of_active_head_order_and_removed_history() {
+	computer, _, element, parent_style := longhand_reuse_fixture()
+	computer.begin_computed_property_page_batch()
+	defer { computer.end_computed_property_page_batch() }
+	width := parse_css_value(ParsingParams{}, '20px', .width) or { panic('width') }
+	height := parse_css_value(ParsingParams{}, '30px', .height) or { panic('height') }
+	opacity := parse_css_value(ParsingParams{}, '0.75', .opacity) or { panic('opacity') }
+	mut first := CascadedProperties.new()
+	first.set_property(.width, width, .no, .author, none, unsafe { nil }, none)
+	first.set_property(.margin_left, width, .no, .author, none, unsafe { nil }, none)
+	first.set_property(.height, height, .yes, .author, none, unsafe { nil }, none)
+	first.set_property(.opacity, opacity, .no, .author, none, unsafe { nil }, none)
+	// Removing a non-last head changes the active-vector order without changing
+	// any surviving cascade result. An explicitly empty head must stay excluded.
+	first.revert_property(.margin_left, .no, .author)
+	first.entry_heads_.set(.font_size, -1)
+	assert first.entry_heads_.active.len == 3
+	_ = computer.compute_properties(dom.AbstractElement.new(element, none), mut first)
+
+	mut second := CascadedProperties.new()
+	second.set_property(.height, height, .yes, .author, none, unsafe { nil }, none)
+	second.set_property(.width, width, .no, .author, none, unsafe { nil }, none)
+	second.set_property(.opacity, opacity, .no, .author, none, unsafe { nil }, none)
+	assert first.entry_heads_.active != second.entry_heads_.active
+	first_key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
+		first, parent_style, false) or { panic('first key') }
+	second_key := computer.computed_longhand_reuse_key(dom.AbstractElement.new(element, none),
+		second, parent_style, false) or { panic('second key') }
+	assert first_key.hash == second_key.hash
+	assert first_key.count == second_key.count
+	assert computed_longhand_reuse_keys_equal(&first_key, &second_key)
+	mut restored := computed_properties_with_initial_values()
+	assert computer.restore_computed_longhands(&second_key, second, mut restored)
+	// The cache holds longhands before element-specific adjustments such as
+	// legacy justify-items. Compare the complete cache-hit computation to the oracle.
+	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+	longhand_reuse_assert_oracle(actual, computer, element, mut second)
+	second.revert_property(.height, .yes, .author)
+	assert !computer.restore_computed_longhands(&second_key, second, mut restored)
+	second.set_property(.height, height, .yes, .author, none, unsafe { nil }, none)
+	assert computer.restore_computed_longhands(&second_key, second, mut restored)
+	readded := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+	longhand_reuse_assert_oracle(readded, computer, element, mut second)
+}

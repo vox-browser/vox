@@ -16,7 +16,7 @@ fn report_cascade_override_without_allocation() {
 fn (mut properties CascadedProperties) set_recycled_entry_without_allocation(id PropertyID,
 	entry CascadedPropertiesEntry, previous int) bool {
 	if retain_cascade_override_arena_entries || properties.scratch_arena_ == unsafe { nil }
-		|| id !in properties.entry_heads_ { return false }
+		|| !properties.entry_heads_.can_set_without_allocation(id) { return false }
 	index := if properties.free_entry_index_ >= 0 {
 		properties.free_entry_index_
 	} else { properties.allocated_entry_count_ }
@@ -24,11 +24,9 @@ fn (mut properties CascadedProperties) set_recycled_entry_without_allocation(id 
 		return false
 	}
 	allocated := properties.allocate_entry(entry, previous)
-	// The key already exists. Borrow its slot only for this immediate write:
-	// map_get_and_set returns it without the capacity check in map assignment.
-	// No map mutation, allocation or callback occurs while the slot is borrowed.
-	slot := unsafe { &properties.entry_heads_[id] }
-	unsafe { *slot = allocated }
+	// Both the entry chunk and active-ID vector have room. The dense head
+	// update cannot allocate, including a property first seen in this lease.
+	properties.entry_heads_.set(id, allocated)
 	report_cascade_override_without_allocation()
 	return true
 }

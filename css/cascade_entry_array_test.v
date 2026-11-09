@@ -4,7 +4,8 @@ import dom
 
 fn entry_array_test_entries(cascaded &CascadedProperties, id PropertyID) []CascadedPropertiesEntry {
  mut entries := []CascadedPropertiesEntry{}
- mut index := cascaded.entry_heads_[id] or { panic("expected entry chain") }
+ assert cascaded.entry_heads_.contains(id)
+ mut index := cascaded.entry_heads_.get(id)
  for index >= 0 {
   node := cascaded.entry_node(index)
   entries << node.entry
@@ -26,7 +27,7 @@ fn test_cascade_entry_arrays_default_on_every_generated_key_and_replace() {
   assert cascaded.property(id)? == initial
   assert cascaded.property_source(id) == voidptr(source)
  }
- assert cascaded.entry_heads_.len == int(PropertyID.container)
+ assert cascaded.entry_heads_.active.len == int(PropertyID.container)
  for index in 1 .. int(PropertyID.container)+1 {
   id := unsafe { PropertyID(index) }
   cascaded.set_property(id,unset,.no,.author,none,unsafe{nil},none)
@@ -72,7 +73,7 @@ fn test_cascade_entry_arrays_handle_stored_empty_arrays_and_stale_presence_byte(
  value := &dom.StyleValue{css_text:'10px'}
  next := &dom.StyleValue{css_text:'20px'}
  mut cascaded := CascadedProperties.new()
- cascaded.entry_heads_[.height] = -1 // An explicitly empty stored history.
+ cascaded.entry_heads_.set(.height, -1) // An explicitly empty stored history.
  cascaded.set_property(.height,value,.no,.author,none,unsafe{nil},none)
  assert cascaded.property(.height)? == value
  cascaded.entry_heads_.delete(PropertyID.height)

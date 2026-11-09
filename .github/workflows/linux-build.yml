@@ -283,6 +283,25 @@ jobs:
       # Focused C-backend suites depend on prepared native libraries, not on
       # the FastC browser build or on preceding test results. Keep collecting
       # failures without making the failed production/window gate optional.
+      - name: Check CSS cascade heads and scratch ownership
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 30
+        run: |
+          # Exercise the dense index with the actual cascade, independent
+          # precedence oracle, retained values and computed-longhand cache.
+          # The matrix covers collector and poisoned production arena storage.
+          export VOX_ARENA_POISON=1
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-cascade-heads-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-cascade-heads-$LADYBIRD_V_GC.json" --timeout 1740 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              css/cascade_heads_test.v \
+              css/cascade_entry_array_test.v \
+              css/cascaded_property_entry_storage_test.v \
+              css/cascade_local_scratch_test.v \
+              css/cascade_scratch_test.v \
+              css/computed_longhand_reuse_test.v
+
       - name: Check XML DOM and document integration
         id: xml_integration
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}

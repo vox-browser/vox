@@ -49,7 +49,7 @@ fn test_cascade_scratch_is_fresh_for_repeated_lists_and_retains_metadata() {
   assert cascaded.property(.color)? == blue
   assert cascaded.property_source(.color) == voidptr(second_source)
   gc_collect()
-  assert cascaded.entry_node(cascaded.entry_heads_[.color]).entry.layer_name? == 'layer'
+  assert cascaded.entry_node(cascaded.winning_entry_index(.color)).entry.layer_name? == 'layer'
   assert cascaded.property(.color)?.css_text == 'blue'
  }
 }

@@ -157,7 +157,7 @@ fn (c &LegacyCascadedPropertyEntries) style_property(property_id PropertyID) ?St
 
 fn entry_storage_snapshot(cascaded &CascadedProperties, id PropertyID) []CascadedPropertiesEntry {
  mut entries := []CascadedPropertiesEntry{}
- mut index := cascaded.entry_heads_[id] or { return entries }
+ mut index := cascaded.entry_heads_.get(id)
  for index >= 0 {
   node := cascaded.entry_node(index)
   entries << node.entry
@@ -168,7 +168,7 @@ fn entry_storage_snapshot(cascaded &CascadedProperties, id PropertyID) []Cascade
 }
 
 fn chain_probe_assert_equivalent(left &LegacyCascadedPropertyEntries,right &CascadedProperties) {
- assert left.properties_.len == right.entry_heads_.len
+ assert left.properties_.len == right.entry_heads_.active.len
  assert left.contained_properties_cache_ == right.contained_properties_cache_
  for id,entries in left.properties_ {
   actual:=entry_storage_snapshot(right,id)
@@ -212,7 +212,7 @@ fn test_entry_chain_multiple_layers_keep_neighbor_values_and_previous_order() {
  assert chain.entry_chunks_.len==(chain.allocated_entry_count_+cascaded_property_entry_chunk_size-1)/cascaded_property_entry_chunk_size
  assert entry_storage_snapshot(chain,.width).len==6
  assert chain.property(.height)?==first
- assert chain.entry_node(chain.entry_heads_[.width]).entry.layer_name?=='fifth'
+ assert chain.entry_node(chain.winning_entry_index(.width)).entry.layer_name?=='fifth'
 }
 
 fn chain_probe_return_cascade() &CascadedProperties {
@@ -233,7 +233,7 @@ fn test_entry_chain_returned_scanned_chunks_retain_values_layer_names_and_source
  for index in 1..40 {
   id:=unsafe{PropertyID(index)}
   assert chain.property(id)?.css_text=='retained-${index}'
-  entry:=chain.entry_node(chain.entry_heads_[id]).entry
+  entry:=chain.entry_node(chain.winning_entry_index(id)).entry
   assert entry.layer_name?=='layer-${index}'
   assert entry.source==voidptr(entry.property.value)
  }
@@ -278,7 +278,7 @@ fn test_entry_chain_recycles_removed_slots_without_retaining_values_or_mutating_
  for _ in 0..2048 {
   chain.revert_property(.color,.no,.author)
   assert chain.property(.color)==none
-  assert chain.entry_heads_.len==0
+  assert chain.entry_heads_.active.len==0
   assert chain.entry_node(0).entry.property.value==unsafe{nil}
   assert chain.entry_node(0).entry.source==unsafe{nil}
   chain.set_property(.color,value,.no,.author,none,unsafe{nil},none)
@@ -320,7 +320,7 @@ fn test_entry_chain_empty_and_deleted_heads_keep_every_getter_consistent() {
  first := &dom.StyleValue{css_text: 'first'}
  second := &dom.StyleValue{css_text: 'second'}
  mut properties := CascadedProperties.new()
- properties.entry_heads_[.height] = -1
+ properties.entry_heads_.set(.height, -1)
  properties.contained_properties_cache_[int(PropertyID.height)] = 1
  assert properties.property(.height) == none
  assert properties.property_source(.height) == unsafe {nil}
@@ -339,4 +339,60 @@ fn test_entry_chain_empty_and_deleted_heads_keep_every_getter_consistent() {
  assert properties.property(.height)? == second
  assert properties.property_source(.height) == voidptr(second)
  assert properties.style_property(.height)?.important == .yes
+}
+
+fn test_entry_chain_absent_and_empty_reverts_preserve_public_presence_semantics() {
+	mut properties := CascadedProperties.new()
+	properties.contained_properties_cache_[int(PropertyID.width)] = 1
+	properties.revert_property(.width, .no, .author)
+	assert properties.contained_properties_cache_[int(PropertyID.width)] == 1
+	assert properties.property(.width) == none
+	properties.entry_heads_.set(.width, -1)
+	properties.revert_property(.width, .no, .author)
+	assert properties.contained_properties_cache_[int(PropertyID.width)] == 0
+	assert properties.property(.width) == none
+
+	first := &dom.StyleValue{css_text: 'first'}
+	second := &dom.StyleValue{css_text: 'second'}
+	properties.set_property(.width, first, .no, .author, none, voidptr(first), none)
+	properties.contained_properties_cache_[int(PropertyID.width)] = 0
+	assert properties.property(.width) == none
+	assert properties.property_source(.width) == unsafe { nil }
+	assert properties.style_property(.width) == none
+	assert entry_storage_snapshot(properties, .width).len == 1
+	properties.contained_properties_cache_[int(PropertyID.width)] = 1
+	assert voidptr(properties.property(.width)?) == voidptr(first)
+	properties.contained_properties_cache_[int(PropertyID.width)] = 0
+	properties.set_property(.width, second, .yes, .author, none, voidptr(second), none)
+	assert properties.contained_properties_cache_[int(PropertyID.width)] == 1
+	assert voidptr(properties.property(.width)?) == voidptr(second)
+	assert properties.property_source(.width) == voidptr(second)
+	assert entry_storage_snapshot(properties, .width).len == 1
+}
+
+fn test_entry_chain_all_generated_ids_match_independent_cascade_after_revert_and_readd() {
+	first := &dom.StyleValue{css_text: 'first'}
+	second := &dom.StyleValue{css_text: 'second'}
+	mut baseline := LegacyCascadedPropertyEntries.new()
+	mut chain := CascadedProperties.new()
+	for index in 0 .. int(PropertyID.container) + 1 {
+		id := unsafe { PropertyID(index) }
+		baseline.set_property(id, first, .no, .author_presentational_hint, none, voidptr(first), none)
+		chain.set_property(id, first, .no, .author_presentational_hint, none, voidptr(first), none)
+		baseline.set_property(id, second, .yes, .author, 'layer', voidptr(second), none)
+		chain.set_property(id, second, .yes, .author, 'layer', voidptr(second), none)
+	}
+	chain_probe_assert_equivalent(baseline, chain)
+	for index in 0 .. int(PropertyID.container) + 1 {
+		id := unsafe { PropertyID(index) }
+		baseline.revert_layer_property(id, .yes, 'layer')
+		chain.revert_layer_property(id, .yes, 'layer')
+		baseline.revert_property(id, .no, .author)
+		chain.revert_property(id, .no, .author)
+		assert chain.property(id) == none
+		baseline.set_property(id, second, .no, .user, none, voidptr(second), none)
+		chain.set_property(id, second, .no, .user, none, voidptr(second), none)
+	}
+	chain_probe_assert_equivalent(baseline, chain)
+	assert chain.allocated_entry_count_ == 2 * (int(PropertyID.container) + 1)
 }
