@@ -29,7 +29,6 @@ fn layout_vertical_multicol_atomic_blocks(mut state LayoutState, box &Node, mut 
   if can_skip_anonymous_text_run(child) { continue }
   if child.as_box() == none || !multicol_atomic_child_supported(child) { return none }
   style := child.computed_values()
-  if style.column_span() != .all && style.break_inside() !in [.avoid,.avoid_column] { return none }
   children << child
  }
  if children.len == 0 { return none }
@@ -61,6 +60,7 @@ fn layout_vertical_multicol_atomic_blocks(mut state LayoutState, box &Node, mut 
   initial.set_has_definite_height(true)
   width := resolve_layout_content_size(child,style.size_value(.width),values.content_width(),initial,true) or { calculate_max_content_width(mut state,child_box) }
   used := layout_independent_child(mut state,child,mut values,values.content_width(),inline_size,width,height)
+  if !spanning && style.break_inside() !in [.avoid,.avoid_column] && used.line_boxes.len>1 { return none }
   items << VerticalMulticolItem{node:child,spanning:spanning,extent:used.margin_box_width()}
  }
  mut groups := []VerticalMulticolGroup{}

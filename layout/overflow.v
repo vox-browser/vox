@@ -143,11 +143,18 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 					if child_used := state.try_get(child_style) {
 						dx := if child.computed_values().position() == .relative { child_used.inset_left } else { CSSPixels.new(0) }
 						dy := if child.computed_values().position() == .relative { child_used.inset_top } else { CSSPixels.new(0) }
+						// Normal block width balancing may put overconstraint into
+						// the used end margin. Overflow retains the authored margin.
+						basis := if box.computed_values().writing_mode() == .horizontal_tb { used.content_width() } else { used.content_height() }
+						edges := child.computed_values().resolved_box_model_edges(basis.to_double())
+						left_margin := if property_is_auto(child.computed_values(),.margin_left) { child_used.margin_left } else { edges.margin_left }
+						right_margin := if property_is_auto(child.computed_values(),.margin_right) { child_used.margin_right } else { edges.margin_right }
+      bottom_margin := child_used.collapsed_flow_margin_bottom() or { child_used.margin_bottom }
 						bounds := css.CSSPixelRect{
-							x:raw_child_rect.x.minus(dx).minus(child_used.margin_left)
+							x:raw_child_rect.x.minus(dx).minus(left_margin)
 							y:raw_child_rect.y.minus(dy).minus(child_used.margin_top)
-							width:raw_child_rect.width.plus(child_used.margin_left).plus(child_used.margin_right)
-							height:raw_child_rect.height.plus(child_used.margin_top).plus(child_used.margin_bottom)
+							width:raw_child_rect.width.plus(left_margin).plus(right_margin)
+							height:raw_child_rect.height.plus(child_used.margin_top).plus(bottom_margin)
 						}
 						in_flow_and_floated_content_bounds = overflow_rect_united(in_flow_and_floated_content_bounds,bounds)
 					}

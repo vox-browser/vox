@@ -12,6 +12,31 @@ struct GridBaselineSubject {
 	outer_size CSSPixels
 }
 
+// A percentage preferred size stays cyclic with an intrinsic track even
+// after the final grid area gives that percentage a numeric value.
+fn grid_baseline_size_is_cyclic(state &LayoutState,container &Node,item &Node,horizontal bool,tracks []GridTrack,start int,span int) bool {
+ if !item.computed_values().size_value(if horizontal { css.PropertyID.width } else { .height }).contains_percentage() { return false }
+ if grid_track_range_crosses_intrinsic_sizing_track(tracks,start,span) { return true }
+ used := state.get(container.as_node_with_style() or { return false })
+ definite := if horizontal { used.has_definite_width() } else { used.has_definite_height() }
+ return !definite && grid_track_range_crosses_flexible_track(tracks,start,span)
+}
+
+// Opposed writing directions form distinct first/last baseline groups.
+// An orthogonal subject has only a synthesized baseline and retains the
+// alignment context's direction instead of joining the opposite group.
+fn grid_baseline_group_reversed(container &Node,item &Node,horizontal bool) bool {
+ return if grid_is_vertical(item)==horizontal { grid_axis_reversed(item,horizontal) } else { grid_axis_reversed(container,horizontal) }
+}
+
+fn grid_alignment_baseline_from_low(state &LayoutState,container &Node,item &Node,horizontal bool,set BaselineSet,reversed bool) CSSPixels {
+ if horizontal && !grid_is_vertical(item) && resolve_dominant_baseline_metric(container.computed_values())!=.central {
+  used := state.get(item.as_node_with_style() or { return CSSPixels.new(0) })
+  return used.margin_left.plus(if reversed { used.border_box_width() } else { CSSPixels.new(0) })
+ }
+ return grid_baseline_from_low(state,container,item,horizontal,set,0)
+}
+
 // Baselines of scroll containers are taken at the initial scroll position
 // and clamped to their border edges (CSS Align 3 section 9.1).
 fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horizontal bool, set BaselineSet, depth int) CSSPixels {
@@ -61,7 +86,7 @@ fn grid_content_baseline_from_low(state &LayoutState, container &Node, item &Nod
 	// its border box, using the context's central or alphabetic baseline.
 	central := resolve_dominant_baseline_metric(container.computed_values()) == .central
 	if horizontal {
-		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else if (grid_is_vertical(container) && container.computed_values().writing_mode() != .sideways_lr) || grid_axis_reversed(container,true) { CSSPixels.new(0) } else { used.border_box_width() })
+		return used.margin_left.plus(if central { used.border_box_width().divided_by_float(2) } else if container.computed_values().writing_mode()==.sideways_lr && !grid_axis_reversed(container,true) { used.border_box_width() } else { CSSPixels.new(0) })
 	}
 	return used.margin_top.plus(if central { used.border_box_height().divided_by_float(2) } else { used.border_box_height() })
 }
@@ -70,12 +95,14 @@ fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placemen
 	width CSSPixels, height CSSPixels, columns []GridTrack, rows []GridTrack,
 	column_gap CSSPixels, row_gap CSSPixels, column_leading CSSPixels, row_leading CSSPixels) {
 	for horizontal in [false,true] {
+		if container.display().is_grid_lanes_inside() && grid_lanes_axis_is_horizontal(container)!=horizontal { continue }
 		mut subjects := []GridBaselineSubject{}
 		mut shared := map[int]CSSPixels{}
 		for placement in placements {
 			item := placement.item
 			words := grid_alignment_text(container,item,horizontal).split(' ')
 			if words.len == 0 || words.last() != 'baseline' { continue }
+   if grid_baseline_size_is_cyclic(state,container,item,horizontal,if horizontal { columns } else { rows },if horizontal { placement.column } else { placement.row },if horizontal { placement.column_span } else { placement.row_span }) { continue }
 			computed := item.computed_values()
 			if property_is_auto(computed,if horizontal { css.PropertyID.margin_left } else { css.PropertyID.margin_top })
 				|| property_is_auto(computed,if horizontal { css.PropertyID.margin_right } else { css.PropertyID.margin_bottom }) { continue }
@@ -91,8 +118,8 @@ fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placemen
 				used.margin_bottom = css_px(computed.length_percentage_to_px(.margin_bottom,area_width.to_double()) or { 0.0 })
 			}
 			last := words[0] == 'last'
-			parallel := grid_is_vertical(container) == grid_is_vertical(item)
-			opposite := parallel && grid_axis_reversed(container,horizontal) != grid_axis_reversed(item,horizontal)
+			reversed := grid_baseline_group_reversed(container,item,horizontal)
+			opposite := grid_axis_reversed(container,horizontal) != reversed
 			logical_end := last != opposite
 			from_end := logical_end != grid_axis_reversed(container,horizontal)
 			track := if horizontal { placement.column } else { placement.row }
@@ -105,7 +132,7 @@ fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placemen
 				grid_physical_row_offset(container,height,rows,placement.row,placement.row_span,row_gap,row_leading)
 			}
 			extent := if horizontal { area_width } else { grid_track_range_size(rows,placement.row,placement.row_span,row_gap) }
-			baseline := grid_baseline_from_low(state,container,item,horizontal,if last { .last } else { .first },0)
+			baseline := grid_alignment_baseline_from_low(state,container,item,horizontal,if last { .last } else { .first },reversed)
 			outer := if horizontal { used.margin_box_width() } else { used.margin_box_height() }
 			candidate := if from_end { start.plus(extent).minus(outer.minus(baseline)) } else { start.plus(baseline) }
 			if previous := shared[group] {

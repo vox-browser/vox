@@ -1777,10 +1777,11 @@ pub fn (n &Box) natural_size() css.SizeWithAspectRatio {
 }
 
 pub fn (n &Box) has_auto_content_box_size() bool {
-	return n.has_auto_content_box_size_ || chromium_menu_list(unsafe { &Node(n) })
+	return n.has_auto_content_box_size_ || chromium_menu_list(unsafe { &Node(n) }) || chromium_select_listbox(unsafe { &Node(n) })
 }
 
 pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
+ if chromium_select_listbox(unsafe { &Node(n) }) { return chromium_select_listbox_auto_size(unsafe { &Node(n) }) }
 	if unsafe { &Node(n) }.has_size_containment() {
 		node := unsafe { &Node(n) }
 		return css.SizeWithAspectRatio{

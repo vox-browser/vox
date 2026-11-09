@@ -60,6 +60,10 @@ fn grid_physical_areas(node &Node) css.GridTemplateAreas {
 }
 
 fn grid_alignment_text(container &Node, item &Node, horizontal bool) string {
+ // Self-alignment on a subgridded axis is stretch: its border edges must
+ // stay on the parent grid lines for descendants to share those tracks.
+ if item.display().is_grid_inside() && grid_axis_template(item,horizontal).is_subgrid()
+  && (!container.display().is_grid_lanes_inside() || grid_lanes_axis_is_horizontal(container)==horizontal) { return 'stretch' }
  inline_axis := horizontal != grid_is_vertical(container)
  self_property := if inline_axis { css.PropertyID.justify_self } else { css.PropertyID.align_self }
  items_property := if inline_axis { css.PropertyID.justify_items } else { css.PropertyID.align_items }

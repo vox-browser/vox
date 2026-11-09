@@ -80,7 +80,6 @@ fn layout_multicol_atomic_blocks(mut state LayoutState, box &Node, mut box_state
 		}
 		if !multicol_atomic_child_supported(child)
 			|| (child.has_children() && !box_has_inline_content(child))
-			|| values.break_inside() !in [.avoid, .avoid_column]
 			|| values.break_before() != .auto || values.break_after() != .auto
 			|| values.column_span() != .none_ {
 			return none
@@ -100,6 +99,9 @@ fn layout_multicol_atomic_blocks(mut state LayoutState, box &Node, mut box_state
 	for child in children {
 		child_styled := child.as_node_with_style() or { return none }
 		values := state.get(child_styled)
+  // An ordinary block with a single line has no internal break point.
+  // Multi-line blocks still need full fragmentation and keep the fallback.
+  if children[tops.len].computed_values().break_inside() !in [.avoid,.avoid_column] && values.line_boxes.len>1 { return none }
 		// Overlapping blocks need more than a sequence of atomic fragments.
 		// The ordinary block pass will rerun at the full width on fallback.
 		if values.margin_top.raw_value() < 0 || values.margin_bottom.raw_value() < 0 {

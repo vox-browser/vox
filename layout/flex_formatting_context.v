@@ -252,7 +252,7 @@ fn flex_formatting_context_specified_size_suggestion(item &Node, item_state &Use
 }
 
 fn can_skip_automatic_minimum_size_for_item(item &Node, item_state &UsedValues, container_state &UsedValues, flex_base_size CSSPixels, row_axis bool, available_main_size ?CSSPixels) bool {
-	if flex_item_is_scroll_container(item) || item.is_replaced_box() {
+	if flex_item_has_scrollable_main_overflow(item,row_axis) || item.is_replaced_box() {
 		return false
 	}
 	box := item.as_box() or { return false }
@@ -376,11 +376,13 @@ fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixe
 }
 
 fn flex_item_is_scroll_container(item &Node) bool {
-	computed := item.computed_values()
-	return computed.overflow_x() !in [.visible, .clip] || computed.overflow_y() !in [
-		.visible,
-		.clip,
-	]
+ return flex_item_has_scrollable_main_overflow(item,true) || flex_item_has_scrollable_main_overflow(item,false)
+}
+
+fn flex_item_has_scrollable_main_overflow(item &Node,row_axis bool) bool {
+ computed := item.computed_values()
+ overflow := if row_axis { computed.overflow_x() } else { computed.overflow_y() }
+ return overflow !in [.visible,.clip]
 }
 
 fn flex_item_has_aspect_ratio_without_natural_dimensions(item &Node) bool {
@@ -551,7 +553,7 @@ fn flex_chromium_replaced_min_content_width(mut state LayoutState, item &Node) ?
 
 // https://drafts.csswg.org/css-flexbox-1/#min-size-auto
 fn flex_formatting_context_automatic_minimum_size(mut state LayoutState, item &Node, item_state &UsedValues, row_axis bool, available_main_size ?CSSPixels) CSSPixels {
-	if flex_item_is_scroll_container(item) {
+	if flex_item_has_scrollable_main_overflow(item,row_axis) {
 		return CSSPixels.new(0)
 	}
 	// Blink resolves this suggestion only while laying items out in a definite

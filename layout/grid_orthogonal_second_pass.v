@@ -27,10 +27,7 @@ fn update_orthogonal_grid_column_contributions(mut state LayoutState, container 
 			continue
 		}
 		style := item.computed_values()
-		if !style.size_value(.height).is_auto() || grid_block_alignment(container, item) !in [
-			.normal,
-			.stretch,
-		]
+		if !style.size_value(.height).is_auto()
 			|| property_is_auto(style, .margin_top) || property_is_auto(style, .margin_bottom) {
 			continue
 		}

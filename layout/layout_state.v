@@ -21,6 +21,7 @@ pub enum SizeConstraint {
 }
 
 struct GridSubgridAxisData {
+ resolved bool
 	tracks     []GridTrack
 	line_names [][]css.GridLineName
 	gap        CSSPixels
@@ -39,6 +40,7 @@ mut:
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
 	box_model_percentage_basis_ ?CSSPixels
+ collapsed_flow_margin_bottom_ ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
 	used_grid_template_columns    []CSSPixels
 	used_grid_template_rows       []CSSPixels
@@ -84,6 +86,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
 		box_model_percentage_basis_: rare.box_model_percentage_basis_
+ collapsed_flow_margin_bottom_:rare.collapsed_flow_margin_bottom_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
 		used_grid_template_columns: rare.used_grid_template_columns.clone()
 		used_grid_template_rows: rare.used_grid_template_rows.clone()
@@ -401,6 +404,17 @@ fn (mut u UsedValues) set_box_model_percentage_basis(value CSSPixels) {
 fn (u &UsedValues) box_model_percentage_basis() ?CSSPixels {
  rare := u.rare_ or { return none }
  return rare.box_model_percentage_basis_
+}
+
+fn (mut u UsedValues) set_collapsed_flow_margin_bottom(value ?CSSPixels) {
+ if value==none && u.rare_==none { return }
+ mut rare := u.ensure_rare_data()
+ rare.collapsed_flow_margin_bottom_=value
+}
+
+fn (u &UsedValues) collapsed_flow_margin_bottom() ?CSSPixels {
+ rare := u.rare_ or { return none }
+ return rare.collapsed_flow_margin_bottom_
 }
 
 pub fn (u &UsedValues) scrollable_overflow_rect() ?css.CSSPixelRect {
@@ -1513,7 +1527,7 @@ fn (mut state LayoutState) set_subgrid_axis_data(node &NodeWithStyle, columns bo
 		for name in line { names << css.GridLineName{name: name.name.clone(), implicit: name.implicit} }
 		line_names << names
 	}
-	owned := GridSubgridAxisData{tracks: axis.tracks.clone(), line_names: line_names, gap: axis.gap}
+	owned := GridSubgridAxisData{tracks: axis.tracks.clone(), line_names: line_names, gap: axis.gap,resolved:axis.resolved}
 	if columns {
 		data.columns = owned
 	} else {

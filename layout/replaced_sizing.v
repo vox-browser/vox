@@ -579,7 +579,7 @@ fn compute_size_for_block_level_replaced_element_in_normal_flow(box &Box, box_st
 	// intentionally retains its second conversion and ratio transfer.
 	if node.document().font_rendering_policy() == .chromium
 		&& node.computed_values().box_sizing() == .border_box
-		&& (node.is_text_input_box() || node.is_textarea_box())
+		&& (node.is_text_input_box() || node.is_textarea_box() || chromium_select_listbox(node))
 		&& !box.has_preferred_aspect_ratio() {
 		return compute_replaced_size_with_box_model(box, available_space, ReplacedBoxModel{
 			percentage_basis:    available_space.width.to_px_or_zero()

@@ -16,3 +16,13 @@ fn test_scrollable_overflow_keeps_zero_area_axes_margins_and_relative_alignment_
  actual := element.scroll_width()
  assert actual == 950,'${actual}'
 }
+
+fn test_scrollable_alignment_bounds_use_the_collapsed_trailing_margin() {
+ for direction in ['ltr','rtl'] {
+  mut document := html.parse_document('<!doctype html><style>body{margin:0}#scroll{width:100px;height:100px;overflow:scroll;padding:10px 5px;line-height:0;direction:${direction}}#outer{position:relative;width:0;margin-bottom:100px;top:-1000px;direction:ltr}#inner{height:200px;margin-bottom:-50px}</style><div id="scroll"><div id="outer"><div id="inner"></div></div></div>')
+  defer { document.finalize() }
+  _ = layout.layout_document_typed_in_viewport(document,800,600)
+  scroll := document.get_element_by_id('scroll') or { panic('scroll') }
+  assert scroll.scroll_height()==270,'${direction}: ${scroll.scroll_height()}'
+ }
+}

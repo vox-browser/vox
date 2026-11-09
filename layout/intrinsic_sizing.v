@@ -1191,6 +1191,9 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(containing_block_height), false).to_double()
 	}
 	if size.is_auto() || size.is_stretch() {
+  if chromium_select_listbox(unsafe { &Node(node) }) {
+   if height := box.auto_content_box_size().height { return height.to_double() }
+  }
 		if ratio := box.preferred_aspect_ratio() {
 			if node.document().font_rendering_policy() == .chromium
 				&& !unsafe { &Node(node) }.is_replaced_box() {

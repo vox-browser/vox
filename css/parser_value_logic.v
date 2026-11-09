@@ -7722,6 +7722,9 @@ fn (mut parser Parser) parse_grid_track_size_list(mut tokens ComponentValueStrea
 			subgrid_attempt.consume_whitespace()
 			for subgrid_attempt.has_more_tokens() {
 				component := subgrid_attempt.peek() or { return none }
+    // The grid-template shorthand consumes the slash between axes.
+    // A longhand's caller still rejects any trailing slash.
+    if component.is_delim(u32(`/`)) { break }
 				if component.is_block() && component.block().is_square() {
 					line_names := parser.parse_grid_line_names(mut subgrid_attempt) or { return none }
 					track_list.append_line_names(line_names)

@@ -1938,7 +1938,7 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
 	for property_id in [PropertyID.position, .position_anchor, .top, .right, .bottom, .left, .float_,
 		.clear, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start,
-		.align_self, .justify_self, .order, .margin_top, .margin_right, .margin_bottom,
+		.align_self, .justify_self, .baseline_source, .order, .margin_top, .margin_right, .margin_bottom,
 		.margin_left, .z_index] {
 		if value := c.property(property_id, .no) {
 			wrapper.set_property_without_modifying_flags(property_id, value)
@@ -15751,8 +15751,8 @@ pub fn (s &StyleComputer) start_needed_transitions(old_style &ComputedProperties
 pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_properties ComputedProperties) {
 	_ = s
 	// https://www.w3.org/TR/css-overflow-3/#overflow-control
-	// The visible/clip values of overflow compute to auto/hidden (respectively)
-	// if one of overflow-x or overflow-y is neither visible nor clip.
+	// A visible axis computes to auto when the other axis is scrollable.
+	// CSS Overflow 3 keeps clip non-scrollable, allowing single-axis scrolling.
 	overflow_x := computed_properties.overflow_x()
 	overflow_y := computed_properties.overflow_y()
 	overflow_x_is_visible_or_clip := overflow_x == .visible || overflow_x == .clip
@@ -15761,14 +15761,8 @@ pub fn (s &StyleComputer) resolve_effective_overflow_values(mut computed_propert
 		if overflow_x == .visible {
 			computed_properties.set_property_without_modifying_flags(.overflow_x, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
 		}
-		if overflow_x == .clip {
-			computed_properties.set_property_without_modifying_flags(.overflow_x, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
-		}
 		if overflow_y == .visible {
 			computed_properties.set_property_without_modifying_flags(.overflow_y, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.auto))))
-		}
-		if overflow_y == .clip {
-			computed_properties.set_property_without_modifying_flags(.overflow_y, dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.hidden))))
 		}
 	}
 }

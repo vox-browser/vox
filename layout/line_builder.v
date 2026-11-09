@@ -518,16 +518,13 @@ fn fragment_alignment_style_source(fragment &LineBoxFragment) &Node {
 // A top- or bottom-aligned subtree contains its root and every descendant
 // inline subtree that is not itself aligned to the line box.
 fn (builder &LineBuilder) line_relative_aligned_subtree_root(style_source &Node) ?LineRelativeAlignedSubtreeRoot {
-	if builder.writing_mode != .horizontal_tb {
-		return none
-	}
 	containing_block := unsafe { &Node(builder.containing_block) }
 	mut node := unsafe { style_source }
 	for !layout_nodes_same(node, containing_block) {
 		if alignment := line_relative_alignment(node) {
 			return LineRelativeAlignedSubtreeRoot{
 				root:      node
-				alignment: alignment
+				alignment: if builder.writing_mode==.vertical_lr { if alignment==.top { css.VerticalAlign.bottom } else { .top } } else { alignment }
 			}
 		}
 		parent := node.parent() or { break }

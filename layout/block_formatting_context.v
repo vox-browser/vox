@@ -906,9 +906,11 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		}
 		bfc.y_offset_of_current_block_container = box_state.offset.y().to_double() + box_state.content_height().to_double() + box_state.border_box_bottom().to_double()
 	}
+ collapsed_bottom := bfc.margin_state.box_last_in_flow_child_margin_bottom_collapsed()
 	bfc.margin_state.set_box_last_in_flow_child_margin_bottom_collapsed(false)
 
 	bfc.margin_state.add_margin(box_state.margin_bottom.to_double())
+ box_state.set_collapsed_flow_margin_bottom(if collapsed_bottom { ?CSSPixels(css_px(bfc.margin_state.current_collapsed_margin())) } else { none })
 	bfc.update_block_waiting_for_final_y_position()
 
 	flow_bottom := box_state.offset.y().to_double() + box_state.content_height().to_double() + box_state.margin_box_bottom().to_double()
