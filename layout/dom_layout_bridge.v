@@ -536,7 +536,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	if generated := box.generated_for_pseudo_element() {
-		if generated in [.first_letter, .before, .after] {
+		if generated in [.first_letter, .before, .after, .backdrop] {
 			if owner := box.pseudo_element_generator() {
 				if is_primary_generated_pseudo_layout_node(box, generated, owner) {
 					dom_generated := dom_pseudo_element_for_layout_node(generated) or { dom.PseudoElement.first_letter }
