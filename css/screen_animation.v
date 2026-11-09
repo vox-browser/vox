@@ -606,6 +606,7 @@ pub mut:
 	fill_mode                    AnimationFillMode
 	playback_direction           AnimationDirection
 	composite                    CompositeOperation
+	iteration_composite_accumulate bool
 	key_frame_set                ?&KeyFrameSet
 	normalized_specified_timing  bool
 	// CSS-side sampling state. Upstream obtains these through AnimationEffect's

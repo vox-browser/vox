@@ -11635,6 +11635,20 @@ fn composite_animated_custom_property(underlying &dom.StyleValue, animated &dom.
 	return dom_style_value_from_value_logic(composited)
 }
 
+// Accumulation repeats the final keyframe once per completed iteration. Binary
+// doubling bounds the work even for very large iteration counts.
+fn accumulate_custom_property_iterations(value &dom.StyleValue, final_value &dom.StyleValue, count f64) &dom.StyleValue {
+ mut remaining := u64(math.min(math.floor(count),9007199254740991.0))
+ mut result := unsafe { value }
+ mut increment := unsafe { final_value }
+ for remaining > 0 {
+  if remaining & 1 != 0 { result = composite_animated_custom_property(result,increment,.accumulate) or { return result } }
+  remaining >>= 1
+  if remaining > 0 { increment = composite_animated_custom_property(increment,increment,.accumulate) or { return result } }
+ }
+ return result
+}
+
 pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractElement, animation voidptr, mut computed_properties ComputedProperties) {
 	if animation == unsafe { nil } {
 		return
@@ -11704,8 +11718,8 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		// Rust css/animation.rs::apply_animation_batch keeps each sampled result
 		// as the underlying value for the next effect in composite order.
 		underlying := computed_properties.property(property_id, .yes) or { continue }
-		start_operation := start_keyframe.composite or { effect.composite }
-		end_operation := end_keyframe.composite or { effect.composite }
+		start_operation := if property_id in start_keyframe.use_initial_properties { CompositeOperation.replace } else { start_keyframe.composite or { effect.composite } }
+		end_operation := if property_id in end_keyframe.use_initial_properties { CompositeOperation.replace } else { end_keyframe.composite or { effect.composite } }
 		if composited := composite_value(property_id, underlying, start, start_operation) {
 			start = composited
 		}
@@ -11763,8 +11777,17 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 			name, start_specified)
 		mut end := s.compute_animated_custom_property_value(abstract_element, computed_properties,
 			name, end_specified)
-		start_operation := start_keyframe.composite or { effect.composite }
-		end_operation := end_keyframe.composite or { effect.composite }
+		// Generated neutral endpoints already represent the underlying value.
+		// Applying add again would count that underlying value twice.
+		start_operation := if name in start_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { start_keyframe.composite or { effect.composite } }
+		end_operation := if name in end_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { end_keyframe.composite or { effect.composite } }
+		if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
+			last_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
+			last_specified := last_keyframe.custom_properties[name] or { base_underlying }
+			last := s.compute_animated_custom_property_value(abstract_element,computed_properties,name,last_specified)
+			start = accumulate_custom_property_iterations(start,last,effect.current_iteration)
+			end = accumulate_custom_property_iterations(end,last,effect.current_iteration)
+		}
 		if composited := composite_animated_custom_property(underlying, start, start_operation) {
 			start = composited
 		}

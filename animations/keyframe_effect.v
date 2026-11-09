@@ -29,6 +29,7 @@ pub struct KeyframeEffectOptions {
 pub mut:
 	timing               OptionalEffectTiming
 	composite            CompositeOperation = .replace
+	iteration_composite_accumulate bool
 	pseudo_element       ?string
 	duration_css_numeric ?css.CSSNumericValue
 }
@@ -104,6 +105,7 @@ pub mut:
 	target_element_                                   ?&dom.Element
 	target_pseudo_selector_                           ?css.PseudoElementSelector
 	composite_                                        CompositeOperation = .replace
+	iteration_composite_accumulate_ bool
 	keyframes_                                        []BaseKeyframe
 	key_frame_set_                                    KeyFrameSet
 	animation_preparation_identity_                   u64
@@ -151,6 +153,7 @@ pub fn KeyframeEffect.copy(source &KeyframeEffect) &KeyframeEffect {
 	effect.target_element_ = source.target_element_
 	effect.target_pseudo_selector_ = source.target_pseudo_selector_
 	effect.composite_ = source.composite_
+	effect.iteration_composite_accumulate_ = source.iteration_composite_accumulate_
 	effect.keyframes_ = source.keyframes_.clone()
 	effect.key_frame_set_ = source.key_frame_set_
 	effect.specified_start_delay_ = source.specified_start_delay_
@@ -180,6 +183,7 @@ pub fn keyframe_effect_options_from_bindings(options KeyframeEffectOptions) !Key
 	return KeyframeEffectOptions{
 		timing: options.timing
 		composite: options.composite
+		iteration_composite_accumulate:options.iteration_composite_accumulate
 		pseudo_element: canonical_pseudo_element
 	}
 }
@@ -192,6 +196,7 @@ pub fn KeyframeEffect.create_from_processed_keyframes(target ?&dom.Element, keyf
 			effect.set_pseudo_element(options.pseudo_element)!
 			effect.AnimationEffect.update_timing(options.timing)!
 			effect.set_composite(options.composite)
+			effect.iteration_composite_accumulate_ = options.iteration_composite_accumulate
 		}
 		f64 {
 			effect.AnimationEffect.update_timing(OptionalEffectTiming{
@@ -870,6 +875,8 @@ pub fn (mut effect KeyframeEffect) css_effect_for_style() &css.KeyframeEffect {
 		.accumulate { css.CompositeOperation.accumulate }
 	}
 	sampling_effect.output_progress = effect.transformed_progress()
+	sampling_effect.iteration_composite_accumulate = effect.iteration_composite_accumulate_
+	sampling_effect.current_iteration = effect.current_iteration() or { 0 }
 	sampling_effect.default_easing = css.EasingFunction.linear()
 	effect.css_sampling_effect_ = sampling_effect
 	return sampling_effect

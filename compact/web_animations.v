@@ -128,6 +128,10 @@ fn compact_web_animation_options(value json2.Any) !animations.KeyframeAnimationO
 			else { return error('TypeError: Invalid composite operation') }
 		}
 	}
+	if operation := json_string_property(object, 'iterationComposite') {
+		if operation !in ['replace','accumulate'] { return error('TypeError: Invalid iteration composite operation') }
+		options.iteration_composite_accumulate = operation == 'accumulate'
+	}
 	if pseudo := json_string_property(object, 'pseudoElement') { options.pseudo_element = pseudo }
 	if id := json_string_property(object, 'id') { options.id = id }
 	return options
@@ -499,7 +503,7 @@ fn compact_web_animations_bootstrap() string {
   if(value===undefined||value===null)return {};
   if(!isObject(value)){const duration=Number(value);if(isNaN(duration)||duration<0)throw new TypeError("Animation duration must be a non-negative number");return {duration};}
   const result={};
-  for(const name of ["composite","direction","easing","fill","id","pseudoElement"])if(value[name]!==undefined)result[name]=string(value[name]);
+  for(const name of ["composite","iterationComposite","direction","easing","fill","id","pseudoElement"])if(value[name]!==undefined)result[name]=string(value[name]);
   for(const name of ["delay","endDelay","iterationStart","iterations"])if(value[name]!==undefined){const number=Number(value[name]);if(isNaN(number))throw new TypeError(name+" must be a number");result[name]=number;}
   if(value.duration!==undefined){
    if(typeof value.duration==="string")result.duration=value.duration;

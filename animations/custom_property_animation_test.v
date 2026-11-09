@@ -171,3 +171,33 @@ fn test_replacement_coverage_includes_case_sensitive_custom_property_targets() {
 	assert second.replace_state() == .active
 	assert third.replace_state() == .active
 }
+
+fn test_registered_angle_list_neutral_add_and_iteration_accumulation() {
+ for comma in [false,true] {
+  for accumulate in [false,true] {
+   mut document,target := connected_animation_target('')!
+   defer { document.finalize() }
+   separator := if comma { ', ' } else { ' ' }
+   initial := if accumulate { '0deg'+separator+'0deg' } else { '50deg'+separator+'100deg' }
+   css.register_property_for_document(mut document,css.PropertyDefinition{name:'--angles',syntax:if comma { '<angle>#' } else { '<angle>+' },inherits:false,initial_value:initial})!
+   frames := if accumulate {
+    [BaseKeyframe{properties:{'--angles':'0deg'+separator+'50deg'}},BaseKeyframe{properties:{'--angles':'100deg'+separator+'100deg'}}]
+   } else { [BaseKeyframe{properties:{'--angles':'150deg'+separator+'200deg'}}] }
+   mut effect := KeyframeEffect.construct_impl(target,frames,KeyframeEffectOptions{
+    timing:OptionalEffectTiming{duration:IterationDuration(1000.0),iterations:3,fill:.both}
+    composite:if accumulate { .replace } else { .add }
+    iteration_composite_accumulate:accumulate
+   })!
+   mut timeline := AnimationTimeline.new()
+   timeline.current_time_ = TimeValue.milliseconds(2500)
+   mut animation := Animation.create(effect.as_animation_effect(),timeline)
+   animation.start_time_ = TimeValue.milliseconds(0)
+   animation.update()
+   document.needs_full_style_update = true
+   document.update_style()
+   actual := custom_style_value(target,'--angles')
+   expected := if accumulate { '250deg'+separator+'275deg' } else { '125deg'+separator+'200deg' }
+   assert actual == expected,actual
+  }
+ }
+}
