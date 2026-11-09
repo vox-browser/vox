@@ -422,3 +422,25 @@ The entropy context-map bound also remains. Production JPEG XL, its Cargo/CI
 hooks and native developer test still require Rust. Removing all Rust dependencies
 remains unfinished; these standalone stages do not establish complete-file
 VarDCT output or production-browser validation.
+
+## HF metadata and VarDCT LF streams on 2026-11-09
+
+Three further slices reconstruct HF metadata maps and read their modular stream
+and the VarDCT LF stream. The 256 additional native cases compare 773,525 exact
+map words, including all transform kinds, both storage widths, clamping, group
+boundaries and rejected metadata. Constructed packet tests separately verify
+composition, stream identities, channel order, sampling, extra precision and
+LF contexts; they are not a new native compressed-stream corpus.
+
+The package now has **281,817 source cases and 68 test files**. Its preceding
+65-file checkpoint and signed-zero correction keep their recorded identities.
+Final focused selection covers the three new files plus modular stream/group
+and LF reconstruction regressions, passing both GC modes with unavailable Rust
+compiler paths. Cadence is **4/10**, with no full 68-file pass claimed.
+[The LF stream report](JPEGXL_V_LF_STREAMS.md) records source/reference boundaries,
+optimized checks, guard results and remaining production work.
+
+Global/frame assembly, frame dependencies/composition, feature streams, final
+image resampling and production integration remain. The production JPEG XL
+decoder and its Cargo/CI/native developer tools still need Rust; removing all
+Rust dependencies remains unfinished.

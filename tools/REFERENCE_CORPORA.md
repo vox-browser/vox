@@ -50,7 +50,7 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects sixty-five test files covering primitives,
+The `jpegxl` suite now selects sixty-eight test files covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
@@ -69,8 +69,9 @@ All twenty-seven inverse-transform kinds now reconstruct, including large DCTs
 through 256x256 and every AFV orientation. Further stages decode HF channel and
 group entropy, HFGlobal passes and nonzero maps, reconstruct subsampled group
 pixels, convert XYB to linear RGB, apply sRGB transfer curves and prepare
-sRGB/gray output matrices.
-Its 281,561 source cases include whole stateful predictor/property/map/order
+sRGB/gray output matrices. It also reconstructs HF metadata maps and reads the
+HF metadata and VarDCT LF modular streams.
+Its 281,817 source cases include whole stateful predictor/property/map/order
 transcripts and individual ANS alias transitions.
 The prior fifty-five-file checkpoint passed in both GC modes. Ten subsequent
 slices pass focused checks in both modes and under `-prod`. The full sixty-five-
@@ -83,5 +84,10 @@ That full checkpoint contains 281,553 records. A subsequent grayscale signed-zer
 fix adds eight source cases and passes focused default/no-GC/optimized checks,
 bringing cadence to 1/10; the prior full selections are not claimed on its three
 changed paths.
+Three further slices add 256 native metadata cases and constructed LF/metadata
+packet checks, with the final six-file focused selection passing both GC modes.
+Cadence is now 4/10; no full sixty-eight-file selection is claimed.
+[The LF stream report](../docs/translation-audit/JPEGXL_V_LF_STREAMS.md) records
+the independent metadata comparisons and narrower stream-composition coverage.
 This checks the V layers; the production pixel decoder and its native developer
 test still require Rust.

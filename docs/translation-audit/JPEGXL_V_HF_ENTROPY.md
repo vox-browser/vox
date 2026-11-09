@@ -287,3 +287,7 @@ Removing all Rust dependencies, including developer tools, is unfinished. Every
 commit requests the managed production rebuild. The existing successful bundle
 and receipt were checked; their older executable identity cannot validate these
 unconnected V stages. No duplicate manual build or browser launch was performed.
+
+The later [LF stream continuation](JPEGXL_V_LF_STREAMS.md) adds metadata map
+reconstruction and LF/metadata stream composition. It retains this report's
+checkpoint identities and results rather than extending the full-suite claim.

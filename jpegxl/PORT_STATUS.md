@@ -440,10 +440,25 @@ other full-checkpoint inputs remain unchanged. The package now has 281,561
 records and sixty-five files, at cadence 1/10 after that checkpoint. The report
 distinguishes the prior full selections from these focused correction checks.
 
-LF/HF metadata entropy and global/frame assembly, feature streams, frame
-dependencies/composition, final resampling and production integration remain.
-Typed-stage reconstruction does not establish complete-file VarDCT pixels or
-preserve every source-supported image yet.
+At that checkpoint, LF/HF metadata entropy and global/frame assembly, feature
+streams, frame dependencies/composition, final resampling and production
+integration remained. Typed-stage reconstruction does not establish complete-file
+VarDCT pixels or preserve every source-supported image yet.
+
+Three subsequent slices reconstruct HF metadata and connect its modular stream
+and the VarDCT LF stream. Metadata maps preserve transform/QF/color/sharpness
+clamping, source storage widths, group boundaries, subsampling restrictions and
+unused records. LF reading preserves Y/X/B channel order, extra precision,
+sampling, context thresholds and the distinct LF stream identities. The 256 new
+source cases add 773,525 exact metadata words; constructed packet checks verify
+composition of the already referenced modular and LF stages.
+
+The package now has 281,817 source records and sixty-eight test files. The final
+six-file focused selection passes in both GC modes; optimized validation is
+recorded in [the LF stream report](../docs/translation-audit/JPEGXL_V_LF_STREAMS.md).
+Cadence is 4/10 after the sixty-five-file checkpoint; no full sixty-eight-file
+pass is claimed. Global/frame assembly, frame dependencies/composition, feature
+streams, final image resampling and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
