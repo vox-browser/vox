@@ -192,18 +192,8 @@ fn browser_chrome_elements(chrome BrowserChromeState) []ui2.Element {
 			ui2.Element{ ...chrome_navigation_button('back', '‹', 5, chrome.back), tooltip: 'Back', accessibility_label: 'Back' },
 			ui2.Element{ ...chrome_navigation_button('forward', '›', 27, chrome.forward), tooltip: 'Forward', accessibility_label: 'Forward' },
 			ui2.Element{ ...chrome_navigation_button('reload', '↻', 49, chrome.reload), tooltip: 'Reload', accessibility_label: 'Reload' },
-			ui2.text_input(
-				id:          'address'
-				action_id:   'address-change'
-				submit_id:   'address-submit'
-				text:        chrome.address
-				hint_text:   'Enter a URL'
-				multiline:   false
-				autocorrect: false
-				frame:       ui2.rect(address_field_left, tab_strip_height + address_field_top, address_width,
-					address_field_height)
-				text_style:  ui2.TextStyle{ size: 12 }
-			) or { panic(err) },
+			browserui.address_field(ui2.rect(address_field_left, tab_strip_height + address_field_top,
+				address_width, address_field_height), chrome.address),
 			ui2.Element{
 				...chrome_navigation_button('history', '◷', width - 32, true)
 				text_style:          chrome_history_text_style()

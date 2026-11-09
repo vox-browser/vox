@@ -11,12 +11,7 @@ fn test_custom_ui2_readonly_address_is_focusable_and_rejects_text_mutation() {
 		mut ctx := gg.new_context(native_rendering: true, width: 800, height: 600)
 		ctx.r = render.new_context(max_vertices: 4096, max_commands: 256)
 		field := ui2.Element{
-			...ui2.text_input(
-				multiline: false
-				id:        'address'
-				text:      'https://example.com'
-				frame:     ui2.rect(98, 34, 600, 20)
-			)!
+			...address_field(ui2.rect(98, 34, 600, 20), 'https://example.com')
 			readonly: true
 		}
 		ui2.draw_embedded_elements(ctx, [field], map[string]int{}, fn (_ string) {})
