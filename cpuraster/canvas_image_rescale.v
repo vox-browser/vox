@@ -82,10 +82,12 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	// Otherwise native rescale combines the deferred source shader with
 	// its first downsample, avoiding an extra 8-bit resolve surface.
 	sx, sy := blur_layer_sigma(math_abs32(step.sigma * ctm.sx)), blur_layer_sigma(math_abs32(step.sigma * ctm.sy))
+	preserve_pixels := total.sx == 1 && total.sy == 1 && int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
+		&& filter == none && !image.display_p3 && alpha == 1
 	if stages.len == 0 && step.sigma >= 0 && is_finite_f32(step.sigma)
 		&& (sx > image_blur_max_sigma || sy > image_blur_max_sigma)
 		&& !large_filter_uses_identity_rescale(ctm, step.sigma) && affine_is_finite(total)
-		&& total.sx != 0 && total.sy != 0 && !filter_nearly_integer_translation(total) {
+		&& total.sx != 0 && total.sy != 0 && !preserve_pixels {
 		return draw_large_source_filter(mut pixels, width, height, pitch, alpha_type,
 			ctm, dst, foreground, mode, clips, step, DeferredRescaleImage{foreground, image, src})
 	}
