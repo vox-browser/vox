@@ -6,6 +6,7 @@ import importlib.util
 import json
 import platform
 import sys
+import struct
 from pathlib import Path
 
 spec = importlib.util.spec_from_file_location(
@@ -435,6 +436,29 @@ cases += [
 cases.append(dict(name='rejected-alpha-prefilter', destination=[4, 5, 30, 25], p3=True,
     premul=False, alpha=.65, smoothing=False, filters=[opacity, shadow(-1), blur(.8)]))
 
+# Exact float inputs found by searching for MakeFromImage layer crops.
+def scalar_bits(bits):
+    return struct.unpack('<f', struct.pack('<I', bits))[0]
+def scalar(value):
+    return struct.unpack('<f', struct.pack('<f', value))[0]
+crop_geometries = [
+    (3, 1, [1085067283, 1082968454, 1086745844, 1090940148], 1067450368),
+    (2, 2, [1076837620, 1076337300, 1080834193, 1084229582], 1074161254),
+    (3, 1, [1078835906, 1076337300, 1080834193, 1084229582], 1074161254),
+]
+for i, (left, width, dst_bits, scale_bits) in enumerate(crop_geometries):
+    l, t, rr, bb = map(scalar_bits, dst_bits)
+    dw, dh = scalar(rr-l), scalar(bb-t)
+    assert scalar(l+dw) == rr and scalar(t+dh) == bb
+    scale = scalar_bits(scale_bits)
+    for variant, filters in enumerate([[opacity, shadow(.01)],
+            [contrast, shadow(.01), opacity, blur(.8)], [opacity, shadow(-1), blur(.8)],
+            [opacity, shadow(.8), blur(.8)]]):
+        cases.append(dict(name=f'cropped-deferred-{i}-{variant}', source=[left, 1, width, 5],
+            destination=[l, t, dw, dh], transform=[scale, 0, 0, scale, 2.25, 3.5],
+            filters=filters, p3=variant != 1, premul=variant == 2, alpha=.65,
+            mode='src_in' if variant == 1 else 'src_over', clip=variant == 1))
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -521,6 +545,9 @@ if platform.system() == 'Linux':
 expected += ['184b651f07c58e73', '92bb21a535a76d83', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a', '5706ca183399eb51', 'b5ef1fde955a65aa', 'a30a880b43cc2f9f']
 if platform.system() == 'Linux':
     expected[-11:] = ['184b651f07c58e73', '53fedce89798753f', 'bbb5e38c1ab0ca9e', '35b6e57a5ac3f38d', 'e22c651cda68cd6d', '9f479983c4eac599', '23776fec044d9aac', '3416e69e948b6d3a', '94bb2e3e5122f73c', 'b5ef1fde955a65aa', '8a0bb9c29ff1424f']
+expected += ['4df34ad3170908fa', '8e7893ef665e07b6', 'eacd8fde217cf3fe', '030f88d9d77c6cc2', '925ff7120103e699', '62bbcb7ecc229498', '8f76dc9ca3585f3c', '4e47f5b286c15049', '65c6352c1aadf86d', 'e227f114505d2ce6', 'e4f3f15a9d09e674', '4e345290a5870197']
+if platform.system() == 'Linux':
+    expected[-12:] = ['7fa25b3afcf70974', 'ff202711441f1425', 'e9a48b9a15b48098', '030f88d9d77c6cc2', '5d8c9b12bd871571', '13e21e9efa7637f4', '454694f8f486415c', '4e47f5b286c15049', '03803f2bfe8fd947', 'e227f114505d2ce6', '428717f06c4023fc', '4e345290a5870197']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']

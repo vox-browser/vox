@@ -1402,6 +1402,10 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'croppedviews' {
+		check_cropped_image_views(oracle, count) or { eprintln(err.msg()); exit(1) }
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') in ['rejected-spatial-chains', 'identity-first-spatial-chains', 'shadow-first-spatial-chains', 'resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
@@ -3784,4 +3788,36 @@ fn random_rejected_spatial_filter_chain() []cpuraster.CanvasFilterStep {
  if rand.intn(2) or { 0 } == 0 { return [drop, ...filters] }
  filters << drop
  return filters
+}
+
+fn check_cropped_image_views(oracle Oracle, count int) ! {
+ bits := [[u32(1085067283), 1082968454, 1086745844, 1090940148],
+  [u32(1076837620), 1076337300, 1080834193, 1084229582],
+  [u32(1078835906), 1076337300, 1080834193, 1084229582]]
+ mut declined := 0
+ for i in 0 .. count {
+  index := i % 3
+  b := bits[index].map(math.f32_from_bits(it))
+  scale := math.f32_from_bits(if index == 0 { u32(1067450368) } else { u32(1074161254) })
+  w, h := 30 + (rand.intn(61) or { 0 }), 25 + (rand.intn(66) or { 0 })
+  pitch := w * 4 + 4 * (rand.intn(3) or { 0 })
+  alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+  premul := (rand.intn(2) or { 0 }) == 0
+  pattern := cpuraster.CanvasPattern{width: 7, height: 6, pitch: 32,
+   pixels: random_composite_bitmap(7, 6, 32, if premul { 2 } else { 1 }),
+   premultiplied: premul, display_p3: (rand.intn(2) or { 0 }) == 0}
+  mut filters := random_color_filters()
+  filters << cpuraster.CanvasFilterStep{kind: .drop_shadow,
+   sigma: if i % 5 == 0 { f32(-1) } else if i % 5 == 1 { f32(.8) } else { f32(.01) },
+   offset_x: 5.25, offset_y: -3.75, color: random_composite_color()}
+  if i % 2 != 0 { filters << random_spatial_filter_chain() }
+  c := BitmapCase{width: w, height: h, pitch: pitch, alpha_type: alpha_type, operation: 2,
+   smoothing: (rand.intn(2) or { 0 }) == 0, transform: [scale, f32(0), 0, scale, 2.25, 3.5]!,
+   global_alpha: random_composite_alpha(), clips: random_clips(w, h),
+   composite: rand.intn(28) or { 0 }, image: pattern, filters: filters,
+   source: [if index == 1 { f32(2) } else { f32(3) }, f32(1), if index == 1 { f32(2) } else { f32(1) }, f32(5)]!,
+   destination: [b[0], b[1], b[2]-b[0], b[3]-b[1]]!}
+  if compare_canvas_bitmap(oracle, random_composite_bitmap(w, h, pitch, alpha_type), c, 'cropped view ${i}')! { declined++ }
+ }
+ println('cropped source views: ${count-declined} exact, ${declined} declined')
 }
