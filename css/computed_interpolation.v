@@ -300,6 +300,7 @@ pub mut:
 	type_                      ContentDataType
 	text                       string
 	alt_text                   string
+	has_alt_text               bool
 	items                      []ContentItem
 	counter_style_dependencies []?CounterStyle
 }
@@ -3135,6 +3136,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 		}
 	}
 	mut alt_text := ''
+	has_alt_text := content_value.alt_text() != none
 	if alt := content_value.alt_text() {
 		for item in alt.values() {
 			if item is StringStyleValue {
@@ -3150,6 +3152,7 @@ pub fn (c &ComputedProperties) content(abstract_element &dom.AbstractElement, in
 			type_: .list
 			text: text
 			alt_text: alt_text
+			has_alt_text: has_alt_text
 			items: items
 			counter_style_dependencies: counter_style_dependencies
 		}

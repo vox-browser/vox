@@ -1132,6 +1132,8 @@ pub struct NodeWithStyle {
 	Node
 pub mut:
 	computed_values_  &css.ComputedValues = unsafe { nil }
+	// Upstream NodeWithStyle::m_content is per layout node, even when styles share.
+	resolved_content_ &css.ContentData = unsafe { nil }
 	list_style_image_ ?css.StyleValue
 	image_observers_  []&ImageObserver
 	layout_index_     u32
@@ -1140,6 +1142,23 @@ pub mut:
 	previous_layout_index_ u32
 mut:
 	inherited_style_proof_ &css.LayoutInheritanceProof = unsafe { nil }
+}
+
+// Generated content is resolved in tree order. Keep the result on its owning
+// node rather than consulting a style another pseudo-element may have reused.
+pub fn (mut node NodeWithStyle) set_content(content css.ContentData) {
+	mut allocations := platform.enter_retained_allocations()
+	defer { allocations.finish() }
+	mut items := []css.ContentItem{cap:content.items.len}
+	for item in content.items { items << css.ContentItem{ ...item, value:item.value.clone() } }
+	node.resolved_content_ = &css.ContentData{ ...content,
+		text:content.text.clone(), alt_text:content.alt_text.clone(), items:items,
+		counter_style_dependencies:content.counter_style_dependencies.clone() }
+}
+
+pub fn (node &NodeWithStyle) content() ?css.ContentData {
+	if node.resolved_content_ == unsafe { nil } { return none }
+	return *node.resolved_content_
 }
 
 fn materialize_list_style_image(computed_values &css.ComputedProperties, document &dom.Document) ?css.StyleValue {

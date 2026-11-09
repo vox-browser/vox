@@ -2030,22 +2030,33 @@ fn append_layout_rendered_text(node &LayoutNode, mut builder strings.Builder) {
 	}
 }
 
-fn append_generated_content_text(node &LayoutNode, pseudo_element PseudoElement, mut builder strings.Builder) {
+fn append_generated_content_text(node &LayoutNode, element &Element, pseudo_element PseudoElement, mut builder strings.Builder) {
 	if generated_for := node.generated_for_pseudo_element() {
 		if generated_for == pseudo_element {
-			append_layout_rendered_text(node, mut builder)
-			return
+			if generator := node.pseudo_element_generator() {
+				if voidptr(generator) == voidptr(element) {
+					callback := node.bridge_callbacks().generated_content_text_callback
+					if callback != unsafe { nil } {
+						if text := callback(node.layout_handle) {
+							builder.write_string(text)
+							return
+						}
+					}
+					append_layout_rendered_text(node, mut builder)
+					return
+				}
+			}
 		}
 	}
 	for child in node.children_ {
-		append_generated_content_text(child, pseudo_element, mut builder)
+		append_generated_content_text(child, element, pseudo_element, mut builder)
 	}
 }
 
 fn generated_content_text(element &Element, pseudo_element PseudoElement) string {
 	layout_node := element.as_node().layout_node() or { return '' }
 	mut builder := strings.new_builder(0)
-	append_generated_content_text(layout_node, pseudo_element, mut builder)
+	append_generated_content_text(layout_node, element, pseudo_element, mut builder)
 	return builder.str()
 }
 
@@ -4819,6 +4830,10 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 		//    is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element
 		//    (e.g. label in HTML), or is a descendant of a native host language text alternative element:
 		if element_allows_accessible_name_from_content(element, should_compute_role) || element_is_referenced_for_accessibility(element) || is_descendant == .yes {
+			// Generated content and counter values must be current before step F,
+			// including the first accessibility query before an initial layout.
+			mut mutable_document := unsafe { &Document(document) }
+			mutable_document.update_layout(.node_name_or_description)
 			mut accumulated_text := strings.new_builder(0)
 			accumulated_text.write_string(generated_content_text(element, .before))
 			mut child_nodes := n.children.clone()
@@ -4841,11 +4856,6 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 					continue
 				}
 				mut should_add_space := true
-				// Node.cpp updates layout before consulting the child's display. Apart
-				// from spacing, this also ensures TextNode::text_for_rendering() is
-				// available for step G of the accessible-name algorithm.
-				mut mutable_document := unsafe { &Document(document) }
-				mutable_document.update_layout(.node_name_or_description)
 				if layout_node := child_node.layout_node() {
 					display := layout_node.display()
 					// Unstyled TextNodes participate in inline flow. Their DOM

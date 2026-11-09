@@ -4,6 +4,7 @@ module dom
 // one immutable table; the opaque handle remains specific to each node.
 pub struct LayoutNodeCallbacks {
 pub:
+	generated_content_text_callback fn (voidptr) ?string = unsafe { nil }
 	find_matching_text_callback            fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	apply_style_callback                   LayoutApplyStyleCallback                       = unsafe { nil }
 	apply_animated_style_callback          LayoutApplyAnimatedStyleCallback               = unsafe { nil }

@@ -5,6 +5,7 @@ import css
 import os
 
 __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
+	generated_content_text_callback: layout_generated_accessible_text
 	find_matching_text_callback: find_matching_layout_text
 	apply_style_callback: apply_style_to_layout_node
 	apply_animated_style_callback: apply_animated_style_to_layout_node
@@ -933,4 +934,14 @@ fn overflow_to_dom_for_layout(value css.Overflow) dom.CSSOverflow_ {
 		.scroll { .scroll }
 		.auto_ { .auto_ }
 	}
+}
+
+// Accessibility reads the content snapshot resolved while this generated box
+// was built. An explicitly empty alternative suppresses its painted text.
+fn layout_generated_accessible_text(handle voidptr) ?string {
+	if handle == unsafe { nil } { return none }
+	node := unsafe { &Node(handle) }
+	styled := node.as_node_with_style() or { return none }
+	content := styled.content() or { return none }
+	return if content.has_alt_text { content.alt_text } else { content.text }
 }

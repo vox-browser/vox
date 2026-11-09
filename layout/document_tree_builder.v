@@ -2544,6 +2544,10 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 		create_layout_node_for_generated_content(document, generated_style)
 	}
 	node.set_generated_for(layout_pseudo, element)
+	if styled := node.as_node_with_style() {
+		mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+		mutable_styled.set_content(content)
+	}
 	node.initial_quote_nesting_level_ = initial_quote_nesting_level
 	if content.type_ == .list && node.can_have_children() {
 		mut generated_children := []&Node{}
