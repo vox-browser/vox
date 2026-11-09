@@ -108,7 +108,11 @@ enum GridItemAlignment {
 	baseline
 }
 
-fn static_position_alignment_for_grid_item(alignment GridItemAlignment) StaticPositionAlignment {
+fn static_position_alignment_for_grid_item(container &Node, alignment GridItemAlignment, horizontal bool) StaticPositionAlignment {
+	if grid_axis_reversed(container,horizontal) {
+		if alignment in [.normal,.start,.stretch,.baseline] { return .end }
+		if alignment == .end { return .start }
+	}
 	return match alignment {
 		.center { .center }
 		.end { .end }
@@ -142,8 +146,8 @@ fn set_grid_abspos_containing_rect(mut state LayoutState, container &Node, child
 	}
 	child_state.set_static_position_rect(StaticPositionRect{
 		rect: rect
-		horizontal_alignment: static_position_alignment_for_grid_item(grid_inline_alignment(container, child))
-		vertical_alignment: static_position_alignment_for_grid_item(grid_block_alignment(container, child))
+		horizontal_alignment: static_position_alignment_for_grid_item(container,grid_inline_alignment(container, child),true)
+		vertical_alignment: static_position_alignment_for_grid_item(container,grid_block_alignment(container, child),false)
 	})
 }
 
