@@ -221,6 +221,7 @@ pub mut:
 	// Chromium-policy inline box decorations painted from whole line pieces,
 	// outermost box first.
 	box_decorations []TextFragment
+	inline_hit_regions []InlineHitRegion
 }
 
 // A laid-out block box: `x`/`y`/`width`/`height` are the *content box* geometry in CSS px, relative

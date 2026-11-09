@@ -1305,6 +1305,11 @@ fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	// space. Apply its viewport/element CTM before the shared visual contexts
 	// map the result back to CSS pixels (including native display scaling).
 	mut source_rects := rects
+ source := unsafe { &Node(layout_handle) }
+ if source.is_inline_node() && !source.is_atomic_inline() {
+  pieces := inline_client_piece_rects(source,result.state)
+  if pieces.len > 0 { source_rects = pieces.clone() }
+ }
 	if box := result.retained_box_for_layout(layout_handle) {
 		if box.has_svg_path() {
 			bounds := svg_transformed_hit_bounds(box.svg_data.bounding_box,
@@ -4210,6 +4215,15 @@ fn compatibility_hit_test_fragments_at(document &dom.Document, box &BlockBox,
 	}
 	for line_index in 0 .. box.lines.len {
 		line := unsafe { &box.lines[line_index] }
+  if type_ == .exact {
+   for region_index := line.inline_hit_regions.len-1; region_index >= 0; region_index-- {
+    region := line.inline_hit_regions[region_index]
+    if !region.radii.contains(local_position,region.rect) { continue }
+    node := unsafe { &Node(region.layout_handle) }.dom_node() or { continue }
+    candidate := compatibility_hit_test_result_for_node(node,0,0,0,none)
+    if hit_test_state.consider_hit_test_result(candidate,type_) { return true }
+   }
+  }
 		for fragment_index in 0 .. line.fragments.len {
 			// Borrow each fragment: this scan visits every fragment of every
 			// box with lines, and a by-value TextFragment copies its wide record.

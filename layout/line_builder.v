@@ -981,8 +981,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		// Text is initially aligned using its computed line height so that it
 		// contributes the right bounds to the line box. Anchor its paint box to
 		// the selected font's normal metrics afterwards, matching upstream's
-		// horizontal-writing-mode fragment geometry.
-		if fragment.layout_node_.is_text_node() && builder.writing_mode == .horizontal_tb {
+		// physical font-box geometry in every writing mode.
+		if fragment.layout_node_.is_text_node() {
 			font_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
 			font_box_height := normal_line_height_for_font_metrics(font_metrics)
 			font_baseline := font_baseline_for_line_height(font_metrics, font_box_height)

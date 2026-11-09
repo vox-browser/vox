@@ -4854,6 +4854,11 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			line_x = fragments[0].x
 			line_y = fragments[0].y
 		}
+  if !paint_parent_pieces_ready {
+   paint_parent_pieces = compute_inline_box_pieces(container,used,state)
+   paint_parent_pieces_ready = true
+  }
+  inline_hits := inline_hit_regions_for_line(container,used,state,paint_parent_pieces,line_index,container_position)
 		lines << TextLine{
 			x: line_x
 			y: line_y
@@ -4861,6 +4866,7 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			height: line_box.height().to_double()
 			fragments: fragments
 			box_decorations: box_decorations
+			inline_hit_regions: inline_hits
 		}
 	}
 	_ = container

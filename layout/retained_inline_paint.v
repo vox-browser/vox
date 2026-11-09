@@ -87,12 +87,15 @@ fn rebase_retained_inline_lines(lines []TextLine, dx f64, dy f64) ?[]TextLine {
 			if !rebase_retained_inline_fragment_into(unsafe { &line.box_decorations[index] }, dx, dy,
 				mut decorations[index]) { return none }
 		}
+  mut regions := []InlineHitRegion{cap:line.inline_hit_regions.len}
+  for region in line.inline_hit_regions { regions << InlineHitRegion{...region,rect:painting.Rect{region.rect.x+dx,region.rect.y+dy,region.rect.width,region.rect.height}} }
 		result << TextLine{
 			...line
 			x:               line.x + dx
 			y:               line.y + dy
 			fragments:       fragments
 			box_decorations: decorations
+			inline_hit_regions: regions
 		}
 	}
 	return result

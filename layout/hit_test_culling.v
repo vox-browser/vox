@@ -110,6 +110,11 @@ fn hit_test_step_bounds(step CompatibilityPaintStep) HitTestStepBounds {
 			mut bottom := f64(0)
 			for line_index in 0 .. box.lines.len {
 				line := unsafe { &box.lines[line_index] }
+    for region in line.inline_hit_regions {
+     rect := region.rect
+     if !found { left,top,right,bottom = rect.x,rect.y,rect.right(),rect.bottom();found = true }
+     else { left = math.min(left,rect.x);top = math.min(top,rect.y);right = math.max(right,rect.right());bottom = math.max(bottom,rect.bottom()) }
+    }
 				for fragment_index in 0 .. line.fragments.len {
 					fragment := unsafe { &line.fragments[fragment_index].paintable_fragment }
 					x := fragment.offset.x + fragment.containing_block_offset.x
