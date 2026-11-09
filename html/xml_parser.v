@@ -40,9 +40,10 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 	xmlcompat.check_name(node.name)!
 	mut namespaces := unsafe { inherited_namespaces }
 	mut owns_namespaces := false
-	for name, value in node.attributes {
+	for name, raw_value in node.attributes {
 		xmlcompat.check_name(name)!
 		if name == 'xmlns' || name.starts_with('xmlns:') {
+			value := prepared.attribute_value(raw_value)!
 			prefix := if name == 'xmlns' { '' } else { name[6..] }
 			if prefix == 'xmlns' || value == xmlns_namespace_uri || (prefix == 'xml' && value != xml_namespace_uri)
 				|| (prefix != 'xml' && value == xml_namespace_uri) || (prefix != '' && value == '') {
@@ -66,7 +67,8 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 		?string(namespace_)
 	}, node.name)!
 	mut expanded_names := map[string]bool{}
-	for name, value in node.attributes {
+	for name, raw_value in node.attributes {
+		value := prepared.attribute_value(raw_value)!
 		attribute_prefix, local_name := xml_qualified_name_parts(name)
 		attribute_namespace := if name == 'xmlns' || attribute_prefix == 'xmlns' {
 			xmlns_namespace_uri
@@ -75,9 +77,13 @@ fn xml_append_vlib_node(parent &dom.Node, node vxml.XMLNode, inherited_namespace
 		} else {
 			''
 		}
-		expanded_name := '${attribute_namespace}\x00${local_name}'
-		if expanded_name in expanded_names { return error('duplicate XML attribute ${name}') }
-		expanded_names[expanded_name] = true
+		// vlib already rejects duplicate raw names. Only two author prefixes
+		// bound to the same namespace can introduce an additional collision.
+		if attribute_prefix !in ['', 'xml', 'xmlns'] {
+			expanded_name := '${attribute_namespace}\x00${local_name}'
+			if expanded_name in expanded_names { return error('duplicate XML attribute ${name}') }
+			expanded_names[expanded_name] = true
+		}
 		element.set_attribute_ns_for_bindings(if attribute_namespace == '' {
 			none
 		} else {
@@ -100,17 +106,16 @@ fn xml_append_vlib_children(parent &dom.Node, children []vxml.XMLNodeContents, n
 				mutable_parent.append_child(document.create_cdata_section(child.text)!.as_node())!
 			}
 			vxml.XMLComment {
-				if child.text.starts_with(prepared.marker) {
-					index := child.text[prepared.marker.len..].int()
-					if index < 0 || index >= prepared.special_nodes.len {
-						return error('invalid XML node marker')
-					}
-					special := prepared.special_nodes[index]
+				if special := prepared.special_node(child) {
 					if doctype := special.doctype {
 						if !parent.is_document() { return error('doctype inside XML element') }
 						xml_append_doctype(document, doctype)!
 					} else if special.is_comment {
 						mutable_parent.append_child(document.create_comment(special.data).as_node())!
+					} else if special.is_text {
+						mutable_parent.append_child(document.create_text_node(special.data).as_node())!
+					} else if special.is_cdata {
+						mutable_parent.append_child(document.create_cdata_section(special.data)!.as_node())!
 					} else {
 						mutable_parent.append_child(document.create_processing_instruction(special.target, special.data)!.as_node())!
 					}

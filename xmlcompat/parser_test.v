@@ -15,18 +15,46 @@ fn parsed_test_root(source string) !vxml.XMLNode {
 	document := parse(source, resolve_test_entity)!
 	for child in document.children {
 		if child is vxml.XMLNode {
-			return child
+			return resolved_test_node(document, child)!
 		}
 	}
 	return error('missing root')
 }
 
+// Exercise the public payload-resolution boundary used by the DOM adapter.
+// Processing instructions and doctypes keep their marker because vlib's tree
+// has no matching node variant; callers inspect them through special_node.
+fn resolved_test_node(document Document, node vxml.XMLNode) !vxml.XMLNode {
+	mut attributes := map[string]string{}
+	for name, value in node.attributes { attributes[name] = document.attribute_value(value)! }
+	mut children := []vxml.XMLNodeContents{cap: node.children.len}
+	for child in node.children {
+		match child {
+			vxml.XMLNode { children << resolved_test_node(document, child)! }
+			vxml.XMLComment {
+				if special := document.special_node(child) {
+					if special.is_text {
+						children << special.data
+					} else if special.is_cdata {
+						children << vxml.XMLCData{ text: special.data }
+					} else if special.is_comment {
+						children << vxml.XMLComment{ text: special.data }
+					} else {
+						children << child
+					}
+				} else {
+					children << child
+				}
+			}
+			else { children << child }
+		}
+	}
+	return vxml.XMLNode{ name: node.name, attributes: attributes, children: children }
+}
+
 fn parsed_test_special(document Document, child vxml.XMLNodeContents) SpecialNode {
 	comment := child as vxml.XMLComment
-	assert comment.text.starts_with(document.marker)
-	index := comment.text[document.marker.len..].int()
-	assert index >= 0 && index < document.special_nodes.len
-	return document.special_nodes[index]
+	return document.special_node(comment) or { panic('missing special node') }
 }
 
 fn test_parse_preserves_mixed_content_and_whitespace_only_nodes() {
@@ -62,7 +90,7 @@ fn test_parse_preserves_comments_cdata_and_processing_instruction_order() {
 	before := parsed_test_special(document, document.children[0])
 	assert before.target == 'before'
 	assert before.data == 'document'
-	root := document.children[1] as vxml.XMLNode
+	root := resolved_test_node(document, document.children[1] as vxml.XMLNode)!
 	assert root.children.len == 5
 	assert (root.children[0] as string) == 'A'
 	assert (root.children[1] as vxml.XMLComment).text == '&amp;'
@@ -119,18 +147,18 @@ fn test_parse_rejects_malformed_documents_and_trailing_input() {
 }
 
 fn test_parse_keeps_marker_like_comments_and_wrapper_named_elements() {
-	document := parse('<!--vox-xml-special:not-an-index--><vox-xml-document><!--vox-xml-special:0--><?inside data?><item/></vox-xml-document>',
+	document := parse('<!--!not-an-index--><vox-xml-document><!--!0--><?inside data?><item/></vox-xml-document>',
 		resolve_test_entity)!
 	assert document.children.len == 2
 	before := parsed_test_special(document, document.children[0])
 	assert before.is_comment
-	assert before.data == 'vox-xml-special:not-an-index'
+	assert before.data == '!not-an-index'
 	root := document.children[1] as vxml.XMLNode
 	assert root.name == 'vox-xml-document'
 	assert root.children.len == 3
 	comment := parsed_test_special(document, root.children[0])
 	assert comment.is_comment
-	assert comment.data == 'vox-xml-special:0'
+	assert comment.data == '!0'
 	instruction := parsed_test_special(document, root.children[1])
 	assert !instruction.is_comment
 	assert instruction.target == 'inside'
@@ -149,4 +177,44 @@ fn test_parse_many_small_elements_without_losing_text_or_attributes() {
 		assert item.children.len == 1
 		assert (item.children[0] as string) == ' x '
 	}
+}
+
+fn test_parse_resolves_literal_attribute_markers_only_once() {
+	root := parsed_test_root('<root literal="@0" numeric="&#64;0" escaped="&amp;#64;0"><!--!0-->!0<![CDATA[!0]]></root>')!
+	assert root.attributes['literal'] == '@0'
+	assert root.attributes['numeric'] == '@0'
+	assert root.attributes['escaped'] == '&#64;0'
+	assert root.children.len == 3
+	assert (root.children[0] as vxml.XMLComment).text == '!0'
+	assert (root.children[1] as string) == '!0'
+	assert (root.children[2] as vxml.XMLCData).text == '!0'
+}
+
+fn test_parse_preserves_large_attribute_text_comment_and_cdata_payloads() {
+	path := 'M 0 0 L 1 1 '.repeat(6000)
+	text := ' leading\tpayload &amp; 文\n'.repeat(4000)
+	comment := ' comment &amp; payload '.repeat(4000)
+	cdata := ' <raw>&amp; ] '.repeat(6000)
+	root := parsed_test_root('<root path="${path}">${text}<!--${comment}--><![CDATA[${cdata}]]></root>')!
+	assert root.attributes['path'] == path
+	assert root.children.len == 3
+	assert (root.children[0] as string) == text.replace('&amp;', '&')
+	assert (root.children[1] as vxml.XMLComment).text == comment
+	assert (root.children[2] as vxml.XMLCData).text == cdata
+}
+
+fn test_normalized_source_stays_bounded_for_large_spaced_payloads() {
+	path := 'M 0 0 L 1 1 '.repeat(6000)
+	text := ' a b c d '.repeat(8192)
+	assert path.len >= 65536
+	assert text.len >= 65536
+	prepared := xml_prepare_source('<root path="${path}">${text}</root>', resolve_test_entity)!
+	// Each payload is represented once outside vlib's lexical stream. This
+	// bounds the allocation regression from encoding every whitespace byte.
+	assert prepared.source.len <= 1024
+	assert prepared.attribute_values.len == 1
+	assert prepared.attribute_values[0] == path
+	assert prepared.special_nodes.len == 1
+	assert prepared.special_nodes[0].is_text
+	assert prepared.special_nodes[0].data == text
 }
