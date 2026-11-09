@@ -6521,6 +6521,24 @@ pub fn interpolate_discrete(from &dom.StyleValue, to &dom.StyleValue, delta f64,
 pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from &dom.StyleValue, a_to &dom.StyleValue, delta f64, allow_discrete AllowDiscrete) ?&dom.StyleValue {
 	from := with_keyword_values_resolved_boundary(element, property_id, a_from)
 	to := with_keyword_values_resolved_boundary(element, property_id, a_to)
+	// Anchor functions produce lengths at used-value time. Retain both live
+	// queries in the interpolated calculation instead of treating them as
+	// discrete keywords or freezing their current geometry.
+	if property_id in [.left,.right,.top,.bottom,.width,.height,.min_width,.max_width,.min_height,.max_height,.margin_left,.margin_right,.margin_top,.margin_bottom] {
+		from_value := style_value_logic_from_dom(property_id,from) or { return none }
+		to_value := style_value_logic_from_dom(property_id,to) or { return none }
+		from_anchor := from_value is AnchorStyleValue || from_value is AnchorSizeStyleValue
+			|| (from_value is CalculatedStyleValue && from_value.contains_anchor_functions())
+		to_anchor := to_value is AnchorStyleValue || to_value is AnchorSizeStyleValue
+			|| (to_value is CalculatedStyleValue && to_value.contains_anchor_functions())
+		if from_anchor || to_anchor {
+			if delta == 0 { return unsafe { from } }
+			if delta == 1 { return unsafe { to } }
+			text := 'calc(${serialize_a_number(1-delta)} * (${from_value.serialize(.normal)}) + ${serialize_a_number(delta)} * (${to_value.serialize(.normal)}))'
+			value := parse_css_value_logic(property_id,text) or { return none }
+			return dom_style_value_from_value_logic(value)
+		}
+	}
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
 	match animation_type_from_longhand_property(property_id) {
