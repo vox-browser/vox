@@ -2296,3 +2296,33 @@ pkg-config; link/readelf/ldd checks find no Skia dependency, with FreeType,
 libm and libc as direct libraries. Full-browser integration still uses Skia;
 its canvas/shadow bridges remain compiled. See the [native cases, guarded
 comparisons and component dependency proof](https://github.com/vox-browser/vox-tests/blob/b230c6245b878cb5cfaac64b1ed5c2debb8c20da/evidence/gg-migration/large-direct-source-rescale-20261109.json).
+
+
+### Near-integer sources in real large-filter rescale passes (2026-11-09)
+
+`c03df8cc6` retains nearly integer source transforms during actual downsampling,
+including deferred P3 conversion, paint alpha and incoming color effects.
+Exact integer translations without pending effects keep their raw-pixel path.
+Default sampling retains native N32 shader-context eligibility; mipmapped
+sources and deferred paint alpha use the raster pipeline.
+
+At seed 20270121 the baseline accepts 78 of 500 requests; the candidate
+matches 469 of that same cohort. Final macOS and Linux C cohorts each match
+1,929 of 2,000 at seed 20270122, declining 71. Optimized macOS/no-GC matches
+960 of 1,000 at seed 20270123, declining 40. Counts include no-ops; completed
+cohorts retain unchanged inputs under the 3 GiB guard. Twenty-three native
+fixtures verify on each platform, covering both scale directions around 1,
+near-limit and larger sigmas, exact composed transforms with color effects,
+raw-pixel reuse, a rejected negative shadow blur and an offscreen shadow.
+The former near-integer decline now has a positive native expectation;
+the skewed control remains atomic.
+
+Focused C suites on both platforms, macOS FastC, Linux browser typechecking
+and HTML canvas integration pass. The initial browser check hit a concurrent
+layout edit; the receipt retains that failure and the successful retry after
+its correction. The C FMA audit finds zero contracted operations (189 explicit).
+The standalone Linux production/no-GC executable runs all eleven registered
+image test functions with Skia unavailable to pkg-config; link/readelf/ldd
+checks find no Skia dependency, with FreeType, libm and libc as direct libraries.
+Full-browser integration still uses Skia. See the [native cases, guarded
+comparisons, integration retry and component linkage](https://github.com/vox-browser/vox-tests/blob/620abd5a99c04452effdd18a4d7be01f786f1b7e/evidence/gg-migration/large-near-source-rescale-20261109.json).
