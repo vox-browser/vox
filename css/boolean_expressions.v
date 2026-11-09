@@ -114,6 +114,7 @@ pub enum BooleanExpressionKind {
 	supports_env
 	supports_at_rule
 	style_query_function
+	scroll_state_query_function
 }
 
 @[heap]
@@ -123,6 +124,8 @@ pub mut:
 	text                           string
 	matches                        MatchResult = .unknown
 	children                       []&BooleanExpression
+	scroll_state_feature_name      string
+	scroll_state_feature_value     string
 	size_feature_name              string
 	media_feature_name             string
 	media_feature_kind             MediaFeatureEvalKind
@@ -331,6 +334,9 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 	match expression.kind {
 		.general_enclosed, .constant, .supports_declaration, .supports_selector,
 		.supports_font_tech, .supports_font_format, .supports_env, .supports_at_rule {
+			if expression.scroll_state_feature_name != '' {
+				return evaluate_scroll_state_feature(expression, context)
+			}
 			if expression.style_feature_is_range {
 				return evaluate_style_range(expression, context)
 			}
@@ -404,7 +410,7 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 			}
 			return .unknown
 		}
-		.style_query_function {
+		.style_query_function, .scroll_state_query_function {
 			if expression.children.len == 0 {
 				return .unknown
 			}
@@ -416,7 +422,9 @@ pub fn (expression &BooleanExpression) evaluate(context BooleanExpressionEvaluat
 pub fn (expression &BooleanExpression) collect_container_query_feature_requirements(mut requirements ContainerQueryFeatureRequirements) {
 	match expression.kind {
 		.general_enclosed {
-			if expression.style_feature_is_range {
+			if expression.scroll_state_feature_name != '' {
+				requirements.requires_scroll_state_container = true
+			} else if expression.style_feature_is_range {
 				requirements.requires_style_container = true
 			} else if _ := expression.style_feature_property {
 				requirements.requires_style_container = true
@@ -426,7 +434,7 @@ pub fn (expression &BooleanExpression) collect_container_query_feature_requireme
 				requirements.has_unknown_or_unsupported_feature = true
 			}
 		}
-		.not, .in_parens, .and, .or, .style_query_function {
+		.not, .in_parens, .and, .or, .style_query_function, .scroll_state_query_function {
 			for child in expression.children {
 				child.collect_container_query_feature_requirements(mut requirements)
 			}
@@ -459,6 +467,9 @@ pub fn (expression &BooleanExpression) to_string() string {
 		}
 		.or {
 			boolean_expression_children_to_string(expression.children, ' or ')
+		}
+		.scroll_state_query_function {
+			'scroll-state(${expression.children[0].to_string()})'
 		}
 		.style_query_function {
 			if expression.children.len == 0 {
@@ -530,6 +541,10 @@ pub fn (expression &BooleanExpression) dump(indent_levels int) string {
 			for child in expression.children {
 				builder.write_string(child.dump(indent_levels + 1))
 			}
+		}
+		.scroll_state_query_function {
+			builder.write_string('${indent}ScrollStateQueryFunction:\n')
+			for child in expression.children { builder.write_string(child.dump(indent_levels + 1)) }
 		}
 		.style_query_function {
 			builder.write_string('${indent}StyleQueryFunction:\n')

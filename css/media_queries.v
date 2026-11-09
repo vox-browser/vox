@@ -120,6 +120,7 @@ enum BooleanExpressionParseTest {
 	media_in_parens
 	if_test
 	container_query_feature
+	scroll_state_feature
 	style_feature
 }
 
@@ -224,6 +225,9 @@ fn (mut parser Parser) parse_boolean_expression_group(mut tokens SupportsTokenSt
 			if test := parser.parse_container_query_feature(mut tokens) {
 				return test
 			}
+		}
+		.scroll_state_feature {
+			if test := parser.parse_scroll_state_feature(mut tokens) { return test }
 		}
 		.style_feature {
 			if test := parser.parse_style_feature(mut tokens) {
@@ -433,14 +437,14 @@ fn (mut parser Parser) parse_general_enclosed(mut tokens SupportsTokenStream, re
 			return none
 		}
 		tokens = transaction
-		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
+		return BooleanExpression.create_general_enclosed(if first_token.original_source_text() != '' { first_token.original_source_text() } else { first_token.to_string() }, result)
 	}
 	if first_token.is_block() && first_token.block().is_paren() {
 		if !component_values_contain_only_any_value(first_token.block().value) {
 			return none
 		}
 		tokens = transaction
-		return BooleanExpression.create_general_enclosed(first_token.to_string(), result)
+		return BooleanExpression.create_general_enclosed(if first_token.original_source_text() != '' { first_token.original_source_text() } else { first_token.to_string() }, result)
 	}
 	return none
 }

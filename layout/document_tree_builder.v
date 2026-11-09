@@ -712,6 +712,8 @@ fn install_document_layout_hook_with_callback(document &dom.Document,
 		style_did_update: document_layout_style_did_update
 		retire_native_layout: retire_native_document_layout
 		commit_position_options: commit_document_position_try_options
+		snapshot_scroll_state_queries: snapshot_document_scroll_state_queries
+		record_relative_scroll: record_document_relative_scroll
 	})
 }
 

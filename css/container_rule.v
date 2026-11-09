@@ -179,6 +179,16 @@ fn (rule &CSSRule) container_conditions_match(element dom.AbstractElement) bool 
 	return false
 }
 
+pub fn (rule &CSSRule) container_rule_contains_scroll_state_feature() bool {
+	for condition in rule.container_conditions {
+		if query := condition.container_query {
+			if query.feature_requirements.requires_scroll_state_container { return true }
+		}
+	}
+	if parent := rule.parent_container_rule() { return parent.container_rule_contains_scroll_state_feature() }
+	return false
+}
+
 fn (rule &CSSRule) parent_container_rule() ?&CSSRule {
 	if rule.parent_container_rule_cache_valid {
 		return rule.cached_parent_container_rule
@@ -893,6 +903,26 @@ fn (mut parser Parser) parse_container_query_feature(mut tokens SupportsTokenStr
 	mut transaction := tokens
 	transaction.discard_whitespace()
 	first_token := transaction.next_token() or { return none }
+
+	if first_token.is_function() && first_token.function().name.to_lower() == 'scroll-state' {
+		function := first_token.function()
+		mut inner := SupportsTokenStream.from_values(function.value)
+		mut condition := parser.parse_scroll_state_feature(mut inner)
+		inner.discard_whitespace()
+		if condition == none || inner.has_next_token() {
+			inner = SupportsTokenStream.from_values(function.value)
+			condition = parser.parse_boolean_expression(mut inner, .unknown, .scroll_state_feature)
+		}
+		child := condition or { return none }
+		inner.discard_whitespace()
+		if inner.has_next_token() { return none }
+		mut requirements := ContainerQueryFeatureRequirements{}
+		child.collect_container_query_feature_requirements(mut requirements)
+		if requirements.has_unknown_or_unsupported_feature { return none }
+		transaction.discard_a_token()
+		tokens = transaction
+		return &BooleanExpression{kind: .scroll_state_query_function, children: [child]}
+	}
 
 	// `style( <style-query> )`
 	if first_token.is_function() && first_token.function().name.to_lower() == 'style' {

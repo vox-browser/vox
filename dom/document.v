@@ -1826,6 +1826,10 @@ pub type DocumentLayoutUpdateCallback = fn (voidptr, &Document, f64, f64, bool) 
 
 pub type DocumentLayoutStyleUpdateCallback = fn (voidptr, &Document)
 
+pub type DocumentScrollStateSnapshotCallback = fn (voidptr, &Document, bool) bool
+
+pub type DocumentRelativeScrollCallback = fn (voidptr, &Document, ?&Element, CSSPixelPoint_)
+
 pub type DocumentLayoutRetireCallback = fn (voidptr)
 
 pub type DocumentRenderedTextCallback = fn (voidptr, &Document, &Element) string
@@ -1838,6 +1842,8 @@ pub:
 	// Releases a native layout publisher; the argument is its concrete handle.
 	retire_native_layout DocumentLayoutRetireCallback = unsafe { nil }
 	commit_position_options DocumentLayoutStyleUpdateCallback = unsafe { nil }
+	snapshot_scroll_state_queries DocumentScrollStateSnapshotCallback = unsafe { nil }
+	record_relative_scroll DocumentRelativeScrollCallback = unsafe { nil }
 }
 
 pub struct DocumentRenderedTextHook {
@@ -7653,6 +7659,7 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 		d.update_style()
 		if d.layout_is_up_to_date() {
 			d.invalidate_pending_size_query_dependents()
+			_ = d.snapshot_scroll_state_queries(true)
 			if d.needs_style_update_after_layout() {
 				continue
 			}
@@ -7729,6 +7736,7 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 		}
 
 		d.invalidate_pending_size_query_dependents()
+		_ = d.snapshot_scroll_state_queries(true)
 		// A scroll() timeline can become active, inactive or move once its
 		// source has committed geometry. Chromium validates timelines after
 		// layout and runs style and layout again within the same frame; sample
@@ -7748,6 +7756,17 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 
 pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
 	d.layout_update_hook_ = hook
+}
+
+pub fn (d &Document) record_relative_scroll_for_queries(element ?&Element, delta CSSPixelPoint_) {
+	hook := d.layout_update_hook_ or { return }
+	if hook.record_relative_scroll != unsafe { nil } { hook.record_relative_scroll(hook.target, d, element, delta) }
+}
+
+pub fn (d &Document) snapshot_scroll_state_queries(new_containers_only bool) bool {
+	hook := d.layout_update_hook_ or { return false }
+	if hook.snapshot_scroll_state_queries == unsafe { nil } { return false }
+	return hook.snapshot_scroll_state_queries(hook.target, d, new_containers_only)
 }
 
 pub fn (d &Document) record_last_successful_position_options() {

@@ -10975,6 +10975,8 @@ pub mut:
 @[heap]
 pub struct StyleComputer {
 pub mut:
+	scroll_state_query_containers_ map[voidptr]&ScrollStateQueryContainer
+	relative_scroll_query_directions_ map[u64]u8
 	position_try_override_ ?PositionTryStyleOverride
 	document_                                            &dom.Document = unsafe { nil }
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }

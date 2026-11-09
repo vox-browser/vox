@@ -2461,6 +2461,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 		if container_rule := rule_to_run.container_rule {
 			if !container_rule.container_rule_contains_size_feature()
 				&& !container_rule.container_rule_contains_style_feature()
+				&& !container_rule.container_rule_contains_scroll_state_feature()
 				&& !container_rule.container_rule_matches(abstract_element) {
 				continue
 			}
@@ -2549,7 +2550,7 @@ fn collect_matching_rules_with_storage(style_computer &StyleComputer, abstract_e
 			if container_rule := rule_to_run.container_rule {
 				contains_size_feature := container_rule.container_rule_contains_size_feature()
 				contains_style_feature := container_rule.container_rule_contains_style_feature()
-				if contains_size_feature || contains_style_feature {
+				if contains_size_feature || contains_style_feature || container_rule.container_rule_contains_scroll_state_feature() {
 					mut subject := unsafe { &dom.Element(abstract_element.element()) }
 					if contains_size_feature {
 						subject.set_style_depends_on_size_container_query()

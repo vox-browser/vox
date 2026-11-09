@@ -926,7 +926,19 @@ fn computed_custom_property_for_cssom(owner dom.AbstractElement, name string) ?&
 		mut document := unsafe { &dom.Document(owner.document()) }
 		mut computer := css_style_computer_for(document)
 		if document.element_needs_style_update(element) { document.update_style() }
+		// A newly observed scroll-state container needs its first committed
+		// geometry before custom-property queries can expose a matching rule.
+		scope := css_style_scope_for(owner)
+		if computer.scroll_state_query_containers_.len > 0
+			|| (scope.have_size_container_queries() && !document.layout_is_up_to_date()) {
+			document.update_layout(.resolved_css_style_declaration_property)
+		}
 		computer.materialize_hidden_styles_for_query(element)
+		if owner.pseudo_element() != none {
+			// CSSOM exposes pseudo styles even when content:none prevents a box.
+			// Refresh its custom-property environment without creating that box.
+			_ = computer.compute_style_with_seeded_ancestors(owner)
+		}
 	}
 	if value := owner.get_custom_property(name) {
 		return value

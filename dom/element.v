@@ -4142,7 +4142,12 @@ fn (mut e Element) el_scroll_with_snap_strategy(x_ f64, y_ f64, behavior ScrollB
 		offset.set_x(x)
 		offset.set_y(y)
 		if strategy := snap_strategy {
+			before := pb.scroll_offset()
 			pb.set_scroll_offset_with_snap_strategy(offset, strategy)
+			if strategy.type_ == .end_position_and_direction {
+				after := pb.scroll_offset()
+				document.record_relative_scroll_for_queries(&e, CSSPixelPoint_{x_: after.x() - before.x(), y_: after.y() - before.y()})
+			}
 		} else {
 			pb.set_scroll_offset(offset)
 		}

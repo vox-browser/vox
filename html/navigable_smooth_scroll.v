@@ -260,6 +260,10 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_an_element(element &dom.El
 	document.update_layout(.element_scroll)
 	mut paintable := element.paintable_box() or { return model.resolved_scroll_promise() }
 	destination := paintable.select_scroll_snap_destination(position, strategy)
+	if strategy.type_ == .end_position_and_direction {
+		before := paintable.scroll_offset()
+		document.record_relative_scroll_for_queries(element, dom.CSSPixelPoint_{x_: destination.position.x() - before.x(), y_: destination.position.y() - before.y()})
+	}
 	paintable.record_scroll_snap_destination(destination)
 	return model.perform_main_thread_scroll(compositor.AsyncScrollNodeStableId{
 		node_id: u64(element.as_node().unique_id())

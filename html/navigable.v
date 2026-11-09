@@ -2282,6 +2282,10 @@ pub fn (mut model NavigableModel) perform_a_scroll_of_the_viewport_with_options(
 	paintable := document.as_node().paintable_box() or { return model.resolved_scroll_promise() }
 	clamped := paintable.clamp_scroll_offset(requested)
 	destination := mutable_document.adjust_viewport_scroll_destination(clamped, strategy)
+	if strategy.type_ == .end_position_and_direction {
+		final_position := paintable.clamp_scroll_offset(destination.position)
+		mutable_document.record_relative_scroll_for_queries(none, dom.CSSPixelPoint_{x_: final_position.x() - viewport.x, y_: final_position.y() - viewport.y})
+	}
 	return model.perform_main_thread_scroll(compositor.AsyncScrollNodeStableId{
 		node_id: u64(document.as_node().unique_id())
 		kind: .viewport

@@ -787,6 +787,7 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 		// ResizeObserver delivery reaches a fixed point. The viewport paintable
 		// owns the filtered box list populated by Document::update_layout().
 		mut resize_observer_depth := 0
+		mut did_snapshot_post_layout_state := false
 		for {
 			mutable_document.update_layout(.html_event_loop_rendering_update)
 			// A callback can detach a document while this update is running.
@@ -794,6 +795,12 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 			if !navigable.active_document_is(document) {
 				break
 			}
+
+			if !did_snapshot_post_layout_state {
+				did_snapshot_post_layout_state = true
+				if mutable_document.snapshot_scroll_state_queries(false) { continue }
+			}
+			did_snapshot_post_layout_state = false
 
 			mut had_initial_visible_content_visibility_determination := false
 			if document.document_element() != none {
