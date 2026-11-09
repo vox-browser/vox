@@ -22,11 +22,11 @@ mut:
 	image_urls         []string
 }
 
-fn (mut app BrowserApp) cancel_page_preload() {
-	if mut pending := app.pending_page_preload {
+fn (mut navigation NavigationController) cancel_page_preload() {
+	if mut pending := navigation.pending_page_preload {
 		if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
 	}
-	app.pending_page_preload = none
+	navigation.pending_page_preload = none
 }
 
 fn (mut app BrowserApp) commit_preloaded_page(loaded LoadedPage, add_history bool) {

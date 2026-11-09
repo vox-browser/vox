@@ -219,9 +219,14 @@ fn (app &BrowserApp) javascript_tasks_have_unadopted_paint() bool {
 
 // Stop replaying the adopted commands and let their scene be reused.
 fn (mut app BrowserApp) release_paint_commands() {
-	app.scroll_raster_keys.release()
-	app.paint_commands = []layout.PaintCommand{}
-	app.paint_display_list = unsafe { nil }
-	layout.release_display_list_scene(app.paint_scene)
-	app.paint_scene = unsafe { nil }
+	mut session := app.document_session()
+	session.release_paint_commands()
+}
+
+fn (mut session DocumentSession) release_paint_commands() {
+	session.scroll_raster_keys.release()
+	session.paint_commands = []layout.PaintCommand{}
+	session.paint_display_list = unsafe { nil }
+	layout.release_display_list_scene(session.paint_scene)
+	session.paint_scene = unsafe { nil }
 }

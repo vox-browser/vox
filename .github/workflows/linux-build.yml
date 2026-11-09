@@ -173,6 +173,24 @@ jobs:
                 layout/lazy_dom_visual_lines_test.v
           done
 
+      - name: Check document session lifecycles
+        timeout-minutes: 60
+        run: |
+          # The same owner must survive suspension and retire exactly once in
+          # collector and production arena builds, including external frames.
+          export VOX_ARENA_POISON=1
+          for gc in boehm prealloc; do
+            python3 tools/run_memory_bounded.py \
+              --lock "$RUNNER_TEMP/vox-session-$gc.lock" \
+              --report "$RUNNER_TEMP/vox-session-$gc.json" --timeout 1740 -- \
+              python3 tools/test_linux_native.py --gc "$gc" \
+                document/session_test.v \
+                navigation/controller_test.v \
+                navigation/back_forward_cache_test.v \
+                navigation/retire_before_styles_test.v \
+                browserapp/browser_zoom_test.v
+          done
+
       - name: Check parser script lifecycles
         timeout-minutes: 60
         run: |
@@ -211,7 +229,8 @@ jobs:
                                                     'vox-ownership-tests.json',
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json',
                                                     'vox-recording-boehm.json', 'vox-recording-prealloc.json',
-                                                    'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json')]
+                                                    'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json',
+                                                    'vox-session-boehm.json', 'vox-session-prealloc.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))

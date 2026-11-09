@@ -43,9 +43,11 @@ fn test_domain_zoom_restores_on_navigation_history_and_browser_restart() {
 	app.history_go(-1)
 	assert app.document.url_string() == 'https://first.test/start'
 	assert app.page_zoom == 1.25
+	assert app.page_model.client().zoom_level() == 1.25
 	assert app.document.viewport_rect().width == 640
 	app.history_go(1)
 	assert app.page_zoom == 0.9
+	assert app.page_model.client().zoom_level() == 0.9
 	domain_zoom_test_load(mut app, 'http://first.test:8080/other')
 	assert app.page_zoom == 1.25
 	assert app.document.viewport_rect().height == 480
@@ -239,4 +241,16 @@ fn test_zoom_scales_inner_scrolling_and_viewport_wheel_coordinates() {
 		0, 0, 0, 0, 40, false) == .handled
 	assert app.scroll_y == 40 && document.viewport_rect().y == 20
 	assert scroller.el_scroll_offset().y() == 20
+}
+
+fn test_publishing_session_synchronizes_unchanged_zoom_without_rescaling_scroll() {
+	mut app := domain_zoom_test_app()!
+	defer { app.dispose_browser_tab() }
+	mut client := app.page_model.client()
+	client.zoom_level_ = 2
+	app.scroll_y = 120
+	app.set_browser_zoom(1)
+	assert app.page_zoom == 1
+	assert client.zoom_level() == 1
+	assert app.scroll_y == 120
 }

@@ -118,7 +118,7 @@ fn test_cached_pages_receive_persisted_page_transition_events() {
 	events := back_forward_cache_test_window_events(app.document)
 	app.install_loaded_page(back_forward_cache_test_page('second'), true)
 	assert events.entries == ['pagehide:true']
-	assert app.back_forward_cache.pages[0].document.visibility_state() == 'hidden'
+	assert app.back_forward_cache.pages[0].session.document.visibility_state() == 'hidden'
 	app.history_go(-1)
 	assert events.entries == ['pagehide:true', 'pageshow:true']
 	assert app.document.visibility_state() == 'visible'
@@ -172,7 +172,7 @@ fn test_a_new_navigation_discards_forward_pages() {
 	second := app.document
 	app.history_go(-1)
 	assert app.back_forward_cache.pages.len == 1
-	assert voidptr(app.back_forward_cache.pages[0].document) == voidptr(second)
+	assert voidptr(app.back_forward_cache.pages[0].session.document) == voidptr(second)
 	app.install_loaded_page(back_forward_cache_test_page('third'), true)
 	assert app.history.len == 2
 	// The second page's entry was replaced; only the first page is kept.
@@ -221,7 +221,7 @@ fn test_reinstalled_entries_and_reloads_are_not_restored_from_stale_pages() {
 		markup:       '<!doctype html><title>changed</title>'
 		content_type: 'text/html'
 	}
-	cached_first := app.back_forward_cache.pages[0].document
+	cached_first := app.back_forward_cache.pages[0].session.document
 	app.history_go(-1)
 	assert voidptr(app.document) != voidptr(cached_first)
 	assert app.document.title() == 'changed'

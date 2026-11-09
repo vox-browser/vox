@@ -167,11 +167,17 @@ fn (mut app BrowserApp) invalidate_native_media_frame(mut document dom.Document,
 }
 
 fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
+	mut session := app.document_session()
+	session.install_media_playback(element)
+}
+
+fn (mut session DocumentSession) install_media_playback(element &dom.Element) {
+	if session.state == .retired || voidptr(element.document()) != voidptr(session.document) { return }
 	install_video_poster_fetch_hook(element)
 	$if macos {
 		if !element.is_html_element() || element.local_name() !in ['audio', 'video'] { return }
 		mut media := html.html_media_element_for_dom_element(element) or { return }
-		app.install_native_media_player(element)
+		session.install_native_media_player(element)
 		// Parsed and fragment-parsed owners only now have a media model, after
 		// their src attribute and insertion; run the skipped selection.
 		media.queue_resource_selection_if_connected_and_empty()
@@ -179,13 +185,19 @@ fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
 }
 
 fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
+	mut session := app.document_session()
+	session.install_native_media_player(element)
+}
+
+fn (mut session DocumentSession) install_native_media_player(element &dom.Element) {
+	if session.state == .retired || voidptr(element.document()) != voidptr(session.document) { return }
 	$if macos {
 		mut media := html.html_media_element_for_dom_element(element) or { return }
-		for player in app.media_players {
+		for player in session.media_players {
 			if voidptr(player.media) == voidptr(media) { return }
 		}
 		player := &BrowserMediaPlayback{ media: media, element: element }
-		app.media_players << player
+		session.media_players << player
 		media.set_playback_manager_hooks(html.MediaPlaybackManagerHooks{
 			can_play_type:       browser_native_media_type
 			reset:               fn [player] () {
@@ -231,33 +243,43 @@ fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
 }
 
 fn (mut app BrowserApp) install_document_media_playback() {
+	mut session := app.document_session()
+	session.install_document_media_playback()
+}
+
+fn (mut session DocumentSession) install_document_media_playback() {
 	// Media inserted after load (innerHTML, script-moved parsed fragments) may
 	// never get a script wrapper, so configure it from its insertion steps.
-	mut document := app.document
-	document.set_media_element_inserted_hook(fn [app] (element &dom.Element) {
+	mut document := session.document
+	document.set_media_element_inserted_hook(fn [session] (element &dom.Element) {
 		// Materializing the owner can build its controls shadow tree, so do not
 		// mutate the tree from inside the insertion steps.
-		html.queue_an_element_task(element, .dom_manipulation, fn [app, element] () {
-			mut owner := unsafe { &BrowserApp(app) }
-			if voidptr(element.document()) != voidptr(owner.document)
+		html.queue_an_element_task(element, .dom_manipulation, fn [session, element] () {
+			mut owner := unsafe { &DocumentSession(session) }
+			if owner.state == .retired || voidptr(element.document()) != voidptr(owner.document)
 				|| !element.as_node().is_connected() {
 				return
 			}
 			owner.install_media_playback(element)
 		})
 	})
-	root := unsafe { &dom.ParentNode(app.document) }
+	root := unsafe { &dom.ParentNode(session.document) }
 	list := root.query_selector_all('audio,video') or { return }
 	for index in 0 .. list.length() {
 		node := list.item(index) or { continue }
 		element := node.as_element() or { continue }
-		app.install_media_playback(element)
+		session.install_media_playback(element)
 	}
 }
 
 fn (mut app BrowserApp) close_media_playback() {
-	for mut player in app.media_players { player.close() }
-	app.media_players = []&BrowserMediaPlayback{}
+	mut session := app.document_session()
+	session.close_media_playback()
+}
+
+fn (mut session DocumentSession) close_media_playback() {
+	for mut player in session.media_players { player.close() }
+	session.media_players = []&BrowserMediaPlayback{}
 }
 
 fn (mut app BrowserApp) poll_media_playback() {
