@@ -16,7 +16,7 @@ fn validate_small_lossless_file(file FileHeader) ! {
 	if file.size.width == 0 || file.size.height == 0 || file.size.width > 65536 || file.size.height > 65536 || u64(file.size.width) * u64(file.size.height) * 4 > 67108864 {
 		return error('JPEG XL RGBA image exceeds output limits')
 	}
-	if metadata.animation != none || metadata.preview != none || metadata.xyb_encoded || metadata.bit_depth.floating_point || metadata.bit_depth.bits_per_sample != 8 {
+	if metadata.animation != none || metadata.xyb_encoded || metadata.bit_depth.floating_point || metadata.bit_depth.bits_per_sample != 8 {
 		return error('JPEG XL file requires unsupported image services')
 	}
 	if color.want_icc || color.color_space !in [.rgb, .gray] || color.white_point != .d65 || color.have_gamma || color.transfer_function != .srgb || (color.color_space == .rgb && color.primaries != .srgb) {
@@ -59,6 +59,7 @@ fn decode_lossless_rgba_impl(input []u8, premultiply bool, small_only bool) !Rgb
 	mut reader := new_bit_reader(extract_codestream(input)!)
 	file := reader.read_file_header()!
 	validate_small_lossless_file(file)!
+	reader.skip_preview(file)!
 	context := file.frame_header_context()
 	mut frame := reader.read_frame_header(context)!
 	frame.postprocess(context)!
