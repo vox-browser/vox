@@ -9,7 +9,7 @@ import strings
 import time
 
 $if gcboehm ? {
-	fn C.GC_get_total_bytes() uint
+	fn C.GC_get_total_bytes() usize
 }
 
 $if linux || macos {

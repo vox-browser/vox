@@ -209,6 +209,7 @@ jobs:
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
       - name: Compare XML parser CPU and retained memory
+        id: xml_performance
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
         timeout-minutes: 45
         env:
@@ -225,6 +226,18 @@ jobs:
             --report "$RUNNER_TEMP/vox-xml-performance.json" --timeout 2640 -- \
             python3 tools/benchmark_xml_parser.py --gc prealloc --pairs 7 \
               --output "Build/linux/tests/prealloc/run-xml-performance-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: Preserve XML performance evidence immediately
+        if: ${{ always() && !cancelled() && matrix.gc == 'prealloc' && (steps.xml_performance.outcome == 'success' || steps.xml_performance.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: xml-performance-receipts
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/vox-xml-performance.json
+            Build/linux/tests/prealloc/run-xml-performance-${{ github.run_id }}-${{ github.run_attempt }}/*.json
+            Build/linux/tests/prealloc/run-xml-performance-${{ github.run_id }}-${{ github.run_attempt }}/*.log
 
       - name: Build Vox and run the headless smoke test
         id: production_build
