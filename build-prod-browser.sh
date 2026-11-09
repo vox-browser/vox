@@ -301,7 +301,7 @@ export V_MACOS_V3_NO_FALLBACK
 # graph while leaving pointer-free buffers atomic. Optimized forced-GC tests
 # cover nested token strings, CSSOM values and arena records. boehm_full
 # remains available as an ownership diagnostic.
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler" --lease-pid "$$")
+ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
 http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
 prealloc_modules=""
 # Every collector uses glyph-index lookup in the platform font bridge. Avoid

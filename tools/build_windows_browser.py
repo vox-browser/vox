@@ -47,8 +47,7 @@ def main():
          args.javascriptcore_dll.resolve()])
     run([sys.executable, repo / 'tools/build_linux_native.py', '--os', 'windows'])
     modules = subprocess.check_output(
-        [sys.executable, str(repo / 'tools/prepare_ui2.py'), compiler,
-         '--lease-pid', str(os.getpid())],
+        [sys.executable, str(repo / 'tools/prepare_ui2.py'), compiler],
         cwd=repo, env=environment, text=True).strip()
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -45,7 +45,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
             VOX_BUILD_TEST_COMPILER_LOG=str(self.compiler_log),
             VOX_BUILD_TEST_HELPER_LOG=str(self.helper_log),
             VOX_BUILD_TEST_MODULES=str(self.root / 'modules'),
-            VOX_BUILD_TEST_UI2_MODULES=str(self.root / 'ui2-dependency/modules'),
+            VOX_BUILD_TEST_LINUX_MODULES=str(self.root / 'linux-modules'),
             VOX_BUILD_TEST_SHELL=self.shell,
             VOX_BUILD_TEST_REENTER='0',
         )
@@ -62,8 +62,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
 
             with open(os.environ['VOX_BUILD_TEST_HELPER_LOG'], 'a') as log:
                 log.write(json.dumps({'argv': sys.argv[1:], 'cwd': os.getcwd(),
-                                      'v_bin': os.environ.get('V_BIN'),
-                                      'parent_pid': os.getppid()}) + '\\n')
+                                      'v_bin': os.environ.get('V_BIN')}) + '\\n')
             if (Path(sys.argv[1]).name == 'rebuild_browser.py'
                     and sys.argv[2:] == ['--build']
                     and os.environ['VOX_BUILD_TEST_REENTER'] == '1'):
@@ -73,9 +72,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                     [os.environ['VOX_BUILD_TEST_SHELL'], str(repo / 'build-linux-browser.sh')],
                     cwd=repo, env=dict(os.environ, VOX_BUILD_SUPERVISED='1'))
                 raise SystemExit(result.returncode)
-            if Path(sys.argv[1]).name == 'prepare_ui2.py':
-                print(os.environ['VOX_BUILD_TEST_UI2_MODULES'] + '|'
-                      + os.environ['VOX_BUILD_TEST_MODULES'])
+            if Path(sys.argv[1]).name == 'prepare_linux_modules.py':
+                print(os.environ['VOX_BUILD_TEST_LINUX_MODULES'])
             elif Path(sys.argv[1]).name.startswith('prepare_'):
                 print(os.environ['VOX_BUILD_TEST_MODULES'])
             if Path(sys.argv[1]).name == 'browser_backend.py':
@@ -128,9 +126,7 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         for preparation in preparations:
             self.assertEqual(preparation['argv'][1], str(compiler))
             self.assertEqual(preparation['cwd'], str(helper_cwd or self.caller))
-            if Path(preparation['argv'][0]).name == 'prepare_ui2.py':
-                self.assertEqual(preparation['argv'][2:],
-                                 ['--lease-pid', str(preparation['parent_pid'])])
+            self.assertEqual(preparation['argv'][2:], [])
 
     def test_unsupervised_build_delegates_to_supervisor(self):
         compiler = self.compiler(self.helpers / 'v')
@@ -142,13 +138,18 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
                          [[str(self.repo / 'tools/rebuild_browser.py'), '--build']])
         self.assertEqual(helpers[0]['v_bin'], str(compiler))
 
-    def test_ui2_snapshot_precedes_a_stale_shared_module(self):
+    def test_current_ui2_precedes_a_stale_linux_module(self):
         compiler = self.compiler(self.helpers / 'v')
-        selected = Path(self.environment['VOX_BUILD_TEST_UI2_MODULES']) / 'ui2/ui.v'
-        stale = Path(self.environment['VOX_BUILD_TEST_MODULES']) / 'ui2/ui.v'
-        for path, content in ((selected, 'reviewed UI2'), (stale, 'obsolete UI2')):
-            path.parent.mkdir(parents=True)
-            path.write_text(content)
+        current = self.root / 'current-ui2'
+        current.mkdir()
+        (current / 'ui.v').write_text('current UI2')
+        modules = Path(self.environment['VOX_BUILD_TEST_MODULES'])
+        modules.mkdir()
+        (modules / 'ui2').symlink_to(current, target_is_directory=True)
+        selected = modules / 'ui2/ui.v'
+        stale = Path(self.environment['VOX_BUILD_TEST_LINUX_MODULES']) / 'ui2/ui.v'
+        stale.parent.mkdir(parents=True)
+        stale.write_text('obsolete UI2')
         result = self.run_build()
         self.assert_compiler_selected(result, compiler)
         arguments = json.loads(self.compiler_log.read_text())['argv']
@@ -156,6 +157,8 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         resolved = next(Path(path) / 'ui2/ui.v' for path in paths
                         if (Path(path) / 'ui2/ui.v').is_file())
         self.assertEqual(resolved, selected)
+        (current / 'ui.v').write_text('updated UI2')
+        self.assertEqual(resolved.read_text(), 'updated UI2')
 
     def test_unsupervised_relative_compiler_survives_supervisor_directory_change(self):
         compiler = self.compiler(self.caller / 'toolchain/v')

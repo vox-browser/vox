@@ -34,59 +34,31 @@ UI2 RAM label; it stops on unmount. It does not invalidate the document painter.
 
 The vector, icon, native/custom embedding and input APIs live in
 [upstream UI2](https://github.com/vlang/ui2/blob/master/docs/embedding.md).
-Vox records its reviewed revision, Git tree and embedding API generation in
-[`dependency.json`](dependency.json). CI and local builds use that same lock.
-From the Vox checkout, create a separate dependency checkout so an existing UI2
-development branch and its local edits are preserved:
+Vox uses the latest upstream UI2 directly. Install it with `v install ui2` and
+update an existing installation with `v up ui2`. To use a separate checkout:
 
 ```sh
-ui2_revision=$(python3 tools/prepare_ui2.py --print-revision)
-git clone --no-checkout https://github.com/vlang/ui2.git ../vox-ui2
-git -C ../vox-ui2 fetch --depth 1 origin "$ui2_revision"
-git -C ../vox-ui2 checkout --detach "$ui2_revision"
-export UI2_SOURCE_DIR="$(cd ../vox-ui2 && pwd)"
+git clone --depth 1 https://github.com/vlang/ui2.git ../ui2
+export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
+# Refresh that checkout later:
+git -C "$UI2_SOURCE_DIR" pull --ff-only
 ```
 
-`tools/prepare_ui2.py` stages the locked Git contents without modifying UI2's
-sources. Each content-identified snapshot contains real files, so later checkout
-edits and other preparation calls cannot change an active build's UI2 inputs.
-The script prints a V module search path containing the UI2 snapshot followed by
-the separate compiler compatibility modules. Keep that path ahead of other
-shared module caches. UI2 APIs are consumed directly, without private source
-rewrites. Stable UI2 IDs are exposed as native view identifiers for
+`tools/prepare_ui2.py` links the selected checkout into the compiler module path.
+It creates no UI2 source snapshots, copies, revision locks or process leases.
+Local edits and updates are visible through the link immediately. Local builds
+use `UI2_SOURCE_DIR`, or `~/.vmodules/ui2` (`$VMODULES/ui2`) by default. CI fetches
+upstream HEAD for each run. The instruction benchmark uses that same fetched
+checkout for both variants and records the actual revision in its evidence.
+
+The script prints the module search path containing UI2 and the separate V/GG
+compiler compatibility modules. Keep it ahead of other shared module caches.
+Preparation checks for the UI2 module and embedding API files; the V compiler
+checks the APIs used by Vox. UI2 APIs are consumed directly without private
+source rewrites. Stable UI2 IDs are exposed as native view identifiers for
 accessibility/testing tools.
 
-Preparation rejects unsupported revisions, modified or untracked checkout
-files, and unsupported embedding API generations. Ignored build artifacts are
-excluded. Snapshots live outside `Build/`, under
-`${XDG_CACHE_HOME:-$HOME/.cache}/vox/ui2-snapshots/<digest>` (Windows uses
-`LOCALAPPDATA` when available). Set `VOX_UI2_CACHE_DIR` to choose another cache;
-paths resolving inside this checkout's `Build/` are rejected, including symlink
-aliases. Each snapshot has a `manifest.json` recording the revision, tree, API
-generation and every file's SHA-256 and Git mode. Reuse verifies those files;
-a damaged snapshot fails instead of being rewritten under active consumers.
-
-Every successful preparation retires snapshots beyond the two most recently
-used, preserving any snapshot leased by a live build or test process regardless
-of age. The drivers pass `--lease-pid` with their own PID and keep running through
-compilation. Standalone preparation defaults to its parent process; when using a
-shell command substitution, pass `--lease-pid "$$"` explicitly as below. Keep that
-process alive for as long as the returned path is needed; detached consumers
-must register their own PID before their parent exits. Leases for exited owners
-and interrupted preparation directories are removed on the next successful
-preparation. PID reuse may conservatively retain an extra snapshot until the
-replacement process exits. A cache lock serializes publication, registration
-and cleanup, so another preparation cannot retire inputs before their consumer
-is registered. Remove a damaged snapshot only after its consumers have exited.
-Legacy `Build/<platform>/ui2-snapshots` directories are no longer written; remove
-them after any consumers of those old paths have finished.
-
-To update UI2, review its embedding API and behavior, update `dependency.json`,
-and run the preparation and UI tests below before committing the new lock.
-The preparation script never checks out, resets or discards work in the selected
-dependency checkout.
-
-Check dependency staging and the Linux module-search contract without compiling
+Check dependency selection and the Linux module-search contract without compiling
 the browser:
 
 ```sh
@@ -124,7 +96,7 @@ Small component checks avoid compiling the document engine. Use the preparation
 script's complete printed search path in `-path`:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py --lease-pid "$$")
+ui2_modules=$(python3 tools/prepare_ui2.py)
 v -enable-globals -memory-limit 10G -cc clang \
   -path "$ui2_modules|.|@vmodules|@vlib" test browserui
 v -enable-globals -memory-limit 10G -cc clang -d vox_ui2 \

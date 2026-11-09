@@ -17,6 +17,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -129,11 +130,9 @@ class Run:
         candidate = os.environ.get("VOX_CI_CANDIDATE_SHA", "")
         runner_bytes = (ROOT / SCRIPT).read_bytes()
         self.select(baseline, runner_bytes)
-        # Read the selected source's lock only after switching the checkout.
-        # The candidate comparison below also requires identical build tools,
-        # including tools/ui2/dependency.json.
-        pins = dict(PINS, ui2=("vlang/ui2", read([
-            sys.executable, "tools/prepare_ui2.py", "--print-revision"])))
+        # Resolve UI2's current upstream HEAD for each run, then reuse that
+        # checkout for both variants and record its actual revision as evidence.
+        dependencies = dict(PINS, ui2=("vlang/ui2", "HEAD"))
         if candidate:
             if not re.fullmatch(r"[0-9a-f]{40}", candidate) or candidate == baseline:
                 raise ValueError("A candidate must be a distinct full SHA")
@@ -144,7 +143,7 @@ class Run:
                          "Tests/Browser/Brave/sites/stackoverflow", "native_jpegxl_rust")
             if shared:
                 raise ValueError("Build/observer/workload inputs differ:\n" + shared)
-        state = {"baseline": baseline, "candidate": candidate, "dependencies": pins, "builds": {}}
+        state = {"baseline": baseline, "candidate": candidate, "dependencies": dict(dependencies), "builds": {}}
         if (self.output / "state.json").exists():
             raise RuntimeError("Do not reuse an earlier attempt's evidence directory")
         save(self.output / "state.json", state)
@@ -159,8 +158,10 @@ class Run:
         ):
             self.command(name, command, bounded=False)
         deps = ROOT / "Build/ci-dependencies"
-        for relative, (repository, sha) in pins.items():
-            path = deps / relative
+        ui2_source = Path(os.environ.get("RUNNER_TEMP", tempfile.gettempdir())) / (
+            "vox-ui2-" + self.output.name)
+        for relative, (repository, sha) in dependencies.items():
+            path = ui2_source if relative == "ui2" else deps / relative
             if path.exists():
                 raise RuntimeError(f"Fresh dependency checkout required: {path}")
             path.mkdir(parents=True)
@@ -172,10 +173,13 @@ class Run:
                          cwd=path, bounded=False)
             self.command(name + "-checkout", ["git", "switch", "-c", "master", "FETCH_HEAD"],
                          cwd=path, bounded=False)
-            if read(["git", "rev-parse", "HEAD"], cwd=path) != sha:
+            actual = read(["git", "rev-parse", "HEAD"], cwd=path)
+            if sha != "HEAD" and actual != sha:
                 raise RuntimeError("Dependency pin mismatch")
+            state["dependencies"][relative] = (repository, actual)
+            save(self.output / "state.json", state)
         env = dict(os.environ, CC="clang", CXX="clang++", LADYBIRD_V_GC="boehm",
-                   VOX_CI_REAL_V=str(deps / "v/v"), UI2_SOURCE_DIR=str(deps / "ui2"),
+                   VOX_CI_REAL_V=str(deps / "v/v"), UI2_SOURCE_DIR=str(ui2_source),
                    VOX_LINUX_CFLAGS="-O2 -gline-tables-only")
         self.command("build-v", ["make", "-j1", "local=1", "VFLAGS=-memory-limit 10G"],
                      cwd=deps / "v", env=env)

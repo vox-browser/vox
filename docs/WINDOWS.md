@@ -24,11 +24,10 @@ blocked until the fixture paths are made portable.
 
 ## Dependencies and native build
 
-Install current V, Python 3, the reviewed UI2 revision from
-[`tools/ui2/dependency.json`](../tools/ui2/dependency.json), and the MinGW
-development packages. The [UI2 adapter guide](../tools/ui2/README.md) shows how to
-fetch the locked revision into a separate checkout while preserving local UI2
-work. In an MSYS2 MinGW64 shell, the native packages are:
+Install current V, Python 3, the latest upstream UI2 and the MinGW development
+packages. Use `v install ui2` for a new installation and `v up ui2` to update it.
+The [UI2 adapter guide](../tools/ui2/README.md) also covers separate checkouts.
+In an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
@@ -53,10 +52,10 @@ python tools/build_windows_browser.py \
 ```
 
 Set `V_BIN`, `UI2_SOURCE_DIR`, `CC`, `CXX`, `AR`, `OBJDUMP` or `DLLTOOL` to
-override tool discovery. UI2 is staged as unchanged files from the locked Git
-contents. The separate compiler compatibility modules still need permission to
-create symlinks; Windows Developer Mode supplies this for ordinary user
-accounts. Keep the native dependency DLL directories on PATH, or install their
+override tool discovery. UI2 is linked directly from the current checkout.
+UI2 and compiler compatibility modules need permission to create symlinks;
+Windows Developer Mode supplies this for ordinary user accounts. Keep the native
+dependency DLL directories on PATH, or install their
 DLLs beside Vox.
 JavaScriptCore's dependencies must come from its matching WebKit distribution.
 The GCC runtime DLLs must match the compiler used for Vox's native bridges.
@@ -95,7 +94,7 @@ the import library remain under `Build/deps/windows`. The helper prepares
 native bridges and UI2, then runs the equivalent of:
 
 ```sh
-ui2_modules=$(python3 tools/prepare_ui2.py --lease-pid "$$")
+ui2_modules=$(python3 tools/prepare_ui2.py)
 v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \
