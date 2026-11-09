@@ -2035,3 +2035,58 @@ Status: `/Users/alex/.cache/vox/wpt/20261109-marker-production-status.json`.
 The native job's scratch outputs and temporary combined test are removed after
 archiving; active collection/observer directories remain in use.
 **Overall 100% is not achieved.**
+
+
+## aria-owns name traversal and production crash evidence (2026-11-09)
+
+`b754ddfd6` resolves aria-owns content attributes for accessible-name traversal
+within one DOM tree scope. A per-query ownership map follows reference order,
+removes reparented content from its original location, rejects cycles and
+repeated ownership, and preserves DOM rendering restrictions. ARIA hiding
+follows the resolved accessibility parent, allowing a visible owned target to
+leave an aria-hidden DOM ancestor. Hidden owners cannot relocate content;
+CSS-hidden targets and targets with their own aria-hidden remain excluded.
+Fresh queries observe ownership and ID mutations. This slice does not claim
+complete accessibility-tree publication or element-list reflection support.
+
+All **21 original official accname variants pass 495/500 assertions** in normal
+native Page tests and with the prepared preallocation runtime, up from
+**492/500**. Both cohorts preserve every assertion name and expected count,
+complete all harnesses, and gain **three passes with no lost passes**. The
+aria-owns page passes **9/9**. The remaining **five tentative heading assertions**
+keep both strict runner and guard exits at **1**. These are focused native
+results, not production or overall WPT percentages.
+
+Eleven native behavioral checks pass in each memory mode, plus two worker/WPT
+entry points; trusted-input-disabled invocations also exit **0**. A typed layout
+fixture covers reparented names, reference order, duplicate references, hidden
+owners and targets, and cycles. Native checks additionally exercise competing
+owners and live ownership, hiding and ID changes. Required compiles and focused
+runtimes exit **0** under the established 12 GiB compile/3 GiB runtime guards
+and V's 10 GiB compiler limit. Feature-function and fixture hashes are audited
+against `b754ddfd6`, while concurrent shared-checkout inputs are separately
+recorded. The runtime executables, tools, WPT checkout and manifest are pinned.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-accessible-ownership-native-raw.tar.gz`,
+SHA-256 `08cc130b08f8c29ea06e87b98a8795ecb842cee234fef024bdf1e28333a8a2e2`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-accessible-ownership-native-summary.json`,
+SHA-256 `eb0e8c12b8dcbba8235d92393b14f97b19bd4399a40b7a84c58f20412717cb51`.
+
+The separate marker production observer completed on executable
+`cb5fd041d5ad4a2dcc1fe8f225abcd5dbc4f07d020898b4a8004f0841b7f0e8a`,
+receipt `20261109-070627-d2916ddb`, with the marker/summary feature hashes and
+unchanged runtime inputs. It **failed**: only four of 21 variants completed;
+14 crashed and three hit the original hard deadline. Only **38/500 expected
+assertions were reported**, with 35 passing and three failing. Those failures
+reported per-instance counter alternatives as zero. Missing assertions do not
+count as passes, and this is no 500-assertion production result. Thirteen crash
+logs have their first native frame in
+`poll_navigation_and_background_resources`; that identifies an investigation
+point, not the cause. Both runner and guard exit **1**. Its completed scratch
+directory was archived and removed.
+
+Production evidence: `/Users/alex/.cache/vox/wpt/20261109-marker-production-raw.tar.gz`,
+SHA-256 `e081bd979b495443d338d8ca98b5c020db003de17086b4a343a5219b42fca9c1`.
+Completion: `/Users/alex/.cache/vox/wpt/20261109-marker-production-completion.json`.
+The independent 40,139-variant official testharness collection remains active
+on its pinned production image. **Overall 100% is not achieved.**
