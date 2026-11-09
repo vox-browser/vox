@@ -4704,6 +4704,11 @@ pub fn (n &Node) build_accessibility_tree(mut parent AccessibilityTreeNode) {
 
 // https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_te
 pub fn (n &Node) name_or_description(target NameOrDescription, document &Document, mut visited_nodes map[UniqueNodeID]bool, is_descendant IsDescendant, should_compute_role ShouldComputeRole) !string {
+	ownership := accessible_name_ownership(n, document)
+	return n.name_or_description_with_ownership(target, document, mut visited_nodes, is_descendant, should_compute_role, &ownership)
+}
+
+fn (n &Node) name_or_description_with_ownership(target NameOrDescription, document &Document, mut visited_nodes map[UniqueNodeID]bool, is_descendant IsDescendant, should_compute_role ShouldComputeRole, ownership &AccessibleNameOwnership) !string {
 	_ = should_compute_role
 	// The text alternative for a given element is computed as follows:
 	// 1. Set the root node to the given element, the current node to the root node, and the total accumulated text to the
@@ -4743,7 +4748,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 						}
 						continue
 					}
-					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, .yes)!
+					result := referenced_node.name_or_description_with_ownership(target, document, mut visited_nodes, .no, .yes, ownership)!
 					accumulated_text.write_string(' ')
 					accumulated_text.write_string(result)
 				}
@@ -4856,7 +4861,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				}
 				child_nodes = slot.assigned_nodes()
 			}
-			for child_node in child_nodes {
+			for child_node in ownership.child_nodes(n, child_nodes) {
 				if !child_node.is_element() && !child_node.is_text() {
 					continue
 				}
@@ -4872,7 +4877,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				if visited_nodes[child_node.unique_id()] {
 					continue
 				}
-				result := child_node.name_or_description(target, document, mut visited_nodes, .yes, should_compute_role)!
+				result := child_node.name_or_description_with_ownership(target, document, mut visited_nodes, .yes, should_compute_role, ownership)!
 				if should_add_space {
 					accumulated_text.write_string(' ')
 					accumulated_text.write_string(result)
@@ -4890,7 +4895,7 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 	// G. Text Node: Otherwise, if the current node is a Text Node, return its textual contents.
 	if n.is_text() {
 		if parent_element := n.parent_element() {
-			if !element_is_referenced_for_accessibility(parent_element) && parent_element.is_hidden() && parent_element.has_hidden_ancestor() && !element_has_referenced_and_hidden_ancestor(parent_element) {
+			if !element_is_referenced_for_accessibility(parent_element) && ownership.is_hidden(parent_element) && !element_has_referenced_and_hidden_ancestor(parent_element) {
 				return ''
 			}
 		}
