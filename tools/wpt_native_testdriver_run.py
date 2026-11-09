@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the upstream manifest runner with Vox's optional native click backend.
+"""Run the upstream manifest runner with Vox's optional native test-driver backend.
 
     VOX_WPT_TESTDRIVER=1 python3 tools/wpt_native_testdriver_run.py [runner args]
 
