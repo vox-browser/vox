@@ -4067,7 +4067,7 @@ pub fn (mut e Element) scroll_width() int {
 	}
 	if pb := e.paintable_box() {
 		if r := pb.scrollable_overflow_rect() {
-			return int(r.width())
+			return int(math.round(r.width()))
 		}
 	}
 	if layout := e.as_node().layout_node() {
@@ -4086,7 +4086,7 @@ pub fn (mut e Element) scroll_height() int {
 	}
 	if pb := e.paintable_box() {
 		if r := pb.scrollable_overflow_rect() {
-			return int(r.height())
+			return int(math.round(r.height()))
 		}
 	}
 	if layout := e.as_node().layout_node() {
