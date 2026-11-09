@@ -1,8 +1,9 @@
 # JPEG XL V decoder port
 
 The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package is the tested foundation for replacing it;
-it does not decode image pixels or remove that final Rust dependency yet.
+builds that helper. This package reconstructs selected modular channels and
+whole palette/squeeze planes. It does not decode a complete JPEG XL image or
+remove that final Rust dependency yet.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
 `6513ef8722db71eea2b3806ea71b8d9b39481f214af295788d7ceb4d3395eb9e`.
@@ -161,8 +162,8 @@ squeeze parameters. The 8,289 frozen reference records compare every field,
 validation result and consumed bit count, including all RCT selectors and
 palette predictor IDs. Empty squeeze lists retain their automatic-transform
 meaning. Default and no-GC focused checks pass under separate 3 GiB guards,
-including unavailable Rust compiler paths. Applying these transforms to pixels
-is still pending.
+including unavailable Rust compiler paths. Transform planning and tiled
+application remain separate work.
 
 All fourteen modular predictors now run in V, with source border-neighbor
 substitutions, interior-row updates, signed division and selection tie behavior.
@@ -200,19 +201,47 @@ limit at 131,070 so the resulting entropy map fits its 65,536-context limit.
 The 747 frozen tree records compare every node, histogram metadata, eight output
 symbols, validity and consumed bits; 488 parse successfully. Predictor/multiplier
 errors, empty ranges and caller size limits are included. Separate checks cover
-both sides of the depth bound. Default and no-GC checks pass. Computing pixel
-properties and reconstructing channel samples remain pending.
+both sides of the depth bound. Default and no-GC checks pass.
 
-Remaining work includes modular pixel properties/channel decoding, palettes and
-squeeze transforms, VarDCT, filtering, pixel color conversion, oriented output
-rows, exact alpha quantization and browser integration. Container/API streaming
-remains a broader parity task. All fifteen module test files pass with default
-GC and `-gc none` through
-`tools/check_translation_corpora.v --suite jpegxl`, with unavailable Rust compiler
-paths. The complete package now checks 176,133 source cases, counting individual
-ANS alias transitions and whole weighted-predictor transcripts.
-[The frame/modular verification report](../docs/translation-audit/JPEGXL_V_FRAME_MODULAR.md)
-records the commands, limits and source-case definitions.
+Pixel property calculation now preserves the static channel/stream IDs, row
+gradient history, wrapped signed neighbors, weighted error property and prior
+channel references. Residual reconstruction preserves release wrapping.
+Comparisons add 4,096 residual/guess cases and 32 stateful property transcripts
+covering 1,536 steps and all 256 property slots.
+
+Selected modular channels now decode through the entropy reader, decision tree
+and predictors, preserving empty channel numbering, nearest compatible prior
+channels and 16-bit storage with untruncated rolling prediction rows. The 952
+source comparisons cover all predictors, reference properties, Huffman/LZ77 and
+constant ANS streams; 924 succeed and 28 fail the expected final checksum.
+The independent oracle exercises the source's generic FullTree branch, with a
+minimal image-buffer carrier. Specialized trees, fast lossless paths and
+streaming-error state are not parity claims.
+
+Palette expansion now handles explicit entries, all 143 implicit deltas and both
+color cubes, bit-depth scaling, extra channels, predictor deltas, weighted error
+updates and single-channel partial-index clipping. There are 360 frozen lookup
+vectors (217,800 exact values) and 224 complete single-grid expansions in both
+storage widths. Tiled borders and auxiliary row handoff remain pending.
+
+Scalar horizontal/vertical squeeze reconstruction now handles monotonic
+tendencies, signed rounding, stored-neighbor narrowing and odd trailing samples.
+There are 8,192 sample-pair and 1,024 whole-plane source comparisons. The caller
+supplies output shift metadata; transform planning, tiled borders, smooth-squeeze
+application and equivalence to the source SIMD paths remain pending.
+
+Remaining work includes modular stream/header selection, transform planning and
+tiled application, complete frame assembly, VarDCT, filtering, pixel color
+conversion, oriented output rows, exact alpha quantization and browser
+integration. Container/API streaming remains a broader parity task.
+
+The corpus checker discovers nineteen test files. The preceding full batch ran
+the then-fifteen files in both GC modes; the four new files pass focused default
+and no-GC batches with unavailable Rust compiler paths. This is four completed
+slices after that JPEG XL baseline; broader suites were not rerun. The package
+now checks 191,013 source cases, counting individual ANS alias transitions and
+whole weighted/property transcripts. [The modular sample verification report](../docs/translation-audit/JPEGXL_V_MODULAR_SAMPLES.md)
+records commands, limits and the source-case definitions.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

@@ -121,3 +121,21 @@ pixel conversion/output and browser integration still need completion.
 the V path preserves the production decoder's supported images and limits.
 This does not claim that all Rust dependencies, including developer tools, have
 been removed. Prior LibJS/ICU results above were not rerun for this continuation.
+
+## Modular sample continuation on 2026-11-09
+
+V now computes modular pixel properties, reconstructs selected channels from
+entropy residuals and applies complete-image palettes and scalar squeeze
+planes. Four focused test files pass in default and no-GC modes with unavailable
+Rust compiler paths. The source comparisons now total 191,013 cases, with
+stateful property transcripts counted as whole cases. This continuation adds
+four implementation slices after the preceding JPEG XL fifteen-file batch;
+formatting and documentation do not add implementation credit. Broader suites
+and unrelated DOM/performance verification counters were left unchanged.
+
+[The modular sample report](JPEGXL_V_MODULAR_SAMPLES.md) records the exact source
+coverage and commands. The oracle checks the source generic channel branch and
+scalar squeeze paths; specialized/SIMD performance or parity is not claimed.
+Stream selection, transform planning/tiled borders, complete frames, VarDCT,
+filters, final color/pixel output and browser integration remain. Production
+JPEG XL, its Cargo/CI hooks and its native developer test still require Rust.
