@@ -598,6 +598,10 @@ integer arguments as one `i32` array.
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
 | Linux `pkg-config skia` | Canvas and portable shadows | Remains until those ports land |
 
+SVG fill/stroke geometry queries now use `cpuraster.path_hit_test`; the
+production `vox_skia_path_hit_test` entry point and C transport are removed.
+See the [path geometry checks](#path-containment-and-svg-hit-testing-2026-11-09).
+
 Anti-aliased path filling, hairlines, the stroker, dashing, anti-aliased clips,
 the legacy solid blitters, the raster pipeline blitter with constant colors,
 gradient shaders and image shaders, the legacy bitmap shader context and the
@@ -1614,3 +1618,39 @@ fallback so their original foreground stays deferred. Remaining crops,
 rotations, SVG graphs, boolean shadows, large-sigma/tiling paths and native/GPU
 bridges also remain. See the
 [resampling graph checks and retained failures](gg-migration/resampled-spatial-chains-20261109.json).
+
+
+### Path containment and SVG hit testing (2026-11-09)
+
+`c0bf6f955` translates path containment to V, including monotonic line,
+quadratic, conic and cubic crossings, on-curve points, inverse/even-odd fill
+rules and coincident tangent cancellation. SVG stroke queries use the existing
+V dash and stroke-outline engines at the native identity resolution scale;
+non-scaling strokes transform the geometry first. The production C entry point
+and query struct are removed. The compatibility API in `skia/` now calls V.
+
+| Platform/build | Seed | Containment queries | Fill/stroke queries |
+| --- | --- | ---: | ---: |
+| macOS, C backend | 20261116 | 100,000 exact | 100,000 exact |
+| Linux ARM64, C backend | 20261116 | 100,000 exact | 100,000 exact |
+| macOS, `-prod -gc none` | 20261117 | 50,000 exact | 50,000 exact |
+
+These cohorts have no declines and finish with unchanged input pins. An
+independent native capture supplies 72 coincident-curve boundary expectations
+on each platform. Focused C/FastC hit tests, the compatibility API tests, all
+28 CPU raster test files and SVG pointer/group/bounding-box integration pass.
+Raster-suite credit combines 27 completed files from the interrupted batch
+with a guarded final text-shadow check; no whole-batch exit is claimed.
+The bounding-box fixture now owns its helper so it can compile independently;
+its assertions are unchanged. The optional FastC differential driver encounters
+an unsupported generic in V's math library; no FastC random-parity credit is
+claimed. The FMA audit finds zero contractions (189 explicit operations).
+The full Linux browser typecheck passes with Skia development files available.
+
+A standalone Linux production/no-GC hit-test binary compiles with Skia
+unavailable to pkg-config, then executes all four registered test functions.
+Its only direct libraries are FreeType, libm and libc, with no direct or
+transitive Skia linkage. This verifies the geometry component. The complete
+browser still links Skia and its older production bundle cannot validate this
+change. Full-browser Linux compile/link/run without Skia remains unverified.
+See the [receipts, native fixtures and retained interrupted checks](gg-migration/path-hit-geometry-20261109.json).
