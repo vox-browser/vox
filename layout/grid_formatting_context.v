@@ -126,17 +126,16 @@ fn grid_container_is_abspos_containing_block(container &Node, child &Node) bool 
 }
 
 fn set_grid_abspos_containing_rect(mut state LayoutState, container &Node, child &Node, rect css.CSSPixelRect) {
-	if !grid_container_is_abspos_containing_block(container, child) {
-		return
-	}
-	styled := child.as_node_with_style() or { return }
-	mut child_state := state.get_mutable(styled)
-	child_state.set_abspos_containing_block_rect(rect)
+	is_containing_block := grid_container_is_abspos_containing_block(container,child)
 	is_direct_grid_child := if parent := child.parent() {
 		voidptr(parent) == voidptr(container)
 	} else {
 		false
 	}
+	if !is_containing_block && !is_direct_grid_child { return }
+	styled := child.as_node_with_style() or { return }
+	mut child_state := state.get_mutable(styled)
+	if is_containing_block { child_state.set_abspos_containing_block_rect(rect) }
 	if !is_direct_grid_child {
 		existing_static_position := child_state.static_position()
 		child_state.set_static_position_rect(StaticPositionRect{

@@ -45,3 +45,11 @@ fn test_absolute_grid_span_outside_the_grid_uses_padding_edge() {
   assert r.x == if direction == 'ltr' { 315.0 } else { 0.0 }
  }
 }
+
+fn test_absolute_grid_static_alignment_without_a_positioned_grid_container() {
+ mut document := html.parse_document('<!doctype html><style>body{margin:0;display:flow-root}#grid{display:grid;width:200px;height:100px;margin:20px 0 0 30px}#item{position:absolute;width:20px;height:10px;place-self:center}</style><div id="grid"><div id="item"></div></div>')
+ defer { document.finalize() }
+ _ = layout_document_typed_in_viewport(document,800,600)
+ rect := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
+ assert rect.x == 120 && rect.y == 65, '${rect.x} ${rect.y}'
+}
