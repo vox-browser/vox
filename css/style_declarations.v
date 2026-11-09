@@ -1462,6 +1462,9 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 				}
 			}
 			value := computed.property(property_id, .yes) or { return none }
+			if property_id in [.min_width,.min_height] && value.css_text == 'auto' {
+				return StyleProperty{property_id:property_id,value:cssom_style_value_for_px(0)}
+			}
 			return StyleProperty{
 				property_id: property_id
 				value: value
