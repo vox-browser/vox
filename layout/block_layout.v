@@ -430,6 +430,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 
 fn layout_uncached_independent_formatting_context(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	platform.cooperative_work_checkpoint()
+ if vertical := layout_vertical_table_wrapper(mut state,box,mut box_state) { return vertical }
 	if box.is_svg_svg_box() {
 		return run_root_svg_formatting_context(mut state, box, mut box_state, available_space)
 	}

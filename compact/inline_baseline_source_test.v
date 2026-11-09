@@ -105,3 +105,24 @@ fn test_vertical_fieldset_baselines_reserve_the_side_legend_and_skip_its_baselin
  }
  assert failures.len==0,failures.join('\n')
 }
+
+fn test_vertical_inline_tables_export_row_baselines_with_side_captions() {
+ for mode in ['vertical-lr','vertical-rl'] {
+  for source in ['first','last'] {
+   for nested in [true,false] {
+    table := '<table style="border-spacing:0"><caption></caption><tr><td style="font-size:10px"><span></span><br><span></span></td><td><span></span><br><span></span></td></tr><tr><td><span></span><br><span></span></td><td style="font-size:10px"><span></span><br><span></span></td></tr><caption style="caption-side:bottom"></caption></table>'
+    content := if nested { '<div id="inner" style="display:inline-block">'+table+'</div>' } else { table.replace('<table style="border-spacing:0">','<table id="inner" style="border-spacing:0;display:inline-table">') }
+    mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{inline-size:200px;padding:10px;position:relative;line-height:0;font-size:20px;writing-mode:${mode}}#inner{border:5px solid;padding:10px;baseline-source:${source};font-size:30px}span{display:inline-block;width:1em;height:1em}tr{vertical-align:baseline}td{padding:0}caption{margin:10px;block-size:20px}</style><div id="outer"><span id="reference"></span>${content}</div>')
+    defer { document.finalize() }
+    _ = layout.layout_document_typed_in_viewport(document,800,600)
+    reference := (document.get_element_by_id('reference') or { panic('reference') }).get_bounding_client_rect()
+    inner := (document.get_element_by_id('inner') or { panic('inner') }).get_bounding_client_rect()
+    expected := if mode=='vertical-lr' { if source=='first' { 60.0 } else { 120.0 } } else { if source=='first' { 150.0 } else { 90.0 } }
+    reference_element := document.get_element_by_id('reference') or { panic('reference') }
+    inner_element := document.get_element_by_id('inner') or { panic('inner') }
+    actual := html.html_element_offset_left(unsafe { &dom.HTMLElement(reference_element) })-html.html_element_offset_left(unsafe { &dom.HTMLElement(inner_element) })
+    assert actual==expected,'${mode} ${source} nested=${nested}: ${actual}; rect delta ${reference.x-inner.x}'
+   }
+  }
+ }
+}

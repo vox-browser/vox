@@ -1981,6 +1981,7 @@ fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, perc
 }
 
 fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut wrapper_state UsedValues, containing_width CSSPixels) CSSPixels {
+ if vertical := layout_vertical_table_wrapper(mut state,wrapper,mut wrapper_state) { return vertical.automatic_content_width }
 	wrapper_timing_start := time.sys_mono_now()
 	defer {
 		if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
