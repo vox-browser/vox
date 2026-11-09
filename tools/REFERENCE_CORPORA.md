@@ -50,7 +50,7 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects forty-five test files covering primitives,
+The `jpegxl` suite now selects fifty-one test files covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
@@ -61,12 +61,15 @@ output, fused binary32 arithmetic, Gaborish, chroma upsampling, YCbCr and all
 three EPF passes, VarDCT quantizer/color-correlation parameters, block and
 zero-density contexts, natural coefficient orders and entropy permutations,
 transform metadata, adaptive LF smoothing, VarDCT EPF sigma, DCT quantization
-bands, LF reconstruction/context planes and non-raw quantization encodings.
-Its 267,769 source cases include whole stateful predictor/property/map/order
+bands, LF reconstruction/context planes, non-raw quantization encodings, complete
+quantization matrices and raw modular matrix streams, matrix-set/transform
+lookups, HF coefficient dequantization and Hornuss/DCT2X2 inverse transforms.
+Its 270,905 source cases include whole stateful predictor/property/map/order
 transcripts and individual ANS alias transitions.
 The full forty-five-file group passed in both GC modes with unavailable Rust
-compiler paths, completing the next ten-slice checkpoint and resetting JPEG XL
-cadence to 0/10. The added focused files also pass optimized checks.
-[The current verification report](../docs/translation-audit/JPEGXL_V_VARDCT_PARAMETERS.md)
-records the source-case coverage and limits. This checks the V layers; the
-production pixel decoder and its native developer test still require Rust.
+compiler paths. Six later slices pass focused checks in both modes and under
+`-prod`, bringing JPEG XL cadence to 6/10; a new full-package checkpoint is not
+claimed. [The current verification report](../docs/translation-audit/JPEGXL_V_QUANTIZATION.md)
+records the source-case coverage and limits, and links the preceding checkpoint.
+This checks the V layers; the production pixel decoder and its native developer
+test still require Rust.

@@ -352,22 +352,41 @@ only for 4:4:4, and derives full-size LF context buckets for all sampling modes.
 These five slices add 5,890 source cases, including 328,098 smoothing words,
 28,581 sigma words, 60,716 LF words and 35,781 LF context indices. VarDCT global
 and LF stream assembly, HF coefficient decoding/inverse transforms,
-quantization matrices and complete-file pipeline integration remain pending.
+quantization matrices and complete-file pipeline integration were still pending
+at that checkpoint.
 
 Non-raw quantization encodings now parse library, identity, DCT2, DCT4, DCT4x8,
 AFV and DCT modes with source table-size restrictions and per-mode scaling.
 Their 4,096 additional source cases compare all seventeen table dimensions,
 complete records and cursors. Raw modular quantization streams and matrix
-generation remain separate pending work.
+generation were still pending at that checkpoint.
 
-The full forty-five-file package passes through the V corpus checker in both
+The full forty-five-file checkpoint passed through the V corpus checker in both
 GC modes with unavailable Rust compiler paths, completing the next ten-slice
-checkpoint and resetting JPEG XL cadence to 0/10. Focused optimized checks also
-cover the new files. Unrelated broader suites were not rerun. The package checks 267,769 source
-cases, counting individual ANS alias transitions and whole stateful/map/order
+checkpoint and resetting JPEG XL cadence to 0/10 at that point. Focused optimized
+checks also covered those new files. Unrelated broader suites were not rerun.
+That checkpoint checked 267,769 source cases, counting individual ANS alias transitions and whole stateful/map/order
 transcripts as before. [The VarDCT parameter/order report](../docs/translation-audit/JPEGXL_V_VARDCT_PARAMETERS.md)
 records current validation and boundaries; [the EPF report](../docs/translation-audit/JPEGXL_V_EPF.md)
 retains the preceding full checkpoint.
+
+Quantization matrices now execute entirely in V: all seventeen default
+calibrations, distance-band interpolation, identity/DCT2/DCT4/DCT4x8/AFV placement,
+raw matrices, local/global modular stream integration and full matrix-set parsing.
+All twenty-seven transform lookups return independently owned channel slices.
+HF coefficient dequantization preserves signed 16/32-bit storage, quantization
+bias, channel scales and fused color correlation. The initial inverse-transform
+API reconstructs Hornuss identity and DCT2X2 blocks from LF/HF coefficients;
+other transform kinds still reject explicitly.
+
+These six slices add 3,136 independent source records, bringing the package to
+270,905 records and fifty-one test files. Every new focused file passes in both
+GC modes and under `-prod`, with unavailable Rust compiler paths. This is
+6/10 after the forty-five-file checkpoint; no newer full-package checkpoint is
+claimed. [The quantization report](../docs/translation-audit/JPEGXL_V_QUANTIZATION.md)
+records exact comparison boundaries, source pins and executed checks. HF
+entropy decoding, remaining inverse transforms, LF/global/frame assembly,
+XYB/transfer conversion, frame dependencies and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

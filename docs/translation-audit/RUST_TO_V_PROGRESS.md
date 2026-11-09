@@ -318,3 +318,26 @@ frame dependencies, XYB/transfer conversion and production pipeline integration
 remain. Production JPEG XL and its Cargo/CI/native developer tools still depend
 on Rust; removal of all Rust dependencies remains unfinished. No
 production-browser validation is claimed for these standalone decoder stages.
+
+## Quantization and initial inverse transforms on 2026-11-09
+
+Six additional pure V slices generate all seventeen quantization matrices,
+decode raw modular matrix streams and complete matrix sets, dequantize HF
+coefficients and reconstruct Hornuss identity/DCT2X2 blocks. Every transform's
+matrix lookup is checked. The new 3,136 independent source records include
+1,930,368 exact HF dequantization words and 65,536 inverse-transform words.
+The package now has 270,905 source records and fifty-one test files.
+
+All six new focused files pass in both GC modes and under `-prod`, with
+unavailable Rust compiler paths and 3 GiB guards. The preceding full checkpoint
+still covers forty-five files; JPEG XL cadence is now 6/10. Other suites and
+historical ledgers are unchanged. [The quantization report](JPEGXL_V_QUANTIZATION.md)
+records the original-source oracle boundaries, input identities, harness
+corrections and executed checks. Temporary migration references use cached Rust
+artifacts, while frozen developer checks execute with V alone.
+
+HF entropy decoding, the remaining inverse transforms, LF/global/frame
+assembly, XYB/transfer conversion, frame dependencies and production image-path
+integration remain. Production JPEG XL, Cargo/CI hooks and the native developer
+test still depend on Rust. Removal of all Rust dependencies remains unfinished;
+no production-browser validation is claimed for these standalone stages.
