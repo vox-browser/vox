@@ -756,6 +756,9 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 				}
 			}
 		}
+		// ::part() can be followed by the pseudo-element actually being
+		// styled. Candidate lookup must index that target, not ::part itself.
+		pseudo_element = if target := selector.target_pseudo_element() { target.type_ } else { none }
 		matching_rule.pseudo_element = pseudo_element
 
 		for pseudo_class in style_scope_pseudo_classes_with_rule_cache() {

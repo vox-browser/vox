@@ -168,6 +168,7 @@ pub enum PseudoElement {
 	spelling_error
 	grammar_error
 	search_text
+	cue
 	known_pseudo_element_count
 	unknown_webkit
 	// V uses a sentinel where C++'s pseudo_element_from_string() returns Optional{}.
@@ -362,6 +363,7 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 		.spelling_error { 'spelling-error' }
 		.grammar_error { 'grammar-error' }
 		.search_text { 'search-text' }
+		.cue { 'cue' }
 		.known_pseudo_element_count, .unknown { '' }
 		.unknown_webkit { '-webkit-unknown' }
 	}
@@ -373,6 +375,7 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 		'spelling-error' { .spelling_error }
 		'grammar-error' { .grammar_error }
 		'search-text' { .search_text }
+		'cue' { .cue }
 		'highlight' { .highlight }
 		'after' {
 			.after
