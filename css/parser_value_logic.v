@@ -932,7 +932,10 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.contain_intrinsic_inline_size, .contain_intrinsic_width] {
 		return parser.parse_contain_intrinsic_size_value(mut tokens)
 	}
-	if property_is_positional_value_list_shorthand(property_id) {
+	// Inset components also accept anchor(). The generated positional type
+	// metadata only describes their numeric values, so use the inset grammar.
+	if property_is_positional_value_list_shorthand(property_id)
+		&& property_id !in [.inset,.inset_block,.inset_inline] {
 		return parser.parse_positional_value_list_shorthand(property_id, mut tokens)
 	}
 	if property_multiplicity(property_id) == .coordinating_list

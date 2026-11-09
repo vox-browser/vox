@@ -90,3 +90,14 @@ fn test_last_successful_anchor_function_fallback_uses_current_anchor_geometry() 
 		commit_position_try_options_in_subtree(unsafe { &Node(result.root) })
 	}
 }
+
+fn test_position_try_resolves_custom_properties_before_expanding_inset_shorthand() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#container{position:relative;width:195px;height:70px}#anchor{anchor-name:--a;margin-left:45px;width:100px;height:30px}#target{position:absolute;position-try-fallbacks:--fallback;width:40px;height:15px;margin:5px;--left:anchor(--a right);--top:anchor(--a top)}@position-try --fallback{inset:var(--top) 0px 0px var(--left)}</style><div id="container"><div style="height:20px"></div><div id="anchor"></div><div id="target"></div></div>')
+	defer { document.finalize() }
+	run_document_layout(document,800,600) or { panic('layout') }
+	target := document.get_element_by_id('target') or { panic('target') }
+	assert css.parse_css_value(css.ParsingParams{},'anchor(--a top) 0px 0px anchor(--a right)',.inset) != none
+	r := target.get_bounding_client_rect()
+	assert r.x == 150,'${r.x}'
+	assert r.y == 25,'${r.y}'
+}
