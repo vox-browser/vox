@@ -518,15 +518,15 @@ pub fn html_element_offset_top(element &dom.HTMLElement) int {
 	top_border_edge := (paintable_box_absolute_united_border_box_rect(layout_node) or {
 		layout_node.border_box_
 	}).y
-	offset_parent := html_element_offset_parent(element) or { return int(top_border_edge / document.layout_coordinate_scale()) }
-	parent_layout := offset_parent.as_node().layout_node() or { return int(top_border_edge / document.layout_coordinate_scale()) }
+	offset_parent := html_element_offset_parent(element) or { return int(math.round(top_border_edge / document.layout_coordinate_scale())) }
+	parent_layout := offset_parent.as_node().layout_node() or { return int(math.round(top_border_edge / document.layout_coordinate_scale())) }
 	if html_element_is_body(offset_parent) && !parent_layout.is_positioned_ {
-		return int(top_border_edge / document.layout_coordinate_scale())
+		return int(math.round(top_border_edge / document.layout_coordinate_scale()))
 	}
 	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
 		dom.Rect{ y: parent_layout.border_box_.y + parent_layout.box_model().border_top }
 	}
-	return int((top_border_edge - parent_padding_box.y) / document.layout_coordinate_scale())
+	return int(math.round((top_border_edge - parent_padding_box.y) / document.layout_coordinate_scale()))
 }
 
 // https://www.w3.org/TR/cssom-view-1/#dom-htmlelement-offsetleft
@@ -544,15 +544,15 @@ pub fn html_element_offset_left(element &dom.HTMLElement) int {
 	left_border_edge := (paintable_box_absolute_united_border_box_rect(layout_node) or {
 		layout_node.border_box_
 	}).x
-	offset_parent := html_element_offset_parent(element) or { return int(left_border_edge / document.layout_coordinate_scale()) }
-	parent_layout := offset_parent.as_node().layout_node() or { return int(left_border_edge / document.layout_coordinate_scale()) }
+	offset_parent := html_element_offset_parent(element) or { return int(math.round(left_border_edge / document.layout_coordinate_scale())) }
+	parent_layout := offset_parent.as_node().layout_node() or { return int(math.round(left_border_edge / document.layout_coordinate_scale())) }
 	if html_element_is_body(offset_parent) && !parent_layout.is_positioned_ {
-		return int(left_border_edge / document.layout_coordinate_scale())
+		return int(math.round(left_border_edge / document.layout_coordinate_scale()))
 	}
 	parent_padding_box := paintable_box_absolute_united_padding_box_rect(parent_layout) or {
 		dom.Rect{ x: parent_layout.border_box_.x + parent_layout.box_model().border_left }
 	}
-	return int((left_border_edge - parent_padding_box.x) / document.layout_coordinate_scale())
+	return int(math.round((left_border_edge - parent_padding_box.x) / document.layout_coordinate_scale()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-htmlelement-offsetwidth

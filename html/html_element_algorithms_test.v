@@ -275,11 +275,15 @@ fn test_offset_dimensions_round_fractional_border_boxes() {
 		dom_node_: element.as_node()
 		has_geometry_: true
 		border_box_: dom.Rect{
+			x: 10.6
+			y: 20.4
 			width: 10.4
 			height: 20.6
 		}
 	})
 	html_element := unsafe { &dom.HTMLElement(element) }
+	assert html_element_offset_left(html_element) == 11
+	assert html_element_offset_top(html_element) == 20
 	assert html_element_offset_width(html_element) == 10
 	assert html_element_offset_height(html_element) == 21
 }
