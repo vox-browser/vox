@@ -7630,6 +7630,12 @@ fn (mut d Document) invalidate_pending_size_query_dependents() {
 	}
 }
 
+const document_layout_diagnostics = os_getenv_document_layout_diagnostics()
+
+fn os_getenv_document_layout_diagnostics() bool {
+	return unsafe { C.getenv(c'VOX_DOCUMENT_LAYOUT_DIAGNOSTICS') } != nil
+}
+
 pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_layout')
 	defer { load_instruction_stage.finish() }
@@ -7654,12 +7660,24 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	}
 
 	document_node := unsafe { &Node(&d) }
+	// VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1: one line per call that ran layout.
+	diag_started := if document_layout_diagnostics { vtime.sys_mono_now() } else { u64(0) }
+	mut diag_style_ns := u64(0)
+	mut diag_passes := 0
+	mut diag_rebuilds := 0
+	defer {
+		if document_layout_diagnostics && diag_passes > 0 {
+			eprintln('VOX_DOCUMENT_LAYOUT reason=${reason} us=${(vtime.sys_mono_now() - diag_started) / 1000} style_us=${diag_style_ns / 1000} passes=${diag_passes} rebuilds=${diag_rebuilds}')
+		}
+	}
 	// A size-query dependency points from a descendant to an ancestor, so one
 	// pass per connected element is a conservative exact bound for nested query
 	// containers, in addition to Ladybird's ordinary stabilization allowance.
 	layout_pass_limit := 9 + d.cached_layout_stabilization_element_count()
 	for _ in 0 .. layout_pass_limit {
+		diag_style_started := if document_layout_diagnostics { vtime.sys_mono_now() } else { u64(0) }
 		d.update_style()
+		if document_layout_diagnostics { diag_style_ns += vtime.sys_mono_now() - diag_style_started }
 		if d.layout_is_up_to_date() {
 			d.invalidate_pending_size_query_dependents()
 			_ = d.snapshot_scroll_state_queries(true)
@@ -7711,6 +7729,8 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 		}
 		viewport := d.viewport_rect()
 		new_layout := hook.callback(hook.target, &d, viewport.width, viewport.height, needs_layout_tree_rebuild)
+		diag_passes++
+		if needs_layout_tree_rebuild { diag_rebuilds++ }
 		if new_layout == unsafe { nil } {
 			// Keep every invalidation bit set when the layout boundary cannot
 			// produce a tree, so a later call retries instead of declaring the

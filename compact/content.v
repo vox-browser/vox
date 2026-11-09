@@ -9,6 +9,7 @@ import strconv
 import trustedtypes
 import x.json2
 import os
+import time
 
 @[heap]
 struct CompactElementQueryBinding {
@@ -204,7 +205,17 @@ fn (binding &CompactElementQueryBinding) initial_element_state(element &dom.Elem
 	return json2.Any(state)
 }
 
+const compact_query_diagnostics = os.getenv('VOX_COMPACT_QUERY_DIAGNOSTICS') != ''
+
 fn (mut binding CompactElementQueryBinding) query(input string) !string {
+	diag_started := if compact_query_diagnostics { time.sys_mono_now() } else { u64(0) }
+	mut diag_action := ''
+	mut diag_replay_ns := u64(0)
+	defer {
+		if compact_query_diagnostics {
+			eprintln('VOX_COMPACT_QUERY action=${diag_action} us=${(time.sys_mono_now() - diag_started) / 1000} replay_us=${diag_replay_ns / 1000} input=${input.len}')
+		}
+	}
 	// Replaying pending mutations and lazily creating DOM metadata can both
 	// publish records that outlive this host call. Own the complete query,
 	// including replay, rather than just its final operation.
@@ -218,6 +229,8 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	}
 	request := decode_compact_element_query_request(input)!
 	defer { request.workspace.finish() }
+	if compact_query_diagnostics { diag_action = (request.action or { '?' }).clone() + ':' + (request.selector or { '' }).limit(24) }
+	diag_replay_started := if compact_query_diagnostics { time.sys_mono_now() } else { u64(0) }
 	if snapshot := request.snapshot {
 		mut messages := []string{}
 		result := replay_compact_dom_snapshot(binding.document, snapshot, binding.runtime, mut messages)
@@ -234,6 +247,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 			binding.keys[voidptr(element)] = key
 		}
 	}
+	if compact_query_diagnostics { diag_replay_ns = time.sys_mono_now() - diag_replay_started }
 	// Replayed writes, and earlier native actions, may have queued custom
 	// element reactions. Run them before this operation observes the tree;
 	// the request's own writes are already applied, preserving their order.
