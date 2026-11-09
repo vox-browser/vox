@@ -231,3 +231,13 @@ including full/irregular chunk equality. Cadence is 3/10 after the full 94-file
 checkpoint; a full 97-file run has not been performed. Encoded patch frames
 and production/native developer-tool replacement remain unfinished.
 See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).
+
+
+The spline entropy corpus adds 3,044 native records (536 accepted), bringing
+JPEG XL to 290,279 records and 98 test files. The focused file passes default,
+no-GC and optimized checks with unavailable Rust compiler paths, actual exits
+zero and 713 unchanged inputs. The initial compile-only failure has no execution
+credit. Cadence is 4/10 after the full 94-file checkpoint; no full 98-file run is
+claimed. Spline rendering, frame integration and production/native tool
+replacement remain.
+See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).

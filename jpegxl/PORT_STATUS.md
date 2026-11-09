@@ -655,6 +655,18 @@ ninety-four-file checkpoint; no full ninety-seven-file run is claimed.
 Encoded patch frames still need reference ownership and pipeline integration.
 See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).
 
+The spline entropy reader now translates starting points, adjustment, second
+differences and four 32-term DCTs, including final entropy-state validation.
+Its 3,044 native records include 536 accepted cases with exact metadata,
+consumption, point words and coefficients. Truncations, count/coordinate/delta
+limits and signed integer extremes execute. The focused file passes default,
+no-GC and optimized checks with actual exits zero and 713 unchanged inputs;
+an initial declaration-only compile failure has no execution credit. The count
+is 290,279 records and ninety-eight files, cadence 4/10 after the full
+ninety-four-file checkpoint. No full ninety-eight-file run is claimed.
+Spline dequantization, subdivision, rendering and frame integration remain.
+See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

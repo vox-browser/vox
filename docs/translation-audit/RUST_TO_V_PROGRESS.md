@@ -704,3 +704,17 @@ checkpoint; no full 97-file run is claimed.
 verification. Encoded patch frames, stored references/composition, splines,
 wider channel/LF combinations and production/tool integration remain.
 Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL quantized spline streams on 2026-11-09
+
+The spline entropy reader adds 3,044 native records, including 536 accepted
+states with exact consumption, metadata, point words and DCT coefficients.
+Default/no-GC/optimized checks pass with actual exits zero and 713 unchanged
+inputs. The initial declaration-only compile failure receives no execution
+credit. The package has 290,279 records and 98 files, cadence 4/10 after the
+full 94-file checkpoint; no full 98-file run is claimed.
+[The spline-stream report](JPEGXL_V_SPLINE_STREAMS.md) records pins and limits.
+Dequantization, subdivision/rendering, feature/reference frame integration and
+production/developer-tool replacement remain. Production JPEG XL and its
+native developer test still require Rust.
