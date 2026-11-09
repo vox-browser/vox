@@ -1198,16 +1198,21 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 			removed = true
 		}
 	} else {
-		property_name := string_from_property_id(property.id() or { PropertyID.color })
-		for index, existing in properties.properties {
-			if existing.name == property_name {
-				properties.clear_typed_properties_cache()
-				removed_value = existing.value
+		property_id := property.id() or { return '' }
+		removed_value = properties.get_property_value(string_from_property_id(property_id))
+		longhands := if property_is_shorthand(property_id) {
+			generated_expanded_longhands_for_shorthand(property_id)
+		} else { [property_id] }
+		mut names := map[string]bool{}
+		for longhand in longhands { names[string_from_property_id(longhand)] = true }
+		mut index := 0
+		for index < properties.properties.len {
+			if properties.properties[index].name in names {
 				properties.properties.delete(index)
 				removed = true
-				break
-			}
+			} else { index++ }
 		}
+		if removed { properties.clear_typed_properties_cache() }
 	}
 
 	if removed {
