@@ -135,6 +135,11 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	}
 	computed_width := box.computed_values().size_value(.width)
 	mut intrinsic_width := ?CSSPixels(none)
+	if computed_width.is_stretch() {
+		intrinsic_width = if available_width.is_definite() {
+			stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true)
+		} else { calculate_max_content_width(mut state, box_as_box) }
+	}
 	// HTML button layout: an auto inline size is fit-content instead of the
 	// normal fill-available size of a block-level box.
 	if computed_width.is_auto() && box.computed_values().writing_mode() != .horizontal_tb {
@@ -162,11 +167,17 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	// order, matching FormattingContext::compute_width().
 	mut clamped := used_values.content_width()
 	max_size := box.computed_values().size_value(.max_width)
+	if max_size.is_stretch() && available_width.is_definite() {
+		clamped = css_pixels_min(clamped, stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true))
+	}
 	if max_size.is_intrinsic_sizing_constraint() {
 		maximum := intrinsic_width_for_size(mut state, box_as_box, max_size, available_width)
 		clamped = css_pixels_min(clamped, maximum)
 	}
 	min_size := box.computed_values().size_value(.min_width)
+	if min_size.is_stretch() && available_width.is_definite() {
+		clamped = css_pixels_max(clamped, stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true))
+	}
 	if min_size.is_intrinsic_sizing_constraint() {
 		minimum := intrinsic_width_for_size(mut state, box_as_box, min_size, available_width)
 		clamped = css_pixels_max(clamped, minimum)

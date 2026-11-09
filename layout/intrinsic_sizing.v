@@ -381,6 +381,7 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 // resolved against the zero placeholder width of the throwaway state.
 fn should_treat_max_width_as_none(state &LayoutState, box &Node, available_width AvailableSize) bool {
 	max_width := box.computed_values().size_value(.max_width)
+	if max_width.is_stretch() && !available_width.is_definite() { return true }
 	if max_width.is_none() {
 		return true
 	}
@@ -1185,7 +1186,10 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 	box := unsafe { &Node(node) }.as_box() or {
 		return resolve_definite_content_height(computed, containing_block_height)
 	}
-	if size.is_auto() {
+	if size.is_stretch() && containing_block_height != none {
+		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(containing_block_height), false).to_double()
+	}
+	if size.is_auto() || size.is_stretch() {
 		if ratio := box.preferred_aspect_ratio() {
 			if node.document().font_rendering_policy() == .chromium
 				&& !unsafe { &Node(node) }.is_replaced_box() {
@@ -1266,6 +1270,10 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, property css.PropertyID, adjustment f64, containing_block_height ?f64) ?CSSPixels {
 	computed := node.computed_values()
 	size := computed.size_value(property)
+	if size.is_stretch() {
+		basis := containing_block_height or { return none }
+		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(basis), false)
+	}
 	if !(size.contains_percentage() && containing_block_height == none) {
 		if specified := computed.length_percentage_to_px(property, containing_block_height or { 0 }) {
 			return css_px(if specified > adjustment { specified - adjustment } else { 0.0 })

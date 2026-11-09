@@ -114,6 +114,7 @@ fn resolve_layout_size(node &Node, size css.Size, percentage_basis CSSPixels) ?C
 // formatting-context handshake. CSS lengths name the border box when
 // box-sizing:border-box, while UsedValues always stores content dimensions.
 fn resolve_layout_content_size(node &Node, size css.Size, percentage_basis CSSPixels, used_values &UsedValues, width bool) ?CSSPixels {
+	if size.is_stretch() { return stretch_fit_content_size(node, used_values, percentage_basis, width) }
 	mut resolved := resolve_layout_size(node, size, percentage_basis) or { return none }
 	if node.computed_values().box_sizing() == .border_box {
 		edges := if used_values.is_collapsed_borders_table_box() {
@@ -144,7 +145,7 @@ fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPi
 	} else {
 		used_values.border_top.plus(used_values.padding_top).plus(used_values.padding_bottom).plus(used_values.border_bottom)
 	}
-	return css_px(clamp_box_content_to_min_max(node.computed_values(), if width {
+	mut result := css_px(clamp_box_content_to_min_max(node.computed_values(), if width {
 		.min_width
 	} else {
 		.min_height
@@ -153,6 +154,14 @@ fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPi
 	} else {
 		.max_height
 	}, value.to_double(), percentage_basis.to_double(), edges.to_double()))
+	computed := node.computed_values()
+	if computed.size_value(if width { .max_width } else { .max_height }).is_stretch() {
+		result = css_pixels_min(result, stretch_fit_content_size(node, used_values, percentage_basis, width))
+	}
+	if computed.size_value(if width { .min_width } else { .min_height }).is_stretch() {
+		result = css_pixels_max(result, stretch_fit_content_size(node, used_values, percentage_basis, width))
+	}
+	return result
 }
 
 fn resolve_layout_gap(node &Node, property_id css.PropertyID, percentage_basis CSSPixels) CSSPixels {

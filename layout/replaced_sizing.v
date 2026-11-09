@@ -59,6 +59,8 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 	computed_height := replaced_size_value(node, box_model, .height)
 	mut specified_width := resolve_replaced_content_size(node, computed_width, width_basis, box_model, true)
 	mut specified_height := resolve_replaced_content_size(node, computed_height, height_basis, box_model, false)
+	if computed_width.is_stretch() && !available_space.width.is_definite() { specified_width = none }
+	if computed_height.is_stretch() && !available_space.height.is_definite() { specified_height = none }
 	if computed_width.contains_percentage() && !available_space.width.is_definite() {
 		// CSS Sizing's replaced percentage min-contribution resolves a cyclic
 		// percentage preferred width against zero. Under max-content or a plain
@@ -218,11 +220,13 @@ fn replaced_box_sizing_edges(node &Node, box_model ReplacedBoxModel, width bool)
 }
 
 fn resolve_replaced_content_size(node &Node, size css.Size, size_basis CSSPixels, box_model ReplacedBoxModel, width bool) ?CSSPixels {
+	if size.is_stretch() { return replaced_stretch_fit_content_size(node, size_basis, box_model, width) }
 	resolved := resolve_layout_size(node, size, size_basis) or { return none }
 	return css_pixels_max(CSSPixels.new(0), resolved.minus(replaced_box_sizing_edges(node, box_model, width)))
 }
 
 fn should_treat_replaced_max_as_none(maximum css.Size, available_size AvailableSize) bool {
+	if maximum.is_stretch() && !available_size.is_definite() { return true }
 	if maximum.is_none() {
 		return true
 	}
@@ -247,9 +251,9 @@ fn should_treat_replaced_max_as_none(maximum css.Size, available_size AvailableS
 
 fn replaced_axis_constraints(node &Node, minimum css.Size, maximum css.Size, input CSSPixels, available_size AvailableSize, box_model ReplacedBoxModel, width bool) (CSSPixels, CSSPixels) {
 	basis := available_size.to_px_or_zero()
-	min_value := resolve_replaced_content_size(node, minimum, basis, box_model, width) or {
+	min_value := if minimum.is_stretch() && !available_size.is_definite() { CSSPixels.new(0) } else { resolve_replaced_content_size(node, minimum, basis, box_model, width) or {
 		CSSPixels.new(0)
-	}
+	} }
 	specified_max := if should_treat_replaced_max_as_none(maximum, available_size) {
 		CSSPixels.max()
 	} else {
@@ -357,6 +361,7 @@ fn solve_replaced_size_constraint(box &Box, input_width CSSPixels, input_height 
 fn should_treat_width_as_auto(state &LayoutState, box &Box, available_space AvailableSpace) bool {
 	node := unsafe { &Node(box) }
 	computed_width := node.computed_values().size_value(.width)
+	if computed_width.is_stretch() && !available_space.width.is_definite() { return true }
 	if computed_width.is_auto() {
 		return true
 	}
@@ -435,6 +440,7 @@ fn should_treat_height_as_auto(state &LayoutState, box &Box, available_space Ava
 	node := unsafe { &Node(box) }
 	styled := node.as_node_with_style() or { return true }
 	computed_height := node.computed_values().size_value(.height)
+	if computed_height.is_stretch() && !available_space.height.is_definite() { return true }
 	if computed_height.is_auto() {
 		if used_values := state.try_get(styled) {
 			if used_values.has_definite_width() && box.has_preferred_aspect_ratio() {
@@ -626,6 +632,9 @@ fn compute_size_for_block_level_replaced_element_in_normal_flow(box &Box, box_st
 // matching intrinsic width; a length or percentage passes through the
 // `box-sizing: border-box` conversion against the *used* inline padding.
 fn calculate_inner_width(mut state LayoutState, box &Box, box_state &UsedValues, available_width AvailableSize, size css.Size) CSSPixels {
+	if size.is_stretch() && available_width.is_definite() {
+		return stretch_fit_content_size(unsafe { &Node(box) }, box_state, available_width.to_px_or_zero(), true)
+	}
 	if size.is_fit_content() {
 		return calculate_fit_content_width(mut state, box, available_width)
 	}
