@@ -28,20 +28,17 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 	if layout_nodes_same(anchor_node, context.box) || (anchor_node.as_box() == none && anchor_node.as_inline_node() == none) {
 		return false
 	}
-	if anchor_node.is_absolutely_positioned() {
-		if block := anchor_node.containing_block() {
-			if layout_nodes_same(unsafe { &Node(block) },unsafe { &Node(context.containing_block) }) {
-				query := anchor_query_element(context.box) or { return false }
-				if candidate.as_node().compare_document_position(query.as_node()) & dom.document_position_following == 0 { return false }
-			}
-		}
-	}
 	mut pending := []&Node{}
 	mut pending_ancestor := ?&Node(anchor_node)
 	for pending_ancestor != none {
 		ancestor_node := pending_ancestor or { break }
 		if layout_nodes_same(ancestor_node,unsafe { &Node(context.containing_block) }) { break }
 		if ancestor_node.is_absolutely_positioned() {
+			if anchor_has_same_positioning_container(ancestor_node,context.box) {
+				owner := anchor_query_element(ancestor_node) or { return false }
+				query := anchor_query_element(context.box) or { return false }
+				if owner.as_node().compare_document_position(query.as_node()) & dom.document_position_following == 0 { return false }
+			}
 			status := context.state.absolute_layout_status[voidptr(ancestor_node)] or { u8(0) }
 			if status == 1 { return false }
 			if status == 0 { pending << ancestor_node }

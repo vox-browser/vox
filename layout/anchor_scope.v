@@ -34,3 +34,10 @@ fn anchor_query_element(node &Node) ?&dom.Element {
 	if generator := node.pseudo_element_generator() { return generator }
 	return (node.dom_node() or { return none }).as_element()
 }
+
+fn anchor_has_same_positioning_container(candidate &Node, query &Node) bool {
+	left := candidate.inline_containing_block_if_applicable()
+	right := query.inline_containing_block_if_applicable()
+	if left != none || right != none { return voidptr(left or { unsafe { nil } }) == voidptr(right or { unsafe { nil } }) }
+	return voidptr(candidate.containing_block() or { unsafe { nil } }) == voidptr(query.containing_block() or { unsafe { nil } })
+}

@@ -14,3 +14,11 @@ fn test_anchor_dependency_chain_uses_preceding_positioned_boxes() {
 		assert r.x == index*60,'box ${index}: ${r.x}'
 	}
 }
+
+fn test_propagated_anchors_are_visible_outside_but_not_before_their_own_positioning_queue() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer,#inner{position:relative;width:100px;height:100px}.target{position:absolute;width:anchor-size(--a width);height:1px}#future{position:absolute}#anchor{width:30px;height:10px;anchor-name:--a}</style><div id="outer"><div id="outside" class="target"></div><div id="inner"><div id="inside" class="target"></div><div id="future"><div id="anchor"></div></div></div></div>')
+	defer { document.finalize() }
+	run_document_layout(document,200,200) or { panic('layout') }
+	assert (document.get_element_by_id('outside') or { panic('outside') }).get_bounding_client_rect().width == 30
+	assert (document.get_element_by_id('inside') or { panic('inside') }).get_bounding_client_rect().width == 0
+}
