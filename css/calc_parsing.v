@@ -144,7 +144,7 @@ fn calc_node_contains_anchor_functions(node CalcNode) bool {
 
 fn calc_function_is_supported(name string) bool {
 	return name in ['calc', 'min', 'max', 'clamp', 'hypot', 'abs', 'sign', 'sin', 'cos', 'tan',
-		'asin', 'acos', 'atan', 'atan2', 'pow', 'sqrt', 'exp', 'log', 'mod', 'rem', 'round', 'random']
+		'asin', 'acos', 'atan', 'atan2', 'pow', 'sqrt', 'exp', 'log', 'mod', 'rem', 'round', 'random', 'progress']
 }
 
 // Entry point: parse a `<calc-function>` component value into a CalculatedStyleValue.
@@ -458,7 +458,7 @@ fn (mut parser Parser) parse_random_function(values []ComponentValue, allow_tree
 fn build_calc_function(name string, arguments []CalcNode, strategy string) ?CalcNode {
 	valid_arity := match name {
 		'min', 'max', 'hypot' { arguments.len >= 1 }
-		'clamp' { arguments.len == 3 }
+		'clamp', 'progress' { arguments.len == 3 }
 		'abs', 'sign', 'sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'sqrt', 'exp' {
 			arguments.len == 1
 		}
@@ -836,6 +836,10 @@ fn calc_function_numeric_type(name string, children []CalcNode) ?NumericType {
 		'min', 'max', 'clamp', 'hypot', 'abs', 'mod', 'rem', 'round' {
 			// Type-preserving: the result has the consistent type of the arguments.
 			return calc_consistent_children_type(children)
+		}
+		'progress' {
+			calc_consistent_children_type(children) or { return none }
+			return NumericType.new()
 		}
 		'sign' {
 			// <number>|<dimension>|<percentage> in, <number> out.

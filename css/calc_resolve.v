@@ -325,6 +325,10 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 		results << (resolve_calc_node(child, calculation_context, ctx) or { return none })
 	}
 	match node.name {
+		'progress' {
+			calc_consistent_results_type(results) or { return none }
+			return CalcResult{value:(results[0].value-results[1].value)/(results[2].value-results[1].value),type_:NumericType.new()}
+		}
 		'min' {
 			consistent_type := calc_consistent_results_type(results) or { return none }
 			mut minimum := results[0].value

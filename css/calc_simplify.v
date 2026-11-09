@@ -505,7 +505,7 @@ fn simplify_calc_invert(child CalcNode) CalcNode {
 }
 
 fn calc_function_needs_resolved_percentage(name string) bool {
-	return name in ['min', 'max', 'clamp', 'hypot', 'abs', 'atan2', 'round', 'mod', 'rem']
+	return name in ['min', 'max', 'clamp', 'hypot', 'abs', 'atan2', 'round', 'mod', 'rem', 'progress']
 }
 
 // C++ step 5 partially combines comparable same-unit children of min()/max(), even
