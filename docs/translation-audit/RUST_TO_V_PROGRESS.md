@@ -529,3 +529,25 @@ Production JPEG XL, its Cargo/CI integration and native developer test still
 need Rust. Non-visible preview dependencies, wider reference composition,
 VarDCT extra channels/alpha, whole-frame chroma sampling, feature streams,
 large entropy maps and production integration remain unfinished.
+
+## Visible modular XYB output and full checkpoint on 2026-11-09
+
+Two more V slices share modular XYB rendering with LF saving and add complete
+opaque VarDCT/modular XYB output. Twenty new native files compare 269,336 RGBA
+bytes exactly, including filtering, all image-upsample factors and orientation.
+The entry point also preserves 42 prior opaque native image references. The
+package now has 282,781 source records and 84 test files.
+
+Focused default/no-GC/optimized checks pass. The full 84-file corpus also passes
+through the V checker in both GC modes, with actual tests, inner guards, drivers
+and outer guards exiting zero. All 358 selected hashes/change times remain
+unchanged. This completes ten slices after the 74-file checkpoint and resets
+cadence to 0/10 at `16b9843ac`.
+[The modular-output report](JPEGXL_V_MODULAR_OUTPUT.md) records the independent
+fixture construction, source/toolchain pins, focused checks and full results.
+
+Production JPEG XL and its Cargo/CI/native developer tool still use Rust.
+VarDCT extra channels/alpha, whole-frame chroma sampling, feature streams,
+wider reference composition, non-visible preview dependencies, larger entropy
+maps and production integration remain. Removing all Rust dependencies remains
+unfinished.

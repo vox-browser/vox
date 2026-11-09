@@ -523,9 +523,25 @@ batch receives no whole-run pass credit. Cadence is 8/10, with no full
 eighty-two-file run claimed.
 See [the preview report](../docs/translation-audit/JPEGXL_V_PREVIEWS.md).
 
+Two further slices share modular XYB frame rendering with LF saving and add
+`decode_opaque_rgba` for complete opaque VarDCT/modular XYB files. Twenty native
+images compare all 269,336 RGBA bytes exactly through restoration, upsampling
+and orientation. The new entry point also preserves all 42 prior opaque native
+image references. Reused conversion records are not counted again. The package
+now has 282,781 source records and eighty-four test files.
+
+Focused checks pass both GC modes and optimized builds. All eighty-four files
+also pass through the V corpus checker in both GC modes, with actual tests,
+inner guards, drivers and outer guards exiting zero. All 358 selected input
+hashes/change times remain unchanged, including the root module declaration
+and current compiler. This completes the ten-slice checkpoint and resets
+cadence to 0/10 at `16b9843ac`.
+See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
+
 Non-visible preview dependencies, wider reference composition, extra channels/
-alpha in VarDCT, whole-frame chroma sampling, feature streams, large entropy
-maps and production integration remain.
+alpha in VarDCT, non-XYB modular rendering beyond the existing lossless path,
+whole-frame chroma sampling, feature streams, large entropy maps and production
+integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

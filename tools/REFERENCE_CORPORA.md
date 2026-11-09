@@ -130,3 +130,14 @@ an option unwrap; its corrected standalone pass combines with three retained
 image-file passes, without whole-run credit for the failed original batch.
 Cadence is 8/10; no full 82-file run is claimed. Production and its native
 developer tool still need Rust. See [the preview report](../docs/translation-audit/JPEGXL_V_PREVIEWS.md).
+
+Visible modular XYB output adds twenty complete native files and 269,336 exact
+RGBA bytes, bringing JPEG XL to 282,781 source records and 84 test files. The
+shared frame renderer also retains the previous conversion references without
+counting them again. The new opaque entry point preserves all 42 prior native
+opaque image references. Focused default/no-GC/optimized checks pass. All 84
+files also pass through this V driver in both GC modes, with tests, inner guards,
+drivers and outer guards exiting zero and 358 unchanged selected inputs. The
+ten-slice checkpoint resets cadence to 0/10 at `16b9843ac`.
+See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
+Production JPEG XL and its native developer tool still require Rust.
