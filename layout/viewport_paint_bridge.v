@@ -549,11 +549,19 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 		inset_percentage_basis = painting.Size{nearest_scrollport.width, nearest_scrollport.height}
 	}
 	mut containing_region := LayoutRect{}
+	mut margins := box.margin
 	mut needs_parent_offset_adjustment := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
 		if containing_block := node.containing_block() {
 			if containing_box := boxes_by_layout[u64(voidptr(containing_block))] {
+				basis := if containing_block.computed_values().writing_mode() == .horizontal_tb { containing_box.width } else { containing_box.height }
+				edges := node.computed_values().resolved_box_model_edges(basis)
+				margins = BoxEdges{
+					...margins
+					left:if property_is_auto(node.computed_values(),.margin_left) { margins.left } else { edges.margin_left.to_double() }
+					right:if property_is_auto(node.computed_values(),.margin_right) { margins.right } else { edges.margin_right.to_double() }
+				}
 				if voidptr(containing_box) == voidptr(scroll_ancestor) {
 					overflow := scroll_ancestor.scrollable_overflow or {
 						LayoutRect{ width: scroll_ancestor.width, height: scroll_ancestor.height }
@@ -572,6 +580,20 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 			}
 		}
 	}
+	// The position box includes margins, limited to the distance available to
+	// the containing block edge when a margin already extends outside it.
+	position := painting.Point{sticky_border_box.x-scrollport_rect.x,sticky_border_box.y-scrollport_rect.y}
+	left_margin := math.min(margins.left,math.max(0.0,position.x-containing_region.x))
+	right_margin := math.min(margins.right,math.max(0.0,containing_region.x+containing_region.width-position.x-sticky_border_box.width))
+	top_margin := math.min(margins.top,math.max(0.0,position.y-containing_region.y))
+	bottom_margin := math.min(margins.bottom,math.max(0.0,containing_region.y+containing_region.height-position.y-sticky_border_box.height))
+	containing_region = LayoutRect{
+		x:containing_region.x+left_margin
+		y:containing_region.y+top_margin
+		width:containing_region.width-left_margin-right_margin
+		height:containing_region.height-top_margin-bottom_margin
+	}
+	insets := compatibility_sticky_view_rectangle_insets(box,compatibility_sticky_insets(box,inset_percentage_basis),scrollport_size,painting.Size{sticky_border_box.width,sticky_border_box.height})
 	mut sticky_frame := state.frame_at(sticky_frame_index)
 	sticky_frame.set_sticky_constraints(painting.StickyConstraints{
 		position_relative_to_scroll_ancestor: painting.Point{
@@ -587,8 +609,28 @@ fn precompute_compatibility_sticky_constraints(mut box BlockBox, sticky_frame_in
 			height: containing_region.height
 		}
 		needs_parent_offset_adjustment: needs_parent_offset_adjustment
-		insets: compatibility_sticky_insets(box, inset_percentage_basis)
+		insets: insets
 	})
+}
+
+fn compatibility_sticky_view_rectangle_insets(box &BlockBox,insets painting.StickyInsets,scrollport painting.Size,border_box painting.Size) painting.StickyInsets {
+ if box.layout_handle==unsafe { nil } { return insets }
+ node := unsafe { &Node(box.layout_handle) }
+ mut left,mut right := insets.left,insets.right
+ mut top,mut bottom := insets.top,insets.bottom
+ width := scrollport.width-(left or { 0 })-(right or { 0 })
+ height := scrollport.height-(top or { 0 })-(bottom or { 0 })
+ // A negative end inset enlarges an undersized sticky view rectangle to
+ // contain the border box. End follows the sticky box's writing direction.
+ if width<border_box.width {
+  if absolute_axis_starts_low(node,true) { if value := right { right=value-(border_box.width-width) } }
+  else { if value := left { left=value-(border_box.width-width) } }
+ }
+ if height<border_box.height {
+  if absolute_axis_starts_low(node,false) { if value := bottom { bottom=value-(border_box.height-height) } }
+  else { if value := top { top=value-(border_box.height-height) } }
+ }
+ return painting.StickyInsets{top,right,bottom,left}
 }
 
 fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]&BlockBox, mut boxes_by_scroll_frame map[int]&BlockBox, mut state painting.ScrollState) {
