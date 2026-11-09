@@ -146,7 +146,9 @@ fn (mut binding CompactElementQueryBinding) query_with_temporary_reply(input str
 		binding.reply_workspace.finish()
 		return failure
 	}
-	return browserjs.HostFunctionReply{value: value, workspace: binding.reply_workspace}
+	// Query results are JSON. Keep lone UTF-16 units as escapes while the
+	// native host copies the reply through its UTF-8 source-string boundary.
+	return browserjs.HostFunctionReply{value: compact_replay_json_result(value), workspace: binding.reply_workspace}
 }
 
 fn (mut binding CompactElementQueryBinding) node_for_key(key string) ?&dom.Node {

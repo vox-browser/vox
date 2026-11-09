@@ -16,7 +16,7 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 	state := if encoded_state == '' {
 		json2.Any(json2.Null{})
 	} else {
-		json2.decode[json2.Any](encoded_state)!
+		json2.decode[json2.Any](compact_replay_json_text(encoded_state))!
 	}
 	mut node := binding.equality_node(owned_key, state)!
 	mut element := node.as_element() or { return error('TypeError: Illegal Element receiver') }
@@ -60,7 +60,7 @@ fn (mut binding CompactElementQueryBinding) set_trusted_attribute(key string, na
 		element.set_attribute_for_bindings(owned_name, owned_input)!
 	}
 	change.finish(element)
-	return json2.encode({
+	return compact_replay_json_result(json2.encode({
 		'refresh': binding.element_attribute_refresh(element)
-	})
+	}))
 }

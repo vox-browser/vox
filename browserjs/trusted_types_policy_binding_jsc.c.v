@@ -132,10 +132,10 @@ fn (binding &TrustedTypesPolicyBinding) set_trusted_attribute(args []voidptr) !v
 	work := platform.begin_thread_scratch('trusted attribute transport')
 	defer { work.finish() }
 	key := runtime.binding_dom_string(args[0])!
-	namespace := if C.JSValueIsNull(runtime.context, args[1]) { ?string(none) } else { ?string(runtime.binding_dom_string(args[1])!) }
-	name := runtime.binding_dom_string(args[2])!
+	namespace := if C.JSValueIsNull(runtime.context, args[1]) { ?string(none) } else { ?string((runtime.binding_dom_utf16(args[1])!).str()) }
+	name := (runtime.binding_dom_utf16(args[2])!).str()
 	kind := runtime.binding_dom_string(args[3])!
-	value := runtime.binding_dom_string(args[4])!
+	value := (runtime.binding_dom_utf16(args[4])!).str()
 	namespaced := C.JSValueToBoolean(runtime.context, args[5])
 	state := runtime.binding_dom_string(args[6])!
 	input := match kind {

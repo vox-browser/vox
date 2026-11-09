@@ -25,7 +25,7 @@ fn (mut binding CompactElementQueryBinding) node_tree_query(root &dom.Node, acti
 	if action == 'setNodeText' {
 		parent.set_text_content(value)!
 	} else {
-		request := json2.decode[map[string]json2.Any](value)!
+		request := compact_decode_query[map[string]json2.Any](value)!
 		key := json_string_property(request, 'child') or { return error('TypeError: Invalid child node') }
 		child := binding.node_for_key(key) or {
 			state := request['state'] or { return error('TypeError: Invalid child node') }
