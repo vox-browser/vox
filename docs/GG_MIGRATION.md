@@ -1785,3 +1785,39 @@ Raw near-integer real-blur crop/resampling cases and other layer crops remain,
 along with rotated layers, SVG graphs, boolean shadows, large-sigma/tiling
 paths and native/GPU services. Full-browser Linux compile/link/run without
 Skia remains unverified. See the [native crop cases, baseline probes and guarded checks](gg-migration/deferred-image-crops-20261109.json).
+
+### Color-filter image crops and clearing restores (2026-11-09)
+
+`216da0f27` preserves the source layer crop for color-filter-only images.
+Bounded blends clip the draw; transparency-affecting blends resolve the cropped
+image before restoring across the full clip. General affine bounds use mapped
+float corners, retaining the existing double-precision scale/translate path.
+
+The new random crop selection exposed a real mismatch at case 92: a gain of
+100 amplified sampling beyond the source crop, producing red 39 instead of 36
+at pixel (9, 8). The exact source, background and filter request are frozen as
+a regression; independent native recapture on both platforms reproduces the
+original full expected SHA-256. Twelve additional native cases cover gain,
+opacity, P3, source alpha, clips and clearing modes. All 190 image fixtures
+verify on macOS and Linux. Initial focused checks caught five rotated-image
+regressions from applying scale-only bounds math; their failures remain in
+the receipt and the final C/FastC image and filter-layer suites pass.
+
+Default macOS and Linux each match 1,863 of 2,000 crop-focused attempts at
+seed 20261129, declining 137. Optimized macOS/no-GC matches 1,888 of 2,000
+at seed 20261130, declining 112. The broader image-filter selection matches
+4,122 of 5,000 on each platform at seed 20261131, declining 878. Counts
+include no-ops; every final cohort finishes with unchanged input pins.
+
+HTML canvas integration, the full Linux browser typecheck and the FMA audit
+pass (zero contracted operations, 189 explicit). A standalone Linux
+production/no-GC executable runs all 45 image tests with Skia unavailable to
+pkg-config and no direct or transitive Skia linkage; direct libraries are
+FreeType, libm and libc. The browser typecheck uses installed Skia development
+files. The complete browser still links Skia, and full-browser Linux
+compile/link/run without Skia remains unverified. The shared production bundle
+was not used to validate this fix; its parsed source manifest predates it.
+
+Raw near-integer real-blur crops, rotated saved layers, SVG graphs, boolean
+shadows, large-sigma/tiling paths and native/GPU services remain. See the
+[original mismatch, native fixtures, input pins and Linux linkage](gg-migration/color-image-crops-20261109.json).
