@@ -15,10 +15,10 @@ fn chromium_control_font_style_sheet() &CSSStyleSheet {
 		chromium_control_font_stylesheet = parse_shared_user_agent_stylesheet('input, select, button, textarea { font: 13.3333333333333px Arial; }
 textarea { font-family: monospace; }
 input::placeholder, textarea::placeholder { color:#757575; }
-input:not([type=submit i], input[type=button i], input[type=image i], input[type=reset i], input[type=color i], input[type=checkbox i], input[type=file i], input[type=radio i], input[type=range i]) { border: 2px inset #767676; min-height: auto; }
-input:is([type=submit i], [type=button i], [type=reset i]), button { border: 2px outset #767676; padding: 1px 6px; background-color: #efefef; }
-textarea { border-color: #767676; }
-select { border: 1px solid #767676; padding: 0; }
+input:not([type=submit i], input[type=button i], input[type=image i], input[type=reset i], input[type=color i], input[type=checkbox i], input[type=file i], input[type=radio i], input[type=range i]) { border: 2px inset ButtonBorder; min-height: auto; }
+input:is([type=submit i], [type=button i], [type=reset i]), button { border: 2px outset ButtonBorder; padding: 1px 6px; background-color: ButtonFace; }
+textarea { border-color: ButtonBorder; }
+select { border: 1px solid ButtonBorder; padding: 0; }
 select:not(:disabled), select:not(:disabled):hover { background-color: white; color: black; }
 input[type=checkbox i] { margin: 3px 3px 3px 4px; }
 input[type=radio i] { margin: 3px 3px 0px 5px; }')

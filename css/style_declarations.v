@@ -1562,7 +1562,7 @@ fn cssom_resolve_color_style_value(style_value &dom.StyleValue, context ColorRes
 		return dom_style_value_from_value_logic(resolved)
 	}
 	color := typed.to_color(context) or { return unsafe { style_value } }
-	return dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create_from_color(color, .modern, none)))
+	return dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create_from_color(color, .legacy, none)))
 }
 
 // The resolved value of a color that keeps a form of its own: a relative
@@ -1576,7 +1576,7 @@ fn cssom_resolve_typed_color(typed StyleValue, context ColorResolutionContext) ?
 			color_scheme: context.color_scheme
 		}), context) or {
 			color := branch.to_color(context)?
-			return StyleValue(ColorStyleValue.create_from_color(color, .modern, none))
+			return StyleValue(ColorStyleValue.create_from_color(color, .legacy, none))
 		}
 		return resolved
 	}

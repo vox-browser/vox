@@ -9410,6 +9410,11 @@ pub fn (style_value KeywordStyleValue) to_color(color_resolution_context ColorRe
 	}
 
 	scheme := color_resolution_context.color_scheme or { PreferredColorScheme.light }
+	if document := color_resolution_context.document {
+		if document.font_rendering_policy() == .chromium {
+			if color := chromium_system_color(style_value.keyword(),scheme) { return color }
+		}
+	}
 
 	// Calculate accent_color_text based on contrast to accent_color
 	if style_value.keyword() == .accentcolortext {
@@ -9523,8 +9528,9 @@ pub fn (style_value KeywordStyleValue) absolutized(context ComputationContext) S
 
 	resolved_color := style_value.to_color(ColorResolutionContext{
 		color_scheme: context.color_scheme
+		document: if element := context.abstract_element { ?&dom.Document(element.document()) } else { none }
 	}) or { return StyleValue(style_value) }
-	return StyleValue(ColorStyleValue.create(resolved_color))
+	return StyleValue(ColorStyleValue.create_from_color(resolved_color, .legacy, none))
 }
 
 pub fn (style_value KeywordStyleValue) tokenize() []ComponentValue {
