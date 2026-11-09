@@ -51,8 +51,9 @@
   Do not leave implemented work uncommitted unless the user explicitly asks.
 - Every commit must request an automatic production rebuild through the managed
   post-commit hook (`python3 tools/rebuild_browser.py --install-hook`). The hook
-  selects the C frontend for production; FastC remains available for explicit
-  builds. Keep requests coalesced under the shared worker and memory guard.
+  selects the C backend with literal V `-prod` in one C unit; FastC remains
+  available for explicit builds. Keep requests coalesced under the shared worker
+  and memory guard.
 - Commit each completed translation feature separately with a focused commit
   message. Do not combine unrelated translation slices in one commit.
 - Include the feature's focused tests in the same commit as its implementation.
@@ -159,8 +160,9 @@
 
 - `build-prod-browser.sh` uses `V_BIN` when set, then `v` from `PATH`, and finally
   `~/code/v/v`. It writes `Build/v/Vox.app` and ad-hoc signs the bundle.
-- By default the build compiles the generated C with V's `-parallel-cc` (split
-  units linked with ThinLTO). `sh build-prod-browser.sh --no-parallel-cc`
+- Automatic commit builds use the C backend with literal V `-prod` in one C unit.
+  Manual builds without `--prod` compile the generated C with V's `-parallel-cc`
+  (split units linked with ThinLTO). `sh build-prod-browser.sh --no-parallel-cc`
   compiles one sealed C unit for maximum binary performance; it is several
   times slower to build. Without a V that supports native-header splitting
   (`V3_PARALLEL_CC_REQUIRE_SPLIT`), or when native code cannot be split, the

@@ -281,6 +281,18 @@ class LinuxCompilerSelectionTest(unittest.TestCase):
         compiler = self.compiler(self.helpers / 'v')
         self.assert_compiler_selected(self.run_build(), compiler)
 
+    def test_automatic_prod_request_reaches_c_compiler_for_every_gc_mode(self):
+        self.compiler(self.helpers / 'v')
+        for gc_mode in ('boehm', 'boehm_full', 'none'):
+            with self.subTest(gc_mode=gc_mode):
+                result = self.run_build(overrides={'VOX_BUILD_V_PROD': '1',
+                    'VOX_BUILD_BACKEND': 'c', 'LADYBIRD_V_GC': gc_mode})
+                self.assertEqual(result.returncode, 0, result.stdout)
+                arguments = json.loads(self.compiler_log.read_text())['argv']
+                self.assertEqual(arguments[:2], ['-b', 'c'])
+                self.assertEqual(arguments.count('-prod'), 1)
+                self.assertEqual(arguments[arguments.index('-gc') + 1], gc_mode)
+
     def test_explicit_compiler_name_is_found_on_path(self):
         compiler = self.compiler(self.helpers / 'v')
         self.assert_compiler_selected(self.run_build(v_bin='v'), compiler)

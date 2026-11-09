@@ -11,7 +11,7 @@ if [ "$#" -ne 0 ]; then
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 # Match the supervisor's protocol; stale workers hand off before compiling.
-if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v7 ]; then
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v8 ]; then
     python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
     exit 75
 fi
@@ -96,11 +96,14 @@ if [ "$gc_mode" = prealloc ]; then
     # selected. Keep the compiler's imported graph within its memory budget.
     set -- "$@" -w -n -nocache -prealloc -gc none
 elif [ "$gc_mode" = none ]; then
-    set -- "$@" -prod -gc none
+    set -- "$@" -gc none
 else
     # Use the distribution's threaded collector, rather than building V's
     # bundled collector through its object-file cache.
     set -- "$@" -gc "$gc_mode" -d dynamic_boehm
+fi
+if [ "$gc_mode" = none ] || [ "${VOX_BUILD_V_PROD:-0}" = 1 ]; then
+    set -- "$@" -prod
 fi
 if [ "$gc_mode" = prealloc ]; then
     # V resolves builtin relative to its compiler root, not just -path.

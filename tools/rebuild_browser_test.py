@@ -195,14 +195,58 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertFalse(reset['v_prod'])
                 self.assertEqual(reset['c_mode'],'parallel')
 
+    def test_prod_request_overrides_pending_fastc_and_nonprod_settings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = build.production_state_dir(root)
+            for started in (False, True):
+                with self.subTest(started=started):
+                    build.write_json(state / 'request.json', dict(id='old', backend='fastc',
+                                     c_mode='parallel', v_prod=False))
+                    build.write_json(state / 'started.json', dict(id='old' if started else 'earlier'))
+                    with patch.object(build, 'ROOT', root), patch.object(build, 'validate_repository'), \
+                            patch.object(build, 'git', return_value=b'head'), \
+                            patch.object(sys, 'argv', ['rebuild_browser.py', '--request', '--backend', 'c', '--prod']), \
+                            patch.object(build.subprocess, 'Popen') as worker:
+                        self.assertEqual(build.main(), 0)
+                    worker.assert_called_once()
+                    request = json.loads((state / 'request.json').read_text())
+                    self.assertEqual(request['backend'], 'c')
+                    self.assertTrue(request['v_prod'])
+                    self.assertEqual(request['c_mode'], 'single')
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'macOS application-directory publication')
+    def test_new_prod_or_c_mode_request_is_built_when_source_is_unchanged(self):
+        for changed in (dict(v_prod=True), dict(c_mode='single')):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.app(root / 'Build/v', b'old')
+                state = build.production_state_dir(root)
+                request = dict(id='one', backend='c', c_mode='parallel', v_prod=False)
+                build.write_json(state / 'request.json', request)
+                modes = []
+                def compile(repo, stage, receipt, environment):
+                    modes.append((environment['VOX_BUILD_V_PROD'], environment['VOX_BUILD_C_MODE']))
+                    self.app(stage, str(len(modes)).encode())
+                    if len(modes) == 1:
+                        build.write_json(state / 'request.json', dict(request, **dict(changed, id='two')))
+                    return 0
+                with patch.object(build, 'validate_repository'), \
+                        patch.object(build, 'repository_state', return_value=dict(head='same')):
+                    self.assertEqual(build.build_pending(root, compile), 0)
+                self.assertEqual(modes, [('0', 'parallel'),
+                    ('1' if changed.get('v_prod') else '0', changed.get('c_mode', 'parallel'))])
+                self.assertEqual(json.loads((state / 'latest.json').read_text())['request']['id'], 'two')
+
     @unittest.skipUnless(sys.platform=='darwin','macOS application-directory publication')
     def test_literal_prod_request_reaches_the_supervised_build(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); self.app(root/'Build/v',b'old')
-            build.write_json(build.production_state_dir(root) / 'request.json',dict(id='prod',c_mode='single',v_prod=True))
+            build.write_json(build.production_state_dir(root) / 'request.json',dict(id='prod',backend='c',c_mode='single',v_prod=True))
             def compile(repo,stage,receipt,environment):
                 self.assertEqual(environment['VOX_BUILD_C_MODE'],'single')
                 self.assertEqual(environment['VOX_BUILD_V_PROD'],'1')
+                self.assertEqual(environment['VOX_BUILD_BACKEND'],'c')
                 self.app(stage,b'prod'); return 0
             with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='one')):
                 self.assertEqual(build.build_pending(root,compile),0)
@@ -581,9 +625,10 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(check.read_text(), build.PRE_COMMIT_HOOK)
                 self.assertTrue(hook.stat().st_mode & 0o111)
                 self.assertTrue(check.stat().st_mode & 0o111)
-                hook.write_text(build.PREVIOUS_HOOK)
-                build.install_hook(root)
-                self.assertEqual(hook.read_text(), build.HOOK)
+                for old_hook in (build.PREVIOUS_HOOK, build.LEGACY_HOOK):
+                    hook.write_text(old_hook)
+                    build.install_hook(root)
+                    self.assertEqual(hook.read_text(), build.HOOK)
                 hook.write_text('custom hook\n')
                 with self.assertRaisesRegex(RuntimeError, 'Existing post-commit hook retained'):
                     build.install_hook(root)
@@ -594,7 +639,7 @@ class ProductionBuildTests(unittest.TestCase):
                     build.install_hook(root)
                 self.assertEqual(check.read_text(), 'custom check\n')
 
-    def test_each_commit_requests_production_with_the_c_frontend(self):
+    def test_each_commit_requests_literal_prod_with_the_c_backend(self):
         with tempfile.TemporaryDirectory(prefix='vox commit builds ') as directory:
             root = Path(directory)
             subprocess.run(['git', 'init', '-q', '-b', 'master', str(root)], check=True)
@@ -615,7 +660,7 @@ class ProductionBuildTests(unittest.TestCase):
                 heads.append(build.git(root, 'rev-parse', 'HEAD').decode().strip())
             requests = [json.loads(line) for line in (root / 'requests.jsonl').read_text().splitlines()]
             self.assertEqual([request['head'] for request in requests], heads)
-            self.assertTrue(all(request['arguments'] == ['--request', '--backend', 'c']
+            self.assertTrue(all(request['arguments'] == ['--request', '--backend', 'c', '--prod']
                                 for request in requests))
 
     @unittest.skipUnless(sys.platform == 'linux', 'Linux compiler selection')
@@ -793,10 +838,10 @@ printf '%s' 'quoted "body" with $literal and `literal`' > "$VOX_BUILD_OUTPUT_DIR
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
         self.assertIn('--no-parallel-cc requires --build', result.stderr)
-        result = subprocess.run([sys.executable, str(tool), '--request', '--prod'],
+        result = subprocess.run([sys.executable, str(tool), '--worker', '--prod'],
                                 capture_output=True, text=True)
         self.assertEqual(result.returncode, 2)
-        self.assertIn('--prod requires --build', result.stderr)
+        self.assertIn('--prod requires --request or --build', result.stderr)
         script = tool.parents[1] / 'build-prod-browser.sh'
         for arguments in (['--parallel'], ['--no-parallel-cc', '--no-parallel-cc'], ['--prod', '--prod'],
                           ['--parallel-cc','--parallel-cc'], ['--parallel-cc','--no-parallel-cc']):

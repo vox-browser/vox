@@ -23,19 +23,20 @@ ROOT = Path(__file__).resolve().parents[1]
 # Large optimized C builds need more wall time when the shared host is busy.
 # Keep the memory guard's default aggregate RSS budget.
 PRODUCTION_BUILD_TIMEOUT_SECONDS = 45 * 60
-BUILD_PROTOCOL = 'bundle-lease-v7'
-WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v7.lock'
+BUILD_PROTOCOL = 'bundle-lease-v8'
+WORKER_UPGRADE_LOCK = 'upgrade-bundle-lease-v8.lock'
 PUBLICATION_REVIEW_GRACE_SECONDS = 5
 HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
 repo=$(git rev-parse --show-toplevel)
-exec python3 "$repo/tools/rebuild_browser.py" --request --backend c
+exec python3 "$repo/tools/rebuild_browser.py" --request --backend c --prod
 '''
 # Upgrade our previously installed hook without replacing a user's custom hook.
-# FastC remains available through v.mod and explicit build requests; automatic
-# production requests use the C frontend until FastC can compile the browser.
-PREVIOUS_HOOK = HOOK.replace(' --backend c', '')
+# Automatic builds use literal V -prod with the C backend. FastC remains
+# available through v.mod and explicit build requests.
+PREVIOUS_HOOK = HOOK.replace(' --prod', '')
+LEGACY_HOOK = PREVIOUS_HOOK.replace(' --backend c', '')
 PRE_COMMIT_HOOK = '''#!/bin/sh
 # Vox staged-file check; managed by tools/rebuild_browser.py.
 set -eu
@@ -182,6 +183,12 @@ def same_build_inputs(before, after):
     if 'build_inputs_sha256' in before and 'build_inputs_sha256' in after:
         return before['build_inputs_sha256'] == after['build_inputs_sha256']
     return before == after
+
+
+def same_build_options(before, after):
+    defaults = dict(renderer='gg', c_mode='parallel', v_prod=False, backend=None)
+    return all(before.get(key, default) == after.get(key, default)
+               for key, default in defaults.items())
 
 
 def exchange_directories(source, target):
@@ -362,9 +369,7 @@ def build_pending(root, runner=run_build, foreground=False):
                                 from production_source_manifest import matches_compiled_checkout
                                 matches = (matches_compiled_checkout(root, frozen) if frozen else
                                            same_build_inputs(repository_state(root), before))
-                                same_options = all(latest.get(key) == request.get(key)
-                                                   for key in ('renderer', 'c_mode', 'v_prod', 'backend'))
-                                if (not matches or not same_options) and time.monotonic() - ready_time >= PUBLICATION_REVIEW_GRACE_SECONDS:
+                                if (not matches or not same_build_options(latest, request)) and time.monotonic() - ready_time >= PUBLICATION_REVIEW_GRACE_SECONDS:
                                     record.update(superseded=True, publication_deferred='reader lease held; newer source requested')
                                     write_json(receipt / 'result.json', record)
                                     print('Superseded an unpublished build; the leased browser is unchanged.', flush=True)
@@ -383,10 +388,8 @@ def build_pending(root, runner=run_build, foreground=False):
             # the final request check and unlock cannot lose its wake-up.
             with lock(state / 'queue.lock'):
                 latest = json.loads((state / 'request.json').read_text())
-                same_renderer = (latest.get('renderer','gg') == request.get('renderer','gg')
-                                 and latest.get('backend') == request.get('backend'))
                 from production_source_manifest import matches_compiled_checkout
-                if latest['id'] == request['id'] or (same_renderer and (
+                if latest['id'] == request['id'] or (same_build_options(latest, request) and (
                     same_build_inputs(repository_state(root), record['verified_inputs'])
                     or frozen is not None and matches_compiled_checkout(root, frozen))):
                     fcntl.flock(build_lock, fcntl.LOCK_UN)
@@ -429,7 +432,7 @@ def install_hook(root):
     hooks.mkdir(parents=True, exist_ok=True)
     installs = [(path, HOOK, 'post-commit'), (hooks / 'pre-commit', PRE_COMMIT_HOOK, 'pre-commit')]
     for hook, content, name in installs:
-        accepted = {content, PREVIOUS_HOOK} if name == 'post-commit' else {content}
+        accepted = {content, PREVIOUS_HOOK, LEGACY_HOOK} if name == 'post-commit' else {content}
         if hook.exists() and hook.read_text() not in accepted:
             raise RuntimeError(f'Existing {name} hook retained; install the Vox hook manually')
     for hook, content, name in installs:
@@ -452,7 +455,7 @@ def main():
     parser.add_argument('--parallel-cc', action='store_true',
                         help='with --build: split C units, also with literal --prod')
     parser.add_argument('--prod', action='store_true',
-                        help="with --build: literal V -prod, without custom C optimization flags")
+                        help="with --request or --build: literal V -prod, without custom C optimization flags")
     parser.add_argument('--backend', choices=['c', 'fastc'],
                         help='with --request or --build: explicitly select the compiler backend')
     args = parser.parse_args()
@@ -460,8 +463,8 @@ def main():
         parser.error('--backend requires --request or --build')
     if args.no_parallel_cc and not args.build:
         parser.error('--no-parallel-cc requires --build')
-    if args.prod and not args.build:
-        parser.error('--prod requires --build')
+    if args.prod and not (args.request or args.build):
+        parser.error('--prod requires --request or --build')
     if args.parallel_cc and not args.build:
         parser.error('--parallel-cc requires --build')
     if args.parallel_cc and args.no_parallel_cc:
@@ -470,7 +473,8 @@ def main():
         install_hook(ROOT)
         return 0
     if args.request:
-        enqueue(ROOT, backend=args.backend)
+        enqueue(ROOT, backend=args.backend, v_prod=True if args.prod else None,
+                c_mode='single' if args.prod else None)
         return 0
     if args.upgrade_worker:
         request_worker_upgrade(ROOT)
