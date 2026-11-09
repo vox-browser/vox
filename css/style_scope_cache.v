@@ -402,6 +402,9 @@ fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element d
 // This is the same coarse candidate filtering used before selector matching;
 // it can produce false positives, but never skips a potentially matching rule.
 pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	// A part's rules can live in an outer scope. Local buckets cannot prove
+	// that its pseudo-element has no matching rules there.
+	if abstract_element.element().has_part_names() { return true }
 	scope.build_rule_cache_if_needed()
 	for caches in [scope.author_rule_cache, scope.user_rule_cache, scope.user_agent_rule_cache]! {
 		if value := caches {
