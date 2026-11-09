@@ -1096,6 +1096,11 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 	element_style_changed := !invalidation.is_none()
 	element_custom_properties_changed := unsafe { *did_change_custom_properties }
 	abstract_element.set_computed_properties(computed_properties_to_dom(computed))
+	if previous := old_style {
+		if previous.font_size() != computed.font_size() || previous.line_height() != computed.line_height() {
+			invalidate_size_query_font_dependents(element)
+		}
+	}
 	new_non_animated_display_is_none := computed_display_is_none_ignoring_animations(computed)
 	if old_non_animated_display_is_none != new_non_animated_display_is_none {
 		element.as_node().for_each_shadow_including_inclusive_descendant(fn (node &dom.Node) dom.TraversalDecision {
@@ -1275,6 +1280,7 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	// and apply the same object to a retained Layout::Node, if one exists.
 	computed_dom_mirror := computed_properties_to_dom(computed)
 	abstract_element.set_computed_properties(computed_dom_mirror)
+	if !only_color_changes { invalidate_size_query_font_dependents(abstract_element.element()) }
 	if layout_node := abstract_element.unsafe_layout_node() {
 		if only_color_changes {
 			layout_node.apply_inherited_color_style(computed_dom_mirror)
