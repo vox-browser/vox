@@ -62,8 +62,8 @@ fn grid_track_list_is_context_free(list css.GridTrackSizeList) bool {
 fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, columns bool,
 	available CSSPixels, gap CSSPixels, definite bool, implicit_before int, required int) []GridTrack {
 	computed := container.computed_values()
-	list := if columns { computed.grid_template_columns() } else { computed.grid_template_rows() }
-	implicit := if columns { computed.grid_auto_columns() } else { computed.grid_auto_rows() }
+	list := grid_axis_template(container, columns)
+	implicit := grid_axis_implicit_tracks(container, columns)
 	mut pool := state.measurement_chunk_pool_
 	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed {
 		return resolve_grid_tracks(container, list, implicit, available, gap, definite, implicit_before, required)

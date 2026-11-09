@@ -108,50 +108,6 @@ enum GridItemAlignment {
 	baseline
 }
 
-fn grid_inline_alignment(container &Node, item &Node) GridItemAlignment {
-	self_alignment := item.computed_values().justify_self()
-	if self_alignment == .auto_ {
-		return match container.computed_values().justify_items() {
-			.center { .center }
-			.end_, .flex_end, .self_end, .right { .end }
-			.start, .flex_start, .self_start, .left, .safe, .unsafe_ { .start }
-			.stretch { .stretch }
-			.baseline { .baseline }
-			.normal, .legacy { .normal }
-		}
-	}
-	return match self_alignment {
-		.center { .center }
-		.end_, .flex_end, .self_end, .right { .end }
-		.start, .flex_start, .self_start, .left, .safe, .unsafe_ { .start }
-		.stretch { .stretch }
-		.baseline { .baseline }
-		.normal, .auto_ { .normal }
-	}
-}
-
-fn grid_block_alignment(container &Node, item &Node) GridItemAlignment {
-	self_alignment := item.computed_values().align_self()
-	if self_alignment == .auto_ {
-		return match container.computed_values().align_items() {
-			.center { .center }
-			.end_, .flex_end, .self_end { .end }
-			.start, .flex_start, .self_start, .safe, .unsafe_ { .start }
-			.stretch { .stretch }
-			.baseline { .baseline }
-			.normal { .normal }
-		}
-	}
-	return match self_alignment {
-		.center { .center }
-		.end_, .flex_end, .self_end { .end }
-		.start, .flex_start, .self_start, .safe, .unsafe_ { .start }
-		.stretch { .stretch }
-		.baseline { .baseline }
-		.normal, .auto_ { .normal }
-	}
-}
-
 fn static_position_alignment_for_grid_item(alignment GridItemAlignment) StaticPositionAlignment {
 	return match alignment {
 		.center { .center }
@@ -788,9 +744,9 @@ fn resolve_grid_item_axis_position(item &Node, columns bool, start css.GridTrack
 	if grid_span_value(start) == none && grid_span_value(end) == none
 		&& !(start.is_positioned() && end.is_positioned()) && item.display().is_grid_inside() {
 		template := if columns {
-			item.computed_values().grid_template_columns()
+			grid_axis_template(item, true)
 		} else {
-			item.computed_values().grid_template_rows()
+			grid_axis_template(item, false)
 		}
 		if template.is_subgrid() {
 			placement.span = if explicit_track_count_from_subgrid_line_name_list(template) > 1 {
@@ -1069,12 +1025,12 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	// edge, and an auto-positioned item must always fit its largest column span.
 	for item in items {
 		computed := item.computed_values()
-		column_axis_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
-		row_axis_is_auto := grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
-			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
-			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
+		column_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false))
+		row_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
+		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
+			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
+			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		column := if column_axis_is_auto { -1 } else { column_position.start }
@@ -1108,14 +1064,14 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	// Step 1: position items with definite positions in both axes.
 	for item in items {
 		computed := item.computed_values()
-		if grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-			|| grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end()) {
+		if grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
+			|| grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
-			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
-			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
+			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
+			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		mut placement := GridItemPlacement{
@@ -1134,14 +1090,14 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	// Step 2: position items locked to a definite row in the first free column.
 	for item in items {
 		computed := item.computed_values()
-		if grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-			|| !grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end()) {
+		if grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
+			|| !grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
-			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
-			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
+			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
+			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		row := row_position.start
@@ -1168,21 +1124,22 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 
 	// Step 4: place every item whose row is still auto-positioned. Row flow
 	// advances columns inside rows; column flow performs the transposed search.
-	auto_flow := container.computed_values().grid_auto_flow()
+	logical_flow := container.computed_values().grid_auto_flow()
+ auto_flow := css.GridAutoFlow{row:logical_flow.row != grid_is_vertical(container),dense:logical_flow.dense}
 	mut cursor_row := implicit_minimum_row
 	mut cursor_column := implicit_minimum_column
 	for item in items {
 		computed := item.computed_values()
-		if !grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end()) {
+		if !grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, computed.grid_column_start(),
-			computed.grid_column_end(), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, computed.grid_row_start(),
-			computed.grid_row_end(), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
+			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
+			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
-		column_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
+		column_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false))
 		if auto_flow.dense {
 			cursor_column = implicit_minimum_column
 			cursor_row = implicit_minimum_row
@@ -1276,9 +1233,9 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 	for placement in placements {
 		item := placement.item
 		template := if columns {
-			item.computed_values().grid_template_columns()
+			grid_axis_template(item, true)
 		} else {
-			item.computed_values().grid_template_rows()
+			grid_axis_template(item, false)
 		}
 		if !item.display().is_grid_inside() || !template.is_subgrid() {
 			mut projected := placement
@@ -1291,9 +1248,9 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 			continue
 		}
 
-		child_columns_template := item.computed_values().grid_template_columns()
-		child_rows_template := item.computed_values().grid_template_rows()
-		child_areas := item.computed_values().grid_template_areas()
+		child_columns_template := grid_axis_template(item, true)
+		child_rows_template := grid_axis_template(item, false)
+		child_areas := grid_physical_areas(item)
 		child_columns_subgridded := child_columns_template.is_subgrid()
 		child_rows_subgridded := child_rows_template.is_subgrid()
 		child_column_lines := if child_columns_subgridded {
@@ -1329,7 +1286,7 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 				item_state.margin_box_bottom()
 			})
 		}
-		gap_property := if columns { css.PropertyID.column_gap } else { .row_gap }
+		gap_property := grid_axis_gap(item, columns)
 		computed_gap := if item.computed_values().gap_value(gap_property).is_normal {
 			parent_gap
 		} else {
@@ -1476,12 +1433,12 @@ fn install_grid_item_subgrid_data(mut state LayoutState, item &Node, columns []G
 		return
 	}
 	styled := item.as_node_with_style() or { return }
-	if item.computed_values().grid_template_columns().is_subgrid() {
+	if grid_axis_template(item, true).is_subgrid() {
 		inherited_lines := inherited_subgrid_line_names(column_lines, row_lines, placement, true)
 		state.set_subgrid_axis_data(styled, true, subgrid_axis_data_for_item(columns, inherited_lines,
 			placement.column, placement.column_span, column_gap))
 	}
-	if item.computed_values().grid_template_rows().is_subgrid() {
+	if grid_axis_template(item, false).is_subgrid() {
 		inherited_lines := inherited_subgrid_line_names(column_lines, row_lines, placement, false)
 		state.set_subgrid_axis_data(styled, false, subgrid_axis_data_for_item(rows, inherited_lines,
 			placement.row, placement.row_span, row_gap))
@@ -1489,7 +1446,7 @@ fn install_grid_item_subgrid_data(mut state LayoutState, item &Node, columns []G
 }
 
 fn apply_subgrid_gap_extra_margins(container &Node, mut item_state UsedValues, placement GridItemPlacement, columns bool, track_count int, parent_gap CSSPixels, percentage_basis CSSPixels) {
-	gap_property := if columns { css.PropertyID.column_gap } else { .row_gap }
+	gap_property := grid_axis_gap(container, columns)
 	computed_gap := if container.computed_values().gap_value(gap_property).is_normal {
 		parent_gap
 	} else {
@@ -1526,7 +1483,7 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 	mut effective_gap := computed_gap
 	if gap_count > 0 {
 		total_gap_space := css_pixels_max(container_width.minus(tracks_size), CSSPixels.new(0))
-		distributed_gap := match container.computed_values().justify_content() {
+		distributed_gap := match grid_axis_content_alignment(container, true) {
 			.space_between { CSSPixels.from_raw(total_gap_space.raw_value() / gap_count) }
 			.space_around { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 1)) }
 			.space_evenly { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 2)) }
@@ -1540,7 +1497,7 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 	// alignment overflows both edges, as in GitHub's 28px icon buttons whose
 	// 16px track exceeds the 12px content box.
 	positional_free_space := grid_positional_free_space(container, container_width.minus(used_size), free_space)
-	mut leading := match container.computed_values().justify_content() {
+	mut leading := match grid_axis_content_alignment(container, true) {
 		.end_, .flex_end, .right {
 			positional_free_space
 		}
@@ -1554,8 +1511,8 @@ fn grid_inline_content_geometry(container &Node, container_width CSSPixels, trac
 			CSSPixels.new(0)
 		}
 	}
-	if container.computed_values().direction() == .rtl {
-		match container.computed_values().justify_content() {
+	if grid_axis_reversed(container, true) {
+		match grid_axis_content_alignment(container, true) {
 			.left {
 				leading = positional_free_space
 			}
@@ -1577,7 +1534,7 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 	mut effective_gap := computed_gap
 	if gap_count > 0 {
 		total_gap_space := css_pixels_max(container_height.minus(tracks_size), CSSPixels.new(0))
-		distributed_gap := match container.computed_values().align_content() {
+		distributed_gap := match grid_axis_content_alignment(container, false) {
 			.space_between { CSSPixels.from_raw(total_gap_space.raw_value() / gap_count) }
 			.space_around { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 1)) }
 			.space_evenly { CSSPixels.from_raw(total_gap_space.raw_value() / (gap_count + 2)) }
@@ -1588,7 +1545,7 @@ fn grid_block_content_geometry(container &Node, container_height CSSPixels, trac
 	used_size := tracks_size.plus(effective_gap.scaled(f64(gap_count)))
 	free_space := css_pixels_max(container_height.minus(used_size), CSSPixels.new(0))
 	positional_free_space := grid_positional_free_space(container, container_height.minus(used_size), free_space)
-	leading := match container.computed_values().align_content() {
+	leading := match grid_axis_content_alignment(container, false) {
 		.end_, .flex_end {
 			positional_free_space
 		}
@@ -1613,7 +1570,7 @@ fn grid_positional_free_space(container &Node, free_space CSSPixels, clamped CSS
 
 fn grid_physical_column_offset(container &Node, container_width CSSPixels, tracks []GridTrack, start int, span int, gap CSSPixels, leading CSSPixels) CSSPixels {
 	logical_offset := leading.plus(grid_track_offset(tracks, start, gap))
-	if container.computed_values().direction() != .rtl {
+	if !grid_axis_reversed(container, true) {
 		return logical_offset
 	}
 	area_width := grid_track_range_size(tracks, start, span, gap)
@@ -2664,8 +2621,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	} else {
 		?CSSPixels(none)
 	}
-	template_columns := container.computed_values().grid_template_columns()
-	template_rows := container.computed_values().grid_template_rows()
+	template_columns := grid_axis_template(container, true)
+	template_rows := grid_axis_template(container, false)
 	container_styled := container.as_node_with_style() or { panic('grid container has no style') }
 	inherited_columns := state.subgrid_axis_data(container_styled, true)
 	inherited_rows := state.subgrid_axis_data(container_styled, false)
@@ -2674,23 +2631,23 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	// Subgridded axes use their parent's gutter. Standalone axes resolve each
 	// percentage gutter against the available size in its own dimension.
 	column_gap := if data := inherited_columns {
-		if subgridded_columns { data.gap } else { resolve_layout_gap(container, .column_gap,
+		if subgridded_columns { data.gap } else { resolve_layout_gap(container, grid_axis_gap(container, true),
 			available_space.width.to_px_or_zero()) }
 	} else {
-		resolve_layout_gap(container, .column_gap, available_space.width.to_px_or_zero())
+		resolve_layout_gap(container, grid_axis_gap(container, true), available_space.width.to_px_or_zero())
 	}
 	row_gap := if data := inherited_rows {
-		if subgridded_rows { data.gap } else { resolve_layout_gap(container, .row_gap,
+		if subgridded_rows { data.gap } else { resolve_layout_gap(container, grid_axis_gap(container, false),
 			available_space.height.to_px_or_zero()) }
 	} else {
-		resolve_layout_gap(container, .row_gap, available_space.height.to_px_or_zero())
+		resolve_layout_gap(container, grid_axis_gap(container, false), available_space.height.to_px_or_zero())
 	}
 	row_basis := if container_state.has_definite_height() {
 		container_state.content_height()
 	} else {
 		CSSPixels.new(0)
 	}
-	areas := container.computed_values().grid_template_areas()
+	areas := grid_physical_areas(container)
 	column_lines := if data := inherited_columns {
 		if subgridded_columns {
 			subgrid_lines_for_definition(template_columns, data.line_names, data.tracks.len)
@@ -2879,7 +2836,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	for column in columns {
 		columns_before_alignment = columns_before_alignment.plus(column.base_size)
 	}
-	if container.computed_values().justify_content() in [.normal, .stretch] {
+	if grid_axis_content_alignment(container, true) in [.normal, .stretch] {
 		stretch_auto_grid_tracks(mut columns, container_width.minus(columns_before_alignment))
 	}
 	column_leading_space, effective_column_gap := grid_inline_content_geometry(container, container_width, columns, column_gap)
@@ -2939,7 +2896,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			&& !has_auto_inline_margin {
 			?CSSPixels(area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)))
 		} else if width_is_auto && !placement.item.is_replaced_box() {
-			if box := placement.item.as_box() {
+			if transferred := grid_item_width_from_definite_height(placement.item,item_state,
+				if container_state.has_definite_height() { ?CSSPixels(container_state.content_height()) } else { none }) {
+				?CSSPixels(transferred)
+			} else if box := placement.item.as_box() {
 				?CSSPixels(calculate_fit_content_width(mut state, box, AvailableSize.make_definite(area_width)))
 			} else {
 				?CSSPixels(none)
@@ -3116,7 +3076,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		}
 	}
 	if alignment_height := grid_alignment_height {
-		if container.computed_values().align_content() in [.normal, .stretch] {
+		if grid_axis_content_alignment(container, false) in [.normal, .stretch] {
 			mut rows_before_alignment := row_gap.scaled(f64(grid_gutter_count(rows, 0,
 				rows.len - 1)))
 			for row in rows {
@@ -3159,8 +3119,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	for row in rows {
 		used_rows << row.base_size
 	}
-	container_state.set_grid_template_columns(used_columns)
-	container_state.set_grid_template_rows(used_rows)
+	container_state.set_grid_template_columns(if grid_is_vertical(container) { used_rows } else { used_columns })
+	container_state.set_grid_template_rows(if grid_is_vertical(container) { used_columns } else { used_rows })
 	container_state.set_grid_subgridded_axes(subgridded_columns, subgridded_rows)
 	// Only *explicit* line names are serialized, so recompute the line map
 	// without the `<area>-start`/`-end` names that grid-template-areas adds.
@@ -3179,7 +3139,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		grid_line_name_strings(grid_lines_for_definition(container, template_rows, row_basis, row_gap,
 			container_state.has_definite_height(), empty_areas, false))
 	}
-	container_state.set_grid_line_names(used_column_line_names, used_row_line_names)
+	container_state.set_grid_line_names(if grid_is_vertical(container) { used_row_line_names } else { used_column_line_names }, if grid_is_vertical(container) { used_column_line_names } else { used_row_line_names })
 
 	for placement in placements {
 		styled := placement.item.as_node_with_style() or { continue }
@@ -3206,10 +3166,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			CSSPixels.new(0)
 		})
 		item_state.set_relative_inset_basis(grid_area_width, grid_area_height)
-		inline_alignment := grid_inline_alignment(container, placement.item)
+		mut inline_alignment := grid_inline_alignment(container, placement.item)
 		left_margin_auto := property_is_auto(placement.item.computed_values(), .margin_left)
 		right_margin_auto := property_is_auto(placement.item.computed_values(), .margin_right)
-		block_alignment := grid_block_alignment(container, placement.item)
+		mut block_alignment := grid_block_alignment(container, placement.item)
 		top_margin_auto := property_is_auto(placement.item.computed_values(), .margin_top)
 		bottom_margin_auto := property_is_auto(placement.item.computed_values(), .margin_bottom)
 		mut forced_item_height := ?CSSPixels(none)
@@ -3262,8 +3222,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			item_state = layout_independent_child(mut state, placement.item, mut container_state,
 				area_width, area_height, item_state.content_width(), none)
 		}
+		// A block child layout may distribute horizontal overconstraint into a
+		// margin. Grid self-alignment starts from the authored margins instead.
+		resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
 		if subgridded_columns || subgridded_rows {
-			resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
 			if subgridded_columns {
 				apply_subgrid_gap_extra_margins(container, mut item_state, placement, true,
 					columns.len, column_gap, container_width)
@@ -3274,6 +3236,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			}
 		}
 		inline_margin_space := area_width.minus(item_state.margin_box_width())
+		if inline_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,true) { inline_alignment = .start }
 		if inline_margin_space.raw_value() > 0 && left_margin_auto && right_margin_auto {
 			item_state.margin_left = inline_margin_space.divided_by_float(2)
 			item_state.margin_right = inline_margin_space.divided_by_float(2)
@@ -3282,7 +3245,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		} else if inline_margin_space.raw_value() > 0 && right_margin_auto {
 			item_state.margin_right = inline_margin_space
 		} else if inline_alignment == .end {
-			if container.computed_values().direction() == .rtl {
+			if grid_axis_reversed(container, true) {
 				item_state.margin_right = item_state.margin_right.plus(inline_margin_space)
 			} else {
 				item_state.margin_left = item_state.margin_left.plus(inline_margin_space)
@@ -3292,15 +3255,16 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			item_state.margin_left = item_state.margin_left.plus(half)
 			item_state.margin_right = item_state.margin_right.plus(half)
 		} else if inline_alignment in [.start, .baseline] {
-			if container.computed_values().direction() == .rtl {
+			if grid_axis_reversed(container, true) {
 				item_state.margin_left = item_state.margin_left.plus(inline_margin_space)
 			} else {
 				item_state.margin_right = item_state.margin_right.plus(inline_margin_space)
 			}
-		} else if container.computed_values().direction() == .rtl {
+		} else if grid_axis_reversed(container, true) {
 			item_state.margin_left = item_state.margin_left.plus(inline_margin_space)
 		}
 		block_margin_space := area_height.minus(item_state.margin_box_height())
+		if block_margin_space.raw_value() < 0 && grid_item_alignment_is_safe(container,placement.item,false) { block_alignment = .start }
 		if block_margin_space.raw_value() > 0 && top_margin_auto && bottom_margin_auto {
 			item_state.margin_top = block_margin_space.divided_by_float(2)
 			item_state.margin_bottom = block_margin_space.divided_by_float(2)
@@ -3309,18 +3273,21 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		} else if block_margin_space.raw_value() > 0 && bottom_margin_auto {
 			item_state.margin_bottom = block_margin_space
 		} else if block_alignment == .end {
-			item_state.margin_top = item_state.margin_top.plus(block_margin_space)
+			if grid_axis_reversed(container, false) { item_state.margin_bottom = item_state.margin_bottom.plus(block_margin_space) }
+			else { item_state.margin_top = item_state.margin_top.plus(block_margin_space) }
 		} else if block_alignment == .center {
 			half := CSSPixels.from_raw(block_margin_space.raw_value() / 2)
 			item_state.margin_top = item_state.margin_top.plus(half)
 			item_state.margin_bottom = item_state.margin_bottom.plus(half)
-		} else if block_alignment in [.start, .baseline] {
-			item_state.margin_bottom = item_state.margin_bottom.plus(block_margin_space)
+		} else if block_alignment in [.start, .baseline, .normal, .stretch] {
+			if grid_axis_reversed(container, false) { item_state.margin_top = item_state.margin_top.plus(block_margin_space) }
+			else { item_state.margin_bottom = item_state.margin_bottom.plus(block_margin_space) }
 		}
 		area_x := grid_physical_column_offset(container, container_width, columns, placement.column, placement.column_span, effective_column_gap, column_leading_space)
 		item_state.set_content_x(area_x.plus(item_state.margin_box_left()))
-		item_state.set_content_y(row_leading_space.plus(grid_track_offset(rows, placement.row, effective_row_gap)).plus(item_state.margin_box_top()))
-		grid_area_rect := css.CSSPixelRect.new(area_x.to_double(), row_leading_space.plus(grid_track_offset(rows, placement.row, effective_row_gap)).to_double(), grid_area_width.to_double(), grid_area_height.to_double())
+		area_y := grid_physical_row_offset(container, grid_alignment_height or { automatic_height }, rows, placement.row, placement.row_span, effective_row_gap, row_leading_space)
+		item_state.set_content_y(area_y.plus(item_state.margin_box_top()))
+		grid_area_rect := css.CSSPixelRect.new(area_x.to_double(), area_y.to_double(), grid_area_width.to_double(), grid_area_height.to_double())
 		set_grid_abspos_descendant_rects(mut state, container, placement.item, grid_area_rect)
 	}
 
@@ -3332,57 +3299,18 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			continue
 		}
 		computed := child.computed_values()
-		column_is_auto := grid_axis_is_auto(computed.grid_column_start(), computed.grid_column_end())
-		row_is_auto := grid_axis_is_auto(computed.grid_row_start(), computed.grid_row_end())
-		column_position := resolve_grid_axis_position_for_context(computed.grid_column_start(), computed.grid_column_end(),
-			column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_axis_position_for_context(computed.grid_row_start(), computed.grid_row_end(),
-			row_lines.len, row_lines, subgridded_rows)
-
-		mut area_x := CSSPixels.new(0).minus(container_state.padding_left)
-		mut area_width :=
-			container_state.padding_left.plus(container_width).plus(container_state.padding_right)
-		if !column_is_auto {
-			column := column_position.start + placement_result.implicit_columns_before
-			if column >= columns.len {
-				area_width = container_state.padding_right
-				area_x = grid_physical_column_offset(container, container_width, columns, columns.len, 0, effective_column_gap, column_leading_space).minus(if container.computed_values().direction() == .rtl {
-					area_width
-				} else {
-					CSSPixels.new(0)
-				})
-			} else {
-				column_start := if column < 0 {
-					0
-				} else {
-					column
-				}
-				area_width = grid_track_range_size(columns, column_start, column_position.span, effective_column_gap)
-				area_x = grid_physical_column_offset(container, container_width, columns, column_start, column_position.span, effective_column_gap, column_leading_space)
-			}
-		}
-
-		mut area_y := CSSPixels.new(0).minus(container_state.padding_top)
-		mut area_height := container_state.padding_top.plus(if container_state.has_definite_height() {
-			container_state.content_height()
-		} else {
-			automatic_height
-		}).plus(container_state.padding_bottom)
-		if !row_is_auto {
-			row := row_position.start + placement_result.implicit_rows_before
-			if row >= rows.len {
-				area_y =
-					row_leading_space.plus(grid_track_offset(rows, rows.len, effective_row_gap))
-				area_height = container_state.padding_bottom
-			} else {
-				area_y = row_leading_space.plus(grid_track_offset(rows, if row < 0 {
-					0
-				} else {
-					row
-				}, effective_row_gap))
-				area_height = grid_track_range_size(rows, if row < 0 { 0 } else { row }, row_position.span, effective_row_gap)
-			}
-		}
+		column_start := grid_axis_placement(container, computed, true, true)
+		column_end := grid_axis_placement(container, computed, true, false)
+		row_start := grid_axis_placement(container, computed, false, true)
+		row_end := grid_axis_placement(container, computed, false, false)
+		column_position := resolve_grid_axis_position_for_context(column_start,column_end,column_lines.len,column_lines,subgridded_columns)
+		row_position := resolve_grid_axis_position_for_context(row_start,row_end,row_lines.len,row_lines,subgridded_rows)
+		area_x, area_width := grid_abspos_axis_bounds(container,true,column_start,column_end,column_position,
+			placement_result.implicit_columns_before,container_width,container_state.padding_left,container_state.padding_right,
+			columns,effective_column_gap,column_leading_space)
+		area_y, area_height := grid_abspos_axis_bounds(container,false,row_start,row_end,row_position,
+			placement_result.implicit_rows_before,grid_alignment_height or { automatic_height },container_state.padding_top,container_state.padding_bottom,
+			rows,effective_row_gap,row_leading_space)
 
 		rect := css.CSSPixelRect.new(area_x.to_double(), area_y.to_double(), area_width.to_double(), area_height.to_double())
 		set_grid_abspos_containing_rect(mut state, container, child, rect)
