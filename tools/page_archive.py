@@ -115,8 +115,10 @@ def capture(args):
         if url in entries:
             continue
         path = cached.get(url)
+        method = 'GET'
         if previous and url in previous['responses']:
             entry = previous['responses'][url]
+            method = entry.get('method', 'GET')
             imported = progress_source if progress is not None else args.from_archive
             body = checked_response_body(imported, url, entry)
             headers, status = entry['headers'], entry['status']
@@ -158,7 +160,7 @@ def capture(args):
                 raise RuntimeError(f'Could not archive required resource: {status} {url}')
         sha = digest(body)
         (output / 'bodies' / sha).write_bytes(body)
-        entries[url] = dict(status=status, headers=headers, sha256=sha,
+        entries[url] = dict(method=method, status=status, headers=headers, sha256=sha,
                             bytes=len(body), provenance=provenance)
         if 'text/html' in mime(headers) and 200 <= status < 300:
             parser = ResourceLinks(url)

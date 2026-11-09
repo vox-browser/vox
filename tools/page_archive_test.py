@@ -162,6 +162,41 @@ class PageArchiveTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'changed'):
                 page_archive.load_archive(archive)
 
+    def test_import_preserves_recorded_request_methods_for_replay(self):
+        for source_kind in ['archive', 'progress']:
+            with self.subTest(source_kind=source_kind), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                archive, url, _ = self.fixture(root)
+                manifest = page_archive.load_archive(archive)
+                methods = {'https://archive.invalid/a.js': 'POST',
+                           'https://archive.invalid/image.png': 'HEAD'}
+                for address, method in methods.items():
+                    manifest['responses'][address]['method'] = method
+                manifest_path = archive / 'manifest.json'
+                manifest_path.write_text(json.dumps(manifest))
+                source = dict(from_archive=archive, from_progress=None,
+                              expected_progress_sha256=None)
+                if source_kind == 'progress':
+                    del manifest['sealed_unix']
+                    progress = archive / 'capture-progress.json'
+                    progress.write_text(json.dumps(manifest))
+                    source = dict(from_archive=None, from_progress=archive,
+                                  expected_progress_sha256=page_archive.digest(progress.read_bytes()))
+                output = root / 'imported'
+                with mock.patch.object(page_archive.subprocess, 'run',
+                        side_effect=AssertionError('Unexpected refetch')), redirect_stdout(io.StringIO()):
+                    page_archive.capture(argparse.Namespace(output=output, url=url, proxy=None,
+                        extra_url=list(manifest['responses']), from_cache=None, **source))
+                imported = page_archive.load_archive(output)
+                replay = page_archive.Replay.__new__(page_archive.Replay)
+                replay.manifest = imported
+                for address, method in methods.items():
+                    entry = replay.response_entry(method, address)
+                    self.assertIsNotNone(entry)
+                    self.assertEqual(entry['sha256'], manifest['responses'][address]['sha256'])
+                    self.assertIsNone(replay.response_entry('GET', address))
+                self.assertIsNotNone(replay.response_entry('GET', url))
+
     def test_replay_serves_https_from_disk_and_never_forwards_misses(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
