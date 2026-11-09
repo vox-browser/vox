@@ -1486,6 +1486,7 @@ pub:
 	recompute_selection_states_callback         ViewportPaintableRangeCallback = unsafe { nil }
 	text_range_rects_callback                   ViewportPaintableTextRangeRectsCallback = unsafe { nil }
 	transform_client_rects_callback             ViewportPaintableTransformClientRectsCallback = unsafe { nil }
+	sticky_position_offset_callback             PaintableBoxTypeAgnosticPositionCallback = unsafe { nil }
 	scroll_into_view_geometry_callback          ViewportPaintableScrollIntoViewGeometryCallback = unsafe { nil }
 	set_needs_repaint_callback                  ViewportPaintableVoidCallback = unsafe { nil }
 	document_set_needs_repaint_callback         ViewportPaintableVoidCallback = unsafe { nil }

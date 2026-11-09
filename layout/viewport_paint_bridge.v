@@ -30,6 +30,7 @@ fn install_document_painting_bridge(document &dom.Document, result &DocumentLayo
 		recompute_selection_states_callback: viewport_recompute_selection_states
 		text_range_rects_callback: viewport_text_range_rects
 		transform_client_rects_callback: viewport_transform_client_rects
+		sticky_position_offset_callback: viewport_sticky_position_offset
 		scroll_into_view_geometry_callback: viewport_scroll_into_view_geometry
 		set_needs_repaint_callback: viewport_set_needs_repaint
 		document_set_needs_repaint_callback: viewport_document_set_needs_repaint
@@ -595,7 +596,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 	box.sticky_scroll_frame_index = 0
 	// Only frame owners use the parent index. Ordinary boxes still recurse so
 	// nested scrollers and sticky descendants find their containing-block frame.
-	parent_index := if box.sticky_position || box.has_scrollable_overflow || box.is_viewport_scroller {
+	parent_index := if box.sticky_position || compatibility_box_establishes_scroll_frame(box) {
 		paintable_box_nearest_scroll_frame_index(box, boxes_by_layout)
 	} else {
 		0
@@ -607,7 +608,7 @@ fn assign_compatibility_scroll_frames(mut box BlockBox, boxes_by_layout map[u64]
 		boxes_by_scroll_frame[sticky_frame_index] = unsafe { &box }
 		precompute_compatibility_sticky_constraints(mut box, sticky_frame_index, boxes_by_layout, boxes_by_scroll_frame, mut state)
 	}
-	if box.has_scrollable_overflow || box.is_viewport_scroller {
+	if compatibility_box_establishes_scroll_frame(box) {
 		scroll_parent_index := if box.sticky_scroll_frame_index > 0 {
 			box.sticky_scroll_frame_index
 		} else {
