@@ -2155,3 +2155,29 @@ the component: the browser integration checks still use installed Skia, and
 full Linux browser compile/link/run without it remains open. The older shared
 bundle was not used to validate this change. See the [native cases, guarded
 cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/202eeab62636f300465f78280e3fc9e7ce9a31c3/evidence/gg-migration/large-source-image-shadows-20261109.json).
+
+
+### Large blurs with an initial minified-source resolve (2026-11-09)
+
+`a53278da8` handles whole-image mappings for which native rescale resolves
+minification before progressive downsampling. The step-count test preserves
+that boundary; other deferred mappings keep their guards. Sampling, paint
+alpha, P3 conversion and incoming matrices resolve together, while outgoing
+matrices stay deferred through the large blur.
+
+The fixed-sigma baseline declines all 500 requests at seed 20261201; the
+candidate matches all 500. Broader final cohorts vary scales, flips, sigmas
+and matrices: macOS and Linux match 1,380 of 2,000 requests at seed 20261202,
+declining 620. Optimized macOS/no-GC matches 699 of 1,000 at seed 20261203,
+declining 301. Counts include no-ops; all completed cohorts finish with
+unchanged inputs under the 3 GiB guard. Eight additional native regressions
+verify on both platforms. Focused C/FastC suites, Linux browser typechecking,
+Linux HTML canvas integration and the C FMA audit pass (zero contracted,
+189 explicit).
+
+The standalone Linux production/no-GC image executable runs all six registered
+test functions with Skia unavailable to pkg-config. Its direct libraries are
+FreeType, libm and libc; link/readelf/ldd checks find no Skia dependency. Browser
+integration still uses installed Skia, so the requested full-browser Linux
+compile/link/run without it remains open. See the [native inputs, cohorts and
+component linkage](https://github.com/vox-browser/vox-tests/blob/ecea3ad79cde8a95bac6a811ad46ba0a04b50e42/evidence/gg-migration/large-minified-source-blurs-20261109.json).
