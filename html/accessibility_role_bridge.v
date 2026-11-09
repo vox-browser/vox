@@ -116,18 +116,27 @@ fn dom_embedded_control_label_value(_ voidptr, element &dom.Element) ?string {
 		return none
 	}
 
+	mut document := unsafe { &dom.Document(element.document()) }
+	document.update_layout(.node_name_or_description)
 	mut builder := strings.new_builder(0)
 	for label_index in 0 .. labels.length() {
 		if builder.len > 0 {
 			builder.write_string(' ')
 		}
 		label := labels.item(label_index) or { continue }
-		for node in label.children_as_vector() {
+		include_hidden := if label_element := label.as_element() { label_element.is_hidden() } else { false }
+		mut pending := label.children_as_vector()
+		pending.reverse_in_place()
+		for pending.len > 0 {
+			node := pending.pop()
 			if voidptr(node) == voidptr(element.as_node()) {
 				continue
 			}
 			if child := node.as_element() {
-				role := html_element_role_or_default(child) or { continue }
+				role := html_element_role_or_default(child) or { aria.Role.generic }
+				if !include_hidden && child.is_hidden() && role in [.textbox, .combobox, .listbox, .spinbutton, .slider] {
+					continue
+				}
 				match role {
 					.textbox {
 						if child.local_name() == 'input' {
@@ -187,9 +196,21 @@ fn dom_embedded_control_label_value(_ voidptr, element &dom.Element) ?string {
 							builder.write_string(input.value())
 						}
 					}
-					else {}
+					else {
+						// Ordinary wrappers contribute their descendants in tree order.
+						// Keep the labelled control excluded even when it is nested.
+						children := node.children_as_vector()
+						for index := children.len - 1; index >= 0; index-- {
+							pending << children[index]
+						}
+					}
 				}
 			} else if node.is_text() {
+				if !include_hidden {
+					if parent := node.parent_element() {
+						if parent.is_hidden() { continue }
+					}
+				}
 				builder.write_string(node.text_content() or { '' })
 			}
 		}
