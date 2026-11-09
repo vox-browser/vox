@@ -526,7 +526,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		return clamp_to_max_dimension_value(result.automatic_content_width)
 	}
 	if multicol := layout_vertical_multicol_atomic_blocks(mut throwaway,box_node,mut box_state,.intrinsic_sizing,AvailableSpace.new(available_width,available_height)) { return multicol.automatic_content_width }
- if grid_is_vertical(box_node) && line_clamp_is_active(box_node.computed_values()) && !box_node.children_are_inline() {
+ if grid_is_vertical(box_node) && !box_node.children_are_inline() {
   return layout_inside_independent_formatting_context_with_mode(mut throwaway,box_node,mut box_state,.intrinsic_sizing,AvailableSpace.new(available_width,available_height)).automatic_content_width
  }
 	if box_node.children_are_inline() {
