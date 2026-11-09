@@ -2,6 +2,7 @@ module main
 
 import html
 import layout
+import dom
 
 fn test_inline_blocks_export_explicit_first_and_last_baseline_sets() {
 	for source in ['first', 'last'] {
@@ -27,4 +28,13 @@ fn test_explicit_first_baselines_skip_fieldset_legend_and_include_table_caption(
  table := (document.get_element_by_id('table-reference') or { panic('table') }).get_bounding_client_rect()
  target := (document.get_element_by_id('table-target') or { panic('target') }).get_bounding_client_rect()
  assert table.y-target.y == 75,'${table.y-target.y}'
+}
+
+fn test_inline_table_border_offset_includes_the_top_caption_origin() {
+ mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{width:200px;padding:10px;position:relative;line-height:0;font-size:20px}#table{display:inline-table;border:5px solid;padding:10px;baseline-source:first;font-size:30px;border-spacing:0}tr{vertical-align:baseline}td{padding:0}caption{height:20px;margin:10px}span{display:inline-block;width:1em;height:1em}</style><div id="outer"><span></span><table id="table"><caption></caption><tr><td style="font-size:10px"><span></span><br><span></span></td><td><span></span><br><span></span></td></tr><tr><td><span></span><br><span></span></td><td style="font-size:10px"><span></span><br><span></span></td></tr><caption style="caption-side:bottom"></caption></table></div>')
+ defer { document.finalize() }
+ _ = layout.layout_document_typed_in_viewport(document,800,600)
+ table := document.get_element_by_id('table') or { panic('table') }
+ actual := html.html_element_offset_top(unsafe { &dom.HTMLElement(table) })
+ assert actual==10,'${actual}'
 }

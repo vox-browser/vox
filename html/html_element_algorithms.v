@@ -504,6 +504,16 @@ fn paintable_box_absolute_united_padding_box_rect(start &dom.LayoutNode) ?dom.Re
 	return united_rect_for_continuation_chain(start, .padding)
 }
 
+fn html_element_offset_box(element &dom.Element) ?&dom.LayoutNode {
+	box := element.as_node().layout_node() or { return none }
+	if parent := box.parent() {
+		// A table's first CSS box is its wrapper. Its offset includes top or
+		// side captions even though computed table properties use the grid box.
+		if parent.is_table_wrapper() { return parent }
+	}
+	return box
+}
+
 pub fn html_element_offset_top(element &dom.HTMLElement) int {
 	dom_element := dom_element_from_html_element(element)
 	if html_element_is_body(dom_element) {
@@ -511,7 +521,7 @@ pub fn html_element_offset_top(element &dom.HTMLElement) int {
 	}
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_top)
-	layout_node := dom_element.as_node().layout_node() or { return 0 }
+	layout_node := html_element_offset_box(dom_element) or { return 0 }
 	if !layout_node.has_geometry_ {
 		return 0
 	}
@@ -537,7 +547,7 @@ pub fn html_element_offset_left(element &dom.HTMLElement) int {
 	}
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_left)
-	layout_node := dom_element.as_node().layout_node() or { return 0 }
+	layout_node := html_element_offset_box(dom_element) or { return 0 }
 	if !layout_node.has_geometry_ {
 		return 0
 	}
