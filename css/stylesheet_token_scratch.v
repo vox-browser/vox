@@ -12,7 +12,7 @@ fn stylesheet_components_from_source(input string) []ComponentValue {
 	$if prealloc {
 		if input.len >= stylesheet_syntax_minimum_bytes {
 			mut scratch := platform.begin_thread_scratch('stylesheet tokenization')
-			values := ParserTokenStream.from_source(input, 'utf-8').values
+			values := ParserTokenStream.from_transient_source(input, 'utf-8').values
 			scratch.leave()
 			owned := own_stylesheet_components(values)
 			scratch.finish()
@@ -23,10 +23,20 @@ fn stylesheet_components_from_source(input string) []ComponentValue {
 }
 
 fn own_stylesheet_token(token Token) Token {
+	// Unescaped identifiers and delimiters already share their immutable
+	// source spelling. Preserve that sharing in the new owner, without
+	// conflating escaped values or different spans of the same source.
+	source := token.original_source_text_.clone()
+	value := if token.value.str == token.original_source_text_.str
+		&& token.value.len == token.original_source_text_.len {
+		source
+	} else {
+		token.value.clone()
+	}
 	return Token{
 		...token
-		value: token.value.clone()
-		original_source_text_: token.original_source_text_.clone()
+		value: value
+		original_source_text_: source
 	}
 }
 
@@ -45,10 +55,17 @@ fn own_stylesheet_component(component &ComponentValue) ComponentValue {
 			attr_tainted:component.attr_tainted
 		}
 	} else if component.value is &Function {
+		name_token := own_stylesheet_token(component.value.name_token)
+		name := if component.value.name.str == component.value.name_token.value.str
+			&& component.value.name.len == component.value.name_token.value.len {
+			name_token.value
+		} else {
+			component.value.name.clone()
+		}
 		return ComponentValue{
 			value:ComponentValuePayload(&Function{
-				name:component.value.name.clone()
-				name_token:own_stylesheet_token(component.value.name_token)
+				name:name
+				name_token:name_token
 				end_token:own_stylesheet_token(component.value.end_token)
 				value:own_stylesheet_components(component.value.value)
 			})
