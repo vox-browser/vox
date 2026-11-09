@@ -482,6 +482,21 @@ for i, (left, width, dst_bits, scale_bits) in enumerate(crop_geometries):
             filters=filters, p3=variant in [1,2], premul=variant == 0, alpha=.65,
             mode=['src_over','src','src_in','plus_lighter'][variant], clip=variant in [1,2]))
 
+# Nearly integer transforms whose concatenation rounds an image edge past
+# its logical layer. Interior requests may retain the raw source subset.
+near_crop_x_bits = [1078836904, 1080834192, 1082480956]
+for i, x_bits in enumerate(near_crop_x_bits):
+    destination = list(map(scalar_bits, [x_bits, 1082230297, 1075339656, 1075339654]))
+    for premul in [True, False]:
+        for variant, filters in enumerate([[blur(.8)], [blur(.1)], [blur(.8), contrast, blur(1.2)]]):
+            case = dict(name=f'near-crop-blur-{i}-{int(premul)}-{variant}', iw=13, ih=7,
+                source=[6,1,5,5], destination=destination,
+                transform=[scalar_bits(1074161254),0,0,scalar_bits(1074161254),2.25,3.5],
+                filters=filters, premul=premul, smoothing=variant != 0,
+                mode='src_in' if variant == 0 else 'src_over')
+            if variant == 1: case['clip_rect'] = [11+i,14,1,1]
+            cases.append(case)
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -572,6 +587,7 @@ expected += ['4df34ad3170908fa', '8e7893ef665e07b6', 'eacd8fde217cf3fe', '030f88
 if platform.system() == 'Linux':
     expected[-12:] = ['7fa25b3afcf70974', 'ff202711441f1425', 'e9a48b9a15b48098', '030f88d9d77c6cc2', '5d8c9b12bd871571', '13e21e9efa7637f4', '454694f8f486415c', '4e47f5b286c15049', '03803f2bfe8fd947', 'e227f114505d2ce6', '428717f06c4023fc', '4e345290a5870197']
 expected += ['7590fe0bcd5b92d1', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1', '7f9693b40ef11387', 'f44d1959a67025ac', '44c0f31be7db0067', '8bfc2f0cbc7e43c7', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1']
+expected += ['633e7bfa680a5d4c', '34a6856f70dce369', '7af094b311774ce4', 'f19e7a111286ddc1', '88523b9296e4d31a', 'bba34b76b9c65bcd', 'fdf70e74ece3d570', '9e645119af2ee69c', '79d8030bcedde1b8', '3b1caa28fadde8ba', '4b2fc2c9df2fb262', '00d5da61b2dd5925', '19538cd84a4b3ba1', 'b35a046e132f0edd', '0466e63ce6feb7ad', '6ffd98323a241688', '13be7362ae8813c8', 'b39893a0f6c26b00']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
