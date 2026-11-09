@@ -66,7 +66,7 @@ fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, col
 	implicit := grid_axis_implicit_tracks(container, columns)
 	mut pool := state.measurement_chunk_pool_
 	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed {
-		return resolve_grid_tracks(container, list, implicit, available, gap, definite, implicit_before, required)
+		return resolve_grid_tracks_for_axis(container, list, implicit, available, gap, definite, implicit_before, required, columns)
 	}
 	key := GridTrackResolutionKey{
 		columns: columns
@@ -89,7 +89,7 @@ fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, col
 		}
 		return cached.tracks.clone()
 	}
-	tracks := resolve_grid_tracks(container, list, implicit, available, gap, definite, implicit_before, required)
+	tracks := resolve_grid_tracks_for_axis(container, list, implicit, available, gap, definite, implicit_before, required, columns)
 	if revision == 0 || computed.has_animated_properties()
 		|| !grid_track_list_is_context_free(list) || !grid_track_list_is_context_free(implicit) { return tracks }
 	mut retained := platform.enter_retained_allocations()

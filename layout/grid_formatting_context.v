@@ -344,39 +344,40 @@ fn auto_repeat_template_rest(node &Node, list css.GridTrackSizeList, basis CSSPi
 // standalone axis with a definite size, auto-fill repeats the largest positive
 // number of times that does not overflow the content box once the template's
 // other definite tracks and the gaps are accounted for; otherwise once.
-fn auto_repeat_count(node &Node, repeat css.GridRepeat, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool) int {
+fn auto_repeat_count(node &Node, repeat css.GridRepeat, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool) int {
+	repeat_basis,repeat_definite,minimum_only := grid_repeat_axis_constraint(node,horizontal,basis,available_is_definite)
 	list := repeat.grid_track_size_list()
 	mut repeated_tracks_size := CSSPixels.new(0)
 	mut repeated_track_count := 0
 	for track in list.track_list() {
 		// If neither sizing function is definite, the number of repetitions is one.
-		size := auto_repeat_estimate_track_size(node, track, basis) or { return 1 }
+		size := auto_repeat_estimate_track_size(node, track, repeat_basis) or { return 1 }
 		// Floor each track to 1px to avoid division by zero.
 		repeated_tracks_size = repeated_tracks_size.plus(css_pixels_max(size, CSSPixels.new(1)))
 		repeated_track_count++
 	}
 	denominator := repeated_tracks_size.plus(gap.scaled(f64(repeated_track_count)))
-	if available_is_definite && denominator.raw_value() > 0 {
-		rest_size, rest_count := auto_repeat_template_rest(node, template, basis)
+	if repeat_definite && denominator.raw_value() > 0 {
+		rest_size, rest_count := auto_repeat_template_rest(node, template, repeat_basis)
 		// The gap is added to the free space because the last track has none.
-		leftover := basis.plus(gap).minus(rest_size).minus(gap.scaled(f64(rest_count)))
-		count := int(leftover.raw_value() / denominator.raw_value())
+		leftover := repeat_basis.plus(gap).minus(rest_size).minus(gap.scaled(f64(rest_count)))
+		count := int((leftover.raw_value() + if minimum_only { denominator.raw_value()-1 } else { 0 }) / denominator.raw_value())
 		return if count > 1 { count } else { 1 }
 	}
 	return 1
 }
 
-fn append_explicit_grid_track(node &Node, track css.ExplicitGridTrack, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, mut tracks []GridTrack) {
+fn append_explicit_grid_track(node &Node, track css.ExplicitGridTrack, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, horizontal bool, mut tracks []GridTrack) {
 	if track.is_repeat() {
 		repeat := track.repeat()
 		repeat_count := if repeat.is_fixed() {
 			int(repeat.repeat_count())
 		} else {
-			auto_repeat_count(node, repeat, template, basis, gap, available_is_definite)
+			auto_repeat_count(node, repeat, template, basis, gap, available_is_definite, horizontal)
 		}
 		repeated_track_is_auto_fit := inherited_auto_fit || repeat.is_auto_fit()
 		for _ in 0 .. repeat_count {
-			append_grid_track_list_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite, repeated_track_is_auto_fit, mut tracks)
+			append_grid_track_list_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite, repeated_track_is_auto_fit, horizontal, mut tracks)
 		}
 		return
 	}
@@ -430,17 +431,17 @@ fn append_explicit_grid_track(node &Node, track css.ExplicitGridTrack, template 
 	tracks << grid_track_from_size(node, track.grid_size(), basis, available_is_definite, inherited_auto_fit)
 }
 
-fn append_grid_track_list(node &Node, list css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, mut tracks []GridTrack) {
-	append_grid_track_list_in_template(node, list, list, basis, gap, available_is_definite, inherited_auto_fit, mut tracks)
+fn append_grid_track_list(node &Node, list css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, horizontal bool, mut tracks []GridTrack) {
+	append_grid_track_list_in_template(node, list, list, basis, gap, available_is_definite, inherited_auto_fit, horizontal, mut tracks)
 }
 
-fn append_grid_track_list_in_template(node &Node, list css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, mut tracks []GridTrack) {
+fn append_grid_track_list_in_template(node &Node, list css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, inherited_auto_fit bool, horizontal bool, mut tracks []GridTrack) {
 	for track in list.track_list() {
-		append_explicit_grid_track(node, track, template, basis, gap, available_is_definite, inherited_auto_fit, mut tracks)
+		append_explicit_grid_track(node, track, template, basis, gap, available_is_definite, inherited_auto_fit, horizontal, mut tracks)
 	}
 }
 
-fn expanded_explicit_grid_track_count_in_template(node &Node, list css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool) int {
+fn expanded_explicit_grid_track_count_in_template(node &Node, list css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool) int {
 	mut count := 0
 	for track in list.track_list() {
 		if track.is_repeat() {
@@ -448,9 +449,9 @@ fn expanded_explicit_grid_track_count_in_template(node &Node, list css.GridTrack
 			repeat_count := if repeat.is_fixed() {
 				int(repeat.repeat_count())
 			} else {
-				auto_repeat_count(node, repeat, template, basis, gap, available_is_definite)
+				auto_repeat_count(node, repeat, template, basis, gap, available_is_definite, horizontal)
 			}
-			count += repeat_count * expanded_explicit_grid_track_count_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite)
+			count += repeat_count * expanded_explicit_grid_track_count_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite, horizontal)
 			continue
 		}
 		count++
@@ -458,12 +459,12 @@ fn expanded_explicit_grid_track_count_in_template(node &Node, list css.GridTrack
 	return count
 }
 
-fn expand_grid_lines(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, mut lines [][]css.GridLineName, mut pending_names []css.GridLineName) {
-	expand_grid_lines_in_template(node, definition, definition, basis, gap, available_is_definite, mut
+fn expand_grid_lines(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool, mut lines [][]css.GridLineName, mut pending_names []css.GridLineName) {
+	expand_grid_lines_in_template(node, definition, definition, basis, gap, available_is_definite, horizontal, mut
 		lines, mut pending_names)
 }
 
-fn expand_grid_lines_in_template(node &Node, definition css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, mut lines [][]css.GridLineName, mut pending_names []css.GridLineName) {
+fn expand_grid_lines_in_template(node &Node, definition css.GridTrackSizeList, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool, mut lines [][]css.GridLineName, mut pending_names []css.GridLineName) {
 	for item in definition.list() {
 		match item {
 			css.GridLineNames {
@@ -477,10 +478,10 @@ fn expand_grid_lines_in_template(node &Node, definition css.GridTrackSizeList, t
 					repeat_count := if repeat.is_fixed() {
 						int(repeat.repeat_count())
 					} else {
-						auto_repeat_count(node, repeat, template, basis, gap, available_is_definite)
+						auto_repeat_count(node, repeat, template, basis, gap, available_is_definite, horizontal)
 					}
 					for _ in 0 .. repeat_count {
-						expand_grid_lines_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite, mut lines, mut pending_names)
+						expand_grid_lines_in_template(node, repeat.grid_track_size_list(), template, basis, gap, available_is_definite, horizontal, mut lines, mut pending_names)
 					}
 				} else {
 					lines << pending_names.clone()
@@ -496,7 +497,7 @@ fn expand_grid_lines_in_template(node &Node, definition css.GridTrackSizeList, t
 fn grid_lines_for_definition(node &Node, definition css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, areas css.GridTemplateAreas, columns bool) [][]css.GridLineName {
 	mut lines := [][]css.GridLineName{}
 	mut pending_names := []css.GridLineName{}
-	expand_grid_lines(node, definition, basis, gap, available_is_definite, mut lines, mut pending_names)
+	expand_grid_lines(node, definition, basis, gap, available_is_definite, columns, mut lines, mut pending_names)
 	lines << pending_names.clone()
 	required_line_count := int(if columns { areas.column_count } else { areas.row_count }) + 1
 	for lines.len < required_line_count {
@@ -801,12 +802,16 @@ fn resolve_grid_item_axis_position(item &Node, columns bool, start css.GridTrack
 }
 
 fn resolve_grid_tracks(container &Node, list css.GridTrackSizeList, implicit_list css.GridTrackSizeList, available CSSPixels, gap CSSPixels, available_is_definite bool, implicit_before_count int, required_count int) []GridTrack {
+ return resolve_grid_tracks_for_axis(container,list,implicit_list,available,gap,available_is_definite,implicit_before_count,required_count,true)
+}
+
+fn resolve_grid_tracks_for_axis(container &Node, list css.GridTrackSizeList, implicit_list css.GridTrackSizeList, available CSSPixels, gap CSSPixels, available_is_definite bool, implicit_before_count int, required_count int, horizontal bool) []GridTrack {
 	mut tracks := []GridTrack{}
 	implicit_tracks := implicit_list.track_list()
 	for index in 0 .. implicit_before_count {
 		if implicit_tracks.len > 0 {
 			implicit_index := (implicit_before_count - index - 1) % implicit_tracks.len
-			append_explicit_grid_track(container, implicit_tracks[implicit_index], css.GridTrackSizeList{}, available, gap, available_is_definite, false, mut tracks)
+			append_explicit_grid_track(container, implicit_tracks[implicit_index], css.GridTrackSizeList{}, available, gap, available_is_definite, false, horizontal, mut tracks)
 		} else {
 			tracks << GridTrack{
 				intrinsic: true
@@ -816,11 +821,11 @@ fn resolve_grid_tracks(container &Node, list css.GridTrackSizeList, implicit_lis
 			}
 		}
 	}
-	append_grid_track_list(container, list, available, gap, available_is_definite, false, mut tracks)
+	append_grid_track_list(container, list, available, gap, available_is_definite, false, horizontal, mut tracks)
 	mut implicit_index := 0
 	for tracks.len < required_count {
 		if implicit_tracks.len > 0 {
-			append_explicit_grid_track(container, implicit_tracks[implicit_index % implicit_tracks.len], css.GridTrackSizeList{}, available, gap, available_is_definite, false, mut tracks)
+			append_explicit_grid_track(container, implicit_tracks[implicit_index % implicit_tracks.len], css.GridTrackSizeList{}, available, gap, available_is_definite, false, horizontal, mut tracks)
 			implicit_index++
 		} else {
 			tracks << GridTrack{
@@ -2697,14 +2702,14 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			subgrid_lines_for_definition(template_columns, data.line_names, data.tracks.len)
 		} else {
 			grid_lines_for_definition(container, template_columns, container_width, column_gap,
-				true, areas, true)
+				!width_is_intrinsic, areas, true)
 		}
 	} else {
 		if template_columns.is_subgrid() {
 			[][]css.GridLineName{len: 1}
 		} else {
 			grid_lines_for_definition(container, template_columns, container_width, column_gap,
-				true, areas, true)
+				!width_is_intrinsic, areas, true)
 		}
 	}
 	row_lines := if data := inherited_rows {
@@ -3397,4 +3402,26 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		}
 		automatic_content_height: automatic_height
 	}
+}
+
+fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,definite bool) (CSSPixels,bool,bool) {
+ if definite { return basis,true,false }
+ style := node.computed_values()
+ minimum := style.size_value(if horizontal { .min_width } else { .min_height })
+ maximum := style.size_value(if horizontal { .max_width } else { .max_height })
+ mut min_bound := ?CSSPixels(none)
+ mut max_bound := ?CSSPixels(none)
+ if !minimum.contains_percentage() && !minimum.is_auto() { min_bound = resolve_layout_size(node,minimum,basis) }
+ if !maximum.contains_percentage() && !maximum.is_none() { max_bound = resolve_layout_size(node,maximum,basis) }
+ edges := style.resolved_box_model_edges(basis.to_double())
+ adjustment := if style.box_sizing() == .border_box {
+  if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
+  else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) }
+ } else { CSSPixels.new(0) }
+ if max_value := max_bound {
+  lower := min_bound or { CSSPixels.new(0) }
+  return css_pixels_max(CSSPixels.new(0),css_pixels_max(lower,max_value).minus(adjustment)),true,false
+ }
+ if min_value := min_bound { return css_pixels_max(CSSPixels.new(0),min_value.minus(adjustment)),true,true }
+ return basis,false,false
 }
