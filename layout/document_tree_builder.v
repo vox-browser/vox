@@ -111,9 +111,12 @@ fn counter_origin_description(abstract_element dom.AbstractElement, computed &cs
 	return abstract_element.debug_description()
 }
 
-fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, computed &css.ComputedProperties) {
+fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, source &css.ComputedProperties) {
+	// Counter getters consume resolved values. Device layout can resolve only
+	// the projected style, leaving the CSS-coordinate source cache empty.
+	values := computed_values_in_layout_coordinates(source, abstract_element.element().document())
+	computed := unsafe { &css.ComputedProperties(values) }
 	if builder_state.counter_sets.len == 0 {
-		values := unsafe { &css.ComputedValues(computed) }
 		if !computed.display().is_list_item() && values.counter_reset().len == 0
 			&& values.counter_increment().len == 0 && values.counter_set().len == 0 {
 			// Before any counter exists, empty parent/sibling history cannot
@@ -164,7 +167,9 @@ fn resolve_layout_counters(mut builder_state TreeBuilderState, abstract_element 
 	builder_state.last_processed_key = key
 }
 
-fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, computed &css.ComputedProperties) {
+fn resolve_marker_layout_counters(mut builder_state TreeBuilderState, abstract_element dom.AbstractElement, source &css.ComputedProperties) {
+	values := computed_values_in_layout_coordinates(source, abstract_element.element().document())
+	computed := unsafe { &css.ComputedProperties(values) }
 	host := dom.AbstractElement.new(abstract_element.element(), none)
 	host_key := abstract_element_counter_key(host)
 	host_counters := builder_state.counter_sets[host_key]
