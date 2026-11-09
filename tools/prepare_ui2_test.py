@@ -1,9 +1,14 @@
+from contextlib import redirect_stdout
+import io
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from prepare_linux_modules import stage_module
 from prepare_ui2 import prepare_gg_gradient, prepare_ui2_source
+import test_linux_native as native_runner
 
 
 class GGGradientCompatibilityTests(unittest.TestCase):
@@ -64,6 +69,74 @@ class GGGradientCompatibilityTests(unittest.TestCase):
             self.assertEqual((modules / 'gg/canvas/path.v').read_text(), (source / 'path.v').read_text())
             prepare_gg_gradient(modules, vlib)
             self.assertEqual((modules / 'gg/canvas/gpu_gradient.v').read_text(), actual)
+
+
+class LinuxNativeRunnerStagingTests(unittest.TestCase):
+    def test_application_compile_keeps_linux_fontstash_adapters_after_ui2_preparation(self):
+        for gc in ('boehm', 'prealloc'):
+            with self.subTest(gc=gc), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory).resolve()
+                repo, vlib = root / 'repo', root / 'vlib'
+                modules, source = repo / 'Build/linux/modules', vlib / 'gg'
+                (repo / 'compact').mkdir(parents=True)
+                (repo / 'compact/probe_test.v').write_text('module main\n')
+                (source / 'canvas').mkdir(parents=True)
+                (source / 'canvas/gpu_gradient.v').write_text('module canvas\n')
+                original = '''module gg
+fn fons_render_update(uptr voidptr, rect &i32, data &u8) {
+}
+fn fons_render_draw(uptr voidptr, verts &f32, tcoords &f32, colors &u32, nverts i32) {
+}
+fn create_fonts() {
+\tparams.renderUpdate = fons_render_update
+\tparams.renderDraw = fons_render_draw
+\tif memory_font {
+\t\tparams.renderUpdate = fons_render_update
+\t\tparams.renderDraw = fons_render_draw
+\t}
+}
+'''
+                (source / 'text_rendering.c.v').write_text(original)
+
+                def prepare(command, **_):
+                    if command[1] == '--version':
+                        return 'clang version test'
+                    helper = Path(command[1]).name
+                    if helper == 'prepare_http_compat.py':
+                        return str(root / 'http')
+                    if helper == 'prepare_prealloc_runtime.py':
+                        return str(root / 'prealloc')
+                    modules.mkdir(parents=True, exist_ok=True)
+                    if helper == 'prepare_ui2.py':
+                        prepare_gg_gradient(modules, vlib)
+                    elif helper == 'prepare_linux_modules.py':
+                        stage_module(source, modules / 'gg', 'gg')
+                    else:
+                        self.fail('unexpected preparation command: ' + str(command))
+                    return str(modules)
+
+                compiled = []
+
+                def run(command, **_):
+                    if '-b' in command:
+                        staged = modules / 'gg/text_rendering.c.v'
+                        self.assertEqual(staged.read_text().count('C.vox_gg_fontstash_callbacks(&params)'), 2)
+                        self.assertTrue((modules / 'gg/vox_fontstash_callbacks.h').is_file())
+                        self.assertEqual((source / 'text_rendering.c.v').read_text(), original)
+                        compiled.append(command)
+                    return subprocess.CompletedProcess(command, 0, '')
+
+                # Exercise the runner's orchestration with real staging. The
+                # compiler boundary checks its selected sources before use.
+                with patch.object(native_runner, '__file__', str(repo / 'tools/test_linux_native.py')), \
+                        patch.object(native_runner.sys, 'platform', 'linux'), \
+                        patch.object(native_runner.sys, 'argv', ['test_linux_native.py', '--gc', gc, 'compact/probe_test.v']), \
+                        patch.dict(native_runner.os.environ, V_BIN=str(root / 'v'), CC='clang'), \
+                        patch.object(native_runner.subprocess, 'check_output', side_effect=prepare), \
+                        patch.object(native_runner.subprocess, 'run', side_effect=run), \
+                        redirect_stdout(io.StringIO()):
+                    native_runner.main()
+                self.assertEqual(len(compiled), 1)
 
 
 class UpstreamUI2Tests(unittest.TestCase):
