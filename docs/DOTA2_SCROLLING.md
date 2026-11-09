@@ -1653,3 +1653,66 @@ and 36 rebuild checks pass, with two platform-specific skips. The shared
 rebuild remains pending and the published executable is still `23d3335d...`.
 **The stall-free 60 Hz goal remains open.** See
 [production checks, resource coverage and retained build failures](performance/reddit-boots-prod-validation-20261109.md).
+
+## 2026-11-09: cached pages kept the main thread busy
+
+The reporting user's own windows explained the lag that fresh-launch
+measurements did not reproduce. Their Vox processes had browsed the Reddit
+front page, threads and back for 1–13 hours, and sat at 93–97% CPU while
+idle (one at 7.3 GB). Read-only stack samples put the main thread inside
+`html.EventLoop.process`, in the inlined `TaskQueue.has_runnable_tasks` scan
+over a very long queue of tasks whose document was not fully active.
+
+- **Back/forward cache timers** (`c92aa4c2f`). A cached page's repeating timer
+  clocks kept running, and each tick queued a task that cannot run until the
+  page is shown again. Sixty seconds after leaving the page, the hidden-page
+  intensive-throttling grace timer realigned those timers. An inactive
+  document is never throttled, so each repeating clock restarted at its
+  long-past deadline with a zero interval. From then on every event-loop turn
+  appended and scanned unrunnable tasks; cost grows with the queue, and memory
+  without bound. Cached pages now freeze their timer clocks and resume each
+  with its remaining time when reactivated, as WebKit suspends a cached page's
+  timers.
+- **Repeated script navigations** (`2e402e050`). `__compactTakeTaskOutput`
+  reported `location.href` assignments without clearing them, so every later
+  task of the page called `navigate()` again and restarted the pending load.
+  A page with a 16 ms interval never reached its destination and grew by
+  about 30 MB/s at a third of a core.
+
+Checks on a private production-mode bundle built from `5a44b2ad9` (dirty
+shared tree; the shared bundle could not publish while a WPT run held its
+lock):
+
+| Fixture, fresh process, private profile | Before (`f14f71f6…`) | After |
+| --- | --- | --- |
+| Page with intervals, then navigate to a second page; CPU 60–100 s later | 97% of a core, RSS rising | 0.1%, RSS flat |
+| Same with `VOX_DISABLE_BACK_FORWARD_CACHE=1` | 0.1% | – |
+| 16 ms interval, script navigation to `https://example.com/` | never navigates, 35% CPU, +30 MB/s | navigates, idle, flat |
+
+Focused tests: `html/back_forward_cache_timer_test.v` (Boehm and `-gc none`),
+`compact/task_navigation_test.v`, and the existing
+`window_or_worker_global_scope`, `timer`, `native_timer` and
+`global_scope_native_timeout` tests pass. `html/timer_source_task_test.v`
+fails identically without these changes: `850c9c53a` moved the string-timer
+CSP check to installation and left that test's run-time expectation.
+
+Scrolling the thread two minutes after arriving from a page with an interval
+(1,200 precise 120 Hz inputs, delta 6, 150% zoom, 1701×948, load 10–17) does
+not separate the arms yet: after 105.7/108.8, before 109.0/101.4 scroll
+publications/s. The scan cost grows with how long the cached pages have been
+spinning, so it matters for long sessions; the processes above had been
+spinning for hours. Users need to restart such a running Vox.
+
+At host load ~10, a fresh fling (800 inputs, delta 24, about 50 CSS px per
+input) has median frame preparation 5.2–6.2 ms and p95 9.8–12.4 ms, with
+10–23 of about 790 intervals over 16.7 ms. The same workload at load 110–175
+had 40–100 ms frames near the top, mostly GPU canvas uploads (CPU-side Metal
+texture tiling) and readbacks of tall strips. One remaining hitch of
+325–380 ms per run is Old Reddit's own `DOMContentLoaded` handler: the HTML
+takes about 6 s through the proxy, parsing waits on its scripts, and the
+handler (interpreted JavaScript plus compact element queries, then a style
+and layout rebuild) runs once while the first scroll is in progress. With a
+25 s settle the hitch does not occur. Shortening that handler (compact bridge
+queries, `opGetByIdSlow` property reads) is the next lever for the first
+scroll; GPU canvas transfer cost is the next lever for fling frames under
+load.
