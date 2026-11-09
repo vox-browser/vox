@@ -182,3 +182,11 @@ total. Four focused files pass default/no-GC/optimized checks with actual
 exits zero and 524 unchanged inputs. Cadence is 6/10; no full 90-file run is
 claimed. Production and its native developer tool still use Rust.
 See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).
+
+Original-profile modular RGB/gray output adds 128 native records and 8,564,736
+exact straight/paint RGBA bytes: 283,061 records and 91 JPEG XL test files
+total. Three focused files pass default/no-GC/optimized checks with actual
+exits zero and 655 unchanged inputs, retaining prior unified output references.
+Cadence is 7/10; no full 91-file run is claimed. Production and its native
+developer tool still use Rust.
+See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).

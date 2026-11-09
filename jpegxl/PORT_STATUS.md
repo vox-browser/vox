@@ -592,8 +592,19 @@ optimized checks with actual exits zero and 524 unchanged inputs. Cadence is
 6/10; no full ninety-file run is claimed.
 See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).
 
+One further slice adds original-profile modular RGB/gray restoration and
+image/alpha upsampling to the unified output owner. The file is now parsed
+once through an explicit decode mode; older opaque/lossless APIs retain their
+contracts. Another 128 native files compare all 8,564,736 straight/paint RGBA
+bytes exactly across filters, upsampling, associated alpha and orientation.
+The count is 283,061 source records and ninety-one test files. Three focused
+files pass default/no-GC/optimized checks with actual exits zero and 655
+unchanged inputs, preserving all prior unified-image references. Cadence is
+7/10; no full ninety-one-file run is claimed.
+See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
-extra channels, resampled LF alpha, non-XYB modular rendering beyond the existing lossless path,
+extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production
 integration remain.
 

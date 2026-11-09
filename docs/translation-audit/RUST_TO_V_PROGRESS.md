@@ -624,3 +624,17 @@ limits and checks. Wider chroma combinations, original-profile modular
 rendering, extra-channel combinations, feature streams, frame composition and
 production/tool integration remain. Production JPEG XL and its native developer
 tool still require Rust.
+
+## JPEG XL original-profile modular RGB/gray on 2026-11-09
+
+Another slice adds filtered and upsampled original-profile modular RGB/gray
+output, sharing one parsed file owner with VarDCT and XYB. Another 128 native
+files compare 8,564,736 straight/paint RGBA bytes exactly, bringing JPEG XL to
+283,061 records and 91 test files. Three focused files pass default/no-GC/
+optimized checks with actual exits zero and 655 unchanged inputs. Older
+unified-image references remain exact. Cadence is 7/10 after the 84-file
+checkpoint; no full 91-file run is claimed.
+[The modular RGB report](JPEGXL_V_MODULAR_RGB.md) records source/tool pins,
+limits and checks. Feature streams, frame composition, wider extra-channel/LF
+combinations, larger entropy maps and production/tool integration remain.
+Production JPEG XL and its native developer tool still require Rust.
