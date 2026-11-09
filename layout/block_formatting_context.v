@@ -518,23 +518,37 @@ fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state Layout
 // hand its flow bottom back to the line builder so subsequent inline content
 // resumes on a fresh line below it.
 fn (mut bfc BlockFormattingContext) layout_interrupting_block_inside_inline_context(mut state LayoutState, box &Box, containing_block &BlockContainer, available_space AvailableSpace, mut line_builder LineBuilder) {
-	box_node := unsafe { &Node(box) }
-	box_styled := box_node.as_node_with_style() or { return }
-	containing_node := unsafe { &Node(containing_block) }
-	containing_styled := containing_node.as_node_with_style() or { return }
-	containing_state := state.get(containing_styled)
-	saved_y_offset := bfc.y_offset_of_current_block_container
-	bfc.y_offset_of_current_block_container = line_builder.current_block_offset_value().to_double()
-	_ = bfc.layout_block_level_box(mut state, box_styled, containing_styled,
-		containing_state.content_width().to_double(), if available_space.height.is_definite() {
-		?f64(available_space.height.to_px_or_zero().to_double())
-	} else {
-		none
-	})
-	block_bottom := css_px(bfc.y_offset_of_current_block_container)
-	block_bottom_margin := css_px(bfc.margin_state.current_collapsed_margin())
-	bfc.y_offset_of_current_block_container = saved_y_offset
-	line_builder.append_block_level_box(box, block_bottom, block_bottom_margin)
+ box_node := unsafe { &Node(box) }
+ box_styled := box_node.as_node_with_style() or { return }
+ containing_node := unsafe { &Node(containing_block) }
+ containing_styled := containing_node.as_node_with_style() or { return }
+ mut containing_state := state.get_mutable(containing_styled)
+ if bfc.has_line_clamp() { bfc.apply_line_clamp_to_lines(containing_block,mut containing_state,mut state) }
+ invisible := bfc.line_clamp_reached()
+ saved_invisible := bfc.laying_out_invisible_clamped_content
+ bfc.laying_out_invisible_clamped_content = saved_invisible || invisible
+ saved_y_offset := bfc.y_offset_of_current_block_container
+ block_start := line_builder.current_block_offset_value()
+ bfc.y_offset_of_current_block_container = block_start.to_double()
+ _ = bfc.layout_block_level_box(mut state,box_styled,containing_styled,containing_state.content_width().to_double(),if available_space.height.is_definite() { ?f64(available_space.height.to_px_or_zero().to_double()) } else { none })
+ mut block_bottom := css_px(bfc.y_offset_of_current_block_container)
+ mut block_bottom_margin := css_px(bfc.margin_state.current_collapsed_margin())
+ bfc.y_offset_of_current_block_container = saved_y_offset
+ bfc.laying_out_invisible_clamped_content = saved_invisible
+ if invisible { return }
+ if grid_is_vertical(containing_node) {
+  mut used := state.get_mutable(box_styled)
+  if bfc.has_line_clamp() && property_is_auto(box_styled.computed_values(),.width) && used.line_boxes.len > 0 {
+   mut extent := CSSPixels.new(0)
+   for line in used.line_boxes { extent = css_pixels_max(extent,line.bottom_) }
+   used.set_content_width(clamp_layout_content_size(box_node,extent,containing_state.content_width(),used,true))
+  }
+  x := if grid_axis_reversed(containing_node,true) { containing_state.content_width().minus(block_start).minus(used.margin_box_right()).minus(used.content_width()) } else { block_start.plus(used.margin_box_left()) }
+  used.set_content_offset(css.CSSPixelPoint.new(x,used.margin_box_top()))
+  block_bottom = block_start.plus(used.margin_box_width())
+  block_bottom_margin = CSSPixels.new(0)
+ }
+ line_builder.append_block_level_box(box,block_bottom,block_bottom_margin)
 }
 
 // Commit a collapsed margin when inline content resumes after an interrupting
@@ -1030,6 +1044,7 @@ mut:
 	is_line_clamp_container              bool
 	max_lines                            ?int
 	line_clamp_line_count                int
+	line_clamp_processed_lines           map[u32]int
 	line_clamp_reached_                  bool
 	laying_out_invisible_clamped_content bool
 }

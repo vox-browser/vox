@@ -30,3 +30,17 @@ fn test_vertical_clamped_content_uses_the_visible_lines_for_intrinsic_width() {
   }
  }
 }
+
+fn test_clamping_counts_inline_lines_before_an_interrupting_block() {
+ for mode in ['horizontal-tb','vertical-lr','vertical-rl'] {
+  for preference in ['first','last'] {
+   mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{display:grid;grid-auto-flow:column;inline-size:100px;writing-mode:${mode};align-items:${preference} baseline;line-height:0;font-size:30px}span{display:inline-block;width:1em;height:1em}#inner{display:-webkit-box;-webkit-box-orient:vertical;line-clamp:3 no-ellipsis;border:10px solid;font-size:40px;overflow:hidden}</style><div id="outer"><div id="a"><span></span></div><div id="inner"><span></span><br><i><span></span><div><span></span><br><span></span><br><span></span></div></i></div></div>')
+   defer { document.finalize() }
+   _ = layout_document_typed_in_viewport(document,800,600)
+   rect := (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect()
+   actual := if mode == 'horizontal-tb' { rect.y } else { rect.x }
+   expected := if mode == 'horizontal-tb' { if preference == 'first' { 20.0 } else { 100.0 } } else if (mode == 'vertical-rl') == (preference == 'first') { 95.0 } else { 15.0 }
+   assert actual == expected, '${mode} ${preference}: ${actual}'
+  }
+ }
+}

@@ -638,46 +638,39 @@ fn (mut bfc BlockFormattingContext) apply_line_clamp_to_lines(containing_block &
 		used.line_boxes.clear()
 		return
 	}
-	if bfc.line_clamp_reached() {
-		for line in used.line_boxes {
-			for fragment in line.fragments_ {
-				mark_line_clamp_fragment_invisible(mut state, fragment)
-			}
-		}
-		used.line_boxes.clear()
-		return
-	}
-	for line_index in 0 .. used.line_boxes.len {
-		bfc.line_clamp_line_count++
-		if bfc.line_clamp_line_count != maximum {
-			continue
-		}
-		line := used.line_boxes[line_index]
-		anchor := if line.fragments_.len > 0 {
-			line.fragments_.last().layout_node()
-		} else {
-			unsafe { &Node(containing_block) }
-		}
-		has_immediate_continuation := line_index + 1 < used.line_boxes.len
-		if !has_immediate_continuation && !bfc.line_clamp_has_future_content(anchor) {
-			continue
-		}
-		bfc.line_clamp_reached_ = true
-		if root := bfc.root {
-			if styled := root.as_node_with_style() {
-				mut root_used := state.get_mutable(styled)
-				root_used.set_has_line_clamp_point(true)
-			}
-		}
-		for hidden_line_index := line_index + 1; hidden_line_index < used.line_boxes.len; hidden_line_index++ {
-			for fragment in used.line_boxes[hidden_line_index].fragments_ {
-				mark_line_clamp_fragment_invisible(mut state, fragment)
-			}
-		}
-		used.line_boxes = used.line_boxes[..line_index + 1].clone()
-		apply_block_ellipsis(containing_block, mut used, mut state)
-		return
-	}
+ key := unsafe { &Node(containing_block) }.as_node_with_style() or { return }
+ already_processed := bfc.line_clamp_processed_lines[key.layout_index()]
+ mut kept := []LineBox{cap:used.line_boxes.len}
+ mut processed := already_processed
+ mut ellipsis := false
+ for index,line in used.line_boxes {
+  if index < already_processed { kept << line;continue }
+  if line.has_block_level_box() {
+   child := line.fragments_[0].layout_node().as_node_with_style() or { continue }
+   if !state.get(child).is_invisible_for_line_clamp() { kept << line }
+   processed = kept.len
+   continue
+  }
+  if line.is_empty() && !line.has_forced_break() { kept << line;continue }
+  if bfc.line_clamp_reached() || bfc.line_clamp_line_count >= maximum {
+   for fragment in line.fragments_ { mark_line_clamp_fragment_invisible(mut state,fragment) }
+   continue
+  }
+  bfc.line_clamp_line_count++
+  kept << line
+  processed = kept.len
+  if bfc.line_clamp_line_count != maximum { continue }
+  anchor := if line.fragments_.len > 0 { line.fragments_.last().layout_node() } else { unsafe { &Node(containing_block) } }
+  has_continuation := index+1 < used.line_boxes.len || bfc.line_clamp_has_future_content(anchor)
+  if has_continuation {
+   bfc.line_clamp_reached_ = true
+   if root := bfc.root { if styled := root.as_node_with_style() { mut root_used := state.get_mutable(styled);root_used.set_has_line_clamp_point(true) } }
+   ellipsis = true
+  }
+ }
+ used.line_boxes = kept
+ bfc.line_clamp_processed_lines[key.layout_index()] = processed
+ if ellipsis { apply_block_ellipsis(containing_block,mut used,mut state) }
 }
 
 fn automatic_line_clamp_limit(containing_block &BlockContainer, used &UsedValues,

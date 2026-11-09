@@ -37,6 +37,11 @@ fn grid_content_baseline_from_low(state &LayoutState, container &Node, item &Nod
 				index := if set == .first { i } else { used.line_boxes.len-1-i }
 				line := used.line_boxes[index]
 				if line.is_empty() { continue }
+    if line.has_block_level_box() {
+     child := line.fragments_[0].layout_node()
+     child_used := state.get(child.as_node_with_style() or { continue })
+     return used.margin_box_left().plus(child_used.offset.x().minus(child_used.margin_box_left())).plus(grid_baseline_from_low(state,container,child,true,set,depth+1))
+    }
 				// Vertical text shares a central baseline. Line offsets retain
 				// logical block progression, even after physical placement.
 				central := resolve_dominant_baseline_metric(container.computed_values()) == .central
