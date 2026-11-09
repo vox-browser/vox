@@ -202,6 +202,11 @@ fn (mut script SVGScriptElementModel) execute_script() {
 	if !script.document_.document_ready_to_run_scripts() {
 		return
 	}
+	mut document := unsafe { &dom.Document(script.document_) }
+	previous := document.current_script()
+	defer { document.set_current_script(previous) }
+	element := svg_script_dom_element(script.element_)
+	document.set_current_script(if element.as_node().root().is_shadow_root() { none } else { element })
 	execute := script.execute_hook_ or {
 		_ = execute_bound_script_element(script.document_,.classic,source,int(script.source_line_number_),svg_script_dom_element(script.element_)) or { false }
 		return

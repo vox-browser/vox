@@ -65,7 +65,7 @@ fn browser_parser_created(target voidptr, parser &html.HTMLParser) {
 		mut binding := unsafe { &BrowserParserScriptHost(host) }
 		mut document := unsafe { &dom.Document(host.document) }
 		previous := document.current_script()
-		document.set_current_script(none)
+		if kind == .module { document.set_current_script(none) }
 		defer { document.set_current_script(previous) }
 		binding.run_script(browserjs.ScriptSource{
 			code: source
@@ -107,6 +107,7 @@ fn (mut host BrowserParserScriptHost) execute(script &dom.HTMLScriptElement,
 	element := unsafe { &dom.Element(script) }
 	host.run_script(browserjs.ScriptSource{
 		code: source
+		starting_line: if element.has_attribute('src') { 1 } else { html.html_script_element_model_for_dom_element(script).source_line_number() }
 		url: address.serialize()
 		source_type: if kind == .module { .module } else { .script }
 		element: element
