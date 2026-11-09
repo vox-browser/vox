@@ -1837,10 +1837,11 @@ fn grid_content_based_minimum_from_outer_contribution(item &Node, item_state &Us
 			})
 			if opposite.is_length() {
 				if opposite_size := resolve_layout_size(item, opposite, CSSPixels.new(0)) {
+					used_opposite := clamp_layout_content_size(item,opposite_size,CSSPixels.new(0),item_state,!columns)
 					content_minimum = if columns {
-						intrinsic_content_width_from_aspect_ratio(box, item_state, opposite_size)
+						intrinsic_content_width_from_aspect_ratio(box, item_state, used_opposite)
 					} else {
-						intrinsic_content_height_from_aspect_ratio(box, item_state, opposite_size)
+						intrinsic_content_height_from_aspect_ratio(box, item_state, used_opposite)
 					}
 				}
 			}
@@ -2399,9 +2400,13 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	mut contribution := inner.plus(edges)
 	maximum := item.computed_values().size_value(.max_height)
 	if !maximum.is_none() && !(maximum.contains_percentage() && !available_height_is_definite) {
-		if maximum_size := resolve_layout_size(item, maximum, percentage_basis) {
-			contribution = css_pixels_min(contribution, maximum_size)
+		if maximum_size := resolve_layout_content_size(item, maximum, percentage_basis,item_state,false) {
+			contribution = css_pixels_min(contribution, maximum_size.plus(edges))
 		}
+	}
+	minimum := item.computed_values().size_value(.min_height)
+	if !minimum.is_auto() && !(minimum.contains_percentage() && !available_height_is_definite) {
+		if minimum_size := resolve_layout_content_size(item,minimum,percentage_basis,item_state,false) { contribution=css_pixels_max(contribution,minimum_size.plus(edges)) }
 	}
 	return contribution
 }
@@ -2579,6 +2584,12 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 		if maximum_size := resolve_layout_content_size(item, maximum, CSSPixels.new(0),
 			item_state, true) {
 			inner = css_pixels_min(inner, maximum_size)
+		}
+	}
+	if !preferred_behaves_as_auto && !preferred.is_intrinsic_sizing_constraint() {
+		minimum := item.computed_values().size_value(.min_width)
+		if !minimum.contains_percentage() {
+			if minimum_size := resolve_layout_content_size(item,minimum,containing_width,item_state,true) { inner=css_pixels_max(inner,minimum_size) }
 		}
 	}
 	return inner.plus(edges)

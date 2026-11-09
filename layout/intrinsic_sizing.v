@@ -218,14 +218,15 @@ fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &
 		return none
 	}
 	computed_height := computed.size_value(.height)
-	if computed_height.is_auto() || computed_height.is_intrinsic_sizing_constraint() {
+	has_opposite_constraint := computed.size_value(.min_height).is_length() || computed.size_value(.max_height).is_length()
+	if (computed_height.is_auto() || computed_height.is_intrinsic_sizing_constraint()) && !has_opposite_constraint {
 		return none
 	}
 	styled := node.as_node_with_style() or { return none }
 	box_state := state.get(styled)
 	available_space := box_state.available_inner_space_or_constraints_from(AvailableSpace.new(
 		AvailableSize.make_max_content(), AvailableSize.make_indefinite()))
-	if should_treat_height_as_auto(state, box, available_space) {
+	if should_treat_height_as_auto(state, box, available_space) && !has_opposite_constraint {
 		return none
 	}
 	return compute_replaced_size(box, replaced_available_space_with_percentage_height_basis(state,
