@@ -1,0 +1,121 @@
+// Copyright (c) the JPEG XL Project Authors. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
+module jpegxl
+
+pub struct VarDctFramePlanes {
+pub:
+	planes    [3]FloatPlane
+	epf_maps  VarDctEpfMaps
+	quantizer QuantizerParams
+}
+
+fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
+	checked_vardct_lf_rect(frame, 0)!
+	if !frame.is444() || frame.has_lf_frame() || frame.lf_level != 0 || frame.upsampling != 1
+		|| file.metadata.extra_channels.len != 0 || frame.extra_upsampling.len != 0 {
+		return error('JPEG XL VarDCT frame requires unsupported sampling, LF references or extra channels')
+	}
+	size := frame.size_padded()
+	if size.width < frame.width || size.height < frame.height || size.width == 0 || size.height == 0
+		|| u64(size.width) * u64(size.height) > 67108864 / 3 {
+		return error('JPEG XL VarDCT frame exceeds the plane sample budget')
+	}
+}
+
+// Assemble complete 4:4:4 frame planes before restoration/color conversion.
+// All progressive passes are consumed. LF references, extra channels, feature
+// streams, partial recovery and frame composition remain separate work.
+pub fn decode_vardct_frame(file FileHeader, frame FrameHeader, storage ModularStorage, mut sections []BitReader) !VarDctFramePlanes {
+	validate_vardct_frame_subset(file, frame)!
+	if sections.len != int(frame.num_toc_entries()) { return error('Incorrect JPEG XL VarDCT section count') }
+	combined := sections.len == 1
+	global := sections[0].read_lf_global(file, frame)!
+	context := global.vardct or { return error('Missing JPEG XL VarDCT LF context') }
+	if global.modular_plan.coded.len != 0 { return error('Unexpected JPEG XL VarDCT modular channels') }
+	if !combined { finish_modular_section(mut sections[0], 0, false)! }
+	mut metadata := []HfMetadata{cap: int(frame.num_lf_groups())}
+	mut low := []VarDctLfResult{cap: int(frame.num_lf_groups())}
+	for group in u64(0) .. frame.num_lf_groups() {
+		index := if combined { 0 } else { 1 + int(group) }
+		low << sections[index].read_vardct_lf(frame, group, file.metadata.bit_depth, context, storage, global.tree)!
+		// This subset has no modular LF channels between LF and metadata.
+		metadata << sections[index].read_hf_metadata(frame, group, file.metadata.bit_depth, storage, global.tree)!
+		if !combined { finish_modular_section(mut sections[index], index, false)! }
+	}
+	blocks := frame.size_blocks()
+	bw := int(blocks.width)
+	bh := int(blocks.height)
+	mut low_samples := [3][]f32{}
+	for c in 0 .. 3 { low_samples[c] = []f32{len: bw * bh} }
+	mut raw_quant := []i32{len: bw * bh}
+	mut transforms := []u8{len: bw * bh}
+	mut sharpness := []u8{len: bw * bh}
+	for group in 0 .. low.len {
+		r := frame.lf_group_rect(u64(group))!
+		for y in 0 .. int(r.height) {
+			for x in 0 .. int(r.width) {
+				src := y * int(r.width) + x
+				dst := (int(r.y) + y) * bw + int(r.x) + x
+				for c in 0 .. 3 { low_samples[c][dst] = low[group].planes[c].samples[src] }
+				raw_quant[dst] = metadata[group].raw_quant[src]
+				transforms[dst] = metadata[group].transform_ids[src]
+				sharpness[dst] = metadata[group].sharpness[src]
+			}
+		}
+	}
+	mut lf_planes := []FloatPlane{cap: 3}
+	for c in 0 .. 3 { lf_planes << FloatPlane{ width: bw, height: bh, samples: low_samples[c] } }
+	if frame.should_do_adaptive_lf_smoothing() {
+		inverse := context.quantizer.inverse_quant_lf()
+		factors := context.lf_quant.quant_factors
+		lf_planes = adaptive_lf_smoothing(lf_planes, [inverse * factors[0], inverse * factors[1], inverse * factors[2]]!)!
+	}
+	for group in 0 .. low.len {
+		r := frame.lf_group_rect(u64(group))!
+		mut planes := []FloatPlane{cap: 3}
+		for c in 0 .. 3 { planes << crop_float_plane(lf_planes[c], int(r.x), int(r.y), int(r.width), int(r.height))! }
+		low[group] = VarDctLfResult{ ...low[group], planes: planes }
+	}
+	hf_index := if combined { 0 } else { 1 + low.len }
+	hf := sections[hf_index].read_hf_global(frame, global, storage)!
+	if !combined { finish_modular_section(mut sections[hf_index], hf_index, false)! }
+	size := frame.size_padded()
+	w := int(size.width)
+	h := int(size.height)
+	mut samples := [3][]f32{}
+	for c in 0 .. 3 { samples[c] = []f32{len: w * h} }
+	for group in u64(0) .. frame.num_groups() {
+		owner := frame.vardct_lf_group_for_group(group)!
+		data := select_vardct_group(frame, group, owner, metadata[int(owner)], low[int(owner)])!
+		mut coefficients := [3][]i32{}
+		for c in 0 .. 3 { coefficients[c] = []i32{len: data.maps.width * data.maps.height * 64} }
+		mut inputs := []HfGroupInput{cap: int(frame.passes.count)}
+		for pass in 0 .. int(frame.passes.count) {
+			index := if combined { 0 } else { 2 + low.len + pass * int(frame.num_groups()) + int(group) }
+			inputs << HfGroupInput{ pass: pass, reader: sections[index] }
+		}
+		decode_hf_group(data.maps, data.parameters, context.block_context, hf.passes, mut inputs, mut coefficients)!
+		for pass, input in inputs {
+			index := if combined { 0 } else { 2 + low.len + pass * int(frame.num_groups()) + int(group) }
+			sections[index] = input.reader
+			if !combined { finish_modular_section(mut sections[index], index, false)! }
+		}
+		pixels := render_hf_group(data.maps, data.parameters, context.block_context, data.colors, data.lf,
+			coefficients, hf.matrices, HfGroupRendering{ storage: hf.passes.coefficient_storage,
+				quantizer: context.quantizer, x_qm_scale: frame.x_qm_scale, b_qm_scale: frame.b_qm_scale,
+				color_correlation: context.color_correlation, biases: file.transform.opsin.quant_biases })!
+		r := frame.block_group_rect(group)!
+		for c in 0 .. 3 {
+			for y in 0 .. pixels[c].height {
+				for x in 0 .. pixels[c].width {
+					samples[c][(int(r.y) * 8 + y) * w + int(r.x) * 8 + x] = pixels[c].samples[y * pixels[c].width + x]
+				}
+			}
+		}
+	}
+	if combined { finish_modular_section(mut sections[0], 0, false)! }
+	return VarDctFramePlanes{ planes: [FloatPlane{ width: w, height: h, samples: samples[0] },
+		FloatPlane{ width: w, height: h, samples: samples[1] }, FloatPlane{ width: w, height: h, samples: samples[2] }]!,
+		epf_maps: VarDctEpfMaps{ width: bw, height: bh, raw_quant: raw_quant, transform_ids: transforms, sharpness: sharpness },
+		quantizer: context.quantizer }
+}
