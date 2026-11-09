@@ -33,3 +33,15 @@ fn test_absolute_grid_static_alignment_follows_physical_axis_direction() {
   }
  }
 }
+
+fn test_absolute_grid_span_outside_the_grid_uses_padding_edge() {
+ for direction in ['ltr','rtl'] {
+  mut document := html.parse_document('<!doctype html><style>body{margin:0}#grid{display:grid;position:relative;direction:${direction};width:500px;height:300px;padding:15px;grid-template-columns:100px 200px;grid-template-rows:50px 150px}#item{position:absolute;left:0;top:0;width:100%;height:100%;grid-column:3 / span 2;grid-row:3 / span 2}</style><div id="grid"><div id="item"></div></div>')
+  defer { document.finalize() }
+  _ = layout_document_typed_in_viewport(document,800,600)
+  r := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
+  assert r.width == 215, '${direction}: ${r.width}'
+  assert r.height == 115
+  assert r.x == if direction == 'ltr' { 315.0 } else { 0.0 }
+ }
+}

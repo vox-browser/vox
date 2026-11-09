@@ -10,8 +10,8 @@ fn grid_abspos_axis_bounds(container &Node, horizontal bool, start css.GridTrack
  reversed := grid_axis_reversed(container,horizontal)
  mut low := CSSPixels.new(0).minus(if reversed { padding_high } else { padding_low })
  mut high := size.plus(if reversed { padding_low } else { padding_high })
- first := position.start + implicit_before
- last := position.end + implicit_before
+ first := (if start.is_span() && end.is_positioned() { position.end - (grid_span_value(start) or { 1 }) } else { position.start }) + implicit_before
+ last := (if end.is_span() && start.is_positioned() { position.start + (grid_span_value(end) or { 1 }) } else { position.end }) + implicit_before
  start_auto := start.is_auto() || (start.is_span() && !end.is_positioned())
  end_auto := end.is_auto() || (end.is_span() && !start.is_positioned())
  if !start_auto && first >= 0 && first <= tracks.len {
