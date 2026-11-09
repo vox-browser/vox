@@ -1709,6 +1709,16 @@ fn cssom_resolved_border_width(computed &ComputedProperties, width_property Prop
 	return dom_style_value_from_value_logic(StyleValue(LengthStyleValue.create(length)))
 }
 
+fn cssom_resolved_margin(value LengthPercentageOrAuto, used f64, layout_node &dom.LayoutNode, scale f64) &dom.StyleValue {
+	if value.is_auto() { return cssom_style_value_for_px(used / scale) }
+	if value.is_calculated() && value.length_percentage().calculated().contains_anchor_functions() {
+		return cssom_style_value_for_px(used / scale)
+	}
+	context := LengthResolutionContext.for_layout_node(layout_node)
+	basis := if containing := layout_node.containing_block_ { containing.content_width_ / scale } else { 0.0 }
+	return cssom_style_value_for_px(value.to_px_or_zero(context, CSSPixels.nearest_value_for(basis)).to_double())
+}
+
 // CSSStyleProperties::style_value_for_computed_property(). This is the CSSOM
 // resolved-value algorithm, consuming the geometry mirrored by
 // layout/dom_layout_bridge.v instead of a second independently computed box.
@@ -1813,25 +1823,25 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		}
 		.margin_bottom {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.box_model().margin_bottom / owner.document().layout_coordinate_scale())
+				return cssom_resolved_margin(margin.bottom(), layout_node.box_model().margin_bottom, layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.bottom())
 		}
 		.margin_left {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.box_model().margin_left / owner.document().layout_coordinate_scale())
+				return cssom_resolved_margin(margin.left(), layout_node.box_model().margin_left, layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.left())
 		}
 		.margin_right {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.box_model().margin_right / owner.document().layout_coordinate_scale())
+				return cssom_resolved_margin(margin.right(), layout_node.box_model().margin_right, layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.right())
 		}
 		.margin_top {
 			if display_allows_used_value {
-				return cssom_style_value_for_px(layout_node.box_model().margin_top / owner.document().layout_coordinate_scale())
+				return cssom_resolved_margin(margin.top(), layout_node.box_model().margin_top, layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.top())
 		}
