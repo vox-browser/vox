@@ -27,9 +27,9 @@ fn (mut app BrowserApp) navigate_to_a_fragment(resolved string) bool {
 				app.history = app.history[..app.history_index + 1].clone()
 			}
 			app.history << HistoryEntry{
+				...current
 				url: resolved
-				markup: current.markup
-				content_type: current.content_type
+				scroll_y: none
 			}
 			app.history_index = app.history.len - 1
 		}

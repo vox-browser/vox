@@ -51,7 +51,7 @@ mut:
 	closed             bool
 	runtime            &browserjs.Runtime = unsafe { nil }
 	parser_host        ?&BrowserParserScriptHost
-	media_owner        &BrowserApp = unsafe { nil }
+	media_owner        &BrowserMediaOwner = unsafe { nil }
 	scripts            ?&BrowserScriptRequestLoader
 	images             ?&BrowserImageRequestLoader
 	resource_delay     ?dom.DocumentLoadEventDelayer
@@ -206,7 +206,7 @@ fn new_browser_hosted_document(document &dom.Document, engine browserjs.Engine) 
 	service.scripts = scripts
 	mut media_loader := ?browserjs.MediaElementCreatedHook(none)
 	$if macos {
-		service.media_owner = &BrowserApp{document:document}
+		service.media_owner = new_browser_media_owner(document)
 		service.media_owner.install_document_media_playback()
 		media_loader = fn [service] (element &dom.Element) {
 			if service.media_owner != unsafe { nil } { service.media_owner.install_media_playback(element) }
@@ -246,7 +246,7 @@ fn (mut service BrowserHostedDocument) close() {
 	if service.closed { return }
 	service.closed = true
 	if service.media_owner != unsafe { nil } {
-		service.media_owner.close_media_playback()
+		service.media_owner.close()
 		service.media_owner = unsafe { nil }
 	}
 	if mut host := service.parser_host { host.closed = true }
@@ -451,7 +451,7 @@ fn (mut service BrowserHostedDocument) initialize(mut messages []string) {
 
 fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 	if service.closed { return false }
-	if service.media_owner != unsafe { nil } { service.media_owner.poll_media_playback() }
+	if service.media_owner != unsafe { nil } { service.media_owner.poll_media_playback(0) }
 	mut changed := false
 	if mut loader := service.images {
 		for loader.results.len > 0 {

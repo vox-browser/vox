@@ -24,9 +24,9 @@ mut:
 	image_urls         []string
 }
 
-fn (mut app BrowserApp) cancel_page_preload() {
-	pending := app.pending_page_preload or { return }
-	app.pending_page_preload = none
+fn (mut navigation NavigationController) cancel_page_preload() {
+	pending := navigation.pending_page_preload or { return }
+	navigation.pending_page_preload = none
 	pending.requests.cancel()
 	pending.requests.release()
 	if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }

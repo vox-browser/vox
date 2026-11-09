@@ -15,7 +15,7 @@ fn publish_navigation_result(result NavigationResult, results chan NavigationRes
 	_ = browsernet.publish_result(result, results, scope)
 }
 
-fn (mut app BrowserApp) cancel_navigation_fetch() {
+fn (mut app NavigationController) cancel_navigation_fetch() {
 	if scope := app.navigation_request_scope {
 		scope.cancel()
 		scope.release()
@@ -25,11 +25,8 @@ fn (mut app BrowserApp) cancel_navigation_fetch() {
 }
 
 fn (mut app BrowserApp) cancel_background_resource_fetches() {
-	if scope := app.background_resource_scope {
-		scope.cancel()
-		scope.release()
-		app.background_resource_scope = none
-	}
+	mut session := app.document_session()
+	session.retire_background_resources()
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	app.background_resource_pending = map[string]bool{}

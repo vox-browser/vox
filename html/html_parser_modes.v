@@ -993,6 +993,13 @@ fn (mut p HTMLParser) handle_text(mut token HTMLToken) {
 					p.increment_script_nesting_level()
 					html_script_element_parser_execute_ready_script(the_script)
 					p.decrement_script_nesting_level()
+					// A nested write may have paused for either kind of script.
+					// Keep that pause until the pending script can resume parsing.
+					if p.script_nesting_level == 0
+						&& p.document_.pending_parsing_blocking_script() == none
+						&& p.document_.pending_parsing_blocking_svg_script() == none {
+						p.parser_pause_flag = false
+					}
 					p.tokenizer.restore_old_insertion_point()
 				}
 			}

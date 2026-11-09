@@ -394,21 +394,16 @@ struct PortableShadowImage {
 
 @[heap]
 struct BrowserApp {
+	NavigationController
+	DocumentSessionRef = new_document_session()
 mut:
 	paint_colors                        PaintColorCache
 	scroll_profile                      BrowserScrollProfile
 	paint_canvas_culling_disabled       bool
 	ctx                                 &gg.Context = unsafe { nil }
 	page_model                          &page.Page = unsafe { nil }
-	js_runtime                          &browserjs.Runtime = unsafe { nil }
-	media_players                       []&BrowserMediaPlayback
 	js_engine                           browserjs.Engine = .javascriptcore
 	script_policy                       BrowserScriptPolicy
-	document                            &dom.Document = unsafe { nil }
-	root_box                            layout.BlockBox
-	markup                              string
-	content_type                        string
-	source_label                        string
 	address                             string
 	address_cursor                      int
 	address_active                      bool
@@ -434,54 +429,16 @@ mut:
 	chrome_debug                        bool
 	viewport_width                      int
 	viewport_height                     int
-	page_zoom                           f64 = 1
 	zoom_levels                         &browsersettings.ZoomLevels = unsafe { nil }
-	applied_page_zoom                   f64 = 1
-	scroll_y                            f64
 	overlay_scrollbars                  BrowserOverlayScrollbars
-	content_height                      f64
-	paint_tree_storage                  voidptr = unsafe { nil }
-	paint_commands                      []layout.PaintCommand
-	chromium_raster_plan                layout.ChromiumRasterLayerPlan
-	chromium_background_uses_local_origin bool
-	// Content identities of the frame whose pixels the scroll raster retains.
-	scroll_raster_keys                  ScrollRasterKeyFrame
-	stationary_media_revision_owner     u64
-	stationary_media_revision_count     u64
-	// Whether the last frame's content qualified for viewport scroll reuse, and
-	// whether this replay attempt defers leaf rasters into layer pictures.
-	scroll_raster_content_eligible      bool
-	scroll_raster_frame_deferred        bool
 	native_gradient_storage             NativeGradientStorage
 	chromium_msaa_storage               ChromiumMSAAStorage
-	chromium_raster_tiles               [][]i32
-	chromium_raster_grids               []ChromiumRasterGrid
-	paint_commands_have_backdrop_filter bool
 	frame_preparation_depth             int
-	paint_commands_pending              bool
-	pending_editing_scroll              ?&dom.InputEventsTarget
 	paint_effect_depth                  int
 	paint_svg_mask_depth                int
 	status                              string
-	load_status                         string
 	memory_status                       BrowserMemoryStatus
 	memory_maintenance                  BrowserMemoryMaintenance
-	js_messages                         []string
-	adblock_tokens                      BrowserAdblockTokenCache
-	history                             []HistoryEntry
-	history_index                       int = -1
-	// Recently left pages, kept alive so back/forward shows them at once.
-	back_forward_cache                  BrowserBackForwardCache
-	history_scroll_restoration          ?HistoryScrollRestoration
-	hovered_link                        string
-	navigation_results                  chan NavigationResult
-	navigation_generation               int
-	navigation_request_scope            ?&browsernet.RequestScope
-	navigation_fetch_generation         int
-	pending_navigation                  ?PendingNavigation
-	pending_page_preload                ?PendingPagePreload
-	navigation_preloaded_resources      map[string]PreloadedResource
-	pending_native_navigation           ?string
 	navigation_work_depth               int
 	navigation_work_yielded             bool
 	deferred_navigation_input           ?DeferredNavigationInput
@@ -490,42 +447,13 @@ mut:
 	frame_aligned_wheel                 ?DeferredPageInput
 	dispatching_frame_aligned_wheel     bool
 	background_image_ids                map[string]int
-	// Image ids by URL for the current document and adblock setting; every
-	// frame's lookups use it without building the full cache key.
-	background_image_scope_document voidptr
-	background_image_scope_adblock  bool
-	background_image_scope_ids      map[string]int
 	force_dark_image_states             map[string]int
 	force_dark_image_bitmaps            map[string]&dom.Bitmap_
 	force_dark_images                   map[string]&gg.Image
 	portable_shadow_images              []PortableShadowImage
 	portable_shadow_image_index         int
-	resource_cache                      map[string]PreloadedResource
-	background_resource_results         chan PreloadedResource
-	background_resource_scope           ?&browsernet.RequestScope
-	image_request_loader                ?&BrowserImageRequestLoader
-	script_request_loader               ?&BrowserScriptRequestLoader
-	child_document_host                 ?&BrowserChildDocumentHost
-	background_resource_pending         map[string]bool
-	// Remote stylesheets requested for links that scripts inserted, and the DOM
-	// tree version last scanned for them.
-	script_stylesheet_requests          map[string]bool
-	script_stylesheet_links             map[dom.UniqueNodeID]string
-	script_stylesheet_responses         map[string]PreloadedResource
-	script_stylesheet_scan_version      u64
-	script_image_requests               map[string]bool
-	script_image_scan_version           u64
-	// A check box background deferred to its border's native GPU pass, with
-	// the command as drawn and as it was submitted.
-	rounded_rect_underlay               ?layout.PaintCommand
-	// draw_command's working copy of each command, one per nesting depth.
-	draw_command_copies []&layout.PaintCommand
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
-	rounded_rect_underlay_source        ?layout.PaintCommand
-	background_image_border            ?layout.PaintCommand
-	background_image_border_consumed   bool
-	nonrendered_image_preloads          map[string]bool
 	screenshot_path                     string
 	screenshot_scheduled                bool
 	capture_readiness_last_reason       string
@@ -538,17 +466,9 @@ mut:
 	// A windowed macOS launch installs its first page before the native
 	// context exists; that page will still be replayed natively.
 	native_paint_expected               bool
-	document_presented                  bool
 	paint_timing                        BrowserPaintTiming
-	paint_display_list                  &dom.DisplayList = unsafe { nil }
 	// Frame activity compares revisions without rooting the previous list.
 	paint_generation                    u64
-	initial_layout_pending              bool
-	// Storage behind paint_commands, retained until the next adoption.
-	paint_scene      voidptr
-	paint_status_key PaintStatusKey
-	paint_status_text string
-	animation_epoch_ns                  u64
 	initial_window_frame_presented      bool
 	snapshot_visible                    bool
 	snapshot_cached                     bool
@@ -589,42 +509,6 @@ mut:
 	auto_open_devtools         bool
 	width                      int = initial_width
 	height                     int = initial_height
-}
-
-struct HistoryEntry {
-	url    string
-	markup string
-	content_type string = 'text/html'
-	// Saved when navigation leaves this entry; back, forward and reload restore it.
-	scroll_y ?f64
-}
-
-struct LoadedPage {
-	url          string
-	markup       string
-	status       string
-	content_type string
-	response_headers []adblock.ResponseHeader
-	response_status u16
-	javascript_url_source ?&dom.Document
-	// Compact navigation produces a response locally; this is the source
-	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
-	monotonic_response_time_ns i64 = time.sys_mono_now()
-}
-
-struct NavigationResult {
-	generation      int
-	add_history     bool
-	resolved        string
-	loaded          ?LoadedPage
-	error           string
-}
-
-struct PendingNavigation {
-	resolved        string
-	base            string
-	generation      int
-	add_history     bool
 }
 
 struct PreloadedResource {
@@ -3952,6 +3836,8 @@ fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
 		url: loaded.url
 		markup: loaded.markup
 		content_type: loaded.content_type
+		response_headers: loaded.response_headers
+		response_status: loaded.response_status
 	}
 }
 
@@ -3978,86 +3864,52 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		&& (app.page_model == unsafe { nil } || app.page_model.is_scripting_enabled())
 	mut heap_scope := platform.begin_browser_activity_heap_scope_for_scripting(heap_scripting_enabled)
 	defer { heap_scope.finish() }
-	// A page the back/forward cache keeps leaves with its realm and loaders.
+	mut outgoing := app.document_session()
+	initiator_origin := if outgoing.document != unsafe { nil } { ?dom.Origin(outgoing.document.origin()) } else { none }
+	previous_document := if outgoing.document != unsafe { nil } { ?&dom.Document(outgoing.document) } else { ?&dom.Document(none) }
 	back_forward_cached := app.suspend_displayed_page_for_back_forward_cache(add_history)
-	app.cancel_background_resource_fetches()
-	// Retained paint bytes belong to this document. A new document obtains
-	// reusable responses through the freshness-checked preload/disk path.
-	app.resource_cache = map[string]PreloadedResource{}
-	app.markup = loaded.markup
-	app.content_type = loaded.content_type
-	app.source_label = loaded.url
-	if mut old_loader := app.image_request_loader { old_loader.cancel() }
-	app.image_request_loader = none
-	if mut old_loader := app.script_request_loader { old_loader.cancel() }
-	app.script_request_loader = none
-	if mut children := app.child_document_host { children.close() }
-	app.child_document_host = none
-	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
-	app.address_cursor = app.address.runes().len
-	app.address_select = false
-	app.sync_address_bar()
-	app.scroll_y = 0
-	app.restore_browser_zoom(loaded.url)
-	// A screenshot strip scrolls the replacement document to its offset again.
-	app.screenshot_scroll_applied = false
-	app.screenshot_scroll_awaits_content = false
-	app.screenshot_initial_viewport_ready = false
-	app.initial_layout_pending = false
-	app.defer_initial_rendering_opportunity(false)
-	app.load_status = loaded.status
-	app.document_presented = false
-	app.snapshot_cached = false
-	app.js_messages = []
+	mut incoming := new_document_session()
+	incoming.markup = loaded.markup
+	incoming.content_type = loaded.content_type
+	incoming.source_label = loaded.url
+	incoming.load_status = loaded.status
 	mut checkpoint := time.sys_mono_now()
 	install_start := checkpoint
 	app.paint_timing.document_install_start_ns = i64(install_start)
 	app.paint_timing.installation_instructions = processmetrics.begin_instructions()
 	app.paint_timing.submission.begin_installation(app.navigation_generation, app.paint_timing.installation_instructions)
-	initiator_origin := if app.document != unsafe { nil } { ?dom.Origin(app.document.origin()) } else { none }
-	previous_document := if app.document != unsafe { nil } { ?&dom.Document(app.document) } else { ?&dom.Document(none) }
-	previous_layout := if app.document != unsafe { nil } { app.document.layout_engine_handle() } else { unsafe { nil } }
-	app.script_stylesheet_requests.clear()
-	app.script_stylesheet_links.clear()
-	app.script_stylesheet_responses.clear()
 	scripting_enabled := browser_scripting_enabled(loaded.url, app.script_policy)
-	app.adblock_tokens.release()
 	prepared_document := if document_url := dom.dom_url_parse(loaded.url, dom.url_about_blank(),
 		'UTF-8') {
 		prepare_loaded_browser_navigation_document(loaded, document_url, initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	} else {
 		prepare_loaded_browser_navigation_document(loaded, dom.url_about_blank(), initiator_origin, previous_document, unsafe { &dom.Page(app.page_model) }, scripting_enabled)
 	}
-	app.document = prepared_document.document
+	incoming.activate(prepared_document.document)
+	// Preparation synchronously notifies outgoing inactivity observers. Keep
+	// their owner published until the replacement document is ready to attach.
+	app.DocumentSessionRef = incoming
+	app.set_browser_zoom(incoming.page_zoom)
+	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
+	app.address_cursor = app.address.runes().len
+	app.address_select = false
+	app.sync_address_bar()
+	app.restore_browser_zoom(loaded.url)
+	// Capture readiness belongs to the shell, and restarts for each document.
+	app.screenshot_scroll_applied = false
+	app.screenshot_scroll_awaits_content = false
+	app.screenshot_initial_viewport_ready = false
+	app.defer_initial_rendering_opportunity(false)
+	app.snapshot_cached = false
 	// Scripts and subresource preflight can force layout before relayout().
 	configure_site_animation_clock_demand(app.document)
 	layout.enable_native_paint_tree_storage(app.document)
 	layout.enable_native_static_svg_backgrounds(app.document)
-	// Navigation has deactivated the old document. Release its realm and
-	// rendering before the replacement stylesheet allocation wave, which can
-	// otherwise trigger collections while both complete render graphs live.
-	if app.js_runtime != unsafe { nil } {
-		mut agent_event_loop := html.main_thread_event_loop()
-		agent_event_loop.bind_vm(none)
-		app.js_runtime.close()
-		app.js_runtime = unsafe { nil }
-	}
-	if previous := previous_document {
-		app.close_media_playback()
-		if back_forward_cached {
-			// The cached page keeps its document, styles and layout.
-			app.release_document_rendering()
-		} else {
-			app.retire_native_document_rendering(previous)
-			if previous.native_storage() != unsafe { nil } {
-				mut outgoing := unsafe { &dom.Document(previous) }
-				outgoing.destroy_a_document_and_its_descendants()
-				outgoing.finalize()
-				layout.retire_native_document_layout(previous_layout)
-				outgoing.release_native_storage()
-			}
-		}
-	}
+	// Navigation has deactivated the old document. Close its complete owner
+	// before the replacement stylesheet allocation wave. A suspended owner
+	// has already dropped its replay views and remains intact in the cache.
+	if !back_forward_cached { outgoing.retire() }
+	app.enforce_back_forward_cache_limits()
 	$if vox_document_retention_diagnostics ? {
 	if replaced := previous_document {
 		if !replaced.has_been_destroyed() && voidptr(replaced) != voidptr(app.document)
@@ -4089,12 +3941,12 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	mut parser_host := ?&BrowserParserScriptHost(none)
 	if app.document.as_node().is_scripting_enabled() {
 		parser_host = install_browser_parser_script_host(app.document, app.js_engine,
-			image_loader, script_loader, parser_resources, fn [app] (element &dom.Element) {
-				mut owner := unsafe { &BrowserApp(app) }
+			image_loader, script_loader, parser_resources, fn [incoming] (element &dom.Element) {
+				mut owner := unsafe { &DocumentSession(incoming) }
 				owner.install_media_playback(element)
-			}, fn [app] (runtime &browserjs.Runtime) {
-				mut owner := unsafe { &BrowserApp(app) }
-				owner.js_runtime = unsafe { &browserjs.Runtime(runtime) }
+			}, fn [incoming] (runtime &browserjs.Runtime) {
+				mut owner := unsafe { &DocumentSession(incoming) }
+				owner.adopt_runtime(runtime)
 			})
 	}
 	parse_prepared_browser_navigation_document(prepared_document)
@@ -4175,6 +4027,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 			url: loaded.url
 			markup: loaded.markup
 			content_type: loaded.content_type
+			response_headers: loaded.response_headers
+			response_status: loaded.response_status
 		}
 		app.history_index = app.history.len - 1
 	}
@@ -4340,7 +4194,7 @@ fn (mut app BrowserApp) poll_navigation() {
 		return
 	}
 	select {
-		result := <-app.navigation_results {
+		result := <-app.NavigationController.navigation_results {
 			if result.generation != app.navigation_generation {
 				return
 			}
@@ -4359,37 +4213,6 @@ fn (mut app BrowserApp) poll_navigation() {
 		else {
 		}
 	}
-}
-
-fn (mut app BrowserApp) history_go(delta int) {
-	if app.navigation_work_depth > 0 {
-		previous := app.deferred_navigation_input or { DeferredNavigationInput{} }
-		app.deferred_navigation_input = DeferredNavigationInput{history_delta: previous.history_delta + delta, is_history: true}
-		return
-	}
-	target := app.history_index + delta
-	if target < 0 || target >= app.history.len {
-		return
-	}
-	app.save_history_scroll_position()
-	from_index := app.history_index
-	app.history_index = target
-	app.navigation_generation++
-	app.pending_navigation = none
-	app.cancel_navigation_fetch()
-	app.cancel_page_preload()
-	app.pending_native_navigation = none
-	entry := app.history[target]
-	app.page_model.traverse_the_history_by_delta(delta)
-	if app.traverse_to_a_fragment(from_index, target) { return }
-	if app.restore_back_forward_cached_page(target - delta, target) { return }
-	app.start_history_scroll_restoration(voidptr(app.document))
-	app.install_loaded_page(LoadedPage{
-		url: entry.url
-		markup: entry.markup
-		status: 'History'
-		content_type: entry.content_type
-	}, false)
 }
 
 fn (mut app BrowserApp) reload() {
@@ -5315,6 +5138,7 @@ fn browser_local_file_path(serialized_url string) ?string {
 }
 
 fn (mut app BrowserApp) request_background_resource(image_url string) {
+	if app.state == .retired { return }
 	if image_url in app.resource_cache || image_url in app.background_resource_pending {
 		return
 	}
@@ -5322,6 +5146,7 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 	owned_url := image_url.clone()
 	app.background_resource_pending[owned_url] = true
 	source_url := if app.document != unsafe { nil } { app.document.url.serialize().clone() } else { app.address.clone() }
+	app.background_resource_jobs++
 	scope := app.resource_request_scope()
 	scope.retain()
 	spawn fetch_background_resource_in_background_with_scope(owned_url, source_url, app.background_resource_results, scope)
@@ -5329,6 +5154,7 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 }
 
 fn (mut app BrowserApp) poll_background_resources() {
+	if app.state == .retired { return }
 	mut installed_stylesheets := app.request_script_inserted_stylesheets()
 	// Polled every frame: the URL lists stay unallocated until a resource
 	// completes, and the channel is only selected on when it holds results.
@@ -5337,8 +5163,10 @@ fn (mut app BrowserApp) poll_background_resources() {
 	mut completed_nonrendered_images := []string{}
 	mut resource_pixels_changed := false
 	for app.background_resource_results.len > 0 {
+		session := app.document_session()
 		select {
-			resource := <-app.background_resource_results {
+			resource := <-session.background_resource_results {
+				if app.background_resource_jobs > 0 { app.background_resource_jobs-- }
 				app.background_resource_pending.delete(resource.url)
 				if resource.url in app.nonrendered_image_preloads {
 					app.nonrendered_image_preloads.delete(resource.url)

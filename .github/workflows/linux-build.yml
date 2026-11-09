@@ -197,6 +197,25 @@ jobs:
                 layout/lazy_dom_visual_lines_test.v
           done
 
+      - name: Check document session lifecycles
+        timeout-minutes: 60
+        run: |
+          # The same owner must survive suspension and retire exactly once in
+          # collector and production arena builds, including external frames.
+          export VOX_ARENA_POISON=1
+          for gc in boehm prealloc; do
+            python3 tools/run_memory_bounded.py \
+              --lock "$RUNNER_TEMP/vox-session-$gc.lock" \
+              --report "$RUNNER_TEMP/vox-session-$gc.json" --timeout 1740 -- \
+              python3 tools/test_linux_native.py --gc "$gc" \
+                document/session_test.v \
+                navigation/controller_test.v \
+                navigation/back_forward_cache_test.v \
+                navigation/blob_url_cache_lifetime_test.v \
+                navigation/retire_before_styles_test.v \
+                browserapp/browser_zoom_test.v
+          done
+
       - name: Check resource consumers and navigation retirement
         timeout-minutes: 35
         run: |
@@ -250,6 +269,7 @@ jobs:
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json',
                                                     'vox-recording-boehm.json', 'vox-recording-prealloc.json',
                                                     'vox-dom-authority-boehm.json', 'vox-dom-authority-prealloc.json',
+                                                    'vox-session-boehm.json', 'vox-session-prealloc.json',
                                                     'vox-resource-cache.json', 'vox-resource-cache-nogc.json',
                                                     'vox-resource-lifecycle.json', 'vox-resource-v.json',
                                                     'vox-resource-v-prealloc.json', 'vox-resource-integration.json')]

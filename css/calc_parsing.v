@@ -109,6 +109,39 @@ struct CalcAnchorSize {
 	style_value AnchorSizeStyleValue
 }
 
+pub fn (value CalculatedStyleValue) contains_anchor_functions() bool {
+	for node in value.node {
+		if calc_node_contains_anchor_functions(node) { return true }
+	}
+	return false
+}
+
+// Computed min/max sizes keep percentages symbolic after anchor substitution.
+pub fn (value CalculatedStyleValue) resolved_anchor_sizes(context CalculationResolutionContext) ?StyleValue {
+	if value.node.len != 1 { return none }
+	node := simplify_calc_with_resolution(value.node[0],value.calculation_context,context)
+	if calc_node_contains_anchor_functions(node) { return none }
+	return StyleValue(CalculatedStyleValue{
+		serialization:node.serialize_top()
+		numeric_type_:calculated_numeric_type_storage(value.numeric_type())
+		node:[node]
+		calculation_context:value.calculation_context
+	})
+}
+
+fn calc_node_contains_anchor_functions(node CalcNode) bool {
+	match node {
+		CalcAnchor, CalcAnchorSize { return true }
+		CalcSum, CalcProduct, CalcNegate, CalcInvert, CalcFunction, CalcRandom {
+			for child in node.children {
+				if calc_node_contains_anchor_functions(child) { return true }
+			}
+		}
+		else {}
+	}
+	return false
+}
+
 fn calc_function_is_supported(name string) bool {
 	return name in ['calc', 'min', 'max', 'clamp', 'hypot', 'abs', 'sign', 'sin', 'cos', 'tan',
 		'asin', 'acos', 'atan', 'atan2', 'pow', 'sqrt', 'exp', 'log', 'mod', 'rem', 'round', 'random']

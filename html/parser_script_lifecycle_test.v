@@ -200,10 +200,14 @@ fn test_cached_external_script_written_by_a_script_waits_for_the_outer_evaluatio
 	})
 	parser.run()
 	assert parser.paused()
+	assert document.pending_parsing_blocking_script() != none
+	assert document.get_element_by_id('written-tail') == none
+	assert document.get_element_by_id('after') == none
 	assert observation.executed == ['outer-start', 'outer-end']
 	parser_script_drain_tasks()
 	assert observation.executed == ['outer-start', 'outer-end', 'cached']
 	assert !parser.paused()
+	assert document.pending_parsing_blocking_script() == none
 	assert document.get_element_by_id('nested-output') != none
 	assert document.get_element_by_id('written-tail') != none
 	assert document.get_element_by_id('after') != none

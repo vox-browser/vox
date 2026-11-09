@@ -150,7 +150,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 // installed at once, so the document is not laid out and painted without it
 // first. Returns whether an owned sheet was installed, removed, or replaced.
 fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
-	if app.document == unsafe { nil } {
+	if app.state == .retired || app.document == unsafe { nil } {
 		return false
 	}
 	version := app.document.dom_tree_version()
@@ -204,6 +204,7 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 		owned_url := resolved_url.clone()
 		owned_source := source_url.clone()
 		app.background_resource_pending[owned_url] = true
+		app.background_resource_jobs++
 		scope := app.resource_request_scope()
 		scope.retain()
 		spawn fetch_stylesheet_in_background_with_scope(owned_url, owned_source, app.background_resource_results, scope)

@@ -9,6 +9,7 @@ $if macos {
 
 import painting
 import os
+import platform
 
 const retain_native_media_paint = os.getenv('VOX_RETAIN_NATIVE_MEDIA_PAINT') != ''
 const retained_native_media_paint_diagnostics = os.getenv('VOX_RETAINED_NATIVE_MEDIA_PAINT_DIAGNOSTICS') != ''
@@ -48,6 +49,30 @@ fn C.native_media_copy_frame(voidptr, &i32, &i32) &u8
 fn C.native_media_frame_planes(voidptr, &i32, &i32) &u8
 fn C.native_media_free_frame(&u8)
 
+// Both top-level sessions and hosted documents own this service. It manages
+// native playback only; closing it never destroys its document or rendering.
+@[heap]
+struct BrowserMediaOwner {
+mut:
+	media_document                  &dom.Document = unsafe { nil }
+	closed                          bool
+	retiring                        bool
+	media_players                   []&BrowserMediaPlayback
+	stationary_media_revision_owner u64
+	stationary_media_revision_count u64
+}
+
+fn new_browser_media_owner(document &dom.Document) &BrowserMediaOwner {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	return &BrowserMediaOwner{ media_document: document }
+}
+
+fn (owner &BrowserMediaOwner) owns(element &dom.Element) bool {
+	return !owner.closed && !owner.retiring && owner.media_document != unsafe { nil }
+		&& voidptr(element.document()) == voidptr(owner.media_document)
+}
+
 @[heap]
 struct BrowserMediaPlayback {
 	media   &html.HTMLMediaElement
@@ -55,6 +80,7 @@ struct BrowserMediaPlayback {
 mut:
 	handle          voidptr
 	metadata_loaded bool
+	retired         bool
 	frame           ?&painting.MediaVideoFrame
 	mime_type       string = 'video/mp4'
 }
@@ -88,6 +114,7 @@ fn (mut player BrowserMediaPlayback) close() {
 
 fn (player &BrowserMediaPlayback) ranges() []html.MediaBufferedRange {
 	mut ranges := []html.MediaBufferedRange{}
+	if player.retired { return ranges }
 	$if macos {
 		if player.handle == unsafe { nil } { return ranges }
 		for index in 0 .. int(C.native_media_buffer_count(player.handle)) {
@@ -148,18 +175,26 @@ fn (mut player BrowserMediaPlayback) update_frame_with_pixel_reuse(pixels &u8, w
 // Preserve every ordinary pixel invalidation, including the full document
 // revision, but do not rebuild unchanged geometry and paint transport.
 fn (mut app BrowserApp) invalidate_native_media_frame(mut document dom.Document, stable bool) {
+	mut session := app.document_session()
+	mut owner := session.media_owner()
+	owner.invalidate_native_media_frame(mut document, stable, app.paint_generation)
+}
+
+fn (mut owner BrowserMediaOwner) invalidate_native_media_frame(mut document dom.Document, stable bool,
+	paint_generation u64) {
+	if owner.closed || owner.retiring { return }
 	if retain_native_media_paint && stable {
-		if app.document != unsafe { nil } && voidptr(&document) == voidptr(app.document) {
-			owner := u64(document.unique_id().value())
-			if app.stationary_media_revision_owner != owner {
-				app.stationary_media_revision_owner = owner
-				app.stationary_media_revision_count = 0
+		if owner.media_document != unsafe { nil } && voidptr(&document) == voidptr(owner.media_document) {
+			identity := u64(document.unique_id().value())
+			if owner.stationary_media_revision_owner != identity {
+				owner.stationary_media_revision_owner = identity
+				owner.stationary_media_revision_count = 0
 			}
-			app.stationary_media_revision_count++
+			owner.stationary_media_revision_count++
 		}
 		document.set_needs_repaint_with_invalidation(.no)
 		if retained_native_media_paint_diagnostics {
-			eprintln('VOX_RETAINED_NATIVE_MEDIA_PAINT generation=${app.paint_generation}')
+			eprintln('VOX_RETAINED_NATIVE_MEDIA_PAINT generation=${paint_generation}')
 		}
 		return
 	}
@@ -167,11 +202,23 @@ fn (mut app BrowserApp) invalidate_native_media_frame(mut document dom.Document,
 }
 
 fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
+	mut session := app.document_session()
+	session.install_media_playback(element)
+}
+
+fn (mut session DocumentSession) install_media_playback(element &dom.Element) {
+	if session.state == .retired { return }
+	mut owner := session.media_owner()
+	owner.install_media_playback(element)
+}
+
+fn (mut owner BrowserMediaOwner) install_media_playback(element &dom.Element) {
+	if !owner.owns(element) { return }
 	install_video_poster_fetch_hook(element)
 	$if macos {
 		if !element.is_html_element() || element.local_name() !in ['audio', 'video'] { return }
 		mut media := html.html_media_element_for_dom_element(element) or { return }
-		app.install_native_media_player(element)
+		owner.install_native_media_player(element)
 		// Parsed and fragment-parsed owners only now have a media model, after
 		// their src attribute and insertion; run the skipped selection.
 		media.queue_resource_selection_if_connected_and_empty()
@@ -179,45 +226,78 @@ fn (mut app BrowserApp) install_media_playback(element &dom.Element) {
 }
 
 fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
+	mut session := app.document_session()
+	session.install_native_media_player(element)
+}
+
+fn (mut session DocumentSession) install_native_media_player(element &dom.Element) {
+	if session.state == .retired { return }
+	mut owner := session.media_owner()
+	owner.install_native_media_player(element)
+}
+
+fn (mut owner BrowserMediaOwner) install_native_media_player(element &dom.Element) {
+	if !owner.owns(element) { return }
 	$if macos {
 		mut media := html.html_media_element_for_dom_element(element) or { return }
-		for player in app.media_players {
+		for player in owner.media_players {
 			if voidptr(player.media) == voidptr(media) { return }
 		}
 		player := &BrowserMediaPlayback{ media: media, element: element }
-		app.media_players << player
+		owner.media_players << player
 		media.set_playback_manager_hooks(html.MediaPlaybackManagerHooks{
 			can_play_type:       browser_native_media_type
 			reset:               fn [player] () {
+				if player.retired { return }
 				mut p := unsafe { &BrowserMediaPlayback(player) }
 				p.close()
 			}
 			play:                fn [player] () {
+				if player.retired { return }
 				C.native_media_play(player.handle, player.media.playback_rate())
 			}
-			pause:               fn [player] () { C.native_media_pause(player.handle) }
+			pause:               fn [player] () {
+				if player.retired { return }
+				C.native_media_pause(player.handle)
+			}
 			set_volume:          fn [player] (volume f64) {
+				if player.retired { return }
 				C.native_media_volume(player.handle, volume)
 			}
 			set_playback_rate:   fn [player] (rate f32) {
+				if player.retired { return }
 				if !player.media.paused() { C.native_media_play(player.handle, rate) }
 			}
 			seek:                fn [player] (seconds f64, mode html.MediaPlaybackSeekMode) {
+				if player.retired { return }
 				C.native_media_seek(player.handle, seconds, if mode == .accurate {
 					i32(0)
 				} else {
 					i32(1)
 				})
 			}
-			current_time:        fn [player] () f64 { return C.native_media_time(player.handle) }
-			has_ended:           fn [player] () bool { return C.native_media_ended(player.handle) != 0 }
-			current_video_frame: fn [player] () ?&painting.MediaVideoFrame { return player.frame }
+			current_time:        fn [player] () f64 {
+				if player.retired { return 0 }
+				return C.native_media_time(player.handle)
+			}
+			has_ended:           fn [player] () bool {
+				return !player.retired && C.native_media_ended(player.handle) != 0
+			}
+			current_video_frame: fn [player] () ?&painting.MediaVideoFrame {
+				if player.retired { return none }
+				return player.frame
+			}
 			buffered_ranges:     fn [player] () []html.MediaBufferedRange { return player.ranges() }
 		})
 		media.set_fetch_hook(fn [player] (source dom.URL, _ u64) !html.MediaResourceResponse {
+			if player.retired { return error('Media owner is closed') }
 			mut p := unsafe { &BrowserMediaPlayback(player) }
 			p.close()
-			p.mime_type = if browser_media_source_is_webm(source, p.element) { 'video/webm' } else { 'video/mp4' }
+			p.mime_type = if browser_media_source_is_webm(source, p.element) {
+				'video/webm'
+			} else {
+				'video/mp4'
+			}
 			p.handle = if p.mime_type == 'video/webm' {
 				browser_open_webm_resource(source, p.element.document().url.serialize())!
 			} else {
@@ -231,39 +311,82 @@ fn (mut app BrowserApp) install_native_media_player(element &dom.Element) {
 }
 
 fn (mut app BrowserApp) install_document_media_playback() {
+	mut session := app.document_session()
+	session.install_document_media_playback()
+}
+
+fn (mut session DocumentSession) install_document_media_playback() {
+	if session.state == .retired { return }
+	mut owner := session.media_owner()
+	owner.install_document_media_playback()
+}
+
+fn (mut owner BrowserMediaOwner) install_document_media_playback() {
+	if owner.closed || owner.retiring || owner.media_document == unsafe { nil } { return }
 	// Media inserted after load (innerHTML, script-moved parsed fragments) may
 	// never get a script wrapper, so configure it from its insertion steps.
-	mut document := app.document
-	document.set_media_element_inserted_hook(fn [app] (element &dom.Element) {
+	mut document := owner.media_document
+	document.set_media_element_inserted_hook(fn [owner] (element &dom.Element) {
+		if owner.closed || owner.retiring { return }
 		// Materializing the owner can build its controls shadow tree, so do not
 		// mutate the tree from inside the insertion steps.
-		html.queue_an_element_task(element, .dom_manipulation, fn [app, element] () {
-			mut owner := unsafe { &BrowserApp(app) }
-			if voidptr(element.document()) != voidptr(owner.document)
-				|| !element.as_node().is_connected() {
+		html.queue_an_element_task(element, .dom_manipulation, fn [owner, element] () {
+			mut media_owner := unsafe { &BrowserMediaOwner(owner) }
+			if !media_owner.owns(element) || !element.as_node().is_connected() {
 				return
 			}
-			owner.install_media_playback(element)
+			media_owner.install_media_playback(element)
 		})
 	})
-	root := unsafe { &dom.ParentNode(app.document) }
+	root := unsafe { &dom.ParentNode(owner.media_document) }
 	list := root.query_selector_all('audio,video') or { return }
 	for index in 0 .. list.length() {
 		node := list.item(index) or { continue }
 		element := node.as_element() or { continue }
-		app.install_media_playback(element)
+		owner.install_media_playback(element)
 	}
 }
 
 fn (mut app BrowserApp) close_media_playback() {
-	for mut player in app.media_players { player.close() }
-	app.media_players = []&BrowserMediaPlayback{}
+	mut session := app.document_session()
+	session.close_media_playback()
+}
+
+fn (mut session DocumentSession) close_media_playback() {
+	mut owner := session.media_owner()
+	owner.close()
+}
+
+fn (mut owner BrowserMediaOwner) close() {
+	if owner.closed { return }
+	owner.begin_retirement()
+	owner.closed = true
+	for mut player in owner.media_players { player.close() }
+	owner.media_players = []&BrowserMediaPlayback{}
+	owner.media_document = unsafe { nil }
+	owner.stationary_media_revision_owner = 0
+	owner.stationary_media_revision_count = 0
+}
+
+// Stop callback work at the owning document's retirement boundary. Actual
+// handle closure stays ordered with realm/loader cleanup in that owner.
+fn (mut owner BrowserMediaOwner) begin_retirement() {
+	owner.retiring = true
+	for mut player in owner.media_players { player.retired = true }
 }
 
 fn (mut app BrowserApp) poll_media_playback() {
+	mut session := app.document_session()
+	mut owner := session.media_owner()
+	owner.poll_media_playback(app.paint_generation)
+}
+
+fn (mut owner BrowserMediaOwner) poll_media_playback(paint_generation u64) {
+	if owner.closed || owner.retiring { return }
 	$if macos {
-		for mut player in app.media_players {
-			if player.handle == unsafe { nil } { continue }
+		for mut player in owner.media_players {
+			if owner.closed || owner.retiring { return }
+			if player.retired || player.handle == unsafe { nil } { continue }
 			mut media := player.media
 			status := C.native_media_status(player.handle)
 			if status < 0 {
@@ -313,7 +436,7 @@ fn (mut app BrowserApp) poll_media_playback() {
 				player.update_frame_planes(planes, int(plane_length), int(plane_format), previous_generation)
 				C.native_media_free_frame(pixels)
 				mut document := media.document() or { continue }
-				app.invalidate_native_media_frame(mut document, stable)
+				owner.invalidate_native_media_frame(mut document, stable, paint_generation)
 			}
 			media.on_playback_manager_state_change(C.native_media_buffering(player.handle) != 0)
 			ended := C.native_media_take_ended(player.handle) != 0
