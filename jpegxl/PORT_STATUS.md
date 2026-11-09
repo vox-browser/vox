@@ -603,6 +603,16 @@ unchanged inputs, preserving all prior unified-image references. Cadence is
 7/10; no full ninety-one-file run is claimed.
 See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).
 
+Another slice translates noise LUT parsing and deterministic Xorshift128+
+state. Another 1,162 independent records compare 8,192 LUT float words,
+truncations/consumption, both seed constructors and 12,288 random u64 words
+exactly. The count is 284,223 source records and ninety-two test files. The
+focused noise file passes default/no-GC/optimized checks with actual exits zero
+and 659 unchanged inputs. This does not enable noise-bearing frames: convolution,
+color application and whole-file integration remain. Cadence is 8/10; no full
+ninety-two-file run is claimed.
+See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

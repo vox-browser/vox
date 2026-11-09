@@ -190,3 +190,12 @@ exits zero and 655 unchanged inputs, retaining prior unified output references.
 Cadence is 7/10; no full 91-file run is claimed. Production and its native
 developer tool still use Rust.
 See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).
+
+Noise LUT/random-state translation adds 1,162 original source records:
+284,223 records and 92 JPEG XL test files total. All 8,192 LUT float words and
+12,288 RNG u64 words compare exactly, alongside truncation/consumption checks.
+The focused file passes default/no-GC/optimized checks with actual exits zero
+and 659 unchanged inputs. Cadence is 8/10; no full 92-file run is claimed.
+Checked-in verification uses V alone; whole-file noise and production/native
+developer-tool replacement remain unfinished.
+See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).

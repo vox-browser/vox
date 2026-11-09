@@ -638,3 +638,16 @@ checkpoint; no full 91-file run is claimed.
 limits and checks. Feature streams, frame composition, wider extra-channel/LF
 combinations, larger entropy maps and production/tool integration remain.
 Production JPEG XL and its native developer tool still require Rust.
+
+## JPEG XL noise state on 2026-11-09
+
+Another slice translates noise LUT parsing and deterministic random state.
+A temporary caller of the cached original crate supplies 1,162 new records,
+comparing 8,192 LUT float words and 12,288 RNG u64 words exactly, plus truncation
+and bit consumption. The package has 284,223 records and 92 test files. The
+focused file passes default/no-GC/optimized checks with actual exits zero and
+659 unchanged inputs. Cadence is 8/10 after the 84-file checkpoint; no full
+92-file run is claimed. [The noise-state report](JPEGXL_V_NOISE_STATE.md)
+records source/artifact pins and checks. Noise rendering, patches/splines,
+composition and production/tool integration remain. Production JPEG XL and
+its native developer tool still require Rust.
