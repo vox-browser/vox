@@ -16,7 +16,16 @@ fn (s &StyleComputer) compute_highlight_inherited_values(mut properties Computed
 	if parent := origin.element_to_inherit_style_from() {
 		target := dom.AbstractElement{element_:parent.element(), pseudo_element_:pseudo, pseudo_argument:element.pseudo_argument}
 		mut computer := unsafe { &StyleComputer(s) }
+		// The caller's context contains the child's font metrics. A recursive
+		// parent computation must not reuse those metrics for em/lh lengths.
+		font_context := computer.cached_font_computation_context
+		line_context := computer.cached_line_height_computation_context
+		generic_context := computer.cached_generic_computation_context
+		computer.clear_computation_context_caches()
 		parent_highlight = computer.compute_style_with_seeded_ancestors(target)
+		computer.cached_font_computation_context = font_context
+		computer.cached_line_height_computation_context = line_context
+		computer.cached_generic_computation_context = generic_context
 	}
 	for index in 0 .. number_of_longhand_properties {
 		id := property_id_from_longhand_index(index) or { continue }
