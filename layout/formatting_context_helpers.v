@@ -567,6 +567,9 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	styled := box.as_node_with_style() or { return CSSPixels.new(0) }
 	box_state := state.try_get(styled) or { return CSSPixels.new(0) }
 	computed := box.computed_values()
+	// Size containment suppresses content-derived baselines just as it
+	// suppresses content contributions to the box's automatic size.
+	if box.has_size_containment() { return box_state.margin_box_height() }
 	if box.vertical_align_applies() {
 		match computed.vertical_align() {
 			.top {

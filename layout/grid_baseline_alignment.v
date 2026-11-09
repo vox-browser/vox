@@ -17,7 +17,7 @@ fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horiz
 	used := state.get(styled)
 	item_horizontal := item.computed_values().writing_mode() == .horizontal_tb
 	if !horizontal && item_horizontal { return layout_box_baseline(state,item,set) }
-	if horizontal && !item_horizontal && depth < 64 {
+	if horizontal && !item_horizontal && !item.has_size_containment() && depth < 64 {
 		if used.line_boxes.len > 0 {
 			for i in 0 .. used.line_boxes.len {
 				index := if set == .first { i } else { used.line_boxes.len-1-i }

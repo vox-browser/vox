@@ -1299,6 +1299,7 @@ fn table_cell_content_offset_top(values UsedValues, collapsed bool) CSSPixels {
 // Table cells use this instead of the generic atomic-inline baseline, which is
 // affected by the cell's own vertical-align and selects the last line.
 fn table_first_in_flow_content_baseline(state &LayoutState, box &Node) ?CSSPixels {
+	if box.has_size_containment() { return none }
 	styled := box.as_node_with_style() or { return none }
 	values := state.try_get(styled) or { return none }
 	if values.line_boxes.len > 0 {
