@@ -2326,3 +2326,39 @@ image test functions with Skia unavailable to pkg-config; link/readelf/ldd
 checks find no Skia dependency, with FreeType, libm and libc as direct libraries.
 Full-browser integration still uses Skia. See the [native cases, guarded
 comparisons, integration retry and component linkage](https://github.com/vox-browser/vox-tests/blob/620abd5a99c04452effdd18a4d7be01f786f1b7e/evidence/gg-migration/large-near-source-rescale-20261109.json).
+
+
+### Large terminal blurs in saved-canvas chains (2026-11-09)
+
+`a6028f156` downsamples the final large blur in a saved-canvas pure-blur
+chain. Earlier small or identity passes keep their native quantized images;
+pending input color effects enter the first downsample and outgoing effects
+stay deferred through restoration. An initialized backing border may contain
+color, so the rescale path distinguishes it from transparent padding. Earlier
+large stages, source-image chains and mixed large shadow graphs remain guarded.
+
+At seed 20270201 the baseline accepts 11 of 500 requests; the candidate
+matches 409 of that same cohort. Final macOS C matches 1,622 of 2,000 requests
+at seed 20270202, declining 378; Linux matches 1,700, declining 300. Platform
+glyph backends and fonts differ. Counts include no-ops; completed cohorts
+retain unchanged inputs under the 3 GiB guard. Twenty-eight independent native
+fixtures verify on both platforms, including colored requested boundaries,
+intermediate/post color effects, clips, composites, strokes and P3 patterns.
+Unsupported chain positions and source-image controls preserve the destination.
+
+A single 1,000-request macOS `-prod -gc none` process exceeded the 3 GiB guard
+and did not complete. Ten fresh 100-request processes at seeds 20270203–20270212
+then matched 786 requests and declined 214, using the same pinned optimized
+binary and oracle; peak sampled RSS was 1.41 GiB. These different seeded batches
+establish short-batch pixel parity, not bounded long-run no-GC ownership.
+The receipt retains the failed stress run and an initial runner setup error.
+
+Focused C suites on both platforms, the selected macOS FastC suite, Linux
+browser typechecking and HTML canvas integration pass. The inherited FastC
+saved-canvas degenerate-gradient failure remains outside that passing selection.
+The C FMA audit finds zero contracted operations (189 explicit). A standalone
+Linux production/no-GC executable runs all 17 registered filter-layer test
+functions with Skia unavailable to pkg-config; link/readelf/ldd checks find no
+Skia dependency, with FreeType, libm and libc as direct libraries. Full-browser
+integration still uses installed Skia. See the [native cases, guarded comparisons,
+resource limits and component linkage](https://github.com/vox-browser/vox-tests/blob/b58019050c2fb0ef00975448f4f247d7426eb3fb/evidence/gg-migration/large-terminal-blur-chains-20261109.json).
