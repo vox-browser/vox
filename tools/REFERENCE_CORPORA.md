@@ -271,3 +271,13 @@ zero and 723 unchanged inputs. JPEG XL has 305,792 records and 101 test files,
 cadence 7/10 after the full 94-file checkpoint; no full 101-file run is claimed.
 Gaussian drawing, frame integration and production/native tool replacement
 remain. See [the cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).
+
+
+Gaussian spline drawing adds 512 native records, including 468 successful
+raw float images and 2,227,200 exact words. Full/chunked equality, negative
+sigma, signed zero and unchanged empty-cache controls execute. Three focused
+files pass default/no-GC/optimized checks with unavailable Rust compiler paths,
+actual exits zero and 726 unchanged inputs. JPEG XL totals 306,304 records and
+102 test files, cadence 8/10 after the full 94-file checkpoint; no full 102-file
+run is claimed. Complete feature frames and production/native tool replacement
+remain. See [the Gaussian report](../docs/translation-audit/JPEGXL_V_SPLINE_RASTER.md).

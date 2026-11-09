@@ -700,6 +700,18 @@ actual exits zero and 723 unchanged inputs. The count is 305,792 records and
 101-file run is claimed. Gaussian drawing and complete feature/reference
 frames remain. See [the spline-cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).
 
+Gaussian spline drawing now compares 512 native records: 468 successful
+float images, 2,227,200 exact words and 618,988 changed words. Full rows and
+irregular chunks agree in both implementations; positive/negative sigma and
+signed-zero backgrounds execute. All 340 nonempty images change; 128 empty
+cache controls remain unchanged. The operation fixes the verified fused
+profile, without whole-row scalar/SSE or all-host equivalence claims. Three
+focused files pass default/no-GC/optimized checks with actual exits zero and
+726 unchanged inputs. The package has 306,304 records and 102 files, cadence
+8/10 after the full ninety-four-file checkpoint; no full 102-file run is
+claimed. Feature streams and complete frames remain.
+See [the Gaussian-row report](../docs/translation-audit/JPEGXL_V_SPLINE_RASTER.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

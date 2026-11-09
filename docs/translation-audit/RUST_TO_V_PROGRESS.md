@@ -759,3 +759,17 @@ checkpoint; no full 101-file run is claimed.
 pixel drawing, complete feature/reference frames and production/developer-tool
 replacement remain. Production JPEG XL and its native developer test still
 require Rust.
+
+
+## JPEG XL Gaussian spline rows on 2026-11-09
+
+Gaussian drawing adds 512 native records, with 468 successful raw float images
+comparing 2,227,200 words. Both implementations preserve full/chunked equality,
+negative sigma and signed zero; 340 nonempty images change and 128 empty-cache
+controls do not. Three focused files pass default/no-GC/optimized checks with
+actual exits zero and 726 unchanged inputs. JPEG XL has 306,304 records and
+102 files, cadence 8/10 after the full 94-file checkpoint; no full 102-file run
+is claimed. [The Gaussian report](JPEGXL_V_SPLINE_RASTER.md) records pins and
+the fixed fused profile. Feature streams, complete frames, reference ownership
+and production/developer-tool replacement remain. Production JPEG XL and its
+native developer test still require Rust.
