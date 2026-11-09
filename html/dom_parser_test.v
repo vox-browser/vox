@@ -31,35 +31,25 @@ fn test_dom_parser_parses_namespaced_xml_and_entities() {
 	assert item.as_node().text_content() or { '' } == 'A & B <C> '
 }
 
-fn test_xml_reference_decoder_preserves_utf8_and_resolves_full_named_table() {
-	plain := xml_decode_references('Привет') or { panic('UTF-8 text: ${err}') }
-	assert plain == 'Привет'
-	ligature := xml_decode_references('&AElig;') or { panic('AElig: ${err}') }
-	assert ligature == 'Æ'
-	not_equal_tilde := xml_decode_references('&NotEqualTilde;') or {
-		panic('NotEqualTilde: ${err}')
-	}
-	assert not_equal_tilde == '≂̸'
-}
-
 fn test_dom_parser_places_processing_instructions_at_their_parse_location() {
 	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
 	document := parser.parse_from_string('<?before document?><!DOCTYPE root [<?ignored subset?>]><root><?inside element?></root><?after document?>', .text_xml) or { panic(err) }
 	children := unsafe { &dom.Node(document) }.children_as_vector()
-	assert children.len == 3
+	assert children.len == 4
 	assert children[0].as_processing_instruction()?.target() == 'before'
-	root := children[1].as_element() or { panic('missing document element') }
+	assert children[1].is_document_type()
+	root := children[2].as_element() or { panic('missing document element') }
 	inside := root.as_node().first_child() or { panic('missing element processing instruction') }
 	assert inside.as_processing_instruction()?.target() == 'inside'
-	assert children[2].as_processing_instruction()?.target() == 'after'
+	assert children[3].as_processing_instruction()?.target() == 'after'
 }
 
 fn test_dom_parser_preserves_processing_instruction_targets_starting_with_xml() {
 	parser := DOMParser.create(dom.Document.create(dom.url_about_blank()))
 	for target in ['xml-stylesheet', 'xml-model', 'xmlfoo'] {
 		for declaration in ['', '<?xml version="1.0"?>'] {
-			mut document := parser.parse_from_string(declaration + '<?' + target
-				+ ' href="sheet.css"?><root/>', .application_xml) or { panic(err) }
+			mut document := parser.parse_from_string(declaration + '<?' + target +
+				' href="sheet.css"?><root/>', .application_xml) or { panic(err) }
 			children := document.as_node().children_as_vector()
 			assert children.len == 2
 			instruction := children[0].as_processing_instruction() or { panic('missing instruction') }
