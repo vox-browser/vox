@@ -1716,3 +1716,35 @@ Rejected mixed-graph blur nodes, rounding-induced crops, rotated layers, SVG
 filters, boolean shadows, large-sigma/tiling paths and native/GPU bridges
 remain. A full Skia-free Linux browser compile/link/run is still unverified.
 See the [native platform expectations, checks and retained setup failures](gg-migration/identity-first-spatial-chains-20261109.json).
+
+
+### Rejected blur branches in mixed shadow graphs (2026-11-09)
+
+`ab4ec8e68` handles rejected drop-shadow blur nodes in mixed graphs. The
+shadow's tint/offset branch reads the original SourceGraphic while the
+foreground retains its preceding filters. Source bounds, requests and fast
+bounds follow that branch reset. Resampled images keep an unfiltered source
+view independently of their resolved foreground. Invalid standalone blur
+functions continue to discard preceding nodes as before.
+
+Eleven new native image cases freeze resets before/after blurs, after earlier
+shadows and after an alpha-changing matrix. All 165 image fixtures verify on
+both platforms. Two additional geometry-layer cases replace the former
+unsupported-case expectation with native pixels for both destination alpha
+types; the rotation guard is preserved. The receipt retains that initial
+assertion failure without whole-selection pass credit.
+
+At seed 20261124, macOS and Linux each match 853 of 1,000 resampled graph
+attempts, declining 147. Optimized macOS/no-GC matches 840 of 1,000 at seed
+20261125, declining 160. Fill/stroke/glyph layer cohorts match 387 of 500 on
+macOS and 400 of 500 on Linux, declining 113 and 100 respectively. Counts
+include no-ops; all cohorts finish with unchanged input pins.
+
+Final C/FastC focused tests, HTML canvas integration, the full Linux browser
+typecheck and zero-contraction FMA audit (189 explicit operations) pass.
+A standalone Linux production/no-GC executable runs all 42 image tests with
+Skia unavailable to pkg-config and no direct or transitive Skia linkage.
+Its direct libraries are FreeType, libm and libc. The browser typecheck uses
+installed Skia development files, and the complete browser still links Skia.
+Full-browser Linux compile/link/run without Skia remains unverified.
+See the [native branch-reset fixtures and guarded checks](gg-migration/rejected-shadow-graphs-20261109.json).
