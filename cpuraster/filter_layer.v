@@ -104,6 +104,14 @@ struct FilterPlan {
 
 fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 	f := filter or { return FilterPlan{} }
+	// A zero-radius blur returns its child unchanged, with identical requested
+	// and fast bounds. Keep the real blur's layer semantics while allowing its
+	// existing source-sampling path to handle identities on either side.
+	if f.steps.all(it.kind in [.blur, .matrix])
+		&& f.steps.filter(it.kind == .blur && it.sigma != 0).len == 1
+		&& f.steps.any(it.kind == .blur && it.sigma == 0) {
+		return plan_canvas_filter(CanvasFilter{steps: f.steps.filter(it.kind != .blur || it.sigma != 0)})
+	}
 	only, color := f.color_only()
 	if only {
 		if c := color {

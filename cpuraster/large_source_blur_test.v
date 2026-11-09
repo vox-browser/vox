@@ -22,6 +22,7 @@ struct LargeSourceBlurFixture {
 	shadow              bool
 	shadow_color        u32
 	offset              [2]f32
+	trailing_sigmas     []f32
 	leading_sigmas      []f32
 	between             [][]f32
 	pre                 [][]f32
@@ -79,6 +80,9 @@ fn large_source_blur_draw(mut pixels []u8, c LargeSourceBlurFixture) bool {
 		mut values := [20]f32{}
 		for k, v in matrix { values[k] = v }
 		steps << CanvasFilterStep{ kind: .matrix, matrix: MatrixColorFilter{values, true} }
+	}
+	for sigma in c.trailing_sigmas {
+		steps << CanvasFilterStep{kind: .blur, sigma: sigma}
 	}
 	clips := if c.clip { [rect_path(Rect{5.25, 6.5, 110.75, 100.25})] } else { []Path{} }
 	image := CanvasBitmap{
@@ -585,6 +589,86 @@ fn test_large_terminal_source_blur_chains_match_native() {
 		original := fixtures[indices[base]]
 		c := LargeSourceBlurFixture{...original,
 			leading_sigmas: [[f32(.8)], [f32(2.5), 0], [f32(.01), 6], [f32(.8), 2.5]][base % 4]
+			between: if base % 3 != 0 { [contrast] } else { [][]f32{} }
+			image_width: if i < indices.len { original.image_width } else { 641 }
+			image_height: if i < indices.len { original.image_height } else { 479 }
+			source: if i < indices.len { original.source } else { [f32(3), 2, 630, 468]! }
+			destination: if i < indices.len { original.destination } else { [f32(7.25), 9.5, 550, 440]! }
+			transform: if i < indices.len { original.transform } else { [f32(1), 0, 0, 1, 0, 0]! }
+			sigma: if i < indices.len { original.sigma } else { [f32(135.2), 200, 270, 300][base] }
+			expected_macos: macos[i], expected_linux: linux[i]
+		}
+		check_large_source_blur_fixture(c, i)
+	}
+}
+
+// Exact zero stages return their child without changing source sampling.
+fn test_zero_blur_stages_preserve_source_sampling() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 3, 7, 14, 16, 17, 20, 23, 24, 25, 28, 29, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+	macos := [
+		'aa24d198e860ea26d5e7f35ed29dc1ac837b49663fc00048b26e3c3009b3258b',
+		'e564e27ca5efcb78f682403278ce4923f7f4f7f1e9c79d316f258e90ce7a4931',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'1fd6e853cd332b32b7fe7fc5815c80409b1a3bcfe68ac73240563c20b3840e78',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'42936ee777aaa701684b48f2e508d341a35b75f3ccee8647cf7b257de05ed9e8',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'e61274991eb28bb638157ca1020dc28e686d8d103a860469e9fa81fc72069785',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'7bf0409a4e527a1d4513e908dfd60ec271e19a886cdf1ab2c3caad40e080512e',
+		'dac07651f27a4bd723770d11e3877ab92c36e0c10abd0790b40b04d3a2a6fc17',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'53f05b3afc495e4e05f462a325f45b256435571887e30bd09e37ff0c9d417968',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'6518ef34a933aa65cb1d734f5652fe43c371c8775a2097b9cd0910af772470f3',
+		'1974fe79303069e1a4cd00f56d37bb2292494bce13f85eba990e8565a13cc1c3',
+		'b2189ca1431e1d3c3c2577ea0b4f474a555247e439e4edd066cfc99e25feb206',
+		'6db2a6d159781dac80ae975f7f148033e0b2d8866b8fcd13b56ca34b3601b0a8',
+		'490afc9d02e772cee08388550d4d7c266c676b85078fc01bb43aafdc64980c37',
+		'809b7c6e5d4cfc7d33a192ef3af85c667311091877ad23e47311ea7b7c3d3b84',
+		'7a21bc14daed4c2cf481eda6c984531be3300b59889cc723f4fb5a1f42f3eb18',
+	]
+	linux := [
+		'43fe1c86f4c27b3321147c0d458c142b0246203fdf3cad0a079305a4d1f148f5',
+		'e564e27ca5efcb78f682403278ce4923f7f4f7f1e9c79d316f258e90ce7a4931',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'6488b479c11dc84d222509aad9d333be839cd4c3856cb9d87a962a88eba99424',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'4500ca9b41182b34e61174088ff95a28f7dd7013f652fc743f44173b1ddb067b',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'e61274991eb28bb638157ca1020dc28e686d8d103a860469e9fa81fc72069785',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'7bf0409a4e527a1d4513e908dfd60ec271e19a886cdf1ab2c3caad40e080512e',
+		'dac07651f27a4bd723770d11e3877ab92c36e0c10abd0790b40b04d3a2a6fc17',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'bf2beb433d512c7dfe2c178f83d32b2ca88ecae5d2548040176dd9f41fc60c7f',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'25ebdf0d0dc7f9693df2aaaffcdb6ab1ca5579f385ba44588160deb8d21ea844',
+		'1974fe79303069e1a4cd00f56d37bb2292494bce13f85eba990e8565a13cc1c3',
+		'b2189ca1431e1d3c3c2577ea0b4f474a555247e439e4edd066cfc99e25feb206',
+		'35e818619d06bf6158a6a58abc7da602b2191d7d171ff6115dcc85c991c11a5a',
+		'490afc9d02e772cee08388550d4d7c266c676b85078fc01bb43aafdc64980c37',
+		'809b7c6e5d4cfc7d33a192ef3af85c667311091877ad23e47311ea7b7c3d3b84',
+		'7a21bc14daed4c2cf481eda6c984531be3300b59889cc723f4fb5a1f42f3eb18',
+	]
+	contrast := [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]
+	for i in 0 .. macos.len {
+		base := if i < indices.len { i } else { i - indices.len }
+		original := fixtures[indices[base]]
+		c := LargeSourceBlurFixture{...original,
+			leading_sigmas: []f32{len: 1 + i % 2}
+			trailing_sigmas: []f32{len: i % 3}
 			between: if base % 3 != 0 { [contrast] } else { [][]f32{} }
 			image_width: if i < indices.len { original.image_width } else { 641 }
 			image_height: if i < indices.len { original.image_height } else { 479 }
