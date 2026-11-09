@@ -6,10 +6,11 @@ import dom
 import html
 import mimesniff
 import platform
+import browsernet
 
 const max_browser_script_fetches = 8
 
-type BrowserScriptFetch = fn (string, string, chan PreloadedResource)
+type BrowserScriptFetch = fn (string, string, chan PreloadedResource, &browsernet.RequestScope)
 
 @[heap]
 struct BrowserScriptRequest {
@@ -31,6 +32,7 @@ mut:
 struct BrowserScriptRequestLoader {
 	document &dom.Document
 	results  chan PreloadedResource = chan PreloadedResource{cap: max_browser_script_fetches}
+	request_scope &browsernet.RequestScope = browsernet.new_request_scope()
 mut:
 	requests       []&BrowserScriptRequest
 	candidates     []&dom.Element
@@ -68,6 +70,9 @@ fn (loader &BrowserScriptRequestLoader) parser_fetch_hook() html.ScriptElementAs
 fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTMLScriptElementModel,
 	address dom.URL, _ html.ScriptElementType) ! {
 	if loader.cancelled { return error('Script loader is closed') }
+	scope := loader.request_scope
+	scope.retain()
+	defer { scope.release() }
 	script := model.element() or { return error('Parser script has no DOM element') }
 	element := unsafe { &dom.Element(script) }
 	if voidptr(element.document()) != voidptr(loader.document) {
@@ -75,7 +80,7 @@ fn (mut loader BrowserScriptRequestLoader) request_parser_script(model &html.HTM
 	}
 	resource_url := address.serialize()
 	if resource := loader.resources[resource_url] {
-		filtered := filter_preloaded_resource(resource, loader.document.url.serialize(), 'script')!
+		filtered := filter_preloaded_resource_with_scope(resource, loader.document.url.serialize(), 'script', scope)!
 		mut prepared := unsafe { &html.HTMLScriptElementModel(model) }
 		prepared.complete_external_fetch(filtered.body)
 		return
@@ -100,13 +105,17 @@ fn (mut loader BrowserScriptRequestLoader) finish_parsing() {
 	loader.resources = map[string]PreloadedResource{}
 }
 
-fn fetch_script_in_background(address string, source string, results chan PreloadedResource) {
-	fetch_resource_in_background(address, source, 'script', results)
+fn fetch_script_in_background(address string, source string, results chan PreloadedResource,
+	scope &browsernet.RequestScope) {
+	fetch_resource_for_results_with_scope(address, source, 'script', results, scope)
 	C.native_wake_browser()
 }
 
 fn (mut loader BrowserScriptRequestLoader) cancel() {
+	if loader.cancelled { return }
 	loader.cancelled = true
+	loader.request_scope.cancel()
+	loader.request_scope.release()
 	if mut host := loader.parser_host { host.closed = true }
 	// Releasing a blocking model can schedule a resume check. Retirement must
 	// not let that check parse more markup or prepare requests on a closed host.
@@ -130,8 +139,19 @@ fn (mut loader BrowserScriptRequestLoader) start_fetches() {
 		loader.active_fetches++
 		// Workers never retain DOM/model pointers or document-owned strings.
 		source_url := loader.document.url.serialize().clone()
-		spawn loader.fetch(address, source_url, loader.results)
+		loader.request_scope.retain()
+		spawn run_browser_script_fetch(loader.fetch, address, source_url,
+			loader.results, loader.request_scope)
 	}
+}
+
+// The wrapper owns the worker reference for both native transport and test
+// hooks. Injected callbacks borrow the scope and never release that reference.
+fn run_browser_script_fetch(fetch_resource BrowserScriptFetch, address string, source string,
+	results chan PreloadedResource, scope &browsernet.RequestScope) {
+	defer { scope.release() }
+	scope.check() or { return }
+	fetch_resource(address, source, results, scope)
 }
 
 fn (mut loader BrowserScriptRequestLoader) discover() {
@@ -224,6 +244,12 @@ fn (mut loader BrowserScriptRequestLoader) poll(runtime &browserjs.Runtime, mut 
 }
 
 fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runtime, mut messages []string) {
+	if loader.cancelled { return }
+	// Script callbacks may retire the loader reentrantly. Keep this invocation's
+	// handle alive until it has observed that cancellation and returned.
+	scope := loader.request_scope
+	scope.retain()
+	defer { scope.release() }
 	mut ordered_waiting := false
 	// A completion can enqueue another parser request. Retain each heap request
 	// by value and read the current array again after reentrant preparation.
@@ -248,7 +274,7 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 			continue
 		}
 		if mut model := request.parser_model {
-			if resource := filter_preloaded_resource(request.resource, loader.document.url.serialize(), 'script') {
+			if resource := filter_preloaded_resource_with_scope(request.resource, loader.document.url.serialize(), 'script', scope) {
 				model.complete_external_fetch(resource.body)
 			} else {
 				messages << 'Script ${request.url}: ${err.msg()}'
@@ -257,7 +283,7 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 			continue
 		}
 		mut event_name := 'load'
-		if resource := filter_preloaded_resource(request.resource, loader.document.url.serialize(), 'script') {
+		if resource := filter_preloaded_resource_with_scope(request.resource, loader.document.url.serialize(), 'script', scope) {
 			run_compact_document_script(loader.document, browserjs.ScriptSource{
 				code:             resource.body
 				url:              request.url
@@ -267,9 +293,11 @@ fn (mut loader BrowserScriptRequestLoader) execute_ready(runtime &browserjs.Runt
 			event_name = 'error'
 			messages << 'Script ${request.url}: ${err.msg()}'
 		}
+		if loader.cancelled { break }
 		runtime.dispatch_external_script_event(request.element, event_name) or {
 			messages << 'JavaScript script completion: ${err.msg()}'
 		}
+		if loader.cancelled { return }
 		request.delayer.finish()
 		mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 		mutable_runtime.mark_document_state_dirty()

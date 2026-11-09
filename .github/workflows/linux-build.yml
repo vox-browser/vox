@@ -47,7 +47,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             build-essential clang ninja-build generate-ninja pkg-config \
-            python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev \
+            python3 git curl ca-certificates nodejs openssl libjavascriptcoregtk-4.1-dev \
             libglib2.0-dev libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev \
             libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
             libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
@@ -84,6 +84,30 @@ jobs:
           git -C "$RUNNER_TEMP/ui2" checkout --detach FETCH_HEAD
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
+
+      - name: Check resource cache and cancellation contracts
+        timeout-minutes: 10
+        run: |
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-cache.lock" \
+            --report "$RUNNER_TEMP/vox-resource-cache.json" --limit-gib 3 --timeout 300 -- \
+            "$V_BIN" -memory-limit 10G test cachepolicy
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-cache-nogc.lock" \
+            --report "$RUNNER_TEMP/vox-resource-cache-nogc.json" --limit-gib 3 --timeout 300 -- \
+            "$V_BIN" -memory-limit 10G -gc none test cachepolicy
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-lifecycle.lock" \
+            --report "$RUNNER_TEMP/vox-resource-lifecycle.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_resource_lifecycle.py
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-v.lock" \
+            --report "$RUNNER_TEMP/vox-resource-v.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_resource_v_contracts.py --v "$V_BIN"
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-v-prealloc.lock" \
+            --report "$RUNNER_TEMP/vox-resource-v-prealloc.json" --limit-gib 3 --timeout 300 -- \
+            python3 tools/test_resource_v_contracts.py --v "$V_BIN" --prealloc
 
       - name: Cache pinned Skia
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -158,6 +182,20 @@ jobs:
                 layout/visual_context_memo_test.v
           done
 
+      - name: Check resource consumers and navigation retirement
+        timeout-minutes: 35
+        run: |
+          # Exercise the adapters and document owners against the full engine,
+          # in addition to the fast cache and native transport contracts above.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-resource-integration.lock" \
+            --report "$RUNNER_TEMP/vox-resource-integration.json" --timeout 1980 -- \
+            python3 tools/test_linux_native.py \
+              resources/cache_reuse_test.v \
+              navigation/preload_cancellation_test.v \
+              navigation/back_forward_cache_test.v \
+              fetch/upstream_entry_points_test.v
+
       - name: Check parser script lifecycles
         timeout-minutes: 60
         run: |
@@ -195,7 +233,10 @@ jobs:
                                                     'vox-native-build.json', 'vox-skia-test.json',
                                                     'vox-ownership-tests.json',
                                                     'vox-parser-tests.json', 'vox-parser-storage-tests.json',
-                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json')]
+                                                    'vox-recording-boehm.json', 'vox-recording-prealloc.json',
+                                                    'vox-resource-cache.json', 'vox-resource-cache-nogc.json',
+                                                    'vox-resource-lifecycle.json', 'vox-resource-v.json',
+                                                    'vox-resource-v-prealloc.json', 'vox-resource-integration.json')]
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.log'))
           paths.extend(Path('Build/linux/tests').glob('*/run-*/*.json'))
           receipts = sorted(Path('Build/linux/production-build/receipts').glob('*'))

@@ -1,13 +1,12 @@
 module main
 
-import adblock
+import cachepolicy
 import css
 import fetch
 import http
-import json2
 import requestserver
-import strconv
 import platform
+import time
 
 fn (app &BrowserApp) document_pixels_ready_for_frame() bool {
 	if app.initial_layout_pending { return false }
@@ -48,26 +47,31 @@ fn install_browser_font_resource_cache() {
 
 fn browser_cached_font_response(request &fetch.Request) ?&fetch.Response {
 	destination := request.destination or { return none }
-	if request.method != 'GET' || destination != .font
+	if destination != .font
 		|| request.current_url().scheme() !in ['http', 'https'] { return none }
 	address := request.current_url().serialize()
-	path := browser_cache_entry_path(browser_cache_root(), 'resources', address)
-	// Old entries lack status or redirect/header provenance. They remain cache
-	// misses rather than manufacturing a successful font response.
-	status := strconv.atoi(read_browser_cache_entry(path + '.status') or { return none }) or { return none }
-	if status < 200 || status >= 300 { return none }
-	if (read_browser_cache_entry(path + '.url') or { return none }) != address { return none }
-	headers := json2.decode[[]adblock.ResponseHeader](
-		read_browser_cache_entry(path + '.headers.json') or { return none }) or { return none }
-	body := read_browser_cache_entry(path) or { return none }
-	mut response := fetch.Response.create()
-	response.status = u16(status)
-	response.url_list = request.url_list.clone()
-	for header in headers {
-		response.header_list.append(http.Header{name:header.name,value:header.value})
+	accept := request.header_list.get('Accept') or { '*/*' }
+	for key in [resource_accept_cache_key_for_header(address, accept), address] {
+		path := browser_cache_entry_path(browser_cache_root(), 'resources', key)
+		entry := browser_resource_cache_entry(path) or { continue }
+		if entry.final_url != address { continue }
+		if key == address && resource_response_varies_on_accept(entry.headers) { continue }
+		decision := cachepolicy.evaluate(request.cache_policy_request(), entry.metadata,
+			cachepolicy.ReuseOptions{storage: .disk}, time.now().unix_milli())
+		if !decision.can_reuse() { continue }
+		mut response := fetch.Response.create()
+		response.status = u16(entry.metadata.status)
+		response.url_list = request.url_list.clone()
+		for header in entry.headers {
+			if header.name.to_lower() != 'age' {
+				response.header_list.append(http.Header{name:header.name,value:header.value})
+			}
+		}
+		response.header_list.append(http.Header{name: 'Age', value: decision.age_header_value()})
+		response.set_body_bytes(entry.body.bytes())
+		return response
 	}
-	response.set_body_bytes(body.bytes())
-	return response
+	return none
 }
 
 fn (app &BrowserApp) font_resources_ready_for_capture() bool {

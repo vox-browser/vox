@@ -22,7 +22,9 @@ fn test_font_response_cache_requires_actual_status_headers_and_redirect_provenan
 	request.url_list = [dom.URL{value:address}]
 	request.destination = .font
 	headers := [adblock.ResponseHeader{name:'Content-Type',value:'font/ttf'},
-		adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'https://owner.example'}]
+		adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'https://owner.example'},
+		adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=60'},
+		adblock.ResponseHeader{name:'Date',value:time.utc().http_header_string()}]
 	cache_resource_response_headers(address, address, 'font bytes', headers)
 	assert browser_cached_font_response(request) == none
 	cache_resource_response_headers_with_status(address, address, 'font bytes', headers, 200)
@@ -78,7 +80,9 @@ fn test_cached_font_fetch_stays_asynchronous_and_enforces_cors_and_adblock() {
 		mut set := css.FontFaceSet.create_for_font_computer(computer)
 		mut transport := requestserver.NativeFontFetchTransport.create()!
 		computer.set_fetch_host(transport.fetch_host())
-		mut headers := [adblock.ResponseHeader{name:'Content-Type',value:'font/ttf'}]
+		mut headers := [adblock.ResponseHeader{name:'Content-Type',value:'font/ttf'},
+			adblock.ResponseHeader{name:'Cache-Control',value:'public, max-age=60'},
+			adblock.ResponseHeader{name:'Date',value:time.utc().http_header_string()}]
 		if index != 1 { headers << adblock.ResponseHeader{name:'Access-Control-Allow-Origin',value:'*'} }
 		cache_resource_response_headers_with_status(address, address, bytes, headers, 200)
 		mut face := css.FontFaceObject.construct_impl('Cached native font',

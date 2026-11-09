@@ -47,6 +47,7 @@ mut:
 	image_request_loader           ?&BrowserImageRequestLoader
 	script_request_loader          ?&BrowserScriptRequestLoader
 	child_document_host            ?&BrowserChildDocumentHost
+	resource_cache                 map[string]PreloadedResource
 	markup                         string
 	content_type                   string
 	source_label                   string
@@ -82,6 +83,9 @@ fn (app &BrowserApp) back_forward_cache_blocker() string {
 	if document.readiness() == .loading || (app.ctx != unsafe { nil } && !app.document_presented) {
 		return 'loading'
 	}
+	// Compact background requests do not have a suspend/resume contract. A
+	// cached page must not retain request flags after their producers retire.
+	if app.background_resource_pending.len > 0 { return 'resource requests' }
 	// Native players do not survive suspension.
 	if app.media_players.len > 0 { return 'media' }
 	if children := app.child_document_host {
@@ -137,6 +141,7 @@ fn (mut app BrowserApp) cache_displayed_page(history_index int) bool {
 		image_request_loader:           app.image_request_loader
 		script_request_loader:          app.script_request_loader
 		child_document_host:            app.child_document_host
+		resource_cache:                 app.resource_cache
 		markup:                         app.markup
 		content_type:                   app.content_type
 		source_label:                   app.source_label
@@ -157,6 +162,7 @@ fn (mut app BrowserApp) cache_displayed_page(history_index int) bool {
 	app.image_request_loader = none
 	app.script_request_loader = none
 	app.child_document_host = none
+	app.resource_cache = map[string]PreloadedResource{}
 	app.js_messages = []string{}
 	app.script_stylesheet_requests = map[string]bool{}
 	app.script_stylesheet_links = map[dom.UniqueNodeID]string{}
@@ -236,6 +242,7 @@ fn (mut app BrowserApp) restore_back_forward_cached_page(from_index int, target 
 	}
 	outgoing_layout := if outgoing != unsafe { nil } { outgoing.layout_engine_handle() } else { unsafe { nil } }
 	outgoing_cached := app.cache_displayed_page(from_index)
+	app.cancel_background_resource_fetches()
 	if !outgoing_cached && app.js_runtime != unsafe { nil } {
 		if app.js_runtime.engine == .libjs {
 			mut agent_event_loop := html.main_thread_event_loop()
@@ -272,6 +279,7 @@ fn (mut app BrowserApp) restore_back_forward_cached_page(from_index int, target 
 	app.image_request_loader = page.image_request_loader
 	app.script_request_loader = page.script_request_loader
 	app.child_document_host = page.child_document_host
+	app.resource_cache = page.resource_cache
 	app.markup = page.markup
 	app.content_type = page.content_type
 	app.source_label = page.source_label

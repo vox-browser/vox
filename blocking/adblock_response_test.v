@@ -15,8 +15,10 @@ fn test_native_cached_response_headers_are_rechecked_for_the_request_type() {
 		os.rmdir_all(cache) or {}
 	}
 	address := 'https://pikabu.ru/ajax/opaque'
-	headers := [adblock.ResponseHeader{name: 'LLaSalBBubRRl', value: '1'}]
-	cache_resource_response_headers(address, address, 'retained payload', headers)
+	headers := [adblock.ResponseHeader{name: 'LLaSalBBubRRl', value: '1'},
+		adblock.ResponseHeader{name: 'Cache-Control', value: 'public, max-age=60, immutable'},
+		adblock.ResponseHeader{name: 'Date', value: time.utc().http_header_string()}]
+	cache_resource_response_headers_with_status(address, address, 'retained payload', headers, 200)
 	image := fetch_browser_resource(address, '', 'https://pikabu.ru/', 'image')!
 	assert image.body == 'retained payload'
 	assert image.response_headers == headers
@@ -76,7 +78,10 @@ fn test_native_redirected_cache_and_preload_require_the_intermediate_header_prov
 	source := 'https://pikabu.ru/'
 	// The final headers cannot prove that an intermediate redirect's headers
 	// would still be allowed for this consumer, even with the same URL/type.
-	cache_resource_response_headers('${base}/cached', '${base}/end', 'old redirect payload', [])
+	cache_resource_response_headers_with_status('${base}/cached', '${base}/end', 'old redirect payload', [
+		adblock.ResponseHeader{name: 'Cache-Control', value: 'public, max-age=60, immutable'},
+		adblock.ResponseHeader{name: 'Date', value: time.utc().http_header_string()},
+	], 200)
 	assert fetch_browser_resource('${base}/cached', '', source, 'xmlhttprequest')!.body == 'fresh'
 	preloaded := PreloadedResource{
 		url: '${base}/preloaded'

@@ -22,6 +22,7 @@ import strconv
 import time
 
 struct FetchMemoryCacheEntry {
+	response_token   u64
 	vary_key         string
 	status_code      u16
 	reason_phrase    string
@@ -37,6 +38,7 @@ mut:
 
 __global (
 	fetch_http_memory_cache_enabled  = true
+	fetch_http_memory_cache_next_response_token = u64(1)
 	fetch_next_task_id               = u64(1)
 	fetch_http_memory_cache_pending  = map[string][]FetchMemoryCacheEntry{}
 	fetch_http_memory_cache_complete = map[string][]FetchMemoryCacheEntry{}
@@ -514,6 +516,7 @@ pub fn FetchedDataReceiver.create(params &FetchParams, stream &streams.ReadableS
 	}
 	controller.set_pull_algorithm(fn () ! {})
 	controller.set_cancel_algorithm(fn [mut receiver] (reason streams.Value) ! {
+		receiver.retire_cache_storage()
 		if current_params := receiver.fetch_params_ {
 			mut fetch_controller := current_params.controller
 			fetch_controller.abort(reason.description())
@@ -530,6 +533,13 @@ pub fn FetchedDataReceiver.create_for_stream(stream &streams.ReadableStream) &Fe
 
 pub fn (mut receiver FetchedDataReceiver) set_response(response &Response) {
 	receiver.response_ = response
+	// The public response view stays read-only; enrollment is private runtime
+	// state owned by the producer and its receiver.
+	mut internal := unsafe { response.cache_storage_response() }
+	internal.cache_body_pending_ = true
+	if !receiver.cache_enabled_ {
+		internal.retire_cache_storage()
+	}
 }
 
 pub fn (mut receiver FetchedDataReceiver) set_body(body &Body) {
@@ -560,7 +570,11 @@ pub fn (mut receiver FetchedDataReceiver) handle_network_data(data NetworkRespon
 		receiver.queue_delivery_task()
 		return
 	}
-	if state == .error || data.bytes.len == 0 {
+	if state == .error {
+		receiver.retire_cache_storage()
+		return
+	}
+	if data.bytes.len == 0 {
 		return
 	}
 	bytes := data.bytes
@@ -1769,6 +1783,8 @@ pub fn http_memory_cache_enabled() bool {
 }
 
 pub fn clear_http_memory_cache() {
+	// Keep response tokens monotonic: a late completion must not consume an
+	// entry registered after the cache was cleared.
 	fetch_http_memory_cache_pending.clear()
 	fetch_http_memory_cache_complete.clear()
 }

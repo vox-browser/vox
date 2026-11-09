@@ -37,6 +37,7 @@ struct BrowserImageFetchJob {
 struct BrowserImageRequestLoader {
 	document &dom.Document
 	results chan PreloadedResource
+	requests &browsernet.RequestScope = browsernet.new_request_scope()
 mut:
 	resources map[string]PreloadedResource
 	pending map[string][]html.HTMLImageFetchCompletion
@@ -76,7 +77,10 @@ fn (mut loader BrowserImageRequestLoader) finish_initialization(has_runtime bool
 }
 
 fn (mut loader BrowserImageRequestLoader) cancel() {
+	if loader.cancelled { return }
 	loader.cancelled = true
+	loader.requests.cancel()
+	loader.requests.release()
 	for _, request in loader.cors_requests { request.cancel() }
 	loader.cors_requests = map[string]&BrowserCORSImageRequest{}
 	loader.cors_queued = []&BrowserCORSImageRequest{}
@@ -113,7 +117,8 @@ fn (mut loader BrowserImageRequestLoader) start_queued_fetches() {
 		job := loader.queued[0]
 		loader.queued.delete(0)
 		loader.active_fetches++
-		spawn fetch_navigation_preload(job.url, job.source_url, 'image', []PreloadedResource{}, loader.results)
+		spawn_resource_fetch_workers_with_scope([ResourceFetchJob{url: job.url, request_type: 'image'}],
+			job.source_url, true, loader.results, loader.requests)
 	}
 }
 

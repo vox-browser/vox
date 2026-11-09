@@ -110,7 +110,9 @@ fn test_static_disk_cached_image_response_reaches_the_replay_cache_before_paint(
 	resource_url := 'https://async-native-image.test/thumb.png?width=140&s=1'
 	pixels := base64.decode(async_browser_image_png).bytestr()
 	cache_resource_response_headers_with_status(resource_url, resource_url, pixels,
-		[adblock.ResponseHeader{name: 'content-type', value: 'image/png'}], 200)
+		[adblock.ResponseHeader{name: 'content-type', value: 'image/png'},
+			adblock.ResponseHeader{name: 'cache-control', value: 'public, max-age=60'},
+			adblock.ResponseHeader{name: 'date', value: time.utc().http_header_string()}], 200)
 	owner := page.Page.create(1)!
 	mut app := &BrowserApp{page_model: owner, script_policy: .disabled, viewport_width: 320, viewport_height: 200}
 	app.install_loaded_page(LoadedPage{

@@ -14,5 +14,9 @@ fn resource_response_varies_on_accept(headers []adblock.ResponseHeader) bool {
 }
 
 fn resource_accept_cache_key(address string, request_type string) string {
-	return address + '\nAccept: ' + browsernet.request_accept_header(request_type)
+	return resource_accept_cache_key_for_header(address, browsernet.request_accept_header(request_type))
+}
+
+fn resource_accept_cache_key_for_header(address string, accept string) string {
+	return address + '\nAccept: ' + accept
 }

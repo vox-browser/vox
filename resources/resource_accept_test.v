@@ -19,7 +19,7 @@ fn serve_accept_variants(mut listener net.TcpListener) []string {
 		}
 		accepts << accept
 		body := if accept == '*/*' { 'other' } else { 'image' }
-		socket.write_string('HTTP/1.1 200 OK\r\nVary: Origin, Accept\r\nContent-Length: 5\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
+		socket.write_string('HTTP/1.1 200 OK\r\nVary: Accept\r\nCache-Control: public, max-age=60, immutable\r\nDate: ${time.utc().http_header_string()}\r\nContent-Length: 5\r\nConnection: close\r\n\r\n${body}') or { panic(err) }
 		socket.close() or {}
 	}
 	return accepts
@@ -42,8 +42,10 @@ fn test_accept_variants_refresh_legacy_entries_and_keep_separate_disk_and_preloa
 	defer { listener.close() or {} }
 	address := 'http://${listener.addr()!}/negotiated'
 	server := spawn serve_accept_variants(mut listener)
-	headers := [adblock.ResponseHeader{ name: 'Vary', value: 'Origin, Accept' }]
-	cache_resource_response_headers(address, address, 'legacy JPEG', headers)
+	headers := [adblock.ResponseHeader{ name: 'Vary', value: 'Accept' },
+		adblock.ResponseHeader{ name: 'Cache-Control', value: 'public, max-age=60, immutable' },
+		adblock.ResponseHeader{ name: 'Date', value: time.utc().http_header_string() }]
+	cache_resource_response_headers_with_status(address, address, 'legacy JPEG', headers, 200)
 	assert fetch_browser_resource(address, '', address, 'image')!.body == 'image'
 	assert fetch_browser_resource(address, '', address, 'script')!.body == 'other'
 	assert fetch_browser_resource(address, '', address, 'image')!.body == 'image'

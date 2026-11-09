@@ -291,6 +291,8 @@ fn (mut app BrowserApp) dispose_browser_tab() {
 	}
 	app.navigation_generation++
 	app.pending_navigation = none
+	app.cancel_navigation_fetch()
+	app.cancel_background_resource_fetches()
 	app.cancel_page_preload()
 	app.pending_native_navigation = none
 	app.deferred_page_input = []DeferredPageInput{}
