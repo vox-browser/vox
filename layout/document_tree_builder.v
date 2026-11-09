@@ -1200,8 +1200,11 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// Collect generated ::before content, DOM children, then generated ::after
 	// content in tree order.
 	mut children := []&Node{}
-	if before := build_generated_pseudo_element(document, element, .before, .before, mut builder_state) {
-		children << before
+	generated_content_allowed := control_allows_generated_content(box_node, element)
+	if generated_content_allowed {
+		if before := build_generated_pseudo_element(document, element, .before, .before, mut builder_state) {
+			children << before
+		}
 	}
 	child_snapshot := layout_tree_children_for_element(element)
 	defer { child_snapshot.storage.finish() }
@@ -1295,8 +1298,10 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 			list_item.set_marker(marker)
 		}
 	}
-	if after := build_generated_pseudo_element(document, element, .after, .after, mut builder_state) {
-		children << after
+	if generated_content_allowed {
+		if after := build_generated_pseudo_element(document, element, .after, .after, mut builder_state) {
+			children << after
+		}
 	}
 	if box_node.is_inline_node() && !computed.display().is_contents() {
 		mut kept := []&Node{cap: children.len}
