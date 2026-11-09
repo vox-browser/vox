@@ -8,6 +8,7 @@ import platform
 fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 	return dom.DocumentLifecycleHook{
 		target:                           voidptr(window)
+		script_element_post_connection: document_script_element_post_connection
 		register_document:                document_register_with_event_loop
 		unregister_document:              document_unregister_from_event_loop
 		document_navigable_did_change:    document_navigable_did_change

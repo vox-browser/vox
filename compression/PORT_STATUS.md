@@ -1,4 +1,4 @@
-# Compression module V translation — complete
+# Compression module V translation
 
 Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/Compression`
 
@@ -23,11 +23,20 @@ decoding, the readable/writable transform boundary, chunk copying, flush and
 close state, error propagation, end-of-stream validation, checksum validation,
 and rejection of data trailing a raw DEFLATE stream.
 
-Ladybird's LibCompress codecs maintain incremental contexts and may emit output
-from each transform call. The available pure-V codec is one-shot, so the
-translation deliberately buffers copied input at this narrow Streams boundary
-and emits the equivalent bytes on flush. The public stream state and all codec
-validation remain observable and tested.
+The JavaScript binding owns a native zlib or Brotli decoder context for each
+DecompressionStream and uses the translated native TransformStream queues.
+Each write copies BufferSource internal slots, emits decoded bytes immediately,
+and preserves output produced before an invalid checksum or trailing-input
+error. Flush requires the codec end marker. Cancellation, errors and runtime
+shutdown release codec contexts. Both the current IDL name `brotli` and the
+existing `br` alias are accepted. The older complete-buffer model API remains
+available for internal callers.
+
+Native decoding links zlib and libbrotlidec; Brotli encoding links
+libbrotlienc. The other encoders retain their valid stored-DEFLATE streaming
+implementation. Linux setup already installs libbrotli-dev. Native binding
+coverage does not establish all upstream compression tests or production
+browser acceptance.
 
 ## Verification
 

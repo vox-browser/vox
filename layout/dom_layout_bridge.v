@@ -13,6 +13,7 @@ __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	set_needs_layout_update_callback: set_layout_node_needs_layout_update
 	invalidate_text_for_rendering_callback: invalidate_layout_text_for_rendering
 	refresh_empty_text_fragment_callback: refresh_layout_empty_text_fragment
+	anchor_size_value_callback: layout_resolved_anchor_size_property
 	view_transition_properties_callback: layout_view_transition_properties
 }
 

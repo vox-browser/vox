@@ -29,11 +29,51 @@ class PreCommitCheckTests(unittest.TestCase):
     def test_source_reports_and_allowed_assets_pass(self):
         with TemporaryDirectory() as directory:
             root = self.repository(directory)
-            for path in ['layout/grid.v', 'docs/REPORT.md', 'docs/performance/cohort.json',
+            for path in ['layout/grid.v', 'docs/REPORT.md', 'docs/performance/cohort.md',
+                         'docs/manifests/fixture.json', 'Tests/Browser/config.json',
                          'adblock/engine.js.gz', 'tools/adblock/fixtures/page.json.gz',
                          'Tests/Browser/Brave/candidates/page.zip']:
                 self.stage(root, path)
             self.assertEqual(pre_commit_check.violations(root), [])
+
+    def test_force_added_measurement_dumps_are_rejected(self):
+        with TemporaryDirectory() as directory:
+            root = self.repository(directory)
+            paths = ['docs/performance/github-vlang-instruction-diagnostics-20261108-20pct.json',
+                     'docs/performance/raw/cohort.jsonl', 'docs/performance/raw/events.ndjson',
+                     'docs/benchmark-results/cohort.json', 'docs/performance/diagnostics.JSON']
+            for path in paths:
+                self.stage(root, path)
+            problems = pre_commit_check.violations(root)
+            self.assertEqual(len(problems), len(paths), problems)
+            self.assertTrue(all('measurement dumps stay local' in problem for problem in problems))
+
+    def test_tracked_measurement_updates_are_rejected_and_untracking_keeps_local_data(self):
+        with TemporaryDirectory() as directory:
+            root = self.repository(directory)
+            path = 'docs/performance/existing-diagnostic.json'
+            self.stage(root, path, b'original')
+            self.commit(root)
+            self.stage(root, path, b'local measurement update')
+            self.assertEqual(pre_commit_check.violations(root),
+                             [f'{path}: measurement dumps stay local; commit a Markdown summary instead'])
+            subprocess.run(['git', '-C', str(root), 'rm', '-q', '--cached', path], check=True)
+            self.assertEqual((root / path).read_bytes(), b'local measurement update')
+            self.assertEqual(pre_commit_check.violations(root), [])
+
+    def test_repository_ignore_rules_cover_generated_measurements(self):
+        with TemporaryDirectory() as directory:
+            root = self.repository(directory)
+            (root / '.gitignore').write_bytes((CHECK.parent.parent / '.gitignore').read_bytes())
+            paths = ['docs/performance/github-vlang-instruction-diagnostics-20261108-20pct.json',
+                     'docs/performance/raw/nested/cohort.json', 'docs/performance/raw/cohort.jsonl',
+                     'docs/performance/events.ndjson', 'docs/benchmark-results/cohort.json']
+            for path in paths:
+                result = subprocess.run(['git', '-C', str(root), 'check-ignore', path],
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, path)
+            self.stage(root, paths[0])
+            self.assertIn('measurement dumps stay local', pre_commit_check.violations(root)[0])
 
     def test_archives_outside_asset_directories_are_rejected(self):
         with TemporaryDirectory() as directory:

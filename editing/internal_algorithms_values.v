@@ -1001,10 +1001,9 @@ pub fn record_the_values_of_nodes(node_list []&dom.Node) []RecordedNodeValue {
 	// 2. For each node in node list, for each command in the list "subscript", "bold", "fontName",
 	//    "fontSize", "foreColor", "hiliteColor", "italic", "strikethrough", and "underline" in that
 	//    order:
-	// AD-HOC: We include "preserveWhitespace" as well.
 	commands := [command_subscript, command_bold, command_font_name, command_font_size,
 		command_fore_color, command_hilite_color, command_italic, command_strikethrough,
-		command_underline, command_preserve_whitespace]
+		command_underline]
 	for node in node_list {
 		for command in commands {
 			// 1. Let ancestor equal node.

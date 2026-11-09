@@ -68,19 +68,29 @@ fn compact_reflected_attributes_bootstrap() string {
   if(value==="false")return false;
   return this.localName==="img"||(this.localName==="a"&&this.hasAttribute("href"));
  },function(value){this.setAttribute("draggable",value?"true":"false");});
+ for(const [constructor,namespace] of [[HTMLElement,"http://www.w3.org/1999/xhtml"],
+  [SVGElement,"http://www.w3.org/2000/svg"],[MathMLElement,"http://www.w3.org/1998/Math/MathML"]]){
+ const common=constructor.prototype;
+ boolean(common,"autofocus","autofocus");
  // tabIndex: a valid integer, else 0 for focusable areas and -1 otherwise.
- define(element,"tabIndex",function(){
+ define(common,"tabIndex",function(){
+  const state=__elementApply(__elementRecordGet,__elementRecords,[this]);
+  if(!state||state.namespaceURI!==namespace)throw new TypeError("Illegal tabIndex receiver");
   const value=this.getAttribute("tabindex");
   if(value!==null){
    const match=/^[\t\n\f\r ]*([+-]?[0-9]+)/.exec(value);
    if(match){const parsed=parseInt(match[1],10);if(parsed>=-2147483648&&parsed<=2147483647)return parsed;}
   }
   const name=this.localName;
-  if((name==="a"||name==="area")&&this.hasAttribute("href"))return 0;
-  if(["button","input","select","textarea","iframe","object","embed","summary"].includes(name))return 0;
-  if(this.hasAttribute("contenteditable")&&(this.getAttribute("contenteditable")||"").toLowerCase()!=="false")return 0;
+  if(name==="a")return 0;
+  if(namespace!=="http://www.w3.org/1999/xhtml")return -1;
+  if(["area","button","frame","input","select","textarea","iframe","object"].includes(name))return 0;
+  if(name==="summary"&&this.parentElement&&this.parentElement.namespaceURI===namespace&&this.parentElement.localName==="details"){
+   for(const child of this.parentElement.children)if(child.namespaceURI===namespace&&child.localName==="summary")return child===this?0:-1;
+  }
   return -1;
- },function(value){this.setAttribute("tabindex",String(Number(value)|0));});
+ },function(value){const state=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!state||state.namespaceURI!==namespace)throw new TypeError("Illegal tabIndex receiver");this.setAttribute("tabindex",String(+value|0));});
+ }
  define(element,"contentEditable",function(){
   const value=this.getAttribute("contenteditable");
   if(value===null)return "inherit";
@@ -95,6 +105,7 @@ fn compact_reflected_attributes_bootstrap() string {
   else if(lower==="true"||lower==="false"||lower==="plaintext-only")this.setAttribute("contenteditable",lower);
   else throw new DOMException("The value must be true, false, plaintext-only or inherit","SyntaxError");
  });
+ if(typeof HTMLStyleElement==="function")for(const attribute of ["media","type"])plainString(HTMLStyleElement.prototype,attribute,attribute);
  // Form controls: https://html.spec.whatwg.org/multipage/input.html#the-input-element
  const integer=/^[\t\n\f\r ]*([+-]?[0-9]+)/;
  // long limited to only non-negative numbers, -1 when missing or invalid.
@@ -139,7 +150,14 @@ fn compact_reflected_attributes_bootstrap() string {
  const select=typeof HTMLSelectElement==="function"?HTMLSelectElement.prototype:null;
  if(select){boolean(select,"multiple","multiple");boolean(select,"required","required");}
  const form=typeof HTMLFormElement==="function"?HTMLFormElement.prototype:null;
- if(form){boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");}
+ if(typeof HTMLIFrameElement==="function")plainString(HTMLIFrameElement.prototype,"name","name");
+ if(form){
+  boolean(form,"noValidate","novalidate");plainString(form,"acceptCharset","accept-charset");plainString(form,"target","target");
+  enumerated(form,"method","method",{get:"get",post:"post",dialog:"dialog"},"get","get");
+  enumerated(form,"enctype","enctype",{"application/x-www-form-urlencoded":"application/x-www-form-urlencoded","multipart/form-data":"multipart/form-data","text/plain":"text/plain"},"application/x-www-form-urlencoded","application/x-www-form-urlencoded");
+  define(form,"encoding",function(){return this.enctype;},function(value){this.enctype=value;});
+  define(form,"action",function(){const value=this.getAttribute("action");const address=value===null||value===""?this.ownerDocument.URL:value;try{return new URL(address,this.baseURI).href;}catch(error){return address;}},function(value){this.setAttribute("action",string(value));});
+ }
  // https://html.spec.whatwg.org/multipage/interaction.html#dom-writingsuggestions
  define(element,"writingSuggestions",function(){
   for(let current=this;current;current=current.parentElement){
@@ -150,7 +168,7 @@ fn compact_reflected_attributes_bootstrap() string {
   return "true";
  },function(value){this.setAttribute("writingsuggestions",string(value));});
 })();
-'
+' + compact_nonce_bootstrap()
 }
 
 // Token lists use the native ordered-set and attribute mutation algorithms.

@@ -33,7 +33,7 @@ static JSGlobalContextRef vox_browserjs_create_agent_context(int worker_global)
     JSClassRef global_class = NULL;
     if (worker_global) {
         JSClassDefinition definition = kJSClassDefinitionEmpty;
-        definition.className = "DedicatedWorkerGlobalScope";
+        definition.className = worker_global == 2 ? "SharedWorkerGlobalScope" : "DedicatedWorkerGlobalScope";
         global_class = JSClassCreate(&definition);
     }
     pthread_once(&vox_browserjs_agent_key_once, vox_browserjs_make_agent_key);

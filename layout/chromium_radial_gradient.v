@@ -80,7 +80,7 @@ fn chromium_resolve_radial_gradient_geometry(gradient css.RadialGradientStyleVal
 	cy := chromium_gradient_position(position.edge_y().offset(), context, h)
 	mut rx := f32(radius_x)
 	mut ry := f32(radius_y)
-	if size := gradient.size_[0].as_radial_size() {
+	if size := gradient.size_.value.as_radial_size() {
 		components := size.components()
 		if components.len > 0 {
 			first := components[0]

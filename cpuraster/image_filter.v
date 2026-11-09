@@ -42,6 +42,21 @@ fn (s SpecialImage) bitmap() BlurImage {
 // skif's rounding epsilon.
 const image_filter_round_epsilon = f32(1e-3)
 
+// MakeFromImage retains the source's alpha type and color space. Raster
+// blur passes preserve that storage until a color filter or conversion
+// requires an intermediate premultiplied sRGB image.
+struct FilterImageInfo {
+	premultiplied bool = true
+	display_p3 bool
+	// The paint's DstIn alpha filter precedes the canvas filter graph.
+	alpha f32 = 1
+}
+
+fn (info FilterImageInfo) bitmap(image BlurImage) CanvasBitmap {
+	return CanvasBitmap{pixels: image.pixels, width: image.width, height: image.height,
+		pitch: image.width * 4, premultiplied: info.premultiplied, display_p3: info.display_p3}
+}
+
 // LayerSpace<SkSize>::ceil(): SkScalarCeilToInt(size - 1e-3).
 fn skif_ceil(v f32) int {
 	return float_saturate2int(ceil_f32(v - image_filter_round_epsilon))
@@ -53,9 +68,11 @@ fn skif_outset(r IRect, dx int, dy int) IRect {
 
 // FilterResult for pixel-aligned images: an image placed at an integer
 // origin in layer space (fTransform a translation), decal tiled without a
-// color filter, visible within its layer bounds.
+// deferred matrix filter, visible within its layer bounds. Source-image
+// alpha type and color space are retained separately from the raw channels.
 struct FilterResult {
 	image        SpecialImage
+	color_info   FilterImageInfo
 	has_image    bool
 	// PixelBoundary::kTransparent permits sampling the surrounding pixel
 	// instead of anti-aliasing the image edge. Blur output is initialized,
@@ -92,12 +109,19 @@ fn (f FilterResult) subset(bounds IRect) FilterResult {
 	sub := IRect{image_bounds.left - f.origin_x, image_bounds.top - f.origin_y, image_bounds.right - f.origin_x, image_bounds.bottom - f.origin_y}
 	return FilterResult{
 		...new_filter_result(f.image.make_subset(sub), image_bounds.left, image_bounds.top)
+		color_info: f.color_info
 		transparent_boundary: f.transparent_boundary
 	}
 }
 
 fn (f FilterResult) inset_for_save_layer() FilterResult {
 	return FilterResult{...f.inset_by_pixel(), transparent_boundary: true}
+}
+
+fn (f FilterResult) translated(dx int, dy int) FilterResult {
+	b := f.layer_bounds
+	return FilterResult{...f, origin_x: f.origin_x + dx, origin_y: f.origin_y + dy,
+		layer_bounds: IRect{b.left + dx, b.top + dy, b.right + dx, b.bottom + dy}}
 }
 
 // FilterResult::insetByPixel().
@@ -123,6 +147,22 @@ fn blur_layer_sigma(sigma f32) f32 {
 		return 0
 	}
 	return s
+}
+
+// FilterResult's pixel-alignment test intentionally allows 1e-3 of error.
+// It can reduce bilinear sampling to nearest without snapping the matrix.
+fn filter_nearly_integer_translation(m SkAffine) bool {
+	x, y := filter_nearly_integer_axes(m)
+	return x && y
+}
+
+fn filter_nearly_integer_axes(m SkAffine) (bool, bool) {
+	e := image_filter_round_epsilon
+	x := math_abs32(m.sx - 1) <= e && math_abs32(m.kx) <= e
+		&& math_abs32(m.tx - floor_f32(m.tx + f32(.5))) <= e
+	y := math_abs32(m.sy - 1) <= e && math_abs32(m.ky) <= e
+		&& math_abs32(m.ty - floor_f32(m.ty + f32(.5))) <= e
+	return x, y
 }
 
 // SkBlurImageFilter::onFilterImage() with Builder::blur() on a decal
@@ -175,6 +215,7 @@ fn blur_filter_result(source FilterResult, desired IRect, sigma_x_in f32, sigma_
 	bounds := desired.intersect(shifted.layer_bounds) or { IRect{} }
 	return FilterResult{
 		...shifted
+		color_info: source.color_info
 		layer_bounds: bounds
 	}
 }

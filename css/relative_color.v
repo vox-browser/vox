@@ -233,36 +233,36 @@ fn relative_parts(target ConcreteColorType, origin []StyleValue, components []St
 fn relative_color_parts(style_value StyleValue) ?RelativeColorParts {
 	return match style_value {
 		RGBColorStyleValue {
-			relative_parts(.rgb, style_value.relative_origin_, [style_value.r_[0], style_value.g_[0],
-				style_value.b_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.rgb, style_value.relative_origin_, [style_value.r_.value, style_value.g_.value,
+				style_value.b_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		HSLColorStyleValue {
-			relative_parts(.hsl, style_value.relative_origin_, [style_value.h_[0], style_value.s_[0],
-				style_value.l_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.hsl, style_value.relative_origin_, [style_value.h_.value, style_value.s_.value,
+				style_value.l_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		HWBColorStyleValue {
-			relative_parts(.hwb, style_value.relative_origin_, [style_value.h_[0], style_value.w_[0],
-				style_value.b_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.hwb, style_value.relative_origin_, [style_value.h_.value, style_value.w_.value,
+				style_value.b_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		LabColorStyleValue {
-			relative_parts(.lab, style_value.relative_origin_, [style_value.l_[0], style_value.a_[0],
-				style_value.b_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.lab, style_value.relative_origin_, [style_value.l_.value, style_value.a_.value,
+				style_value.b_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		OKLabColorStyleValue {
-			relative_parts(.oklab, style_value.relative_origin_, [style_value.l_[0], style_value.a_[0],
-				style_value.b_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.oklab, style_value.relative_origin_, [style_value.l_.value, style_value.a_.value,
+				style_value.b_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		LCHColorStyleValue {
-			relative_parts(.lch, style_value.relative_origin_, [style_value.l_[0], style_value.c_[0],
-				style_value.h_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.lch, style_value.relative_origin_, [style_value.l_.value, style_value.c_.value,
+				style_value.h_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		OKLCHColorStyleValue {
-			relative_parts(.oklch, style_value.relative_origin_, [style_value.l_[0], style_value.c_[0],
-				style_value.h_[0]], style_value.alpha_[0], style_value.relative_alpha_)
+			relative_parts(.oklch, style_value.relative_origin_, [style_value.l_.value, style_value.c_.value,
+				style_value.h_.value], style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		ColorFunctionStyleValue {
 			relative_parts(style_value.color_type_, style_value.relative_origin_, style_value.channels_,
-				style_value.alpha_[0], style_value.relative_alpha_)
+				style_value.alpha_.value, style_value.relative_alpha_)
 		}
 		else {
 			none

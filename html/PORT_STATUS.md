@@ -628,3 +628,20 @@ records the original missing-fetch-hook failure and **2/2 default plus 5/5
 GC-none** combined caller/neighbor files, including main. Standalone Legacy
 consumers, remote media transport and complete native bindings/GC ownership
 retain separate scope.
+
+Local MessagePort transfer memory now preserves graph aliases and event-port
+identity through the native JavaScript bridge (`0b34de6b2`). The owner keeps
+scheduled deliveries queued until execution and moves them with a transferred
+endpoint; a disabled in-transit endpoint keeps its peer live and supports moving
+both channel ends. Receiving ports retain their actual native clone context,
+including File/Blob exposure. The existing worker wire keeps buffer-transfer
+behavior while active/nested worker-port transfers remain unsupported.
+Sixteen HTML owner/messaging and eleven public integration checks pass in normal
+GC and preallocated GC-none modes. Twenty-two original official Window/Worker
+WPT variants pass 564/564 in both native Page modes; production verification is
+tracked separately. Exact resizable-view metadata and full WebMessaging parity
+remain open. See [WPT progress](../docs/WPT_CONFORMANCE_PROGRESS.md).
+
+Production verification of that local-port change also passes all 564 assertions
+in the same 22 original variants on a fresh matching executable, with harness
+OK and strict exits 0; its build identity and evidence are in the linked report.

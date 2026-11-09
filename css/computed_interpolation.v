@@ -758,6 +758,14 @@ pub enum PointerEvents as u8 {
 	auto_
 	all
 	none_
+	bounding_box
+	visible_painted
+	visible_fill
+	visible_stroke
+	visible
+	painted
+	fill
+	stroke
 }
 
 pub enum VerticalAlign as u8 {
@@ -1676,6 +1684,7 @@ pub mut:
 	root_line_height_px_                          f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
 	subject_element_                              ?&dom.Element
+	position_try_reference_scope_ ?&StyleScope
 
 	// Layout::NodeWithStyle resolves these values once in apply_style(). Keeping
 	// the translated ComputedValues slots on the retained object avoids decoding
@@ -3756,9 +3765,9 @@ pub fn (c &ComputedProperties) align_content() AlignContent {
 	return match keyword {
 		.normal { AlignContent.normal }
 		.start { AlignContent.start }
-		.flex_start { AlignContent.flex_start }
+		.flex_start, .flow_start { AlignContent.flex_start }
 		.end_ { AlignContent.end_ }
-		.flex_end { AlignContent.flex_end }
+		.flex_end, .flow_end { AlignContent.flex_end }
 		.center { AlignContent.center }
 		.stretch { AlignContent.stretch }
 		.space_between { AlignContent.space_between }
@@ -3774,10 +3783,10 @@ pub fn (c &ComputedProperties) align_items() AlignItems {
 	return match keyword {
 		.normal { AlignItems.normal }
 		.start { AlignItems.start }
-		.flex_start { AlignItems.flex_start }
+		.flex_start, .flow_start { AlignItems.flex_start }
 		.self_start { AlignItems.self_start }
 		.end_ { AlignItems.end_ }
-		.flex_end { AlignItems.flex_end }
+		.flex_end, .flow_end { AlignItems.flex_end }
 		.self_end { AlignItems.self_end }
 		.center { AlignItems.center }
 		.stretch { AlignItems.stretch }
@@ -3795,10 +3804,10 @@ pub fn (c &ComputedProperties) align_self() AlignSelf {
 		.auto { AlignSelf.auto_ }
 		.normal { AlignSelf.normal }
 		.start { AlignSelf.start }
-		.flex_start { AlignSelf.flex_start }
+		.flex_start, .flow_start { AlignSelf.flex_start }
 		.self_start { AlignSelf.self_start }
 		.end_ { AlignSelf.end_ }
-		.flex_end { AlignSelf.flex_end }
+		.flex_end, .flow_end { AlignSelf.flex_end }
 		.self_end { AlignSelf.self_end }
 		.center { AlignSelf.center }
 		.stretch { AlignSelf.stretch }
@@ -3906,9 +3915,9 @@ pub fn (c &ComputedProperties) justify_content() JustifyContent {
 	return match keyword {
 		.normal { JustifyContent.normal }
 		.start { JustifyContent.start }
-		.flex_start { JustifyContent.flex_start }
+		.flex_start, .flow_start { JustifyContent.flex_start }
 		.end_ { JustifyContent.end_ }
-		.flex_end { JustifyContent.flex_end }
+		.flex_end, .flow_end { JustifyContent.flex_end }
 		.center { JustifyContent.center }
 		.stretch { JustifyContent.stretch }
 		.space_between { JustifyContent.space_between }
@@ -3926,10 +3935,10 @@ pub fn (c &ComputedProperties) justify_items() JustifyItems {
 	return match keyword {
 		.normal { JustifyItems.normal }
 		.start { JustifyItems.start }
-		.flex_start { JustifyItems.flex_start }
+		.flex_start, .flow_start { JustifyItems.flex_start }
 		.self_start { JustifyItems.self_start }
 		.end_ { JustifyItems.end_ }
-		.flex_end { JustifyItems.flex_end }
+		.flex_end, .flow_end { JustifyItems.flex_end }
 		.self_end { JustifyItems.self_end }
 		.center { JustifyItems.center }
 		.stretch { JustifyItems.stretch }
@@ -3950,10 +3959,10 @@ pub fn (c &ComputedProperties) justify_self() JustifySelf {
 		.auto { JustifySelf.auto_ }
 		.normal { JustifySelf.normal }
 		.start { JustifySelf.start }
-		.flex_start { JustifySelf.flex_start }
+		.flex_start, .flow_start { JustifySelf.flex_start }
 		.self_start { JustifySelf.self_start }
 		.end_ { JustifySelf.end_ }
-		.flex_end { JustifySelf.flex_end }
+		.flex_end, .flow_end { JustifySelf.flex_end }
 		.self_end { JustifySelf.self_end }
 		.center { JustifySelf.center }
 		.stretch { JustifySelf.stretch }
@@ -4040,6 +4049,14 @@ fn keyword_to_pointer_events_for_computed_properties(keyword Keyword) ?PointerEv
 		.auto { PointerEvents.auto_ }
 		.all { PointerEvents.all }
 		.none_ { PointerEvents.none_ }
+		.bounding_box { PointerEvents.bounding_box }
+		.visible_painted { PointerEvents.visible_painted }
+		.visible_fill { PointerEvents.visible_fill }
+		.visible_stroke { PointerEvents.visible_stroke }
+		.visible { PointerEvents.visible }
+		.painted { PointerEvents.painted }
+		.fill { PointerEvents.fill }
+		.stroke { PointerEvents.stroke }
 		else { none }
 	}
 }
@@ -9236,7 +9253,7 @@ fn composite_style_value(property_id PropertyID, underlying StyleValue, animated
 			}
 		}
 		EdgeStyleValue {
-			if animated is EdgeStyleValue && underlying.offset_ != none && animated.offset_ != none {
+			if animated is EdgeStyleValue && underlying.offset_ != unsafe { nil } && animated.offset_ != unsafe { nil } {
 				offset := composite_style_value(property_id, underlying.offset(), animated.offset(), operation) or { return none }
 				StyleValue(EdgeStyleValue.create(none, offset))
 			} else {
@@ -10935,6 +10952,7 @@ pub mut:
 @[heap]
 pub struct StyleComputer {
 pub mut:
+	position_try_override_ ?PositionTryStyleOverride
 	document_                                            &dom.Document = unsafe { nil }
 	computed_property_page_interner_ &ComputedPropertyPageInterner = unsafe { nil }
 	device_layout_property_pages_ &DeviceLayoutPropertyPages = unsafe { nil }
@@ -11799,6 +11817,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	properties.subject_element_ = abstract_element.element()
+	properties.position_try_reference_scope_ = position_try_reference_scope(abstract_element,cascaded_properties)
 	mut recascaded_font_size_depends_on_viewport_metrics := false
 	recascaded_font_size := s.recascade_font_size_if_needed(abstract_element, mut cascaded_properties, &recascaded_font_size_depends_on_viewport_metrics)
 	// Only unchanged, context-independent specified values can keep their style
@@ -12050,6 +12069,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// Apply any property-specific computed value logic.
 	s.resolve_effective_overflow_values(mut properties)
 	compute_text_align(mut properties, abstract_element)
+	compute_alignment_values(mut properties, abstract_element)
 	if abstract_element.pseudo_element() == none {
 		adjust_element_computed_style(mut properties, abstract_element.element())
 	}
@@ -12060,7 +12080,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		compute_transitioned_properties(properties, abstract_element, mut transition_storage)
 		if old_dom_style := abstract_element.computed_properties() {
 			if old_style := computed_properties_from_dom(old_dom_style) {
-				s.start_needed_transitions(old_style, mut properties, abstract_element)
+				initial_fallback := s.position_try_override_ != none && !position_try_target_has_geometry(abstract_element)
+				if !initial_fallback { s.start_needed_transitions(old_style, mut properties, abstract_element) }
 			}
 		}
 	}
@@ -12200,7 +12221,7 @@ pub fn html_element_adjust_computed_style(mut properties ComputedProperties, ele
 // DOM::Element::adjust_computed_style() overrides implemented by the element
 // classes. Keep this after the generic box-type transformations, matching
 // StyleComputer::compute_properties().
-fn is_outermost_svg_element_for_css_box_layout(element &dom.Element) bool {
+pub fn is_outermost_svg_element_for_css_box_layout(element &dom.Element) bool {
 	if !element.is_svg_element() || element.local_name() != 'svg' {
 		return false
 	}
@@ -14439,6 +14460,12 @@ fn (s &StyleComputer) compute_cascaded_values_into(mut cascaded_properties Casca
 	// Normal author declarations, ordered by @layer, with un-@layer-ed rules last.
 	for layer in matching_rule_set.author_rules {
 		s.cascade_declarations(mut cascaded_properties, abstract_element, layer.rules, .author, .no, layer.qualified_layer_name, logical_alias_mapping_context, properties_to_cascade)
+	}
+	if override := s.position_try_override_ {
+		if voidptr(override.target.element()) == voidptr(abstract_element.element())
+			&& override.target.pseudo_element() == abstract_element.pseudo_element() {
+			cascade_one_declaration(mut cascaded_properties,abstract_element,override.declaration,none,.author,.no,'\x00position-try',logical_alias_mapping_context,properties_to_cascade)
+		}
 	}
 
 	// Important author declarations, with un-@layer-ed rules first, followed by each @layer in reverse order.

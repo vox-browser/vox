@@ -42,6 +42,13 @@ pub fn (runtime &Runtime) dispatch_document_readiness_event(name string) ! {
 	}
 	mut owner := unsafe { &dom.Document(document) }
 	if !owner.claim_readiness_event(name) { return }
+	// The compact loader can reach this boundary before the parser's queued
+	// completion task. Listeners must observe the readiness for this event.
+	if name == 'load' {
+		owner.update_readiness(.complete)
+	} else if owner.readiness() == .loading {
+		owner.update_readiness(.interactive)
+	}
 	event := dom.Event.create(name, dom.EventInit{ bubbles: name == 'DOMContentLoaded' })
 	mut mutable_event := unsafe { &dom.Event(event) }
 	mutable_event.set_time_stamp(highresolutiontime.current_high_resolution_time(highresolutiontime.TimeOriginContext{

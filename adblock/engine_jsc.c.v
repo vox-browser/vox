@@ -186,6 +186,14 @@ pub fn release_default_engine_if_idle(idle_ms int) bool {
 		|| now - default_engine_last_used_ns < i64(idle_ms) * 1_000_000 {
 		return false
 	}
+	$if macos {
+		if C.vox_adblock_worker_is_configured() != 0 {
+			// A helper may take seconds to destroy its VM or acknowledge quit.
+			// Transfer its transport to the native reaper without holding the
+			// request lock during shutdown; a new request can start immediately.
+			return C.vox_adblock_worker_release_idle() != 0
+		}
+	}
 	return release_default_engine_locked()
 }
 

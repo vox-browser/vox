@@ -1,0 +1,1783 @@
+{
+  "scope": "Exact original first 100 newly added runnable Ladybird imported testharness cases. Fresh native Vox Document/HTML/DOM/JSC/Fetch processes, real upstream HTTP handlers, actual iframe navigation and native dedicated/shared worker processes. No GUI, painting or production-bundle acceptance claim.",
+  "revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "new_since": "963d46a829f3e1b79f44dba9d02afb70654300fa",
+  "fully_passing_cases": 100,
+  "cases": 100,
+  "passing_subtests": 8514,
+  "subtests": 8514,
+  "harness_ok": 100,
+  "failing_subtests": 0,
+  "timeouts": 0,
+  "not_run_subtests": 0,
+  "results": [
+    {
+      "id": "FileAPI/blob/Blob-text.any",
+      "url": "/FileAPI/blob/Blob-text.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 16,
+      "passing_subtests": 16
+    },
+    {
+      "id": "FileAPI/blob/Blob-textStream.any",
+      "url": "/FileAPI/blob/Blob-textStream.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 8,
+      "passing_subtests": 8
+    },
+    {
+      "id": "FileAPI/file/send-file-form-iso-2022-jp",
+      "url": "/FileAPI/file/send-file-form-iso-2022-jp.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "FileAPI/file/send-file-form-windows-1252",
+      "url": "/FileAPI/file/send-file-form-windows-1252.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "FileAPI/file/send-file-form-x-user-defined",
+      "url": "/FileAPI/file/send-file-form-x-user-defined.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "IndexedDB/clone-before-keypath-eval.any",
+      "url": "/IndexedDB/clone-before-keypath-eval.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "IndexedDB/get-databases.any",
+      "url": "/IndexedDB/get-databases.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 5,
+      "passing_subtests": 5
+    },
+    {
+      "id": "IndexedDB/get-databases.any.worker",
+      "url": "/IndexedDB/get-databases.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 5,
+      "passing_subtests": 5
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.sharedworker",
+      "url": "/IndexedDB/idbcursor-key.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any",
+      "url": "/IndexedDB/idbcursor-key.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbcursor-key.any.worker",
+      "url": "/IndexedDB/idbcursor-key.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.sharedworker",
+      "url": "/IndexedDB/idbcursor-primarykey.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any",
+      "url": "/IndexedDB/idbcursor-primarykey.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbcursor-primarykey.any.worker",
+      "url": "/IndexedDB/idbcursor-primarykey.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.sharedworker",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbfactory-open-error-properties.any.worker",
+      "url": "/IndexedDB/idbfactory-open-error-properties.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.sharedworker",
+      "url": "/IndexedDB/idbindex-rename.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 9,
+      "passing_subtests": 9
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any",
+      "url": "/IndexedDB/idbindex-rename.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 9,
+      "passing_subtests": 9
+    },
+    {
+      "id": "IndexedDB/idbindex-rename.any.worker",
+      "url": "/IndexedDB/idbindex-rename.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 9,
+      "passing_subtests": 9
+    },
+    {
+      "id": "IndexedDB/idbindex_keyPath.any",
+      "url": "/IndexedDB/idbindex_keyPath.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_createIndex.any.worker",
+      "url": "/IndexedDB/idbobjectstore_createIndex.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 21,
+      "passing_subtests": 21
+    },
+    {
+      "id": "IndexedDB/idbobjectstore_keyPath.any",
+      "url": "/IndexedDB/idbobjectstore_keyPath.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.sharedworker",
+      "url": "/IndexedDB/idbrequest_error.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any",
+      "url": "/IndexedDB/idbrequest_error.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbrequest_error.any.worker",
+      "url": "/IndexedDB/idbrequest_error.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.sharedworker",
+      "url": "/IndexedDB/idbtransaction_objectStoreNames.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 8,
+      "passing_subtests": 8
+    },
+    {
+      "id": "IndexedDB/idbtransaction_objectStoreNames.any.worker",
+      "url": "/IndexedDB/idbtransaction_objectStoreNames.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 8,
+      "passing_subtests": 8
+    },
+    {
+      "id": "IndexedDB/keygenerator.any.worker",
+      "url": "/IndexedDB/keygenerator.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 21,
+      "passing_subtests": 21
+    },
+    {
+      "id": "IndexedDB/keypath.any",
+      "url": "/IndexedDB/keypath.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 20,
+      "passing_subtests": 20
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.sharedworker",
+      "url": "/IndexedDB/keypath_invalid.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 24,
+      "passing_subtests": 24
+    },
+    {
+      "id": "IndexedDB/keypath_invalid.any.worker",
+      "url": "/IndexedDB/keypath_invalid.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 24,
+      "passing_subtests": 24
+    },
+    {
+      "id": "IndexedDB/keypath_maxsize.any",
+      "url": "/IndexedDB/keypath_maxsize.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.sharedworker",
+      "url": "/IndexedDB/request_bubble-and-capture.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any",
+      "url": "/IndexedDB/request_bubble-and-capture.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/request_bubble-and-capture.any.worker",
+      "url": "/IndexedDB/request_bubble-and-capture.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction-abort-generator-revert.any",
+      "url": "/IndexedDB/transaction-abort-generator-revert.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 2,
+      "passing_subtests": 2
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-index-metadata-revert.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "IndexedDB/transaction-abort-index-metadata-revert.any.worker",
+      "url": "/IndexedDB/transaction-abort-index-metadata-revert.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "IndexedDB/transaction-abort-multiple-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-multiple-metadata-revert.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "IndexedDB/transaction-abort-object-store-metadata-revert.any",
+      "url": "/IndexedDB/transaction-abort-object-store-metadata-revert.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 4,
+      "passing_subtests": 4
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.sharedworker",
+      "url": "/IndexedDB/transaction-abort-request-error.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any",
+      "url": "/IndexedDB/transaction-abort-request-error.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction-abort-request-error.any.worker",
+      "url": "/IndexedDB/transaction-abort-request-error.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.sharedworker",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.sharedworker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "IndexedDB/transaction_bubble-and-capture.any.worker",
+      "url": "/IndexedDB/transaction_bubble-and-capture.any.worker.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CBC.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-CBC.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 686,
+      "passing_subtests": 686
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-CTR.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-CTR.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 686,
+      "passing_subtests": 686
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_AES-GCM.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_AES-GCM.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 686,
+      "passing_subtests": 686
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_HMAC.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_HMAC.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 436,
+      "passing_subtests": 436
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSA-OAEP.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 340,
+      "passing_subtests": 340
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSA-PSS.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSA-PSS.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 116,
+      "passing_subtests": 116
+    },
+    {
+      "id": "WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any",
+      "url": "/WebCryptoAPI/generateKey/failures_RSASSA-PKCS1-v1_5.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 116,
+      "passing_subtests": 116
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any",
+      "url": "/WebCryptoAPI/modern-algos/derive_bits_keys/argon2.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 4,
+      "passing_subtests": 4
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/cshake.https.any",
+      "url": "/WebCryptoAPI/modern-algos/digest/cshake.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 88,
+      "passing_subtests": 88
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/digest/sha3.https.any",
+      "url": "/WebCryptoAPI/modern-algos/digest/sha3.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 48,
+      "passing_subtests": 48
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encap_decap/encap_decap_bits.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 18,
+      "passing_subtests": 18
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encap_decap/encap_decap_keys.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 240,
+      "passing_subtests": 240
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encrypt_decrypt/aes_ocb.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 277,
+      "passing_subtests": 277
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any",
+      "url": "/WebCryptoAPI/modern-algos/encrypt_decrypt/chacha20_poly1305.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 28,
+      "passing_subtests": 28
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/failures_ML-DSA.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 252,
+      "passing_subtests": 252
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/failures_kmac.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 312,
+      "passing_subtests": 312
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_ML-DSA.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 108,
+      "passing_subtests": 108
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_ML-KEM.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 468,
+      "passing_subtests": 468
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/generateKey/successes_kmac.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 144,
+      "passing_subtests": 144
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/getPublicKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/getPublicKey.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 43,
+      "passing_subtests": 43
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/idlharness.https.any",
+      "url": "/WebCryptoAPI/modern-algos/idlharness.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 28,
+      "passing_subtests": 28
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/KMAC_importKey.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 144,
+      "passing_subtests": 144
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/ML-DSA_importKey.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 180,
+      "passing_subtests": 180
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/ML-KEM_importKey.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 324,
+      "passing_subtests": 324
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any",
+      "url": "/WebCryptoAPI/modern-algos/import_export/raw_format_aliases.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 20,
+      "passing_subtests": 20
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/aes-ocb.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 3,
+      "passing_subtests": 3
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/chacha20-poly1305.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 2,
+      "passing_subtests": 2
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/kmac.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mldsa.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/mldsa.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/serialization/mlkem.https.any",
+      "url": "/WebCryptoAPI/modern-algos/serialization/mlkem.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 6,
+      "passing_subtests": 6
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/kmac.https.any",
+      "url": "/WebCryptoAPI/modern-algos/sign_verify/kmac.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 103,
+      "passing_subtests": 103
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any",
+      "url": "/WebCryptoAPI/modern-algos/sign_verify/mldsa.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 57,
+      "passing_subtests": 57
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports-modern.https.any",
+      "url": "/WebCryptoAPI/modern-algos/supports-modern.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 147,
+      "passing_subtests": 147
+    },
+    {
+      "id": "WebCryptoAPI/modern-algos/supports.https.any",
+      "url": "/WebCryptoAPI/modern-algos/supports.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 200,
+      "passing_subtests": 200
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/derive_bits_keys/cfrg_curves_bits_curve448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 18,
+      "passing_subtests": 18
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/failures_Ed448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 84,
+      "passing_subtests": 84
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/failures_X448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 104,
+      "passing_subtests": 104
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/successes_Ed448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 36,
+      "passing_subtests": 36
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/generateKey/successes_X448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 32,
+      "passing_subtests": 32
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_Ed448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 72,
+      "passing_subtests": 72
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_X448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 54,
+      "passing_subtests": 54
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_Ed448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 770,
+      "passing_subtests": 770
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/import_export/okp_importKey_failures_X448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 662,
+      "passing_subtests": 662
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/ed448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/serialization/ed448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 2,
+      "passing_subtests": 2
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/serialization/x448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/serialization/x448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 2,
+      "passing_subtests": 2
+    },
+    {
+      "id": "WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any",
+      "url": "/WebCryptoAPI/secure-curves/sign_verify/eddsa_curve448.https.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 19,
+      "passing_subtests": 19
+    },
+    {
+      "id": "clipboard-apis/dataTransfer-clearData",
+      "url": "/clipboard-apis/dataTransfer-clearData.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 1,
+      "passing_subtests": 1
+    },
+    {
+      "id": "compression/decompression-extra-input.any",
+      "url": "/compression/decompression-extra-input.any.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 4,
+      "passing_subtests": 4
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http",
+      "url": "/content-security-policy/gen/top.http-rp/worker-src-none/sharedworker-import-data.http.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 12,
+      "passing_subtests": 12
+    },
+    {
+      "id": "content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.http-rp/worker-src-self/worker-import-data.http.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 12,
+      "passing_subtests": 12
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-self/sharedworker-import-data.http.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 12,
+      "passing_subtests": 12
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-self/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-self/worker-import-data.http.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 12,
+      "passing_subtests": 12
+    },
+    {
+      "id": "content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http",
+      "url": "/content-security-policy/gen/top.meta/script-src-wildcard/worker-import-data.http.html",
+      "process_exit": 0,
+      "harness_status": 0,
+      "subtests": 12,
+      "passing_subtests": 12
+    }
+  ],
+  "assertions_unchanged": true,
+  "fixture_tree_verified_before_and_after": true,
+  "server_inputs_unchanged": true,
+  "executable_verified_before_and_after": true,
+  "subtest_denominator": "8514 includes 52 SharedWorker subtests that earlier production runs never registered. The other 90 cases retain identical subtest names and counts versus the 82-case production baseline.",
+  "fixture_overrides": [
+    "Ladybird-only testharness CI shortcuts removed by the existing upstream_testharness() helper.",
+    "testharnessreport.js replaced by a collector; test bodies, wrappers, support files and assertions retain pinned bytes."
+  ],
+  "binary": {
+    "path": "/Users/alex/code/vox2/Build/first100-document-20261108/native-r7",
+    "sha256": "559768100803bf929efbbadf5cdac6208e35d79293dab58ff5c06208b6421ecd"
+  },
+  "source_identity": {
+    "head": "85cfa9fb654964a0fa65749026a404fc3b87af42",
+    "scope": "Source hashes for cohort-specific changed paths; shared checkout also contains concurrent unrelated work. Native test binary uses C backend.",
+    "sources": {
+      "compact/upstream_testharness_test.v": "aca2034fb8ea0291bfb789ae09898e430e05af09393f3118eabd960cda379046",
+      "compact/form_controls.v": "5d1dfcfcbd9bbd8a805d28e124104bf3a2295c222e7ffeed99c1271be38778cb",
+      "compact/form_submit_test.v": "0cc78b8391b076ebb551e16de81006673ec98128f462899df97a8e97acdd1b2f",
+      "compact/request_submit_test.v": "ae0fdb77daf983aea0d552141d5a058ab5f0ff4631f1b1c54ceeba199e19809a",
+      "navigation/document.v": "9955ab71ef3db6f565e3a51230fedba96b5f8c9a15f1bf0fb7fcc25b44e56740",
+      "navigation/response_policy_test.v": "aa83bd1b0f16e948e11b74b64e2eb9e7d0601d502d2ed8d0ec5810c9210faf3a",
+      "main.v": "5373da0fe3772e4fc0214b4e60b10d17451d36a05f19382d7b51ecdc61832759",
+      "document/form_submission.v": "53eff26cbe9bc6aef5835d98ac73b5f6f41ce0e54b39c65acccecf6d42b6ade5",
+      "encoding/html_charset_encoder.v": "dd56903750e61d689bd9b9966627dfd2866d39483bbf16908ff7856b46eb28d4",
+      "encoding/html_charset_encoder_test.v": "8587d0c7e6f9c91f49fb5838bca0ee40d1e77c3d41c70fb951f830ddb034c627",
+      "html/form_control_infrastructure.v": "4df4a0a9876bc34bbb5ad882b40c3fb1c9bf30264499c86662da36df7755cb63",
+      "html/html_form_element.v": "def46a1cbe82fedca50e6822b09a020ab74c1e6c53a0180666d03633dba9cc7a",
+      "html/worker_constructor_csp.v": "cc6eb8eca5f7d9b03bd6bf031dea1abd555e74eb7196fa1b17e1474392040540",
+      "browserjs/shared_worker_host_jsc.c.v": "debd3e6eaf88291adeede6ddd4cd8abadc3aa632e2b0eae5ca1b401f5803a278",
+      "browserjs/worker_host_jsc.c.v": "60e1af8e4c094a8e6feae79e687e0e4e0bbf94dfa0d8fcb8f23397572c27eceb",
+      "browserjs/worker_global_host_jsc.c.v": "8537e5661f9cffeae6ab825847d9a0ab295102696fa5ac1a4549b28e1803507d",
+      "compact/zz_first100_document_checks_20261108_test.v": "dcf5d5789392bea04de4c88d39ab5b86846b469e88b942ac43954a2bc565f7bf",
+      "browserjs/document_window_event_binding_jsc.c.v": "95d027fbd95b5b2ce302037a29d1d1af37bb2a161bd33d54f380d5a3dbaf1ee5",
+      "compact/readiness_event_test.v": "1ca4683afb63e649127f8743d0f42d960412833218612ae75053aab1f851c98f",
+      "html/navigable.v": "685d48d3b0d00423502391a26db020e128db126274a312ecc0ae0891ad27f998"
+    }
+  },
+  "feature_commits": {
+    "navigation_response_policy_headers": "af38f10ac",
+    "explicit_submitter_association": "344cfe7d2",
+    "removed_frame_targets": "583e00a92",
+    "load_readiness": "85cfa9fb6",
+    "literal_text_navigation": "e1b6e0d50",
+    "native_document_harness_driver": "0e2b7fc01",
+    "shared_worker": "d67ae676b",
+    "worker_csp": "a5e36790d",
+    "html_form_charsets": "d30bfc72f",
+    "form_submit": "c238849e7"
+  },
+  "focused_native_regression_functions": 8,
+  "native_compile_guard": {
+    "command": [
+      "v",
+      "-b",
+      "c",
+      "-memory-limit",
+      "10G",
+      "-enable-globals",
+      "-cc",
+      "clang",
+      "-w",
+      "-skip-running",
+      "-o",
+      "Build/first100-document-20261108/native-r7",
+      "compact/zz_first100_document_checks_20261108_test.v"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 12884901888,
+    "observed_peak_rss_bytes": 5996986368,
+    "elapsed_seconds": 106.00412324999999,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "focused_runtime_guard": {
+    "command": [
+      "Build/first100-document-20261108/native-r7"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 124256256,
+    "elapsed_seconds": 0.852636041,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "cohort_guard": {
+    "command": [
+      "python3",
+      "/tmp/vox-first100-document-wpt-run.py",
+      "all100-r7"
+    ],
+    "reason": "completed",
+    "child_exit_code": 0,
+    "adopted_processes": {},
+    "adoption_error": null,
+    "limit_bytes": 3221225472,
+    "observed_peak_rss_bytes": 359743488,
+    "elapsed_seconds": 74.318538709,
+    "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+  },
+  "server": {
+    "kind": "upstream-wptserve",
+    "checkout": "/Users/alex/code/3rd/web-platform-tests",
+    "revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+    "host": "localhost",
+    "http_ports": [
+      58310,
+      58311
+    ],
+    "https_ports": [
+      58312,
+      58313
+    ],
+    "unserved_protocols": {
+      "ws": [
+        58314
+      ],
+      "wss": [
+        58315
+      ]
+    },
+    "ca_certificate": "/Users/alex/code/vox2/Build/first100-document-wpt-all100-r7-20261108/certificates/cacert.pem",
+    "ca_sha256": "9134b486e1c0ce002d96a553563bec44a179dce8e4f381c5a77afbf281d1ddaa",
+    "source_files": {
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/__init__.py": "8a757e6c2014843fd01a341ee4c93c825ec5f39bf6e945bd5b7047a2ff6f0400",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/config.py": "90c5dd21b3a6d6f46a2cceda3c91a0e841ee2410e8f724b6dff23977d4ed893c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/connection.py": "22c59c91f3ba26e34358157c8bb472f88ad939c6fed8af951f37d2bfbcd70bed",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/errors.py": "e8ace66f261228cf51b8277a9f3ecfd8bb719a54ace4fda69de4bf49af2f4c4a",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/events.py": "1a9b444d5c1f7f73a96b14531cfe1bbddde04679f79c33f0aaaa51a0d97e9a97",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/exceptions.py": "3a57de347fdf70618cd2b1653a90f62463a45baaf41f10cdee749e1b33be1f3d",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/frame_buffer.py": "ee2d79a0f2ea7c03cf7d30c4e40f3b820816e05c41ee5fffbcc5f85def51ed35",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/settings.py": "cd1b3f6c0cfdaa0db58eca7a1d063e4d95a77086c20f0109ff5c193b276660d7",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/stream.py": "6f7840a51c2fc64e2b9541c3ac1d596f08303e890e6996bc30c65215111c5621",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/utilities.py": "470828210442983ad1bf2531d39e13c8e296d47963766fd9373de3c78a3db3f1",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/h2/src/h2/windows.py": "37f3fd9938b4559dbaf9e63642cbd6622e8d2f1ef7c6cc2f5196fb546a1dd739",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/__init__.py": "d6fed17439aa39358e149e16ba5acc7701cd05f40d8cfd17465a70e4a1726b75",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/exceptions.py": "46bc351647b909fabbd8ec2fc2b9d2e89b9c06fc37fdbc6ede8fee8ed01496b3",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/hpack.py": "aa838f72ca8c744e83cea208a31b3e518fabbccccf9f8012b6a8457db1f3501c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman.py": "d1e7e0b25d048d1a11088d0fb97f06f722b83f8f1d98e483e697a931b9314936",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_constants.py": "8a7d696ea53a1e4b63170439825b6b5d955d2f753893f42cb46f6b2108015b33",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/huffman_table.py": "e728a322e6b294878fc246e158c5ca7f7117b29797298ee16a4a6f3dd4912648",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/struct.py": "830ee8c66955cd7cb354457863abaf4b7c271ab274cce963a87fb12e926a5997",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hpack/src/hpack/table.py": "902f12c1e4c9207de307faa51098f4ebd8ce9046101b340787010bafe4671a43",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/__init__.py": "3d4f98b3ed6e074f43cae4ca56ac070943a2e2cb20d5157fcab082a82cc8ada0",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/exceptions.py": "1c4709548ee42ee4deba0b7ec861c6abea736f8a456c30270114e8162c0a9d36",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/flags.py": "dbc84fe118f104bdc8e4ab3dfb1175db34dff46d1787c25afe224ba8373b3b8e",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/hyperframe/src/hyperframe/frame.py": "e42ffbdf4e3bce7d2a3017a511a915729f6ebef5c921b2e4097ec87ff83d0489",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/__init__.py": "b0db4010b05191b1abc32c3a46168ee50c5313c4c5587ab61aa321076fa4a8b6",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/_stream_exceptions.py": "bd2e571a45cd869a639e5ac04048cdc2665e251dc8610a3f02383791479c5263",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/common.py": "f1f46621904f254b42467bce614c41f4f5ef67aacf7db7d11c36c6ead3196bfb",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/dispatch.py": "1bea6b669b3eba6500e6f03adcf1f59768f47447c562751cf79b223bfc441585",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/extensions.py": "6ea603d9ce2bd26eb8e82cdb214cc7fa37d115b0243f9e5601444cb069ea7609",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/__init__.py": "d060d9288ce77a7b9c4af9440f236a82f2e79fab75595a606411e362596c7585",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/base.py": "0a2936d38c93244d51e8cb36f0e0a7c408d3cc0624c09008934241feeda4ee71",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/handshake/hybi.py": "bace292d3f76f99568a95f021124712fc09cb7d5a3ccb461ef47b116e256cb0b",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/http_header_util.py": "9a003299dc2f5c2552c7178cb1dd1ec1ee9de7b30120138f2b063fed8ab49ba1",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/msgutil.py": "a1a71af4bb1e58d442ddbff431395ea682225661ec5862a480b47806ad405194",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/stream.py": "7f8282b0c01056c177604e755acbcec3913467b67b5a2e15dbaf320cd9723a3f",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/pywebsocket3/pywebsocket3/util.py": "f13c20ffcec20173a25b7494257793fe54ff4aedaa544cf55ecc10cb23967830",
+      "/Users/alex/code/3rd/web-platform-tests/tools/third_party/six/six.py": "4ce39f422ee71467ccac8bed76beb05f8c321c7f0ceda9279ae2dfa3670106b3",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/docs/conf.py": "5ac333fd290c86d91c18530ae09bd354d064fdd440ed64c5c9c3851bb7f7c027",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/setup.py": "87b552bf033441a406e65a1dd102d8e375ad05a22da64835e8b067e6f9fc8007",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/base.py": "81a219ac2b98a7eba239ca4730d24a0d3a293f039d82376bd3eba276f4f5318e",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.py": "3267165da1879beace10f5dd4ff68db8bfbbcbac8ff736dae0c2809457d74477",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultpy/default.sub.py": "9ad871406bef3d1bef57fdf29aeef2f7b6365f11aade764c8733f55bc711af58",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/defaultsubpy/default.sub.py": "79ac4f25853a64e02eb81bbbe856a7a93f6c33b8e451d80eae4fd90030fe50ea",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/invalid.py": "4827239f0d462d95654e4b99240aad1908264684e1364b4cfcc2997ebebb160b",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/no_main.py": "b165350880e521a5bd47de630f9e42e0b5c45610f5315982b3b53465b3c28b6e",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/example_module.py": "f925058fca8d4e806d9ce0d22d55db2f93e0df118aab2c4ff4a190b06a81632c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/subdir/import_handler.py": "2a8977e4ff8c1174e608c9dafec5e524adee3cf2219913c4aa42f4301e97a598",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_data.py": "37b3e3b534b8470c8b75f35f525e563369053f25807c6e0418c44e417d8aad66",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers.py": "3272d89073aa6b0c9ae7a394d905252a8a37de10ac447e4802b157535fe2544d",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_h2_headers_data.py": "ec4caec2cd6cfd91d8d7b5b16ac0b4547c67840f7a756373fb8ef4e6ad8cdead",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_string.py": "013a2a125eb356a7a67c56b26aa0a3fba480f660428ad41916dc5ff4646440a1",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_2.py": "e71815ac5fa17cf3933e2ae528453218111eda14f8145e4d1a1d711e2f9bf076",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/docroot/test_tuple_3.py": "aa9441158c9273d6777b660dee776aaa50e45b4ed67439c5e0357b2f51058487",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_cookies.py": "180a90c4910fa0649c04e1c8060d94881ed7bb633ef86a9f5b3bbf116a5433f3",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_handlers.py": "ad61d09080fce751f202c4442161517ee2285df8fa510ccf1bd7e2969816705f",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_input_file.py": "790617ef1ad35148e043b9b75e19d6d52d8bd90a00499038d8c5633c07805590",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_pipes.py": "7eedc059aa7531e276e05920d14b6a8b8e33526c7a3214b535812c068a83de80",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_request.py": "56ba853ed351d574325e5beaae7f798a8ef49f8ed7a7b4f74e3b7d39bc517178",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_response.py": "815646ca02126094d0a4352313d27a06e06da3f43c0f7ed69ff2c818c5b1a7d7",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_server.py": "f3320bd5d251eb5a708e606c52dccfab110914da7b5858c2f35235ca66c212f5",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/functional/test_stash.py": "1c8886fb295fbee9a795a74da4b0098709d8dce501cb592f18f34deab2452043",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_config.py": "8eb3d5adb7bef997560b788f5714c4ddb80e07dbbac043b3d3f4f80db3faa4ea",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_replacement_tokenizer.py": "48ff6e90d26d23ec1f0bfa3af8a8bdb654815d70df211f82e805fdf96e78e5e9",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_request.py": "ca74dda01ad3d7b2979436215345f198d4cc3c793a0491aca581c33c5858292b",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_response.py": "1eb3f26fd7ba5e8b53b5419125b9ac0f20ced70409b685c956acaddea008d683",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/tests/test_stash.py": "37e8a5a23ba45483526d7cbe0240bdd7f7dffdae934da6a915f1c1f66e9b3998",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/__init__.py": "43d9e569859eaf37b69367eabfb09c7e98e8ed7b9e63b186837fd961f10400af",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/__init__.py": "879c4b96b443f5356d16fb37891d368293f6cf4b2d90cfeaa2bbe14df929658e",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/cgi.py": "79ba98f3dbc82458cc785a95167dffe92940de47a6e4b7c7ce218b8e3821ee4d",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/cgi/test_cgi.py": "60287942dfc29e6fb27255859651fa5e302bef81c6710568424a662a42c07da4",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/config.py": "9b270173370908cd954affd446aabb80bd7980cb5ac2dc303620be92963c14e8",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/constants.py": "364c675b995159ce6fb75e392f48da01f1c5faff29bdf6131706509affeade7c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/handlers.py": "ccaa4c7b487b21909d4f7c12199088b57e8fbc3cb68f3705f4ebc4612a091c8a",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/logger.py": "a7d26967e170196d3c7fc017fa0708b6c8be27df4715745453e722e2ef5434e7",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/pipes.py": "79953d0eb5c79fb5e06055eb1d9f6f7d30c77e3f2e885e6815b36c8ea5c90e8e",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ranges.py": "80ad5dd6bc88bdf00dcfdbe67f4cb139a87d154f5e6c2beed20f45fbe9e52983",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/request.py": "30767f80fa432159317285846e6c5d2fec4a644c9ab4beb5fee349f0cef3c314",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/response.py": "69ef948acb90b4f30b41a6820cb2569477ec524b011b1ea858ea510e7dc0f9db",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/router.py": "f994b9956b3801854b8a66f504b30516060c9d76ca8a0d790db68d5706906ad4",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/routes.py": "b1d813ac53a12325eaa33c0cfb0b4fac70e0661293be5eb55779d1560409f546",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/server.py": "a01cb525cc56b3258b044c41343a74b38daff66f9efab26127b40cfc93c5877c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/__init__.py": "e1250cc6a298f098ab7ba7f2e18abd9cb5a533755d195d6199c07439dd02e72c",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/base.py": "2e5da0cefbc077153ff7608ccf1409ba907103683c81a3318b967e12f9c9288d",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/openssl.py": "85c9c715633d6654f5a74bc21d0e5c4d60da68a861222bae4989aae34811c54b",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/sslutils/pregenerated.py": "de13e631b0bb198e93bf5c6784d1545725be1237c4f149f422ec507226883661",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/stash.py": "1c9e8699443e8648dd25aae2a812e5424ba2aadb2aa8a8f22996cdbb56202d4b",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/utils.py": "208f4d1516efeb29be91799dafffe742d0a8a5d8d28de1c57ca1b97291ab05fd",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/wptserve.py": "d24baf5aeae82f2b1de0716df0495bdf810dfa9e5cefb5dd87740217e421e873",
+      "/Users/alex/code/3rd/web-platform-tests/tools/wptserve/wptserve/ws_h2_handshake.py": "e572ed34743be3c6368d7dc6d0f3a5a113906d01cba6bc25490630025f659fdc"
+    }
+  },
+  "production_validation": {
+    "pending": true,
+    "build_guard_busy": true,
+    "available_executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+    "reason": "Available completed production browser predates these fixes. Shared production build is already running; no duplicate build was queued. Native engine acceptance is complete; a newer production bundle still needs its own run.",
+    "last_completed_browser_run": {
+      "executable_sha256": "59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357",
+      "passing_cases": 82,
+      "cases": 100,
+      "passing_subtests": 8396,
+      "registered_subtests": 8462,
+      "manifest": "ladybird-first100-forms-csp-browser82-20261108.json"
+    },
+    "available_bundle_cohort_run": "Not run. Bundle was published during archival and differs from the executable of the saved 82-case baseline.",
+    "available_bundle_sealed_inputs": "Build/production-build/receipts/20261108-151324-a8c2bca5/source-manifest.json",
+    "available_bundle_predates_final_source_paths": [
+      "document/form_submission.v",
+      "browserjs/document_window_event_binding_jsc.c.v",
+      "html/navigable.v"
+    ]
+  },
+  "development_guard_summary": {
+    "first100-archive-stage-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 103301120
+    },
+    "first100-created-form-diag-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 129384448
+    },
+    "first100-created-form-diag-r5-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 129548288
+    },
+    "first100-doc-all100-r7-000-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 122421248
+    },
+    "first100-doc-all100-r7-001-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 138510336
+    },
+    "first100-doc-all100-r7-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 136855552
+    },
+    "first100-doc-all100-r7-003-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 150913024
+    },
+    "first100-doc-all100-r7-004-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 138067968
+    },
+    "first100-doc-all100-r7-005-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 134053888
+    },
+    "first100-doc-all100-r7-006-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 134348800
+    },
+    "first100-doc-all100-r7-007-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 215580672
+    },
+    "first100-doc-all100-r7-008-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 195837952
+    },
+    "first100-doc-all100-r7-009-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 122175488
+    },
+    "first100-doc-all100-r7-010-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 199065600
+    },
+    "first100-doc-all100-r7-011-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 200622080
+    },
+    "first100-doc-all100-r7-012-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 122372096
+    },
+    "first100-doc-all100-r7-013-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 194183168
+    },
+    "first100-doc-all100-r7-014-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 201228288
+    },
+    "first100-doc-all100-r7-015-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 125501440
+    },
+    "first100-doc-all100-r7-016-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 198918144
+    },
+    "first100-doc-all100-r7-017-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 198754304
+    },
+    "first100-doc-all100-r7-018-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 124698624
+    },
+    "first100-doc-all100-r7-019-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 206290944
+    },
+    "first100-doc-all100-r7-020-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 123518976
+    },
+    "first100-doc-all100-r7-021-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 215941120
+    },
+    "first100-doc-all100-r7-022-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 125304832
+    },
+    "first100-doc-all100-r7-023-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 191283200
+    },
+    "first100-doc-all100-r7-024-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 122454016
+    },
+    "first100-doc-all100-r7-025-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 195379200
+    },
+    "first100-doc-all100-r7-026-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 190955520
+    },
+    "first100-doc-all100-r7-027-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 195411968
+    },
+    "first100-doc-all100-r7-028-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 221036544
+    },
+    "first100-doc-all100-r7-029-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 130891776
+    },
+    "first100-doc-all100-r7-030-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 199442432
+    },
+    "first100-doc-all100-r7-031-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 195133440
+    },
+    "first100-doc-all100-r7-032-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 122126336
+    },
+    "first100-doc-all100-r7-033-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 192741376
+    },
+    "first100-doc-all100-r7-034-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 133791744
+    },
+    "first100-doc-all100-r7-035-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 185253888
+    },
+    "first100-doc-all100-r7-036-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 125714432
+    },
+    "first100-doc-all100-r7-037-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135544832
+    },
+    "first100-doc-all100-r7-038-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 199032832
+    },
+    "first100-doc-all100-r7-039-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 134692864
+    },
+    "first100-doc-all100-r7-040-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 128204800
+    },
+    "first100-doc-all100-r7-041-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 207028224
+    },
+    "first100-doc-all100-r7-042-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 125583360
+    },
+    "first100-doc-all100-r7-043-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 188923904
+    },
+    "first100-doc-all100-r7-044-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 206438400
+    },
+    "first100-doc-all100-r7-045-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 134529024
+    },
+    "first100-doc-all100-r7-046-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 195870720
+    },
+    "first100-doc-all100-r7-047-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137969664
+    },
+    "first100-doc-all100-r7-048-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135626752
+    },
+    "first100-doc-all100-r7-049-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135659520
+    },
+    "first100-doc-all100-r7-050-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137134080
+    },
+    "first100-doc-all100-r7-051-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140738560
+    },
+    "first100-doc-all100-r7-052-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 141721600
+    },
+    "first100-doc-all100-r7-053-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 141737984
+    },
+    "first100-doc-all100-r7-054-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 126746624
+    },
+    "first100-doc-all100-r7-055-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 123191296
+    },
+    "first100-doc-all100-r7-056-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 136921088
+    },
+    "first100-doc-all100-r7-057-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 127238144
+    },
+    "first100-doc-all100-r7-058-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 148094976
+    },
+    "first100-doc-all100-r7-059-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140378112
+    },
+    "first100-doc-all100-r7-060-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 127582208
+    },
+    "first100-doc-all100-r7-061-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137428992
+    },
+    "first100-doc-all100-r7-062-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 142196736
+    },
+    "first100-doc-all100-r7-063-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 147439616
+    },
+    "first100-doc-all100-r7-064-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 193232896
+    },
+    "first100-doc-all100-r7-065-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139329536
+    },
+    "first100-doc-all100-r7-066-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137756672
+    },
+    "first100-doc-all100-r7-067-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139198464
+    },
+    "first100-doc-all100-r7-068-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 142868480
+    },
+    "first100-doc-all100-r7-069-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 143605760
+    },
+    "first100-doc-all100-r7-070-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 153092096
+    },
+    "first100-doc-all100-r7-071-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 143015936
+    },
+    "first100-doc-all100-r7-072-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139067392
+    },
+    "first100-doc-all100-r7-073-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 123879424
+    },
+    "first100-doc-all100-r7-074-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 138887168
+    },
+    "first100-doc-all100-r7-075-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 126042112
+    },
+    "first100-doc-all100-r7-076-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 128794624
+    },
+    "first100-doc-all100-r7-077-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 141950976
+    },
+    "first100-doc-all100-r7-078-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 142131200
+    },
+    "first100-doc-all100-r7-079-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 143065088
+    },
+    "first100-doc-all100-r7-080-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137822208
+    },
+    "first100-doc-all100-r7-081-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 143654912
+    },
+    "first100-doc-all100-r7-082-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 144031744
+    },
+    "first100-doc-all100-r7-083-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 143097856
+    },
+    "first100-doc-all100-r7-084-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140115968
+    },
+    "first100-doc-all100-r7-085-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139952128
+    },
+    "first100-doc-all100-r7-086-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 138444800
+    },
+    "first100-doc-all100-r7-087-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 127205376
+    },
+    "first100-doc-all100-r7-088-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140689408
+    },
+    "first100-doc-all100-r7-089-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 141688832
+    },
+    "first100-doc-all100-r7-090-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 142163968
+    },
+    "first100-doc-all100-r7-091-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 129040384
+    },
+    "first100-doc-all100-r7-092-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 124403712
+    },
+    "first100-doc-all100-r7-093-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 121896960
+    },
+    "first100-doc-all100-r7-094-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 120438784
+    },
+    "first100-doc-all100-r7-095-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135856128
+    },
+    "first100-doc-all100-r7-096-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139870208
+    },
+    "first100-doc-all100-r7-097-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 139378688
+    },
+    "first100-doc-all100-r7-098-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137248768
+    },
+    "first100-doc-all100-r7-099-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140001280
+    },
+    "first100-doc-final-eight-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 142704640
+    },
+    "first100-doc-final-eight-003-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 130072576
+    },
+    "first100-doc-final-eight-004-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 127664128
+    },
+    "first100-doc-final-eight-095-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 130056192
+    },
+    "first100-doc-final-eight-096-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 131989504
+    },
+    "first100-doc-final-eight-097-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 129859584
+    },
+    "first100-doc-final-eight-098-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135036928
+    },
+    "first100-doc-final-eight-099-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 135217152
+    },
+    "first100-doc-probe-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 131252224
+    },
+    "first100-doc-probe-093-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 118472704
+    },
+    "first100-doc-probe-098-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 138051584
+    },
+    "first100-doc-probe-r3-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 134660096
+    },
+    "first100-doc-probe-r3-098-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 132366336
+    },
+    "first100-doc-uploads-r5-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 142917632
+    },
+    "first100-doc-uploads-r5-003-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 141983744
+    },
+    "first100-doc-uploads-r5-004-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 129187840
+    },
+    "first100-doc-uploads-r6-002-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 138264576
+    },
+    "first100-doc-uploads-r6-003-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 146669568
+    },
+    "first100-doc-uploads-r6-004-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 131891200
+    },
+    "first100-document-all100-r7-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 359743488
+    },
+    "first100-document-compile-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5988515840
+    },
+    "first100-document-final-eight-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 286588928
+    },
+    "first100-document-native-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 138395648
+    },
+    "first100-document-native-r2-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 96288768
+    },
+    "first100-document-native-r3-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 132890624
+    },
+    "first100-document-native-r4-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 140312576
+    },
+    "first100-document-native-r5-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 125157376
+    },
+    "first100-document-native-r6-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 137052160
+    },
+    "first100-document-native-r7-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 124256256
+    },
+    "first100-document-probe-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 276496384
+    },
+    "first100-document-probe-r3-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 279642112
+    },
+    "first100-document-r2-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5986451456
+    },
+    "first100-document-r3-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5961695232
+    },
+    "first100-document-r4-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5991579648
+    },
+    "first100-document-r5-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5976653824
+    },
+    "first100-document-r6-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5989122048
+    },
+    "first100-document-r7-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "observed_peak_rss_bytes": 5996986368
+    },
+    "first100-document-uploads-r5-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 281575424
+    },
+    "first100-document-uploads-r6-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 291897344
+    },
+    "first100-form-diag-20261108.json": {
+      "reason": "completed",
+      "child_exit_code": 1,
+      "observed_peak_rss_bytes": 124928000
+    }
+  },
+  "archive": "/Users/alex/.cache/vox/wpt/20261108-first100-native-all-pass.tar.gz",
+  "archive_sha256": "1fee71eefdb9d0d77ad90c321b17a67644856e3bba36e313604503d938a38336",
+  "archive_verified": true,
+  "limitations": [
+    "Native engine run exercises the unchanged cohort without GUI or rendering.",
+    "The same tests are served over HTTP localhost, matching the existing cohort runner. This is a selected imported-test result, not a full official WPT or full LibWeb parity claim.",
+    "Early driver setup errors, development failures and their actual guard exits remain in the raw archive; they receive no all-pass credit."
+  ]
+}

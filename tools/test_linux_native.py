@@ -14,7 +14,7 @@ CASES = [
     "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
-    "libregex/native_abi_test.v",
+    "libregex/compiled_regex_test.v", "libregex/ecmascript_regex_test.v",
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
     "platform/fontconfig_linux_test.v", "browserjs/linux_runtime_test.v",
     "browserjs/jsc_abi_test.v",

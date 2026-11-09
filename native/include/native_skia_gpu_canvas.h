@@ -223,6 +223,47 @@ void gpu_canvas_time_command(char const* name, int length)
 }
 
 // Device rows of the CPU bitmap are top-down RGBA; GPU surfaces are BGRA.
+static bool gpu_canvas_direct_readback_disjoint(std::vector<SkIRect> const& rects)
+{
+    // The direct reader writes BGRA into the destination, then converts each
+    // rectangle in place. Overlap would convert the same pixels twice. Keep
+    // such batches on the staged reader, whose last writer converts its own
+    // independent BGRA buffer exactly once.
+    for (size_t index = 0; index < rects.size(); ++index)
+        for (size_t previous = 0; previous < index; ++previous)
+            if (SkIRect::Intersects(rects[index], rects[previous])) return false;
+    return true;
+}
+
+static void gpu_canvas_readback_diagnostic(char const* kind, size_t regions)
+{
+    static bool const enabled = std::getenv("VOX_GPU_CANVAS_READBACK_DIAGNOSTICS") != nullptr;
+    if (!enabled) return;
+    using Clock = double (*)();
+    static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+    double time = clock ? clock() : -1;
+    if (clock && time < 0) return;
+    static unsigned logged;
+    if (logged++ >= 128) return;
+    std::fprintf(stderr, "VOX_GPU_CANVAS_READBACK kind=%s regions=%zu t_us=%.3f\n",
+        kind, regions, time);
+}
+
+static void gpu_canvas_transfer_diagnostic(char const* direction,
+    VoxRasterBufferPool::Buffer const& buffer, size_t count)
+{
+    static bool const enabled = std::getenv("VOX_GPU_CANVAS_TRANSFER_DIAGNOSTICS") != nullptr;
+    if (!enabled) return;
+    using Clock = double (*)();
+    static auto clock = reinterpret_cast<Clock>(dlsym(RTLD_DEFAULT, "vox_precise_scroll_diagnostic_time"));
+    double time = clock ? clock() : -1;
+    if (clock && time < 0) return;
+    static unsigned logged;
+    if (logged++ >= 128) return;
+    std::fprintf(stderr, "VOX_GPU_CANVAS_TRANSFER direction=%s pixels=%zu reused=%d t_us=%.3f\n",
+        direction, count, int(buffer.reused), time);
+}
+
 void gpu_canvas_flush()
 {
     auto* frame = s_gpu_canvas.get();
@@ -292,7 +333,8 @@ void gpu_canvas_flush()
         }
         if (api && api->read_direct && data && !gpu_canvas_verify()
             && std::getenv("VOX_GPU_CANVAS_DIRECT_READBACK") && pitch <= INT_MAX
-            && !gpu_canvas_partial_readback() && !verify_partial) {
+            && !gpu_canvas_partial_readback() && !verify_partial
+            && gpu_canvas_direct_readback_disjoint(frame->rects)) {
             std::vector<VoxGraphitePixelRegion> direct;
             for (size_t index = 0; index < frame->rects.size(); ++index) {
                 auto const& rect = frame->rects[index];
@@ -302,6 +344,7 @@ void gpu_canvas_flush()
             }
             CGContextFlush(frame->destination);
             if (api->read_direct(direct.data(), int(direct.size()))) {
+                gpu_canvas_readback_diagnostic("frame", direct.size());
                 if (gpu_canvas_diagnostics())
                     std::fprintf(stderr, "VOX_GPU_CANVAS_DIRECT_READBACK rects=%zu\n", direct.size());
                 for (auto const& view : direct)
@@ -315,15 +358,24 @@ void gpu_canvas_flush()
                 return;
             }
         }
-        std::vector<std::vector<uint32_t>> pixels(read_rects.size());
+        std::vector<VoxRasterBufferPool::Lease> pixels;
+        pixels.reserve(read_rects.size());
         std::vector<VoxGraphitePixelRegion> views;
         for (size_t index = 0; index < read_rects.size(); ++index) {
             auto const& rect = read_rects[index];
             auto const& tile = frame->tiles[index];
             int width=rect.isEmpty()?1:rect.width(),height=rect.isEmpty()?1:rect.height();
-            pixels[index].resize(size_t(width)*height);
+            auto buffer = s_gpu_canvas_transfer_pool.lease(size_t(width) * height);
+            if (!buffer) {
+                s_gpu_canvas_read_failed = true;
+                s_deferred_layer_frame_failed = true;
+                frame->cpu_stale = frame->gpu_valid = false;
+                return;
+            }
+            gpu_canvas_transfer_diagnostic("read", *buffer, size_t(width) * height);
             views.push_back({rect.isEmpty()?0:rect.left()-tile.left(),rect.isEmpty()?0:rect.top()-tile.top(),
-                width,height,width*4,reinterpret_cast<uint8_t*>(pixels[index].data())});
+                width,height,width*4,reinterpret_cast<uint8_t*>(buffer->pixels.get())});
+            pixels.push_back(std::move(buffer));
         }
         bool read = api && data && api->read(views.data(), int(views.size()));
         // Retry a failed transfer, but never repeat a successful synchronous
@@ -340,7 +392,7 @@ void gpu_canvas_flush()
                 for(int y=rect.top();y<rect.bottom();++y) for(int x=rect.left();x<rect.right();++x) {
                     if(dirty.contains(x,y)) continue;
                     auto* cpu=data+size_t(y)*pitch+size_t(x)*4;
-                    auto* gpu=reinterpret_cast<uint8_t*>(pixels[index].data())
+                    auto* gpu=reinterpret_cast<uint8_t*>(pixels[index]->pixels.get())
                         +(size_t(y-rect.top())*rect.width()+x-rect.left())*4;
                     int const order[]={2,1,0,3};
                     for(int channel=0;channel<4;++channel) error=std::max(error,std::abs(int(cpu[channel])-int(gpu[order[channel]])));
@@ -356,7 +408,7 @@ void gpu_canvas_flush()
                 auto const& rect = read_rects[index];
                 for (int row = 0; row < rect.height(); ++row) {
                     auto const* cpu = data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4;
-                    auto const* gpu = reinterpret_cast<uint8_t const*>(pixels[index].data() + size_t(row) * rect.width());
+                    auto const* gpu = reinterpret_cast<uint8_t const*>(pixels[index]->pixels.get() + size_t(row) * rect.width());
                     for (int column = 0; column < rect.width(); ++column) {
                         int error = 0;
                         int const order[4] {2, 1, 0, 3};
@@ -382,13 +434,13 @@ void gpu_canvas_flush()
                 auto const& rect = read_rects[index];
                 if (std::getenv("VOX_PARALLEL_GPU_CANVAS_READBACK")) {
                     vox_swap_red_blue_rows(data + size_t(rect.top()) * pitch + size_t(rect.left()) * 4,
-                        pitch, reinterpret_cast<uint8_t const*>(pixels[index].data()),
+                        pitch, reinterpret_cast<uint8_t const*>(pixels[index]->pixels.get()),
                         size_t(rect.width()) * 4, size_t(rect.width()), size_t(rect.height()));
                     continue;
                 }
                 for (int row = 0; row < rect.height(); ++row)
                     swap_red_blue_pixels(data + size_t(rect.top() + row) * pitch + size_t(rect.left()) * 4,
-                        reinterpret_cast<uint8_t const*>(pixels[index].data() + size_t(row) * rect.width()),
+                        reinterpret_cast<uint8_t const*>(pixels[index]->pixels.get() + size_t(row) * rect.width()),
                         size_t(rect.width()));
             }
         }
@@ -430,12 +482,19 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
     frame.opaque_upload = std::getenv("VOX_GPU_CANVAS_CACHED_BLURS") != nullptr;
     for (size_t index = 0; index < frame.tiles.size(); ++index) {
         auto const& rect = frame.tiles[index];
-        std::vector<uint32_t> pixels(size_t(rect.width()) * rect.height());
+        size_t count = size_t(rect.width()) * rect.height();
+        auto buffer = s_gpu_canvas_transfer_pool.lease(count);
+        if (!buffer) return false;
+        auto* pixels = buffer->pixels.get();
+        // Upload tiles may extend outside the CPU bitmap. Preserve the old
+        // vector's transparent initialization even when this storage is reused.
+        std::fill_n(pixels, count, uint32_t(0));
+        gpu_canvas_transfer_diagnostic("upload", *buffer, count);
         auto visible = rect;
         if (visible.intersect(SkIRect::MakeWH(int(CGBitmapContextGetWidth(frame.destination)),
                 int(CGBitmapContextGetHeight(frame.destination))))) {
             for (int row = visible.top(); row < visible.bottom(); ++row)
-                swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels.data()
+                swap_red_blue_pixels(reinterpret_cast<uint8_t*>(pixels
                         + size_t(row - rect.top()) * rect.width() + visible.left() - rect.left()),
                     data + size_t(row) * pitch + size_t(visible.left()) * 4, size_t(visible.width()));
             if (frame.opaque_upload) {
@@ -447,7 +506,7 @@ bool gpu_canvas_upload(GpuCanvasFrame& frame)
             }
         }
         auto upload = frame.queued_upload ? api->upload_queued : api->upload;
-        if (!upload || !upload(int(index), reinterpret_cast<uint8_t const*>(pixels.data()), rect.width() * 4))
+        if (!upload || !upload(int(index), reinterpret_cast<uint8_t const*>(pixels), rect.width() * 4))
             return false;
     }
     frame.gpu_valid = true;

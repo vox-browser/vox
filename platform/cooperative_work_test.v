@@ -26,17 +26,75 @@ fn test_cooperative_work_throttles_yields_and_preserves_the_outer_scope() {
 	assert state.yields == 0
 	cooperative_work_checkpoint_at(deadline)
 	assert state.yields == 1
+	next_deadline := cooperative_work_state_.next_yield_ns
 	mut inner := begin_cooperative_work(state, cooperative_work_test_callback)
 	inner.finish()
-	cooperative_work_checkpoint_at(deadline + 15_000_000)
+	cooperative_work_checkpoint_at(next_deadline - 1)
 	assert state.yields == 1
-	cooperative_work_checkpoint_at(deadline + 16_000_000)
+	cooperative_work_checkpoint_at(next_deadline)
 	assert state.yields == 2
 	outer.finish()
 	outer.finish()
 	cooperative_work_checkpoint_at(deadline + 32_000_000)
 	assert state.yields == 2
 	assert cooperative_work_state_ == unsafe { nil }
+}
+
+fn cooperative_work_slow_test_callback(context voidptr) {
+	mut state := unsafe { &CooperativeWorkObservation(context) }
+	state.yields++
+	time.sleep(40 * time.millisecond)
+}
+
+fn test_slow_host_callback_leaves_time_for_engine_work_before_yielding_again() {
+	retains_start_deadline := os.getenv('VOX_RETAIN_COOPERATIVE_YIELD_START_DEADLINE') != ''
+	state := &CooperativeWorkObservation{}
+	mut scope := begin_cooperative_work(state, cooperative_work_slow_test_callback)
+	defer { scope.finish() }
+	cooperative_work_checkpoint_at(cooperative_work_state_.next_yield_ns)
+	assert state.yields == 1
+	// Use the real checkpoint clock after a callback longer than the interval.
+	cooperative_work_checkpoint()
+	assert state.yields == if retains_start_deadline { 2 } else { 1 }
+	cooperative_work_checkpoint_at(cooperative_work_state_.next_yield_ns)
+	assert state.yields == if retains_start_deadline { 3 } else { 2 }
+}
+
+@[heap]
+struct CooperativeWorkReplacementObservation {
+mut:
+	original    CooperativeWorkScope
+	replacement CooperativeWorkScope
+	deadline    i64
+	identity    voidptr
+	generation  u64
+}
+
+fn cooperative_work_replacing_test_callback(context voidptr) {
+	mut state := unsafe { &CooperativeWorkReplacementObservation(context) }
+	state.original.finish()
+	state.replacement = begin_cooperative_work(context, cooperative_work_replacing_test_callback)
+	state.deadline = cooperative_work_state_.next_yield_ns
+	state.identity = voidptr(cooperative_work_state_)
+	state.generation = cooperative_work_state_.generation
+	time.sleep(20 * time.millisecond)
+}
+
+fn test_finished_callback_cannot_reschedule_its_replacement_scope() {
+	mut state := &CooperativeWorkReplacementObservation{}
+	state.original = begin_cooperative_work(state, cooperative_work_replacing_test_callback)
+	identity := voidptr(cooperative_work_state_)
+	generation := cooperative_work_state_.generation
+	cooperative_work_checkpoint_at(cooperative_work_state_.next_yield_ns)
+	defer { state.replacement.finish() }
+	assert voidptr(cooperative_work_state_) == state.identity
+	assert cooperative_work_state_.generation == state.generation
+	assert cooperative_work_state_.next_yield_ns == state.deadline
+	assert !cooperative_work_state_.delivering
+	$if prealloc {
+		assert state.identity == identity
+		assert state.generation != generation
+	}
 }
 
 fn test_finished_prealloc_work_reuses_its_record_without_retaining_the_last_target() {

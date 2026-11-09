@@ -13,6 +13,7 @@ fn C.vox_adblock_worker_get_pid() int
 fn C.vox_adblock_worker_memory_bytes(&u64) int
 fn C.vox_adblock_worker_evaluate(&u8, uint, &&u8, &uint) int
 fn C.vox_adblock_worker_release() int
+fn C.vox_adblock_worker_release_idle() int
 fn C.vox_adblock_worker_begin_lifetime_watch() int
 fn C.vox_adblock_worker_send_frame(int, int, u64, &u8, uint, int) int
 fn C.vox_adblock_worker_read_frame(int, &int, &u64, &&u8, &uint, int) int

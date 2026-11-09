@@ -36,7 +36,7 @@ fn compute_scalar_font_property(id PropertyID, value &dom.StyleValue,
 			} else { return none }
 		}
 		.font_style {
-			if box.value is FontStyleStyleValue && box.value.angle_value_ == none {
+			if box.value is FontStyleStyleValue && box.value.angle_value_ == unsafe { nil } {
 				StyleComputer.compute_font_style(value)
 			} else if box.value is KeywordStyleValue
 				&& box.value.keyword_ in [.normal, .italic, .oblique] {

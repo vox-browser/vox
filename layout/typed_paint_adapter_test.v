@@ -2395,7 +2395,7 @@ fn test_svg_paths_retain_exact_geometry_and_stroke_style_for_native_replay() {
 	assert command.svg().stroke_miterlimit == 7
 }
 
-fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_bounds() {
+fn test_svg_path_hit_testing_includes_stroke_outside_transformed_path_bounds() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display: block }</style><svg width="200" height="100" viewBox="0 0 100 50"><path id="target" transform="translate(10 5)" d="M 10 10 H 20 V 20 H 10 Z" fill="none" stroke="blue" stroke-width="10"/></svg>')
 	root := layout_document_typed_in_viewport(document, 240, 140)
 	target := document.get_element_by_id('target') or { panic('missing SVG path') }
@@ -2414,8 +2414,8 @@ fn test_svg_path_hit_testing_rejects_stroke_inflation_outside_transformed_path_b
 	stroke_margin_hit := mutable_document.element_from_point(45, 25) or {
 		panic('missing fallback hit outside path bounds')
 	}
-	assert stroke_margin_hit.as_node().unique_id() != target.as_node().unique_id()
-	assert mutable_document.elements_from_point(45, 25).all(it.as_node().unique_id() != target.as_node().unique_id())
+	assert stroke_margin_hit.as_node().unique_id() == target.as_node().unique_id()
+	assert mutable_document.elements_from_point(45, 25).any(it.as_node().unique_id() == target.as_node().unique_id())
 }
 
 fn test_author_css_replaces_an_svg_transform_presentation_attribute_once() {
@@ -3125,7 +3125,7 @@ fn test_iframe_replays_the_hosted_document_as_a_nested_display_list() {
 	assert result.clip_radii.top_left == painting.CornerRadius{8, 8}
 }
 
-fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_test_clip() {
+fn test_url_svg_clip_path_retains_paint_mask_and_clips_hit_geometry() {
 	document := html.parse_document('<!doctype html><style>html, body { margin: 0 } svg { display:block }</style><svg width="140" height="120" viewBox="0 0 140 120"><defs><clipPath id="cut"><circle cx="60" cy="50" r="35" clip-rule="evenodd"/></clipPath></defs><rect id="target" x="10" y="0" width="100" height="100" fill="rgb(101 102 103)" clip-path="url(#cut)"/></svg>')
 	_ = layout_document_typed_in_viewport(document, 320, 200)
 	mut mutable_document := unsafe { &dom.Document(document) }
@@ -3153,10 +3153,12 @@ fn test_url_svg_clip_path_is_a_retained_alpha_mask_not_a_painted_child_or_hit_te
 	assert component.path_data[compatibility_clip_path_segment_stride] == 4
 	assert component.transform == [f64(1), 0, 0, 1, 0, 0]!
 
-	// StackingContext::hit_test() does not consult SVG mask alpha.
+	// Referenced clip paths also constrain hit geometry; alpha masks do not.
 	target := document.get_element_by_id('target') or { panic('missing target') }
 	hit := mutable_document.element_from_point(12, 12) or { panic('missing target hit') }
-	assert hit.as_node().unique_id() == target.as_node().unique_id()
+	assert hit.as_node().unique_id() != target.as_node().unique_id()
+	inside := mutable_document.element_from_point(60, 50) or { panic('missing clipped target hit') }
+	assert inside.as_node().unique_id() == target.as_node().unique_id()
 }
 
 fn test_url_svg_clip_path_prepends_target_and_resource_transforms() {

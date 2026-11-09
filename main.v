@@ -604,6 +604,8 @@ struct LoadedPage {
 	markup       string
 	status       string
 	content_type string
+	response_headers []adblock.ResponseHeader
+	response_status u16
 	javascript_url_source ?&dom.Document
 	// Compact navigation produces a response locally; this is the source
 	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
@@ -1186,6 +1188,8 @@ fn fetch_page_with_scope(address string, base string, scope &browsernet.RequestS
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
+		response_headers: browsernet.response_headers(response)
+		response_status: u16(response.status_code)
 	}
 	debug_timing_checkpoint('main_resource_cache', cache_start)
 	return loaded
@@ -1575,6 +1579,9 @@ $if test {
 			if script_element.is_html_element() {
 				mut script_model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) })
 				script_model.set_already_started(true)
+			} else if script_element.is_svg_element() {
+				mut script_model := html.svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(script_element) })
+				script_model.set_already_processed(true)
 			}
 			// Legacy standalone test fixtures supply sources after parsing. Inline scripts
 			// still precede deferred external scripts and non-async modules, whose
@@ -1610,8 +1617,14 @@ $if test {
 					element: script_element
 				}
 			} else {
+				code := script_element.as_node().text_content() or { '' }
+				if document.should_block_inline_content(script_element, 'script', code) { continue }
+				starting_line := if script_element.is_html_element() {
+					html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) }).source_line_number()
+				} else { 1 }
 				source = browserjs.ScriptSource{
-					code: script_element.as_node().text_content() or { '' }
+					starting_line: starting_line
+					code: code
 					url: document.url.serialize()
 					source_type: if type_ == 'module' { .module } else { .script }
 					element: script_element
@@ -2054,10 +2067,10 @@ fn javascript_bootstrap() string {
 		// resolved URL, as HTMLHyperlinkElementUtils and HTMLLinkElement do.
 		'    if(s.namespaceURI==="http://www.w3.org/1999/xhtml"){const __reflect=function(name){Object.defineProperty(o,name,{configurable:true,get:function(){return __compactNativeAttributes.read(s,name,true)||"";},set:function(v){__compactNativeAttributes.write(s,name,v,true);}});};__reflect("title");if(["a","area","link","form"].includes(s.tagName))__reflect("rel");if(["link","style","script","source"].includes(s.tagName))__reflect("type");if(s.tagName==="input"||s.tagName==="button"){const states=s.tagName==="input"?__compactInputTypes:__compactButtonTypes;Object.defineProperty(o,"type",{configurable:true,enumerable:true,get:function(){const v=(__compactNativeAttributes.read(s,"type",true)||"").toLowerCase();return states.includes(v)?v:states[0];},set:function(v){__compactNativeAttributes.write(s,"type",v,true);}});}if(["link","style","source","meta"].includes(s.tagName))__reflect("media");if(s.tagName==="select")__compactSelect(o,s);if(s.tagName==="option")__compactOption(o,s);if(["a","area","link","base"].includes(s.tagName))Object.defineProperty(o,"href",{configurable:true,get:function(){return __queryElements(s.bridgeKey,"elementURL","href");},set:function(v){__compactNativeAttributes.write(s,"href",v,true);}});}',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"src",{get:function(){return __compactNativeAttributes.read(s,"src",true)||"";},set:function(v){__setElementSource(s,v);},configurable:true});',
-		'    if(s.namespaceURI!=="http://www.w3.org/2000/svg"&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video"))Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);__setAttribute(s,"height",s.height);},configurable:true}});',
+		'    if(s.namespaceURI!=="http://www.w3.org/2000/svg"&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video"))Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"?__queryElements(s.bridgeKey,"geometry","inputWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"&&Number(s.width)>2147483647)s.width="0";__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"?__queryElements(s.bridgeKey,"geometry","inputHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"&&Number(s.height)>2147483647)s.height="0";__setAttribute(s,"height",s.height);},configurable:true}});',
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;},configurable:true}, videoHeight:{get:function(){return +s.videoHeight||0;},configurable:true}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;},configurable:true});',
-		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});__compactMutationFlush(true);};o.blur=function(){__state.operations.push({op:"blur",target:s.bridgeKey});__compactMutationFlush(true);};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
+		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});__compactMutationFlush(true);};o.blur=function(){__state.operations.push({op:"blur",target:s.bridgeKey});__compactMutationFlush(true);};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.appendChild=function(child){return __compactInsertNode(o,child,null,false);};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
 		'    const __styleObject=__styleProxy(s); Object.defineProperty(o,"style",{get:function(){return __styleObject;},set:function(v){__styleObject.cssText=v;},enumerable:true,configurable:true}); if(!__elementApply(__elementRecordGet,__elementRecords,[o]))o.classList=__classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__ladybirdImageBind(o,s.bridgeKey);delete o.addEventListener;delete o.removeEventListener;} if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="script"||s.tagName==="link"||s.tagName==="iframe"))__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
 		'    __compactDocumentElementBindings(o,s);',
 		'  } return s.__object;',
@@ -2098,6 +2111,7 @@ fn javascript_bootstrap() string {
 		compact_computed_style_bootstrap(),
 		compact_accessibility_internals_bootstrap(),
 		compact_keyboard_internals_bootstrap(),
+		compact_testdriver_click_bootstrap(),
 		'__ladybirdElementWheelSetResolver(function(key){const s=__resolveElementState(key);return s?__element(s):null;});',
 		compact_named_elements_bootstrap(),
 		'window.__ladybirdSnapshot = function () { if(typeof __nativeElementQuery==="function"){const states=JSON.parse(__nativeElementQuery(JSON.stringify({key:"",action:"snapshotStates",selector:""})));for(const state of states)if(!__state.elements[state.bridgeKey])__state.elements[state.bridgeKey]=state;} return JSON.stringify(__state); };',
@@ -2408,6 +2422,7 @@ fn set_javascript_element_attribute(mut element dom.Element, source_name string,
 	mut input_model := unsafe { &html.HTMLInputElementModel(nil) }
 	if namespace_uri == none && element.is_html_element() && element.local_name() == 'input' {
 		input_model = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(&element) })
+		configure_browser_input_image_fetch(&element, false)
 	}
 	if new_value := value {
 		if attribute := element.get_attribute_node(name) {
@@ -2968,6 +2983,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	ensure_compact_browser_navigable(document) or { return false }
 	if !compact_document_can_run_script(document) { return false }
+	install_browser_input_image_fetch_hooks(document)
 	if runtime.engine == .libjs {
 		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
 		return true
@@ -3012,6 +3028,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	blob_host.install_constructor() or {
 		messages << 'JavaScript Blob constructor: ${err.msg()}'
+		return false
+	}
+	mutable_runtime.install_file_reader_binding() or {
+		messages << 'JavaScript FileReader bindings: ${err.msg()}'
 		return false
 	}
 	mut query_host := browserjs.URLSearchParamsHost.create(document) or {
@@ -3166,6 +3186,19 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	element_wheel_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
+		return false
+	}
+	mutable_runtime.define_value_host_function('__ladybirdSyntheticClickEvent', fn [runtime] (_ voidptr, values []voidptr) !voidptr {
+		if values.len != 1 { return error('Invalid synthetic click event') }
+		event := runtime.native_event(values[0])!
+		if event.type_name() != 'click' || event.interface_ !in [.mouse_event, .pointer_event] {
+			return error('Invalid synthetic click event')
+		}
+		mut mouse := unsafe { &dom.MouseEvent(event) }
+		mouse.is_synthetic_activation_ = true
+		return values[0]
+	}) or {
+		messages << 'JavaScript synthetic click binding: ${err.msg()}'
 		return false
 	}
 	mutable_runtime.install_script_element_event_binding() or {

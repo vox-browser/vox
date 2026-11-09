@@ -79,7 +79,7 @@ fn export_calculated_property_value(value CalculatedStyleValue) CalculatedStyleV
 	}
 	return CalculatedStyleValue{
 		serialization: value.serialization.clone()
-		numeric_type_: value.numeric_type_
+		numeric_type_: calculated_numeric_type_storage(value.numeric_type())
 		calculation_context: CalculationContext{
 			percentages_resolve_as: value.calculation_context.percentages_resolve_as
 			resolve_numbers_as_integers: value.calculation_context.resolve_numbers_as_integers

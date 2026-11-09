@@ -314,8 +314,8 @@ fn run_compact_document_script(owner &dom.Document, source browserjs.ScriptSourc
 		mut candidate := source.element
 		if candidate == none { candidate = source.external_element }
 		if element := candidate {
-			if element.is_html_element() && element.local_name() == 'script' && !element.as_node().root().is_shadow_root() {
-				document.set_current_script(unsafe { &dom.HTMLScriptElement(element) })
+			if (element.is_html_element() || element.is_svg_element()) && element.local_name() == 'script' && !element.as_node().root().is_shadow_root() {
+				document.set_current_script(element)
 			}
 		}
 	}

@@ -15,7 +15,8 @@ pub fn rasterize_outer_shadow(width int, height int, outer RoundedRect, content 
 	}
 	if canvas_quick_reject(fast_bounds, matrix, &rc) { return pixels }
 	if !rc.is_empty && color >> 24 != 0 {
-		mut blitter := canvas_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255, .src_over) or { return none }
+		mut blitter := choose_color_blitter(mut pixels, width * 4, color, f32(color >> 24) * inv_255,
+			.src_over, canvas_rgba_uses_legacy()) or { return none }
 		// drawRRect delegates square corners to drawRect and ovals to drawOval.
 		mut local := outer.path()
 		if outer.radii[..].all(it == 0) { local = rect_path(outer.bounds) }

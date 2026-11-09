@@ -113,8 +113,19 @@ fn (mut router WorkerPortRouter) take_outgoing() ![][]u8 {
 	mut total := 0
 	for token, mut proxy in router.proxies {
 		for record in proxy.take_disabled_transport_messages()! {
-			if record.transfers.len != 0 { return error('Nested MessagePort transfer is unavailable') }
-			payload := encode_worker_message(NativeArrayBufferTransferRecord{serialized: record.serialized})!
+			mut serialized := record.serialized
+			if record.transfers.len != 0 {
+				for item in record.transfers {
+					if item.type_ !in [.array_buffer, .resizable_array_buffer] {
+						return error('Nested MessagePort transfer is unavailable')
+					}
+				}
+				// Local sends now carry native transfer memory. Flatten buffer
+				// entries at the existing worker wire boundary, preserving aliases.
+				data := html.structured_deserialize_with_transfer_in_context(record, router.settings.realm(), router.runtime.native_clone_deserialization_context())!
+				serialized = html.structured_serialize(data.deserialized)!
+			}
+			payload := encode_worker_message(NativeArrayBufferTransferRecord{serialized: serialized})!
 			if payload.len > worker_message_max_bytes - 12 { return error('Worker MessagePort frame exceeds the limit') }
 			mut bytes := 'VXP1'.bytes()
 			worker_message_write_u64(mut bytes, token)

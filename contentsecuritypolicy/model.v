@@ -120,7 +120,8 @@ pub fn new_request(target url.URL) Request {
 
 pub fn (request &Request) destination_is_script_like() bool {
 	if destination := request.destination {
-		return destination in [.script, .xslt, .audio_worklet, .paint_worklet]
+		return destination in [.script, .xslt, .audio_worklet, .paint_worklet,
+			.service_worker, .shared_worker, .worker]
 	}
 	return false
 }
@@ -137,6 +138,7 @@ pub mut:
 
 pub struct ElementContext {
 pub:
+	dom_element                 ?&dom.Element
 	is_html_or_svg               bool = true
 	is_script                    bool
 	is_style                     bool
@@ -190,6 +192,9 @@ pub type ViolationEventDispatcher = fn (&SecurityPolicyViolationEvent)
 pub struct GlobalContext {
 pub mut:
 	url             url.URL
+	source_file ?url.URL
+	line_number u32
+	column_number u32
 	referrer        ?url.URL
 	policy_list     &PolicyList = unsafe { nil }
 	reports         []ViolationReport

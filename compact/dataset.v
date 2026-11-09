@@ -45,10 +45,10 @@ Object.defineProperty(DOMStringMap,"prototype",{writable:false});
 Object.defineProperty(DOMStringMap.prototype,Symbol.toStringTag,{value:"DOMStringMap",configurable:true});
 const __datasetMaps=new WeakMap();
 function __compactElementDataset(object,state){
- if(state.namespaceURI!=="http://www.w3.org/1999/xhtml"&&state.namespaceURI!=="http://www.w3.org/2000/svg")return;
+ if(state.namespaceURI!=="http://www.w3.org/1999/xhtml"&&state.namespaceURI!=="http://www.w3.org/2000/svg"&&state.namespaceURI!=="http://www.w3.org/1998/Math/MathML")return;
  Object.defineProperty(object,"dataset",{get:function(){
   const own=__elementApply(__elementRecordGet,__elementRecords,[this]);
-  if(!own||(own.namespaceURI!=="http://www.w3.org/1999/xhtml"&&own.namespaceURI!=="http://www.w3.org/2000/svg"))throw new TypeError("Illegal dataset receiver");
+  if(!own||(own.namespaceURI!=="http://www.w3.org/1999/xhtml"&&own.namespaceURI!=="http://www.w3.org/2000/svg"&&own.namespaceURI!=="http://www.w3.org/1998/Math/MathML"))throw new TypeError("Illegal dataset receiver");
   let map=__datasetMaps.get(this);if(map)return map;
   const request=function(op,name,value){
    let result;

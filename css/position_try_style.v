@@ -1,0 +1,75 @@
+module css
+
+import dom
+
+struct PositionTryStyleOverride {
+	target dom.AbstractElement
+	declaration &CSSStyleProperties
+}
+
+pub fn compute_position_try_style(target dom.AbstractElement, declaration &CSSStyleProperties) &ComputedProperties {
+	mut computer := css_style_computer_for(target.element().document())
+	previous := computer.position_try_override_
+	computer.position_try_override_ = PositionTryStyleOverride{target:target,declaration:declaration}
+	defer { computer.position_try_override_ = previous }
+	return computer.compute_style(target)
+}
+
+pub fn install_position_try_style(mut target dom.AbstractElement, properties &ComputedProperties) {
+	target.set_computed_properties(computed_properties_to_dom(properties))
+}
+
+@[heap]
+struct PositionTryRuleLookup {
+	name string
+	scope &StyleScope
+mut:
+	rule ?&CSSRule
+	layer_index int = -1
+}
+
+fn position_try_rule_in_scope(scope &StyleScope, name string) ?&CSSRule {
+	scope.build_rule_cache_if_needed()
+	lookup := &PositionTryRuleLookup{name:name,scope:scope}
+	for sheet in scope.stylesheets_for_cascade_origin(.author) {
+		sheet.for_each_effective_rule(.preorder,fn [lookup] (rule &CSSRule) {
+			if rule.type_ == .position_try && rule.position_try_name() == lookup.name {
+				mut mutable_rule := unsafe { &CSSRule(rule) }
+				index := lookup.scope.custom_function_layer_index(mutable_rule.qualified_layer_name())
+				if index >= lookup.layer_index {
+					mut found := unsafe { &PositionTryRuleLookup(lookup) }
+					found.rule = rule
+					found.layer_index = index
+				}
+			}
+		})
+	}
+	if rule := lookup.rule { return rule }
+	node := scope.node or { return none }
+	shadow := node.as_shadow_root() or { return none }
+	host := shadow.host() or { return none }
+	return position_try_rule_in_scope(css_style_scope_for_node(host.as_node()),name)
+}
+
+pub fn position_try_rule_for_element(target dom.AbstractElement, name string) ?&CSSRule {
+	properties := target.computed_properties() or { return none }
+	computed := computed_properties_from_dom(properties) or { return none }
+	scope := computed.position_try_reference_scope_ or { style_scope_for_abstract_element(target) }
+	return position_try_rule_in_scope(scope,name)
+}
+
+fn position_try_reference_scope(element dom.AbstractElement, cascaded &CascadedProperties) &StyleScope {
+	if shadow := cascaded.property_source_shadow_root(.position_try_fallbacks) { return css_style_scope_for_shadow_root(shadow) }
+	source := cascaded.property_source(.position_try_fallbacks)
+	if source != unsafe { nil } {
+		declaration := unsafe { &CSSStyleProperties(source) }
+		if declaration.parent_rule != none { return css_style_scope_for_document(element.document()) }
+	}
+	return style_scope_for_abstract_element(element)
+}
+
+fn position_try_target_has_geometry(target dom.AbstractElement) bool {
+	styled := target.layout_node() or { return false }
+	layout := styled.layout_node_ or { return false }
+	return layout.has_geometry_
+}

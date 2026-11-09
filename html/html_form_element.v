@@ -320,7 +320,7 @@ pub fn (form &HTMLFormElementModel) pick_an_encoding() string {
 	if input := element.get_attribute('accept-charset') {
 		for label in input.fields() {
 			if candidate := encoding.get_an_encoding(label) {
-				return candidate
+				return if candidate in ['replacement', 'UTF-16BE', 'UTF-16LE'] { 'UTF-8' } else { candidate }
 			}
 		}
 		return 'UTF-8'
@@ -410,7 +410,7 @@ pub fn (mut form HTMLFormElementModel) mutate_action_url(parsed_action dom.URL, 
 	})!
 }
 
-pub fn (mut form HTMLFormElementModel) submit_as_entity_body(parsed_action dom.URL, entry_list []FormDataEntry, encoding_type FormEncodingType, _ string, user_involvement UserNavigationInvolvement) ! {
+pub fn (mut form HTMLFormElementModel) submit_as_entity_body(parsed_action dom.URL, entry_list []FormDataEntry, encoding_type FormEncodingType, encoding_name string, user_involvement UserNavigationInvolvement) ! {
 	mut body := []u8{}
 	mut content_type := ''
 	match encoding_type {
@@ -419,7 +419,7 @@ pub fn (mut form HTMLFormElementModel) submit_as_entity_body(parsed_action dom.U
 			content_type = 'application/x-www-form-urlencoded'
 		}
 		.multipart {
-			serialized := serialize_to_multipart_form_data(entry_list)
+			serialized := serialize_to_multipart_form_data_with_encoding(entry_list, encoding_name)!
 			body = serialized.serialized_data.clone()
 			content_type = 'multipart/form-data; boundary=${serialized.boundary}'
 		}

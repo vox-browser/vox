@@ -53,10 +53,10 @@ fn identical_layout_value_is_safe(value &StyleValue) bool {
 		RGBColorStyleValue {
 			value.relative_origin_.len == 0 && value.r_.len == 1 && value.g_.len == 1
 				&& value.b_.len == 1 && value.alpha_.len == 1
-				&& identical_layout_value_is_safe(&value.r_[0])
-				&& identical_layout_value_is_safe(&value.g_[0])
-				&& identical_layout_value_is_safe(&value.b_[0])
-				&& identical_layout_value_is_safe(&value.alpha_[0])
+				&& identical_layout_value_is_safe(&value.r_.value)
+				&& identical_layout_value_is_safe(&value.g_.value)
+				&& identical_layout_value_is_safe(&value.b_.value)
+				&& identical_layout_value_is_safe(&value.alpha_.value)
 		}
 		GridTrackSizeListStyleValue { device_layout_grid_is_projection_invariant(value) }
 		else { computed_page_value_is_scalar(value) && !device_layout_value_contains_lengths(value) }

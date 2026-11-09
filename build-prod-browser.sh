@@ -140,10 +140,6 @@ case "$gc_mode" in
         ;;
 esac
 
-# LibRegex's translated C++ wrappers reuse the same pinned Rust backend as
-# upstream. Build the repository-owned archive before compiling the browser.
-python3 "$repo_dir/tools/build_regex_backend.py"
-
 case "$(uname -m)" in
     arm64|aarch64) default_vcpkg_triplet=arm64-osx-dynamic ;;
     x86_64|amd64) default_vcpkg_triplet=x64-osx-dynamic ;;
@@ -202,16 +198,11 @@ if [ -z "$rust_cargo" ]; then
 fi
 # A fresh Cargo build fails to load its proc-macro crates (rustc reports
 # "can't find crate for thiserror_impl") whenever MACOSX_DEPLOYMENT_TARGET is
-# set. Build the Rust helpers without it; they keep rustc's lower default
+# set. Build the JPEG XL helper without it; it keeps rustc's lower default
 # minimum, which the release accepts.
-if [ -n "$rust_cargo" ]; then
-    rust_target_dir="$cache_dir/rust-yuv"
-    env -u MACOSX_DEPLOYMENT_TARGET PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$rust_target_dir" \
-        "$rust_cargo" build --quiet --release --locked \
-        --manifest-path "$repo_dir/native_yuv_rust/Cargo.toml"
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_RUST_YUV"
-    extra_ldflags="$extra_ldflags -L$rust_target_dir/release -lladybird_v_yuv"
-fi
+# The browser exports the planar converter from media/yuv_bridge.v. Its pure V
+# implementation preserves the previous decoder's integer color quantization.
+extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_V_YUV"
 jpegxl_library=""
 if [ -n "$rust_cargo" ]; then
     jpegxl_target_dir="$cache_dir/rust-jpegxl"
@@ -433,11 +424,13 @@ if [ "$v_prod" = 1 ]; then set -- "$@" -prod; fi
 # helper symbols. Do not initialize their unused native libraries at startup.
 export V_MACOS_V3_SOURCE_MANIFEST=1
 export V_MACOS_V3_C_ERROR_DIR="$VOX_BUILD_RECEIPT_DIR/worker-sources"
+# Compile the module directory so FastC enables full language support, including
+# the generic JSON transport. Its single-file mode uses a restricted parser.
 python3 "$repo_dir/tools/production_source_manifest.py" compile --root "$repo_dir" \
     --inventory "$VOX_BUILD_RECEIPT_DIR/source-inventory.json" \
     --component-dir "$VOX_BUILD_RECEIPT_DIR/worker-sources" \
     --command "$v_compiler" "$@" -cflags "$helper_cflags" -ldflags "-Wl,-dead_strip,-dead_strip_dylibs" \
-    -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini/main.v"
+    -o "$helper_tmp" "$repo_dir/tools/adblock-worker-mini"
 chmod 755 "$helper_tmp"
 if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - --entitlements "$repo_dir/packaging/Vox.entitlements.plist" "$helper_tmp" >/dev/null

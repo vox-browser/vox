@@ -99,6 +99,7 @@ fn install_static_browser_image_fetch_hooks(document &dom.Document, deferred map
 
 fn install_static_browser_image_fetch_hooks_with_loader(document &dom.Document,
 	deferred map[string]bool, image_loader ?&BrowserImageRequestLoader) {
+	install_browser_input_image_fetch_hooks(document)
 	for element in css.query_selector_all(document.as_node(), 'img') {
 		if !element.is_html_element() { continue }
 		image := unsafe { &dom.HTMLImageElement(element) }

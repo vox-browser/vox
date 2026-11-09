@@ -590,9 +590,9 @@ integer arguments as one `i32` array.
 | Non-anti-aliased path fills | Rotated `clearRect()` and `drawImage()`, oversized blur masks | `cpuraster.fill_path` (`SkScan::FillPath`): `SkEdge`'s 26.6 and 16.16 fixed-point lines and forward-differenced quadratic and cubic segments, `SkBasicEdgeBuilder` (poly and clipped builds, vertical-edge combining), `SkTQSort`, `walk_edges()` for winding and even-odd fills and `walk_simple_edges()` for convex paths, the 16.16 clip limit, conservative bounds rounding and `SkScanClipper`; 200,000 random fills of lines, quads, conics and cubics over five seeds exact in both default and `-prod -gc none` builds. Inverse fills are not ported |
 | `skia.draw_glyph_run` (`vox_skia_canvas_glyphs`) | Canvas 2D `fillText()` without filters | `cpuraster.fill_canvas_glyphs` on macOS, with CoreText doing exactly what `SkTypeface_Mac` and `SkScalerContext_Mac` ask of it (the font from the file's bytes, `SkCTFontCreateExactCopy()` at the strike's text size, advances and bounding rects through `fTransform`, glyphs drawn into the offscreen `CGBitmapContext`, CoreGraphics' inline point and size transforms evaluated without fused multiply-adds): `SkScalerContextRec`'s relaxed 2x2, `computeMatrices(kVertical)` with its Givens rotation, the quarter-pixel `SkPackedGlyphID` positions and rounding, `generateMetrics()`'s bounds rounding and outset, `SkTMaskGamma<3, 3, 3>`'s default sRGB tables selected by the paint's luminance color (a gradient's average stop color, gray for patterns), the blob's conservative quick reject from the typeface bounds, and `Draw::paintMasks()` through the existing blitters and anti-aliased clip; glyphs over 256 pixels per em are the 64-point strike's outlines (`generatePath()`'s 4x request through `SkCTPathGeometrySink`) filled like `SkCanvas::drawPath()`, concatenated onto the canvas matrix in `SkM44`'s float arithmetic or mapped first under a shader; color typefaces make ARGB32 strikes drawn whole by `Draw::drawSprite()` (sprite blitters, or a clamped image shader where the clip cuts them), and glyphs without outlines stay masks at path sizes; 80,000 random runs over two seeds (22,710 of them drawing, about 1,300 path-sized) and 10,000 color emoji runs (2,960 drawing) exact in both default and `-prod -gc none` builds. Declines faces past the first of a collection (Skia's CoreText manager cannot open them either), color glyphs 8192 or more pixels wide and non-finite positions; Linux uses the FreeType outline, bitmap and COLRv0 routes; COLRv1 remains pending |
 | `skia.draw_path` and `draw_glyph_run` color filters | Canvas 2D `filter` lists of grayscale, sepia, saturate, hue-rotate, invert, opacity, brightness and contrast on fills, strokes and `fillText()` | `cpuraster.ColorFilter`: `SkImageFilters::ColorFilter()`'s composed `SkMatrixColorFilter`s, moved into the paint by `SkCanvasPriv::ImageToColorFilter()` and folded by `SkBlitter::Choose()`'s `RemoveColorFilter()`: `filterColor4f()`'s one-pixel highp pipeline for a solid color (then the legacy blitter when it fits in bytes, else the constant pipeline, highp through `unbounded_uniform_color` when a channel exceeds alpha), `SkColorFilterShader` stages after gradients and patterns, `CheckFastPath()` and `nothingToDraw()` seeing the filter, and the filtered luminance color for glyph mask gamma; 200,000 random filtered draws over two seeds exact in both default and `-prod -gc none` builds. Filters that change transparent black decline (they need an image filter layer) |
-| `skia.draw_path` and `draw_glyph_run` blur layers | Canvas 2D `filter: blur()` on fills, strokes and `fillText()` | `cpuraster.draw_blur_layer`: `AutoLayerForImageFilter` and `internalSaveLayer()` for a scale-translate CTM (layer bounds from the clip bounds outset by the blur kernel and the paint's fast bounds rounded out with skif's epsilon, the transparent padding pixel, `SkM44::postTranslate()` for the layer matrix), `internalDrawDeviceWithFilter()` with `insetForSaveLayer()` and the layer-space sigma, SkBlurEngine's `Raster8888BlurAlgorithm` (`eval_blur_passes()`, the float Gaussian pass below sigma 2, `ThreeBoxApproxPass` with `ScaledDividerU32` up to 135) inside `Builder::blur()`'s bounds, and `FilterResult::draw()`'s sprite or image-shader draw-back with the composite operation; 60,000 random `SkImages::MakeWithFilter()` blurs and 60,000 random blurred canvas draws over two seeds exact in both default and `-prod -gc none` builds. Rotations, blenders that change transparent black, sigmas over 135, blurs mixed with other filters and fonts without typeface bounds decline |
-| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: scaled drop shadows, mixed and rotated filter layers, SVG filter graphs, and image filters on `drawImage()` |
-| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Untiled outer shadows and nested inner shadows with rectangular outer casters use V. Retained text shadows on macOS also use V for scale/translate transforms, including all smoothing modes, large outlines, variable and color fonts. Intersecting/rounded inner casters, rotated/skewed text layers, sigma over 135 and tiled surfaces retain native fallback; Linux bitmap and COLRv0 glyphs use V composition; COLRv1 remains pending |
+| `skia.draw_path` and `draw_glyph_run` filter layers | Canvas 2D filters on fills, strokes and text | `cpuraster.draw_filter_layer` and `draw_blur_filter_chain` cover scale/translate blur and drop-shadow layers, every composite mode, color matrices around one spatial filter and throughout repeated blur lists. Rotated layers, chains containing further shadow nodes, sigmas over 135, transparency-flooding matrices and tiling retain fallback. Native fixtures and comparison receipts are linked below. |
+| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: further spatial chains, general rotated layers, SVG graphs, integer-source spatial resampling, source clipping on spatial draws, large-sigma rescaling and tiling. Direct image filters already cover aligned sources, fractional-source surfaces, deferred conversion and paint alpha. |
+| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Untiled outer shadows and strictly nested inner shadows with rectangular or proven containing rounded outer casters use V. Retained text shadows on macOS also use V for scale/translate transforms, including all smoothing modes, large outlines, variable and color fonts. Intersecting or unproven inner contours, rotated/skewed text layers, sigma over 135 and tiled surfaces retain native fallback; Linux bitmap and COLRv0 glyphs use V composition; COLRv1 remains pending |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
@@ -1127,3 +1127,490 @@ contracted operations. See the
 This validates the explicit CPU policy; the existing macOS Dawn dispatch is
 unchanged. Direct image-space spatial filters, remaining spatial chains,
 rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
+
+
+### Portable Linux shadow blending (2026-11-08)
+
+Portable box shadows now select blending for the explicit RGBA surface instead of native N32. Two native fixtures freeze faint inner and outer shadows on both platforms. The isolated regression tests pass on macOS and Linux production builds; 20,000 existing Linux inner-shadow attempts also match, including 5,364 painted results.
+See the [verification receipt](gg-migration/shadow-rgba-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Linux rounded-clip convexity (2026-11-08)
+
+Axis-preserving transforms now retain rounded-rectangle convexity on Linux, matching immutable SkPathData. The legacy macOS path behavior is preserved. A frozen mask regression covers the quarter-turn rounding difference. Both platforms match 20,000 rounded-rectangle and difference-clip cases; Linux also matches 20,000 outer-shadow attempts, including 3,285 painted results.
+See the [verification receipt](gg-migration/rounded-clip-convexity-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Nested rounded inner shadows (2026-11-08)
+
+Portable inner shadows now accept strictly nested rounded contours when bounding-box corners or concentric corner ellipses prove containment. Six native fixtures cover curved outer bounds, scales, rotations, antialiased overlap and concentric insets. The 20,000-attempt corpora match on macOS (5,134 painted), production macOS (5,167 painted) and Linux (5,155 painted). All 27 CPU raster test files pass; the FMA audit reports zero contracted operations. Intersections and shared edges still require the native fallback.
+See the [verification receipt](gg-migration/rounded-inner-shadows-20261108.json).
+The browser still retains Skia dependencies; no Skia-free link or run is claimed.
+
+
+### Color matrices within repeated blur chains (2026-11-08)
+
+Repeated blur layers now retain color matrices between passes. Identity blurs
+keep the matrices deferred; real blurs resolve them into N32 pixels before
+sampling. Eight native fixtures cover clearing composites, patterns, scaled
+layers, unpremultiplied targets and dashed strokes. Canvas integration tests
+exercise fills, strokes and text.
+
+Of 20,000 attempts, 16,044 supported comparisons match on macOS at seed
+20261106, 16,079 in production mode at seed 20261108, and 16,985 on Linux
+at seed 20261106. All 27 CPU raster test files and focused Linux production
+tests pass. The FMA audit reports zero contracted operations. See the
+[blur/color-chain receipt](gg-migration/blur-color-chains-20261108.json).
+Drop-shadow chains, general rotated layers, SVG graphs, image-space spatial
+filters and native bridges still retain browser Skia dependencies.
+
+
+### Spatial filters on pixel-aligned source images (2026-11-08)
+
+Direct source-image filters now use V for integer-aligned premultiplied sRGB
+subsets at full paint alpha, with one source pixel per device pixel. The
+port retains unknown source-image boundaries for identity shadow sampling.
+Eight native fixtures cover real and identity blur/shadow passes, subsets,
+color-filter chains and clearing composites. A canvas integration test also
+checks the direct CPU route against the native command.
+
+Of 20,000 attempts, 18,973 supported comparisons match on both platforms
+at seed 20261106, and 19,016 match in production mode at seed 20261108.
+The existing Linux filtered-image corpus matches 13,283 supported draws.
+All 27 CPU raster files, canvas integration tests and focused Linux
+production tests pass. The FMA audit reports zero contracted operations.
+See the [aligned-image receipt](gg-migration/aligned-image-layers-20261108.json).
+General source-image transforms, fractional subsets, paint alpha and color
+conversion still require work, as do the remaining filter graphs and native
+bridges. The browser retains Skia dependencies.
+
+
+### Deferred source-image color state (2026-11-08)
+
+Pixel-aligned source filters now retain unpremultiplied sRGB and Display P3
+storage until the native filter graph converts it. Color matrices, identity
+passes and shadow foregrounds keep that conversion deferred. Image shadow
+merges also retain the original layer coordinates, preserving fractional
+offset rounding. Twelve new native fixtures cover these branches; the
+canvas integration test now exercises an unpremultiplied filtered image.
+
+Of 20,000 attempts, 18,792 supported comparisons match on both platforms at
+seed 20261106, and 18,771 match in production mode at seed 20261108. The
+existing Linux image-filter corpus matches 13,330 supported draws. All 27
+CPU raster files, canvas integration tests and focused Linux production tests
+pass; the FMA audit reports zero contracted operations. See the
+[source color-state receipt](gg-migration/source-image-color-state-20261108.json).
+Nonintegral mappings, source-image paint alpha, remaining spatial chains,
+rotated layers, SVG graphs, tiling and native bridges retain Skia dependencies.
+
+
+### Fractional source-image filter surfaces (2026-11-08)
+
+Fractional in-bounds source rectangles now draw into an antialiased source
+surface before filtering under scale/translation, including flips. Color-only
+filters use the same surface policy. Source-image filter evaluation keeps its
+original layer coordinates. Six native fixtures cover color conversion,
+clearing composites, blur chains, fractional shadows and flipped sources.
+
+At seed 20261106, 18,821 supported comparisons match out of 20,000 on both
+platforms. Production runs match 4,698 of 5,000 at seed 20261108 and 4,694
+of 5,000 at seed 20261109. All 27 CPU raster files, focused Linux production
+tests and canvas integration tests pass; the FMA audit reports zero contracted
+operations. HTML continues to round source rectangles; the integration test
+checks its existing output and the direct fractional service separately.
+
+The full current Linux browser typecheck passes in 50.18 seconds with 4.72 GB
+sampled peak RSS after refreshing the VM UI2 dependency. Skia libraries were
+available during that check. See the
+[fractional-image receipt](gg-migration/fractional-image-layers-20261108.json).
+Source-image paint alpha, integer-source resampling, rotations, remaining
+spatial chains, SVG graphs, tiling and native bridges retain Skia dependencies.
+
+
+### Paint alpha before source-image filters (2026-11-08)
+
+Filtered source images now keep paint alpha as a deferred DstIn filter before
+the canvas filter graph. Real blurs resolve it into pixels; identity passes
+and shadow foregrounds retain it through sampling and color filters. Invalid
+shadow blurs still sample SourceGraphic with its paint alpha. Ten native
+fixtures cover raw and fractional sources, sRGB and Display P3, unpremultiplied
+storage, zero alpha, clearing blends and repeated blur/color lists.
+
+Of 20,000 attempts, 18,735 supported comparisons match on both platforms at
+seed 20261106, and 18,801 match in production mode at seed 20261108. The
+existing Linux image-filter corpus matches 13,685 supported draws. All 27
+CPU raster files, canvas integration tests and focused Linux production tests
+pass; the FMA audit reports zero contracted operations. See the
+[paint-alpha receipt](gg-migration/source-image-paint-alpha-20261108.json).
+Integer-source spatial resampling, source clipping, general rotated layers,
+remaining spatial chains, SVG graphs, tiling and native bridges still retain
+Skia dependencies.
+
+
+### Resampling integer source images before blur (2026-11-08)
+
+Scaled, flipped and fractionally translated integer source rectangles now
+resolve their sampling, source color conversion, paint alpha and preceding
+color filters together before the first real blur. Identity blurs preserve
+that ordering. Native bounds analysis chooses clamp or decal and the backing
+image or strict subset, including linear mipmaps. Eight new frozen native
+fixtures match on both platforms.
+
+At seed 20261108, 8,310 of 20,000 attempts are supported and exact on both
+macOS and Linux. Production mode matches 8,349 at seed 20261109. The original
+Linux filtered-image corpus matches 14,397 supported draws. All 27 CPU raster
+files, the canvas integration test and focused Linux production tests pass;
+the FMA audit reports zero contracted operations. Counts include no-ops and
+explicit declines. See the [resampling receipt](gg-migration/resampled-image-blurs-20261108.json).
+
+Source clipping, scaled shadow foregrounds, all-identity lists, near-integer
+transforms, general rotated layers, remaining spatial chains, SVG graphs,
+tiling and native browser bridges remain open. The browser still links Skia.
+
+
+### Source clipping before spatial filters (2026-11-08)
+
+Source rectangles that cross an image edge now clip before the source-to-layer
+mapping. Quick rejection retains the original draw bounds, including clearing
+blends whose clipped image has no visible pixels. This covers the previously
+supported aligned and fractional-source shadows and resampled blur chains.
+Shadow restores also reproduce FilterResult's nearest sampling within 1e-3 of
+an integer translation while preserving the original geometry. A two-pixel
+regression failed before that fix and matches the frozen native result after it.
+
+At seed 20261108, 16,855 of 20,000 attempts are supported and exact on both
+macOS and Linux. Production mode matches 16,803 at seed 20261109. All 27 CPU
+raster files, canvas integration and focused Linux production tests pass. The
+full canonical Linux browser typecheck passes with Skia available; no Skia-free
+browser compile/link/run is established. The FMA audit reports zero contracted
+operations. Counts include no-ops and explicit declines; nine new native
+fixtures and the initial failing checks are in the
+[clipping receipt](gg-migration/spatial-source-clipping-20261108.json).
+
+Scaled shadow foregrounds, all-identity and nearly integer source mappings,
+general rotated layers, remaining spatial chains, SVG graphs, intersecting
+boolean shadows, large-sigma rescaling, tiling and native browser bridges
+continue to retain Skia dependencies.
+
+
+### Deferred color through source-image identity blurs (2026-11-08)
+
+When every mapped blur is an identity and a color matrix remains, integer
+source images now retain their sampling, color conversion, alpha and matrix
+list through the final image draw. The original expanded draw bounds still
+control quick rejection, including clearing blends. Six new native fixtures
+cover mipmaps, flips, P3, source clipping and a fully transparent clearing draw.
+
+At seed 20261108, 17,281 of 20,000 attempts are supported and exact on both
+platforms; production mode matches 17,298 at seed 20261109. All 27 CPU raster
+files, canvas integration and focused Linux production tests pass. The FMA
+audit reports zero contracted operations. Counts include no-ops and explicit
+declines. See the [identity-blur receipt](gg-migration/identity-image-blurs-20261108.json).
+
+Identity lists without color matrices, nearly integer deferred mappings,
+scaled shadow foregrounds and the previously listed graph/native work remain
+open. The browser still links Skia.
+
+
+### Source-image identity blurs without color matrices (2026-11-08)
+
+Integer source images now also restore all-identity blur lists when no color
+matrix remains. Paint alpha stays in the raster pipeline, while unfiltered
+full-alpha draws retain the native legacy eligibility. Linear mipmap sampling
+correctly declines the legacy bitmap context and uses the raster pipeline.
+Six new native fixtures cover these routes, including downsampling, P3,
+unpremultiplied pixels, flips, clearing blends and fractional translations.
+
+All 20,000 attempts are supported and exact on both macOS and Linux at seed
+20261108, and in production mode at seed 20261109. The original Linux
+filtered-image corpus matches 15,427 supported draws. All 27 CPU raster files,
+canvas integration and focused Linux production tests pass; the FMA audit
+reports zero contracted operations. The full canonical Linux typecheck also
+passes with Skia available. Counts include no-ops. See the
+[identity-sampling receipt](gg-migration/identity-image-sampling-20261108.json).
+
+Nearly integer deferred mappings, scaled shadow foregrounds and the previously
+listed graph/native work remain open. The browser still links Skia; a full
+Skia-free browser compile/link/run remains unverified.
+
+
+### Nearly integer source-filter mappings (2026-11-08)
+
+Source filters now reproduce applyTransform's replacement of requested
+sampling by default bilinear sampling for nearly integer incoming transforms,
+and the final restore's separate reduction to nearest. Real blurs preserve
+raw sRGB pixels when no deferred effect requires resolution, including
+unpremultiplied storage. Color effects resolve with the original transform.
+Slight scales with integer translations also use the native sprite shortcut,
+including clearing blends whose clip lies inside the image. Thirteen new
+native fixtures cover these rules and factored canvas transforms.
+
+Of 20,000 near-integer attempts, 19,217 supported draws match on each platform
+at seed 20261108; production mode matches 19,184 at seed 20261109. Factored
+transforms match 19,265 on each platform and 19,207 in production mode. The
+original Linux image-filter corpus matches 15,427 supported draws. All 27
+CPU raster files pass, as does the expanded image fixture file on macOS and
+Linux production builds. Canvas integration, the FMA audit (zero contracted
+operations) and the full canonical Linux typecheck pass. Counts include
+no-ops and explicit declines. Initial sampling/sprite failures and two
+transient, unrelated regex compile failures are retained in the
+[near-integer receipt](gg-migration/near-integer-image-filters-20261108.json).
+
+Rounding-induced layer crops, scaled shadow foregrounds, remaining spatial
+chains, rotations, SVG graphs, intersecting boolean shadows, large-sigma
+rescaling, tiling and native browser bridges remain open. The Linux typecheck
+uses Skia development files; a Skia-free browser compile/link/run remains
+unverified.
+
+
+### CPU mipmap exhaustion review verification (2026-11-08)
+
+The review's proposed clamp beyond the mipmap pyramid was checked against
+the pinned native CPU renderer. Its SkMipmapAccessor calls getLevel(), which
+rejects a missing upper level and reloads the base image. When only the lower
+level is missing, linear mode retains the available upper level without a
+lerp. The separate extractLevel() API clamps, but neither these image shaders
+nor the legacy bitmap context use that API.
+
+Eight direct native shader cases match on both platforms. They distinguish
+the base image's clamped edge (192) from the final 1x1 mip's average (96), at
+scales .125, .1, .05 and .025 in nearest and linear mipmap modes. The portable
+regressions pass in default and production builds on macOS and Linux. Another
+2,000 macOS and 10,000 Linux mipmap-level comparisons pass. Production sampling
+arithmetic is unchanged; comments explain the intentional fallback. See the
+[native review verification](gg-migration/mipmap-review-native-20261108.json).
+
+
+### Scaled source-image drop shadows (2026-11-08)
+
+Integer source images under real drop-shadow blurs now resample through the
+portable filter layer. The blur input resolves sampling, color conversion,
+paint alpha and preceding matrices together. The foreground retains those
+effects until the merge, avoiding an extra 8-bit quantization. Its original
+global mapping is preserved before translating the merge surface. The blur's
+sampling region is independent of the foreground extent. Reversed axes use
+sorted double-precision integer filter bounds.
+
+Eight new native fixtures cover scaled subsets, nearest sampling, P3 and
+unpremultiplied sources, paint alpha, color matrices, downscaling, reversed
+axes and fractional translation. All 86 image-filter reference fixtures pass
+on macOS and Linux. Of 20,000 random scaled-shadow attempts, 17,958 supported
+draws match exactly on each platform; production mode matches 17,975 at a
+second seed. The broader Linux filtered-image cohort matches 16,195 supported
+draws. Counts include no-ops and explicit declines.
+
+All 27 CPU raster files, the focused FastC image tests, Linux production image
+tests and HTML canvas integration pass. The FMA audit reports zero contracted
+operations (175 explicit). The filter still declines identity or invalid
+resampled shadow blurs, nearly integer shadow mappings and rounding-induced
+layer crops. General spatial chains, rotations, SVG graphs, boolean shadows,
+large-sigma rescaling, tiling and native/GPU bridges remain. The browser still
+links Skia; a Skia-free Linux browser compile/link/run is unverified. See the
+[scaled-source shadow receipt](gg-migration/scaled-source-image-shadows-20261108.json).
+
+
+### Nearly integer source-image shadows (2026-11-08)
+
+Real drop shadows now share the blur's raw-subset shortcut at nearly integer
+source mappings. The shadow input can preserve unpremultiplied sRGB storage,
+while the foreground keeps its original mapping and deferred effects until
+merge. Color-converting sources retain the existing resampling path. Seven
+new native fixtures cover both routes, source subsets, requested sampling
+and factored canvas transforms. All 93 native image-filter fixtures pass on
+macOS and Linux.
+
+Of 20,000 attempts, 19,116 supported draws match on each platform; production
+mode matches 19,032 at another seed. A separately factored Linux cohort
+matches 19,075. The new raw-shadow regression fails without the change.
+Focused C/FastC tests, Linux production image tests and HTML integration pass.
+This small forwarding change reuses the preceding slice's broader checks.
+Counts include no-ops and explicit declines. Rounding-induced crops and
+identity/invalid resampled shadow blurs still decline, and the remaining
+filter graphs, native/GPU services and Skia-free browser link/run remain
+unfinished. See the [near-integer shadow receipt](gg-migration/near-integer-image-shadows-20261108.json).
+
+
+### Deferred identity and rejected source-image shadow blurs (2026-11-08)
+
+Source-image shadows now keep sampling, source conversion, paint alpha,
+color matrices and the SrcIn tint deferred when the blur is an identity.
+Rejected blur nodes tint SourceGraphic, while the foreground still retains
+its preceding matrices. Compatible offset sampling follows the native rules;
+nearest sources requiring a separate linear resolve surface still decline.
+The merge drops empty shadow/color-filter results from its bounds, preserving
+the native surface origin and floating-point sampling.
+
+Nine additional native fixtures bring the image-filter corpus to 102 exact
+cases on both platforms. Of 20,000 identity-shadow attempts, 9,499 supported
+draws match on each platform. Production mode matches 9,461 at another seed,
+and the broader Linux image-filter cohort matches 16,430. Counts include
+no-ops and explicit declines. The production cohort originally found a
+one-byte origin error; its frozen regression produces 127 before the fix
+and the native 128 afterward, with the whole-image hash matching as well.
+
+All 27 CPU raster test files, C/FastC image regressions, Linux production
+image tests and HTML integration pass. The FMA audit reports zero contracted
+operations (175 explicit). The Linux browser typecheck passes with Skia
+available; the later bounds correction is compiled and exercised by Linux
+production image tests. Initial concurrent-edit compile failures and a
+comparison rejected by the input guard are retained without pass credit.
+The differential harness now enables globals for shared module diagnostics.
+Concurrent pixel-readback work is preserved outside these commits and PR
+changes. See the [identity-shadow receipt](gg-migration/identity-source-image-shadows-20261108.json).
+
+Rounding-induced crops, nearest/fractional-offset resolve surfaces, further
+spatial chains, rotations, SVG graphs, boolean shadows, large-sigma rescaling,
+tiling and native/GPU bridges remain. The browser still links Skia, and a
+complete Skia-free Linux browser compile/link/run remains unverified.
+
+
+### Nearest source-image shadows with fractional offsets (2026-11-09)
+
+Nearest source images now resolve their shadow tint, color conversion and
+paint effects before a fractional linear offset. The foreground remains
+deferred. The intermediate retains its transparent pixel border, and its
+restore uses the destination's RGBA color type. Linux therefore keeps the
+raster-pipeline shader where native N32 would be BGRA. The full pixel outset
+is drawn without an unnecessary logical-layer clip; a thin-shadow control
+captures legacy bilerp's nonzero four-bit contribution beyond epsilon-rounded
+bounds. This fixes the second seed's one-byte coverage difference.
+
+Twelve new native fixtures bring the image-filter corpus to 114 exact cases
+on both platforms. Of 20,000 forced-nearest shadow attempts, 19,109 supported
+draws match on each platform; production mode matches 19,131 at a second seed.
+The broader Linux image-filter cohort matches 16,573 supported draws at seed
+20261108. Counts include no-ops and explicit declines. All 27 CPU raster files,
+C/FastC image regressions, HTML integration, the FMA audit (zero contracted
+operations, 175 explicit) and the canonical Linux browser typecheck pass.
+
+The standalone Linux image tests also compile with Skia unavailable to
+pkg-config, then execute all 34 generated test functions. The link command
+contains no Skia libraries; readelf and ldd confirm no direct or transitive
+Skia dependency. Direct dependencies are FreeType, libm and libc. This proves
+the portable image-raster module's build and execution, while the complete
+browser still retains Skia services and uses Skia files for its typecheck.
+A full Skia-free browser compile/link/run remains unverified.
+
+Rounding-induced crops, additional spatial chains, rotated layers, SVG graphs,
+intersecting boolean shadows, large-sigma rescaling, tiling and native/GPU
+bridges remain. The [resolve-surface receipt](gg-migration/resolved-source-image-shadows-20261109.json)
+retains source and binary identities, native hashes, the Linux dependency
+inspection and initial failures without full-cohort pass credit.
+
+
+### Mixed blur and drop-shadow graphs (2026-11-09)
+
+`cda95382d` moves mixed blur/drop-shadow lists off the canvas Skia fallback
+for axis-aligned saved layers: fills, strokes, glyph runs and bitmap-space
+image layers. Color matrices remain deferred through identity passes, resolve
+before real blurs and run before each shadow tint/foreground merge. Each
+shadow evaluates its preceding graph separately for the foreground and blur
+requests. Source bounds are intersected at each graph leaf before request
+unions. Both details have frozen native regression fixtures. Evaluation above
+256 graph visits declines before changing destination pixels.
+
+Native captures supply 21 new fixtures on both macOS and Linux (40 mixed
+filter fixtures total), including repeated shadows, scaled strokes, P3
+patterns, identity passes and clearing composite modes. Random comparisons:
+
+| Platform/build | Seed | Attempts | Exact | Declined |
+| --- | --- | ---: | ---: | ---: |
+| macOS, default | 20261109 | 5,000 | 3,896 | 1,104 |
+| macOS, `-prod -gc none` | 20261110 | 5,000 | 3,811 | 1,189 |
+| Linux ARM64, default | 20261109 | 5,000 | 4,141 | 859 |
+
+All runs finish with unchanged input pins. The two earlier failing prototypes
+are retained in the receipt and covered by regressions. All 27 CPU raster
+test files, focused C/FastC filter-layer tests, and HTML canvas integration
+pass. The FMA audit reports zero contracted operations (175 explicit FMAs).
+The full Linux browser typecheck passes **with Skia available**.
+
+A separate Linux `-prod -gc none` filter-layer binary compiles with Skia
+unavailable to pkg-config and runs all 14 registered test functions, including
+the three new tests. Its only direct dynamic dependencies are FreeType, libm
+and libc; the transitive library list also contains no Skia. This is a
+component proof. The existing production browser predates these changes and
+still links Skia; a complete Skia-free browser compile/link/run is unverified.
+
+Direct source-image mixed graphs, rotated layers, SVG graphs, boolean shadow
+intersections, large-sigma rescaling, tiling and native/GPU bridges remain.
+See the [checks, native fixtures and retained failures](gg-migration/spatial-filter-chains-20261109.json).
+
+
+### Mixed spatial graphs on source images (2026-11-09)
+
+`0554d9a4d` extends the branching evaluator to source images. Pixel-aligned
+sources keep their raw alpha type, color space and paint alpha until each
+consumer resolves them. Fractional source rectangles use MakeFromImage's AA
+surface. The graph evaluates in the original image-filter coordinate system,
+retains the correct known/unknown pixel boundary and applies global shadow
+offsets. Fourteen new native cases cover interleaved matrices, repeated shadows,
+P3/unpremultiplied input, source clipping, empty sources and zero-alpha clears.
+All 128 native source-image fixtures verify on macOS and Linux.
+
+| Platform/build | Sources | Seed | Attempts | Exact | Declined |
+| --- | --- | --- | ---: | ---: | ---: |
+| macOS and Linux, each | Aligned | 20261111 | 10,000 | 8,824 | 1,176 |
+| macOS and Linux, each | Fractional | 20261111 | 10,000 | 8,853 | 1,147 |
+| macOS, `-prod -gc none` | Aligned | 20261112 | 5,000 | 4,381 | 619 |
+| macOS, `-prod -gc none` | Fractional | 20261112 | 5,000 | 4,431 | 569 |
+
+Every cohort ends with unchanged input pins; exact counts include no-ops.
+C and FastC image tests, all 27 raster test files, and HTML canvas image
+integration pass. A fresh FMA audit reports zero contracted operations (175
+explicit). The full Linux browser typecheck passes with Skia development
+files available. The first attempt saw a temporarily incomplete shared
+`main.v`; the successful retry pins its unchanged before/after identity.
+
+A separate Linux production/no-GC image test binary runs all 35 registered
+tests with Skia unavailable to pkg-config. Its direct dependencies are
+FreeType, libm and libc, with no direct or transitive Skia linkage. This is
+component evidence; the full browser still needs Skia. The existing production
+bundle predates this change and cannot validate it.
+
+General resampled integer-source mixed graphs still decline, along with the
+remaining crops, rotations, SVG graphs, boolean shadows, large-sigma/tiling
+paths and native/GPU bridges. The requested Skia-free full-browser Linux
+compile/link/run remains unverified. See the
+[source-image graph checks and native fixtures](gg-migration/source-spatial-chains-20261109.json).
+
+
+### Mixed spatial graphs after source-image resampling (2026-11-09)
+
+`0061d1d78` supports scaled/flipped integer-source images when a real blur
+precedes the first shadow. Each branch resolves the source using its own
+first-blur sample bounds. Reusing one union-sized source surface changes
+clamping and strict/decal sampling. Larger default and production cohorts
+exposed that error; both full inputs and native output hashes are frozen as
+regressions. Ten new native fixtures include those failures, minification,
+identity prefixes, nearest sampling, source clipping and clearing composites.
+All 138 source-image native fixtures verify on macOS and Linux.
+
+| Platform/build | Seed | Attempts | Exact | Declined |
+| --- | --- | ---: | ---: | ---: |
+| macOS, current pinned compiler | 20261113 | 10,000 | 8,288 | 1,712 |
+| Linux ARM64 | 20261113 | 10,000 | 8,288 | 1,712 |
+| macOS, `-prod -gc none` | 20261114 | 5,000 | 4,137 | 863 |
+
+Each accepted cohort finishes with unchanged listed input pins. Counts include
+no-ops. C/FastC image tests, all 27 CPU raster files, HTML canvas integration,
+and the full Linux browser typecheck pass. The latter uses installed Skia
+development files. The FMA audit reports zero contracted operations (189
+explicit with this compiler). Host checks pin compiler executable
+`d39159ce199ca1aa9c8734d2ae4f4a05fd468d79165ad9a1e8a7c0d6b2ac3145`;
+the receipt retains the compiler/test-harness and shared-edit setup failures.
+These concurrent bounded checks establish pixel parity, not performance gains.
+
+The Linux production/no-GC image-test executable runs all 38 registered tests
+with Skia unavailable to pkg-config. Its only direct libraries are FreeType,
+libm and libc, and its transitive library list contains no Skia. This remains
+component evidence: the full browser and the older shared bundle still need
+Skia, and a Skia-free full-browser Linux compile/link/run remains unverified.
+
+Resampled graphs that branch into a shadow before a real blur keep the native
+fallback so their original foreground stays deferred. Remaining crops,
+rotations, SVG graphs, boolean shadows, large-sigma/tiling paths and native/GPU
+bridges also remain. See the
+[resampling graph checks and retained failures](gg-migration/resampled-spatial-chains-20261109.json).

@@ -50,7 +50,7 @@ fn simplify_calc(node CalcNode, calculation_context CalculationContext) CalcNode
 		CalcTreeCounting, CalcChannel {
 			return node
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return node
 		}
 		CalcSum {
@@ -124,6 +124,12 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 		}
 		CalcAnchor {
 			if resolved := resolve_calc_anchor(node, calculation_context, context) {
+				return calc_canonical_leaf(.length, resolved.value)
+			}
+			return node
+		}
+		CalcAnchorSize {
+			if resolved := resolve_calc_anchor_size(node, calculation_context, context) {
 				return calc_canonical_leaf(.length, resolved.value)
 			}
 			return node

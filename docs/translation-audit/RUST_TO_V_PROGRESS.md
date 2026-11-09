@@ -1,0 +1,141 @@
+# Rust-to-V migration progress, 2026-11-08
+
+The regex runtime now builds and executes in V. Its Rust source snapshot, native
+ABI, archive builder, platform build hooks and panic handoff have been removed.
+The owner wrapper, HTML input pattern caller and existing API behavior use the
+translated parser, bytecode compiler, VM and high-level engine. Unicode data
+still comes through the existing ICU bridge. This does not complete LibJS's
+RegExp object integration or replace JavaScriptCore.
+
+The YUV conversion and GB18030 generator were replaced in earlier focused
+commits. Forty Rust-dependent encoding/regex reference-refresh scripts have now
+been retired; the V corpus checker verifies their existing independent gold
+records. Automatic source-gold regeneration is retired, rather than generated
+from the candidate implementation. The C++ Wasm/preparation probes remain.
+See [the developer-tool guide](../../tools/REFERENCE_CORPORA.md).
+
+JPEG XL remains the production Rust dependency, including its Cargo build and
+native test tool. Its V package now covers checked bit reading and integer
+encodings, dimensions/depth, signatures, complete container extraction and
+Huffman prefix decoding. ANS, image metadata/color headers, modular prediction
+and transforms, VarDCT, filters, color conversion, orientation, alpha
+quantization and browser integration remain. The Rust implementation is retained
+until the V decoder can preserve supported static 8-bit sRGB/gray images and
+current rejection/resource limits. This is progress toward removing all Rust,
+not a claim that the repository is Rust-free.
+
+## Executed checks
+
+Current V was used with `-memory-limit 10G -b c -cc clang`; LibJS also uses
+`-enable-globals`. Every expensive check ran through the process-tree memory
+guard. Focused checks used 3 GiB; the two broad LibJS runs and AST comparison
+used the default 12 GiB. GC modes were run separately.
+
+| Check | Result |
+| --- | --- |
+| Frozen regex parser | 3,018 exact AST/error records pass in both GC modes |
+| Frozen full regex engine | 26,544 exact result/capture/output records pass in both GC modes |
+| Empty Unicode class-string repetition | Bounded regression and capture checks pass in both modes; six patterns independently checked with Node v26.8.1 |
+| LibRegex wrapper | Both files execute successfully in both GC modes |
+| HTML input-pattern caller | Executes with GC disabled and unavailable Rust compiler paths, together with the two wrapper files |
+| Broad `test libjs` | **241 passed, 2 failed, 243 total**, in each GC mode; both commands exit 1 |
+| Current upstream AST corpus, `--all` | **100 passed, 0 failed**, exit 0; no case overrides |
+| JPEG XL primitives | 75,776 frozen records, including all half-float encodings; default and no-GC pass |
+| JPEG XL container | Valid/malformed signatures and boxes, part permutations, bounded sections, exact existing RGBA fixture extraction; default and no-GC pass |
+| JPEG XL Huffman | 4,096 frozen parse/symbol/bit-count records plus byte-histogram and 15-bit-code checks; default and no-GC pass |
+| JPEG XL hybrid values | 384 frozen value/max-bit/consumption records plus invalid configurations; default and no-GC pass |
+| V corpus checker | Compiles; all-suite and JPEG XL dry runs validate; replacement and JPEG XL suites actually execute, the latter with no GC and unavailable Rust compiler paths |
+| Build entrypoints | Shell/Python syntax and V build-driver help pass |
+| Windows native smoke | MinGW compilation/linking pass with warnings as errors; no Windows execution for this change |
+
+The full-engine migration oracle could not produce ninety `/v`
+repeated-empty-class-string records: the unchanged source exceeded its 3 GiB
+memory guard. Those cases are excluded, not replaced or overridden. The V
+zero-progress fix is tested separately. Successful source records remain exact.
+
+The broad LibJS failures are `regex_matching_corpus_test.v` and
+`string_case_test.v`. On this host, the existing ICU default-locale uppercase
+path maps U+0386 to U+0391 where the frozen regex fixture expects U+0386, and
+uppercases U+0390 differently from the string fixture's expansion. A direct
+`libicucore` probe reproduces the U+0386 conversion even after setting
+`en_US_POSIX`; explicitly using the root locale retains U+0386. These helper
+implementations and expectations were not changed by the runtime port. The
+failures are retained and do not count as a passing broad suite. No locale
+substitution or golden-data edits were made to obtain a pass.
+
+Sampled peak RSS was 2,403,172,352 bytes for broad default GC and 2,376,679,424
+bytes for broad no-GC. The final four-file JPEG XL default run peaked at
+233,488,384 bytes; the no-GC checker process tree peaked at 250,658,816 bytes.
+These are sampled process-tree sums, not kernel allocation limits or leak
+proofs. Raw per-job receipts were kept while checking and then removed under
+the Build scratch policy.
+
+The JPEG XL reference is `jxl` 0.7.0, crate SHA-256
+`6513ef8722db71eea2b3806ea71b8d9b39481f214af295788d7ceb4d3395eb9e`.
+Ten translated source/license files were byte-verified against that archive.
+The source's unusual half-float subnormal exponent is preserved and documented;
+this is compatibility evidence, not a general IEEE conversion claim.
+
+No production browser build was scheduled or launched for this change. The
+latest successful shared receipt was inspected: input head
+`44096ca073b59f1009a8cd16b930abe70b296f62`, executable SHA-256
+`f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`.
+No production-bundle validation is claimed. New-code evidence comes from the
+executed library and HTML caller tests. V-owned regex lifetime now follows GC
+or the caller's arena; `destroy()` detaches references and does not claim
+immediate native-style reclamation under `-gc none`.
+
+See [LibRegex status](../../libregex/PORT_STATUS.md),
+[LibJS status](../../libjs/PORT_STATUS.md) and
+[JPEG XL status](../../jpegxl/PORT_STATUS.md) for remaining implementation limits.
+
+## Continuation on 2026-11-09
+
+JPEG XL now also has V ANS decoding, combined histogram/symbol readers, context
+maps, LZ77, bounded checkpoints and complete file/metadata/color/transform
+headers. The nine-file V suite passes in both GC modes through the corpus
+checker with unavailable Rust compiler paths. The package's frozen comparisons
+now cover 149,526 source cases, counting individual ANS alias transitions.
+[The entropy/header report](JPEGXL_V_ENTROPY_HEADERS.md) records the new evidence.
+Frame/pixel decoding and production integration remain, so the Rust JPEG XL
+backend, build hooks and native test tool are retained. The LibJS results above
+are historical and were not rerun for this independent JPEG XL slice.
+
+## Frame and modular continuation on 2026-11-09
+
+The V JPEG XL package now also parses frame/restoration headers, permutations,
+complete/incremental section tables, modular transform headers and decision
+trees. All fourteen predictors, weighted predictor error/row state and all
+42 reversible color transforms run in V. Six browser fixtures have exact
+frame/section-chain checks; no pixels are decoded by these chains yet.
+
+The fifteen-file package passes through the V corpus checker in both GC modes
+with unavailable Rust compiler paths. Frozen comparisons now cover 176,133
+source cases, including whole weighted transcripts and individual ANS alias
+transitions. [The frame/modular report](JPEGXL_V_FRAME_MODULAR.md) records the
+source coverage, commands, memory observations and remaining boundaries.
+
+Modular channel reconstruction, palettes/squeeze application, VarDCT, filters,
+pixel conversion/output and browser integration still need completion.
+`native_jpegxl_rust`, its Cargo/CI hooks and `tools/test_jpegxl.py` remain until
+the V path preserves the production decoder's supported images and limits.
+This does not claim that all Rust dependencies, including developer tools, have
+been removed. Prior LibJS/ICU results above were not rerun for this continuation.
+
+## Modular sample continuation on 2026-11-09
+
+V now computes modular pixel properties, reconstructs selected channels from
+entropy residuals and applies complete-image palettes and scalar squeeze
+planes. Four focused test files pass in default and no-GC modes with unavailable
+Rust compiler paths. The source comparisons now total 191,013 cases, with
+stateful property transcripts counted as whole cases. This continuation adds
+four implementation slices after the preceding JPEG XL fifteen-file batch;
+formatting and documentation do not add implementation credit. Broader suites
+and unrelated DOM/performance verification counters were left unchanged.
+
+[The modular sample report](JPEGXL_V_MODULAR_SAMPLES.md) records the exact source
+coverage and commands. The oracle checks the source generic channel branch and
+scalar squeeze paths; specialized/SIMD performance or parity is not claimed.
+Stream selection, transform planning/tiled borders, complete frames, VarDCT,
+filters, final color/pixel output and browser integration remain. Production
+JPEG XL, its Cargo/CI hooks and its native developer test still require Rust.

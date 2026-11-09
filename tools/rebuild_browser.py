@@ -135,6 +135,9 @@ def production_input_path(relative):
         (path.stem.endswith('_test') and path.suffix in {'.py', '.c', '.cpp', '.m', '.mm'})
         or (path.name.startswith('test_') and path.suffix in {'.py', '.c', '.cpp', '.m', '.mm'}))
     return not (relative.startswith(('docs/', 'Tests/'))
+                # Documentation cannot alter browser/helper output by itself.
+                # Explicit compiler-reported inputs remain pinned separately.
+                or path.suffix.lower() == '.md'
                 or relative.endswith('_test.v') or test_tool
                 or relative in {'AGENTS.md', 'OPTIMIZED_SITES.md'})
 

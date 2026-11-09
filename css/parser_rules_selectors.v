@@ -1017,9 +1017,13 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 	// Declaration values borrow the immutable component stream. Growing a second
 	// vector copied every token and retained each growth buffer under prealloc.
 	start_value := input.index
-	for !input.next_token().is(.end_of_file) && !input.next_token().is(.semicolon)
-		&& !(nested == .yes && input.next_token().is(.close_curly)) {
-		input.discard_a_token()
+	if disable_borrowed_declaration_value_scan {
+		for !input.next_token().is(.end_of_file) && !input.next_token().is(.semicolon)
+			&& !(nested == .yes && input.next_token().is(.close_curly)) {
+			input.discard_a_token()
+		}
+	} else {
+		input.index = declaration_value_span_end(&input, nested)
 	}
 	declaration.value = input.values[start_value..input.index]
 
@@ -1195,6 +1199,9 @@ fn (mut parser RuleSelectorParser) convert_to_rule_impl(rule Rule, nested Parser
 	platform.cooperative_work_checkpoint()
 	match rule {
 		AtRule {
+			if equals_ignoring_ascii_case(rule.name, 'position-try') {
+				return parser.convert_to_position_try_rule(rule)
+			}
 			if equals_ignoring_ascii_case(rule.name, 'keyframes')
 				|| equals_ignoring_ascii_case(rule.name, '-webkit-keyframes') {
 				return parser.convert_to_keyframes_rule(rule)
@@ -3276,6 +3283,7 @@ fn parser_component_values_to_string(values []ComponentValue) string {
 }
 
 fn parser_component_values_original_text(values []ComponentValue) string {
+	if text := exact_component_source_copy(values) { return text }
 	$if prealloc {
 		// Nested blocks and functions assemble intermediate strings. Only the
 		// final source spelling belongs to the declaration's owner.
@@ -3561,6 +3569,7 @@ fn (parser RuleSelectorParser) is_valid_qualified_rule_in_the_current_context(ru
 }
 
 fn rule_context_type_for_at_rule_local(name string) RuleContext {
+	if equals_ignoring_ascii_case(name,'position-try') { return .style }
 	if equals_ignoring_ascii_case(name, 'media') {
 		return .media
 	}

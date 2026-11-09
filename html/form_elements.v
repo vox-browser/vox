@@ -582,6 +582,10 @@ pub fn (mut form HTMLFormElementModel) set_submission_hook(hook ?FormSubmissionH
 	form.submission_hook_ = hook
 }
 
+pub fn (form &HTMLFormElementModel) has_submission_hook() bool {
+	return form.submission_hook_ != none
+}
+
 pub fn (form &HTMLFormElementModel) method_state(submitter ?&FormAssociatedElement) FormMethodState {
 	element := if control := submitter { control.element } else { form_model_element(form) }
 	value := if control := submitter {

@@ -480,6 +480,14 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
+	// The measured inline axis is indefinite; the independently resolved
+	// block axis remains a valid input to percentage and aspect-ratio sizing.
+	if source := source_state.try_get(box_styled) {
+		if source.has_definite_height() {
+			box_state.set_content_height(source.content_height())
+			box_state.set_has_definite_height(true)
+		}
+	}
 	box_state.width_constraint = constraint
 	box_state.set_indefinite_content_width()
 	available_width := if constraint == .min_content {
@@ -656,6 +664,18 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 		calculate_min_content_width(mut state, box)
 	} else {
 		calculate_max_content_width(mut state, box)
+	}
+	// A cyclic inline percentage is automatic for intrinsic sizing, but an
+	// independently definite block size can still transfer through the ratio.
+	if preferred_width == none && box.has_preferred_aspect_ratio() {
+		if containing := values.containing_block_used_values() {
+			height := styled.computed_values().size_value(.height)
+			if !height.contains_percentage() || containing.has_definite_height() {
+				if resolved := resolve_layout_content_size(node,height,containing.content_height(),values,false) {
+					inner = intrinsic_content_width_from_aspect_ratio(box,values,resolved)
+				}
+			}
+		}
 	}
 	preferred := styled.computed_values().size_value(.width)
 	// A cyclic percentage preferred size behaves as auto during intrinsic
@@ -1051,7 +1071,7 @@ fn calculate_fit_content_width(mut state LayoutState, box &Box, available_width 
 // boxes the min-content block size is the max-content block size.
 fn calculate_min_content_height(mut state LayoutState, box &Box, width CSSPixels) CSSPixels {
 	node := unsafe { &Node(box) }
-	if node.is_block_container() || node.display().is_table_inside() {
+	if (node.is_block_container() && node.computed_values().writing_mode() == .horizontal_tb) || node.display().is_table_inside() {
 		return calculate_max_content_height(mut state, box, width)
 	}
 	if auto_size := box.auto_content_box_size().height {

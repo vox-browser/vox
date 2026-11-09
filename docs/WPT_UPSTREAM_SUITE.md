@@ -1,8 +1,9 @@
 # Full upstream WPT inventory and execution status
 
-The full upstream checkout has been fetched. **The official runner stopped
-before executing any tests. There is no full-suite Vox pass rate.** The earlier
-3,808-case runs cover Ladybird's imported expectation cohort only.
+The full upstream checkout has been fetched. Vox is now collecting the official
+manifest's testharness variants through a separate adapter described below.
+**There is no completed full-suite Vox pass rate.** The earlier 3,808-case runs
+and newer 6,828-case imported runs cover Ladybird's expectation cohort only.
 
 Upstream is checked out at `/Users/alex/code/3rd/web-platform-tests`, revision
 `57bbaa12ff3515848cc0b3d3791791086a563047`, with all 167,878 tracked files and
@@ -40,7 +41,7 @@ URLs do not establish identical bytes across revisions. The imported HTTP
 server cannot correctly execute the entire upstream suite: it lacks Python
 handlers, generated worker pages, real HTTPS, and WPT's multi-origin setup.
 
-## Execution attempts
+## Earlier official wptrunner attempts
 
 The exact available production executable is pinned at
 `843893a4a6f9e8f235b9fe36cb4184e3df6c038dbf41370f219dcecdc1581bd2`.
@@ -100,3 +101,102 @@ The tool records manifest and checkout identity, retains every manifest type,
 and leaves the subtest count unknown. Future imported-run JSON and Markdown
 reports explicitly identify their subset scope. Neither inventory generation
 nor successful tooling checks count as a completed upstream WPT run.
+
+## Official-manifest testharness adapter (November 8)
+
+Commit `4c03f4713` adds `tools/wpt_upstream_compare.py`. It selects all
+**40,139 testharness variants** directly from the official manifest rather than
+Ladybird expectations. Generated window and worker URLs, query bytes, metadata
+timeouts and HTTPS/service-worker flags remain distinct. Every manifest blob
+hash is checked against the clean pinned Git index; all 167,878 tracked files,
+the manifest identity, loaded server sources, runner and executable/library
+hashes are checked before and during collection. Upstream's own RoutesBuilder
+serves generated pages and worker scripts. Original testharness.js and test
+assertions are unchanged; testharnessreport.js supplies result collection.
+
+The inventory selects 32,432 HTTP, 7,423 HTTPS and 284 HTTP/2 variants. HTTPS
+uses a job-private CA through SSL_CERT_FILE, with no OS trust or resolver edits.
+HTTP/2 is not served by this adapter: those 284 selected variants receive
+explicit `UNSUPPORTED_PROTOCOL` records and cannot count as passing. WebSocket,
+WebSocket-over-TLS and WebTransport services also remain unavailable. Tests
+requiring them stay in the selection and retain their observed failure or
+timeout. Other manifest types remain outside this adapter's execution scope;
+this is **not all 132,460 WPT variants** or an integrated WebDriver endpoint.
+
+All **32 WPT tooling tests pass** under a 3 GiB guard. Fresh processes of
+production executable `8fe20c9aaaa506da42672d47f1f1ffc087fce78f44290e68f14e62d00a1b90de`
+exercise original generated-window, window-global and dedicated-worker pages:
+four pages pass 20 assertions. A selected HTTP/2 variant is retained as
+unsupported, so that collection exits 1. A separate original HTTPS randomUUID
+page passes all three assertions with strict exit 0. The original HTTPS
+secure-contexts dedicated-worker probe reaches its document and harness but
+times out; its exit 1 is retained. These are focused adapter checks, not a
+full-manifest result.
+
+Raw checks: `/Users/alex/.cache/vox/wpt/20261108-upstream-adapter-4c03f4713-raw.tar.gz`,
+SHA-256 `5319db7ee605883514a0c30663d6f88833c97351537477735dbb8fb9405e9e68`.
+Summary: `/Users/alex/.cache/vox/wpt/20261108-upstream-adapter-summary.json`,
+SHA-256 `1c7849b0cd26fb41c733660735182b6ae3582de633c302d35ee55a7c815db49e`.
+Completed Build output and locks have been removed.
+
+The first unfiltered official-manifest collection started with all
+40,139 selected variants, a 4 GiB browser cap and a 12 GiB outer guard. It starts
+after the imported r18 prerequisite job ends, keeping broad suites serial.
+r18 itself is deferred because its SVG production gates fail; this does not
+prevent collecting an honest official-manifest baseline on the latest completed
+image. The full collection pins executable
+`e66ce03390efb5ef5b85d4e9009db6df414ed241d9b9b9217222e5825a767e33`
+under the canonical bundle's shared read lease. Status/completion:
+`/Users/alex/.cache/vox/wpt/20261108-official-testharness-{status,completion}.json`.
+Supervisor: `/Users/alex/.cache/vox/wpt/20261108-official-testharness-supervisor.py`,
+SHA-256 `e3617843d865b1ff67b61006304912da1f779abbdd161dba6606c33c6bd2c47c`.
+It is later stopped with 1,128 preserved partial records to correct the server
+faults below; it does not establish a completed baseline.
+
+To reproduce an unfiltered collection with a new output directory:
+
+```sh
+python3 tools/run_memory_bounded.py \
+  --lock Build/wpt-official-UNIQUE.lock \
+  --report Build/wpt-official-UNIQUE/guard.json -- \
+  python3 tools/wpt_upstream_compare.py \
+    --wpt-root /Users/alex/code/3rd/web-platform-tests \
+    --manifest /Users/alex/.cache/vox/wpt/upstream-57bbaa12-MANIFEST.json \
+    --output Build/wpt-official-UNIQUE/run
+```
+
+## Corrected HTTPS transport and origin setup (November 9)
+
+Commits `1a7c4b72a` and `1ae3f9c5c` repair two adapter faults: direct HTTPS
+responses did not send a TLS close notification, and the stock host-info helper
+could not substitute its missing public-origin port. The adapter now gracefully
+closes completed HTTPS streams and serves all eight ordinary/local/public
+HTTP/HTTPS listeners. The complete stock host-info helper renders through every
+listener; unserved protocol ports also substitute without inventing services.
+Certificates remain verified, and original test bytes/assertions/deadlines are
+unchanged. Deliberately truncated HTTP bodies remain failures.
+
+All **35 WPT tooling tests pass**. Eight original HKDF HTTPS Window/Worker
+variants pass **7,328/7,328** on production executable
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`, with strict
+exits 0, exact counts and unchanged inputs. The executable and six native helper/
+library identities match the preceding four-Worker-timeout result. Recovering
+those previously unreported Worker assertions is a transport measurement repair,
+not an engine-conformance gain. The expected denominator is 7,328 in both runs.
+
+Both interrupted full-collection attempts remain archived: 1,128 records before
+the TLS correction and three before the origin correction, each with exit 143.
+Neither is a complete pass-rate measurement. Detailed hashes, commands and
+focused evidence are in [WPT progress](WPT_CONFORMANCE_PROGRESS.md).
+
+The corrected **40,139-variant testharness collection is running**, using the
+production identity above and 25-case batches under the existing 4 GiB browser /
+12 GiB outer budgets. Its status/completion paths are
+`/Users/alex/.cache/vox/wpt/20261109-official-testharness-corrected-{status,completion}.json`.
+The supervisor is
+`/Users/alex/.cache/vox/wpt/20261109-official-testharness-corrected-supervisor.py`,
+SHA-256 `5ebfc77637f077b1a1ffaceb9b79b63568dbbf39657c73e6b2cb067afe170b44`.
+All variants stay selected; unsupported h2 cases remain explicit failures.
+WebSocket, WebTransport, DNS, IP address-space emulation and non-testharness
+execution retain separate setup/integration work. **Full WPT coverage and a
+completed overall pass rate remain unavailable.**

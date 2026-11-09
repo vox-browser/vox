@@ -6,6 +6,7 @@
 module fileapi
 
 import crypto.rand
+import platform
 import storageapi
 import url as liburl
 
@@ -76,6 +77,10 @@ pub fn BlobURLStore.create() &BlobURLStore {
 }
 
 pub fn blob_url_store() &BlobURLStore {
+	// The first lookup can happen while an evicted document is being retired.
+	// Process-wide store records must outlive every document payload arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if file_api_blob_url_store == unsafe { nil } {
 		file_api_blob_url_store = BlobURLStore.create()
 	}
@@ -97,6 +102,10 @@ pub fn generate_new_blob_url(settings BlobURLSettingsObject) !string {
 }
 
 pub fn (mut store BlobURLStore) add_entry(object BlobURLObject, settings BlobURLSettingsObject) !string {
+	// Map growth and generated URL keys also belong to process storage.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+
 	// Source's GC::Ref variants cannot contain a missing platform object.
 	// ID-only MediaSource descriptors belong to the standalone adapter.
 	if object.kind == .blob {
@@ -175,6 +184,9 @@ pub fn (entry BlobURLEntry) snapshot() liburl.BlobURLEntry {
 
 // Removal serializes with the fragment; resolve deliberately excludes it.
 pub fn (mut store BlobURLStore) remove_entry(url liburl.URL) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+
 	store.entries.delete(url.serialize(false))
 }
 
@@ -191,6 +203,8 @@ pub fn (mut store BlobURLStore) run_unloading_cleanup_steps(settings BlobURLSett
 			urls_to_remove << url
 		}
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	for url in urls_to_remove {
 		store.entries.delete(url)
 	}

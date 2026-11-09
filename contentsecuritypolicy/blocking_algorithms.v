@@ -217,6 +217,30 @@ fn script_source_list(policy &Policy) ?[]string {
 	return none
 }
 
+// The engine can disable string code generation without replacing intrinsic
+// eval. Reading policy must not itself report a violation.
+pub fn string_compilation_is_allowed(global &GlobalContext) bool {
+	if isnil(global.policy_list) { return true }
+	mut trusted_types_required := false
+	for policy in global.policy_list.policies {
+		if policy.disposition() != .enforce { continue }
+		if directive := policy.get_directive_by_name(require_trusted_types_for) {
+			if "'script'" in directive.value() { trusted_types_required = true }
+		}
+	}
+	for policy in global.policy_list.policies {
+		if policy.disposition() != .enforce { continue }
+		if sources := script_source_list(policy) {
+			if contains_ascii_case_insensitive(sources,unsafe_eval) { continue }
+			if trusted_types_required && contains_ascii_case_insensitive(sources,trusted_types_eval) { continue }
+			return false
+		}
+	}
+	return true
+}
+
+// Reading engine policy does not itself report a violation.
+
 pub fn ensure_csp_does_not_block_string_compilation(mut global GlobalContext, input CompilationInput) ! {
 	mut source_string := input.code_string
 	if input.type_ != .timer {
@@ -255,8 +279,16 @@ pub fn ensure_csp_does_not_block_string_compilation(mut global GlobalContext, in
 		return
 	}
 	mut blocked := false
+	mut trusted_types_required := false
+	for policy in global.policy_list.policies {
+		if policy.disposition() != .enforce { continue }
+		if directive := policy.get_directive_by_name(require_trusted_types_for) {
+			if "'script'" in directive.value() { trusted_types_required = true }
+		}
+	}
 	for policy in global.policy_list.policies {
 		if source_list := script_source_list(policy) {
+			if trusted_types_required && contains_ascii_case_insensitive(source_list, trusted_types_eval) { continue }
 			if !contains_ascii_case_insensitive(source_list, unsafe_eval) {
 				mut violation := create_a_violation_object_for_global_policy_and_directive(global,
 					policy, script_src)

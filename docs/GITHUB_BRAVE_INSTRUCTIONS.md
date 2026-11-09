@@ -1,10 +1,10 @@
 # github.com/vlang/v: Vox versus Brave instructions, 2026-11-08
 
 Current goal (user, November 8): load `https://github.com/vlang/v` with at least
-**20% fewer observed instructions** than Brave. **Not met yet.** Acceptance now
-requires seven complete alternating pairs and
-`10 * max(Vox) <= 8 * min(Brave)`. Regression tests remain deferred until this
-new instruction gate passes, as requested.
+**20% fewer observed instructions** than Brave. **The c35 cohort passes at 20.5406% fewer observed instructions.
+Native checks and the deferred CSS/layout regression batches pass.**
+Acceptance requires seven complete alternating pairs and
+`10 * max(Vox) <= 8 * min(Brave)`. Deferred tests start only after a complete passing gate, as requested.
 
 The earlier 10% goal was **met for the pinned c12 frozen-page workload.** Seven
 complete alternating pairs give a conservative maximum-Vox/minimum-Brave ratio
@@ -13,15 +13,16 @@ of **0.88483393** (11.5166% fewer observed instructions). The maximum Vox count,
 and the earlier failed cohorts remain included. Regression and screenshot
 checks started only after this complete instruction gate passed.
 
-The ongoing 20% work retains its
-[performance diagnostic ledger](performance/github-vlang-instruction-diagnostics-20261108-20pct.json).
+The ongoing 20% work keeps its generated performance diagnostic ledger local,
+outside Git; the results are summarized in this report.
 The restored HTML and both engine reference PNGs match c12 exactly. The rebuilt
 response-cache directory has a different fingerprint, so it is pinned as a new
 workload cohort and supplies no fixture-change optimization credit. The first
 new cohort attempt is invalid because Brave's teardown watchdog exited nonzero;
 its counters and failure remain recorded. Separate cleanup diagnostics exit
 normally after the already-frozen capture endpoint. Parser and layout probes
-are diagnostic only; no 20% acceptance or new regression-test pass is claimed.
+are diagnostic only; the later native acceptance and regression results are
+reported separately below.
 
 The first complete 20% cohort, c13, still fails: maximum Vox **9,147,785,937**,
 minimum Brave **11,072,030,805**, ratio **0.82620669** (17.3793% fewer).
@@ -120,6 +121,349 @@ markers place most of the extra observed work in paint and capture, without
 proving that equality caused it. C22 remains the best complete result at
 17.8990% fewer. [Full c23 evidence](performance/github-vlang-instructions-20261108-20pct-c23.json)
 retains every observation and build receipt. Regression tests remain deferred.
+
+C24, with recursive slot and parser-payload value equality restored, also
+fails the conservative gate. Its first Vox launch uses **10,351,680,022**
+instructions; the remaining six use 8,849,933,327–8,878,174,575. All seven
+observations remain included. Minimum Brave is **11,003,128,307**, producing
+ratio **0.94079427** (5.9206% fewer), despite median paired savings of 21.0418%.
+All fourteen captures retain exact per-engine references, complete content and
+normal browser exits. The first launch performs an additional paint-command
+checkpoint with roughly 899M instructions; its cause remains unresolved.
+Executable `5837924433ab3217d0db412cb9da680d6fc8a94ca222b503dcfed0c8174d0ffa`
+uses canonical sources with the same single-C-unit O3/1500 policy. Build guard
+exits 0, while benchmark/guard exit 1 records the failed gate. C22 remains the
+best conservative result. [Full c24 evidence](performance/github-vlang-instructions-20261108-20pct-c24.json)
+retains the first-launch outlier and all other attempts. Regression tests remain
+deferred.
+
+The complete c26 cohort passes against the updated installed Brave:
+maximum Vox **8,965,426,938**, minimum Brave **11,318,614,571**, ratio
+**0.79209579** (**20.7904% fewer**). The exact integer gate is
+`89,654,269,380 <= 90,548,916,568`. All seven alternating pairs, including the
+first launch, retain exact per-engine pixels, complete content audits and
+normal exits; benchmark and guard exit 0. Vox/Brave medians are
+8,875,520,338 / 11,595,809,689. Executable
+`3562d544a39e4a36ab32132c78d586dd105171bd4883919ae19ef6b2294a37d4`
+uses literal V `-prod`, one C unit, O3/1500, LTO disabled and frame pointers
+omitted; its minimum macOS target is 27.2 (current packaging minimum 26.0).
+
+Brave updated between c24 and c26 from Chrome 156.0.8078.48 to
+Chrome 157.0.8103.39, with a different executable hash. C26 pins the updated
+browser throughout. Vox's median is essentially unchanged from c24, so this
+result does **not** isolate a gain from compiler tuning or establish 20% against
+the earlier Chrome 156 minimum. OS filesystem/shader caches remain retained,
+with fresh private profiles/page caches; no preparatory native13 browser run
+preceded its acceptance cohort. [Full c26 evidence](performance/github-vlang-instructions-20261108-20pct-c26.json)
+retains exact counts, both browser-version identities, input/source hashes,
+commands, host contention and exits.
+
+The deferred checks then caught a real scalar color-serialization mismatch:
+the shortcut emitted legacy `rgba()` syntax rather than ordinary `Color.serialize()`
+modern `rgb()` syntax and alpha precision. Commit `8446d7cbb` fixes it and adds
+an explicit contract case. The 236-case focused CSS, 214-case broader CSS,
+26-case additional equality/invalidation and 84-case layout batches pass in
+both Boehm and preallocation/no-GC modes with normal assertions. These are
+batch invocations with overlapping cases, not a sum of distinct tests. The
+50 build-tool checks pass (two existing skips), as do 66 benchmark-driver checks.
+The FastC filter helper compiles and passes its JavaScript/filtering/idle-release
+check after the module-directory build fix. Initial failures and fixture fixes
+remain in the [20% verification receipt](performance/github-vlang-instruction-validation-20261108-20pct.json).
+C26 predates the serializer correction; final native startup/visual checks and
+a new seven-pair cohort remain required before completing the goal.
+
+C27 is invalid: Vox captures correctly at 8,986,010,264 instructions, then
+Brave captures but exits 2 from its macOS teardown watchdog. Both counters and
+the failed browser/guard exits are retained. A target-close cleanup experiment
+also hits the watchdog and is removed. The retained cleanup change releases the
+observer's DevTools socket after `Browser.close` is acknowledged and before
+waiting for process exit (`493ff9f58`). It runs after the frozen counter endpoint
+and earns no instruction credit. No launch flags, references or counter
+boundaries change. The watchdog's documented ten-second termination is described
+in the [Chromium implementation](https://chromium.googlesource.com/chromium/src/+/dc1ae3ada2dffe30971100b5b1d3185b1ad395c1%5E!/).
+
+C28 completes all seven alternating pairs with exact per-engine references,
+complete content audits and normal exits. Maximum Vox **8,872,351,990** /
+minimum Brave **11,024,953,359** gives **0.80475188**, or **19.5248% fewer**.
+The integer gate fails: `88,723,519,900 > 88,199,626,872`. Vox/Brave medians
+are 8,852,126,742 / 11,070,951,458; the median paired reduction of 20.0780%
+does not satisfy the conservative gate. Benchmark/guard exit is 1 for the
+numerical failure. The build and native-check guards exit 0.
+
+Executable `91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831`,
+receipt `20261108-151324-a8c2bca5`, is a completed production staging build
+with one C unit, non-literal-prod O3/1500 and minimum macOS 26.0. It contains
+the serializer correction and all retained slot/equality/tokenizer changes.
+The same image passes native DOM mutation/click/wheel startup checks, the real
+filter-worker self-check, and all eleven standard visual cases: eight exact
+and three within their unchanged existing fuzzy bounds. Source/reference hashes
+remain fixed. A separate diagnostic explicitly verifies scripting enabled,
+page runtime uninitialized and zero page sources on this script-free fixture;
+the helper independently executes JavaScript. This supplies no live-page
+script-execution claim. [Full c28 and partial c27 evidence](performance/github-vlang-instructions-20261108-20pct-c28.json)
+and the [verification receipt](performance/github-vlang-instruction-validation-20261108-20pct.json)
+retain the exact counters, identities, inputs, commands, failures and exits.
+Brave remains Chrome 157, but its observed counts are lower than c26 under
+the retained OS-cache conditions. Further engine optimization remains required.
+
+
+C29 includes bulk ASCII/filter-byte probes and a narrowly eligible exact-UTF-8
+ASCII decoder shortcut. It again completes seven alternating pairs with exact
+pixels, complete audits and normal browser exits, but misses the 20% gate:
+maximum Vox **8,880,773,337** / minimum Brave **11,064,384,892**, ratio
+**0.80264501** (**19.7355% fewer**). The integer check is
+`88,807,733,370 > 88,515,079,136`, leaving **29,265,424** Vox instructions to
+remove at this minimum. Medians are 8,851,404,119 / 11,128,645,021; the 20.6438%
+median paired saving cannot replace the failed conservative check.
+Executable `f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`,
+receipt `20261108-155123-59ff4982`, uses the same single-C-unit compilation
+policy as c28. Build guard exits 0, benchmark/guard 1 for the numerical failure.
+
+The preprocessing path executes in a separate native diagnostic. In matched
+headless probes it saves median 50,537,982 parsing instructions and 18,894,627
+layout-workload instructions with identical geometry. These are not additive
+native credit: two same-image native A/B pairs show a 10,170,454-instruction
+regression and a 14,383,224 saving. The small net median 2,106,385 saving does
+not establish a consistent full-load improvement. All four A/B captures retain
+exact reference pixels and normal exits. New bulk regression checks remain
+explicitly deferred after c29 fails. The local raw c29 receipt at
+`docs/performance/github-vlang-instructions-20261108-20pct-c29.json` retains
+every observation and the complete A/B; generated JSON remains untracked under
+the repository policy. The exact cohort counts are retained here in Git.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,880,773,337 | 11,343,154,934 |
+| 2 | 8,799,782,942 | 11,088,971,550 |
+| 3 | 8,815,992,971 | 11,064,384,892 |
+| 4 | 8,801,456,326 | 11,147,173,131 |
+| 5 | 8,852,112,922 | 11,100,178,243 |
+| 6 | 8,851,404,119 | 11,128,645,021 |
+| 7 | 8,878,841,686 | 11,239,274,637 |
+
+Increasing the longhand cache beyond
+256 entries executes but has only a 1,032,973 median probe saving with one
+regression; that experiment is removed. Further optimization is required.
+
+The next candidate boxes immutable calculation type metadata while retaining
+the public value snapshot and structural equality. It reduces `StyleValue`
+from 232 to 208 bytes. Three headless control/candidate pairs save
+23,386,479, 26,258,848 and 2,292,229 instructions with identical geometry.
+These separate builds also contain concurrent unrelated edits, so the probe
+does not establish isolated native credit. The planned c30 cohort never
+launches: receipt `20261108-170928-4691702f` fails its source guard after
+unconsumed `encoding/PORT_STATUS.md` changes during compilation. Build and
+waiting cohort guards exit 1; there are no browser observations or new
+regression checks. The follow-on build extends the existing unconsumed
+Markdown exclusion; explicitly compiler-reported resources remain pinned.
+
+
+C31 completes all seven alternating pairs with exact per-engine reference pixels,
+complete audits and normal browser exits, but also fails. Maximum Vox is
+**8,887,166,010**, minimum Brave **10,768,526,543**, ratio **0.82529081**
+(**17.4709% fewer**). The integer gate is
+`88,871,660,100 > 86,148,212,344`; another **272,344,776** Vox
+instructions must be removed at this minimum. Medians are 8,810,553,950 /
+10,813,605,174. Vox's median falls relative to c29, while Brave's
+observed counts fall too; its executable SHA and Chrome 157 version are unchanged.
+No cause is assigned to this variation, and no observations are excluded.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,887,166,010 | 10,849,391,785 |
+| 2 | 8,825,799,367 | 10,813,605,174 |
+| 3 | 8,725,266,753 | 10,894,278,444 |
+| 4 | 8,810,896,857 | 10,768,526,543 |
+| 5 | 8,765,543,256 | 10,777,985,075 |
+| 6 | 8,770,753,113 | 10,789,028,450 |
+| 7 | 8,810,553,950 | 10,814,989,706 |
+
+Executable `7c41735d12565c78ebfdfd91156e84e1fad2f05871f3b4ec9e2518eef3002e79`,
+receipt `20261108-171433-91108974`, uses the same single-C-unit O3/1500
+policy as c29 and contains both pending CSS optimizations. Build guard exits 0
+with peak RSS 11,598,381,056 bytes; benchmark/guard exits 1 for the numerical
+failure, peaking at 1,222,721,536 bytes. The source receipt also includes
+concurrent IndexedDB, CPU raster, encoding, LibJS parser and YUV changes; this
+cohort supplies no isolated optimization attribution. The local untracked raw
+receipt is `docs/performance/github-vlang-instructions-20261108-20pct-c31.json`.
+New regression checks remain explicitly deferred.
+
+Later same-image headless probes admit disposable principal inline runs of
+list items, table cells and single-text-child markers. The outer list/table
+algorithms and committed-layout admission remain unchanged. Three alternating
+control/candidate pairs save 220,735,209, 199,182,788 and 231,610,657 instructions
+(median 220,735,209), with identical geometry and normal exits in all six runs.
+These diagnostic savings do not replace another native seven-pair cohort.
+Focused regression cases are written but remain deferred.
+
+
+C33 completes seven alternating pairs with fourteen exact per-engine captures,
+complete content audits and normal browser exits. It still fails 20%: maximum
+Vox **8,671,388,014** / minimum Brave **10,712,151,283**, ratio
+**0.80949081** (**19.0509% fewer**).
+The integer gate is `86,713,880,140 > 85,697,210,264`, leaving
+**101,666,988** Vox instructions to remove. Medians are
+8,607,781,417 / 10,848,284,246; the 20.0987% median paired
+saving does not satisfy the conservative gate. All observations are retained.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,661,584,606 | 10,978,712,272 |
+| 2 | 8,602,387,129 | 10,848,284,246 |
+| 3 | 8,607,781,417 | 10,939,119,476 |
+| 4 | 8,671,388,014 | 10,852,625,128 |
+| 5 | 8,638,993,155 | 10,786,713,238 |
+| 6 | 8,603,953,097 | 10,730,890,037 |
+| 7 | 8,572,371,776 | 10,712,151,283 |
+
+Executable `8fe20c9aaaa506da42672d47f1f1ffc087fce78f44290e68f14e62d00a1b90de`,
+receipt `20261108-184019-5afc557c`, contains the new inline-root and stable
+symbol-marker candidates and is published to the canonical bundle. It keeps
+the single-C-unit O3/1500 policy, but uses staged V
+`20959647402d7b629c24e796c72f8a8ac644de4551e8675365b655692602d998`
+and updated native/font inputs. The cross-build difference includes concurrent
+changes and cannot be assigned solely to this session's optimizations. Build
+guard exits 0, peak RSS 11,696,570,368 bytes; benchmark/guard 1 records the failed
+numerical gate. New regression checks remain deferred. Raw local evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c33.json`.
+The intermediate c32 attempt produces no executable after a concurrent CSS
+source edit invalidates its parsed-buffer fingerprint; no browser samples or
+new regression checks run for it.
+
+The symbol-text shortcut separately saves 17,248,948, 10,529,608 and 11,586,810
+instructions (median 11,586,810) in three same-image headless pairs, all with
+unchanged geometry. Combined inline-root/symbol controls save 249,783,401,
+219,346,314 and 215,110,353 (median 219,346,314). Separate diagnostic messages
+prove all four paths execute in that headless workload; these figures are
+not additive native instruction credit.
+
+C34 also fails 20%, with all seven alternating pairs, fourteen exact per-engine
+captures, complete content audits and normal browser exits retained. Maximum
+Vox **8,663,077,330** / minimum Brave **10,742,923,882** gives ratio
+**0.80639847** (**19.3602% fewer**). The integer gate is
+`86,630,773,300 > 85,943,391,056`, leaving **68,738,225** instructions.
+Medians are 8,624,573,397 / 10,776,923,039. The 20.0908% median paired saving
+still does not satisfy the conservative gate; regression checks remain deferred.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,663,077,330 | 10,829,953,356 |
+| 2 | 8,640,653,745 | 10,776,923,039 |
+| 3 | 8,624,573,397 | 10,797,236,777 |
+| 4 | 8,642,351,762 | 10,785,432,057 |
+| 5 | 8,595,284,168 | 10,775,392,885 |
+| 6 | 8,576,602,412 | 10,751,989,778 |
+| 7 | 8,584,584,876 | 10,742,923,882 |
+
+Executable `cd7f5f91e8b46a0f1a313ee9b8c93478081c035eaf36e6532699f0035ffeb978`,
+receipt `20261108-193625-82de3115`, keeps the single-C-unit O3/1500 policy.
+It was measured directly under its artifact lease; a held canonical reader
+lease and newer source request later superseded its unpublished staging app.
+Build guard exits 0, peak RSS 11,126,177,792 bytes; benchmark/guard exits 1 for
+the numerical failure, peak RSS 1,220,001,792 bytes. Local raw evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c34.json`.
+
+The readback endpoint candidate saves about 494M instructions on a conversion
+probe with mostly transparent/opaque pixels, but its matched native ABBA pairs
+save 3,031,909 and regress 1,489,470 instructions. Those native runs all retain
+exact pixels, content and normal exits. With no consistent native saving, the
+candidate is reverted and supplies no load optimization credit. A subsequent
+eligibility diagnostic accidentally launches the older canonical c33 image;
+its absent path messages cannot establish whether c34 executed the shortcut.
+The earlier interrupted readback build has no retained final exit, executable
+or browser samples and is not counted as a completed attempt.
+
+C35 passes the numerical goal on seven complete alternating pairs, including
+the first launch, with fourteen exact per-engine references, complete content
+audits and normal browser exits. Maximum Vox **8,516,462,391** / minimum Brave
+**10,718,007,194** gives ratio **0.79459383** (**20.5406% fewer**).
+The exact integer gate is `85,164,623,910 <= 85,744,057,552`.
+Medians are 8,496,500,426 / 10,775,180,100. Both engines retain the documented
+observed process-tree lower-bound scope; this is a frozen, script-free page
+result, not a live-site or JavaScript-engine result.
+
+| Pair | Vox | Brave |
+| --- | ---: | ---: |
+| 1 | 8,516,462,391 | 10,845,518,580 |
+| 2 | 8,492,779,206 | 10,718,007,194 |
+| 3 | 8,494,282,526 | 10,785,112,055 |
+| 4 | 8,496,500,426 | 10,763,185,089 |
+| 5 | 8,494,839,749 | 10,769,320,187 |
+| 6 | 8,502,605,980 | 10,786,216,055 |
+| 7 | 8,502,140,509 | 10,775,180,100 |
+
+Executable `f30a1422ea5f2c1e8ead9cd46cef0f80c653d2fd7c6c92da2ccf3cdab4fb2d9b`,
+receipt `20261108-201049-3f8c6d33`, uses the same single-C-unit O3/1500
+policy. Build guard exits 0, peak RSS 12,225,347,584 bytes; benchmark/guard
+exits 0, peak RSS 1,203,404,800 bytes. Its completed staging image was pinned
+through acceptance and native validation. A held canonical reader lease and
+newer request subsequently superseded the unpublished staging app; the shared
+bundle remained c33 at that time. The result is scoped to this pinned c35 executable.
+Local raw evidence is
+`docs/performance/github-vlang-instructions-20261108-20pct-c35.json`.
+
+The November 9 publication check confirms a newer shared bundle,
+`23d3335dede25e37f908b5e4f17a0694aacf1bf314fbd453c9892eaab9b71688`,
+published by receipt `20261108-233251-1703525c`. All fourteen c35 implementation
+files match that build's parsed-source hashes exactly. A fresh process passes
+the guarded headless smoke check (exit 0, peak RSS 47,595,520 bytes), with stable
+executable and native-library identities. Thus the c35 optimizations are now in
+the shared app. The seven-pair instruction cohort has not been rerun on this
+newer executable; 20.5406% remains the measured c35 result. Local status evidence
+is `docs/performance/github-vlang-c35-publication-status-20261109.json`.
+
+C35 pins Brave Chrome **157.0.8103.39**, V8 **15.7.112.23**, executable
+`4772b8898cc23f044c134b75a494ddc9053f58d5ea8cd1acb6f60762292df513`.
+Its replay-cache fingerprint is
+`10f7ec6b9e40c926ea81afc1447e07f1c8382fadd64339db159b6cc33055e73e`;
+HTML and both reference hashes remain unchanged from the earlier restored input.
+Fresh private profiles/page caches are used; OS filesystem/shader caches remain
+retained. The hardware counter is `proc_pid_rusage/RUSAGE_INFO_V4/ri_instructions`
+for both observed process trees. Exact ownership omissions, host load/timestamps,
+native-library identities and commands remain in the local receipt.
+
+A separate matched ABBA comparison disables only exact component-source copies
+and borrowed declaration-span scanning. Controls use 8,633,509,790 and
+8,680,375,806 instructions; candidates use 8,509,999,884 and 8,500,668,622.
+Pair savings are **123,509,906** and **179,707,184** (median **151,608,545**),
+with four exact captures, complete content audits, normal exits and unchanged
+pinned inputs. These two pairs attribute a native saving to the combined paths;
+they do not replace the seven-pair acceptance cohort. Separate diagnostic
+messages confirm execution of both paths, all extended inline-root kinds,
+stable marker text, bulk CSS probes and boxed calculation metadata.
+
+The gate receipt is written at `2026-11-08T17:25:43.096294+00:00` before
+deferred checks start. The 50 build-tool checks pass (two skips), as do the
+native headless smoke, worker self-check and eleven screenshot cases under
+existing bounds. The first focused CSS build catches a missing optional unwrap
+in a new assertion; that test is corrected without changing engine code.
+The final assertion-enabled batches pass in both Boehm and preallocation/no-GC
+modes: **246 focused CSS cases across 48 files**, **231 broader CSS cases
+across 47 files**, and **89 layout cases across 20 files**. These batches overlap;
+the counts are not a sum of distinct tests. Counts come from the executed
+binaries' test symbols, with source-component and assembled-batch hashes
+recorded before compilation. No standalone parsed test-source manifest is claimed.
+
+Further test-only corrections replace an obsolete relative-size assertion with
+independent 208-byte ceilings, amortize GC allocation bookkeeping over 256
+constructors with the same 16-byte per-constructor allowance, and fix new layout
+fixture syntax, integer construction and inside-marker sizing assumptions.
+Every failure is retained locally. The fourteen candidate engine files still
+match c35's parsed-buffer manifest after these test-only corrections.
+The ordinary production builder's
+required startup smoke precedes its ready marker and is distinct from these
+deferred suites.
+
+The completed changes are committed on master: bulk input probes
+`5f3fcfa91`, calculation metadata `d94508120`, source copying/declaration scanning
+`dd3323bb7` / `8532570f3`, disposable inline roots `d46c95bda`, stable marker
+text `484840b35`, build-input filtering `a902b0d4e`, and allocation-check
+stabilization `2b3ad9f6c`. Replay HTML, response bodies and unchanged reference
+PNGs are retained locally under
+`docs/benchmark-results/github-vlang-20pct-inputs-20261108`; no browser bundles,
+repository tools or generated C are copied there. The scratch job, temporary
+probe sources and per-job guard files have been removed; structured receipts
+remain local under `docs/performance/github-vlang-20pct-local-records-20261108`.
 
 ## Workload and scope
 

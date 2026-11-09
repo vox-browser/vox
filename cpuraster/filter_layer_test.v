@@ -1,6 +1,7 @@
 module cpuraster
 
 import crypto.sha256
+import json2
 import os
 
 fn filter_layer_test_background() []u8 {
@@ -220,6 +221,54 @@ fn test_repeated_blurs_retain_native_intermediate_images() {
 	}
 }
 
+fn test_color_filters_between_blur_passes_match_native() {
+	contrast := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+		matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!}}
+	opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+		matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+	zero := CanvasFilterStep{kind: .blur}
+	tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+	gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+	box := CanvasFilterStep{kind: .blur, sigma: 2.5}
+	large := CanvasFilterStep{kind: .blur, sigma: 12}
+	sequences := [
+		[contrast, gaussian, opacity, box, contrast],
+		[zero, contrast, box],
+		[box, contrast, zero, opacity],
+		[contrast, zero, opacity, tiny, contrast],
+		[large, contrast, gaussian],
+		[contrast, gaussian, opacity, box, contrast, gaussian],
+		[gaussian, opacity, zero, contrast, box],
+		[contrast, box, opacity, large, contrast],
+	]
+	hashes := $if linux {
+		['7607d02c17545ce9', 'e6fc7d183d6f508a', '853d995ca42ed6ae', 'd44f4631ee09188a',
+		 'bc75c784f5dc7c47', '2e2efd552912f6ff', '9094cff4114223f5', 'de48da03ed37df5c']
+	} $else {
+		['7607d02c17545ce9', 'e6fc7d183d6f508a', '853d995ca42ed6ae', 'd44f4631ee09188a',
+		 'db5ae4482ca62300', '2e2efd552912f6ff', '9094cff4114223f5', 'de48da03ed37df5c']
+	}
+	for i, steps in sequences {
+		mut pixels := filter_layer_test_background()
+		transform := if i in [4, 7] { [f32(1.25), 0, 0, .75, 2, 4]! }
+			else { [f32(1), 0, 0, 1, 0, 0]! }
+		mode := match i { 1 { BlendMode.multiply } 2, 6 { .src_in } 3 { .plus_lighter }
+			5 { .overlay } 7 { .plus_darker } else { .src_over } }
+		style := if i == 4 { ?CanvasPaintStyle(filter_layer_test_color_pattern()) } else { none }
+		filter := new_canvas_filter(steps)
+		if i == 5 {
+			assert stroke_canvas_path(mut pixels, 48, 40, 192, 2, filter_layer_test_path(),
+				transform, 0xc0e04010, style, .7, mode, 0, 3, .round, .round, 10,
+				[f32(3), 2], .7, filter_layer_test_clip(), filter)
+		} else {
+			assert fill_canvas_path(mut pixels, 48, 40, 192, if i in [4, 7] { 1 } else { 2 },
+				filter_layer_test_path(), transform, 0xc0e04010, style, .7, mode, 0,
+				filter_layer_test_clip(), filter)
+		}
+		assert sha256.sum(pixels).hex()[..16] == hashes[i], 'color blur chain fixture ${i}'
+	}
+}
+
 // Byte hashes captured from vox_skia_canvas_path() in the pinned LibWeb
 // Skia, on the same path/background as the blur-layer regression tests.
 fn test_drop_shadow_filter_layers_match_skia() {
@@ -288,7 +337,7 @@ fn test_unsupported_drop_shadow_layers_preserve_destination() {
 	assert !fill_canvas_path(mut px, 48, 40, 192, 1, filter_layer_test_path(),
 		[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, 0, [], new_canvas_filter([
 			step,
-			step,
+			CanvasFilterStep{...step, sigma: -1},
 		]))
 	assert px == before
 }
@@ -356,4 +405,120 @@ fn test_drop_shadow_fast_bounds_ignore_empty_original_bounds() {
 	assert fill_canvas_path(mut pixels, 36, 10, 144, 2, path.detach(),
 		[f32(1), 0, 0, 1, -8, 5]!, 0xff000000, none, 1, .src_out, 0, [], filter)
 	assert pixels == before
+}
+
+// Native fixtures captured by native_mixed_filter_hashes.py. A shadow forks
+// the preceding graph; its foreground and blur request different bounds.
+fn test_mixed_spatial_filter_chains_match_native() {
+ contrast := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{
+  matrix: [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]!}}
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: 2.5, offset_x: 5.25,
+  offset_y: -3.75, color: 0x805030e0}
+ shadow2 := CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: -7.25,
+  offset_y: 4.5, color: 0xc0ff6040}
+ shadow3 := CanvasFilterStep{kind: .drop_shadow, sigma: .01, color: 0x80000000}
+ identity := CanvasFilterStep{...shadow, sigma: 0}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ blur := CanvasFilterStep{kind: .blur, sigma: 2.5}
+ tiny := CanvasFilterStep{kind: .blur, sigma: .01}
+ steps := [
+  [gaussian, shadow], [shadow, blur], [shadow, shadow], [shadow, shadow2, shadow3],
+  [contrast, gaussian, shadow, opacity], [shadow, contrast, blur, opacity],
+  [contrast, identity, opacity, tiny, shadow],
+  [shadow, contrast, gaussian, opacity, shadow2], [blur, shadow],
+  [shadow, gaussian, shadow2], [opacity, identity, contrast, identity],
+  [gaussian, shadow], [gaussian, shadow], [gaussian, shadow], [gaussian, shadow],
+  [gaussian, shadow], [gaussian, shadow], [gaussian, shadow],
+ ]
+ hashes := $if linux { ['85ded641bc1c40b8', 'ec15a885c51f0d6b', '9d2ac3778a55b8b4', 'a64b950cb4d0a36d', '97c5d861829696bd', '14d76c98d987d016', '0c1f73de745d740c', '40ba2d1c527ff712', '5bd229939f881f9e', '1f0a2c78c8e886b1', '93e68261d8d229b5', '94c142ea8bddbd93', 'db5c83122c79221e', 'cda50e26e2123dda', '6dd757e2dc19830b', 'f314c3b09b8271eb', '2c7e8f53b7715761', 'f96cd103d1fd3b1b'] } $else { ['adebac55b9b00c3e', 'bb249b0417fd19d0', '08ac9e68c0cc079e', 'a4b05ca5ecaffedc', '97c5d861829696bd', '14d76c98d987d016', '3f7c1039156f9d86', '40ba2d1c527ff712', '5bd229939f881f9e', '08e9e2e170ce3ec7', 'e0c801a90a68a272', '94c142ea8bddbd93', 'db5c83122c79221e', 'cda50e26e2123dda', '6dd757e2dc19830b', 'f314c3b09b8271eb', '2c7e8f53b7715761', 'f96cd103d1fd3b1b'] }
+ clearing := [BlendMode.src, .src_in, .dst_in, .src_out, .dst_atop, .plus_darker, .plus_lighter]
+ for i, filters in steps {
+  mut pixels := filter_layer_test_background()
+  transform := if i in [7, 8] { [f32(1.25), 0, 0, .75, 2, 4]! }
+   else { [f32(1), 0, 0, 1, 0, 0]! }
+  mode := if i >= 11 { clearing[i - 11] } else if i == 7 { BlendMode.overlay }
+   else if i == 8 { BlendMode.multiply } else { BlendMode.src_over }
+  alpha_type := if i in [7, 9] { 1 } else { 2 }
+  if i == 7 {
+   assert stroke_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),
+    transform, 0xc0e04010, none, .7, mode, 0, 3, .round, .round, 10, [f32(3), 2], .7,
+    filter_layer_test_clip(), new_canvas_filter(filters))
+  } else {
+   style := if i == 8 { ?CanvasPaintStyle(filter_layer_test_color_pattern()) } else { none }
+   assert fill_canvas_path(mut pixels, 48, 40, 192, alpha_type, filter_layer_test_path(),
+    transform, 0xc0e04010, style, .7, mode, 0, filter_layer_test_clip(), new_canvas_filter(filters))
+  }
+  assert sha256.sum(pixels).hex()[..16] == hashes[i], 'spatial chain fixture ${i}'
+ }
+}
+
+struct SpatialChainClipFixture {
+ segments []f32
+ even_odd bool
+}
+
+struct SpatialChainStepFixture {
+ kind int
+ matrix [20]f32
+ clamp bool
+ sigma f32
+ offset_x f32
+ offset_y f32
+ color u32
+}
+
+struct SpatialChainFixture {
+ width int
+ height int
+ alpha_type int
+ segments []f32
+ even_odd bool
+ transform [6]f32
+ color u32
+ global_alpha f32
+ clips []SpatialChainClipFixture
+ composite int
+ filters []SpatialChainStepFixture
+}
+
+fn test_spatial_chain_branch_requests_and_source_leaf_bounds() {
+ inputs := [
+  $embed_file('@VMODROOT/cpuraster/testdata/spatial-branch.json').to_string(),
+  $embed_file('@VMODROOT/cpuraster/testdata/spatial-leaf-bounds.json').to_string(),
+ ]
+ hashes := ['79d4e37074d97045', '18911ffab2702601', '5fd9c806c2246dd6']
+ for i, input in inputs {
+  c := json2.decode[SpatialChainFixture](input) or { panic(err) }
+  steps := c.filters.map(CanvasFilterStep{
+   kind: match it.kind { 0 { CanvasFilterKind.blur } 1 { .drop_shadow } else { .matrix } }
+   matrix: MatrixColorFilter{it.matrix, it.clamp}
+   sigma: it.sigma, offset_x: it.offset_x, offset_y: it.offset_y, color: it.color
+  })
+  clips := c.clips.map(canvas_path(it.segments, it.even_odd))
+  counts := if i == 0 { [steps.len] } else { [5, steps.len] }
+  for j, count in counts {
+   mut pixels := if i == 0 {
+    $embed_file('@VMODROOT/cpuraster/testdata/spatial-branch-background.rgba').to_bytes()
+   } else { []u8{len: c.width * c.height * 4} }
+   assert fill_canvas_path(mut pixels, c.width, c.height, c.width * 4, c.alpha_type,
+    canvas_path(c.segments, c.even_odd), c.transform, c.color, none, c.global_alpha,
+    if c.composite == 7 { BlendMode.dst_atop } else { .src_over }, 0, clips,
+    new_canvas_filter(steps[..count]))
+   assert sha256.sum(pixels).hex()[..16] == hashes[if i == 0 { 0 } else { j + 1 }]
+  }
+ }
+}
+
+fn test_spatial_chain_work_limit_preserves_unpremultiplied_destination() {
+ step := CanvasFilterStep{kind: .drop_shadow, sigma: .8, offset_x: 5.25,
+  offset_y: -3.75, color: 0x805030e0}
+ steps := []CanvasFilterStep{len: 8, init: step}
+ mut pixels := filter_layer_test_background()
+ before := pixels.clone()
+ assert !fill_canvas_path(mut pixels, 48, 40, 192, 1, filter_layer_test_path(),
+  [f32(1), 0, 0, 1, 0, 0]!, 0xc0e04010, none, .7, .src_over, 0,
+  filter_layer_test_clip(), new_canvas_filter(steps))
+ assert pixels == before
 }

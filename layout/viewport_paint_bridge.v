@@ -84,6 +84,7 @@ fn refresh_document_paint_tree(document &dom.Document, mut result DocumentLayout
 	previous_storage := result.paint_tree_storage
 	defer { release_paint_tree(voidptr(previous_storage)) }
 	result.paint_tree = renderer_box_from_document_layout_result(result, viewport_width, viewport_height)
+	result.has_renderer_snapshot = true
 	result.invalidate_boxes_by_layout_cache()
 	result.drop_display_list_scene()
 	result.needs_repaint = true
@@ -1299,11 +1300,27 @@ fn viewport_transform_client_rects(target voidptr, node &dom.Node,
 	if result.paint_projection_incomplete && result.retained_box_for_layout(layout_handle) == none {
 		restore_complete_paint_projection(mut result)
 	}
-	context_index := result.client_rect_visual_context(layout_handle) or {
-		return layout_rects_in_css_pixels(rects, scale)
+	// SVG geometry is stored in user units, not the HTML layout coordinate
+	// space. Apply its viewport/element CTM before the shared visual contexts
+	// map the result back to CSS pixels (including native display scaling).
+	mut source_rects := rects
+	if box := result.retained_box_for_layout(layout_handle) {
+		if box.has_svg_path() {
+			bounds := svg_transformed_hit_bounds(box.svg_data.bounding_box,
+				normalized_affine(box.svg_path().path_transform))
+			source_rects = [dom.CSSPixelRect_{
+				x_: bounds.x
+				y_: bounds.y
+				width_: bounds.width
+				height_: bounds.height
+			}]
+		}
 	}
-	mut transformed_rects := []dom.CSSPixelRect_{cap: rects.len}
-	for rect in rects {
+	context_index := result.client_rect_visual_context(layout_handle) or {
+		return layout_rects_in_css_pixels(source_rects, scale)
+	}
+	mut transformed_rects := []dom.CSSPixelRect_{cap: source_rects.len}
+	for rect in source_rects {
 		transformed := transform_rect_to_viewport_in_layout_coordinates(context_index, LayoutRect{
 			x: rect.x_
 			y: rect.y_
@@ -3563,7 +3580,7 @@ fn viewport_hit_test_with_culling(target voidptr, x f64, y f64, type_ dom.HitTes
 			}
 			.border {
 				candidate_node_id := box.node_id_for_hit_test()
-				if candidate_node_id == 0 || !box.visible || !box.pointer_events_enabled
+				if candidate_node_id == 0 || !box.visible_for_pointer_events()
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
@@ -4303,7 +4320,7 @@ fn viewport_hit_test_all(target voidptr, x f64, y f64) []&dom.Element {
 			}
 			.border {
 				node_id := box.node_id_for_hit_test()
-				if node_id == 0 || !box.visible || !box.pointer_events_enabled
+				if node_id == 0 || !box.visible_for_pointer_events()
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
@@ -4327,6 +4344,9 @@ fn compatibility_box_contains_hit_test_point(box &BlockBox, x f64, y f64,
 fn compatibility_box_contains_hit_test_point_at(box &BlockBox, stacking_context_root bool,
 	mut memo CompatibilityHitPointMemo) bool {
 	local_point := memo.local(box.accumulated_visual_context_index) or { return false }
+	if box.has_svg_hit_geometry() {
+		return box.svg_contains_hit_test_point(local_point)
+	}
 	if !box.svg_path_bounding_box_contains_hit_test_point(local_point) {
 		return false
 	}

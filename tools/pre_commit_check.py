@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reject staged evidence archives, Build/ output and oversized files.
+"""Reject generated measurement dumps, evidence archives and build output.
 
-Measurement and evidence archives stay local; commit the report or manifest
-that describes them instead. Build/ is local scratch. The pre-commit hook
+Generated measurement JSON and evidence archives stay local; commit a concise
+Markdown summary instead. Build/ is local scratch. The pre-commit hook
 installed by `python3 tools/rebuild_browser.py --install-hook` runs this.
 """
 import subprocess
@@ -12,6 +12,8 @@ ARCHIVE_SUFFIXES = ('.gz', '.tgz', '.zip', '.tar', '.xz', '.zst', '.7z', '.bz2',
                     '.txz', '.rar')
 # Runtime assets and test fixtures that are archives by format.
 ARCHIVE_DIRECTORIES = ('adblock/', 'tools/adblock/fixtures/', 'Tests/Browser/Brave/candidates/')
+MEASUREMENT_DIRECTORIES = ('docs/performance/', 'docs/benchmark-results/')
+MEASUREMENT_SUFFIXES = ('.json', '.jsonl', '.ndjson')
 MAX_BYTES = 32 * 2**20
 
 
@@ -45,6 +47,8 @@ def violations(root='.', max_bytes=MAX_BYTES):
     for path, blob in entries:
         if path == 'Build' or path.startswith('Build/'):
             problems.append(f'{path}: Build/ is local scratch')
+        elif path.startswith(MEASUREMENT_DIRECTORIES) and path.lower().endswith(MEASUREMENT_SUFFIXES):
+            problems.append(f'{path}: measurement dumps stay local; commit a Markdown summary instead')
         elif path.lower().endswith(ARCHIVE_SUFFIXES) and not path.startswith(ARCHIVE_DIRECTORIES):
             problems.append(f'{path}: archives stay local; commit the report or manifest instead')
         elif sizes[blob] > max_bytes:

@@ -130,6 +130,11 @@ fn hit_test_step_bounds(step CompatibilityPaintStep) HitTestStepBounds {
 			return hit_test_bounds_from_rect(context, left, top, right - left, bottom - top)
 		}
 		.border {
+			if box.has_svg_hit_geometry() {
+				bounds := box.svg_hit_test_bounds()
+				return hit_test_bounds_from_rect(box.accumulated_visual_context_index,
+					bounds.x, bounds.y, bounds.width, bounds.height)
+			}
 			border := box.border_box()
 			return hit_test_bounds_from_rect(box.accumulated_visual_context_index, border.x,
 				border.y, border.width, border.height)

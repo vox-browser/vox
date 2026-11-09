@@ -206,6 +206,7 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 		if !p.stack_of_open_elements.contains_template_element() {
 			return
 		}
+		template := p.stack_of_open_elements.last_element_with_tag_name('template').element
 		p.generate_all_implied_end_tags_thoroughly()
 		p.stack_of_open_elements.pop_until_an_element_with_tag_name_has_been_popped('template')
 		p.list_of_active_formatting_elements.clear_up_to_the_last_marker()
@@ -213,6 +214,13 @@ fn (mut p HTMLParser) handle_in_head(mut token HTMLToken) {
 			p.stack_of_template_insertion_modes.pop()
 		}
 		p.reset_the_insertion_mode_appropriately()
+		if p.document_.allow_declarative_shadow_roots() {
+			if owner := template {
+				if owner.has_attribute('shadowrootmode') {
+					if parent := owner.as_node().parent() { materialize_declarative_shadow_roots(parent) }
+				}
+			}
+		}
 		return
 	}
 	if (token.is_start_tag() && token.tag_name == 'head') || token.is_end_tag() {

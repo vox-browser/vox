@@ -583,6 +583,7 @@ mut:
 	cursor_cache_initialized   bool
 	// CSS can apply a paint-only style through Document::update_layout(),
 	// without entering the embedder's explicit layout wrapper.
+	has_renderer_snapshot bool
 	paint_tree_needs_style_update bool
 	paint_style_update_requires_full_refresh bool
 	paint_style_update_handles HandleSet
@@ -653,6 +654,7 @@ fn document_layout_update_callback_with_paint_tree(document &dom.Document, viewp
 		paint_projection_interest: result.paint_projection_interest
 		paint_projection_incomplete: result.paint_projection_incomplete
 		paint_tree: paint_tree
+		has_renderer_snapshot: build_paint_tree
 		paint_tree_storage: result.paint_tree_storage
 		paint_tree_pool: result.paint_tree_pool
 		equal_text_cache: if build_paint_tree { take_document_equal_text_cache(document) } else { unsafe { nil } }
@@ -709,6 +711,7 @@ fn install_document_layout_hook_with_callback(document &dom.Document,
 		callback: callback
 		style_did_update: document_layout_style_did_update
 		retire_native_layout: retire_native_document_layout
+		commit_position_options: commit_document_position_try_options
 	})
 }
 
@@ -780,6 +783,12 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 	mutable_document.update_layout(.debugging)
 	css.end_style_profile()
 	mut result := document_layout_result(document) or { return none }
+	// A tree dump commits valid geometry without building the renderer's
+	// transport. Reusing that geometry at the same viewport must still publish
+	// the first paint snapshot and install the document's painting callbacks.
+	if build_paint_tree && !result.has_renderer_snapshot {
+		refresh_document_paint_tree(document, mut result, viewport_width, viewport_height)
+	}
 	// A transform/opacity/filter animation can invalidate only painting. The
 	// typed layout tree then remains current, but the compatibility renderer
 	// transport still has to observe the freshly applied computed values.
@@ -804,6 +813,7 @@ fn run_document_layout_with_renderer_mode(document &dom.Document, viewport_width
 		state: result.state
 		document: result.document
 		paint_tree: result.paint_tree
+		has_renderer_snapshot: result.has_renderer_snapshot
 	}
 }
 

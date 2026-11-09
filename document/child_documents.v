@@ -51,6 +51,7 @@ mut:
 	closed             bool
 	runtime            &browserjs.Runtime = unsafe { nil }
 	parser_host        ?&BrowserParserScriptHost
+	media_owner        &BrowserApp = unsafe { nil }
 	scripts            ?&BrowserScriptRequestLoader
 	images             ?&BrowserImageRequestLoader
 	resource_delay     ?dom.DocumentLoadEventDelayer
@@ -128,7 +129,6 @@ fn (mut host BrowserChildDocumentHost) ensure_initial_realm(element &dom.Element
 		mut child := host.children[index]
 		if child.closed || voidptr(child.element) != voidptr(element) { continue }
 		active := child.navigable.active_document() or { return }
-		if !active.get_is_initial_about_blank() { return }
 		if mut service := child.service {
 			if voidptr(service.document) == voidptr(active) {
 				service.ensure_initial_realm(mut messages)
@@ -136,6 +136,7 @@ fn (mut host BrowserChildDocumentHost) ensure_initial_realm(element &dom.Element
 			}
 			service.close()
 		}
+		if !active.get_is_initial_about_blank() { return }
 		mut service := new_browser_hosted_document(active, host.engine)
 		child.service = service
 		service.ensure_initial_realm(mut messages)
@@ -203,8 +204,16 @@ fn new_browser_hosted_document(document &dom.Document, engine browserjs.Engine) 
 	mut scripts := new_browser_script_request_loader(document, map[string]PreloadedResource{})
 	service.images = images
 	service.scripts = scripts
+	mut media_loader := ?browserjs.MediaElementCreatedHook(none)
+	$if macos {
+		service.media_owner = &BrowserApp{document:document}
+		service.media_owner.install_document_media_playback()
+		media_loader = fn [service] (element &dom.Element) {
+			if service.media_owner != unsafe { nil } { service.media_owner.install_media_playback(element) }
+		}
+	}
 	service.parser_host = install_browser_parser_script_host(document, engine, images, scripts,
-		map[string]PreloadedResource{}, none, fn [service] (runtime &browserjs.Runtime) {
+		map[string]PreloadedResource{}, media_loader, fn [service] (runtime &browserjs.Runtime) {
 			mut owner := unsafe { &BrowserHostedDocument(service) }
 			owner.runtime = runtime
 		})
@@ -236,6 +245,10 @@ fn (mut service BrowserHostedDocument) ensure_initial_realm(mut messages []strin
 fn (mut service BrowserHostedDocument) close() {
 	if service.closed { return }
 	service.closed = true
+	if service.media_owner != unsafe { nil } {
+		service.media_owner.close_media_playback()
+		service.media_owner = unsafe { nil }
+	}
 	if mut host := service.parser_host { host.closed = true }
 	if mut loader := service.scripts { loader.cancel() }
 	if mut loader := service.images { loader.cancel() }
@@ -438,6 +451,7 @@ fn (mut service BrowserHostedDocument) initialize(mut messages []string) {
 
 fn (mut service BrowserHostedDocument) poll(mut messages []string) bool {
 	if service.closed { return false }
+	if service.media_owner != unsafe { nil } { service.media_owner.poll_media_playback() }
 	mut changed := false
 	if mut loader := service.images {
 		for loader.results.len > 0 {

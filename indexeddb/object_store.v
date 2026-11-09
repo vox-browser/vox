@@ -225,7 +225,7 @@ pub fn (mut store IDBObjectStore) get(range IDBKeyRange) !&IDBRequest {
 }
 
 pub fn (mut store IDBObjectStore) get_key(range IDBKeyRange) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	mut request := store.new_request()
 	for record in data.records {
@@ -240,7 +240,7 @@ pub fn (mut store IDBObjectStore) get_key(range IDBKeyRange) !&IDBRequest {
 }
 
 pub fn (mut store IDBObjectStore) get_all(options IDBGetAllOptions) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!
@@ -254,7 +254,7 @@ pub fn (mut store IDBObjectStore) get_all(options IDBGetAllOptions) !&IDBRequest
 }
 
 pub fn (mut store IDBObjectStore) get_all_keys(options IDBGetAllOptions) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!
@@ -268,7 +268,7 @@ pub fn (mut store IDBObjectStore) get_all_keys(options IDBGetAllOptions) !&IDBRe
 }
 
 pub fn (mut store IDBObjectStore) get_all_records(options IDBGetAllOptions) !&IDBRequest {
-	store.transaction.require_active()!
+	if store.operation_request_ == none { store.transaction.require_active()! }
 	data := store.load()!
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut records := records_in_range(data.records, range, options.direction)!

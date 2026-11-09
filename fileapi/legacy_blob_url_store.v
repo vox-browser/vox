@@ -6,6 +6,8 @@
 // snapshots belong to BlobURLStore instead.
 module fileapi
 
+import platform
+
 __global file_api_legacy_blob_url_store &LegacyBlobURLStore
 
 pub struct LegacyBlobURLEnvironment {
@@ -31,6 +33,10 @@ pub fn LegacyBlobURLStore.create() &LegacyBlobURLStore {
 }
 
 pub fn legacy_blob_url_store() &LegacyBlobURLStore {
+	// The first lookup can happen while an evicted document is being retired.
+	// Process-wide store records must outlive every document payload arena.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if file_api_legacy_blob_url_store == unsafe { nil } {
 		file_api_legacy_blob_url_store = LegacyBlobURLStore.create()
 	}
@@ -45,10 +51,18 @@ pub fn generate_new_legacy_blob_url(origin string) !string {
 
 // https://w3c.github.io/FileAPI/#add-an-entry
 pub fn (mut store LegacyBlobURLStore) add_entry(object BlobURLObject, environment LegacyBlobURLEnvironment) !string {
+	// Map growth and generated URL keys also belong to process storage.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+
 	url := generate_new_legacy_blob_url(environment.origin)!
 	store.entries[url] = LegacyBlobURLEntry{
 		object:      object
-		environment: environment
+		environment: LegacyBlobURLEnvironment{
+			id: environment.id.clone()
+			origin: environment.origin.clone()
+			storage_key: environment.storage_key.clone()
+		}
 	}
 	return url
 }
@@ -78,6 +92,9 @@ pub fn obtain_a_legacy_blob_object(entry LegacyBlobURLEntry, environment LegacyB
 
 // https://w3c.github.io/FileAPI/#removeTheEntry
 pub fn (mut store LegacyBlobURLStore) remove_entry(url string) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+
 	store.entries.delete(blob_url_without_fragment(url))
 }
 
@@ -94,6 +111,8 @@ pub fn (mut store LegacyBlobURLStore) run_unloading_cleanup_steps(environment_id
 			urls_to_remove << url
 		}
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	for url in urls_to_remove {
 		store.entries.delete(url)
 	}

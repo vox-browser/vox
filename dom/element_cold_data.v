@@ -24,6 +24,7 @@ mut:
 @[heap]
 struct ElementBindingData {
 mut:
+	cryptographic_nonce string
 	uppercased_name           ?string
 	attribute_style_map       ?&StylePropertyMap_
 	part_list                 ?&DOMTokenList
@@ -63,6 +64,7 @@ fn (e &Element) copy_binding_data() &ElementBindingData {
 		part_list:                 old.part_list
 		parts:                     old.parts
 		associated_pseudo_element: old.associated_pseudo_element
+		cryptographic_nonce: old.cryptographic_nonce
 	}
 }
 

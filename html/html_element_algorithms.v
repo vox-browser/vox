@@ -585,7 +585,7 @@ pub fn html_element_set_subtree_inertness(element &dom.HTMLElement, is_inert boo
 // https://html.spec.whatwg.org/multipage/webappapis.html#fire-a-synthetic-pointer-event
 pub fn html_element_fire_a_synthetic_pointer_event(element &dom.HTMLElement, type_ string, target &dom.Element, not_trusted bool) bool {
 	_ = element
-	pointer_event := dom.PointerEvent.create(type_, dom.PointerEventInit{
+	mut pointer_event := dom.PointerEvent.create(type_, dom.PointerEventInit{
 		MouseEventInit: dom.MouseEventInit{
 			EventModifierInit: dom.EventModifierInit{
 				UIEventInit: dom.UIEventInit{
@@ -598,6 +598,7 @@ pub fn html_element_fire_a_synthetic_pointer_event(element &dom.HTMLElement, typ
 			}
 		}
 	})
+	pointer_event.is_synthetic_activation_ = true
 	mut event := unsafe { &dom.Event(pointer_event) }
 	if not_trusted {
 		event.set_is_trusted(false)

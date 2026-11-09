@@ -64,3 +64,18 @@ let before=0;editor.addEventListener("beforeinput",event=>{before++;check(event.
 "passed"
 ')!
 }
+
+fn test_internals_send_text_refreshes_attributes_of_retained_inline_elements() {
+	check_compact_native_send_text(r'
+const check=(actual,expected)=>{if(actual!==expected)throw new Error(String(actual)+" != "+String(expected))};
+editor.innerHTML="<div style=\"white-space:pre-wrap\">abc</div><div style=\"white-space:pre-line\"><b>def\nghi</b></div>";
+const left=editor.firstChild,right=editor.lastChild,retained=right.firstChild,attributes=retained.attributes;
+const range=document.createRange();range.setStart(left.firstChild,3);range.setEnd(retained.firstChild,0);getSelection().removeAllRanges();getSelection().addRange(range);editor.focus();
+let inputs=0;editor.addEventListener("input",()=>{inputs++;editor.setAttribute("data-author","kept")});
+internals.sendText(editor,"\ue017");
+check(retained.parentNode,left);check(retained.attributes,attributes);check(retained.getAttribute("style"),"white-space: pre-line;");
+check(attributes.getNamedItem("style").value,"white-space: pre-line;");check(retained.getAttributeNode("style"),attributes.getNamedItem("style"));
+check(inputs,1);check(editor.getAttribute("data-author"),"kept");check(right.textContent,"ghi");
+"passed"
+')!
+}

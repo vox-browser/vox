@@ -71,7 +71,7 @@ pub fn create_host_function(realm string, callable HostCallable, type_ FunctionT
 
 __global (
 	webassembly_global_cache                 &WebAssemblyCache
-	host_ensure_can_compile_wasm_bytes_hook_ ?HostEnsureCanCompileWasmBytesHook = none
+	host_ensure_can_compile_wasm_bytes_hook_ ?HostEnsureCanCompileWasmBytesHook = ?HostEnsureCanCompileWasmBytesHook(none)
 )
 __global (
 	webassembly_realm_caches = map[string]&WebAssemblyCache{}

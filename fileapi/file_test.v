@@ -33,21 +33,20 @@ fn test_file_exact_constructor_entry_point() {
 	assert file.raw_bytes().bytestr() == 'body'
 }
 
-fn test_construct_type_is_normalized_via_mime_parser() {
-	// The type is parsed and re-serialized (type/subtype lowercased, params preserved).
+fn test_file_constructor_type_lowercases_all_printable_ascii_without_mime_parsing() {
 	f := File.construct([BlobPart.from_string('x')], 'a.txt', FilePropertyBag{
 		BlobPropertyBag: BlobPropertyBag{
 			type_: 'Text/Plain;charset=UTF-8'
 		}
 	})
-	assert f.type_() == 'text/plain;charset=UTF-8'
-	// An unparseable type becomes the empty string.
+	assert f.type_() == 'text/plain;charset=utf-8'
+	// A printable string is preserved even when it is not a MIME type.
 	bad := File.construct([BlobPart.from_string('x')], 'a.txt', FilePropertyBag{
 		BlobPropertyBag: BlobPropertyBag{
 			type_: 'not a mime type'
 		}
 	})
-	assert bad.type_() == ''
+	assert bad.type_() == 'not a mime type'
 }
 
 fn test_construct_default_last_modified_is_now() {

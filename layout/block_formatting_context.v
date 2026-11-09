@@ -130,7 +130,7 @@ fn creates_block_formatting_context(box &NodeWithStyle) bool {
 	computed := box.computed_values()
 	// Non-normal block content alignment contains margins and floats, even
 	// when its positional fallback leaves the contents at block-start.
-	if display.is_flow_inside() && computed.align_content() != .normal {
+	if display.is_flow_inside() && block_content_alignment_text(node) != 'normal' {
 		return true
 	}
 	overflow_x := computed.overflow_x()
@@ -422,6 +422,9 @@ fn place_block_level_element_in_normal_flow_horizontally(mut box_state UsedValue
 // children's containing-block width; `cb_height_for_children` is the container's definite content height (for
 // resolving the children's percentage heights).
 fn (mut bfc BlockFormattingContext) layout_block_level_children(mut state LayoutState, block_container &NodeWithStyle, content_width f64, cb_height_for_children ?f64) f64 {
+	if block_container.computed_values().writing_mode() != .horizontal_tb {
+		return layout_vertical_block_children(mut state,block_container,content_width,cb_height_for_children,bfc.layout_mode)
+	}
 	// TemporaryChange<Optional<CSSPixels>> { m_y_offset_of_current_block_container, 0 }.
 	saved_y_offset := bfc.y_offset_of_current_block_container
 	bfc.y_offset_of_current_block_container = 0.0
@@ -949,13 +952,13 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	marker_styled := marker_node.as_node_with_style() or { return }
 	mut marker_state := state.get_mutable(marker_styled)
 	marker_state.set_containing_block_used_values(list_item_state)
+	symbol_marker := marker.chromium_symbol_marker()
 	marker_text := marker.text()
 	if text := marker_text {
 		if child := marker_node.first_child() {
 			if generated_text := child.as_text_node() {
 				mut mutable_text := unsafe { &TextNode(generated_text) }
-				mutable_text.source_text_ = text
-				mutable_text.invalidate_text_for_rendering()
+				set_resolved_marker_text_for_layout(mut mutable_text, text, symbol_marker)
 			}
 		}
 	}
@@ -967,7 +970,7 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	mut mutable_marker_box := unsafe { &Box(marker_box) }
 	mutable_marker_box.reset_cached_intrinsic_sizes()
 	marker_state.set_content_width(calculate_max_content_width(mut state, marker_box))
-	if marker.chromium_symbol_marker() {
+	if symbol_marker {
 		ascent := marker.chromium_symbol_ascent()
 		marker_state.set_content_width(CSSPixels.new((ascent * 2 / 3 + 1) / 2 + 2))
 	}

@@ -7,7 +7,6 @@
 #include "../libgc/primitive_storage_host.h"
 #include "../browsernet/websocket_wake.h"
 #include "../browsertabs/process_windows.h"
-#include "../libregex/rust_panic_windows.h"
 
 static void test_virtual_memory(void) {
     size_t page = vox_gc_storage_page_size();
@@ -66,25 +65,9 @@ static void test_argument_quoting(void) {
     free(quoted);
 }
 
-static bool panic_active(void) { return true; }
-static void test_panic_handoff(void) {
-    char message[] = {'a', 0, 'b'};
-    ladybird_rust_panic(message, sizeof(message), "source.rs", 9, 4, 7, panic_active);
-    message[0] = 'x';
-    assert(strcmp(vox_regex_rust_panic_text, "a?b at source.rs:4:7") == 0);
-    assert(vox_regex_rust_is_panicking == panic_active);
-    char large[9000];
-    memset(large, 'a', sizeof(large));
-    ladybird_rust_panic(large, sizeof(large), large, sizeof(large), 1, 1, panic_active);
-    assert(strlen(vox_regex_rust_panic_text) < sizeof(vox_regex_rust_panic_text));
-    assert(strstr(vox_regex_rust_panic_text, "[truncated]") != NULL);
-    assert(strstr(vox_regex_rust_panic_text, "[location unavailable]") != NULL);
-}
-
 int main(void) {
     test_virtual_memory();
     test_socket_wakeup();
     test_argument_quoting();
-    test_panic_handoff();
     return 0;
 }

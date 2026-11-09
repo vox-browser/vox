@@ -165,7 +165,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 		if item_buffers.arena == unsafe { nil } { unsafe { iterator.items.free() } }
 		item_buffers.finish()
 	}
-	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, available_space.width, direction, writing_mode, parent_block_context)
+	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, if writing_mode == .horizontal_tb { available_space.width } else { available_space.height }, direction, writing_mode, parent_block_context)
 	line_builder.intrinsic_width_only = width_only
 	wrap_breaks := optimized_text_wrap_breaks(containing_block, iterator, line_builder,
 		layout_mode, width_only, available_space, parent_block_context)
@@ -525,7 +525,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	mut content_height := CSSPixels.new(0)
 	for line_box in containing_block_used_values.line_boxes {
 		content_width = css_pixels_max(content_width, line_box.width())
-		content_height = content_height.plus(line_box.height())
+		content_height = if writing_mode == .horizontal_tb { content_height.plus(line_box.height()) } else { css_pixels_max(content_height,line_box.height()) }
 	}
 	return InlineFormattingResult{
 		automatic_content_width: content_width

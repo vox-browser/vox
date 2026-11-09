@@ -1,0 +1,313 @@
+{
+  "date": "2026-11-08",
+  "scope": "Portable outer and inner shadows use the explicit RGBA surface blend policy on Linux.",
+  "commits": [
+    "1bdd334d5",
+    "8e21268f0"
+  ],
+  "checks": {
+    "gg-linux-shadow-rgba-before": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/shadow_rgba_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 1,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 514146304,
+      "elapsed_seconds": 3.5487644450004154,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "eeb742376a3fc1b87fb66b3ecd4f51878eab63e8cff195484fa8aebe09c97fd2"
+    },
+    "gg-linux-shadow-rgba-isolated": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-prod",
+        "-gc",
+        "none",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/shadow_rgba_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 514158592,
+      "elapsed_seconds": 11.14948962699782,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "f609be7c923c38b87d11fa0df2288daaa586449fcee20ad396c5011c45d9d959"
+    },
+    "gg-shadow-rgba-isolated": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/shadow_rgba_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 440516608,
+      "elapsed_seconds": 4.673366333000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "c6750a90b7780b95e889be6b1072d62a4b311ae3276e2854bdd2d06f408d6878"
+    },
+    "gg-linux-rgba-inner-shadows-final": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-linux-raster-oracle",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 666554368,
+      "elapsed_seconds": 24.457923112997378,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "3ff5b96d1fc8c2b39c250163556c84130042d5f1319dd8a2cef4e2dc78fe6fa8"
+    }
+  },
+  "native_fixtures": {
+    "macos": {
+      "platform": "macOS-27.2-arm64-arm-64bit",
+      "reference_sha256": "bd7af409502f5a0fc113ad51bfcf100ebee1bd08156556e3944fb198d40cf103",
+      "tool_sha256": "d485ac98d0a51575c9b8c21d7a9a13a966c7f198b5c95d7b7ed8c15ffc09e073",
+      "records": [
+        {
+          "case": "faint-inner",
+          "function": "oracle_inner_shadow",
+          "arguments": [
+            15,
+            64,
+            761568228
+          ],
+          "floats": [
+            6.9186826,
+            29.3462,
+            9.195145,
+            66.073654,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8.042617,
+            30.470135,
+            6.947276,
+            63.825783,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            8.042617,
+            30.470135,
+            6.947276,
+            63.825783,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            19.790783
+          ],
+          "native_sha256": "4b3523909177b2921d54d1c422d509ee211aae16ff1e8a1985b5fad0fcb5ec17"
+        },
+        {
+          "case": "faint-outer",
+          "function": "oracle_outer_shadow",
+          "arguments": [
+            64,
+            56,
+            243986327,
+            0
+          ],
+          "floats": [
+            8,
+            6,
+            40,
+            32,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            12,
+            10,
+            32,
+            24,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            18.73592
+          ],
+          "native_sha256": "97275a59831025438484f840b16fffa0923b36b760cce9b0c40fc70bf8a8a3d9"
+        }
+      ]
+    },
+    "linux": {
+      "platform": "Linux-6.8.0-147-generic-aarch64-with-glibc2.39",
+      "reference_sha256": "dbe4ec64ec30b80c660f238c129795d6e35aa009edf98dd0d3207f138304165f",
+      "tool_sha256": "d485ac98d0a51575c9b8c21d7a9a13a966c7f198b5c95d7b7ed8c15ffc09e073",
+      "records": [
+        {
+          "case": "faint-inner",
+          "function": "oracle_inner_shadow",
+          "arguments": [
+            15,
+            64,
+            761568228
+          ],
+          "floats": [
+            6.9186826,
+            29.3462,
+            9.195145,
+            66.073654,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8.042617,
+            30.470135,
+            6.947276,
+            63.825783,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            8.042617,
+            30.470135,
+            6.947276,
+            63.825783,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            19.790783
+          ],
+          "native_sha256": "deeb6f65e7b5859b6f6a81d3cbebe3d29bab993adf70116fe478aa4480484d17"
+        },
+        {
+          "case": "faint-outer",
+          "function": "oracle_outer_shadow",
+          "arguments": [
+            64,
+            56,
+            243986327,
+            0
+          ],
+          "floats": [
+            8,
+            6,
+            40,
+            32,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            10,
+            12,
+            10,
+            32,
+            24,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            8,
+            1,
+            0,
+            0,
+            1,
+            0,
+            0,
+            18.73592
+          ],
+          "native_sha256": "7badb3a3a761b5b02f2e942b5f031639edb49554294b0f76ff09f55d12f391a2"
+        }
+      ]
+    }
+  },
+  "results": {
+    "linux_inner_shadow_attempts": 20000,
+    "linux_inner_shadow_painted": 5364
+  },
+  "limits": [
+    "The before check failed as expected on the old native-N32 blend policy.",
+    "A separate quarter-turn clip metadata difference was found in the wider outer-shadow corpus and fixed separately.",
+    "No Skia-free browser link/run is claimed."
+  ]
+}

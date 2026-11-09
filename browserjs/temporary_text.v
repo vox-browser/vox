@@ -20,7 +20,7 @@ pub fn (runtime &Runtime) evaluate_host_temporary_text(source string) !Temporary
 		if runtime.context == unsafe { nil } { return error('JavaScriptCore context creation failed') }
 		runtime.prepare_html_script()
 		defer { runtime.clean_up_html_script() }
-		return evaluate_javascript_core_text(runtime.context, ScriptSource{code:source}, true, false, true)
+		return evaluate_javascript_core_text(runtime.context, ScriptSource{code:source}, true, false, true, runtime)
 	} $else {
 		return error('JavaScript evaluation is currently available on macOS only')
 	}

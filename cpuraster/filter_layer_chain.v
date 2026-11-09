@@ -3,11 +3,10 @@ module cpuraster
 // A sequence of raster blurs shares one source layer. Each filter requests
 // its input bounds from the preceding filter and retains its own quantized
 // intermediate image, as the native image-filter graph does.
-fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, input_sigmas []f32, final_sigma f32, mode BlendMode, content LayerContent) bool {
+fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alpha_type int, transform [6]f32, clips []Path, content_bounds ?Rect, quick_bounds ?Rect, stages []LayerFilterStage, post_color []MatrixColorFilter, source_info FilterImageInfo, source_image bool, source_padding bool, mode BlendMode, content LayerContent) bool {
 	ctm := canvas_affine(transform)
 	if ctm.kx != 0 || ctm.ky != 0 { return false }
-	mut sigmas := input_sigmas.clone()
-	sigmas << final_sigma
+	sigmas := stages.map(it.sigma)
 	mut sx := []f32{cap: sigmas.len}
 	mut sy := []f32{cap: sigmas.len}
 	for sigma in sigmas {
@@ -19,7 +18,7 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
-	if bounds := content_bounds {
+	if bounds := quick_bounds {
 		mut fast := bounds
 		for sigma in sigmas {
 			pad := f32(3) * sigma
@@ -65,10 +64,29 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		zero_y + ctm.sy, shift_x + ctm.tx, shift_y + ctm.ty]!
 	inner_clip := rect_path(Rect{1, 1, f32(lw - 1), f32(lh - 1)})
 	if !content(mut layer_pixels, lw, lh, layer_transform, [inner_clip]) { return false }
-	mut result := new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh}, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	saved := new_filter_result(SpecialImage{BlurImage{layer_pixels, lw, lh}, IRect{0, 0, lw, lh}}, 0, 0).inset_for_save_layer()
+	mut result := FilterResult{...saved, color_info: source_info,
+		transparent_boundary: !source_image || source_padding}
+	base_x := if source_image { 0 } else { padded.left }
+	base_y := if source_image { 0 } else { padded.top }
+	if source_image { result = result.translated(padded.left, padded.top) }
+	mut pending := []MatrixColorFilter{}
 	for i, desired_global in requested {
-		desired := IRect{desired_global.left - padded.left, desired_global.top - padded.top,
-			desired_global.right - padded.left, desired_global.bottom - padded.top}
+		pending << stages[i].pre_color
+		if result.has_image && (sx[i] != 0 || sy[i] != 0) {
+			incoming_color := new_color_filter(pending)
+			if incoming_color != none || result.color_info.display_p3 || result.color_info.alpha != 1 {
+				// A real blur resolves its child's deferred color filter into
+				// N32 pixels. Identity passes preserve it without quantization.
+				result = FilterResult{...result, image: SpecialImage{
+					filter_layer_source_image(result.image.backing, result.color_info, incoming_color), result.image.subset},
+					color_info: FilterImageInfo{}}
+			}
+			pending.clear()
+		}
+		desired := if source_image { desired_global } else {
+			IRect{desired_global.left - padded.left, desired_global.top - padded.top,
+				desired_global.right - padded.left, desired_global.bottom - padded.top} }
 		result = blur_filter_result(result, desired, sx[i], sy[i]) or { return false }
 	}
 	target.ready()
@@ -76,7 +94,8 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 		draw_empty_filter_result(mut pixels, pitch, &rc, mode)
 		return true
 	}
-	draw_filter_sprite(mut pixels, pitch, result.image.bitmap(), padded.left + result.origin_x,
-		padded.top + result.origin_y, &rc, mode)
+	pending << post_color
+	draw_color_filtered_bitmap(mut pixels, pitch, result.color_info.bitmap(result.image.bitmap()), base_x + result.origin_x,
+		base_y + result.origin_y, &rc, mode, pending, result.color_info.alpha)
 	return true
 }

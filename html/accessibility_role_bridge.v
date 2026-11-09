@@ -224,32 +224,41 @@ fn document_csp_policies(document &dom.Document) []&contentsecuritypolicy.Policy
 	return policies
 }
 
-fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, source string) bool {
-	policies := document_csp_policies(element.document())
+fn dom_inline_csp_check(target voidptr, element &dom.Element, inline_type string, source string) bool {
+	policy_document := if target == unsafe { nil } { element.document() } else { unsafe { &dom.Document(target) } }
+	policies := document_csp_policies(policy_document)
 	mut policy_list := contentsecuritypolicy.PolicyList.create(policies)
-	mut global := contentsecuritypolicy.GlobalContext{
+	mut global := &contentsecuritypolicy.GlobalContext{
 		policy_list: policy_list
+	}
+	settings_pointer := policy_document.relevant_settings_object()
+	if settings_pointer != unsafe { nil } {
+		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
+		global = settings.fetch_request_client_csp_global()
 	}
 	mut attributes := map[string]string{}
 	for name in element.get_attribute_names() {
 		attributes[name] = element.get_attribute_value(name)
 	}
 	element_context := contentsecuritypolicy.ElementContext{
+		dom_element: element
 		is_html_or_svg: element.is_html_element() || element.is_svg_element()
 		is_script: element.local_name() == 'script'
 		is_style: element.local_name() == 'style'
-		nonce: element.get_attribute_value('nonce')
+		nonce: element.cryptographic_nonce()
+		had_duplicate_attribute: element.had_duplicate_attribute_during_tokenization
 		attributes: attributes
-		connected_to_policy_document: element.as_node().is_connected()
+		connected_to_policy_document: element.as_node().is_connected() && voidptr(element.document()) == voidptr(policy_document)
 	}
 	type_ := match inline_type {
 		'script' { contentsecuritypolicy.InlineType.script }
 		'script-attribute' { contentsecuritypolicy.InlineType.script_attribute }
+		'navigation' { contentsecuritypolicy.InlineType.navigation }
 		'style-attribute' { contentsecuritypolicy.InlineType.style_attribute }
 		else { contentsecuritypolicy.InlineType.style }
 	}
 	return contentsecuritypolicy.should_elements_inline_type_behavior_be_blocked_by_content_security_policy(mut
-		global, element_context, type_, source) == .blocked
+		global, if type_ == .navigation { contentsecuritypolicy.ElementContext{} } else { element_context }, type_, source) == .blocked
 }
 
 fn dom_base_csp_check(document &dom.Document, base dom.URL) bool {
@@ -292,6 +301,7 @@ fn dom_meta_csp_enforce(document &dom.Document, input string) string {
 			pre_parsed_policy_string: serialized.pre_parsed_policy_string
 		}
 	}
+	dom_string_compilation_policy_changed(unsafe { nil },document)
 	// This string is only the standalone adapter. Genuine settings owners read
 	// the parsed list above, retaining its original unfiltered input separately.
 	return directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
@@ -386,11 +396,19 @@ fn dom_trusted_types_compliant_attribute(_ voidptr, element &dom.Element, local_
 		namespace_uri, element_interface, input)!
 }
 
+fn dom_string_compilation_policy_changed(_ voidptr, document &dom.Document) {
+	pointer := document.relevant_settings_object()
+	if pointer == unsafe { nil } { return }
+	settings := unsafe { &EnvironmentSettingsObject(pointer) }
+	if callback := settings.realm().string_compilation_policy_changed_ { callback() }
+}
+
 pub fn install_document_csp_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_csp_hook(dom.DocumentCSPHook{
 		target:       voidptr(document)
 		inline_check: dom_inline_csp_check
+		policy_changed: dom_string_compilation_policy_changed
 		initialize:   dom_csp_initialize_document
 		base_check:   dom_base_csp_check
 		meta_enforce: dom_meta_csp_enforce

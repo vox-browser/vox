@@ -2968,6 +2968,18 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 				})
 			}
 		}
+		element_copy.set_cryptographic_nonce(element.cryptographic_nonce())
+		// Preserve declarations already checked in this document, including CSSOM
+		// edits. A detached, unchecked source or an imported node is checked when
+		// its copy connects to the destination document.
+		if source_style := element.inline_style_ {
+			if !source_style.awaits_content_security_policy_check && voidptr(element.document()) == voidptr(document) {
+				if mut copy_style := element_copy.inline_style_ {
+					copy_style.set_declarations_from_text(source_style.declarations_text)
+					copy_style.awaits_content_security_policy_check = false
+				}
+			}
+		}
 		working_copy = element_copy.as_node()
 	} else if n.is_document() {
 		source_document := unsafe { &Document(n) }
@@ -3434,7 +3446,14 @@ pub fn (mut n Node) set_has_child_affected_by_backward_structural_changes(value 
 	n.has_child_affected_by_backward_structural_changes_ = value
 }
 
-pub fn (mut n Node) post_connection() {}
+pub fn (mut n Node) post_connection() {
+	if element := n.as_element() {
+		if element.local_name() != 'script' { return }
+		if hook := n.document().lifecycle_hook_ {
+			if hook.script_element_post_connection != unsafe { nil } { hook.script_element_post_connection(hook.target,element) }
+		}
+	}
+}
 
 pub fn (mut n Node) inserted() {
 	// Insertion visits shadow-including inclusive descendants in tree order, so
@@ -4542,6 +4561,7 @@ pub fn (mut n Node) append_child_impl(node &Node) {
 	mutable_node.parent_ = n
 	mutable_node.index_in_parent_ = n.children.len
 	n.children << node
+	n.note_element_membership_change(node)
 }
 
 pub fn (mut n Node) insert_before_impl(node &Node, child ?&Node) {
@@ -4554,6 +4574,7 @@ pub fn (mut n Node) insert_before_impl(node &Node, child ?&Node) {
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = n
 	n.children.insert(index, node)
+	n.note_element_membership_change(node)
 	for child_index := index; child_index < n.children.len; child_index++ {
 		mut current := unsafe { &Node(n.children[child_index]) }
 		current.index_in_parent_ = child_index
@@ -4566,12 +4587,23 @@ pub fn (mut n Node) remove_child_impl(node &Node) {
 		return
 	}
 	n.children.delete(index)
+	n.note_element_membership_change(node)
 	mut mutable_node := unsafe { &Node(node) }
 	mutable_node.parent_ = unsafe { nil }
 	mutable_node.index_in_parent_ = -1
 	for child_index := index; child_index < n.children.len; child_index++ {
 		mut current := unsafe { &Node(n.children[child_index]) }
 		current.index_in_parent_ = child_index
+	}
+}
+
+fn (n &Node) note_element_membership_change(child &Node) {
+	if !child.is_element() && child.children.len == 0 { return }
+	if !n.root().is_document() { return }
+	document := n.document()
+	if document != unsafe { nil } {
+		mut owner := unsafe { &Document(document) }
+		owner.bump_light_dom_element_version()
 	}
 }
 
@@ -4583,6 +4615,7 @@ pub fn (n &Node) is_child_allowed(node &Node) bool {
 }
 
 pub fn (mut n Node) children_changed(metadata ChildrenChangedMetadata) {
+	defer { if n.is_connected() && metadata.type_ == .inserted { n.post_connection() } }
 	if element := n.as_element() {
 		mut mutable_element := unsafe { &Element(element) }
 		mutable_element.children_changed(metadata)
@@ -4606,7 +4639,7 @@ pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
 		if element.is_html_element() && element.local_name() == 'template' {
 			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!
 		}
-		if element.is_html_element() && dom_element_cloning_steps != unsafe { nil } {
+		if (element.is_html_element() || element.is_svg_element()) && dom_element_cloning_steps != unsafe { nil } {
 			dom_element_cloning_steps(element, copy, subtree)!
 		}
 	}
@@ -4685,30 +4718,33 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				for id_ref in idrefs.fields() {
 					referenced_element := document.get_element_by_id(id_ref) or { continue }
 					referenced_node := referenced_element.as_node()
-					// AD-HOC: Required by WPT labelledby cases; a referenced node's own aria-label contributes.
-					if target == .name {
-						if aria_label := referenced_element.get_attribute('aria-label') {
-							if aria_label.trim_space().len > 0 {
-								accumulated_text.write_string(' ')
-								accumulated_text.write_string(aria_label)
+					if visited_nodes[referenced_node.unique_id()] {
+						// A self-reference may contribute its aria-label even though
+						// recursion is suppressed. Unvisited nodes contribute through
+						// step D below, so appending here too would duplicate the label.
+						if target == .name {
+							if aria_label := referenced_element.get_attribute('aria-label') {
+								if aria_label.trim_space().len > 0 {
+									accumulated_text.write_string(' ')
+									accumulated_text.write_string(aria_label)
+								}
 							}
 						}
-					}
-					if visited_nodes[referenced_node.unique_id()] {
 						continue
 					}
 					result := referenced_node.name_or_description(target, document, mut visited_nodes, .no, .yes)!
 					accumulated_text.write_string(' ')
 					accumulated_text.write_string(result)
 				}
-				if accumulated_text.str().trim_space().len == 0 && target == .name {
+				accumulated_name := accumulated_text.str()
+				if accumulated_name.trim_space().len == 0 && target == .name {
 					if aria_label := element.get_attribute('aria-label') {
 						if aria_label.trim_space().len > 0 {
 							return aria_label
 						}
 					}
 				}
-				return accumulated_text.str()
+				return accumulated_name
 			}
 		}
 
@@ -4812,7 +4848,9 @@ pub fn (n &Node) name_or_description(target NameOrDescription, document &Documen
 				mutable_document.update_layout(.node_name_or_description)
 				if layout_node := child_node.layout_node() {
 					display := layout_node.display()
-					if display.is_inline_outside() && display.is_flow_inside() {
+					// Unstyled TextNodes participate in inline flow. Their DOM
+					// layout mirrors have no computed display to consult.
+					if layout_node.is_text_node() || (display.is_inline_outside() && display.is_flow_inside()) {
 						should_add_space = false
 					}
 				}

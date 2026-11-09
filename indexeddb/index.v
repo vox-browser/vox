@@ -188,7 +188,7 @@ pub fn (mut index IDBIndex) get_key(range IDBKeyRange) !&IDBRequest {
 }
 
 pub fn (mut index IDBIndex) get_all(options IDBGetAllOptions) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut entries := index.entries(range, options.direction, true)!
 	if count := options.count {
@@ -201,7 +201,7 @@ pub fn (mut index IDBIndex) get_all(options IDBGetAllOptions) !&IDBRequest {
 }
 
 pub fn (mut index IDBIndex) get_all_keys(options IDBGetAllOptions) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut entries := index.entries(range, options.direction, false)!
 	if count := options.count {
@@ -214,7 +214,7 @@ pub fn (mut index IDBIndex) get_all_keys(options IDBGetAllOptions) !&IDBRequest 
 }
 
 pub fn (mut index IDBIndex) get_all_records(options IDBGetAllOptions) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	range := options.range or { IDBKeyRange.unbounded() }
 	mut entries := index.entries(range, options.direction, true)!
 	if count := options.count {
@@ -231,7 +231,7 @@ pub fn (mut index IDBIndex) get_all_records(options IDBGetAllOptions) !&IDBReque
 }
 
 pub fn (mut index IDBIndex) count(range ?IDBKeyRange) !&IDBRequest {
-	index.transaction.require_active()!
+	if index.operation_request_ == none { index.transaction.require_active()! }
 	actual := range or { IDBKeyRange.unbounded() }
 	_, data := index.load()!
 	mut request := index.new_request()

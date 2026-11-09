@@ -11,21 +11,36 @@ Source records, clone payloads and Blob URL owners reviewed: 2026-10-05
 | `BlobURLStore.cpp` | `blob_url_store.v`, `../html/blob_url_operations.v`, `../domurl/dom_url.v`; standalone adapter in `legacy_blob_url_store.v` |
 | `File.cpp` | `file.v`, `utf16_records.v`, `../html/structured_fileapi_codec.v` |
 | `FileList.cpp` | `filelist.v`, `../html/structured_fileapi_codec.v` |
-| `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v` |
-| `FileReaderSync.cpp` | `file_reader.v`, `../browserjs/file_reader_sync_array_buffer_darwin.c.v` |
+| `FileReader.cpp` | `file_reader.v`, `file_reader_global_context.v`, `file_reader_stream_operation.v`, `../html/file_reader_operations.v`, `../browserjs/file_reader_binding_jsc.c.v` |
+| `FileReaderSync.cpp` | `file_reader.v`, `../browserjs/file_reader_sync_array_buffer_jsc.c.v`, `../browserjs/file_reader_sync_binding_jsc.c.v` |
 
 The existing typed package covers immutable owned Blob bytes, blob parts and
-line endings, MIME normalization, slicing, byte streams, BOM-aware decoding, File
+line endings, printable-ASCII type normalization, slicing, byte streams, BOM-aware decoding, File
 state, FileList ordering, blob URL partition checks and environment cleanup,
 and reader state transitions. Standalone FileReader read generations protect
 its compatibility abort/replacement adapter at loadstart and progress. Actual
-Window/Worker readers preserve Source's shared abort Boolean instead. This inventory does not
+Window/Worker readers also distinguish read generations after a reentrant abort;
+this corrects the upstream shared-Boolean behavior. This inventory does not
 establish full source runtime or generated WebIDL binding parity.
 
-Blob/File public constructor MIME parsing now retains the source basic-Latin
-gate, including non-ASCII quoted parameters, tab and DEL rejection. Internal
+Blob/File public constructors now follow File API's printable-ASCII gate and
+ASCII lowercase conversion, including parameter values and non-MIME strings.
+This intentionally differs from the upstream constructor's MIME parsing:
+`"NonParsable"` becomes `"nonparsable"`, and spaces/parameter formatting remain
+intact. Non-ASCII quoted parameters, tab, NUL and DEL are rejected. Internal
 ByteBuffer/Utf16String constructors and deserialization preserve arbitrary raw
 UTF-16 type/name units, immutable storage flags and independently owned bytes.
+See [Blob construction](https://w3c.github.io/FileAPI/#constructorBlob) and
+[File construction](https://w3c.github.io/FileAPI/#file-constructor).
+
+Worker agent startup installs the existing native File and FileList owners
+after Blob, for classic, module and shared workers. File serialization from
+dedicated workers preserves bytes and metadata in the receiving realm.
+Shared-worker constructor exposure and shared-port File cloning are checked
+through their real connect ports. Local MessagePort transfer lists now retain
+native ports, ArrayBuffers and receiver-realm File/Blob wrappers. Public
+FileReader and dedicated/shared-worker FileReaderSync bindings are installed;
+the focused native evidence and remaining boundaries are recorded below.
 Compatibility serialization DTO updates check stale raw metadata before reuse.
 
 HTML IPC/LBSC serialization now implements the exact primary Blob/File/FileList
@@ -155,8 +170,9 @@ Actual Window/Worker readers now use Source `ReadOperationState` with a real
 Blob stream/default reader, per-chunk retained WebIDL Promise reactions, empty
 byte accumulation, first-chunk flag and monotonic progress timer. The initial
 setup task is untracked; loadstart/progress/completion/error tasks use the
-reader's actual affiliated TaskIDs. Abort preserves Source's shared Boolean
-and task-removal semantics. Completion and rejection retain Source's two error
+reader's actual affiliated TaskIDs. Abort preserves task-removal semantics and
+uses read generations to reject callbacks from an aborted earlier operation.
+Completion and rejection retain Source's two error
 setter FIXMEs and reentrant loadend suppression. The old manual pending-byte
 path is limited to standalone compatibility construction. Streams' typed
 result-object/Uint8Array projection, genuine native witnesses and FileReader
@@ -165,8 +181,8 @@ result wrappers remain separate runtime boundaries.
 New read-operation, existing owner-task, monotonic-threshold and standalone
 reader files pass **4/4 in both GC modes**, including all package types, empty
 chunks, immutable Blob snapshot, actual InvalidStateError record, Worker
-ownership, early/late abort, reentrant loadend and the pinned shared-abort flag
-edge. Source mappings and explicit native boundaries are in
+ownership, early/late abort and reentrant loadend. The former shared-abort flag
+edge is now a regression requiring only the replacement read's events. Source mappings and explicit native boundaries are in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
 
 Blob URLs now retain actual creator settings and live Blob/MediaSource objects
@@ -194,3 +210,27 @@ consume the native snapshots. [Caller evidence](../docs/translation-audit/BLOB_U
 records **2/2 default and 5/5 GC-none** combined focused/neighbor files. The
 Legacy consumers retain their previous behavior; native public bindings,
 remote IPC and physical GC/WrapperWorld ownership remain separate.
+
+Public native FileReader interfaces (2026-11-09): `2d4952bab` exposes
+FileReaderSync in classic/module dedicated and shared workers; `777d4ad8e`
+exposes asynchronous FileReader in Window and those worker globals. The
+bindings consume genuine native Blob/File records, decode through the typed
+owners, project owned UTF-16 results and real caller-realm ArrayBuffers, retain
+one ArrayBuffer result per operation, and dispatch through the native
+EventTarget and creation-global FileReading task queue. IDL conversion errors,
+DOMExceptions, handler metadata, replacement reads and runtime closure are
+checked. `68eefee70` prevents an aborted operation from publishing after an
+abort handler starts another read before loadstart. `8c9a70441` carries the
+entry URL's copied Blob bytes/type/creator origin across worker startup IPC,
+preserving the original URL, opaque origin nonce and Fetch origin checks.
+
+All **30 original official FileReaderSync, FileReader and reading-data-section
+Window/Worker variants pass 115/115 assertions** in native Page checks, in both
+normal and preallocated GC-none builds. **15 integration checks plus seven
+native owner checks pass per mode.** These are focused native results;
+production validation is pending a source-matching completed shared build.
+Error-setting FIXMEs in the typed asynchronous owner, full ProgressEvent
+coverage, and physical weak wrapper/world GC remain open. These results do not
+establish full FileAPI or overall WPT parity. See the
+[WPT progress report](../docs/WPT_CONFORMANCE_PROGRESS.md) for raw evidence,
+build identities and the continuing broader collection.

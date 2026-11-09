@@ -41,6 +41,17 @@ static pthread_mutex_t vox_adblock_worker_lifecycle_mutex = PTHREAD_MUTEX_INITIA
 static int vox_adblock_worker_tx = -1, vox_adblock_worker_rx = -1;
 static int vox_adblock_worker_life = -1, vox_adblock_worker_timeout;
 static uint64_t vox_adblock_worker_sequence;
+/* Idle release transfers one helper to a native shutdown thread. Requests can
+   immediately start a replacement; a second retiring helper is never queued.
+   The lifecycle mutex protects this slot, including its PID until reap. */
+typedef struct {
+    int running;
+    pid_t pid;
+    int tx, rx, life;
+    uint64_t sequence;
+} VoxAdblockRetiringWorker;
+static VoxAdblockRetiringWorker vox_ab_retiring;
+static pthread_cond_t vox_ab_retirement_finished = PTHREAD_COND_INITIALIZER;
 
 static int64_t vox_ab_now_ms(void) {
     struct timespec value;
@@ -193,10 +204,22 @@ static void vox_adblock_worker_cleanup(void) {
     vox_adblock_worker_pid = 0;
     pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
 }
+static int vox_ab_wait_for_retirement(void) {
+    pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
+    int released = vox_ab_retiring.running;
+    while (vox_ab_retiring.running)
+        pthread_cond_wait(&vox_ab_retirement_finished, &vox_adblock_worker_lifecycle_mutex);
+    pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+    return released;
+}
+static void vox_ab_exit_cleanup(void) {
+    vox_adblock_worker_cleanup();
+    (void)vox_ab_wait_for_retirement();
+}
 static pthread_once_t vox_ab_exit_cleanup_once = PTHREAD_ONCE_INIT;
 static int vox_ab_exit_cleanup_result;
 static void vox_ab_register_exit_cleanup(void) {
-    vox_ab_exit_cleanup_result = atexit(vox_adblock_worker_cleanup);
+    vox_ab_exit_cleanup_result = atexit(vox_ab_exit_cleanup);
 }
 /* dyld image index zero can be an injected library, not the executable.
    Ask the kernel for this process's image path instead of relying on argv[0]
@@ -336,46 +359,115 @@ VOX_AB_API int vox_adblock_worker_evaluate(const unsigned char *source, size_t l
     vox_ab_error_payload(output, output_size, "response read");
     vox_adblock_worker_cleanup(); return VOX_AB_TRANSPORT_ERROR;
 }
-VOX_AB_API int vox_adblock_worker_release(void) {
-    if (!vox_adblock_worker_pid) return 0;
-    uint64_t id = ++vox_adblock_worker_sequence;
-    if (!id) id = ++vox_adblock_worker_sequence;
+static void vox_ab_request_shutdown(int tx, int rx, uint64_t id) {
     unsigned char *bytes = NULL; size_t length = 0;
     int kind = 0; uint64_t response = 0;
     /* One shared 2s graceful-shutdown budget, independent of eval timeout.
        Closing the lifeline then bounds owned-child reap by a further 200ms. */
     int64_t deadline = vox_ab_now_ms() + 2000;
-    if (!vox_adblock_worker_send_frame(vox_adblock_worker_tx, VOX_AB_QUIT, id, NULL, 0, 2000)) {
+    if (!vox_adblock_worker_send_frame(tx, VOX_AB_QUIT, id, NULL, 0, 2000)) {
         int64_t left = deadline - vox_ab_now_ms();
         if (left > 0) {
-            int received = vox_adblock_worker_read_frame(vox_adblock_worker_rx, &kind, &response,
+            int received = vox_adblock_worker_read_frame(rx, &kind, &response,
                 &bytes, &length, (int)left);
             if (received != 1 || kind != VOX_AB_CLOSED || response != id || length != 0)
                 errno = received == 0 ? EPIPE : received == 1 ? EPROTO : errno;
         }
     }
     free(bytes);
-    vox_adblock_worker_cleanup();
-    return 1;
 }
-/* Process-tree footer accounting for the one directly owned helper. No RSS
-   aggregation or private allocator API. A failed live-child query is surfaced
+/* Do not hold the sampling lock across shutdown I/O or the 200ms reap grace.
+   Each waitpid and PID removal remain atomic with respect to footprint reads,
+   so a reaped PID can never be sampled after the OS reuses it. */
+static int vox_ab_try_reap_retiring(pid_t pid, int terminate) {
+    int status;
+    pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
+    pid_t result = waitpid(pid, &status, WNOHANG);
+    int done = result == pid || (result < 0 && errno != EINTR);
+    if (done) vox_ab_retiring.pid = 0;
+    else if (result == 0 && terminate) (void)kill(pid, SIGKILL);
+    pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+    return done;
+}
+static void *vox_ab_retire_worker(void *unused) {
+    (void)unused;
+    pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
+    VoxAdblockRetiringWorker worker = vox_ab_retiring;
+    pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+    vox_ab_request_shutdown(worker.tx, worker.rx, worker.sequence);
+    vox_ab_close(&worker.tx); vox_ab_close(&worker.rx); vox_ab_close(&worker.life);
+    for (unsigned attempt = 0;; ++attempt) {
+        if (vox_ab_try_reap_retiring(worker.pid, attempt >= 200)) break;
+        struct timespec pause = {0, 1000000}; nanosleep(&pause, NULL);
+    }
+    pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
+    vox_ab_retiring.running = 0;
+    pthread_cond_broadcast(&vox_ab_retirement_finished);
+    pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+    return NULL;
+}
+#ifndef VOX_AB_CREATE_IDLE_THREAD
+#define VOX_AB_CREATE_IDLE_THREAD pthread_create
+#endif
+VOX_AB_API int vox_adblock_worker_release_idle(void) {
+    if (!vox_adblock_worker_pid) return 0;
+    pthread_attr_t attributes;
+    int code = pthread_attr_init(&attributes);
+    if (code) { errno = code; return 0; }
+    code = pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
+    if (code) { pthread_attr_destroy(&attributes); errno = code; return 0; }
+    pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
+    if (vox_ab_retiring.running) {
+        pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+        pthread_attr_destroy(&attributes);
+        return 0;
+    }
+    uint64_t id = ++vox_adblock_worker_sequence;
+    if (!id) id = ++vox_adblock_worker_sequence;
+    vox_ab_retiring = (VoxAdblockRetiringWorker){1, vox_adblock_worker_pid,
+        vox_adblock_worker_tx, vox_adblock_worker_rx, vox_adblock_worker_life, id};
+    pthread_t thread;
+    code = VOX_AB_CREATE_IDLE_THREAD(&thread, &attributes, vox_ab_retire_worker, NULL);
+    if (!code) {
+        /* Ownership changes only after thread creation succeeds. The new
+           thread cannot inspect its slot until this handoff is complete. */
+        vox_adblock_worker_pid = 0;
+        vox_adblock_worker_tx = vox_adblock_worker_rx = vox_adblock_worker_life = -1;
+    } else vox_ab_retiring = (VoxAdblockRetiringWorker){0};
+    pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
+    pthread_attr_destroy(&attributes);
+    if (code) errno = code;
+    return code == 0;
+}
+VOX_AB_API int vox_adblock_worker_release(void) {
+    int released = vox_adblock_worker_pid != 0;
+    if (released) {
+        uint64_t id = ++vox_adblock_worker_sequence;
+        if (!id) id = ++vox_adblock_worker_sequence;
+        vox_ab_request_shutdown(vox_adblock_worker_tx, vox_adblock_worker_rx, id);
+        vox_adblock_worker_cleanup();
+    }
+    return vox_ab_wait_for_retirement() || released;
+}
+/* Process-tree footer accounting includes both the current and retiring owned
+   helpers. No RSS aggregation or private allocator API. A failed query is surfaced
    as unavailable, rather than silently showing only the browser process. */
 VOX_AB_API int vox_adblock_worker_memory_bytes(uint64_t *bytes) {
     if (!bytes) { errno = EINVAL; return -1; }
     *bytes = 0;
     int result = 0;
     pthread_mutex_lock(&vox_adblock_worker_lifecycle_mutex);
-    pid_t pid = vox_adblock_worker_pid;
-    if (pid > 0) {
+    pid_t pids[] = {vox_adblock_worker_pid, vox_ab_retiring.pid};
+    for (unsigned i = 0; i < sizeof pids / sizeof *pids; ++i) if (pids[i] > 0) {
 #ifdef __APPLE__
         struct rusage_info_v4 usage;
         memset(&usage, 0, sizeof usage);
-        result = proc_pid_rusage(pid, RUSAGE_INFO_V4, (rusage_info_t *)&usage);
-        if (!result) *bytes = usage.ri_phys_footprint;
+        result = proc_pid_rusage(pids[i], RUSAGE_INFO_V4, (rusage_info_t *)&usage);
+        if (!result) *bytes += usage.ri_phys_footprint;
 #else
         errno = ENOTSUP; result = -1;
 #endif
+        if (result) break;
     }
     pthread_mutex_unlock(&vox_adblock_worker_lifecycle_mutex);
     return result;

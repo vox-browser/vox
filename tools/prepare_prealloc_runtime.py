@@ -57,23 +57,31 @@ def wrap_function(source, signature, before="", after=""):
     return result
 
 
-CAPTURE_DECLARATIONS = '#include "@VEXEROOT/vlib/os/execute_capture_legacy.h"'
-
-
-def declare_capture_helpers(compat):
+def declare_capture_helpers(compat, header):
     """Declare os's native process-capture helpers in the staged runtime.
 
     The staged library links each module to V's checkout, so V resolves those
     sources outside the staged compiler root. It then does not recognize os as
     part of its own library and omits the helpers' prototypes, leaving their
     calls as implicit declarations. vlib keeps a header with the same signatures
-    for compilers that do not emit them; include it unconditionally here.
+    for compilers that do not emit them; include its resolved path here. Some
+    backends expand @VMODROOT or @VEXEROOT relative to the consuming project,
+    which would produce a nonexistent repository/vlib include.
     """
-    if CAPTURE_DECLARATIONS in compat:
+    resolved = json.dumps(str(header.resolve()))
+    # The legacy guard is active in FastC, so fix its existing directive too.
+    # An additional absolute include alone does not remove that broken path.
+    compat = re.sub(r'(#include\s+)"@(VMODROOT|VEXEROOT)/vlib/os/execute_capture_legacy\.h"',
+                    lambda match: match[1] + resolved, compat)
+    declaration = '#include ' + resolved
+    footer = ("// Staged by tools/prepare_prealloc_runtime.py: os sources resolve outside\n"
+              "// this compiler root, so V does not declare their native capture helpers.\n"
+              + declaration + "\n")
+    # Keep this outside the legacy guard: current C backends also need the
+    # declarations when os is linked from the original compiler's library.
+    if footer in compat:
         return compat
-    return (compat.rstrip("\n") + "\n\n// Staged by tools/prepare_prealloc_runtime.py: os sources resolve outside\n"
-            "// this compiler root, so V does not declare their native capture helpers.\n"
-            + CAPTURE_DECLARATIONS + "\n")
+    return compat.rstrip("\n") + "\n\n" + footer
 
 
 def prepare(compiler, output_root=None):
@@ -98,8 +106,10 @@ def prepare(compiler, output_root=None):
              "builtin/prealloc.c.v": prealloc.encode(),
              "builtin/closure/" + helper.name: helper.read_bytes()}
     compat = builtin / "c_headers_compat_nix.c.v"
-    if compat.is_file() and (vlib / "os/execute_capture_legacy.h").is_file():
-        owned["builtin/" + compat.name] = declare_capture_helpers(compat.read_text()).encode()
+    capture_header = vlib / "os/execute_capture_legacy.h"
+    if compat.is_file() and capture_header.is_file():
+        owned["builtin/" + compat.name] = declare_capture_helpers(compat.read_text(), capture_header).encode()
+        inputs["os/execute_capture_legacy.h"] = capture_header.read_bytes()
     for name, data in list(inputs.items()):
         if name.startswith("builtin/closure/"):
             if name.endswith("/closure.c.v"):

@@ -94,7 +94,7 @@ fn test_brotli_decodes_external_compressed_html_with_dictionary_and_utf8() {
 	assert readable.read_all().bytestr() == '<!doctype html><meta charset="utf-8"><p>Compression dictionary: international information. Привет, 世界!</p>'
 }
 
-fn test_brotli_round_trips_large_binary_input_without_a_native_encoder() {
+fn test_brotli_round_trips_large_binary_input() {
 	// Exercise sizes beyond vlib's optional native-encoder threshold (4096).
 	input := []u8{len: 8193, init: u8(index % 251)}
 	mut compressor := CompressionStream.construct_from_string('br')!

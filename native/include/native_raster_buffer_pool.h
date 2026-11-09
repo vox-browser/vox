@@ -14,7 +14,14 @@ public:
         std::unique_ptr<uint32_t[]> pixels;
         size_t capacity = 0;
         uint64_t generation = 0;
+        bool reused = false;
     };
+    struct ReturnToPool {
+        VoxRasterBufferPool* pool;
+        void operator()(Buffer* buffer) const { pool->release(std::unique_ptr<Buffer>(buffer)); }
+    };
+    using Lease = std::unique_ptr<Buffer, ReturnToPool>;
+    Lease lease(size_t count) { return Lease(acquire(count).release(), ReturnToPool {this}); }
     explicit VoxRasterBufferPool(size_t limit = 8 * 1024 * 1024) : limit_(limit) { }
     std::unique_ptr<Buffer> acquire(size_t count) {
         uint64_t generation;
@@ -29,6 +36,7 @@ public:
             if (best != slots_.size()) {
                 auto result = std::move(slots_[best]);
                 cached_ -= result->capacity;
+                result->reused = true;
                 return result;
             }
         }

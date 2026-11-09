@@ -38,7 +38,7 @@ fn test_source_regex_storage_paths_empty_pattern_find_all_growth_and_move_owners
 	target.move_from(mut source)
 	assert target.find_all(libjs.utf16_string('a'.repeat(300)), 0) == 300
 	assert target.find_all_match(299) == MatchPair{ start: 299, end: 300 }
-	assert target.rust_regex_.find_all_buffer_.len == 1024
+	assert target.compiled_.find_all_buffer_.len == 1024
 	utf16 := libjs.utf16_string_from_code_units_with_storage([u16(0x61), 0x61], false)!
 	assert target.exec(utf16, 1) == .match_
 	assert target.capture_slot(0) == 1 && target.capture_slot(1) == 2

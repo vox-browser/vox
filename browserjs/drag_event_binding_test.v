@@ -108,10 +108,10 @@ fn test_native_drag_event_dictionary_order_nullable_transfer_and_original_author
 	actual := runtime.native_event(runtime.evaluate_host_value('orderedNativeDrag')!)!
 	assert actual.interface_ == .drag_event && !actual.is_trusted()
 	drag := unsafe { &html.DragEvent(actual) }
-	assert drag.data_transfer() or { panic('missing actual DragEvent DataTransfer') } == transfer
+	assert voidptr(drag.data_transfer() or { panic('missing actual DragEvent DataTransfer') }) == voidptr(transfer)
 	assert drag.client_x_ == -3.75 && drag.page_y_ == 4.625 && drag.offset_x_ == -3.75
-	assert drag.related_target() or { panic('missing actual DragEvent related target') } == related
-	assert runtime.native_data_transfer(transfer_wrapper)! == transfer
+	assert voidptr(drag.related_target() or { panic('missing actual DragEvent related target') }) == voidptr(related)
+	assert voidptr(runtime.native_data_transfer(transfer_wrapper)!) == voidptr(transfer)
 	assert settings.realm().reported_exceptions.len == 0
 }
 
@@ -124,12 +124,12 @@ fn test_native_drag_event_transfer_identity_ignores_author_slots_and_rejects_for
 	transfer.set_data('text/plain', 'retained native drag data')
 	wrapper := runtime.javascript_data_transfer(transfer)!
 	assert runtime.javascript_data_transfer(transfer)! == wrapper
-	assert runtime.native_data_transfer(wrapper)! == transfer
+	assert voidptr(runtime.native_data_transfer(wrapper)!) == voidptr(transfer)
 	drag_native_export(mut runtime, '__dragIdentityTransfer', wrapper)!
 	other_transfer := html.DataTransfer.construct()
 	other_wrapper := runtime.javascript_data_transfer(other_transfer)!
 	assert other_wrapper != wrapper
-	assert runtime.native_data_transfer(other_wrapper)! == other_transfer
+	assert voidptr(runtime.native_data_transfer(other_wrapper)!) == voidptr(other_transfer)
 	drag_native_export(mut runtime, '__dragOtherTransfer', other_wrapper)!
 	// Wrapper brands are local to the runtime, even when two runtimes wrap
 	// the same underlying implementation. Do not pass foreign JSC values to
@@ -137,7 +137,7 @@ fn test_native_drag_event_transfer_identity_ignores_author_slots_and_rejects_for
 	mut foreign_runtime, _ := drag_native_event_fixture('https://drag-foreign.example/')
 	defer { foreign_runtime.close() }
 	foreign_wrapper := foreign_runtime.javascript_data_transfer(transfer)!
-	assert foreign_runtime.native_data_transfer(foreign_wrapper)! == transfer
+	assert voidptr(foreign_runtime.native_data_transfer(foreign_wrapper)!) == voidptr(transfer)
 	if _ := runtime.native_data_transfer(foreign_wrapper) {
 		assert false, 'accepted a DataTransfer wrapper from another Runtime'
 	}
@@ -156,7 +156,7 @@ fn test_native_drag_event_transfer_identity_ignores_author_slots_and_rejects_for
 	assert transfer.get_data('text/plain') == 'retained native drag data'
 	actual := runtime.native_event(runtime.evaluate_host_value('dragIdentityEvent')!)!
 	drag := unsafe { &html.DragEvent(actual) }
-	assert drag.data_transfer() or { panic('missing retained DataTransfer') } == transfer
+	assert voidptr(drag.data_transfer() or { panic('missing retained DataTransfer') }) == voidptr(transfer)
 	assert runtime.javascript_data_transfer(transfer)! == wrapper
 	assert settings.realm().reported_exceptions.len == 0
 }
@@ -179,7 +179,7 @@ fn test_native_drag_event_getter_brands_and_native_mouse_family_prototypes() {
 	runtime.evaluate_host('globalThis.dragNativeFamilies=[];0')!
 	for index, event in events {
 		wrapper := runtime.javascript_event(event)!
-		assert runtime.native_event(wrapper)! == event
+		assert voidptr(runtime.native_event(wrapper)!) == voidptr(event)
 			&& runtime.javascript_event(event)! == wrapper
 		drag_native_export(mut runtime, '__dragNativeFamily' + index.str(), wrapper)!
 		runtime.evaluate_host('dragNativeFamilies.push(__dragNativeFamily' + index.str() + '());0')!
@@ -241,7 +241,7 @@ fn test_native_drag_event_live_wrappers_and_inherited_initializers_preserve_tran
 	stamp := base.time_stamp()
 	runtime.evaluate_host('globalThis.retainedNativeDrag=DragEvent;globalThis.retainedNativeDragPrototype=DragEvent.prototype;delete globalThis.DragEvent;globalThis.DragEvent=function ReplacementDragEvent(){};0')!
 	wrapper := runtime.javascript_event(base)!
-	assert runtime.native_event(wrapper)! == base && runtime.javascript_event(base)! == wrapper
+	assert voidptr(runtime.native_event(wrapper)!) == voidptr(base) && runtime.javascript_event(base)! == wrapper
 	drag_native_export(mut runtime, '__dragLiveEvent', wrapper)!
 	assert runtime.evaluate_host(r'(()=>{
  const event=__dragLiveEvent(),check=(condition,label)=>{if(!condition)throw new Error(label)},coordinates=["screenX","screenY","pageX","pageY","clientX","clientY","x","y","offsetX","offsetY"],values=[10.25,-11.75,20.375,-21.625,30.5,-31.5,30.5,-31.5,40.125,-41.875];globalThis.nativeLiveDrag=event;globalThis.dragLiveCoordinates=coordinates;globalThis.dragLiveValues=values;
@@ -267,7 +267,7 @@ fn test_native_drag_event_live_wrappers_and_inherited_initializers_preserve_tran
 	assert !target.dispatch_event(base)
 	assert runtime.evaluate_host('dragDispatchChecks.length===2&&dragDispatchChecks.every(Boolean)&&dragDispatchConversions.join(",")==="type,detail"&&nativeLiveDrag.type==="drag"&&nativeLiveDrag.isTrusted&&nativeLiveDrag.currentTarget===null&&nativeLiveDrag.defaultPrevented&&nativeLiveDrag.dataTransfer===__dragLiveTransfer()')! == 'true'
 	assert base.time_stamp() == stamp
-	assert drag.data_transfer() or { panic('missing actual live Drag transfer') } == transfer
+	assert voidptr(drag.data_transfer() or { panic('missing actual live Drag transfer') }) == voidptr(transfer)
 	assert settings.realm().reported_exceptions.len == 0
 	assert settings.realm().script_execution_depth == 0
 		&& settings.realm().callback_execution_depth == 0

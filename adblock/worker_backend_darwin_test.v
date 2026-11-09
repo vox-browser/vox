@@ -133,6 +133,23 @@ fn test_prepared_worker_retains_filtering_and_release_lifecycle() {
 	assert check(request).blocked
 }
 
+fn test_idle_release_detaches_worker_before_the_next_filter_request() {
+	_ = release_unused_engine()
+	set_enabled(true)
+	defer { _ = release_unused_engine() }
+	assert prepare_default_worker()!
+	previous := default_worker_pid()
+	C.vox_adblock_lock()
+	default_engine_last_used_ns = time.sys_mono_now() - 6 * time.second
+	C.vox_adblock_unlock()
+	assert release_default_engine_if_idle(5000)
+	assert default_worker_pid() == 0
+	assert prepare_default_worker()!
+	assert default_worker_pid() > 0 && default_worker_pid() != previous
+	assert check(Request{url: 'https://securepubads.g.doubleclick.net/tag/js/gpt.js?idle-replacement',
+		source_url: 'https://www.theverge.com/', request_type: 'script'}).blocked
+}
+
 fn prepare_worker_during_filter_test() string {
 	prepare_default_worker() or { return err.msg() }
 	return ''

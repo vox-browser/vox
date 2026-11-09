@@ -6,7 +6,7 @@ import streams
 import webidl
 
 fn file_reader_read_owner() (&WindowModel, &EnvironmentSettingsObject, &EventLoop) {
-	url := dom.URL{value: 'https://file-reader-read.example.test/'}
+	url := dom.URL{ value: 'https://file-reader-read.example.test/' }
 	document := &dom.Document{ url: url, origin_: url.origin() }
 	window := WindowModel.create_top_level(document, none, '') or { panic(err) }
 	mut settings := window.environment_settings_.settings
@@ -166,7 +166,7 @@ fn test_source_read_rejection_preserves_error_setter_fixme_and_owning_callback_c
 	assert loop.is_backup_incumbent_realm_stack_empty()
 }
 
-fn test_source_abort_handler_new_read_retains_the_pinned_shared_abort_boolean_semantics() {
+fn test_source_abort_handler_new_read_before_setup_discards_the_previous_operation() {
 	window, settings, mut loop := file_reader_read_owner()
 	mut document := window.associated_document()
 	defer { document.finalize() }
@@ -182,14 +182,12 @@ fn test_source_abort_handler_new_read_retains_the_pinned_shared_abort_boolean_se
 	reader.read_as_text(fileapi.Blob.create('first'.bytes(), ''), none)!
 	reader.abort()
 	assert reader.ready_state() == .loading && reader.event_log() == ['abort']
-	// Source leaves both initial tasks untracked and uses one m_is_aborted
-	// Boolean. The reentrant read resets it before the old Promise callback;
-	// no additional operation-generation guard is introduced here.
+	// Both initial tasks remain untracked. Their callbacks must distinguish
+	// operations after the reentrant read resets the shared abort Boolean.
 	assert loop.task_queue().tasks.len == 4
 	drive_source_file_reader(mut loop, reader)
 	assert reader.result().text == 'second'
-	assert reader.event_log() == ['abort', 'loadstart', 'progress', 'load', 'loadend', 'loadstart',
-		'progress', 'load', 'loadend']
+	assert reader.event_log() == ['abort', 'loadstart', 'progress', 'load', 'loadend']
 }
 
 fn test_source_worker_read_operation_uses_actual_worker_realm_loop_and_null_document() {
@@ -197,7 +195,7 @@ fn test_source_worker_read_operation_uses_actual_worker_realm_loop_and_null_docu
 	mut document := window.associated_document()
 	defer { document.finalize() }
 	mut realm := &ScriptingRealm{}
-	worker := WorkerGlobalScope.create(dom.URL{value: 'https://file-reader-read.example.test/worker.js'},
+	worker := WorkerGlobalScope.create(dom.URL{ value: 'https://file-reader-read.example.test/worker.js' },
 		.classic, '', realm)
 	settings := WorkerEnvironmentSettingsObject.setup(worker, mut realm,
 		window.environment_settings_.settings.serialize(), 12).settings

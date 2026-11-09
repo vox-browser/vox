@@ -37,6 +37,7 @@ pub enum EventInterface {
 	pop_state_event
 	hash_change_event
 	page_transition_event
+	security_policy_violation_event
 	storage_event
 	promise_rejection_event
 	navigation_current_entry_change_event
@@ -203,6 +204,8 @@ pub mut:
 	page_y_               f64
 	offset_x_             f64
 	offset_y_             f64
+	// HTMLElement.click() activates without selecting a pointer coordinate.
+	is_synthetic_activation_ bool
 	movement_x_           f64
 	movement_y_           f64
 	ctrl_key_             bool

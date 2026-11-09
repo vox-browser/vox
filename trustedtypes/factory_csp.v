@@ -154,6 +154,10 @@ pub enum InjectionSink {
 	svg_script_element_href
 	worker_constructor
 	element_event_handler
+	window_set_timeout
+	window_set_interval
+	worker_global_scope_set_timeout
+	worker_global_scope_set_interval
 }
 
 pub fn injection_sink_string(sink InjectionSink) string {
@@ -183,6 +187,10 @@ pub fn injection_sink_string(sink InjectionSink) string {
 		.svg_script_element_href { 'SVGScriptElement href' }
 		.worker_constructor { 'Worker constructor' }
 		.element_event_handler { 'Element event handler' }
+		.window_set_timeout { 'Window setTimeout' }
+		.window_set_interval { 'Window setInterval' }
+		.worker_global_scope_set_timeout { 'WorkerGlobalScope setTimeout' }
+		.worker_global_scope_set_interval { 'WorkerGlobalScope setInterval' }
 	}
 }
 

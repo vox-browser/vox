@@ -115,6 +115,10 @@ pub fn Runtime.create_for_worker() &Runtime {
 	return Runtime.create_with_global(.javascriptcore, true)
 }
 
+pub fn Runtime.create_for_shared_worker() &Runtime {
+	return Runtime.create_with_global_kind(.javascriptcore, 2)
+}
+
 // Apple's module API requires its ordinary global class. Keep the worker's
 // bindings as own properties rather than altering the realm's Object.prototype.
 pub fn Runtime.create_for_module_worker() &Runtime {
@@ -128,11 +132,17 @@ pub fn Runtime.create_with_engine(engine Engine) &Runtime {
 }
 
 fn Runtime.create_with_global(engine Engine, worker_global bool) &Runtime {
+	return Runtime.create_with_global_kind(engine, if worker_global { 1 } else { 0 })
+}
+
+fn Runtime.create_with_global_kind(engine Engine, global_kind int) &Runtime {
 	mut agent_vm := libjs.VM.create()
 	realm_context := libjs.create_simple_execution_context(mut agent_vm)
 	mut context := unsafe { nil }
 	$if darwin || linux || windows {
-		if engine == .javascriptcore { context = create_javascript_core_context(worker_global) }
+		if engine == .javascriptcore {
+			context = if global_kind == 2 { create_javascript_core_shared_context() } else { create_javascript_core_context(global_kind == 1) }
+		}
 	}
 	mut runtime := &Runtime{
 		engine:   engine
@@ -176,6 +186,9 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	mut event_loop := unsafe { &html.EventLoop(settings.responsible_event_loop()) }
 	event_loop.attach_embedding_vm(vm)
 	runtime.scripting_settings_ = settings
+	runtime.install_source_location_provider(realm)
+	runtime.install_inline_script_evaluator(realm)
+	runtime.install_string_compilation_policy(realm)
 }
 
 fn (runtime &Runtime) prepare_html_script() {
@@ -353,7 +366,7 @@ fn (runtime &Runtime) evaluate_backend(source ScriptSource, stringify_result boo
 		if runtime.context == unsafe { nil } {
 			return error('JavaScriptCore context creation failed')
 		}
-		return evaluate_with_javascript_core(runtime.context, source, stringify_result, positioned_syntax_errors)
+		return evaluate_with_javascript_core(runtime, source, stringify_result, positioned_syntax_errors)
 	} $else {
 		return error('JavaScript evaluation is currently available on macOS only')
 	}
@@ -370,6 +383,8 @@ pub fn (runtime &Runtime) run_document_scripts(sources []ScriptSource) ! {
 	}
 	for source in sources {
 		runtime.execute_source(source, false) or {
+			mut owner := unsafe { &Runtime(runtime) }
+			owner.report_event_callback_exception(err)
 			runtime.evaluate_host('console.error(${json2.encode(err.msg())})')!
 		}
 	}

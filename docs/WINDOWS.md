@@ -24,7 +24,7 @@ blocked until the fixture paths are made portable.
 
 ## Dependencies and native build
 
-Install current V, UI2, Python 3, Rust and the MinGW development packages. In
+Install current V, UI2, Python 3 and the MinGW development packages. In
 an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
@@ -33,7 +33,6 @@ pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-woff2 mingw-w64-x86_64-openssl \
   mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
-rustup target add x86_64-pc-windows-gnu
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
@@ -70,9 +69,8 @@ runtime versions from a different dependency distribution.
 
 ## Cross-compilation from macOS or Linux
 
-Install the `x86_64-w64-mingw32` toolchain and Rust's
-`x86_64-pc-windows-gnu` target. Supply Windows development packages in a sysroot
-containing `mingw64/include`, `mingw64/lib` and `mingw64/lib/pkgconfig`.
+Install the `x86_64-w64-mingw32` toolchain. Supply Windows development packages
+in a sysroot containing `mingw64/include`, `mingw64/lib` and `mingw64/lib/pkgconfig`.
 Use target libraries and headers throughout; host libraries cannot link into
 a Windows executable. The cross compiler supplies its own C runtime headers.
 
@@ -114,7 +112,7 @@ executable does not establish Windows runtime or rendering conformance.
 
 `tools/test_windows_native.c` exercises reservation, commitment, decommitment
 and zero-filled recommitment, socket readiness and queued wakeups, Windows
-argument quoting and bounded Rust panic diagnostics. Compile it with MinGW,
+argument quoting. Compile it with MinGW,
 then run it on Windows:
 
 ```sh
@@ -191,9 +189,12 @@ compiled and linked with warnings treated as errors; its panic-handoff checks
 also executed on macOS. The modified Skia bridges passed macOS C++ syntax
 checks. Those initial checks did not execute the Windows binaries.
 
-The existing build scaffolding's help and the pinned Rust source audit remain
-available with `v run build_browser.vsh --help` and
-`python3 tools/build_regex_backend.py --verify-only`.
+The build scaffolding's help is available with
+`v run build_browser.vsh --help`. Regex now uses the translated V compiler and
+VM; no Rust toolchain or regex archive is needed. Frozen source records can be
+checked with [the V reference checker](../tools/REFERENCE_CORPORA.md). The native
+smoke program was compiled and linked again after removing the obsolete Rust
+panic handoff; this change has not been executed in Windows.
 
 ## Windows VM verification on 2026-11-08
 

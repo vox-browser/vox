@@ -1,0 +1,187 @@
+{
+  "date": "2026-11-08",
+  "scope": "Linux immutable SkPathData retains oval/rrect convexity for axis-preserving transforms; legacy macOS paths retain their existing behavior.",
+  "commit": "15c32b7b1",
+  "checks": {
+    "gg-linux-clip-convexity-unit": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-prod",
+        "-gc",
+        "none",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/rounded_rect_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 507576320,
+      "elapsed_seconds": 13.080829828999413,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "e2f04be38eec403d73f489e1f465153bc00ed424b207db2b6f96008da2f481e6"
+    },
+    "gg-clip-convexity-unit": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/rounded_rect_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 419168256,
+      "elapsed_seconds": 7.0151523749999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "dfcc21b937add7ee7c565818e8b87e86bef97eb465149632b3bd154b817ae20f"
+    },
+    "gg-linux-convex-portable-shadows": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-linux-raster-oracle",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 658096128,
+      "elapsed_seconds": 25.169355090001773,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "b279b3145f03a8c0ac4f52ee9deda746da0e529487c163a954ff9020623753d4"
+    },
+    "gg-linux-convex-rrects": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-linux-raster-oracle",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 666959872,
+      "elapsed_seconds": 20.270594514997356,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "82e928cf9957351b2c0ef5fcc2fe3e50aa772a1fe199d4a44aa591ae8aa9e2fd"
+    },
+    "gg-clip-convexity-final": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "20000"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 597278720,
+      "elapsed_seconds": 14.026563416,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "9c510e6ed07d0a41f1207fdb46a1283f05008ca51bec002a26941efb35e2676f"
+    }
+  },
+  "native_probe": {
+    "macos": "convex 0 bounds 21.4097347 43.3963013 28.3034935 137.774872\n24.2621346 43.3963013\n25.3406181 43.3963013\n28.3034935 43.3963013\n28.3034935 51.240448\n28.3034935 132.678223\n28.3034935 137.774872\n26.9215546 137.774872\n26.9215565 137.774872\n21.4097347 137.774872\n21.4097347 132.139099\n21.4097347 49.3276138\n21.4097347 43.3963013\n24.2621346 43.3963013\n",
+    "linux": "convex 1 bounds 21.4097347 43.3963013 28.3034935 137.774872\n24.2621346 43.3963013\n25.3406181 43.3963013\n28.3034935 43.3963013\n28.3034935 51.240448\n28.3034935 132.678223\n28.3034935 137.774872\n26.9215546 137.774872\n26.9215565 137.774872\n21.4097347 137.774872\n21.4097347 132.139099\n21.4097347 49.3276138\n21.4097347 43.3963013\n24.2621346 43.3963013\n"
+  },
+  "native_outputs": {
+    "macos": [
+      {
+        "case": "with_clip",
+        "sha": "8cfaeee87d34864be7a4df8c5106774763610a70b1549ffcde8c6bfbf3ec8bba",
+        "pixel": [
+          0,
+          0,
+          0,
+          29
+        ]
+      },
+      {
+        "case": "without_clip",
+        "sha": "afc8dce8ef2454d0d66c59bfd3401168428c1f610b1e286b5bbb985594a1dfae",
+        "pixel": [
+          0,
+          0,
+          0,
+          34
+        ]
+      },
+      {
+        "case": "clip_mask",
+        "sha": "78ba6a7fbc0ac04cf37cca13d3c865e3c1e4fe848eccb53f96d8eea3e446cf9b",
+        "pixel": [
+          216,
+          216,
+          216,
+          216
+        ]
+      }
+    ],
+    "linux": [
+      {
+        "case": "with_clip",
+        "sha": "00d48294fe70e09ea04e38d7b5f35ac2e95d15341c9ef2dc72b51ce3cdbd164a",
+        "pixel": [
+          0,
+          0,
+          0,
+          28
+        ]
+      },
+      {
+        "case": "without_clip",
+        "sha": "afc8dce8ef2454d0d66c59bfd3401168428c1f610b1e286b5bbb985594a1dfae",
+        "pixel": [
+          0,
+          0,
+          0,
+          34
+        ]
+      },
+      {
+        "case": "clip_mask",
+        "sha": "8e4c92d9e8e3d488b82c1b50fc0633cdfbcbc78d396e9b7061249ff71b52a7af",
+        "pixel": [
+          213,
+          213,
+          213,
+          213
+        ]
+      }
+    ]
+  },
+  "results": {
+    "linux_outer_shadow_attempts": 20000,
+    "linux_outer_shadow_painted": 3285,
+    "linux_rounded_rect_and_clip_cases": 20000,
+    "macos_rounded_rect_and_clip_cases": 20000
+  },
+  "reference": {
+    "revision": "ee20d565acb08dece4a32e3f209cdd41119015ca",
+    "immutable_path_source": "src/core/SkPathData.cpp: makeTransform() and setupIsA()",
+    "legacy_path_source": "src/core/SkPathRef.cpp: CreateTransformedCopy()",
+    "public_probe_source": "#include \"include/core/SkPath.h\"\n#include \"include/core/SkRRect.h\"\n#include \"include/core/SkMatrix.h\"\n#include <cstdio>\nint main() {\n float f[]={10.405047f,-12.90473f,52.73052f,3.8516319f,36.44262f,13.765029f,23.678234f,6.420258f,26.182846f,25.607016f,27.555897f,13.25178f};\n SkVector radii[4]; for(int i=0;i<4;i++)radii[i]={f[4+i*2],f[5+i*2]};\n SkRRect rr;rr.setRectRadii(SkRect::MakeXYWH(f[0],f[1],f[2],f[3]),radii);\n auto m=SkMatrix::MakeAll(0,-1.7898283f,5.206243f,1.7898283f,0,24.773052f,0,0,1);\n auto p=SkPath::RRect(rr).makeTransform(m);auto b=p.getBounds();\n std::printf(\"convex %d bounds %.9g %.9g %.9g %.9g\\n\",p.isConvex(),b.left(),b.top(),b.right(),b.bottom());\n SkPoint points[64];int count=p.getPoints({points,64});for(int i=0;i<count;i++)std::printf(\"%.9g %.9g\\n\",points[i].x(),points[i].y());\n}\n"
+  },
+  "limits": [
+    "Native points are identical on both platforms; convexity metadata selects different AA clip paths.",
+    "These CPU comparisons do not establish a Skia-free browser build."
+  ]
+}

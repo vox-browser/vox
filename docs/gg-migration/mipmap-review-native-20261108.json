@@ -1,0 +1,804 @@
+{
+  "date": "2026-11-08",
+  "scope": "Verify the PR mipmap-clamping review against the pinned native CPU renderer and preserve its actual behavior.",
+  "review_url": "https://github.com/vlang/vox2/pull/16#discussion_r4505836609",
+  "conclusion": "The clamp request does not apply to this pinned CPU target. SkMipmapAccessor reloads the base image when its upper getLevel request fails; when only the lower request fails, it retains the available upper image without interpolation. Both CPU image shaders and legacy bitmap contexts use this accessor.",
+  "skia_revision": "ee20d565acb08dece4a32e3f209cdd41119015ca",
+  "reference_sources": {
+    "src/core/SkMipmapAccessor.cpp": "5d134c807046aa826d99e520a31cfdc2e58458b73668a10a6b1120f7b4d74fd3",
+    "src/core/SkMipmap.cpp": "8f48b1000442f9671d0529ebd7657b24998e159031c85c77e1ab165b44188611",
+    "src/core/SkBitmapProcState.cpp": "c66517aaa6123d21e9b8d913ea1b3402ea82da90dc7bc4d24e4cff7eefd546c3"
+  },
+  "reference_locations": [
+    "SkMipmapAccessor.cpp:88-104",
+    "SkMipmap.cpp:281-290",
+    "SkBitmapProcState.cpp:201-206"
+  ],
+  "commits": [
+    "f859c11b506a4d040c4f7c133bd3c08c927e17e1",
+    "86c006b6b9d91a64a151b590f2fe34fea4f48cf1"
+  ],
+  "source_sha256": {
+    "cpuraster/mipmap.v": "740ce84c2eb9d62ee03f565105c782450fad6836732c1665206432fc5744f317",
+    "cpuraster/mipmap_test.v": "db93c73ba5bd922d26aee5ea7f5c1d19eb0928892ede2716c325996140062d5c",
+    "tools/gg_migration/skia_cpu_oracle.cpp": "feeda3b2d38ffb24a4b513e51a27e9a1f882ca0508549c53f683234c0f263cff",
+    "tools/gg_migration/native_mipmap_fallback_hashes.py": "2543f14107dfdcd3b7e98c9ebe839f7e1e7b86d6456b1920f83cc4bffd78b350"
+  },
+  "results": {
+    "native_sampler_cases_per_platform": 8,
+    "focused_tests_default_and_production_passed_on_both_platforms": true,
+    "macos_random_mipmap_levels": 2000,
+    "linux_random_mipmap_levels": 10000,
+    "production_sampling_arithmetic_changed": false
+  },
+  "checks": {
+    "gg-mipmap-review-first": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-portable-20261108",
+        "2000",
+        "20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 626704384,
+      "elapsed_seconds": 44.202371041999996,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "538dce246ad01858e52c67761a99dc83f9b1f37d993d4aec4f9ffd89f086c52e"
+    },
+    "gg-mipmap-review-linux-prod": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 460115968,
+      "elapsed_seconds": 9.784709961000772,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "8369699bae6abfda96cff040b354a93d6849e89596d205684ffc8900dbb0f54d"
+    },
+    "gg-mipmap-review-linux-unit": {
+      "command": [
+        "/home/alex.guest/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 460906496,
+      "elapsed_seconds": 6.186879127999418,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "19a2ccc719b91a64146ce301473f1e9d8cb040eaab5308ae2596b38e8f3abc18"
+    },
+    "gg-mipmap-review-linux": {
+      "command": [
+        "sh",
+        "tools/gg_migration/test_cpu_raster.sh",
+        "Build/gg-linux-raster-oracle",
+        "10000",
+        "20261108"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 691646464,
+      "elapsed_seconds": 26.221255554999516,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "a0dc5a5ec65a35579cbe90f94c7aeb20e58923c3244cd5d4e90c85ff4a592c58"
+    },
+    "gg-mipmap-review-prod": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "-prod",
+        "-gc",
+        "none",
+        "test",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 501170176,
+      "elapsed_seconds": 59.683875917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "9b5a53b88c2bcbe90f50c28e00b8ebae1c84564db9c8af167dfda8bbc3717507"
+    },
+    "gg-mipmap-review-unit": {
+      "command": [
+        "/Users/alex/code/v/v",
+        "-memory-limit",
+        "10G",
+        "-cc",
+        "clang",
+        "test",
+        "cpuraster/mipmap_test.v"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 389627904,
+      "elapsed_seconds": 13.809134125,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice",
+      "log_sha256": "13b61a2bc5e2a9ba20127230153d65831c61a1578e1728bb5ba15df22c89320c"
+    }
+  },
+  "native_fixtures": {
+    "macos": {
+      "platform": "macOS-27.2-arm64-arm-64bit",
+      "reference_sha256": "0a7cc6e949190ce50fb7965540a84b5e0e65bdd22065a4d1443f56791d48fa48",
+      "tool_sha256": "2543f14107dfdcd3b7e98c9ebe839f7e1e7b86d6456b1920f83cc4bffd78b350",
+      "source_sha256": "58aad44868e91114bf2426548e7bd62f93d98de621719c301f1064e9b52725a2",
+      "records": [
+        {
+          "mode": "nearest",
+          "scale": 0.125,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.125,
+            0,
+            0,
+            0.125,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.1,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.1,
+            0,
+            0,
+            0.1,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.05,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.05,
+            0,
+            0,
+            0.05,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.025,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.025,
+            0,
+            0,
+            0.025,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.125,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.125,
+            0,
+            0,
+            0.125,
+            0,
+            0
+          ],
+          "pixels": [
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255
+          ],
+          "sha256": "415c4ef609f2d22f818b7cde2c4d9d4a7b6c09ba49fa256f87da7bff1a863c0b"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.1,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.1,
+            0,
+            0,
+            0.1,
+            0,
+            0
+          ],
+          "pixels": [
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255
+          ],
+          "sha256": "415c4ef609f2d22f818b7cde2c4d9d4a7b6c09ba49fa256f87da7bff1a863c0b"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.05,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.05,
+            0,
+            0,
+            0.05,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.025,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.025,
+            0,
+            0,
+            0.025,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        }
+      ]
+    },
+    "linux": {
+      "platform": "Linux-6.8.0-147-generic-aarch64-with-glibc2.39",
+      "reference_sha256": "087eb749a83ed6e50e87868af0e6354fe2ec773c6aab1bde58cf69814efe0518",
+      "tool_sha256": "2543f14107dfdcd3b7e98c9ebe839f7e1e7b86d6456b1920f83cc4bffd78b350",
+      "source_sha256": "58aad44868e91114bf2426548e7bd62f93d98de621719c301f1064e9b52725a2",
+      "records": [
+        {
+          "mode": "nearest",
+          "scale": 0.125,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.125,
+            0,
+            0,
+            0.125,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.1,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.1,
+            0,
+            0,
+            0.1,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.05,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.05,
+            0,
+            0,
+            0.05,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "nearest",
+          "scale": 0.025,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            1
+          ],
+          "matrix": [
+            0.025,
+            0,
+            0,
+            0.025,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.125,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.125,
+            0,
+            0,
+            0.125,
+            0,
+            0
+          ],
+          "pixels": [
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255
+          ],
+          "sha256": "415c4ef609f2d22f818b7cde2c4d9d4a7b6c09ba49fa256f87da7bff1a863c0b"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.1,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.1,
+            0,
+            0,
+            0.1,
+            0,
+            0
+          ],
+          "pixels": [
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255,
+            96,
+            96,
+            96,
+            255
+          ],
+          "sha256": "415c4ef609f2d22f818b7cde2c4d9d4a7b6c09ba49fa256f87da7bff1a863c0b"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.05,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.05,
+            0,
+            0,
+            0.05,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        },
+        {
+          "mode": "linear",
+          "scale": 0.025,
+          "arguments": [
+            4,
+            4,
+            16,
+            2,
+            2,
+            2
+          ],
+          "matrix": [
+            0.025,
+            0,
+            0,
+            0.025,
+            0,
+            0
+          ],
+          "pixels": [
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255,
+            192,
+            192,
+            192,
+            255
+          ],
+          "sha256": "0b19e97a345179dc1a2b50e8d26c51ca50e3316d8c514a1426efe5eee48ca942"
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "This verifies the pinned CPU target, not a general GPU mipmap policy.",
+    "The browser still links Skia; this review verification does not establish a Skia-free browser build."
+  ]
+}

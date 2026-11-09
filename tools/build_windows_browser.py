@@ -46,9 +46,6 @@ def main():
     run([sys.executable, repo / 'tools/prepare_windows_jsc.py',
          args.javascriptcore_dll.resolve()])
     run([sys.executable, repo / 'tools/build_linux_native.py', '--os', 'windows'])
-    regex_command = [sys.executable, repo / 'tools/build_regex_backend.py',
-                     '--target', 'x86_64-pc-windows-gnu']
-    run(regex_command)
     modules = subprocess.check_output(
         [sys.executable, str(repo / 'tools/prepare_ui2.py'), compiler],
         cwd=repo, env=environment, text=True).strip()

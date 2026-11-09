@@ -4,13 +4,12 @@
 
 // Translation of the self-contained core of Libraries/LibWeb/FileAPI/File.cpp — the File record,
 // which extends Blob with a name and a lastModified timestamp, plus its constructor. The type is
-// normalized through the mimesniff MimeType parser (matching upstream), and an absent lastModified
+// normalized as printable ASCII with ASCII lowercase, and an absent lastModified
 // defaults to the current time in milliseconds since the Unix epoch. Structured serialization is
 // exposed as a typed payload while the wire encoder remains an HTML/runtime concern.
 // https://w3c.github.io/FileAPI/#file-section
 module fileapi
 
-import mimesniff
 import time
 import libjs
 
@@ -62,12 +61,9 @@ pub fn File.construct(file_bits []BlobPart, file_name string, options ?FilePrope
 	mut type_ := ''
 	mut last_modified := i64(0)
 	if opts := options {
-		// The spec is out of date: the type is normalized through the MimeType parser (an
-		// unparseable, e.g. empty, type leaves the type as the empty string).
+		// File API lowercases the complete printable ASCII string without MIME parsing.
 		if is_basic_latin(opts.type_) {
-			if parsed_type := mimesniff.MimeType.parse(opts.type_) {
-				type_ = parsed_type.serialized()
-			}
+			type_ = ascii_lowercase(opts.type_)
 		}
 		// lastModified defaults to the current time in ms since the Unix epoch when not provided.
 		last_modified = opts.last_modified or { time.now().unix_milli() }

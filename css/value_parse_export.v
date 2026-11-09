@@ -81,10 +81,10 @@ fn property_value_can_export(value StyleValue) bool {
 		}
 		RGBColorStyleValue {
 			// A relative color keeps its origin, which the export does not copy.
-			value.relative_origin_.len == 0 && property_value_can_export(value.r_[0])
-				&& property_value_can_export(value.g_[0])
-				&& property_value_can_export(value.b_[0])
-				&& property_value_can_export(value.alpha_[0])
+			value.relative_origin_.len == 0 && property_value_can_export(value.r_.value)
+				&& property_value_can_export(value.g_.value)
+				&& property_value_can_export(value.b_.value)
+				&& property_value_can_export(value.alpha_.value)
 		}
 		else { false }
 	}
@@ -152,9 +152,9 @@ fn export_property_value(value StyleValue) StyleValue {
 		}
 		RGBColorStyleValue {
 			name := if original_name := value.name_ { ?string(original_name.clone()) } else { none }
-			StyleValue(RGBColorStyleValue.create(export_property_value(value.r_[0]),
-				export_property_value(value.g_[0]), export_property_value(value.b_[0]),
-				export_property_value(value.alpha_[0]), value.color_syntax_, name))
+			StyleValue(RGBColorStyleValue.create(export_property_value(value.r_.value),
+				export_property_value(value.g_.value), export_property_value(value.b_.value),
+				export_property_value(value.alpha_.value), value.color_syntax_, name))
 		}
 		else { panic('unsupported property value export') }
 	}

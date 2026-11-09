@@ -288,12 +288,7 @@ fn compact_range_selection_bootstrap() string {
    state.id=entry.attributes.id===undefined?"":String(entry.attributes.id);
    state.className=entry.attributes.class===undefined?"":String(entry.attributes.class);
   }
-  for(const key of Object.keys(__state.elements)){
-   const state=__state.elements[key];
-   if(!state.textContentDirty)delete state.textContent;
-   if(!state.innerHTMLDirty)delete state.innerHTML;
-   state.nativeContent=true;
-  }
+  __compactInvalidateAllContent();
   return result;
  }
  globalThis.__compactApplyMutationRefresh=refresh;
