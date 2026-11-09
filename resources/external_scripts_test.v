@@ -1,6 +1,7 @@
 module main
 
 import browserjs
+import browsernet
 import dom
 import html
 import os
@@ -13,7 +14,7 @@ fn dynamic_script_fixture(code string) (&dom.Document, &browserjs.Runtime, &Brow
 	mut loader := &BrowserScriptRequestLoader{
 		document: document
 		// Tests deliver responses explicitly, including out-of-order completions.
-		fetch:    fn (_ string, _ string, _ chan PreloadedResource) {}
+		fetch:    fn (_ string, _ string, _ chan PreloadedResource, _ &browsernet.RequestScope) {}
 	}
 	mut messages := []string{}
 	_ := script_sources(document, document.url.serialize(), {}, mut messages)
@@ -159,6 +160,12 @@ const s=document.createElement("script");s.src="pending.js";document.head.append
 	}
 	assert messages == []
 	assert document.anything_is_delaying_the_load_event()
+	scope := loader.request_scope
+	scope.retain()
+	defer { scope.release() }
+	loader.cancel()
+	assert scope.is_cancelled()
+	assert !browsernet.publish_result[PreloadedResource](PreloadedResource{}, loader.results, scope)
 	loader.cancel()
 	assert !document.anything_is_delaying_the_load_event()
 	assert loader.requests.len == 0

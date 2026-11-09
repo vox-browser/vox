@@ -25,7 +25,10 @@ fn test_query_responses_reject_legacy_transport_cache_and_reuse_new_entries() {
 		PreloadedResource{}
 	}
 	assert read_cached_resource(address) == none
-	cache_resource_response_headers(address, address, 'all requested weights', []adblock.ResponseHeader{})
+	cache_resource_response_headers_with_status(address, address, 'all requested weights', [
+		adblock.ResponseHeader{ name: 'Cache-Control', value: 'public, max-age=60' },
+		adblock.ResponseHeader{ name: 'Date', value: time.utc().http_header_string() },
+	], 200)
 	loaded := cached_browser_resource_response(address, address, 'https://owner.example/', 'stylesheet')!
 	assert loaded.body == 'all requested weights'
 	assert os.read_file(legacy)! == 'regular weights only'

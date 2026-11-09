@@ -1,5 +1,6 @@
 module main
 
+import browsernet
 import dom
 import html
 import os
@@ -322,4 +323,23 @@ fn test_cached_page_scripts_can_read_persisted_on_real_lifecycle_events() {
 	app.history_go(-1)
 	assert voidptr(app.document) == voidptr(first)
 	assert app.js_runtime.evaluate_host('JSON.stringify(transitions.slice(-2))')! == '[["pagehide",true,true,true,true],["pageshow",true,true,true,true]]'
+}
+
+fn test_pending_background_requests_retire_before_a_page_can_enter_back_forward_cache() {
+	mut app := back_forward_cache_test_app()
+	defer { app.dispose_browser_tab() }
+	app.install_loaded_page(back_forward_cache_test_page('pending-resource'), true)
+	assert app.back_forward_cache_blocker() == ''
+	scope := browsernet.new_request_scope()
+	scope.retain()
+	defer { scope.release() }
+	app.background_resource_scope = scope
+	app.background_resource_pending['https://bfcache.example/pending.css'] = true
+	assert app.back_forward_cache_blocker() == 'resource requests'
+	app.install_loaded_page(back_forward_cache_test_page('replacement'), true)
+	// Check eligibility before cancellation clears pending flags. Otherwise
+	// restoring this page would retain a request whose producer was retired.
+	assert app.back_forward_cache.pages.len == 0
+	assert app.background_resource_pending.len == 0
+	assert scope.is_cancelled()
 }

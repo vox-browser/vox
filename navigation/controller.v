@@ -1,5 +1,6 @@
 module main
 
+import browsernet
 import adblock
 import dom
 import platform
@@ -15,6 +16,7 @@ mut:
 	back_forward_cache             BrowserBackForwardCache
 	history_scroll_restoration     ?HistoryScrollRestoration
 	navigation_results             chan NavigationResult
+	navigation_request_scope ?&browsernet.RequestScope
 	navigation_generation          int
 	navigation_fetch_generation    int
 	pending_navigation             ?PendingNavigation
@@ -91,7 +93,7 @@ fn (mut navigation NavigationController) cancel_pending_navigation() {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	navigation.navigation_generation++
-	navigation.navigation_fetch_generation = 0
+	navigation.cancel_navigation_fetch()
 	navigation.pending_navigation = none
 	navigation.pending_native_navigation = none
 	navigation.history_scroll_restoration = none

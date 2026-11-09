@@ -342,6 +342,7 @@ pub fn (mut request CurlRequest) stop() {
 fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
+	request.receiver_.stop_caching_incomplete_response()
 	if request.in_multi_ {
 		check_curl_result(C.vox_curl_multi_remove_handle(request.connection_.multi_, request.easy_), C.CURLM_OK)
 		request.in_multi_ = false

@@ -56,6 +56,9 @@ fn (app &BrowserApp) back_forward_cache_blocker() string {
 	if document.readiness() == .loading || (app.ctx != unsafe { nil } && !app.document_presented) {
 		return 'loading'
 	}
+	// Compact background requests do not have a suspend/resume contract. A
+	// cached page must not retain request flags after their producers retire.
+	if app.background_resource_pending.len > 0 { return 'resource requests' }
 	// Native players do not survive suspension.
 	if app.media_players.len > 0 { return 'media' }
 	if children := app.child_document_host {

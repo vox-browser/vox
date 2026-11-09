@@ -17,7 +17,7 @@ fn test_response_storage_follows_cache_control_no_store() {
 	])
 }
 
-// Serves `count` requests; `stored` answers without Cache-Control, every other
+// Serves `count` requests; `stored` is explicitly fresh and public, every other
 // path is no-store. Returns the requested paths in order.
 fn serve_storage_responses(mut listener net.TcpListener, count int) []string {
 	mut paths := []string{}
@@ -28,8 +28,8 @@ fn serve_storage_responses(mut listener net.TcpListener, count int) []string {
 		length := socket.read(mut bytes) or { panic(err) }
 		path := bytes[..length].bytestr().all_after(' ').all_before(' ')
 		paths << path
-		control := if path == '/stored' { '' } else { 'Cache-Control: no-store\r\n' }
-		socket.write_string('HTTP/1.1 200 OK\r\n${control}Content-Length: 5\r\nConnection: close\r\n\r\nfresh') or { panic(err) }
+		control := if path == '/stored' { 'Cache-Control: public, max-age=60\r\n' } else { 'Cache-Control: no-store\r\n' }
+		socket.write_string('HTTP/1.1 200 OK\r\n${control}Date: ${time.utc().http_header_string()}\r\nContent-Length: 5\r\nConnection: close\r\n\r\nfresh') or { panic(err) }
 		socket.close() or {}
 	}
 	return paths
@@ -90,5 +90,11 @@ fn test_stored_no_store_entries_are_not_answered_from_disk() {
 	assert read_cached_resource(address)? == 'legacy body'
 	assert disk_cached_browser_resource(address, address, 'stylesheet') == none
 	assert try_write_browser_cache_metadata(path + '.headers.json', '[{"name":"Cache-Control","value":"max-age=60"}]')
-	assert disk_cached_browser_resource(address, address, 'stylesheet')?.body == 'legacy body'
+	// Removing no-store does not supply the missing status/receipt provenance.
+	assert disk_cached_browser_resource(address, address, 'stylesheet') == none
+	cache_resource_response_headers_with_status(address, address, 'new response', [
+		adblock.ResponseHeader{ name: 'Cache-Control', value: 'public, max-age=60' },
+		adblock.ResponseHeader{ name: 'Date', value: time.utc().http_header_string() },
+	], 200)
+	assert disk_cached_browser_resource(address, address, 'stylesheet')?.body == 'new response'
 }
