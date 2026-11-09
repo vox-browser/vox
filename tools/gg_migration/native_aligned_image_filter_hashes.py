@@ -512,6 +512,21 @@ for i, x_bits in enumerate(near_crop_x_bits):
             if variant == 1: case['clip_rect'] = [16+i,11,1,1]
             cases.append(case)
 
+for i, x_bits in enumerate(near_crop_x_bits):
+    scale = scalar_bits(1074161254)
+    destination = list(map(scalar_bits, [x_bits, 1082230297, 1075339656, 1075339654]))
+    gain100 = (2,0,0,0,0,[100,0,0,0,0,0,100,0,0,0,0,0,100,0,0,0,0,0,1,0],0)
+    for premul in [True, False]:
+        for variant, filters in enumerate([[blur(.8), shadow(.8)],
+                [blur(.1), gain100, shadow(.1, scalar(-1/scale), 0)],
+                [blur(.8), shadow(.8), contrast, blur(1.2), shadow(.8,-7.25,4.5)]]):
+            case = dict(name=f'prior-blur-crop-shadow-{i}-{int(premul)}-{variant}', iw=13, ih=7,
+                source=[6,1,5,5], destination=destination, transform=[scale,0,0,scale,2.25,3.5],
+                filters=filters, premul=premul, smoothing=variant != 0,
+                mode=['src_in','src_over','plus_lighter'][variant])
+            if variant == 1: case['clip_rect'] = [11+i,14,1,1]
+            cases.append(case)
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -604,6 +619,7 @@ if platform.system() == 'Linux':
 expected += ['7590fe0bcd5b92d1', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1', '7f9693b40ef11387', 'f44d1959a67025ac', '44c0f31be7db0067', '8bfc2f0cbc7e43c7', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee88224a19e9e', '0c10a9f5df1cdcf1']
 expected += ['633e7bfa680a5d4c', '34a6856f70dce369', '7af094b311774ce4', 'f19e7a111286ddc1', '88523b9296e4d31a', 'bba34b76b9c65bcd', 'fdf70e74ece3d570', '9e645119af2ee69c', '79d8030bcedde1b8', '3b1caa28fadde8ba', '4b2fc2c9df2fb262', '00d5da61b2dd5925', '19538cd84a4b3ba1', 'b35a046e132f0edd', '0466e63ce6feb7ad', '6ffd98323a241688', '13be7362ae8813c8', 'b39893a0f6c26b00']
 expected += ['32d1d4b89a7e472d', '239efb14c8f4bc78', '35d3676177c6c2e6', 'e39d375b5f38332b', '239efb14c8f4bc78', 'e8e034b797f18ea6', 'f169dd3728a6ea4b', 'c3346a9e177eb923', '2ee54f1ce951204c', 'a26da7a28810a36c', 'c3346a9e177eb923', '15a951eef607c9ca', '77638311d930795c', '3523569d6973d6d3', '013050aacb5e857a', 'e3f96f7c30d17793', '3523569d6973d6d3', '60b247ba8cfdf249']
+expected += ['e17feea807275f4e', '6b3f5b0930ea912b', '33ded603650e84ff', 'd15d0cd562fd73f6', '6b3f5b0930ea912b', '32d51319e56d4777', 'd4755b4df9901c00', '1b1866138f82436d', '6349917112094de8', 'b9deba5f468ad2bc', '1b1866138f82436d', '28172c83523eb971', '4c0917d9498fd356', 'db11fb4b5d13347e', '361c2c98bc82b5dd', '1fc76ac03494d427', 'db11fb4b5d13347e', '62a3c3cdaa464561']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']

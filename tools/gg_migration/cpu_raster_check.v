@@ -1402,7 +1402,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['near-cropped-blurs', 'near-cropped-shadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['near-cropped-blurs', 'near-cropped-shadows', 'prior-blur-cropped-shadows'] {
 		check_near_cropped_image_blurs(oracle, count) or { eprintln(err.msg()); exit(1) }
 		return
 	}
@@ -3834,7 +3834,8 @@ fn check_cropped_image_views(oracle Oracle, count int) ! {
 }
 
 fn check_near_cropped_image_blurs(oracle Oracle, count int) ! {
- shadows := os.getenv('CPU_RASTER_CHECKS') == 'near-cropped-shadows'
+ prior_blur := os.getenv('CPU_RASTER_CHECKS') == 'prior-blur-cropped-shadows'
+ shadows := prior_blur || os.getenv('CPU_RASTER_CHECKS') == 'near-cropped-shadows'
  mut declined := 0
  for i in 0 .. count {
   index := i % 3
@@ -3849,13 +3850,14 @@ fn check_near_cropped_image_blurs(oracle Oracle, count int) ! {
    pixels: random_composite_bitmap(13, 7, 56, if premul { 2 } else { 1 }), premultiplied: premul}
   mut filters := [cpuraster.CanvasFilterStep{kind: if shadows { cpuraster.CanvasFilterKind.drop_shadow } else { cpuraster.CanvasFilterKind.blur },
    sigma: if i % 4 == 0 { f32(.1) } else { f32(.8) },
-   offset_x: if i % 4 == 0 { f32(5)/scale } else { f32(5.25) },
-   offset_y: if i % 4 == 0 { f32(-3)/scale } else { f32(-3.75) }, color: random_composite_color()}]
+   offset_x: if i % 4 == 0 { (if prior_blur { f32(-1) } else { f32(5) })/scale } else { f32(5.25) },
+   offset_y: if i % 4 == 0 { (if prior_blur { f32(0) } else { f32(-3) })/scale } else { f32(-3.75) }, color: random_composite_color()}]
+  if prior_blur { filters.insert(0, cpuraster.CanvasFilterStep{kind: .blur, sigma: if i % 4 == 0 { f32(.1) } else { f32(.8) }}) }
   if i % 3 == 0 {
    filters << random_color_filters()
    if shadows { filters << random_spatial_filter_chain() } else { filters << cpuraster.CanvasFilterStep{kind: .blur, sigma: 1.2} }
   }
-  ox, oy := if shadows { 5 } else { 0 }, if shadows { -3 } else { 0 }
+  ox, oy := if shadows && !prior_blur { 5 } else { 0 }, if shadows && !prior_blur { -3 } else { 0 }
   clips := if i % 4 == 0 { [ClipCase{segments: rect_segments(Rect4{f32(11+index+ox), f32(14+oy), f32(12+index+ox), f32(15+oy)}, false)}] } else if rand.intn(4) or { 0 } == 0 { random_clips(w, h) } else { []ClipCase{} }
   c := BitmapCase{width: w, height: h, pitch: pitch, alpha_type: alpha_type, operation: 2,
    smoothing: (rand.intn(2) or { 0 }) == 0, transform: [scale, f32(0), 0, scale, 2.25, 3.5]!,
@@ -3863,5 +3865,5 @@ fn check_near_cropped_image_blurs(oracle Oracle, count int) ! {
    source: [f32(6),1,5,5]!, destination: destination}
   if compare_canvas_bitmap(oracle, random_composite_bitmap(w, h, pitch, alpha_type), c, 'near-cropped blur ${i}')! { declined++ }
  }
- println('near-integer cropped image ${if shadows { 'shadows' } else { 'blurs' }}: ${count-declined} exact, ${declined} declined')
+ println('near-integer cropped image ${if prior_blur { 'prior-blur shadows' } else if shadows { 'shadows' } else { 'blurs' }}: ${count-declined} exact, ${declined} declined')
 }
