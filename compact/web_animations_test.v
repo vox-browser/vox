@@ -78,6 +78,7 @@ if(!(transition instanceof CSSTransition)||!(transition instanceof Animation))fa
 if(transition.transitionProperty!=="width"||transition.playState!=="running")fail("state "+transition.transitionProperty+" "+transition.playState);
 if(transition.effect.target!==target||transition.effect.pseudoElement!==null)fail("effect");
 if(document.getAnimations()[0]!==transition)fail("identity");
+if(!(transition.ready instanceof Promise)||transition.ready!==transition.ready)fail("ready promise");
 if(target.getAnimations().length!==1||target.getAnimations()[0]!==transition)fail("element list");
 if(document.getElementById("other").getAnimations().length!==0)fail("other element");
 transition.currentTime=5000;

@@ -241,6 +241,24 @@ fn compact_css_animation_key(handle voidptr) string {
 fn (mut binding CompactElementQueryBinding) web_animation_query(key string, source string) !string {
 	request := json2.decode[map[string]json2.Any](source)!
 	op := json_string_property(request, 'op') or { return error('Invalid animation operation') }
+	if op == 'timelineCreate' {
+		origin := compact_web_animation_number(request['originTime'] or { json2.Any(0) }) or { return error('TypeError: Invalid timeline origin') }
+		if math.is_nan(origin) || math.is_inf(origin,0) { return error('TypeError: Invalid timeline origin') }
+		timeline := animations.DocumentTimeline.create_for_constructor(binding.document, animations.DocumentTimelineOptions{origin_time: origin})
+		binding.next_key++
+		timeline_key := '__timeline_${binding.next_key}'
+		binding.web_animation_timelines[timeline_key] = voidptr(timeline)
+		return json2.encode({'key':json2.Any(timeline_key)})
+	}
+	if op == 'timelineState' {
+		timeline_key := json_string_property(request,'timeline') or { return error('TypeError: Invalid timeline') }
+		timeline := if timeline_key == 'default' { animations.default_document_timeline(binding.document) } else {
+			handle := binding.web_animation_timelines[timeline_key] or { return error('TypeError: Invalid timeline') }
+			unsafe { &animations.AnimationTimeline(handle) }
+		}
+		value := if time := timeline.current_time_for_observation() { json2.Any(time.value) } else { json2.Any(json2.Null{}) }
+		return json2.encode({'currentTime':value})
+	}
 	if op == 'animate' {
 		node := binding.node_for_key(key) or { return error('TypeError: Invalid Element receiver') }
 		element := node.as_element() or { return error('TypeError: Invalid Element receiver') }
@@ -312,6 +330,8 @@ fn (mut binding CompactElementQueryBinding) web_animation_query(key string, sour
 		return json2.encode(compact_keyframes_json(effect))
 	}
 	if op == 'documentList' {
+		mut owner := unsafe { &dom.Document(binding.document) }
+		owner.update_style()
 		// https://drafts.csswg.org/web-animations-1/#dom-documentorshadowroot-getanimations
 		mut items := []json2.Any{}
 		for record in css.document_css_animations(binding.document) {
@@ -426,6 +446,30 @@ fn compact_web_animations_bootstrap() string {
    throw new DOMException(match[2],match[1]);
   }
  }
+ const timelines=new WeakMap();
+ function AnimationTimeline(){throw new TypeError("Illegal AnimationTimeline constructor");}
+ Object.defineProperty(AnimationTimeline.prototype,"currentTime",{get(){const key=__elementApply(get,timelines,[this]);if(!key)throw new TypeError("Illegal AnimationTimeline receiver");return call("",{op:"timelineState",timeline:key}).currentTime;},enumerable:true,configurable:true});
+ Object.defineProperty(AnimationTimeline.prototype,Symbol.toStringTag,{value:"AnimationTimeline",configurable:true});
+ function DocumentTimeline(options={}){
+  if(!new.target)throw new TypeError("DocumentTimeline requires new");
+  if(options!=null&&!isObject(options))throw new TypeError("Timeline options must be a dictionary");
+  const rawOrigin=options==null?undefined:options.originTime;
+  if(typeof rawOrigin==="bigint")throw new TypeError("Timeline origin cannot be a BigInt");
+  const origin=rawOrigin===undefined?0:+rawOrigin;
+  if(!isFinite(origin))throw new TypeError("Timeline origin must be finite");
+  __elementApply(set,timelines,[this,call("",{op:"timelineCreate",originTime:origin}).key]);
+ }
+ Object.defineProperty(AnimationTimeline,"prototype",{writable:false});
+ Object.defineProperty(DocumentTimeline,"prototype",{writable:false});
+ Object.setPrototypeOf(DocumentTimeline,AnimationTimeline);
+ Object.setPrototypeOf(DocumentTimeline.prototype,AnimationTimeline.prototype);
+ Object.defineProperty(DocumentTimeline.prototype,Symbol.toStringTag,{value:"DocumentTimeline",configurable:true});
+ const defaultTimeline=Object.create(DocumentTimeline.prototype);
+ __elementApply(set,timelines,[defaultTimeline,"default"]);
+ const timelineGetter=function(){if(this!==document)throw new TypeError("Illegal Document receiver");return defaultTimeline;};
+ Object.defineProperty(Document.prototype,"timeline",{get:timelineGetter,enumerable:true,configurable:true});
+ Object.defineProperty(globalThis,"AnimationTimeline",{value:AnimationTimeline,writable:true,configurable:true});
+ Object.defineProperty(globalThis,"DocumentTimeline",{value:DocumentTimeline,writable:true,configurable:true});
  function keyframes(value){
   if(value===null||value===undefined)return [];
   if(!isObject(value))throw new TypeError("Keyframes must be an object");
@@ -601,6 +645,7 @@ fn compact_web_animations_bootstrap() string {
     call("",{op:"cssCurrentTime",animation:own.key,value:number});
    },enumerable:true,configurable:true},
    effect:{get(){return cssState(this).effect;},enumerable:true,configurable:true},
+   ready:{get(){const own=cssState(this);return own.ready||(own.ready=Promise.resolve(this));},enumerable:true,configurable:true},
    pending:{get(){cssState(this);return false;},enumerable:true,configurable:true},
    id:{get(){cssState(this);return "";},set(value){},enumerable:true,configurable:true}
   });

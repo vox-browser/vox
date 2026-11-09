@@ -304,29 +304,30 @@ fn remove_replaced_animations_for_dom_root(_ voidptr, root &dom.Node) {
 }
 
 fn default_timeline_for_animatable(animatable &Animatable) &AnimationTimeline {
-	if element := animatable.target_ {
-		document := element.document()
-		handle := document.animations_default_timeline_handle_
-		if handle != unsafe { nil } {
-			if document.associated_animation_timelines.any(it.target == handle) {
-				return unsafe { &AnimationTimeline(handle) }
-			}
-		}
-		// A process-wide map can allocate its backing storage in the first
-		// document's arena and retain it after navigation releases that arena.
-		// Keep both the cached handle and its timeline with the owning document.
-		mut allocation_scope := platform.RetainedArenaScope{}
-		mut storage := document.native_storage()
-		if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
-		defer { allocation_scope.finish() }
-		mut timeline := new_document_timeline(document, 0, 0)
-		timeline.set_document_active(document.is_active())
-		mut mutable_document := unsafe { &dom.Document(document) }
-		mutable_document.animations_default_timeline_handle_ = voidptr(timeline)
-		return timeline
-	}
+	if element := animatable.target_ { return default_document_timeline(element.document()) }
 	mut timeline := new_document_timeline(none, 0, 0)
 	timeline.set_document_active(true)
+	return timeline
+}
+
+pub fn default_document_timeline(document &dom.Document) &AnimationTimeline {
+	handle := document.animations_default_timeline_handle_
+	if handle != unsafe { nil } {
+		if document.associated_animation_timelines.any(it.target == handle) {
+			return unsafe { &AnimationTimeline(handle) }
+		}
+	}
+	// A process-wide map can allocate its backing storage in the first
+	// document's arena and retain it after navigation releases that arena.
+	// Keep both the cached handle and its timeline with the owning document.
+	mut allocation_scope := platform.RetainedArenaScope{}
+	mut storage := document.native_storage()
+	if storage != unsafe { nil } { allocation_scope = storage.enter_nested() }
+	defer { allocation_scope.finish() }
+	mut timeline := DocumentTimeline.create_for_constructor(document, DocumentTimelineOptions{})
+	timeline.set_document_active(document.is_active())
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.animations_default_timeline_handle_ = voidptr(timeline)
 	return timeline
 }
 
