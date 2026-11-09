@@ -42,6 +42,7 @@ pub fn (mut runtime Runtime) install_window_proxy_binding(frame FrameWindowResol
 		global,
 	])!)!
 	window_proxy_bindings_[owner] = binding
+	runtime.install_window_open_binding()!
 	runtime.add_close_handler(fn [owner, mut binding] () {
 		binding.by_wrapper = {}
 		binding.by_native = {}
