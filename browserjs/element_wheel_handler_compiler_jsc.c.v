@@ -51,7 +51,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			mut host := unsafe { &ElementWheelHost(owner) }
 			if host.closed || host.runtime.closed { return false }
 			element := host.raw_wheel_handler_element(target) or { return false }
-			if element.local_name() == 'track' { return name in ['load', 'error'] }
+			if element.local_name() in ['track','img'] { return name in ['load', 'error'] }
 			return element.local_name() in ['audio', 'video']
 				&& name in ['play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error']
 		}
@@ -85,6 +85,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if target.data.kind == .window { return true }
 			mut host := unsafe { &ElementWheelHost(owner) }
 			element := host.raw_wheel_handler_element(target) or { return false }
+			if element.local_name() == 'img' && name in ['load','error'] { return true }
 			if element.is_html_element() && (element.local_name() in ['audio', 'video']
 				|| (element.local_name() == 'track' && name in ['load', 'error'])) {
 				return host.raw_media_or_track_handler_available(target, element, name)
@@ -107,7 +108,7 @@ fn (mut host ElementWheelHost) raw_wheel_handler_element(target &dom.EventTarget
 	for _, element in host.elements {
 		if voidptr(element) != voidptr(target) { continue }
 		if voidptr(element.document()) != voidptr(host.document) || !element_exposes_wheel_handler(element)
-			|| (element.is_html_element() && (element.local_name() in ['img', 'object', 'fieldset', 'output']
+			|| (element.is_html_element() && (element.local_name() in ['object', 'fieldset', 'output']
 				|| element.is_form_associated_custom_element())) { return none }
 		return element
 	}
