@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Run the separate Vox raster suite at the revision pinned by this checkout."""
 import argparse
-import errno
 import json
 import os
 from pathlib import Path
@@ -41,11 +40,8 @@ def ensure_checkout(repository, revision, checkout, fetch=True):
             validate_checkout(temporary, revision)
             try:
                 temporary.rename(checkout)
-            except OSError as error:
-                if error.errno not in (errno.EEXIST, errno.ENOTEMPTY):
-                    raise
-                # A concurrent fetch must still pass validation below. Renaming
-                # over its populated directory reports ENOTEMPTY on macOS/Linux.
+            except FileExistsError:
+                pass  # A concurrent fetch must still pass validation below.
         finally:
             if temporary.exists():
                 shutil.rmtree(temporary)
