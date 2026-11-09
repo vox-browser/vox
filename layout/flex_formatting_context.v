@@ -1499,7 +1499,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 		}))
 		for index, item in current_line.items {
 			mut natural_cross := ?CSSPixels(none)
-			if item.computed_values().size_value(.height).is_stretch() {
+			if item.computed_values().size_value(.height).is_stretch() && !container_state.has_definite_height() {
 				if box := item.as_box() {
 					natural_cross = calculate_max_content_height(mut state, box, current_line.targets[index])
 				}
@@ -1653,18 +1653,21 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 			alignment := effective_flex_cross_alignment(container, item)
 			top_margin_auto := property_is_auto(item.computed_values(), .margin_top)
 			bottom_margin_auto := property_is_auto(item.computed_values(), .margin_bottom)
+			if constrained := flex_cross_size_with_stretch_constraints(mut state, item, item_state, container_state.content_height(), cross_size, false) {
+				item_state = layout_independent_child_with_resolved_height(mut state, item, mut container_state, container_width, if container_state.has_definite_height() { container_state.content_height() } else { none }, current_line.targets[item_index], constrained)
+			}
 			if item.computed_values().size_value(.height).is_stretch()
 				|| (alignment in [.stretch, .normal] && property_is_auto(item.computed_values(), .height)
 				&& !top_margin_auto && !bottom_margin_auto) {
 				stretched := if item.computed_values().size_value(.height).is_stretch() {
 					clamp_layout_content_size(item, stretch_fit_content_size(item, item_state, cross_size, false), cross_size, item_state, false)
-				} else { cross_size.minus(flex_or_grid_item_outer_block_edges(item_state)) }
+				} else { clamp_layout_content_size_with_stretch_basis(item, cross_size.minus(flex_or_grid_item_outer_block_edges(item_state)), container_state.content_height(), cross_size, item_state, false) }
 				if stretched == item_state.content_height()
 					&& (item_state.has_definite_height()
 						|| !flex_subtree_depends_on_definite_height(mut state, item)) {
 					item_state.set_has_definite_height(true)
 				} else {
-					item_state = layout_independent_child(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
+					item_state = layout_independent_child_with_resolved_height(mut state, item, mut container_state, container_width, if container_state.has_definite_height() {
 						container_state.content_height()
 					} else {
 						none
@@ -1804,7 +1807,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 				}
 			})
 		} else {
-			?CSSPixels(none)
+			resolve_layout_content_size(item, item.computed_values().size_value(.width), container_width, item_state, true)
 		}
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, item_state, true)
@@ -1874,7 +1877,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 				}
 			})
 		} else {
-			?CSSPixels(none)
+			resolve_layout_content_size(item, item.computed_values().size_value(.width), container_width, current, true)
 		}
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, current, true)
@@ -2007,7 +2010,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		mut forced_width := if property_is_auto(item.computed_values(), .width) {
 			?CSSPixels(flex_fit_content_cross_width(mut state, item, container_width))
 		} else {
-			?CSSPixels(none)
+			resolve_layout_content_size(item, item.computed_values().size_value(.width), container_width, item_state, true)
 		}
 		if width := forced_width {
 			forced_width = clamp_layout_content_size(item, width, container_width, item_state, true)
@@ -2065,7 +2068,7 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			styled := item.as_node_with_style() or { continue }
 			current := state.get(styled)
 			forced_width := if item.computed_values().size_value(.width).is_stretch() {
-				if box := item.as_box() { ?CSSPixels(calculate_max_content_width(mut state, box)) } else { ?CSSPixels(none) }
+				?CSSPixels(current.content_width())
 			} else if property_is_auto(item.computed_values(), .width) {
 				?CSSPixels(current.content_width())
 			} else {
@@ -2165,6 +2168,9 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 			alignment := effective_flex_cross_alignment(container, item)
 			left_margin_auto := property_is_auto(item.computed_values(), .margin_left)
 			right_margin_auto := property_is_auto(item.computed_values(), .margin_right)
+			if constrained := flex_cross_size_with_stretch_constraints(mut state, item, item_state, container_width, cross_size, true) {
+				item_state = layout_independent_child(mut state, item, mut container_state, container_width, main_size, constrained, current_line.targets[item_index])
+			}
 			if item.computed_values().size_value(.width).is_stretch()
 				|| (alignment in [.stretch, .normal] && property_is_auto(item.computed_values(), .width)
 				&& !left_margin_auto && !right_margin_auto) {
