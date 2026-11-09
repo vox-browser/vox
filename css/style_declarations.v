@@ -456,7 +456,7 @@ fn css_style_properties_length(properties &CSSStyleProperties) int {
 		if properties.owner_node == none {
 			return 0
 		}
-		return number_of_longhand_properties
+		return number_of_longhand_properties + properties.computed_custom_property_names().len
 	}
 	return properties.length()
 }
@@ -912,6 +912,9 @@ pub fn (properties &CSSStyleProperties) item(index uint) string {
 		if property_id := property_id_from_longhand_index(int(index)) {
 			return string_from_property_id(property_id)
 		}
+		custom := properties.computed_custom_property_names()
+		custom_index := int(index) - number_of_longhand_properties
+		if custom_index >= 0 && custom_index < custom.len { return custom[custom_index] }
 		return ''
 	}
 
