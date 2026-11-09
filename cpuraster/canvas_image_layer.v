@@ -36,7 +36,7 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 		if ctm.kx != 0 || ctm.ky != 0 || rect_xywh(sample_source) != src
 			|| rect_xywh(sample_destination) != dst { return false }
 		return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
-			transform, clips, dst, CanvasFilterStep{...prepared, source_image: true, source_padding: true,
+			transform, clips, dst, CanvasFilterStep{...prepared, source_image: true, source_padding: true, source_rescale_ready: true,
 				source_color_info: FilterImageInfo{alpha: paint_alpha}}, mode,
 			fn [image, geometry, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {
 				return draw_canvas_image_sampled_aa(mut layer, w, h, w * 4, 2, t, image,
@@ -51,7 +51,7 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 	}
 	raw := CanvasBitmap{...image, premultiplied: true, display_p3: false}
 	return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,
-		transform, clips, dst, CanvasFilterStep{...prepared, source_image: true,
+		transform, clips, dst, CanvasFilterStep{...prepared, source_image: true, source_rescale_ready: true,
 			source_color_info: FilterImageInfo{premultiplied: image.premultiplied,
 				display_p3: image.display_p3, alpha: paint_alpha}}, mode,
 		fn [raw, geometry, smoothing] (mut layer []u8, w int, h int, t [6]f32, inner_clips []Path) bool {

@@ -21,6 +21,8 @@ pub struct CanvasFilterStep {
 	layer_stages []LayerFilterStage
 	source_image bool
 	source_padding bool
+	// Original aligned pixels or MakeFromImage's prescribed AA surface.
+	source_rescale_ready bool
 	source_per_request bool
 	source_color_info FilterImageInfo
 	source_draw_bounds ?Rect
@@ -234,7 +236,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 	layer_sx := blur_layer_sigma(sx)
 	layer_sy := blur_layer_sigma(sy)
 	large_blur := layer_sx > image_blur_max_sigma || layer_sy > image_blur_max_sigma
-	if large_blur && (drop || step.source_image || tint != none) {
+	if large_blur && (drop || (step.source_image && !step.source_rescale_ready) || tint != none) {
 		return false
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)

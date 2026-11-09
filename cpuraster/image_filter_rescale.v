@@ -153,7 +153,7 @@ fn scaled_blur_filter_view(source FilterResult, desired IRect, sigma_x f32, sigm
 	if !result.has_image { return FilterImageView{} }
 	total := sk_concat(transform, affine_translate(f32(result.origin_x), f32(result.origin_y)))
 	bounds := desired.intersect(map_filter_bounds(IRect{0, 0, result.image.width(), result.image.height()}, total)) or { return FilterImageView{} }
-	bitmap := CanvasBitmap{ ...FilterImageInfo{}.bitmap(result.image.bitmap()), native_n32: native_context || canvas_rgba_uses_legacy() }
+	bitmap := CanvasBitmap{ ...low.color_info.bitmap(result.image.bitmap()), native_n32: native_context || canvas_rgba_uses_legacy() }
 	return FilterImageView{
 		bitmap:           bitmap
 		native_context:   native_context
@@ -172,15 +172,23 @@ fn draw_large_blur_layer(mut pixels []u8, pitch int, rc &RasterClip, mode BlendM
 	filter := new_color_filter(step.pre_color)
 	image := layer
 	saved := new_filter_result(SpecialImage{image, IRect{0, 0, image.width, image.height}}, 0, 0).inset_for_save_layer()
-	source := FilterResult{ ...saved, color_info: step.source_color_info }
+	mut source := FilterResult{ ...saved, color_info: step.source_color_info }
 	clip := rc.bounds()
-	desired := IRect{clip.left - origin_x, clip.top - origin_y, clip.right - origin_x, clip.bottom - origin_y}
-	local := scaled_blur_filter_view(source, desired, sigma_x, sigma_y, filter, true) or { return false }
+	mut desired := IRect{clip.left - origin_x, clip.top - origin_y, clip.right - origin_x, clip.bottom - origin_y}
+	mut base_x, mut base_y := origin_x, origin_y
+	if step.source_image {
+		// MakeFromImage evaluates its filter graph in the original layer
+		// coordinates. Saved canvas layers evaluate relative to their buffer.
+		source = FilterResult{ ...source.translated(origin_x, origin_y), transparent_boundary: step.source_padding }
+		desired = clip
+		base_x, base_y = 0, 0
+	}
+	local := scaled_blur_filter_view(source, desired, sigma_x, sigma_y, filter, !step.source_image) or { return false }
 	if local.bitmap.width == 0 {
 		target.ready()
 		draw_empty_filter_result(mut pixels, pitch, rc, mode)
 		return true
 	}
 	view := FilterImageView{ ...local, filter: new_color_filter(step.post_color) }
-	return draw_filter_image_view(mut pixels, pitch, rc, mode, view, -origin_x, -origin_y, mut target)
+	return draw_filter_image_view(mut pixels, pitch, rc, mode, view, -base_x, -base_y, mut target)
 }
