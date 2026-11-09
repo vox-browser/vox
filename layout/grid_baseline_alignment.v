@@ -12,14 +12,25 @@ struct GridBaselineSubject {
 	outer_size CSSPixels
 }
 
+// Baselines of scroll containers are taken at the initial scroll position
+// and clamped to their border edges (CSS Align 3 section 9.1).
 fn grid_baseline_from_low(state &LayoutState, container &Node, item &Node, horizontal bool, set BaselineSet, depth int) CSSPixels {
+ value := grid_content_baseline_from_low(state,container,item,horizontal,set,depth)
+ if !item.is_scroll_container() { return value }
+ used := state.get(item.as_node_with_style() or { return value })
+ start := if horizontal { used.margin_left } else { used.margin_top }
+ extent := if horizontal { used.border_box_width() } else { used.border_box_height() }
+ return css_pixels_max(start,css_pixels_min(value,start.plus(extent)))
+}
+
+fn grid_content_baseline_from_low(state &LayoutState, container &Node, item &Node, horizontal bool, set BaselineSet, depth int) CSSPixels {
 	styled := item.as_node_with_style() or { return CSSPixels.new(0) }
 	used := state.get(styled)
 	item_horizontal := item.computed_values().writing_mode() == .horizontal_tb
 	if horizontal && !item_horizontal && !item.has_size_containment() {
 		if baseline := used.derived_vertical_baseline(set) { return used.margin_box_left().plus(baseline) }
 	}
-	if !horizontal && item_horizontal { return layout_box_baseline(state,item,set) }
+	if !horizontal && item_horizontal { return layout_box_baseline_in_context(state,item,set,true,false) }
 	if horizontal && !item_horizontal && !item.has_size_containment() && depth < 64 {
 		if used.line_boxes.len > 0 {
 			for i in 0 .. used.line_boxes.len {

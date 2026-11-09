@@ -2727,6 +2727,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			placement_result.implicit_columns_before, required_columns)
 	}
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
+	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements)
 
 	// Resolve non-spanning items first, then items of increasing span, through
 	// the same six intrinsic track-sizing phases used by C++.
@@ -2749,9 +2750,9 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 				continue
 			}
 			minimum_contribution := grid_item_minimum_outer_inline_contribution(mut state, placement.item,
-				columns, placement.column, placement.column_span, column_gap).plus(placement.sizing_extra(true))
+				columns, placement.column, placement.column_span, column_gap).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
 			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
-				placement.item, .min_content).plus(placement.sizing_extra(true))
+				placement.item, .min_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
 			phase_one_contribution := if width_is_intrinsic {
 				grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
 			} else {
@@ -2761,7 +2762,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .min_content_contribution)
 			if available_space.width.is_max_content() {
 				max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
-					placement.item, .max_content).plus(placement.sizing_extra(true))
+					placement.item, .max_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
 				limited_max_content_contribution := grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, max_content_contribution, minimum_contribution)
 				distribute_grid_item_contribution_across_intrinsic_track_bases(mut columns, placement.column, placement.column_span, column_gap, limited_max_content_contribution, .max_content_contribution)
 			}
@@ -2773,7 +2774,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			}
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, min_content_contribution, .intrinsic_maximum)
 			max_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
-				placement.item, .max_content).plus(placement.sizing_extra(true))
+				placement.item, .max_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
 			distribute_grid_item_contribution_across_intrinsic_track_growth_limits(mut columns, placement.column, placement.column_span, column_gap, max_content_contribution, .max_content_maximum)
 		}
 	}
@@ -2816,7 +2817,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 				continue
 			}
 			contribution := grid_intrinsic_outer_width_contribution(mut state, placement.item,
-				.max_content).plus(placement.sizing_extra(true))
+				.max_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
 			candidate := grid_flex_fraction_for_range(columns, placement.column, placement.column_span, contribution, column_gap)
 			if candidate.compare(intrinsic_flex_fraction) > 0 {
 				intrinsic_flex_fraction = candidate
