@@ -180,10 +180,11 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 const timer_host_bootstrap = r'(function(operate){
  const define=Object.defineProperty,TypeError=globalThis.TypeError;
  function timer(receiver,operation,handler,timeout,args){const values=[];for(let i=2;i<args.length;i++)define(values,i-2,{value:args[i],writable:true,enumerable:true,configurable:true});return operate(operation,handler,timeout,values,receiver)}
- function setTimeout(handler,timeout){if(arguments.length<1)throw new TypeError("setTimeout requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"timeout",converted,timeout===undefined?0:+timeout,arguments)}
- function setInterval(handler,timeout){if(arguments.length<1)throw new TypeError("setInterval requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"interval",converted,timeout===undefined?0:+timeout,arguments)}
- function clearTimeout(id){return operate("clear",id===undefined?0:+id)}
- function clearInterval(id){return operate("clear",id===undefined?0:+id)}
+ const {setTimeout,setInterval,clearTimeout,clearInterval}={
+ setTimeout(handler,timeout){if(arguments.length<1)throw new TypeError("setTimeout requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"timeout",converted,timeout===undefined?0:+timeout,arguments)},
+ setInterval(handler,timeout){if(arguments.length<1)throw new TypeError("setInterval requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"interval",converted,timeout===undefined?0:+timeout,arguments)},
+ clearTimeout(id){return operate("clear",id===undefined?0:+id)},
+ clearInterval(id){return operate("clear",id===undefined?0:+id)}};
  for(const [name,method] of [["setTimeout",setTimeout],["setInterval",setInterval],["clearTimeout",clearTimeout],["clearInterval",clearInterval]])define(globalThis,name,{value:method,writable:true,enumerable:true,configurable:true});
  define(setTimeout,"length",{value:1,configurable:true});define(setInterval,"length",{value:1,configurable:true});define(clearTimeout,"length",{value:0,configurable:true});define(clearInterval,"length",{value:0,configurable:true})
 })'
