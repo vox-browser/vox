@@ -1654,3 +1654,31 @@ transitive Skia linkage. This verifies the geometry component. The complete
 browser still links Skia and its older production bundle cannot validate this
 change. Full-browser Linux compile/link/run without Skia remains unverified.
 See the [receipts, native fixtures and retained interrupted checks](gg-migration/path-hit-geometry-20261109.json).
+
+
+### Resampled chains beginning with a real shadow (2026-11-09)
+
+`5756031ad` preserves the source-image foreground through a first real
+`drop-shadow()` in a mixed graph. Only the blur branch resolves its source
+sampling, alpha and color filters. The merge draws the original deferred
+foreground; later blur/shadow nodes consume that merged surface. Identity
+blur and matrix prefixes remain supported. Identity/rejected shadows before
+the first real blur still decline.
+
+Eight new native regressions cover scaling, nearest sampling, minification,
+P3/unpremultiplied input, flips, nearly integer mappings, repeated shadows,
+clipped sources and clearing composites. All 146 native source-image fixtures
+verify on both platforms. At seed 20261119, each platform matches 4,121 of
+5,000 attempts and declines 879. Optimized macOS/no-GC matches 1,647 of 2,000
+at seed 20261120 and declines 353. Counts include no-ops; every cohort ends
+with unchanged input pins. Host contention and the separate eligibility sample
+are retained without performance credit.
+
+C/FastC image and filter-layer tests, HTML canvas integration, the full Linux
+browser typecheck and the zero-contraction FMA audit (189 explicit operations)
+pass. The typecheck uses installed Skia development files. The standalone
+Linux production/no-GC image-test binary runs all 39 registered tests with
+Skia unavailable to pkg-config and no direct or transitive Skia linkage.
+Its direct libraries are FreeType, libm and libc. The complete browser still
+links Skia, and full-browser Linux compile/link/run without it remains open.
+See the [source identities, fixtures and guarded check results](gg-migration/shadow-first-spatial-chains-20261109.json).
