@@ -693,6 +693,10 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 	} else {
 		x = static_position.x().plus(box_state.margin_box_left())
 	}
+ if horizontal_alignment.stretches() && !property_is_auto(computed,.width)
+  && containing_box.computed_values().direction() == .rtl && left != none {
+  if right_value := right { x = containing_rect.x.plus(containing_width).minus(right_value).minus(box_state.margin_box_right()).minus(box_state.content_width()) }
+ }
 	mut y := CSSPixels.new(0)
 	if top_value := top {
 		y = containing_rect.y.plus(top_value).plus(box_state.margin_box_top())

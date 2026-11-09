@@ -150,13 +150,43 @@ fn set_grid_abspos_containing_rect(mut state LayoutState, container &Node, child
 	})
 }
 
-fn set_grid_abspos_descendant_rects(mut state LayoutState, container &Node, ancestor &Node, rect css.CSSPixelRect) {
-	for descendant in ancestor.children() {
-		if descendant.is_absolutely_positioned() {
-			set_grid_abspos_containing_rect(mut state, container, descendant, rect)
-		}
-		set_grid_abspos_descendant_rects(mut state, container, descendant, rect)
-	}
+struct GridAbsolutePositionContext {
+ columns []GridTrack
+ rows []GridTrack
+ column_lines [][]css.GridLineName
+ row_lines [][]css.GridLineName
+ subgridded_columns bool
+ subgridded_rows bool
+ implicit_columns int
+ implicit_rows int
+ width CSSPixels
+ height CSSPixels
+ padding_left CSSPixels
+ padding_right CSSPixels
+ padding_top CSSPixels
+ padding_bottom CSSPixels
+ column_gap CSSPixels
+ row_gap CSSPixels
+ column_leading CSSPixels
+ row_leading CSSPixels
+}
+
+fn set_grid_abspos_descendant_rects(mut state LayoutState, container &Node, ancestor &Node, context GridAbsolutePositionContext) {
+ for child in ancestor.children() {
+  if child.is_absolutely_positioned() && grid_container_is_abspos_containing_block(container,child) {
+   computed := child.computed_values()
+   column_start := grid_axis_placement(container,computed,true,true)
+   column_end := grid_axis_placement(container,computed,true,false)
+   row_start := grid_axis_placement(container,computed,false,true)
+   row_end := grid_axis_placement(container,computed,false,false)
+   column_position := resolve_grid_axis_position_for_context(column_start,column_end,context.column_lines.len,context.column_lines,context.subgridded_columns)
+   row_position := resolve_grid_axis_position_for_context(row_start,row_end,context.row_lines.len,context.row_lines,context.subgridded_rows)
+   x,width := grid_abspos_axis_bounds(container,true,column_start,column_end,column_position,context.implicit_columns,context.width,context.padding_left,context.padding_right,context.columns,context.column_gap,context.column_leading)
+   y,height := grid_abspos_axis_bounds(container,false,row_start,row_end,row_position,context.implicit_rows,context.height,context.padding_top,context.padding_bottom,context.rows,context.row_gap,context.row_leading)
+   set_grid_abspos_containing_rect(mut state,container,child,css.CSSPixelRect.new(x.to_double(),y.to_double(),width.to_double(),height.to_double()))
+  }
+  set_grid_abspos_descendant_rects(mut state,container,child,context)
+ }
 }
 
 fn resolve_grid_table_wrapper_width(mut state LayoutState, wrapper &Node, mut wrapper_state UsedValues, grid_area_width CSSPixels, alignment GridItemAlignment) CSSPixels {
@@ -3300,37 +3330,22 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		item_state.set_content_x(area_x.plus(item_state.margin_box_left()))
 		area_y := grid_physical_row_offset(container, grid_alignment_height or { automatic_height }, rows, placement.row, placement.row_span, effective_row_gap, row_leading_space)
 		item_state.set_content_y(area_y.plus(item_state.margin_box_top()))
-		grid_area_rect := css.CSSPixelRect.new(area_x.to_double(), area_y.to_double(), grid_area_width.to_double(), grid_area_height.to_double())
-		set_grid_abspos_descendant_rects(mut state, container, placement.item, grid_area_rect)
 	}
 
 	align_grid_baseline_subjects(mut state,container,placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
 	publish_grid_content_baselines(mut state,container,mut container_state,placements)
 
-	// CSS Grid 2 absolute-positioned grid children use their resolved grid area
-	// as the containing rectangle. An auto grid axis contributes the grid
-	// container's padding edges instead of participating in auto-placement.
-	for child in container.children() {
-		if !child.is_absolutely_positioned() {
-			continue
-		}
-		computed := child.computed_values()
-		column_start := grid_axis_placement(container, computed, true, true)
-		column_end := grid_axis_placement(container, computed, true, false)
-		row_start := grid_axis_placement(container, computed, false, true)
-		row_end := grid_axis_placement(container, computed, false, false)
-		column_position := resolve_grid_axis_position_for_context(column_start,column_end,column_lines.len,column_lines,subgridded_columns)
-		row_position := resolve_grid_axis_position_for_context(row_start,row_end,row_lines.len,row_lines,subgridded_rows)
-		area_x, area_width := grid_abspos_axis_bounds(container,true,column_start,column_end,column_position,
-			placement_result.implicit_columns_before,container_width,container_state.padding_left,container_state.padding_right,
-			columns,effective_column_gap,column_leading_space)
-		area_y, area_height := grid_abspos_axis_bounds(container,false,row_start,row_end,row_position,
-			placement_result.implicit_rows_before,grid_alignment_height or { automatic_height },container_state.padding_top,container_state.padding_bottom,
-			rows,effective_row_gap,row_leading_space)
+ // Every abspos descendant whose containing block is this grid resolves
+ // its own grid-placement properties, including through static wrappers.
+ set_grid_abspos_descendant_rects(mut state,container,container,GridAbsolutePositionContext{
+  columns:columns,rows:rows,column_lines:column_lines,row_lines:row_lines,
+  subgridded_columns:subgridded_columns,subgridded_rows:subgridded_rows,
+  implicit_columns:placement_result.implicit_columns_before,implicit_rows:placement_result.implicit_rows_before,
+  width:container_width,height:grid_alignment_height or { automatic_height },
+  padding_left:container_state.padding_left,padding_right:container_state.padding_right,padding_top:container_state.padding_top,padding_bottom:container_state.padding_bottom,
+  column_gap:effective_column_gap,row_gap:effective_row_gap,column_leading:column_leading_space,row_leading:row_leading_space
+ })
 
-		rect := css.CSSPixelRect.new(area_x.to_double(), area_y.to_double(), area_width.to_double(), area_height.to_double())
-		set_grid_abspos_containing_rect(mut state, container, child, rect)
-	}
 	return FormattingContextResult{
 		automatic_content_width: if width_is_intrinsic {
 			intrinsic_container_width
