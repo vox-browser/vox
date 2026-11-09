@@ -12,7 +12,7 @@ pub fn compute_position_try_style(target dom.AbstractElement, declaration &CSSSt
 	previous := computer.position_try_override_
 	computer.position_try_override_ = PositionTryStyleOverride{target:target,declaration:declaration}
 	defer { computer.position_try_override_ = previous }
-	return computer.compute_style(target)
+	return computer.compute_style_with_seeded_ancestors(target)
 }
 
 pub fn install_position_try_style(mut target dom.AbstractElement, properties &ComputedProperties) {
