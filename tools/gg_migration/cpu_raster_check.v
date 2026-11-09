@@ -1402,6 +1402,10 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
+	if os.getenv('CPU_RASTER_CHECKS') == 'imagebounds' {
+		check_image_layer_bounds(oracle, count) or { eprintln(err.msg()); exit(1) }
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') in ['near-cropped-blurs', 'near-cropped-shadows', 'prior-blur-cropped-shadows'] {
 		check_near_cropped_image_blurs(oracle, count) or { eprintln(err.msg()); exit(1) }
 		return
@@ -3866,4 +3870,39 @@ fn check_near_cropped_image_blurs(oracle Oracle, count int) ! {
   if compare_canvas_bitmap(oracle, random_composite_bitmap(w, h, pitch, alpha_type), c, 'near-cropped blur ${i}')! { declined++ }
  }
  println('near-integer cropped image ${if prior_blur { 'prior-blur shadows' } else if shadows { 'shadows' } else { 'blurs' }}: ${count-declined} exact, ${declined} declined')
+}
+
+fn check_image_layer_bounds(oracle Oracle, count int) ! {
+ bits := [[u32(1077936128), 1065353216, 1087289116, 1092033650, 1079041252, 1085392669, 1063675494],
+  [u32(1086324736), 1084227584, 1090977388, 1082230297, 1064818416, 1075339655, 1074161254],
+  [u32(1077936128), 1073741824, 1082837017, 1088002458, 1079881758, 1082130432, 1067450368],
+  [u32(1065353216), 1073741824, 1100432407, 1092033650, 1078092616, 1085392669, 1063675494]]
+ mut declined := 0
+ for i in 0 .. count {
+  b := bits[i % bits.len].map(math.f32_from_bits(it))
+  w, h := 30 + (rand.intn(61) or { 0 }), 25 + (rand.intn(66) or { 0 })
+  pitch := w * 4 + 4 * (rand.intn(3) or { 0 })
+  alpha_type := if rand.intn(2) or { 0 } == 0 { 1 } else { 2 }
+  premul := (rand.intn(2) or { 0 }) == 0
+  image := cpuraster.CanvasPattern{width: 13, height: 7, pitch: 56,
+   pixels: random_composite_bitmap(13, 7, 56, if premul { 2 } else { 1 }),
+   premultiplied: premul, display_p3: (rand.intn(2) or { 0 }) == 0}
+  shadow := cpuraster.CanvasFilterStep{kind: .drop_shadow, sigma: if i % 5 == 0 { f32(.01) } else { f32(.8) },
+   offset_x: 5.25, offset_y: -3.75, color: random_composite_color()}
+  gaussian := cpuraster.CanvasFilterStep{kind: .blur, sigma: .8}
+  filters := match i % 6 {
+   0, 1 { [shadow] }
+   2 { mut f := random_color_filters(); f << shadow; f << random_color_filters(); f << gaussian; f }
+   3 { mut f := [gaussian, shadow]; f << random_color_filters(); f << gaussian; f }
+   4 { [gaussian] }
+   else { mut f := [gaussian]; f << random_color_filters(); f << gaussian; f }
+  }
+  c := BitmapCase{width: w, height: h, pitch: pitch, alpha_type: alpha_type, operation: 2,
+   smoothing: (rand.intn(2) or { 0 }) == 0, transform: [b[6], f32(0), 0, b[6], 2.25, 3.5]!,
+   global_alpha: random_composite_alpha(), clips: if rand.intn(4) or { 0 } == 0 { random_clips(w, h) } else { []ClipCase{} },
+   composite: rand.intn(28) or { 0 }, image: image, filters: filters,
+   source: [b[0],f32(1),b[1],f32(5)]!, destination: [b[2],b[3],b[4],b[5]]!}
+  if compare_canvas_bitmap(oracle, random_composite_bitmap(w, h, pitch, alpha_type), c, 'image bounds ${i}')! { declined++ }
+ }
+ println('source image layer bounds: ${count-declined} exact, ${declined} declined')
 }

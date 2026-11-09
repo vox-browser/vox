@@ -527,6 +527,31 @@ for i, x_bits in enumerate(near_crop_x_bits):
             if variant == 1: case['clip_rect'] = [11+i,14,1,1]
             cases.append(case)
 
+bounds_geometries = [[1077936128, 1065353216, 1087289116, 1092033650, 1079041252, 1085392669, 1063675494], [1086324736, 1084227584, 1090977388, 1082230297, 1064818416, 1075339655, 1074161254], [1077936128, 1073741824, 1082837017, 1088002458, 1079881758, 1082130432, 1067450368], [1065353216, 1073741824, 1100432407, 1092033650, 1078092616, 1085392669, 1063675494]]
+for i, item in enumerate(bounds_geometries):
+    left, width, x, y, dw, dh, scale = map(scalar_bits, item)
+    for variant, filters in enumerate([[shadow(.01)], [shadow(.8)],
+            [contrast, shadow(.8), opacity, blur(1.2)],
+            [blur(.8), shadow(.8), contrast, blur(1.2)], [blur(.8)],
+            [blur(.8), contrast, blur(1.2)]]):
+        cases.append(dict(name=f'image-layer-bounds-{i}-{variant}', iw=13, ih=7,
+            source=[left,1,width,5], destination=[x,y,dw,dh], transform=[scale,0,0,scale,2.25,3.5],
+            filters=filters, premul=variant in [0,4], p3=variant in [1,2,5],
+            alpha=.65 if variant in [1,5] else .7 if variant == 2 else 1,
+            mode=['src_over','src_in','multiply','plus_lighter','src_in','overlay'][variant],
+            smoothing=variant != 1, clip=variant in [1,2,5]))
+
+name = 'image-layer-bounds-failure'
+f = json.loads((fixture_root / (name + '.json')).read_text())
+cases.append(dict(name=name, width=f['width'], height=f['height'], pitch=f['pitch'],
+    alpha_type=f['alpha_type'], iw=f['image_width'], ih=f['image_height'],
+    pixel_pitch=f['image_pitch'], premul=f['image_premultiplied'], p3=f['image_display_p3'],
+    pixels=list((fixture_root / (name + '-source.rgba')).read_bytes()),
+    initial=list((fixture_root / (name + '-background.rgba')).read_bytes()),
+    transform=f['transform'], source=f['source'], destination=f['destination'],
+    alpha=f['global_alpha'], mode=list(m.MODES)[f['composite']], clips=f['clips'],
+    filters=[(x['kind'],x['color'],x['sigma'],x['offset_x'],x['offset_y'],x['matrix'],int(x['clamp'])) for x in f['filters']]))
+
 for case in cases:
     w, h = case.get('width', 48), case.get('height', 40)
     iw, ih = case.get('iw', 7), case.get('ih', 6)
@@ -620,6 +645,7 @@ expected += ['7590fe0bcd5b92d1', 'da060111c6b1cd22', '34530ccb87a66891', 'd67ee8
 expected += ['633e7bfa680a5d4c', '34a6856f70dce369', '7af094b311774ce4', 'f19e7a111286ddc1', '88523b9296e4d31a', 'bba34b76b9c65bcd', 'fdf70e74ece3d570', '9e645119af2ee69c', '79d8030bcedde1b8', '3b1caa28fadde8ba', '4b2fc2c9df2fb262', '00d5da61b2dd5925', '19538cd84a4b3ba1', 'b35a046e132f0edd', '0466e63ce6feb7ad', '6ffd98323a241688', '13be7362ae8813c8', 'b39893a0f6c26b00']
 expected += ['32d1d4b89a7e472d', '239efb14c8f4bc78', '35d3676177c6c2e6', 'e39d375b5f38332b', '239efb14c8f4bc78', 'e8e034b797f18ea6', 'f169dd3728a6ea4b', 'c3346a9e177eb923', '2ee54f1ce951204c', 'a26da7a28810a36c', 'c3346a9e177eb923', '15a951eef607c9ca', '77638311d930795c', '3523569d6973d6d3', '013050aacb5e857a', 'e3f96f7c30d17793', '3523569d6973d6d3', '60b247ba8cfdf249']
 expected += ['e17feea807275f4e', '6b3f5b0930ea912b', '33ded603650e84ff', 'd15d0cd562fd73f6', '6b3f5b0930ea912b', '32d51319e56d4777', 'd4755b4df9901c00', '1b1866138f82436d', '6349917112094de8', 'b9deba5f468ad2bc', '1b1866138f82436d', '28172c83523eb971', '4c0917d9498fd356', 'db11fb4b5d13347e', '361c2c98bc82b5dd', '1fc76ac03494d427', 'db11fb4b5d13347e', '62a3c3cdaa464561']
+expected += ['d15516096f7cb138', 'f38341cca526f022', '20074853e1bd5ef4', '138d90d8c8203388', 'e5ca68c7f5c37a9d', 'fece479f36a16b52', '3bf1384ad86614dd', 'cce7bc5559c5bf69', '4775678bf4a69452', 'a574fecdc9a39a1d', '162fa9d087ccaed5', 'aa15641cbc1de486', 'bc66e05fda02db3c', '4e4ddc977d812f5e', '6b44fa2dbcc25967', 'af380c1f673005ab', '8019ae2a77afb984', '18e6bb27b53e1f7b', '535f901724f7a12f', '90d05f5910c5cf7b', '3d454cb4ccca3b9e', 'ea4400defab0438f', '01d51c5342ef2f0a', '5d6ca6a037a78108', 'c16fc97d78aad7f5']
 assert len(r.records) == len(expected)
 for record, digest in zip(r.records, expected):
     assert record['native_sha256'].startswith(digest), record['case']
