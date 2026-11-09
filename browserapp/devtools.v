@@ -190,10 +190,11 @@ fn (mut app BrowserApp) ensure_devtools_script_runtime() bool {
 	} else {
 		?browserjs.ImageAsyncRequestFetchHook(none)
 	}
+	session := app.document_session()
 	run_document_script_sources_with_media_loader(app.document, app.document.url_string(),
 		[]browserjs.ScriptSource{}, app.js_runtime, browser_fetch_image_request, image_callback,
-		app.script_request_loader, fn [app] (element &dom.Element) {
-		mut owner := unsafe { &BrowserApp(app) }
+		app.script_request_loader, fn [session] (element &dom.Element) {
+		mut owner := unsafe { &DocumentSession(session) }
 		owner.install_media_playback(element)
 	}, mut app.js_messages)
 	return app.js_runtime != unsafe { nil }

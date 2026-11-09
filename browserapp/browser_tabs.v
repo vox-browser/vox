@@ -277,52 +277,22 @@ fn (mut app BrowserApp) close_browser_tab(index int) {
 }
 
 fn (mut app BrowserApp) dispose_browser_tab() {
-	app.adblock_tokens.release()
 	app.stop_browser_tab_loading_animation()
 	$if linux || ui2_custom_rendering ? { app.stop_browser_memory_chrome() }
 	app.dismiss_browser_popup()
 	app.release_native_replay_scratch()
-	app.clear_back_forward_cache()
-	mut retiring := app.document
-	layout_handle := if retiring != unsafe { nil } {
-		retiring.layout_engine_handle()
-	} else {
-		unsafe { nil }
-	}
-	app.navigation_generation++
-	app.pending_navigation = none
-	app.cancel_page_preload()
-	app.pending_native_navigation = none
+	app.NavigationController.cancel_pending_navigation()
 	app.deferred_page_input = []DeferredPageInput{}
-	if mut loader := app.image_request_loader { loader.cancel() }
-	app.image_request_loader = none
-	if mut loader := app.script_request_loader { loader.cancel() }
-	app.script_request_loader = none
-	if mut children := app.child_document_host { children.close() }
-	app.child_document_host = none
-	if app.js_runtime != unsafe { nil } {
-		app.js_runtime.close()
-		app.js_runtime = unsafe { nil }
-	}
-	if retiring != unsafe { nil } {
-		retiring.destroy_a_document_and_its_descendants()
-		retiring.finalize()
-	}
-	app.document = unsafe { nil }
+	app.deferred_navigation_input = none
+	app.frame_aligned_wheel = none
+	app.pointer_clicks = BrowserPointerClicks{}
+	app.clear_back_forward_cache()
+	mut session := app.document_session()
+	session.retire()
+	// The original tab can remain the window callback owner after it closes.
 	app.page_model = unsafe { nil }
-	// The original tab remains the window callback owner after it closes.
-	// Release its retained page graph as well as the live Document pointer.
-	app.root_box = layout.BlockBox{}
-	layout.release_paint_tree(app.paint_tree_storage)
-	app.paint_tree_storage = unsafe { nil }
-	app.release_paint_commands()
-	layout.retire_native_document_layout(layout_handle)
-	if retiring != unsafe { nil } { retiring.release_native_storage() }
-	app.chromium_raster_plan = layout.ChromiumRasterLayerPlan{}
-	app.chromium_raster_tiles = [][]i32{}
 	app.history = []HistoryEntry{}
 	app.resource_cache = map[string]PreloadedResource{}
-	app.markup = ''
 }
 
 fn (mut app BrowserApp) draw_browser_tabs() {

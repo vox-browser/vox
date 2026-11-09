@@ -6,6 +6,7 @@ import css
 import dom
 import html
 import os
+import platform
 import url
 
 fn load_browser_imported_style_sheet(document &dom.Document, address string) ?css.ImportedStyleSheetSource {
@@ -149,7 +150,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 // installed at once, so the document is not laid out and painted without it
 // first. Returns whether an owned sheet was installed, removed, or replaced.
 fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
-	if app.document == unsafe { nil } {
+	if app.state == .retired || app.document == unsafe { nil } {
 		return false
 	}
 	version := app.document.dom_tree_version()
@@ -199,7 +200,14 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			}
 			continue
 		}
-		spawn fetch_stylesheet_in_background(resolved_url, source_url, app.background_resource_results)
+		// The worker can outlive this document. Own its URL strings outside the
+		// payload arena, just as background image requests do.
+		persistent := platform.enter_persistent()
+		request_url := resolved_url.clone()
+		request_source := source_url.clone()
+		app.background_resource_jobs++
+		spawn fetch_stylesheet_in_background(request_url, request_source, app.background_resource_results)
+		platform.leave_persistent(persistent)
 	}
 	return installed
 }
