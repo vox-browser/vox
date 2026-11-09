@@ -1048,7 +1048,17 @@ fn clamp_grid_item_placement_to_subgrid(mut placement GridItemPlacement, column_
 	}
 }
 
-fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_lines [][]css.GridLineName, subgridded_columns bool, subgridded_rows bool) GridPlacementResult {
+fn place_grid_items(container &Node, physical_column_lines [][]css.GridLineName, physical_row_lines [][]css.GridLineName, physical_subgridded_columns bool, physical_subgridded_rows bool) GridPlacementResult {
+	logical_flow := if container.display().is_grid_lanes_inside() { css.GridAutoFlow{row:grid_lanes_columns(container)} } else { container.computed_values().grid_auto_flow() }
+	transpose := !(logical_flow.row != grid_is_vertical(container))
+	auto_flow := css.GridAutoFlow{row:true,dense:logical_flow.dense}
+	// Run the row-flow algorithm in flow-relative coordinates. Column flow
+	// exchanges both placement phases, implicit bounds and final coordinates.
+	column_lines := if transpose { physical_row_lines } else { physical_column_lines }
+	row_lines := if transpose { physical_column_lines } else { physical_row_lines }
+	subgridded_columns := if transpose { physical_subgridded_rows } else { physical_subgridded_columns }
+	subgridded_rows := if transpose { physical_subgridded_columns } else { physical_subgridded_rows }
+
 	mut placements := []GridItemPlacement{}
 	mut occupied := map[u64]bool{}
 	items := ordered_grid_items(container)
@@ -1063,12 +1073,12 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	// edge, and an auto-positioned item must always fit its largest column span.
 	for item in items {
 		computed := item.computed_values()
-		column_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false))
-		row_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
-		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
-			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
-			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
+		column_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, !transpose, true), grid_axis_placement(container, computed, !transpose, false))
+		row_axis_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, transpose, true), grid_axis_placement(container, computed, transpose, false))
+		column_position := resolve_grid_item_axis_position(item, !transpose, grid_axis_placement(container, computed, !transpose, true),
+			grid_axis_placement(container, computed, !transpose, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, transpose, grid_axis_placement(container, computed, transpose, true),
+			grid_axis_placement(container, computed, transpose, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		column := if column_axis_is_auto { -1 } else { column_position.start }
@@ -1102,14 +1112,14 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	// Step 1: position items with definite positions in both axes.
 	for item in items {
 		computed := item.computed_values()
-		if grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
-			|| grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false)) {
+		if grid_axis_is_auto(grid_axis_placement(container, computed, transpose, true), grid_axis_placement(container, computed, transpose, false))
+			|| grid_axis_is_auto(grid_axis_placement(container, computed, !transpose, true), grid_axis_placement(container, computed, !transpose, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
-			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
-			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, !transpose, grid_axis_placement(container, computed, !transpose, true),
+			grid_axis_placement(container, computed, !transpose, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, transpose, grid_axis_placement(container, computed, transpose, true),
+			grid_axis_placement(container, computed, transpose, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		mut placement := GridItemPlacement{
@@ -1126,20 +1136,26 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 	}
 
 	// Step 2: position items locked to a definite row in the first free column.
+	mut row_cursors := map[int]int{}
 	for item in items {
 		computed := item.computed_values()
-		if grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false))
-			|| !grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false)) {
+		if grid_axis_is_auto(grid_axis_placement(container, computed, transpose, true), grid_axis_placement(container, computed, transpose, false))
+			|| !grid_axis_is_auto(grid_axis_placement(container, computed, !transpose, true), grid_axis_placement(container, computed, !transpose, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
-			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
-			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, !transpose, grid_axis_placement(container, computed, !transpose, true),
+			grid_axis_placement(container, computed, !transpose, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, transpose, grid_axis_placement(container, computed, transpose, true),
+			grid_axis_placement(container, computed, transpose, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
 		row := row_position.start
-		mut column := 0
+		mut column := implicit_minimum_column
+		if !auto_flow.dense {
+			for occupied_row in row..row+row_span {
+				if cursor := row_cursors[occupied_row] { if cursor>column { column=cursor } }
+			}
+		}
 		for column < column_count
 			&& !grid_area_is_free(occupied, row, column, row_span, column_span) {
 			column++
@@ -1147,6 +1163,7 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 		if column + column_span > column_count {
 			column_count = column + column_span
 		}
+		for occupied_row in row..row+row_span { row_cursors[occupied_row]=column+column_span }
 		mut placement := GridItemPlacement{
 			item: item
 			row: row
@@ -1162,22 +1179,20 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 
 	// Step 4: place every item whose row is still auto-positioned. Row flow
 	// advances columns inside rows; column flow performs the transposed search.
-	logical_flow := if container.display().is_grid_lanes_inside() { css.GridAutoFlow{row:grid_lanes_columns(container)} } else { container.computed_values().grid_auto_flow() }
- auto_flow := css.GridAutoFlow{row:logical_flow.row != grid_is_vertical(container),dense:logical_flow.dense}
 	mut cursor_row := implicit_minimum_row
 	mut cursor_column := implicit_minimum_column
 	for item in items {
 		computed := item.computed_values()
-		if !grid_axis_is_auto(grid_axis_placement(container, computed, false, true), grid_axis_placement(container, computed, false, false)) {
+		if !grid_axis_is_auto(grid_axis_placement(container, computed, transpose, true), grid_axis_placement(container, computed, transpose, false)) {
 			continue
 		}
-		column_position := resolve_grid_item_axis_position(item, true, grid_axis_placement(container, computed, true, true),
-			grid_axis_placement(container, computed, true, false), column_lines.len, column_lines, subgridded_columns)
-		row_position := resolve_grid_item_axis_position(item, false, grid_axis_placement(container, computed, false, true),
-			grid_axis_placement(container, computed, false, false), row_lines.len, row_lines, subgridded_rows)
+		column_position := resolve_grid_item_axis_position(item, !transpose, grid_axis_placement(container, computed, !transpose, true),
+			grid_axis_placement(container, computed, !transpose, false), column_lines.len, column_lines, subgridded_columns)
+		row_position := resolve_grid_item_axis_position(item, transpose, grid_axis_placement(container, computed, transpose, true),
+			grid_axis_placement(container, computed, transpose, false), row_lines.len, row_lines, subgridded_rows)
 		column_span := column_position.span
 		row_span := row_position.span
-		column_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, true, true), grid_axis_placement(container, computed, true, false))
+		column_is_auto := grid_axis_is_auto(grid_axis_placement(container, computed, !transpose, true), grid_axis_placement(container, computed, !transpose, false))
 		if auto_flow.dense {
 			cursor_column = implicit_minimum_column
 			cursor_row = implicit_minimum_row
@@ -1260,10 +1275,16 @@ fn place_grid_items(container &Node, column_lines [][]css.GridLineName, row_line
 			placements[index].row += rows_before
 		}
 	}
+	if transpose {
+		for index in 0..placements.len {
+			prior := placements[index]
+			placements[index] = GridItemPlacement{...prior,row:prior.column,column:prior.row,row_span:prior.column_span,column_span:prior.row_span}
+		}
+	}
 	return GridPlacementResult{
 		placements: placements
-		implicit_columns_before: columns_before
-		implicit_rows_before: rows_before
+		implicit_columns_before: if transpose { rows_before } else { columns_before }
+		implicit_rows_before: if transpose { columns_before } else { rows_before }
 	}
 }
 
