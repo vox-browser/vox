@@ -1247,7 +1247,7 @@ pub fn (selector Selector) specificity() u32 {
 					// to a type selector. The specificity of a named view transition pseudo-element selector with a '*' argument is zero.
 					// NB: We just break before adding to the type (tag name) specificity in case this is a named view transition pseudo that uses '*'
 					if simple_selector.pseudo_element().type_ in [.view_transition_group,
-						.view_transition_image_pair, .view_transition_old, .view_transition_new] && simple_selector.pseudo_element().pt_name_selector.is_universal {
+						.view_transition_image_pair, .view_transition_old, .view_transition_new, .highlight] && simple_selector.pseudo_element().pt_name_selector.is_universal {
 						continue
 					}
 
@@ -1744,6 +1744,7 @@ fn matches_simple(component &SimpleSelector, element &dom.Element, shadow_host ?
 		}
 		.pseudo_element {
 			if component.pseudo_element().type_ == .highlight {
+    if component.pseudo_element().value_kind == .pt_name_selector && component.pseudo_element().pt_name_selector.is_universal { return true }
 				names := component.pseudo_element().ident_list
 				return names.len == 1 && names[0] == context.pseudo_argument
 			}
@@ -2713,11 +2714,16 @@ fn parse_pseudo_element_selector(name string, argument string, is_function bool)
 		match pseudo_element {
 			.highlight {
 				arg := argument.trim_space()
+    if arg == '*' {
+     selector.value_kind = .pt_name_selector
+     selector.pt_name_selector = PseudoElementPTNameSelector{is_universal:true}
+    } else {
 				if !is_valid_selector_identifier(arg) { return invalid_simple_selector('::${name}(${argument})') }
 				ident,consumed := parse_identifier(arg,0)
 				if consumed != arg.len || ident.to_lower() in ['initial','inherit','unset','revert','revert-layer','default'] { return invalid_simple_selector('::${name}(${argument})') }
 				selector.value_kind = .ident_list
 				selector.ident_list = [ident]
+    }
 			}
 			.slotted {
 				if !selector_text_is_valid_compound(argument.trim_space()) {
@@ -2943,6 +2949,7 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 					}
 				}
 				.pseudo_element {
+     if simple_selector.pseudo_element().type_ == .highlight && simple_index != compound_selector.simple_selectors.len-1 { return true }
 					pseudo_element_count++
 					if pseudo_element_count == 1 {
 						first_pseudo_element = simple_selector.pseudo_element().type_

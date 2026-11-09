@@ -646,7 +646,7 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 			pseudo_element_supports_common_text_properties(name, true) || is_pseudo_margin_property(name) || is_pseudo_padding_property(name) || is_pseudo_border_property(name) || name in ['box-shadow', 'float']
 		}
 		.selection, .highlight {
-			name in ['color', 'background-color', 'text-shadow', 'stroke-width'] || is_pseudo_text_decoration_property(name)
+			name in ['color', 'background-color', 'text-shadow', 'stroke-width', 'text-underline-offset'] || is_pseudo_text_decoration_property(name)
 		}
 		else {
 			true
