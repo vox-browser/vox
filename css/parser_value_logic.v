@@ -7467,8 +7467,8 @@ fn (mut parser Parser) parse_track_list_impl(mut tokens ComponentValueStream, mu
 	if trailing := parser.parse_grid_line_names(mut trailing_transaction) {
 		if !trailing.is_empty() {
 			output.append_line_names(trailing)
-			tokens = trailing_transaction
 		}
+		tokens = trailing_transaction
 	}
 
 	return parsed_tracks_count
