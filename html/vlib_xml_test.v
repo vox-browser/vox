@@ -1,6 +1,7 @@
 module html
 
 import dom
+import platform
 
 fn vlib_xml_parse_document(source string) !&dom.Document {
 	mut document := dom.Document.create(dom.url_about_blank())
@@ -96,6 +97,12 @@ fn test_vlib_xml_rejects_malformed_documents_through_dom_parser() {
 		'<root a="1" a="2"/>',
 		'<missing:root/>',
 		'<root missing:attribute="value"/>',
+		'<a?/>',
+		'<root 1x="value"/>',
+		'<root a?="value"/>',
+		'<root xmlns:p="urn:p" p:a:b="value"/>',
+		'<root xmlns:p:q="urn:p"/>',
+		'<root xmlns:p="urn:p"><p:a:b/></root>',
 		'<root>&unknown;</root>',
 		'<root value="a < b"/>',
 		'<root/><?xml version="1.0"?>',
@@ -150,4 +157,106 @@ fn test_vlib_xml_preserves_doctype_identifiers_and_document_order() {
 	assert children[1].is_document_type()
 	assert children[2].as_element()?.local_name() == 'root'
 	assert children[3].is_comment()
+}
+
+@[noinline]
+fn vlib_xml_churn_parser_scratch() {
+	// Reuse the parser's parent arena and scratch label. Under the native CI
+	// poison setting, retiring this label also makes stale parser bytes fault.
+	for index in 0 .. 8 {
+		scratch := platform.begin_thread_scratch('XML parse tree')
+		// Array initializers expose their own index. Capture the round's fill
+		// value first so the entire allocation receives the same byte.
+		fill := u8(index + 17)
+		bytes := []u8{len: 256 * 1024, init: fill}
+		assert bytes[0] == fill
+		assert bytes[bytes.len - 1] == fill
+		scratch.finish()
+	}
+}
+
+fn test_vlib_xml_dom_payloads_survive_parser_scratch_retirement() {
+	long_attribute := 'long-path-value '.repeat(256)
+	source := '<?before document?><!DOCTYPE root PUBLIC "-//TEST//DTD Root//EN" "root.dtd"><root xmlns="urn:default" xmlns:p="urn:prefixed" plain="short" long="${long_attribute}&lt;tail&gt;" p:flag="namespace-value"><p:item> lead &amp; tail <![CDATA[ <raw>&amp; ]]><!--comment &amp;--><?work retained?><label>plain</label><nested xmlns="urn:inner"/></p:item><sibling/></root><?after document?>'
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.xml)
+	document.enable_native_storage()
+	mut owner_scope := document.enter_native_storage()
+	defer {
+		owner_scope.finish()
+		document.destroy()
+		document.finalize()
+		document.release_native_storage()
+	}
+	parse_xml_document_source(document, source)!
+	vlib_xml_churn_parser_scratch()
+	owner_scope.finish()
+
+	document_children := document.as_node().children_as_vector()
+	assert document_children.len == 4
+	assert document_children[0].as_processing_instruction()?.target() == 'before'
+	assert document_children[0].as_processing_instruction()?.data() == 'document'
+	doctype := document_children[1].as_document_type()?
+	assert doctype.name() == 'root'
+	assert doctype.public_id() == '-//TEST//DTD Root//EN'
+	assert doctype.system_id() == 'root.dtd'
+	assert document_children[3].as_processing_instruction()?.target() == 'after'
+	assert document_children[3].as_processing_instruction()?.data() == 'document'
+
+	root := document.document_element()?
+	assert root.local_name() == 'root'
+	assert root.namespace_uri()? == 'urn:default'
+	assert root.get_attribute('xmlns')? == 'urn:default'
+	assert root.get_attribute('xmlns:p')? == 'urn:prefixed'
+	assert root.get_attribute('plain')? == 'short'
+	assert root.get_attribute('long')? == long_attribute + '<tail>'
+	assert root.get_attribute_ns('urn:prefixed', 'flag')? == 'namespace-value'
+	item := root.as_node().children[0].as_element()?
+	assert item.node_name() == 'p:item'
+	assert item.prefix()? == 'p'
+	assert item.local_name() == 'item'
+	assert item.namespace_uri()? == 'urn:prefixed'
+	children := item.as_node().children_as_vector()
+	assert children.len == 6
+	assert children[0].is_exclusive_text()
+	assert children[0].character_data()?.data() == ' lead & tail '
+	assert children[1].is_cdata_section()
+	assert children[1].character_data()?.data() == ' <raw>&amp; '
+	assert children[2].is_comment()
+	assert children[2].character_data()?.data() == 'comment &amp;'
+	assert children[3].as_processing_instruction()?.target() == 'work'
+	assert children[3].as_processing_instruction()?.data() == 'retained'
+	label := children[4].as_element()?
+	assert label.local_name() == 'label'
+	assert label.namespace_uri()? == 'urn:default'
+	assert label.as_node().first_child()?.character_data()?.data() == 'plain'
+	assert children[5].as_element()?.namespace_uri()? == 'urn:inner'
+	sibling := root.as_node().children[1].as_element()?
+	assert sibling.local_name() == 'sibling'
+	assert sibling.namespace_uri()? == 'urn:default'
+}
+
+fn vlib_xml_captured_parse_error(document &dom.Document, source string) IError {
+	parse_xml_document_source(document, source) or { return err }
+	panic('expected malformed XML to fail')
+}
+
+fn test_vlib_xml_parse_errors_survive_parser_scratch_retirement() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.xml)
+	document.enable_native_storage()
+	mut owner_scope := document.enter_native_storage()
+	defer {
+		owner_scope.finish()
+		document.destroy()
+		document.finalize()
+		document.release_native_storage()
+	}
+	entity_error := vlib_xml_captured_parse_error(document, '<root value="&missing;"/>')
+	structure_error := vlib_xml_captured_parse_error(document, '<root><child/></wrong>')
+	vlib_xml_churn_parser_scratch()
+	owner_scope.finish()
+	assert entity_error.msg().contains('unknown XML entity &missing;')
+	assert structure_error.msg().contains('root')
+	assert structure_error.msg().contains('not closed')
 }

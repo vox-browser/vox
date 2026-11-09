@@ -27,7 +27,8 @@ jobs:
         gc: [boehm, prealloc]
     env:
       # FastC must support JSON enum attributes and dynamic-array decoding.
-      V_REVISION: 339affce1891514d11aeb7111f579845d966a138
+      # XML allocation fixes: https://github.com/vlang/v/pull/32104
+      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
@@ -208,6 +209,39 @@ jobs:
             --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
             python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
 
+      - name: Compare XML parser CPU and retained memory
+        id: xml_performance
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
+        timeout-minutes: 45
+        env:
+          # Used only for exact-SHA fetches; checkout retains no credentials.
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # Three optimized C builds share this checkout's DOM engine and
+          # native libraries. The driver fetches exact historical parser blobs
+          # when absent from the shallow checkout, then restores source files.
+          # Allocator poisoning remains enabled for all correctness steps;
+          # only the measured subprocesses disable poison and no-reuse modes.
+          # Unrelated complete event diffs produce a skipped comparison receipt;
+          # missing history or manual dispatch always runs the full benchmark.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-xml-performance.lock" \
+            --report "$RUNNER_TEMP/vox-xml-performance.json" --timeout 2640 -- \
+            python3 tools/benchmark_xml_parser.py --gc prealloc --pairs 7 --changed-only \
+              --output "Build/linux/tests/prealloc/run-xml-performance-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+      - name: Preserve XML performance evidence immediately
+        if: ${{ always() && !cancelled() && matrix.gc == 'prealloc' && (steps.xml_performance.outcome == 'success' || steps.xml_performance.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: xml-performance-receipts
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/vox-xml-performance.json
+            Build/linux/tests/prealloc/run-xml-performance-${{ github.run_id }}-${{ github.run_attempt }}/*.json
+            Build/linux/tests/prealloc/run-xml-performance-${{ github.run_id }}-${{ github.run_attempt }}/*.log
+
       - name: Build Vox and run the headless smoke test
         id: production_build
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
@@ -235,6 +269,7 @@ jobs:
       # the FastC browser build or on preceding test results. Keep collecting
       # failures without making the failed production/window gate optional.
       - name: Check XML DOM and document integration
+        id: xml_integration
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 45
         run: |
@@ -251,6 +286,23 @@ jobs:
               html/xml_namespace_test.v \
               xhr/document_response_test.v \
               html/document_loading_bridge_test.v
+
+      - name: Preserve XML integration evidence immediately
+        if: ${{ always() && !cancelled() && (steps.xml_integration.outcome == 'success' || steps.xml_integration.outcome == 'failure') }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: xml-integration-receipts-${{ matrix.gc }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/vox-xml-integration-${{ matrix.gc }}.json
+            Build/linux/tests/${{ matrix.gc }}/run-*/vlib_xml_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/dom_parser_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_document_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_fragment_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/xml_namespace_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/document_response_test.*
+            Build/linux/tests/${{ matrix.gc }}/run-*/document_loading_bridge_test.*
 
       - name: Check retained storage with the production allocator
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
