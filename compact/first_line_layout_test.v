@@ -116,3 +116,40 @@ fn test_first_line_style_sources_survive_native_geometry_workspace_retirement() 
 	assert source.parent() != none
 	assert target.get_bounding_client_rect().height == 106
 }
+
+fn test_first_line_font_survives_emergency_and_character_wrapping() {
+	for policy in [dom.FontRenderingPolicy.libweb, .chromium] {
+		for rule in ['overflow-wrap:anywhere', 'overflow-wrap:break-word', 'word-break:break-all'] {
+			for nowrap in [false, true] {
+				white_space := if nowrap { 'white-space:nowrap' } else { '' }
+				mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{font:20px/1 monospace;width:1ch;color:blue;${rule};${white_space}}#target::first-line{font-size:40px;color:red}</style><div id="target">XXXX</div>')
+				document.set_font_rendering_policy(policy)
+				mut root := layout.layout_document_typed_in_viewport(document, 400, 300)
+				target := document.get_element_by_id('target') or { panic('target') }
+				expected := if nowrap { 40 } else { 100 }
+				assert target.get_bounding_client_rect().height == expected, '${policy}, ${rule}, nowrap=${nowrap}'
+				commands := root.paint_commands().filter(it.kind == 'draw_text' && it.text.trim_space() != '')
+				assert commands.len == if nowrap { 1 } else { 4 }
+				assert commands[0].font_size == 40
+				if !nowrap { assert commands[1..].all(it.font_size == 20) }
+				mut text := ''
+				for command in commands { text += command.text }
+				assert text == 'XXXX'
+				document.finalize()
+			}
+		}
+	}
+}
+
+fn test_first_line_emergency_wrap_keeps_combining_characters_together() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{font:20px/1 monospace;width:1ch;overflow-wrap:anywhere}#target::first-line{font-size:40px;letter-spacing:2px}</style><div id="target">ÁBCD</div>')
+	defer { document.finalize() }
+	mut root := layout.layout_document_typed_in_viewport(document, 400, 300)
+	target := document.get_element_by_id('target') or { panic('target') }
+	assert target.get_bounding_client_rect().height == 100
+	commands := root.paint_commands().filter(it.kind == 'draw_text' && it.text.trim_space() != '')
+	assert commands.len == 4
+	assert commands[0].text == 'Á' && commands[0].font_size == 40
+	assert commands[1..].map(it.text).join('') == 'BCD'
+	assert commands[1..].all(it.font_size == 20)
+}

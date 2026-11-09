@@ -413,6 +413,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 							line_builder.break_if_needed(projected_width)
 						}
 					}
+					if iterator.resume_ordinary_items_after_break(item) { continue }
 					if overflow_break_allowed {
 						break_overflowing_text_item(mut line_builder, mut item)
 						previous_text_item_allows_overflow_break_after = true
@@ -544,6 +545,11 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 
 fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLevelItem) {
 	for {
+		// A split on the first line changes the pending remainder's cascade.
+		// Let the iterator resume it at the same UTF-16 offset in ordinary
+		// text before fitting or shaping another line.
+		if item.style_source != none && line_builder.first_line_style_source != none
+			&& line_builder.containing_block_used_values.line_boxes.len > 1 { return }
 		remaining_width := line_builder.remaining_width_for_overflow_break() or { return }
 		if line_builder.projected_text_sequence_width(item, []).raw_value() <= remaining_width.raw_value() {
 			return
@@ -562,7 +568,7 @@ fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLeve
 			continue
 		}
 		item = remainder
-		line_builder.append_text_item(prefix, (prefix.node or { return }).computed_values().line_height())
+		line_builder.append_text_item(prefix, inline_item_style_source(prefix).computed_values().line_height())
 		line_builder.note_soft_wrap_opportunity()
 		line_builder.break_line(.no, none)
 	}

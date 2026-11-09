@@ -24,10 +24,9 @@ fn (mut iterator InlineLevelIterator) prepare_first_line_items() ?&Node {
 	style := css.computed_properties_for_pseudo_element(element, .first_line) or { return none }
 	ordinary := root.computed_values()
 	// This slice handles text and explicit breaks in the block's own inline
-	// context. Descendant inline inheritance, emergency word splitting and
+	// context. Descendant inline inheritance, automatic hyphenation and
 	// transformed source mappings require additional first-line integration.
 	if ordinary.writing_mode() != .horizontal_tb || ordinary.hyphens() == .auto_
-		|| ordinary.overflow_wrap() != .normal || ordinary.word_break() != .normal
 		|| ordinary.text_wrap_style() in [.balance, .pretty]
 		|| style.white_space_collapse() != ordinary.white_space_collapse()
 		|| style.text_wrap_mode() != ordinary.text_wrap_mode()

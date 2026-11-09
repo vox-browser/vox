@@ -89,6 +89,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 	prefix := InlineLevelItem{
 		type_: .text
 		node: node
+		style_source: item.style_source
 		glyph_run: prefix_run
 		offset_in_node: item.offset_in_node
 		length_in_node: split - item.offset_in_node
@@ -103,6 +104,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 	remainder := InlineLevelItem{
 		type_: .text
 		node: node
+		style_source: item.style_source
 		glyph_run: remainder_run
 		offset_in_node: split
 		length_in_node: item.offset_in_node + item.length_in_node - split
@@ -226,8 +228,9 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 		return none
 	}
 
-	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
-	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
+	style_source := inline_item_style_source(item)
+	letter_spacing := f32(resolved_text_spacing_for_shaping(style_source, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(style_source, .word_spacing))
 	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split := -1
 	for boundary in boundaries {
