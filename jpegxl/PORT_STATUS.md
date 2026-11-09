@@ -254,7 +254,7 @@ Rotated, animated and wide-gamut fixture metadata does not establish support for
 their final pixel output.
 
 Remaining work includes partial/tiled rendering, VarDCT and frame dependencies,
-patches/noise/splines, EPF filtering, XYB/transfer conversion, frame color/filter
+patches/noise/splines, VarDCT EPF sigma-map generation, XYB/transfer conversion, frame color/filter
 pipeline assembly and browser
 integration. Container/API streaming
 remains a broader parity task.
@@ -319,16 +319,23 @@ Output samples are independent; shape/weight/size limits have focused checks.
 These stages are not connected to the complete-file rendering path yet, and do
 not lift its filter, resampling or YCbCr restrictions.
 
-The corpus checker discovers thirty-two test files. The preceding twenty-five
-file package passed in both GC modes at the ten-slice checkpoint; subsequent
-work passes focused checks in both modes with unavailable Rust compiler paths.
-JPEG XL cadence is 7/10 after that checkpoint; unrelated broader
-suites were not rerun. The four new arithmetic/stage files pass default GC,
-no-GC and optimized checks. The package checks 239,082 source cases, counting
+All three EPF passes now preserve reflected borders, five-point SAD ordering,
+forward weight sums and pass-specific output accumulation. Constant or 8x8-block
+inverse sigma, block-border scales, exact threshold comparisons and per-pixel
+bypass match native source outputs. There are 512 frozen planes per pass, with
+229,311 output f32 words in total. Modular positive sigma has a checked conversion
+helper; deriving VarDCT sigma from quantization/transform/sharpness maps remains
+pending. These stages also remain separate from complete-file rendering.
+
+The corpus checker discovers thirty-five test files. The full package passes
+in both GC modes with unavailable Rust compiler paths at the ten-slice JPEG XL
+checkpoint, resetting its cadence to 0/10. The arithmetic/color stages and EPF
+focused files also pass optimized checks. Unrelated broader suites were not
+rerun. The package checks 240,618 source cases, counting
 individual ANS alias transitions and whole weighted/property/row transcripts.
-[The filter/color stage report](../docs/translation-audit/JPEGXL_V_FILTER_COLOR_STAGES.md)
-records the current scope; [the output sample report](../docs/translation-audit/JPEGXL_V_OUTPUT_SAMPLES.md)
-records the preceding full checkpoint.
+[The EPF report](../docs/translation-audit/JPEGXL_V_EPF.md) records the current
+checkpoint and boundaries; [the filter/color stage report](../docs/translation-audit/JPEGXL_V_FILTER_COLOR_STAGES.md)
+records the preceding stage coverage.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

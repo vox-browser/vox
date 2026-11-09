@@ -241,3 +241,26 @@ entry points retain their filter/resampling/YCbCr restrictions. EPF, VarDCT,
 XYB/transfer conversion, frame dependencies and production integration remain.
 The production Rust JPEG XL backend and its Cargo/CI/developer tools are still
 required; all-dependency removal remains unfinished.
+
+## EPF and thirty-five-file JPEG XL checkpoint on 2026-11-09
+
+The three pure V EPF passes now match 1,536 independently generated whole-plane
+source cases, comparing 229,311 output f32 words exactly. Reflected borders,
+channel/patch summation and FMA order, constant/block inverse sigma, block phase,
+threshold equality and per-pixel bypass are preserved. Output buffers are
+independently owned, and bounded geometry/sigma APIs have focused regressions.
+
+All thirty-five JPEG XL test files pass through the V corpus checker in both
+GC modes with unavailable Rust compiler paths. The three focused EPF files also
+pass an optimized build. The compiler and all 155 selected input hashes remained
+unchanged through these final checks. The package now has 240,618 frozen cases.
+This completes ten slices after the preceding twenty-five-file checkpoint and
+resets JPEG XL cadence to 0/10. Unrelated LibJS/DOM/performance ledgers and their
+historical results were not changed or rerun.
+
+[The EPF report](JPEGXL_V_EPF.md) records source pins, commands, memory results and
+the corrected test-literal failure. VarDCT sigma-map generation, frame color and
+filter pipeline assembly, VarDCT/frame dependencies, XYB/transfer conversion and
+production integration remain. The complete-file APIs retain their existing
+filter/YCbCr restrictions. Production JPEG XL, Cargo/CI hooks and native developer
+tests still require Rust; complete dependency removal remains unfinished.
