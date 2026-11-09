@@ -345,7 +345,12 @@ fn auto_repeat_template_rest(node &Node, list css.GridTrackSizeList, basis CSSPi
 // number of times that does not overflow the content box once the template's
 // other definite tracks and the gaps are accounted for; otherwise once.
 fn auto_repeat_count(node &Node, repeat css.GridRepeat, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool) int {
+ if resolved := repeat.repeat_count_ { if !repeat.is_fixed() { return int(css.int_from_style_value(resolved)) } }
 	repeat_basis,repeat_definite,minimum_only := grid_repeat_axis_constraint(node,horizontal,basis,available_is_definite)
+ return auto_repeat_count_for_constraint(node,repeat,template,repeat_basis,gap,repeat_definite,minimum_only,horizontal)
+}
+
+fn auto_repeat_count_for_constraint(node &Node,repeat css.GridRepeat,template css.GridTrackSizeList,repeat_basis CSSPixels,gap CSSPixels,repeat_definite bool,minimum_only bool,horizontal bool) int {
 	list := repeat.grid_track_size_list()
 	mut repeated_tracks_size := CSSPixels.new(0)
 	mut repeated_track_count := 0
@@ -2667,13 +2672,13 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	} else {
 		?CSSPixels(none)
 	}
-	template_columns := grid_axis_template(container, true)
-	template_rows := grid_axis_template(container, false)
+	raw_template_columns := grid_axis_template(container,true)
+	raw_template_rows := grid_axis_template(container,false)
 	container_styled := container.as_node_with_style() or { panic('grid container has no style') }
 	inherited_columns := state.subgrid_axis_data(container_styled, true)
 	inherited_rows := state.subgrid_axis_data(container_styled, false)
-	subgridded_columns := template_columns.is_subgrid() && inherited_columns != none
-	subgridded_rows := template_rows.is_subgrid() && inherited_rows != none
+	subgridded_columns := raw_template_columns.is_subgrid() && inherited_columns != none
+	subgridded_rows := raw_template_rows.is_subgrid() && inherited_rows != none
 	// Subgridded axes use their parent's gutter. Standalone axes resolve each
 	// percentage gutter against the available size in its own dimension.
 	column_gap := if data := inherited_columns {
@@ -2693,6 +2698,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	} else {
 		CSSPixels.new(0)
 	}
+ template_columns := grid_template_with_used_repeat_counts(state,container,raw_template_columns,container_width,column_gap,!width_is_intrinsic,true)
+ template_rows := grid_template_with_used_repeat_counts(state,container,raw_template_rows,row_basis,row_gap,container_state.has_definite_height(),false)
 	areas := grid_physical_areas(container)
 	column_lines := if data := inherited_columns {
 		if subgridded_columns {
@@ -2761,6 +2768,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			placement_result.implicit_columns_before, required_columns)
 	}
 	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
+
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements,columns)
@@ -3451,6 +3459,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 }
 
 fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,definite bool) (CSSPixels,bool,bool) {
+ return grid_repeat_axis_constraint_with_adjustment(node,horizontal,basis,definite,none)
+}
+
+fn grid_repeat_axis_constraint_with_adjustment(node &Node,horizontal bool,basis CSSPixels,definite bool,used_adjustment ?CSSPixels) (CSSPixels,bool,bool) {
  if definite { return basis,true,false }
  style := node.computed_values()
  minimum := style.size_value(if horizontal { .min_width } else { .min_height })
@@ -3466,10 +3478,12 @@ fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,defini
   else { max_bound=resolve_layout_size(node,maximum,basis) }
  }
  edges := style.resolved_box_model_edges(basis.to_double())
- adjustment := if style.box_sizing() == .border_box {
-  if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
-  else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) }
- } else { CSSPixels.new(0) }
+ adjustment := used_adjustment or {
+  if style.box_sizing() == .border_box {
+   if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
+   else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) }
+  } else { CSSPixels.new(0) }
+ }
  if max_value := max_bound {
   lower := min_bound or { CSSPixels.new(0) }
   return css_pixels_max(CSSPixels.new(0),css_pixels_max(lower,max_value).minus(adjustment)),true,false

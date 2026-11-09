@@ -1154,6 +1154,14 @@ fn calculate_content_height_with_constraint(mut source_state LayoutState, box &B
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, node, node)
 	mut values := throwaway.get_mutable(styled)
+ if source := source_state.try_get(styled) {
+  if basis := source.box_model_percentage_basis() { values.set_box_model_percentage_basis(basis) }
+ }
+ if containing := node.containing_block() {
+  parent := throwaway.get_mutable(unsafe { &NodeWithStyle(containing) })
+  values.set_containing_block_used_values(parent)
+  resolve_box_model_edges(node.computed_values(),mut values,parent.content_width().to_double())
+ }
 	values.height_constraint = constraint
 	values.set_indefinite_content_height()
 	values.set_content_width(width)
