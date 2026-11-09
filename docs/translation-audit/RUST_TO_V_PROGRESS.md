@@ -139,3 +139,22 @@ scalar squeeze paths; specialized/SIMD performance or parity is not claimed.
 Stream selection, transform planning/tiled borders, complete frames, VarDCT,
 filters, final color/pixel output and browser integration remain. Production
 JPEG XL, its Cargo/CI hooks and its native developer test still require Rust.
+
+## Modular stream continuation on 2026-11-09
+
+V now plans and reverses modular transform graphs, selects local/global trees
+for complete modular streams, parses LF quant factors and decodes small global
+sections into raw channel planes. Five additional focused files pass in default
+and no-GC modes with unavailable Rust compiler paths. These add 5,691 frozen
+source cases, bringing the package to 196,704 cases and twenty-four test files.
+This is 9/10 implementation slices after the preceding fifteen-file JPEG XL
+batch; formatting and documentation add no slice credit. Broader suites and
+unrelated DOM/performance counters were not changed.
+
+The raw planes match six existing fixtures in both storage widths. Guardian's
+first modular LF frame is a dependency for its pending visible VarDCT frame;
+orientation, animation and wide-gamut metadata are not final rendering support.
+[The modular stream report](JPEGXL_V_MODULAR_STREAMS.md) records the independent
+source, exact coverage, commands and corrected failures. Grouped/tiled decoding,
+complete frames, VarDCT, filters and final pixel output remain. Production JPEG
+XL, Cargo/CI hooks and its developer test continue to require Rust.

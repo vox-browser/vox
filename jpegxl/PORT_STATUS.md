@@ -1,8 +1,8 @@
 # JPEG XL V decoder port
 
 The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package reconstructs selected modular channels and
-whole palette/squeeze planes. It does not decode a complete JPEG XL image or
+builds that helper. This package decodes complete modular streams and the raw
+planes of small modular global sections. It does not render a complete JPEG XL image or
 remove that final Rust dependency yet.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
@@ -162,8 +162,7 @@ squeeze parameters. The 8,289 frozen reference records compare every field,
 validation result and consumed bit count, including all RCT selectors and
 palette predictor IDs. Empty squeeze lists retain their automatic-transform
 meaning. Default and no-GC focused checks pass under separate 3 GiB guards,
-including unavailable Rust compiler paths. Transform planning and tiled
-application remain separate work.
+including unavailable Rust compiler paths. Tiled application remains separate work.
 
 All fourteen modular predictors now run in V, with source border-neighbor
 substitutions, interior-row updates, signed division and selection tie behavior.
@@ -227,20 +226,45 @@ storage widths. Tiled borders and auxiliary row handoff remain pending.
 Scalar horizontal/vertical squeeze reconstruction now handles monotonic
 tendencies, signed rounding, stored-neighbor narrowing and odd trailing samples.
 There are 8,192 sample-pair and 1,024 whole-plane source comparisons. The caller
-supplies output shift metadata; transform planning, tiled borders, smooth-squeeze
+supplies output shift metadata; tiled borders, smooth-squeeze
 application and equivalence to the source SIMD paths remain pending.
 
-Remaining work includes modular stream/header selection, transform planning and
-tiled application, complete frame assembly, VarDCT, filtering, pixel color
-conversion, oriented output rows, exact alpha quantization and browser
-integration. Container/API streaming remains a broader parity task.
+Transform planning now preserves channel metadata, automatic squeeze ordering,
+palette sample budgets, stable buffer identities and reverse reconstruction.
+Empty physical buffers retain the logical dimensions needed by singleton
+squeeze axes. There are 1,024 frozen planning records (722 accepted) and 256
+composed reconstruction cases in both storage widths. Caller samples remain
+independently owned.
 
-The corpus checker discovers nineteen test files. The preceding full batch ran
-the then-fifteen files in both GC modes; the four new files pass focused default
-and no-GC batches with unavailable Rust compiler paths. This is four completed
-slices after that JPEG XL baseline; broader suites were not rerun. The package
-now checks 191,013 source cases, counting individual ANS alias transitions and
-whole weighted/property transcripts. [The modular sample verification report](../docs/translation-audit/JPEGXL_V_MODULAR_SAMPLES.md)
+Complete modular streams now select local/global trees, parse missing headers,
+avoid reapplying provided global transforms and validate final entropy state.
+All-empty streams consume no header. The 303 frozen stream cases include local
+transforms, global selection, every-byte truncations and six source fast-lossless
+RLE cases; 234 succeed. Successful consumed bits and samples match exactly;
+cached-reader cursor parity after errors is not claimed. The V tree cap remains
+131,070 nodes so leaf contexts fit the entropy map.
+
+LF quant factors now parse with exact f32 values and reciprocals in 4,096 source
+cases (2,312 accepted). Small modular global sections derive color/extra-channel
+geometry, select the optional global tree, decode all coded channels and undo
+global transforms. Twelve comparisons check every raw sample from the first
+frame of six existing fixtures in both storage widths. Guardian's first frame
+is a non-visible 13x13 LF dependency; its visible VarDCT frame remains pending.
+Rotated, animated and wide-gamut fixture metadata does not establish support for
+their final pixel output.
+
+Remaining work includes grouped/tiled application, complete frame assembly,
+VarDCT, patches/noise/splines, filtering, pixel color conversion, oriented output
+rows, exact alpha quantization and browser integration. Container/API streaming
+remains a broader parity task.
+
+The corpus checker discovers twenty-four test files. The preceding full batch
+ran the then-fifteen files in both GC modes; the subsequent nine files pass
+focused default and no-GC batches with unavailable Rust compiler paths. This is
+nine completed slices after that JPEG XL baseline; broader suites were not
+rerun. The package now checks 196,704 source cases, counting individual ANS alias
+transitions and whole weighted/property transcripts.
+[The modular stream report](../docs/translation-audit/JPEGXL_V_MODULAR_STREAMS.md)
 records commands, limits and the source-case definitions.
 
 The V package is not connected to the production image path until
