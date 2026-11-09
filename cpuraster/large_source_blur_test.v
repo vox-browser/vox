@@ -216,3 +216,44 @@ fn test_large_minified_whole_source_blurs_match_native() {
 		check_large_source_blur_fixture(c, i)
 	}
 }
+
+// The blur resolves a minified source per shadow request, while merge keeps
+// the original foreground view, including when the shadow is offscreen.
+fn test_large_minified_whole_source_shadows_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 2, 3, 4, 5, 6, 7, 2, 1]
+	macos := [
+		'ac90861d3cdd537e9f6e6fc6068b6b48e207dd96a7e040666c2eb9ef646f8c3c',
+		'dc87f96b84e2d04bc947af14fd42eff3f46ab7bbcf8ad25b9a16e3d93f19e831',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'3ef6eebac7b3ed64eefe6df2bc7404a6931c2ea0f2fda3e0efcafc6b530c1130',
+		'72bd5d4149364f4e7f9c92b569d61601d7b16d6db0b60328fb6e4502c3eb9cb1',
+		'114a74b5e4150d7b0b2947f23fb5b7d29766409c9c07c606043c84c6e821a9b6',
+		'fc7373294e6b292a8eee37068bb5baa1f48f50737514c92cf97a50c6f2bd6437',
+		'61d939acd1709dd5028ba9a59e608214a48ee5333ebd2e185475914c97f273d2',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'dcf5803a334a54610445c02f042975fffd6502696ae2f3df361842ba1e90df61',
+	]
+	linux := [
+		'c3c14a4ddab99cc6b850feb8d3871754784ae663cd10e39d7311a02cfc500bcc',
+		'dc87f96b84e2d04bc947af14fd42eff3f46ab7bbcf8ad25b9a16e3d93f19e831',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'3ef6eebac7b3ed64eefe6df2bc7404a6931c2ea0f2fda3e0efcafc6b530c1130',
+		'72bd5d4149364f4e7f9c92b569d61601d7b16d6db0b60328fb6e4502c3eb9cb1',
+		'114a74b5e4150d7b0b2947f23fb5b7d29766409c9c07c606043c84c6e821a9b6',
+		'fc7373294e6b292a8eee37068bb5baa1f48f50737514c92cf97a50c6f2bd6437',
+		'61d939acd1709dd5028ba9a59e608214a48ee5333ebd2e185475914c97f273d2',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'dcf5803a334a54610445c02f042975fffd6502696ae2f3df361842ba1e90df61',
+	]
+	for i, index in indices {
+		base := fixtures[index]
+		w, h := f32(base.image_width), f32(base.image_height)
+		c := LargeSourceBlurFixture{...base, source: [f32(0), 0, w, h]!,
+			destination: [f32(5.25), 7.75, w * f32(.5), h * f32(.75)]!, sigma: 300,
+			shadow: true, shadow_color: 0x9d70d020,
+			offset: if i < 8 { [f32(9.25), -13.75]! } else { [f32(4096), -4096]! },
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}
