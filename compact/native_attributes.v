@@ -57,13 +57,8 @@ fn (change CompactNativeAttributeChange) finish(element &dom.Element) {
 		mut control := html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(element) }).control
 		control.form_node_attribute_changed(change.name)
 	}
-	if element.is_html_element() && element.local_name() == 'img' && change.name == 'src' {
-		image := unsafe { &dom.HTMLImageElement(element) }
-		html.html_image_element_form_associated_element_attribute_changed(image, 'src', change.old_value, value, none)
-		mut node := element.as_node()
-		node.set_needs_layout_update(.html_image_element_update_the_image_data)
-		node.set_needs_repaint(.paint_commands)
-	}
+	compact_image_attribute_changed(element, change.name, change.old_value, value,
+		change.namespace)
 	if element.is_html_element() && element.local_name() == 'canvas' && change.name in [
 		'width',
 		'height',
