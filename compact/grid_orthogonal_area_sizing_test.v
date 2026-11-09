@@ -30,3 +30,11 @@ fn test_orthogonal_grid_intrinsic_columns_use_fixed_row_inline_constraints() {
   assert vertical.width==50 && vertical.height==50,'${width}: ${vertical.width}x${vertical.height}'
  }
 }
+
+fn test_orthogonal_initial_inline_constraint_includes_distributed_fixed_row_gaps() {
+ mut document := html.parse_document('<!doctype html><style>body{margin:0;font-size:0;line-height:0}#grid{display:inline-grid;grid-template-rows:50px 50px;height:200px;align-content:space-between}#item{grid-row:span 2;writing-mode:vertical-lr}span{display:inline-block;width:10px;height:40px}</style><div id="grid"><div id="item"><span></span><span></span><span></span><span></span><span></span></div></div>')
+ defer { document.finalize() }
+ _ = layout.layout_document_typed_in_viewport(document,800,600)
+ item := (document.get_element_by_id('item') or { panic('item') }).get_bounding_client_rect()
+ assert item.width==10 && item.height==200,'${item.width}x${item.height}'
+}

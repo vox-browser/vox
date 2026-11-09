@@ -3181,7 +3181,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
  mut orthogonal_columns_changed := false
  if orthogonal_column_tracks.len > 0 && !subgridded_columns {
   mut updated_columns := orthogonal_column_tracks.clone()
-  if update_orthogonal_grid_column_contributions(mut state,container,mut updated_columns,rows,placements,effective_row_gap,column_gap,available_space.width) {
+  if update_orthogonal_grid_column_contributions(mut state,container,mut updated_columns,rows,placements,effective_row_gap,column_gap,available_space.width,baseline_column_shims) {
    orthogonal_columns_changed = true
    columns = updated_columns.clone()
    mut total := column_gap.scaled(f64(grid_gutter_count(columns,0,columns.len-1)))
