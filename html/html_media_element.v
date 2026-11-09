@@ -1174,7 +1174,9 @@ fn (mut element HTMLMediaElement) select_resource_if_connected_and_empty() {
 			return
 		}
 	}
-	element.select_resource() or {}
+	// The owner was created after parsing its resource attributes. Reproduce
+	// their skipped load algorithm, including the first loadeddata notification.
+	element.load_element() or {}
 }
 
 fn (mut element HTMLMediaElement) select_resource_for_current_load() ! {

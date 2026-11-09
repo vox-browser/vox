@@ -54,3 +54,21 @@ fn test_native_stream_metadata_waits_for_decoder_completion_and_resets_on_source
 	media.finalize()
 	assert probe.resets == before_finalize + 1
 }
+
+fn test_media_owner_created_after_parsing_its_source_runs_the_initial_load_algorithm() {
+	url := dom.URL{value:'https://media-initial.test/'}
+	mut document := parse_navigation_document('<!doctype html><audio id="audio" src="audio.wav"></audio>',url,url.origin(),none)!
+	defer { document.finalize() }
+	element := document.get_element_by_id('audio') or { panic('audio') }
+	mut media := html_media_element_for_dom_element(element) or { panic('media') }
+	media.set_fetch_hook(fn (_ dom.URL, _ u64) !MediaResourceResponse {
+		return MediaResourceResponse{mime_type:'audio/wav',metadata_pending:true}
+	})
+	media.queue_resource_selection_if_connected_and_empty()
+	for _ in 0..8 { main_thread_event_loop().process() }
+	assert media.network_state() == .loading
+	media.complete_pending_media_resource(MediaResourceResponse{mime_type:'audio/wav',duration:5,buffered_end:5,audio_tracks:[MediaTrackMetadata{identifier:1}]})
+	for _ in 0..8 { main_thread_event_loop().process() }
+	assert media.ready_state() == .have_enough_data
+	assert media.event_count('loadeddata') == 1
+}
