@@ -100,7 +100,7 @@ function __compactNodeList(read){
 function __compactChildNodes(receiver,state){
  const cached=__elementApply(__compactNodeGet,__compactChildLists,[receiver]);if(cached)return cached;
  let version=-1,nodes=[];
- const read=()=>{const current=__childTreeVersion();if(current>=0&&current===version&&__state.operations.length===0&&__dirtyElementStates.size===0)return nodes;nodes=__queryElements(state.bridgeKey,"childNodes","");version=__childTreeVersion();return nodes;};
+ const read=()=>{const current=__childTreeVersion();if(current>=0&&current===version&&!__compactHasPendingDOMState())return nodes;nodes=__queryElements(state.bridgeKey,"childNodes","");version=__childTreeVersion();return nodes;};
  const list=__compactNodeList(read);
  __elementApply(__elementRecordSet,__compactChildLists,[receiver,list]);
  return list;

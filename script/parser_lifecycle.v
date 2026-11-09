@@ -125,8 +125,7 @@ fn (mut host BrowserParserScriptHost) run_script(source browserjs.ScriptSource) 
 	// Each evaluation flushes mutations before the parser consumes another token.
 	host.runtime.run_document_scripts([source])!
 	if host.engine != .libjs {
-		state := host.runtime.evaluate_host('__ladybirdFinalize(true)')!
-		apply_javascript_runtime_state(host.document, state, host.runtime, mut host.messages)
+		flush_compact_dom_mutations(host.document, host.runtime)!
 	}
 	mut runtime := host.runtime
 	runtime.mark_document_state_dirty()
@@ -168,11 +167,9 @@ fn (mut host BrowserParserScriptHost) flush(mut messages []string) ?string {
 	messages << host.messages
 	host.messages = []string{}
 	if !host.initialized || host.closed || host.engine == .libjs { return none }
-	state := host.runtime.evaluate_host('__ladybirdFinalize()') or {
+	commit := commit_compact_dom_task(host.document, host.runtime, mut messages) or {
 		messages << 'JavaScript parser state: ${err.msg()}'
 		return none
 	}
-	navigation := apply_javascript_runtime_state(host.document, state, host.runtime, mut messages)
-	host.runtime.evaluate_host('__ladybirdClearLogs()') or {}
-	return navigation
+	return commit.navigation
 }

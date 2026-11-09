@@ -16,11 +16,13 @@ __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	view_transition_properties_callback: layout_view_transition_properties
 }
 
-// dom <-> layout bridge. The DOM keeps a per-node `dom.LayoutNode` placeholder (node.layout_node()); the
-// layout tree is the real thing (layout.Node) but dom can't name it (dom can't import layout). After
-// laying out, walk the layout tree and populate + attach a placeholder onto each DOM node, mirroring the
-// layout node's data (dom_node / parent / is_anonymous / is_text_node / display) and stashing an opaque
-// handle to the real layout.Node. This retires the DOM's Layout::Node boundary stubs.
+// Layout owns tree metadata, style and committed geometry. DOM consumes the
+// per-node LayoutNode as a live projection across the module import boundary;
+// mutation callbacks always target the authoritative typed layout.Node.
+// prepare_dom_layout_attachment refreshes metadata and invalidates geometry;
+// commit_dom_layout_attachment publishes geometry after formatting completes.
+// Lazy read-only caret providers bind that exact committed LayoutState, so a
+// copied projection cannot silently switch to a later geometry pass.
 
 fn attachment_parent_user_select(root &Node) css.UserSelect {
  if parent := root.parent() { return parent.user_select_used_value() }
@@ -31,13 +33,13 @@ fn attachment_parent_user_select(root &Node) css.UserSelect {
 pub fn attach_layout_nodes(root_box &Node) &dom.LayoutNode {
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, false)
+	return attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
 }
 
 pub fn attach_layout_nodes_with_state(root_box &Node, state &LayoutState) &dom.LayoutNode {
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
-	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, false)
+	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders, mut inline_pieces, false, unsafe { nil })
 }
 
 // Formatting needs the complete DOM/layout association before geometry is
@@ -59,7 +61,7 @@ fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	root := attach_layout_node_recursive(root_box, none, none, attachment_parent_user_select(root_box), false, mut placeholders,
-		mut inline_pieces, true, false)
+		mut inline_pieces, true, unsafe { nil })
 	return PreparedDOMLayoutAttachment{
 		root: root
 	}
@@ -67,16 +69,20 @@ fn prepare_dom_layout_attachment(root_box &Node) PreparedDOMLayoutAttachment {
 
 fn commit_dom_layout_attachment(root_box &Node, state &LayoutState, prepared PreparedDOMLayoutAttachment) &dom.LayoutNode {
 	assert prepared.root.layout_handle == voidptr(root_box)
-	if viewport := root_box.as_viewport() {
-		mut current := unsafe { &Viewport(viewport) }
-		current.committed_geometry_state_ = state
+	// One immutable provider per commit retains the geometry context, without
+	// adding a closure or allocation to every text node. It belongs to the same
+	// retained document storage as the state and the projections that use it.
+	provider := if root_box.is_viewport() {
+		dom.LayoutVisualLinesProvider.new(voidptr(state), materialize_dom_text_visual_lines)
+	} else {
+		unsafe { &dom.LayoutVisualLinesProvider(nil) }
 	}
 	// Keep a separate traversal map so continuation and containing-block links
 	// follow the same tree order as a fresh attachment.
 	mut placeholders := DOMLayoutAttachmentIndex.new(root_box)
 	mut inline_pieces := map[u64][]InlineBoxPiece{}
 	return attach_layout_node_recursive(root_box, none, state, attachment_parent_user_select(root_box), true, mut placeholders,
-		mut inline_pieces, true, root_box.is_viewport())
+		mut inline_pieces, true, provider)
 }
 
 fn collect_dom_text_visual_lines(box &Node, state &LayoutState) []dom.VisualLine {
@@ -91,12 +97,10 @@ fn collect_dom_text_visual_lines(box &Node, state &LayoutState) []dom.VisualLine
 	return lines
 }
 
-fn materialize_dom_text_visual_lines(layout_handle voidptr) []dom.VisualLine {
-	if layout_handle == unsafe { nil } { return []dom.VisualLine{} }
+fn materialize_dom_text_visual_lines(layout_handle voidptr, geometry_context voidptr) []dom.VisualLine {
+	if layout_handle == unsafe { nil } || geometry_context == unsafe { nil } { return []dom.VisualLine{} }
 	box := unsafe { &Node(layout_handle) }
-	viewport := box.root_viewport() or { return []dom.VisualLine{} }
-	state := viewport.committed_geometry_state_
-	if state == unsafe { nil } { return []dom.VisualLine{} }
+	state := unsafe { &LayoutState(geometry_context) }
 	containing := box.containing_block() or { return []dom.VisualLine{} }
 	styled := unsafe { &Node(containing) }.as_node_with_style() or { return []dom.VisualLine{} }
 	used := state.try_get(styled) or { return []dom.VisualLine{} }
@@ -370,7 +374,7 @@ fn collect_uncached_dom_visual_lines(box &Node, state &LayoutState) []dom.Visual
 	return result
 }
 
-fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders DOMLayoutAttachmentIndex, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, lazy_visual_lines bool) &dom.LayoutNode {
+fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, state ?&LayoutState, parent_user_select css.UserSelect, collect_text_chunks bool, mut placeholders DOMLayoutAttachmentIndex, mut inline_pieces map[u64][]InlineBoxPiece, retain_live_nodes bool, visual_lines_provider &dom.LayoutVisualLinesProvider) &dom.LayoutNode {
 	mut visibility := dom.CSSVisibility_.visible
 	mut content_visibility := dom.CSSContentVisibility_.visible
 	mut overflow_x := dom.CSSOverflow_.visible
@@ -471,8 +475,8 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 	}
 	if layout_state := state {
 		if box.is_text_node() {
-			if lazy_visual_lines {
-				placeholder.visual_lines_callback = materialize_dom_text_visual_lines
+			if visual_lines_provider != unsafe { nil } {
+				placeholder.visual_lines_provider_ = visual_lines_provider
 			} else {
 				placeholder.set_visual_lines(collect_dom_text_visual_lines(box, layout_state))
 			}
@@ -550,7 +554,7 @@ fn attach_layout_node_recursive(box &Node, parent_placeholder ?&dom.LayoutNode, 
 		}
 	}
 	for child in box.children() {
-		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes, lazy_visual_lines)
+		attach_layout_node_recursive(child, placeholder, state, user_select, collect_text_chunks, mut placeholders, mut inline_pieces, retain_live_nodes, visual_lines_provider)
 	}
 	return placeholder
 }

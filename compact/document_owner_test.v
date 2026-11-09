@@ -31,13 +31,13 @@ fn test_compact_document_owner_bootstrap_checks_pending_edits_and_captures_intri
 	mut runtime := browserjs.Runtime.create_with_engine(.javascriptcore)
 	defer { runtime.close() }
 	_ = runtime.evaluate_host(r'
-const document={},foreign={},__state={operations:[]},__dirtyElementStates=new Set(),__elementApply=Reflect.apply;
+const document={},foreign={},__state={elements:{},operations:[]},__canvases={},__elementApply=Reflect.apply;
 let ownerIsRoot=true,reads=0,queries=0,keyReads=0;
 function __compactNodeState(object){if(!object||!object.state)throw new TypeError("brand");return object.state;}
 function __queryElements(key,action,value){if(action!=="ownerDocument"||value!=="")throw new Error("query");queries++;__state.operations=[];__dirtyElementStates.clear();return foreign;}
 globalThis.__ladybirdRootDocumentOwner=key=>{reads++;return ownerIsRoot&&key==="known";};
 ')!
-	_ = runtime.evaluate_host(compact_document_owner_bootstrap())!
+	_ = runtime.evaluate_host(compact_pending_elements_bootstrap()+compact_document_owner_bootstrap())!
 	assert runtime.evaluate_host(r'
 const node={state:{get bridgeKey(){keyReads++;return "known";}}};
 __compactOwnerDocument(node)===document&&reads===1&&queries===0&&keyReads===1

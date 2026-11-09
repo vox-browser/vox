@@ -323,7 +323,7 @@ fn compact_range_selection_bootstrap() string {
  let epoch=0;const states=new Map();
  function version(){
   if(typeof contentVersion!=="function")return -1;
-  if(__state.operations.length||__dirtyElementStates.size)return -1;
+  if(__compactHasPendingDOMState())return -1;
   return contentVersion();
  }
  function op(receiver,name,fields){

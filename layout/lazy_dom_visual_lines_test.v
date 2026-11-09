@@ -24,7 +24,7 @@ fn test_committed_text_defers_caret_projection_until_requested_and_resets_after_
 		node := nodes.pop()
 		nodes << node.children()
 		if !node.is_text_node() { continue }
-		assert node.dom_layout_node_.visual_lines_callback != unsafe { nil }
+		assert node.dom_layout_node_.visual_lines_provider_ != unsafe { nil }
 		assert node.dom_layout_node_.cached_visual_lines().len == 0
 		deferred++
 	}
@@ -35,7 +35,7 @@ fn test_committed_text_defers_caret_projection_until_requested_and_resets_after_
 	lines := dom.collect_visual_lines(text)
 	assert lines == collect_dom_text_visual_lines(typed, document_layout_result(document)?.state)
 	assert lines.len > 1 && lines[0].caret_stops.len > 1
-	assert mirror.visual_lines_callback == unsafe { nil }
+	assert mirror.visual_lines_provider_ == unsafe { nil }
 	storage := mirror.visual_lines().data
 	assert mirror.visual_lines().data == storage
 	old := lines.str()
@@ -43,7 +43,7 @@ fn test_committed_text_defers_caret_projection_until_requested_and_resets_after_
 	before.set_inner_html('<p>expanded preceding comment</p>')!
 	document.update_layout(.debugging)
 	assert voidptr(text.as_node().layout_node()?) == voidptr(mirror)
-	assert mirror.visual_lines_callback != unsafe { nil }
+	assert mirror.visual_lines_provider_ != unsafe { nil }
 	assert mirror.cached_visual_lines().len == 0
 	current := dom.collect_visual_lines(text)
 	assert current == collect_dom_text_visual_lines(typed, document_layout_result(document)?.state)
@@ -60,9 +60,37 @@ fn test_explicit_dom_attachment_with_a_state_keeps_its_eager_projection() {
 	_ = attach_layout_nodes_with_state(result.root, result.state)
 	text := lazy_visual_dom_text(document)
 	mirror := text.as_node().layout_node()?
-	assert mirror.visual_lines_callback == unsafe { nil }
+	assert mirror.visual_lines_provider_ == unsafe { nil }
 	assert mirror.cached_visual_lines().len > 1
 	assert dom.collect_visual_lines(text) == collect_dom_text_visual_lines(unsafe { &Node(mirror.real_layout_handle()) }, result.state)
+}
+
+fn test_copied_unmaterialized_text_projection_keeps_geometry_across_retained_tree_relayout() {
+	mut document := html.parse_document('<!doctype html><style>html,body,p{margin:0}p{font:16px/20px SerenityMono}</style><p id="text" style="width:320px">A committed geometry projection keeps the original wrapping after the same layout tree is reused.</p>')
+	defer { document.finalize() }
+	_ = layout_document_typed_in_viewport(document, 320, 300)
+	initial := document_layout_result(document)?
+	text := lazy_visual_dom_text(document)
+	mirror := text.as_node().layout_node()?
+	assert mirror.visual_lines_provider_ != unsafe { nil }
+	assert mirror.cached_visual_lines().len == 0
+	copied := *mirror
+	typed := unsafe { &Node(mirror.real_layout_handle()) }
+	expected := collect_dom_text_visual_lines(typed, initial.state)
+	assert expected.len > 1
+
+	mut paragraph := document.get_element_by_id('text')?
+	paragraph.set_attribute_value('style', 'width:120px')
+	document.update_layout(.debugging)
+	current := document_layout_result(document)?
+	assert voidptr(current.root) == voidptr(initial.root)
+	assert voidptr(current.state) != voidptr(initial.state)
+	assert voidptr(text.as_node().layout_node()?) == voidptr(mirror)
+	assert voidptr(copied.visual_lines_provider_) != voidptr(mirror.visual_lines_provider_)
+	$if gcboehm ? { C.GC_gcollect() }
+	assert copied.visual_lines() == expected
+	assert dom.collect_visual_lines(text).len > expected.len
+	assert copied.visual_lines() == expected
 }
 
 fn test_unmaterialized_old_text_mirror_keeps_its_committed_geometry_after_a_full_rebuild_and_collection() {
@@ -71,7 +99,7 @@ fn test_unmaterialized_old_text_mirror_keeps_its_committed_geometry_after_a_full
 	_ = layout_document_typed_in_viewport(document, 320, 300)
 	text := lazy_visual_dom_text(document)
 	old := text.as_node().layout_node()?
-	assert old.visual_lines_callback != unsafe { nil }
+	assert old.visual_lines_provider_ != unsafe { nil }
 	expected := collect_dom_text_visual_lines(unsafe { &Node(old.real_layout_handle()) }, document_layout_result(document)?.state)
 	mut element := document.get_element_by_id('text')?
 	element.set_attribute_value('style', 'width:60px')

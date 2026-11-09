@@ -5,12 +5,7 @@ import dom
 import platform
 
 fn flush_compact_iframe_runtime_state(document &dom.Document, runtime &browserjs.Runtime) ! {
-	// A contentWindow/contentDocument read replays writes synchronously, but
-	// neither its JSON text nor queued console output belongs to the frame.
-	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize(true)')!
-	defer { state.finish() }
-	mut messages := []string{}
-	apply_javascript_runtime_state(document, state.value, runtime, mut messages)
+	flush_compact_dom_mutations(document, runtime)!
 }
 
 fn install_compact_iframe_windows(document &dom.Document, mut runtime browserjs.Runtime) ! {

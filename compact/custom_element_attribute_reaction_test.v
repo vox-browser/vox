@@ -6,7 +6,7 @@ import dom
 // Attribute writes are [CEReactions]: attributeChangedCallback runs before
 // setAttribute(), removeAttribute() and reflecting setters return.
 fn test_compact_custom_element_attribute_reactions_run_before_the_write_returns() {
-	$if !darwin {
+	$if !darwin && !linux {
 		return
 	}
 	mut document := parse_browser_navigation_document('<!doctype html><body></body>', dom.URL{

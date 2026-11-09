@@ -103,7 +103,7 @@ pub fn (mut n NamedNodeMap) append_attribute(attr &Attr_) {
 	n.attrs << attr
 	if n.element != unsafe { nil } {
 		mut mutable_attr := unsafe { &Attr_(attr) }
-		mutable_attr.owner_element_ = n.element
+		mutable_attr.set_owner_element(n.element)
 		mutable_attr.handle_attribute_changes(n.element, none, attr.value_)
 	}
 }
@@ -115,7 +115,7 @@ pub fn (mut n NamedNodeMap) remove_attribute(name string) {
 
 pub fn (mut n NamedNodeMap) remove_attribute_node(attr &Attr_) {
 	for index, existing in n.attrs {
-		if existing == attr {
+		if voidptr(existing) == voidptr(attr) {
 			n.remove_attribute_at_index(index)
 			return
 		}
@@ -132,6 +132,13 @@ pub mut:
 	prefix__       ?string
 	namespace_uri_ ?string
 	owner_element_ ?&Element
+	// Detached attributes retain the document of their last native owner.
+	// Attached attributes read the live element so subtree adoption needs no
+	// separate wrapper refresh.
+	document_ &Document = unsafe { nil }
+	// This is an allocation identity, not an extra lease. Documents/realms
+	// share the balanced lifetime and keep it live for their retained Attrs.
+	storage_owner_ &platform.RetainedArena = unsafe { nil }
 }
 
 pub fn (a &Attr_) name() string {
@@ -158,7 +165,24 @@ pub fn (a &Attr_) owner_element() ?&Element {
 	return a.owner_element_
 }
 
+pub fn (a &Attr_) document() &Document {
+	if element := a.owner_element_ { return element.document() }
+	return a.document_
+}
+
+pub fn (a &Attr_) storage_owner() &platform.RetainedArena { return a.storage_owner_ }
+
 pub fn (mut a Attr_) set_owner_element(element ?&Element) {
+	if owner := element {
+		if owner == unsafe { nil } { a.set_owner_element(none); return }
+		mut document := unsafe { &Document(owner.document()) }
+		document.share_native_storage_lifetime(a.storage_owner_)
+		if a.storage_owner_ == unsafe { nil } { a.storage_owner_ = document.native_storage() }
+		a.document_ = document
+	} else if previous := a.owner_element_ {
+		a.document_ = previous.document()
+		if a.storage_owner_ == unsafe { nil } { a.storage_owner_ = previous.document().native_storage() }
+	}
 	a.owner_element_ = element
 }
 
@@ -1983,7 +2007,14 @@ pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value t
 	}
 
 	verified_value := e.document().trusted_types_compliant_attribute_value(&e, actual_name, none, value)!
-	e.set_attribute_value(actual_name, verified_value)
+	// Qualified-name lookup can select a namespaced Attr. Preserve that
+	// native identity and its namespace instead of creating a null-namespace
+	// attribute with the same spelling.
+	if attribute := e.get_attribute_node(actual_name) {
+		e.set_attribute_value_ns(attribute.local_name(), verified_value, attribute.prefix(), attribute.namespace_uri())
+	} else {
+		e.set_attribute_value(actual_name, verified_value)
+	}
 }
 
 // https://dom.spec.whatwg.org/#dom-element-setattributens
@@ -2047,8 +2078,8 @@ pub fn (mut e Element) remove_attribute_node(attr &Attr_) !&Attr_ {
 
 // https://dom.spec.whatwg.org/#dom-element-toggleattribute
 pub fn (mut e Element) toggle_attribute(name string, force ?bool) !bool {
-	if name.len == 0 {
-		return error('InvalidCharacterError: Attribute name must not be empty')
+	if !is_valid_attribute_local_name(name) {
+		return error('InvalidCharacterError: Attribute name must not be empty or contain invalid characters')
 	}
 
 	mut actual_name := name

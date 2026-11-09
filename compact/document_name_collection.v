@@ -7,7 +7,7 @@ delete globalThis.__ladybirdDocumentNameCollection;
 Object.defineProperty(Document.prototype,"getElementsByName",{value:{getElementsByName(name){
  "use strict";
  const read=arguments.length?__nativeDocumentNameCollection(this,name):__nativeDocumentNameCollection(this);
- return __compactNodeList(()=>{__queryElements("","documentValue","readyState");return read();});
+ return __compactNodeList(()=>{__compactFlushDOMMutations();return read();});
 }}.getElementsByName,writable:true,enumerable:true,configurable:true});
 '
 }

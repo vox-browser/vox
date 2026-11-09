@@ -17,16 +17,16 @@ function __compactCommonPropertyState(receiver){
  return state;
 }
 const __compactCommonProperties={
- id:{get:function(){return __compactCommonPropertyState(this).id;},set:function(value){__setAttribute(__compactCommonPropertyState(this),"id",value);}},
+ id:{get:function(){return __compactNativeAttributes.read(__compactCommonPropertyState(this),"id",true)||"";},set:function(value){__compactNativeAttributes.write(__compactCommonPropertyState(this),"id",value,true);}},
  firstChild:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="#document-fragment")return s.children.length?__element(s.children[0]):null;return __queryElements(s.bridgeKey,"firstChild","");}},
  parentNode:{get:function(){const s=__compactCommonPropertyState(this);if(s.nativeParent)return __compactNativeParent(s);const p=s.parentKey&&__state.elements[s.parentKey];if(p&&!p.removed)return __compactNodeWrapper(p);return !s.parentKey&&!s.removed&&!s.created&&s.tagName==="html"?document:null;}},
  parentElement:{get:function(){__compactCommonPropertyState(this);const parent=this.parentNode;return parent&&parent.nodeType===1?parent:null;}},
  textContent:{get:function(){return __elementContent(__compactCommonPropertyState(this),"textContent");},set:function(value){const s=__compactCommonPropertyState(this);s.textContent=String(value);s.innerHTML="";s.textContentDirty=true;s.innerHTMLDirty=false;__compactMutationFlush(false);}},
  innerHTML:{get:function(){return __elementContent(__compactCommonPropertyState(this),"innerHTML");},set:function(value){const s=__compactCommonPropertyState(this);s.innerHTML=String(value);s.innerHTMLDirty=true;s.textContentDirty=false;__compactMutationFlush(false);}},
- className:{get:function(){return __compactCommonPropertyState(this).className;},set:function(value){__setAttribute(__compactCommonPropertyState(this),"class",value);}},
- name:{get:function(){return __compactCommonPropertyState(this).attributes.name||"";},set:function(value){__setAttribute(__compactCommonPropertyState(this),"name",value);}},
- hidden:{get:function(){return Object.prototype.hasOwnProperty.call(__compactCommonPropertyState(this).attributes,"hidden");},set:function(value){const s=__compactCommonPropertyState(this);if(value)__setAttribute(s,"hidden","");else __removeAttribute(s,"hidden");}},
- disabled:{get:function(){return !!__compactCommonPropertyState(this).disabled;},set:function(value){const s=__compactCommonPropertyState(this);if(value)__setAttribute(s,"disabled","");else __removeAttribute(s,"disabled");}},
+ className:{get:function(){return __compactNativeAttributes.read(__compactCommonPropertyState(this),"class",true)||"";},set:function(value){__compactNativeAttributes.write(__compactCommonPropertyState(this),"class",value,true);}},
+ name:{get:function(){return __compactNativeAttributes.read(__compactCommonPropertyState(this),"name",true)||"";},set:function(value){__compactNativeAttributes.write(__compactCommonPropertyState(this),"name",value,true);}},
+ hidden:{get:function(){return __compactNativeAttributes.contains(__compactCommonPropertyState(this),"hidden",true);},set:function(value){const s=__compactCommonPropertyState(this);if(value)__compactNativeAttributes.write(s,"hidden","",true);else __compactNativeAttributes.remove(s,"hidden",true);}},
+ disabled:{get:function(){return __compactNativeAttributes.contains(__compactCommonPropertyState(this),"disabled",true);},set:function(value){const s=__compactCommonPropertyState(this);if(value)__compactNativeAttributes.write(s,"disabled","",true);else __compactNativeAttributes.remove(s,"disabled",true);}},
  // Activation, radio groups and form reset change these natively.
  checked:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.checked;},set:function(value){const s=__compactCommonPropertyState(this);s.checked=!!value;s.checkedDirty=true;}},
  indeterminate:{get:function(){const s=__compactCommonPropertyState(this);if(s.tagName==="input")__compactRefreshNativeState(s);return !!s.indeterminate;},set:function(value){const s=__compactCommonPropertyState(this);s.indeterminate=!!value;s.indeterminateDirty=true;}},
@@ -39,7 +39,7 @@ for(const key in __compactCommonProperties)__compactCommonProperties[key].config
 // SVG elements inherit className, an SVGAnimatedString, from SVGElement.
 const __compactSVGCommonProperties=Object.assign({},__compactCommonProperties);delete __compactSVGCommonProperties.className;
 function __compactElementCommonProperties(object,state){
- if(__compactCommonElementGet(object))delete object.setAttribute;
+ if(__compactCommonElementGet(object))for(const name of ["getAttribute","hasAttribute","setAttribute","removeAttribute"])delete object[name];
  if(!__compactCommonElementGet(object))__elementApply(__elementRecordSet,__compactLegacyPropertyRecords,[object,state]);
  __compactDefineCommonProperties(object,state&&state.namespaceURI==="http://www.w3.org/2000/svg"?__compactSVGCommonProperties:__compactCommonProperties);
 }

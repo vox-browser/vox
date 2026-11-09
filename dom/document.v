@@ -1395,7 +1395,7 @@ pub mut:
 	rendered_text_chunks_data_ &LayoutRenderedTextChunks = unsafe { nil }
 	visual_lines_data_ &LayoutVisualLines = unsafe { nil }
 	rare_data_ &LayoutNodeRareData = unsafe { nil }
-	visual_lines_callback                           fn (voidptr) []VisualLine = unsafe { nil }
+	visual_lines_provider_ &LayoutVisualLinesProvider = unsafe { nil }
 	paintables_                                     []&Paintable
 	border_box_                                     Rect
 	content_width_                                  f64

@@ -1927,7 +1927,7 @@ fn javascript_bootstrap() string {
 		'function __isTrackElementState(s){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="track"||__trackApply(__trackEndsWith,s.tagName,[":track"]));}',
 		'const __bindElementWheel = globalThis.__ladybirdElementWheelBind;',
 		'const __bindScriptElement = globalThis.__ladybirdScriptElementBind;',
-		'globalThis.__ladybirdFlushPendingScriptMutations=function(){__queryElements("","querySelectorAll","script[src]");};',
+		'globalThis.__ladybirdFlushPendingScriptMutations=function(){__compactFlushDOMMutations();};',
 		'const __nativeImageGet = globalThis.__ladybirdImageGet;',
 		'const __listeners = Object.create(null);',
 		browserjs.compact_attribute_bootstrap(),
@@ -1949,14 +1949,15 @@ fn javascript_bootstrap() string {
 		// Native DOM failures arrive as "<Name>Error: message"; script sees the
 		// TypeError, RangeError or DOMException they name.
 		'const __compactDOMExceptionNames=new Set(["IndexSizeError","HierarchyRequestError","WrongDocumentError","InvalidCharacterError","NoModificationAllowedError","NotFoundError","NotSupportedError","InUseAttributeError","InvalidStateError","SyntaxError","InvalidModificationError","NamespaceError","InvalidAccessError","TypeMismatchError","SecurityError","NetworkError","AbortError","URLMismatchError","QuotaExceededError","TimeoutError","InvalidNodeTypeError","DataCloneError","EncodingError","NotReadableError","UnknownError","ConstraintError","DataError","TransactionInactiveError","ReadOnlyError","VersionError","OperationError","NotAllowedError","OptOutError"]);function __compactNativeError(error){if(!error||Object.getPrototypeOf(error)!==Error.prototype)return error;const match=/^([A-Za-z]+Error):\\s*([\\s\\S]*)$/.exec(String(error.message));if(!match)return error;if(match[1]==="TypeError")return new TypeError(match[2]);if(match[1]==="RangeError")return new RangeError(match[2]);if(__compactDOMExceptionNames.has(match[1]))return new DOMException(match[2].trim(),match[1]);return error;}',
-		'function __queryElements(key,action,selector,raw){const request={key:key,action:action,selector:selector},pending=__pendingElementStates(false);if(__state.operations.length||Object.keys(pending).length){const snapshot=Object.assign({},__state,{elements:pending,logs:[]});delete snapshot.videoSources;request.snapshot=JSON.stringify(snapshot);request.logCount=0;__state.operations=[];for(const key of Object.keys(pending)){const s=pending[key];s.attributesDirty=false;s.textContentDirty=false;s.innerHTMLDirty=false;s.checkedDirty=false;s.indeterminateDirty=false;}}let result;try{result=JSON.parse(__nativeElementQuery(JSON.stringify(request)));}catch(error){throw __compactNativeError(error);}return raw||action==="documentValue"||action==="setDocumentTitle"||action==="elementURL"||action==="matches"||action==="contains"||action==="isEqualNode"||action==="compareDocumentPosition"||action==="nodeConnected"||action==="geometry"||action==="windowScroll"||action==="elementScroll"||action==="computedStyle"||action==="inputValue"||action==="characterData"||action==="inlineStyle"||action==="cssSheet"||action==="linkSheet"||action==="formControls"||action==="dataset"||action==="shadowValue"||action==="setMarkup"||action==="selectedIndex"||action==="setSelectedIndex"||action==="selectValue"||action==="setSelectValue"||action==="removeChild"||action==="nodeValue"||action==="setNodeValue"||action==="nodeText"||action==="setNodeText"||action==="getElementsByTagName"||action==="eventAncestors"||action==="cachedParent"?result:(action==="querySelectorAll"||action==="getElementsByClassName"||action==="childNodes"||action==="childElements"||action==="elementsFromPoint")?result.map(__queryElement):__queryElement(result);}',
+		'function __queryElements(key,action,selector,raw){const request={key:key,action:action,selector:selector},snapshot=__compactTakePendingDOMState(false,false,false);if(snapshot!==null){request.snapshot=snapshot;request.logCount=0;}let result;try{result=JSON.parse(__nativeElementQuery(JSON.stringify(request)));}catch(error){throw __compactNativeError(error);}return raw||action==="documentValue"||action==="setDocumentTitle"||action==="elementURL"||action==="matches"||action==="contains"||action==="isEqualNode"||action==="compareDocumentPosition"||action==="nodeConnected"||action==="geometry"||action==="windowScroll"||action==="elementScroll"||action==="computedStyle"||action==="inputValue"||action==="characterData"||action==="inlineStyle"||action==="cssSheet"||action==="linkSheet"||action==="formControls"||action==="dataset"||action==="shadowValue"||action==="setMarkup"||action==="selectedIndex"||action==="setSelectedIndex"||action==="selectValue"||action==="setSelectValue"||action==="removeChild"||action==="nodeValue"||action==="setNodeValue"||action==="nodeText"||action==="setNodeText"||action==="getElementsByTagName"||action==="eventAncestors"||action==="cachedParent"?result:(action==="querySelectorAll"||action==="getElementsByClassName"||action==="childNodes"||action==="childElements"||action==="elementsFromPoint")?result.map(__queryElement):__queryElement(result);}',
 		'for(const name of ["matches","closest","querySelector","querySelectorAll"]){const method={ [name](selectors){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");if(arguments.length===0)throw new TypeError(name+" requires a selector");if(typeof selectors==="symbol")throw new TypeError("Cannot convert a Symbol to a string");return __queryElements(s.bridgeKey,name,String(selectors));} }[name];Object.defineProperty(Element.prototype,name,{value:method,writable:true,enumerable:true,configurable:true});} Object.defineProperty(Element.prototype,"webkitMatchesSelector",{value:Element.prototype.matches,writable:true,enumerable:true,configurable:true});',
 		// Flush pending children and clone their actual native owners, including
 		// detached elements created by script.
 		'Object.defineProperty(Element.prototype,"cloneNode",{value:function cloneNode(subtree){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");return __queryElements(s.bridgeKey,"cloneNode",subtree?"deep":"shallow");},writable:true,enumerable:true,configurable:true});',
 		'Object.defineProperty(Element.prototype,"getAttributeNames",{value:{getAttributeNames(){"use strict";const s=__elementApply(__elementRecordGet,__elementRecords,[this]);if(!s)throw new TypeError("Illegal Element receiver");return __compactAttributes.names(s);}}.getAttributeNames,writable:true,enumerable:true,configurable:true});',
+		compact_native_attributes_bootstrap(),
 		compact_named_node_map_bootstrap(),
-		'const __readElementContent=globalThis.__ladybirdReadElementContent; const __contentVersion=globalThis.__ladybirdDOMContentVersion,__contentCache=new WeakMap(); function __elementContent(s,name){if(name==="innerHTML"&&__compactIsTemplateState(s)&&!s.innerHTMLDirty)return __compactTemplateInnerHTML(s);const own=Object.prototype.hasOwnProperty.call(s,name),dirty=name==="innerHTML"?s.innerHTMLDirty:name==="textContent"?s.textContentDirty:true;if(own&&(dirty||(s.created&&!s.nativeContent)))return s[name];if(!own&&s.created&&!s.nativeContent)return "";if(typeof __contentVersion==="function"){if(__state.operations.length||__dirtyElementStates.size)__queryElements("","documentValue","readyState");const version=__contentVersion();let entry=__contentCache.get(s);const cached=entry&&entry[name];if(cached&&cached.version===version)return cached.value;const value=__readElementContent(String(s.bridgeKey)+":"+name);if(!entry){entry={};__contentCache.set(s,entry);}entry[name]={value,version};return value;}return own?s[name]:__readElementContent(String(s.bridgeKey)+":"+name);}',
+		'const __readElementContent=globalThis.__ladybirdReadElementContent; const __contentVersion=globalThis.__ladybirdDOMContentVersion,__contentCache=new WeakMap(); function __elementContent(s,name){if(name==="innerHTML"&&__compactIsTemplateState(s)&&!s.innerHTMLDirty)return __compactTemplateInnerHTML(s);const own=Object.prototype.hasOwnProperty.call(s,name),dirty=name==="innerHTML"?s.innerHTMLDirty:name==="textContent"?s.textContentDirty:true;if(own&&(dirty||(s.created&&!s.nativeContent)))return s[name];if(!own&&s.created&&!s.nativeContent)return "";if(typeof __contentVersion==="function"){if(__compactHasPendingDOMState())__compactFlushDOMMutations();const version=__contentVersion();let entry=__contentCache.get(s);const cached=entry&&entry[name];if(cached&&cached.version===version)return cached.value;const value=__readElementContent(String(s.bridgeKey)+":"+name);if(!entry){entry={};__contentCache.set(s,entry);}entry[name]={value,version};return value;}return own?s[name]:__readElementContent(String(s.bridgeKey)+":"+name);}',
 		'function __listenerKey(s, n) { return (s && (s.bridgeKey || s.id) ? (s.bridgeKey || s.id) : "document") + ":" + n; }',
 		'function __styleName(name) { const result=String(name).replace(/[A-Z]/g, function (character) { return "-" + character.toLowerCase(); }); return result.indexOf("webkit-")===0?"-"+result:result; }',
 		'function __elementStates() { return Object.keys(__state.elements).map(function (key) { return __state.elements[key]; }).filter(function(s){return !s.removed;}).sort(function (a,b) { return (+a.elementIndex||0)-(+b.elementIndex||0); }); }',
@@ -1971,15 +1972,15 @@ fn javascript_bootstrap() string {
 		compact_inline_style_bootstrap(),
 		compact_link_sheet_bootstrap(),
 		'function __classList(s) { function tokens() { return String(s.className || "").trim().split(/\\s+/).filter(Boolean); } function sync(values) { __setAttribute(s,"class",values.join(" ")); } return { add: function () { const values=tokens(); for(const item of arguments){const token=String(item);if(token&&!values.includes(token))values.push(token);} sync(values); }, remove: function () { const removed=Array.prototype.map.call(arguments,String); sync(tokens().filter(function(token){return !removed.includes(token);})); }, contains: function (token) { return tokens().includes(String(token)); }, toggle: function (token, force) { token=String(token); const values=tokens(), present=values.includes(token), add=force===undefined?!present:!!force; if(add&&!present)values.push(token); if(!add&&present)values.splice(values.indexOf(token),1); sync(values); return add; }, replace: function (token, replacement) { token=String(token); replacement=String(replacement); const values=tokens(), index=values.indexOf(token); if(index<0)return false; const result=[]; values.forEach(function(value,i){const next=i===index?replacement:value;if(next!==replacement||!result.includes(replacement))result.push(next);}); sync(result); return true; } }; }',
-		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150; if(s[name]===undefined||s[name]===null||String(s[name])==="")return fallback; const value=Number(s[name]); return Number.isFinite(value) && value >= 0 && value <= 2147483647 ? Math.trunc(value) : fallback; }',
+		'function __canvasDimension(s, name) { const fallback=name === "width" ? 300 : 150,attribute=__compactNativeAttributes.read(s,name,true); if(attribute===null||attribute==="")return fallback; const value=Number(attribute); return Number.isFinite(value) && value >= 0 && value <= 2147483647 ? Math.trunc(value) : fallback; }',
 		browserjs.canvas_bootstrap(),
 		browserjs.webgl_bootstrap(),
 		browserjs.xhr_bootstrap(),
 		'function __decodeBase64(input) { const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"; const clean=String(input||"").replace(/[^A-Za-z0-9+/]/g,""); const output=new Uint8ClampedArray(Math.floor(clean.length*3/4)); let bits=0,value=0,index=0; for(const ch of clean){const digit=alphabet.indexOf(ch);if(digit<0)continue;value=(value<<6)|digit;bits+=6;if(bits>=8){bits-=8;output[index++]=(value>>bits)&255;}} return index===output.length?output:output.slice(0,index); }',
 		'function __videoFor(s) { if(s.__videoFrame)return s.__videoFrame; if(!s.videoPixels)return null; return s.__videoFrame={width:+s.videoWidth||0,height:+s.videoHeight||0,data:__decodeBase64(s.videoPixels)}; }',
-		'function __setElementSource(s,value) { const attribute=__setAttribute(s,"src",value); if(attribute.namespaceURI!==null)return; if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} }',
+		'function __setElementSource(s,value) { const attribute=__compactNativeAttributes.write(s,"src",value,true); if(!attribute||attribute.namespaceURI!==null)return; if(s.tagName==="video"){const frame=__state.videoSources[s.src];if(frame){s.readyState=2;s.videoWidth=frame.width;s.videoHeight=frame.height;s.videoPixels=frame.pixels;s.__videoFrame=null;}} }',
 		'const __reflectMediaAttribute=__createMediaSourceSynchronizer(__compactAttributes.reflect,__state.videoSources);',
-		'function __setElementData(s,value) { const attribute=__setAttribute(s,"data",value); if(attribute.namespaceURI!==null)return; if(s.tagName==="object"){const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
+		'function __setElementData(s,value) { const attribute=__compactNativeAttributes.write(s,"data",value,true); if(!attribute||attribute.namespaceURI!==null)return; if(s.tagName==="object"){const target=__element(s),event={type:"load",target:target};for(const listener of (__listeners[__listenerKey(s,"load")]||[]))listener.call(target,event);} }',
 		'function __element(s) {',
 		'  if (!s.__object) {',
 		'    const o = { getAttribute: function (n) { n=__attributeName(s,n); return Object.prototype.hasOwnProperty.call(s.attributes,n)?s.attributes[n]:null; }, hasAttribute: function(n){return Object.prototype.hasOwnProperty.call(s.attributes,__attributeName(s,n));}, setAttribute: function (n, v) { n=__attributeName(s,n); if(n==="src")__setElementSource(s,v);else if(n==="data")__setElementData(s,v);else __setAttribute(s,n,v); }, removeAttribute:function(n){__removeAttribute(s,n);}, remove:function(){if(!s.removed){s.removed=true;s.parentKey="";__state.operations.push({op:"remove",target:s.bridgeKey});__compactMutationFlush(false);}}, addEventListener: function (n, f) { (__listeners[__listenerKey(s, n)] ||= []).push(f); if(s.tagName==="video"&&s.readyState>=2&&(n==="loadeddata"||n==="seeked"))f.call(this,{type:n,target:this}); }, removeEventListener: function(n,f){const key=__listenerKey(s,n);__listeners[key]=(__listeners[key]||[]).filter(function(listener){return listener!==f;});}, appendChild: function (child) { const c=child&&child.__state; if(!c)return child; if(c.tagName==="#node")return __compactInsertNode(o,child,null,false); if(s.tagName==="#document-fragment"){s.children.push(c);s.hasChildren=true;}else{__state.operations.push({op:"appendCreated",target:s.bridgeKey,child:c});s.hasChildren=true;c.parentKey=s.bridgeKey;c.removed=false;} __compactMutationFlush(false);return child; }, insertBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"insertCreated",target:s.bridgeKey,child:c,reference:r?r.bridgeKey:"",referenceFirstChild:!!(reference&&reference.__firstChildOf===s.bridgeKey)});s.hasChildren=true;c.parentKey=s.bridgeKey;c.removed=false;}return child;}, moveBefore:function(child,reference){const c=child&&child.__state,r=reference&&reference.__state;if(c){__state.operations.push({op:"moveBefore",target:s.bridgeKey,child:c.bridgeKey,reference:r?r.bridgeKey:""});c.parentKey=s.bridgeKey;c.removed=false;__compactMutationFlush(false);}}, getContext: function(kind,options) { return s.tagName === "canvas" ? __canvasGetContext(s,kind,options) : null; }, };',
@@ -1991,8 +1992,8 @@ fn javascript_bootstrap() string {
 		// Reflected attributes that scripts set as properties, such as 4chan's
 		// catalog creating its theme link with rel and type. href returns the
 		// resolved URL, as HTMLHyperlinkElementUtils and HTMLLinkElement do.
-		'    if(s.namespaceURI==="http://www.w3.org/1999/xhtml"){const __reflect=function(name){Object.defineProperty(o,name,{configurable:true,get:function(){return Object.prototype.hasOwnProperty.call(s.attributes,name)?String(s.attributes[name]):"";},set:function(v){__setAttribute(s,name,v);}});};__reflect("title");if(["a","area","link","form"].includes(s.tagName))__reflect("rel");if(["link","style","script","source"].includes(s.tagName))__reflect("type");if(s.tagName==="input"||s.tagName==="button"){const states=s.tagName==="input"?__compactInputTypes:__compactButtonTypes;Object.defineProperty(o,"type",{configurable:true,enumerable:true,get:function(){const v=Object.prototype.hasOwnProperty.call(s.attributes,"type")?String(s.attributes.type).toLowerCase():"";return states.includes(v)?v:states[0];},set:function(v){__setAttribute(s,"type",v);}});}if(["link","style","source","meta"].includes(s.tagName))__reflect("media");if(s.tagName==="select")__compactSelect(o,s);if(s.tagName==="option")__compactOption(o,s);if(["a","area","link","base"].includes(s.tagName))Object.defineProperty(o,"href",{configurable:true,get:function(){if(!Object.prototype.hasOwnProperty.call(s.attributes,"href"))return "";const v=String(s.attributes.href);if(__compactOwnerDocument(o)!==document)return __queryElements(s.bridgeKey,"elementURL","href");try{return new globalThis.URL(v,__state.location).href;}catch(e){return v;}},set:function(v){__setAttribute(s,"href",v);}});}',
-		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"src",{get:function(){return s.src||"";},set:function(v){__setElementSource(s,v);},configurable:true});',
+		'    if(s.namespaceURI==="http://www.w3.org/1999/xhtml"){const __reflect=function(name){Object.defineProperty(o,name,{configurable:true,get:function(){return __compactNativeAttributes.read(s,name,true)||"";},set:function(v){__compactNativeAttributes.write(s,name,v,true);}});};__reflect("title");if(["a","area","link","form"].includes(s.tagName))__reflect("rel");if(["link","style","script","source"].includes(s.tagName))__reflect("type");if(s.tagName==="input"||s.tagName==="button"){const states=s.tagName==="input"?__compactInputTypes:__compactButtonTypes;Object.defineProperty(o,"type",{configurable:true,enumerable:true,get:function(){const v=(__compactNativeAttributes.read(s,"type",true)||"").toLowerCase();return states.includes(v)?v:states[0];},set:function(v){__compactNativeAttributes.write(s,"type",v,true);}});}if(["link","style","source","meta"].includes(s.tagName))__reflect("media");if(s.tagName==="select")__compactSelect(o,s);if(s.tagName==="option")__compactOption(o,s);if(["a","area","link","base"].includes(s.tagName))Object.defineProperty(o,"href",{configurable:true,get:function(){return __queryElements(s.bridgeKey,"elementURL","href");},set:function(v){__compactNativeAttributes.write(s,"href",v,true);}});}',
+		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"src",{get:function(){return __compactNativeAttributes.read(s,"src",true)||"";},set:function(v){__setElementSource(s,v);},configurable:true});',
 		'    if(s.namespaceURI!=="http://www.w3.org/2000/svg"&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video"))Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);__setAttribute(s,"height",s.height);},configurable:true}});',
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;},configurable:true}, videoHeight:{get:function(){return +s.videoHeight||0;},configurable:true}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;},configurable:true});',
@@ -2044,12 +2045,13 @@ fn javascript_bootstrap() string {
 		// Replay their pending DOM edits without copying each native bitmap through JSON.
 		// Replays inside a script call omit console output; it stays queued for the
 		// task's own consumer and is not a DOM replay failure.
-		'window.__ladybirdFinalize = function (withoutLogs) { for (const key of Object.keys(__canvases)) { const c=__canvases[key],s=c.state;if(!c.context||c.kind!=="2d")continue;s.canvasNative=true; } const snapshot=JSON.stringify(Object.assign({},__state,{elements:__pendingElementStates(true)},withoutLogs===true?{logs:[]}:{})); __state.operations=[]; __state.bodyHTMLDirty=false; __state.bodyTextDirty=false; __clearPendingElementEdits(); return snapshot; };',
-		'window.__ladybirdClearLogs = function () { __state.logs = []; __state.operations=[]; __state.bodyHTMLDirty = false; __state.bodyTextDirty = false; __clearPendingElementEdits(); };',
+		'window.__ladybirdFinalize = function (withoutLogs) { return __compactTakePendingDOMState(true,withoutLogs!==true,true); }; window.__ladybirdTakePendingDOMMutations=function(){return __compactTakePendingDOMState(false,false,false);}; window.__ladybirdTakeTaskOutput=__compactTakeTaskOutput;',
+		'window.__ladybirdClearLogs = function () { __state.logs = []; };',
 		// The back/forward cache keeps a realm whose navigation request was consumed.
 		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; };',
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
+		'__compactInstallNativeAttributeMutations();',
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
 		'})',
@@ -2912,9 +2914,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	mut canvas_host := browserjs.CanvasHost.create(document)
 	canvas_host.set_before_draw(fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	})
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	mut navigator_host := browserjs.NavigatorHost.create(document) or {
@@ -3000,9 +3000,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	form_data_host.set_before_construct(fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	})
 	form_data_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript FormData bindings: ${err.msg()}'
@@ -3069,9 +3067,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut transition_host := browserjs.ViewTransitionHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -3083,9 +3079,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut image_host := browserjs.ImageHost.create_with_request_fetch_hooks(document, image_fetch, image_async_fetch, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}) or {
 		messages << 'JavaScript image bindings: ${err.msg()}'
 		return false
@@ -3095,9 +3089,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut media_element_host := browserjs.MediaElementHost.create_with_created_element_hook(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}, media_loader or { install_video_poster_fetch_hook }) or {
 		messages << 'JavaScript media element bindings: ${err.msg()}'
 		return false
@@ -3107,9 +3099,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut element_wheel_host := browserjs.ElementWheelHost.create_with_replay(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
 		return false
@@ -3253,25 +3243,19 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	layout.install_document_layout_hook(document)
 	mutable_runtime.install_intersection_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}) or {
 		messages << 'JavaScript IntersectionObserver bindings: ${err.msg()}'
 		return false
 	}
 	mutable_runtime.install_resize_observer_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}) or {
 		messages << 'JavaScript ResizeObserver bindings: ${err.msg()}'
 		return false
 	}
 	mutable_runtime.install_window_find_binding(fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 	}) or {
 		messages << 'JavaScript Window.find bindings: ${err.msg()}'
 		return false
@@ -3298,9 +3282,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut animation_frame_host := browserjs.AnimationFrameHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -3312,9 +3294,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		return false
 	}
 	mut idle_callback_host := browserjs.IdleCallbackHost.create(document, fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -3334,9 +3314,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 		C.native_wake_browser()
 	})
 	mut websocket_host := browserjs.WebSocketHost.create(document, tls_ca_bundle(), fn [document] (callback_runtime &browserjs.Runtime) ! {
-		state := callback_runtime.evaluate_host('__ladybirdFinalize()')!
-		mut replay_messages := []string{}
-		apply_javascript_runtime_state(document, state, callback_runtime, mut replay_messages)
+		flush_compact_dom_mutations(document, callback_runtime)!
 		mut mutable_callback_runtime := unsafe { &browserjs.Runtime(callback_runtime) }
 		mutable_callback_runtime.mark_document_state_dirty()
 	}) or {
@@ -3414,15 +3392,13 @@ fn run_document_script_sources_with_media_loader(document &dom.Document, current
 	// JavaScriptCore drains queued Promise jobs between evaluations. This initial
 	// snapshot captures current script effects; later timer/Promise effects reach
 	// the live document through poll_javascript_tasks().
-	result := runtime.evaluate_host('__ladybirdFinalize()') or {
+	mutable_runtime.take_document_state_dirty()
+	commit := commit_compact_dom_task(document, runtime, mut messages) or {
 		messages << 'JavaScript: ${err.msg()}'
 		return none
 	}
 	processmetrics.instruction_checkpoint('javascript_finalized')
-	navigation := apply_javascript_runtime_state(document, result, runtime, mut messages)
-	runtime.evaluate_host('__ladybirdClearLogs()') or {}
-	mutable_runtime.take_document_state_dirty()
-	return navigation
+	return commit.navigation
 }
 
 // ClassicScript.cpp::run step 2 checks the owning settings before each script.
@@ -3448,18 +3424,14 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	if app.document == unsafe { nil } || app.js_runtime == unsafe { nil } { return }
 	mut runtime := app.js_runtime
 	if !runtime.take_document_state_dirty() { return }
-	state := runtime.evaluate_host_temporary_text('__ladybirdFinalize()') or {
+	commit := commit_compact_dom_task(app.document, runtime, mut app.js_messages) or {
 		app.js_messages << 'JavaScript asynchronous callback: ${err.msg()}'
 		return
 	}
-	defer { state.finish() }
-	navigation := apply_javascript_runtime_state(app.document, state.value, runtime, mut app.js_messages)
-	state.finish()
-	runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	replayed_effects := runtime.take_document_replay_effects()
 	app.synchronize_javascript_task_paint(replayed_effects)
 	app.update_window_title()
-	if destination := navigation {
+	if destination := commit.navigation {
 		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
 	}
 }
@@ -3491,10 +3463,7 @@ fn (mut app BrowserApp) media_click_replay_state(element &dom.Element) !map[stri
 	}
 	// Apply callback mutations before reading the raw slot. Finalize drains the
 	// operation queue; the later snapshot still carries pending navigation.
-	state := app.js_runtime.evaluate_host('__ladybirdFinalize()')!
-	apply_javascript_runtime_state(app.document, state, app.js_runtime,
-		mut app.js_messages)
-	app.js_runtime.evaluate_host('__ladybirdClearLogs()')!
+	commit_compact_dom_task(app.document, app.js_runtime, mut app.js_messages)!
 	mut key := ''
 	for candidate_key, candidate in app.js_runtime.canvas_elements_for_binding() {
 		if voidptr(candidate) == voidptr(element) {
@@ -3555,11 +3524,14 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 		app.js_messages << 'JavaScript event: ${err.msg()}'
 		return false
 	}
-	destination := apply_javascript_runtime_state(app.document, result, app.js_runtime, mut app.js_messages) or { '' }
+	commit := apply_compact_dom_task(app.document, result, app.js_runtime, mut app.js_messages) or {
+		app.js_messages << 'JavaScript event DOM synchronization: ${err.msg()}'
+		return false
+	}
+	destination := commit.navigation or { '' }
 	defer {
 		$if gcboehm ? { C.GC_reachable_here(destination.str) }
 	}
-	app.js_runtime.evaluate_host('__ladybirdClearLogs()') or {}
 	// Read-only input listeners need no cosmetic-filter or rendering pass.
 	// Keep effects flushed by synchronous queries and already-recorded native
 	// paint, just as the asynchronous callback path does.
