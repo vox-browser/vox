@@ -68,3 +68,44 @@ pub fn (geometry SVGDOMGeometry) point_at_length(distance f64) svg.Point {
 pub fn (geometry SVGDOMGeometry) contains_point(x f64,y f64,stroke bool) bool {
 	return skia.path_hit_test(skia.PathHitTest{path:geometry.packed_path,x:f32(x),y:f32(y),areas:if stroke { u8(2) } else { u8(1) },width:f32(geometry.stroke_width),cap:geometry.stroke_cap,join:geometry.stroke_join,miter:f32(geometry.stroke_miter),dashes:geometry.dashes,dash_offset:f32(geometry.dash_offset)})
 }
+
+// Legacy SVG rectangle queries share pointer-event regions with native hits.
+// The region is expressed in the queried SVG viewport's user coordinates.
+pub fn svg_dom_region_matches(element &dom.Element,root &dom.Element,rect dom.DOMRect,enclosed bool) bool {
+ computed := css.up_to_date_computed_properties_for_element(element)
+ values := unsafe { &css.ComputedValues(computed) }
+ mode := computed.pointer_events()
+ if mode == .none_ || (svg_pointer_events_require_visibility(mode) && computed.visibility() != .visible) { return false }
+ areas := svg_pointer_event_areas(&SVGPathHitData{pointer_events:mode,has_fill:values.fill() != none,has_stroke:values.stroke() != none})
+ if areas == 0 { return false }
+ geometry := svg_dom_geometry(element)
+ mut matrix := svg.AffineTransform{}
+ mut current := ?&dom.Element(element)
+ for {
+  node := current or { return false }
+  if node == root { break }
+  if node.is_svg_element() {
+   transforms := svg.parse_transform(node.get_attribute_value('transform')) or { []svg.Transform{} }
+   matrix = svg.compose_transforms(transforms).multiply(matrix)
+  }
+  current = node.as_node().parent_element()
+ }
+ transform := cpuraster.Matrix{f32(matrix.a),f32(matrix.b),f32(matrix.c),f32(matrix.d),f32(matrix.e),f32(matrix.f)}
+ path := cpuraster.canvas_path(geometry.packed_path.segments,geometry.packed_path.even_odd)
+ region := cpuraster.Rect{f32(rect.x),f32(rect.y),f32(rect.x+rect.width),f32(rect.y+rect.height)}
+ mut matched := false
+ if areas & 1 != 0 {
+  fill_match := path.transform(transform).relates_to_rect(region,enclosed)
+  if !enclosed && fill_match { return true }
+  if enclosed && !fill_match { return false }
+  matched = fill_match
+ }
+ if areas & 2 != 0 && geometry.stroke_width > 0 {
+  stroke := cpuraster.path_stroke_outline(cpuraster.PathHitTest{path:path,width:f32(geometry.stroke_width),cap:unsafe { cpuraster.StrokeCap(geometry.stroke_cap) },join:unsafe { cpuraster.StrokeJoin(geometry.stroke_join) },miter:f32(geometry.stroke_miter),dashes:geometry.dashes,dash_offset:f32(geometry.dash_offset)})
+  stroke_match := stroke.transform(transform).relates_to_rect(region,enclosed)
+  if !enclosed && stroke_match { return true }
+  if enclosed && !stroke_match { return false }
+  matched = stroke_match
+ }
+ return matched
+}

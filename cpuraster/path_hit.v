@@ -29,6 +29,13 @@ pub fn path_hit_test(query PathHitTest) bool {
 	if query.areas & 1 != 0 && path.contains(query.x, query.y) { return true }
 	if query.areas & 2 == 0 || !is_finite_f32(query.width) || query.width <= 0 { return false }
 	if path.bounds() == none { return false }
+	return path_stroke_outline(query).contains(query.x, query.y)
+}
+
+// Shared native stroke region for point and rectangle geometry queries.
+pub fn path_stroke_outline(query PathHitTest) Path {
+	t := query.transform
+	mut path := if query.non_scaling { query.path.transform(Matrix{t[0],t[1],t[2],t[3],t[4],t[5]}) } else { query.path }
 	miter := if query.miter >= 0 { query.miter } else { f32(4) }
 	mut filled := false
 	if dash := new_dash_effect(query.dashes, query.dash_offset) {
@@ -49,5 +56,5 @@ pub fn path_hit_test(query PathHitTest) bool {
 		stroked, _ := outline.transformed(Matrix{})
 		path = Path{ ...stroked, fill_type: if inverse { .inverse_winding } else { .winding } }
 	}
-	return path.contains(query.x, query.y)
+	return path
 }
