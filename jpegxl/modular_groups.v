@@ -73,11 +73,16 @@ pub fn modular_group_tile(info ModularChannelInfo, frame FrameHeader, lf bool, g
 	}
 	width := if u64(info.width) - x < tile_width { u64(info.width) - x } else { tile_width }
 	height := if u64(info.height) - y < tile_height { u64(info.height) - y } else { tile_height }
-	return ModularTile{ x: int(x), y: int(y), width: if height == 0 { 0 } else { int(width) }, height: if width == 0 {
-		0
-	} else {
-		int(height)
-	} }
+	return ModularTile{
+		x:      int(x)
+		y:      int(y)
+		width:  if height == 0 { 0 } else { int(width) }
+		height: if width == 0 {
+			0
+		} else {
+			int(height)
+		}
+	}
 }
 
 pub fn (frame FrameHeader) modular_lf_stream_id(group u64) !u32 {
