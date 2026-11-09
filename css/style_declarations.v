@@ -1405,12 +1405,16 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 			return properties.custom_property(property.name())
 		}
 
+		// Cascade first: it records size-query and container-unit dependencies
+		// that a first CSSOM read must consider before deciding to flush layout.
+		if document.element_needs_style_update(element) { document.update_style() }
 		property_id := property.id() or { return none }
 		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id) || property_id in [.min_width,.min_height,.max_width,.max_height]
 		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
 		scope := css_style_scope_for(owner)
-		needs_container_query_layout := scope.have_size_container_queries()
-			&& element.style_depends_on_size_container_query()
+		needs_container_query_layout := ((scope.have_size_container_queries()
+			&& element.style_depends_on_size_container_query())
+			|| element.style_depends_on_container_relative_units())
 			&& !document.layout_is_up_to_date()
 		if needs_layout || needs_layout_node || needs_container_query_layout {
 			document.update_layout(.resolved_css_style_declaration_property)

@@ -41,6 +41,7 @@ fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?Leng
 	}
 	if subject := dom_node.as_element() {
 		context.subject_element = subject
+		context.subject_is_pseudo = layout_node.generated_for_pseudo_element() != none
 		context.query_container_cache = &LengthQueryContainerCache{}
 	}
 	if root := dom_node.document().document_element() {
@@ -59,8 +60,10 @@ fn length_resolution_context_from_layout_node(layout_node &dom.LayoutNode) ?Leng
 
 fn computed_properties_for_layout_node(layout_node &dom.LayoutNode) ?&ComputedProperties {
 	dom_node := layout_node.dom_node() or { return none }
-	element := dom_node.as_element() or { dom_node.parent_element() or { return none } }
-	abstract_element := dom.AbstractElement.new(element, none)
+	element := layout_node.pseudo_element_generator() or {
+		dom_node.as_element() or { dom_node.parent_element() or { return none } }
+	}
+	abstract_element := dom.AbstractElement.new(element, layout_node.generated_for_pseudo_element())
 	dom_computed := abstract_element.computed_properties() or { return none }
 	return computed_properties_from_dom(dom_computed)
 }
@@ -73,6 +76,7 @@ fn document_from_layout_node(layout_node &dom.LayoutNode) ?&dom.Document {
 pub fn LengthResolutionContext.for_element(element &dom.AbstractElement) LengthResolutionContext {
 	mut context := length_resolution_context_from_document(element.document())
 	context.subject_element = element.element()
+	context.subject_is_pseudo = element.pseudo_element() != none
 	context.query_container_cache = &LengthQueryContainerCache{}
 	if dom_computed := element.computed_properties() {
 		if computed := computed_properties_from_dom(dom_computed) {

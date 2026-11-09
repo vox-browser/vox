@@ -157,7 +157,7 @@ fn consume_identical_layout_inputs(style &ComputedProperties, document &dom.Docu
 			document:document, token:target.computed_property_graph_token_, generation:target.mutation_revision()
 			raw_generation:target.computed_property_graph_token_.raw_generation
 			viewport:target.viewport_rect_, root_font_size:target.root_font_size_px_, root_line_height:target.root_line_height_px_
-			root_font_depends_on_viewport:target.root_font_metrics_depend_on_viewport_metrics_, subject:target.subject_element_
+			root_font_depends_on_viewport:target.root_font_metrics_depend_on_viewport_metrics_, subject:target.subject_element_, subject_is_pseudo:target.subject_is_pseudo_
 			font_list:inputs.fonts, font_computer:target.cached_computed_font_list_owner_
 			font_generation:target.cached_computed_font_list_generation_, font_cascade_was_settled:true
 		}

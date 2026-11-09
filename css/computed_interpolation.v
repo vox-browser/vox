@@ -1684,6 +1684,7 @@ pub mut:
 	root_font_size_px_                            f64 = 16.0
 	root_line_height_px_                          f64 = 19.2
 	root_font_metrics_depend_on_viewport_metrics_ bool
+	subject_is_pseudo_                            bool
 	subject_element_                              ?&dom.Element
 	position_try_reference_scope_ ?&StyleScope
 	position_try_was_rendered_ bool
@@ -1813,6 +1814,7 @@ pub fn (c &ComputedProperties) clone_for_anonymous_block() &ComputedProperties {
 	clone.root_line_height_px_ = c.root_line_height_px_
 	clone.root_font_metrics_depend_on_viewport_metrics_ = c.root_font_metrics_depend_on_viewport_metrics_
 	clone.subject_element_ = c.subject_element_
+	clone.subject_is_pseudo_ = c.subject_is_pseudo_
 	ensure_computed_interpolation_inherited_cache()
 	for index, inherited in computed_interpolation_inherited_cache {
 		if inherited == 0 {
@@ -11864,6 +11866,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	properties.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
 	properties.root_font_metrics_depend_on_viewport_metrics_ = s.root_element_font_metrics_depend_on_viewport_metrics
 	properties.subject_element_ = abstract_element.element()
+	properties.subject_is_pseudo_ = abstract_element.pseudo_element() != none
 	properties.position_try_reference_scope_ = position_try_reference_scope(abstract_element,cascaded_properties)
 	properties.position_try_was_rendered_ = position_try_target_has_geometry(abstract_element)
 	if old_dom := abstract_element.computed_properties() {
@@ -16022,6 +16025,7 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		} else {
 			?&dom.Element(none)
 		}
+		length_resolution_context.subject_is_pseudo = if current := abstract_element { current.pseudo_element() != none } else { false }
 		length_resolution_context.query_container_cache = if _ := abstract_element {
 			?&LengthQueryContainerCache(&LengthQueryContainerCache{})
 		} else {
@@ -16101,6 +16105,7 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				s.root_element_font_metrics_depend_on_viewport_metrics
 			}
 			subject_inline_axis_is_horizontal: computed_properties.writing_mode() == .horizontal_tb
+			subject_is_pseudo: if current := abstract_element { current.pseudo_element() != none } else { false }
 			subject_element: if current := abstract_element {
 				?&dom.Element(current.element())
 			} else {

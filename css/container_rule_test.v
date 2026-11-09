@@ -501,3 +501,10 @@ fn test_size_queries_stop_at_ineligible_principal_boxes() {
  }
 }
 
+fn test_pseudo_container_lengths_include_the_originating_element() {
+ document,container,_ := size_query_test_tree('display:block;container-type:size',320,180,true)
+ defer { document.finalize() }
+ origin := dom.AbstractElement.new(container,.before)
+ context := LengthResolutionContext.for_element(&origin)
+ assert Length.new(10,.cqw).to_px(context).to_double() == 32
+}

@@ -2174,6 +2174,7 @@ pub mut:
 	did_resolve_font_relative_length             ?&bool
 	did_resolve_font_face_relative_length        ?&bool
 	subject_inline_axis_is_horizontal            bool = true
+	subject_is_pseudo                            bool
 	subject_element                              ?&dom.Element
 	query_container_cache                        ?&LengthQueryContainerCache
 }
@@ -2474,7 +2475,11 @@ fn query_container_is_eligible_for_axis(container &dom.Element, axis ContainerRe
 }
 
 fn nearest_query_container_for_axis(subject &dom.Element, axis ContainerRelativeAxis) ?&dom.Element {
-	mut candidate := subject.as_node().flat_tree_parent_element()
+	return nearest_query_container_from_candidate(subject.as_node().flat_tree_parent_element(),axis)
+}
+
+fn nearest_query_container_from_candidate(first ?&dom.Element, axis ContainerRelativeAxis) ?&dom.Element {
+	mut candidate := first
 	for candidate != none {
 		container := candidate or { break }
 		if query_container_is_eligible_for_axis(container, axis) {
@@ -2499,7 +2504,7 @@ fn get_or_compute_query_container_for_axis(context LengthResolutionContext, axis
 		return cached
 	}
 	computed := if subject := context.subject_element {
-		nearest_query_container_for_axis(subject, axis)
+		if context.subject_is_pseudo { nearest_query_container_from_candidate(subject,axis) } else { nearest_query_container_for_axis(subject, axis) }
 	} else {
 		?&dom.Element(none)
 	}

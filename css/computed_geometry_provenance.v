@@ -25,6 +25,7 @@ struct ComputedGeometryProvenance {
 	root_font_size                f64
 	root_line_height              f64
 	root_font_depends_on_viewport bool
+	subject_is_pseudo              bool
 	subject                       ?&dom.Element
 	font_list                     &FontCascadeList
 	font_computer                 &FontComputer
@@ -131,6 +132,7 @@ fn (p &ComputedGeometryProvenance) matches_context(c &ComputedProperties) bool {
 	return voidptr(p.token) == voidptr(c.computed_property_graph_token_) && p.viewport == c.viewport_rect_
 		&& p.root_font_size == c.root_font_size_px_ && p.root_line_height == c.root_line_height_px_
 		&& p.root_font_depends_on_viewport == c.root_font_metrics_depend_on_viewport_metrics_
+		&& p.subject_is_pseudo == c.subject_is_pseudo_
 		&& computed_geometry_subject_matches(p.subject, c.subject_element_)
 		&& voidptr(p.font_computer) == voidptr(c.cached_computed_font_list_owner_)
 		&& c.font_geometry_generation_is_current(p.font_computer, p.font_generation, p.font_cascade_was_settled)
@@ -159,6 +161,7 @@ fn (mut c ComputedProperties) publish_computed_geometry_provenance(previous &Com
 		root_line_height:              c.root_line_height_px_
 		root_font_depends_on_viewport: c.root_font_metrics_depend_on_viewport_metrics_
 		subject:                       c.subject_element_
+		subject_is_pseudo:              c.subject_is_pseudo_
 		font_list:                     fonts
 		font_computer:                 c.cached_computed_font_list_owner_
 		font_generation:               c.cached_computed_font_list_generation_
@@ -179,6 +182,7 @@ fn (c &ComputedProperties) anonymous_computed_geometry_source(clone &ComputedPro
 	if p.viewport != clone.viewport_rect_ || p.root_font_size != clone.root_font_size_px_
 		|| p.root_line_height != clone.root_line_height_px_
 		|| p.root_font_depends_on_viewport != clone.root_font_metrics_depend_on_viewport_metrics_
+		|| p.subject_is_pseudo != clone.subject_is_pseudo_
 		|| !computed_geometry_subject_matches(p.subject, clone.subject_element_) {
 		return none
 	}

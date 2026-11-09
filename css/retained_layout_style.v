@@ -94,6 +94,7 @@ pub fn (previous &ComputedProperties) has_identical_retained_layout_inputs(curre
 		|| previous.root_font_size_px_ != current.root_font_size_px_
 		|| previous.root_line_height_px_ != current.root_line_height_px_
 		|| previous.root_font_metrics_depend_on_viewport_metrics_ != current.root_font_metrics_depend_on_viewport_metrics_
+		|| previous.subject_is_pseudo_ != current.subject_is_pseudo_
 		|| !computed_geometry_subject_matches(previous.subject_element_, current.subject_element_)
 		|| previous.display_before_box_type_transformation_ != current.display_before_box_type_transformation_
 		|| previous.property_important_ != current.property_important_
