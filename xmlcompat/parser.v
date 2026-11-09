@@ -36,11 +36,19 @@ struct XMLPreparedSource {
 	attribute_values []string
 }
 
+struct XMLReferenceContext {
+	resolve_entity EntityResolver @[required]
+mut:
+	// Empty until the first HTML name is encountered. Ordinary XML references
+	// use vlib's shared defaults without cloning the map for each document.
+	entities map[string]string
+}
+
 // Only marked attribute values are indirect. Short ordinary values stay in
 // vlib's tree, avoiding a side-table lookup on the common small-SVG path.
 pub fn (document &Document) attribute_value(value string) !string {
 	if !value.starts_with('@') { return value }
-	index := value[1..].int()
+	index := value.substr_unsafe(1, value.len).int()
 	if index < 0 || index >= document.attribute_values.len {
 		return error('invalid XML attribute marker')
 	}
@@ -49,7 +57,7 @@ pub fn (document &Document) attribute_value(value string) !string {
 
 pub fn (document &Document) special_node(comment vxml.XMLComment) ?SpecialNode {
 	if !comment.text.starts_with(document.marker) { return none }
-	index := comment.text[document.marker.len..].int()
+	index := comment.text.substr_unsafe(document.marker.len, comment.text.len).int()
 	return document.special_nodes[index] or { none }
 }
 
@@ -94,11 +102,25 @@ fn xml_is_only_space(value string) bool {
 }
 
 pub fn check_name(name string) ! {
-	if name == '' || name.starts_with(':') || name.ends_with(':') || name.count(':') > 1 {
+	check_name_colon(name)!
+}
+
+// Validate the browser's XML name rules while locating the optional prefix.
+// DOM name validation is broader, so XML callers must retain this check.
+pub fn check_name_colon(name string) !int {
+	if name == '' {
 		return error('invalid qualified XML name ${name}')
 	}
+	mut colon := -1
 	for index, byte in name {
-		if byte == `:` || byte == `_` || byte >= 0x80 || (byte >= `A` && byte <= `Z`)
+		if byte == `:` {
+			if index == 0 || index == name.len - 1 || colon >= 0 {
+				return error('invalid qualified XML name ${name}')
+			}
+			colon = index
+			continue
+		}
+		if byte == `_` || byte >= 0x80 || (byte >= `A` && byte <= `Z`)
 			|| (byte >= `a` && byte <= `z`) || (index > 0 && ((byte >= `0` && byte <= `9`) || byte in [
 			`-`,
 			`.`,
@@ -107,65 +129,96 @@ pub fn check_name(name string) ! {
 		}
 		return error('invalid qualified XML name ${name}')
 	}
+	return colon
 }
 
-// Keep the browser's HTML entity vocabulary while letting vlib decode and
-// validate all character references. Numeric replacements are not decoded a
-// second time, even when an entity's value contains an ampersand.
-fn expand_html_references(value string, resolve_entity EntityResolver) !string {
-	if !value.contains('&') {
-		return value
-	}
+fn xml_numeric_references(value string) string {
 	mut output := strings.new_builder(value.len)
-	mut position := 0
-	for position < value.len {
-		if value[position] != `&` {
-			output.write_u8(value[position])
-			position++
-			continue
-		}
-		end := value.index_after(';', position + 1) or {
-			return error('unterminated XML entity reference')
-		}
-		name := value[position + 1..end]
-		if name.starts_with('#') || name in vxml.default_entities {
-			// The previous browser parser also accepted uppercase hexadecimal X.
-			output.write_string(if name.starts_with('#X') {
-				'&#x${name[2..]};'
-			} else {
-				value[position..end + 1]
-			})
-		} else {
-			decoded := resolve_entity(name) or {
-				return error('unknown XML entity &${name};')
-			}
-			for character in decoded.runes() {
-				output.write_string('&#${int(character)};')
-			}
-		}
-		position = end + 1
+	for character in value.runes() {
+		output.write_string('&#${int(character)};')
 	}
 	return output.str()
 }
 
-fn decode_references(value string, resolve_entity EntityResolver) !string {
+fn (mut context XMLReferenceContext) html_entity(name string) !string {
+	if cached := context.entities[name] { return cached }
+	resolved := context.resolve_entity(name.clone()) or {
+		return error('unknown XML entity &${name};')
+	}
+	// Preserve vlib's character validation even for a custom resolver. This
+	// conversion happens once per distinct HTML name, rather than once per
+	// occurrence, and cached replacements are never decoded recursively.
+	decoded := vxml.unescape_text(xml_numeric_references(resolved))!
+	if context.entities.len == 0 {
+		context.entities = vxml.default_entities.clone()
+	}
+	context.entities[name] = decoded
+	return decoded
+}
+
+// Discover only the HTML names used by this document. Normal payloads stay
+// unchanged for vlib's decoder; the declaration path needs numeric references
+// because vlib parses its prolog with the standard XML entity map.
+fn prepare_references(value string, mut context XMLReferenceContext, expand_html bool) !string {
+	mut output := strings.new_builder(0)
+	mut position := 0
+	mut copied := 0
+	for {
+		start := value.index_after('&', position) or { break }
+		end := value.index_after(';', start + 1) or {
+			return error('unterminated XML entity reference')
+		}
+		name := value.substr_unsafe(start + 1, end)
+		if name.starts_with('#X') {
+			// The previous browser parser also accepted uppercase hexadecimal X.
+			output.write_string(value.substr_unsafe(copied, start + 2))
+			output.write_u8(`x`)
+			copied = start + 3
+		} else if !name.starts_with('#') && name !in vxml.default_entities {
+			decoded := context.html_entity(name)!
+			if expand_html {
+				output.write_string(value.substr_unsafe(copied, start))
+				output.write_string(xml_numeric_references(decoded))
+				copied = end + 1
+			}
+		}
+		position = end + 1
+	}
+	if copied == 0 { return value }
+	output.write_string(value.substr_unsafe(copied, value.len))
+	return output.str()
+}
+
+fn expand_html_references(value string, mut context XMLReferenceContext) !string {
+	return prepare_references(value, mut context, true)
+}
+
+fn decode_references(value string, mut context XMLReferenceContext) !string {
 	if !value.contains('&') { return value }
-	return vxml.unescape_text(expand_html_references(value, resolve_entity)!)
+	prepared := prepare_references(value, mut context, false)!
+	if context.entities.len == 0 { return vxml.unescape_text(prepared) }
+	return vxml.unescape_text(prepared, entities: context.entities)
 }
 
 // vlib currently stops tags at the first '>', requires a quote immediately
 // after '=', and requires closing tags without trailing whitespace. Normalize
 // just these lexical forms; attribute parsing and duplicate detection stay in
 // vlib. Quoted contents remain opaque to the markup scanner.
-fn xml_normalize_tag(tag string, resolve_entity EntityResolver, mut attribute_values []string, declaration bool) !string {
+fn xml_normalize_tag(tag string, mut references XMLReferenceContext, mut attribute_values []string, declaration bool) !string {
 	if tag.starts_with('</') {
-		return tag[..tag.len - 1].trim_right(' \t\r\n') + '>'
+		mut end := tag.len - 1
+		for end > 0 && xml_is_space(tag[end - 1]) { end-- }
+		if end == tag.len - 1 { return tag }
+		return tag[..end] + '>'
 	}
-	mut output := strings.new_builder(if tag.len < 256 { tag.len } else { 256 })
+	// Most tags already have vlib-compatible syntax. Allocate a replacement
+	// only when a value or whitespace actually needs normalization. Borrowed
+	// spans are consumed synchronously; side-table values take owning copies.
+	mut output := strings.new_builder(0)
 	mut position := 0
+	mut copied := 0
 	for position < tag.len {
 		byte := tag[position]
-		output.write_u8(byte)
 		position++
 		if byte in [`'`, `"`] {
 			start := position
@@ -175,31 +228,44 @@ fn xml_normalize_tag(tag string, resolve_entity EntityResolver, mut attribute_va
 			if position == tag.len {
 				return error('unterminated XML attribute value')
 			}
-			value := tag[start..position]
+			value := tag.substr_unsafe(start, position)
 			if value.contains('<') { return error('XML attribute values may not contain <') }
 			if !declaration && (value.len > 64 || value.contains_any(' \t\r\n&>') || value.starts_with('@')) {
-				// vlib scans attributes byte by byte and splits the entire tag on
-				// whitespace to find its name. Keep long SVG paths and decoded
-				// values out of that scan; vlib still parses attribute syntax and
-				// rejects duplicate names. The owning payload survives DOM mapping.
+				// Keep long SVG paths and decoded values out of vlib's byte-by-byte
+				// scan. vlib still parses attribute syntax and rejects duplicate
+				// names. The owning payload survives DOM mapping.
+				output.write_string(tag.substr_unsafe(copied, start))
 				output.write_string('@${attribute_values.len}')
-				attribute_values << decode_references(value, resolve_entity)!
-			} else {
-				expanded := expand_html_references(value, resolve_entity)!
+				attribute_values << if value.contains('&') {
+					decode_references(value, mut references)!
+				} else {
+					value.clone()
+				}
+				copied = position
+			} else if declaration && value.contains_any('&>') {
+				expanded := expand_html_references(value, mut references)!
+				output.write_string(tag.substr_unsafe(copied, start))
 				output.write_string(if expanded.contains('>') {
 					expanded.replace('>', '&gt;')
 				} else {
 					expanded
 				})
+				copied = position
 			}
-			output.write_u8(byte)
 			position++
 		} else if byte == `=` {
+			start := position
 			for position < tag.len && xml_is_space(tag[position]) {
 				position++
 			}
+			if position != start {
+				output.write_string(tag.substr_unsafe(copied, start))
+				copied = position
+			}
 		}
 	}
+	if copied == 0 { return tag }
+	output.write_string(tag.substr_unsafe(copied, tag.len))
 	return output.str()
 }
 
@@ -248,6 +314,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 	mut declaration := ''
 	mut special_nodes := []SpecialNode{}
 	mut attribute_values := []string{}
+	mut references := XMLReferenceContext{ resolve_entity: resolve_entity }
 	mut position := 0
 	mut depth := 0
 	mut saw_element := false
@@ -256,7 +323,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 		if source[position] != `<` {
 			start := position
 			for position < source.len && source[position] != `<` { position++ }
-			text := source[start..position]
+			text := source.substr_unsafe(start, position)
 			if depth == 0 {
 				if !xml_is_only_space(text) {
 					return error('text outside the XML document element')
@@ -269,7 +336,14 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 				// into a reference. That expansion sorted every whitespace match
 				// and made vlib allocate an entity buffer for every single space.
 				output.write_string('<!--${marker}${special_nodes.len}-->')
-				special_nodes << SpecialNode{ is_text: true, data: decode_references(text, resolve_entity)! }
+				special_nodes << SpecialNode{
+					is_text: true
+					data:    if text.contains('&') {
+						decode_references(text, mut references)!
+					} else {
+						text.clone()
+					}
+				}
 			} else {
 				output.write_string(text)
 			}
@@ -277,13 +351,13 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 		}
 		if xml_has_prefix(source, position, '<!--') {
 			end := source.index_after('-->', position + 4) or { return error('unterminated XML comment') }
-			data := source[position + 4..end]
+			data := source.substr_unsafe(position + 4, end)
 			if data.contains('--') || data.ends_with('-') { return error('invalid XML comment') }
 			if data.starts_with(marker) || data.len > 64 {
 				output.write_string('<!--${marker}${special_nodes.len}-->')
-				special_nodes << SpecialNode{ is_comment: true, data: data }
+				special_nodes << SpecialNode{ is_comment: true, data: data.clone() }
 			} else {
-				output.write_string(source[position..end + 3])
+				output.write_string(source.substr_unsafe(position, end + 3))
 			}
 			position = end + 3
 			continue
@@ -306,7 +380,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 				if target != 'xml' || target_end == end || !xml_is_only_space(source[..position]) {
 					return error('XML declaration is only permitted at the beginning of the document')
 				}
-				declaration = xml_normalize_tag(source[position..end + 2], resolve_entity, mut attribute_values, true)!
+				declaration = xml_normalize_tag(source[position..end + 2], mut references, mut attribute_values, true)!
 			} else {
 				output.write_string('<!--${marker}${special_nodes.len}-->')
 				special_nodes << SpecialNode{ target: target, data: source[target_end..end].trim_space() }
@@ -334,8 +408,10 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 			tag := source.substr_unsafe(position, end + 1)
 			if tag.starts_with('<!') { return error('unsupported XML declaration') }
 			if tag.len < 3 || xml_is_space(tag[1]) { return error('invalid XML opening tag') }
-			if !tag.ends_with('/>') && tag[..tag.len - 1].trim_right(' \t\r\n').ends_with('/') {
-				return error('whitespace in XML empty-element delimiter')
+			if !tag.ends_with('/>') {
+				mut last := tag.len - 2
+				for last > 0 && xml_is_space(tag[last]) { last-- }
+				if tag[last] == `/` { return error('whitespace in XML empty-element delimiter') }
 			}
 			if tag.starts_with('</') {
 				depth--
@@ -344,7 +420,7 @@ fn xml_prepare_source(input string, resolve_entity EntityResolver) !XMLPreparedS
 				saw_element = true
 				if !tag.ends_with('/>') { depth++ }
 			}
-			output.write_string(xml_normalize_tag(tag, resolve_entity, mut attribute_values, false)!)
+			output.write_string(xml_normalize_tag(tag, mut references, mut attribute_values, false)!)
 		}
 		position = end + 1
 	}
