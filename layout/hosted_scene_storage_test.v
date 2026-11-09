@@ -170,7 +170,9 @@ fn test_raw_paint_commands_transfer_and_release_their_hosted_scene_leases() {
 fn test_hosted_scene_leases_release_nested_descendants_transitively() {
 	mut parent := hosted_scene_test_document('<!doctype html><iframe id="frame" style="width:220px;height:120px"></iframe>')
 	mut child := hosted_scene_test_document('<!doctype html><iframe id="frame" style="width:160px;height:60px"></iframe>')
-	mut grandchild := hosted_scene_test_document('<!doctype html><p>grandchild payload</p>')
+	// Keep the payload in one command regardless of the platform's font widths;
+	// this fixture tests retained storage, not line wrapping in the narrow frame.
+	mut grandchild := hosted_scene_test_document('<!doctype html><p style="white-space:nowrap">grandchild payload</p>')
 	parent_owner := parent.native_storage()
 	child_owner := child.native_storage()
 	grandchild_owner := grandchild.native_storage()
@@ -186,6 +188,7 @@ fn test_hosted_scene_leases_release_nested_descendants_transitively() {
 	grandchild_scene := inner.nested_viewport_scene
 	assert child_scene.dependencies.len == 1
 	assert grandchild_scene.references == 3
+	assert inner.nested_viewport_commands.any(it.text == 'grandchild payload')
 	hosted_scene_test_retire(mut grandchild)
 	hosted_scene_test_retire(mut child)
 	hosted_scene_test_retire(mut parent)
