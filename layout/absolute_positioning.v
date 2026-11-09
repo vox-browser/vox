@@ -582,6 +582,12 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 			}
 		}
 	}
+	if forced_height == none && preferred_height.is_auto() && computed.writing_mode() != .horizontal_tb && !box.is_replaced_box() && !box.is_table_wrapper() {
+		if sized_box := box.as_box() {
+			available_height := css_pixels_max(CSSPixels.new(0),containing_height.minus(top or { CSSPixels.new(0) }).minus(bottom or { CSSPixels.new(0) }))
+			forced_height = calculate_fit_content_height(mut state,sized_box,forced_width or { box_state.content_width() },AvailableSize.make_definite(available_height))
+		}
+	}
 	if width := forced_width {
 		forced_width = clamp_layout_content_size(box, width, containing_width, box_state, true)
 	}
