@@ -732,3 +732,16 @@ cadence 5/10 after the full 94-file checkpoint; no full 99-file run is claimed.
 pins and checked API limits. Subdivision, caching/rasterization, feature and
 reference frames, and production/developer-tool replacement remain.
 Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL spline arithmetic on 2026-11-09
+
+Cosine and Gaussian error-function approximations add 14,361 distinct native
+input records. Explicit scalar/NEON calls exercise 135 differing rounding
+results. The focused file passes default/no-GC/optimized checks with actual
+exits zero and 719 unchanged inputs. JPEG XL has 305,536 records and 100 files,
+cadence 6/10 after the full 94-file checkpoint; no full 100-file run is claimed.
+[The spline-math report](JPEGXL_V_SPLINE_MATH.md) records source/fixture pins,
+profiles and finite-domain coverage. Curve generation, caching/rasterization,
+feature/reference frames and production/developer-tool replacement remain.
+Production JPEG XL and its native developer test still require Rust.

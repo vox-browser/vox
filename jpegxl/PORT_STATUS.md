@@ -678,6 +678,17 @@ inputs. The package has 291,175 records and ninety-nine test files, cadence
 is claimed. Curve subdivision, caching, rasterization and frame integration
 remain. See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).
 
+Spline cosine and Gaussian error-function approximations now preserve the
+native scalar/unfused and NEON/fused arithmetic profiles. Direct original
+calls compare 14,361 distinct inputs, including 135 profile disagreements,
+DCT arguments, boundary neighbors and signed zero/subnormal cases. The focused
+file passes default/no-GC/optimized checks with actual exits zero and 719
+unchanged inputs. JPEG XL totals 305,536 records and one hundred files,
+cadence 6/10 after the full ninety-four-file checkpoint. No full hundred-file
+run is claimed. Curve generation, caching, Gaussian splats and complete
+feature/reference frames remain.
+See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

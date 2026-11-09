@@ -251,3 +251,13 @@ records and 99 test files, cadence 5/10 after the full 94-file checkpoint;
 no full 99-file run is claimed. Spline rasterization, frame integration and
 production/native tool replacement remain.
 See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).
+
+
+Spline cosine/error-function arithmetic adds 14,361 distinct native inputs,
+including 135 scalar/NEON rounding differences. The focused file passes
+default/no-GC/optimized checks with unavailable Rust compiler paths, actual
+exits zero and 719 unchanged selected inputs. JPEG XL totals 305,536 records
+and 100 test files, cadence 6/10 after the full 94-file checkpoint; no full
+100-file run is claimed. Curve/raster work, frame integration and production/
+native tool replacement remain.
+See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
