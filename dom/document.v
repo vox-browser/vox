@@ -5414,6 +5414,8 @@ pub mut:
 	// none of its retained sample storage can be reached any longer (see
 	// css/animation_samples.v). Layout publishes the scene numbers.
 	layout_pass_generation             u64
+	// VOX_DOCUMENT_LAYOUT_DIAGNOSTICS: what dirtied layout since the last pass.
+	layout_dirty_reasons_              map[string]int
 	paint_scene_generation             u64
 	oldest_live_paint_scene_generation u64
 	// Native shell snapshots retain/release their contiguous paint-tree slots.
@@ -7634,6 +7636,18 @@ fn (mut d Document) invalidate_pending_size_query_dependents() {
 
 const document_layout_diagnostics = os_getenv_document_layout_diagnostics()
 
+struct DocumentLayoutDirtyCount {
+	key   string
+	count int
+}
+
+// Records why a node needed a new layout tree or relayout, for the line
+// VOX_DOCUMENT_LAYOUT_DIAGNOSTICS prints after the next layout pass.
+fn (mut d Document) note_layout_dirty(kind string, reason string, node &Node) {
+	tag := if element := node.as_element() { element.local_name() } else if node.is_text() { '#text' } else { node.node_name() }
+	d.layout_dirty_reasons_['${kind}:${reason}:${tag}']++
+}
+
 fn os_getenv_document_layout_diagnostics() bool {
 	return unsafe { C.getenv(c'VOX_DOCUMENT_LAYOUT_DIAGNOSTICS') } != nil
 }
@@ -7669,7 +7683,13 @@ pub fn (mut d Document) update_layout(reason UpdateLayoutReason) {
 	mut diag_rebuilds := 0
 	defer {
 		if document_layout_diagnostics && diag_passes > 0 {
-			eprintln('VOX_DOCUMENT_LAYOUT reason=${reason} us=${(vtime.sys_mono_now() - diag_started) / 1000} style_us=${diag_style_ns / 1000} passes=${diag_passes} rebuilds=${diag_rebuilds}')
+			mut dirty := []DocumentLayoutDirtyCount{}
+			for key, count in d.layout_dirty_reasons_ { dirty << DocumentLayoutDirtyCount{key, count} }
+			dirty.sort(a.count > b.count)
+			mut summary := []string{}
+			for entry in dirty#[..8] { summary << '${entry.key}=${entry.count}' }
+			d.layout_dirty_reasons_.clear()
+			eprintln('VOX_DOCUMENT_LAYOUT reason=${reason} us=${(vtime.sys_mono_now() - diag_started) / 1000} style_us=${diag_style_ns / 1000} passes=${diag_passes} rebuilds=${diag_rebuilds} dirty=${summary.join(',')}')
 		}
 	}
 	// A size-query dependency points from a descendant to an ancestor, so one

@@ -3307,6 +3307,10 @@ pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayo
 	if n.needs_layout_tree_update == value {
 		return
 	}
+	if value && document_layout_diagnostics {
+		mut diag_document := unsafe { &Document(n.document()) }
+		diag_document.note_layout_dirty('tree', '${reason}', &n)
+	}
 	n.needs_layout_tree_update = value
 	// NOTE: If this is a shadow root, we need to propagate the layout tree update to the host.
 	if shadow_root := n.as_shadow_root() {
@@ -4390,6 +4394,10 @@ fn (mut n Node) image_provider_contents_changed_impl(check_geometry bool) bool {
 }
 
 pub fn (mut n Node) set_needs_layout_update(reason SetNeedsLayoutReason) {
+	if document_layout_diagnostics && n.unsafe_layout_node() != none {
+		mut diag_document := unsafe { &Document(n.document()) }
+		diag_document.note_layout_dirty('layout', '${reason}', &n)
+	}
 	if mut node := n.unsafe_layout_node() {
 		node.set_needs_layout_update(reason)
 		mut document := unsafe { &Document(n.document()) }
