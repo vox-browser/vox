@@ -573,8 +573,17 @@ files pass default/no-GC/optimized checks, with actual exits zero and 426
 unchanged inputs. Cadence is 4/10, with no full eighty-eight-file run claimed.
 See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).
 
-Non-visible preview dependencies, wider reference composition, wider/resampled
-alpha, non-XYB modular rendering beyond the existing lossless path,
+Another slice expands one 8-bit alpha channel independently from color through
+1x/2x/4x/8x sampling for VarDCT and modular XYB. Seventy-two native records
+compare all 4,817,664 straight/paint RGBA bytes exactly across nine factor
+pairs, associated alpha and orientation. Existing LF alpha retains unit
+sampling. The count is 282,913 source records and eighty-nine test files.
+Five focused files pass default/no-GC/optimized checks, with actual exits zero
+and 501 unchanged inputs. Cadence is 5/10; no full eighty-nine-file run is claimed.
+See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
+
+Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
+extra channels, resampled LF alpha, non-XYB modular rendering beyond the existing lossless path,
 whole-frame chroma sampling, feature streams, large entropy maps and production
 integration remain.
 

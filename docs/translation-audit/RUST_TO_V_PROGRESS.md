@@ -597,3 +597,16 @@ the 84-file checkpoint; no full 88-file run is claimed.
 ownership and checks. Resampling, chroma sampling, feature streams, composition,
 larger entropy maps and production/tool integration remain; production JPEG XL
 and its native developer tool still use Rust.
+
+## JPEG XL alpha upsampling on 2026-11-09
+
+Another V slice normalizes and upsamples 8-bit alpha independently of color,
+covering all nine supported factor pairs in VarDCT and modular XYB. Seventy-two
+new native records compare 4,817,664 straight/paint RGBA bytes exactly. The
+package has 282,913 source records and 89 test files. Five focused files pass
+default/no-GC/optimized checks with actual exits zero and 501 unchanged inputs.
+Cadence is 5/10 after the 84-file checkpoint; no full 89-file run is claimed.
+[The alpha-upsampling report](JPEGXL_V_ALPHA_UPSAMPLING.md) records pins and
+checks. Resampled LF alpha, wider extra channels, chroma sampling, feature
+streams, composition and production/tool integration remain. Production JPEG XL
+and its native developer tool still require Rust.

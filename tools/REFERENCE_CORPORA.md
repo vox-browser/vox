@@ -168,3 +168,10 @@ The three-file focused selection passes default/no-GC/optimized checks with
 actual exits zero and 426 unchanged inputs. Cadence is 4/10; no full 88-file
 run is claimed. Production and its native developer tool still require Rust.
 See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).
+
+Alpha upsampling adds 72 native records and 4,817,664 exact straight/paint
+RGBA bytes: 282,913 records and 89 JPEG XL test files total. The five-file
+selection passes default/no-GC/optimized checks with actual exits zero and
+501 unchanged inputs. Cadence is 5/10; no full 89-file run is claimed.
+Production and its native developer tool still use Rust.
+See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
