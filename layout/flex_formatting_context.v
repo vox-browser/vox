@@ -1097,6 +1097,9 @@ fn flex_align_content_offsets(align css.AlignContent, free_space CSSPixels, line
 }
 
 fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignment {
+	if value := item.computed_values().property(.align_self,.yes) {
+		if value.css_text == 'last baseline' { return .baseline }
+	}
 	self := item.computed_values().align_self()
 	match self {
 		.end_, .self_end {
@@ -1124,6 +1127,9 @@ fn effective_flex_cross_alignment(container &Node, item &Node) FlexCrossAlignmen
 			return .start
 		}
 		else {}
+	}
+	if value := container.computed_values().property(.align_items,.yes) {
+		if value.css_text == 'last baseline' { return .baseline }
 	}
 	return match container.computed_values().align_items() {
 		.end_, .self_end { .self_end }
@@ -1183,17 +1189,19 @@ fn flex_item_participates_in_baseline_alignment(container &Node, item &Node) boo
 }
 
 fn flex_line_row_baseline_cross_size(state &LayoutState, container &Node, line FlexLine) CSSPixels {
-	mut ascent := CSSPixels.new(0)
-	mut descent := CSSPixels.new(0)
-	for item in line.items {
-		if !flex_item_participates_in_baseline_alignment(container, item) { continue }
-		styled := item.as_node_with_style() or { continue }
-		used := state.get(styled)
-		baseline := layout_box_baseline(state, item, .first)
-		ascent = css_pixels_max(ascent, baseline)
-		descent = css_pixels_max(descent, used.margin_box_height().minus(baseline))
-	}
-	return ascent.plus(descent)
+ mut size := CSSPixels.new(0)
+ for preference in [BaselineSet.first,.last] {
+  mut ascent,mut descent := CSSPixels.new(0),CSSPixels.new(0)
+  for item in line.items {
+   if !flex_item_participates_in_baseline_alignment(container,item) || flex_baseline_preference(container,item) != preference { continue }
+   used := state.get(item.as_node_with_style() or { continue })
+   baseline := layout_box_baseline(state,item,preference)
+   ascent = css_pixels_max(ascent,baseline)
+   descent = css_pixels_max(descent,used.margin_box_height().minus(baseline))
+  }
+  size = css_pixels_max(size,ascent.plus(descent))
+ }
+ return size
 }
 
 fn flex_static_main_axis_alignment(container &Node, direction css.FlexDirection) StaticPositionAlignment {
@@ -1679,8 +1687,7 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 				if flex_item_participates_in_baseline_alignment(container, item) {
 					// Baseline-aligned items start at the line's cross-start edge, so the
 					// baseline shift always runs towards cross-end.
-					cross_delta = cross_delta.plus(max_baseline.minus(layout_box_baseline(state, item,
-						.first)))
+					cross_delta = cross_delta.plus(flex_row_baseline_alignment_delta(state,container,item,current_line,cross_size))
 				}
 			}
 			item_state.set_content_x(cursor.plus(item_state.margin_box_left()))
