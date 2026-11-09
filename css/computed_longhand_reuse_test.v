@@ -932,10 +932,14 @@ fn test_longhand_reuse_is_independent_of_active_head_order_and_removed_history()
 	assert computed_longhand_reuse_keys_equal(&first_key, &second_key)
 	mut restored := computed_properties_with_initial_values()
 	assert computer.restore_computed_longhands(&second_key, second, mut restored)
-	longhand_reuse_assert_oracle(restored, computer, element, mut second)
+	// The cache holds longhands before element-specific adjustments such as
+	// legacy justify-items. Compare the complete cache-hit computation to the oracle.
+	actual := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+	longhand_reuse_assert_oracle(actual, computer, element, mut second)
 	second.revert_property(.height, .yes, .author)
 	assert !computer.restore_computed_longhands(&second_key, second, mut restored)
 	second.set_property(.height, height, .yes, .author, none, unsafe { nil }, none)
 	assert computer.restore_computed_longhands(&second_key, second, mut restored)
-	longhand_reuse_assert_oracle(restored, computer, element, mut second)
+	readded := computer.compute_properties(dom.AbstractElement.new(element, none), mut second)
+	longhand_reuse_assert_oracle(readded, computer, element, mut second)
 }
