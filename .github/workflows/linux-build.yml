@@ -120,6 +120,21 @@ jobs:
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
+      - name: Check vlib XML input compatibility
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
+        timeout-minutes: 10
+        run: |
+          # The production XML input adapter depends only on vlib, so its
+          # parsing contracts run before the browser's native dependencies.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-xml-compat.lock" \
+            --report "$RUNNER_TEMP/vox-xml-compat.json" --limit-gib 3 --timeout 300 -- \
+            "$V_BIN" -b c -memory-limit 10G test xmlcompat
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-xml-compat-nogc.lock" \
+            --report "$RUNNER_TEMP/vox-xml-compat-nogc.json" --limit-gib 3 --timeout 300 -- \
+            "$V_BIN" -b c -memory-limit 10G -gc none test xmlcompat
+
       - name: Check resource cache and cancellation contracts
         if: ${{ !cancelled() && steps.toolchain.outcome == 'success' && matrix.gc == 'boehm' }}
         timeout-minutes: 10
@@ -219,6 +234,24 @@ jobs:
       # Focused C-backend suites depend on prepared native libraries, not on
       # the FastC browser build or on preceding test results. Keep collecting
       # failures without making the failed production/window gate optional.
+      - name: Check XML DOM and document integration
+        if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
+        timeout-minutes: 45
+        run: |
+          # Exercise the same vlib parser through DOMParser, fragments,
+          # document loading and XHR in both supported allocation models.
+          python3 tools/run_memory_bounded.py \
+            --lock "$RUNNER_TEMP/vox-xml-integration-$LADYBIRD_V_GC.lock" \
+            --report "$RUNNER_TEMP/vox-xml-integration-$LADYBIRD_V_GC.json" --timeout 2640 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" \
+              html/vlib_xml_test.v \
+              html/dom_parser_test.v \
+              html/xml_document_test.v \
+              html/xml_fragment_test.v \
+              html/xml_namespace_test.v \
+              xhr/document_response_test.v \
+              html/document_loading_bridge_test.v
+
       - name: Check retained storage with the production allocator
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' && matrix.gc == 'prealloc' }}
         timeout-minutes: 15
