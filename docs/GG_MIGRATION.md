@@ -2181,3 +2181,30 @@ FreeType, libm and libc; link/readelf/ldd checks find no Skia dependency. Browse
 integration still uses installed Skia, so the requested full-browser Linux
 compile/link/run without it remains open. See the [native inputs, cohorts and
 component linkage](https://github.com/vox-browser/vox-tests/blob/ecea3ad79cde8a95bac6a811ad46ba0a04b50e42/evidence/gg-migration/large-minified-source-blurs-20261109.json).
+
+
+### Large shadows of minified whole images (2026-11-09)
+
+`f90220e40` resolves a minified whole image for the shadow blur's own requested
+bounds, then merges the original deferred foreground above the tinted,
+offset blur. Foreground sampling, paint alpha and incoming color effects
+remain deferred through merge. An offscreen shadow retains the foreground.
+
+The corrected baseline declines all 500 requests at seed 20261211; the
+candidate matches 340 of that same cohort, declining 160. Final default C
+cohorts on macOS and Linux both match 1,360 of 2,000 requests at seed 20261212,
+declining 640. Optimized macOS/no-GC matches 705 of 1,000 at seed 20261213,
+declining 295. Counts include no-ops; completed cohorts finish with unchanged
+input pins under the 3 GiB guard. The first driver attempt omitted the
+minification selector and is retained as a setup error, outside these results.
+Ten independent native fixtures verify on each platform, including two
+foreground-only results whose shadow lies outside the clip.
+
+Focused C/FastC suites, Linux browser typechecking, Linux HTML canvas
+integration and the C FMA audit pass (zero contracted, 189 explicit). The
+standalone Linux production/no-GC image executable runs all seven registered
+test functions with Skia unavailable to pkg-config; link/readelf/ldd checks
+find no direct or transitive Skia dependency. Its direct libraries are
+FreeType, libm and libc. Browser integration still uses installed Skia;
+full-browser Linux compile/link/run without it remains open. See the
+[native cases, setup error, cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/655628b3d28da2c41312f5af653c2071b22f294b/evidence/gg-migration/large-minified-image-shadows-20261109.json).
