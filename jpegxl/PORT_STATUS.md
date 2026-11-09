@@ -2,7 +2,7 @@
 
 The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
 builds that helper. This package decodes complete modular streams, grouped raw
-frames and a bounded lossless subset to final RGBA. It does not replace
+frames and bounded lossless/opaque VarDCT subsets to final RGBA. It does not replace
 the production decoder or remove that final Rust dependency yet.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
@@ -459,6 +459,31 @@ recorded in [the LF stream report](../docs/translation-audit/JPEGXL_V_LF_STREAMS
 Cadence is 4/10 after the sixty-five-file checkpoint; no full sixty-eight-file
 pass is claimed. Global/frame assembly, frame dependencies/composition, feature
 streams, final image resampling and production integration remain.
+
+Six more slices connect LFGlobal/HFGlobal state, explicit LF/HF group ownership,
+complete VarDCT frame planes, restoration and `decode_vardct_rgba`. The new
+complete-file entry point handles opaque 4:4:4 frames with combined or separate
+sections, global modular trees, LF reconstruction/smoothing, all progressive
+passes, HF reconstruction, cropping, restoration, XYB/sRGB or YCbCr conversion,
+dithering and orientation. It rejects unsupported LF references, extra channels,
+resampling, feature streams and frame composition; the production caller is
+unchanged.
+
+Twenty constant and four nonuniform authored codestreams match every RGBA byte
+from the pinned native decoder. They include odd dimensions, multiple HF/LF
+groups and actual smoothing/restoration color transitions. HF coefficients in
+this new whole-file cohort are zero, so these records do not establish general
+whole-file conformance. The source case count is now 281,841 across seventy-four
+test files. Focused default/no-GC and optimized checks pass. All seventy-four
+files also pass through the V corpus checker in both GC modes, with actual
+tests, inner guards, drivers and outer guards exiting zero. Compiler and all
+294 selected input hashes/change times stay unchanged. This completes the
+ten-slice checkpoint and resets cadence to 0/10.
+[The frame-assembly report](../docs/translation-audit/JPEGXL_V_FRAME_ASSEMBLY.md)
+records exact coverage, limits, input identities and executed results.
+
+LF/reference frames, extra channels/alpha, sampling/resampling, feature streams,
+broader composition, large entropy maps and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits

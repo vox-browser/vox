@@ -444,3 +444,29 @@ Global/frame assembly, frame dependencies/composition, feature streams, final
 image resampling and production integration remain. The production JPEG XL
 decoder and its Cargo/CI/native developer tools still need Rust; removing all
 Rust dependencies remains unfinished.
+
+## Complete opaque VarDCT frame assembly on 2026-11-09
+
+Six additional slices connect LFGlobal/HFGlobal state, LF/HF ownership and
+cropping, complete frame-plane decoding, restoration and opaque 4:4:4 VarDCT
+RGBA output. The new 24 independently decoded files compare **1,575,540 native
+RGBA bytes exactly**, with both straight/premultiplied V requests. They include
+odd dimensions, multiple HF/LF groups and nonuniform LF patterns that exercise
+smoothing and restoration. Their HF coefficients are zero; this is a bounded
+complete-file cohort rather than arbitrary image parity.
+
+The package now has **281,841 source records and 74 test files**. All six new
+files pass focused checks in both GC modes and optimized builds. All 74 files
+pass through the V corpus checker in both GC modes. Actual tests, inner guards,
+drivers and outer guards exit zero; all 294 selected input hashes/change times
+and the compiler pin remain unchanged. This completes ten slices after the
+65-file checkpoint and resets cadence to **0/10**. Previous results and input
+identities remain intact. [The frame-assembly report](JPEGXL_V_FRAME_ASSEMBLY.md)
+records source and binary pins, fixture construction, exact comparison scopes,
+harness corrections, checks and remaining limits.
+
+Production JPEG XL, Cargo/CI hooks and the native developer tool still use Rust.
+LF/reference frames, extra channels/alpha, sampling/resampling, feature streams,
+broader composition, large entropy maps and production image integration remain.
+Removal of all Rust dependencies remains unfinished; no browser validation or
+complete production replacement is claimed.
