@@ -113,7 +113,7 @@ fn test_pending_background_requests_retire_with_their_session() {
 	document_session_test_finish_loading(app.document)
 	assert first.state == .retired
 	assert scope.is_cancelled()
-	assert !browsernet.publish_result(PreloadedResource{url: address}, results, scope)
+	assert !browsernet.publish_result(PreloadedResource{ url: address }, results, scope)
 	assert app.background_resource_results.len == 0
 	assert address !in app.background_resource_pending
 	app.poll_background_resources()
@@ -205,6 +205,8 @@ fn test_tab_retirement_closes_the_whole_session_once_even_when_close_reenters() 
 		mut observed := unsafe { &DocumentSessionTestProbe(probe) }
 		observed.closed++
 		mut retiring := unsafe { &DocumentSession(session) }
+		root := retiring.document.document_element() or { panic('missing document element') }
+		assert !retiring.BrowserMediaOwner.owns(root)
 		retiring.retire()
 	})
 	video := document.create_element('video') or { panic(err) }
@@ -356,6 +358,85 @@ fn test_eviction_finishes_retirement_when_the_cached_document_was_destroyed() {
 	assert voidptr(document.native_storage()) == unsafe { nil }
 	assert probe.document_cleanup == 1
 	assert app.document.url_string() == 'https://document-session.example/live-successor'
+}
+
+fn test_hosted_media_closes_independently_of_the_document_and_parent_session() {
+	mut app := document_session_test_app()
+	defer { app.dispose_browser_tab() }
+	app.install_loaded_page(document_session_test_page('parent-media-owner'), true)
+	mut session := app.document_session()
+	parent_owner := session.media_owner()
+	parent_revision := app.document.paint_content_revision()
+	mut child := html.parse_document('<!doctype html><video id="player" preload="none"></video>')
+	defer {
+		child.finalize()
+		child.release_native_storage()
+	}
+	video := child.get_element_by_id('player') or { panic('missing video') }
+	media := html.html_media_element_for_dom_element(video) or { panic('missing media') }
+	player := &BrowserMediaPlayback{
+		media:           media
+		element:         video
+		metadata_loaded: true
+		frame:           painting.MediaVideoFrame.from_bitmap(&dom.Bitmap_{
+			width:  1
+			height: 1
+			pitch:  4
+			data:   [u8(1), 2, 3, 255]
+		})
+	}
+	mut child_owner := new_browser_media_owner(child)
+	child_owner.media_players << player
+	mut service := &BrowserHostedDocument{ document: child, media_owner: child_owner }
+	child_revision := child.paint_content_revision()
+	child_owner.invalidate_native_media_frame(mut child, true, 0)
+	assert child.paint_content_revision() > child_revision
+	assert app.document.paint_content_revision() == parent_revision
+	assert parent_owner.media_players.len == 0
+	assert parent_owner.stationary_media_revision_count == 0
+	service.close()
+	service.close()
+	assert service.closed && child_owner.closed && player.retired
+	assert !player.metadata_loaded
+	has_frame := player.frame != none
+	assert !has_frame
+	assert child_owner.media_players.len == 0
+	assert voidptr(child_owner.media_document) == unsafe { nil }
+	assert !child.has_been_destroyed()
+	assert voidptr(child.get_element_by_id('player') or { panic('child was retired') }) == voidptr(video)
+	closed_revision := child.paint_content_revision()
+	child_owner.install_media_playback(video)
+	child_owner.poll_media_playback(0)
+	child_owner.invalidate_native_media_frame(mut child, true, 0)
+	assert child_owner.media_players.len == 0
+	assert child.paint_content_revision() == closed_revision
+	assert !parent_owner.closed
+	app.dispose_browser_tab()
+	// The embedded owner keeps its terminal state for callbacks captured before
+	// whole-session retirement resets the other fields.
+	assert parent_owner.closed
+}
+
+fn test_closed_native_media_hooks_cannot_reopen_a_hosted_player() {
+	$if !macos {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><video id="player" preload="none"></video>')
+	defer { document.finalize() }
+	video := document.get_element_by_id('player') or { panic('missing video') }
+	mut media := html.html_media_element_for_dom_element(video) or { panic('missing media') }
+	mut owner := new_browser_media_owner(document)
+	owner.install_native_media_player(video)
+	assert owner.media_players.len == 1
+	player := owner.media_players[0]
+	owner.close()
+	assert player.retired
+	mut failure := ''
+	media.load_url_resource(dom.URL{ value: 'data:video/mp4;base64,' }, none) or { failure = err.msg() }
+	assert failure == 'Media owner is closed'
+	assert voidptr(player.handle) == unsafe { nil }
+	assert owner.media_players.len == 0
+	assert !document.has_been_destroyed()
 }
 
 @[heap]

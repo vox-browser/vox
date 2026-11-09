@@ -3836,6 +3836,8 @@ fn (mut app BrowserApp) update_current_history_entry(loaded LoadedPage) {
 		url: loaded.url
 		markup: loaded.markup
 		content_type: loaded.content_type
+		response_headers: loaded.response_headers
+		response_status: loaded.response_status
 	}
 }
 
@@ -4025,6 +4027,8 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 			url: loaded.url
 			markup: loaded.markup
 			content_type: loaded.content_type
+			response_headers: loaded.response_headers
+			response_status: loaded.response_status
 		}
 		app.history_index = app.history.len - 1
 	}

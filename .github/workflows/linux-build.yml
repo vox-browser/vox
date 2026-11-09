@@ -211,6 +211,7 @@ jobs:
                 document/session_test.v \
                 navigation/controller_test.v \
                 navigation/back_forward_cache_test.v \
+                navigation/blob_url_cache_lifetime_test.v \
                 navigation/retire_before_styles_test.v \
                 browserapp/browser_zoom_test.v
           done

@@ -16,7 +16,7 @@ mut:
 	back_forward_cache             BrowserBackForwardCache
 	history_scroll_restoration     ?HistoryScrollRestoration
 	navigation_results             chan NavigationResult
-	navigation_request_scope ?&browsernet.RequestScope
+	navigation_request_scope       ?&browsernet.RequestScope
 	navigation_generation          int
 	navigation_fetch_generation    int
 	pending_navigation             ?PendingNavigation
@@ -26,9 +26,11 @@ mut:
 }
 
 struct HistoryEntry {
-	url          string
-	markup       string
-	content_type string = 'text/html'
+	url              string
+	markup           string
+	content_type     string = 'text/html'
+	response_headers []adblock.ResponseHeader
+	response_status  u16
 	// Saved when navigation leaves this entry; traversal and reload restore it.
 	scroll_y ?f64
 }
@@ -38,8 +40,8 @@ struct LoadedPage {
 	markup                string
 	status                string
 	content_type          string
-	response_headers []adblock.ResponseHeader
-	response_status u16
+	response_headers      []adblock.ResponseHeader
+	response_status       u16
 	javascript_url_source ?&dom.Document
 	// Compact navigation produces a response locally; this is the source
 	// Document.cpp non-Fetch timing fallback, recorded when that response exists.
@@ -78,10 +80,12 @@ fn (navigation &NavigationController) history_traversal(delta int) ?HistoryTrave
 		from_index:   navigation.history_index
 		target_index: target
 		response:     LoadedPage{
-			url:          entry.url
-			markup:       entry.markup
-			status:       'History'
-			content_type: entry.content_type
+			url:              entry.url
+			markup:           entry.markup
+			status:           'History'
+			content_type:     entry.content_type
+			response_headers: entry.response_headers
+			response_status:  entry.response_status
 		}
 	}
 }

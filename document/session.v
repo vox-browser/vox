@@ -21,11 +21,11 @@ enum DocumentSessionState {
 
 @[heap]
 struct DocumentSession {
+	BrowserMediaOwner
 mut:
 	state                 DocumentSessionState
 	document              &dom.Document      = unsafe { nil }
 	js_runtime            &browserjs.Runtime = unsafe { nil }
-	media_players         []&BrowserMediaPlayback
 	image_request_loader  ?&BrowserImageRequestLoader
 	script_request_loader ?&BrowserScriptRequestLoader
 	child_document_host   ?&BrowserChildDocumentHost
@@ -42,8 +42,8 @@ mut:
 	// A worker's destination stays with its document even while that document
 	// is cached. Replacements cannot consume an outgoing page's completions.
 	background_resource_results     chan PreloadedResource
-	background_resource_scope ?&browsernet.RequestScope
-	resource_cache map[string]PreloadedResource
+	background_resource_scope       ?&browsernet.RequestScope
+	resource_cache                  map[string]PreloadedResource
 	background_resource_jobs        int
 	background_resource_pending     map[string]bool
 	script_stylesheet_requests      map[string]bool
@@ -85,8 +85,6 @@ mut:
 	scroll_raster_keys                    ScrollRasterKeyFrame
 	scroll_raster_content_eligible        bool
 	scroll_raster_frame_deferred          bool
-	stationary_media_revision_owner       u64
-	stationary_media_revision_count       u64
 	// A check box background deferred to its border's native GPU pass, with
 	// the command as drawn and as it was submitted.
 	rounded_rect_underlay ?layout.PaintCommand
@@ -109,6 +107,15 @@ fn (app &BrowserApp) document_session() &DocumentSession {
 	return &DocumentSession(app.DocumentSessionRef)
 }
 
+fn (mut session DocumentSession) media_owner() &BrowserMediaOwner {
+	// Fixtures can supply document directly through the promoted field. Keep
+	// the narrow media owner bound without requiring a browser-shell callback.
+	if !session.BrowserMediaOwner.closed && !session.BrowserMediaOwner.retiring {
+		session.BrowserMediaOwner.media_document = session.document
+	}
+	return &session.BrowserMediaOwner
+}
+
 fn (mut session DocumentSession) adopt_runtime(runtime &browserjs.Runtime) {
 	if session.state == .retired {
 		mut abandoned := unsafe { &browserjs.Runtime(runtime) }
@@ -121,6 +128,7 @@ fn (mut session DocumentSession) adopt_runtime(runtime &browserjs.Runtime) {
 fn (mut session DocumentSession) activate(document &dom.Document) {
 	assert session.state == .active && session.document == unsafe { nil }
 	session.document = document
+	session.BrowserMediaOwner.media_document = document
 }
 
 fn (mut session DocumentSession) unbind_runtime() {
@@ -173,6 +181,7 @@ fn (mut session DocumentSession) retire() {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
 	session.state = .retired
+	session.BrowserMediaOwner.begin_retirement()
 	if mut loader := session.image_request_loader { loader.cancel() }
 	if mut loader := session.script_request_loader { loader.cancel() }
 	if mut children := session.child_document_host { children.close() }
@@ -196,5 +205,5 @@ fn (mut session DocumentSession) retire() {
 	}
 	// Clear the complete owner, rather than another list of document fields.
 	// Workers may still hold the old channel; never close their destination.
-	session = DocumentSession{ state: .retired }
+	session = DocumentSession{ BrowserMediaOwner: BrowserMediaOwner{ closed: true }, state: .retired }
 }

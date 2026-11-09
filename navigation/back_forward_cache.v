@@ -1,5 +1,6 @@
 module main
 
+import adblock
 import math
 import os
 import platform
@@ -33,7 +34,17 @@ struct BackForwardCachedPage {
 	history_index int
 	entry_url     string
 	entry_markup  string
+	entry_content_type string
+	entry_response_headers []adblock.ResponseHeader
+	entry_response_status u16
 	session       &DocumentSession
+}
+
+fn (page &BackForwardCachedPage) matches_history_response(entry HistoryEntry) bool {
+	return page.entry_url == entry.url && page.entry_markup == entry.markup
+		&& page.entry_content_type == entry.content_type
+		&& page.entry_response_headers == entry.response_headers
+		&& page.entry_response_status == entry.response_status
 }
 
 // Why the displayed page cannot be kept, or '' when it can.
@@ -95,6 +106,9 @@ fn (mut app BrowserApp) cache_displayed_page(history_index int) bool {
 		history_index: history_index
 		entry_url: entry.url
 		entry_markup: entry.markup
+		entry_content_type: entry.content_type
+		entry_response_headers: entry.response_headers.clone()
+		entry_response_status: entry.response_status
 		session: session
 	}
 	platform.leave_persistent(persistent)
@@ -136,8 +150,7 @@ fn (app &BrowserApp) back_forward_cached_page_position(history_index int) int {
 	if history_index < 0 || history_index >= app.history.len { return -1 }
 	entry := app.history[history_index]
 	for position, page in app.back_forward_cache.pages {
-		if page.history_index == history_index && page.entry_url == entry.url
-			&& page.entry_markup == entry.markup {
+		if page.history_index == history_index && page.matches_history_response(entry) {
 			return position
 		}
 	}
@@ -251,8 +264,7 @@ fn (app &BrowserApp) back_forward_cached_page_evicted(page &BackForwardCachedPag
 		.after_index { page.history_index > history_index }
 		.stale {
 			page.history_index < 0 || page.history_index >= app.history.len
-				|| app.history[page.history_index].url != page.entry_url
-				|| app.history[page.history_index].markup != page.entry_markup
+				|| !page.matches_history_response(app.history[page.history_index])
 		}
 	}
 }
