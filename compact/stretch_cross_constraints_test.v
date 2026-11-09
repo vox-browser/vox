@@ -18,6 +18,19 @@ fn test_stretch_cross_constraints_follow_final_flex_lines() {
 	}
 }
 
+fn test_stretch_width_in_intrinsic_column_measurement_contributes_its_contents() {
+	for wide in [false, true] {
+		middle := if wide { '<div style="width:150px"></div>' } else { '' }
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{display:flex;flex-flow:column wrap;width:min-content;max-width:100px;height:100px;align-content:start}#cb>div{border:3px solid}.target{height:75px;width:stretch}.target span{display:inline-block;width:20px;height:20px}</style><div id="cb"><div id="first" class="target"><span></span></div>${middle}<div id="second" class="target"><span></span></div></div>')
+		_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+		first := (document.get_element_by_id('first') or { panic('first') }).get_bounding_client_rect()
+		second := (document.get_element_by_id('second') or { panic('second') }).get_bounding_client_rect()
+		assert first.width == if wide { 156 } else { 26 }, '${wide}: ${first.width}'
+		assert second.width == if wide { 100 } else { 26 }, '${wide}: ${second.width}'
+		document.finalize()
+	}
+}
+
 fn test_stretch_uses_constrained_automatic_single_flex_line_height() {
 	mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{display:flex;width:100px;max-height:100px}.target{flex:none;margin:5px;border:3px solid;padding:2px}#preferred{height:stretch}#minimum{height:0;min-height:stretch}#maximum{height:500px;max-height:stretch}</style><div id="cb"><div id="preferred" class="target">X X</div><div id="minimum" class="target">X X</div><div id="maximum" class="target">X X</div></div>')
 	defer { document.finalize() }

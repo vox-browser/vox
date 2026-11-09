@@ -790,7 +790,7 @@ fn flex_formatting_context_adjust_cross_size_through_aspect_ratio_for_main_size_
 
 fn flex_cross_width_behaves_as_auto(item &Node, item_state &UsedValues, constraint SizeConstraint) bool {
 	preferred := item.computed_values().size_value(.width)
-	if preferred.is_auto() {
+	if preferred.is_auto() || preferred.is_stretch() {
 		return true
 	}
 	if preferred.contains_percentage() {

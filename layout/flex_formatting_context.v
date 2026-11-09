@@ -2019,7 +2019,14 @@ fn run_wrapping_column_flex_formatting_context(mut state LayoutState, container 
 		mut item_state := state.mutable_internal_box_values(styled)
 		item_state.set_containing_block_used_values(container_state)
 		resolve_box_model_edges(styled.computed_values(), mut item_state, container_width.to_double())
-		mut forced_width := if property_is_auto(item.computed_values(), .width) {
+		mut forced_width := if item.computed_values().size_value(.width).is_stretch()
+			&& container_state.width_constraint != .none {
+			if box := item.as_box() {
+				?CSSPixels(if container_state.width_constraint == .min_content {
+					calculate_min_content_width(mut state, box)
+				} else { calculate_max_content_width(mut state, box) })
+			} else { ?CSSPixels(none) }
+		} else if property_is_auto(item.computed_values(), .width) {
 			?CSSPixels(flex_fit_content_cross_width(mut state, item, container_width))
 		} else {
 			resolve_layout_content_size(item, item.computed_values().size_value(.width), container_width, item_state, true)
