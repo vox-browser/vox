@@ -363,7 +363,7 @@ class ProductionBuildTests(unittest.TestCase):
             ]
             runtime_inputs = [
                 'main.v', 'layout/paint.v', 'layout/test_helpers.v',
-                'native/include/native/include/native_browser_tab_titles_test_darwin.h',
+                'native/include/native_browser_tab_titles_test_darwin.h',
                 'tools/test_runtime_bridge.h', 'tools/native_runtime_test.h',
                 'tools/build_mac_graphite.py',
                 'tools/prepare_ui2.py', 'tools/adblock-worker-mini/main.v',
