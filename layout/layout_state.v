@@ -38,6 +38,7 @@ mut:
 	static_position_rect_         ?StaticPositionRect
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
+	box_model_percentage_basis_ ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
 	used_grid_template_columns    []CSSPixels
 	used_grid_template_rows       []CSSPixels
@@ -82,6 +83,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		static_position_rect_: rare.static_position_rect_
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
+		box_model_percentage_basis_: rare.box_model_percentage_basis_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
 		used_grid_template_columns: rare.used_grid_template_columns.clone()
 		used_grid_template_rows: rare.used_grid_template_rows.clone()
@@ -389,6 +391,16 @@ pub fn (u &UsedValues) relative_inset_basis_width() ?CSSPixels {
 pub fn (u &UsedValues) relative_inset_basis_height() ?CSSPixels {
 	rare := u.rare_ or { return none }
 	return rare.relative_inset_basis_height_
+}
+
+fn (mut u UsedValues) set_box_model_percentage_basis(value CSSPixels) {
+ mut rare := u.ensure_rare_data()
+ rare.box_model_percentage_basis_ = value
+}
+
+fn (u &UsedValues) box_model_percentage_basis() ?CSSPixels {
+ rare := u.rare_ or { return none }
+ return rare.box_model_percentage_basis_
 }
 
 pub fn (u &UsedValues) scrollable_overflow_rect() ?css.CSSPixelRect {

@@ -21,6 +21,7 @@ pub:
 // an immutable snapshot, independent of later mutations to the source state.
 pub struct LayoutBoxModel {
 pub:
+	percentage_basis ?f64
 	margin_left    f64
 	margin_right   f64
 	margin_top     f64

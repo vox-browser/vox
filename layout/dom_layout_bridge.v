@@ -848,6 +848,7 @@ fn invalidate_layout_text_for_rendering(layout_handle voidptr) {
 // CSSStyleProperties.cpp reads them from Painting::PaintableBox::box_model().
 fn copy_used_box_model_to_dom_layout_node(mut placeholder dom.LayoutNode, used &UsedValues) {
 	placeholder.set_box_model(dom.LayoutBoxModel{
+		percentage_basis: if basis := used.box_model_percentage_basis() { ?f64(basis.to_double()) } else { none }
 		margin_left: used.margin_left.to_double()
 		margin_right: used.margin_right.to_double()
 		margin_top: used.margin_top.to_double()

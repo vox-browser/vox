@@ -2763,6 +2763,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			container_width, column_gap, !width_is_intrinsic,
 			placement_result.implicit_columns_before, required_columns)
 	}
+	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements)
@@ -2927,6 +2928,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		install_grid_item_subgrid_data(mut state, placement.item, columns, rows, column_lines,
 			row_lines, placement, effective_column_gap, row_gap)
 		item_state.set_containing_block_used_values(container_state)
+		item_state.set_box_model_percentage_basis(if grid_is_vertical(container) { grid_track_range_size(rows,placement.row,placement.row_span,row_gap) } else { area_width })
 		resolve_box_model_edges(styled.computed_values(), mut item_state, area_width.to_double())
 		if subgridded_columns {
 			apply_subgrid_gap_extra_margins(container, mut item_state, placement, true, columns.len,
@@ -3229,6 +3231,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			row_lines, placement, effective_column_gap, effective_row_gap)
 		area_width := grid_track_range_size(columns, placement.column, placement.column_span, effective_column_gap)
 		area_height := grid_track_range_size(rows, placement.row, placement.row_span, effective_row_gap)
+		item_state.set_box_model_percentage_basis(if grid_is_vertical(container) { area_height } else { area_width })
 		// FlexFormattingContext.cpp/GridFormattingContext.cpp compute relative
 		// insets against the resolved grid-area rectangle, not the grid
 		// container's full content box.

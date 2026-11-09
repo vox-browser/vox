@@ -1786,7 +1786,8 @@ fn cssom_resolved_margin(value LengthPercentageOrAuto, used f64, layout_node &do
 		return cssom_style_value_for_px(used / scale)
 	}
 	context := LengthResolutionContext.for_layout_node(layout_node)
-	basis := if containing := layout_node.containing_block_ { containing.content_width_ / scale } else { 0.0 }
+	basis := if explicit := layout_node.box_model().percentage_basis { explicit / scale }
+		else if containing := layout_node.containing_block_ { containing.content_width_ / scale } else { 0.0 }
 	return cssom_style_value_for_px(value.to_px_or_zero(context, CSSPixels.nearest_value_for(basis)).to_double())
 }
 
