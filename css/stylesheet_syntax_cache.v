@@ -50,6 +50,7 @@ fn (mut cache StylesheetSyntaxCache) release_unused() {
 
 pub fn release_unused_stylesheet_syntax() {
 	stylesheet_syntax_cache_.release_unused()
+	stylesheet_rule_cache_.release_unused()
 }
 
 fn stylesheet_syntax_node_count(values []ComponentValue) int {
@@ -135,7 +136,7 @@ fn (mut cache StylesheetSyntaxCache) parse(input string) []ComponentValue {
 // Rejected candidates belong to the caller, including a retiring native document.
 fn (mut cache StylesheetSyntaxCache) parse_candidate(input string) []ComponentValue {
 	mut scratch := platform.begin_thread_scratch('stylesheet syntax cache candidate')
-	values := ParserTokenStream.from_source(input, 'utf-8').values
+	values := ParserTokenStream.from_transient_source(input, 'utf-8').values
 	nodes := stylesheet_syntax_node_count(values)
 	scratch.leave()
 	defer { scratch.finish() }
