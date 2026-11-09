@@ -216,7 +216,7 @@ fn resolve_calc_leaf(leaf CalcNumeric, calculation_context CalculationContext, c
 			}
 			return CalcResult{
 				value: leaf.value
-				type_: leaf.type_
+				type_: NumericType.with_type(.percent, 1)
 			}
 		}
 		.length {

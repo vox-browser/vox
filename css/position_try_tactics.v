@@ -23,6 +23,11 @@ fn (context PositionTryTacticContext) anchor_side(value StyleValue, side int) St
 	if value is PercentageStyleValue {
 		return if context.reverses(side) { StyleValue(PercentageStyleValue.create(Percentage.new(100-value.percentage().value()))) } else { value }
 	}
+	if value is CalculatedStyleValue && context.reverses(side) {
+		if percentage := value.resolve_percentage(CalculationResolutionContext{}) {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(100 - percentage.value())))
+		}
+	}
 	if value is KeywordStyleValue {
 		word := value.serialize(.normal)
 		mut physical := ['top','right','bottom','left'].index(word)

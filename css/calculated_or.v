@@ -62,7 +62,11 @@ pub fn (c CalculatedStyleValue) resolve_number(context CalculationResolutionCont
 }
 
 pub fn (c CalculatedStyleValue) resolve_percentage(context CalculationResolutionContext) ?Percentage {
-	result := c.resolve_value(context) or { return none }
+	// A pure percentage calculation remains resolvable without a length basis,
+	// including when parsed in a <length-percentage> property. Mixed dimensions
+	// still fail the percentage type check below.
+	percentage_calculation := CalculatedStyleValue{...c, calculation_context: CalculationContext{...c.calculation_context, percentages_resolve_as: none}}
+	result := percentage_calculation.resolve_value(context) or { return none }
 	resolved_type := result.type_ or { return none }
 	if resolved_type.matches_percentage() {
 		return Percentage.new(result.value)

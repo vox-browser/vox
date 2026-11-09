@@ -216,7 +216,12 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 	rect := resolve_anchor_rect(state, box, containing_state, anchor) or {
 		return none
 	}
-	side := anchor.anchor_side()
+	mut side := anchor.anchor_side()
+	if side is css.CalculatedStyleValue {
+		if percentage := side.resolve_percentage(css.CalculationResolutionContext{}) {
+			side = css.StyleValue(css.PercentageStyleValue.create(percentage))
+		}
+	}
 	if side.is_keyword() {
 		return match side.to_keyword() {
 			.top {
