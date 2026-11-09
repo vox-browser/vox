@@ -1468,14 +1468,19 @@ fn build_details_internal_layout_children(document &dom.Document, element &dom.E
 	slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot') or {
 		return children
 	}
-	slot_style := computed_style_with_overrides(host_computed, {
-		css.PropertyID.display:            'block'
-		css.PropertyID.content_visibility: if element.has_attribute('open') {
-			'visible'
-		} else {
-			'hidden'
+	mut computer := unsafe { &css.StyleComputer(style_computer) }
+	details_style := computer.compute_style_with_seeded_ancestors(dom.AbstractElement.new(element, .details_content))
+	mut slot_style := details_style.clone_for_anonymous_block()
+	// This wrapper represents a real pseudo-element, so keep its authored
+	// non-inherited properties as well as the inherited anonymous-box values.
+	for index in 0 .. css.number_of_longhand_properties {
+		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
+		if value := details_style.property(property, .yes) {
+			slot_style.set_property_without_modifying_flags(property, value)
 		}
-	})
+	}
+	slot_style.set_property_without_modifying_flags(.display, &dom.StyleValue{css_text:'block'})
+	slot_style.set_property_without_modifying_flags(.content_visibility, &dom.StyleValue{css_text:if element.has_attribute('open') { 'visible' } else { 'hidden' }})
 	mut slot := unsafe {
 		&Node(BlockContainer.new(document, slot_element.as_node(), slot_style))
 	}
