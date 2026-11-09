@@ -55,33 +55,15 @@ pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularS
 		return error('Incorrect JPEG XL modular frame section count')
 	}
 	global := sections[0].read_modular_global_plan(file, frame)!
-	plan := global.plan
-	infos := plan.coded.map(plan.buffers[it])
-	buckets := plan_modular_sections(infos, frame)!
-	mut assigned := []int{len: infos.len}
-	for bucket in buckets {
-		for c in bucket { assigned[c]++ }
-	}
-	if assigned.any(it != 1) { return error('JPEG XL coded channel has no unique section') }
-	mut coded := plan.allocate_coded_channels()!
-	mut written := []u64{len: coded.len}
-	// Whole zero-area channels retain numbering unless both logical dimensions
-	// are zero, matching source with_buffers; empty group tiles are handled above.
-	selected := buckets[0].filter(infos[it].width != 0 || infos[it].height != 0)
-	inputs := selected.map(infos[it].allocated())
-	decoded := sections[0].decode_modular_stream(inputs, storage, 0, global.header, global.tree)!
-	for i, c in selected {
-		decoded[i].matches_info(infos[c])!
-		coded[c] = decoded[i]
-		written[c] = u64(decoded[i].samples.len)
-	}
+	mut state := new_modular_frame_state(global.plan, frame)!
+	unused_global := state.read_global(mut sections[0], global.header, global.tree, storage)!
 	combined := sections.len == 1
 	if !combined {
-		finish_modular_section(mut sections[0], 0, inputs.all(it.width == 0 || it.height == 0))!
+		finish_modular_section(mut sections[0], 0, unused_global)!
 	}
 	for group in u64(0) .. frame.num_lf_groups() {
 		index := if combined { 0 } else { 1 + int(group) }
-		unused := decode_modular_group_bucket(mut sections[index], frame, infos, buckets[1], true, group, frame.modular_lf_stream_id(group)!, global.tree, storage, mut coded, mut written)!
+		unused := state.read_group(mut sections[index], frame, true, group, 0, global.tree, storage)!
 		if !combined { finish_modular_section(mut sections[index], index, unused)! }
 	}
 	// Modular HF-global has no payload.
@@ -95,15 +77,10 @@ pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularS
 			} else {
 				2 + int(frame.num_lf_groups()) + pass * int(frame.num_groups()) + int(group)
 			}
-			unused := decode_modular_group_bucket(mut sections[index], frame, infos, buckets[2 + pass], false, group, frame.modular_hf_stream_id(pass, group)!, global.tree, storage, mut coded, mut written)!
+			unused := state.read_group(mut sections[index], frame, false, group, pass, global.tree, storage)!
 			if !combined { finish_modular_section(mut sections[index], index, unused)! }
 		}
 	}
 	if combined { finish_modular_section(mut sections[0], 0, false)! }
-	for c, channel in coded {
-		if written[c] != u64(channel.samples.len) {
-			return error('Incomplete JPEG XL modular channel tiles')
-		}
-	}
-	return ModularFramePlanes{ quantization: global.quantization, channels: plan.reconstruct(coded, storage)! }
+	return ModularFramePlanes{ quantization: global.quantization, channels: state.reconstruct(storage)! }
 }

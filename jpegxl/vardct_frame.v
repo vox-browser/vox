@@ -7,10 +7,11 @@ pub:
 	planes    [3]FloatPlane
 	epf_maps  VarDctEpfMaps
 	quantizer QuantizerParams
+	extra_channels []ModularChannel
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
-	if frame.has_lf_frame() || frame.lf_level != 0 || frame.upsampling != 1 {
+	if frame.has_lf_frame() || frame.lf_level != 0 || frame.upsampling != 1 || file.metadata.extra_channels.len != 0 {
 		return error('JPEG XL VarDCT frame requires explicit LF reference ownership')
 	}
 	validate_vardct_frame_reference(file, frame, none)!
@@ -18,10 +19,16 @@ fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
 
 fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference ?[3]FloatPlane) ! {
 	checked_vardct_lf_rect(frame, 0)!
-	if !frame.is444() || file.metadata.extra_channels.len != 0
-		|| frame.extra_upsampling.len != 0 || (frame.lf_level != 0 && frame.frame_type != .lf)
+	if !frame.is444() || file.metadata.extra_channels.len > 1
+		|| frame.extra_upsampling.len != file.metadata.extra_channels.len || (frame.lf_level != 0 && frame.frame_type != .lf)
 		|| (frame.has_lf_frame() && frame.lf_level >= 4) {
 		return error('JPEG XL VarDCT frame requires unsupported sampling or extra channels')
+	}
+	for i,extra in file.metadata.extra_channels {
+		if extra.kind != .alpha || extra.dimension_shift != 0 || extra.bit_depth.floating_point
+			|| extra.bit_depth.bits_per_sample != 8 || frame.extra_upsampling[i] != 1 || frame.upsampling != 1 {
+			return error('JPEG XL VarDCT extra channels require one unscaled 8-bit alpha plane')
+		}
 	}
 	if frame.has_lf_frame() != (reference != none) { return error('Missing or unexpected JPEG XL LF reference') }
 	size := frame.size_padded()
@@ -29,6 +36,9 @@ fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference
 	if size.width < actual.width || size.height < actual.height || size.width == 0 || size.height == 0
 		|| u64(size.width) * u64(size.height) > 67108864 / 3 {
 		return error('JPEG XL VarDCT frame exceeds the plane sample budget')
+	}
+	if u64(size.width)*u64(size.height)*3 + u64(actual.width)*u64(actual.height)*u64(file.metadata.extra_channels.len) > 67108864 {
+		return error('JPEG XL VarDCT color and extra planes exceed the sample budget')
 	}
 	if planes := reference {
 		blocks := frame.size_blocks()
@@ -65,8 +75,9 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 	combined := sections.len == 1
 	global := sections[0].read_lf_global(file, frame)!
 	context := global.vardct or { return error('Missing JPEG XL VarDCT LF context') }
-	if global.modular_plan.coded.len != 0 { return error('Unexpected JPEG XL VarDCT modular channels') }
-	if !combined { finish_modular_section(mut sections[0], 0, false)! }
+	mut modular := new_modular_frame_state(global.modular_plan, frame)!
+	unused_global := modular.read_global(mut sections[0], global.modular_header, global.tree, storage)!
+	if !combined { finish_modular_section(mut sections[0], 0, unused_global && global.modular_header != none)! }
 	mut metadata := []HfMetadata{cap: int(frame.num_lf_groups())}
 	mut low := []VarDctLfResult{cap: int(frame.num_lf_groups())}
 	for group in u64(0) .. frame.num_lf_groups() {
@@ -76,7 +87,7 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 		} else {
 			sections[index].read_vardct_lf(frame, group, file.metadata.bit_depth, context, storage, global.tree)!
 		}
-		// This subset has no modular LF channels between LF and metadata.
+		modular.read_group(mut sections[index], frame, true, group, 0, global.tree, storage)!
 		metadata << sections[index].read_hf_metadata(frame, group, file.metadata.bit_depth, storage, global.tree)!
 		if !combined { finish_modular_section(mut sections[index], index, false)! }
 	}
@@ -136,6 +147,7 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 		for pass, input in inputs {
 			index := if combined { 0 } else { 2 + low.len + pass * int(frame.num_groups()) + int(group) }
 			sections[index] = input.reader
+			modular.read_group(mut sections[index], frame, false, group, pass, global.tree, storage)!
 			if !combined { finish_modular_section(mut sections[index], index, false)! }
 		}
 		pixels := render_hf_group(data.maps, data.parameters, context.block_context, data.colors, data.lf,
@@ -155,5 +167,5 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 	return VarDctFramePlanes{ planes: [FloatPlane{ width: w, height: h, samples: samples[0] },
 		FloatPlane{ width: w, height: h, samples: samples[1] }, FloatPlane{ width: w, height: h, samples: samples[2] }]!,
 		epf_maps: VarDctEpfMaps{ width: bw, height: bh, raw_quant: raw_quant, transform_ids: transforms, sharpness: sharpness },
-		quantizer: context.quantizer }
+		quantizer: context.quantizer, extra_channels: modular.reconstruct(storage)! }
 }
