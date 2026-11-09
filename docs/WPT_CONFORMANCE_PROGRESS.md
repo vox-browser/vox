@@ -2195,3 +2195,97 @@ comparisons under a read lease, without copying a browser bundle. Status:
 `/Users/alex/.cache/vox/wpt/20261109-attribute-utf16-production-status.json`.
 The independently pinned 40,139-variant official testharness collection remains
 active. **Overall 100% is not achieved.**
+
+
+## Parser-created image inputs and production follow-ups (2026-11-09)
+
+`8cc7dd117` installs image-input resource hooks during parser resource setup,
+before later scripts and readiness tasks. Previously an early script could
+initialize the runtime before an image input existed; suffix image inputs were
+then omitted from the parser's resource scan. The original coordinate page
+never requested its SVG and observed a zero-sized input. Its constructed click
+therefore selected `-6` instead of `23`. The fix uses the existing input resource
+loader and leaves the original event, assertions and coordinates unchanged.
+
+Two corrected control fixtures fail native image availability before the fix:
+one has an early inline script, the other resumes after a failed blocking
+script without a runtime. Both pass afterward, including decoded dimensions,
+load readiness, coordinate submission and avoiding duplicate loads. The first
+fixture attempt had an unrelated adblock precondition failure; it remains in
+the archive. The corrected controls preserve and restore that setting.
+**16 behavior checks plus two worker/WPT entrypoints pass** in normal,
+prepared-preallocation, and literal V `-prod`/prepared-preallocation C images.
+They include the existing image-input, transformed-coordinate and parser
+lifecycle tests. Final focused compile/runtime exits are **0** with unchanged
+10 GiB compiler, 12 GiB compile guard and 3 GiB runtime guard limits.
+
+Separate images compiling only the canonical
+`compact/upstream_testharness_test.v` entrypoints pass **all 65 original
+FileReader/FormData variants and 328/328 assertions** in normal and literal
+`-prod`/prepared-preallocation modes. Every original name/count and harness
+completion is required; runner and guard exits are **0** with unchanged pinned
+runtime inputs. These images use ordinary browser policy, without the parser
+unit suite's adblock initialization. The combined normal image also reports
+328/328. The combined optimized image remains a **failed attempt**: it reports
+316/328, with one SIGBUS before a WPT payload and one segmentation fault after
+12 passing WPT assertions, during a later parser fixture's initialization.
+Both abnormal exits are retained. Separate WPT completion does not establish
+that this cross-suite failure is repaired or that all suites pass.
+
+Raw evidence: `/Users/alex/.cache/vox/wpt/20261109-parser-input-images-native-raw.tar.gz`,
+SHA-256 `7b135fb927c916a224edb78a3a5056d894f00bc27c2aa4d5758691cb2462050e`.
+Summary: `/Users/alex/.cache/vox/wpt/20261109-parser-input-images-native-summary.json`,
+SHA-256 `ab15717fb3d516b94fd263c036420d70155dd92d3215ca74a2723867c29a261c`.
+Completed native scratch outputs, locks and the temporary combined test are
+removed after archiving. Feature hashes match the commit; other shared inputs
+are separately recorded. These are native correctness results, not a full
+production WPT percentage.
+
+The completed production image `64b123b9e609ce66e2668c3b518b26a81a16c4ae2784308523e2a2a8e24aa508`,
+receipt `20261109-083835-be46f40f`, contains the UTF-16 and registry fixes but
+predates the parser fix. Its 65-variant follow-up completes **58 variants**,
+reports **260/328** expected assertions, passes **259**, and has **seven hard
+timeouts** plus the old coordinate failure. The accname follow-up on that same
+image completes **five of 21 variants**, reporting **117/500**, all passing,
+with **16 hard timeouts**. Both strict runners/guards exit **1**. Each follow-up
+also passes all **11 unchanged exact SVG comparisons**, pixel guard exit **0**.
+Missing assertions supply no pass credit and these results do not establish
+that the production crash/timeout problem is repaired.
+
+Production UTF-16 archive: `/Users/alex/.cache/vox/wpt/20261109-attribute-utf16-production-raw.tar.gz`,
+SHA-256 `5d16c3a504165c1735e8be5052ccea28782da1fdf2192d39442a222275db0b8a`.
+Production registry archive: `/Users/alex/.cache/vox/wpt/20261109-host-registries-production-raw.tar.gz`,
+SHA-256 `5e818b6609b13b01b580623f0ee68c64469a8147ec8e1ddf950b0c89c820f232`.
+
+
+The follow-up production image
+`fccd6b4794fe917d0683eafb34ea5c7a4273cc83ae8f2955c5cabcac9c47ab18`,
+receipt `20261109-085618-9ba0036c`, contains both committed fixes, verified by
+protected source hashes. The original image-coordinate assertion **passes**.
+Across all 65 variants, **54 complete and 11 hit the unchanged hard deadline**;
+**281/328** expected assertions are reported, all passing. Strict runner and
+guard exits remain **1**: the 47 missing assertions receive no pass credit.
+All **11 unchanged exact SVG comparisons pass**, pixel driver/guard exit **0**,
+and pinned runtime inputs remain unchanged. The browser is the original
+completed C/single-unit/literal-`-prod` preallocation artifact, used under a
+read lease without copying a bundle or queuing a duplicate build.
+
+Production parser-input archive:
+`/Users/alex/.cache/vox/wpt/20261109-parser-input-images-production-raw.tar.gz`,
+SHA-256 `b440cb40ad5aaf7b4faddfcbfebbaca7fe48e7687d862e17eb9132142af44286`.
+Completion: `/Users/alex/.cache/vox/wpt/20261109-parser-input-images-production-completion.json`.
+The observers archive and remove their completed scratch directories.
+
+A fresh, separately sampled production constructor-formelement run also hits
+its original hard deadline. Its three-second native sample observes the main
+application thread mostly waiting in the AppKit event loop; it does not locate
+the page-runtime cause or prove a deadlock. Sampling is diagnostic and supplies
+no acceptance or timing credit. That attempt, its exact command, sampled PID,
+unchanged input hashes and guard exit **1** are retained in
+`/Users/alex/.cache/vox/wpt/20261109-formdata-production-timeout-diagnostic-raw.tar.gz`,
+SHA-256 `9b29955c0b5408895cdfa4cdc70393155eed8840a14e4adca727df27e8fcf7ff`.
+Its completed scratch directory is removed. The independent **40,139-variant
+original official testharness collection** remains active on its older pinned
+production image; other WPT types are outside that runner. These repairs and
+focused results do not establish full WPT conformance. **Overall 100% is not
+achieved.**
