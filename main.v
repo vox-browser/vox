@@ -2002,6 +2002,8 @@ fn javascript_bootstrap() string {
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
 		'__compactInstallNativeAttributeMutations();',
+		// Last: bridge-installed platform functions print as native code.
+		compact_native_function_source_bootstrap(),
 		// Initialization has no replay consumer; explicit snapshots remain available.
 		'return;',
 		'})',
