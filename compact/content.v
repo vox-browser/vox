@@ -266,6 +266,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'nativeAttribute' { return binding.native_attribute_query(key, selector) }
 	if action == 'nonce' { return binding.nonce_query(key, selector) }
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
+	if action == 'typedStyleMap' { return binding.typed_style_map_query(key, selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
 	if action == 'internalsSendText' { return binding.internals_send_text(key, selector) }

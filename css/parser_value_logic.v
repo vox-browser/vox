@@ -223,6 +223,7 @@ fn (parser Parser) calculation_context() CalculationContext {
 			}
 			SyntaxParsingContext {
 				return match value_context.type_ {
+					.integer { CalculationContext{resolve_numbers_as_integers:true} }
 					.angle_percentage {
 						CalculationContext{
 							percentages_resolve_as: ValueType.angle

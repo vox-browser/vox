@@ -10381,8 +10381,9 @@ pub fn (value CSSStyleValue) to_string() !string {
 
 // https://drafts.css-houdini.org/css-typed-om-1/#create-an-internal-representation
 pub fn (value CSSStyleValue) create_an_internal_representation(property PropertyNameAndID, perform_type_check PerformTypeCheck) !StyleValue {
-	_ = property
-	_ = perform_type_check
+	if perform_type_check == .yes && property.is_custom_property() && value.unparsed_value_ == none {
+		return error('Custom properties only accept CSSUnparsedValue objects')
+	}
 	// If value is a direct CSSStyleValue,
 	//     Return value's associated value.
 	if source_value := value.source_value_ {

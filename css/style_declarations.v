@@ -980,12 +980,10 @@ pub fn (properties &CSSStyleProperties) custom_property(custom_property_name str
 	if properties.is_computed() {
 		owner := properties.owner_node or { return none }
 		value := computed_custom_property_for_cssom(owner, custom_property_name) or {
-			initial_value := owner.document().custom_property_initial_value(custom_property_name) or {
-				return none
-			}
+			initial_value := computed_registered_initial_value(owner, custom_property_name) or { return none }
 			return StyleProperty{
 				property_id: .color
-				value: parse_custom_property_value(initial_value)
+				value: initial_value
 			}
 		}
 		if value.guaranteed_invalid {
@@ -2191,6 +2189,10 @@ pub fn (mut property_map StylePropertyMapReadOnly) get(property_name string) ?CS
 	// 1. If property is not a custom property name string, set property to property ASCII lowercased.
 	// 2. If property is not a valid CSS property, throw a TypeError.
 	property := css_style_property_name_and_id_from_name(property_name) or { return none }
+	if values := property_map.registered_custom_values(property) {
+		if values.len == 0 { return none }
+		return values[0]
+	}
 
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify the first item of the result and return it.
@@ -2225,6 +2227,7 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_all(property_name string)
 	property := css_style_property_name_and_id_from_name(property_name) or {
 		return []CSSStyleValue{}
 	}
+	if values := property_map.registered_custom_values(property) { return values }
 
 	// 3. Let props be the value of this's [[declarations]] internal slot.
 	// 4. If props[property] exists, subdivide into iterations props[property], then reify each item of the result, and return the list.
@@ -2320,12 +2323,7 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property Prop
 	if element := property_map.element {
 		if property.is_custom_property() {
 			value := element.get_custom_property(property.name()) or {
-				initial_value := element.document().custom_property_initial_value(property.name()) or {
-					return none
-				}
-				return &dom.StyleValue{
-					css_text: initial_value
-				}
+				return computed_registered_initial_value(element, property.name())
 			}
 			if value.guaranteed_invalid {
 				return none
