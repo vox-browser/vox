@@ -2,8 +2,10 @@
 
 ## Scope and acceptance
 
-This is a fixed cohort of 100 distinct cases from Ladybird's imported WPT
-testharness tests. It is **not yet fully passing**. These cohort results do not
+The fixed 100-case cohort from Ladybird's imported WPT tests passes
+**98/100 pages and 5,354/5,356 assertions with its original assertions**.
+A separately labelled diagnostic with two proposed expectation corrections
+passes **100/100 pages and 5,356/5,356 assertions**. These cohort results do not
 establish an overall WPT pass rate or a comparison with another browser.
 
 The [catalog](../Tests/Browser/ladybird-new-701-800-20261109.txt) contains the next
@@ -17,22 +19,23 @@ between these immutable Ladybird revisions:
 
 There are 27 properties-and-values cases, 18 pseudo-element cases, one shadow
 case, two shapes cases, and 52 sizing cases. Their Ladybird expectations contain
-**5,356 assertions**. Fixtures, support resources, assertions and deadlines are
-unchanged. The original expectation names are compared as a multiset, including
-multiline names; missing assertions fail acceptance.
+**5,356 assertions**. The unmodified runs leave fixtures, support resources,
+assertions and deadlines unchanged. A separate proposed-errata diagnostic
+changes two expected-value literals at serve time, as detailed below. The
+original expectation names are compared as a multiset, including multiline names; missing assertions fail acceptance.
 
 `tools/ladybird_native_cohort.py` exports and verifies the pinned fixtures and
 runs a fresh `compact/upstream_testharness_test.v` process for every page. A case
 passes only with a successful guarded process exit, a clean harness, every
 expected assertion reported, and every reported assertion passing. The runner's
-five Python unit tests pass.
+ten Python unit tests pass.
 
 The native entry point exercises document navigation, parsing, resources,
 JavaScriptCore, DOM, CSS and layout. It does not validate window painting.
 Runtime jobs have a 3 GiB outer guard and a 2 GiB per-page guard. Compiler jobs
 retain the default 12 GiB guard and V's `-memory-limit 10G`.
 
-## Complete native runs
+## Complete native runs with unmodified assertions
 
 | Image | Passing pages | Passing / reported assertions | Missing expected assertions |
 | --- | ---: | ---: | ---: |
@@ -183,7 +186,52 @@ item; its output differs from Vox. Its executable SHA-256 is
 Harnesses complete normally, inputs remain unchanged, and the guarded process
 exits 1 because `--require-all-pass` rejects the two failures. This focused
 static-server diagnostic establishes neither full WPT parity nor a browser
-percentage comparison. All original expectations remain unchanged.
+percentage comparison. The original exported expectations remain unchanged.
+
+## Proposed expectation corrections
+
+The [proposed manifest](../Tests/Browser/ladybird-new-701-800-expectation-errata.json)
+changes the second component's expected `calc(25% + 50px)` to
+`calc(25% + 250px)` in the comma-list and space-list pages. The first component
+remains `250%`. Commit `894767217` records both exact original source hashes,
+the original/corrected lines and the numeric derivation. These are proposed
+corrections; upstream acceptance is not established.
+
+Historical WebKit source helps explain the asymmetry:
+[`blendMixedTypes()`](https://github.com/WebKit/WebKit/blob/c0462225cee0519a9a1dd0c406448a56456ad523/Source/WebCore/platform/Length.cpp#L299-L315)
+constructs a mixed-value blend using progress alone, whereas its
+[numeric blending path](https://github.com/WebKit/WebKit/blob/c0462225cee0519a9a1dd0c406448a56456ad523/Source/WebCore/platform/animation/AnimationUtilities.h#L83-L105)
+applies iteration increments. A zero length can take the numeric path while a
+nonzero mixed-unit pair takes the other path. This is an archived implementation
+comparison, not a measurement of current Safari behavior.
+
+Two fresh, serial full-cohort runs use the **same r16 executable** and identical
+common pinned input hashes:
+
+| Served fixture inputs | Passing pages | Passing / reported assertions | Missing | Guard exit |
+| --- | ---: | ---: | ---: | ---: |
+| Unmodified upstream | 98 / 100 | 5,354 / 5,356 | 0 | 1 |
+| Two explicit proposed expectation corrections | **100 / 100** | **5,356 / 5,356** | **0** | **0** |
+
+All 100 page processes and harnesses exit successfully in both runs. Every
+original expected name remains present, and exactly two assertion outcomes
+change from FAIL to PASS. The exported upstream files remain byte-identical;
+the server substitutes only the two documented literals. No engine behavior
+was changed to obtain this corrected-fixture result. The **unmodified upstream
+result remains 98/100**.
+
+The correction manifest SHA-256 is
+`ee5087112aab485a5b68c65734dcf272faa897b3b1e41e2cc3ad193d01968720`.
+The run identity records each original and served file hash. The runner defaults
+to `unmodified-upstream`; `--expectation-errata` explicitly labels the other
+variant `proposed-expectation-errata` and leaves
+`unmodified_upstream_all_pass` unknown for that run. An erratum must match the
+pinned revision and source hash, replace exactly one complete literal expected
+line, and identify a selected test HTML page. Harness/control-flow edits,
+ambiguous replacements and corrections shared by unlisted query variants fail
+validation. All ten tooling unit tests pass. After the query-variant guard was
+added, both corrected pages also pass a fresh focused run: **12/12 assertions**,
+zero missing, with identical served hashes to the full corrected run.
 
 ## Painting regression evidence
 
@@ -219,8 +267,9 @@ manifests and the pixel observer receipt remain local under
 `/Users/alex/.cache/vox/wpt/batch701-800-20261109` including `completed-evidence/`; active
 `Build/batch701-800-*` job directories retain only ongoing jobs. Completed
 artifacts are relocated there with their receipts and compiler-consumed source
-hashes, and their temporary generated C is removed. Generated measurement JSON and archives
-are not committed.
+hashes, and their temporary generated C is removed. The paired expectation
+recheck evidence is under `iteration-recheck/`. Generated measurement JSON and
+archives are not committed.
 
 After compiling the native entry point under the required guard, run:
 
@@ -234,3 +283,8 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
   --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/final/core/native-r16-prod \
   --output Build/ladybird-701-800-UNIQUE
 ```
+
+For the separately labelled corrected-fixture diagnostic, add
+`--expectation-errata Tests/Browser/ladybird-new-701-800-expectation-errata.json`
+to that command and choose fresh lock, report and output paths. Omitting the
+option runs the original assertions and retains the two failures.
