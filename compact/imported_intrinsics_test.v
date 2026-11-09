@@ -13,6 +13,16 @@ fn test_auto_flex_basis_consumes_the_preferred_intrinsic_width_keyword() {
 	}
 }
 
+fn test_stretch_float_intrinsic_contributions_use_contents_instead_of_the_cyclic_parent_size() {
+	for size in ['width:stretch', 'min-width:stretch', 'max-width:stretch'] {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}#target{width:max-content}#first{float:left;width:100px;height:100px}#second{float:left;${size}}#content{width:20px;height:20px}</style><div id="target"><div id="first"></div><div id="second"><div id="content"></div></div></div>')
+		_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+		r := (document.get_element_by_id('target') or { panic('target') }).get_bounding_client_rect()
+		assert r.width == 120, '${size}: ${r.width}'
+		document.finalize()
+	}
+}
+
 fn test_outside_markers_do_not_contribute_to_floating_list_item_intrinsic_width() {
 	mut document := html.parse_document('<!doctype html><style>body{margin:0}li{float:left;clear:left}#inside{list-style-position:inside}li::marker{content:"marker"}</style><ol><li id="outside"></li><li id="inside"></li></ol>')
 	defer { document.finalize() }

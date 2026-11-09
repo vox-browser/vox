@@ -722,7 +722,7 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 			inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 		} else if preferred.is_fit_content() {
 			inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(containing_width)))
-		} else if !preferred.contains_percentage() {
+		} else if !preferred.contains_percentage() && !preferred.is_stretch() {
 			if resolved := resolve_layout_content_size(node, preferred, containing_width, values, true) {
 				// A definite preferred width determines the box's content width in
 				// the intrinsic-layout pass. Its descendants do not floor that width;
@@ -755,8 +755,10 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 	} else if min_width.is_fit_content() {
 		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, available_width))
-	} else if minimum := resolve_layout_content_size(node, min_width, containing_width, values, true) {
-		inner = css_pixels_max(inner, minimum)
+	} else if !min_width.is_stretch() {
+		if minimum := resolve_layout_content_size(node, min_width, containing_width, values, true) {
+			inner = css_pixels_max(inner, minimum)
+		}
 	}
 	return inner.plus(flex_or_grid_item_outer_inline_edges(values))
 }
