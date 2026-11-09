@@ -2142,6 +2142,9 @@ pub mut:
 pub struct StyleValue {
 pub mut:
 	css_text string
+	// An authored system-font longhand retains its resolved value for the
+	// cascade, but CSSOM can serialize only the intact font shorthand.
+	system_font string
 	// The CSS module stores an opaque pointer to its typed css.StyleValue here.
 	// DOM cannot name that type without creating a module cycle; CSS owns both
 	// creating and reading the handle. Values constructed by DOM-only callers

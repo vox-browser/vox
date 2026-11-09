@@ -11076,13 +11076,17 @@ fn invoke_legacy_dom_longhand(context voidptr, property_id PropertyID, value &do
 
 struct TypedDOMLonghandExpansionContext {
 	context voidptr
+	system_font string
 	@[required]
 	callback fn (voidptr, PropertyID, &dom.StyleValue)
 }
 
 fn bridge_typed_dom_longhand(context voidptr, property_id PropertyID, value StyleValue) {
 	state := unsafe { &TypedDOMLonghandExpansionContext(context) }
-	state.callback(state.context, property_id, dom_style_value_from_value_logic(value))
+	resolved := dom_style_value_from_value_logic(value)
+	state.callback(state.context, property_id, if state.system_font != '' {
+		&dom.StyleValue{ ...resolved, system_font: state.system_font }
+	} else { resolved })
 }
 
 pub fn StyleComputer.for_each_property_expanding_shorthands(property_id PropertyID, value &dom.StyleValue, set_longhand_property fn (PropertyID, &dom.StyleValue)) {
@@ -11094,7 +11098,7 @@ pub fn StyleComputer.for_each_property_expanding_shorthands(property_id Property
 pub fn StyleComputer.for_each_property_expanding_shorthands_with_context(property_id PropertyID, value &dom.StyleValue, context voidptr, set_longhand_property fn (voidptr, PropertyID, &dom.StyleValue)) {
 	if property_is_shorthand(property_id) {
 		if typed_value := style_value_logic_from_dom(property_id, value) {
-			state := TypedDOMLonghandExpansionContext{context: context, callback: set_longhand_property}
+			state := TypedDOMLonghandExpansionContext{context: context, callback: set_longhand_property, system_font: if typed_value is ShorthandStyleValue { typed_value.system_font_ } else { '' }}
 			for_each_typed_property_expanding_shorthands_with_context(property_id, typed_value, voidptr(&state), bridge_typed_dom_longhand)
 			return
 		}

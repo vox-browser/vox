@@ -4658,9 +4658,21 @@ const font_shorthand_longhands = [PropertyID.font_family, PropertyID.font_size,
 
 // https://drafts.csswg.org/css-fonts/#font-prop
 // [ [ <'font-style'> || <font-variant-css2> || <'font-weight'> || <font-width-css3> ]? <'font-size'> [ / <'line-height'> ]? <'font-family'># ]
-// FIXME: <system-family-name> (caption, icon, menu, message-box, small-caption, status-bar).
+// A system-font keyword supplies every font longhand as one indivisible value.
 // PropertyParsing.cpp: Parser::parse_font_value.
 fn (mut parser Parser) parse_font_value(mut tokens ComponentValueStream) ?StyleValue {
+	mut system_tokens := tokens.clone()
+	system_tokens.consume_whitespace()
+	if first := system_tokens.peek() {
+		system_tokens.consume()
+		if first.is(.ident) && to_ascii_lowercase(first.token().ident()) in system_font_keywords {
+			system_tokens.consume_whitespace()
+			if system_tokens.has_more_tokens() { return none }
+			value := parser.parse_system_font_value(to_ascii_lowercase(first.token().ident())) or { return none }
+			tokens = system_tokens
+			return value
+		}
+	}
 	mut font_style := ?StyleValue(none)
 	mut font_variant := ?StyleValue(none)
 	mut font_weight := ?StyleValue(none)

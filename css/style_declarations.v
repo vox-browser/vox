@@ -503,6 +503,10 @@ fn cssom_style_property_index(properties &CSSStyleProperties, property_id Proper
 }
 
 fn cssom_make_shorthand_value(shorthand PropertyID, declarations []StyleProperty) ?StyleValue {
+	if shorthand == .font {
+		if name := system_font_name_for_declarations(declarations) { return StyleValue(CustomIdentStyleValue.create(name)) }
+	}
+	for declaration in declarations { if declaration.value.system_font != '' { return none } }
 	longhand_ids := longhands_for_shorthand_local(shorthand)
 	mut values := []StyleValue{cap: longhand_ids.len}
 	for longhand_id in longhand_ids {
@@ -1173,7 +1177,8 @@ fn (mut properties CSSStyleProperties) set_a_css_declaration_with_serialized(pro
 			}
 
 			if !needs_append {
-				if property.important == new_property.important && property.value == new_property.value {
+				if property.important == new_property.important && property.value == new_property.value
+					&& (property.style_value or { value }).system_font == value.system_font {
 					return false
 				}
 				properties.clear_typed_properties_cache()
@@ -1302,6 +1307,18 @@ pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyN
 	// first serialized declaration that happens to share its name.
 	property_id := property.id() or { return none }
 	if property_is_shorthand(property_id) {
+		if !properties.is_computed() {
+			mut declarations := []StyleProperty{}
+			for id in cssom_expanded_longhands_for_shorthand(property_id) {
+				declarations << properties.get_direct_property(PropertyNameAndID.from_id(id)) or { return none }
+			}
+			if property_id == .font {
+				if name := system_font_name_for_declarations(declarations) {
+					return StyleProperty{property_id:.font,important:declarations[0].important,value:dom_style_value_from_value_logic(StyleValue(CustomIdentStyleValue.create(name)))}
+				}
+			}
+			for declaration in declarations { if declaration.value.system_font != '' { return none } }
+		}
 		longhand_ids := longhands_for_shorthand_local(property_id)
 		mut longhand_values := []StyleValue{cap: longhand_ids.len}
 		mut important := ?Important(none)
@@ -2021,6 +2038,7 @@ pub fn (properties &CSSStyleProperties) property_value(property_name string) str
 
 // https://www.w3.org/TR/cssom/#serialize-a-css-value
 pub fn (properties &CSSStyleProperties) serialize_a_css_value(declaration StyleProperty) string {
+	if !properties.is_computed() && declaration.value.system_font != '' { return '' }
 	if typed := typed_style_value_logic_from_dom(declaration.value) {
 		return typed.serialize(if properties.is_computed() {
 			SerializationMode.resolved_value

@@ -2336,6 +2336,7 @@ pub fn (style_value ShadowStyleValue) properties_equal(other ShadowStyleValue) b
 // --- ShorthandStyleValue ---
 pub struct ShorthandStyleValue {
 pub mut:
+	system_font_    string
 	shorthand_      PropertyID
 	sub_properties_ []PropertyID
 	values_         []StyleValue
@@ -2813,6 +2814,7 @@ fn (style_value ShorthandStyleValue) serialize_border_family(mode SerializationM
 }
 
 pub fn (style_value ShorthandStyleValue) serialize(mode SerializationMode) string {
+	if style_value.shorthand_ == .font && style_value.system_font_ != '' { return style_value.system_font_ }
 	if style_value.shorthand_ == .position_try {
 		order := style_value.values_[0].serialize(mode)
 		fallbacks := style_value.values_[1].serialize(mode)
