@@ -6366,8 +6366,14 @@ fn (mut e Element) invalidate_hosted_shadow_tree_after_attribute_change(style_co
 
 // --- Hidden / Accessibility ---
 pub fn (e &Element) is_hidden() bool {
-	if e.as_node().unsafe_layout_node() == none {
-		return true
+	no_layout_box := e.as_node().unsafe_layout_node() == none
+	if no_layout_box {
+		computed := e.el_computed_properties() or { return true }
+		// display:contents has no principal box, but its rendered descendants
+		// still contribute to the accessibility tree.
+		if !computed.display().is_contents() {
+			return true
+		}
 	}
 	if computed := e.el_computed_properties() {
 		if computed.visibility() in [.hidden, .collapse] || computed.content_visibility() == .hidden {
@@ -6378,6 +6384,13 @@ pub fn (e &Element) is_hidden() bool {
 	for self_or_ancestor != none {
 		current := self_or_ancestor or { break }
 		if element := current.as_element() {
+			if no_layout_box {
+				if computed := element.el_computed_properties() {
+					if computed.display().is_none() || computed.content_visibility() == .hidden {
+						return true
+					}
+				}
+			}
 			if element.get_attribute('aria-hidden') or { '' } == 'true' {
 				return true
 			}
