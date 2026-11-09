@@ -40,23 +40,42 @@ retain the default 12 GiB guard and V's `-memory-limit 10G`.
 | r1 | 33 / 100 | 3,689 / 5,032 | 324 |
 | r2 | 40 / 100 | 4,314 / 5,032 | 324 |
 | r3, optimized prepared runtime | 48 / 100 | 4,387 / 5,032 | 324 |
-| r6, optimized prepared runtime | **59 / 100** | **4,803 / 5,356** | **0** |
+| r6, optimized prepared runtime | 59 / 100 | 4,803 / 5,356 | 0 |
+| r7, optimized prepared runtime | 69 / 100 | 4,984 / 5,356 | 0 |
+| r8, optimized prepared runtime | 76 / 100 | 5,114 / 5,356 | 0 |
+| r9, optimized prepared runtime | 87 / 100 | 5,329 / 5,356 | 0 |
+| r10, optimized prepared runtime | 93 / 100 | 5,340 / 5,356 | 0 |
+| r11, optimized prepared runtime | 95 / 100 | 5,349 / 5,356 | 0 |
+| r12, optimized prepared runtime | 96 / 100 | 5,351 / 5,356 | 0 |
+| r13, optimized prepared runtime | **97 / 100** | **5,353 / 5,356** | **0** |
 
 The missing assertions came from the Typed OM page terminating during setup.
-The r6 image reports and passes all **325/325** of that page's assertions.
+The r6–r13 images report and pass all **325/325** of that page's assertions.
 Registered-property computation passes **75/75**, and URL resolution passes
-**18/18**, including the UTF-16 stylesheet. Every r6 page completes inside its
-unchanged harness deadline, and all pinned runtime inputs remain unchanged.
-The r6 cohort guard exits 1 because assertions remain failing; its compiler
-guard exits 0.
+**18/18**, including the UTF-16 stylesheet. Every r13 page completes inside its
+unchanged harness deadline, with harness status 0 and unchanged pinned runtime
+inputs. The r13 cohort guard exits 1 because assertions remain failing; its
+compiler guard exits 0. Both containment pages now pass: 48/48 and 42/42;
+path interpolation passes 478/478. First-line property filtering and the nested
+highlight-inheritance page also pass completely.
 
 The r4 run was interrupted after 49 pages and has no terminal cohort receipt.
 It is retained as partial evidence, without an aggregate pass-rate claim. The
 r5 focused run reports 448/464 assertions across four pages, with three pages
 passing; it predates the final stylesheet-base and linked-sheet decoding fixes.
 
-The r6 executable SHA-256 is
-`9f754b9de64698545774c1e984fdc58b9124ae441d4e1c57597ee0d75d3bcec7`.
+The r13 executable SHA-256 is
+`f2bf011a660391394a0d6e51b83299ce4de40d4d7b385c639d0158d1b9fb6802`.
+Intermediate images are r12
+`516b4fd17689e788f9ac155097aba122e9523eab0c214c3fe7f99fd36e8703b1`,
+r11 `ae8e8be3028984b29b160c8aa889959dfd5e51f60fa8a308f83776a856b118a3`,
+r10 `65fda36dd92f954f9162157a30503045a180b54bb754d7901979481641f0aaea`,
+and r9 `c6fdeb796e85d4ed3f058277437481372421e41ace1289a582765d14abb8cffc`.
+The earlier r8 image is
+`fc130e706333ca73ea1382b23182136ffb2085c45e8e8c20cc70b1cf5890fc60`.
+The earlier r7 image is
+`1f2a1a53d81325c26f70faf637ecfab601f83cc53e2587d9c13511122cb3deae`;
+r6 is `9f754b9de64698545774c1e984fdc58b9124ae441d4e1c57597ee0d75d3bcec7`.
 It uses C, literal `-prod`, one C unit, and the prepared prealloc runtime with
 `-gc none`. Its compiler SHA-256 is
 `baf5f3b4328f77b9dd8c49d2dc3b837b5c710d47d474ddd93ba3ad7a9d81591f`.
@@ -66,8 +85,12 @@ the table describes the pinned images, rather than attributing every gain to
 one patch.
 
 Regressions remain visible: `stretch-block-size-003` falls from 36/36 in r3 to
-28/36 in r6, and `flex-line-003` falls from 3/4 to 1/4. They remain failures in
-the fixed cohort and require correction.
+28/36 in r6, then returns to **36/36 in r8**. `flex-line-003` falls from
+3/4 to 1/4, then passes 4/4 in r9. `flex-line-004` regresses from 3/4
+in r8 to 2/4 in r9, then returns to **4/4 in r12** after the intrinsic-column
+measurement fix. The r11 automatic flex-height change introduces two failures
+in `stretch-block-size-001`; resolving its stretch maximum against its actual
+containing block restores **18/18 in r13**. All attempts are retained.
 
 ## Implemented slices and follow-up
 
@@ -86,10 +109,47 @@ The import includes focused implementation and regression-test commits for:
 - Fractional aspect-ratio precision, premultiplied color composition,
   compatible path interpolation, and nonnegative contain-intrinsic interpolation.
 
-The last highlight-inheritance, color-composition, path-interpolation and
-contain-intrinsic changes have passing focused checks but postdate r6. An r7
-optimized native build and complete cohort run are pending. The target remains
-all 100 pages and all original expected assertions passing together.
+The r8 image measures the preceding highlight, color, path and containment
+fixes. Later committed fixes cover final flex-line constraints, simulated parent
+margin collapse, intrinsic flex bases and float/list-marker contributions,
+authored replaced-element ratios, intrinsic constraints across axes, and
+suppressed generated content on replaced controls. The r9 run measures these
+fixes, including 180/180 replaced-ratio assertions and 24/24 control-pseudo
+assertions. Later grid, outer-scope shadow-part, details-content, indefinite
+flex, intrinsic float, clearance and anonymous-containing-block fixes have
+passing focused checks and are measured by r10–r13. The final flex-height
+follow-up passes all nine focused test functions and restores both introduced
+regressions in the original cohort.
+
+The target remains all 100 pages and all original expected assertions passing
+together. The **three remaining r13 failures** are also marked `Fail` in the
+pinned Ladybird expectations: the two mixed length/percentage iteration cases
+and shadow-part first-line rendering. Those upstream expectations contain 102
+recorded failures overall; Vox passes 99 of them in r13. Expected upstream
+failures are still failures in this cohort. The first-line case is a real
+rendering implementation gap; its expected height is 106px and r13 produces
+40px.
+
+## Mixed length/percentage accumulation diagnostic
+
+The comma-list and space-list pages each retain one failing iteration-accumulation
+assertion. Their original expectation contains `calc(25% + 50px)`; Vox produces
+`calc(25% + 250px)`. Applying two copies of the 100px final keyframe before
+interpolating the interval endpoints appears to require the latter result under
+the [Web Animations iteration-composition procedure](https://drafts.csswg.org/web-animations-2/#iteration-composition)
+and [CSS numeric accumulation](https://drafts.csswg.org/css-values-4/#combining-values).
+This is a suspected expectation inconsistency, not a passing result.
+
+A separate fresh-process diagnostic on the same two unchanged imported pages
+in installed **Brave 157.1.99.55** also reports 10/12 assertions, with both
+iteration cases failing. Brave produces `50%` in the first list item where
+the test expects `250%`, and retains the expected 50px component in the second
+item; its output differs from Vox. Its executable SHA-256 is
+`4772b8898cc23f044c134b75a494ddc9053f58d5ea8cd1acb6f60762292df513`.
+Harnesses complete normally, inputs remain unchanged, and the guarded process
+exits 1 because `--require-all-pass` rejects the two failures. This focused
+static-server diagnostic establishes neither full WPT parity nor a browser
+percentage comparison. All original expectations remain unchanged.
 
 ## Painting regression evidence
 
@@ -103,14 +163,21 @@ contains the exact Typed OM/computed-style bridge sources being checked:
 - Pixel guard: completed, browser/capture/diff/guard exits 0.
 
 This painting result is separate from the native cohort and does not validate
-later highlight or path changes absent from that production image.
+later highlight or path changes absent from that production image. The three
+original selection reftests remain pending on a matching completed production
+image. Recent automatic builds (receipts `20261109-171656-fd6c144a` and
+`20261109-172639-3b3bad04`) failed input verification because the shared
+`tools/raster_tests.json` changed during compilation. No manual duplicate
+production build was queued.
 
 ## Local evidence and reproduction
 
 Raw results, all failed attempts, logs, selection receipts, compiler source
 manifests and the pixel observer receipt remain local under
-`/Users/alex/.cache/vox/wpt/batch701-800-20261109` and the active
-`Build/batch701-800-*` job directories. Generated measurement JSON and archives
+`/Users/alex/.cache/vox/wpt/batch701-800-20261109` including `completed-evidence/`; active
+`Build/batch701-800-*` job directories retain only ongoing jobs. Completed
+artifacts are relocated there with their receipts and compiler-consumed source
+hashes, and their temporary generated C is removed. Generated measurement JSON and archives
 are not committed.
 
 After compiling the native entry point under the required guard, run:
@@ -122,6 +189,6 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
   python3 tools/ladybird_native_cohort.py \
   --catalog Tests/Browser/ladybird-new-701-800-20261109.txt \
   --ladybird-ref 2919bf87a5e5dfc49a210a70bda079afa411c6c5 \
-  --native Build/batch701-800-core/native-r6-prod \
+  --native /Users/alex/.cache/vox/wpt/batch701-800-20261109/completed-evidence/round3/core/native-r13-prod \
   --output Build/ladybird-701-800-UNIQUE
 ```
