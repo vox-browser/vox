@@ -91,6 +91,7 @@ pub fn (placement GridTrackPlacement) has_identifier() bool {
 	if value is GridTrackPlacementAreaOrLine {
 		return value.name != none
 	}
+	if value is GridTrackPlacementSpan { return value.name != none }
 	return false
 }
 
@@ -109,6 +110,7 @@ pub fn (placement GridTrackPlacement) identifier() string {
 			return name
 		}
 	}
+	if value is GridTrackPlacementSpan { if name := value.name { return name } }
 	panic('VERIFY_NOT_REACHED')
 }
 

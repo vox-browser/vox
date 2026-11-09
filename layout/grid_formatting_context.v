@@ -864,22 +864,15 @@ fn grid_axis_is_auto(start css.GridTrackPlacement, end css.GridTrackPlacement) b
 }
 
 fn get_nth_grid_line_index(lines [][]css.GridLineName, name string, nth_line int) ?int {
-	if nth_line == 0 {
-		return none
-	}
-	mut remaining := if nth_line < 0 { lines.len + nth_line } else { nth_line - 1 }
-	for index, names in lines {
-		for candidate in names {
-			if candidate.name != name {
-				continue
-			}
-			if remaining == 0 {
-				return index
-			}
-			remaining--
-		}
-	}
-	return none
+ if nth_line==0 { return none }
+ mut remaining := if nth_line<0 { -nth_line } else { nth_line }
+ for offset in 0..lines.len {
+  index := if nth_line<0 { lines.len-1-offset } else { offset }
+  if !grid_line_has_name(lines,index,name) { continue }
+  remaining--
+  if remaining==0 { return index }
+ }
+ return none
 }
 
 fn grid_span_value(placement css.GridTrackPlacement) ?int {
@@ -896,73 +889,27 @@ fn grid_span_value(placement css.GridTrackPlacement) ?int {
 // GridFormattingContext::resolve_grid_position(). Line indexes are zero-based;
 // negative authored indexes are resolved from the end of the explicit grid.
 fn resolve_grid_axis_position(start css.GridTrackPlacement, end css.GridTrackPlacement, explicit_line_count int, lines [][]css.GridLineName) GridAxisPlacement {
-	mut result := GridAxisPlacement{}
-	start_line_number := if start.has_line_number() {
-		int(css.int_from_style_value(start.line_number()))
-	} else {
-		1
-	}
-	end_line_number := if end.has_line_number() {
-		int(css.int_from_style_value(end.line_number()))
-	} else {
-		1
-	}
-	if line := resolved_grid_line_number(start, explicit_line_count) {
-		result.start = line
-	}
-	if line := resolved_grid_line_number(end, explicit_line_count) {
-		result.end = line
-	}
-	if span := grid_span_value(end) {
-		result.span = span
-	}
-	if span := grid_span_value(start) {
-		result.span = span
-		result.start = result.end - result.span
-	}
-	if end.has_identifier() {
-		identifier := end.identifier()
-		if area_line := get_nth_grid_line_index(lines, '${identifier}-end', end_line_number) {
-			result.end = area_line
-		} else if named_line := get_nth_grid_line_index(lines, identifier, end_line_number) {
-			result.end = named_line
-		} else {
-			result.end = explicit_line_count
-		}
-		if !start.has_line_number() {
-			result.start = result.end - 1
-		}
-	}
-	if start.has_identifier() {
-		identifier := start.identifier()
-		if area_line := get_nth_grid_line_index(lines, '${identifier}-start', start_line_number) {
-			result.start = area_line
-		} else if named_line := get_nth_grid_line_index(lines, identifier, start_line_number) {
-			result.start = named_line
-		} else {
-			result.start = explicit_line_count
-		}
-	}
-	if !start.is_positioned() && end.is_positioned() && !end.is_span() {
-		result.start = result.end - result.span
-	}
-	if start.is_positioned() && end.is_positioned() {
-		if result.start > result.end {
-			temporary := result.start
-			result.start = result.end
-			result.end = temporary
-		}
-		if result.start != result.end {
-			result.span = result.end - result.start
-		} else {
-			result.span = 1
-			result.end = result.start + result.span
-		}
-	}
-	if start.is_span() && end.is_span() {
-		result.span = grid_span_value(start) or { 1 }
-	}
-	return result
+ start_line := grid_positioned_line(start,true,explicit_line_count,lines)
+ end_line := grid_positioned_line(end,false,explicit_line_count,lines)
+ if start_line==none && end_line==none {
+  span_value := if start.is_span() { start } else { end }
+  span := if span_value.has_identifier() { 1 } else { grid_span_value(span_value) or { 1 } }
+  return GridAxisPlacement{start:0,end:span,span:span}
+ }
+ mut first := start_line or { 0 }
+ mut last := end_line or { first+1 }
+ if start_line==none {
+  first = if start.is_span() && start.has_identifier() {
+   grid_named_span_line(lines,start.identifier(),last,grid_span_value(start) or { 1 },false)
+  } else { last-(grid_span_value(start) or { 1 }) }
+ } else if end_line==none {
+  last = if end.is_span() && end.has_identifier() {
+   grid_named_span_line(lines,end.identifier(),first,grid_span_value(end) or { 1 },true)
+  } else { first+(grid_span_value(end) or { 1 }) }
+ }
+ if first>last { temporary:=first;first=last;last=temporary }
+ if first==last { last=first+1 }
+ return GridAxisPlacement{start:first,end:last,span:last-first}
 }
 
 fn ordered_grid_items(container &Node) []&Node {
