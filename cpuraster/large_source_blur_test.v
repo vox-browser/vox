@@ -257,3 +257,51 @@ fn test_large_minified_whole_source_shadows_match_native() {
 		check_large_source_blur_fixture(c, i)
 	}
 }
+
+// Resolve cropped and clipped sources before large-filter decimation, including
+// fractional AA subsets and negative source-to-layer scales.
+fn test_large_minified_source_subset_filters_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 2, 3, 4, 5, 6, 7, 16, 17, 24, 25, 0, 1]
+	macos := [
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'2cebbea57095bdd0c40fc555eb67f728cd978008d0ae545459d7f286317326d2',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'71de0d0b3ec1fd93197e696316832e37a5e99e9c9204a74532029d5ac60df3cc',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'653ac93bf13745fc254a7da440b494e2453673d0761d471431a60ebea2075620',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'd855ed553b7fa1b8171fade00eee17a3689d0fe48e1f775c18e38ad6490fe5df',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'83e919fea7f88a23d6bb99dacc2acd54d5f02571f252fa1dd669678fde3ba21a',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'7904d81a9b9a33a33cfbb53f70cbeefa98a24d74f1d8a27eb6cc3cd16bdb6d53',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'4f0755a955cc6c81625e020fc095e9c516316f4a17dd4dd9ec1cfd0214139bed',
+	]
+	linux := [
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'2cebbea57095bdd0c40fc555eb67f728cd978008d0ae545459d7f286317326d2',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'71de0d0b3ec1fd93197e696316832e37a5e99e9c9204a74532029d5ac60df3cc',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'653ac93bf13745fc254a7da440b494e2453673d0761d471431a60ebea2075620',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'd855ed553b7fa1b8171fade00eee17a3689d0fe48e1f775c18e38ad6490fe5df',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'83e919fea7f88a23d6bb99dacc2acd54d5f02571f252fa1dd669678fde3ba21a',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'7904d81a9b9a33a33cfbb53f70cbeefa98a24d74f1d8a27eb6cc3cd16bdb6d53',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'4f0755a955cc6c81625e020fc095e9c516316f4a17dd4dd9ec1cfd0214139bed',
+	]
+	for i, index in indices {
+		base := fixtures[index]
+		c := LargeSourceBlurFixture{...base,
+			destination: [f32(5.25), 7.75, base.source[2] * f32(.5), base.source[3] * f32(.75)]!,
+			transform: if i >= 12 { [f32(-1.25), 0, 0, .75, 137, 2]! } else { base.transform },
+			sigma: 300, shadow: i % 2 != 0, shadow_color: 0x9d70d020, offset: [f32(9.25), -13.75]!,
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}
