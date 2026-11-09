@@ -173,7 +173,7 @@ struct GridAbsolutePositionContext {
 
 fn set_grid_abspos_descendant_rects(mut state LayoutState, container &Node, ancestor &Node, context GridAbsolutePositionContext) {
  for child in ancestor.children() {
-  if child.is_absolutely_positioned() && grid_container_is_abspos_containing_block(container,child) {
+  if child.is_absolutely_positioned() {
    computed := child.computed_values()
    column_start := grid_axis_placement(container,computed,true,true)
    column_end := grid_axis_placement(container,computed,true,false)

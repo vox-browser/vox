@@ -26,3 +26,12 @@ fn test_rtl_overconstrained_abspos_keeps_the_right_inset_with_a_definite_width()
  assert html.html_element_offset_left(host) == -35
  assert html.html_element_offset_width(host) == 350
 }
+
+fn test_unpositioned_grid_still_supplies_abspos_static_self_alignment() {
+ mut document := html.parse_document('<!doctype html><style>body{margin:0}#grid{display:grid;width:800px;height:600px}#child{position:absolute;width:142px;height:62px;place-self:center}</style><div id="grid"><div id="child"></div></div>')
+ defer { document.finalize() }
+ _ = layout_document_typed_in_viewport(document,800,600)
+ child := document.get_element_by_id('child') or { panic('child') }
+ rect := child.get_bounding_client_rect()
+ assert rect.x == 329 && rect.y == 269, '${rect.x},${rect.y}'
+}
