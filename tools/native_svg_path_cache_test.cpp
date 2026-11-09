@@ -12,6 +12,15 @@ static int render(uint8_t* pixels, int width, int height, int pitch,
     return 1;
 }
 
+static VoxSmallSvgPathCache* purged_cache;
+static int render_and_purge(uint8_t* pixels, int width, int height, int pitch,
+    int background, VoxGraphitePath const* path)
+{
+    int result = render(pixels, width, height, pitch, background, path);
+    purged_cache->clear();
+    return result;
+}
+
 int main(int argc, char** argv)
 {
     VoxSmallSvgPathCache cache;
@@ -82,6 +91,13 @@ int main(int argc, char** argv)
     auto fail = [](uint8_t*, int, int, int, int, VoxGraphitePath const*) { return 0; };
     cache.clear(); assert(cache.size() == 0 && cache.bytes() == 0);
     assert(cache.draw(fail, pixels.data(), 4, 4, 24, 0, &path) == 0 && cache.size() == 0);
+    purged_cache = &cache;
+    calls = draws;
+    for (int repeat = 0; repeat < 2; ++repeat) {
+        assert(cache.draw(render_and_purge, pixels.data(), 4, 4, 24, 0, &path));
+        assert(cache.size() == 0 && cache.bytes() == 0);
+    }
+    assert(draws == calls + 2);
     for (int i = 0; i < 200; ++i) {
         path.matrix[2] = float(i); draw();
         assert(cache.size() <= 64 && cache.bytes() <= 8u * 1024 * 1024);
@@ -140,6 +156,21 @@ int main(int argc, char** argv)
     });
     assert(s_small_svg_path_cache.size() == 0);
     assert(bridge_draw() && pixels[0] == 177);
+    // An old renderer can replace itself while finishing a draw. Returning
+    // successfully must not insert its pixels into the new owner's cache.
+    ladybird_v_skia_set_gg_path_draw([](uint8_t* p, int w, int h, int stride, int,
+            VoxGraphitePath const*) {
+        ++draws;
+        ladybird_v_skia_set_gg_path_draw(render);
+        for (int y = 0; y < h; ++y) std::memset(p + y * stride, 88, size_t(w) * 4);
+        return 1;
+    });
+    calls = draws;
+    assert(bridge_draw() && pixels[0] == 88 && draws == calls + 1);
+    assert(s_small_svg_path_cache.size() == 0);
+    assert(bridge_draw() && draws == calls + 2);
+    auto new_owner_pixels = pixels;
+    assert(bridge_draw() && draws == calls + 2 && pixels == new_owner_pixels);
 #if defined(__APPLE__)
     auto main_pixels=pixels;
     auto main_hits=s_small_svg_path_cache.hits;

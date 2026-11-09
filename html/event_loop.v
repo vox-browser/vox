@@ -817,6 +817,7 @@ pub fn (mut event_loop EventLoop) update_the_rendering() {
 				continue
 			}
 
+			mutable_document.record_last_successful_position_options()
 			mutable_document.gather_active_observations_at_depth(resize_observer_depth)
 			if mutable_document.has_active_resize_observations() {
 				resize_observer_depth = mutable_document.broadcast_active_resize_observations()

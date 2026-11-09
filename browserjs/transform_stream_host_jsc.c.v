@@ -60,6 +60,7 @@ pub fn (mut host TransformStreamHost) install(mut runtime Runtime) ! {
 		host.close()
 		transform_stream_bindings_.delete(owner_handle)
 	})
+	runtime.install_compression_stream_binding()!
 }
 
 fn (host &TransformStreamHost) argument(args []voidptr, index int) voidptr {

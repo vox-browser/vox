@@ -31,6 +31,7 @@ fn test_navigation_refetches_no_store_inputs_retained_for_the_previous_page() {
 	address := '${origin}/script.js'
 	server := spawn serve_uncached_navigation_script(mut listener)
 	mut pending := PendingPagePreload{loaded: LoadedPage{url: '${origin}/next'}, results: chan PreloadedResource{cap: 1}}
+	defer { pending.requests.cancel(); pending.requests.release() }
 	stale := PreloadedResource{
 		url: address
 		final_url: address
@@ -51,7 +52,18 @@ fn test_navigation_refetches_no_store_inputs_retained_for_the_previous_page() {
 	server.wait()
 	assert read_cached_resource(address) == none
 	// Ordinary reusable responses keep their existing in-memory path.
-	ordinary := PreloadedResource{...stale, body: 'reused', response_headers: []adblock.ResponseHeader{}}
+	now := time.now().unix_milli()
+	ordinary := PreloadedResource{
+		...stale
+		body: 'reused'
+		status_code: 200
+		request_time: now
+		response_time: now
+		response_headers: [
+			adblock.ResponseHeader{name: 'Cache-Control', value: 'public, max-age=3600, immutable'},
+			adblock.ResponseHeader{name: 'Date', value: time.utc().http_header_string()},
+		]
+	}
 	queue_navigation_preloads(mut pending, [address], {address: 'script'}, {address: ordinary})
 	select {
 		value := <-pending.results { assert value.body == 'reused', value.error }

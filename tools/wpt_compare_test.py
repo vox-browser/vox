@@ -36,6 +36,16 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(select_new_tests(tests, baseline), tests[2:])
         self.assertEqual(select_new_tests(tests, tests, 100), [])
 
+    def test_continuation_batches_skip_only_new_ids_and_preserve_variants(self):
+        tests = [dict(id=name) for name in ('old', 'a', 'a?x=1', 'old.worker', 'b.worker', 'c')]
+        baseline = [dict(id='old'), dict(id='old.worker')]
+        first = select_new_tests(tests, baseline, 2)
+        second = select_new_tests(tests, baseline, 2, offset=2)
+        self.assertEqual([test['id'] for test in second], ['b.worker', 'c'])
+        self.assertEqual(first + second, select_new_tests(tests, baseline))
+        self.assertEqual(select_new_tests(tests, baseline, offset=2), second)
+        self.assertEqual(select_new_tests(tests, baseline, 200, offset=100), [])
+
     def test_expectations_name_documents_variants_and_long_timeouts(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -60,6 +70,21 @@ class DiscoveryTests(unittest.TestCase):
         self.assertNotIn('globalThis.internals', source)
         with self.assertRaises(ValueError):
             upstream_testharness(HARNESS.replace('150000', '10000'))
+
+    def test_file_filter_includes_query_variants_without_matching_neighbor_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ['case', 'case@x=1', 'case@x=2', 'case-extra@x=1', 'other@x=1']:
+                write(root / ('expected/wpt-import/dom/' + name + '.txt'), '')
+            for name in ['case', 'case-extra', 'other']:
+                write(root / ('input/wpt-import/dom/' + name + '.html'), '')
+            selected = discover_tests(root, ['dom/case'])
+            self.assertEqual([item['id'] for item in selected],
+                             ['dom/case', 'dom/case?x=1', 'dom/case?x=2'])
+            self.assertEqual([item['id'] for item in discover_tests(root, ['dom/case?x=1'])],
+                             ['dom/case?x=1'])
+            self.assertEqual([item['id'] for item in discover_tests(root, ['dom/case', 'dom/other'])],
+                             ['dom/case', 'dom/case?x=1', 'dom/case?x=2', 'dom/other?x=1'])
 
     def test_substitution_covers_single_origin_templates(self):
         body = b'{{host}}:{{ports[http][0]}} {{domains[www]}} {{location[server]}} {{GET[a]}}'

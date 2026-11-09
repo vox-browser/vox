@@ -243,10 +243,12 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	key := request.key
 	if action == 'flushDOM' { return 'null' }
 	if action == 'nativeAttribute' { return binding.native_attribute_query(key, selector) }
+	if action == 'nonce' { return binding.nonce_query(key, selector) }
 	if action == 'cssSheet' { return binding.css_sheet_query(selector) }
 	if action == 'linkSheet' { return binding.link_sheet_query(key) }
 	if action == 'inputValue' { return binding.input_value_query(key, selector) }
 	if action == 'internalsSendText' { return binding.internals_send_text(key, selector) }
+	if action == 'testdriverClick' { return binding.testdriver_click(key, selector) }
 	if action == 'inputFilesOwner' {
 		_ = binding.equality_node(key, json2.decode[json2.Any](selector)!)!
 		return 'null'
@@ -334,6 +336,7 @@ fn (mut binding CompactElementQueryBinding) query(input string) !string {
 	if action == 'insertAdjacentHTML' { return binding.insert_adjacent_html_query(root, selector) }
 	if action == 'characterData' { return binding.character_data_query(root, selector) }
 	if action == 'documentStyleSheets' { return binding.document_style_sheets_query(root) }
+	if action == 'typedStyle' { return compact_typed_style_query(root, selector) }
 	if action == 'computedAccessibility' { return compact_accessibility_query(root, selector) }
 	if action == 'doctypeValue' {
 		if !root.is_document_type() { return error('TypeError: Illegal DocumentType receiver') }

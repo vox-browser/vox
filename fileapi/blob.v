@@ -6,11 +6,10 @@
 // (a byte sequence + a MIME type), convert-line-endings-to-native, process-blob-parts, the
 // constructor, slice, stream and data accessors. WebIDL Promise settlement is a LibJS boundary;
 // the standalone typed API returns the deterministically settled value directly. The type is
-// normalized via the mimesniff MimeType parser, matching upstream.
+// normalized as printable ASCII with ASCII lowercase, following File API.
 // https://w3c.github.io/FileAPI/#blob-section
 module fileapi
 
-import mimesniff
 import encoding
 import streams
 import libjs
@@ -184,12 +183,10 @@ pub fn Blob.construct(blob_parts ?[]BlobPart, options ?BlobPropertyBag) &Blob {
 		byte_buffer = process_blob_parts(parts, options or { BlobPropertyBag{} })
 	}
 	mut type_ := ''
-	// 3. If the type member is non-empty, normalize it via the MIME type parser.
+	// 3. Preserve printable ASCII (including non-MIME strings) and lowercase it.
 	if opts := options {
 		if opts.type_.len != 0 && is_basic_latin(opts.type_) {
-			if parsed_type := mimesniff.MimeType.parse(opts.type_) {
-				type_ = parsed_type.serialized()
-			}
+			type_ = ascii_lowercase(opts.type_)
 		}
 	}
 	// 4. Return the Blob referring to bytes.

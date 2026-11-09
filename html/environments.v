@@ -385,8 +385,21 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 	global_object := settings.global_object_
 	is_window := settings.global_kind_ == .window
 	loop := settings.responsible_event_loop_
+	mut source_file := ?liburl.URL(none)
+	mut line := u32(0)
+	mut column := u32(0)
+	if provider := settings.realm().current_source_location_ {
+		if location := provider() {
+			source_file = liburl.parse(location.url)
+			line = location.line
+			column = location.column
+		}
+	}
 	return &csp.GlobalContext{
 		url: liburl.parse(global_url.serialize()) or { panic('invalid CSP global URL') }
+		source_file:source_file
+		line_number:line
+		column_number:column
 		policy_list: fetch_csp_policy_list(settings.policy_container().csp_list)
 		dispatch_violation_event: fn [global_object, is_window, loop] (event &csp.SecurityPolicyViolationEvent) {
 			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {
@@ -399,6 +412,11 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 						window := unsafe { &dom.Window(global_object) }
 						if document := window.associated_document() {
 							target = unsafe { &dom.EventTarget(document) }
+							if element := event.policy_element {
+								if element.as_node().is_connected() && voidptr(element.document()) == voidptr(document) {
+									target = unsafe { &dom.EventTarget(element) }
+									}
+							}
 						}
 					}
 				}
@@ -494,7 +512,9 @@ pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer
 	// WindowEnvironmentSettingsObject.cpp:134–138 and
 	// WorkerEnvironmentSettingsObject.cpp:103–107 read the current actual owner.
 	if window := settings.window_ {
-		return window.associated_document().policy_container()
+		if document := window.Window.associated_document() {
+			return document.policy_container()
+		}
 	}
 	if worker := settings.worker_ {
 		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }
@@ -507,10 +527,13 @@ pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer
 // Compatibility installation routes to the actual Source container owner.
 // Source defines its setter on Document and assigns WorkerGlobalScope's field.
 pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &dom.PolicyContainer) {
+	defer { if callback := settings.realm().string_compilation_policy_changed_ { callback() } }
 	if window := settings.window_ {
-		mut document := unsafe { &dom.Document(window.associated_document()) }
-		document.set_policy_container(container)
-		return
+		if document := window.Window.associated_document() {
+			mut owner := unsafe { &dom.Document(document) }
+			owner.set_policy_container(container)
+			return
+		}
 	}
 	if worker := settings.worker_ {
 		mut mutable_worker := unsafe { &WorkerGlobalScope(worker) }

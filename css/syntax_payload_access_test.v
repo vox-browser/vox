@@ -79,3 +79,13 @@ fn test_reference_payload_dispatch_preserves_serialization_and_owned_nested_valu
 		assert own_stylesheet_component(value).contains_guaranteed_invalid_value()
 	}
 }
+
+fn test_separately_owned_syntax_payloads_retain_structural_equality() {
+	first := parse_component_values_for_value_logic('var(--name, [1px red])')
+	second := parse_component_values_for_value_logic('var(--name, [1px red])')
+	assert first == second
+	assert first != parse_component_values_for_value_logic('var(--name, [2px red])')
+	mut changed := first.clone()
+	changed[0].attr_tainted = true
+	assert first != changed
+}

@@ -190,6 +190,8 @@ fn (mut runtime Runtime) window_message_operation(mut binding WindowMessageBindi
 				if source is html.WindowMessageEventSource {
 					if source.value.window() == none { return C.vox_jsc_JSValueMakeNull(runtime.context) }
 					return runtime.javascript_window_proxy(source.value)
+				} else if source is html.PortMessageEventSource {
+					return runtime.javascript_message_port(source.value)
 				}
 				return error('MessagePort has no native wrapper')
 			}

@@ -415,7 +415,7 @@ pub fn (mut d Document) set_ready_for_post_load_tasks(value bool) {
 	}
 }
 
-pub fn (mut d Document) set_current_script(script ?&HTMLScriptElement) {
+pub fn (mut d Document) set_current_script(script ?&Element) {
 	d.current_script = script or { unsafe { nil } }
 }
 

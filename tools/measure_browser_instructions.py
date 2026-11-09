@@ -294,6 +294,14 @@ def finish_chrome_capture(client, process, report, prefix, timeout=30):
         client.call("Browser.close")
     except (EOFError, OSError):
         pass
+    finally:
+        # The command has been acknowledged (or the browser disconnected).
+        # Release this observer's DevTools session before waiting for profile
+        # teardown; an open page socket must not keep its target alive.
+        try:
+            client.sock.close()
+        except OSError as error:
+            report["shutdown_cleanup_errors"]["socket.close"] = str(error)
     try:
         report["exit"] = process.wait(timeout=timeout)
     except subprocess.TimeoutExpired:

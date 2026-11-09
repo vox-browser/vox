@@ -35,3 +35,24 @@ fn test_device_layout_svg_em_strokes_and_dashes_use_the_unscaled_svg_font() {
 	assert paths[0].svg().stroke_dashoffset == 1
 	assert paths[0].svg().non_scaling_stroke
 }
+
+fn test_device_svg_without_viewbox_preserves_percentage_and_nested_user_spaces() {
+	for scale in [f64(1), 2] {
+		mut document := html.parse_document('<!doctype html><style>html,body{margin:0}svg{display:block}</style><svg id="root" width="200" height="100"><rect id="percent" width="50%" height="50%"/><svg x="100" width="100" height="100"><rect id="nested" width="50%" height="50%"/></svg></svg><svg width="200" height="100" viewBox="0 0 100 50"><rect id="authored" x="20" y="10" width="40" height="20"/></svg>')
+		document.set_layout_coordinate_scale(scale)
+		document.set_display_device_pixel_ratio(scale)
+		root := layout_document_typed_in_viewport(document, 400, 300)
+		percent := document.get_element_by_id('percent') or { panic('percent') }
+		nested := document.get_element_by_id('nested') or { panic('nested') }
+		authored := document.get_element_by_id('authored') or { panic('authored') }
+		assert percent.get_bounding_client_rect().width == 100
+		assert percent.get_bounding_client_rect().height == 50
+		assert nested.get_bounding_client_rect().x == 100
+		assert nested.get_bounding_client_rect().width == 50
+		authored_box := root.find_box(i64(authored.as_node().unique_id())) or { panic('authored box') }
+		assert authored_box.svg_path().path_transform[0] == 2 * scale
+		assert authored.get_bounding_client_rect().x == 40
+		assert authored.get_bounding_client_rect().width == 80
+		document.finalize()
+	}
+}

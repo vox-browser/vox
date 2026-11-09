@@ -100,9 +100,9 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 		return error('TypeError: Invalid HTMLFormElement receiver')
 	}
 	mut form := html.HTMLFormElementModel.create(unsafe { &dom.HTMLFormElement(element) })
-	if query.op == 'requestSubmit' {
+	if query.op in ['submit', 'requestSubmit'] {
 		mut submitter := ?&html.FormAssociatedElement(none)
-		if query.submitter.len > 0 {
+		if query.op == 'requestSubmit' && query.submitter.len > 0 {
 			submitter_key := json_string_property(query.submitter, 'bridgeKey') or { return error('TypeError: Expected an HTMLElement') }
 			submitter_node := binding.equality_node(submitter_key, json2.Any(query.submitter))!
 			submitter_element := submitter_node.as_element() or { return error('TypeError: Expected an HTMLElement') }
@@ -112,10 +112,26 @@ fn (mut binding CompactElementQueryBinding) form_controls_query(key string, sour
 				'input' { html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(submitter_element) }).control }
 				else { return error('TypeError: the submitter is not a submit button') }
 			}
-			if control.form() == none { control.reset_form_owner() }
+			// Native queries can assign a retained key to a created control.
+			// Resolve explicit associations from the live attribute, independent
+			// of that key's spelling. Preserve parser-established implicit owners.
+			if control.form() == none || submitter_element.has_attribute('form') { control.reset_form_owner() }
 			submitter = control
 		}
-		form.request_submit(submitter)!
+		owns_hook := !form.has_submission_hook()
+		engine := binding.runtime.engine
+		target := if control := submitter {
+			control.element.get_attribute('formtarget') or { element.get_attribute_value('target') }
+		} else { element.get_attribute_value('target') }
+		hook := fn [element, engine, target] (submission html.FormSubmission) ! {
+			submit_browser_form(element, target, submission, engine)!
+		}
+		if owns_hook { form.set_submission_hook(hook) }
+		defer {
+			if owns_hook { form.set_submission_hook(none) }
+			platform.release_closure(voidptr(hook))
+		}
+		if query.op == 'submit' { form.submit()! } else { form.request_submit(submitter)! }
 		return 'null'
 	}
 	collection := form.elements()
@@ -192,6 +208,9 @@ Object.defineProperty(HTMLFormElement.prototype,"elements",{get:function(){
  __elementApply(__elementRecordSet,__formCollectionStates,[collection,state]);__elementApply(__elementRecordSet,__formCollections,[this,collection]);return collection;
 },enumerable:true,configurable:true});
 Object.defineProperty(HTMLFormElement.prototype,"length",{get:function(){__formControlsState(this);return this.elements.length;},enumerable:true,configurable:true});
+Object.defineProperty(HTMLFormElement.prototype,"submit",{value:({submit(){
+ "use strict";const state=__formControlsState(this);__formControlsQuery(state,{op:"submit"});
+}}).submit,writable:true,enumerable:true,configurable:true});
 Object.defineProperty(HTMLFormElement.prototype,"requestSubmit",{value:({requestSubmit(){
  "use strict";const state=__formControlsState(this),submitter=arguments[0],request={op:"requestSubmit"};
  if(submitter!==undefined&&submitter!==null){

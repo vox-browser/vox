@@ -34,15 +34,24 @@ pub struct SerializedTransferItem {
 pub:
 	type_ TransferType
 mut:
-	port_remote   ?&MessagePort
-	port_messages []SerializedTransferRecord
+	port_endpoint ?&MessagePort
 	data          []u8
+	array_buffer_max_byte_length ?u64
 }
 
 pub struct SerializedTransferRecord {
 pub:
 	serialized SerializationRecord
 	transfers  []SerializedTransferItem
+	uses_transfer_memory bool
+}
+
+pub fn SerializedTransferItem.array_buffer(bytes []u8, maximum ?u64) SerializedTransferItem {
+	return SerializedTransferItem{
+		type_: if maximum != none { .resizable_array_buffer } else { .array_buffer }
+		data: bytes.clone()
+		array_buffer_max_byte_length: maximum
+	}
 }
 
 pub struct DeserializedTransferRecord {
@@ -150,18 +159,32 @@ pub fn structured_deserialize_with_transfer(record SerializedTransferRecord) !De
 
 // Received ports belong to the receiving realm, including its worker loop.
 pub fn structured_deserialize_with_transfer_in_realm(record SerializedTransferRecord, target_realm &ScriptingRealm) !DeserializedTransferRecord {
-	data := structured_deserialize(record.serialized)!
+	return structured_deserialize_with_transfer_in_context(record, target_realm, StructuredDeserializationContext{})
+}
+
+pub fn structured_deserialize_with_transfer_in_context(record SerializedTransferRecord, target_realm &ScriptingRealm, context StructuredDeserializationContext) !DeserializedTransferRecord {
+	mut memory := []&StructuredObject{}
 	mut ports := []&MessagePort{}
 	mut images := []&ImageBitmap{}
 	for item in record.transfers {
+		if record.uses_transfer_memory && item.type_ in [.array_buffer, .resizable_array_buffer] {
+			memory << &StructuredObject{kind: .array_buffer, bytes: item.data.clone(), max_byte_length: item.array_buffer_max_byte_length}
+			continue
+		}
 		transferred := structured_deserialize_with_transfer_internal(item, target_realm)!
 		if port := transferred.port {
+			mut received := unsafe { &MessagePort(port) }
+			received.set_deserialization_context(context)
 			ports << port
+			if record.uses_transfer_memory { memory << &StructuredObject{kind: .message_port, message_port_: port} }
 		}
 		if bitmap := transferred.bitmap {
 			images << bitmap
 		}
 	}
+	data := if record.uses_transfer_memory {
+		structured_deserialize_with_transfer_memory(record.serialized, memory, context)!
+	} else { structured_deserialize_with_context(record.serialized, context)! }
 	return DeserializedTransferRecord{
 		deserialized:       data
 		transferred_ports:  ports
@@ -185,9 +208,15 @@ mut:
 	pending_messages_               []SerializedTransferRecord
 	pending_outgoing_messages_      []SerializedTransferRecord
 	message_task_generation_        u64
+	scheduled_message_count_        int
 	fail_next_transfer_for_testing_ bool
 	worker_event_target_            ?&dom.EventTarget
 	settings_                       ?&EnvironmentSettingsObject
+	deserialization_context_        StructuredDeserializationContext
+}
+
+pub fn (mut port MessagePort) set_deserialization_context(context StructuredDeserializationContext) {
+	port.deserialization_context_ = context
 }
 
 pub fn MessagePort.create() &MessagePort {
@@ -305,6 +334,8 @@ pub fn (mut port MessagePort) entangle_with(remote_port &MessagePort) {
 }
 
 pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if port.detached_ {
 		return error('DataCloneError: MessagePort is detached')
 	}
@@ -317,31 +348,38 @@ pub fn (mut port MessagePort) transfer_steps() !SerializedTransferItem {
 	}
 	port.has_been_shipped_ = true
 	port.detached_ = true
-	remote := port.remote_port_
-	if other := remote {
-		mut mutable_remote := unsafe { &MessagePort(other) }
-		mutable_remote.has_been_shipped_ = true
-		mutable_remote.remote_port_ = none
+	// A disabled endpoint owns the channel while the transfer is in flight.
+	// Its peer can continue sending, and transferring both ends still preserves
+	// their connection. Scheduled deliveries move with the incoming queue.
+	mut endpoint := MessagePort.create()
+	endpoint.has_been_shipped_ = true
+	endpoint.pending_messages_ = port.pending_messages_.clone()
+	if remote := port.remote_port_ {
+		mut peer := unsafe { &MessagePort(remote) }
+		peer.has_been_shipped_ = true
+		endpoint.entangle_with(peer)
 	}
-	port.remote_port_ = none
-	messages := port.pending_messages_.clone()
-	port.pending_messages_.clear()
+	port.discard_pending_messages()
 	return SerializedTransferItem{
 		type_:         .message_port
-		port_remote:   remote
-		port_messages: messages
+		port_endpoint: endpoint
 	}
 }
 
 pub fn (mut port MessagePort) transfer_receiving_steps(item SerializedTransferItem) ! {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if item.type_ != .message_port {
 		return error('DataCloneError: invalid MessagePort transfer data')
 	}
+	mut endpoint := item.port_endpoint or { return error('DataCloneError: missing MessagePort endpoint') }
+	if endpoint.detached_ { return error('DataCloneError: MessagePort endpoint already received') }
 	port.has_been_shipped_ = true
-	port.pending_messages_ = item.port_messages.clone()
-	if remote := item.port_remote {
+	port.pending_messages_ = endpoint.pending_messages_.clone()
+	if remote := endpoint.remote_port_ {
 		port.entangle_with(remote)
 	}
+	endpoint.close()
 }
 
 pub fn (port &MessagePort) post_message(message dom.JSValue, options StructuredSerializeOptions) ! {
@@ -398,15 +436,11 @@ pub fn (mut port MessagePort) send_message_on_transport(record SerializedTransfe
 fn (record SerializedTransferRecord) copy_for_transport() SerializedTransferRecord {
 	mut transfers := []SerializedTransferItem{cap: record.transfers.len}
 	for item in record.transfers {
-		mut messages := []SerializedTransferRecord{cap: item.port_messages.len}
-		for message in item.port_messages {
-			messages << message.copy_for_transport()
-		}
 		transfers << SerializedTransferItem{
 			type_:         item.type_
-			port_remote:   item.port_remote
-			port_messages: messages
+			port_endpoint: item.port_endpoint
 			data:          item.data.clone()
+			array_buffer_max_byte_length: item.array_buffer_max_byte_length
 		}
 	}
 	return SerializedTransferRecord{
@@ -416,6 +450,7 @@ fn (record SerializedTransferRecord) copy_for_transport() SerializedTransferReco
 			type_:                record.serialized.type_
 		}
 		transfers:  transfers
+		uses_transfer_memory: record.uses_transfer_memory
 	}
 }
 
@@ -445,17 +480,20 @@ fn (mut port MessagePort) schedule_pending_messages() {
 		main_thread_event_loop()
 	}
 	document := if settings := port.settings_ { settings.responsible_document() } else { none }
-	for port.enabled_ && port.pending_messages_.len > 0 {
-		record := port.pending_messages_[0]
-		port.pending_messages_.delete(0)
+	for port.enabled_ && port.scheduled_message_count_ < port.pending_messages_.len {
+		port.scheduled_message_count_++
 		port_identity := u64(voidptr(&port))
 		message_task_generation := port.message_task_generation_
-		queue_a_task(.posted_message, loop, document, fn [port_identity, record, message_task_generation] () {
+		queue_a_task(.posted_message, loop, document, fn [port_identity, message_task_generation] () {
 			target_pointer := message_port_with_identity(port_identity) or { return }
 			mut target := unsafe { &MessagePort(target_pointer) }
 			if target.message_task_generation_ != message_task_generation {
 				return
 			}
+			if target.pending_messages_.len == 0 { return }
+			record := target.pending_messages_[0]
+			target.pending_messages_.delete(0)
+			target.scheduled_message_count_--
 			target.post_message_task_steps(record)
 		})
 	}
@@ -470,7 +508,7 @@ fn (mut port MessagePort) post_message_task_steps(record SerializedTransferRecor
 	}
 	target := port.worker_event_target_ or { unsafe { &dom.EventTarget(&port) } }
 	target_realm := if settings := port.settings_ { settings.realm() } else { &ScriptingRealm{} }
-	deserialized := structured_deserialize_with_transfer_in_realm(record, target_realm) or {
+	deserialized := structured_deserialize_with_transfer_in_context(record, target_realm, port.deserialization_context_) or {
 		mut event := MessageEvent.create('messageerror', MessageEventInit{})
 		event.set_is_trusted(true)
 		target.dispatch_event(unsafe { &dom.Event(event) })
@@ -500,12 +538,13 @@ pub fn (mut port MessagePort) start() {
 
 pub fn (mut port MessagePort) close() {
 	port.detached_ = true
-	port.pending_messages_.clear()
+	port.discard_pending_messages()
 	port.disentangle()
 }
 
 pub fn (mut port MessagePort) discard_pending_messages() {
 	port.pending_messages_.clear()
+	port.scheduled_message_count_ = 0
 	port.message_task_generation_++
 }
 

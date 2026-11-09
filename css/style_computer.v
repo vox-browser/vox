@@ -1676,7 +1676,8 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			continue
 		}
 		if is_in_display_none_subtree_ignoring_animations(target_element)
-			&& !style_computer.target_has_animation_for_property(target_element, .display) {
+			&& !style_computer.target_has_animation_for_property(target_element, .display)
+			&& !target_element.element().describes_svg_paint_resource() {
 			continue
 		}
 		if !full_refresh && style_computer.animated_target_is_offscreen_throttled(target_element) {
@@ -1830,6 +1831,11 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			}
 		}
 		mut document := unsafe { &dom.Document(target_element.document()) }
+		if invalidation.needs_repaint() {
+			// Resource descendants can have no paintable of their own. Their
+			// animated values still change every referencing gradient/pattern.
+			target_element.element().note_svg_paint_resource_description_may_have_changed()
+		}
 		if invalidation.needs_repaint() && retained_local_paint {
 			document.set_needs_repaint_with_invalidation(.paint_commands)
 		} else if invalidation.needs_repaint() {

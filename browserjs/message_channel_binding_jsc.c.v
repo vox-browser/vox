@@ -61,6 +61,8 @@ pub fn (mut runtime Runtime) install_message_channel_binding() ! {
 }
 
 fn (mut runtime Runtime) message_channel_port_wrapper(mut binding MessageChannelBinding, port &html.MessagePort) !voidptr {
+	mut native_port := unsafe { &html.MessagePort(port) }
+	native_port.set_deserialization_context(runtime.native_clone_deserialization_context())
 	wrapper := runtime.javascript_event_target(unsafe { &dom.EventTarget(port) }, binding.prototype)!
 	binding.ports[wrapper] = port
 	return wrapper
@@ -93,11 +95,16 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 		for index in 0 .. length {
 			transfers << binding.clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 		}
-		record := binding.transfer.serialize(args[2], transfers)!
-		// deserialize returns a rooted value; the host call's stack keeps it
-		// alive until the caller receives it.
-		clone := binding.transfer.deserialize(record)!
-		runtime.release_javascript_value(clone)
+		record := binding.transfer.serialize_local_message(args[2], transfers)!
+		// Projection roots survive reconstruction; the host call's stack keeps
+		// the returned value alive until the caller receives it.
+		runtime.prepare_html_script()
+		defer { runtime.clean_up_html_script() }
+		settings := runtime.scripting_settings_ or { return error('structuredClone requires its owning settings') }
+		data := html.structured_deserialize_with_transfer_in_context(record, settings.realm(), runtime.native_clone_deserialization_context()) or { return native_clone_unsupported(err.msg()) }
+		mut projection := NativeCloneProjection{bridge: binding.clone}
+		defer { projection.release_roots() }
+		clone := projection.root(projection.reconstruct(data.deserialized)!)!
 		return clone
 	}
 	if method == 'reportError' {
@@ -134,8 +141,16 @@ fn (mut runtime Runtime) message_channel_operation(mut binding MessageChannelBin
 				for index in 0 .. length {
 					transfers << binding.clone.engine('list_item', [args[3], C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!
 				}
-				record := binding.transfer.serialize(args[2], transfers)!
-				port.post_message_without_transfer(runtime.worker_message_graph(record)!)!
+				// Match native MessagePort's preflight before author graph getters.
+				mut doomed := false
+				for value in transfers {
+					if source := runtime.native_message_port(value) {
+						if voidptr(source) == voidptr(port) { return native_clone_unsupported('Cannot transfer a MessagePort to itself') }
+						if target := port.entangled_port() { if voidptr(source) == voidptr(target) { doomed = true } }
+					}
+				}
+				record := binding.transfer.serialize_local_message(args[2], transfers)!
+				if !doomed { port.post_port_message(record) }
 				return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 			}
 			mut projection := NativeCloneProjection{ bridge: binding.clone }

@@ -62,7 +62,7 @@ fn (mut binding CompactElementQueryBinding) encode_element_states_with_envelope(
 fn prepare_compact_element_serialization(element &dom.Element) {
 	if !element.is_html_element() { return }
 	if element.local_name() == 'input' {
-		_ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		configure_browser_input_image_fetch(element, true)
 	} else if element.local_name() == 'textarea' {
 		_ = html.html_text_area_element_model_for_dom_element(unsafe { &dom.HTMLTextAreaElement(element) })
 	} else if element.local_name() == 'video' {

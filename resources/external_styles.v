@@ -200,13 +200,14 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			}
 			continue
 		}
-		// The worker can outlive this document. Own its URL strings outside the
-		// payload arena, just as background image requests do.
 		persistent := platform.enter_persistent()
-		request_url := resolved_url.clone()
-		request_source := source_url.clone()
+		owned_url := resolved_url.clone()
+		owned_source := source_url.clone()
+		app.background_resource_pending[owned_url] = true
 		app.background_resource_jobs++
-		spawn fetch_stylesheet_in_background(request_url, request_source, app.background_resource_results)
+		scope := app.resource_request_scope()
+		scope.retain()
+		spawn fetch_stylesheet_in_background_with_scope(owned_url, owned_source, app.background_resource_results, scope)
 		platform.leave_persistent(persistent)
 	}
 	return installed
@@ -217,6 +218,11 @@ fn fetch_stylesheet_in_background(resource_url string, source_url string, result
 	$if macos {
 		C.native_wake_browser()
 	}
+}
+
+fn fetch_stylesheet_in_background_with_scope(resource_url string, source_url string, results chan PreloadedResource, scope &browsernet.RequestScope) {
+	fetch_resource_in_background_with_scope(resource_url, source_url, 'stylesheet', results, scope)
+	$if macos { C.native_wake_browser() }
 }
 
 // Publish a completed stylesheet request to the CSS bridge. Returns whether the

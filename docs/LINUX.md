@@ -22,9 +22,8 @@ sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config
 ```
 
 You also need current [V](https://github.com/vlang/v) and
-[UI2](https://github.com/vlang/ui2) checkouts, a Rust compiler with edition 2024
-support, and Python 3.12 or newer. For a fresh setup, run these commands from
-the Vox checkout:
+[UI2](https://github.com/vlang/ui2) checkouts and Python 3.12 or newer. For a fresh
+setup, run these commands from the Vox checkout:
 
 ```sh
 git clone --depth 1 https://github.com/vlang/v.git ../v
@@ -37,9 +36,9 @@ export UI2_SOURCE_DIR="$(cd ../ui2 && pwd)"
 For existing checkouts, set `V_BIN` if V is outside `PATH` and `~/code/v/v`,
 and set `UI2_SOURCE_DIR` if UI2 is outside `~/.vmodules/ui2` (or `$VMODULES/ui2`).
 The build stages UI2 with Vox's embedding adapter without changing its checkout.
-Put `rustc` on `PATH` or set `RUSTC` to the compiler executable. When Cargo is
-available, the build also compiles the optional JPEG XL helper from its lockfile;
-that helper requires Rust 1.89 or newer.
+Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
+helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
+when Cargo is available, the build compiles that helper from its lockfile.
 On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
 absolute executable path, or a path relative to the directory from which you
 invoke the build script. The build resolves that path before changing directories.
@@ -160,7 +159,8 @@ boundary checks can be run separately:
 
 ```sh
 python3 tools/test_linux_native.py \
-    browserjs/linux_runtime_test.v browserjs/jsc_abi_test.v libregex/native_abi_test.v
+    browserjs/linux_runtime_test.v browserjs/jsc_abi_test.v \
+    libregex/compiled_regex_test.v libregex/ecmascript_regex_test.v
 ```
 
 The port was checked on Ubuntu 24.04 ARM64: fourteen focused files passed with

@@ -39,6 +39,13 @@ fn compact_element_geometry_query(root &dom.Node, name string) !string {
 		return json2.encode(value)
 	}
 	element := root.as_element() or { return error('TypeError: Invalid Element receiver') }
+	if name in ['inputWidth', 'inputHeight'] {
+		if !element.is_html_element() || element.local_name() != 'input' {
+			return error('TypeError: Invalid HTMLInputElement receiver')
+		}
+		model := html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) })
+		return if name == 'inputWidth' { model.width().str() } else { model.height().str() }
+	}
 	if name in ['imageWidth', 'imageHeight'] {
 		if !element.is_html_element() || element.local_name() != 'img' {
 			return error('TypeError: Invalid HTMLImageElement receiver')

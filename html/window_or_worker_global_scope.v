@@ -392,6 +392,19 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) set_fetch_host(host ?&fetch.Fe
 }
 
 fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(handler TimerHandler, timeout i32, arguments []dom.JSValue, repeat bool, previous_id ?i32) i32 {
+	// String compilation is checked once, when the timer is installed. Clearing
+	// it cannot suppress reporting, and a later CSP does not cancel accepted code.
+	if previous_id == none {
+		if source := handler.source {
+			if realm := scope.error_reporting_realm_ {
+				if settings := settings_object_of_realm(realm) {
+					mut global := settings.fetch_request_client_csp_global()
+					contentsecuritypolicy.ensure_csp_does_not_block_string_compilation(mut global,
+						contentsecuritypolicy.CompilationInput{body_string:source,code_string:source,type_:.timer}) or { return 0 }
+				}
+			}
+		}
+	}
 	id := previous_id or {
 		new_id := scope.next_timer_id_
 		scope.next_timer_id_++
@@ -434,21 +447,8 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 			if evaluator := owner.timer_classic_script_evaluator_ {
 				mut realm := owner.error_reporting_realm_ or { panic('timer classic script requires its relevant realm') }
 				settings := settings_object_of_realm(realm) or { panic('timer classic script requires its relevant settings') }
-				mut global := settings.fetch_request_client_csp_global()
-				contentsecuritypolicy.ensure_csp_does_not_block_string_compilation(mut global, contentsecuritypolicy.CompilationInput{
-					body_string: source
-					code_string: source
-					type_: .timer
-				}) or {
-					compilation_exception := err
-					exception := if convert := owner.embedding_timer_compilation_exception_value_ { convert(compilation_exception) } else { webidl.exception_value(compilation_exception) }
-					owner.report_an_exception(dom.js_webidl_value(exception), false)
-					return
-				}
 				mut base_url := settings.api_base_url()
 				if script := initiating_script { base_url = script.base_url() or { base_url } }
-				// Upstream still leaves the TrustedScript sink conversion and the
-				// initiating script's fetch-option propagation as explicit FIXMEs.
 				mut script := ClassicScript.create(base_url.basename(), source, realm, base_url, 1, .no)
 				script.set_evaluator(evaluator)
 				_ = script.run(.no) or { dom.js_undefined() }

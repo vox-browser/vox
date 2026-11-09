@@ -567,14 +567,71 @@ fn test_pattern_canvas_draws_match_skia() {
 // legacy, pipeline and sprite image draws and a clear must match Skia's
 // drawImageRect() and clear().
 fn test_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(false)
+	check_bitmap_commands_match_skia(false, false, false, .none)
 }
 
 fn test_color_filtered_bitmap_commands_match_skia() {
-	check_bitmap_commands_match_skia(true)
+	check_bitmap_commands_match_skia(true, false, false, .none)
 }
 
-fn check_bitmap_commands_match_skia(filtered bool) {
+fn test_spatially_filtered_source_image_matches_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .none)
+}
+
+fn test_fractional_source_image_filter_matches_skia() {
+	check_bitmap_commands_match_skia(false, true, true, .none)
+}
+
+fn test_identity_blur_source_image_filters_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .color)
+}
+
+fn test_identity_blurs_without_matrices_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .plain)
+}
+
+fn test_nearly_integer_source_image_filters_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .near)
+}
+
+fn test_scaled_source_image_shadows_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .shadow)
+}
+
+fn test_near_integer_source_image_shadows_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .near_shadow)
+}
+
+fn test_identity_source_image_shadows_match_skia() {
+	check_bitmap_commands_match_skia(false, true, false, .identity_shadow)
+}
+
+fn test_nearest_source_image_shadows_resolve_fractional_offsets() {
+	check_bitmap_commands_match_skia(false, true, false, .resolved_shadow)
+}
+
+fn test_mixed_source_image_filter_chains_match_skia() {
+ check_bitmap_commands_match_skia(false, true, true, .spatial_chain)
+}
+
+fn test_resampled_source_image_filter_chains_match_skia() {
+ check_bitmap_commands_match_skia(false, true, false, .resolved_chain)
+}
+
+enum CpuImageIdentityTestMode {
+	none
+	color
+	plain
+	near
+	shadow
+	near_shadow
+	identity_shadow
+	resolved_shadow
+	spatial_chain
+	resolved_chain
+}
+
+fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool, identity_mode CpuImageIdentityTestMode) {
 	mut pixels := []u8{len: 6 * 4 * 4}
 	for i in 0 .. 24 {
 		a := if i % 5 == 0 { 0 } else { (i * 41 + 30) % 256 }
@@ -603,7 +660,10 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 		image.set_bitmap(bitmap)
 		sources << image
 	}
-	destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	mut destinations := [[f64(20.5), 10, 60, 40], [f64(100), 30, 6, 4], [f64(150), 70, 6, 4]]
+	if spatial && identity_mode != .spatial_chain { destinations[1] = [f64(100.25), 30.5, 24, 18] }
+	if fractional || identity_mode != .none { destinations[2] = [f64(140.25), 70.5, 28, 24] }
+	if identity_mode in [.near, .near_shadow] { destinations[2] = [f64(150.0004), 70.0006, 6.0006, 3.9996] }
 	transforms := [CanvasAffineTransform{1.2, 0, 0, 0.9, 3, -1}, CanvasAffineTransform{},
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
@@ -611,7 +671,19 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 	mut expected := []u8{}
 	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
-		context.set_filter(if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
+		context.set_filter(if identity_mode == .resolved_chain && i in [1, 2] { 'contrast(130%) blur(.8px) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%) drop-shadow(-7px 4px .8px blue)' }
+		else if identity_mode == .spatial_chain && i == 1 { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) blur(.8px) opacity(65%)' }
+		else if identity_mode == .spatial_chain && i == 2 { 'drop-shadow(5px -4px 0px blue) contrast(130%) blur(.01px) drop-shadow(-7px 4px 2.5px #805030e0)' }
+		else if identity_mode == .resolved_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 0px #805030e0) opacity(65%)' }
+		else if identity_mode == .identity_shadow && i in [1, 2] { 'contrast(130%) drop-shadow(5px -4px 0px #805030e0) opacity(65%)' }
+		else if identity_mode in [.shadow, .near_shadow] && i in [1, 2] { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%)' }
+		else if spatial && i == 1 { 'blur(1.2px) contrast(130%)' }
+		else if identity_mode == .color && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(0px)' }
+		else if identity_mode == .plain && i == 2 { 'blur(.001px) blur(0px)' }
+		else if identity_mode == .near && i == 2 { 'contrast(130%) blur(.001px) opacity(65%) blur(1.2px)' }
+		else if spatial && i == 2 {
+			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
+		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 		mut target := if i == 0 { bitmap.data.clone() } else { expected }
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
@@ -623,7 +695,8 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 				f: -2
 			}
 		}
-		context.drawing_state.global_alpha = if i == 1 { 0.6 } else { 1 }
+		context.drawing_state.global_alpha = if i == 1 { 0.6 }
+			else if spatial && i == 2 { 0.65 } else { 1 }
 		context.drawing_state.image_smoothing_enabled = i == 0
 		context.drawing_state.current_compositing_and_blending_operator = if i < 3 {
 			operations[i]
@@ -646,10 +719,12 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 				pattern_alpha:  int(source.alpha_type)
 			}
 		}
+		source_rect := if fractional && i == 2 { [f32(.25), .5, 5.25, 3.25]! }
+			else { [f32(0), 0, 6, 4]! }
 		command := skia.Command{
 			operation:    if i < 3 { 2 } else { 1 }
 			destination:  destination
-			source:       [f32(0), 0, 6, 4]!
+			source:       source_rect
 			smoothing:    state.image_smoothing_enabled
 			style:        style
 			transform:    canvas_skia_transform(state.transform)
@@ -660,7 +735,7 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 		mut direct := target.clone()
 		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
 			command)
-		if filtered && i == 1 {
+		if (filtered && i == 1) || (spatial && i in [1, 2]) {
 			supported, filter := canvas_cpu_filter(command.filters)
 			assert supported
 			assert cpuraster.draw_canvas_image_filtered(mut direct, bitmap.width, bitmap.height,
@@ -672,7 +747,16 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 					premultiplied: style.pattern_alpha == 2
 				}, command.source, command.destination, command.smoothing, command.global_alpha,
 				cpuraster.canvas_blend_mode(command.composite) or { panic('blend mode') }, [], filter, false)
-			assert direct == target
+			direct_matches := direct == target
+			assert direct_matches, 'direct bitmap command ${i} differs from Skia'
+		}
+		if fractional && i == 2 {
+			// The HTML painter currently rounds source rectangles before its
+			// service call. Preserve that policy while checking the direct
+			// fractional service result separately above.
+			target = bitmap.data.clone()
+			assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
+				skia.Command{...command, source: command.source.map(f32(math.round(it)))})
 		}
 		expected = target.clone()
 		expected_alpha_type = 2
@@ -682,8 +766,10 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 				image:              ImageBitmapCanvasSource{
 					value: sources[i]
 				}
-				source_width:       6
-				source_height:      4
+				source_x:           source_rect[0]
+				source_y:           source_rect[1]
+				source_width:       source_rect[2]
+				source_height:      source_rect[3]
 				destination_x:      d[0]
 				destination_y:      d[1]
 				destination_width:  d[2]
@@ -693,7 +779,8 @@ fn check_bitmap_commands_match_skia(filtered bool) {
 			context.clear_rect(40, 20, 50, 30)
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'bitmap command ${i} differs from Skia'
+		context_matches := after.data == expected
+		assert context_matches, 'bitmap command ${i} differs from Skia'
 	}
 	assert expected.any(it != 0 && it != 255)
 }
@@ -857,6 +944,22 @@ fn test_drop_shadow_filtered_canvas_draws_match_skia() {
 		'drop-shadow(-10px 10px 1.2px blue)', 'drop-shadow(5px -10px 6px #10203090)'])
 }
 
+fn test_repeated_blur_and_color_canvas_draws_match_skia() {
+	check_filtered_canvas_draws_match_skia([
+		'contrast(130%) blur(.8px) opacity(65%) blur(2.5px) contrast(130%)',
+		'blur(2.5px) contrast(130%) blur(0px) opacity(65%)',
+		'blur(.8px) opacity(65%) blur(0px) contrast(130%) blur(2.5px)',
+	])
+}
+
+fn test_mixed_shadow_and_blur_canvas_draws_match_skia() {
+ check_filtered_canvas_draws_match_skia([
+  'blur(.8px) drop-shadow(5px -3px 2.5px #805030e0) opacity(65%)',
+  'drop-shadow(5px -3px 2.5px #805030e0) contrast(130%) blur(.8px) drop-shadow(-7px 4px .8px #c0ff6040)',
+  'contrast(130%) drop-shadow(5px -3px 0px blue) blur(0px) opacity(65%) drop-shadow(-7px 4px 2.5px #805030e0)',
+ ])
+}
+
 fn check_filtered_canvas_draws_match_skia(filters []string) {
 	mut context := cpu_raster_test_context()
 	context.set_font('21px sans-serif')
@@ -882,7 +985,7 @@ fn check_filtered_canvas_draws_match_skia(filters []string) {
 		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
 		state := context.drawing_state
 		skia_filters := context.canvas_skia_filters()
-		assert skia_filters.len == 1
+		assert skia_filters.len > 0
 		supported, cpu_filter := canvas_cpu_filter(skia_filters)
 		assert supported
 		assert cpu_filter != none

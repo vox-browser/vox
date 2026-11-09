@@ -12,10 +12,10 @@ fn retained_layout_color_component_is_constant(value &StyleValue) bool {
 
 fn retained_layout_rgb_is_constant(rgb &RGBColorStyleValue) bool {
 	return rgb.relative_origin_.len == 0 && rgb.r_.len == 1 && rgb.g_.len == 1 && rgb.b_.len == 1
-		&& rgb.alpha_.len == 1 && retained_layout_color_component_is_constant(&rgb.r_[0])
-		&& retained_layout_color_component_is_constant(&rgb.g_[0])
-		&& retained_layout_color_component_is_constant(&rgb.b_[0])
-		&& retained_layout_color_component_is_constant(&rgb.alpha_[0])
+		&& rgb.alpha_.len == 1 && retained_layout_color_component_is_constant(&rgb.r_.value)
+		&& retained_layout_color_component_is_constant(&rgb.g_.value)
+		&& retained_layout_color_component_is_constant(&rgb.b_.value)
+		&& retained_layout_color_component_is_constant(&rgb.alpha_.value)
 }
 
 fn retained_layout_color_needs_no_metrics(style &ComputedProperties, property PropertyID) bool {

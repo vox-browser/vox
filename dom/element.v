@@ -7,6 +7,8 @@
 // Translated from Libraries/LibWeb/DOM/Element.cpp
 module dom
 
+import url as liburl
+
 import rand
 import math
 import strings
@@ -190,6 +192,9 @@ pub fn (a &Attr_) handle_attribute_changes(element &Element, old_value ?string, 
 	if element.document() != unsafe { nil } {
 		mut owner := unsafe { &Document(element.document()) }
 		owner.bump_attribute_version()
+		if a.local_name_.to_lower() in ['id', 'class'] && element.as_node().root().is_document() {
+			owner.bump_light_dom_id_class_attribute_version()
+		}
 	}
 	if new_value != none && element.document() != unsafe { nil } {
 		mut owner := unsafe { &Document(element.document()) }
@@ -514,6 +519,8 @@ pub struct CSSStyleProperties_ {
 pub mut:
 	is_updating_       bool
 	associated_element ?&Element
+	declarations_text string
+	awaits_content_security_policy_check bool
 	// DOM owns the element while CSS owns the typed CSSStyleProperties. Keep the
 	// same live declaration object across cascades and attribute mutations without
 	// introducing a dom -> css import cycle.
@@ -528,6 +535,7 @@ pub fn (c &CSSStyleProperties_) is_updating() bool {
 }
 
 pub fn (mut c CSSStyleProperties_) set_declarations_from_text(text string) {
+	c.declarations_text = text
 	if c.css_handle != unsafe { nil } && c.set_declarations_callback != unsafe { nil } {
 		c.set_declarations_callback(c.css_handle, text)
 	}
@@ -2007,11 +2015,13 @@ pub fn (mut e Element) set_attribute_for_bindings(qualified_name string, value t
 	}
 
 	verified_value := e.document().trusted_types_compliant_attribute_value(&e, actual_name, none, value)!
-	// Qualified-name lookup can select a namespaced Attr. Preserve that
-	// native identity and its namespace instead of creating a null-namespace
-	// attribute with the same spelling.
-	if attribute := e.get_attribute_node(actual_name) {
-		e.set_attribute_value_ns(attribute.local_name(), verified_value, attribute.prefix(), attribute.namespace_uri())
+	// setAttribute matches the first qualified name, including a namespaced
+	// attribute. The internal set-attribute-value operation matches namespace
+	// and local name instead and would update a different duplicate here.
+	if existing := e.get_attribute_node(actual_name) {
+		old_value := existing.value_
+		unsafe { existing.value_ = verified_value }
+		existing.handle_attribute_changes(&e, old_value, verified_value)
 	} else {
 		e.set_attribute_value(actual_name, verified_value)
 	}
@@ -3724,14 +3734,34 @@ fn parse_html_integer(value string) ?int {
 
 	mut result := 0
 	for index < value.len && value[index] >= `0` && value[index] <= `9` {
-		result = result * 10 + int(value[index] - `0`)
+		digit := int(value[index] - `0`)
+		if result > (i64(9223372036854775807) - digit) / 10 { return none }
+		result = result * 10 + digit
 		index++
 	}
 	return sign * result
 }
 
 pub fn (e &Element) default_tab_index_value() int {
-	if e.is_html_element() && e.local_name() in ['iframe', 'object'] {
+	if e.is_html_element() {
+		if e.local_name() in ['a', 'area', 'button', 'frame', 'iframe', 'input', 'object', 'select', 'textarea'] {
+			return 0
+		}
+		if e.local_name() == 'summary' {
+			if parent := e.as_node().parent_element() {
+				if is_html_element_with_local_name(parent, 'details') {
+					for child in parent.as_node().children_as_vector() {
+						if element := child.as_element() {
+							if is_html_element_with_local_name(element, 'summary') {
+								return if voidptr(element) == voidptr(e) { 0 } else { -1 }
+							}
+						}
+					}
+				}
+			}
+		}
+	} else if e.local_name() == 'a' && (e.namespace_uri() or { '' }) in [namespace_svg_uri,
+		'http://www.w3.org/1998/Math/MathML'] {
 		return 0
 	}
 	return -1
@@ -3740,6 +3770,9 @@ pub fn (e &Element) default_tab_index_value() int {
 // https://html.spec.whatwg.org/multipage/interaction.html#dom-tabindex
 pub fn (e &Element) tab_index() int {
 	tab_index := parse_html_integer(e.get_attribute_value('tabindex')) or {
+		return e.default_tab_index_value()
+	}
+	if tab_index < -2147483648 || tab_index > 2147483647 {
 		return e.default_tab_index_value()
 	}
 	return tab_index
@@ -5929,9 +5962,11 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	// HTMLElement's base hook and body/frameset WindowEventHandlers run after
 	// Element's attribute steps, including the pinned source namespace FIXME.
 	defer {
-		if e.is_html_element() && (is_global_event_handler_content_attribute(local_name)
-			|| (e.local_name() in ['body', 'frameset']
-				&& is_window_event_handler_content_attribute(local_name))) {
+		namespace := e.namespace_uri() or { '' }
+		if ((e.is_html_element() || (namespace_ == none && namespace in [namespace_svg_uri,
+			'http://www.w3.org/1998/Math/MathML'])) && is_global_event_handler_content_attribute(local_name))
+			|| (e.is_html_element() && e.local_name() in ['body', 'frameset']
+				&& is_window_event_handler_content_attribute(local_name)) {
 			unsafe { &EventTarget(&e) }.element_event_handler_attribute_changed(local_name, value)
 		}
 	}
@@ -5953,6 +5988,9 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	value_or_empty := value or { '' }
+	if local_name == 'nonce' && (e.is_html_element() || e.is_svg_element()) {
+		e.set_cryptographic_nonce(value_or_empty)
+	}
 	if local_name in ['autoplay', 'preload'] && e.is_html_element() && e.local_name() in ['audio', 'video'] {
 		if hook := e.document().media_element_resource_attribute_changed_hook_ {
 			hook(&e)
@@ -6050,7 +6088,10 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		if inline_style.is_updating() {
 			return
 		}
-		inline_style.set_declarations_from_text(value_or_empty)
+		inline_style.awaits_content_security_policy_check = value != none && !e.is_connected()
+		blocked := value != none && e.is_connected()
+			&& e.document().should_block_inline_content(&e, 'style-attribute', value_or_empty)
+		inline_style.set_declarations_from_text(if blocked { '' } else { value_or_empty })
 		e.set_needs_style_update(true)
 	} else if local_name == 'dir' || local_name == 'lang' {
 		is_dir := local_name == 'dir'
@@ -6325,8 +6366,14 @@ fn (mut e Element) invalidate_hosted_shadow_tree_after_attribute_change(style_co
 
 // --- Hidden / Accessibility ---
 pub fn (e &Element) is_hidden() bool {
-	if e.as_node().unsafe_layout_node() == none {
-		return true
+	no_layout_box := e.as_node().unsafe_layout_node() == none
+	if no_layout_box {
+		computed := e.el_computed_properties() or { return true }
+		// display:contents has no principal box, but its rendered descendants
+		// still contribute to the accessibility tree.
+		if !computed.display().is_contents() {
+			return true
+		}
 	}
 	if computed := e.el_computed_properties() {
 		if computed.visibility() in [.hidden, .collapse] || computed.content_visibility() == .hidden {
@@ -6337,6 +6384,13 @@ pub fn (e &Element) is_hidden() bool {
 	for self_or_ancestor != none {
 		current := self_or_ancestor or { break }
 		if element := current.as_element() {
+			if no_layout_box {
+				if computed := element.el_computed_properties() {
+					if computed.display().is_none() || computed.content_visibility() == .hidden {
+						return true
+					}
+				}
+			}
 			if element.get_attribute('aria-hidden') or { '' } == 'true' {
 				return true
 			}
@@ -6497,6 +6551,16 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 pub fn (mut e Element) inserted() {
+	if mut inline_style := e.inline_style_ {
+		if inline_style.awaits_content_security_policy_check && e.is_connected() {
+			inline_style.awaits_content_security_policy_check = false
+			if value := e.get_attribute('style') {
+				if e.document().should_block_inline_content(&e, 'style-attribute', value) {
+					inline_style.set_declarations_from_text('')
+				}
+			}
+		}
+	}
 	mut owner_document := unsafe { &Document(e.document()) }
 	owner_document.note_element_local_name(e.local_name().to_lower())
 	owner_document.note_element_classes(e.classes)
@@ -6548,6 +6612,8 @@ pub fn (mut e Element) inserted() {
 			e.svg_use_process_the_url()
 		}
 	}
+
+	e.hide_cryptographic_nonce_if_needed()
 
 	// HTMLStyleElement::inserted() and SVGStyleElement::inserted().
 	if mut style_element_base := e.style_element_base() {
@@ -6873,6 +6939,7 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 	// attribute value, relative to subject's node document.
 	// 5. If urlRecord is failure, then return.
 	url_record := e.document().encoding_parse_url(e.get_attribute_value('href')) or { return }
+	if url_record.scheme() == 'javascript' && e.document().should_block_inline_content(&e,'navigation',liburl.percent_decode(url_record.serialize()).bytestr()) { return }
 
 	// 6. Let noopener be the result of getting an element's noopener with subject, urlRecord, and targetAttributeValue.
 	noopener := e.get_an_elements_noopener(url_record, target_attribute_value)

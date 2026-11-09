@@ -41,3 +41,13 @@ fn test_dom_exact_integer_formats_numbers_percentages_and_limits() {
 		assert typed_style_value_logic_from_dom(wrapped)?.equals(value)
 	}
 }
+
+fn test_dom_color_text_preserves_modern_syntax_and_full_alpha_precision() {
+	color := Color.rgba(12, 34, 56, 128)
+	wrapped := dom_style_value_from_value_logic(StyleValue(ColorStyleValue.create(color)))
+	assert wrapped.css_text == 'rgb(12 34 56 / 0.501961)'
+	parsed := parse_css_value_logic(.color, wrapped.css_text) or { panic('color roundtrip') }
+	assert parsed.to_color(ColorResolutionContext{})? == color
+	assert serialize_dom_color(Color.rgba(12, 34, 56, 0)) == 'rgb(12 34 56 / 0)'
+	assert serialize_dom_color(Color.rgb(12, 34, 56)) == 'rgb(12 34 56)'
+}

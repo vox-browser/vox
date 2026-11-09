@@ -29,15 +29,14 @@ fn test_construct_from_parts() {
 	assert blob.type_() == 'text/plain'
 }
 
-fn test_construct_type_is_normalized_via_mime_parser() {
-	// The type is parsed and re-serialized (type/subtype lowercased, params preserved).
+fn test_blob_constructor_type_lowercases_all_printable_ascii_without_mime_parsing() {
 	blob := Blob.construct([BlobPart.from_string('x')], BlobPropertyBag{
 		type_: 'Text/Plain;charset=UTF-8'
 	})
-	assert blob.type_() == 'text/plain;charset=UTF-8'
-	// An unparseable type becomes the empty string.
+	assert blob.type_() == 'text/plain;charset=utf-8'
+	// A printable string is preserved even when it is not a MIME type.
 	bad := Blob.construct([BlobPart.from_string('x')], BlobPropertyBag{ type_: 'not a mime type' })
-	assert bad.type_() == ''
+	assert bad.type_() == 'not a mime type'
 }
 
 fn test_convert_line_endings_to_native() {

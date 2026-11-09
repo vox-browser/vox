@@ -26,6 +26,7 @@ struct CSSRuleKindData {
 	page_descriptors                  ?&CSSPageDescriptors
 	margin_name                       string
 	property_rule_name                string
+	position_try_name                 string
 	property_rule_syntax              string
 	property_rule_inherits            bool
 	property_rule_initial_value       ?string

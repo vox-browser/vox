@@ -403,8 +403,8 @@ pub fn is_element_nonceable(element ?ElementContext) bool {
 		for name, attribute_value in value.attributes {
 			lower_name := name.to_lower()
 			lower_value := attribute_value.to_lower()
-			if lower_name.contains('<script') || lower_name.contains('<style')
-				|| lower_value.contains('<script') || lower_value.contains('<style') {
+			if lower_name.contains('<link') || lower_name.contains('<script') || lower_name.contains('<style')
+				|| lower_value.contains('<link') || lower_value.contains('<script') || lower_value.contains('<style') {
 				return false
 			}
 		}

@@ -1616,6 +1616,7 @@ pub mut:
 	natural_size_              css.SizeWithAspectRatio
 	has_auto_content_box_size_ bool
 	auto_content_box_size_     css.SizeWithAspectRatio
+	position_try_state_ ?&PositionTryLayoutState
 }
 
 @[heap]

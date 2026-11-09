@@ -73,6 +73,9 @@ pub fn create_a_violation_object_for_global_policy_and_directive(global &GlobalC
 	global_scope := global_scope_from_global_object(global) or { panic('missing CSP global scope') }
 	return &Violation{
 		global_url: global_scope.url
+		source_file_: global_scope.source_file
+		line_number_: global_scope.line_number
+		column_number_: global_scope.column_number
 		referrer_: global_scope.referrer
 		policy_: policy
 		effective_directive_: directive
@@ -317,6 +320,7 @@ pub fn (violation &Violation) report_a_violation(mut global GlobalContext) {
 		sample: report.sample
 	}
 	mut event := SecurityPolicyViolationEvent.create('securitypolicyviolation', init)
+	if element := violation.element_ { event.policy_element = element.dom_element }
 	event.set_is_trusted(true)
 	global.events << *event
 	if dispatch := global.dispatch_violation_event {

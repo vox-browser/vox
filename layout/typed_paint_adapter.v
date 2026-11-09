@@ -10,6 +10,7 @@ import math
 import os
 import painting
 import platform
+import skia
 import svg
 import time
 
@@ -1385,7 +1386,7 @@ fn resolve_radial_gradient_data(resolution_context css.LengthResolutionContext,
 	center_fraction_x, center_fraction_y := resolved_typed_gradient_position(resolution_context, gradient.position_, width, height)
 	center_x := center_fraction_x * width
 	center_y := center_fraction_y * height
-	components := if radial_size := gradient.size_[0].as_radial_size() {
+	components := if radial_size := gradient.size_.value.as_radial_size() {
 		radial_size.components()
 	} else {
 		[]css.RadialSizeStyleValueComponent{}
@@ -3671,6 +3672,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	mut svg_path := ''
 	mut svg_path_data := []f32{}
 	mut svg_path_bounding_box := painting.Rect{}
+	mut svg_hit_data := &SVGPathHitData(unsafe { nil })
 	mut svg_transform := [f64(1), 0, 0, 1, 0, 0]!
 	mut svg_points := []f64{}
 	mut svg_fill_color := ''
@@ -3823,9 +3825,22 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		ellipse_data := retained_svg_ellipse_data(node, path)
 		projection := svg_paint_path_projection(path, if computed.fill_rule() == .evenodd {
 			painting.WindingRule.even_odd
-		} else { painting.WindingRule.nonzero }, ellipse_data == none, node.document().font_rendering_policy() == .chromium)
+		} else { painting.WindingRule.nonzero }, true, node.document().font_rendering_policy() == .chromium)
 		svg_path_data = ellipse_data or { projection.packed_segments }
 		svg_fill_even_odd = computed.fill_rule() == .evenodd
+		svg_hit_data = &SVGPathHitData{
+			pointer_events: computed.pointer_events()
+			has_fill: computed.fill() != none
+			has_stroke: computed.stroke() != none
+			path: skia.Path{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			bounding_box: if node.is_svg_text_box() {
+				svg_text_bounding_box_for_hit_testing(node, state)
+			} else { none }
+			text_cells: if origin := used.svg_text_paint_origin() {
+				painting.Rect{origin.character_cells.x, origin.character_cells.y,
+					origin.character_cells.width, origin.character_cells.height}
+			} else { none }
+		}
 		to_page := svg_path_transform_to_page(node, state)
 		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
 		mapped_bounds := svg_box_visual_bounds_to_page(node, state, used)
@@ -3895,6 +3910,29 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			}
 		}
 	}
+	if node.is_svg_image_box() {
+		// Image hit regions use the viewport rectangle for every pointer-events
+		// area; SVG fill/stroke styles do not restrict raster-image hits.
+		to_page := svg_path_transform_to_page(node, state)
+		svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
+		svg_hit_data = &SVGPathHitData{
+			pointer_events: computed.pointer_events()
+			is_image: true
+			bounding_box: painting.Rect{used.offset.x().to_double(), used.offset.y().to_double(),
+				used.content_width().to_double(), used.content_height().to_double()}
+		}
+	}
+	if container_element := svg_element_for_layout_node(node) {
+		if node.is_svg_graphics_box() && is_svg_container_element(container_element) {
+			to_page := svg_path_transform_to_page(node, state)
+			svg_transform = [to_page.a, to_page.b, to_page.c, to_page.d, to_page.e, to_page.f]!
+			svg_hit_data = &SVGPathHitData{
+				pointer_events: computed.pointer_events()
+				bounding_box: svg_container_bounding_box_for_hit_testing(node, state)
+			}
+		}
+	}
+
 	svg_clip = svg_url_clip_path_for_box(node, state, used)
 	svg_mask = svg_url_mask_for_box(node, state, used)
 	if svg_mask == none {
@@ -4329,7 +4367,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		layout_handle: voidptr(node)
 		children: []
 		lines: lines
-		svg_data: if has_svg_path || svg_path.len > 0 {
+		svg_data: if has_svg_path || svg_path.len > 0 || svg_hit_data != unsafe { nil } {
 			&BlockBoxSVGData{
 				has_path: has_svg_path
 				path: &PaintSVGPathData{
@@ -4357,6 +4395,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				fill_color: svg_fill_color
 				stroke_color: svg_stroke_color
 				stroke_width: svg_stroke_width
+				hit_test: svg_hit_data
 				text: if svg_text.runs.len > 0 && svg_text_color != unsafe { nil } {
 					&BlockBoxSVGText{
 						runs: svg_text.runs

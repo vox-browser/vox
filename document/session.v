@@ -1,5 +1,6 @@
 module main
 
+import browsernet
 import browserjs
 import css
 import dom
@@ -41,6 +42,8 @@ mut:
 	// A worker's destination stays with its document even while that document
 	// is cached. Replacements cannot consume an outgoing page's completions.
 	background_resource_results     chan PreloadedResource
+	background_resource_scope ?&browsernet.RequestScope
+	resource_cache map[string]PreloadedResource
 	background_resource_jobs        int
 	background_resource_pending     map[string]bool
 	script_stylesheet_requests      map[string]bool

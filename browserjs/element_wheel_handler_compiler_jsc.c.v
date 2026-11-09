@@ -23,8 +23,8 @@ fn element_global_event_handler_events() map[string]bool {
 // Media and track elements keep their dedicated owners; image, object,
 // fieldset, output and form-associated custom elements keep compact replay.
 fn element_owns_native_inline_handlers(element &dom.Element) bool {
-	return element.is_html_element()
-		&& element.local_name() !in ['img', 'object', 'fieldset', 'output', 'audio', 'video', 'track']
+	if !element.is_html_element() { return element_exposes_wheel_handler(element) }
+	return element.local_name() !in ['img', 'object', 'fieldset', 'output', 'audio', 'video', 'track']
 		&& !element.is_form_associated_custom_element()
 }
 
@@ -51,7 +51,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			mut host := unsafe { &ElementWheelHost(owner) }
 			if host.closed || host.runtime.closed { return false }
 			element := host.raw_wheel_handler_element(target) or { return false }
-			if element.local_name() == 'track' { return name in ['load', 'error'] }
+			if element.local_name() in ['track','img'] { return name in ['load', 'error'] }
 			return element.local_name() in ['audio', 'video']
 				&& name in ['play', 'pause', 'playing', 'waiting', 'canplay', 'canplaythrough', 'loadedmetadata', 'loadeddata', 'ratechange', 'volumechange', 'timeupdate', 'durationchange', 'seeking', 'seeked', 'progress', 'suspend', 'abort', 'emptied', 'loadstart', 'ended', 'resize', 'error']
 		}
@@ -65,7 +65,7 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			element := host.raw_wheel_handler_element(target) or { return false }
 			binding := host.runtime.event_binding() or { return false }
 			if voidptr(host.document) !in binding.target_wrappers { return false }
-			if element.local_name() in ['audio', 'video'] {
+			if element.is_html_element() && element.local_name() in ['audio', 'video'] {
 				return host.live_raw_media_wheel_hosts().len != 0
 			}
 			// The form owner is part of a control's handler scope. Create the control
@@ -85,8 +85,9 @@ fn (mut host ElementWheelHost) install_raw_wheel_handler_compiler() ! {
 			if target.data.kind == .window { return true }
 			mut host := unsafe { &ElementWheelHost(owner) }
 			element := host.raw_wheel_handler_element(target) or { return false }
-			if element.local_name() in ['audio', 'video']
-				|| (element.local_name() == 'track' && name in ['load', 'error']) {
+			if element.local_name() == 'img' && name in ['load','error'] { return true }
+			if element.is_html_element() && (element.local_name() in ['audio', 'video']
+				|| (element.local_name() == 'track' && name in ['load', 'error'])) {
 				return host.raw_media_or_track_handler_available(target, element, name)
 			}
 			return name in ['wheel', 'scrollend'] || event_target_owns_native_inline_handler(target, name)
@@ -106,9 +107,9 @@ fn (mut host ElementWheelHost) raw_wheel_handler_element(target &dom.EventTarget
 	host.refresh_elements()
 	for _, element in host.elements {
 		if voidptr(element) != voidptr(target) { continue }
-		if voidptr(element.document()) != voidptr(host.document) || !element.is_html_element()
-			|| element.local_name() in ['img', 'object', 'fieldset', 'output']
-			|| element.is_form_associated_custom_element() { return none }
+		if voidptr(element.document()) != voidptr(host.document) || !element_exposes_wheel_handler(element)
+			|| (element.is_html_element() && (element.local_name() in ['object', 'fieldset', 'output']
+				|| element.is_form_associated_custom_element())) { return none }
 		return element
 	}
 	return none
@@ -117,6 +118,7 @@ fn (mut host ElementWheelHost) raw_wheel_handler_element(target &dom.EventTarget
 // Read the real cached control; compiling an attribute must not manufacture a
 // form model or infer ownership from its nearest ancestor.
 fn raw_wheel_handler_control(element &dom.Element) ?&html.FormAssociatedElement {
+	if !element.is_html_element() { return none }
 	match element.local_name() {
 		'input' {
 			input := unsafe { &dom.HTMLInputElement(element) }
@@ -143,6 +145,7 @@ fn raw_wheel_handler_control(element &dom.Element) ?&html.FormAssociatedElement 
 }
 
 fn raw_handler_ensure_control(element &dom.Element) {
+	if !element.is_html_element() { return }
 	match element.local_name() {
 		'input' { _ = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(element) }) }
 		'button' { _ = html.HTMLButtonElementModel.create(unsafe { &dom.HTMLButtonElement(element) }) }
@@ -156,7 +159,7 @@ fn raw_handler_ensure_control(element &dom.Element) {
 }
 
 fn raw_wheel_handler_form_owner_available(element &dom.Element) bool {
-	return element.local_name() !in ['input', 'button', 'select', 'textarea']
+	return !element.is_html_element() || element.local_name() !in ['input', 'button', 'select', 'textarea']
 		|| raw_wheel_handler_control(element) != none
 }
 
@@ -170,7 +173,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 	// Parse the actual FunctionBody in isolation. Checking a generated Script
 	// alone would allow closing braces to escape into the scope factory.
 	mut exception := voidptr(0)
-	validated := C.vox_jsc_JSObjectMakeFunction(runtime.context, name, 1, &parameter,
+	validated := runtime.compile_host_function(name, 1, &parameter,
 		body_value, unsafe { nil }, 1, &exception)
 	return exception == unsafe { nil } && validated != unsafe { nil }
 }
@@ -211,7 +214,7 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	factory_body := js_source_string(openings + 'return ({' + handler_name + ':function(event){\n' + body + '\n}}).' + handler_name + ';' + endings)
 	defer { C.JSStringRelease(factory_body) }
 	mut exception := voidptr(0)
-	factory := C.vox_jsc_JSObjectMakeFunction(runtime.context, unsafe { nil }, 0, unsafe { nil },
+	factory := runtime.compile_host_function(unsafe { nil }, 0, unsafe { nil },
 		factory_body, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } || factory == unsafe { nil } { return none }
 	C.JSValueProtect(runtime.context, factory)

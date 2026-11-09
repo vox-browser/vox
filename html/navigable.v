@@ -1240,12 +1240,16 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 		if owner := model.page() {
 			document.set_page(owner)
 		}
-		// An XML response becomes an XML document; everything else is parsed
-		// as HTML here.
 		xml_type := navigation_response_xml_type(navigation_params)
+		text_type := navigation_response_text_type(navigation_params)
 		if type_ := xml_type {
 			document.set_document_type(.xml)
 			document.set_content_type(type_.essence())
+		} else if type_ := text_type {
+			document.set_document_type(.html)
+			document.set_content_type(type_.essence())
+			document.set_parser_cannot_change_the_mode(true)
+			document.set_quirks_mode(.no)
 		} else {
 			document.set_document_type(.html)
 			document.set_content_type('text/html')
@@ -1296,6 +1300,18 @@ pub fn (mut model NavigableModel) populate_session_history_entry_document(entry 
 				markup := state.resource as string
 				if xml_type != none {
 					parse_navigated_xml_document(document, markup)
+				} else if type_ := text_type {
+					if document.document_ready_to_run_scripts() {
+						parse_navigated_text_document(document, markup, type_)
+					} else {
+						document_pointer := voidptr(document)
+						document.set_deferred_parser_start(fn [document_pointer, markup, type_] () {
+							document := unsafe { &dom.Document(document_pointer) }
+							mut payload := document.enter_native_storage()
+							parse_navigated_text_document(document, markup, type_)
+							payload.finish()
+						})
+					}
 				} else if document.document_ready_to_run_scripts() {
 					parse_html_from_a_string(document, markup)
 				} else {
@@ -1345,6 +1361,21 @@ fn navigation_response_xml_type(navigation_params ?&NavigationParams) ?mimesniff
 	type_ := fetch.extract_mime_type(response.header_list) or { return none }
 	if !type_.is_xml() || type_.is_html() { return none }
 	return type_
+}
+
+// Use the same literal-text tokenizer as DOM's text document loader. Parsing
+// a text response as HTML would interpret tags and numeric references in it.
+fn navigation_response_text_type(navigation_params ?&NavigationParams) ?mimesniff.MimeType {
+	params := navigation_params or { return none }
+	type_ := fetch.extract_mime_type(params.response.unsafe_response().header_list) or { return none }
+	if type_.is_javascript() || type_.is_json() || type_.essence() in ['text/css', 'text/plain', 'text/vtt'] { return type_ }
+	return none
+}
+
+fn parse_navigated_text_document(document &dom.Document, source string, type_ mimesniff.MimeType) {
+	encoding_name := dom_loaded_text_parse_callback(unsafe { nil }, document, source.bytes(), type_.parameters()['charset'], document.url) or { return }
+	mut owner := unsafe { &dom.Document(document) }
+	owner.set_encoding(encoding_name)
 }
 
 fn parse_navigated_xml_document(document &dom.Document, source string) {
@@ -1759,8 +1790,9 @@ pub fn (mut model NavigableModel) evaluate_javascript_url(url dom.URL, new_docum
 	if active_document.as_node().is_scripting_disabled() {
 		return none
 	}
+	if javascript_url_is_blocked_by_csp(active_document,url) { return none }
 	hook := model.javascript_url_hook_ or { return none }
-	source := url.serialize().all_after('javascript:')
+	source := javascript_url_source(url)
 	result := hook(source, active_document) or { return none }
 	mut document := dom.Document.create(active_document.url)
 	document.set_document_type(.html)

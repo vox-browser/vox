@@ -137,8 +137,7 @@ class Run:
                            cwd=ROOT, check=True)
             shared = git("diff", "--name-only", baseline, candidate, "--", "tools",
                          "build-linux-browser.sh", "build-prod-browser.sh",
-                         "Tests/Browser/Brave/sites/stackoverflow", "native_jpegxl_rust",
-                         "libregex/native")
+                         "Tests/Browser/Brave/sites/stackoverflow", "native_jpegxl_rust")
             if shared:
                 raise ValueError("Build/observer/workload inputs differ:\n" + shared)
         state = {"baseline": baseline, "candidate": candidate, "dependencies": PINS, "builds": {}}

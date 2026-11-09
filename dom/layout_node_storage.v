@@ -12,6 +12,7 @@ pub:
 	set_needs_layout_update_callback       LayoutSetNeedsLayoutUpdateCallback       = unsafe { nil }
 	invalidate_text_for_rendering_callback LayoutInvalidateTextForRenderingCallback = unsafe { nil }
 	refresh_empty_text_fragment_callback   fn (voidptr) bool                        = unsafe { nil }
+	anchor_size_value_callback fn (voidptr, string) ?string = unsafe { nil }
 	view_transition_properties_callback    fn (voidptr) map[string]string           = unsafe { nil }
 }
 

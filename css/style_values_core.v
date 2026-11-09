@@ -2145,6 +2145,17 @@ pub enum Keyword {
 	trim_start
 	trim_end
 	trim_both
+	last
+	anchor_center
+	flow_start
+	flow_end
+	flip_x
+	flip_y
+	bounding_box
+	visible_painted
+	visible_fill
+	visible_stroke
+	painted
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3052,6 +3063,17 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.zoom_in { 'zoom-in' }
 		.zoom_out { 'zoom-out' }
 		.manual { 'manual' }
+		.last { 'last' }
+		.anchor_center { 'anchor-center' }
+		.flow_start { 'flow-start' }
+		.flow_end { 'flow-end' }
+		.flip_x { 'flip-x' }
+		.flip_y { 'flip-y' }
+		.bounding_box { 'bounding-box' }
+		.visible_painted { 'visiblepainted' }
+		.visible_fill { 'visiblefill' }
+		.visible_stroke { 'visiblestroke' }
+		.painted { 'painted' }
 	}
 }
 
@@ -3064,6 +3086,17 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'trim-both' { return .trim_both }
 	if name == 'oblique-only' { return .oblique_only }
 	if name == 'manual' { return .manual }
+	if name == 'last' { return .last }
+	if name == 'anchor-center' { return .anchor_center }
+	if name == 'flow-start' { return .flow_start }
+	if name == 'flow-end' { return .flow_end }
+	if name == 'flip-x' { return .flip_x }
+	if name == 'flip-y' { return .flip_y }
+	if name == 'bounding-box' { return .bounding_box }
+	if name == 'visiblepainted' { return .visible_painted }
+	if name == 'visiblefill' { return .visible_fill }
+	if name == 'visiblestroke' { return .visible_stroke }
+	if name == 'painted' { return .painted }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false
@@ -11093,7 +11126,7 @@ fn reify_calc_node(node CalcNode) !CSSNumericValue {
 				}
 			}
 		}
-		CalcAnchor, CalcRandom, CalcTreeCounting, CalcChannel {
+		CalcAnchor, CalcAnchorSize, CalcRandom, CalcTreeCounting, CalcChannel {
 			return error('Unable to reify this math function.')
 		}
 	}

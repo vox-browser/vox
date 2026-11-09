@@ -38,7 +38,9 @@ eligibility retains its existing exclusions for live media and child documents.
 
 Restoration publishes the incoming session pointer before `resume(navigable)`
 reactivates the document and dispatches `pageshow`. The incoming VM is bound
-before that dispatch. If an outgoing `pagehide` handler invalidates the cached
+before that dispatch. Publishing or rolling back an owner also synchronizes the
+tab-owned PageClient zoom, even when the session already holds that zoom.
+If an outgoing `pagehide` handler invalidates the cached
 candidate, navigation restores the outgoing owner and falls back to the normal
 stored-response reconstruction path.
 
@@ -98,3 +100,12 @@ VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
     document/session_test.v navigation/controller_test.v \
     navigation/back_forward_cache_test.v navigation/retire_before_styles_test.v
 ```
+
+The resource-cancellation integration keeps the retained resource map and request
+scope on the session. Pending background requests block cache admission, matching
+the current resource policy. Retirement cancels scoped producers, which can
+suppress their response and wake from full queues; it never starts a fixed-count
+drain for those producers. Legacy unscoped producers still use the finite drain.
+Navigation request scopes remain on the NavigationController and are cancelled
+on traversal and tab closure. Validation of this integration is deferred until
+the Codex bot approves the updated PR, as requested.

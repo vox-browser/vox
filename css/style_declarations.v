@@ -680,7 +680,7 @@ fn inline_style_for_abstract_element(abstract_element dom.AbstractElement) ?&CSS
 	if bridge.css_handle != unsafe { nil } {
 		return unsafe { &CSSStyleProperties(bridge.css_handle) }
 	}
-	text := element.get_attribute('style') or { '' }
+	text := bridge.declarations_text
 	properties := parse_css_property_declaration_block_for_style_properties(ParsingParams{
 		document: element.document()
 	}, text)
@@ -858,7 +858,9 @@ pub fn (mut properties CSSStyleProperties) update_style_attribute() {
 		mut element := unsafe { &dom.Element(owner_node.element()) }
 		mut bridge := element.style_for_bindings()
 		bridge.is_updating_ = true
-		element.set_attribute_value('style', css_style_properties_serialized(properties))
+		bridge.awaits_content_security_policy_check = false
+		bridge.declarations_text = css_style_properties_serialized(properties)
+		element.set_attribute_value('style', bridge.declarations_text)
 		bridge.is_updating_ = false
 	}
 
@@ -991,6 +993,10 @@ pub fn (mut properties CSSStyleProperties) set_property(property_name string, va
 // https://drafts.csswg.org/cssom/#dom-cssstyledeclaration-setproperty
 pub fn (mut properties CSSStyleProperties) set_property_internal(property PropertyNameAndID, value string, priority string) ! {
 	properties.ensure_declarations_parsed()
+	if properties.is_position_try_descriptors() {
+		if property.is_custom_property() || priority != '' { return }
+		if !is_accepted_position_try_property(property.id() or { return }) { return }
+	}
 	// NB: Steps 1 and 2 only apply to the IDL method that invokes this.
 
 	// 3. If value is the empty string, invoke removeProperty() with property as argument and return.
@@ -1261,6 +1267,7 @@ pub fn (mut properties CSSStyleProperties) set_declarations_from_text(css_text s
 	properties.clear_typed_properties_cache()
 	properties.properties = parsed.properties.clone()
 	properties.custom_properties = parsed.custom_properties.clone()
+	properties.filter_position_try_descriptors()
 }
 
 pub fn (properties &CSSStyleProperties) get_property_internal(property PropertyNameAndID) ?StyleProperty {
@@ -1362,7 +1369,7 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		}
 
 		property_id := property.id() or { return none }
-		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id)
+		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id) || property_id in [.min_width,.min_height,.max_width,.max_height]
 		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
 		scope := css_style_scope_for(owner)
 		needs_container_query_layout := scope.have_size_container_queries()
@@ -1718,6 +1725,19 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		return properties.style_value_for_computed_property(layout_node, physical)
 	}
 
+	if property_id in [.min_width,.min_height,.max_width,.max_height] {
+		if raw := computed.property(property_id,.yes) {
+			if raw.css_text.contains('anchor-size(') || raw.css_text.contains('anchor(') {
+				callback := layout_node.bridge_callbacks().anchor_size_value_callback
+				if callback != unsafe { nil } {
+					if text := callback(layout_node.real_layout_handle(),string_from_property_id(property_id)) {
+						return &dom.StyleValue{css_text:text}
+					}
+				}
+				return computed_interpolation_property_initial_value(property_id)
+			}
+		}
+	}
 	display_allows_used_value := !computed.display().is_none() && !computed.display().is_contents() && layout_node.has_geometry_
 	margin := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
 	padding := computed.length_box(.padding_left, .padding_top, .padding_right, .padding_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))

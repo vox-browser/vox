@@ -60,17 +60,33 @@ mut:
 // children, shifted positioned content, first-letter splits or clamp effects.
 // Other contexts continue through the ordinary formatting algorithm.
 fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedInlineInput) bool {
+	return collect_inline_inputs_with_measurement_roots(node, root, false, mut inputs)
+}
+
+fn collect_inline_inputs_with_measurement_roots(node &Node, root bool,
+	extended_roots bool, mut inputs []RetainedInlineInput) bool {
+	marker_root := extended_roots && root && node.is_list_item_marker_box()
+		&& !disable_marker_inline_measurement_reuse
+	return collect_inline_inputs_with_measurement_policy(node, root, extended_roots,
+		marker_root, mut inputs)
+}
+
+fn collect_inline_inputs_with_measurement_policy(node &Node, root bool,
+	extended_roots bool, marker_root bool, mut inputs []RetainedInlineInput) bool {
+	if extended_roots && !root && inline_measurement_marker_is_external(node) { return true }
+	if marker_root && !root && !node.is_text_node() { return false }
 	computed := node.computed_values()
-	if node.is_generated_for_pseudo_element() || node.is_generated_text_node()
+	if ((node.is_generated_for_pseudo_element() || node.is_generated_text_node()) && !marker_root)
 		|| node.is_in_ua_internal_shadow_tree() || node.is_svg_box() || node.is_replaced_box()
-		|| node.is_floating() || !retained_layout_position_is_unshifted(node) || node.is_list_item_box()
-		|| node.is_list_item_marker_box() {
+		|| node.is_floating() || !retained_layout_position_is_unshifted(node)
+		|| (node.is_list_item_box() && !(root && extended_roots))
+		|| (node.is_list_item_marker_box() && !(root && marker_root)) {
 		return false
 	}
 	if !root && !node.is_text_node() && (!node.is_inline_node() || node.is_break_node()) {
 		return false
 	}
-	if root && (!node.display().is_flow_inside()
+	if root && ((!node.display().is_flow_inside() && !(extended_roots && node.display().is_table_cell()))
 		|| node.computed_values().writing_mode() != .horizontal_tb) {
 		return false
 	}
@@ -110,7 +126,8 @@ fn collect_retained_inline_inputs(node &Node, root bool, mut inputs []RetainedIn
 		root_line_height: computed.root_line_height_px_
 	}
 	for child in node.children() {
-		if !collect_retained_inline_inputs(child, false, mut inputs) { return false }
+		if !collect_inline_inputs_with_measurement_policy(child, false, extended_roots,
+			marker_root, mut inputs) { return false }
 	}
 	return true
 }

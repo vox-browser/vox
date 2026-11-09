@@ -56,6 +56,9 @@ fn (app &BrowserApp) back_forward_cache_blocker() string {
 	if document.readiness() == .loading || (app.ctx != unsafe { nil } && !app.document_presented) {
 		return 'loading'
 	}
+	// Compact background requests do not have a suspend/resume contract. A
+	// cached page must not retain request flags after their producers retire.
+	if app.background_resource_pending.len > 0 { return 'resource requests' }
 	// Native players do not survive suspension.
 	if app.media_players.len > 0 { return 'media' }
 	if children := app.child_document_host {
@@ -175,12 +178,14 @@ fn (mut app BrowserApp) restore_back_forward_cached_page(from_index int, target 
 	}
 	outgoing_cached := app.cache_displayed_page(from_index)
 	app.DocumentSessionRef = incoming
+	app.set_browser_zoom(incoming.page_zoom)
 	// Publish the complete owner before resume dispatches pageshow. Its
 	// handlers must observe the incoming realm, loaders and rendering state.
 	if !incoming.resume(navigable) {
 		// A pagehide handler can invalidate the candidate. Put the outgoing
 		// owner back before falling through to ordinary history reconstruction.
 		app.DocumentSessionRef = outgoing
+		app.set_browser_zoom(outgoing.page_zoom)
 		if outgoing_cached {
 			for index, cached in app.back_forward_cache.pages {
 				if voidptr(cached.session) == voidptr(outgoing) {

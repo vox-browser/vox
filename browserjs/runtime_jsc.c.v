@@ -100,6 +100,10 @@ fn create_javascript_core_context(worker_global bool) voidptr {
 	return C.vox_browserjs_create_agent_context(i32(worker_global))
 }
 
+fn create_javascript_core_shared_context() voidptr {
+	return C.vox_browserjs_create_agent_context(2)
+}
+
 fn release_javascript_core_context(context voidptr) {
 	C.JSGlobalContextRelease(context)
 }
@@ -132,13 +136,13 @@ fn javascript_core_syntax_position(context voidptr, exception voidptr, property 
 	return if ignored == unsafe { nil } && number >= 1 && number <= 2147483647 { int(number) } else { fallback }
 }
 
-fn evaluate_with_javascript_core(context voidptr, source ScriptSource, stringify_result bool, positioned_syntax_errors bool) !string {
-	result := evaluate_javascript_core_text(context, source, stringify_result, positioned_syntax_errors, false)!
+fn evaluate_with_javascript_core(runtime &Runtime, source ScriptSource, stringify_result bool, positioned_syntax_errors bool) !string {
+	result := evaluate_javascript_core_text(runtime.context, source, stringify_result, positioned_syntax_errors, false, runtime)!
 	return result.value
 }
 
 fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify_result bool,
-	positioned_syntax_errors bool, temporary bool) !TemporaryText {
+	positioned_syntax_errors bool, temporary bool, owner &Runtime) !TemporaryText {
 	load_instruction_stage := processmetrics.begin_javascript_instruction_stage()
 	defer { load_instruction_stage.finish() }
 	// Both engines must consume the entire same UTF-16 input, including NULs.
@@ -170,7 +174,7 @@ fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify
 			column := javascript_core_syntax_position(context, exception, 'column', 1)
 			return error('SyntaxError: ${filename}:${line}:${column}: ${message.trim_string_left('SyntaxError: ')}')
 		}
-		return error(message)
+		return owner.actual_javascript_exception(exception)
 	}
 	if value == unsafe { nil } || !stringify_result {
 		return TemporaryText{}
@@ -185,7 +189,7 @@ fn evaluate_javascript_core_text(context voidptr, source ScriptSource, stringify
 		workspace.leave()
 		message := err.msg().clone()
 		workspace.finish()
-		return error(message)
+		return owner.actual_javascript_exception(exception)
 	}
 	workspace.leave()
 	return TemporaryText{value: text, workspace: workspace}

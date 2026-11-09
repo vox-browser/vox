@@ -28,10 +28,30 @@ emitted/capacity/malformed state and replacement wrapper. The given-decoder
 helper routes replacement after Unicode BOM selection; public TextDecoder
 continues to reject it. Focused raw decoder, internal helper, public decoder
 stream and FileReader packaging tests pass **5/5 in both GC modes**. Native
-probes compile the actual pinned Rust bridge and dependency and pass **2/2 in
-debug and release**. Source mapping, exact dependency checksum and remaining
-FileReader owner boundaries are recorded in
+migration probes compiled the actual pinned Rust bridge and dependency and
+passed **2/2 in debug and release**; those Rust-dependent refresh tools are now
+retired in favor of frozen independent records. Source mapping, exact dependency
+checksum and remaining FileReader owner boundaries are recorded in
 [`FILEREADER_TEXT_SOURCE.md`](../docs/translation-audit/FILEREADER_TEXT_SOURCE.md).
+
+GB18030 table generation no longer requires Cargo or `encoding_rs`.
+`tools/gen_gb18030_data.v` and `tools/gb18030gen/` read the pinned WHATWG
+[two-byte index](https://encoding.spec.whatwg.org/index-gb18030.txt) and
+[range index](https://encoding.spec.whatwg.org/index-gb18030-ranges.txt), stored
+under `encoding/indices/`. SHA-256 checks reject changed inputs. The V generator
+preserves all 23,940 two-byte pointers, BMP range starts, the first-pointer
+encoder mapping and the decoder's separate handling of pointer 7457 and astral
+ranges. The generated V file differs from its previous Rust-generated version
+only in its attribution comment. The generator tests cover exact regeneration
+and malformed, unsorted and duplicate index entries; generation and `--check`
+also pass under separate 3 GiB guards with current V's `-memory-limit 10G`.
+Run `v -memory-limit 10G run tools/gen_gb18030_data.v --check` through a memory
+guard to verify the checked-in output offline. The old Python/Cargo generator
+has been removed. The Rust-dependent encoding and regex corpus refresh scripts
+have also been retired. [The V reference checker](../tools/REFERENCE_CORPORA.md)
+executes existing independent records without compiling Rust; it deliberately
+does not regenerate expected values from the candidate implementation. JPEG XL
+still has a separate Rust-dependent test tool pending its decoder replacement.
 
 Pinned LibTextCodec isomorphic UTF8/UTF16 encoding (`242a95de`) now uses
 Source code-point iteration and byte truncation, retaining its diagnostic

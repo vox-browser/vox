@@ -8,6 +8,7 @@ import css
 import dom
 
 struct AnchorElementLookupContext {
+	name string
 	box              &Node = unsafe { nil }
 	containing_block &Box = unsafe { nil }
 	state            &LayoutState = unsafe { nil }
@@ -18,14 +19,34 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 		return false
 	}
 	context := unsafe { &AnchorElementLookupContext(target) }
+	if !anchor_name_scopes_match(candidate, context.box, context.name) { return false }
 	dom_layout_node := candidate.as_node().unsafe_layout_node() or { return false }
 	if dom_layout_node.real_layout_handle() == unsafe { nil } {
 		return false
 	}
 	anchor_node := unsafe { &Node(dom_layout_node.real_layout_handle()) }
-	if layout_nodes_same(anchor_node, context.box) || anchor_node.as_box() == none {
+	if layout_nodes_same(anchor_node, context.box) || (anchor_node.as_box() == none && anchor_node.as_inline_node() == none) {
 		return false
 	}
+	mut pending := []&Node{}
+	mut pending_ancestor := ?&Node(anchor_node)
+	for pending_ancestor != none {
+		ancestor_node := pending_ancestor or { break }
+		if layout_nodes_same(ancestor_node,unsafe { &Node(context.containing_block) }) { break }
+		if ancestor_node.is_absolutely_positioned() {
+			if anchor_has_same_positioning_container(ancestor_node,context.box) {
+				owner := anchor_query_element(ancestor_node) or { return false }
+				query := anchor_query_element(context.box) or { return false }
+				if owner.as_node().compare_document_position(query.as_node()) & dom.document_position_following == 0 { return false }
+			}
+			status := context.state.absolute_layout_status[voidptr(ancestor_node)] or { u8(0) }
+			if status == 1 { return false }
+			if status == 0 { pending << ancestor_node }
+		}
+		pending_ancestor = if block := ancestor_node.containing_block() { unsafe { &Node(block) } } else { none }
+	}
+	mut mutable_state := unsafe { &LayoutState(context.state) }
+	for index := pending.len-1; index >= 0; index-- { layout_absolutely_positioned_box(mut mutable_state,pending[index]) }
 	anchor_styled := anchor_node.as_node_with_style() or { return false }
 	if context.state.try_get(anchor_styled) == none {
 		return false
@@ -42,10 +63,11 @@ fn is_acceptable_anchor_element(target voidptr, candidate &dom.Element) bool {
 }
 
 fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValues, name string) ?css.CSSPixelRect {
-	dom_node := box.dom_node() or { return none }
-	element := dom_node.as_element() or { return none }
+	if saved := position_try_saved_anchor(box,name) { return saved }
+	element := anchor_query_element(box) or { return none }
 	containing_block := box.containing_block() or { return none }
 	lookup_context := AnchorElementLookupContext{
+		name: name
 		box: box
 		containing_block: containing_block
 		state: state
@@ -60,20 +82,65 @@ fn resolve_named_anchor_rect(state &LayoutState, box &Node, containing_state &Us
 		return none
 	}
 	anchor_layout_node := unsafe { &Node(dom_anchor_layout_node.real_layout_handle()) }
-	if anchor_layout_node.as_box() == none {
-		return none
+	if inline := anchor_layout_node.as_inline_node() {
+		mut mutable_state := unsafe { &LayoutState(state) }
+		rect := compute_inline_containing_block_rect(mut mutable_state,inline,containing_block) or { return none }
+		styled := anchor_layout_node.as_node_with_style() or { return none }
+		values := state.try_get(styled) or { return none }
+		border_rect := css.CSSPixelRect{x:rect.x.minus(values.border_left),y:rect.y.minus(values.border_top),
+			width:rect.width.plus(values.border_left).plus(values.border_right),height:rect.height.plus(values.border_top).plus(values.border_bottom)}
+		position_try_note_anchor(box,name,border_rect)
+		return border_rect
 	}
+	if anchor_layout_node.as_box() == none { return none }
 	anchor_styled := anchor_layout_node.as_node_with_style() or { return none }
 	anchor_state := state.try_get(anchor_styled) or { return none }
-	anchor_border_box_origin := anchor_state.cumulative_offset().minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
+	anchor_border_box_origin := anchor_state.cumulative_offset()
+		.plus(anchor_relative_position_offset(state, anchor_layout_node, unsafe { &Node(containing_block) }))
+		.minus(css.CSSPixelPoint.new(anchor_state.border_box_left(), anchor_state.border_box_top()))
 	containing_block_padding_box_origin := containing_state.cumulative_offset().minus(css.CSSPixelPoint.new(containing_state.padding_left, containing_state.padding_top))
 	origin := anchor_border_box_origin.minus(containing_block_padding_box_origin)
-	return css.CSSPixelRect{
+	rect := css.CSSPixelRect{
 		x: origin.x()
 		y: origin.y()
 		width: anchor_state.border_box_width()
 		height: anchor_state.border_box_height()
 	}
+	position_try_note_anchor(box,name,rect)
+	return rect
+}
+
+// Absolute descendants are laid out before the final relative-inset pass.
+// Resolve relative offsets on the anchor's ancestor chain using the same
+// algorithm, without moving normal-flow geometry or applying the CB twice.
+fn anchor_relative_position_offset(state &LayoutState, anchor &Node, containing &Node) css.CSSPixelPoint {
+	mut offset := css.CSSPixelPoint{}
+	mut current := ?&Node(anchor)
+	for current != none {
+		node := current or { break }
+		if layout_nodes_same(node, containing) { break }
+		if !layout_nodes_same(node,anchor) && node.is_scroll_container() {
+			if dom_node := node.dom_node() {
+				if element := dom_node.as_element() {
+					scroll := element.el_scroll_offset()
+					offset = offset.minus(css.CSSPixelPoint.new(css_px(scroll.x()),css_px(scroll.y())))
+				}
+			}
+		}
+		if node.computed_values().position() == .relative {
+			if styled := node.as_node_with_style() {
+				if used := state.try_get(styled) {
+					if basis := used.containing_block_used_values() {
+						mut relative := *used
+						compute_relative_inset_for_node(styled, mut relative, basis)
+						offset = offset.plus(css.CSSPixelPoint.new(relative.inset_left, relative.inset_top))
+					}
+				}
+			}
+		}
+		current = node.parent()
+	}
+	return offset
 }
 
 // https://drafts.csswg.org/css-anchor-position-1/#resolving-anchor
@@ -86,6 +153,8 @@ fn resolve_anchor_rect(state &LayoutState, box &Node, containing_state &UsedValu
 struct SpanAllPositionArea {
 	rect        css.CSSPixelRect
 	anchor_rect css.CSSPixelRect
+	x_tracks PositionAreaRange
+	y_tracks PositionAreaRange
 }
 
 fn position_area_is_span_all(computed &css.ComputedValues) bool {
@@ -171,10 +240,10 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 			}
 			.start, .end_ {
 				is_start := side.to_keyword() == .start
+				low := absolute_axis_starts_low(containing_box, is_horizontal_axis) == is_start
 				if is_horizontal_axis {
-					use_left := (containing_box.computed_values().direction() == .ltr) == is_start
-					if use_left { rect.left() } else { rect.right() }
-				} else if is_start {
+					if low { rect.left() } else { rect.right() }
+				} else if low {
 					rect.top()
 				} else {
 					rect.bottom()
@@ -182,10 +251,10 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 			}
 			.self_start, .self_end {
 				is_start := side.to_keyword() == .self_start
+				low := absolute_axis_starts_low(box, is_horizontal_axis) == is_start
 				if is_horizontal_axis {
-					use_left := (box.computed_values().direction() == .ltr) == is_start
-					if use_left { rect.left() } else { rect.right() }
-				} else if is_start {
+					if low { rect.left() } else { rect.right() }
+				} else if low {
 					rect.top()
 				} else {
 					rect.bottom()
@@ -206,13 +275,15 @@ fn resolve_anchor_side(state &LayoutState, box &Node, containing_box &Node, cont
 	}
 	if side.is_percentage() {
 		percentage := side.as_percentage().percentage().as_fraction()
+		low := absolute_axis_starts_low(containing_box, is_horizontal_axis)
 		if is_horizontal_axis {
-			if containing_box.computed_values().direction() == .ltr {
+			if low {
 				return rect.left().plus(rect.width.times_float(percentage))
 			}
 			return rect.right().minus(rect.width.times_float(percentage))
 		}
-		return rect.top().plus(rect.height.times_float(percentage))
+		return if low { rect.top().plus(rect.height.times_float(percentage)) }
+			else { rect.bottom().minus(rect.height.times_float(percentage)) }
 	}
 	return none
 }
@@ -313,6 +384,7 @@ fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box
 		percentage_basis: css.Length.make_css_px(basis)
 		length_resolution_context: length_context
 		anchor_resolver: resolve_anchor_for_calculation
+		anchor_size_resolver: resolve_anchor_size_for_calculation
 		anchor_resolver_context: voidptr(&context)
 	}) or { return none }
 	return CSSPixels.truncated_value_for(resolved.to_px_without_rounding(length_context))
@@ -321,6 +393,9 @@ fn resolve_calculated_anchor_inset(state &LayoutState, box &Node, containing_box
 fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &Node, containing_state &UsedValues, computed &css.ComputedValues, property_id css.PropertyID, containing_start CSSPixels, basis CSSPixels, is_from_end bool, is_horizontal_axis bool) ?CSSPixels {
 	value := unsafe { &css.ComputedProperties(computed) }.typed_property_value(property_id) or {
 		return resolved_inset(box, property_id, basis)
+	}
+	if value is css.AnchorSizeStyleValue {
+		return resolve_anchor_size_value(state, box, containing_state, value, basis, is_horizontal_axis)
 	}
 	if value is css.AnchorStyleValue {
 		return resolve_anchor_for_inset(state, box, containing_box, containing_state,
@@ -337,6 +412,14 @@ fn resolved_inset_with_anchors(state &LayoutState, box &Node, containing_box &No
 }
 
 fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
+	if state.absolute_layout_status[voidptr(box)] or { u8(0) } != 0 { return }
+	state.absolute_layout_status[voidptr(box)] = 1
+	defer { state.absolute_layout_status[voidptr(box)] = 2 }
+	if layout_with_position_try_fallbacks(mut state,box) { return }
+	layout_absolutely_positioned_box_once(mut state,box)
+}
+
+fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 	containing_box := box.containing_block() or { return }
 	containing_styled := unsafe { &Node(containing_box) }.as_node_with_style() or { return }
 	mut containing_state := state.get_mutable(containing_styled)
@@ -363,48 +446,90 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				containing_state.padding_top.plus(containing_state.content_height()).plus(containing_state.padding_bottom).to_double())
 		}
 	}
-	position_area := span_all_position_area(state, box, containing_state, computed, containing_rect)
+	original_containing_rect := containing_rect
+	position_area := resolved_position_area(state, box, containing_state, computed, containing_rect)
 	if area := position_area {
 		containing_rect = area.rect
 	}
 	containing_width := containing_rect.width
 	containing_height := containing_rect.height
+	mut horizontal_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, true)
+	mut vertical_alignment := absolute_self_alignment(box, unsafe { &Node(containing_box) }, false)
+	if area := position_area {
+		horizontal_alignment = position_area_alignment(horizontal_alignment, area.x_tracks)
+		vertical_alignment = position_area_alignment(vertical_alignment, area.y_tracks)
+	}
+	mut alignment_anchor := ?css.CSSPixelRect(none)
+	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
+		if name := computed.position_anchor() { alignment_anchor = resolve_named_anchor_rect(state,box,containing_state,name) }
+	}
+	zero_horizontal_auto := position_area != none || (horizontal_alignment.position == 'anchor-center' && alignment_anchor != none)
+	zero_vertical_auto := position_area != none || (vertical_alignment.position == 'anchor-center' && alignment_anchor != none)
 	resolve_box_model_edges(computed, mut box_state, containing_width.to_double())
 
-	left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut left := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .left, containing_rect.x, containing_width, false, true)
-	right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut right := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .right, containing_rect.x, containing_width, true, true)
-	top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut top := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .top, containing_rect.y, containing_height, false, false)
-	bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
+	mut bottom := resolved_inset_with_anchors(state, box, containing_box, containing_state,
 		computed, .bottom, containing_rect.y, containing_height, true, false)
-	mut forced_width := resolve_layout_content_size(box, computed.size_value(.width),
+	if zero_horizontal_auto {
+		if left == none { left = CSSPixels.new(0) }; if right == none { right = CSSPixels.new(0) }
+	}
+	if zero_vertical_auto {
+		if top == none { top = CSSPixels.new(0) }; if bottom == none { bottom = CSSPixels.new(0) }
+	}
+	mut forced_width := resolve_absolute_content_size(state, box, containing_state, .width,
 		containing_width, box_state, true)
-	mut forced_height := resolve_layout_content_size(box, computed.size_value(.height),
+	mut forced_height := resolve_absolute_content_size(state, box, containing_state, .height,
 		containing_height, box_state, false)
+	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 	preferred_width := computed.size_value(.width)
 	preferred_height := computed.size_value(.height)
+	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper()
+		&& horizontal_alignment.stretches() && (!box.is_replaced_box() || horizontal_alignment.position == 'stretch') {
+		if l := left { if r := right {
+			forced_width = css_pixels_max(CSSPixels.new(0),containing_width.minus(l).minus(r).minus(flex_or_grid_item_outer_inline_edges(box_state)))
+		} }
+	}
+	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper()
+		&& vertical_alignment.stretches() && (!box.is_replaced_box() || vertical_alignment.position == 'stretch') {
+		if t := top { if b := bottom {
+			forced_height = css_pixels_max(CSSPixels.new(0),containing_height.minus(t).minus(b).minus(flex_or_grid_item_outer_block_edges(box_state)))
+		} }
+	}
 	// FormattingContext::compute_width_for_absolutely_positioned_element() and
 	// compute_height_for_absolutely_positioned_element() both select the replaced
 	// algorithm through box_is_sized_as_replaced_element(), so a non-replaced box
 	// with a preferred aspect ratio and one specified axis is sized by it too.
 	abspos_available_space := AvailableSpace.new(AvailableSize.make_definite(containing_width),
 		AvailableSize.make_definite(containing_height))
-	if box_is_sized_as_replaced_element(state, box, abspos_available_space) {
+	if box_is_sized_as_replaced_element(state, box, abspos_available_space)
+		|| (if sized_box := box.as_box() { sized_box.has_preferred_aspect_ratio() && (forced_width != none || forced_height != none) } else { false }) {
 		replaced := box.as_box() or { return }
 		// CSS ratio boxes transfer the border-box inline size before removing
 		// block-axis edges, just as they do in normal flow. The resolved ratio
 		// height supplies the existing percentage-size basis for descendants.
-		size := chromium_concrete_ratio_block_size(replaced, box_state, abspos_available_space) or {
-			compute_replaced_size(replaced, abspos_available_space)
+		mut substitutions := map[css.PropertyID]css.Size{}
+		for property in [css.PropertyID.min_width,.max_width,.min_height,.max_height] {
+			horizontal := property in [.min_width,.max_width]
+			if value := absolute_anchor_size_property(state,box,containing_state,property,if horizontal { containing_width } else { containing_height },horizontal) {
+				substitutions[property] = css.Size.make_px(value)
+			}
 		}
-		if forced_width == none {
-			forced_width = size.width()
+		model := ReplacedBoxModel{percentage_basis:containing_width,used_inline_padding:box_state.padding_left.plus(box_state.padding_right)}
+		if width := forced_width { substitutions[.width] = css.Size.make_px(width.plus(replaced_box_sizing_edges(box,model,true))) }
+		if height := forced_height { substitutions[.height] = css.Size.make_px(height.plus(replaced_box_sizing_edges(box,model,false))) }
+		size := compute_replaced_size_with_box_model(replaced,abspos_available_space,ReplacedBoxModel{...model,size_overrides:substitutions})
+		if forced_width != none && forced_height == none && replaced.has_preferred_aspect_ratio() {
+			forced_height = intrinsic_content_height_from_aspect_ratio(replaced,box_state,size.width())
+		} else if forced_height != none && forced_width == none && replaced.has_preferred_aspect_ratio() {
+			forced_width = intrinsic_content_width_from_aspect_ratio(replaced,box_state,size.height())
 		}
-		if forced_height == none {
-			forced_height = size.height()
-		}
+		forced_width = forced_width or { size.width() }
+		forced_height = forced_height or { size.height() }
 	}
 	if forced_width == none && preferred_width.is_intrinsic_sizing_constraint() {
 		if box_as_box := box.as_box() {
@@ -412,7 +537,7 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				AvailableSize.make_definite(containing_width))
 		}
 	}
-	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper() {
+	if forced_width == none && preferred_width.is_auto() && !box.is_table_wrapper() && horizontal_alignment.stretches() {
 		if left_value := left {
 			if right_value := right {
 				forced_width = css_pixels_max(CSSPixels.new(0), css_px(
@@ -424,6 +549,10 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	}
 	if forced_width == none {
 		if box_as_box := box.as_box() {
+			if height := forced_height {
+				box_state.set_content_height(height)
+				box_state.set_has_definite_height(true)
+			}
 			// CSS 2.2 10.3.7 rules 1 and 3 use the space left by a
 			// specified inset as the stretch-fit limit for shrink-to-fit.
 			mut fit_available_width := containing_width
@@ -434,11 +563,16 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 				fit_available_width = fit_available_width.minus(right_value)
 			}
 			fit_available_width = css_pixels_max(CSSPixels.new(0), fit_available_width)
-			forced_width = calculate_fit_content_width(mut state, box_as_box,
-				AvailableSize.make_definite(fit_available_width))
+			if forced_height != none && !box.is_replaced_box() {
+				minimum := calculate_content_width_with_constraint(mut state,box_as_box,.min_content)
+				maximum := calculate_content_width_with_constraint(mut state,box_as_box,.max_content)
+				forced_width = css_pixels_max(minimum,css_pixels_min(maximum,calculate_stretch_fit_width(box_as_box,AvailableSize.make_definite(fit_available_width))))
+			} else {
+				forced_width = calculate_fit_content_width(mut state, box_as_box,AvailableSize.make_definite(fit_available_width))
+			}
 		}
 	}
-	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper() {
+	if forced_height == none && preferred_height.is_auto() && !box.is_table_wrapper() && vertical_alignment.stretches() {
 		if top_value := top {
 			if bottom_value := bottom {
 				forced_height = css_pixels_max(CSSPixels.new(0), css_px(
@@ -446,6 +580,12 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 					bottom_value.to_double() -
 					flex_or_grid_item_outer_block_edges(box_state).to_double()))
 			}
+		}
+	}
+	if forced_height == none && preferred_height.is_auto() && computed.writing_mode() != .horizontal_tb && !box.is_replaced_box() && !box.is_table_wrapper() {
+		if sized_box := box.as_box() {
+			available_height := css_pixels_max(CSSPixels.new(0),containing_height.minus(top or { CSSPixels.new(0) }).minus(bottom or { CSSPixels.new(0) }))
+			forced_height = calculate_fit_content_height(mut state,sized_box,forced_width or { box_state.content_width() },AvailableSize.make_definite(available_height))
 		}
 	}
 	if width := forced_width {
@@ -456,14 +596,17 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	}
 	box_state = layout_independent_child_with_forced_height_definiteness(mut state, box,
 		mut containing_state, containing_width, containing_height, forced_width, forced_height,
-		computed_height_establishes_definite_containing_block_height(preferred_height))
+		computed_height_establishes_definite_containing_block_height(preferred_height)
+			|| (preferred_height.is_auto() && top != none && bottom != none && vertical_alignment.stretches()))
+
+	resolve_absolute_anchor_margins(state, box, containing_state, mut box_state, containing_width)
 
 	// CSS 2.2 10.3.7: with both insets specified and a definite width,
 	// auto margins absorb the remaining space (equally when both are auto).
 	if left_value := left {
 		if right_value := right {
-			left_auto_margin := property_is_auto(computed, .margin_left)
-			right_auto_margin := property_is_auto(computed, .margin_right)
+			left_auto_margin := !zero_horizontal_auto && property_is_auto(computed, .margin_left)
+			right_auto_margin := !zero_horizontal_auto && property_is_auto(computed, .margin_right)
 			remaining := containing_width.minus(left_value).minus(right_value).minus(box_state.border_box_width()).minus(if left_auto_margin {
 				CSSPixels.new(0)
 			} else {
@@ -488,8 +631,8 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	// space when both block-axis insets are specified.
 	if top_value := top {
 		if bottom_value := bottom {
-			top_auto_margin := property_is_auto(computed, .margin_top)
-			bottom_auto_margin := property_is_auto(computed, .margin_bottom)
+			top_auto_margin := !zero_vertical_auto && property_is_auto(computed, .margin_top)
+			bottom_auto_margin := !zero_vertical_auto && property_is_auto(computed, .margin_bottom)
 			remaining := containing_height.minus(top_value).minus(bottom_value).minus(box_state.border_box_height()).minus(if top_auto_margin {
 				CSSPixels.new(0)
 			} else {
@@ -554,6 +697,56 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 	} else {
 		y = static_position.y().plus(box_state.margin_box_top())
 	}
+	if left_value := left {
+		if right_value := right {
+			if !horizontal_alignment.stretches() && !property_is_auto(computed, .margin_left) && !property_is_auto(computed, .margin_right) {
+				x = containing_rect.x.plus(absolute_aligned_axis_offset(horizontal_alignment, box,
+					unsafe { &Node(containing_box) }, true, left_value, right_value,
+					containing_width, box_state.margin_box_width())).plus(box_state.margin_box_left())
+			}
+		}
+	}
+	if top_value := top {
+		if bottom_value := bottom {
+			if !vertical_alignment.stretches() && !property_is_auto(computed, .margin_top) && !property_is_auto(computed, .margin_bottom) {
+				y = containing_rect.y.plus(absolute_aligned_axis_offset(vertical_alignment, box,
+					unsafe { &Node(containing_box) }, false, top_value, bottom_value,
+					containing_height, box_state.margin_box_height())).plus(box_state.margin_box_top())
+			}
+		}
+	}
+	if zero_horizontal_auto {
+		if property_is_auto(computed, .margin_left) { box_state.margin_left = CSSPixels.new(0) }
+		if property_is_auto(computed, .margin_right) { box_state.margin_right = CSSPixels.new(0) }
+	}
+	if zero_vertical_auto {
+		if property_is_auto(computed, .margin_top) { box_state.margin_top = CSSPixels.new(0) }
+		if property_is_auto(computed, .margin_bottom) { box_state.margin_bottom = CSSPixels.new(0) }
+	}
+	if horizontal_alignment.position == 'anchor-center' || vertical_alignment.position == 'anchor-center' {
+		if anchor := alignment_anchor {
+				if horizontal_alignment.position == 'anchor-center' {
+					x = absolute_anchor_center_offset(anchor.x.minus(containing_state.padding_left), anchor.width, containing_rect.x,
+						containing_width, left or { CSSPixels.new(0) }, right or { CSSPixels.new(0) },
+						box_state.margin_box_width()).plus(box_state.margin_box_left())
+				}
+				if vertical_alignment.position == 'anchor-center' {
+					y = absolute_anchor_center_offset(anchor.y.minus(containing_state.padding_top), anchor.height, containing_rect.y,
+						containing_height, top or { CSSPixels.new(0) }, bottom or { CSSPixels.new(0) },
+						box_state.margin_box_height()).plus(box_state.margin_box_top())
+				}
+		}
+	}
+	if position_area != none {
+		// Default overflow alignment uses the union with the original containing
+		// block, even when position-area reduced the alignment container.
+		if horizontal_alignment.overflow == '' {
+			x = position_area_default_overflow_offset(x,box_state.margin_box_left(),box_state.margin_box_width(),original_containing_rect.x,original_containing_rect.width,containing_rect.x,containing_rect.width,absolute_axis_starts_low(unsafe { &Node(containing_box) },true))
+		}
+		if vertical_alignment.overflow == '' {
+			y = position_area_default_overflow_offset(y,box_state.margin_box_top(),box_state.margin_box_height(),original_containing_rect.y,original_containing_rect.height,containing_rect.y,containing_rect.height,absolute_axis_starts_low(unsafe { &Node(containing_box) },false))
+		}
+	}
 	box_state.set_content_offset(CSSPixelPoint.new(x, y))
 
 	// compute_width_for_absolutely_positioned_non_replaced_element() and
@@ -572,14 +765,27 @@ fn layout_absolutely_positioned_box(mut state LayoutState, box &Node) {
 		.minus(y)
 		.minus(box_state.content_height())
 		.minus(box_state.margin_box_bottom())
+	if zero_horizontal_auto {
+		if property_is_auto(computed,.left) { box_state.inset_left = CSSPixels.new(0) }
+		if property_is_auto(computed,.right) { box_state.inset_right = CSSPixels.new(0) }
+	}
+	if zero_vertical_auto {
+		if property_is_auto(computed,.top) { box_state.inset_top = CSSPixels.new(0) }
+		if property_is_auto(computed,.bottom) { box_state.inset_bottom = CSSPixels.new(0) }
+	}
 }
 
 fn layout_absolutely_positioned_descendants(mut state LayoutState, root &Node) {
+	state.absolute_layout_status.clear()
+	layout_absolutely_positioned_subtree(mut state,root)
+}
+
+fn layout_absolutely_positioned_subtree(mut state LayoutState, root &Node) {
 	if root.is_absolutely_positioned() {
 		layout_absolutely_positioned_box(mut state, root)
 	}
 	align_block_contents(mut state, root)
 	for child in root.children() {
-		layout_absolutely_positioned_descendants(mut state, child)
+		layout_absolutely_positioned_subtree(mut state, child)
 	}
 }

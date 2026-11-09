@@ -38,6 +38,19 @@ class ProcessStopTests(unittest.TestCase):
 
 
 class ChromeCaptureExitTests(unittest.TestCase):
+    def test_shutdown_releases_the_observer_socket_before_waiting_for_browser_exit(self):
+        client, process = Mock(), Mock()
+        client.call.return_value = {'result': {'value': True}}
+        def wait(timeout):
+            client.sock.close.assert_called_once_with()
+            return 0
+        process.wait.side_effect = wait
+        report = dict(instructions=123, endpoint='screenshot response')
+        measurement.finish_chrome_capture(client, process, report, Path('/unused/capture'))
+        self.assertEqual(report['instructions'], 123)
+        self.assertEqual(report['endpoint'], 'screenshot response')
+        self.assertEqual(report['exit'], 0)
+
     def test_shutdown_cancels_interception_after_preserving_capture_counters(self):
         client, process = Mock(), Mock()
         client.call.return_value = {'result': {'value': True}}

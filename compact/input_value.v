@@ -81,11 +81,11 @@ fn (mut binding CompactElementQueryBinding) input_value_query(key string, source
 	}
 	allocation_scope.finish()
 	records, attributes := browserjs.compact_attribute_state(element)
-	return json2.encode({
+	return compact_replay_json_result(json2.encode({
 		'value':            json2.Any(value)
 		'attributeRecords': json2.Any(records)
 		'attributes':       json2.Any(attributes)
-	})
+	}))
 }
 
 fn compact_input_value_bootstrap() string {

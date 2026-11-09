@@ -239,7 +239,7 @@ fn (mut host ModuleHost) execute(source ScriptSource, stringify_result bool) !st
 		mut external := false
 		if element := source.element {
 			external = element.has_attribute('src')
-			options.cryptographic_nonce = element.get_attribute_value('nonce')
+			options.cryptographic_nonce = element.cryptographic_nonce()
 			options.integrity_metadata = element.get_attribute_value('integrity')
 			options.referrer_policy = element.get_attribute_value('referrerpolicy')
 			options.credentials_mode = if element.get_attribute_value('crossorigin').to_lower() == 'use-credentials' {

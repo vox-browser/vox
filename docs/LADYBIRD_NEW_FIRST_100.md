@@ -271,3 +271,137 @@ python3 tools/run_memory_bounded.py --limit-gib 3 \
     --limit 100 --browsers vox --chunk-size 20 \
     --browser-memory-gib 2 --require-all-pass
 ```
+
+## Upstream server and compression continuation
+
+The next published browser, SHA-256
+`c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0`,
+passes **77/100** cases in a fresh windowed run of the same pinned cohort.
+It reports 8,375 PASS, 8 FAIL, 4 TIMEOUT and 15 NOTRUN subtests. The first
+upstream-server configuration omitted WebSocket placeholders used by a shared
+security helper, so five CSP cases reached the outer timeout without reports.
+After correcting the configuration, those exact five cases all report with
+harness OK; all five still contain failing assertions. The 100-case batch
+remains incomplete. The executable predates several final IndexedDB fixes.
+
+The runner now optionally uses an existing upstream WPT checkout with
+`--wpt-server-root`. Python upload handlers, stash, response headers,
+substitution, localhost aliases and two HTTP/HTTPS ports use real wptserve.
+All 22 tooling tests pass, including binary upload/stash and a TLS client
+trusting the isolated test CA. WebSocket listeners remain unavailable and are
+recorded explicitly; the browser run uses HTTP. See the
+[server/browser report](performance/ladybird-first100-upstream-server-20261108.json).
+
+Commit `15a9f7020` replaces the JavaScript decompression buffer with an owned
+incremental zlib/Brotli context behind native TransformStream queues. Decoded
+bytes reach a pending reader before trailing input errors the stream, without
+requiring writable close. It accepts the current `brotli` IDL spelling,
+validates BufferSource internal slots, and closes codec state on cancellation,
+errors and runtime shutdown. All four unchanged upstream extra-input subtests
+pass, with names matching the saved browser run. Twelve model functions and
+three native binding functions pass, including the optional upstream harness.
+The [compression report](performance/ladybird-first100-compression-20261108.json)
+retains successful and failed development attempts. This source check does not
+replace production browser validation. Raw evidence is archived locally and
+all completed job scratch has been removed.
+
+## Native SharedWorker continuation
+
+Commit `d67ae676b` adds native SharedWorker globals, independent worker agents,
+queued connect events and reusable connections backed by actual MessagePorts.
+The parent registry reuses the agent for same-origin URL/name keys across
+Window owners. Port identifiers remain distinct between connections; closing
+one Window preserves another owner's connection, and the final owner closes
+the agent. Native JavaScriptCore globals carry the correct SharedWorker class.
+Connect events retain their empty-string data and port source identity.
+
+All **52 subtests in the ten selected IndexedDB SharedWorker variants pass**
+through fresh native worker processes and unchanged upstream worker wrappers,
+support scripts and assertions. The upstream parent shell harness collects
+results over real process/port transport. All 23 dedicated/shared worker
+regression functions pass, and the independent two-window reuse and constructor
+checks pass. This does not replace production windowed browser validation.
+`extendedLifetime` conversion does not implement a post-owner grace lifetime,
+and the registry does not claim cross-browser persistence. See the
+[SharedWorker report](performance/ladybird-first100-shared-workers-20261108.json)
+for identities, per-case results, failed development checks and local evidence.
+
+
+## Production refresh and form/CSP source checks
+
+The next completed production executable, SHA-256
+`59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`,
+passes **82/100 cases and 8396/8462 subtests** in the unchanged cohort using
+upstream wptserve. There are 87 harness-OK cases and 13 harness timeouts.
+The remaining 18 cases are ten SharedWorker variants, three multipart upload
+pages and five CSP pages. This bundle includes incremental decompression and
+passes all four corresponding upstream subtests. It predates the subsequent
+SharedWorker, form and CSP fixes.
+
+Source commits `c238849e7`, `a5e36790d` and `d30bfc72f` add legacy form submit
+navigation, creator-window worker CSP enforcement, and HTML form charset
+encoding. Focused checks pass two form binding/navigation functions, two native
+worker-CSP functions, two CSP owner/destination model functions, three encoder
+functions (including all three pinned upload encoding vectors), two multipart
+functions and three existing UTF-8 serializer functions. These focused results
+are separate from full upstream upload integration, which remains under repair.
+The [manifest](performance/ladybird-first100-forms-csp-browser82-20261108.json)
+retains the production results, guard exits and local archive identity.
+
+
+## Full native engine acceptance
+
+The unchanged first-100 cohort now passes **100/100 cases and 8514/8514
+subtests** in fresh native Vox engine processes. All harness statuses and
+process exits are zero, with no failed, timed-out or unrun subtests. The
+executable SHA-256 is
+`559768100803bf929efbbadf5cdac6208e35d79293dab58ff5c06208b6421ecd`.
+The selection remains the original 100 IDs from Ladybird
+`2919bf87a5e5dfc49a210a70bda079afa411c6c5`, newly added since
+`963d46a829f3e1b79f44dba9d02afb70654300fa`.
+
+The denominator increases from 8462 to 8514 because the ten SharedWorker
+variants now register their 52 subtests. The other 90 cases retain the same
+subtest names and counts as the saved production baseline. Test bodies,
+wrappers, support files and assertions retain their pinned bytes. The existing
+harness normalization removes Ladybird-only CI shortcuts, and a collecting
+report script replaces the presentation reporter.
+
+This run uses actual Vox navigation documents, HTML/DOM bindings, JavaScriptCore,
+Fetch, upstream wptserve handlers, iframe POST navigation and native dedicated
+and shared worker processes. It exercises all 18 upload assertions and all 60
+CSP assertions through their original HTML pages. It does not exercise GUI
+creation or painting. The full controller and its children stay within the
+3 GiB runtime guard; compilation uses the C backend and the 12 GiB guard.
+Eight focused native regression functions also pass on the final executable.
+The [acceptance manifest](performance/ladybird-first100-native-all-pass-20261108.json)
+records every case, executable/source identity, guards, server identity and
+verified local raw archive. Completed job directories, generated C, guards and
+the temporary combined test file have been removed from the checkout.
+
+The final integration fixes preserve HTTP navigation policy headers
+(`af38f10ac`), resolve live submitter associations (`344cfe7d2`), retire a removed
+iframe before reusing its target name (`583e00a92`), publish complete readiness
+before load listeners run (`85cfa9fb6`), and parse text responses with the
+existing literal-text tokenizer (`e1b6e0d50`). The optional native document
+harness driver is committed in `0e2b7fc01`.
+
+Production-bundle acceptance remains pending. The last completed production
+browser tested here passes 82/100, as recorded above, and predates these fixes.
+The shared production build guard was busy at final verification; no duplicate
+production build was queued. The 100/100 result is native engine acceptance and
+must not be presented as a completed windowed production-browser run. Reuse the
+existing `tools/wpt_compare.py` command above with
+`--wpt-server-root /Users/alex/code/3rd/web-platform-tests` when a completed
+bundle contains the final fixes.
+
+
+A newer production executable,
+`91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831`,
+was published while the final native evidence was being archived. Its sealed
+source manifest includes the earlier SharedWorker and response-policy fixes,
+but predates the final frame-target, readiness and literal-text navigation
+changes. It has not received a cohort result here. The 82/100 production
+baseline belongs specifically to executable `59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`;
+the 100/100 native result remains attached to executable
+`559768100803bf929efbbadf5cdac6208e35d79293dab58ff5c06208b6421ecd`.

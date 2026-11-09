@@ -1,5 +1,6 @@
 module main
 
+import browsernet
 import browserjs
 import dom
 import html
@@ -94,7 +95,7 @@ fn test_back_forward_navigation_transfers_the_document_session_identity() {
 	assert app.js_messages.len == 0
 }
 
-fn test_background_completions_wait_in_the_session_that_requested_them() {
+fn test_pending_background_requests_retire_with_their_session() {
 	mut app := document_session_test_app()
 	defer { app.dispose_browser_tab() }
 	app.install_loaded_page(document_session_test_page('resource-owner'), true)
@@ -103,30 +104,21 @@ fn test_background_completions_wait_in_the_session_that_requested_them() {
 	address := 'https://document-session.example/late-resource.bin'
 	app.background_resource_pending[address] = true
 	app.background_resource_jobs++
-	// The worker has already captured this channel. Completing after navigation
-	// must not deliver a resource to the replacement document's poller.
 	results := app.background_resource_results
+	scope := app.resource_request_scope()
+	scope.retain()
+	defer { scope.release() }
+	assert app.back_forward_cache_blocker() == 'resource requests'
 	app.install_loaded_page(document_session_test_page('replacement'), true)
 	document_session_test_finish_loading(app.document)
-	results <- PreloadedResource{
-		url:        address
-		source_url: 'https://document-session.example/resource-owner'
-		body:       'response for the suspended document'
-	}
-	assert first.background_resource_results.len == 1
+	assert first.state == .retired
+	assert scope.is_cancelled()
+	assert !browsernet.publish_result(PreloadedResource{url: address}, results, scope)
 	assert app.background_resource_results.len == 0
 	assert address !in app.background_resource_pending
 	app.poll_background_resources()
 	assert address !in app.resource_cache
-	assert first.background_resource_results.len == 1
-
-	app.history_go(-1)
-	assert voidptr(app.DocumentSessionRef) == voidptr(first)
-	app.poll_background_resources()
-	assert app.background_resource_results.len == 0
-	assert address !in app.background_resource_pending
 	assert app.background_resource_jobs == 0
-	assert app.resource_cache[address].body == 'response for the suspended document'
 }
 
 fn document_session_test_background_worker(results chan PreloadedResource, started chan bool,
@@ -233,7 +225,8 @@ fn test_tab_retirement_closes_the_whole_session_once_even_when_close_reenters() 
 	lease := layout.retain_display_list_scene(app.paint_display_list)
 	defer { layout.release_display_list_scene(lease) }
 	assert app.paint_commands.len > 0
-	app.draw_command_copies << &layout.PaintCommand(app.paint_commands[0])
+	command_copy := app.paint_commands[0]
+	app.draw_command_copies << &command_copy
 	app.rounded_rect_underlay = app.paint_commands[0]
 	app.rounded_rect_underlay_source = app.paint_commands[0]
 	app.background_image_border = app.paint_commands[0]

@@ -2,6 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from prepare_linux_modules import stage_module
 from prepare_ui2 import prepare_gg_gradient, prepare_ui2_source
 from prepare_linux_modules import stage_module
 
@@ -91,6 +92,41 @@ class UpstreamUI2Tests(unittest.TestCase):
             self.assertEqual((source / 'ui/embedding.v').read_bytes(), before)
             prepare_ui2_source(source, target)
             self.assertEqual(target.resolve(), source)
+
+
+class GgCacheTests(unittest.TestCase):
+    def test_repeated_preparation_preserves_compiler_sources(self):
+        for linked_directory in [False, True]:
+            with self.subTest(linked_directory=linked_directory), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                vlib, modules = root / 'vlib', root / 'modules'
+                source, target = vlib / 'gg', modules / 'gg'
+                (source / 'canvas').mkdir(parents=True)
+                (source / 'canvas/shaders').mkdir()
+                (source / 'render').mkdir()
+                (source / 'keyboard.v').write_text('module gg\n')
+                (source / 'render/render.v').write_text('module render\n')
+                (source / 'render/helper.h').write_text('/* native renderer */\n')
+                (source / 'canvas/gpu_gradient.v').write_text('module canvas\n')
+                (source / 'canvas/shaders/fill.glsl').write_text('// native shader\n')
+                target.mkdir(parents=True)
+                (target / 'canvas').mkdir()
+                (target / 'keyboard.v').write_text('stale cached module\n')
+                if linked_directory:
+                    (target / 'render').symlink_to(source / 'render', target_is_directory=True)
+                    (target / 'canvas/shaders').symlink_to(source / 'canvas/shaders', target_is_directory=True)
+                else:
+                    (target / 'render').mkdir()
+                    (target / 'render/render.v').write_text('stale renderer\n')
+                    (target / 'canvas/shaders').mkdir()
+                original = {p.relative_to(source): p.read_bytes() for p in source.rglob('*') if p.is_file()}
+                for _ in range(2):
+                    prepare_gg_gradient(modules, vlib)
+                    self.assertFalse((target / 'render').is_symlink())
+                    self.assertFalse((target / 'canvas/shaders').is_symlink())
+                    stage_module(source, target, 'gg')
+                    actual = {p.relative_to(source): p.read_bytes() for p in source.rglob('*') if p.is_file()}
+                    self.assertEqual(actual, original)
 
 
 if __name__ == '__main__':

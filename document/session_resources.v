@@ -9,6 +9,14 @@ import platform
 fn (mut session DocumentSession) retire_background_resources() {
 	jobs := session.background_resource_jobs
 	session.background_resource_jobs = 0
+	// Scoped producers may suppress their response after cancellation. They
+	// wake from a full queue themselves, so no fixed-count drain may wait here.
+	if scope := session.background_resource_scope {
+		scope.cancel()
+		scope.release()
+		session.background_resource_scope = none
+		return
+	}
 	if jobs == 0 { return }
 	results := session.background_resource_results
 	persistent := platform.enter_persistent()

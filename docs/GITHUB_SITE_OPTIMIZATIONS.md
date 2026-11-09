@@ -1,5 +1,64 @@
 # GitHub site policy, 2026-11-08
 
+The requested **20% reduction is established for the frozen, full-JavaScript
+startup-and-capture workload**. Seven matched control/candidate pairs show
+**29.23% fewer observed instructions between medians**, with a conservative
+**22.19% reduction** using the highest candidate and lowest control.
+The app starts immediately; no interaction-triggered script loading is added.
+
+| Statistic | Control | Optimized |
+| --- | ---: | ---: |
+| Median observed instructions | 56,828,029,810 | 40,219,144,070 |
+| Conservative gate inputs | 52,109,819,927 (lowest) | 40,545,639,507 (highest) |
+
+The integer gate passes: `5 × 40545639507 = 202728197535` is at most
+`4 × 52109819927 = 208439279708`. This compares the combined GitHub site policies with their
+rollback controls in the **same executable**, plus original versus optimized
+resource assets. It does not isolate the contribution of any individual policy.
+The [complete evidence](performance/github-raster-input-validation-20261108.json)
+retains every observation and failed attempt, exact process counters, host load,
+commands, exits, source/native input manifests and semantic/pixel audits.
+
+The pinned completed production-build artifact is executable SHA256
+`91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831`, receipt
+`20261108-151324-a8c2bca5`: JavaScriptCore, GG adapters, one C unit and literal
+V `-prod` disabled. It was checked directly in the shared publisher's staging
+location under its artifact lease. This result identifies that compiled artifact;
+it does not imply that an older installed bundle contains these changes.
+
+The endpoint includes fresh process startup, native window setup, resource
+loading, document-only 1024×768 PNG encoding at 1×, retained-content audit and
+teardown. Each side uses a fresh private profile and HTTP cache, the same
+original-origin archived responses and the same Date-only replay prefix. OS
+filesystem/shader caches remain warm. Capture waits for the hydrated Sponsor
+button and complete contributor sidebar, then settles for five seconds. Scripts,
+timers and performance clocks execute normally. Counts are sampled process-tree
+lower bounds, including charged root CPU work; missing final helper samples and
+GPU/WindowServer exclusions prevent a complete-browser instruction-total claim.
+The result applies to this frozen launch/capture workload, not isolated rendering,
+live-site performance, scrolling FPS or a comparison with Brave.
+
+All fourteen captures match the **unchanged original reference exactly**, with
+33 directory rows, 141 file links, 53 commit links, all 39 images, latest-commit
+metadata and the full README. Every browser exits normally with zero reported
+native or JavaScript errors. Both independent animation-time probes agree with
+`performance.now()` within their read brackets. A separate diagnostic confirms
+the new cosmetic-token reuse path and cross-generation native raster reuse.
+Headless startup, all 11 default screenshots, all eight SVG mutation checks and
+the image/style/SVG mutation proof pass. A fresh live GitHub load also passes
+with 34 rows, 51 commit links and the README, without reported errors; it is a
+functional check, not a live performance comparison.
+
+The final policy (`43af24792`) avoids repeating GitHub's cosmetic ID/class survey
+after unrelated attributes, text-only edits and detached/shadow mutations. Light
+DOM element membership and relevant ID/class changes still invalidate it.
+Procedural filtering and live CSS matching continue. Four DOM cases, three policy
+cases in enabled/rollback modes and all five existing cache regressions under
+preallocation pass. ChatGPT and GitHub policy live in the `site_optimizations/`
+virtual module; the historical sections below retain the path to this result.
+
+## Initial diagnostic (historical)
+
 The requested 20% instruction reduction is **not established**. The site policy
 and the `site_optimizations/` virtual module are implemented; this report does
 not mark the performance target complete.
@@ -233,3 +292,69 @@ retains attempts, failures, source identities, counters, clock probes and check
 receipts. The [earlier wakeup evidence](performance/github-wakeup-validation-20261108.json)
 retains earlier production build proofs and the source-inventory changes. No
 seven-pair 20% acceptance or live performance fix is claimed yet.
+
+The later `site14` diagnostic on executable `c7079cad06a2637240b8eab7e3ab6836e4c086a4fc714c706f7494ed3fe516d0`
+found an empty-byte-array panic in the expanded raster key. A size-only image
+bitmap can retain its deferred decoder until its first draw. `62d75c184` keeps
+empty and deferred bitmaps on the revision key and applies the renderer's own
+scope-aware culling before examining image pixels. It does not force decoding.
+Uniform fills covering the viewport also retain their existing extent rule.
+All nine focused raster cases pass with reuse enabled and disabled; the original
+crash and failed fixture attempts remain in the evidence. Production validation
+of this correction remains pending.
+
+The corrected capture condition also requires the last contributor image before
+the five-second settle. A fresh functional control retains all 39 images, with
+the full repository audit and zero JavaScript diagnostics. Four readiness cases
+pass, including the combined Sponsor/sidebar condition. These checks earn no
+instruction credit. The same condition must apply to both sides of a new cohort;
+the earlier incomplete-content results remain invalid.
+
+## Clock correction before acceptance
+
+The complete `site15` seven-pair cohort reaches 29.09% between medians and 22.12%
+using highest candidate / lowest control, but **fails acceptance**. The first
+control renders “9 hours ago”; all later captures render “10 hours ago”, changing
+828 pixels. All primary content and input identities match. Original HTTP Date
+headers did not freeze JavaScript Date. Earlier wording about a controlled author
+clock was not supported by those drivers.
+
+`ea605a957` adds an explicit shared replay-clock prefix to the reviewed runtime,
+retaining every original module byte. Date advances from a fixed epoch using
+elapsed `performance.now()`; performance clocks and timers remain unchanged.
+The three tool tests cover constructors, static methods, subclasses, elapsed time,
+idempotence, original-byte preservation and unknown-runtime rejection. A fresh
+functional control with this clock matches the original first-control PNG exactly.
+`b7e153a32` retains that unchanged reference and its semantic manifest under
+`Tests/Browser/GitHub/site-optimizations-20261108/`. Neither the reference nor
+the tolerance changes for the corrected cohort. No optimization credit is earned
+by this clock correction.
+
+The corrected raster build `16a2e4e7` passes fresh headless startup, all 19
+screenshot checks and a mutation fixture with identical control/candidate pixels:
+the box is green, the moved SVG path is blue with its old position white, and the
+same-size replacement image is blue. Both optimized animation-time probes match
+`performance.now()` exactly within their read brackets. Fresh live GitHub also
+passes with 34 directory rows, 50 commit links and the README, with zero reported
+errors. These functional checks do not validate the still-pending corrected
+instruction cohort.
+
+The clock-corrected `site16` cohort on published build `59de419d` has seven
+complete pairs and exact original PNGs throughout. Observed medians are
+67,254,775,743 control and 43,439,794,443 optimized instructions (35.4101%
+reduction), but the conservative reduction is only 17.3503%, so the requested
+20% gate remains open. Every complete attempt is retained; none is excluded.
+Headless startup, all 19 screenshot checks and the mutation fixture pass. This
+build's live check receives a navigation error, while the preceding build's live
+check succeeded; the frozen result does not establish a live performance gain.
+
+`43af24792` makes GitHub cosmetic-token invalidation match its actual inputs.
+The survey reads IDs/classes from the light DOM, so unrelated attributes,
+text-only edits and detached/shadow mutations need not rescan it. Generic DOM
+counters preserve invalidation for connected element membership and ID/class
+changes; other sites retain the original counters. Procedural filtering still
+runs and live CSS matching is unchanged. Four DOM cases and three policy cases
+pass, including rollback mode; all five existing token-cache cases also pass
+under preallocation. `b5fc1df2f` shares their independent selector-based oracle
+between focused test files. Production eligibility and instruction savings from
+this latest policy are verified by the final seven-pair cohort above.

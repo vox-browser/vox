@@ -3,7 +3,7 @@ module main
 // Native reads must replay every pending edit, but an unchanged indexed
 // collection read should not enumerate every facade in the document.
 fn compact_pending_elements_bootstrap() string {
-	return r'
+	return compact_element_content_cache_bootstrap() + r'
 const __dirtyElementStates=new Set(),__trackedElementStates=new WeakSet();
 const __pendingKeys=Object.keys,__pendingAssign=Object.assign,__pendingStringify=JSON.stringify;
 const __pendingApply=Reflect.apply,__pendingSetSize=Object.getOwnPropertyDescriptor(Set.prototype,"size").get;
@@ -13,6 +13,7 @@ function __compactHasPendingDOMState(){
 function __trackElementEdits(state){
  if(__trackedElementStates.has(state))return state;
  __trackedElementStates.add(state);
+ __compactRegisterContent(state);
  for(const name of ["attributesDirty","textContentDirty","innerHTMLDirty","checkedDirty","indeterminateDirty"]){
   let value=state[name];
   if(value)__dirtyElementStates.add(state);
@@ -25,12 +26,12 @@ __state.elements=new Proxy(__state.elements,{set(target,key,state){return Reflec
 function __pendingElementStates(includeCanvases){
  const pending=Object.create(null);
  for(const state of __dirtyElementStates){
-  if(state.attributesDirty||state.textContentDirty||state.innerHTMLDirty||state.checkedDirty||state.indeterminateDirty)pending[state.bridgeKey]=state;
+  if(state.attributesDirty||state.textContentDirty||state.innerHTMLDirty||state.checkedDirty||state.indeterminateDirty){__compactRefreshContent(state);pending[state.bridgeKey]=state;}
   else __dirtyElementStates.delete(state);
  }
  if(includeCanvases)for(const key of Object.keys(__canvases)){
   const state=__canvases[key].state;
-  if(state.canvasNative&&__state.elements[state.bridgeKey]===state)pending[state.bridgeKey]=state;
+  if(state.canvasNative&&__state.elements[state.bridgeKey]===state){__compactRefreshContent(state);pending[state.bridgeKey]=state;}
  }
  return pending;
 }

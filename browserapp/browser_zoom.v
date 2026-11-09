@@ -87,14 +87,16 @@ fn (mut app BrowserApp) activate_browser_zoom(action string) {
 }
 
 fn (mut app BrowserApp) set_browser_zoom(zoom f64) {
-	if zoom == app.page_zoom { return }
-	// Keep the same document position while changing the screen-pixel scale.
-	app.scroll_y *= zoom / app.page_zoom
-	app.page_zoom = zoom
+	// The PageClient belongs to the tab; a newly published session can already
+	// hold this zoom while the client still has the outgoing document's zoom.
 	if app.page_model != unsafe { nil } {
 		mut client := app.page_model.client()
 		client.zoom_level_ = zoom
 	}
+	if zoom == app.page_zoom { return }
+	// Keep the same document position while changing the screen-pixel scale.
+	app.scroll_y *= zoom / app.page_zoom
+	app.page_zoom = zoom
 	$if macos {
 		if app.snapshot_visible { C.native_hide_cached_snapshot() }
 	}

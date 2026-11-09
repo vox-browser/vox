@@ -231,6 +231,10 @@ pub fn (mut script HTMLScriptElementModel) set_source_line_number(line uint) {
 	script.source_line_number_ = if line == 0 { uint(1) } else { line }
 }
 
+pub fn (script &HTMLScriptElementModel) source_line_number() int {
+	return int(script.source_line_number_)
+}
+
 pub fn (script &HTMLScriptElementModel) is_parser_inserted() bool {
 	return script.parser_document_ != none
 }
@@ -352,6 +356,10 @@ pub fn (mut script HTMLScriptElementModel) prepare_script(document ?&dom.Documen
 		}
 		script.complete_external_fetch(source)
 		return
+	}
+	if element := script.element_ {
+		owner := script_dom_element(element)
+		if owner.document().should_block_inline_content(owner, 'script', script.text_) { return }
 	}
 	if script.script_type_ == .import_map {
 		result := ImportMapParseResult.create(script.text_, script.base_url_)
@@ -577,7 +585,7 @@ fn (script &HTMLScriptElementModel) execute_source(source string) ! {
 		if script.script_type_ == .classic {
 			if element := script.element_ {
 				if !script_dom_element(element).as_node().root().is_shadow_root() {
-					document.set_current_script(element)
+					document.set_current_script(script_dom_element(element))
 				}
 			}
 		}
@@ -601,7 +609,14 @@ fn (script &HTMLScriptElementModel) invoke_execute_hook(source string) ! {
 			return
 		}
 	}
-	if execute := script.execute_hook_ { execute(script.script_type_, source, source_url)! }
+	if execute := script.execute_hook_ {
+		execute(script.script_type_, source, source_url)!
+		return
+	}
+	if document := script.preparation_time_document_ {
+		element := if owner := script.element_ { ?&dom.Element(script_dom_element(owner)) } else { none }
+		_ = execute_bound_script_element(document, script.script_type_, source, int(script.source_line_number_), element)!
+	}
 }
 
 pub fn (mut script HTMLScriptElementModel) parser_execute_ready_script() {
@@ -719,6 +734,7 @@ pub fn html_script_element_post_connection(element &dom.HTMLScriptElement) {
 	if model.is_parser_inserted() {
 		return
 	}
+	model.set_connected(script_dom_element(element).as_node().is_connected())
 	model.prepare_script(script_dom_element(element).document())
 }
 

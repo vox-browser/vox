@@ -50,7 +50,7 @@ fn simplify_calc(node CalcNode, calculation_context CalculationContext) CalcNode
 		CalcTreeCounting, CalcChannel {
 			return node
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return node
 		}
 		CalcSum {
@@ -124,6 +124,29 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 		}
 		CalcAnchor {
 			if resolved := resolve_calc_anchor(node, calculation_context, context) {
+				return calc_canonical_leaf(.length, resolved.value)
+			}
+			return node
+		}
+		CalcAnchorSize {
+			if resolver := context.anchor_size_resolver {
+				if pixels := resolver(context.anchor_resolver_context,node.style_value) {
+					return calc_canonical_leaf(.length,pixels.to_double())
+				}
+				if fallback := node.style_value.fallback_value() {
+					match fallback {
+						LengthStyleValue { return calc_canonical_leaf(.length,fallback.length().to_px_without_rounding(context.length_resolution_context)) }
+						PercentageStyleValue { return calc_canonical_leaf(.percentage,fallback.percentage().value()) }
+						CalculatedStyleValue {
+							if fallback.node.len == 1 { return simplify_calc_with_resolution(fallback.node[0],fallback.calculation_context,context) }
+						}
+						AnchorSizeStyleValue { return simplify_calc_with_resolution(CalcNode(CalcAnchorSize{style_value:fallback}),calculation_context,context) }
+						else {}
+					}
+				}
+				return node
+			}
+			if resolved := resolve_calc_anchor_size(node, calculation_context, context) {
 				return calc_canonical_leaf(.length, resolved.value)
 			}
 			return node

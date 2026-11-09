@@ -13,6 +13,13 @@ pub fn (mut store IDBObjectStore) get_async(range IDBKeyRange) !&IDBRequest {
 	})
 }
 
+pub fn (mut store IDBObjectStore) get_key_async(range IDBKeyRange) !&IDBRequest {
+	store.require_cursor_source()!
+	return store.enqueue_operation(fn [range] (mut handle IDBObjectStore) !&IDBRequest {
+		return handle.get_key(range)
+	})
+}
+
 pub fn (mut store IDBObjectStore) put_async(input Value, key ?Key, no_overwrite bool) !&IDBRequest {
 	data := store.load()!
 	store.transaction.require_writable()!

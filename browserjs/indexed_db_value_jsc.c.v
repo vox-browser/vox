@@ -58,6 +58,19 @@ fn indexed_db_value_from_projection(value dom.JSValue, mut seen map[voidptr]bool
 		}
 		.date { return indexeddb.date_value(object.number_data) }
 		.array_buffer { return indexeddb.binary_value(object.bytes) }
+		.array_buffer_view {
+			buffer := object.viewed_array_buffer or { return error('DataCloneError: Missing viewed buffer') }
+			if buffer.max_byte_length != none {
+				return error('DataCloneError: IndexedDB resizable backing buffers are not yet stored')
+			}
+			if voidptr(buffer) in seen {
+				return error('DataCloneError: IndexedDB cannot yet store shared backing buffer records')
+			}
+			seen[voidptr(buffer)] = true
+			length := object.byte_length or { return error('DataCloneError: Missing fixed view byte length') }
+			return indexeddb.array_buffer_view_value(object.string_data, buffer.bytes, object.byte_offset,
+				length, object.array_length)
+		}
 		.array {
 			length := int(object.array_length or { u32(0) })
 			if object.properties.len != length {
@@ -95,6 +108,17 @@ fn (mut runtime Runtime) indexed_db_output(value indexeddb.Value) !voidptr {
 }
 
 fn indexed_db_value_to_projection(value indexeddb.Value) !dom.JSValue {
+	if value.kind == .array_buffer_view {
+		mut buffer := html.StructuredObject.create(.array_buffer)
+		buffer.bytes = value.bytes.clone()
+		mut view := html.StructuredObject.create(.array_buffer_view)
+		view.viewed_array_buffer = buffer
+		view.string_data = value.view_name
+		view.byte_offset = value.view_offset
+		view.byte_length = value.view_byte_length
+		view.array_length = value.view_length
+		return html.structured_object_value(view)
+	}
 	if value.kind == .blob {
 		return html.structured_object_value(html.StructuredObject.create_blob(fileapi.Blob.create_utf16(value.bytes,
 			libjs.utf16_string_from_utf8_without_validation(value.mime_type))))

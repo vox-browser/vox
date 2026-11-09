@@ -42,7 +42,9 @@ fn (mut binding CompactElementQueryBinding) internals_send_text(key string, sour
 	binding.note_node_tree_mutation()
 	mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
 	runtime.mark_document_replay_effects()
-	return 'null'
+	// Editing can add or remove attributes on existing inline elements. Reuse
+	// execCommand's refresh so retained wrappers and Attr objects see them.
+	return json2.encode({'refresh': binding.mutation_refresh(document.as_node())})
 }
 
 fn compact_webdriver_key(code u32) (dom.KeyCode, u32, u32) {
@@ -77,7 +79,7 @@ if(window.internals)window.internals.sendText=({sendText(element,text,modifiers=
  text=String(text);
  const number=+modifiers;modifiers=Number.isFinite(number)?((Math.trunc(number)%65536)+65536)%65536:0;
  __compactInvalidateContent(state);
- try{__queryElements(state.bridgeKey,"internalsSendText",JSON.stringify({text,modifiers,state:state.created?state:undefined}));}
+ try{__compactApplyMutationRefresh(__queryElements(state.bridgeKey,"internalsSendText",JSON.stringify({text,modifiers,state:state.created?state:undefined}),true));}
  finally{__compactInvalidateContent(state);}
 }}).sendText;
 '

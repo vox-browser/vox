@@ -6,6 +6,11 @@ output_dir=${1:-"$repo_dir/Build/gg-cpu-raster"}
 count=${2:-20000}
 seed=${3:-20261106}
 v_compiler=${V_BIN:-"$HOME/code/v/v"}
+v_backend=${CPU_RASTER_TEST_BACKEND:-c}
+case "$v_backend" in
+    c|fastc) ;;
+    *) echo 'CPU_RASTER_TEST_BACKEND must be c or fastc' >&2; exit 2 ;;
+esac
 platform=$(uname -s)
 case "$platform" in
     Darwin)
@@ -80,7 +85,10 @@ fi
 set --
 if [ "${CPU_RASTER_TEST_PROD:-0}" = 1 ]; then set -- -prod -gc none; fi
 if [ "${CPU_RASTER_FREETYPE:-0}" = 1 ]; then set -- "$@" -d cpuraster_freetype; fi
-"$v_compiler" -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
+# Keep the differential baseline on the C backend independently of the
+# browser manifest's selected backend. FastC comparisons require an opt-in.
+echo "cpu raster backend: $v_backend"
+"$v_compiler" -enable-globals -b "$v_backend" -cc clang -memory-limit 10G "$@" -path "$repo_dir|@vlib|@vmodules" \
     -o "$output_dir/cpu_raster_check" "$repo_dir/tools/gg_migration/cpu_raster_check.v"
 python3 - "$output_dir/inputs.json" "$output_dir/cpu_raster_check" "$output_dir/$oracle_name" <<'PY'
 import hashlib,json,sys

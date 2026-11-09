@@ -4,6 +4,7 @@
 import argparse
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -13,7 +14,7 @@ CASES = [
     "css/color_interpolation_test.v", "dom/range_mutation_order_test.v",
     "platform/gc_keepalive_linux_test.v",
     "libjs/stack_info_test.v",
-    "libregex/native_abi_test.v",
+    "libregex/compiled_regex_test.v", "libregex/ecmascript_regex_test.v",
     "platform/native_timer_test.v", "platform/native_deferred_test.v",
     "platform/fontconfig_linux_test.v", "browserjs/linux_runtime_test.v",
     "browserjs/jsc_abi_test.v",
@@ -58,6 +59,15 @@ def main():
         [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
         cwd=repo, env=environment, text=True).strip()
     module_paths = [str(repo), linux_modules, http_modules]
+    # Application tests compile all of module main, including browser chrome.
+    # Use the production UI2 adapter only for those cases so engine-only tests
+    # retain their existing dependency set.
+    if any(re.search(r"(?m)^\s*module\s+main\s*$", (repo / case).read_text())
+           for case in args.cases):
+        ui2_modules = subprocess.check_output(
+            [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
+            cwd=repo, env=environment, text=True).strip()
+        module_paths.append(ui2_modules)
     if args.gc == "prealloc":
         # Match the production allocator, including bounded realloc and the
         # persistent closure directory. Flags alone leave global runtime

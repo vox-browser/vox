@@ -22,6 +22,7 @@ type CalcNode = CalcNumeric
 	| CalcFunction
 	| CalcRandom
 	| CalcAnchor
+	| CalcAnchorSize
 	| CalcTreeCounting
 	| CalcChannel
 
@@ -104,6 +105,43 @@ struct CalcAnchor {
 	style_value AnchorStyleValue
 }
 
+struct CalcAnchorSize {
+	style_value AnchorSizeStyleValue
+}
+
+pub fn (value CalculatedStyleValue) contains_anchor_functions() bool {
+	for node in value.node {
+		if calc_node_contains_anchor_functions(node) { return true }
+	}
+	return false
+}
+
+// Computed min/max sizes keep percentages symbolic after anchor substitution.
+pub fn (value CalculatedStyleValue) resolved_anchor_sizes(context CalculationResolutionContext) ?StyleValue {
+	if value.node.len != 1 { return none }
+	node := simplify_calc_with_resolution(value.node[0],value.calculation_context,context)
+	if calc_node_contains_anchor_functions(node) { return none }
+	return StyleValue(CalculatedStyleValue{
+		serialization:node.serialize_top()
+		numeric_type_:calculated_numeric_type_storage(value.numeric_type())
+		node:[node]
+		calculation_context:value.calculation_context
+	})
+}
+
+fn calc_node_contains_anchor_functions(node CalcNode) bool {
+	match node {
+		CalcAnchor, CalcAnchorSize { return true }
+		CalcSum, CalcProduct, CalcNegate, CalcInvert, CalcFunction, CalcRandom {
+			for child in node.children {
+				if calc_node_contains_anchor_functions(child) { return true }
+			}
+		}
+		else {}
+	}
+	return false
+}
+
 fn calc_function_is_supported(name string) bool {
 	return name in ['calc', 'min', 'max', 'clamp', 'hypot', 'abs', 'sign', 'sin', 'cos', 'tan',
 		'asin', 'acos', 'atan', 'atan2', 'pow', 'sqrt', 'exp', 'log', 'mod', 'rem', 'round', 'random']
@@ -140,7 +178,7 @@ fn (mut parser Parser) parse_calculated_value_with_context(mut tokens ComponentV
 	tokens = transaction
 	return StyleValue(CalculatedStyleValue{
 		serialization: node.serialize_top()
-		numeric_type_: numeric_type
+		numeric_type_: calculated_numeric_type_storage(numeric_type)
 		node: [node]
 		calculation_context: context
 	})
@@ -539,6 +577,12 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 	}
 	if component_value.is_function() {
 		name := to_ascii_lowercase(component_value.function().name)
+		if name == 'anchor-size' {
+			mut anchor_tokens := ComponentValueStream.new([component_value])
+			anchor := parser.parse_anchor_size(mut anchor_tokens) or { return none }
+			if anchor !is AnchorSizeStyleValue { return none }
+			return CalcNode(CalcAnchorSize{style_value: anchor as AnchorSizeStyleValue})
+		}
 		if name == 'anchor' {
 			mut anchor_tokens := ComponentValueStream.new([component_value])
 			anchor := parser.parse_anchor(mut anchor_tokens) or { return none }
@@ -653,7 +697,7 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 		CalcTreeCounting, CalcChannel {
 			return node
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return node
 		}
 		CalcSum {
@@ -741,7 +785,7 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		CalcTreeCounting, CalcChannel {
 			return NumericType.new()
 		}
-		CalcAnchor {
+		CalcAnchor, CalcAnchorSize {
 			return NumericType.with_type(.length, 1)
 		}
 		CalcSum {
@@ -850,6 +894,8 @@ fn (node CalcNode) serialize_top() string {
 		}
 	}
 
+	if node is CalcAnchorSize { return node.style_value.serialize(.normal) }
+
 	// AD-HOC: random() is serialized directly because its value-sharing argument is not a
 	//         calculation node and its step is optional.
 	if node is CalcRandom {
@@ -884,6 +930,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 			return node.name
 		}
 		CalcAnchor {
+			return node.style_value.serialize(.normal)
+		}
+		CalcAnchorSize {
 			return node.style_value.serialize(.normal)
 		}
 

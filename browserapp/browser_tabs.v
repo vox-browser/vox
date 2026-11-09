@@ -2,7 +2,6 @@ module main
 
 import browsertabs
 import gg
-import layout
 import math
 import os
 import page

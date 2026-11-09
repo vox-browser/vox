@@ -5,6 +5,8 @@ import css
 import html
 import platform
 import layout
+import mimesniff
+import browsernet
 
 // Resource requests must not block the native event callback that commits a
 // navigation. Discover them on the owning thread, then wait through the frame
@@ -14,6 +16,7 @@ struct PendingPagePreload {
 	add_history bool
 	generation  int
 	results     chan PreloadedResource
+	requests    &browsernet.RequestScope = browsernet.new_request_scope()
 mut:
 	remaining          int
 	resources          map[string]PreloadedResource
@@ -22,10 +25,11 @@ mut:
 }
 
 fn (mut navigation NavigationController) cancel_page_preload() {
-	if mut pending := navigation.pending_page_preload {
-		if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
-	}
+	pending := navigation.pending_page_preload or { return }
 	navigation.pending_page_preload = none
+	pending.requests.cancel()
+	pending.requests.release()
+	if pending.discovery_document != unsafe { nil } { retire_native_preload_document(pending.discovery_document) }
 }
 
 fn (mut app BrowserApp) commit_preloaded_page(loaded LoadedPage, add_history bool) {
@@ -68,6 +72,17 @@ fn parse_page_preload_document(loaded LoadedPage, scripting_enabled bool) &dom.D
 	workspace.leave()
 	defer { workspace.finish() }
 	if selected_encoding := encoding_name { document.set_encoding(selected_encoding.clone()) }
+	if mime := mimesniff.MimeType.parse(loaded.content_type) {
+		if mime.is_xml() {
+			document.set_document_type(.xml)
+			document.set_content_type(mime.essence())
+			document.set_allow_declarative_shadow_roots(false)
+			// Discovery is inert. Own the token source without scheduling the
+			// active navigation document's readiness or load events.
+			html.parse_xml_document_source(document, markup.clone()) or {}
+			return document
+		}
+	}
 	// Match noscript parsing without creating a Window, executing import maps
 	// or preparing scripts in this resource-discovery document.
 	mut parser := html.HTMLParser.create_with_scripting_mode(document, markup,
@@ -104,14 +119,16 @@ fn queue_navigation_preloads(mut pending PendingPagePreload, urls []string,
 	mut jobs := []ResourceFetchJob{cap: urls.len}
 	for resource_url in urls {
 		// The map also retains the current page's rendering inputs. That does
-		// not permit replaying a no-store response into another navigation.
+		// not permit replaying stale or non-storable bytes into a navigation.
 		cached := if resource := cache[resource_url] {
-			if browser_response_forbids_storage(resource.response_headers) { []PreloadedResource{} } else { [resource] }
+			if reusable_browser_resource(resource, types[resource_url] or { 'image' }) {
+				[resource]
+			} else { []PreloadedResource{} }
 		} else { []PreloadedResource{} }
 		jobs << ResourceFetchJob{ url: resource_url.clone(), request_type: types[resource_url] or { 'image' },
 			cached: cached }
 	}
-	spawn_resource_fetch_workers(jobs, pending.loaded.url, true, pending.results)
+	spawn_resource_fetch_workers_with_scope(jobs, pending.loaded.url, true, pending.results, pending.requests)
 }
 
 fn fetch_navigation_preload(resource_url string, source_url string, request_type string,
@@ -237,6 +254,7 @@ fn (mut app BrowserApp) poll_page_preload() {
 		}
 	}
 	app.pending_page_preload = none
+	pending.requests.release()
 	// Keep failures too: installation must consume the completed failure rather
 	// than retrying the same slow request synchronously on the UI thread. This
 	// per-install cache is independent of the bounded reusable resource cache.

@@ -117,3 +117,28 @@ fn test_source_queued_csp_violation_keeps_actual_worker_global_target_and_null_d
 	source_csp_execute_violation_task(worker.event_loop)
 	assert observation.targets == [voidptr(worker.this_impl())]
 }
+
+fn test_inline_csp_check_queues_the_real_element_and_rechecks_its_connection() {
+	owner := page.Page.create(1)!
+	mut document, window := source_csp_owner_window(owner, 'https://csp-owner.test/inline')!
+	defer { document.finalize() }
+	install_document_csp_hook(document)
+	mut settings := window.environment_settings_.settings
+	loop := EventLoop.create(.window)
+	settings.responsible_event_loop_ = loop
+	settings.set_policy_container(&PolicyContainer{csp_list:[parse_response_csp_policy("script-src-attr 'none'", .enforce, document.origin())]})
+	mut root := document.create_element('html')!
+	document.as_node().append_child(root.as_node())!
+	mut button := document.create_element('button')!
+	root.as_node().append_child(button.as_node())!
+	observation := &SourceCSPViolationOwnerObservation{}
+	source_csp_observe_violation(unsafe { &dom.EventTarget(document) }, observation)
+	assert document.should_block_inline_content(button, 'script-attribute', 'void(0)')
+	assert observation.targets.len == 0
+	source_csp_execute_violation_task(loop)
+	assert observation.targets == [voidptr(button)]
+	assert document.should_block_inline_content(button, 'script-attribute', 'void(0)')
+	button.as_node().remove(false)
+	source_csp_execute_violation_task(loop)
+	assert observation.targets == [voidptr(button), voidptr(document)]
+}

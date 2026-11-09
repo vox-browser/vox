@@ -1,0 +1,591 @@
+{
+  "recorded": "2026-11-08T16:29:26+0300",
+  "scope": "Focused IndexedDB native bindings and eight original imported WPT pages in directly instantiated native Page processes",
+  "full_goal_achieved": false,
+  "feature_commits": {
+    "key_conversion": "f6d912b0484e640e2e87c1150ef90191229fe772",
+    "key_range": "edbbebca26664d4020377c71c3598a2857e3e9f6",
+    "key_and_count": "7f9fa5e216921a5bfff0b05785c19df13591549e"
+  },
+  "changes": [
+    "Convert IndexedDB keys directly from engine values instead of using structured clone; preserve exact getter exceptions, own array indices, shared array children, cycles, internal Date slots and binary view slices.",
+    "Expose branded IDBKeyRange constructors, accessors and includes() in Window and Worker realms, and accept actual ranges in existing store/index/cursor queries.",
+    "Expose ordered IDBObjectStore.getKey() and IDBIndex.count() requests, including explicit commit, deleted-source validation, request owner identity and worker task dispatch."
+  ],
+  "compiler": {
+    "path": "/Users/alex/code/v/v",
+    "version": "V 0.5.2 395d574",
+    "sha256": "4a2a1338076b2888cdf144bc5a5b83964557bfb1b6b0835414c34fb5e39b7ac3"
+  },
+  "native_focused_regressions": {
+    "distinct_final_checks": 44,
+    "binding_checks_prealloc_gc_none": 32,
+    "model_checks_prealloc_gc_none": 12,
+    "model_checks_normal_allocation": 12,
+    "new_binding_checks_also_normal_allocation": 12,
+    "all_pass": true,
+    "count_note": "32 binding plus 12 model tests are distinct. Repeated earlier 22/29-function suites and normal-allocation runs do not add distinct tests.",
+    "final_binding_guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 54181888,
+      "elapsed_seconds": 0.630311625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "final_model_guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.362299291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "normal_model_guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.555171959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "wpt_native_pages": {
+    "cases": [
+      {
+        "id": "IndexedDB/idbcursor-advance.any",
+        "url": "/IndexedDB/idbcursor-advance.any.html",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 6,
+        "expected_subtests": 6,
+        "passing_subtests": 6,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbcursor-continue.any",
+        "url": "/IndexedDB/idbcursor-continue.any.html",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 6,
+        "expected_subtests": 6,
+        "passing_subtests": 6,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbcursor-direction-index-keyrange.any",
+        "url": "/IndexedDB/idbcursor-direction-index-keyrange.any.html",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 4,
+        "expected_subtests": 4,
+        "passing_subtests": 4,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbfactory_cmp3",
+        "url": "/IndexedDB/idbfactory_cmp3.htm",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 4,
+        "expected_subtests": 4,
+        "passing_subtests": 4,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbfactory_cmp4",
+        "url": "/IndexedDB/idbfactory_cmp4.htm",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 4,
+        "expected_subtests": 4,
+        "passing_subtests": 4,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbindex_reverse_cursor.any",
+        "url": "/IndexedDB/idbindex_reverse_cursor.any.html",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 2,
+        "expected_subtests": 2,
+        "passing_subtests": 2,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbkeyrange",
+        "url": "/IndexedDB/idbkeyrange.htm",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 10,
+        "expected_subtests": 10,
+        "passing_subtests": 10,
+        "failures": [],
+        "all_pass": true
+      },
+      {
+        "id": "IndexedDB/idbobjectstore_getKey.any",
+        "url": "/IndexedDB/idbobjectstore_getKey.any.html",
+        "guard_process_exit": 0,
+        "harness": 0,
+        "tests": 17,
+        "expected_subtests": 17,
+        "passing_subtests": 17,
+        "failures": [],
+        "all_pass": true
+      }
+    ],
+    "selected_cases": 8,
+    "subtests": 53,
+    "passing_subtests": 53,
+    "all_selected_cases_pass": true,
+    "inputs_unchanged": true,
+    "executable": {
+      "sha256": "1d3a6ecafd61941e9d686bdcea59a1ad4fed98c582a466be745fe982efd945d1",
+      "bytes": 23134560,
+      "linked_libraries": "Build/wpt-idb-keys-20261108-1610/count-native-document-tests:\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)\n\t/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/JavaScriptCore (compatibility version 1.0.0, current version 625.2.8)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.1.8)\n\t/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 5027.1.8)\n\t/usr/lib/libicucore.A.dylib (compatibility version 1.0.0, current version 78.1.0)\n\t/System/Library/Frameworks/Cocoa.framework/Versions/A/Cocoa (compatibility version 1.0.0, current version 24.0.0)\n\t/System/Library/Frameworks/CoreGraphics.framework/Versions/A/CoreGraphics (compatibility version 64.0.0, current version 2050.1.6)\n\t/System/Library/Frameworks/CoreText.framework/Versions/A/CoreText (compatibility version 1.0.0, current version 910.0.0)\n\t@rpath/libfreetype.6.20.2.dylib (compatibility version 6.0.0, current version 6.20.2)\n\t/opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib (compatibility version 3.0.0, current version 3.3.1)\n\t@rpath/libicuuc.78.2.dylib (compatibility version 78.0.0, current version 78.2.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)\n\t/System/Library/Frameworks/AppKit.framework/Versions/C/AppKit (compatibility version 45.0.0, current version 2775.20.133)\n\t/System/Library/Frameworks/QuartzCore.framework/Versions/A/QuartzCore (compatibility version 1.2.0, current version 1223.10.17)\n\t/opt/homebrew/opt/brotli/lib/libbrotlidec.1.dylib (compatibility version 1.0.0, current version 1.2.1)\n\t/opt/homebrew/opt/brotli/lib/libbrotlienc.1.dylib (compatibility version 1.0.0, current version 1.2.1)\n\t/opt/homebrew/opt/brotli/lib/libbrotlicommon.1.dylib (compatibility version 1.0.0, current version 1.2.1)\n\t/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)\n\t/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)\n\t@rpath/libskia.dylib (compatibility version 0.0.0, current version 0.0.0)\n\t/System/Library/Frameworks/Metal.framework/Versions/A/Metal (compatibility version 1.0.0, current version 383.1.0)\n\t/System/Library/Frameworks/MetalKit.framework/Versions/A/MetalKit (compatibility version 1.0.0, current version 174.4.0)\n\t/System/Library/Frameworks/CoreImage.framework/Versions/A/CoreImage (compatibility version 1.0.1, current version 7.0.0)\n\t@rpath/libz.1.3.1.dylib (compatibility version 1.0.0, current version 1.3.1)\n\t/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo (compatibility version 1.2.0, current version 776.2.0)\n\t/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia (compatibility version 1.0.0, current version 3385.14.5)\n\t/System/Library/Frameworks/ImageIO.framework/Versions/A/ImageIO (compatibility version 1.0.0, current version 1.0.0)\n\t/System/Library/Frameworks/IOSurface.framework/Versions/A/IOSurface (compatibility version 1.0.0, current version 1.0.0)\n"
+    },
+    "fixture_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+    "fixture_manifest_sha256": "74485a3af3d07f0da4a46fa031bfca3067ea58667a0193f8258d29357530fcb3",
+    "server_revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+    "server": "Real upstream wptserve; original HTML, JS and assertions; stock harness deadlines restored from imported CI settings; collector only changes reporting.",
+    "process_policy": "Fresh native Page process and private profile per case, complete selection, exact expected counts checked against original r16 reports; no assertion, expected result or tolerance overrides.",
+    "harness_ok": 8,
+    "runner_exit": 0,
+    "guard_process_exit": 0,
+    "guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 231784448,
+      "elapsed_seconds": 9.446788667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "baseline_context": {
+      "r16_reported_subtests_for_same_ids": {
+        "PASS": 12,
+        "FAIL": 41
+      },
+      "limit": "r16 is production window navigation on an earlier build; this native Page follow-up is not a matched browser comparison or a new full-cohort percentage."
+    }
+  },
+  "earlier_seven_page_check": {
+    "cases": 7,
+    "passing_subtests": 36,
+    "all_pass": true,
+    "guard": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 350388224,
+      "elapsed_seconds": 9.690985125000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "source_hashes": {
+    "browserjs/indexed_db_binding.v": "cf59a50a2e040ff46adffc21e7152d1d10a6ef34683b5516d60a1395a72b92b3",
+    "browserjs/indexed_db_binding_jsc.c.v": "359eb2954874ca3322296843bcbe9039c813e63a9c156c79159d0a82c7457b81",
+    "browserjs/indexed_db_key_range_jsc.c.v": "bca135a54fcc8387de9868c6400967603555bdef4af3e53e74f1e73017f2eb63",
+    "browserjs/indexed_db_key_range_binding_test.v": "938cf99c3501ee1a4bd1303e40a081fb4ba8213b45bb7f85795cd7fa659a3740",
+    "browserjs/indexed_db_key_jsc.c.v": "9ce9e4b6ec0b3213eb3f80cb9fb07c0f31d67d0699e239d00ba7fc90a1dfd52e",
+    "browserjs/indexed_db_key_binding_test.v": "e49663ad917c5645460b200825d6de747b3bb25788b7469e4a6369cfb2af3ae9",
+    "browserjs/indexed_db_key_count_binding_test.v": "378ef96e594a32114ffafc31d52da8f81b65a634e682b6b79d4baf8408b1da3a",
+    "indexeddb/object_store.v": "bca8947442db9db12fd412cdfcf0abff6566a516c9c9e15dba28fe95cf4ba1a2",
+    "indexeddb/object_store_async.v": "a2252732ea43358e73f8c462d3d6d3eb6649a14d831c0765f40ab4918461e40b",
+    "indexeddb/index.v": "e83f177869cdcc5dd5c16174cecd635326996a1549df45122864b109d023c4aa",
+    "indexeddb/index_async.v": "f0e435f7fb529a397ce84039c0b170b58b350a6213dadf36dd6eafffe771f4dc",
+    "indexeddb/key_count_async_test.v": "b40666481426bf201203acb3a6166dcd104041d9d2ad0454204d5af401d44ee9"
+  },
+  "all_guard_receipts": {
+    "compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5046108160,
+      "elapsed_seconds": 45.3517365,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5053218816,
+      "elapsed_seconds": 56.003384542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-model-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 673251328,
+      "elapsed_seconds": 4.990537208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-model-prealloc-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 711868416,
+      "elapsed_seconds": 6.830753375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-model-prealloc-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.362299291,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-model-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.555171959,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-native-document-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5994692608,
+      "elapsed_seconds": 109.981202083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-native-wpt-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 231784448,
+      "elapsed_seconds": 9.446788667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-prealloc-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5058248704,
+      "elapsed_seconds": 62.876463041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-prealloc-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 54181888,
+      "elapsed_seconds": 0.630311625,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "count-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 32768,
+      "elapsed_seconds": 0.435673792,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-document-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5996675072,
+      "elapsed_seconds": 119.699170333,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/000-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 109674496,
+      "elapsed_seconds": 0.7763813749999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/001-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 87064576,
+      "elapsed_seconds": 0.401281375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/002-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 86556672,
+      "elapsed_seconds": 0.372682042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/003-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 89325568,
+      "elapsed_seconds": 0.362154042,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/004-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 89669632,
+      "elapsed_seconds": 0.356428083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/005-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 93421568,
+      "elapsed_seconds": 0.362361708,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/006-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 91783168,
+      "elapsed_seconds": 0.357964583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-final/007-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 92897280,
+      "elapsed_seconds": 0.354383542,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 350388224,
+      "elapsed_seconds": 9.690985125000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/000-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 93208576,
+      "elapsed_seconds": 0.911067458,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/001-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 87801856,
+      "elapsed_seconds": 0.368210667,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/002-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 92848128,
+      "elapsed_seconds": 0.370602041,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/003-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 88227840,
+      "elapsed_seconds": 0.366596292,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/004-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 88866816,
+      "elapsed_seconds": 0.380257375,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/005-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 89915392,
+      "elapsed_seconds": 0.351839083,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "native-wpt-r1/006-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 88145920,
+      "elapsed_seconds": 0.383807917,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "prealloc-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5069504512,
+      "elapsed_seconds": 80.076531709,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "prealloc-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 14008320,
+      "elapsed_seconds": 0.8225228330000001,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "range-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5053267968,
+      "elapsed_seconds": 60.504360334000005,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "range-prealloc-compile-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 5052317696,
+      "elapsed_seconds": 66.550232583,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "range-prealloc-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 77807616,
+      "elapsed_seconds": 0.9209629579999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "range-runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 9699328,
+      "elapsed_seconds": 0.727003875,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "runtime-guard.json": {
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 3221225472,
+      "observed_peak_rss_bytes": 25903104,
+      "elapsed_seconds": 0.6855905409999999,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    }
+  },
+  "production_status": {
+    "new_fixes_in_r16": false,
+    "r16_executable_sha256": "f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48",
+    "r16_state_at_recording": "RUNNING",
+    "r16_case_records_written": 2700,
+    "r16_changed_inputs_at_recording": [],
+    "focused_followup_state_at_recording": "WAITING_FOR_COMPLETED_PRODUCTION_BUILD",
+    "queued_receipt": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-162410-f193c9e0",
+    "followup_script": "/Users/alex/.cache/vox/wpt/20261108-idb-production-followup.py",
+    "followup_script_sha256": "55021ad272e109421e58280405d467322bead391bc039e6ca3f25363a6236aa9",
+    "followup_pid": 74212,
+    "status_file": "/Users/alex/.cache/vox/wpt/20261108-idb-production-status.json",
+    "completion_file": "/Users/alex/.cache/vox/wpt/20261108-idb-production-completion.json",
+    "scope": "Eight focused WPT cases, original completed production artifact checked in place under its read lease; no app copy or replacement of the bundle pinned by r16."
+  },
+  "raw_evidence": {
+    "archive": "/Users/alex/.cache/vox/wpt/20261108-idb-range-queries-f6d912b04.tar.gz",
+    "sha256": "6929b8de18a42eb10d286426c8e4296bea5124afb02846257a5c4a6a21cce225",
+    "bytes": 164292,
+    "includes": "All focused compile/runtime receipts and logs, test inputs, native WPT results and request logs, source and binary hashes, temporary canonical test sources and both native coordinators.",
+    "excluded": "Binaries, generated C and private profile/cache trees."
+  },
+  "cleanup": "Completed owned Build scratch and temporary test sources are removed after verifying this archive. Active r16 and production follow-up jobs remain under their separate supervisors.",
+  "remaining": "100% for the 6828 imported cohort and full upstream WPT is not established. getAll/getAllKeys/getAllRecords, structured storage types, other API gaps, crashes and timeouts remain."
+}

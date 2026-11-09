@@ -98,7 +98,7 @@ fn (mut runtime Runtime) install_input_event_binding() ! {
 		mut ranges := []voidptr{cap: input.target_ranges_.len}
 		for range in input.target_ranges_ { ranges << runtime.javascript_static_range(range)! }
 		mut exception := unsafe { nil }
-		array := C.vox_jsc_JSObjectMakeArray(runtime.context, usize(ranges.len), ranges.data, &exception)
+		array := C.vox_jsc_JSObjectMakeArray(runtime.context, uint(ranges.len), ranges.data, &exception)
 		if exception != unsafe { nil } { return runtime.actual_javascript_exception(exception) }
 		return array
 	})!

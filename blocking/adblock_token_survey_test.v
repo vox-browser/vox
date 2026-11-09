@@ -1,21 +1,6 @@
 module main
 
-import css
 import dom
-
-fn selector_adblock_token_survey(document &dom.Document) []string {
-	mut tokens := map[string]bool{}
-	for element in css.query_selector_all(document.as_node(), '[id], [class]') {
-		id := element.get_attribute_value('id')
-		if id != '' { tokens['#${id}'] = true }
-		for name in element.get_attribute_value('class').fields() {
-			tokens['.${name}'] = true
-		}
-	}
-	mut result := tokens.keys()
-	result.sort()
-	return result
-}
 
 fn test_adblock_token_survey_matches_selectors_and_observes_live_light_tree_edits() {
 	mut document := parse_browser_navigation_document('<!doctype html><body id="root"><div id="first" class="one two one"></div><p class="one two one"></p><div id="host"></div><template><p id="inert" class="inert"></p></template><svg><g id="svg" class="one&#9;svg"></g></svg></body>', dom.url_about_blank(), none)

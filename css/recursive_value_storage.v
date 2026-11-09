@@ -1,18 +1,18 @@
 module css
 
-// Current V sum types store their variants inline. Recursive child values use
-// array storage, as CalculationNode does, to keep finite layouts and structural
-// value equality. Optional children retain their public value-based API.
-fn optional_style_value_storage(value ?StyleValue) ?[]StyleValue {
+// Current V sum types store their variants inline. A recursive child uses a
+// separate slot; nil represents an absent child. Public accessors still return
+// optional values, while the storage avoids an array header for one element.
+fn optional_style_value_storage(value ?StyleValue) &StyleValueSlot {
 	if child := value {
-		return [child]
+		return style_value_slot(child)
 	}
-	return none
+	return unsafe { nil }
 }
 
-fn style_value_from_optional_storage(value ?[]StyleValue) ?StyleValue {
-	if children := value {
-		return children[0]
+fn style_value_from_optional_storage(value &StyleValueSlot) ?StyleValue {
+	if value != unsafe { nil } {
+		return value.value
 	}
 	return none
 }

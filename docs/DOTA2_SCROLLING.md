@@ -1288,3 +1288,338 @@ or broad-check cadence reset. Raw evidence is archived privately before removing
 the completed job's Build output, locks and temporary drivers.
 
 The verified mode-0600 archive SHA256 is `f9ddef9674e742c1597b3ada4ec611b003352d014df64e86accfc48edfa6ff7a` (84,565,052 bytes; 4,618 files). Its Build job, locks and temporary drivers are removed. Immutable fixture/reference/interposer data and the pinned candidate Metal library are transferred to the next bounded GG shape-cache job, with no browser/source/tool copies.
+
+
+## 2026-11-08: exact GG shape reuse and remaining readback stalls
+
+Commit `718f9719e` brings the GG adapter into the exact native shape cache.
+Small direct rasters and packed requested regions reuse their pixels, with
+original surface dimensions and rectangle layout in the key. Admission stays
+bounded to 64 KiB, 64 views and 256 clip-outs; storage is 16 MiB/512 entries.
+Owner replacement, purge and graphics-memory release invalidate both retained
+and pending results. Main-thread ownership, transactional outputs, row padding,
+reentrant replacement/purge and failed callbacks retain their fallback behavior.
+
+Optimized and ASan/UBSan checks pass, including 48 real GPU direct/region scenes
+with exact pixels. The existing native raster-cache checks pass in both modes.
+The unchanged Reddit references at offsets 0 and 850 are exact with the cache
+enabled and disabled. A separate live input diagnostic records 10 hits in 24
+logged bounded-cache calls; frozen input has zero hits in 22. Oversized bypasses
+are not included in those counts. Diagnostics receive no timing credit, and the
+frozen workload cannot establish a cache gain.
+
+The matched cohort uses executable `c7079cad...`, primary `4b94760c...` and
+installed Metal `d7845b10...`; only the cache disable flag changes. Controls
+and candidates vary substantially under host load rising from about 19 to 49
+on 18 CPUs. One pair regresses and the next improves; no isolated cache gain
+or causal regression is established. A newer completed production bundle,
+`59de419d75f2cacafe67899969e35f8c0fe4c1c935e7720eb50921ab5a3bf357`,
+contains the four relevant sealed native source hashes. Its fresh installed
+validation has no renderer override. No cross-build timing earns credit.
+
+All unprofiled trials below complete 5,400 precise native inputs at nominal
+120 Hz, delta 3, reversing every 300, with title readiness and 12-second settle.
+The document is 1400×900 at 2× backing and 125% zoom; scripts are automatic,
+profiles/caches fresh, OS caches retained, and live access uses the existing
+SOCKS5h route. Throughput uses the full first-to-last input window. The endpoint
+is completed native frame installation, not physical scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| installed-cohort/1-baseline | 116.913 | 8.343 | 10.316 | 22.955 | 0.858% | 5400 / 5401 | 33.633 / 0.164 |
+| installed-cohort/2-baseline | 116.914 | 8.359 | 10.322 | 29.807 | 0.955% | 5400 / 5385 | 25.150 / 3.862 |
+| live-cohort/1-control | 106.821 | 8.658 | 14.469 | 43.905 | 2.527% | 5400 / 5368 | 34.393 / 0.792 |
+| live-cohort/2-candidate | 86.408 | 10.756 | 18.601 | 41.182 | 8.408% | 5400 / 5252 | 52.597 / 0.343 |
+| live-cohort/3-control | 98.907 | 9.209 | 16.226 | 40.037 | 4.351% | 5400 / 5336 | 50.193 / 0.421 |
+| live-cohort/4-candidate | 108.399 | 8.683 | 13.518 | 32.813 | 1.188% | 5400 / 5321 | 49.152 / 0.355 |
+
+**Stall-free 60 Hz remains open.** An earlier live stall sample is inside AGX
+texture decompression during synchronous Graphite canvas readback. The frozen
+sample is inside a synchronous GG shape texture-upload wait. These samples
+identify observed blocking work, without attributing every long interval to it.
+The longer installed diagnostic does not reproduce that sampled stack.
+
+GPU tile publication stays opt-in. Fixed-pose sidebar borders still differ, up
+to 17 channel levels at logical screenshot density and 9 at native 2× density.
+Isolated-shape and GG fallback controls do not remove the failure; the proposed
+native-grid path is ineligible here. Changing scrollbar renderer alone produces
+identical pixels, excluding that hypothesis for this pose. A temporary forced
+Quartz-rectangle fallback worsens differences and is reverted. No reference,
+tolerance or default GPU setting changes to accept these experiments.
+
+The [complete receipt](performance/reddit-boots-gg-shape-cache-20261108.json)
+retains every timing, failed pixel experiment, command, input schedule, host
+condition and browser/guard exit. Its mode-0600 raw archive contains 6,451
+verified files, SHA256
+`1c79d99d4427eb1d1d9b640347772119d29f1a78bb8957526d03ab725b3ea36e`.
+Completed job output and temporary drivers are removed after verification;
+immutable replay data and unchanged references move into the readback job.
+
+
+## 2026-11-08: uncompressed CPU-readback textures
+
+Commit `ee53a2fb4` addresses the sampled Metal readback conversion. The earlier
+live stack enters AGX compressed-region decoding from `getBytes`, through
+`vox_shared_readback` and the GPU canvas CPU-access barrier. These synchronous
+shared BGRA targets inherited `allowGPUOptimizedContents=true`. The installed
+Metal SDK documents disabling this property to opt out of compression and make
+CPU readback predictable. CPU-readback targets now disable it;
+`VOX_GPU_OPTIMIZED_READBACK_TEXTURES=1` retains the previous layout for controls.
+Geometry, format, synchronization, conversion fallback and paint policy stay
+the same. This removes that texture-conversion path, without promising a bound
+on GPU completion or operating-system scheduling.
+
+Seven GPU control/candidate scenes are byte exact in optimized and ASan/UBSan
+modes: odd/large dimensions, clipped AA/MSAA, padded partial reads, pending
+writers, result lifetime and context replacement. The existing Metal canvas
+suite also passes in both modes, covering direct/staged and linear/ordinary
+transfers, nested layers, compositor transport, alpha, clips, failure handling
+and ownership. All four fixed-pose checks match the unchanged Reddit references
+at offsets 0 and 850 exactly, with checker and image hashes pinned throughout.
+Separate input diagnostics observe 2,602 live and 2,626 frozen canvas uploads
+with `optimized=0`; their timings receive no performance credit.
+
+All eight unprofiled trials use completed executable `59de419d...`, installed
+primary `c2ec42c0...` and the same explicit Metal candidate
+`bce89e00ebfe0c7d3a6ee4ba70206ab17b987a50f3ac0cf3458d828d2f373eb9`.
+Only the layout control flag changes. Both live and frozen order is
+control/candidate/control/candidate. The actual C mode is single, C `-O3`,
+V `-prod=false`, GG and JSC. No GPU tile, offscreen-layer, animation or paint
+policy changes enter these trials.
+
+Each fresh process completes 5,400 native precise inputs, nominal 120 Hz, delta
+3, reversing every 300, after matching-title readiness and a 12-second settle.
+The document is 1400×900 at 2× backing and 125% zoom. Scripts are automatic,
+private profiles/caches fresh and OS caches retained. Live uses the existing
+SOCKS5h route; frozen replays the original-origin 152-response fixture while
+blocking external DNS/connect/connectx. Throughput uses the entire first-to-last
+input window. The endpoint is completed native frame installation, not physical
+scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| frozen-cohort/1-frozen-control | 115.790 | 8.382 | 11.047 | 32.952 | 0.670% | 5400 / 5389 | 34.889 / 0.228 |
+| frozen-cohort/2-frozen-candidate | 98.575 | 8.828 | 17.228 | 39.054 | 5.839% | 5400 / 5282 | 32.664 / 0.366 |
+| frozen-cohort/3-frozen-control | 82.189 | 11.173 | 21.109 | 52.899 | 13.839% | 5400 / 4999 | 53.597 / 0.516 |
+| frozen-cohort/4-frozen-candidate | 82.275 | 10.995 | 20.968 | 43.866 | 13.892% | 5400 / 5159 | 63.519 / 1.250 |
+| live-cohort/1-live-control | 107.277 | 8.675 | 14.373 | 67.038 | 2.602% | 5400 / 5342 | 49.863 / 0.570 |
+| live-cohort/2-live-candidate | 114.319 | 8.435 | 11.864 | 38.271 | 1.012% | 5400 / 5384 | 37.974 / 4.556 |
+| live-cohort/3-live-control | 112.908 | 8.434 | 12.186 | 44.877 | 1.439% | 5400 / 5383 | 36.943 / 4.305 |
+| live-cohort/4-live-candidate | 117.436 | 8.346 | 10.113 | 19.671 | 0.485% | 5400 / 5403 | 30.669 / 2.662 |
+
+Both live pairs improve observed throughput, maxima and deadline misses. The
+frozen candidate regresses in pair one, while the host load average rises from
+15 to 60; the next control slows further as load rises from 68 to 139 on 18 CPUs.
+The final candidate remains contended. All attempts and regressions remain in
+the receipt. These changing conditions do not support an isolated percentage
+claim or a clean frozen-page gain. No instruction savings are credited.
+
+**The stall-free 60 Hz goal remains open.** Even the better live candidate has
+a 19.671 ms interval and 0.485% deadline misses. Samples still enter synchronous
+GG shape/path transfers and Graphite submit waits, alongside other paint work;
+they do not identify the sole cause of every long interval. A separate existing
+small-SVG-cache probe records 32 input draws and zero hits, so it does not justify
+changing that cache's Reddit policy.
+
+Pure installed-bundle validation of this fix is pending. The available completed
+bundle's sealed readback-header hash predates the change; the shared production
+guard is busy, and its queued target already contains `ee53a2fb4`. The explicit
+component checks above execute the new code; no duplicate browser build is queued.
+
+The [full receipt](performance/reddit-boots-readback-layout-20261108.json) records
+component/source hashes, the SDK reference, every command, browser/guard exit,
+actual input timestamps and host conditions. All guards and browsers exit zero.
+The mode-0600 raw archive contains 2,990 individually verified files, SHA256
+`0810978f6fb26b4f6e32d9e7be7495b7c4f9da2976f983f536423aa4bb86c6ce`.
+Per-job Build output, locks, reports and temporary drivers are removed after
+verification. Existing references and tolerances are unchanged.
+
+
+## 2026-11-08: published readback validation and SVG cache lifetime
+
+The completed production bundle now contains the earlier readback-layout and
+GG shape-cache fixes. Executable
+`f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48`
+loads installed primary `c2ec42c0...` and Metal `bce89e00...`; sealed source hashes
+match those features. Two fresh installed-default trials below complete 5,400
+native inputs each, and a fresh headless engine/JavaScript/input smoke passes.
+This resolves the earlier pending installed-bundle validation for `ee53a2fb4`;
+it does not establish smooth 60 Hz.
+
+Commit `f5d690561` fixes a cache ownership hazard found during this investigation.
+A renderer callback could clear graphics memory or replace its registered
+renderer and then return successfully; its old pixels were inserted into the
+cleared cache afterwards. A generation check now keeps that result uncached.
+Regression checks exercise both reentrant purge and replacement through the
+actual registration bridge. Optimized and ASan/UBSan checks pass, including 72
+real GPU stroke scenes per mode with exact pixels. Existing keys, admission,
+8 MiB/64-entry bounds, controls, scope and padded rows retain their behavior.
+This correctness fix receives no scrolling optimization credit.
+
+Commit `37da4ce1f` adds clip/ancestor/gradient/segment eligibility to the existing
+opt-in SVG diagnostic. The fresh live input diagnostic observes 14 hits in 42
+calls, all small unclipped four-segment strokes. The earlier zero-hit result
+remains retained; changing build/page conditions cannot be assumed equivalent.
+The new short diagnostic has no interval-budget misses, but its timings are
+instrumented and cannot supply acceptance.
+
+The matched cohort below uses the same pure installed browser and libraries in
+all four trials, with no renderer override. Only the existing experimental
+`VOX_SMALL_SVG_PATH_CACHE=1` changes in candidates. The control arms also supply
+the two installed-default validation runs. All trials complete 5,400 precise
+native inputs, nominal 120 Hz, delta 3, reversing every 300, after matching-title
+readiness and a 12-second settle. The document viewport is 1400×900 at 2× backing
+and 125% zoom. Scripts are automatic, each process has a fresh empty private
+profile/cache, OS caches remain, and live access uses the existing SOCKS5h route.
+C mode is the actual single-C fallback, C `-O3`, V `-prod=false`, GG and JSC.
+Throughput uses the full first-to-last input period; the endpoint is completed
+native frame installation, not physical scanout.
+
+| Trial | Moving publications/s | Median ms | p95 ms | Maximum ms | Over 16.67 ms | Inputs / publications | Leading / trailing gap ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| live-cohort/1-live-control | 113.535 | 8.409 | 12.403 | 42.480 | 1.288% | 5400 / 5384 | 37.639 / 2.451 |
+| live-cohort/2-live-candidate | 102.276 | 8.979 | 16.016 | 56.940 | 4.023% | 5400 / 5327 | 55.681 / 0.341 |
+| live-cohort/3-live-control | 95.957 | 9.587 | 17.069 | 43.428 | 5.573% | 5400 / 5246 | 35.541 / 0.337 |
+| live-cohort/4-live-candidate | 104.432 | 8.840 | 15.306 | 39.333 | 3.330% | 5400 / 5336 | 31.378 / 0.222 |
+
+The first candidate regresses and the second improves. Host load averages
+range from roughly 14 to 158 on 18 CPUs. These results do not establish a
+causal cache gain; Reddit's default cache policy is unchanged. No instruction
+savings, cross-build gain or zero-stall acceptance is claimed.
+
+A separate 5,400-input installed-default profile records 88 samples over 124
+slow frames, with zero dropped samples or sampling failures. Observations
+include GG readback/upload waits (13/3 samples), Graphite readback/submit
+(24), event-loop servicing (8) and copies. These counts overlap and are not
+time fractions or proof of a single cause for every missed budget. **The
+60 Hz goal without stalls remains open.**
+
+The final native primary containing the cache-lifetime fix remains pixel exact
+at offsets 0 and 850 with reuse disabled and enabled, against the unchanged
+references. Its actual 199 compiler inputs and static libraries are pinned
+before/after, and the compiler-derived dependency lists match. The initial
+fixture compile failure (a capturing lambda incompatible with the callback
+API) is retained with no execution credit. A separate candidate compile exits
+zero but is rejected because an all-header pin changes; the changed FFmpeg
+header is not a dependency of this translation unit. Only the later stable
+component supplies pixel validation. The shared production guard remains busy;
+no duplicate build is queued, and installed validation of the new cache-lifetime
+fix remains pending.
+
+The [full receipt](performance/reddit-boots-svg-cache-20261108.md) preserves
+all attempts, commands, source/component identities, actual input schedules,
+host conditions, sample stacks, browser/guard exits and unchanged pixel checks.
+Its mode-0600 raw archive contains 2,134 individually verified files, SHA256
+`ff70df5cb180534004d1651a887e6645cf48ed0705214c9f4e24349b4046bd53`.
+Completed per-job Build output, locks and temporary drivers are removed after
+verification. Existing archives, references and tolerances remain unchanged.
+
+
+## 2026-11-08: leave engine work time after cooperative host callbacks
+
+Commit `5598a9b06` moves the next cooperative host-pump deadline to 16 ms
+after callback completion. The previous start-based deadline could expire
+inside a slow callback, allowing another immediate pump before document work
+progressed. A scope generation also prevents a finished callback from
+rescheduling a replacement scope on the same preallocated record. The previous
+pacing remains available through
+`VOX_RETAIN_COOPERATIVE_YIELD_START_DEADLINE=1` for matched controls.
+
+Executed checks pass in explicit no-GC and production preallocation modes.
+The 40 ms callback regression observes one immediate pump under the fix versus
+two under the old-pacing control; scope replacement retains its own deadline.
+Ten cooperative test functions are dispatched per mode, subject to their
+existing collector/preallocation guards. Twenty additional native timer, arena
+and zero-timer cases pass in preallocation mode. All final selected compiles
+and runtimes exit zero under the required 12 GiB/3 GiB guards. The rejected
+Boehm probe and original missing-helper test compilation are retained without
+pass credit; separate commit `5d128d8e3` makes the zero-timer harness standalone.
+
+**Browser acceptance and the 60 Hz goal without stalls remain pending.** The
+shared build worker is busy; completed executable `f26b41bd...` still has the old
+cooperative-work source. It cannot validate the new scheduler, and no duplicate
+production build is queued. The unit checks receive no scrolling/FPS or
+instruction credit. Previous GPU waits and deadline misses remain unresolved.
+
+The [pacing receipt](performance/reddit-boots-cooperative-pacing-20261108.md)
+records the exact commands, modes, source pins, dispatch and local evidence
+manifest. Its mode-0600 archive has 121 individually verified files, SHA256
+`2cdb576e636f506fc3cb6a5b28be4452368e3505564585245bc00b2ba024d4a9`.
+Completed job output and temporary drivers are removed after verification.
+
+
+## 2026-11-09: idle worker shutdown leaves the event loop
+
+Installed build `23d3335d...` contains the cooperative pacing and SVG cache
+lifetime fixes. Four fresh, alternating old-pacing/default live trials complete
+5,400 native inputs each, with exact unchanged fixed-pose references at offsets
+0 and 850. Default trials still have 29.467/47.307 ms maximum intervals and
+2.905%/4.024% budget misses; both have lower throughput than their preceding
+controls as host load varies. No isolated gain or stall-free acceptance is claimed.
+
+Separate live stack sampling catches synchronous idle ad-block worker shutdown
+delaying input 151. Commit `e01e931b3` transfers that helper to a bounded native
+reaper, lets new requests immediately start a replacement, accounts both owned
+helpers until reap, and preserves synchronous explicit/exit cleanup. Optimized,
+ASan/UBSan, ThreadSanitizer and 20 V tests in each normal/preallocated no-GC mode
+pass. A helper ignoring quit for two seconds hands off in 0–1 ms in focused
+tests; this is not browser FPS evidence.
+
+GPU waits and transfer allocation remain. Installed worker-fix validation is
+pending the shared production builder, whose attempts fail on missing generated-C
+include `vlib/os/execute_capture_legacy.h`. **The 60 Hz goal without stalls remains
+open.** See [the full evidence and limitations](performance/reddit-boots-idle-worker-20261109.md).
+
+
+## 2026-11-09: scoped GPU transfer reuse and queued-upload comparison
+
+Commit `3250b00e8` replaces repeated GPU canvas transfer-vector allocation with
+scoped buffer leases, bounded to 32 MiB/eight retained slots and released on
+idle/explicit purge. Generation checks preserve purge and live-buffer ownership;
+upload padding and failed-read behavior are retained. Optimized/ASan checks pass
+54 exact GPU transfer cases per mode, plus damage/failure checks and the existing
+concurrent pool ownership tests. All eight strictly pinned pool/queued-upload
+fixed-pose captures remain exact against unchanged references.
+
+Separate diagnostics observe 124/128 live and 125/128 frozen input transfers
+reusing storage. The four matched live trials complete all 5,400 inputs each;
+pool candidates improve compared with their preceding controls, but load varies
+roughly 86–158 on 18 CPUs and the controls differ. No isolated FPS gain is claimed.
+The pool trials still have 116.747/33.023 ms maximum moving intervals and
+1.231%/8.520% deadline misses. **The 60 Hz goal without stalls remains open.**
+
+The isolated queued-upload experiment executes 7,684 times during a separate
+live diagnostic and preserves pixels, but its unprofiled cohort has one regression
+and one improvement. It remains disabled. Commit `738a12dcc` resolves the staged
+compiler's missing capture-header include; nine Python tests and an actual staged
+prealloc capture/exit-code smoke pass. The completed production bundle is still
+`23d3335d...`; installed validation of the worker and transfer fixes is pending.
+
+See [the transfer-pool measurements, retained regressions and evidence](performance/reddit-boots-transfer-pool-20261109.md).
+
+
+## 2026-11-09: direct-reader color fix; transport changes rejected
+
+Commit `20d2a9a69` protects the opt-in direct-frame reader from overlapping
+CPU destinations: converting each rectangle in place had swapped some pixels
+twice. The old path changes 616 pixels, with maximum error 38, at offset 850 and fails the new
+actual-GPU regression. The guarded path preserves exact reference pixels at
+0/850 and passes optimized/ASan overlap, eligibility and failure checks.
+
+Its matched native-input cohort has one regression and one improvement, so it
+remains opt-in. A second prototype reading directly into pooled staging buffers
+passes pixels and 24 actual-GPU cases/mode, but both unprofiled candidates
+regress; that prototype and its test mode are removed. Default transport remains
+unchanged. Every timing attempt completes 5,400 inputs with stable identities;
+no isolated performance gain is accepted.
+
+A separate 456.780 ms diagnostic callback blocks writing the general GPU dump.
+Commit `35e0f9875` adds a dedicated input-window logger capped at 128 markers;
+the wheel/frame probe already buffers its own records. Final native code passes
+fresh GPU/sanitizer checks and exact captures. Its bounded diagnostic still has
+a 27.805 ms maximum moving interval and 0.732% misses, and supplies no FPS credit.
+
+**The 60 Hz goal without stalls remains open.** Installed worker/pool validation
+still awaits the shared build: the completed bundle is `23d3335d...`. The jobs
+and temporary drivers were removed after their archives were verified. See
+[the complete readback results and retained failures](performance/reddit-boots-readback-20261109.md).

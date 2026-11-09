@@ -1,0 +1,204 @@
+{
+  "recorded": "2026-11-08T16:01:12+0300",
+  "status_at_recording": "WAITING_FOR_EXISTING_BROAD_CHECKS",
+  "collection_complete": false,
+  "all_pass": false,
+  "scope": "All 6828 Ladybird imported testharness cases; not all upstream WPT types or variants",
+  "fixture_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "selection_count": 6828,
+  "selection_sha256": "29a7d7cc0d12cf9b7069457c04558ba5cd96d789b45d0e7986ac1eaa827461ac",
+  "selection_filters": [],
+  "new_server_protocol": {
+    "revision": "57bbaa12ff3515848cc0b3d3791791086a563047",
+    "available": [
+      "Python handlers",
+      "stash",
+      "substitutions",
+      "two HTTP ports",
+      "two HTTPS ports with a private CA",
+      "localhost host aliases"
+    ],
+    "unserved": [
+      "ws",
+      "wss"
+    ],
+    "comparability": "r15 used a static HTTP server; r16 changes server coverage and is not a matched regression or speed comparison."
+  },
+  "preflight": {
+    "scope": "Three selected cases only, on the published production bundle",
+    "executable_sha256": "91be2b76025a47d21d22e7f40d13ebc47c81da4832515014a72c3506da579831",
+    "summary": {
+      "tests": 3,
+      "outcomes": {
+        "COMPLETE": 3
+      },
+      "harness": {
+        "OK": 3
+      },
+      "subtests": {
+        "PASS": 1859
+      },
+      "subtest_total": 1859,
+      "subtest_pass_rate": 1.0,
+      "tests_all_pass": 3
+    },
+    "changed_inputs": [],
+    "aborted": null,
+    "unexpected_posts": 0,
+    "runner_exit": 0,
+    "guard_process_exit": 0,
+    "guard": {
+      "command": [
+        "python3",
+        "tools/wpt_compare.py",
+        "--output",
+        "Build/wpt-r16-20261108-1558/preflight",
+        "--ladybird-ref",
+        "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+        "--wpt-server-root",
+        "/Users/alex/code/3rd/web-platform-tests",
+        "--browsers",
+        "vox",
+        "--chunk-size",
+        "3",
+        "--include",
+        "FileAPI/blob/Blob-text.any",
+        "--include",
+        "dom/ranges/Range-insertNode",
+        "--include",
+        "fetch/api/body/formdata.any",
+        "--require-all-pass"
+      ],
+      "reason": "completed",
+      "child_exit_code": 0,
+      "adopted_processes": {},
+      "adoption_error": null,
+      "limit_bytes": 12884901888,
+      "observed_peak_rss_bytes": 3530407936,
+      "elapsed_seconds": 11.386007208,
+      "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+    },
+    "archive": "/Users/alex/.cache/vox/wpt/20261108-r16-1558-preflight.tar.gz",
+    "archive_sha256": "0075158aeda74dd9872a46a6208f7873b8bb3cefc01bb37236ab9aac7cb93188"
+  },
+  "supervision": {
+    "script": "/Users/alex/.cache/vox/wpt/20261108-r16-1558-supervisor.py",
+    "script_sha256": "276b53223b4812c91ae45a53d62e19cd70cd79e3b8f70f8006c08a50716d0fdd",
+    "pid": 34750,
+    "start_new_session": true,
+    "stdout_and_stderr": "Build/wpt-r16-20261108-1558/supervisor.log",
+    "stdin": "DEVNULL",
+    "waits_for_existing_jobs": {
+      "27745": "Sun Nov  8 15:54:35 2026",
+      "29804": "Sun Nov  8 15:56:33 2026"
+    },
+    "lease": "Canonical shared bundle lease acquired after existing jobs complete and held through actual guard completion. Latest completed published build is selected and required source hashes are checked.",
+    "integrity": "Executable, native libraries and runner/guard source hashes are monitored throughout; fixture and upstream server inputs are verified by the runner. Changed inputs invalidate all-pass.",
+    "browser_budget_gib": 4,
+    "aggregate_budget_gib": 12,
+    "guard_timeout_seconds": 28800,
+    "chunk_size": 100,
+    "require_all_pass": true,
+    "harness_deadlines": "Unchanged imported original harness, normal 10 seconds / long 60 seconds, plus 10 second report grace.",
+    "runner_exit": null,
+    "guard_process_exit": null,
+    "status_file": "/Users/alex/.cache/vox/wpt/20261108-r16-1558-status.json",
+    "completion_file": "/Users/alex/.cache/vox/wpt/20261108-r16-1558-completion.json",
+    "completion_archive": "/Users/alex/.cache/vox/wpt/20261108-r16-1558-raw.tar.gz",
+    "cleanup": "Supervisor archives results and receipts, writes durable completion with actual exits, releases its bundle lease and removes completed Build scratch."
+  },
+  "full_upstream_status": "The full upstream checkout exists. Full official browser execution still requires integrated WebDriver/runner support and services for other test types; these 6828 cases are a subset.",
+  "collection_start_snapshot": {
+    "state": "RUNNING",
+    "collection_started": "2026-11-08T16:01:38+0300",
+    "guard_pid": 39048,
+    "executable_sha256": "f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48",
+    "required_committed_source_hashes": {
+      "compact/content_cache.v": "fa2efdfe81f9bc0003ce0635d90d3c4ad4d4b72043cd36e386cf8a12c52d8de1",
+      "compact/pending.v": "79d8b50badadd86af7c597f057040b911ddb5ba65a6255f97482de3514629fe6",
+      "compact/range_selection.v": "f2e59fc8b46ecf85cc5f14bcba082b052297e155df8e1f1d50d3f2b01f50fed8",
+      "compact/internals_keyboard.v": "8b3b7c2ab486db1ffd41308fca0f9766185fd9ed40d9ddbae640a28cdd096493",
+      "editing/paragraph_whitespace.v": "5a6ed7b9527d14a6f11f2d7a713e8cff0e14e9c1a19bd63edfe1096e7db34d11",
+      "dom/element.v": "7e3a3a57e620de0d4a27d024bbfc4da25d4881cc334420c4ab123253f277167b"
+    },
+    "case_records_written": 100,
+    "changed_inputs": [],
+    "recorded": "2026-11-08T16:02:21+0300",
+    "receipt": {
+      "c_compile": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "fallback": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v cannot split programs with native project headers (no V3_PARALLEL_CC_REQUIRE_SPLIT support)",
+        "mode": "single",
+        "requested": "parallel",
+        "v_prod": false
+      },
+      "executable": "/Users/alex/code/vox2/Build/v/Vox.app/Contents/MacOS/Vox",
+      "executable_sha256": "f26b41bdc7345c07673f9bbe6eeb9cda4308454efe8cb6a185537cc420f19d48",
+      "exit": 0,
+      "frozen_compilation": "/Users/alex/code/vox2/Build/production-build/receipts/20261108-155123-59ff4982/frozen-compile.json",
+      "inputs": {
+        "build_inputs_sha256": "dcf1e770b4be643cb9e22ffc66293ca7a6fd42888dd96aef6c9c9bf5c47f54c4",
+        "dirty": true,
+        "head": "44096ca073b59f1009a8cd16b930abe70b296f62",
+        "repository_sha256": "58ce2318baf16cae1e0d4a0f2fcac9b620bb34a1767d0829434fa6fc66820b5f"
+      },
+      "renderer": {
+        "compiler": "/Users/alex/code/vox2/Build/v/prealloc-runtime/d3527395f2cd5b2e74cb2cd00f859f877dae2912dfe54f140225423caae9b199/compiler/v",
+        "default": "gg",
+        "gg_adapters": true,
+        "skia_free": false,
+        "skia_required_for": [
+          "text preparation and fallback",
+          "canvas",
+          "shadows",
+          "bitmap export",
+          "recording and picture playback"
+        ]
+      },
+      "repository_after_build": {
+        "build_inputs_sha256": "b06649ebb83539a4b429ca726f92b7e6a4cc4d08b6dde879e70216fa23b0a693",
+        "dirty": true,
+        "head": "c8e726bf31a6c68ae1d1bb1e1bc9d399be7c30d1",
+        "repository_sha256": "577a71d4d4b893e8d5622212f4b16c2d5cbeaeb3d01eeb56ee6652e31eb04cf1"
+      },
+      "request": {
+        "backend": "c",
+        "c_mode": "parallel",
+        "head": "44096ca073b59f1009a8cd16b930abe70b296f62",
+        "id": "8578c3f5673f43bdbc6226ce8bcd3e39",
+        "renderer": "gg",
+        "v_prod": false
+      },
+      "verified_inputs": {
+        "build_inputs_sha256": "99515103abd07586d593decb2e0abfeeab4a329dd9a58bcc25541ff70a10a5f8",
+        "dirty": true,
+        "head": "44096ca073b59f1009a8cd16b930abe70b296f62",
+        "source_kind": "verified parsed buffers and sealed native inputs"
+      }
+    },
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "tools/run_memory_bounded.py",
+      "--lock",
+      "/Users/alex/code/vox2/Build/wpt-r16-20261108-1558.lock",
+      "--report",
+      "/Users/alex/code/vox2/Build/wpt-r16-20261108-1558/full-guard.json",
+      "--timeout",
+      "28800",
+      "--",
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "tools/wpt_compare.py",
+      "--output",
+      "/Users/alex/code/vox2/Build/wpt-r16-20261108-1558/full",
+      "--ladybird-ref",
+      "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+      "--wpt-server-root",
+      "/Users/alex/code/3rd/web-platform-tests",
+      "--browsers",
+      "vox",
+      "--chunk-size",
+      "100",
+      "--require-all-pass"
+    ]
+  }
+}

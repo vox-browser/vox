@@ -428,3 +428,20 @@ source empty name default. Generation and import explicitly assign `HMAC` at
 the source steps, so actual operation keys remain unchanged. The default-record,
 HMAC source-vector and core test files pass 3/3 in both GC modes; no implicit
 algorithm name is introduced into an otherwise empty source record.
+
+The native KDF provider adapter preserves present empty input parameters with
+non-null zero-length octet spans (`1485745ff`). This fixes HKDF empty key material
+and PBKDF2 empty passwords/salts without changing algorithm validation. Six
+typed checks pass in both normal GC and preallocated GC-none modes, including
+16 official empty-key HKDF vectors and eight independent PBKDF2 vectors.
+The four original official HKDF HTTPS Window variants pass 3,664/3,664 in native
+Page checks, gaining 272 passes over the earlier pinned Window results. All
+four Worker variants initially time out before subtest reporting, retaining the
+7,328 expected assertions and strict exit 1. Those timeouts are subsequently
+traced to the WPT server's missing direct-HTTPS TLS shutdown. With that adapter
+repair, the same matching production browser passes all eight original variants,
+7,328/7,328, with strict exits 0 and unchanged executable/library hashes. The
+recovered Worker assertions are a measurement repair, not additional engine
+conformance credit. This finite selection does not establish full WebCrypto or
+WPT parity. See
+[WPT progress](../docs/WPT_CONFORMANCE_PROGRESS.md).

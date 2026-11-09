@@ -33,17 +33,17 @@ fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels
 	mut contribution := item.width
 	run := item.glyph_run or {
 		projection.node = unsafe { nil }
-		return item.border_box_width()
+		return item.fitting_width()
 	}
 	node := item.node or {
 		projection.node = unsafe { nil }
-		return item.border_box_width()
+		return item.fitting_width()
 	}
 	if run.font().font_rendering_policy != .chromium || run.text_type() == .rtl
 		|| item.width != shaped_inline_width(run, 0) || run.glyphs_.len == 0
 		|| node.computed_values().text_align() == .justify {
 		projection.node = unsafe { nil }
-		return item.border_box_width()
+		return item.fitting_width()
 	}
 	// A chunk continuing the same text node joins its text item, even across a
 	// fallback font or a line-break opportunity, as append_text_item() does.
@@ -51,7 +51,7 @@ fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels
 		&& projection.end == item.offset_in_node
 	if !continues_item && run.glyphs_[0].position.x != 0 {
 		projection.node = unsafe { nil }
-		return item.border_box_width()
+		return item.fitting_width()
 	}
 	continues_segment := continues_item && projection.run != unsafe { nil }
 		&& voidptr(projection.run.font()) == voidptr(run.font())
@@ -86,7 +86,7 @@ fn (mut projection ProjectedTextAdvance) append(item &InlineLevelItem) CSSPixels
 	projection.node = node
 	projection.run = run
 	projection.end = item.offset_in_node + item.length_in_node
-	return item.border_box_width().minus(item.width).plus(contribution)
+	return item.fitting_width().minus(item.width).plus(contribution)
 }
 
 // Fitting must use the same merged advance as append_text_item(). Adding

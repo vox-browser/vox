@@ -8,6 +8,14 @@ mut:
 	values []int
 }
 
+fn wait_for_zero_timer(condition fn () bool) {
+	deadline := time.sys_mono_now() + i64(2_000_000_000)
+	for !condition() && time.sys_mono_now() < deadline {
+		pump_native_events(0.05)
+	}
+	assert condition()
+}
+
 fn test_zero_timers_wait_for_a_pump_and_deliver_in_registration_order() {
 	if !native_timer_scheduling_available() { return }
 	state := &ZeroTimerObservation{}
@@ -21,7 +29,7 @@ fn test_zero_timers_wait_for_a_pump_and_deliver_in_registration_order() {
 		timers << timer
 	}
 	assert state.values.len == 0
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 4 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 4 })
 	assert state.values == [0, 1, 2, 3]
 	for timer in timers { assert !timer.is_active() && !timer.has_activity_root() }
 }
@@ -38,7 +46,7 @@ fn test_zero_timer_cancellation_and_restart_discard_the_old_queued_callback() {
 	restarted.start()
 	cancelled.stop()
 	restarted.restart()
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 1 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 1 })
 	pump_native_events(0.005)
 	assert state.values == [1]
 	assert !cancelled.has_activity_root() && !restarted.has_activity_root()
@@ -50,7 +58,7 @@ fn test_zero_timer_nested_native_pump_delivers_another_timer_before_returning() 
 	mut first := Timer.create_single_shot(0, fn [state] () {
 		mut observed := unsafe { &ZeroTimerObservation(state) }
 		observed.values << 1
-		wait_for_native_timer(fn [state] () bool { return state.values.len == 2 })
+		wait_for_zero_timer(fn [state] () bool { return state.values.len == 2 })
 		assert observed.values == [1, 2]
 		observed.values << 3
 	})
@@ -60,7 +68,7 @@ fn test_zero_timer_nested_native_pump_delivers_another_timer_before_returning() 
 	})
 	first.start()
 	second.start()
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 3 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 3 })
 	assert state.values == [1, 2, 3]
 }
 
@@ -76,7 +84,7 @@ fn test_repeating_zero_timer_can_stop_and_restart_itself_without_a_stale_deliver
 		if observed.values.len == 3 { current.stop() }
 	}
 	timer.start()
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 3 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 3 })
 	pump_native_events(0.005)
 	assert state.values == [0, 1, 2]
 	assert !timer.is_active() && !timer.has_activity_root()
@@ -95,7 +103,7 @@ fn test_zero_timer_can_change_single_shot_policy_and_reload_a_positive_interval(
 	}
 	timer.start()
 	timer.set_single_shot(false)
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 3 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 3 })
 	assert state.values[2] - state.values[1] >= 10
 	assert timer.interval() == 20 && !timer.is_active() && !timer.has_activity_root()
 }
@@ -114,7 +122,7 @@ fn test_zero_timer_keeps_a_retired_owner_through_native_callback_cleanup() {
 	timer.start()
 	scope.finish()
 	owner.release()
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 1 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 1 })
 	assert owner.arena.usage().used == 0
 }
 
@@ -130,7 +138,7 @@ fn test_zero_timer_delivery_stays_coalesced_during_cooperative_work() {
 	pump_native_events(0.005)
 	assert state.values.len == 0
 	work.finish()
-	wait_for_native_timer(fn [state] () bool { return state.values.len == 1 })
+	wait_for_zero_timer(fn [state] () bool { return state.values.len == 1 })
 	pump_native_events(0.005)
 	assert state.values == [1] && !timer.has_activity_root()
 }

@@ -807,7 +807,7 @@ fn (style_value RadialSizeStyleValue) resolve_ellipse_component(component Radial
 // --- RandomValueSharingStyleValue extra helpers ---
 
 pub fn (style_value RandomValueSharingStyleValue) is_fixed() bool {
-	return style_value.fixed_value_ != none
+	return style_value.fixed_value_ != unsafe { nil }
 }
 
 pub fn (style_value RandomValueSharingStyleValue) is_auto() bool {
@@ -823,7 +823,7 @@ pub fn (style_value RandomValueSharingStyleValue) element_shared() bool {
 }
 
 pub fn (style_value RandomValueSharingStyleValue) random_caching_key(element_id ?i64) ?RandomCachingKey {
-	if style_value.fixed_value_ != none {
+	if style_value.fixed_value_ != unsafe { nil } {
 		return none
 	}
 	name := style_value.name_ or { return none }

@@ -27,7 +27,7 @@ def main():
         parser.error('The subprocess backend is macOS-only; other platforms retain the direct engine')
     output = args.output.resolve()
     output.mkdir()
-    source_names = ['fake', 'transport', 'parent_death', 'publication']
+    source_names = ['fake', 'transport', 'parent_death', 'publication', 'idle_release', 'normal_exit']
     sources = [ROOT / 'tools' / ('adblock_worker_' + name + '_test.c') for name in source_names]
     inputs = sources + [Path(__file__), ROOT / 'main.v']
     inputs += [path for path in (ROOT / 'adblock').iterdir() if path.is_file() and path.suffix in ['.v', '.h', '.c', '.bin', '.gz']]
@@ -47,7 +47,16 @@ def main():
             raise RuntimeError(label + ' failed; raw log retained')
     try:
         main_source = (ROOT / 'main.v').read_text().split('fn main() {', 1)[1]
-        first = re.sub(r'^\s*(?://[^\n]*\n\s*)*', '', main_source)
+        first = re.sub(r'(?m)^\s*//[^\n]*\n', '', main_source).lstrip()
+        # Current startup installs process metrics and script resource hooks
+        # before either role dispatch; none initializes browser heap/font/GUI.
+        startup = '''load_instruction_stage := processmetrics.begin_instruction_stage('browser_main')
+\tdefer { load_instruction_stage.finish() }
+\tconfigure_browser_javascript_startup()
+\tinstall_browser_script_resource_cache()
+\tloader.install_fetch_user_agent_provider()'''
+        if first.startswith(startup):
+            first = first[len(startup):].lstrip()
         # JavaScript's self-helper also dispatches before browser setup. It
         # returns immediately for the filter worker's distinct role flag.
         js_dispatch = 'if status := browserjs.run_worker_process_role(os.args) { exit(status) }'
@@ -57,12 +66,15 @@ def main():
         helper = args.helper.resolve() if args.helper else output / 'helper'
         if not args.helper:
             compiler = os.environ.get('V_BIN') or shutil.which('v') or str(Path.home() / 'code/v/v')
-            run([compiler, '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals', '-exclude', '@vlib/time/zoneinfo.native.v', '-gc', args.gc, '-path', str(ROOT) + '|@vlib', '-keepc', '-o', str(helper), str(ROOT / 'tools/adblock-worker-mini/main.v')], 'helper-compile')
+            run([compiler, '-memory-limit', '10G', '-bug-report-url', 'http://127.0.0.1:9', '-enable-globals', '-exclude', '@vlib/time/zoneinfo.native.v', '-gc', args.gc, '-path', str(ROOT) + '|@vlib', '-keepc', '-o', str(helper), str(ROOT / 'tools/adblock-worker-mini/main.v')], 'helper-compile')
         result['helper_sha256'] = sha(helper)
         for name, source in zip(source_names, sources):
             run(['cc', '-std=c11', '-O2', '-Wall', '-Wextra', '-Werror', '-Wno-unused-function', str(source), '-o', str(output / name)], name + '-compile')
         run([str(output / 'transport'), str(output / 'fake'), str(output / 'requests.log')], 'transport-run')
         run([str(output / 'publication'), str(output / 'fake')], 'publication-run')
+        run([str(output / 'idle_release'), str(output / 'fake')], 'idle-release-run')
+        run([str(output / 'idle_release'), str(output / 'fake'), 'exit'], 'idle-release-exit-run')
+        run([str(output / 'normal_exit'), str(output / 'fake')], 'normal-exit-run')
         invalid = subprocess.run([str(helper), '--vox-adblock-worker-v1', 'unexpected-argument'], env=env, capture_output=True)
         result['invalid_worker_role_exit'] = invalid.returncode
         assert invalid.returncode == 64 and not invalid.stdout and not invalid.stderr

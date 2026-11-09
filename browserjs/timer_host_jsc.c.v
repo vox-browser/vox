@@ -3,6 +3,7 @@ module browserjs
 
 import dom
 import html
+import trustedtypes
 import webidl
 
 
@@ -95,6 +96,28 @@ fn (mut host TimerHost) value(value webidl.Value) !voidptr {
 fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 	if host.closed { return error('Timer binding is closed') }
 	op := host.runtime.binding_dom_string(host.argument(arguments, 0))!
+	if arguments.len > 4 && host.settings.fetch_request_client_is_window() {
+		// Same-origin WindowProxy reads expose the other realm's actual global.
+		// Its EventTarget wrapper belongs to that realm, rather than this one.
+		for _, candidate in timer_host_bindings_ {
+			if candidate.closed || C.JSContextGetGroup(candidate.runtime.context) != C.JSContextGetGroup(host.runtime.context) { continue }
+			if C.JSValueIsStrictEqual(host.runtime.context,arguments[4],C.JSContextGetGlobalObject(candidate.runtime.context)) {
+				if voidptr(candidate) == voidptr(&host) { return host.operate(arguments[..4]) }
+				mut target := unsafe { &TimerHost(candidate) }
+				return target.operate(arguments[..4])
+			}
+		}
+		window := host.runtime.message_window(arguments[4])!
+		settings := window.associated_document().relevant_settings_object()
+		if settings != unsafe { nil } {
+			owner := unsafe { &html.EnvironmentSettingsObject(settings) }
+			target_scope := owner.window_or_worker_global_scope()!
+			if voidptr(target_scope) != voidptr(host.scope) {
+				mut target := timer_scope_bindings_[voidptr(target_scope)] or { return error('Window timer host is not installed') }
+				return target.operate(arguments[..4])
+			}
+		}
+	}
 	handler_value := host.argument(arguments, 1)
 	if op == 'clear' {
 		mut exception := unsafe { nil }
@@ -140,7 +163,15 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 		roots << value
 	}
 	mut scope := unsafe { &html.WindowOrWorkerGlobalScopeMixin(host.scope) }
+	if source := handler.source {
+		mut factory := unsafe { &trustedtypes.TrustedTypePolicyFactory(scope.trusted_types()) }
+		sink := if host.settings.fetch_request_client_is_window() {
+			if op == 'interval' { trustedtypes.InjectionSink.window_set_interval } else { trustedtypes.InjectionSink.window_set_timeout }
+		} else { if op == 'interval' { trustedtypes.InjectionSink.worker_global_scope_set_interval } else { trustedtypes.InjectionSink.worker_global_scope_set_timeout } }
+		handler = html.timer_source_handler(trustedtypes.get_trusted_type_compliant_string(mut factory,.trusted_script,source,sink,"'script'",true)!)
+	}
 	id := if op == 'interval' { scope.set_interval(handler, timeout, values) } else { scope.set_timeout(handler, timeout, values) }
+	if id == 0 { return C.vox_jsc_JSValueMakeNumber(host.runtime.context,0) }
 	host.ids[id] = roots
 	installed = true
 	return C.vox_jsc_JSValueMakeNumber(host.runtime.context, id)
@@ -148,9 +179,9 @@ fn (mut host TimerHost) operate(arguments []voidptr) !voidptr {
 
 const timer_host_bootstrap = r'(function(operate){
  const define=Object.defineProperty,TypeError=globalThis.TypeError;
- function timer(operation,handler,timeout,args){const values=[];for(let i=2;i<args.length;i++)define(values,i-2,{value:args[i],writable:true,enumerable:true,configurable:true});return operate(operation,handler,timeout,values)}
- function setTimeout(handler,timeout){if(arguments.length<1)throw new TypeError("setTimeout requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer("timeout",converted,timeout===undefined?0:+timeout,arguments)}
- function setInterval(handler,timeout){if(arguments.length<1)throw new TypeError("setInterval requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer("interval",converted,timeout===undefined?0:+timeout,arguments)}
+ function timer(receiver,operation,handler,timeout,args){const values=[];for(let i=2;i<args.length;i++)define(values,i-2,{value:args[i],writable:true,enumerable:true,configurable:true});return operate(operation,handler,timeout,values,receiver)}
+ function setTimeout(handler,timeout){if(arguments.length<1)throw new TypeError("setTimeout requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"timeout",converted,timeout===undefined?0:+timeout,arguments)}
+ function setInterval(handler,timeout){if(arguments.length<1)throw new TypeError("setInterval requires 1 argument");const converted=typeof handler==="function"?handler:`${handler}`;return timer(this,"interval",converted,timeout===undefined?0:+timeout,arguments)}
  function clearTimeout(id){return operate("clear",id===undefined?0:+id)}
  function clearInterval(id){return operate("clear",id===undefined?0:+id)}
  for(const [name,method] of [["setTimeout",setTimeout],["setInterval",setInterval],["clearTimeout",clearTimeout],["clearInterval",clearInterval]])define(globalThis,name,{value:method,writable:true,enumerable:true,configurable:true});

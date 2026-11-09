@@ -1725,6 +1725,7 @@ pub type DocumentQueueElementTaskCallback = fn (voidptr, &Element, TaskSource, f
 
 pub struct DocumentLifecycleHook {
 pub:
+	script_element_post_connection fn (voidptr, &Element) = unsafe { nil }
 	target                           voidptr = unsafe { nil }
 	register_document                DocumentLifecycleCallback = unsafe { nil }
 	unregister_document              DocumentLifecycleCallback = unsafe { nil }
@@ -1836,6 +1837,7 @@ pub:
 	style_did_update DocumentLayoutStyleUpdateCallback = unsafe { nil }
 	// Releases a native layout publisher; the argument is its concrete handle.
 	retire_native_layout DocumentLayoutRetireCallback = unsafe { nil }
+	commit_position_options DocumentLayoutStyleUpdateCallback = unsafe { nil }
 }
 
 pub struct DocumentRenderedTextHook {
@@ -1881,6 +1883,7 @@ pub type DocumentMetaElementMetadataCallback = fn (&HTMLMetaElement, ?string)
 
 pub struct DocumentCSPHook {
 pub:
+	policy_changed fn (voidptr, &Document) = unsafe { nil }
 	target       voidptr = unsafe { nil }
 	inline_check DocumentInlineCSPCheckCallback = unsafe { nil }
 	initialize   DocumentCSPInitializationCallback = unsafe { nil }
@@ -5296,6 +5299,8 @@ pub mut:
 
 	// Version tracking
 	dom_tree_version                         u64
+	light_dom_id_class_attribute_version_     u64
+	light_dom_element_version_                u64
 	attribute_version_                       u64
 	// Local names are immutable. Keep a conservative history without retaining
 	// elements, so an absent tag can rule out document-wide selector walks.
@@ -5488,7 +5493,7 @@ pub mut:
 	scripts_to_execute_when_parsing_has_finished    []&HTMLScriptElement
 	scripts_to_execute_in_order_as_soon_as_possible []&HTMLScriptElement
 	scripts_to_execute_as_soon_as_possible          []&HTMLScriptElement
-	current_script                                  &HTMLScriptElement = unsafe { nil }
+	current_script                                  &Element = unsafe { nil }
 	custom_element_reaction_backup_queue            []&Element
 	custom_element_construction_hook_               ?CustomElementConstructionHook
 	processing_custom_element_reaction_backup_queue bool
@@ -6105,6 +6110,26 @@ pub fn (mut d Document) bump_dom_tree_version() {
 // from both inputs must observe this version as well as dom_tree_version().
 pub fn (d &Document) attribute_version() u64 {
 	return d.attribute_version_
+}
+
+// Connected light-DOM token consumers need not rescan for unrelated
+// attributes or detached/shadow edits. Structure has its separate version.
+pub fn (d &Document) light_dom_id_class_attribute_version() u64 {
+	return d.light_dom_id_class_attribute_version_
+}
+
+pub fn (mut d Document) bump_light_dom_id_class_attribute_version() {
+	d.light_dom_id_class_attribute_version_++
+}
+
+// Text edits cannot change connected light-DOM element membership. Raw tree
+// operations update this counter and retain ordinary invalidation as well.
+pub fn (d &Document) light_dom_element_version() u64 {
+	return d.light_dom_element_version_
+}
+
+pub fn (mut d Document) bump_light_dom_element_version() {
+	d.light_dom_element_version_++
 }
 
 pub fn (mut d Document) bump_attribute_version() {
@@ -7725,6 +7750,11 @@ pub fn (mut d Document) set_layout_update_hook(hook DocumentLayoutUpdateHook) {
 	d.layout_update_hook_ = hook
 }
 
+pub fn (d &Document) record_last_successful_position_options() {
+	hook := d.layout_update_hook_ or { return }
+	if hook.commit_position_options != unsafe { nil } { hook.commit_position_options(hook.target,d) }
+}
+
 pub fn (mut d Document) set_rendered_text_hook(hook DocumentRenderedTextHook) {
 	d.rendered_text_hook_ = hook
 }
@@ -8866,7 +8896,7 @@ pub fn (mut d Document) implementation() &DOMImplementation {
 }
 
 // --- Scripting ---
-pub fn (d &Document) current_script() ?&HTMLScriptElement {
+pub fn (d &Document) current_script() ?&Element {
 	if d.current_script == unsafe { nil } {
 		return none
 	}
@@ -9554,6 +9584,10 @@ pub fn (mut d Document) set_needs_animated_style_update() {
 }
 
 pub fn (mut d Document) invalidate_scroll_state() {
+	if d.any_anchor_names_are_registered() {
+		mut root := d.as_node()
+		root.set_needs_layout_update(.style_change)
+	}
 	// Propagate scroll state invalidation to its retained painting owner.
 	if paintable := d.unsafe_paintable() {
 		paintable.invalidate_scroll_state()
@@ -9869,6 +9903,7 @@ pub fn (d &Document) policy_container() &PolicyContainer {
 
 pub fn (mut d Document) set_policy_container(pc &PolicyContainer) {
 	d.policy_container_ = pc
+	if hook := d.csp_hook_ { if hook.policy_changed != unsafe { nil } { hook.policy_changed(hook.target,&d) } }
 }
 
 // --- Navigation ---

@@ -465,8 +465,8 @@ fn (b &BlockBox) svg_path_bounding_box_contains_hit_test_point(point painting.Po
 fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 	mut local_point := painting.Point{x, y}
 	if affine_is_compact_identity(b.paint_transform) {
-		return b.svg_path_bounding_box_contains_hit_test_point(local_point)
-			&& b.border_box_contains_hit_test_point(local_point)
+		return b.svg_contains_hit_test_point(local_point)
+			&& (b.has_svg_hit_geometry() || b.border_box_contains_hit_test_point(local_point))
 	}
 	matrix := normalized_affine(b.paint_transform)
 	determinant := matrix[0] * matrix[3] - matrix[1] * matrix[2]
@@ -479,15 +479,15 @@ fn (b &BlockBox) contains_hit_test_point(x f64, y f64) bool {
 		x: (matrix[3] * translated_x - matrix[2] * translated_y) / determinant
 		y: (-matrix[1] * translated_x + matrix[0] * translated_y) / determinant
 	}
-	return b.svg_path_bounding_box_contains_hit_test_point(local_point)
-		&& b.border_box_contains_hit_test_point(local_point)
+	return b.svg_contains_hit_test_point(local_point)
+		&& (b.has_svg_hit_geometry() || b.border_box_contains_hit_test_point(local_point))
 }
 
 fn hit_test_paint_order(order []&BlockBox, x f64, y f64) ?i64 {
 	for i := order.len - 1; i >= 0; i-- {
 		box := order[i]
 		node_id := box.node_id_for_hit_test()
-		if node_id != 0 && box.visible && box.pointer_events_enabled
+		if node_id != 0 && box.visible_for_pointer_events()
 			&& box.contains_hit_test_point(x, y) {
 			return node_id
 		}

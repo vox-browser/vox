@@ -109,6 +109,10 @@ pub fn (script &SVGScriptElementModel) is_ready_to_be_parser_executed() bool {
 	return script.ready_to_be_parser_executed_
 }
 
+pub fn (mut script SVGScriptElementModel) set_already_processed(value bool) {
+	script.already_processed_ = value
+}
+
 pub fn (script &SVGScriptElementModel) already_processed() bool {
 	return script.already_processed_
 }
@@ -155,6 +159,7 @@ pub fn (mut script SVGScriptElementModel) process_the_script_element() {
 		return
 	}
 	script.already_processed_ = true
+	if element.document().should_block_inline_content(element,'script',script.text_) { return }
 	script.result_source_ = script.text_
 	script.execute_script()
 }
@@ -197,6 +202,14 @@ fn (mut script SVGScriptElementModel) execute_script() {
 	if !script.document_.document_ready_to_run_scripts() {
 		return
 	}
-	execute := script.execute_hook_ or { return }
+	mut document := unsafe { &dom.Document(script.document_) }
+	previous := document.current_script()
+	defer { document.set_current_script(previous) }
+	element := svg_script_dom_element(script.element_)
+	document.set_current_script(if element.as_node().root().is_shadow_root() { none } else { element })
+	execute := script.execute_hook_ or {
+		_ = execute_bound_script_element(script.document_,.classic,source,int(script.source_line_number_),svg_script_dom_element(script.element_)) or { false }
+		return
+	}
 	execute(.classic, source, script.base_url_) or {}
 }

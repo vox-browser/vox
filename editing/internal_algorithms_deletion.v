@@ -557,6 +557,7 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 
 	// 32. If start block is an ancestor of end block:
 	mut values := []RecordedNodeValue{}
+	mut recorded_white_space := []RecordedWhiteSpace{}
 	if start_block_ref.is_ancestor_of(end_block_ref) {
 		// 1. Let reference node be end block.
 		mut reference_node := end_block_ref
@@ -625,21 +626,17 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 			return
 		}
 
-		// 6. Let children be a list of nodes, initially empty.
-		// 7. Append the first child of end block to children.
-		mut children := [end_first_child]
-
-		// 8. While children's last member is not a br, and children's last member's nextSibling is an inline node,
-		//    append children's last member's nextSibling to children.
-		for !children.last().is_html_br_element() {
-			next_sibling := children.last().next_sibling() or { break }
-			if !is_inline_node(next_sibling) {
-				break
+		mut children := isolate_first_line_of_inline_run(end_block_ref, end_first_child)
+		if children.len == 0 {
+			if !end_block_ref.has_children() && end_block_ref.is_editable() {
+				remove_node(end_block_ref)
 			}
-			children << next_sibling
+			restore_states_and_values(mut document, overrides)
+			return
 		}
 
 		// 9. Record the values of children, and let values be the result.
+		recorded_white_space = record_white_space_of_nodes(mut children)
 		values = record_the_values_of_nodes(children)
 
 		// 10. While children's first member's parent is not start block, split the parent of children.
@@ -695,21 +692,12 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 		// 6. If reference node's nextSibling is neither null nor a block node, append it to nodes to move.
 		if next_sibling := reference_node.next_sibling() {
 			if !is_block_node(next_sibling) {
-				nodes_to_move << next_sibling
+				nodes_to_move = isolate_first_line_of_inline_run(end_block_ref, next_sibling)
 			}
-		}
-
-		// 7. While nodes to move is nonempty and its last member isn't a br and its last member's nextSibling is
-		//    neither null nor a block node, append its last member's nextSibling to nodes to move.
-		for nodes_to_move.len > 0 && !nodes_to_move.last().is_html_br_element() {
-			next_sibling := nodes_to_move.last().next_sibling() or { break }
-			if is_block_node(next_sibling) {
-				break
-			}
-			nodes_to_move << next_sibling
 		}
 
 		// 8. Record the values of nodes to move, and let values be the result.
+		recorded_white_space = record_white_space_of_nodes(mut nodes_to_move)
 		values = record_the_values_of_nodes(nodes_to_move)
 
 		// 9. For each node in nodes to move, append node as the last child of start block, preserving ranges.
@@ -738,13 +726,18 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 			}
 		}
 
-		// 3. Record the values of end block's children, and let values be the result.
-		values = record_the_values_of_nodes(end_block_ref.children_as_vector())
+		mut children := end_block_ref.children_as_vector()
+		if first := end_block_ref.first_child() {
+			if is_inline_node(first) && resolved_white_space(start_block_ref) != resolved_white_space(end_block_ref) {
+				children = isolate_first_line_of_inline_run(end_block_ref, first)
+			}
+		}
+		recorded_white_space = record_white_space_of_nodes(mut children)
+		values = record_the_values_of_nodes(children)
 
-		// 4. While end block has children, append the first child of end block to start block, preserving ranges.
+		// Move the isolated line, retaining any subsequent lines in end block.
 		mut new_position := start_block_ref.length()
-		for {
-			child := end_block_ref.first_child() or { break }
+		for child in children {
 			move_node_preserving_ranges(child, start_block_ref, new_position)
 			new_position++
 		}
@@ -794,6 +787,7 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 
 	// 38. Restore the values from values.
 	restore_the_values_of_nodes(values)
+	restore_white_space_of_nodes(recorded_white_space)
 
 	// 39. If start block has no children, call createElement("br") on the context object and append the result as the
 	//     last child of start block.

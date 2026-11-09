@@ -219,6 +219,35 @@ fn test_javascript_bytecode_cache_update_respects_vary_request_headers() {
 	clear_http_memory_cache()
 }
 
+fn test_http_cache_reload_replaces_the_previous_body_and_no_store_bypasses_hits() {
+	clear_http_memory_cache()
+	defer { clear_http_memory_cache() }
+	set_http_memory_cache_enabled(true)
+	mut request := Request.create()
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{value: 'https://top-level.test'}
+	})
+	request.set_url(dom.URL{value: 'https://resource.test/reloaded'})
+	mut first := Response.create()
+	first.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+	first.set_body_bytes('before reload'.bytes())
+	store_response_in_cache(request, mut first)
+	finalize_response_in_cache(request, first)
+	assert select_response_from_cache(request)?.body?.bytes() == 'before reload'.bytes()
+
+	request.cache_mode = .no_store
+	assert select_response_from_cache(request) == none
+	request.cache_mode = .reload
+	assert select_response_from_cache(request) == none
+	mut replacement := Response.create()
+	replacement.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+	replacement.set_body_bytes('after reload'.bytes())
+	store_response_in_cache(request, mut replacement)
+	finalize_response_in_cache(request, replacement)
+	request.cache_mode = .default
+	assert select_response_from_cache(request)?.body?.bytes() == 'after reload'.bytes()
+}
+
 fn test_fetched_data_receiver_prefers_cached_response_body_for_cache_finalization() {
 	clear_http_memory_cache()
 	set_http_memory_cache_enabled(true)
@@ -232,15 +261,121 @@ fn test_fetched_data_receiver_prefers_cached_response_body_for_cache_finalizatio
 	mut body := Body.streaming()
 	response.set_body(body)
 	store_response_in_cache(request, mut response)
+	finalize_response_in_cache(request, response)
+	assert select_response_from_cache(request) == none
 	mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
 	receiver.set_response(response)
 	receiver.set_body(body)
 	receiver.set_cached_response_body('cache-owned'.bytes())
-	receiver.handle_network_data(NetworkResponseData.from_bytes('network-copy'.bytes()), .ongoing)
+	receiver.handle_network_data(NetworkResponseData.from_file_backed_bytes('network-copy'.bytes()), .ongoing)
+	// File-backed data can change the body's source to bytes before the network
+	// has reported success. It still must not publish an incomplete entry.
+	assert body.body_source() == .bytes
+	finalize_response_in_cache(request, response)
+	assert select_response_from_cache(request) == none
 	receiver.handle_network_data(NetworkResponseData.from_bytes([]u8{}), .complete)
+	receiver.stop_caching_incomplete_response()
 	assert body.fully_read()! == 'network-copy'.bytes()
 	assert select_response_from_cache(request)?.fetch_response_body_bytes()? == 'cache-owned'.bytes()
 	clear_http_memory_cache()
+}
+
+fn test_http_cache_matches_out_of_order_completion_to_its_response() {
+	clear_http_memory_cache()
+	defer { clear_http_memory_cache() }
+	set_http_memory_cache_enabled(true)
+	mut request := Request.create()
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{value: 'https://top-level.test'}
+	})
+	request.set_url(dom.URL{value: 'https://resource.test/concurrent'})
+	request.header_list.append(http.Header{name: 'Accept-Language', value: 'en'})
+	mut first := Response.create()
+	first.status = 203
+	first.header_list.append(http.Header{name: 'Vary', value: 'Accept-Language'})
+	first.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+	first.set_body_bytes('first response'.bytes())
+	mut second := Response.create()
+	second.header_list.append(http.Header{name: 'Vary', value: 'Accept-Language'})
+	second.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60, no-cache'})
+	second.set_body_bytes('second response'.bytes())
+	store_response_in_cache(request, mut first)
+	store_response_in_cache(request, mut second)
+
+	// Both producers have the same cache key and Vary selection. Completing
+	// the second one first must retain its own no-cache metadata.
+	finalize_response_in_cache(request, filtered_response(second, .basic))
+	assert select_response_from_cache(request) == none
+	finalize_response_in_cache(request, first)
+	cached := select_response_from_cache(request)?
+	assert cached.status == 203
+	assert cached.fetch_response_body_bytes()? == 'first response'.bytes()
+	// Repeated or late completion of the second producer cannot consume the
+	// first producer's enrollment or overwrite its finished representation.
+	finalize_response_in_cache(request, second)
+	assert select_response_from_cache(request)?.fetch_response_body_bytes()? == 'first response'.bytes()
+}
+
+fn test_http_cache_clones_and_cleared_producers_cannot_finalize_other_entries() {
+	clear_http_memory_cache()
+	defer { clear_http_memory_cache() }
+	set_http_memory_cache_enabled(true)
+	mut request := Request.create()
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{value: 'https://top-level.test'}
+	})
+	request.set_url(dom.URL{value: 'https://resource.test/identity'})
+	mut original := Response.create()
+	original.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+	original.set_body_bytes('original'.bytes())
+	store_response_in_cache(request, mut original)
+	cloned := filtered_response(original, .basic).clone()
+	finalize_response_in_cache(request, cloned)
+	assert select_response_from_cache(request) == none
+
+	clear_http_memory_cache()
+	mut replacement := Response.create()
+	replacement.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+	replacement.set_body_bytes('replacement'.bytes())
+	store_response_in_cache(request, mut replacement)
+	finalize_response_in_cache(request, original)
+	assert select_response_from_cache(request) == none
+	finalize_response_in_cache(request, replacement)
+	assert select_response_from_cache(request)?.fetch_response_body_bytes()? == 'replacement'.bytes()
+}
+
+fn test_fetched_data_receiver_retires_incomplete_cache_enrollment() {
+	clear_http_memory_cache()
+	defer { clear_http_memory_cache() }
+	set_http_memory_cache_enabled(true)
+	mut request := Request.create()
+	request.set_client(&CacheTestClient{
+		top_level_origin: dom.Origin{value: 'https://top-level.test'}
+	})
+	request.set_url(dom.URL{value: 'https://resource.test/canceled'})
+	for enrolled_before_stop in [true, false] {
+		mut response := Response.create()
+		response.header_list.append(http.Header{name: 'Cache-Control', value: 'max-age=60'})
+		body := Body.streaming()
+		response.set_body(body)
+		mut receiver := FetchedDataReceiver.create(FetchParams.create(request, FetchTimingInfo.create()), body.stream())
+		receiver.set_response(response)
+		receiver.set_body(body)
+		if enrolled_before_stop {
+			store_response_in_cache(request, mut response)
+		}
+		receiver.set_cached_response_body('incomplete'.bytes())
+		receiver.stop_caching_incomplete_response()
+		// Transport teardown may precede the queued response callback. That late
+		// callback must not enroll already-retired work.
+		store_response_in_cache(request, mut response)
+		response.set_body_bytes('late completion'.bytes())
+		finalize_response_in_cache(request, response)
+		assert select_response_from_cache(request) == none
+		assert fetch_http_memory_cache_pending.len == 0
+		assert receiver.cache_body_ == none
+		assert receiver.cache_buffer_.len == 0
+	}
 }
 
 fn test_body_entry_points_and_multipart_header_parser() {

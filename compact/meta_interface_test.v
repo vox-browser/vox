@@ -55,3 +55,20 @@ fn test_compact_meta_interface_uses_native_html_constructor_validation() {
 	assert native.as_node().is_html_meta_element()
 	assert native.custom_element_is_value()? == 'x-meta-interface'
 }
+
+fn test_dynamic_meta_http_equiv_reflection_installs_the_actual_compilation_policy() {
+	address := dom.URL{value:'https://meta-policy.test/'}
+	mut document := html.parse_navigation_document('<!doctype html><head></head>',address,address.origin(),none)!
+	mut runtime := browserjs.Runtime.create()
+	defer { runtime.close();document.finalize() }
+	mut messages := []string{}
+	run_document_javascript(document,address.serialize(),[r'
+ const meta=document.createElement("meta");
+ meta.httpEquiv="Content-Security-Policy";meta.content="script-src \u0027self\u0027 \u0027unsafe-inline\u0027";
+ if(meta.getAttribute("http-equiv")!=="Content-Security-Policy"||meta.httpEquiv!=="Content-Security-Policy")throw Error("httpEquiv reflection");
+ document.head.appendChild(meta);
+ let blocked=false;try{eval("1")}catch(e){blocked=e instanceof EvalError}
+ if(!blocked)throw Error("dynamic meta did not install compilation policy");
+ '],runtime,mut messages)
+	assert messages == []string{},messages.str()
+}

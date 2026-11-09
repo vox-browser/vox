@@ -95,5 +95,17 @@ pub fn (r RoundedRect) clip_path(matrix Matrix) Path {
 		p := rect_path(r.bounds)
 		return Path{...p, convex_hint: .convex_cw}.transform(matrix)
 	}
-	return r.path().transform(matrix)
+	device := r.path().transform(matrix)
+	$if linux {
+		// SkPathData::makeTransform() reattaches its oval/rrect metadata
+		// after an axis-preserving transform. setupIsA() also restores the
+		// known convexity, unlike the legacy SkPathRef implementation.
+		m := matrix_affine(matrix)
+		if !rect_is_empty(r.bounds) && affine_is_finite(m) && rect_stays_rect(m) {
+			reversed := if m.sx != 0 { (m.sx < 0) != (m.sy < 0) }
+				else { (m.kx < 0) == (m.ky < 0) }
+			return Path{...device, convex_hint: if reversed { .convex_ccw } else { .convex_cw }}
+		}
+	}
+	return device
 }

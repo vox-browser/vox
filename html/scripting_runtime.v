@@ -47,6 +47,17 @@ pub type ScriptEvaluationHook = fn(string, &ScriptingRealm) !dom.JSValue
 
 pub type ScriptParseHook = fn(string, string, uint) !
 
+pub struct ScriptSourceLocation {
+pub:
+	url string
+	line u32
+	column u32
+}
+
+pub type StringCompilationPolicyChanged = fn ()
+
+pub type ScriptElementEvaluator = fn (ScriptElementType, string, string, int, ?&dom.Element) !
+
 @[heap]
 pub struct ScriptingRealm {
 pub mut:
@@ -64,6 +75,9 @@ pub mut:
 	skip_when_determining_incumbent_counter uint
 	active_classic_script_                  ?&ClassicScript
 	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
+	current_source_location_                ?fn () ?ScriptSourceLocation
+	string_compilation_policy_changed_ ?StringCompilationPolicyChanged
+	evaluate_script_element_ ?ScriptElementEvaluator
 mut:
 	embedding_vm_                            ?&libjs.VM
 	embedding_realm_execution_context_       ?&libjs.ExecutionContext

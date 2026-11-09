@@ -1,5 +1,5 @@
 from pathlib import Path
-from contextlib import chdir
+from contextlib import contextmanager
 import hashlib
 import fcntl
 import json
@@ -12,6 +12,18 @@ import subprocess
 from unittest.mock import patch
 
 import rebuild_browser as build
+
+
+@contextmanager
+def chdir(path):
+    # Production tools use macOS's system Python as well as newer interpreters.
+    # contextlib.chdir is available only from Python 3.11 onward.
+    previous = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(previous)
 
 
 class ProductionBuildTests(unittest.TestCase):
@@ -351,7 +363,7 @@ class ProductionBuildTests(unittest.TestCase):
             ]
             runtime_inputs = [
                 'main.v', 'layout/paint.v', 'layout/test_helpers.v',
-                'native/include/native/include/native_browser_tab_titles_test_darwin.h',
+                'native/include/native_browser_tab_titles_test_darwin.h',
                 'tools/test_runtime_bridge.h', 'tools/native_runtime_test.h',
                 'tools/build_mac_graphite.py',
                 'tools/prepare_ui2.py', 'tools/adblock-worker-mini/main.v',

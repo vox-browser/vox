@@ -36,10 +36,10 @@ fn computed_page_value_is_scalar(value &StyleValue) bool {
 		RGBColorStyleValue {
 			value.relative_origin_.len == 0 && value.r_.len == 1 && value.g_.len == 1
 				&& value.b_.len == 1 && value.alpha_.len == 1
-				&& computed_page_value_is_scalar(&value.r_[0])
-				&& computed_page_value_is_scalar(&value.g_[0])
-				&& computed_page_value_is_scalar(&value.b_[0])
-				&& computed_page_value_is_scalar(&value.alpha_[0])
+				&& computed_page_value_is_scalar(&value.r_.value)
+				&& computed_page_value_is_scalar(&value.g_.value)
+				&& computed_page_value_is_scalar(&value.b_.value)
+				&& computed_page_value_is_scalar(&value.alpha_.value)
 		}
 		FontStyleStyleValue {
 			if angle := style_value_from_optional_storage(value.angle_value_) {

@@ -7,6 +7,7 @@ import browsersettings
 import browserjs
 import browserhistory
 import browserbookmarks
+import cachepolicy
 import crypto.sha256
 import css
 import dom
@@ -451,7 +452,6 @@ mut:
 	force_dark_images                   map[string]&gg.Image
 	portable_shadow_images              []PortableShadowImage
 	portable_shadow_image_index         int
-	resource_cache                      map[string]PreloadedResource
 	draw_command_depth  int
 	native_replay_scratch &platform.Arena = unsafe { nil }
 	screenshot_path                     string
@@ -520,6 +520,9 @@ struct PreloadedResource {
 	request_type string
 	adblock_replacement bool
 	response_headers []adblock.ResponseHeader
+	status_code int
+	request_time i64
+	response_time i64
 	bytes_available_before_completion u64
 }
 
@@ -977,10 +980,15 @@ $if test {
 	fn cache_resource(resource_url string, body string) {
 		cache_resource_response(resource_url, resource_url, body)
 	}
-}
 
-fn cache_resource_response(resource_url string, final_url string, body string) {
-	cache_resource_response_headers(resource_url, final_url, body, []adblock.ResponseHeader{})
+	// Seed an eligible completed response. Tests for missing provenance write
+	// legacy companions explicitly or use the unknown-status headers helper.
+	fn cache_resource_response(resource_url string, final_url string, body string) {
+		cache_resource_response_headers_with_status(resource_url, final_url, body, [
+			adblock.ResponseHeader{name: 'Cache-Control', value: 'public, max-age=3600, immutable'},
+			adblock.ResponseHeader{name: 'Date', value: time.utc().http_header_string()},
+		], 200)
+	}
 }
 
 fn cache_resource_response_headers(resource_url string, final_url string, body string, headers []adblock.ResponseHeader) {
@@ -988,22 +996,24 @@ fn cache_resource_response_headers(resource_url string, final_url string, body s
 }
 
 fn cache_resource_response_headers_with_status(resource_url string, final_url string, body string, headers []adblock.ResponseHeader, status_code int) {
+	// Callers with a live transport use its measured request/response times.
+	// This entry point remains useful for completed in-process responses.
+	now := time.now().unix_milli()
+	cache_resource_response_headers_with_timing(resource_url, final_url, body, headers,
+		status_code, now, now)
+}
+
+fn cache_resource_response_headers_with_timing(resource_url string, final_url string, body string, headers []adblock.ResponseHeader, status_code int, request_time i64, response_time i64) {
+	$if prealloc {
+		scratch := platform.begin_thread_scratch('resource cache publication')
+		defer { scratch.finish() }
+	}
 	path := browser_cache_entry_path(browser_cache_root(), 'resources', resource_url)
-	// Discard old status provenance before replacing any part of the response.
-	os.rm(path + '.status') or {}
-	if browser_response_forbids_storage(headers) {
-		discard_browser_cache_resource(path)
-		return
-	}
-	body_written := try_write_browser_cache_entry(path, body)
-	// A torn URL would be filtered as a different request, so keep it atomic.
-	url_written := try_write_browser_cache_entry(path + '.url', final_url)
-	headers_written := try_write_browser_cache_metadata(path + '.headers.json', json2.encode(headers, escape_unicode: true))
-	if status_code >= 100 && status_code <= 599 {
-		if body_written && url_written && headers_written {
-			_ = try_write_browser_cache_metadata(path + '.status', status_code.str())
-		}
-	}
+	_ = cachepolicy.store_disk_response(path, final_url, body, cachepolicy.Response{
+		status: u32(status_code)
+		headers: browser_resource_policy_headers(headers)
+		timing: cachepolicy.Timing{request_time: request_time, response_time: response_time}
+	}, max_disk_cache_entry_size)
 }
 
 fn cached_snapshot_path(resource_url string) string {
@@ -1011,6 +1021,13 @@ fn cached_snapshot_path(resource_url string) string {
 }
 
 fn fetch_page(address string, base string) !LoadedPage {
+	scope := browsernet.new_request_scope()
+	defer { scope.release() }
+	return fetch_page_with_scope(address, base, scope)
+}
+
+fn fetch_page_with_scope(address string, base string, scope &browsernet.RequestScope) !LoadedPage {
+	scope.check()!
 	load_instruction_stage := processmetrics.begin_instruction_stage('main_resource_fetch')
 	defer { load_instruction_stage.finish() }
 	fetch_start := time.sys_mono_now()
@@ -1040,7 +1057,7 @@ fn fetch_page(address string, base string) !LoadedPage {
 	if !resolved.starts_with('http://') && !resolved.starts_with('https://') {
 		return error('Unsupported URL scheme')
 	}
-	result := browsernet.get(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle())!
+	result := browsernet.get_with_scope(adblock.Request{url: resolved, source_url: resolved, request_type: 'main_frame'}, tls_ca_bundle(), scope)!
 	cache_start := debug_timing_checkpoint('main_resource_fetch', fetch_start)
 	response := result.response
 	content_type := response.header.get(.content_type) or { 'text/html' }
@@ -1055,6 +1072,8 @@ fn fetch_page(address string, base string) !LoadedPage {
 		markup: markup
 		status: 'HTTP ${response.status_code} · ${response.body.len} bytes'
 		content_type: content_type
+		response_headers: browsernet.response_headers(response)
+		response_status: u16(response.status_code)
 	}
 	debug_timing_checkpoint('main_resource_cache', cache_start)
 	return loaded
@@ -1070,41 +1089,39 @@ const browser_cache_miss_code = 1404
 // The disk-cached response for an already filtered request. A miss fails with
 // browser_cache_miss_code; a filter rejection fails with its own error.
 fn cached_browser_resource_response(resolved string, filtered_url string, owner_url string, request_type string) !PreloadedResource {
-	// Legacy entries have no redirect provenance. Re-fetch those entries so
-	// an allowed URL cannot hide a redirect to a blocked tracker.
 	for cache_key in [resource_accept_cache_key(filtered_url, request_type), filtered_url] {
 		path := browser_cache_entry_path(browser_cache_root(), 'resources', cache_key)
-		if final_url := read_browser_cache_entry(path + '.url') {
-			final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
-			// Without a redirect, the final request is the one the caller has
-			// already filtered.
-			final_filter := if final_url == resolved && filtered_url == resolved {
-				browsernet.FilteredRequest{url: final_url}
-			} else {
-				browsernet.filter(final_request)!
-			}
-			if replacement := final_filter.replacement {
-				return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
-			}
-			if final_filter.url == final_url && final_url == filtered_url {
-				// Only the final response is retained. Re-fetch redirects so an
-				// intermediate response-header condition cannot bypass filtering.
-				// Older cache entries have no header provenance. Re-fetch them;
-				// assuming an empty header list could expose a header-blocked ad.
-				if encoded_headers := read_browser_cache_entry(path + '.headers.json') {
-					if headers := decode_browser_cached_response_headers(encoded_headers) {
-						// Including entries stored before no-store was honored.
-						if browser_response_forbids_storage(headers) { continue }
-						filter_browser_response_headers(final_request, headers)!
-						// An old unvaried key cannot identify the Accept value that
-						// selected a negotiated image representation.
-						if cache_key == filtered_url && resource_response_varies_on_accept(headers) { continue }
-						if cached := read_cached_resource(cache_key) {
-							return PreloadedResource{url: resolved, body: cached, source_url: owner_url, final_url: final_url, request_type: request_type, response_headers: headers}
-						}
-					}
-				}
-			}
+		entry := browser_resource_cache_entry(path) or { continue }
+		final_url := entry.final_url
+		final_request := adblock.Request{url: final_url, source_url: owner_url, request_type: request_type}
+		final_filter := if final_url == resolved && filtered_url == resolved {
+			browsernet.FilteredRequest{url: final_url}
+		} else {
+			browsernet.filter(final_request)!
+		}
+		if replacement := final_filter.replacement {
+			return PreloadedResource{url: resolved, body: replacement.body, source_url: owner_url, final_url: final_url, request_type: request_type, adblock_replacement: true}
+		}
+		// Only the final response is retained. Redirect reuse would need every
+		// intermediate response-header condition and its filter provenance.
+		if final_filter.url != final_url || final_url != filtered_url { continue }
+		filter_browser_response_headers(final_request, entry.headers)!
+		if cache_key == filtered_url && resource_response_varies_on_accept(entry.headers) { continue }
+		decision := cachepolicy.evaluate(cachepolicy.Request{}, entry.metadata,
+			cachepolicy.ReuseOptions{storage: .disk, require_immutable: request_type == 'script'},
+			time.now().unix_milli())
+		if !decision.can_reuse() { continue }
+		timing := entry.metadata.timing or { continue }
+		return PreloadedResource{
+			url: resolved
+			body: entry.body
+			source_url: owner_url
+			final_url: final_url
+			request_type: request_type
+			response_headers: entry.headers
+			status_code: int(entry.metadata.status)
+			request_time: timing.request_time
+			response_time: timing.response_time
 		}
 	}
 	return error_with_code('not in the disk cache', browser_cache_miss_code)
@@ -1122,6 +1139,13 @@ fn disk_cached_browser_resource(resource_url string, source_url string, request_
 }
 
 fn fetch_browser_resource(reference string, base string, source_url string, request_type string) !PreloadedResource {
+	scope := browsernet.new_request_scope()
+	defer { scope.release() }
+	return fetch_browser_resource_with_scope(reference, base, source_url, request_type, scope)
+}
+
+fn fetch_browser_resource_with_scope(reference string, base string, source_url string, request_type string, scope &browsernet.RequestScope) !PreloadedResource {
+	scope.check()!
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
 		path := url.percent_decode(resolved['file://'.len..]).bytestr()
@@ -1140,7 +1164,8 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 		}
 		if cached.url != '' { return cached }
 	}
-	result := browsernet.get(adblock.Request{url: filtered.url, source_url: owner_url, request_type: request_type}, tls_ca_bundle())!
+	result := browsernet.get_with_scope(adblock.Request{url: filtered.url, source_url: owner_url, request_type: request_type}, tls_ca_bundle(), scope)!
+	scope.check()!
 	response := result.response
 	if response.status_code < 200 || response.status_code >= 400 {
 		return error('HTTP ${response.status_code}')
@@ -1148,28 +1173,51 @@ fn fetch_browser_resource(reference string, base string, source_url string, requ
 	headers := browsernet.response_headers(response)
 	if !result.is_replacement {
 		cache_key := if resource_response_varies_on_accept(headers) { resource_accept_cache_key(filtered.url, request_type) } else { filtered.url }
-		cache_resource_response_headers_with_status(cache_key, result.url, response.body, headers, response.status_code)
+		// Cancellation and publication are serialized. Once cancellation
+		// returns, this request cannot commit a response to the disk cache.
+		scope.begin_publication()!
+		cache_resource_response_headers_with_timing(cache_key, result.url, response.body, headers,
+			response.status_code, result.request_time, result.response_time)
+		scope.end_publication()
 	}
-	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers, bytes_available_before_completion: result.bytes_available_before_completion}
+	return PreloadedResource{url: resolved, body: response.body, source_url: owner_url, final_url: result.url, request_type: request_type, adblock_replacement: result.is_replacement, response_headers: headers, status_code: response.status_code, request_time: result.request_time, response_time: result.response_time, bytes_available_before_completion: result.bytes_available_before_completion}
 }
 
 fn fetch_resource_in_background(resource_url string, source_url string, request_type string, results chan PreloadedResource) {
+	fetch_resource_in_background_with_scope(resource_url, source_url, request_type, results,
+		browsernet.new_request_scope())
+}
+
+// Consumes the worker reference retained before the thread was started.
+fn fetch_resource_in_background_with_scope(resource_url string, source_url string, request_type string, results chan PreloadedResource, scope &browsernet.RequestScope) {
+	defer { scope.release() }
+	fetch_resource_for_results_with_scope(resource_url, source_url, request_type, results, scope)
+}
+
+fn fetch_resource_for_results_with_scope(resource_url string, source_url string, request_type string, results chan PreloadedResource, scope &browsernet.RequestScope) {
 	platform.retain_thread_allocations()
-	resource := fetch_browser_resource(resource_url, '', source_url, request_type) or {
-		results <- PreloadedResource{
+	resource := fetch_browser_resource_with_scope(resource_url, '', source_url, request_type, scope) or {
+		publish_resource_result(PreloadedResource{
 			url: resource_url
 			error: err.msg()
 			source_url: source_url
 			request_type: request_type
-		}
+		}, results, scope)
 		return
 	}
-	results <- resource
+	publish_resource_result(resource, results, scope)
 }
 
 // A URL may be requested as both a script and an image. A replacement or a
 // rejection in one context is not a reusable network response in the other.
 fn filter_preloaded_resource(resource PreloadedResource, source_url string, request_type string) !PreloadedResource {
+	scope := browsernet.new_request_scope()
+	defer { scope.release() }
+	return filter_preloaded_resource_with_scope(resource, source_url, request_type, scope)
+}
+
+fn filter_preloaded_resource_with_scope(resource PreloadedResource, source_url string, request_type string, scope &browsernet.RequestScope) !PreloadedResource {
+	scope.check()!
 	filtered := browsernet.filter(adblock.Request{url: resource.url, source_url: source_url, request_type: request_type})!
 	if replacement := filtered.replacement {
 		return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: filtered.url, request_type: request_type, adblock_replacement: true}
@@ -1178,7 +1226,7 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 		|| resource.error.starts_with('Blocked by adblock:')
 		|| resource.error.starts_with('Adblock unavailable:')
 		|| (resource.error != '' && (resource.source_url != source_url || resource.request_type != request_type)) {
-		return fetch_browser_resource(resource.url, '', source_url, request_type)
+		return fetch_browser_resource_with_scope(resource.url, '', source_url, request_type, scope)
 	}
 	if resource.error != '' { return error(resource.error) }
 	// Without a redirect, the final request is the one filtered above.
@@ -1187,11 +1235,11 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 		if replacement := final_filter.replacement {
 			return PreloadedResource{url: resource.url, body: replacement.body, source_url: source_url, final_url: resource.final_url, request_type: request_type, adblock_replacement: true}
 		}
-		if final_filter.url != resource.final_url { return fetch_browser_resource(resource.url, '', source_url, request_type) }
+		if final_filter.url != resource.final_url { return fetch_browser_resource_with_scope(resource.url, '', source_url, request_type, scope) }
 	}
 	if resource.final_url != '' && resource.final_url != filtered.url {
 		// Replaying a redirect requires every hop, including its headers.
-		return fetch_browser_resource(resource.url, '', source_url, request_type)
+		return fetch_browser_resource_with_scope(resource.url, '', source_url, request_type, scope)
 	}
 	filter_browser_response_headers(adblock.Request{
 		url: if resource.final_url == '' { resource.url } else { resource.final_url }
@@ -1200,7 +1248,7 @@ fn filter_preloaded_resource(resource PreloadedResource, source_url string, requ
 	}, resource.response_headers)!
 	if resource_response_varies_on_accept(resource.response_headers)
 		&& browsernet.request_accept_header(resource.request_type) != browsernet.request_accept_header(request_type) {
-		return fetch_browser_resource(resource.url, '', source_url, request_type)
+		return fetch_browser_resource_with_scope(resource.url, '', source_url, request_type, scope)
 	}
 	return resource
 }
@@ -1212,26 +1260,37 @@ fn fetch_background_resource_in_background(resource_url string, source_url strin
 	}
 }
 
+fn fetch_background_resource_in_background_with_scope(resource_url string, source_url string, results chan PreloadedResource, scope &browsernet.RequestScope) {
+	fetch_resource_in_background_with_scope(resource_url, source_url, 'image', results, scope)
+	$if macos { C.native_wake_browser() }
+}
+
 fn fetch_page_in_background(resolved string, base string, generation int, add_history bool, results chan NavigationResult) {
+	fetch_page_in_background_with_scope(resolved, base, generation, add_history, results,
+		browsernet.new_request_scope())
+}
+
+fn fetch_page_in_background_with_scope(resolved string, base string, generation int, add_history bool, results chan NavigationResult, scope &browsernet.RequestScope) {
+	defer { scope.release() }
 	platform.retain_thread_allocations()
-	loaded := fetch_page(resolved, base) or {
-		results <- NavigationResult{
+	loaded := fetch_page_with_scope(resolved, base, scope) or {
+		publish_navigation_result(NavigationResult{
 			generation: generation
 			add_history: add_history
 			resolved: resolved
 			error: err.msg()
-		}
+		}, results, scope)
 		$if macos {
 			C.native_wake_browser()
 		}
 		return
 	}
-	results <- NavigationResult{
+	publish_navigation_result(NavigationResult{
 		generation: generation
 		add_history: add_history
 		resolved: resolved
 		loaded: loaded
-	}
+	}, results, scope)
 	$if macos {
 		C.native_wake_browser()
 	}
@@ -1404,6 +1463,9 @@ $if test {
 			if script_element.is_html_element() {
 				mut script_model := html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) })
 				script_model.set_already_started(true)
+			} else if script_element.is_svg_element() {
+				mut script_model := html.svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(script_element) })
+				script_model.set_already_processed(true)
 			}
 			// Legacy standalone test fixtures supply sources after parsing. Inline scripts
 			// still precede deferred external scripts and non-async modules, whose
@@ -1439,8 +1501,14 @@ $if test {
 					element: script_element
 				}
 			} else {
+				code := script_element.as_node().text_content() or { '' }
+				if document.should_block_inline_content(script_element, 'script', code) { continue }
+				starting_line := if script_element.is_html_element() {
+					html.html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(script_element) }).source_line_number()
+				} else { 1 }
 				source = browserjs.ScriptSource{
-					code: script_element.as_node().text_content() or { '' }
+					starting_line: starting_line
+					code: code
 					url: document.url.serialize()
 					source_type: if type_ == 'module' { .module } else { .script }
 					element: script_element
@@ -1883,10 +1951,10 @@ fn javascript_bootstrap() string {
 		// resolved URL, as HTMLHyperlinkElementUtils and HTMLLinkElement do.
 		'    if(s.namespaceURI==="http://www.w3.org/1999/xhtml"){const __reflect=function(name){Object.defineProperty(o,name,{configurable:true,get:function(){return __compactNativeAttributes.read(s,name,true)||"";},set:function(v){__compactNativeAttributes.write(s,name,v,true);}});};__reflect("title");if(["a","area","link","form"].includes(s.tagName))__reflect("rel");if(["link","style","script","source"].includes(s.tagName))__reflect("type");if(s.tagName==="input"||s.tagName==="button"){const states=s.tagName==="input"?__compactInputTypes:__compactButtonTypes;Object.defineProperty(o,"type",{configurable:true,enumerable:true,get:function(){const v=(__compactNativeAttributes.read(s,"type",true)||"").toLowerCase();return states.includes(v)?v:states[0];},set:function(v){__compactNativeAttributes.write(s,"type",v,true);}});}if(["link","style","source","meta"].includes(s.tagName))__reflect("media");if(s.tagName==="select")__compactSelect(o,s);if(s.tagName==="option")__compactOption(o,s);if(["a","area","link","base"].includes(s.tagName))Object.defineProperty(o,"href",{configurable:true,get:function(){return __queryElements(s.bridgeKey,"elementURL","href");},set:function(v){__compactNativeAttributes.write(s,"href",v,true);}});}',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"src",{get:function(){return __compactNativeAttributes.read(s,"src",true)||"";},set:function(v){__setElementSource(s,v);},configurable:true});',
-		'    if(s.namespaceURI!=="http://www.w3.org/2000/svg"&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video"))Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);__setAttribute(s,"height",s.height);},configurable:true}});',
+		'    if(s.namespaceURI!=="http://www.w3.org/2000/svg"&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video"))Object.defineProperties(o,{width:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageWidth"):s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"?__queryElements(s.bridgeKey,"geometry","inputWidth"):__canvasDimension(s,"width");},set:function(v){s.width=String(Number(v)>>>0);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"&&Number(s.width)>2147483647)s.width="0";__setAttribute(s,"width",s.width);},configurable:true}, height:{get:function(){return s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="img"?__queryElements(s.bridgeKey,"geometry","imageHeight"):s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"?__queryElements(s.bridgeKey,"geometry","inputHeight"):__canvasDimension(s,"height");},set:function(v){s.height=String(Number(v)>>>0);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&s.tagName==="input"&&Number(s.height)>2147483647)s.height="0";__setAttribute(s,"height",s.height);},configurable:true}});',
 		'    if(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||s.tagName!=="video")Object.defineProperties(o,{videoWidth:{get:function(){return +s.videoWidth||0;},configurable:true}, videoHeight:{get:function(){return +s.videoHeight||0;},configurable:true}});',
 		'    if(!__isTrackElementState(s)&&(s.namespaceURI!=="http://www.w3.org/1999/xhtml"||(s.tagName!=="audio"&&s.tagName!=="video")))Object.defineProperty(o,"readyState",{get:function(){return +s.readyState||0;},configurable:true});',
-		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});__compactMutationFlush(true);};o.blur=function(){__state.operations.push({op:"blur",target:s.bridgeKey});__compactMutationFlush(true);};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
+		'    __compactElementGeometry(o,s);o.focus=function(){__state.operations.push({op:"focus",target:s.bridgeKey});__compactMutationFlush(true);};o.blur=function(){__state.operations.push({op:"blur",target:s.bridgeKey});__compactMutationFlush(true);};o.select=function(){__state.operations.push({op:"selectTextControl",target:s.bridgeKey});};o.appendChild=function(child){return __compactInsertNode(o,child,null,false);};o.insertBefore=function(child,reference){return __compactInsertNode(o,child,reference,true);};',
 		'    const __styleObject=__styleProxy(s); Object.defineProperty(o,"style",{get:function(){return __styleObject;},set:function(v){__styleObject.cssText=v;},enumerable:true,configurable:true}); if(!__elementApply(__elementRecordGet,__elementRecords,[o]))o.classList=__classList(s); Object.defineProperty(o,"__state",{value:s}); Object.defineProperty(s, "__object", { value: o, writable: true, configurable: true }); if(s.tagName==="img"&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__ladybirdImageBind(o,s.bridgeKey);delete o.addEventListener;delete o.removeEventListener;} if((s.tagName==="audio"||s.tagName==="video")&&s.namespaceURI==="http://www.w3.org/1999/xhtml"){__bindMediaElement(o,s.bridgeKey,s.tagName);__recordMediaAttributes(o,s,__reflectMediaAttribute);delete o.addEventListener;delete o.removeEventListener;}else if(s.tagName!=="#document-fragment"&&s.tagName!=="#text"){__bindElementWheel(o,s.bridgeKey,s.tagName,s.namespaceURI);if(s.namespaceURI==="http://www.w3.org/1999/xhtml"&&(s.tagName==="script"||s.tagName==="link"||s.tagName==="iframe"))__bindScriptElement(o);if(__isTrackElementState(s)){__bindTrackElement(o,s.bridgeKey);__recordMediaAttributes(o,s,__compactAttributes.reflect);delete o.addEventListener;delete o.removeEventListener;delete o.dispatchEvent;}}',
 		'    __compactDocumentElementBindings(o,s);',
 		'  } return s.__object;',
@@ -1927,6 +1995,7 @@ fn javascript_bootstrap() string {
 		compact_computed_style_bootstrap(),
 		compact_accessibility_internals_bootstrap(),
 		compact_keyboard_internals_bootstrap(),
+		compact_testdriver_click_bootstrap(),
 		'__ladybirdElementWheelSetResolver(function(key){const s=__resolveElementState(key);return s?__element(s):null;});',
 		compact_named_elements_bootstrap(),
 		'window.__ladybirdSnapshot = function () { if(typeof __nativeElementQuery==="function"){const states=JSON.parse(__nativeElementQuery(JSON.stringify({key:"",action:"snapshotStates",selector:""})));for(const state of states)if(!__state.elements[state.bridgeKey])__state.elements[state.bridgeKey]=state;} return JSON.stringify(__state); };',
@@ -2237,6 +2306,7 @@ fn set_javascript_element_attribute(mut element dom.Element, source_name string,
 	mut input_model := unsafe { &html.HTMLInputElementModel(nil) }
 	if namespace_uri == none && element.is_html_element() && element.local_name() == 'input' {
 		input_model = html.HTMLInputElementModel.create(unsafe { &dom.HTMLInputElement(&element) })
+		configure_browser_input_image_fetch(&element, false)
 	}
 	if new_value := value {
 		if attribute := element.get_attribute_node(name) {
@@ -2797,6 +2867,7 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	ensure_compact_browser_navigable(document) or { return false }
 	if !compact_document_can_run_script(document) { return false }
+	install_browser_input_image_fetch_hooks(document)
 	if runtime.engine == .libjs {
 		messages << 'LibJS DOM bindings are not translated yet; page scripts use the supported standalone runtime.'
 		return true
@@ -2841,6 +2912,10 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	blob_host.install_constructor() or {
 		messages << 'JavaScript Blob constructor: ${err.msg()}'
+		return false
+	}
+	mutable_runtime.install_file_reader_binding() or {
+		messages << 'JavaScript FileReader bindings: ${err.msg()}'
 		return false
 	}
 	mut query_host := browserjs.URLSearchParamsHost.create(document) or {
@@ -2995,6 +3070,19 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	}
 	element_wheel_host.install(mut mutable_runtime) or {
 		messages << 'JavaScript element wheel bindings: ${err.msg()}'
+		return false
+	}
+	mutable_runtime.define_value_host_function('__ladybirdSyntheticClickEvent', fn [runtime] (_ voidptr, values []voidptr) !voidptr {
+		if values.len != 1 { return error('Invalid synthetic click event') }
+		event := runtime.native_event(values[0])!
+		if event.type_name() != 'click' || event.interface_ !in [.mouse_event, .pointer_event] {
+			return error('Invalid synthetic click event')
+		}
+		mut mouse := unsafe { &dom.MouseEvent(event) }
+		mouse.is_synthetic_activation_ = true
+		return values[0]
+	}) or {
+		messages << 'JavaScript synthetic click binding: ${err.msg()}'
 		return false
 	}
 	mutable_runtime.install_script_element_event_binding() or {
@@ -3799,6 +3887,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	// Preparation synchronously notifies outgoing inactivity observers. Keep
 	// their owner published until the replacement document is ready to attach.
 	app.DocumentSessionRef = incoming
+	app.set_browser_zoom(incoming.page_zoom)
 	app.address = if loaded.url == browser_new_tab_url { '' } else { loaded.url }
 	app.address_cursor = app.address.runes().len
 	app.address_select = false
@@ -4006,6 +4095,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	if resolved in [browser_history_url, browser_new_tab_url] {
 		app.navigation_generation++
 		app.pending_navigation = none
+		app.cancel_navigation_fetch()
 		app.cancel_page_preload()
 		app.pending_native_navigation = none
 		app.install_loaded_page(LoadedPage{url: resolved, status: if resolved == browser_new_tab_url { 'New Tab' } else { 'History' }, content_type: 'text/html'}, add_history)
@@ -4027,6 +4117,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.status = app.load_status
 	app.navigation_generation++
 	app.pending_navigation = none
+	app.cancel_navigation_fetch()
 	app.cancel_page_preload()
 	app.pending_native_navigation = none
 	if app.ctx != unsafe { nil } {
@@ -4103,7 +4194,7 @@ fn (mut app BrowserApp) poll_navigation() {
 			if result.generation != app.navigation_generation {
 				return
 			}
-			app.navigation_fetch_generation = 0
+			app.cancel_navigation_fetch()
 			if loaded := result.loaded {
 				app.prepare_loaded_page(loaded, result.add_history)
 			} else {
@@ -5052,7 +5143,9 @@ fn (mut app BrowserApp) request_background_resource(image_url string) {
 	app.background_resource_pending[owned_url] = true
 	source_url := if app.document != unsafe { nil } { app.document.url.serialize().clone() } else { app.address.clone() }
 	app.background_resource_jobs++
-	spawn fetch_background_resource_in_background(owned_url, source_url, app.background_resource_results)
+	scope := app.resource_request_scope()
+	scope.retain()
+	spawn fetch_background_resource_in_background_with_scope(owned_url, source_url, app.background_resource_results, scope)
 	platform.leave_persistent(persistent)
 }
 

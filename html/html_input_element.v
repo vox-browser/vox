@@ -100,6 +100,9 @@ pub:
 	run    InputFormActionCallback = unsafe { nil }
 }
 
+// Hosts receive the model so adopted image inputs use their current owner.
+pub type InputImageModelFetchHook = fn (&HTMLInputElementModel, dom.URL) !DecodedImageData
+
 @[heap]
 pub struct HTMLInputElementModel {
 pub:
@@ -141,6 +144,7 @@ pub mut:
 	resource_request_                ?&SharedResourceRequest
 	load_event_delayer_              ?dom.DocumentLoadEventDelayer
 	image_fetch_hook_                ?HTMLImageFetchHook
+	image_model_fetch_hook_          ?InputImageModelFetchHook
 	visible_in_viewport_             bool = true
 	form_action_hook_                ?InputFormActionHook
 }
@@ -557,7 +561,7 @@ fn (model &HTMLInputElementModel) sanitize_value(value string) string {
 					number = maximum
 				}
 			}
-			return number.str()
+			return best_representation_of_number(number)
 		}
 		.color {
 			return if valid_simple_color(value) { ascii_lowercase_string(value) } else { '#000000' }
@@ -1345,6 +1349,37 @@ fn (mut model HTMLInputElementModel) run_form_action(action InputFormAction) ! {
 	}
 }
 
+// Image submitter coordinates are relative to the image's content edge. Use
+// native geometry for constructed MouseEvents too, without changing trust or
+// granting user activation. Reuse the paint transform for scaled/rotated boxes.
+fn (mut model HTMLInputElementModel) select_image_coordinate(event &dom.MouseEvent) {
+	element := input_element(&model)
+	rect := element.get_bounding_client_rect()
+	layout_node := element.as_node().unsafe_layout_node() or { return }
+	if !layout_node.has_geometry_ { return }
+	document := element.document()
+	scale := document.layout_coordinate_scale()
+	mut x := event.client_x() - rect.x
+	mut y := event.client_y() - rect.y
+	if paintable := element.as_node().unsafe_paintable() {
+		viewport := document.viewport_rect()
+		local := paintable.inverse_transform_point(dom.CSSPixelPoint_{
+			x_: event.client_x() + viewport.x
+			y_: event.client_y() + viewport.y
+		})
+		origin := paintable.box_type_agnostic_position()
+		x = (local.x() - origin.x()) / scale
+		y = (local.y() - origin.y()) / scale
+	} else {
+		box := layout_node.box_model()
+		x -= (box.border_left + box.padding_left) / scale
+		y -= (box.border_top + box.padding_top) / scale
+	}
+	if math.is_nan(x) || math.is_nan(y) || math.is_inf(x, 0) || math.is_inf(y, 0) { return }
+	model.selected_x_ = int(x)
+	model.selected_y_ = int(y)
+}
+
 // https://html.spec.whatwg.org/multipage/input.html#input-activation-behavior
 pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &dom.Event) ! {
 	match model.type_state_ {
@@ -1364,10 +1399,11 @@ pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &do
 			model.show_the_picker_if_applicable()
 		}
 		.image_button {
-			if event.is_trusted() && event.interface_ in [.mouse_event, .pointer_event] {
+			if event.interface_ in [.mouse_event, .pointer_event] {
 				mouse_event := unsafe { &dom.MouseEvent(event) }
-				model.selected_x_ = int(mouse_event.offset_x())
-				model.selected_y_ = int(mouse_event.offset_y())
+				if !mouse_event.is_synthetic_activation_ {
+					model.select_image_coordinate(mouse_event)
+				}
 			}
 			model.run_form_action(.submit)!
 		}
@@ -1579,8 +1615,13 @@ pub fn (mut model HTMLInputElementModel) set_size(value u64) ! {
 }
 
 pub fn (model &HTMLInputElementModel) height() u32 {
+	mut document := unsafe { &dom.Document(input_element(model).document()) }
+	document.update_layout(.html_input_element_height)
 	if model.type_state_ != .image_button {
 		return 0
+	}
+	if node := input_element(model).as_node().layout_node() {
+		if node.has_geometry_ { return u32(node.content_height_ / document.layout_coordinate_scale()) }
 	}
 	if attribute := input_element(model).get_attribute('height') {
 		if parsed := parse_non_negative_integer(attribute) {
@@ -1589,8 +1630,8 @@ pub fn (model &HTMLInputElementModel) height() u32 {
 			}
 		}
 	}
-	frame := model.current_image_frame_sized(0, 0) or { return 0 }
-	return u32(frame.height())
+	value := model.intrinsic_height() or { return 0 }
+	return if value > 0 { u32(value) } else { 0 }
 }
 
 pub fn (mut model HTMLInputElementModel) set_height(value u64) {
@@ -1600,8 +1641,13 @@ pub fn (mut model HTMLInputElementModel) set_height(value u64) {
 }
 
 pub fn (model &HTMLInputElementModel) width() u32 {
+	mut document := unsafe { &dom.Document(input_element(model).document()) }
+	document.update_layout(.html_input_element_width)
 	if model.type_state_ != .image_button {
 		return 0
+	}
+	if node := input_element(model).as_node().layout_node() {
+		if node.has_geometry_ { return u32(node.content_width_ / document.layout_coordinate_scale()) }
 	}
 	if attribute := input_element(model).get_attribute('width') {
 		if parsed := parse_non_negative_integer(attribute) {
@@ -1610,8 +1656,8 @@ pub fn (model &HTMLInputElementModel) width() u32 {
 			}
 		}
 	}
-	frame := model.current_image_frame_sized(0, 0) or { return 0 }
-	return u32(frame.width())
+	value := model.intrinsic_width() or { return 0 }
+	return if value > 0 { u32(value) } else { 0 }
 }
 
 pub fn (mut model HTMLInputElementModel) set_width(value u64) {
@@ -1657,6 +1703,10 @@ pub fn (mut model HTMLInputElementModel) set_image_fetch_hook(hook ?HTMLImageFet
 	model.image_fetch_hook_ = hook
 }
 
+pub fn (mut model HTMLInputElementModel) set_image_model_fetch_hook(hook ?InputImageModelFetchHook) {
+	model.image_model_fetch_hook_ = hook
+}
+
 fn (mut model HTMLInputElementModel) begin_delaying_document_load_event() {
 	if mut delayer := model.load_event_delayer_ {
 		delayer.finish()
@@ -1695,6 +1745,8 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	mut request := SharedResourceRequest.get_or_create(input_element(&model).document(), url)
 	model.resource_request_ = request
 	model.update_image_button_alt_text_shadow_tree()
+	mut node := input_element(&model).as_node()
+	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
 	if request.state() == .finished {
 		model.fire_event('load')
 		model.update_image_button_alt_text_shadow_tree()
@@ -1705,9 +1757,9 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 		model.update_image_button_alt_text_shadow_tree()
 		return
 	}
-	fetch := model.image_fetch_hook_ or { return }
+	if model.image_model_fetch_hook_ == none && model.image_fetch_hook_ == none { return }
 	model.begin_delaying_document_load_event()
-	decoded := fetch(url) or {
+	decoded := model.fetch_image(url) or {
 		request.handle_failed_fetch()
 		model.fire_event('error')
 		model.stop_delaying_document_load_event()
@@ -1718,8 +1770,12 @@ pub fn (mut model HTMLInputElementModel) handle_src_attribute(value string) ! {
 	model.fire_event('load')
 	model.stop_delaying_document_load_event()
 	model.update_image_button_alt_text_shadow_tree()
-	mut node := input_element(&model).as_node()
-	node.set_needs_layout_tree_update(true, .html_input_element_src_attribute)
+}
+
+fn (model &HTMLInputElementModel) fetch_image(url dom.URL) !DecodedImageData {
+	if fetch := model.image_model_fetch_hook_ { return fetch(model, url) }
+	fetch := model.image_fetch_hook_ or { return error('No input image fetch hook') }
+	return fetch(url)
 }
 
 pub fn (model &HTMLInputElementModel) image_data() ?DecodedImageData {
@@ -2605,6 +2661,21 @@ pub fn (mut model HTMLInputElementModel) handle_return_key(_ string) ! {
 
 // The cloning steps of the HTML elements whose state lives in their models.
 fn html_element_cloning_steps(source &dom.Element, copy &dom.Node, subtree bool) ! {
+	if source.local_name() == 'script' {
+		copy_element := copy.as_element() or { return }
+		if source.is_svg_element() && copy_element.is_svg_element() {
+			model := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(source) })
+			mut copy_model := svg_script_element_model_for_dom_element(unsafe { &dom.SVGScriptElement(copy_element) })
+			copy_model.set_already_processed(model.already_processed())
+		} else if source.is_html_element() && copy_element.is_html_element() {
+			model := html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(source) })
+			mut copy_model := html_script_element_model_for_dom_element(unsafe { &dom.HTMLScriptElement(copy_element) })
+			copy_model.set_already_started(model.has_already_started())
+		}
+		return
+	}
+	if !source.is_html_element() { return }
+
 	if source.local_name() != 'input' {
 		return
 	}

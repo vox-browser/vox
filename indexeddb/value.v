@@ -16,6 +16,7 @@ pub enum ValueType {
 	date
 	string_
 	binary
+	array_buffer_view
 	array
 	object
 	blob
@@ -35,6 +36,10 @@ pub mut:
 	mime_type     string
 	file_name     string
 	last_modified f64
+	view_name string
+	view_offset u32
+	view_byte_length u32
+	view_length ?u32
 }
 
 pub fn undefined_value() Value {
@@ -129,6 +134,10 @@ pub fn (value Value) clone() Value {
 		mime_type: value.mime_type
 		file_name: value.file_name
 		last_modified: value.last_modified
+		view_name: value.view_name
+		view_offset: value.view_offset
+		view_byte_length: value.view_byte_length
+		view_length: value.view_length
 	}
 }
 
@@ -150,6 +159,7 @@ fn clone_fields(fields map[string]Value) map[string]Value {
 
 pub fn value_to_key(value Value) Key {
 	return match value.kind {
+		.array_buffer_view { binary_key(value.bytes[int(value.view_offset) .. int(value.view_offset) + int(value.view_byte_length)]) }
 		.number {
 			if math.is_nan(value.number) {
 				invalid_key()

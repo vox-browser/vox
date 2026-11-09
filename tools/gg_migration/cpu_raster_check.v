@@ -1348,6 +1348,10 @@ fn main() {
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
 	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
 	rand.seed([seed, 7])
+	if os.getenv('CPU_RASTER_CHECKS') in ['pathcontains', 'pathhits'] {
+		check_path_geometry_hits(count) or { eprintln(err.msg()); exit(1) }
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'exports' {
 		table := check_export_exhaustive(oracle) or { panic(err) }
 		exports := check_export_random(oracle, count) or { panic(err) }
@@ -1398,7 +1402,7 @@ fn main() {
 		println('non-anti-aliased path fills: ${fills - declined} exact, ${declined} declined')
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['images', 'imagefilters'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['resampled-spatial-chains', 'source-spatial-chains', 'fractional-spatial-chains', 'images', 'imagefilters', 'image-space-layers', 'converted-image-layers', 'fractional-image-layers', 'image-layer-alpha', 'resampled-image-layers', 'clipped-image-layers', 'identity-image-layers', 'identity-image-sampling', 'near-integer-image-layers', 'near-integer-factored-images', 'resampled-image-shadows', 'near-integer-image-shadows', 'near-integer-factored-shadows', 'identity-image-shadows', 'resolved-image-shadows'] {
 		check_image_cases(oracle, count)
 		return
 	}
@@ -1410,7 +1414,7 @@ fn main() {
 		check_color_filter_cases(oracle, count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows'] {
+	if os.getenv('CPU_RASTER_CHECKS') in ['filterlayers', 'dropshadows', 'mixedshadows', 'mixedblurs', 'spatialchains'] {
 		check_filter_layer_cases(oracle, count)
 		return
 	}
@@ -1418,7 +1422,7 @@ fn main() {
 		check_portable_outer_shadow_cases(count)
 		return
 	}
-	if os.getenv('CPU_RASTER_CHECKS') == 'inner-shadows' {
+	if os.getenv('CPU_RASTER_CHECKS') in ['inner-shadows', 'rounded-inner-shadows'] {
 		check_portable_inner_shadow_cases(count)
 		return
 	}
@@ -2458,7 +2462,23 @@ fn random_image_source(width int, height int) [4]f32 {
 // destinations, under every composite operation, global alphas and clips.
 fn check_image_draws(oracle Oracle, count int) !(int, int) {
 	mut declined := 0
-	filtered := os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
+	resampled_chains := os.getenv('CPU_RASTER_CHECKS') == 'resampled-spatial-chains'
+	spatial := resampled_chains || os.getenv('CPU_RASTER_CHECKS') in ['source-spatial-chains', 'fractional-spatial-chains']
+	fractional := os.getenv('CPU_RASTER_CHECKS') in ['fractional-image-layers', 'fractional-spatial-chains']
+	alpha_layers := os.getenv('CPU_RASTER_CHECKS') == 'image-layer-alpha'
+	identity_layers := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-layers'
+	identity_sampling := os.getenv('CPU_RASTER_CHECKS') == 'identity-image-sampling'
+	factored := os.getenv('CPU_RASTER_CHECKS') in ['near-integer-factored-images', 'near-integer-factored-shadows']
+	near_shadows := os.getenv('CPU_RASTER_CHECKS') in ['near-integer-image-shadows', 'near-integer-factored-shadows']
+	near_integer := near_shadows || factored || os.getenv('CPU_RASTER_CHECKS') == 'near-integer-image-layers'
+	resolved_shadows := os.getenv('CPU_RASTER_CHECKS') == 'resolved-image-shadows'
+	identity_shadows := resolved_shadows || os.getenv('CPU_RASTER_CHECKS') == 'identity-image-shadows'
+	shadow_sources := identity_shadows || near_shadows || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-shadows'
+	resampled := resampled_chains || shadow_sources || near_integer || identity_sampling || identity_layers || os.getenv('CPU_RASTER_CHECKS') == 'resampled-image-layers'
+	clipped := os.getenv('CPU_RASTER_CHECKS') == 'clipped-image-layers'
+	converted := spatial || fractional || alpha_layers || resampled || clipped || os.getenv('CPU_RASTER_CHECKS') == 'converted-image-layers'
+	aligned := converted || os.getenv('CPU_RASTER_CHECKS') == 'image-space-layers'
+	filtered := aligned || os.getenv('CPU_RASTER_CHECKS') == 'imagefilters'
 	mut bitmap_space := 0
 	mut image_space := 0
 	for i in 0 .. count {
@@ -2503,7 +2523,7 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 				random_stroke_matrix()
 			}
 		}
-		c := BitmapCase{
+		mut c := BitmapCase{
 			width:        width
 			height:       height
 			pitch:        pitch
@@ -2526,6 +2546,117 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 			} else { []cpuraster.CanvasFilterStep{} }
 			chromium: filtered && (rand.intn(2) or { 0 }) == 0
 		}
+		if aligned {
+			left, top := rand.intn(image.width) or { 0 }, rand.intn(image.height) or { 0 }
+			sw := rand.intn(image.width - left) or { 0 } + 1
+			sh := rand.intn(image.height - top) or { 0 } + 1
+			c = BitmapCase{...c,
+				image: if converted { cpuraster.CanvasPattern{...image,
+					display_p3: i % 3 != 0} } else {
+					cpuraster.CanvasPattern{...image, pixels: random_premultiplied(image.width * image.height),
+						pitch: image.width * 4, premultiplied: true, display_p3: false} }
+				source: [f32(left), top, sw, sh]!
+				destination: [f32(rand.intn(width + 8) or { 0 } - 4), f32(rand.intn(height + 8) or { 0 } - 4), sw, sh]!
+				transform: [f32(1), 0, 0, 1, f32(rand.intn(21) or { 0 } - 10), f32(rand.intn(21) or { 0 } - 10)]!
+				global_alpha: if spatial || alpha_layers || resampled || clipped { random_composite_alpha() } else { f32(1) }
+				chromium: false
+				filters: if converted { random_converted_image_blurs() } else { match i % 4 {
+					0 { random_layer_filters() }
+					1 { random_shadow_filters() }
+					2 { random_color_blur_chain() }
+					else { random_color_shadow_filters() }
+				} }
+			}
+		}
+		if fractional || resampled || (alpha_layers && i % 2 == 0) {
+			l := f32(rand.f64() * f64(image.width) * .4)
+			t := f32(rand.f64() * f64(image.height) * .4)
+			r := f32(image.width) - f32(rand.f64() * f64(image.width) * .4)
+			b := f32(image.height) - f32(rand.f64() * f64(image.height) * .4)
+			sx := f32(rand.f64() * 2 + .25) * if i % 3 == 0 { f32(-1) } else { f32(1) }
+			sy := f32(rand.f64() * 2 + .25) * if i % 4 == 0 { f32(-1) } else { f32(1) }
+			c = BitmapCase{...c,
+				source: if resampled { c.source } else { [l, t, r - l, b - t]! }
+				destination: [f32(rand.f64() * f64(width) * .6 - 4), f32(rand.f64() * f64(height) * .6 - 4),
+					f32(rand.f64() * f64(width) + 1), f32(rand.f64() * f64(height) + 1)]!
+				transform: [sx, 0, 0, sy, if sx < 0 { f32(width) * .8 } else { f32(3.25) },
+					if sy < 0 { f32(height) * .8 } else { f32(2.75) }]!
+			}
+		}
+		if clipped {
+			iw, ih := f32(image.width), f32(image.height)
+			src := match i % 4 {
+				0 { [iw + f32(2), f32(0), iw, ih]! }
+				1 { [f32(-2), -1, iw, ih]! }
+				2 { [f32(1), 1, iw, ih]! }
+				else { [f32(-.75), -.5, iw + f32(.5), ih + f32(1.25)]! }
+			}
+			c = BitmapCase{...c, source: src,
+				destination: if i % 3 == 0 { [f32(4), 5, src[2], src[3]]! } else { c.destination },
+				transform: if i % 3 == 1 { [f32(1.25), 0, 0, .75, 3.25, 2.75]! } else { c.transform }}
+		}
+		if identity_layers {
+			mut filters := random_color_filters()
+			filters << cpuraster.CanvasFilterStep{kind: .blur, sigma: .001}
+			filters << random_color_filters()
+			if i % 2 == 0 { filters << cpuraster.CanvasFilterStep{kind: .blur} }
+			if i % 3 == 0 { filters << random_color_filters() }
+			c = BitmapCase{...c, filters: filters}
+		}
+		if identity_sampling {
+			c = BitmapCase{...c, filters: [cpuraster.CanvasFilterStep{kind: .blur, sigma: .001},
+				cpuraster.CanvasFilterStep{kind: .blur}]}
+		}
+		if near_integer {
+			sx, sy := f32(1) + f32(rand.f64() * .0018 - .0009), f32(1) + f32(rand.f64() * .0018 - .0009)
+			c = BitmapCase{...c,
+				transform: [f32(1), 0, 0, 1, 0, 0]!
+				destination: [f32(4) + c.source[0] * sx, f32(6) + c.source[1] * sy, c.source[2] * sx, c.source[3] * sy]!
+				filters: if i % 2 == 0 { [cpuraster.CanvasFilterStep{kind: .blur, sigma: 1.2}] }
+					else { [cpuraster.CanvasFilterStep{kind: .blur, sigma: .001}] }
+			}
+			if factored {
+				mx, my := f32(rand.f64() * 2.75 + .25), f32(rand.f64() * 2.75 + .25)
+				tx, ty := f32(rand.f64() * 20 - 10), f32(rand.f64() * 20 - 10)
+				lx, ly := (f32(4) - tx) / mx, (f32(6) - ty) / my
+				local_sx, local_sy := sx / mx, sy / my
+				c = BitmapCase{...c, transform: [mx, 0, 0, my, tx, ty]!,
+					destination: [lx + c.source[0] * local_sx, ly + c.source[1] * local_sy,
+						c.source[2] * local_sx, c.source[3] * local_sy]!}
+			}
+			if i % 3 == 0 {
+				mut filters := random_color_filters()
+				filters << c.filters
+				filters << random_color_filters()
+				c = BitmapCase{...c, filters: filters}
+			}
+		}
+		if shadow_sources {
+			mut filters := if i % 2 == 0 { random_color_shadow_filters() } else { random_shadow_filters() }
+			for j, step in filters {
+				if step.kind == .drop_shadow && (near_shadows || i % 5 != 0) {
+					filters[j] = cpuraster.CanvasFilterStep{...step, sigma: if near_shadows { f32(1.2) } else { f32(rand.f64() * 5 + .2) }}
+				}
+			}
+			if identity_shadows {
+				for j, step in filters {
+					if step.kind == .drop_shadow {
+						filters[j] = cpuraster.CanvasFilterStep{...step, sigma: if i % 4 == 0 { f32(-1) } else { f32(.000001) }}
+					}
+				}
+			}
+			c = BitmapCase{...c, filters: filters, smoothing: if resolved_shadows { false } else { c.smoothing }}
+		}
+		if spatial {
+			mut filters := random_spatial_filter_chain()
+			if resampled_chains {
+				mut prefix := random_color_filters()
+				prefix << cpuraster.CanvasFilterStep{kind: .blur, sigma: .8}
+				prefix << filters
+				filters = prefix.clone()
+			}
+			c = BitmapCase{...c, filters: filters}
+		}
 		if compare_canvas_bitmap(oracle, initial, c, 'image ${i}')! {
 			declined++
 		} else if filtered {
@@ -2536,6 +2667,26 @@ fn check_image_draws(oracle Oracle, count int) !(int, int) {
 		println('filtered image policies: ${image_space} image-space, ${bitmap_space} bitmap-space comparisons exact (includes no-ops)')
 	}
 	return count, declined
+}
+
+fn random_converted_image_blurs() []cpuraster.CanvasFilterStep {
+	match rand.intn(4) or { 0 } {
+		0 { return random_color_shadow_filters() }
+		1 { return random_shadow_filters() }
+		else {}
+	}
+	mut filters := [random_blur_step()]
+	if rand.intn(2) or { 0 } == 0 {
+		mut before := random_color_filters()
+		before << filters
+		filters = before.clone()
+	}
+	for _ in 0 .. rand.intn(3) or { 0 } {
+		if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+		filters << random_blur_step()
+	}
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
 }
 
 fn check_image_cases(oracle Oracle, count int) {
@@ -3059,19 +3210,49 @@ fn check_filter_layer_cases(oracle Oracle, count int) {
 	repo := os.real_path(os.join_path(os.dir(@FILE), '..', '..'))
 	mixed := os.getenv('CPU_RASTER_CHECKS') == 'mixedshadows'
 	shadows := mixed || os.getenv('CPU_RASTER_CHECKS') == 'dropshadows'
-	make_filters := if mixed { random_color_shadow_filters }
+	make_filters := if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { random_spatial_filter_chain }
+		else if os.getenv('CPU_RASTER_CHECKS') == 'mixedblurs' { random_color_blur_chain }
+		else if mixed { random_color_shadow_filters }
 		else if shadows { random_shadow_filters } else { random_layer_filters }
 	draws, declined := check_color_filter_draws(oracle, glyphs, repo, count, make_filters) or {
 		eprintln(err.msg())
 		exit(1)
 	}
-	label := if shadows { 'drop-shadow' } else { 'blur' }
+	label := if os.getenv('CPU_RASTER_CHECKS') == 'spatialchains' { 'spatial-chain' } else if shadows { 'drop-shadow' } else { 'blur' }
 	println('${label}-filtered canvas draws: ${draws - declined} exact, ${declined} declined')
 }
 
 fn random_color_shadow_filters() []cpuraster.CanvasFilterStep {
 	mut filters := random_color_filters()
 	filters << random_shadow_filters()
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
+}
+
+fn random_spatial_filter_chain() []cpuraster.CanvasFilterStep {
+	mut filters := []cpuraster.CanvasFilterStep{}
+	count := rand.intn(3) or { 0 } + 2
+	mut shadow_added := false
+	for i in 0 .. count {
+		if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+		if (rand.intn(2) or { 0 }) == 0 || (i == count - 1 && !shadow_added) {
+			shadow := random_shadow_filters()[0]
+			filters << cpuraster.CanvasFilterStep{...shadow, sigma: [f32(0), .01, .8, 2.5, 6][rand.intn(5) or { 0 }]}
+			shadow_added = true
+		} else {
+			filters << cpuraster.CanvasFilterStep{kind: .blur, sigma: [f32(0), .01, .8, 2.5, 6][rand.intn(5) or { 0 }]}
+		}
+	}
+	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+	return filters
+}
+
+fn random_color_blur_chain() []cpuraster.CanvasFilterStep {
+	mut filters := []cpuraster.CanvasFilterStep{}
+	for _ in 0 .. rand.intn(3) or { 0 } + 2 {
+		if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
+		filters << random_blur_step()
+	}
 	if rand.intn(2) or { 0 } == 0 { filters << random_color_filters() }
 	return filters
 }
@@ -3243,14 +3424,31 @@ fn check_portable_inner_shadow_cases(count int) {
 	library := C.dlopen(os.args[1].str, 2)
 	oracle := unsafe { OracleOuterShadow(oracle_symbol(library, 'oracle_inner_shadow')) }
 	path_oracle := unsafe { OracleRoundedRect(oracle_symbol(library, 'oracle_inner_shadow_path')) }
+	rounded := os.getenv('CPU_RASTER_CHECKS') == 'rounded-inner-shadows'
 	mut painted := 0
 	for trial in 0 .. count {
 		w := rand.intn(80) or { 0 } + 1
 		h := rand.intn(80) or { 0 } + 1
-		inner := random_shadow_rrect()
-		pad := f32(rand.f64()*20 + 1)
-		outer := [inner[0] - pad, inner[1] - pad, inner[2] + pad*2, inner[3] + pad*2,
+		mut inner := random_shadow_rrect()
+		mut pad := f32(rand.f64()*20 + 1)
+		if rounded && trial % 2 == 0 {
+			// Exact integer/half-pixel centers exercise concentric insets
+			// whose bounding-box corners lie outside the outer ellipse.
+			for i in 0 .. 4 { inner[i] = f32(int(inner[i])) }
+			inner[2], inner[3] = math.max(inner[2], f32(4)), math.max(inner[3], f32(4))
+			for i in 4 .. 12 {
+				limit := inner[if i % 2 == 0 { 2 } else { 3 }] * f32(.5)
+				inner[i] = math.min(limit, math.max(f32(1), f32(int(inner[i]))))
+			}
+			pad = f32(int(pad))
+		}
+		mut outer := [inner[0] - pad, inner[1] - pad, inner[2] + pad*2, inner[3] + pad*2,
 			f32(0), 0, 0, 0, 0, 0, 0, 0]
+		if rounded {
+			for i in 4 .. 12 {
+				outer[i] = if trial % 2 == 0 { inner[i] + pad } else { pad * f32(rand.f64() * 3) }
+			}
+		}
 		content := if trial % 2 == 0 { inner } else { random_shadow_rrect() }
 		t := if trial % 3 == 0 { [f32(1), 0, 0, 1, 0, 0]! } else { random_stroke_matrix() }
 		blur := if trial % 7 == 0 { f32(0) } else { f32(rand.f64()*20) }
@@ -3453,4 +3651,118 @@ fn check_path_geometry(count int) {
 		}
 	}
 	println('${count} canvas path geometries exact')
+}
+
+
+type OraclePathQuery = fn (&i32, &f32) i32
+
+fn hit_rectangle_segments(reverse bool) []f32 {
+ points := if reverse { [cpuraster.Point{2, 3}, cpuraster.Point{2, 23}, cpuraster.Point{27, 23}, cpuraster.Point{27, 3}] }
+  else { [cpuraster.Point{2, 3}, cpuraster.Point{27, 3}, cpuraster.Point{27, 23}, cpuraster.Point{2, 23}] }
+ mut segments := []f32{len: 60}
+ for i, point in points {
+  segments[i*12] = if i == 0 { f32(0) } else { f32(1) }
+  segments[i*12+1] = point.x
+  segments[i*12+2] = point.y
+ }
+ segments[48] = 5
+ return segments
+}
+
+fn hit_coincident_curve_segments(kind int, reverse bool) []f32 {
+ mut segments := []f32{len: 36}
+ segments[1] = if reverse { f32(10) } else { f32(0) }
+ segments[12] = f32(kind)
+ segments[13] = if reverse { f32(0) } else { f32(10) }
+ if kind == 2 {
+  segments[15] = 5
+  segments[16] = 10
+ } else if kind == 3 {
+  segments[15] = if reverse { f32(10) } else { f32(0) }
+  segments[16] = 10
+  segments[17] = if reverse { f32(0) } else { f32(10) }
+  segments[18] = 10
+ } else {
+  segments[19], segments[20] = 5, 5
+  segments[23] = if reverse { f32(0) } else { f32(1) }
+ }
+ segments[24] = 5
+ return segments
+}
+
+fn random_geometry_query_point(path cpuraster.Path) cpuraster.Point {
+ if path.points.len > 0 && (rand.intn(3) or { 0 }) == 0 {
+  p := path.points[rand.intn(path.points.len) or { 0 }]
+  epsilon := [f32(0), 0, 0, .0001220703125, -.0001220703125][rand.intn(5) or { 0 }]
+  return cpuraster.Point{p.x + epsilon, p.y}
+ }
+ return cpuraster.Point{f32(rand.f64()*90-15), f32(rand.f64()*90-15)}
+}
+
+fn check_path_geometry_hits(count int) ! {
+ library := C.dlopen(os.args[1].str, 2)
+ contains := unsafe { OraclePathQuery(oracle_symbol(library, 'oracle_path_contains')) }
+ hit := unsafe { OraclePathQuery(oracle_symbol(library, 'oracle_path_hit')) }
+ strokes := os.getenv('CPU_RASTER_CHECKS') == 'pathhits'
+ mut positive := 0
+ for i in 0 .. count {
+  mut segments := random_canvas_segments(60, 60)
+  if i % 11 == 0 {
+   segments = hit_rectangle_segments(false)
+   if i % 22 == 0 { segments << hit_rectangle_segments(i % 44 == 0) }
+  }
+  curve_kind := 2 + (i / 13) % 3
+  if i % 13 == 0 {
+   segments = hit_coincident_curve_segments(curve_kind, false)
+   segments << hit_coincident_curve_segments(curve_kind, (i / 13) % 2 == 0)
+  }
+  even_odd := (rand.intn(2) or { 0 }) == 0
+  base := cpuraster.canvas_path(segments, even_odd)
+  transform := random_stroke_matrix()
+  non_scaling := strokes && (rand.intn(3) or { 0 }) == 0
+  path := if non_scaling { base.transform(cpuraster.Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}) } else { base }
+  point := if i % 13 == 0 && !non_scaling {
+   cpuraster.Point{5, if curve_kind == 2 { f32(5) } else if curve_kind == 3 { f32(7.5) } else { f32(-5) }}
+  } else { random_geometry_query_point(path) }
+  if !strokes {
+   fill := rand.intn(4) or { 0 }
+   query := cpuraster.Path{...base, fill_type: unsafe { cpuraster.PathFillType(fill) }}
+   values := [i32(segments.len/12), fill]
+   mut floats := [point.x, point.y]
+   floats << segments
+   expected := contains(values.data, floats.data) != 0
+   if expected { positive++ }
+   actual := query.contains(point.x, point.y)
+   if expected != actual {
+    description := 'contains ${i}: native=${expected}, V=${actual}; values=${values}; floats=${floats}'
+    save_failure([], [], [], description)
+    return error(description)
+   }
+   continue
+  }
+  areas := rand.intn(5) or { 0 }
+  cap, join := rand.intn(5) or { 0 } - 1, rand.intn(5) or { 0 } - 1
+  width := [f32(0), -1, .001, .75, 2.5, 4, 20, f32(rand.f64()*30)][rand.intn(8) or { 0 }]
+  miter := [f32(-1), 0, .5, 1, 4, 10][rand.intn(6) or { 0 }]
+  dashes := if i % 3 == 0 { random_dashes() } else { []f32{} }
+  phase := random_dash_offset()
+  values := [i32(segments.len/12), int(even_odd), areas, cap, join, int(non_scaling), dashes.len]
+  mut floats := [point.x, point.y, width, miter, phase]
+  floats << transform[..]
+  floats << segments
+  floats << dashes
+  expected := hit(values.data, floats.data) != 0
+  if expected { positive++ }
+  actual := cpuraster.path_hit_test(cpuraster.PathHitTest{path: base, x: point.x, y: point.y,
+   areas: u8(areas), width: width, miter: miter, dashes: dashes, dash_offset: phase,
+   cap: if cap == 0 { cpuraster.StrokeCap.butt } else if cap == 1 { cpuraster.StrokeCap.round } else { cpuraster.StrokeCap.square },
+   join: if join == 0 { cpuraster.StrokeJoin.round } else if join == 1 { cpuraster.StrokeJoin.bevel } else { cpuraster.StrokeJoin.miter },
+   non_scaling: non_scaling, transform: transform})
+  if expected != actual {
+   description := 'path hit ${i}: native=${expected}, V=${actual}; values=${values}; floats=${floats}'
+   save_failure([], [], [], description)
+   return error(description)
+  }
+ }
+ println('${if strokes { "path hits" } else { "path containment" }}: ${count} exact queries (${positive} true)')
 }

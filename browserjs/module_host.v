@@ -37,7 +37,7 @@ mut:
 }
 
 struct BrowserModuleCurrentScript {
-	script ?&dom.HTMLScriptElement
+	script ?&dom.Element
 }
 
 // The native module loader uses the document's Fetch client, module map and

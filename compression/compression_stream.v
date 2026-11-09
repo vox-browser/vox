@@ -6,8 +6,6 @@
 // GenericTransformStream surface it exposes.
 module compression
 
-import x.compress.brotli
-
 pub enum CompressionFormat {
 	brotli
 	deflate
@@ -17,7 +15,7 @@ pub enum CompressionFormat {
 
 pub fn parse_compression_format(value string) !CompressionFormat {
 	return match value {
-		'br' { .brotli }
+		'br', 'brotli' { .brotli }
 		'deflate' { .deflate }
 		'deflate-raw' { .deflate_raw }
 		'gzip' { .gzip }
@@ -253,7 +251,7 @@ fn (mut stream CompressionStream) compress(bytes []u8, finish bool) ![]u8 {
 		if !finish {
 			return []u8{}
 		}
-		return brotli.compress(stream.input_)!
+		return encode_brotli(stream.input_)!
 	}
 	mut output := []u8{}
 	if !stream.header_emitted_ {

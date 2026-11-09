@@ -44,10 +44,11 @@ The reversible controls are `VOX_DISABLE_GITHUB_IMAGE_LAYOUT_BATCHING=1` and
 `VOX_GITHUB_SVG_PATH_CACHE_DIAGNOSTICS=1`. The cache's sanitizer test is
 `tools/native_svg_path_cache_test.cpp`; run it through the memory guard.
 
-Removing collection code does not establish a rendering instruction reduction.
-The GitHub 20% target remains open; see
-[the diagnostic report](../docs/GITHUB_SITE_OPTIMIZATIONS.md) before making a
-performance claim.
+The combined GitHub policies pass the 20% target on the frozen full-JavaScript
+launch/capture workload: 29.23% fewer observed instructions between medians,
+22.19% conservatively, across seven matched pairs with exact original
+pixels. See [the measured scope and evidence](../docs/GITHUB_SITE_OPTIMIZATIONS.md);
+this does not establish live-site performance or isolated rendering cost.
 
 `github_css_builder.mjs` and `github_css.js` reuse four already-loaded component
 entry sheets when the original Rspack loader asks for byte-equivalent chunk CSS.
@@ -75,10 +76,19 @@ idle-clock policy; they do not establish the requested instruction reduction.
 `raster_inputs.v` compares supported static paint values across display-list
 generations before using the existing stationary viewport raster. Its key
 includes path coordinates, bitmap pixels and formats, response bytes and image
-decode availability. Unknown commands, live media and complex SVG resources
-keep the existing revision key. Native owner, viewport, transform and independent
-content guards still apply. Disable this policy with
+decode availability. It applies the renderer's existing scope-aware culler and
+uniform viewport-fill rule. Visible empty or deferred bitmaps, unknown commands,
+live media and complex SVG resources keep the existing revision key; filter and
+mask inputs remain relevant outside the viewport. Native owner, viewport,
+transform and independent content guards still apply. Disable this policy with
 `VOX_DISABLE_GITHUB_RASTER_INPUT_REUSE=1`; inspect eligibility with
 `VOX_GITHUB_RASTER_INPUT_DIAGNOSTICS=1`. Focused cases pass with reuse enabled
-and disabled. Production eligibility and instruction savings require separate
-verification.
+and disabled. Production diagnostics verify eligibility; the matched combined-policy
+comparison and its limits are recorded in the report above.
+
+`cosmetic_tokens.v` keeps GitHub's ID/class token survey across text-only,
+unrelated-attribute, detached and shadow-tree changes. Generic DOM counters
+track connected light-DOM element membership and ID/class edits; every relevant
+input still invalidates the survey. Procedural filtering and live CSS matching
+continue normally. Disable it with `VOX_DISABLE_GITHUB_COSMETIC_TOKEN_REUSE=1`;
+`VOX_GITHUB_COSMETIC_TOKEN_DIAGNOSTICS=1` reports the precise reuse path.

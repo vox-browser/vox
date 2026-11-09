@@ -25,30 +25,9 @@ pub:
 	// Buffered/cache responses have no such prefix. Image decoders use this
 	// provenance to preserve an incremental RGB generator after completion.
 	bytes_available_before_completion u64
-}
-
-@[heap]
-struct ResponseBodyProgress {
-mut:
-	previous u64
-	incomplete_prefix u64
-	prefix []u8
-}
-
-fn (mut progress ResponseBodyProgress) observe(chunk []u8, received u64, expected u64, status int) {
-	if status < 200 || status >= 300 { return }
-	if progress.prefix.len < 32 {
-		count := if chunk.len < 32 - progress.prefix.len { chunk.len } else { 32 - progress.prefix.len }
-		progress.prefix << chunk[..count]
-	}
-	if expected > 0 && received < expected {
-		progress.incomplete_prefix = received
-	} else if expected == 0 && progress.previous > progress.incomplete_prefix {
-		// With unknown length, the next body delivery proves the preceding
-		// prefix was incomplete. A single buffered delivery stays complete.
-		progress.incomplete_prefix = progress.previous
-	}
-	progress.previous = received
+	// Final hop timestamps, shared by every persistent-cache consumer.
+	request_time i64
+	response_time i64
 }
 
 // Retain repeated values in their wire order; uBO examines the first
@@ -165,8 +144,23 @@ fn fetch_with_timeout_recovery(config http.FetchConfig, mut progress ResponseBod
 // hide redirect targets from the blocker. Resolve every hop explicitly while
 // retaining the document and resource type of the original request.
 pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
+	scope := new_request_scope()
+	defer { scope.release() }
+	return get_resource(input, ca_bundle, scope, false)
+}
+
+// A navigation/document supplies its lifetime. The worker adapter can remove
+// an active transfer even while the origin is not delivering progress events.
+pub fn get_with_scope(input adblock.Request, ca_bundle string, scope &RequestScope) !HTTPResult {
+	return get_resource(input, ca_bundle, scope, true)
+}
+
+fn get_resource(input adblock.Request, ca_bundle string, scope &RequestScope, cancellable bool) !HTTPResult {
 	mut resource_url := input.url
+	mut owns_slot := false
+	defer { if owns_slot { release_request_slot() } }
 	for hop in 0 .. 21 {
+		scope.check()!
 		filtered := filter(adblock.Request{
 			url:          resource_url
 			source_url:   input.source_url
@@ -174,6 +168,7 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			method:       input.method
 		})!
 		resource_url = filtered.url
+		scope.check()!
 		if replacement := filtered.replacement { return HTTPResult{
 				url:            resource_url
 				response:       replacement
@@ -182,17 +177,21 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		if !resource_url.starts_with('http://') && !resource_url.starts_with('https://') {
 			return error('Unsupported URL scheme')
 		}
-		// Share ALPN-negotiated HTTP/2 connections across concurrent resources.
-		// HTTP/1 servers keep the same fallback and per-hop filtering above.
+		if !owns_slot {
+			scope.acquire_request_slot()!
+			owns_slot = true
+		}
+		// Both transports negotiate HTTP/2 with HTTP/1 fallback. The cancellable
+		// worker owns its curl connection cache; legacy requests use net.http's pool.
 		proxy := request_proxy(resource_url)!
 		mut progress := &ResponseBodyProgress{}
-		on_body := if input.request_type == 'image' {
+		on_body := if input.request_type == 'image' && !cancellable {
 			http.RequestProgressBodyFn(fn [mut progress] (_ &http.Request, chunk []u8,
 				received u64, expected u64, status int) ! {
 				progress.observe(chunk, received, expected, status)
 			})
 		} else { http.RequestProgressBodyFn(unsafe { nil }) }
-		response := fetch_with_timeout_recovery(http.FetchConfig{
+		config := http.FetchConfig{
 			url:            resource_url
 			proxy:          if proxy == '' { unsafe { nil } } else { http.new_http_proxy(proxy)! }
 			method:         .get
@@ -205,7 +204,20 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			validate:       true
 			verify:         ca_bundle
 			on_progress_body: on_body
-		}, mut progress)!
+		}
+		mut request_time := time.now().unix_milli()
+		mut response_time := i64(0)
+		response := if cancellable {
+			result := fetch_cancellable(config, scope, mut progress)!
+			request_time = result.request_time
+			response_time = result.response_time
+			result.response
+		} else {
+			result := fetch_with_timeout_recovery(config, mut progress)!
+			response_time = time.now().unix_milli()
+			result
+		}
+		scope.check()!
 		filter_response(adblock.Request{
 			url: resource_url
 			source_url: input.source_url
@@ -214,12 +226,16 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 		}, response)!
 		// Keep each Set-Cookie field separate (Expires contains a comma), and
 		// store redirect cookies before constructing the next hop's headers.
+		scope.begin_publication()!
 		browsercookies.store_response_cookies(resource_url, input.source_url,
 			input.request_type == 'main_frame', 'GET', response.header.custom_values('Set-Cookie'))
+		scope.end_publication()
 		if response.status_code !in [301, 302, 303, 307, 308] {
 			return HTTPResult{
 				url:      resource_url
 				response: response
+				request_time: request_time
+				response_time: response_time
 				// Progress callbacks can precede content-coding decompression.
 				// Only publish a prefix belonging to the returned body bytes.
 				bytes_available_before_completion: if response.body.starts_with(progress.prefix.bytestr()) {
@@ -231,11 +247,15 @@ pub fn get(input adblock.Request, ca_bundle string) !HTTPResult {
 			return HTTPResult{
 				url:      resource_url
 				response: response
+				request_time: request_time
+				response_time: response_time
 			}
 		}
 		if location == '' { return HTTPResult{
 				url:      resource_url
 				response: response
+				request_time: request_time
+				response_time: response_time
 			} }
 		if hop == 20 { return error('Maximum number of redirects reached (20)') }
 		base_url := url.parse(resource_url) or { return error('Invalid request URL') }

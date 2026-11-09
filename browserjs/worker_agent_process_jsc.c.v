@@ -33,8 +33,11 @@ fn (mut child WorkerChildSession) start(bytes []u8) ! {
 	if child.started { return error('Worker startup frame was repeated') }
 	child.started = true
 	startup := decode_worker_startup(bytes)!
-	mut agent := WorkerAgentRuntime.create(startup.url, startup.options, startup.outside,
-		startup.creation_time, child.transport) or {
+	mut agent := (if startup.is_shared {
+		WorkerAgentRuntime.create_shared(startup.url, startup.options, startup.outside, startup.creation_time, child.transport)
+	} else {
+		WorkerAgentRuntime.create(startup.url, startup.options, startup.outside, startup.creation_time, child.transport)
+	}) or {
 		child.send(.load_failure, [])
 		child.finished = true
 		return

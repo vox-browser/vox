@@ -260,6 +260,12 @@ fn (mut projection NativeCloneProjection) reconstruct(value dom.JSValue) !voidpt
 	object := html.structured_object_from_value(value)!
 	identity := u64(voidptr(object))
 	if existing := projection.output_memory[identity] { return existing }
+	if object.kind == .message_port {
+		port := object.message_port_ or { return native_clone_unsupported('Missing transferred MessagePort endpoint') }
+		actual := projection.root(owner.javascript_message_port(port)!)!
+		projection.output_memory[identity] = actual
+		return actual
+	}
 	if object.kind == .serializable_object {
 		interface_name := object.serializable_interface_ or { return native_clone_unsupported('Source native serializable object has no primary interface') }
 		mut actual := unsafe { nil }

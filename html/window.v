@@ -287,6 +287,11 @@ pub fn (mut window WindowModel) window_open_steps_internal(url string, target_ s
 			window_type: window_type
 		}
 	}
+	if record := url_record {
+		if record.scheme() == 'javascript' && javascript_url_is_blocked_by_csp(source_document,record) {
+			return OpenedWindow{navigable:chosen,no_opener:no_opener,window_type:window_type}
+		}
+	}
 	if window_type in [.new_and_unrestricted, .new_with_no_opener] {
 		chosen.set_popup(check_if_a_popup_window_is_requested(tokenized_features) == .yes)
 		mut target_document := chosen.active_document() or {
