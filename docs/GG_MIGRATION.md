@@ -2233,3 +2233,37 @@ find no direct or transitive Skia dependency; direct libraries are FreeType,
 libm and libc. Browser integration still uses installed Skia development
 files. Full-browser Linux compile/link/run without Skia remains open. See the
 [guarded comparisons and dependency proof](https://github.com/vox-browser/vox-tests/blob/a0a230fb6b113ac5935d7a758a6805add64031c3/evidence/gg-migration/large-minified-source-subsets-20261109.json).
+
+
+### Source shaders at the large-blur rescale boundary (2026-11-09)
+
+`46f124838` handles large blur and shadow filters whose native rescale factors
+round to zero downsampling steps. The identity shader pass still samples and
+converts the source with paint alpha and incoming color filters. Outgoing
+filters and the original shadow foreground stay deferred. Actual decimation
+keeps its existing eligibility checks.
+
+The fixed-sigma 135.01 baseline accepts 29 of 500 requests at seed 20261231;
+the candidate accepts 385 of that same cohort. Wider final cohorts cycle
+sigmas from 135.001 through 135.14 across the step-count boundary: macOS and
+Linux each match 1,387 of 2,000 requests at seed 20270101, declining 613.
+Optimized macOS/no-GC matches 699 of 1,000 at seed 20270102, declining 301.
+Counts include no-ops; completed cohorts retain unchanged inputs. Sixteen
+independent native fixtures verify on both platforms, and a neighboring
+unsupported request verifies atomic fallback.
+
+Focused C/FastC suites, Linux browser typechecking and HTML canvas integration
+pass. The C FMA audit finds zero contracted operations (189 explicit). The
+standalone Linux production/no-GC executable runs all nine registered image
+test functions with Skia unavailable to pkg-config; link/readelf/ldd checks
+find no Skia dependency, with FreeType, libm and libc as direct libraries.
+A full-browser Linux C compile with Skia hidden instead fails at link time on
+Skia symbols from the canvas and shadow bridges. Full-browser Skia removal
+therefore remains open; the passing component is not that result.
+
+`0eddb82df` also fixes concurrent suite-cache publication: macOS/Linux can
+report a nonempty-directory error after another fetch wins. The launcher now
+validates that winner and still rejects dirty checkouts and unrelated I/O
+errors. All six Python tests pass on both platforms. The [guarded evidence,
+cache race and full-browser link failure](https://github.com/vox-browser/vox-tests/blob/6f101eac79a7d6a1157d427be98c8d964801d48c/evidence/gg-migration/large-identity-source-rescale-20261109.json)
+remain in vox-tests; passing V checks disable compatibility fallback.
