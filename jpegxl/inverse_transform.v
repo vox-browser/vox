@@ -20,6 +20,7 @@ pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32)
 	mut output := coefficients.clone()
 	output[0] = lf[0]
 	match transform {
+		.dct { return inverse_dct_plane(8, 8, output) }
 		.identity { inverse_identity(mut output) }
 		.dct2x2 { inverse_dct2x2(mut output) }
 		else { return error('Unsupported JPEG XL inverse transform') }
