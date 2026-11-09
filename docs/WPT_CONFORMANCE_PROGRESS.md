@@ -1935,3 +1935,46 @@ pinned completed production image, independently of these native checks.
 New-production validation remains pending; the image/SVG observer v3 is still
 waiting for a matching completed image. Commit hooks request coalesced C builds
 with literal V `-prod` in one C unit. **Overall 100% is not achieved.**
+
+## Production image/FormData follow-up and larger collection restart (2026-11-09)
+
+The image/SVG observer v3 has completed against production executable
+`f14f71f6be464c11fa14ade78d458c28ef4a837524bc004ec9d1f9cdba1d7c53`,
+receipt `20261109-062416-e96d5f98`: C backend, literal V `-prod`, single C unit,
+prepared preallocation runtime. It used the original completed production
+artifact under a read lease, without copying or replacing a bundle. All
+recorded runtime inputs remained unchanged.
+
+This production validation **failed**: of the 65 original FileReader/FormData
+variants (328 expected assertions), 56 completed and nine crashed. They
+reported 288 assertions, with **286 passing and two failing**. Missing results
+from crashed variants do not count as passes. The failures are preservation of
+an unpaired surrogate in an input name, and an image-submit coordinate of
+`-6` where the test expects `23`. Crash logs retain native stacks in
+`TimerHost.operate` and `poll_navigation_and_background_resources`; these
+locations do not establish the cause. Both runner and memory guard exit **1**.
+The earlier 328/328 focused native checks do not establish production parity.
+
+All **11 unchanged SVG reftest comparisons are pixel-exact**, with zero channel
+error and zero differing pixels. The pixel driver and its 3 GiB guard exit
+**0**. This successful rendering check does not cancel the WPT failures.
+The observer archived its evidence and removed its completed Build directory.
+
+Production evidence:
+`/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-raw.tar.gz`,
+SHA-256 `dcebca843e25149ae5f346b0b264c6d3799c3e66e250cb9fbe95b80837ac3726`.
+Its detailed completion record is
+`/Users/alex/.cache/vox/wpt/20261109-image-input-production-v3-completion.json`.
+
+The previous 40,139-variant testharness collection was interrupted after
+**1,431 records**, with runner and guard exits **143**, unchanged pinned inputs,
+and no complete summary. It supplies no full-suite pass rate. Evidence remains
+at `/Users/alex/.cache/vox/wpt/20261109-official-vendor-raw.tar.gz`, SHA-256
+`1608fe58f7a28c343509faf6463f826ec1f3ff2413363ffae17b71c8968a38eb`.
+Its completed Build directory was removed. A fresh collection starts at offset
+zero on the newly published production executable above, retaining all
+**40,139 official manifest testharness variants**, original assertions and
+deadlines, and explicit unsupported-protocol records. Live status is
+`/Users/alex/.cache/vox/wpt/20261109-official-vendor-prod-status.json`.
+Other manifest test types remain outside this runner. **Overall 100% is not
+achieved.**
