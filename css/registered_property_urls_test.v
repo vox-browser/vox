@@ -40,3 +40,16 @@ fn test_image_computation_resolves_document_relative_urls_without_a_retained_par
 	assert computed.url_.url() == 'https://urls.test/document/image.png'
 	assert value.url_.url() == 'image.png'
 }
+
+fn test_cached_stylesheet_custom_declarations_keep_independent_bases() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	first := parse_css_stylesheet_with_params(ParsingParams{document:document}, 'html{--image:url(image.png)}', 'https://urls.test/main/sheet.css')
+	second := parse_css_stylesheet_with_params(ParsingParams{document:document}, 'html{--image:url(image.png)}', 'https://urls.test/alt/sheet.css')
+	for index, sheet in [first, second] {
+		expected := ['https://urls.test/main/sheet.css', 'https://urls.test/alt/sheet.css'][index]
+		declaration := sheet.rules.rules[0].style() or { panic('declaration') }
+		property := declaration.custom_property('--image') or { panic('custom property') }
+		assert property.value.base_url or { '' } == expected
+	}
+}
