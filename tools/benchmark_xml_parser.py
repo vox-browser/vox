@@ -38,6 +38,22 @@ FIXTURES = (
     ("star-svg", "Tests/Browser/Brave/resources/discord-star.svg", 1000),
     ("strokes-svg", "Tests/Browser/Brave/input/isolated-svg-strokes.svg", 20),
 )
+XML_INPUT_PREFIXES = (
+    "xml/", "xmlcompat/", "dom/", "platform/", "svg/",
+    "html/xml_", "html/vlib_xml", "html/dom_parser", "html/entities",
+    "html/html_parser_fragment", "html/navigable", "xhr/document_response",
+    "tools/benchmark_xml_parser", "tools/prepare_", "tools/prealloc_runtime/",
+    "tools/build_linux_",
+)
+XML_INPUT_FILES = {
+    ".github/workflows/linux-build.yml", "v.mod", "build-linux-browser.sh",
+    "build-prod-browser.sh", "tools/test_linux_native.py", "tools/run_memory_bounded.py",
+    *(path for _, path, _ in FIXTURES),
+}
+
+
+def xml_input_changed(path):
+    return path in XML_INPUT_FILES or path.startswith(XML_INPUT_PREFIXES)
 
 
 def digest(path):
@@ -223,9 +239,9 @@ class Comparison:
         if self.command(name, command, **kwargs):
             raise RuntimeError(f"{name} failed; full log retained")
 
-    def historical_file(self, ref, name):
+    def ensure_commit(self, ref, stage="fetch"):
         if not re.fullmatch(r"[0-9a-f]{40}", ref):
-            raise ValueError("Historical references must be exact 40-character commit SHAs")
+            raise ValueError("References must be exact 40-character commit SHAs")
         exists = subprocess.run(["git", "cat-file", "-e", ref + "^{commit}"], cwd=ROOT,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
         if not exists:
@@ -240,10 +256,63 @@ class Comparison:
                 fetch_environment[f"GIT_CONFIG_KEY_{index}"] = "http.https://github.com/.extraheader"
                 encoded = base64.b64encode(("x-access-token:" + token).encode()).decode()
                 fetch_environment[f"GIT_CONFIG_VALUE_{index}"] = "AUTHORIZATION: basic " + encoded
-            self.require_command("fetch-" + ref[:12],
+            self.require_command(stage + "-" + ref[:12],
                                  ["git", "fetch", "--no-tags", "--depth", "1", "origin", ref],
                                  environment=fetch_environment, timeout=180)
+
+    def historical_file(self, ref, name):
+        self.ensure_commit(ref)
         return subprocess.check_output(["git", "show", f"{ref}:{name}"], cwd=ROOT)
+
+    def selected(self):
+        gate = {"run": True, "event": os.environ.get("GITHUB_EVENT_NAME", ""),
+                "reason": "change filtering disabled"}
+        self.state["change_selection"] = gate
+        if not self.args.changed_only:
+            return True
+        if gate["event"] == "workflow_dispatch":
+            gate["reason"] = "manual dispatch always runs"
+        elif self.state["working_status"]:
+            gate["reason"] = "working tree changed; run conservatively"
+        else:
+            try:
+                event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+                if gate["event"] == "pull_request":
+                    base = event["pull_request"]["base"]["sha"]
+                    head = event["pull_request"]["head"]["sha"]
+                elif gate["event"] == "push":
+                    base, head = event["before"], event["after"]
+                    if head != self.state["head"]:
+                        raise ValueError("push head differs from the checked-out source")
+                else:
+                    raise ValueError("event has no supported complete base/head diff")
+                if self.state["head"] != os.environ["GITHUB_SHA"]:
+                    raise ValueError("checkout differs from the workflow event SHA")
+                if base == "0" * 40 or head == "0" * 40:
+                    raise ValueError("branch creation/deletion has no complete comparison")
+                gate.update(base=base, head=head)
+                for ref in (base, head):
+                    self.ensure_commit(ref, stage="selection-fetch")
+                command = ["git", "diff", "--no-ext-diff", "--no-textconv", "--name-only",
+                           "--no-renames", "-z", base, head, "--"]
+                paths = subprocess.check_output(command, cwd=ROOT, timeout=60).split(b"\0")
+                # This compares complete trees, not a capped API file list or
+                # HEAD^ from a shallow synthetic PR merge. Disabling renames
+                # includes both sides of moved/deleted XML paths.
+                changed = sorted({os.fsdecode(path) for path in paths if path})
+                relevant = [path for path in changed if xml_input_changed(path)]
+                gate.update(command=command, changed_files=changed, relevant_files=relevant,
+                            run=bool(relevant), reason="relevant input changed" if relevant else "no XML benchmark inputs changed")
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
+                gate.update(run=True, reason="complete change set unavailable; run conservatively",
+                            error=f"{type(error).__name__}: {error}")
+        self.persist()
+        print(json.dumps({"xml_performance_selection": {
+            "run": gate["run"], "reason": gate["reason"],
+            "changed_files": len(gate.get("changed_files", [])),
+            "relevant_files": gate.get("relevant_files", []),
+        }}), flush=True)
+        return gate["run"]
 
     def prepare(self):
         compiler = str(Path(shutil.which(self.args.v) or self.args.v).resolve())
@@ -281,7 +350,7 @@ class Comparison:
         cflags = "-O2 -Werror=incompatible-pointer-types"
         if "clang" in self.state["c_compiler"]["version"].lower():
             cflags += " -Werror=incompatible-function-pointer-types -Wno-error=incompatible-pointer-types-discards-qualifiers"
-        command = [compiler, "-b", "c", "-prod", "-memory-limit", "10G",
+        command = [compiler, "-b", "c", "-prod", "-showcc", "-memory-limit", "10G",
                    "-enable-globals", "-cc", cc, "-cstrict", "-cflags", cflags,
                    "-gc", "none" if self.args.gc == "prealloc" else "boehm", "-d", "use_openssl",
                    "-exclude", "@vlib/time/zoneinfo.native.v", "-path", "|".join([*paths, "@vmodules", "@vlib"])]
@@ -445,6 +514,10 @@ class Comparison:
         self.persist()
 
     def run(self):
+        if not self.selected():
+            self.state["status"] = "skipped"
+            self.persist()
+            return 0
         self.build()
         for workload, options in self.workloads():
             for pair in range(1, self.args.pairs + 1):
@@ -477,6 +550,8 @@ def main():
     parser.add_argument("--baseline-ref", default=ORIGINAL)
     parser.add_argument("--merged-ref", default=MERGED)
     parser.add_argument("--output", type=Path, required=True, help="fresh evidence directory; never reused")
+    parser.add_argument("--changed-only", action="store_true",
+                        help="skip unrelated CI base/head changes; manual or uncertain events always run")
     parser.add_argument("--pairs", type=int, default=7)
     parser.add_argument("--max-cpu-ratio", type=positive, default=1.05)
     parser.add_argument("--max-wall-ratio", type=positive, help="optional noisy-host wall-time gate; always reported")

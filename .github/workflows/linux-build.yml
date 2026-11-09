@@ -221,10 +221,12 @@ jobs:
           # when absent from the shallow checkout, then restores source files.
           # Allocator poisoning remains enabled for all correctness steps;
           # only the measured subprocesses disable poison and no-reuse modes.
+          # Unrelated complete event diffs produce a skipped comparison receipt;
+          # missing history or manual dispatch always runs the full benchmark.
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-xml-performance.lock" \
             --report "$RUNNER_TEMP/vox-xml-performance.json" --timeout 2640 -- \
-            python3 tools/benchmark_xml_parser.py --gc prealloc --pairs 7 \
+            python3 tools/benchmark_xml_parser.py --gc prealloc --pairs 7 --changed-only \
               --output "Build/linux/tests/prealloc/run-xml-performance-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
       - name: Preserve XML performance evidence immediately
