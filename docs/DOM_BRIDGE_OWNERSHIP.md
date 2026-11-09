@@ -47,7 +47,11 @@ Remaining batched API families share one pending-state contract:
 5. `commit_compact_dom_task` and `apply_compact_dom_task` collect task output
    after reactions settle. A navigation written by a reaction supersedes an
    earlier navigation, and its logs are collected before the realm can retire.
-   Clearing console output never clears DOM mutations.
+   Successful task-output serialization consumes both logs and navigation once,
+   so later callbacks cannot replay an already handled fragment navigation.
+   Preliminary host reads, including media-click replay, use the host flush
+   boundary to preserve that output for the task owner. Clearing console output
+   never clears DOM mutations.
 
 The `flushDOM` query is an explicit synchronization operation. Bindings do not
 need a dummy selector or a `readyState` read to publish preceding writes. Cache
