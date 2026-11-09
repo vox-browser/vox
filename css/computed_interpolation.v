@@ -6101,6 +6101,7 @@ pub fn (c &ComputedProperties) line_height() CSSPixels {
 	// Since upstream 0e6db9d9, `normal` is the sum of the selected face's
 	// independently rounded ascent and descent. The font list is materialized
 	// before layout-facing values in resolve_computed_values_for_document().
+	if c.font_size().raw_value()==0 { return CSSPixels.new(0) }
 	if c.cached_first_available_computed_font_ != unsafe { nil } {
 		computed_font := c.cached_first_available_computed_font_
 		font := computed_font.font_for_metrics()

@@ -1172,6 +1172,9 @@ fn layout_font_metrics_for_node(node &Node) platform.FontPixelMetrics {
 }
 
 fn layout_inline_font_metrics(node &Node, font &platform.Font) platform.FontPixelMetrics {
+	// Raster font handles have a positive minimum size. A CSS zero-size font
+	// still contributes a zero strut and baseline to inline layout.
+	if node.computed_values().font_size().raw_value()==0 { return platform.FontPixelMetrics{} }
 	document := node.document()
 	return font.inline_metrics_at_scale(document.display_device_pixel_ratio() / document.layout_coordinate_scale())
 }
