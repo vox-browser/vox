@@ -367,7 +367,7 @@ for(const name of ["addEventListener","removeEventListener","dispatchEvent"])Obj
 const __compactDocumentLegacyAdd=document.addEventListener;
 const __compactDocumentPointerTypes=new Set(' + json2.encode(browserjs.native_pointer_event_names()) + r');
 const __compactDocumentPointerHas=Set.prototype.has;
-function __compactDocumentNativeEvent(name){return Reflect.apply(__compactDocumentPointerHas,__compactDocumentPointerTypes,[name])||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
+function __compactDocumentNativeEvent(name){return Reflect.apply(__compactDocumentPointerHas,__compactDocumentPointerTypes,[name])||name==="wheel"||name==="keydown"||name==="keyup"||name==="keypress"||name==="beforeinput"||name==="input"||name==="change"||name==="submit"||name==="reset"||name==="formdata"||name==="invalid";}
 document.addEventListener=function(name,callback,options){
  name=String(name);if(__compactDocumentNativeEvent(name))return EventTarget.prototype.addEventListener.call(this,name,callback,options);
  return __compactDocumentLegacyAdd.call(this,name,callback,options);

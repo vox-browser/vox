@@ -1987,6 +1987,7 @@ fn javascript_bootstrap() string {
 		compact_computed_style_bootstrap(),
 		compact_accessibility_internals_bootstrap(),
 		compact_keyboard_internals_bootstrap(),
+		compact_wheel_internals_bootstrap(),
 		compact_testdriver_click_bootstrap(),
 		'__ladybirdElementWheelSetResolver(function(key){const s=__resolveElementState(key);return s?__element(s):null;});',
 		compact_named_elements_bootstrap(),
