@@ -100,3 +100,12 @@ VOX_ARENA_POISON=1 python3 tools/run_memory_bounded.py \
     document/session_test.v navigation/controller_test.v \
     navigation/back_forward_cache_test.v navigation/retire_before_styles_test.v
 ```
+
+The resource-cancellation integration keeps the retained resource map and request
+scope on the session. Pending background requests block cache admission, matching
+the current resource policy. Retirement cancels scoped producers, which can
+suppress their response and wake from full queues; it never starts a fixed-count
+drain for those producers. Legacy unscoped producers still use the finite drain.
+Navigation request scopes remain on the NavigationController and are cancelled
+on traversal and tab closure. Validation of this integration is deferred until
+the Codex bot approves the updated PR, as requested.
