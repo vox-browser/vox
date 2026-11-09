@@ -8963,6 +8963,7 @@ pub fn (style_value StyleValue) absolutized(context ComputationContext) StyleVal
 		BackgroundSizeStyleValue { style_value.absolutized(context) }
 		BasicShapeStyleValue { style_value.absolutized(context) }
 		BorderRadiusRectStyleValue { style_value.absolutized(context) }
+		BorderImageSliceStyleValue { style_value.absolutized(context) }
 		BorderRadiusStyleValue { style_value.absolutized(context) }
 		CalculatedStyleValue { style_value.absolutized(context) }
 		ColorFunctionStyleValue { absolutize_relative_color(style_value, context) or { style_value.absolutized(context) } }

@@ -544,6 +544,29 @@ pub fn (style_value BorderImageSliceStyleValue) serialize(mode SerializationMode
 	return serialized
 }
 
+fn computed_border_slice_component(value StyleValue, context ComputationContext) StyleValue {
+ absolute := value.absolutized(context)
+ if absolute is CalculatedStyleValue {
+  resolution := CalculationResolutionContext{length_resolution_context:context.length_resolution_context}
+  if absolute.resolves_to_number() {
+   if number := absolute.resolve_number(resolution) { return StyleValue(NumberStyleValue.create(if number < 0 { 0.0 } else { number })) }
+  } else if absolute.resolves_to_percentage() {
+   if percentage := absolute.resolve_percentage(resolution) { return StyleValue(PercentageStyleValue.create(Percentage.new(if percentage.value() < 0 { 0.0 } else { percentage.value() }))) }
+  }
+ }
+ return absolute
+}
+
+pub fn (style_value BorderImageSliceStyleValue) absolutized(context ComputationContext) StyleValue {
+ top := computed_border_slice_component(style_value.top(),context)
+ right := computed_border_slice_component(style_value.right(),context)
+ bottom := computed_border_slice_component(style_value.bottom(),context)
+ left := computed_border_slice_component(style_value.left(),context)
+ if top == style_value.top() && right == style_value.right()
+  && bottom == style_value.bottom() && left == style_value.left() { return StyleValue(style_value) }
+ return StyleValue(BorderImageSliceStyleValue.create(top,right,bottom,left,style_value.fill()))
+}
+
 pub fn (style_value BorderImageSliceStyleValue) to_string() string {
 	return style_value.serialize(.normal)
 }
