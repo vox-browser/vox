@@ -2362,3 +2362,32 @@ functions with Skia unavailable to pkg-config; link/readelf/ldd checks find no
 Skia dependency, with FreeType, libm and libc as direct libraries. Full-browser
 integration still uses installed Skia. See the [native cases, guarded comparisons,
 resource limits and component linkage](https://github.com/vox-browser/vox-tests/blob/b58019050c2fb0ef00975448f4f247d7426eb3fb/evidence/gg-migration/large-terminal-blur-chains-20261109.json).
+
+
+### Large terminal blurs after resolved image stages (2026-11-09)
+
+`caeea072c` permits a large final blur on image chains when an earlier
+non-identity blur has materialized the source. The large stage consumes that
+quantized intermediate, retaining pending color effects through downsampling
+and restoration with the image-source context. Identity-only prefixes and
+earlier large stages remain guarded; the identity-prefix control stays atomic.
+
+At seed 20270221 the baseline declines all 500 requests; the candidate matches
+416 and declines 84. Final macOS and Linux C cohorts each match 860 of 1,000
+at seed 20270222, declining 140. Optimized macOS/no-GC matches 84 of 100 at seed
+20270223, declining 16. Counts include no-ops; all completed cohorts retain
+unchanged inputs under the 3 GiB guard. Twenty-six independent native fixtures
+verify on both platforms, all changing the background, covering alpha types,
+P3, paint alpha, matrices, clips, fractional subsets, scaling, reflection,
+near-integer mapping and larger source content.
+
+Focused C suites on both platforms, selected macOS FastC tests, Linux browser
+typechecking and HTML canvas integration pass. The FMA audit finds zero
+contracted operations (189 explicit). The standalone Linux production/no-GC
+executable runs all 12 registered source-image test functions with Skia
+unavailable to pkg-config; link/readelf/ldd checks find no Skia dependency,
+with FreeType, libm and libc as direct libraries. Full-browser integration
+still uses installed Skia. The optimized random cohort is deliberately small;
+it does not resolve the preceding saved-canvas long-run no-GC resource failure
+or the inherited FastC saved-canvas degenerate-gradient failure. See the
+[native cases, guarded comparisons and component dependency proof](https://github.com/vox-browser/vox-tests/blob/d7e7e7609c0388c6491c3664c8daf7fd187ac32a/evidence/gg-migration/large-terminal-image-blurs-20261109.json).
