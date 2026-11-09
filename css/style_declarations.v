@@ -1463,6 +1463,9 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 				}
 			}
 			value := computed.property(property_id, .yes) or { return none }
+			if property_id == .column_rule_width {
+				return StyleProperty{property_id:property_id,value:StyleComputer.compute_border_or_outline_width(value,document.device_pixels_per_css_pixel(),ComputationContext{})}
+			}
 			if property_id in [.min_width,.min_height] && value.css_text == 'auto' {
 				return StyleProperty{property_id:property_id,value:cssom_style_value_for_px(0)}
 			}
@@ -1980,6 +1983,10 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		}
 		.animation_duration {
 			return cssom_resolved_animation_duration(computed)
+		}
+		.column_rule_width {
+			value := computed.property(.column_rule_width,.yes) or { return none }
+			return StyleComputer.compute_border_or_outline_width(value,owner.document().device_pixels_per_css_pixel(),ComputationContext{length_resolution_context:LengthResolutionContext.for_layout_node(layout_node)})
 		}
 		.border_bottom_width {
 			return cssom_resolved_border_width(computed, .border_bottom_width, .border_bottom_style)
