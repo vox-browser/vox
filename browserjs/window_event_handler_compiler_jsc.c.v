@@ -67,7 +67,7 @@ fn (mut runtime Runtime) compile_window_event_handler(target &dom.EventTarget, n
 	mut context := runtime.realm_context
 	vm.push_execution_context(mut context)
 	mut exception := unsafe { nil }
-	function := C.vox_jsc_JSObjectMakeFunction(runtime.context, function_name, u32(parameters.len), parameters.data,
+	function := runtime.compile_host_function(function_name, u32(parameters.len), parameters.data,
 		body_value, unsafe { nil }, 1, &exception)
 	popped := vm.pop_execution_context()
 	assert voidptr(popped) == voidptr(runtime.realm_context)

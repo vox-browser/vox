@@ -173,7 +173,7 @@ fn (runtime &Runtime) raw_wheel_handler_body_is_valid(handler_name string, body 
 	// Parse the actual FunctionBody in isolation. Checking a generated Script
 	// alone would allow closing braces to escape into the scope factory.
 	mut exception := voidptr(0)
-	validated := C.vox_jsc_JSObjectMakeFunction(runtime.context, name, 1, &parameter,
+	validated := runtime.compile_host_function(name, 1, &parameter,
 		body_value, unsafe { nil }, 1, &exception)
 	return exception == unsafe { nil } && validated != unsafe { nil }
 }
@@ -214,7 +214,7 @@ fn (mut host ElementWheelHost) compile_raw_wheel_handler(target &dom.EventTarget
 	factory_body := js_source_string(openings + 'return ({' + handler_name + ':function(event){\n' + body + '\n}}).' + handler_name + ';' + endings)
 	defer { C.JSStringRelease(factory_body) }
 	mut exception := voidptr(0)
-	factory := C.vox_jsc_JSObjectMakeFunction(runtime.context, unsafe { nil }, 0, unsafe { nil },
+	factory := runtime.compile_host_function(unsafe { nil }, 0, unsafe { nil },
 		factory_body, unsafe { nil }, 1, &exception)
 	if exception != unsafe { nil } || factory == unsafe { nil } { return none }
 	C.JSValueProtect(runtime.context, factory)

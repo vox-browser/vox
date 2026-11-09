@@ -8,6 +8,25 @@ $if darwin {
 }
 fn C.vox_jsc_set_eval_enabled(context voidptr, enabled bool)
 
+// FunctionBody compilation for an allowed event handler is a browser operation.
+// JSObjectMakeFunction consults JSC's eval switch, even though CSP has already
+// checked the handler's separate script-src-attr policy. No author code runs
+// during this synchronous compile; restore the eval gate before invoking it.
+fn (runtime &Runtime) compile_host_function(name voidptr, count u32, parameters &voidptr,
+	body voidptr, source voidptr, line int, exception &voidptr) voidptr {
+	$if darwin {
+		$if !vox_v8 ? {
+			if settings := runtime.scripting_settings_ {
+				blocked := !csp.string_compilation_is_allowed(settings.fetch_request_client_csp_global())
+				if blocked { C.vox_jsc_set_eval_enabled(runtime.context,true) }
+				defer { if blocked { C.vox_jsc_set_eval_enabled(runtime.context,false) } }
+				return C.vox_jsc_JSObjectMakeFunction(runtime.context,name,count,parameters,body,source,line,exception)
+			}
+		}
+	}
+	return C.vox_jsc_JSObjectMakeFunction(runtime.context,name,count,parameters,body,source,line,exception)
+}
+
 fn (mut runtime Runtime) install_string_compilation_policy(realm &html.ScriptingRealm) {
 	$if darwin {
 		$if !vox_v8 ? {
