@@ -942,7 +942,10 @@ fn layout_generated_accessible_text(handle voidptr) ?string {
 	if handle == unsafe { nil } { return none }
 	node := unsafe { &Node(handle) }
 	styled := node.as_node_with_style() or { return none }
-	content := styled.content() or { return none }
+	content := styled.content() or {
+		if marker := node.as_list_item_marker_box() { return marker.text() }
+		return none
+	}
 	if content.has_alt_text {
 		// Alternative text names a separate accessibility object. Preserve its
 		// word boundaries when it joins the host's text, including counters.

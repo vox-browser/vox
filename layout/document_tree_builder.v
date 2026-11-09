@@ -2633,6 +2633,10 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		marker_box := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 		mut marker := unsafe { &Node(marker_box) }
 		marker.set_generated_for(.marker, element)
+		if styled := marker.as_node_with_style() {
+			mut mutable_styled := unsafe { &NodeWithStyle(styled) }
+			mutable_styled.set_content(content)
+		}
 		inline_image_style := marker_computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 		for item in content.items {
 			mut child := if item.type_ == .image {
