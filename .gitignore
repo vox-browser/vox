@@ -10,6 +10,7 @@
 /docs/**/*.zip
 *.v3cc.*/
 /tools/layout_corpus
+/tools/check_translation_corpora
 
 # Compiled V test binaries dropped next to their _test.v source
 *_test
