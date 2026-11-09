@@ -224,13 +224,14 @@ fn document_csp_policies(document &dom.Document) []&contentsecuritypolicy.Policy
 	return policies
 }
 
-fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, source string) bool {
-	policies := document_csp_policies(element.document())
+fn dom_inline_csp_check(target voidptr, element &dom.Element, inline_type string, source string) bool {
+	policy_document := if target == unsafe { nil } { element.document() } else { unsafe { &dom.Document(target) } }
+	policies := document_csp_policies(policy_document)
 	mut policy_list := contentsecuritypolicy.PolicyList.create(policies)
 	mut global := &contentsecuritypolicy.GlobalContext{
 		policy_list: policy_list
 	}
-	settings_pointer := element.document().relevant_settings_object()
+	settings_pointer := policy_document.relevant_settings_object()
 	if settings_pointer != unsafe { nil } {
 		settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }
 		global = settings.fetch_request_client_csp_global()
@@ -247,7 +248,7 @@ fn dom_inline_csp_check(_ voidptr, element &dom.Element, inline_type string, sou
 		nonce: element.cryptographic_nonce()
 		had_duplicate_attribute: element.had_duplicate_attribute_during_tokenization
 		attributes: attributes
-		connected_to_policy_document: element.as_node().is_connected()
+		connected_to_policy_document: element.as_node().is_connected() && voidptr(element.document()) == voidptr(policy_document)
 	}
 	type_ := match inline_type {
 		'script' { contentsecuritypolicy.InlineType.script }

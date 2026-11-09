@@ -206,6 +206,9 @@ pub fn parse_html_fragment_with_options(context_element &dom.Element, markup str
 	mut parser := HTMLParser.create_with_scripting_mode(temp_document, markup, scripting_mode)
 	parser.context_element = context_element
 	parser.parsing_fragment = true
+	// Fragment nodes are adopted into the context document. Inline checks use
+	// that document's policy and running realm while the temporary tree parses.
+	temp_document.set_csp_hook(dom.DocumentCSPHook{target:voidptr(context_document),inline_check:dom_inline_csp_check})
 
 	// 6. Set the tokenizer state based on the context element.
 	context_name := context_element.local_name()
