@@ -581,6 +581,9 @@ class ProductionBuildTests(unittest.TestCase):
                 self.assertEqual(check.read_text(), build.PRE_COMMIT_HOOK)
                 self.assertTrue(hook.stat().st_mode & 0o111)
                 self.assertTrue(check.stat().st_mode & 0o111)
+                hook.write_text(build.PREVIOUS_HOOK)
+                build.install_hook(root)
+                self.assertEqual(hook.read_text(), build.HOOK)
                 hook.write_text('custom hook\n')
                 with self.assertRaisesRegex(RuntimeError, 'Existing post-commit hook retained'):
                     build.install_hook(root)
@@ -590,6 +593,30 @@ class ProductionBuildTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, 'Existing pre-commit hook retained'):
                     build.install_hook(root)
                 self.assertEqual(check.read_text(), 'custom check\n')
+
+    def test_each_commit_requests_production_with_the_c_frontend(self):
+        with tempfile.TemporaryDirectory(prefix='vox commit builds ') as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', '-b', 'master', str(root)], check=True)
+            tools = root / 'tools'
+            tools.mkdir()
+            # Exercise the installed Git hook without starting a real compiler.
+            (tools / 'rebuild_browser.py').write_text(
+                'import json, pathlib, subprocess, sys\n'
+                'head = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()\n'
+                'with pathlib.Path("requests.jsonl").open("a") as output:\n'
+                '    output.write(json.dumps(dict(head=head, arguments=sys.argv[1:])) + "\\n")\n')
+            build.install_hook(root)
+            heads = []
+            for message in ('first change', 'second change'):
+                subprocess.run(['git', '-C', str(root), '-c', 'user.name=Vox Test',
+                                '-c', 'user.email=vox@example.test', '-c', 'commit.gpgsign=false',
+                                'commit', '-q', '--allow-empty', '-m', message], check=True)
+                heads.append(build.git(root, 'rev-parse', 'HEAD').decode().strip())
+            requests = [json.loads(line) for line in (root / 'requests.jsonl').read_text().splitlines()]
+            self.assertEqual([request['head'] for request in requests], heads)
+            self.assertTrue(all(request['arguments'] == ['--request', '--backend', 'c']
+                                for request in requests))
 
     @unittest.skipUnless(sys.platform == 'linux', 'Linux compiler selection')
     def test_linux_supervisor_resolves_compiler_before_repository_directory_change(self):

@@ -49,6 +49,10 @@
 
 - Commit every completed feature and fix after running the relevant checks.
   Do not leave implemented work uncommitted unless the user explicitly asks.
+- Every commit must request an automatic production rebuild through the managed
+  post-commit hook (`python3 tools/rebuild_browser.py --install-hook`). The hook
+  selects the C frontend for production; FastC remains available for explicit
+  builds. Keep requests coalesced under the shared worker and memory guard.
 - Commit each completed translation feature separately with a focused commit
   message. Do not combine unrelated translation slices in one commit.
 - Include the feature's focused tests in the same commit as its implementation.
@@ -123,14 +127,15 @@
 ## Build and run Vox
 
 - All sessions share this `master` checkout and `Build/v/Vox.app`. Reuse the
-  latest successfully completed production browser by default. Check the bundle
-  and build receipts before scheduling a build; do not queue duplicate production
-  builds or wait hours for one when a completed bundle is available. Rebuild only
-  on explicit request or evidence that no available bundle contains the required
-  change. If the build guard is busy, use the available bundle for applicable
-  checks and report validation that still needs a newer build. An older bundle
-  cannot establish that new code works. Preserve the memory guard below and pin
-  build identity for comparisons.
+  latest successfully completed production browser while each commit requests
+  an automatic rebuild. Check the bundle and build receipts before scheduling
+  an additional manual build; do not queue duplicate production builds or wait
+  hours when a completed bundle is available. Request an additional manual build
+  only on explicit request or evidence that no available bundle contains the
+  required change. If the build guard is busy, use the available bundle for
+  applicable checks and report validation that still needs a newer build. An
+  older bundle cannot establish that new code works. Preserve the memory guard
+  below and pin build identity for comparisons.
 
 - Run expensive builds, test binaries and benchmarks through
   `python3 tools/run_memory_bounded.py --lock Build/UNIQUE-job.lock --report Build/UNIQUE-job.json -- COMMAND...`.

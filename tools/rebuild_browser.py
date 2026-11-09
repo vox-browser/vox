@@ -30,8 +30,12 @@ HOOK = '''#!/bin/sh
 # Vox canonical production rebuild hook; managed by tools/rebuild_browser.py.
 set -eu
 repo=$(git rev-parse --show-toplevel)
-exec python3 "$repo/tools/rebuild_browser.py" --request
+exec python3 "$repo/tools/rebuild_browser.py" --request --backend c
 '''
+# Upgrade our previously installed hook without replacing a user's custom hook.
+# FastC remains available through v.mod and explicit build requests; automatic
+# production requests use the C frontend until FastC can compile the browser.
+PREVIOUS_HOOK = HOOK.replace(' --backend c', '')
 PRE_COMMIT_HOOK = '''#!/bin/sh
 # Vox staged-file check; managed by tools/rebuild_browser.py.
 set -eu
@@ -425,7 +429,8 @@ def install_hook(root):
     hooks.mkdir(parents=True, exist_ok=True)
     installs = [(path, HOOK, 'post-commit'), (hooks / 'pre-commit', PRE_COMMIT_HOOK, 'pre-commit')]
     for hook, content, name in installs:
-        if hook.exists() and hook.read_text() != content:
+        accepted = {content, PREVIOUS_HOOK} if name == 'post-commit' else {content}
+        if hook.exists() and hook.read_text() not in accepted:
             raise RuntimeError(f'Existing {name} hook retained; install the Vox hook manually')
     for hook, content, name in installs:
         hook.write_text(content)
