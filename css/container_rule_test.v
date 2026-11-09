@@ -27,7 +27,9 @@ fn size_query_test_tree(container_style string, width f64, height f64, has_geome
 		panic('${err}')
 	}
 	mut document_node := unsafe { &dom.Node(document) }
-	document_node.append_child(container.as_node()) or { panic('${err}') }
+	mut root := document.create_element('html') or { panic(err) }
+	document_node.append_child(root.as_node()) or { panic(err) }
+	root.as_node().append_child(container.as_node()) or { panic(err) }
 	mut container_node := container.as_node()
 	container_node.append_child(subject.as_node()) or { panic('${err}') }
 
@@ -490,3 +492,12 @@ fn test_container_rules_can_be_nested_in_function_rules() {
 	declarations := container_children.item(0) or { panic('function declarations are missing') }
 	assert declarations.type_ == .function_declarations
 }
+
+fn test_size_queries_stop_at_ineligible_principal_boxes() {
+ for display in ['inline','table','table-cell','contents','none'] {
+  document,_,subject := size_query_test_tree('display:${display};container-type:size',320,180,true)
+  defer { document.finalize() }
+  assert parsed_single_container_query('(width >= 0px)').evaluate(dom.AbstractElement.new(subject,none),none) == .unknown,display
+ }
+}
+

@@ -1187,6 +1187,12 @@ fn size_feature_value_for_query_container(feature_name string, container &dom.El
 	}
 	dom_style := container.el_computed_properties() or { return none }
 	style := computed_properties_from_dom(dom_style) or { return none }
+	display := style.display()
+	// Select the nearest declared container first. An ineligible principal box
+	// makes this feature unknown; it must not fall through to an outer container.
+	if display.is_none() || display.is_contents() || display.is_table_inside() || display.is_internal_table() { return none }
+	if container.is_svg_element() && !is_outermost_svg_element_for_css_box_layout(container) { return none }
+	if display.is_inline_outside() && display.is_flow_inside() && !layout_node.is_replaced_box_ && !container.is_svg_element() { return none }
 	width := layout_node.content_width_ / container.document().layout_coordinate_scale()
 	height := layout_node.content_height_ / container.document().layout_coordinate_scale()
 	inline_axis_horizontal := style.writing_mode() == .horizontal_tb
