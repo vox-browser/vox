@@ -2,7 +2,7 @@ module cpuraster
 
 import math
 
-// FilterResult::rescale() for a pixel-aligned decal source. Each pass keeps
+// FilterResult::rescale() for decal sources. Each pass keeps
 // its logical bounds in floats, while the backing image has an integer
 // extent and a transparent pixel around it. The upscale remains deferred.
 fn filter_downscale_steps(scale f32) int {
@@ -72,10 +72,11 @@ fn rescale_filter_shader(image FilterResult, transform SkAffine, destination IRe
 	return new_image_shader(image.color_info.bitmap(pixels), tile, tile, true, sk_concat(device, local))
 }
 
-fn downscale_filter_source(source FilterResult, desired IRect, scale_x f32, scale_y f32, filter ?ColorFilter) ?(FilterResult, SkAffine) {
-	visible := source.layer_bounds.intersect(desired) or { return FilterResult{}, SkAffine{} }
+fn downscale_filter_input(source FilterResult, desired IRect, scale_x f32, scale_y f32, filter ?ColorFilter, deferred ?DeferredRescaleImage) ?(FilterResult, SkAffine) {
+	layer_bounds := if input := deferred { input.view.layer_bounds } else { source.layer_bounds }
+	visible := layer_bounds.intersect(desired) or { return FilterResult{}, SkAffine{} }
 	mut xs, mut ys := filter_downscale_steps(scale_x), filter_downscale_steps(scale_y)
-	if xs == 0 && ys == 0 && filter == none && !source.color_info.display_p3 && source.color_info.alpha == 1 {
+	if deferred == none && xs == 0 && ys == 0 && filter == none && !source.color_info.display_p3 && source.color_info.alpha == 1 {
 		return source.subset(visible), SkAffine{}
 	}
 	src := Rect{f32(visible.left), f32(visible.top), f32(visible.right), f32(visible.bottom)}
@@ -83,7 +84,8 @@ fn downscale_filter_source(source FilterResult, desired IRect, scale_x f32, scal
 	mut image := source
 	// Color filtering follows sampling in the first pass, without an
 	// intermediate 8-bit quantization of the source.
-	mut pending := filter
+	mut first := deferred
+	mut pending := if input := deferred { input.view.filter } else { filter }
 	final_x, final_y := if xs > 0 { scale_x } else { f32(1) }, if ys > 0 { scale_y } else { f32(1) }
 	for {
 		mut sx, mut sy := f32(1), f32(1)
@@ -111,13 +113,17 @@ fn downscale_filter_source(source FilterResult, desired IRect, scale_x f32, scal
 		if w > max_untiled_dimension || h > max_untiled_dimension { return none }
 		mut pixels := []u8{len: w * h * 4}
 		transform := rect_to_rect(logical, next) or { return none }
-		shader := rescale_filter_shader(image, transform, bounds, padded.left, padded.top)
+		shader := if input := first { rescale_source_image_shader(input, transform, bounds, padded.left, padded.top) }
+			else { rescale_filter_shader(image, transform, bounds, padded.left, padded.top) }
+		alpha := if input := first { input.view.alpha } else { image.color_info.alpha }
+		legacy := first == none && canvas_rgba_uses_legacy()
 		rc := canvas_raster_clip(w, h, [])
-		if mut blitter := canvas_draw_blitter_for_surface(mut pixels, w * 4, 0xff000000, shader, image.color_info.alpha, .src,
-			Rect{1, 1, f32(w - 1), f32(h - 1)}, pending, canvas_rgba_uses_legacy()) {
+		if mut blitter := canvas_draw_blitter_for_surface(mut pixels, w * 4, 0xff000000, shader, alpha, .src,
+			Rect{1, 1, f32(w - 1), f32(h - 1)}, pending, legacy) {
 			fill_irect(IRect{1, 1, w - 1, h - 1}, &rc, mut blitter)
 		}
 		pending = none
+		first = none
 		image = new_filter_result(SpecialImage{BlurImage{pixels, w, h}, IRect{0, 0, w, h}}, padded.left, padded.top).inset_for_save_layer()
 		logical = next
 		if xs == 0 && ys == 0 { break }
@@ -129,13 +135,18 @@ fn downscale_filter_source(source FilterResult, desired IRect, scale_x f32, scal
 // Builder::blur() downsamples sigmas beyond the raster engine's limit,
 // blurs in low-resolution pixels, and retains the transform until restore.
 fn scaled_blur_filter_view(source FilterResult, desired IRect, sigma_x f32, sigma_y f32, filter ?ColorFilter, native_context bool) ?FilterImageView {
-	if !source.has_image { return FilterImageView{} }
+	return scaled_blur_input_view(source, desired, sigma_x, sigma_y, filter, native_context, none)
+}
+
+fn scaled_blur_input_view(source FilterResult, desired IRect, sigma_x f32, sigma_y f32, filter ?ColorFilter, native_context bool, deferred ?DeferredRescaleImage) ?FilterImageView {
+	if deferred == none && !source.has_image { return FilterImageView{} }
 	rx, ry := skif_ceil(f32(3) * sigma_x), skif_ceil(f32(3) * sigma_y)
-	output := desired.intersect(skif_outset(source.layer_bounds, rx, ry)) or { return FilterImageView{} }
+	layer_bounds := if input := deferred { input.view.layer_bounds } else { source.layer_bounds }
+	output := desired.intersect(skif_outset(layer_bounds, rx, ry)) or { return FilterImageView{} }
 	sample := skif_outset(output, rx, ry)
 	scale_x := if sigma_x > image_blur_max_sigma { image_blur_max_sigma / sigma_x } else { f32(1) }
 	scale_y := if sigma_y > image_blur_max_sigma { image_blur_max_sigma / sigma_y } else { f32(1) }
-	low, restore := downscale_filter_source(source, sample, scale_x, scale_y, filter)?
+	low, restore := downscale_filter_input(source, sample, scale_x, scale_y, filter, deferred)?
 	if !low.has_image { return FilterImageView{} }
 	transform := sk_concat(restore, affine_translate(f32(low.origin_x), f32(low.origin_y)))
 	sx := fmin_std(sigma_x * (f32(1) / transform.sx), image_blur_max_sigma)

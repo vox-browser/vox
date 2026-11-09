@@ -76,8 +76,18 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	// Native drawSpecial resolves the extracted bitmap subset, with its
 	// original row stride, before these large-filter downsampling steps.
 	if stages.len == 0 && large_filter_resolves_source_first(total, ctm, step.sigma) {
-		return draw_large_resolved_source_filter(mut pixels, width, height, pitch, alpha_type,
-			ctm, dst, foreground, mode, clips, step)
+		return draw_large_source_filter(mut pixels, width, height, pitch, alpha_type,
+			ctm, dst, foreground, mode, clips, step, none)
+	}
+	// Otherwise native rescale combines the deferred source shader with
+	// its first downsample, avoiding an extra 8-bit resolve surface.
+	sx, sy := blur_layer_sigma(math_abs32(step.sigma * ctm.sx)), blur_layer_sigma(math_abs32(step.sigma * ctm.sy))
+	if stages.len == 0 && step.sigma >= 0 && is_finite_f32(step.sigma)
+		&& (sx > image_blur_max_sigma || sy > image_blur_max_sigma)
+		&& !large_filter_uses_identity_rescale(ctm, step.sigma) && affine_is_finite(total)
+		&& total.sx != 0 && total.sy != 0 && !filter_nearly_integer_translation(total) {
+		return draw_large_source_filter(mut pixels, width, height, pitch, alpha_type,
+			ctm, dst, foreground, mode, clips, step, DeferredRescaleImage{foreground, image, src})
 	}
 	reset := if stages.any(it.kind == .drop_shadow && (it.sigma < 0 || !is_finite_f32(it.sigma))) {
 		?FilterImageView(FilterImageView{...foreground, filter: none})
