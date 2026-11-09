@@ -97,8 +97,9 @@ fn generate_random_uuid() !string {
 
 pub fn generate_new_blob_url(settings BlobURLSettingsObject) !string {
 	origin := settings.blob_url_settings_origin().serialize()
-	serialized_origin := if origin == 'null' { 'ladybird' } else { origin }
-	return 'blob:${serialized_origin}/${generate_random_uuid()!}'
+	// Use "null" as File API's implementation-defined opaque serialization.
+	// Partition checks still use the creator's actual origin, not this string.
+	return 'blob:${origin}/${generate_random_uuid()!}'
 }
 
 pub fn (mut store BlobURLStore) add_entry(object BlobURLObject, settings BlobURLSettingsObject) !string {

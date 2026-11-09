@@ -159,7 +159,7 @@ fn test_native_url_revoke_uses_actual_opaque_partitions_and_source_fragment_beha
 		same_document.finalize()
 	}
 	value := native_object_url_text(mut creator, 'URL.createObjectURL(new Blob(["opaque"]))')!
-	assert value.starts_with('blob:ladybird/')
+	assert value.starts_with('blob:null/')
 	record := liburl.parse(value)?
 	assert document.origin().serialize() == 'null' && other_document.origin().serialize() == 'null'
 	assert other.evaluate_host('URL.revokeObjectURL("${value}")===undefined')! == 'true'
