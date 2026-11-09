@@ -18,6 +18,20 @@ fn test_stretch_cross_constraints_follow_final_flex_lines() {
 	}
 }
 
+fn test_automatic_flex_stretch_maximum_resolves_against_its_containing_block() {
+	for example in [
+		['height:100px', 'margin:0', '100'],
+		['height:100%', 'margin:0', '120'],
+		['height:auto', 'margin:0', '120'],
+	] {
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{${example[0]}}#target{display:flex;max-height:stretch;${example[1]}}#content{height:120px}</style><div id="cb"><div id="target"><div id="content"></div></div></div>')
+		_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+		r := (document.get_element_by_id('target') or { panic('target') }).get_bounding_client_rect()
+		assert r.height == example[2].f64(), '${example}: ${r.height}'
+		document.finalize()
+	}
+}
+
 fn test_stretch_width_in_intrinsic_column_measurement_contributes_its_contents() {
 	for wide in [false, true] {
 		middle := if wide { '<div style="width:150px"></div>' } else { '' }
