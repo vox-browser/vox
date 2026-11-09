@@ -188,6 +188,7 @@ pub fn (mut runtime Runtime) bind_scripting_environment(settings &html.Environme
 	runtime.scripting_settings_ = settings
 	runtime.install_source_location_provider(realm)
 	runtime.install_inline_script_evaluator(realm)
+	runtime.install_string_compilation_policy(realm)
 }
 
 fn (runtime &Runtime) prepare_html_script() {

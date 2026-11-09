@@ -300,6 +300,7 @@ fn dom_meta_csp_enforce(document &dom.Document, input string) string {
 			pre_parsed_policy_string: serialized.pre_parsed_policy_string
 		}
 	}
+	dom_string_compilation_policy_changed(unsafe { nil },document)
 	// This string is only the standalone adapter. Genuine settings owners read
 	// the parsed list above, retaining its original unfiltered input separately.
 	return directives.map('${it.name} ${it.value.join(' ')}'.trim_space()).join('; ')
@@ -394,11 +395,19 @@ fn dom_trusted_types_compliant_attribute(_ voidptr, element &dom.Element, local_
 		namespace_uri, element_interface, input)!
 }
 
+fn dom_string_compilation_policy_changed(_ voidptr, document &dom.Document) {
+	pointer := document.relevant_settings_object()
+	if pointer == unsafe { nil } { return }
+	settings := unsafe { &EnvironmentSettingsObject(pointer) }
+	if callback := settings.realm().string_compilation_policy_changed_ { callback() }
+}
+
 pub fn install_document_csp_hook(document &dom.Document) {
 	mut mutable_document := unsafe { &dom.Document(document) }
 	mutable_document.set_csp_hook(dom.DocumentCSPHook{
 		target:       voidptr(document)
 		inline_check: dom_inline_csp_check
+		policy_changed: dom_string_compilation_policy_changed
 		initialize:   dom_csp_initialize_document
 		base_check:   dom_base_csp_check
 		meta_enforce: dom_meta_csp_enforce

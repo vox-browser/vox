@@ -1883,6 +1883,7 @@ pub type DocumentMetaElementMetadataCallback = fn (&HTMLMetaElement, ?string)
 
 pub struct DocumentCSPHook {
 pub:
+	policy_changed fn (voidptr, &Document) = unsafe { nil }
 	target       voidptr = unsafe { nil }
 	inline_check DocumentInlineCSPCheckCallback = unsafe { nil }
 	initialize   DocumentCSPInitializationCallback = unsafe { nil }
@@ -9898,6 +9899,7 @@ pub fn (d &Document) policy_container() &PolicyContainer {
 
 pub fn (mut d Document) set_policy_container(pc &PolicyContainer) {
 	d.policy_container_ = pc
+	if hook := d.csp_hook_ { if hook.policy_changed != unsafe { nil } { hook.policy_changed(hook.target,&d) } }
 }
 
 // --- Navigation ---

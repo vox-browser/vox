@@ -54,6 +54,8 @@ pub:
 	column u32
 }
 
+pub type StringCompilationPolicyChanged = fn ()
+
 pub type ScriptElementEvaluator = fn (ScriptElementType, string, string, int, ?&dom.Element) !
 
 @[heap]
@@ -74,6 +76,7 @@ pub mut:
 	active_classic_script_                  ?&ClassicScript
 	error_extraction_context_               ?fn (dom.JSValue) ErrorExtractionContext
 	current_source_location_                ?fn () ?ScriptSourceLocation
+	string_compilation_policy_changed_ ?StringCompilationPolicyChanged
 	evaluate_script_element_ ?ScriptElementEvaluator
 mut:
 	embedding_vm_                            ?&libjs.VM

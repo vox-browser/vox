@@ -527,6 +527,7 @@ pub fn (settings &EnvironmentSettingsObject) policy_container() &PolicyContainer
 // Compatibility installation routes to the actual Source container owner.
 // Source defines its setter on Document and assigns WorkerGlobalScope's field.
 pub fn (mut settings EnvironmentSettingsObject) set_policy_container(container &dom.PolicyContainer) {
+	defer { if callback := settings.realm().string_compilation_policy_changed_ { callback() } }
 	if window := settings.window_ {
 		if document := window.Window.associated_document() {
 			mut owner := unsafe { &dom.Document(document) }
