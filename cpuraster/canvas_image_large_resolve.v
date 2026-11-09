@@ -1,5 +1,17 @@
 module cpuraster
 
+// Near the raster sigma limit, rescale() applies the source shader at
+// identity scale. Sampling and color effects still resolve in that pass.
+fn large_filter_uses_identity_rescale(ctm SkAffine, sigma f32) bool {
+	if sigma < 0 || !is_finite_f32(sigma) { return false }
+	sx, sy := blur_layer_sigma(math_abs32(sigma * ctm.sx)), blur_layer_sigma(math_abs32(sigma * ctm.sy))
+	if !is_finite_f32(sx) || !is_finite_f32(sy)
+		|| (sx <= image_blur_max_sigma && sy <= image_blur_max_sigma) { return false }
+	rx := if sx > image_blur_max_sigma { image_blur_max_sigma / sx } else { f32(1) }
+	ry := if sy > image_blur_max_sigma { image_blur_max_sigma / sy } else { f32(1) }
+	return filter_downscale_steps(rx) == 0 && filter_downscale_steps(ry) == 0
+}
+
 // rescale() resolves a deferred minification before progressive downsampling
 // when composing the two scales would omit source pixels. Near-identity
 // downsampling and mappings that do not require this pass stay deferred.

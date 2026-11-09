@@ -305,3 +305,62 @@ fn test_large_minified_source_subset_filters_match_native() {
 		check_large_source_blur_fixture(c, i)
 	}
 }
+
+// An identity rescale still samples the source shader and resolves paint
+// effects before the blur. Stay atomic beyond that rounding boundary.
+fn test_large_identity_rescale_image_filters_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 2, 3, 4, 5, 6, 7, 16, 17, 24, 25, 0, 1, 2, 3]
+	sigmas := [f32(135.01), 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.01, 135.001, 135.1, 135.13, 135.135]
+	macos := [
+		'7d80be1fece0a4168cc94cbebfa06d09205a3413096bfb2ccc80fbc81076bb4d',
+		'2de7278a1b4828f1aacf707f7ce7a58916bf2d144042ccad849bf557f1b87ed8',
+		'b2f3078667063cefd2d44605955cec2f1d5b6889f2c0897368c096f1c5e5d935',
+		'4d1ef2e9dc50b03052c94e9d152f661118d7db54e7a88ad602e73925811c3bc6',
+		'0ff7c68391c1742131fc445dc1f2774ea4cdad322967c8ec42e65164c9102485',
+		'b2343f97ab8e72daac163f565c27acfaad853f8e4fa17fd19ba8c24bb52e7d81',
+		'77ee7552da56317c7db9ab605de9e1eafa7da8c395e0ab8755b686387a8e6054',
+		'03f286f8a213e86caf95b0ea3330c4a9ca7f1cb4e15c73b89717a0d6cf13affd',
+		'4a492d8de1a7537f6c5c55581aca980345012aed5c3c063ec199cb6b13b379db',
+		'f509b823d9ded0f6a20b55ae72265b859cd5ce4d3b67cb3a2d69d92a0f8350b8',
+		'ceed5bac7106b947bdf03edadffadd7d19f1377db80dc22c0055d7dfad8c0c7d',
+		'edf67d81bc04d9db580d52cc001f1a48dcbab66c16e2a0d7ce2a6a49efa88189',
+		'7d80be1fece0a4168cc94cbebfa06d09205a3413096bfb2ccc80fbc81076bb4d',
+		'2de7278a1b4828f1aacf707f7ce7a58916bf2d144042ccad849bf557f1b87ed8',
+		'b2f3078667063cefd2d44605955cec2f1d5b6889f2c0897368c096f1c5e5d935',
+		'4d1ef2e9dc50b03052c94e9d152f661118d7db54e7a88ad602e73925811c3bc6',
+	]
+	linux := [
+		'0738951d7d84126af0692d76cf09052e99342d0a40e8b2423941c0d98a4085dc',
+		'2de7278a1b4828f1aacf707f7ce7a58916bf2d144042ccad849bf557f1b87ed8',
+		'b2f3078667063cefd2d44605955cec2f1d5b6889f2c0897368c096f1c5e5d935',
+		'4d1ef2e9dc50b03052c94e9d152f661118d7db54e7a88ad602e73925811c3bc6',
+		'0ff7c68391c1742131fc445dc1f2774ea4cdad322967c8ec42e65164c9102485',
+		'b2343f97ab8e72daac163f565c27acfaad853f8e4fa17fd19ba8c24bb52e7d81',
+		'77ee7552da56317c7db9ab605de9e1eafa7da8c395e0ab8755b686387a8e6054',
+		'03f286f8a213e86caf95b0ea3330c4a9ca7f1cb4e15c73b89717a0d6cf13affd',
+		'1e15ac1fc014b62badfd076c32c298e75046972567edd48a61f0b8252c52a1ff',
+		'f509b823d9ded0f6a20b55ae72265b859cd5ce4d3b67cb3a2d69d92a0f8350b8',
+		'ed92451fda2d31fb241fb957f637468b0ade5fbdd5fc527d10088dc0fed2763f',
+		'edf67d81bc04d9db580d52cc001f1a48dcbab66c16e2a0d7ce2a6a49efa88189',
+		'0738951d7d84126af0692d76cf09052e99342d0a40e8b2423941c0d98a4085dc',
+		'2de7278a1b4828f1aacf707f7ce7a58916bf2d144042ccad849bf557f1b87ed8',
+		'b2f3078667063cefd2d44605955cec2f1d5b6889f2c0897368c096f1c5e5d935',
+		'4d1ef2e9dc50b03052c94e9d152f661118d7db54e7a88ad602e73925811c3bc6',
+	]
+	for i, index in indices {
+		base := fixtures[index]
+		c := LargeSourceBlurFixture{...base,
+			destination: [f32(5.25), 7.75, base.source[2] * f32(.5), base.source[3] * f32(.75)]!,
+			sigma: sigmas[i], shadow: i % 2 != 0, shadow_color: 0x9d70d020, offset: [f32(9.25), -13.75]!,
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+	base := fixtures[0]
+	unsupported := LargeSourceBlurFixture{...base, sigma: 135.14,
+		destination: [f32(5.25), 7.75, base.source[2] * f32(.5), base.source[3] * f32(.75)]!}
+	mut pixels := large_source_blur_pixels(unsupported, false)
+	original := pixels.clone()
+	assert !large_source_blur_draw(mut pixels, unsupported)
+	assert pixels == original
+}

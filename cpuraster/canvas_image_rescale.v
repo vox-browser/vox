@@ -118,6 +118,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	// A first real blur can precede a shadow. Keep its source view available
 	// so each branch can choose raw storage or resolve its own visible crop.
 	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
+		source_rescale_ready: stages.len == 0 && large_filter_uses_identity_rescale(ctm, step.sigma),
 		source_reset: reset, source_layer_bounds: foreground.layer_bounds,
 		source_image: true, source_padding: true, source_per_request: stages.any(it.kind == .drop_shadow), source_color_info: FilterImageInfo{},
 		source_foreground: if deferred_foreground || stages.any(it.kind == .drop_shadow) { ?FilterImageView(foreground) } else { none }}
