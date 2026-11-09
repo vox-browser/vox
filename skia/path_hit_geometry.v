@@ -1,5 +1,7 @@
 module skia
 
+import cpuraster
+
 // Geometry queries share Canvas replay's path decoder, caps and joins. Paint
 // colors and opacity are deliberately absent: the caller selects hit regions.
 pub struct PathHitTest {
@@ -18,41 +20,34 @@ pub:
 	transform   [6]f32 = [f32(1), 0, 0, 1, 0, 0]!
 }
 
-struct C.VoxPathHitTest {
-	path        C.VoxCanvasPath
-	x           f32
-	y           f32
-	width       f32
-	miter       f32
-	transform   [6]f32
-	cap         i32
-	join        i32
-	areas       i32
-	non_scaling i32
-	dashes      &f32
-	dash_count  i32
-	dash_offset f32
-}
-
-fn C.vox_skia_path_hit_test(&C.VoxPathHitTest) bool
-
 pub fn path_hit_test(query PathHitTest) bool {
 	if query.path.segments.len == 0 || query.path.segments.len % 12 != 0 || query.areas == 0 {
 		return false
 	}
-	return C.vox_skia_path_hit_test(&C.VoxPathHitTest{
-		path:        native_path(query.path)
+	return cpuraster.path_hit_test(cpuraster.PathHitTest{
+		path:        cpuraster.canvas_path(query.path.segments, query.path.even_odd)
 		x:           query.x
 		y:           query.y
+		areas:       query.areas
 		width:       query.width
 		miter:       query.miter
-		transform:   query.transform
-		cap:         i32(query.cap)
-		join:        i32(query.join)
-		areas:       i32(query.areas)
-		non_scaling: i32(query.non_scaling)
-		dashes:      query.dashes.data
-		dash_count:  i32(query.dashes.len)
+		cap:         if query.cap == 0 {
+			cpuraster.StrokeCap.butt
+		} else if query.cap == 1 {
+			cpuraster.StrokeCap.round
+		} else {
+			cpuraster.StrokeCap.square
+		}
+		join:        if query.join == 0 {
+			cpuraster.StrokeJoin.round
+		} else if query.join == 1 {
+			cpuraster.StrokeJoin.bevel
+		} else {
+			cpuraster.StrokeJoin.miter
+		}
+		dashes:      query.dashes
 		dash_offset: query.dash_offset
+		non_scaling: query.non_scaling
+		transform:   query.transform
 	})
 }

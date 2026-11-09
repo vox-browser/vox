@@ -1348,6 +1348,10 @@ fn main() {
 	count := if os.args.len > 2 { os.args[2].int() } else { 20000 }
 	seed := if os.args.len > 3 { u32(os.args[3].int()) } else { u32(20261106) }
 	rand.seed([seed, 7])
+	if os.getenv('CPU_RASTER_CHECKS') in ['pathcontains', 'pathhits'] {
+		check_path_geometry_hits(count) or { eprintln(err.msg()); exit(1) }
+		return
+	}
 	if os.getenv('CPU_RASTER_CHECKS') == 'exports' {
 		table := check_export_exhaustive(oracle) or { panic(err) }
 		exports := check_export_random(oracle, count) or { panic(err) }
@@ -3647,4 +3651,118 @@ fn check_path_geometry(count int) {
 		}
 	}
 	println('${count} canvas path geometries exact')
+}
+
+
+type OraclePathQuery = fn (&i32, &f32) i32
+
+fn hit_rectangle_segments(reverse bool) []f32 {
+ points := if reverse { [cpuraster.Point{2, 3}, cpuraster.Point{2, 23}, cpuraster.Point{27, 23}, cpuraster.Point{27, 3}] }
+  else { [cpuraster.Point{2, 3}, cpuraster.Point{27, 3}, cpuraster.Point{27, 23}, cpuraster.Point{2, 23}] }
+ mut segments := []f32{len: 60}
+ for i, point in points {
+  segments[i*12] = if i == 0 { f32(0) } else { f32(1) }
+  segments[i*12+1] = point.x
+  segments[i*12+2] = point.y
+ }
+ segments[48] = 5
+ return segments
+}
+
+fn hit_coincident_curve_segments(kind int, reverse bool) []f32 {
+ mut segments := []f32{len: 36}
+ segments[1] = if reverse { f32(10) } else { f32(0) }
+ segments[12] = f32(kind)
+ segments[13] = if reverse { f32(0) } else { f32(10) }
+ if kind == 2 {
+  segments[15] = 5
+  segments[16] = 10
+ } else if kind == 3 {
+  segments[15] = if reverse { f32(10) } else { f32(0) }
+  segments[16] = 10
+  segments[17] = if reverse { f32(0) } else { f32(10) }
+  segments[18] = 10
+ } else {
+  segments[19], segments[20] = 5, 5
+  segments[23] = if reverse { f32(0) } else { f32(1) }
+ }
+ segments[24] = 5
+ return segments
+}
+
+fn random_geometry_query_point(path cpuraster.Path) cpuraster.Point {
+ if path.points.len > 0 && (rand.intn(3) or { 0 }) == 0 {
+  p := path.points[rand.intn(path.points.len) or { 0 }]
+  epsilon := [f32(0), 0, 0, .0001220703125, -.0001220703125][rand.intn(5) or { 0 }]
+  return cpuraster.Point{p.x + epsilon, p.y}
+ }
+ return cpuraster.Point{f32(rand.f64()*90-15), f32(rand.f64()*90-15)}
+}
+
+fn check_path_geometry_hits(count int) ! {
+ library := C.dlopen(os.args[1].str, 2)
+ contains := unsafe { OraclePathQuery(oracle_symbol(library, 'oracle_path_contains')) }
+ hit := unsafe { OraclePathQuery(oracle_symbol(library, 'oracle_path_hit')) }
+ strokes := os.getenv('CPU_RASTER_CHECKS') == 'pathhits'
+ mut positive := 0
+ for i in 0 .. count {
+  mut segments := random_canvas_segments(60, 60)
+  if i % 11 == 0 {
+   segments = hit_rectangle_segments(false)
+   if i % 22 == 0 { segments << hit_rectangle_segments(i % 44 == 0) }
+  }
+  curve_kind := 2 + (i / 13) % 3
+  if i % 13 == 0 {
+   segments = hit_coincident_curve_segments(curve_kind, false)
+   segments << hit_coincident_curve_segments(curve_kind, (i / 13) % 2 == 0)
+  }
+  even_odd := (rand.intn(2) or { 0 }) == 0
+  base := cpuraster.canvas_path(segments, even_odd)
+  transform := random_stroke_matrix()
+  non_scaling := strokes && (rand.intn(3) or { 0 }) == 0
+  path := if non_scaling { base.transform(cpuraster.Matrix{transform[0], transform[1], transform[2], transform[3], transform[4], transform[5]}) } else { base }
+  point := if i % 13 == 0 && !non_scaling {
+   cpuraster.Point{5, if curve_kind == 2 { f32(5) } else if curve_kind == 3 { f32(7.5) } else { f32(-5) }}
+  } else { random_geometry_query_point(path) }
+  if !strokes {
+   fill := rand.intn(4) or { 0 }
+   query := cpuraster.Path{...base, fill_type: unsafe { cpuraster.PathFillType(fill) }}
+   values := [i32(segments.len/12), fill]
+   mut floats := [point.x, point.y]
+   floats << segments
+   expected := contains(values.data, floats.data) != 0
+   if expected { positive++ }
+   actual := query.contains(point.x, point.y)
+   if expected != actual {
+    description := 'contains ${i}: native=${expected}, V=${actual}; values=${values}; floats=${floats}'
+    save_failure([], [], [], description)
+    return error(description)
+   }
+   continue
+  }
+  areas := rand.intn(5) or { 0 }
+  cap, join := rand.intn(5) or { 0 } - 1, rand.intn(5) or { 0 } - 1
+  width := [f32(0), -1, .001, .75, 2.5, 4, 20, f32(rand.f64()*30)][rand.intn(8) or { 0 }]
+  miter := [f32(-1), 0, .5, 1, 4, 10][rand.intn(6) or { 0 }]
+  dashes := if i % 3 == 0 { random_dashes() } else { []f32{} }
+  phase := random_dash_offset()
+  values := [i32(segments.len/12), int(even_odd), areas, cap, join, int(non_scaling), dashes.len]
+  mut floats := [point.x, point.y, width, miter, phase]
+  floats << transform[..]
+  floats << segments
+  floats << dashes
+  expected := hit(values.data, floats.data) != 0
+  if expected { positive++ }
+  actual := cpuraster.path_hit_test(cpuraster.PathHitTest{path: base, x: point.x, y: point.y,
+   areas: u8(areas), width: width, miter: miter, dashes: dashes, dash_offset: phase,
+   cap: if cap == 0 { cpuraster.StrokeCap.butt } else if cap == 1 { cpuraster.StrokeCap.round } else { cpuraster.StrokeCap.square },
+   join: if join == 0 { cpuraster.StrokeJoin.round } else if join == 1 { cpuraster.StrokeJoin.bevel } else { cpuraster.StrokeJoin.miter },
+   non_scaling: non_scaling, transform: transform})
+  if expected != actual {
+   description := 'path hit ${i}: native=${expected}, V=${actual}; values=${values}; floats=${floats}'
+   save_failure([], [], [], description)
+   return error(description)
+  }
+ }
+ println('${if strokes { "path hits" } else { "path containment" }}: ${count} exact queries (${positive} true)')
 }

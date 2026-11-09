@@ -362,6 +362,37 @@ static void oracle_draw_path(uint8_t* pixels, int const* a, float const* f, bool
 // The production Canvas2D raster path (skia/canvas_raster.cpp).
 #include "../../skia/canvas_raster.cpp"
 
+ORACLE int oracle_path_contains(int const* v, float const* f) {
+    SkPathBuilder builder(make_path(VoxCanvasPath{f + 2, v[0], v[1] & 1}));
+    builder.setFillType(static_cast<SkPathFillType>(v[1]));
+    return builder.detach().contains(f[0], f[1]) ? 1 : 0;
+}
+
+// The removed production geometry query, with array transport for V's ABI.
+ORACLE int oracle_path_hit(int const* v, float const* f) {
+    if (v[0] <= 0 || !std::isfinite(f[0]) || !std::isfinite(f[1]))
+        return 0;
+    auto path = make_path(VoxCanvasPath{f + 11, v[0], v[1]});
+    if (v[5])
+        path = path.makeTransform(make_matrix(f + 5));
+    if ((v[2] & 1) && path.contains(f[0], f[1]))
+        return 1;
+    if (!(v[2] & 2) || !std::isfinite(f[2]) || f[2] <= 0)
+        return 0;
+    SkPaint paint;
+    paint.setStyle(SkPaint::kStroke_Style);
+    paint.setStrokeWidth(f[2]);
+    paint.setStrokeCap(v[3] == 0 ? SkPaint::kButt_Cap : v[3] == 1 ? SkPaint::kRound_Cap : SkPaint::kSquare_Cap);
+    paint.setStrokeJoin(v[4] == 0 ? SkPaint::kRound_Join : v[4] == 1 ? SkPaint::kBevel_Join : SkPaint::kMiter_Join);
+    paint.setStrokeMiter(f[3]);
+    if (v[6] > 0)
+        paint.setPathEffect(SkDashPathEffect::Make({f + 11 + v[0] * 12, size_t(v[6])}, f[4]));
+    SkPathBuilder stroke;
+    if (!skpathutils::FillPathWithPaint(path, paint, &stroke))
+        return 0;
+    return stroke.detach().contains(f[0], f[1]) ? 1 : 0;
+}
+
 ORACLE void oracle_canvas_path_geometry(float const* segments, int const* args,
                                        uint8_t* verbs, float* points, float* weights, int* info) {
     auto path = make_path(VoxCanvasPath{segments, args[0], args[1]});
