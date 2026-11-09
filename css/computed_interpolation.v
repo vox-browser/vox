@@ -12144,6 +12144,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 			}
 		}
 	}
+	underlying_transition_samples := capture_transition_underlying_samples(properties,abstract_element,s.css_transition_storage_)
 	if s.css_transition_storage_ != unsafe { nil } {
 		for existing in s.css_transition_storage_.transitions_for(abstract_element) {
 			mut transition := unsafe { existing }
@@ -12190,6 +12191,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 				if !initial_fallback { s.start_needed_transitions(old_style, mut properties, abstract_element) }
 			}
 		}
+		restore_cancelled_transition_samples(mut properties,abstract_element,transition_storage,underlying_transition_samples)
 	}
 
 	return properties
