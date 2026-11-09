@@ -3789,8 +3789,9 @@ pub fn Size.from_style_value(value StyleValue) Size {
 		PercentageStyleValue { Size.make_percentage(value.percentage()) }
 		LengthStyleValue { Size.make_length(value.length()) }
 		AnchorSizeStyleValue {
-			// FIXME: Resolve anchor-size() once anchor positioning is available.
-			Size.make_none()
+			// Anchor queries are supplied separately by absolute layout. Other
+			// sizing contexts consume the function's fallback or the auto value.
+			if fallback := value.fallback_value() { Size.from_style_value(fallback) } else { Size.make_auto() }
 		}
 		else { Size.make_auto() }
 	}

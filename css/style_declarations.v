@@ -1369,7 +1369,7 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 		}
 
 		property_id := property.id() or { return none }
-		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id)
+		needs_layout := generated_property_needs_layout_for_getcomputedstyle(property_id) || property_id in [.min_width,.min_height,.max_width,.max_height]
 		needs_layout_node := generated_property_needs_layout_node_for_resolved_value(property_id) || property_is_logical_alias(property_id) || property_is_shorthand(property_id)
 		scope := css_style_scope_for(owner)
 		needs_container_query_layout := scope.have_size_container_queries()
@@ -1725,6 +1725,19 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		return properties.style_value_for_computed_property(layout_node, physical)
 	}
 
+	if property_id in [.min_width,.min_height,.max_width,.max_height] {
+		if raw := computed.property(property_id,.yes) {
+			if raw.css_text.contains('anchor-size(') || raw.css_text.contains('anchor(') {
+				callback := layout_node.bridge_callbacks().anchor_size_value_callback
+				if callback != unsafe { nil } {
+					if text := callback(layout_node.real_layout_handle(),string_from_property_id(property_id)) {
+						return &dom.StyleValue{css_text:text}
+					}
+				}
+				return computed_interpolation_property_initial_value(property_id)
+			}
+		}
+	}
 	display_allows_used_value := !computed.display().is_none() && !computed.display().is_contents() && layout_node.has_geometry_
 	margin := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
 	padding := computed.length_box(.padding_left, .padding_top, .padding_right, .padding_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
