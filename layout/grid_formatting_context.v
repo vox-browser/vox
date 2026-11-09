@@ -3414,8 +3414,14 @@ fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,defini
  maximum := style.size_value(if horizontal { .max_width } else { .max_height })
  mut min_bound := ?CSSPixels(none)
  mut max_bound := ?CSSPixels(none)
- if !minimum.contains_percentage() && !minimum.is_auto() { min_bound = resolve_layout_size(node,minimum,basis) }
- if !maximum.contains_percentage() && !maximum.is_none() { max_bound = resolve_layout_size(node,maximum,basis) }
+ if !minimum.is_auto() {
+  if minimum.contains_percentage() { if parent_basis := grid_repeat_explicit_parent_size(node,horizontal) { min_bound=resolve_layout_size(node,minimum,parent_basis) } }
+  else { min_bound=resolve_layout_size(node,minimum,basis) }
+ }
+ if !maximum.is_none() {
+  if maximum.contains_percentage() { if parent_basis := grid_repeat_explicit_parent_size(node,horizontal) { max_bound=resolve_layout_size(node,maximum,parent_basis) } }
+  else { max_bound=resolve_layout_size(node,maximum,basis) }
+ }
  edges := style.resolved_box_model_edges(basis.to_double())
  adjustment := if style.box_sizing() == .border_box {
   if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
@@ -3427,4 +3433,27 @@ fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,defini
  }
  if min_value := min_bound { return css_pixels_max(CSSPixels.new(0),min_value.minus(adjustment)),true,true }
  return basis,false,false
+}
+
+// A fixed computed containing-block size can resolve a percentage constraint
+// before this grid has any geometry. Avoid consulting a previous layout pass.
+fn grid_repeat_explicit_parent_size(node &Node,horizontal bool) ?CSSPixels {
+ parent := node.containing_block() or { return none }
+ container := unsafe { &Node(parent) }
+ style := container.computed_values()
+ value := style.size_value(if horizontal { .width } else { .height })
+ if !value.is_length() || value.contains_percentage() { return none }
+ mut size := resolve_layout_size(container,value,CSSPixels.new(0)) or { return none }
+ minimum := style.size_value(if horizontal { .min_width } else { .min_height })
+ maximum := style.size_value(if horizontal { .max_width } else { .max_height })
+ if !maximum.contains_percentage() { if bound := resolve_layout_size(container,maximum,CSSPixels.new(0)) { size=css_pixels_min(size,bound) } }
+ if !minimum.contains_percentage() { if bound := resolve_layout_size(container,minimum,CSSPixels.new(0)) { size=css_pixels_max(size,bound) } }
+ if style.box_sizing()==.border_box {
+  for property in [css.PropertyID.padding_left,.padding_right,.padding_top,.padding_bottom] {
+   if value_ := style.property(property,.yes) { if value_.css_text.contains('%') { return none } }
+  }
+  edges := style.resolved_box_model_edges(0)
+  size = size.minus(if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) } else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) })
+ }
+ return css_pixels_max(CSSPixels.new(0),size)
 }
