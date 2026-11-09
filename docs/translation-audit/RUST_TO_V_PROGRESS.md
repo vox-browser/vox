@@ -470,3 +470,23 @@ LF/reference frames, extra channels/alpha, sampling/resampling, feature streams,
 broader composition, large entropy maps and production image integration remain.
 Removal of all Rust dependencies remains unfinished; no browser validation or
 complete production replacement is claimed.
+
+## LF reference frames on 2026-11-09
+
+Four further V slices add modular XYB conversion, shared restoration, explicit
+VarDCT LF dependencies and complete-file LF ownership. The Guardian photo now
+matches the pinned native decoder's entire 98×98 RGBA image, including nonzero
+HF content. All 25 whole-file references compare 1,613,956 native RGBA bytes
+exactly. Another 512 conversion cases compare 130,560 complete float words,
+bringing the package to 282,354 source records and 78 test files.
+
+The final seven-file focused selection passes both GC modes and `-prod`, with
+test/guard exits zero and 299 unchanged inputs. Cadence is 4/10 after the
+74-file checkpoint; no full 78-file run is claimed. Source pins, corrected test
+attempts, exact coverage and remaining bounds are in
+[the LF reference report](JPEGXL_V_LF_REFERENCES.md).
+
+Production JPEG XL and its Cargo/CI/native developer tool still need Rust.
+Wider reference composition, alpha/extra channels, sampling/resampling, feature
+streams, large entropy maps and production integration remain. Removing every
+Rust dependency, including developer tools, remains unfinished.

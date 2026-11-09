@@ -100,3 +100,14 @@ remain unchanged, completing the ten-slice checkpoint and resetting cadence
 to 0/10. See [the frame report](../docs/translation-audit/JPEGXL_V_FRAME_ASSEMBLY.md).
 This checks the V layers; the production pixel decoder and its native developer
 test still require Rust.
+
+Four further LF-reference slices add 512 modular XYB cases and the existing
+Guardian photo's complete native RGBA hash. The count is 282,354 source records
+and 78 test files. All 130,560 new conversion float words and all 38,416 photo
+bytes compare exactly. The photo exercises modular LF ownership and nonzero HF
+reconstruction; the preceding 24 whole-image references remain exact. The final
+seven-file selection passes default/no-GC/optimized checks with unavailable Rust
+compiler paths, actual test/guard exits zero and 299 unchanged inputs. Cadence
+is 4/10; the full 78-file selection has not run. Frozen verification uses V
+alone. Production JPEG XL and its native developer test still use Rust.
+See [the LF reference report](../docs/translation-audit/JPEGXL_V_LF_REFERENCES.md).

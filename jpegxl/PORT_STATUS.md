@@ -482,8 +482,24 @@ ten-slice checkpoint and resets cadence to 0/10.
 [The frame-assembly report](../docs/translation-audit/JPEGXL_V_FRAME_ASSEMBLY.md)
 records exact coverage, limits, input identities and executed results.
 
-LF/reference frames, extra channels/alpha, sampling/resampling, feature streams,
-broader composition, large entropy maps and production integration remain.
+Four later slices add modular XYB conversion, shared restoration, explicit
+VarDCT LF plane dependencies and complete-file LF reference ownership. LF level
+N saves restored source-space floats in slot N-1; VarDCT level N reads slot N,
+skipping LF entropy and smoothing and retaining zero quant-LF contexts. Both
+modular XYB and VarDCT LF frames can supply the bounded 4:4:4, unit-upsampled
+opaque output path. The existing Guardian photo now matches all 38,416 native
+RGBA bytes exactly, including its nonzero HF content. The prior 24 image
+references remain exact. Another 512 source cases compare all 130,560 modular
+XYB float words exactly, preserving integer storage wrapping and f32 sum order.
+
+The count is now 282,354 source records and seventy-eight test files. The final
+seven-file focused selection passes both GC modes and `-prod`, with tests and
+3 GiB guards exiting zero and all 299 inputs unchanged. Cadence is 4/10 after
+the full seventy-four-file checkpoint; no full seventy-eight-file run is
+claimed. See [the LF reference report](../docs/translation-audit/JPEGXL_V_LF_REFERENCES.md).
+
+Wider reference composition, extra channels/alpha, sampling/resampling, feature
+streams, large entropy maps and production integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
