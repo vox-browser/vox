@@ -31,7 +31,7 @@ fn publish_flex_content_baselines(mut state LayoutState, container &Node, mut va
   for item in lines[index].items {
    styled := item.as_node_with_style() or { continue }
    used := state.get(styled)
-   aligned := row_axis && flex_item_participates_in_baseline_alignment(container,item)
+   aligned := flex_item_participates_in_baseline_alignment(container,item)
    if has_aligned && !aligned { continue }
    coordinate := if row_axis { used.offset.x() } else { used.offset.y() }
    if candidate == none || (aligned && !has_aligned) || (if low_edge { coordinate.raw_value() < edge.raw_value() } else { coordinate.raw_value() >= edge.raw_value() }) {
@@ -62,10 +62,10 @@ fn flex_row_baseline_alignment_delta(state &LayoutState, container &Node, subjec
  for item in line.items {
   if !flex_item_participates_in_baseline_alignment(container,item) || flex_baseline_preference(container,item) != preference { continue }
   used := state.get(item.as_node_with_style() or { continue })
-  baseline := layout_box_baseline(state,item,preference)
+  baseline := grid_baseline_from_low(state,container,item,false,preference,0)
   maximum = css_pixels_max(maximum,if preference == .last { used.margin_box_height().minus(baseline) } else { baseline })
  }
- baseline := layout_box_baseline(state,subject,preference)
+ baseline := grid_baseline_from_low(state,container,subject,false,preference,0)
  target := if preference == .last { cross_size.minus(maximum) } else { maximum }
  return target.minus(baseline)
 }

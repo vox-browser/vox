@@ -39,3 +39,18 @@ fn test_flex_logical_directions_project_main_cross_axes_and_gaps() {
   assert actual == entry[3], '${entry[0]} ${entry[1]} ${entry[2]}: ${actual}'
  }
 }
+
+fn test_wrapped_vertical_flex_prefers_the_shared_baseline_in_the_visual_line() {
+ for preference in ['first','last'] {
+  for wrap in ['wrap','wrap-reverse'] {
+   for alignment in ['first','last'] {
+    mut document := html.parse_document('<!doctype html><style>body{margin:0}#outer{display:grid;grid-auto-flow:column;writing-mode:vertical-rl;align-items:${preference} baseline;line-height:0;font-size:20px;inline-size:200px}span{display:inline-block;width:1em;height:1em}#inner{display:flex;inline-size:140px;flex-wrap:${wrap};gap:10px;border:5px solid;padding:10px}.aligned{margin-block:10px;align-self:${alignment} baseline}</style><div id="outer"><div id="a"><span></span></div><div id="inner"><div style="font-size:10px"><span></span></div><div class="aligned" style="font-size:30px"><span></span></div><div style="font-size:50px"><span></span></div><div style="font-size:60px"><span></span></div><div class="aligned" style="font-size:40px"><span></span></div><div style="font-size:20px"><span></span></div></div></div>')
+    defer { document.finalize() }
+    _ = layout_document_typed_in_viewport(document,800,600)
+    x := (document.get_element_by_id('a') or { panic('a') }).get_bounding_client_rect().x
+    expected := if preference == 'first' { if wrap == 'wrap' { 100.0 } else { 95.0 } } else { if wrap == 'wrap' { 35.0 } else { 30.0 } }
+    assert x == expected, '${preference} ${wrap} ${alignment}: ${x}'
+   }
+  }
+ }
+}
