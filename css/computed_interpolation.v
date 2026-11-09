@@ -7200,6 +7200,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from_shape is BasicShapePath && to_shape is BasicShapeCommands { from_shape=BasicShape(shape_commands_from_svg_path(from_shape) or { return none }) }
 				mut interpolated_shape := ?BasicShape(none)
 				match from_shape {
+					BasicShapePath {
+						if to_shape !is BasicShapePath { return none }
+						interpolated_shape = BasicShape(interpolate_basic_shape_path(from_shape, to_shape, delta) or { return none })
+					}
 					BasicShapeCommands {
 						if to_shape !is BasicShapeCommands { return none }
 						interpolated_shape = BasicShape(interpolate_shape_commands(basic_shape_context,from_shape,to_shape,delta) or { return none })
@@ -7575,6 +7579,15 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 }
 
 pub fn interpolate_style_value(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	if calculation_context.property == .shape_outside {
+		first := shape_outside_without_default_box(from)
+		last := shape_outside_without_default_box(to)
+		if shape_outside_reference_box(first) != shape_outside_reference_box(last) {
+			return interpolate_discrete_style_value(first, last, delta, allow_discrete)
+		}
+		if value := interpolate_style_value_impl(calculation_context, first, last, delta, allow_discrete) { return value }
+		return interpolate_discrete_style_value(first, last, delta, allow_discrete)
+	}
 	if result := interpolate_style_value_impl(calculation_context, from, to, delta, allow_discrete) {
 		return result
 	}
@@ -12791,6 +12804,7 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 	}
 
 	return match property_id {
+		.shape_outside { dom_style_value_from_value_logic(shape_outside_without_default_box(typed_absolutized_value)) }
 		.animation_range_start, .animation_range_end { compute_animation_range_endpoint(absolutized_value, property_id == .animation_range_start) }
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)
