@@ -49,6 +49,50 @@ Failures, harness errors, timeouts and missing results remain failures.
 Native pages use 2 GiB / 80 second guards; the outer 3 GiB guard completed
 cleanly with 487,407,616 bytes peak RSS over 254.05 seconds.
 
+## Latest complete native run
+
+The latest complete native run passes **155/200 pages** and
+**5,656/6,038 assertions**, up from the 50/200 baseline. Acceptance remains
+incomplete. All eight masking pages, all nine multicolumn pages, all nineteen
+positioning pages, all nineteen highlight API pages and all six overscroll
+pages pass in this run. Both grid-lanes track-animation pages also pass all
+726 assertions each within the existing harness timeout (5.37 and 5.70 seconds).
+
+This run uses the C `-O1` native executable SHA-256
+`fcb44ba47a82f82f5d6e32d09eea05167112ea1b36113cfc1fdc7012383b653a`.
+It exercises native navigation, DOM/CSS/layout, JavaScriptCore and the HTML
+event loop with a fresh profile for every page. It does not validate GUI or
+painting behavior. The outer guard completed in 172.38 seconds, with
+508,690,432 bytes sampled peak RSS. Executable, controller, server and fixture
+identities remained unchanged throughout the run. Later edits are pending
+validation and are not included in this count.
+
+Original fixtures and assertions remain unchanged. Four selected pages invoke
+functions missing from Ladybird's own pinned `testing-utils.js`:
+`column-flex-track-intrinsic-sizes`, `row-flex-track-intrinsic-sizes`,
+`column-intrinsic-track-sizes` and `row-intrinsic-track-sizes` under
+`css/css-grid/grid-lanes/items/`. They call
+`TestingUtils.testGridTemplateColumns` or `TestingUtils.testGridTemplateRows`;
+the imported support file exports only `testGridTemplateColumnsRows` and
+`testGridTemplateAreas`. These pages register no assertions and remain
+failures. Engine code does not inject replacements for the missing helpers.
+
+Two tentative resolved-template pages also expect `none` for the same grid
+markup for which their non-tentative counterparts require used track sizes.
+Both expectations remain visible in the cohort; the engine does not select
+behavior by test URL. Other grid, inline-layout, logical-animation and overflow
+failures still require investigation.
+
+Complete evidence through native run 5 is archived under
+`~/.cache/vox/wpt/batch501-700-20261109/evidence-through-r5/`. Runs 6–10,
+focused checks and completed build receipts are archived under
+`~/.cache/vox/wpt/batch501-700-20261109/evidence-r6-r10/`, including
+the earlier `batch501-700-native-r10-full/{summary,cases,identity}.json` and
+its executable under `batch501-700-core/native-r10-tests`. The latest run is
+currently under `Build/batch501-700-native-r12-full/` with its executable at
+`Build/batch501-700-core/native-r12-tests`. Paths recorded inside
+older receipts refer to their original temporary `Build/` locations.
+
 ## Provenance and reproduction
 
 Fixtures are exported without changing the upstream checkout to
