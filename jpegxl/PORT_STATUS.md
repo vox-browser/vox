@@ -624,6 +624,22 @@ and 662 unchanged inputs. Field construction, convolution and whole-file noise
 integration remain. Cadence is 9/10; no full ninety-three-file run is claimed.
 See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
 
+The next slice constructs and convolves noise fields and applies them after
+image upsampling but before color conversion. Twenty-eight native files compare
+all 2,477,600 straight/paint RGBA bytes exactly: seven zero-LUT controls retain
+base pixels and all 21 nonzero-LUT images change. Alpha, orientation, permuted
+TOCs, multiple LF owners and 1x/2x/4x/8x image sampling execute. Output fixes the
+verified BF16 reference profile across hosts; other original SIMD profiles may
+differ. Noisy LF/modular/non-XYB output remains unsupported.
+
+The count is 285,019 source records and ninety-four test files. Focused checks
+pass both GC modes and optimized builds with actual exits zero and 693 unchanged
+final inputs. Default coverage composes three retained passes with the corrected
+noise file; the original zero-shape failure has no whole-batch pass credit.
+This reaches 10/10 after the full eighty-four-file checkpoint. The required full
+ninety-four-file default/no-GC checks are pending; cadence has not reset.
+See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
+
 Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
 extra channels, resampled LF alpha, LF original-profile modular rendering,
 wider chroma combinations, feature streams, large entropy maps and production

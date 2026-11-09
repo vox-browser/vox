@@ -208,3 +208,13 @@ operation, with native gold unchanged. Cadence is 9/10; no full 93-file run is
 claimed. Whole-file noise and production/native developer-tool replacement
 remain unfinished.
 See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
+
+Complete VarDCT noise adds 28 native files and 2,477,600 exact straight/paint
+RGBA bytes: 285,019 records and 94 JPEG XL test files total. The original parser
+verifies independently rewritten headers/TOCs; zero controls retain base pixels
+and every nonzero-LUT file changes its native image. Focused default/no-GC/
+optimized checks pass with actual exits zero and 693 unchanged final inputs;
+the original failed default batch retains no whole-run credit. This reaches
+10/10 after the 84-file checkpoint. Required full 94-file checks are pending;
+no cadence reset is claimed. Production and its native tool still use Rust.
+See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).

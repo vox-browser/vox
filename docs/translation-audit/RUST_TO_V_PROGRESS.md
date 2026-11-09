@@ -666,3 +666,23 @@ checkpoint; no full 93-file run is claimed.
 precision limits and checks. Fields/convolution, whole-file noise, patches/
 splines, composition and production/tool integration remain. Production JPEG XL
 and its native developer tool still require Rust.
+
+## Complete JPEG XL VarDCT noise on 2026-11-09
+
+The next slice constructs seeded random fields, convolves them and applies
+noise before color conversion. Twenty-eight native files compare 2,477,600
+straight/paint RGBA bytes exactly, including controls, alpha, orientation,
+permuted TOCs, multiple LF owners and image upsampling. The package has 285,019
+records and 94 test files. Whole output fixes the verified BF16 reference
+profile; native scalar/AVX full-table output may differ. Noisy LF/modular/non-XYB
+frames remain unsupported.
+
+Focused checks pass both GC modes and optimized builds with actual exits zero
+and 693 unchanged final inputs. Default coverage combines three retained passes
+with the corrected noise file; the original failed batch retains no whole-run
+credit. This reaches 10/10 after the 84-file checkpoint. Required full 94-file
+checks are pending; cadence has not reset.
+[The whole-noise report](JPEGXL_V_NOISE_FRAMES.md) records source/tool pins,
+independent header verification, failures and checks. Patches/splines, reference
+composition, wider channels/LF combinations and production/tool integration
+remain. Production JPEG XL and its native developer tool still require Rust.
