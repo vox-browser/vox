@@ -32,29 +32,22 @@ fn test_upstream_testharness_in_native_document() {
 	loaded := fetch_page(address, '')!
 	url := dom.URL{value: loaded.url}
 	mut owner := page.Page.create(1)!
-	mut document := parse_loaded_browser_navigation_document(loaded, url, none, none, unsafe { &dom.Page(owner) }, true)
+	prepared := prepare_loaded_browser_navigation_document(loaded, url, none, none, unsafe { &dom.Page(owner) }, true)
+	mut document := prepared.document
 	owner.set_local_root_navigable(document.navigable() or { panic('missing root navigable') })!
 	assert document.is_fully_active()
 	document.update_the_visibility_state(.visible)
 	document.set_viewport_rect(dom.Rect{0, 0, 800, 600})
-	mut service := &BrowserHostedDocument{document: document}
+	mut service := new_browser_hosted_document(document,.javascriptcore)
 	mut manager := browser_child_document_host(document, .javascriptcore)
 	defer { manager.close(); service.close(); document.finalize() }
 	mut messages := []string{}
-	service.start_resources()
 	deadline := time.now().add(70 * time.second)
-	// Match the browser's initial resource preload boundary: parser completion
-	// tasks must not dispatch load before the scripts install their listeners.
-	for !service.initialized {
-		service.initialize(.javascriptcore, mut messages)
-		assert time.now() < deadline, 'initial resources did not finish'
-		time.sleep(time.millisecond)
-	}
-	// Native Page checks need the same initial rendering opportunity as a
-	// windowed navigation, including layout-dependent FontFaceSet.ready.
-	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
+	parse_prepared_browser_navigation_document(prepared)
+	_ = layout.layout_document_typed_in_viewport(document,800,600)
 	for {
 		service.poll(mut messages)
+		service.initialize(mut messages)
 		manager.poll(mut messages)
 		html.main_thread_event_loop().process()
 		mut client := owner.client()
