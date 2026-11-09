@@ -3612,33 +3612,6 @@ pub fn (style_value SuperellipseStyleValue) parameter() f64 {
 }
 
 pub fn (style_value SuperellipseStyleValue) serialize(mode SerializationMode) string {
-	if mode == .resolved_value && style_value.parameter_[0].is_number() {
-		number := style_value.parameter_[0].as_number().number()
-
-		if number == 1 {
-			return 'round'
-		}
-
-		if number == 2 {
-			return 'squircle'
-		}
-
-		if math.is_inf(number, 1) {
-			return 'square'
-		}
-
-		if number == 0 {
-			return 'bevel'
-		}
-
-		if number == -1 {
-			return 'scoop'
-		}
-
-		if math.is_inf(number, -1) {
-			return 'notch'
-		}
-	}
 
 	mut serialized := 'superellipse('
 	if !style_value.parameter_[0].is_number() {
