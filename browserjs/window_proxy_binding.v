@@ -56,6 +56,9 @@ fn window_proxy_binding_factory() string {
     if(/^(0|[1-9][0-9]*)$/.test(key))return operate("index",proxy,key);
     const value=operate("get",proxy,key);
     if(typeof value!=="function")return value;
+    // Constructors must retain their identity: caught errors expose the
+    // original constructor through the prototype constructor property.
+    if(Object.prototype.hasOwnProperty.call(value,"prototype"))return value;
     let wrapped=functions.get(value);
     if(!wrapped){
      wrapped=new Proxy(value,{apply(callee,receiver,args){return apply(callee,receiver===proxy?operate("realmGlobal",proxy):receiver,args)}});
