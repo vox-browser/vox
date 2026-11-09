@@ -1119,7 +1119,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		})
 	}
 
-	pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter,
+	pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter, .first_line,
 		.backdrop, .marker]!
 	process_backdrop := element.rendered_in_top_layer()
 	process_marker := had_list_marker || computed.display().is_list_item()
@@ -1204,7 +1204,12 @@ struct InheritedStyleOldValue {
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
-	if s.target_animation_uses_inherited_endpoints(*abstract_element) {
+	// A first-line style inherits through the originating element as well.
+	// Refresh its cascade alongside inherited font/color changes instead of
+	// leaving layout with the previous pseudo's immutable font snapshot.
+	if s.target_animation_uses_inherited_endpoints(*abstract_element)
+		|| (abstract_element.pseudo_element() == none
+			&& computed_properties_for_pseudo_element(abstract_element.element(), .first_line) != none) {
 		mut changed_custom_properties := false
 		invalidation,_ := s.recompute_style_with_invalidation(mut abstract_element,&changed_custom_properties)
 		return invalidation

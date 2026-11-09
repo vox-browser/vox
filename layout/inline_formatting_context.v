@@ -164,14 +164,16 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	writing_mode := containing_block.computed_values().writing_mode()
 	mut item_buffers := acquire_inline_item_buffers(unsafe { &Node(containing_block) }.document())
 	mut iterator := new_inline_iterator_with_item_storage(mut state, containing_block, containing_block_used_values, layout_mode, available_space, parent_block_context, item_buffers.arena)
+	first_line_style_source := iterator.prepare_first_line_items()
 	// This iterator's item records are consumed by value. Published line
 	// fragments retain their own node and glyph references, so the temporary
 	// outer item buffer has no owner after this formatting run completes.
 	defer {
-		if item_buffers.arena == unsafe { nil } { unsafe { iterator.items.free() } }
+		iterator.release_item_vectors()
 		item_buffers.finish()
 	}
 	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, if writing_mode == .horizontal_tb { available_space.width } else { available_space.height }, direction, writing_mode, parent_block_context)
+	line_builder.first_line_style_source = first_line_style_source
 	line_builder.intrinsic_width_only = width_only
 	wrap_breaks := optimized_text_wrap_breaks(containing_block, iterator, line_builder,
 		layout_mode, width_only, available_space, parent_block_context)
@@ -334,8 +336,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 			}
 			.text {
 				node := item.node or { continue }
-				text_node := node.as_text_node() or { continue }
-				style := text_node.Node.computed_values()
+				style := inline_item_style_source(item).computed_values()
 				if style.text_wrap_mode() == .wrap {
 					is_whitespace := item.is_all_whitespace
 					mut next_width := CSSPixels.new(0)
@@ -417,6 +418,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 						previous_text_item_allows_overflow_break_after = true
 					}
 				}
+				if iterator.resume_ordinary_items_after_break(item) { continue }
 				line_builder.append_text_item(item, style.line_height())
 			}
 		}

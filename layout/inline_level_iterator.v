@@ -22,6 +22,7 @@ pub struct InlineLevelItem {
 pub:
 	type_                     InlineLevelItemType
 	node                      ?&Node
+	style_source              ?&Node
 	glyph_run                 ?&platform.GlyphRun
 	offset_in_node            int
 	length_in_node            int
@@ -322,6 +323,7 @@ mut:
 	next_item_index                int
 	accumulated_width_for_tabs     CSSPixels
 	previous_chunk_can_break_after bool
+	first_line_items              ?&FirstLineItems
 }
 
 pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) &InlineLevelIterator {
@@ -413,6 +415,7 @@ fn (mut iterator InlineLevelIterator) generate_all_items() {
 }
 
 pub fn (mut iterator InlineLevelIterator) next() ?InlineLevelItem {
+	iterator.finish_first_line_before_next_item()
 	if iterator.next_item_index >= iterator.items.len {
 		return none
 	}
@@ -659,6 +662,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		if context.should_respect_linebreaks && chunk.has_breaking_newline {
 			return InlineLevelItem{
 				type_: .forced_break
+				node: current
+				offset_in_node: chunk.start
+				length_in_node: chunk.length
 			}
 		}
 		computed := text_node.Node.computed_values()
