@@ -52,13 +52,17 @@ fn stretch_fit_content_size(node &Node, used &UsedValues, available CSSPixels, w
 	// block's block axis, even when another condition prevents real collapse.
 	if node.is_in_flow() && !node.is_floating() && node.display().is_block_outside() {
 		if containing := used.containing_block_used_values_ {
-			parent := containing.node_
+			mut parent_values := containing
+			for parent_values.node_ != unsafe { nil } && unsafe { &Node(parent_values.node_) }.is_anonymous() {
+				parent_values = parent_values.containing_block_used_values() or { break }
+			}
+			parent := parent_values.node_
 			if parent != unsafe { nil } {
 				parent_node := unsafe { &Node(parent) }
 				if width == (parent.computed_values().writing_mode() != .horizontal_tb)
 					&& parent_node.display().is_flow_inside() && !creates_block_formatting_context(parent) {
-					first_edge := if width { containing.border_left.plus(containing.padding_left) } else { containing.border_top.plus(containing.padding_top) }
-					last_edge := if width { containing.border_right.plus(containing.padding_right) } else { containing.border_bottom.plus(containing.padding_bottom) }
+					first_edge := if width { parent_values.border_left.plus(parent_values.padding_left) } else { parent_values.border_top.plus(parent_values.padding_top) }
+					last_edge := if width { parent_values.border_right.plus(parent_values.padding_right) } else { parent_values.border_bottom.plus(parent_values.padding_bottom) }
 					if first_edge.raw_value() == 0 { first = CSSPixels.new(0) }
 					if last_edge.raw_value() == 0 { last = CSSPixels.new(0) }
 				}

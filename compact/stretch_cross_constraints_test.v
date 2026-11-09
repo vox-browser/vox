@@ -18,6 +18,27 @@ fn test_stretch_cross_constraints_follow_final_flex_lines() {
 	}
 }
 
+fn test_stretch_uses_constrained_automatic_single_flex_line_height() {
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{display:flex;width:100px;max-height:100px}.target{flex:none;margin:5px;border:3px solid;padding:2px}#preferred{height:stretch}#minimum{height:0;min-height:stretch}#maximum{height:500px;max-height:stretch}</style><div id="cb"><div id="preferred" class="target">X X</div><div id="minimum" class="target">X X</div><div id="maximum" class="target">X X</div></div>')
+	defer { document.finalize() }
+	_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+	for id in ['preferred', 'minimum', 'maximum'] {
+		r := (document.get_element_by_id(id) or { panic(id) }).get_bounding_client_rect()
+		assert r.height == 90, '${id}: ${r.height}'
+	}
+}
+
+fn test_stretch_margin_edge_checks_skip_anonymous_block_wrappers() {
+	for bordered in [false, true] {
+		border := if bordered { 'border:3px solid' } else { '' }
+		mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{height:100px;width:100px;${border}}#target{height:stretch;margin:25px}</style><div id="cb"><div></div><span><div id="target"></div></span></div>')
+		_ = layout.layout_document_typed_in_viewport(document, 400, 300)
+		r := (document.get_element_by_id('target') or { panic('target') }).get_bounding_client_rect()
+		assert r.height == if bordered { 50 } else { 100 }, '${border}: ${r.height}'
+		document.finalize()
+	}
+}
+
 fn test_fixed_minimum_wins_over_stretch_maximum() {
 	mut document := html.parse_document('<!doctype html><style>body{margin:0}#cb{height:50px}#target{height:20px;min-height:70px;max-height:stretch}</style><div id="cb"><div id="target"></div></div>')
 	defer { document.finalize() }

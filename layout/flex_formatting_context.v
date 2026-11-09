@@ -1288,12 +1288,11 @@ fn clear_intrinsic_flex_item_line_boxes(mut state LayoutState, node &Node) {
 	}
 }
 
-// Intrinsic measurement of an inline flex container also supplies its atomic
-// inline block size and baseline to the parent IFC. Resolve an automatic block
-// size before the alignment phases, so min/max-height affect justify-content
-// and align-content rather than being applied only after item placement.
-fn resolve_inline_flex_auto_block_size_for_alignment(state &LayoutState, container &Node, container_state &UsedValues, available_space AvailableSpace, automatic_size CSSPixels) CSSPixels {
-	if !container.display().is_inline_outside() || !available_space.height.is_indefinite() {
+// Resolve an automatic flex block size before alignment. Both block and inline
+// flex containers apply min/max-height here so item placement uses the final
+// constrained size instead of the earlier intrinsic measurement.
+fn resolve_flex_auto_block_size_for_alignment(state &LayoutState, container &Node, container_state &UsedValues, available_space AvailableSpace, automatic_size CSSPixels) CSSPixels {
+	if !available_space.height.is_indefinite() {
 		return automatic_size
 	}
 	box := container.as_box() or { return automatic_size }
@@ -1549,8 +1548,13 @@ fn run_uncached_flex_formatting_context_with_mode(mut state LayoutState, contain
 	for cross_size in line_cross_sizes {
 		total_cross_size = total_cross_size.plus(cross_size)
 	}
-	resolved_automatic_cross_size := resolve_inline_flex_auto_block_size_for_alignment(state, container,
+	resolved_automatic_cross_size := resolve_flex_auto_block_size_for_alignment(state, container,
 		container_state, available_space, total_cross_size)
+	if container.computed_values().flex_wrap() == .nowrap && !container_state.has_definite_height()
+		&& available_space.height.is_indefinite() && line_cross_sizes.len == 1 {
+		line_cross_sizes[0] = resolved_automatic_cross_size
+		total_cross_size = resolved_automatic_cross_size
+	}
 	// https://drafts.csswg.org/css-flexbox-1/#definite-sizes
 	// Once the line cross sizes of an auto-height row flex container are known,
 	// each item's used cross size is definite for laying out its descendants.
@@ -1858,7 +1862,7 @@ fn run_column_flex_formatting_context(mut state LayoutState, container &Node, mu
 	mut main_size := container_height or {
 		flex_intrinsic_main_size_of_column_container(mut state, items, bases, edges, contributions, row_gap)
 	}
-	main_size = resolve_inline_flex_auto_block_size_for_alignment(state, container, container_state,
+	main_size = resolve_flex_auto_block_size_for_alignment(state, container, container_state,
 		available_space, main_size)
 
 	line.targets = resolve_flexible_lengths(mut state, line, main_size, edges, row_gap, container_height, false)
