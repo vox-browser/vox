@@ -552,7 +552,7 @@ __global remote_link_style_sheets = map[string]string{}
 pub fn set_remote_link_style_sheet(resolved_url string, css_text string) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	remote_link_style_sheets[resolved_url.clone()] = css_text.clone()
+	remote_link_style_sheets[resolved_url.clone()] = decode_stylesheet_response_text(css_text)
 }
 
 pub fn has_remote_link_style_sheet(resolved_url string) bool {

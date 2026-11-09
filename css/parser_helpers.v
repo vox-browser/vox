@@ -69,8 +69,16 @@ pub fn parse_component_values_list(parsing_params ParsingParams, text string) []
 // https://drafts.csswg.org/css-syntax/#css-decode-bytes
 pub fn css_decode_bytes(environment_encoding ?string, mime_type_charset ?string, encoded_string []u8) !string {
 	mut fallback := ''
+	// The byte-order mark takes precedence over transport and @charset labels.
+	if encoded_string.len >= 2 && encoded_string[0] == 0xfe && encoded_string[1] == 0xff {
+		fallback = 'utf-16be'
+	} else if encoded_string.len >= 2 && encoded_string[0] == 0xff && encoded_string[1] == 0xfe {
+		fallback = 'utf-16le'
+	} else if encoded_string.len >= 3 && encoded_string[..3] == [u8(0xef), 0xbb, 0xbf] {
+		fallback = 'utf-8'
+	}
 	if charset := mime_type_charset {
-		fallback = encoding.get_an_encoding(charset) or { '' }
+		if fallback == '' { fallback = encoding.get_an_encoding(charset) or { '' } }
 	}
 	if fallback == '' {
 		scan_length := if encoded_string.len < 1024 { encoded_string.len } else { 1024 }
