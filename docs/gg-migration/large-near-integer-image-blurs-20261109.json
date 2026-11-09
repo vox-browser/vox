@@ -9394,7 +9394,7 @@
       "/home/alex.guest/code/v/v": "a6f1725568c223bb6134bc222b3e7e8d577fb8d26f57194a33b33591d98ec427"
     }
   },
-  "integration_status": "Pending: the comparison compiler exceeded the 12 GiB guard twice. The production compiler reported invalid calls in concurrent uncommitted CSS parser edits. These edits were preserved.",
+  "integration_status": "Pending: HTML integration compilation still exceeds the unchanged 12 GiB guard with both comparison and production compilers after concurrent CSS API errors were corrected. Plain error-message formatting did not help and was reverted. Raster and Linux component checks pass.",
   "failed_integration_checks": [
     {
       "name": "gg-srcnear-html",
@@ -9484,6 +9484,90 @@
         "css/parser_value_logic.v:960:47: error: unexpected `or` block, the function `to_keyword` does not return an Option or a Result",
         "css/parser_value_logic.v:965:46: error: expected 3 arguments, but got 2"
       ]
+    },
+    {
+      "name": "gg-srcnear-html-css-fixed",
+      "guard": {
+        "command": [
+          "/tmp/vox-gg-resampled-compiler-20261109/v",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/9bd9c5749090dee0/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "test",
+          "html/canvas_cpu_raster_test.v"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 12905922560,
+        "elapsed_seconds": 38.305287959,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "errors": []
+    },
+    {
+      "name": "gg-srcnear-html-production-css-fixed",
+      "guard": {
+        "command": [
+          "/Users/alex/code/vox2/Build/v/prealloc-runtime/c83469c5e6340f3dc4b81b4c60949ebf5aaaac0025e23d07cb69a0e749dc62ec/compiler/v",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/9bd9c5749090dee0/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "test",
+          "html/canvas_cpu_raster_test.v"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 12936019968,
+        "elapsed_seconds": 133.761320917,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "errors": []
+    },
+    {
+      "name": "gg-srcnear-html-error-messages",
+      "guard": {
+        "command": [
+          "/tmp/vox-gg-resampled-compiler-20261109/v",
+          "-b",
+          "c",
+          "-cc",
+          "clang",
+          "-enable-globals",
+          "-memory-limit",
+          "10G",
+          "-path",
+          "/Users/alex/code/vox2|/Users/alex/code/vox2/Build/v/httpcompat/9bd9c5749090dee0/modules|/Users/alex/code/vox2/Build/v/modules|@vmodules|@vlib",
+          "test",
+          "html/canvas_cpu_raster_test.v"
+        ],
+        "reason": "memory_limit",
+        "child_exit_code": -9,
+        "adopted_processes": {},
+        "adoption_error": null,
+        "limit_bytes": 12884901888,
+        "observed_peak_rss_bytes": 12925108224,
+        "elapsed_seconds": 54.472336625000004,
+        "metric": "sampled sum of process-tree RSS; shared pages may be counted twice"
+      },
+      "errors": []
     }
   ],
   "integration_alternate_compiler": {
@@ -12294,5 +12378,11 @@
       "/Users/alex/code/vox2/Build/gg-srcnear-final-linux/skia_cpu_oracle.so": "8612e8bba4357af525b08c0878e9571dafc1b90ca9c0134cb5af67d3b2177e06"
     }
   },
-  "input_manifest_format": "Take input_bases[base], remove omitted paths, then apply overrides."
+  "input_manifest_format": "Take input_bases[base], remove omitted paths, then apply overrides.",
+  "css_fix_retry_snapshot": {
+    "path": "/Users/alex/code/vox2/css/parser_value_logic.v",
+    "sha256": "cc932a3801c2daaad4f2c08ad7c0834ff89d390387fbc2ec6b6b9cc0034006ad",
+    "note": "Snapshot before retry after the invalid CSS calls were corrected"
+  },
+  "diagnostic_note": "Only panic(err) diagnostic formatting was experimentally changed in the HTML test. Every assertion remained enabled, the compile still exceeded the memory guard, and the formatting change was fully reverted."
 }

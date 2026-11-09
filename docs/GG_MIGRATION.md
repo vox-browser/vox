@@ -2077,8 +2077,12 @@ HTML integration remains pending. The pinned comparison compiler exceeded
 the unchanged 12 GiB aggregate guard twice. A fresh attempt with the production
 browser's compiler reached invalid `to_keyword()` and `StyleValueList.create()`
 calls in concurrent, uncommitted CSS parser edits. Those edits were preserved;
-all three unsuccessful attempts are retained. The earlier integration result
-predates this near-integer change and cannot validate it.
+the unsuccessful attempts are retained. After those API calls were corrected,
+both compilers still exceeded the same guard. An experiment using plain error
+messages instead of formatting error objects also exceeded it and was reverted;
+every assertion remained enabled. Integration validation therefore remains
+limited by compilation memory. The earlier integration result predates this
+near-integer change and cannot validate it.
 
 The Linux typecheck uses installed Skia development files. The shared bundle
 was not used to validate this slice, and complete browser compilation, linking
