@@ -10,23 +10,57 @@ pub:
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
-	checked_vardct_lf_rect(frame, 0)!
-	if !frame.is444() || frame.has_lf_frame() || frame.lf_level != 0 || frame.upsampling != 1
-		|| file.metadata.extra_channels.len != 0 || frame.extra_upsampling.len != 0 {
-		return error('JPEG XL VarDCT frame requires unsupported sampling, LF references or extra channels')
+	if frame.has_lf_frame() || frame.lf_level != 0 {
+		return error('JPEG XL VarDCT frame requires explicit LF reference ownership')
 	}
+	validate_vardct_frame_reference(file, frame, none)!
+}
+
+fn validate_vardct_frame_reference(file FileHeader, frame FrameHeader, reference ?[3]FloatPlane) ! {
+	checked_vardct_lf_rect(frame, 0)!
+	if !frame.is444() || frame.upsampling != 1 || file.metadata.extra_channels.len != 0
+		|| frame.extra_upsampling.len != 0 || (frame.lf_level != 0 && frame.frame_type != .lf)
+		|| (frame.has_lf_frame() && frame.lf_level >= 4) {
+		return error('JPEG XL VarDCT frame requires unsupported sampling or extra channels')
+	}
+	if frame.has_lf_frame() != (reference != none) { return error('Missing or unexpected JPEG XL LF reference') }
 	size := frame.size_padded()
-	if size.width < frame.width || size.height < frame.height || size.width == 0 || size.height == 0
+	actual := frame.size()
+	if size.width < actual.width || size.height < actual.height || size.width == 0 || size.height == 0
 		|| u64(size.width) * u64(size.height) > 67108864 / 3 {
 		return error('JPEG XL VarDCT frame exceeds the plane sample budget')
 	}
+	if planes := reference {
+		blocks := frame.size_blocks()
+		for plane in planes {
+			plane.validate()!
+			if plane.width != int(blocks.width) || plane.height != int(blocks.height) {
+				return error('Incorrect JPEG XL LF reference geometry')
+			}
+		}
+	}
+}
+
+fn referenced_lf_group(frame FrameHeader, group u64, reference [3]FloatPlane) !VarDctLfResult {
+	r := checked_vardct_lf_rect(frame, group)!
+	mut planes := []FloatPlane{cap: 3}
+	for plane in reference { planes << crop_float_plane(plane, int(r.x), int(r.y), int(r.width), int(r.height))! }
+	// The source leaves the LF quant-context map zero-initialized when the
+	// LF modular stream is replaced by a rendered reference frame.
+	return VarDctLfResult{ width: int(r.width), height: int(r.height), planes: planes,
+		quant_lf_contexts: []u8{len: int(r.width) * int(r.height)} }
 }
 
 // Assemble complete 4:4:4 frame planes before restoration/color conversion.
-// All progressive passes are consumed. LF references, extra channels, feature
-// streams, partial recovery and frame composition remain separate work.
+// All progressive passes are consumed. This entry point has no LF dependency;
+// the reference-aware entry point also handles non-visible LF frame levels.
 pub fn decode_vardct_frame(file FileHeader, frame FrameHeader, storage ModularStorage, mut sections []BitReader) !VarDctFramePlanes {
 	validate_vardct_frame_subset(file, frame)!
+	return decode_vardct_frame_with_lf(file, frame, storage, none, mut sections)
+}
+
+pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage ModularStorage, reference ?[3]FloatPlane, mut sections []BitReader) !VarDctFramePlanes {
+	validate_vardct_frame_reference(file, frame, reference)!
 	if sections.len != int(frame.num_toc_entries()) { return error('Incorrect JPEG XL VarDCT section count') }
 	combined := sections.len == 1
 	global := sections[0].read_lf_global(file, frame)!
@@ -37,7 +71,11 @@ pub fn decode_vardct_frame(file FileHeader, frame FrameHeader, storage ModularSt
 	mut low := []VarDctLfResult{cap: int(frame.num_lf_groups())}
 	for group in u64(0) .. frame.num_lf_groups() {
 		index := if combined { 0 } else { 1 + int(group) }
-		low << sections[index].read_vardct_lf(frame, group, file.metadata.bit_depth, context, storage, global.tree)!
+		low << if planes := reference {
+			referenced_lf_group(frame, group, planes)!
+		} else {
+			sections[index].read_vardct_lf(frame, group, file.metadata.bit_depth, context, storage, global.tree)!
+		}
 		// This subset has no modular LF channels between LF and metadata.
 		metadata << sections[index].read_hf_metadata(frame, group, file.metadata.bit_depth, storage, global.tree)!
 		if !combined { finish_modular_section(mut sections[index], index, false)! }
