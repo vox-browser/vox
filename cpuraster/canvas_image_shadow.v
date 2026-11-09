@@ -10,19 +10,19 @@ struct DeferredImageShadow {
 // An identity blur leaves the tint on the deferred source. A fractional
 // linear offset of a nearest source instead resolves that tinted input first.
 fn prepare_deferred_image_shadow(foreground FilterImageView, offset SkAffine, desired IRect, color u32, valid_blur bool) ?DeferredImageShadow {
-	needs_resolve := !foreground.default_sampling && !foreground.smoothing
-		&& !filter_nearly_integer_translation(offset)
 	bitmap := foreground.bitmap
-	if !foreground.layer_bounds.contains(map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, foreground.transform)) {
-		return none
-	}
+	image_bounds := map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, foreground.transform)
+	b := foreground.layer_bounds
+	cropped := foreground.layer_crop && !b.contains(image_bounds)
+		&& !filter_quad_contains_rect(offset, Rect{f32(b.left), f32(b.top), f32(b.right), f32(b.bottom)},
+			Rect{f32(desired.left), f32(desired.top), f32(desired.right), f32(desired.bottom)}).all(it)
+	needs_resolve := !filter_nearly_integer_translation(offset)
+		&& ((!foreground.default_sampling && !foreground.smoothing) || cropped)
 	shadow := FilterImageView{...foreground, transform: sk_concat(offset, foreground.transform),
 		layer_bounds: map_filter_bounds(foreground.layer_bounds, offset),
 		default_sampling: foreground.default_sampling || foreground.smoothing,
 		filter: if valid_blur { foreground.filter } else { none }, tint: color}
 	if !affine_is_finite(shadow.transform) { return none }
-	if !needs_resolve && !shadow.layer_bounds.contains(
-		map_filter_bounds(IRect{0, 0, bitmap.width, bitmap.height}, shadow.transform)) { return none }
 	mut resolved := ?FilterResult(none)
 	mut bounds := shadow.layer_bounds
 	if needs_resolve {

@@ -6,6 +6,7 @@ struct FilterImageView {
 	bitmap CanvasBitmap
 	transform SkAffine
 	layer_bounds IRect
+	layer_crop bool
 	default_sampling bool
 	smoothing bool
 	alpha f32 = 1
@@ -66,6 +67,26 @@ fn draw_color_filtered_image_with_bounds(mut pixels []u8, width int, height int,
 }
 
 fn draw_filter_image_view(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget) bool {
+	if view.layer_crop {
+		image := map_filter_bounds(IRect{0, 0, view.bitmap.width, view.bitmap.height}, view.transform)
+		clip := rc.bounds()
+		global := IRect{clip.left + origin_x, clip.top + origin_y, clip.right + origin_x, clip.bottom + origin_y}
+		if !view.layer_bounds.contains(image) && !view.layer_bounds.contains(global) {
+			// These deferred source views draw into merge/resolve surfaces.
+			// Clearing restores require resolving the crop before blending.
+			if blend_affects_transparent_black(mode) { return false }
+			mut clipped := *rc
+			b := view.layer_bounds
+			clipped.op_device_rect(Rect{f32(b.left - origin_x), f32(b.top - origin_y),
+				f32(b.right - origin_x), f32(b.bottom - origin_y)}, true)
+			if clipped.is_empty { return target.ready() }
+			return draw_filter_image_view_unclipped(mut pixels, pitch, &clipped, mode, view, origin_x, origin_y, mut target)
+		}
+	}
+	return draw_filter_image_view_unclipped(mut pixels, pitch, rc, mode, view, origin_x, origin_y, mut target)
+}
+
+fn draw_filter_image_view_unclipped(mut pixels []u8, pitch int, rc &RasterClip, mode BlendMode, view FilterImageView, origin_x int, origin_y int, mut target CanvasTarget) bool {
 	mut total := if origin_x == 0 && origin_y == 0 { view.transform } else {
 		sk_concat(affine_translate(-f32(origin_x), -f32(origin_y)), view.transform) }
 	// The default-sampling decision belongs to applyTransform(), before the

@@ -70,6 +70,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	bitmap := CanvasBitmap{...image, pixels: image.pixels[int(src.top) * image.pitch + int(src.left) * 4..],
 		width: int(src.right - src.left), height: int(src.bottom - src.top)}
 	foreground := FilterImageView{bitmap: bitmap, transform: total,
+		layer_crop: true,
 		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
 	reset := if stages.any(it.kind == .drop_shadow && (it.sigma < 0 || !is_finite_f32(it.sigma))) {
@@ -80,7 +81,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		return draw_deferred_image_shadow(mut pixels, width, height, pitch, alpha_type,
 			ctm, dst, foreground, mode, clips, step)
 	}
-	if filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
+	if real_blur && filter_nearly_integer_translation(total) && filter == none && !image.display_p3 && alpha == 1 {
 		// The blur can use the raw subset shortcut while a shadow's
 		// foreground retains its original mapping and sampling until merge.
 		near_step := CanvasFilterStep{...step, source_reset: reset,

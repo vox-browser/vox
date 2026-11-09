@@ -2,6 +2,7 @@ module cpuraster
 
 import crypto.sha256
 import json2
+import math
 
 // The pattern tests' background, image and clip triangle.
 fn image_test_background() []u8 {
@@ -1323,5 +1324,35 @@ fn test_resampled_rejected_shadows_reset_original_source_after_prior_filters() {
    image_test_bitmap(7, 6, false, i != 1), [f32(0), 0, 7, 6]!, destination,
    i == 1, if i == 1 { f32(.7) } else { f32(.65) }, mode, image_test_clips(i == 0), new_canvas_filter(steps), false)
   assert sha256.sum(pixels).hex()[..16] == hashes[i], 'rejected source reset ${i}'
+ }
+}
+
+
+fn test_deferred_source_layer_crops_match_native_resolve_and_offsets() {
+ bits := [[u32(1085067283), 1082968454, 1086745844, 1090940148],
+  [u32(1076837620), 1076337300, 1080834193, 1084229582],
+  [u32(1078835906), 1076337300, 1080834193, 1084229582]]
+ contrast := image_test_contrast_filter()
+ opacity := CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{clamp: true,
+  matrix: [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]!}}
+ shadow := CanvasFilterStep{kind: .drop_shadow, sigma: .01, offset_x: 5.25, offset_y: -3.75, color: 0x805030e0}
+ gaussian := CanvasFilterStep{kind: .blur, sigma: .8}
+ sequences := [[opacity, shadow], [contrast, shadow, opacity, gaussian],
+  [opacity, CanvasFilterStep{...shadow, sigma: -1}, gaussian],
+  [opacity, CanvasFilterStep{...shadow, sigma: .8}, gaussian]]
+ hashes := $if linux { ['7fa25b3afcf70974', 'ff202711441f1425', 'e9a48b9a15b48098', '030f88d9d77c6cc2', '5d8c9b12bd871571', '13e21e9efa7637f4', '454694f8f486415c', '4e47f5b286c15049', '03803f2bfe8fd947', 'e227f114505d2ce6', '428717f06c4023fc', '4e345290a5870197'] } $else { ['4df34ad3170908fa', '8e7893ef665e07b6', 'eacd8fde217cf3fe', '030f88d9d77c6cc2', '925ff7120103e699', '62bbcb7ecc229498', '8f76dc9ca3585f3c', '4e47f5b286c15049', '65c6352c1aadf86d', 'e227f114505d2ce6', 'e4f3f15a9d09e674', '4e345290a5870197'] }
+ for index in 0 .. 3 {
+  b := bits[index].map(math.f32_from_bits(it))
+  scale := math.f32_from_bits(if index == 0 { u32(1067450368) } else { u32(1074161254) })
+  for variant, steps in sequences {
+   mut pixels := image_test_background()
+   assert draw_canvas_image_filtered(mut pixels, 48, 40, 192, 2,
+    [scale, f32(0), 0, scale, 2.25, 3.5]!, image_test_bitmap(7, 6, variant == 2, variant != 1),
+    [if index == 1 { f32(2) } else { f32(3) }, f32(1), if index == 1 { f32(2) } else { f32(1) }, f32(5)]!,
+    [b[0], b[1], b[2]-b[0], b[3]-b[1]]!, true, .65,
+    if variant == 1 { BlendMode.src_in } else { BlendMode.src_over },
+    image_test_clips(variant == 1), new_canvas_filter(steps), false), 'source crop ${index}/${variant} declined'
+   assert sha256.sum(pixels).hex()[..16] == hashes[index * 4 + variant], 'source crop ${index}/${variant}'
+  }
  }
 }
