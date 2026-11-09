@@ -33,8 +33,8 @@ class GgCanvasBuildTest(unittest.TestCase):
             compiler.write_text(f'''#!{sys.executable}
 import sys
 from pathlib import Path
-assert sys.argv[1:4] == ['-memory-limit', '10G', 'run'], sys.argv
-assert 'println(@VEXEROOT)' in Path(sys.argv[4]).read_text()
+assert sys.argv[1:6] == ['-b', 'c', '-memory-limit', '10G', 'run'], sys.argv
+assert 'println(@VEXEROOT)' in Path(sys.argv[6]).read_text()
 print({str(library.parent)!r})
 ''')
             compiler.chmod(0o755)
