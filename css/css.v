@@ -3720,6 +3720,7 @@ pub fn (e EdgeRect) resolved(context LengthResolutionContext, border_box CSSPixe
 // --- Size ---
 pub enum SizeType {
 	auto_
+	stretch
 	calculated
 	length
 	percentage
@@ -3798,6 +3799,7 @@ pub fn Size.from_style_value(value StyleValue) Size {
 		KeywordStyleValue {
 			match value.keyword() {
 				.auto { Size.make_auto() }
+				.stretch { Size.make_stretch() }
 				.fit_content { Size.make_fit_content_without_available_space() }
 				.min_content { Size.make_min_content() }
 				.max_content { Size.make_max_content() }
@@ -3923,6 +3925,7 @@ pub fn (s Size) fit_content_available_space() ?LengthPercentage {
 
 pub fn (s Size) serialize(mode SerializationMode) string {
 	return match s.type_ {
+		.stretch { 'stretch' }
 		.auto_ {
 			'auto'
 		}

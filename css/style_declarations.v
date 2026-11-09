@@ -1530,6 +1530,9 @@ fn cssom_style_value_for_length_percentage_or_auto(value LengthPercentageOrAuto)
 }
 
 fn cssom_style_value_for_size(value Size) &dom.StyleValue {
+	if value.is_stretch() {
+		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.stretch)))
+	}
 	if value.is_none() {
 		return dom_style_value_from_value_logic(StyleValue(KeywordStyleValue.create(.none_)))
 	}

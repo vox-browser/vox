@@ -4844,7 +4844,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'cover', 'contain']
 		}
 		.block_size, .height, .inline_size, .min_block_size, .min_height, .min_inline_size, .min_width, .width {
-			lowercase_value in ['auto', 'max-content', 'min-content']
+			lowercase_value in ['auto', 'stretch', 'max-content', 'min-content']
 		}
 		.border_block_end_style, .border_block_start_style, .border_block_style, .border_bottom_style, .border_inline_end_style, .border_inline_start_style, .border_inline_style, .border_left_style, .border_right_style, .border_style, .border_top_style, .column_rule_style {
 			lowercase_value in ['none', 'hidden', 'dotted', 'dashed', 'solid', 'double', 'groove',
@@ -4930,7 +4930,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['show', 'hide']
 		}
 		.flex_basis {
-			lowercase_value in ['auto', 'content', 'max-content', 'min-content']
+			lowercase_value in ['auto', 'content', 'stretch', 'max-content', 'min-content']
 		}
 		.flex_direction {
 			lowercase_value in ['row', 'row-reverse', 'column', 'column-reverse']
@@ -5019,7 +5019,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['normal', 'compact']
 		}
 		.max_block_size, .max_height, .max_inline_size, .max_width {
-			lowercase_value in ['max-content', 'min-content', 'none']
+			lowercase_value in ['stretch', 'max-content', 'min-content', 'none']
 		}
 		.object_fit {
 			lowercase_value in ['fill', 'contain', 'cover', 'none', 'scale-down']
