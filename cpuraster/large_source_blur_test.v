@@ -185,3 +185,37 @@ fn test_large_source_image_shadows_match_native() {
 		check_large_source_blur_fixture(c, index)
 	}
 }
+
+// Native rescale resolves whole-image minification before decimation when
+// the combined step count would otherwise omit source pixels.
+fn test_large_minified_whole_source_blurs_match_native() {
+	fixtures := large_source_blur_fixtures()
+	macos := [
+		'c55db4f651180f604cb69e49c9f231bab877c87a7dce7004b826ae6da44ad38c',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'210107c689fe1839876780397e0931dfa73483d992145cb13d41c6f07bf2f9ed',
+		'd5f376e71629cb91dabfde32b1bd2c59731dfac489616e05ab5d9b7f6633db1d',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'df7c41a9da2b27cc56160f3d4194f3c2b0a64a05a44aadc667e6cf36921bbe6b',
+	]
+	linux := [
+		'e231bc84276b8e4770dbf3e4a5fffbdc08e676bff590398298cc62d9a63003cc',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'210107c689fe1839876780397e0931dfa73483d992145cb13d41c6f07bf2f9ed',
+		'd5f376e71629cb91dabfde32b1bd2c59731dfac489616e05ab5d9b7f6633db1d',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'df7c41a9da2b27cc56160f3d4194f3c2b0a64a05a44aadc667e6cf36921bbe6b',
+	]
+	for i in 0 .. 8 {
+		base := fixtures[i]
+		w, h := f32(base.image_width), f32(base.image_height)
+		c := LargeSourceBlurFixture{...base, source: [f32(0), 0, w, h]!,
+			destination: [f32(5.25), 7.75, w * f32(.5), h * f32(.75)]!, sigma: 300,
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}

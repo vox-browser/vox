@@ -73,23 +73,10 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		layer_crop: true,
 		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
-	// Native drawSpecial resolves the extracted bitmap subset, with its
-	// original row stride, before these large-filter downsampling steps.
-	if stages.len == 0 && large_filter_resolves_source_first(total, ctm, step.sigma) {
-		return draw_large_source_filter(mut pixels, width, height, pitch, alpha_type,
-			ctm, dst, foreground, mode, clips, step, none)
-	}
-	// Otherwise native rescale combines the deferred source shader with
-	// its first downsample, avoiding an extra 8-bit resolve surface.
-	sx, sy := blur_layer_sigma(math_abs32(step.sigma * ctm.sx)), blur_layer_sigma(math_abs32(step.sigma * ctm.sy))
-	preserve_pixels := total.sx == 1 && total.sy == 1 && int_cast_preserves(total.tx) && int_cast_preserves(total.ty)
-		&& filter == none && !image.display_p3 && alpha == 1
-	if stages.len == 0 && step.sigma >= 0 && is_finite_f32(step.sigma)
-		&& (sx > image_blur_max_sigma || sy > image_blur_max_sigma)
-		&& !large_filter_uses_identity_rescale(ctm, step.sigma) && affine_is_finite(total)
-		&& total.sx != 0 && total.sy != 0 && !preserve_pixels {
-		return draw_large_source_filter(mut pixels, width, height, pitch, alpha_type,
-			ctm, dst, foreground, mode, clips, step, DeferredRescaleImage{foreground, image, src})
+	if !drop && stages.len == 0 && src == Rect{0, 0, f32(image.width), f32(image.height)}
+		&& large_filter_resolves_source_first(total, ctm, step.sigma) {
+		return draw_large_resolved_source_blur(mut pixels, width, height, pitch, alpha_type,
+			ctm, dst, foreground, mode, clips, step)
 	}
 	reset := if stages.any(it.kind == .drop_shadow && (it.sigma < 0 || !is_finite_f32(it.sigma))) {
 		?FilterImageView(FilterImageView{...foreground, filter: none})
