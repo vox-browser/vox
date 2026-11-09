@@ -9,20 +9,15 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 	sigmas := stages.map(it.sigma)
 	mut sx := []f32{cap: sigmas.len}
 	mut sy := []f32{cap: sigmas.len}
+	mut resolved_source := !source_image
 	for i, sigma in sigmas {
 		x := blur_layer_sigma(math_abs32(sigma * ctm.sx))
 		y := blur_layer_sigma(math_abs32(sigma * ctm.sy))
 		if (x > image_blur_max_sigma || y > image_blur_max_sigma)
-			&& (i != sigmas.len - 1 || source_image) { return false }
+			&& (i != sigmas.len - 1 || !resolved_source) { return false }
 		sx << x
 		sy << y
-		if x != 0 || y != 0 { last_real_stage = i }
-	}
-	mut resolved_source := !source_image
-	for i in 0 .. sigmas.len {
-		if (sx[i] > image_blur_max_sigma || sy[i] > image_blur_max_sigma)
-			&& (i != last_real_stage || !resolved_source) { return false }
-		if sx[i] != 0 || sy[i] != 0 { resolved_source = true }
+		if x != 0 || y != 0 { resolved_source = true }
 	}
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
@@ -87,7 +82,7 @@ fn draw_blur_filter_chain(mut pixels []u8, width int, height int, pitch int, alp
 			// Keep color effects in the first downsample rather than resolving
 			// them into an extra 8-bit image. The upscale stays deferred.
 			input := FilterResult{...result, initialized_boundary: true}
-			view := scaled_blur_filter_view(input, desired, sx[i], sy[i], new_color_filter(pending), true) or { return false }
+			view := scaled_blur_filter_view(input, desired, sx[i], sy[i], new_color_filter(pending), !source_image) or { return false }
 			if view.bitmap.width == 0 {
 				target.ready()
 				draw_empty_filter_result(mut pixels, pitch, &rc, mode)

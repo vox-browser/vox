@@ -660,6 +660,6 @@ fn test_unsupported_large_chain_positions_preserve_destination() {
 	image := CanvasBitmap{pixels: []u8{len: 24, init: 255}, width: 3, height: 2, pitch: 12, premultiplied: true}
 	assert !draw_canvas_image_filtered(mut pixels, 48, 40, 192, 1, [f32(1), 0, 0, 1, 0, 0]!,
 		image, [f32(0), 0, 3, 2]!, [f32(10), 8, 3, 2]!, true, 1, .src_over, [],
-		new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: .8}, CanvasFilterStep{kind: .blur, sigma: 300}]), false)
+		new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: .01}, CanvasFilterStep{kind: .blur, sigma: 300}]), false)
 	assert pixels == original
 }

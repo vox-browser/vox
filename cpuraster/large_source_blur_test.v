@@ -22,6 +22,8 @@ struct LargeSourceBlurFixture {
 	shadow              bool
 	shadow_color        u32
 	offset              [2]f32
+	leading_sigmas      []f32
+	between             [][]f32
 	pre                 [][]f32
 	post                [][]f32
 	clip                bool
@@ -62,6 +64,14 @@ fn large_source_blur_draw(mut pixels []u8, c LargeSourceBlurFixture) bool {
 		mut values := [20]f32{}
 		for k, v in matrix { values[k] = v }
 		steps << CanvasFilterStep{ kind: .matrix, matrix: MatrixColorFilter{values, true} }
+	}
+	for sigma in c.leading_sigmas {
+		steps << CanvasFilterStep{kind: .blur, sigma: sigma}
+	}
+	for matrix in c.between {
+		mut values := [20]f32{}
+		for k, v in matrix { values[k] = v }
+		steps << CanvasFilterStep{kind: .matrix, matrix: MatrixColorFilter{values, true}}
 	}
 	steps << CanvasFilterStep{ kind: if c.shadow { .drop_shadow } else { .blur }, sigma: c.sigma,
 		color: c.shadow_color, offset_x: c.offset[0], offset_y: c.offset[1] }
@@ -506,6 +516,87 @@ fn test_large_near_source_rescale_filters_match_native() {
 			image_display_p3: i == 21 || base.image_display_p3,
 			pre: if i == 21 { fixtures[1].pre } else { base.pre },
 			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}
+
+// An earlier real blur has resolved the image source before the large final
+// pass. Incoming color effects, output restoration and initialized borders
+// must then use that quantized intermediate rather than the original source.
+fn test_large_terminal_source_blur_chains_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 3, 7, 14, 16, 17, 20, 23, 24, 25, 28, 29, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+	macos := [
+		'd5e33d87d18252ad7880e6ba9081c7cfabc138e4c5313af1918d5e6796ffeac4',
+		'655aa67ec0754da073e610bb1e51019c59563997e53d3d83468b2c84878c61c2',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'ce573014916e4de3f09987a23db36557e98202a496ae612635df7864513950ff',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'a351c41355d309f540d4fca6651e9c14991147f0aec5c3fda24ddb58f178985c',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'd3fdfd3ff35c57d5a0a28a1fd25d27322463fc1075a5e7820358dfbbc92ec8a1',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'c11bb237417120a84c121be978b57dc006140c9b250eb8d826d0df6a84c13848',
+		'3143cee20077c07519e476e104a53eb8ff965eb2b95c3ace52d9f0ca6493b082',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'53f05b3afc495e4e05f462a325f45b256435571887e30bd09e37ff0c9d417968',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'be33edbe937f68ae020437c2d998ae454543c7b75c926b73fcfcf25879a9687c',
+		'39f1982337f7b02bbeafb8c46505e6c362499e66baf8acfb7a3cd2052151919f',
+		'793a4aeaec989fe83334d9d2212c89174498007656c0ad5a87879e141113fd72',
+		'23e8b651003da4be72d89a36e69eccf2357b7557c43c3be4440b6cb340f3b995',
+		'5801511459e9d2ca60491bddf497c196d923b9f3f6aff802452061630dbb954a',
+		'37765080374f82c51d8be9100a8a86007a76b02d97f456c8e7a6c40f3824d37e',
+		'20e037798068823e1084514b2e6f2e287b7fd0b2f0f3e207ba452084f5ab604c',
+	]
+	linux := [
+		'e08bcff776e8ed1636747f4df48a7efd119ff9da6a0927618622da6670c2d876',
+		'655aa67ec0754da073e610bb1e51019c59563997e53d3d83468b2c84878c61c2',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'e33cfdc37303f28b213a5159741b4fb4aca16d655a87e4e229eaa7be827663c2',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'87ff0e76c5c1c27048a45055e0bfa8d08de0c001087cd5fe7348004f74497125',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'd3fdfd3ff35c57d5a0a28a1fd25d27322463fc1075a5e7820358dfbbc92ec8a1',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'c11bb237417120a84c121be978b57dc006140c9b250eb8d826d0df6a84c13848',
+		'3143cee20077c07519e476e104a53eb8ff965eb2b95c3ace52d9f0ca6493b082',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'53f05b3afc495e4e05f462a325f45b256435571887e30bd09e37ff0c9d417968',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'100df4de4adde3672283a26cec5c884e014712e0ea721b5d17b38ad2049b43a2',
+		'39f1982337f7b02bbeafb8c46505e6c362499e66baf8acfb7a3cd2052151919f',
+		'793a4aeaec989fe83334d9d2212c89174498007656c0ad5a87879e141113fd72',
+		'ab69a9421ceeff78bfd679f5868113956dc1fca7c457f77e0151dfea464c52fe',
+		'5801511459e9d2ca60491bddf497c196d923b9f3f6aff802452061630dbb954a',
+		'37765080374f82c51d8be9100a8a86007a76b02d97f456c8e7a6c40f3824d37e',
+		'20e037798068823e1084514b2e6f2e287b7fd0b2f0f3e207ba452084f5ab604c',
+	]
+	contrast := [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]
+	for i in 0 .. macos.len {
+		base := if i < indices.len { i } else { i - indices.len }
+		original := fixtures[indices[base]]
+		c := LargeSourceBlurFixture{...original,
+			leading_sigmas: [[f32(.8)], [f32(2.5), 0], [f32(.01), 6], [f32(.8), 2.5]][base % 4]
+			between: if base % 3 != 0 { [contrast] } else { [][]f32{} }
+			image_width: if i < indices.len { original.image_width } else { 641 }
+			image_height: if i < indices.len { original.image_height } else { 479 }
+			source: if i < indices.len { original.source } else { [f32(3), 2, 630, 468]! }
+			destination: if i < indices.len { original.destination } else { [f32(7.25), 9.5, 550, 440]! }
+			transform: if i < indices.len { original.transform } else { [f32(1), 0, 0, 1, 0, 0]! }
+			sigma: if i < indices.len { original.sigma } else { [f32(135.2), 200, 270, 300][base] }
+			expected_macos: macos[i], expected_linux: linux[i]
+		}
 		check_large_source_blur_fixture(c, i)
 	}
 }
