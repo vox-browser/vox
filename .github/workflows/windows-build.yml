@@ -2,7 +2,7 @@ name: Windows build (scaffolding)
 
 # Baseline for the Windows release work (see docs/WINDOWS.md). A native
 # Windows checkout is still blocked by pixel_tests fixture names that are
-# illegal on Windows (see issue #8), so this runs on Linux: it verifies the
+# illegal on Windows (see issue #8), so this runs on Linux: it checks the
 # Windows driver syntax and exercises the
 # x.imp build script end to end through `v run build_browser.vsh --help`.
 on:
@@ -30,26 +30,50 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: windows-build-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   scaffolding:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
+    env:
+      V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 1
           persist-credentials: false
 
+      - name: Check the Linux build entrypoint
+        run: |
+          python3 tools/build_linux_browser_test.py
+          python3 tools/rebuild_browser_test.py
+
       - name: Syntax-check the Windows build driver
         run: python3 -m py_compile tools/build_windows_browser.py
 
+      - name: Cache pinned V
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        id: v-cache
+        with:
+          path: ${{ github.workspace }}/.cache/v-pinned
+          key: windows-workflow-v-ubuntu24-${{ runner.arch }}-${{ env.V_REVISION }}
+
       - name: Install V from source (for x.imp)
+        if: steps.v-cache.outputs.cache-hit != 'true'
         timeout-minutes: 20
         run: |
           set -euo pipefail
-          git clone --depth 1 https://github.com/vlang/v.git "$RUNNER_TEMP/v"
-          make -C "$RUNNER_TEMP/v" -j2
-          "$RUNNER_TEMP/v/v" version
+          git init "$GITHUB_WORKSPACE/.cache/v-pinned"
+          git -C "$GITHUB_WORKSPACE/.cache/v-pinned" remote add origin https://github.com/vlang/v.git
+          git -C "$GITHUB_WORKSPACE/.cache/v-pinned" fetch --depth 1 origin "$V_REVISION"
+          git -C "$GITHUB_WORKSPACE/.cache/v-pinned" checkout --detach FETCH_HEAD
+          make -C "$GITHUB_WORKSPACE/.cache/v-pinned" -j2
+
+      - name: Show V version
+        run: '"$GITHUB_WORKSPACE/.cache/v-pinned/v" version'
 
       - name: Show x.imp build flows
-        run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'
+        run: '"$GITHUB_WORKSPACE/.cache/v-pinned/v" run build_browser.vsh --help'
