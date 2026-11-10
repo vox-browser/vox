@@ -761,3 +761,106 @@ fn test_large_source_blur_identity_tails_match_native() {
 		check_large_source_blur_fixture(c, i)
 	}
 }
+
+// Identity kernels before the only real blur leave the image unresolved.
+// The large blur then samples it directly; every radius still pads fast
+// bounds. A later real kernel keeps the whole chain declined.
+fn test_large_source_blur_identity_prefixes_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 3, 7, 14, 16, 17, 20, 23, 24, 25, 28, 29, 32, 33, 34, 35, 36, 37, 38, 39, 40]
+	macos := [
+		'aa24d198e860ea26d5e7f35ed29dc1ac837b49663fc00048b26e3c3009b3258b',
+		'd4ec784fa0eae5b51b711b4b1c3bb699f6a10c2b3b908e27f65e5f2d34a9a136',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'b83721e57e55b90a0ac0c0da9952e08efefaae5b40c0522e87dfea8da49691d7',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'42936ee777aaa701684b48f2e508d341a35b75f3ccee8647cf7b257de05ed9e8',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+		'e61274991eb28bb638157ca1020dc28e686d8d103a860469e9fa81fc72069785',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'3b768000a03943d0641fe4bcf34fc6e30da1d97a7c114a84b4cf9936f100778d',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'53f05b3afc495e4e05f462a325f45b256435571887e30bd09e37ff0c9d417968',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'6518ef34a933aa65cb1d734f5652fe43c371c8775a2097b9cd0910af772470f3',
+		'1974fe79303069e1a4cd00f56d37bb2292494bce13f85eba990e8565a13cc1c3',
+		'bd3d3d5dc615e5e3f6aec5b31ef8c24c6b14e3f013e12a1a44c8c7b91c1a8359',
+		'6db2a6d159781dac80ae975f7f148033e0b2d8866b8fcd13b56ca34b3601b0a8',
+		'4f05af7a3b2df0d36593c26cdefcf25982b1d25a6e08a12318da901d4ccdc578',
+		'809b7c6e5d4cfc7d33a192ef3af85c667311091877ad23e47311ea7b7c3d3b84',
+		'7a21bc14daed4c2cf481eda6c984531be3300b59889cc723f4fb5a1f42f3eb18',
+		'a3d4ad9b0d4b76c27cc3eb66c3e07e5bbf1b3a65bfbf5b47fcb8882b75d5dc14',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'9c19fb0d7af7e1c2560cbe1115c3472a81491a351fe88654c64c8320b07c1a27',
+	]
+	linux := [
+		'43fe1c86f4c27b3321147c0d458c142b0246203fdf3cad0a079305a4d1f148f5',
+		'd4ec784fa0eae5b51b711b4b1c3bb699f6a10c2b3b908e27f65e5f2d34a9a136',
+		'6d462cf67c51ce74c14a43d814f3a089ed17ea08faa94ebe6cc26422343af11e',
+		'23d6224b117431df414bbc8f7992333cf1abc95bf2a2ca267e3c913f1537a0ec',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'978b3647229afea5a5ce02d4e4446f5eac30d838d254eb4abb93260cb0e883c4',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'4500ca9b41182b34e61174088ff95a28f7dd7013f652fc743f44173b1ddb067b',
+		'88c8be8be417d08f1baa3a43a09380c0daa582830d150f22e5881b947853363e',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+		'e61274991eb28bb638157ca1020dc28e686d8d103a860469e9fa81fc72069785',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'01f69302a2caf8ca2bb2652bbf838b3e65fc3079858c92f02335f0c4868a8d05',
+		'3b768000a03943d0641fe4bcf34fc6e30da1d97a7c114a84b4cf9936f100778d',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'bf2beb433d512c7dfe2c178f83d32b2ca88ecae5d2548040176dd9f41fc60c7f',
+		'78f7a93c681ea21a3c00a851b8607043de3adcf8009ebc43c4a9b9da379526b8',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'25ebdf0d0dc7f9693df2aaaffcdb6ab1ca5579f385ba44588160deb8d21ea844',
+		'1974fe79303069e1a4cd00f56d37bb2292494bce13f85eba990e8565a13cc1c3',
+		'bd3d3d5dc615e5e3f6aec5b31ef8c24c6b14e3f013e12a1a44c8c7b91c1a8359',
+		'35e818619d06bf6158a6a58abc7da602b2191d7d171ff6115dcc85c991c11a5a',
+		'4f05af7a3b2df0d36593c26cdefcf25982b1d25a6e08a12318da901d4ccdc578',
+		'809b7c6e5d4cfc7d33a192ef3af85c667311091877ad23e47311ea7b7c3d3b84',
+		'7a21bc14daed4c2cf481eda6c984531be3300b59889cc723f4fb5a1f42f3eb18',
+		'07beabeffda728ba7ccb31875dc909f949803b5b24670bb5f8b6bace70c28e39',
+		'e337b7a188cc687d925033cca467c3e744ad442986d5059b84b6c1217f2f2af5',
+		'0382e0abf59b1bc6660ad064a871ac5a45a157340a72ff0de63bba1e36acf70a',
+	]
+	contrast := [f32(1.3), 0, 0, 0, -.15, 0, 1.3, 0, 0, -.15, 0, 0, 1.3, 0, -.15, 0, 0, 0, 1, 0]
+	opacity := [f32(1), 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, .65, 0]
+	for i in 0 .. macos.len {
+		control := i >= 26
+		g := if control { [0, 17, 9][i - 26] } else { i }
+		base := if g < indices.len { g } else { g - indices.len }
+		original := fixtures[indices[base]]
+		mut pre := original.pre.clone()
+		if !control && base % 4 == 1 { pre << opacity }
+		c := LargeSourceBlurFixture{...original,
+			pre: pre
+			leading_sigmas: if control { [f32(.01)] } else {
+				[[f32(.01)], [f32(.001), .02], [f32(.03), 0, .01], [f32(.02)]][base % 4] }
+			between: if control || base % 3 != 0 { [contrast] } else { [][]f32{} }
+			trailing_sigmas: if control { [[f32(.8)], [f32(.02)], [f32(.001), .8]][i - 26] }
+				else if i % 2 == 0 { [f32(.01), .001] } else { []f32{} }
+			image_width: if g < indices.len { original.image_width } else { 641 }
+			image_height: if g < indices.len { original.image_height } else { 479 }
+			source: if g < indices.len { original.source } else { [f32(3), 2, 630, 468]! }
+			destination: if g < indices.len { original.destination } else { [f32(7.25), 9.5, 550, 440]! }
+			transform: if g < indices.len { original.transform } else { [f32(1), 0, 0, 1, 0, 0]! }
+			sigma: if g < indices.len { original.sigma } else { [f32(135.2), 200, 270, 300][base] }
+			expected_macos: macos[i], expected_linux: linux[i]
+		}
+		if control {
+			mut pixels := large_source_blur_pixels(c, false)
+			untouched := pixels.clone()
+			assert !large_source_blur_draw(mut pixels, c), 'identity prefix control ${i} drew'
+			assert pixels == untouched
+			continue
+		}
+		check_large_source_blur_fixture(c, i)
+	}
+}

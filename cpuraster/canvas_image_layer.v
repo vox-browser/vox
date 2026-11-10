@@ -10,14 +10,15 @@ fn draw_source_image_filter(mut pixels []u8, width int, height int, pitch int, a
 	if !is_finite_f32(global_alpha) || global_alpha < 0 || global_alpha > 1
 		|| !affine_is_finite(ctm) || !rect_is_finite(src) || !rect_is_finite(dst)
 		|| rect_is_empty(src) || rect_is_empty(dst) { return false }
-	mut prepared := step
+	base := single_large_blur_of_chain(step, ctm) or { step }
+	mut prepared := base
 	mut sample_source, mut sample_destination := source, destination
 	image_bounds := Rect{0, 0, f32(image.width), f32(image.height)}
 	if !rect_contains_rect(image_bounds, src) {
 		// Canvas quick rejection uses the original draw bounds. MakeFromImage
 		// subsequently clips its source and maps that subset through the
 		// original source-to-destination matrix before constructing SkM44.
-		prepared = CanvasFilterStep{...step, source_draw_bounds: dst}
+		prepared = CanvasFilterStep{...base, source_draw_bounds: dst}
 		original := rect_to_rect(src, dst) or { return false }
 		src = rect_intersect(src, image_bounds) or {
 			return draw_filter_layer_tinted(mut pixels, width, height, pitch, alpha_type,

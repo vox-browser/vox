@@ -31,6 +31,9 @@ pub struct CanvasFilterStep {
 	source_reset ?FilterImageView
 	pre_color []MatrixColorFilter
 	post_color []MatrixColorFilter
+	// Parameter-space radii of a blur list reduced to its only real stage.
+	// computeFastBounds() still outsets by each removed identity kernel.
+	fast_sigmas []f32
 pub:
 	kind     CanvasFilterKind
 	matrix   MatrixColorFilter
@@ -175,6 +178,49 @@ fn plan_canvas_filter(filter ?CanvasFilter) FilterPlan {
 	}
 }
 
+// SkBlurImageFilter::computeFastBounds() of the step's blur list: each
+// stage outsets its input's bounds by three parameter-space sigmas.
+fn filter_fast_bounds(bounds Rect, step CanvasFilterStep, sigma f32) Rect {
+	if step.fast_sigmas.len == 0 {
+		pad := f32(3) * sigma
+		return Rect{bounds.left - pad, bounds.top - pad, bounds.right + pad, bounds.bottom + pad}
+	}
+	mut fast := bounds
+	for radius in step.fast_sigmas {
+		pad := f32(3) * radius
+		fast = Rect{fast.left - pad, fast.top - pad, fast.right + pad, fast.bottom + pad}
+	}
+	return fast
+}
+
+// Identity kernels on either side of a pure-blur chain's only real stage
+// return their input unchanged, so an image source still reaches that blur
+// unresolved. When the blur is large, reduce the chain to one blur that
+// keeps the single-blur source sampling path. Incoming color effects join
+// the blur's input; later ones restore with the result.
+fn single_large_blur_of_chain(step CanvasFilterStep, ctm SkAffine) ?CanvasFilterStep {
+	stages := step.layer_stages
+	if stages.len < 2 || step.kind != .blur || stages.any(it.kind != .blur) { return none }
+	mut real := -1
+	mut large := false
+	for i, stage in stages {
+		sx := blur_layer_sigma(math_abs32(stage.sigma * ctm.sx))
+		sy := blur_layer_sigma(math_abs32(stage.sigma * ctm.sy))
+		if sx == 0 && sy == 0 { continue }
+		if real >= 0 { return none }
+		real = i
+		large = sx > image_blur_max_sigma || sy > image_blur_max_sigma
+	}
+	if real < 0 || !large { return none }
+	mut before := step.pre_color.clone()
+	for stage in stages[..real + 1] { before << stage.pre_color }
+	mut after := []MatrixColorFilter{}
+	for stage in stages[real + 1..] { after << stage.pre_color }
+	after << step.post_color
+	return CanvasFilterStep{...step, sigma: stages[real].sigma, layer_stages: []LayerFilterStage{},
+		pre_color: before, post_color: after, fast_sigmas: stages.map(it.sigma)}
+}
+
 // SkBlenderBase::affectsTransparentBlack(): a Porter-Duff mode whose
 // destination coefficient is not one, 1 - source alpha or 1 - source
 // color, or a runtime blender. Those fill the clip on restore.
@@ -252,8 +298,7 @@ fn draw_filter_layer_tinted(mut pixels []u8, width int, height int, pitch int, a
 		// The draw's quick reject precedes aboutToDraw()/saveLayer(). Its
 		// fast bounds use the parameter-space filter radius, even when the
 		// mapped blur later becomes an identity.
-		pad := f32(3) * sigma
-		mut fast := Rect{bounds.left - pad, bounds.top - pad, bounds.right + pad, bounds.bottom + pad}
+		mut fast := filter_fast_bounds(bounds, step, sigma)
 		if drop {
 			fast = Rect{fast.left + step.offset_x, fast.top + step.offset_y,
 				fast.right + step.offset_x, fast.bottom + step.offset_y}
