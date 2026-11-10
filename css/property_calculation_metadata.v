@@ -216,6 +216,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'font-synthesis-small-caps' { return .font_synthesis_small_caps }
 	if name == 'font-synthesis-position' { return .font_synthesis_position }
 	if name == 'hyphens' { return .hyphens }
+	if name == 'field-sizing' { return .field_sizing }
 	if name == 'text-align-last' { return .text_align_last }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := PropertyID.webkit_box_orient
@@ -3255,6 +3256,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'font-synthesis-small-caps' }
 		.font_synthesis_position { 'font-synthesis-position' }
 		.hyphens { 'hyphens' }
+		.field_sizing { 'field-sizing' }
 		.text_align_last { 'text-align-last' }
 		.webkit_box_orient { '-webkit-box-orient' }
 		.webkit_font_smoothing { '-webkit-font-smoothing' }
@@ -3772,6 +3774,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'auto' }
 		.font_synthesis_position { 'auto' }
 		.hyphens { 'manual' }
+		.field_sizing { 'fixed' }
 		.text_align_last { 'auto' }
 		.webkit_box_orient { 'horizontal' }
 		.webkit_font_smoothing { 'auto' }
@@ -4236,6 +4239,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			AnimationType.discrete
 		}
 		.hyphens { AnimationType.discrete }
+		.field_sizing { AnimationType.discrete }
 		.text_align_last { AnimationType.discrete }
 		.backface_visibility { AnimationType.discrete }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { AnimationType.discrete }
@@ -4277,6 +4281,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.field_sizing { true }
 		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
@@ -4337,6 +4342,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.field_sizing { true }
 		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
@@ -4755,6 +4761,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'oblique-only']
 		}
 		.hyphens { lowercase_value in ['none', 'manual', 'auto'] }
+		.field_sizing { lowercase_value in ['fixed', 'content'] }
 		.text_align_last { lowercase_value in ['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'] }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			lowercase_value == 'auto'

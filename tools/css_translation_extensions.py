@@ -135,6 +135,11 @@ PROPERTIES = {
         'valid-identifiers': ['auto', 'start', 'end', 'left', 'right', 'center', 'justify',
                               'match-parent'],
     },
+    'field-sizing': {
+        'style-group': 'BoxValues', 'animation-type': 'discrete', 'inherited': False,
+        'initial': 'fixed', 'requires-computation': 'never',
+        'valid-identifiers': ['fixed', 'content'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',

@@ -49,7 +49,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 				.corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cursor,
 				.cx, .cy, .d, .display, .dominant_baseline, .empty_cells, .fill, .fill_opacity,
-				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
+				.fill_rule, .field_sizing, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
 				.font_size, .font_style,
@@ -412,7 +412,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 				.corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cursor,
 				.cx, .cy, .d, .display, .dominant_baseline, .empty_cells, .fill, .fill_opacity,
-				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
+				.fill_rule, .field_sizing, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
 				.font_size, .font_style,
@@ -781,6 +781,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.font_synthesis, .all]
 		}
 		.hyphens { [.all] }
+		.field_sizing { [.all] }
 		.text_align_last { [.all] }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type {
 			[.all]

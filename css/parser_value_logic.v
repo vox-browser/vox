@@ -1913,6 +1913,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.hyphens {
 			return parse_property_keyword_value(mut tokens, ['none', 'manual', 'auto'])
 		}
+		.field_sizing {
+			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
+		}
 		.text_align_last {
 			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
 		}
