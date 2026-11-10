@@ -116,13 +116,13 @@ fn test_panner_render_node_applies_inverse_distance_gain() {
 	assert math.abs(panner.render_node().output(0).channel(1)[0] - expected) < 0.00001
 }
 
-fn test_panner_render_node_exposes_only_its_six_source_parameters() {
+fn test_panner_render_node_exposes_its_source_and_listener_parameters() {
 	mut panner := panner_render_test_node(AudioVector3{}, AudioVector3{1, 0, 0}, 1)
 	mut observation := &PannerParamObservation{}
 	panner.for_each_param(fn [mut observation] (_ mut RenderAudioParam) {
 		observation.count++
 	})
-	assert observation.count == 6
+	assert observation.count == 15
 }
 
 fn test_panner_distance_models_apply_their_distinct_bounds() {
@@ -139,4 +139,27 @@ fn test_panner_distance_models_apply_their_distinct_bounds() {
 	panner := panner_render_test_node(AudioVector3{100, 0, 0}, AudioVector3{1, 0, 0}, 1)
 	render_panner_test_quantum(panner, [f32(1)], PannerRenderConfig{max_distance: 2})
 	assert math.abs(panner.render_node().output(0).channel(1)[0] - 0.01) < 0.000001
+}
+
+fn test_graph_rebuild_does_not_duplicate_audio_listener_connections() {
+	mut graph := RenderGraph.create()
+	panner := panner_render_test_node(AudioVector3{0, 0, -2}, AudioVector3{1, 0, 0}, 1)
+	source := panner_render_test_source([f32(1)])
+	parameter := panner.listener_params_.position_z
+	graph.apply_control_messages([
+		ControlMessage{kind: .add_node, render_node: source},
+		ControlMessage{kind: .add_node, render_node: panner.render_node()},
+		ControlMessage{kind: .replace_connections, node_id: 1,
+			node_connections: [OutgoingNodeConnection{destination: 2}],
+			param_connections: [OutgoingParamConnection{destination: parameter}]},
+	])
+	graph.set_destination(2)
+	context := RenderContext{sample_rate: 48_000, quantum_size: 1}
+	graph.render_quantum(context)
+	assert parameter.inputs().len == 1
+	before := panner.render_node().output(0).channel(0)[0]
+	graph.apply_control_messages([ControlMessage{kind: .add_node, render_node: RenderNode.create(3, 0, 1, 1, 1)}])
+	graph.render_quantum(context)
+	assert parameter.inputs().len == 1
+	assert panner.render_node().output(0).channel(0)[0] == before
 }

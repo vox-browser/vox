@@ -188,6 +188,9 @@ pub fn PannerRenderNode.create(node_id u64, quantum_size int, params PannerRende
 	for parameter in params.as_array() {
 		render_node.add_param(parameter)
 	}
+	for parameter in listener_params.as_array() {
+		render_node.add_param(parameter)
+	}
 	mut panner := &PannerRenderNode{
 		render_node_: render_node
 		params_: params
@@ -242,7 +245,9 @@ pub fn (mut panner PannerRenderNode) handle_message(message NodeMessage) {
 }
 
 pub fn (mut panner PannerRenderNode) for_each_param(callback RenderAudioParamCallback) {
-	for parameter in panner.params_.as_array() {
+	mut parameters := panner.params_.as_array()
+	parameters << panner.listener_params_.as_array()
+	for parameter in parameters {
 		mut mutable_parameter := unsafe { &RenderAudioParam(parameter) }
 		callback(mut mutable_parameter)
 	}
