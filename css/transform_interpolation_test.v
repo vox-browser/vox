@@ -81,3 +81,21 @@ fn test_perspective_interpolates_its_reciprocal_depth() {
 	assert transform_interpolated('perspective(10px)', 'perspective(1px)', -1) == 'perspective(none)'
 	assert_interpolated_matrix('perspective(1px) translateZ(0.5px)', 'perspective(10px) translateZ(0.5px)', -1, 'perspective(1px) translateZ(0.5px)')
 }
+
+fn test_same_transform_functions_keep_their_type() {
+	assert transform_interpolated('translateX(0px)', 'translateX(50px)', 0.5) == 'translateX(25px)'
+	assert transform_interpolated('translateZ(-50px)', 'translateZ(50px)', 0.5) == 'translateZ(0px)'
+	assert transform_interpolated('rotateZ(30deg)', 'rotateZ(90deg)', 0.5) == 'rotateZ(60deg)'
+	assert transform_interpolated('scale(1)', 'scale(2)', 0.5) == 'scale(1.5)'
+	assert transform_interpolated('scaleX(1)', 'scaleX(2)', 0.5) == 'scaleX(1.5)'
+	assert transform_interpolated('skewX(0deg)', 'skewX(180deg)', 0.5) == 'skewX(90deg)'
+	// Different functions still convert to their common primitive.
+	assert transform_interpolated('rotate(0deg)', 'rotateZ(90deg)', 0.5) == 'rotate3d(0, 0, 1, 45deg)'
+	assert transform_interpolated('scaleZ(1)', 'scale(2)', 0.5) == 'scale3d(1.5, 1.5, 1)'
+	assert transform_interpolated('translateX(50px)', 'translateZ(50px)', 0.5) == 'translate3d(25px, 0px, 25px)'
+}
+
+fn test_translations_mixing_zero_lengths_and_percentages_stay_percentages() {
+	assert transform_interpolated('translateY(0%)', 'translateX(50%)', 0.5) == 'translate(25%, 0%)'
+	assert transform_interpolated('translate(50%)', 'translate(100%, 50%)', 0.5) == 'translate(75%, 25%)'
+}

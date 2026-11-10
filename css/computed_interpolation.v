@@ -8588,7 +8588,15 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 			return dom_style_value_from_value_logic(matrix_result)
 		}
 
-		if interpolation_is_2d_transform(from_function) && interpolation_is_2d_transform(to_function) {
+		// https://drafts.csswg.org/css-transforms-1/#interpolation-of-transform-functions
+		// Two transform functions with the same name and the same number of
+		// arguments are interpolated numerically without a former conversion,
+		// and the result keeps their type.
+		same_function := from_function == to_function
+			&& from_transform.values().len == to_transform.values().len
+		if same_function {
+			// Both already share their function and argument count.
+		} else if interpolation_is_2d_transform(from_function) && interpolation_is_2d_transform(to_function) {
 			from_transform = interpolation_convert_to_2d_primitive(from_transform)
 			to_transform = interpolation_convert_to_2d_primitive(to_transform)
 		} else if interpolation_is_3d_transform(from_function) || interpolation_is_3d_transform(to_function) {
@@ -8628,10 +8636,11 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 			continue
 		}
 
+		is_translation := function in [.translate, .translate3d, .translate_x, .translate_y, .translate_z]
 		mut values := []StyleValue{cap: from_values.len}
 		mut interpolation_failed := false
 		for value_index in 0 .. from_values.len {
-			value := interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
+			value := interpolate_transform_argument(calculation_context, is_translation, from_values[value_index], to_values[value_index], delta) or {
 				interpolation_failed = true
 				break
 			}
@@ -8647,6 +8656,31 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .space, .yes)))
+}
+
+// https://drafts.csswg.org/css-values-4/#combine-mixed
+// A mix of a percentage and a dimension computes to a percentage when the
+// dimension component is zero, so translate(0px) to translate(50%) passes
+// through translate(25%) rather than calc(25% + 0px).
+fn interpolate_translation_argument(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64) ?StyleValue {
+	if from is LengthStyleValue && to is PercentageStyleValue {
+		if from.length().raw_value() * (1 - delta) == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(to.raw_value() * delta)))
+		}
+	}
+	if from is PercentageStyleValue && to is LengthStyleValue {
+		if to.length().raw_value() * delta == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(from.raw_value() * (1 - delta))))
+		}
+	}
+	return interpolate_style_value(calculation_context, from, to, delta, .no)
+}
+
+fn interpolate_transform_argument(calculation_context InterpolationCalculationContext, is_translation bool, from StyleValue, to StyleValue, delta f64) ?StyleValue {
+	if is_translation {
+		return interpolate_translation_argument(calculation_context, from, to, delta)
+	}
+	return interpolate_style_value(calculation_context, from, to, delta, .no)
 }
 
 // The depth of perspective() as the negated m34 of its matrix: zero for

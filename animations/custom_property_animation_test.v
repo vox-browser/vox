@@ -370,7 +370,7 @@ fn test_transform_iteration_composition_accumulates_mismatched_lists_as_matrices
 
 fn test_transform_keyframe_composition_adds_and_accumulates_lists() {
 	frames := transform_frames('rotate(90deg)', 'rotate(90deg)')
-	assert transform_at(frames, 'transform: translateX(10px)', .add, 0)! == 'translate(10px, 0px) rotate(90deg)'
+	assert transform_at(frames, 'transform: translateX(10px)', .add, 0)! == 'translateX(10px) rotate(90deg)'
 	assert transform_at(transform_frames('scale(2) rotate(90deg)', 'scale(2) rotate(90deg)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'scale(4, 4) matrix3d(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1)'
 	assert transform_at(transform_frames('rotate(90deg) scale(2)', 'rotate(90deg) scale(2)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'matrix3d(0, 4, 0, 0, -4, 0, 0, 0, 0, 0, 1, 0, 30, 0, 0, 1)'
 }
