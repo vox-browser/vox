@@ -1036,9 +1036,9 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 			break
 		}
 		computed := item.computed_values()
-		product := if desired_fractions[index] > 0 {
+		product := if chosen > 0 {
 			chosen * f64(computed.flex_grow())
-		} else if desired_fractions[index] < 0 {
+		} else if chosen < 0 {
 			chosen * f64(computed.flex_shrink()) * bases[index].to_double()
 		} else {
 			0.0
