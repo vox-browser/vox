@@ -64,3 +64,20 @@ fn test_rotate3d_interpolation_takes_the_shortest_path() {
 	// so halfway to rotateZ(90deg) is rotateZ(45deg), not its opposite turn.
 	assert_interpolated_matrix('rotateX(360deg)', 'rotateZ(90deg)', 0.5, 'rotateZ(45deg)')
 }
+
+fn test_matrix_pairs_interpolate_without_absorbing_later_functions() {
+	assert_interpolated_matrix('matrix(1,0,0,1,0,0) rotate(0deg)', 'matrix(2,0,0,2,0,0) rotate(360deg)', 0.5, 'matrix(1.5,0,0,1.5,0,0) rotate(180deg)')
+	assert transform_interpolated('matrix(2, 0, 0, 2, 10, 30)', 'matrix(4, 0, 0, 6, 14, 10)', 0.5) == 'matrix(3, 0, 0, 4, 12, 20)'
+	assert transform_interpolated('matrix3d(1, 0, 0, 0, 0, 4, 0, 0, 0, 0, 1, 0, 5, 10, 4, 1)', 'matrix3d(3, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, -11, 2, 2, 1)', 0.5) == 'matrix3d(2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 2, 0, -3, 6, 3, 1)'
+}
+
+fn test_perspective_interpolates_its_reciprocal_depth() {
+	assert transform_interpolated('perspective(10px)', 'perspective(2.5px)', 0.5) == 'perspective(4px)'
+	assert transform_interpolated('perspective(10px)', 'perspective(none)', 0.5) == 'perspective(20px)'
+	assert transform_interpolated('perspective(none)', 'perspective(none)', 0.5) == 'perspective(none)'
+	assert transform_interpolated('perspective(100px) translateZ(50px)', 'perspective(none) translateZ(50px)', 0.5) == 'perspective(200px) translateZ(50px)'
+	// Depths below 1px interpolate as 1px, and a depth beyond infinity is none.
+	assert transform_interpolated('perspective(0.1px)', 'perspective(0.1px)', 0.5) == 'perspective(1px)'
+	assert transform_interpolated('perspective(10px)', 'perspective(1px)', -1) == 'perspective(none)'
+	assert_interpolated_matrix('perspective(1px) translateZ(0.5px)', 'perspective(10px) translateZ(0.5px)', -1, 'perspective(1px) translateZ(0.5px)')
+}

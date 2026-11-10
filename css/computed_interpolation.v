@@ -8563,6 +8563,23 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 		mut to_transform := to_transformations[i]
 		from_function := from_transform.transform_function()
 		to_function := to_transform.transform_function()
+		if from_function == .perspective && to_function == .perspective {
+			if perspective := interpolate_perspective_functions(from_transform, to_transform, delta) {
+				result << StyleValue(perspective)
+				continue
+			}
+		}
+		// https://drafts.csswg.org/css-transforms-2/#interpolation-of-transform-functions
+		// matrix() and matrix3d() get converted into 4x4 matrices first and
+		// interpolated as matrices. A pair of the same matrix function is a
+		// pair like any other, so the functions after it still pair up.
+		if from_function == to_function && from_function in [.matrix, .matrix3d] {
+			matrix := interpolate_transform_matrix_pair(from_transform, to_transform, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
+			result << StyleValue(matrix)
+			continue
+		}
 		if from_function in [.matrix, .matrix3d, .perspective]
 			|| to_function in [.matrix, .matrix3d, .perspective] {
 			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
@@ -8630,6 +8647,56 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .space, .yes)))
+}
+
+// The depth of perspective() as the negated m34 of its matrix: zero for
+// perspective(none), and depths below 1px count as 1px.
+fn perspective_reciprocal_depth(transform TransformationStyleValue) ?f64 {
+	values := transform.values()
+	if values.len != 1 {
+		return none
+	}
+	argument := values[0]
+	if style_value_is_keyword_none(argument) {
+		return 0
+	}
+	if argument is LengthStyleValue && argument.length().is_absolute() {
+		return 1 / math.max(argument.length().absolute_length_to_px_without_rounding(), 1)
+	}
+	return none
+}
+
+// https://drafts.csswg.org/css-transforms-2/#interpolation-of-transform-functions
+// perspective() interpolates as a matrix, whose only varying component is
+// the negated reciprocal of the depth. Interpolating that reciprocal gives the
+// same result without decomposing two matrices; a depth that is not positive
+// has no perspective effect, which perspective(none) expresses.
+fn interpolate_perspective_functions(from TransformationStyleValue, to TransformationStyleValue, delta f64) ?TransformationStyleValue {
+	from_reciprocal := perspective_reciprocal_depth(from) or { return none }
+	to_reciprocal := perspective_reciprocal_depth(to) or { return none }
+	reciprocal := interpolate_raw(from_reciprocal, to_reciprocal, delta, none)
+	argument := if reciprocal <= 0 {
+		StyleValue(KeywordStyleValue.create(.none_))
+	} else {
+		StyleValue(LengthStyleValue.create(Length.make_px(1 / reciprocal)))
+	}
+	return TransformationStyleValue.create(.transform, .perspective, [argument])
+}
+
+// Interpolates a matrix() or matrix3d() pair as matrices. Two matrix()
+// functions stay two-dimensional.
+fn interpolate_transform_matrix_pair(from TransformationStyleValue, to TransformationStyleValue, delta f64) ?TransformationStyleValue {
+	from_matrix := from.to_matrix(none) or { return none }
+	to_matrix := to.to_matrix(none) or { return none }
+	matrix := interpolate_matrices(from_matrix, to_matrix, delta) or { return none }
+	if from.transform_function() == .matrix && to.transform_function() == .matrix {
+		mut values := []StyleValue{cap: 6}
+		for entry in [matrix.at(0, 0), matrix.at(1, 0), matrix.at(0, 1), matrix.at(1, 1), matrix.at(0, 3), matrix.at(1, 3)] {
+			values << StyleValue(NumberStyleValue.create(entry))
+		}
+		return TransformationStyleValue.create(.transform, .matrix, values)
+	}
+	return TransformationStyleValue.create(.transform, .matrix3d, matrix_to_style_value_vector(matrix))
 }
 
 fn interpolation_transform_list(value StyleValue) ?[]TransformationStyleValue {

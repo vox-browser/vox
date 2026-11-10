@@ -789,6 +789,7 @@ pub fn (value CSSNumericValue) create_an_internal_representation(property Proper
 fn style_value_is_keyword_none(value StyleValue) bool {
 	return match value {
 		CustomIdentStyleValue { to_ascii_lowercase(value.custom_ident()) == 'none' }
+		KeywordStyleValue { value.keyword() == .none_ }
 		else { false }
 	}
 }
