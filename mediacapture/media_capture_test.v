@@ -150,6 +150,59 @@ fn test_get_user_media_validates_and_selects_requested_device() {
 	assert devices.microphone_information_can_be_exposed()
 }
 
+fn capture_with_device_constraint(constraint ConstrainDOMString) &MediaStreamPromise {
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), capture_test_environment())
+	promise := devices.get_user_media(MediaStreamConstraints{
+		audio: .constrained
+		audio_constraints: MediaTrackConstraints{
+			MediaTrackConstraintSet: MediaTrackConstraintSet{device_id: constraint}
+		}
+	})
+	devices.run_until_idle()
+	return promise
+}
+
+fn test_get_user_media_device_id_preferences_fall_back_but_exact_values_do_not() {
+	for constraint in [
+		ConstrainDOMString{value: 'unavailable'},
+		ConstrainDOMString{kind: .sequence, values: ['unavailable']},
+		ConstrainDOMString.ideal(['unavailable']),
+		ConstrainDOMString.ideal([]),
+	] {
+		promise := capture_with_device_constraint(constraint)
+		assert promise.state() == .fulfilled
+		stream := promise.stream() or { panic('missing stream') }
+		assert stream.get_audio_tracks()[0].device_id()? == 'mic-default'
+	}
+	for constraint in [ConstrainDOMString{value: 'mic-2'}, ConstrainDOMString.ideal(['mic-2'])] {
+		promise := capture_with_device_constraint(constraint)
+		assert promise.state() == .fulfilled
+		stream := promise.stream() or { panic('missing stream') }
+		assert stream.get_audio_tracks()[0].device_id()? == 'mic-2'
+	}
+	for ids in [['unavailable'], [''], []string{}] {
+		promise := capture_with_device_constraint(ConstrainDOMString.exact(ids))
+		assert promise.state() == .rejected
+		assert promise.reason().starts_with('NotFoundError:')
+	}
+}
+
+fn test_get_user_media_defers_exact_selection_until_ids_are_known_after_permission() {
+	mut environment := capture_test_environment()
+	environment.audio_devices = [StoredDevice{kind: .audioinput}]
+	environment.microphone_permission = .denied
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), environment)
+	promise := devices.get_user_media(MediaStreamConstraints{
+		audio: .constrained
+		audio_constraints: MediaTrackConstraints{
+			MediaTrackConstraintSet: MediaTrackConstraintSet{device_id: ConstrainDOMString.exact(['mic-2'])}
+		}
+	})
+	devices.run_until_idle()
+	assert promise.state() == .rejected
+	assert promise.reason().starts_with('NotAllowedError:')
+}
+
 fn test_stream_track_sets_events_clone_and_active_state() {
 	audio := MediaStreamTrack.create(.audio, 'microphone', false)
 	video := MediaStreamTrack.create(.video, 'camera', false)
