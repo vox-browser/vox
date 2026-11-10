@@ -479,14 +479,27 @@ fn (element &HTMLMediaElement) invalidate_media_state_style(names []string) {
 }
 
 pub fn (mut element HTMLMediaElement) removed_from(old_parent ?&dom.Node, old_root &dom.Node) {
-	if html_element := element.associated_element_ {
-		mut dom_element := unsafe { &dom.Element(html_element) }
-		dom_element.removed_from(old_parent, old_root)
-		if dom_element.as_node().in_a_document_tree() {
-			return
-		}
+	html_element := element.associated_element_ or {
+		// Standalone media models have no DOM connection to recheck or owning
+		// document to retain across the checkpoint.
+		element.pause_element()
+		return
 	}
-	element.pause_element()
+	mut dom_element := unsafe { &dom.Element(html_element) }
+	dom_element.removed_from(old_parent, old_root)
+	document := dom_element.document()
+	// Await a stable state so moving a playing element (or its ancestor) within
+	// the document does not interrupt playback between removal and reinsertion.
+	element_pointer := voidptr(&element)
+	queue_a_microtask(document, fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if html_element := media.associated_element_ {
+			if unsafe { &dom.Element(html_element) }.as_node().in_a_document_tree() {
+				return
+			}
+		}
+		media.pause_element()
+	})
 }
 
 pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
