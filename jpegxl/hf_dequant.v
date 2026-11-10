@@ -29,6 +29,7 @@ fn adjust_hf_quant_bias(value i32, channel int, biases [4]f32) f32 {
 
 // Return three coefficient vectors in the matrix table's flat ordering. Spatial
 // placement and replacing the LF coefficients belong to the inverse transform.
+@[direct_array_access]
 pub fn dequantize_hf_block(coefficients [3][]i32, matrices DequantMatrices, params HfDequantParameters) ![3][]f32 {
 	if params.quantizer.global_scale < 1 || params.quantizer.global_scale > 73728 || params.raw_quant == 0 || params.x_qm_scale > 7 || params.b_qm_scale > 7 {
 		return error('Invalid JPEG XL HF quantization scale')

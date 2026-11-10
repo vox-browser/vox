@@ -6,6 +6,7 @@ import math
 
 // The source stores each coefficient matrix with its longest side contiguous.
 // Rows/columns describe the spatial output, including its transpose convention.
+@[direct_array_access]
 pub fn inverse_dct_plane(rows int, columns int, coefficients []f32) !FloatPlane {
 	valid := match rows {
 		2 { columns == 2 }

@@ -29,9 +29,12 @@ fn srgb_rational_polynomial(x f32, p [5]f32, q [5]f32) f32 {
 @[direct_array_access]
 pub fn srgb_transfer(input FloatPlane, direction SrgbTransferDirection) !FloatPlane {
 	input.validate()!
+	for sample in input.samples {
+		if !math.is_finite(sample) { return error('Nonfinite JPEG XL sRGB transfer sample') }
+	}
+	// Validation is separate so this loop has no early exit and can vectorize.
 	mut result := []f32{len: input.samples.len}
 	for i, sample in input.samples {
-		if !math.is_finite(sample) { return error('Nonfinite JPEG XL sRGB transfer sample') }
 		bits := math.f32_bits(sample)
 		absolute := math.f32_from_bits(bits & 0x7fffffff)
 		converted := if direction == .from_linear {

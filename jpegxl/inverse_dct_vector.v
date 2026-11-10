@@ -26,6 +26,7 @@ fn inverse_dct_values(input []f32) ![]f32 {
 }
 
 
+@[direct_array_access]
 fn inverse_dct_2(input []f32) []f32 {
 	v0 := input[0]
 	v1 := input[1]
@@ -35,6 +36,7 @@ fn inverse_dct_2(input []f32) []f32 {
 }
 
 
+@[direct_array_access]
 fn inverse_dct_4(input []f32) []f32 {
 	v0 := input[0]
 	v1 := input[1]
@@ -56,6 +58,7 @@ fn inverse_dct_4(input []f32) []f32 {
 }
 
 
+@[direct_array_access]
 fn inverse_dct_8(input []f32) []f32 {
 	v0 := input[0]
 	v1 := input[1]
@@ -109,6 +112,7 @@ fn inverse_dct_8(input []f32) []f32 {
 }
 
 
+@[direct_array_access]
 fn inverse_dct_16(input []f32) []f32 {
 	v0 := input[0]
 	v1 := input[1]
@@ -242,6 +246,7 @@ fn inverse_dct_16(input []f32) []f32 {
 }
 
 
+@[direct_array_access]
 fn inverse_dct_32(input []f32) []f32 {
 	v0 := input[0]
 	v1 := input[1]
