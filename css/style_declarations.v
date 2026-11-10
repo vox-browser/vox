@@ -1819,6 +1819,19 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 		}
 	}
 	display_allows_used_value := !computed.display().is_none() && !computed.display().is_contents() && layout_node.has_geometry_
+	// A table's position, insets and margins belong to its principal table
+	// wrapper. Other resolved properties keep using the table box itself.
+	principal_layout_node := if computed.display().is_table_inside() {
+		if parent := layout_node.parent_ {
+			if parent.is_table_wrapper() { parent } else { layout_node }
+		} else {
+			layout_node
+		}
+	} else {
+		layout_node
+	}
+	principal_allows_used_value := !computed.display().is_none() && !computed.display().is_contents()
+		&& principal_layout_node.has_geometry_
 	margin := computed.length_box(.margin_left, .margin_top, .margin_right, .margin_bottom, LengthPercentageOrAuto.make_auto())
 	padding := computed.length_box(.padding_left, .padding_top, .padding_right, .padding_bottom, LengthPercentageOrAuto.from_length(Length.make_px(0)))
 	inset := computed.length_box(.left, .top, .right, .bottom, LengthPercentageOrAuto.make_auto())
@@ -1892,26 +1905,26 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_size(computed.size_value(.width))
 		}
 		.margin_bottom {
-			if display_allows_used_value {
-				return cssom_resolved_margin(margin.bottom(), layout_node.box_model().margin_bottom, layout_node, owner.document().layout_coordinate_scale())
+			if principal_allows_used_value {
+				return cssom_resolved_margin(margin.bottom(), principal_layout_node.box_model().margin_bottom, principal_layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.bottom())
 		}
 		.margin_left {
-			if display_allows_used_value {
-				return cssom_resolved_margin(margin.left(), layout_node.box_model().margin_left, layout_node, owner.document().layout_coordinate_scale())
+			if principal_allows_used_value {
+				return cssom_resolved_margin(margin.left(), principal_layout_node.box_model().margin_left, principal_layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.left())
 		}
 		.margin_right {
-			if display_allows_used_value {
-				return cssom_resolved_margin(margin.right(), layout_node.box_model().margin_right, layout_node, owner.document().layout_coordinate_scale())
+			if principal_allows_used_value {
+				return cssom_resolved_margin(margin.right(), principal_layout_node.box_model().margin_right, principal_layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.right())
 		}
 		.margin_top {
-			if display_allows_used_value {
-				return cssom_resolved_margin(margin.top(), layout_node.box_model().margin_top, layout_node, owner.document().layout_coordinate_scale())
+			if principal_allows_used_value {
+				return cssom_resolved_margin(margin.top(), principal_layout_node.box_model().margin_top, principal_layout_node, owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(margin.top())
 		}
@@ -1940,26 +1953,26 @@ pub fn (properties &CSSStyleProperties) style_value_for_computed_property(layout
 			return cssom_style_value_for_length_percentage_or_auto(padding.top())
 		}
 		.bottom {
-			if cssom_should_use_resolved_inset(layout_node, inset.bottom(), inset.top()) {
-				return cssom_style_value_for_px(layout_node.box_model().inset_bottom / owner.document().layout_coordinate_scale())
+			if cssom_should_use_resolved_inset(principal_layout_node, inset.bottom(), inset.top()) {
+				return cssom_style_value_for_px(principal_layout_node.box_model().inset_bottom / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.bottom())
 		}
 		.left {
-			if cssom_should_use_resolved_inset(layout_node, inset.left(), inset.right()) {
-				return cssom_style_value_for_px(layout_node.box_model().inset_left / owner.document().layout_coordinate_scale())
+			if cssom_should_use_resolved_inset(principal_layout_node, inset.left(), inset.right()) {
+				return cssom_style_value_for_px(principal_layout_node.box_model().inset_left / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.left())
 		}
 		.right {
-			if cssom_should_use_resolved_inset(layout_node, inset.right(), inset.left()) {
-				return cssom_style_value_for_px(layout_node.box_model().inset_right / owner.document().layout_coordinate_scale())
+			if cssom_should_use_resolved_inset(principal_layout_node, inset.right(), inset.left()) {
+				return cssom_style_value_for_px(principal_layout_node.box_model().inset_right / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.right())
 		}
 		.top {
-			if cssom_should_use_resolved_inset(layout_node, inset.top(), inset.bottom()) {
-				return cssom_style_value_for_px(layout_node.box_model().inset_top / owner.document().layout_coordinate_scale())
+			if cssom_should_use_resolved_inset(principal_layout_node, inset.top(), inset.bottom()) {
+				return cssom_style_value_for_px(principal_layout_node.box_model().inset_top / owner.document().layout_coordinate_scale())
 			}
 			return cssom_style_value_for_length_percentage_or_auto(inset.top())
 		}
