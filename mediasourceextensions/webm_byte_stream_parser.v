@@ -239,6 +239,9 @@ fn read_ebml_float(bytes []u8, element EBMLElementHeader) !f64 {
 }
 
 fn read_ebml_string(bytes []u8, element EBMLElementHeader) !string {
+	if element.data_end - element.data_start > maximum_metadata_string_size {
+		return error('String element is too large')
+	}
 	require_complete_element(bytes, element)!
 	return bytes[element.data_start..element.data_end].bytestr()
 }
@@ -269,6 +272,9 @@ fn parse_webm_track_entry(bytes []u8, entry EBMLElementHeader) !WebMTrackInfo {
 				codec_id = read_ebml_string(bytes, child)!
 			}
 			codec_private_id {
+				if child.data_end - child.data_start > maximum_codec_configuration_size {
+					return error("Track's CodecPrivate element is too large")
+				}
 				codec_private = bytes[child.data_start..child.data_end].clone()
 			}
 			track_language_id {
