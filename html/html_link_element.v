@@ -747,11 +747,15 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 	if success {
 		link.loaded_style_sheet_ = response.body.bytestr()
 		if element := link.element_ {
-			location := response.url or {
-				dom.dom_url_parse(link.href_, link.base_url_, 'utf-8') or { link.base_url_ }
+			// CSSOM location is the URL from the link; nested @imports and url()
+			// values resolve against the *final* response URL after redirects.
+			location := dom.dom_url_parse(link.href_, link.base_url_, 'utf-8') or {
+				link.base_url_
 			}
-			mut sheet := css.install_link_style_sheet(element, response.body.bytestr(),
-				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_)
+			base_url := response.url or { location }
+			mut sheet := css.install_link_style_sheet_with_base(element, response.body.bytestr(),
+				location.serialize(), base_url.serialize(),
+				link.has_relation('alternate') && !link.explicitly_enabled_)
 			sheet.base.origin_clean = response.origin_clean
 			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
 			dom_link.linked_style_sheet_from_resource_ = true
