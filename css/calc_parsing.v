@@ -252,12 +252,54 @@ fn (mut parser Parser) parse_calculated_value_of_kind(mut tokens ComponentValueS
 	value := parser.parse_calculated_value_with_context(mut transaction, context, parser.context_allows_tree_counting_functions()) or { return none }
 	if value is CalculatedStyleValue {
 		numeric_type := value.numeric_type() or { return none }
+		if !calc_kind_allows_percentages(kind, context.percentages_resolve_as) {
+			for node in value.node {
+				if calc_node_contains_percentage(node) {
+					return none
+				}
+			}
+		}
 		if calc_type_matches(numeric_type, kind, context.percentages_resolve_as) {
 			tokens = transaction
 			return value
 		}
 	}
 	return none
+}
+
+// A calculation for a dimension without a <percentage> alternative, such as
+// the <angle> of rotate(), takes percentages only where the context resolves
+// them against that dimension. Elsewhere a percentage has nothing to resolve
+// against, so atan2(90px, 100%) is invalid there even though its arguments
+// have a consistent type.
+fn calc_kind_allows_percentages(kind CalcMatchKind, percentages_resolve_as ?ValueType) bool {
+	dimension := match kind {
+		.angle { ValueType.angle }
+		.time { ValueType.time }
+		.frequency { ValueType.frequency }
+		.resolution { ValueType.resolution }
+		.flex { ValueType.flex }
+		else { return true }
+	}
+	resolves_as := percentages_resolve_as or { return false }
+	return resolves_as == dimension
+}
+
+fn calc_node_contains_percentage(node CalcNode) bool {
+	match node {
+		CalcNumeric {
+			return node.kind == .percentage
+		}
+		CalcSum, CalcProduct, CalcNegate, CalcInvert, CalcFunction, CalcRandom {
+			for child in node.children {
+				if calc_node_contains_percentage(child) {
+					return true
+				}
+			}
+		}
+		else {}
+	}
+	return false
 }
 
 fn (mut parser Parser) parse_calc_function_node(function Function, allow_tree_counting_functions bool) ?CalcNode {
