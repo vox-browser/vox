@@ -2773,6 +2773,10 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 	}
 	previous_sibling := child.previous_sibling() or { unsafe { nil } }
 	mut removed_nodes := []&Node{}
+	// Adoption removes node from its old parent before child is removed,
+	// preserving mutation record order even when node and child are the same.
+	mut document := n.document()
+	document.adopt_node(node)
 	if child.parent() != none {
 		removed_nodes << child
 		mut mutable_child := unsafe { &Node(child) }
