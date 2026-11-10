@@ -182,3 +182,78 @@ fn test_large_source_image_shadows_match_native() {
 		check_large_source_blur_fixture(c, index)
 	}
 }
+
+// Native rescale resolves whole-image minification before decimation when
+// the combined step count would otherwise omit source pixels.
+fn test_large_minified_whole_source_blurs_match_native() {
+	fixtures := large_source_blur_fixtures()
+	macos := [
+		'c55db4f651180f604cb69e49c9f231bab877c87a7dce7004b826ae6da44ad38c',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'210107c689fe1839876780397e0931dfa73483d992145cb13d41c6f07bf2f9ed',
+		'd5f376e71629cb91dabfde32b1bd2c59731dfac489616e05ab5d9b7f6633db1d',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'df7c41a9da2b27cc56160f3d4194f3c2b0a64a05a44aadc667e6cf36921bbe6b',
+	]
+	linux := [
+		'e231bc84276b8e4770dbf3e4a5fffbdc08e676bff590398298cc62d9a63003cc',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'f023909591bbd5590cea9710ba690c0d2c1235760060a30ba506fc76f88be9bf',
+		'210107c689fe1839876780397e0931dfa73483d992145cb13d41c6f07bf2f9ed',
+		'd5f376e71629cb91dabfde32b1bd2c59731dfac489616e05ab5d9b7f6633db1d',
+		'e1ea97290f53f652fe24f914b7561299dfb212b4ec9d83a81e3f8abee6848df0',
+		'0ab9764c231131015f7b7a697083e118214214e4db1d70c12250af1ebc74f499',
+		'df7c41a9da2b27cc56160f3d4194f3c2b0a64a05a44aadc667e6cf36921bbe6b',
+	]
+	for i in 0 .. 8 {
+		base := fixtures[i]
+		w, h := f32(base.image_width), f32(base.image_height)
+		c := LargeSourceBlurFixture{...base, source: [f32(0), 0, w, h]!,
+			destination: [f32(5.25), 7.75, w * f32(.5), h * f32(.75)]!, sigma: 300,
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}
+
+// The blur resolves a minified source per shadow request, while merge keeps
+// the original foreground view, including when the shadow is offscreen.
+fn test_large_minified_whole_source_shadows_match_native() {
+	fixtures := large_source_blur_fixtures()
+	indices := [0, 1, 2, 3, 4, 5, 6, 7, 2, 1]
+	macos := [
+		'ac90861d3cdd537e9f6e6fc6068b6b48e207dd96a7e040666c2eb9ef646f8c3c',
+		'dc87f96b84e2d04bc947af14fd42eff3f46ab7bbcf8ad25b9a16e3d93f19e831',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'3ef6eebac7b3ed64eefe6df2bc7404a6931c2ea0f2fda3e0efcafc6b530c1130',
+		'72bd5d4149364f4e7f9c92b569d61601d7b16d6db0b60328fb6e4502c3eb9cb1',
+		'114a74b5e4150d7b0b2947f23fb5b7d29766409c9c07c606043c84c6e821a9b6',
+		'fc7373294e6b292a8eee37068bb5baa1f48f50737514c92cf97a50c6f2bd6437',
+		'61d939acd1709dd5028ba9a59e608214a48ee5333ebd2e185475914c97f273d2',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'dcf5803a334a54610445c02f042975fffd6502696ae2f3df361842ba1e90df61',
+	]
+	linux := [
+		'c3c14a4ddab99cc6b850feb8d3871754784ae663cd10e39d7311a02cfc500bcc',
+		'dc87f96b84e2d04bc947af14fd42eff3f46ab7bbcf8ad25b9a16e3d93f19e831',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'3ef6eebac7b3ed64eefe6df2bc7404a6931c2ea0f2fda3e0efcafc6b530c1130',
+		'72bd5d4149364f4e7f9c92b569d61601d7b16d6db0b60328fb6e4502c3eb9cb1',
+		'114a74b5e4150d7b0b2947f23fb5b7d29766409c9c07c606043c84c6e821a9b6',
+		'fc7373294e6b292a8eee37068bb5baa1f48f50737514c92cf97a50c6f2bd6437',
+		'61d939acd1709dd5028ba9a59e608214a48ee5333ebd2e185475914c97f273d2',
+		'1d0a643c1131ca50477ea6fbd633079190621fafb20a18d9018094495cecc87b',
+		'dcf5803a334a54610445c02f042975fffd6502696ae2f3df361842ba1e90df61',
+	]
+	for i, index in indices {
+		base := fixtures[index]
+		w, h := f32(base.image_width), f32(base.image_height)
+		c := LargeSourceBlurFixture{...base, source: [f32(0), 0, w, h]!,
+			destination: [f32(5.25), 7.75, w * f32(.5), h * f32(.75)]!, sigma: 300,
+			shadow: true, shadow_color: 0x9d70d020,
+			offset: if i < 8 { [f32(9.25), -13.75]! } else { [f32(4096), -4096]! },
+			expected_macos: macos[i], expected_linux: linux[i]}
+		check_large_source_blur_fixture(c, i)
+	}
+}
