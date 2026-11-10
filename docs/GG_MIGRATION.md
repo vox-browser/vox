@@ -2458,3 +2458,41 @@ Skia. Short optimized cohorts do not resolve the retained long-run no-GC
 resource failure or inherited FastC saved-canvas degenerate-gradient failure.
 See the [native cases, guarded comparisons, setup failures and component
 proofs](https://github.com/vox-browser/vox-tests/blob/7bbc2a2fca7ed1332b72c162003bcd07b1066e23/evidence/gg-migration/large-blur-identity-tails-20261109.json).
+
+
+### Identity-kernel prefixes before large image blurs (2026-11-10)
+
+`b422ec7ef` reduces a pure-blur image chain to its only mapped non-identity
+stage when that stage is large. Identity kernels before it return the deferred
+image unchanged, so the image never reaches a resolved surface, and these
+chains previously declined. The reduced blur now uses the existing single-blur
+source-sampling path. Incoming color effects join its input and later ones
+restore with its result, as identity tails already did. Quick-reject bounds
+still outset by every original radius, in order. Chains with a second real
+kernel, including sigma .02 made non-identity by a 2x scale, keep their chain
+path or decline atomically.
+
+At seed 20270311 a baseline built from a read-only export of `2aeab0885`
+declines all 500 requests; the candidate matches 345 and declines 155. Final C
+cohorts at seed 20270312 match 693 of 1,000 on both macOS and Linux, declining
+307. Optimized macOS/no-GC at seed 20270313 matches 70 of 100, declining 30.
+Regression cohorts at seed 20270312 find no mismatches: identity tails match
+696 of 1,000 (unchanged from their recorded final), zero stages 868 and
+terminal image blurs 832. Counts include no-ops; all cohorts retain unchanged
+inputs under the 3 GiB guard.
+
+Twenty-six native fixtures and three decline controls verify on each platform.
+They cover one to three identity prefix stages, prefix/between/post color
+matrices, optional identity tails, alpha/P3, clips, composites, fractional
+subsets, scaling/reflection and larger content, and every case changes the
+background. The controls, with a later real kernel, leave the destination
+untouched. An existing unit test expected the image chain `[.01, 300]` to
+decline; it now checks `[.01, 300, .8]`, which still declines.
+
+Focused C suites on both platforms, selected macOS FastC tests, Linux browser
+typechecking and HTML canvas integration pass. The FMA audit finds zero
+contracted operations (170 explicit). The standalone Linux production/no-GC
+executable runs all 15 source-image test functions with Skia unavailable to
+pkg-config; direct libraries are FreeType, libm and libc. Full-browser integration still uses installed Skia. See the
+[native cases, guarded comparisons and component
+proof](https://github.com/vox-browser/vox-tests/blob/7550a2aa6ea614dd9d9d21dcf7146e30f194f499/evidence/gg-migration/identity-prefix-image-blurs-20261110.json).

@@ -36,8 +36,7 @@ fn draw_large_source_filter(mut pixels []u8, width int, height int, pitch int, a
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
 	bounds := step.source_draw_bounds or { dst }
-	pad := f32(3) * step.sigma
-	mut fast := Rect{bounds.left - pad, bounds.top - pad, bounds.right + pad, bounds.bottom + pad}
+	mut fast := filter_fast_bounds(bounds, step, step.sigma)
 	drop := step.kind == .drop_shadow
 	mut offset := SkAffine{}
 	if drop {
