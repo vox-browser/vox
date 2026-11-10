@@ -116,7 +116,11 @@ fn downscale_filter_input(source FilterResult, desired IRect, scale_x f32, scale
 		shader := if input := first { rescale_source_image_shader(input, transform, bounds, padded.left, padded.top) }
 			else { rescale_filter_shader(image, transform, bounds, padded.left, padded.top) }
 		alpha := if input := first { input.view.alpha } else { image.color_info.alpha }
-		legacy := first == none && canvas_rgba_uses_legacy()
+		// Default sampling can use the native N32 shader context. Mipmapped
+		// sources and the paint's deferred alpha filter stay in the pipeline.
+		legacy := canvas_rgba_uses_legacy() && if input := first {
+			input.view.default_sampling && input.view.alpha == 1
+		} else { true }
 		rc := canvas_raster_clip(w, h, [])
 		if mut blitter := canvas_draw_blitter_for_surface(mut pixels, w * 4, 0xff000000, shader, alpha, .src,
 			Rect{1, 1, f32(w - 1), f32(h - 1)}, pending, legacy) {
