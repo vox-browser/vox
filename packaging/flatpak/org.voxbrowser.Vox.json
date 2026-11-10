@@ -1,0 +1,86 @@
+{
+    "app-id": "org.voxbrowser.Vox",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "51",
+    "sdk": "org.gnome.Sdk",
+    "command": "vox",
+    "finish-args": [
+        "--share=ipc",
+        "--share=network",
+        "--socket=x11",
+        "--socket=wayland",
+        "--socket=pulseaudio",
+        "--device=dri",
+        "--filesystem=xdg-download"
+    ],
+    "sdk-extensions": [
+        "org.freedesktop.Sdk.Extension.rust-stable"
+    ],
+    "cleanup": [
+        "/include",
+        "/lib/pkgconfig",
+        "*.la",
+        "*.a"
+    ],
+    "modules": [
+        {
+            "name": "v",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/vlang/v.git",
+                    "commit": "f7f3add7af3c4615ba5dbedc06e18f76ef604346"
+                }
+            ],
+            "build-commands": [
+                "make -j4",
+                "mkdir -p /app/v",
+                "cp -r . /app/v"
+            ]
+        },
+        {
+            "name": "ui2",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/vlang/ui2.git",
+                    "branch": "master"
+                }
+            ],
+            "build-commands": [
+                "mkdir -p /app/ui2",
+                "cp -r . /app/ui2"
+            ]
+        },
+        {
+            "name": "vox",
+            "buildsystem": "simple",
+            "sources": [
+                {
+                    "type": "git",
+                    "url": "https://github.com/vox-browser/vox.git",
+                    "branch": "master"
+                }
+            ],
+            "build-options": {
+                "env": {
+                    "V_BIN": "/app/v/v",
+                    "UI2_SOURCE_DIR": "/app/ui2",
+                    "V_MACOS_V3_NO_FALLBACK": "1"
+                }
+            },
+            "build-commands": [
+                "python3 tools/build_linux_skia.py",
+                "python3 tools/build_linux_native.py",
+                "sh build-linux-browser.sh",
+                "test -x Build/linux/vox",
+                "install -D Build/linux/vox /app/bin/vox",
+                "install -Dm644 packaging/flatpak/org.voxbrowser.Vox.metainfo.xml /app/share/metainfo/org.voxbrowser.Vox.metainfo.xml",
+                "install -Dm644 packaging/flatpak/org.voxbrowser.Vox.desktop /app/share/applications/org.voxbrowser.Vox.desktop",
+                "install -Dm644 packaging/Vox.png /app/share/icons/hicolor/256x256/apps/org.voxbrowser.Vox.png"
+            ]
+        }
+    ]
+}
