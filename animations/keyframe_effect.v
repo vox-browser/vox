@@ -709,6 +709,10 @@ pub fn (effect &KeyframeEffect) can_skip_per_frame_style_update() bool {
 	if !target.as_node().is_connected() {
 		return true
 	}
+	if target.document() != unsafe { nil } && target.document().layout_is_up_to_date()
+		&& !effect.may_animate_display() && target_is_unseen_in_display_none_subtree(target) {
+		return true
+	}
 	if target.namespace_uri() or { '' } == 'http://www.w3.org/2000/svg' {
 		return false
 	}
@@ -763,6 +767,14 @@ pub fn (effect &KeyframeEffect) can_skip_per_frame_animation_tick() bool {
 	if !effect.is_compositor_driven_ && !effect.is_compositor_replaced_
 		&& !effect.can_skip_per_frame_style_update() {
 		return false
+	}
+	// Infinite effects can still finish while playing backwards, or when
+	// their iteration duration is zero. Neither case has a wake-up timer.
+	if animation := effect.associated_animation_ {
+		if math.is_inf(effect.iteration_count_, 1)
+			&& (animation.playback_rate() < 0 || !math.is_inf(effect.end_time().value, 1)) {
+			return false
+		}
 	}
 	if (effect.is_compositor_driven_ || effect.is_compositor_replaced_)
 		&& (!math.is_inf(effect.iteration_count_, 1)
