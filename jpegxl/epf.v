@@ -46,6 +46,7 @@ const epf_wide = [EpfOffset{ y: -2 }, EpfOffset{ x: -1, y: -1 }, EpfOffset{ y: -
 const epf_sad_patch = [EpfOffset{ y: -1 }, EpfOffset{ x: -1 }, EpfOffset{}, EpfOffset{ x: 1 },
 	EpfOffset{ y: 1 }]
 
+@[direct_array_access]
 fn (plane FloatPlane) reflected(x int, y int) f32 {
 	mut px := x % (plane.width * 2)
 	mut py := y % (plane.height * 2)
@@ -99,12 +100,44 @@ fn epf_weight(sad f32, inverse_sigma f32) f32 {
 	return if value < 0 { f32(0) } else { value }
 }
 
+// The widest EPF reach is a two-sample offset plus the one-sample SAD patch.
+const epf_pad = 3
+
+// Copy a plane into a border of epf_pad samples filled by the same mirror rule
+// as reflected(), so the filter reads neighbours without per-sample folding.
+@[direct_array_access]
+fn epf_padded(plane FloatPlane) []f32 {
+	pw := plane.width + 2 * epf_pad
+	ph := plane.height + 2 * epf_pad
+	mut out := []f32{len: pw * ph}
+	// An empty plane has no samples to filter, so its border is never read.
+	if plane.width == 0 || plane.height == 0 { return out }
+	for y in 0 .. ph {
+		sy := y - epf_pad
+		inner := sy >= 0 && sy < plane.height
+		for x in 0 .. pw {
+			sx := x - epf_pad
+			out[y * pw + x] = if inner && sx >= 0 && sx < plane.width {
+				plane.samples[sy * plane.width + sx]
+			} else {
+				plane.reflected(sx, sy)
+			}
+		}
+	}
+	return out
+}
+
+@[direct_array_access]
 fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, origin_x u32, origin_y u32, pass int) ![]FloatPlane {
 	validate_epf(input, parameters, sigma, origin_x, origin_y)!
 	if pass < 0 || pass > 2 { return error('Unsupported JPEG XL EPF pass') }
 	offsets := if pass == 0 { epf_wide } else { epf_cross }
 	width := input[0].width
 	height := input[0].height
+	pw := width + 2 * epf_pad
+	padded := [epf_padded(input[0]), epf_padded(input[1]), epf_padded(input[2])]
+	offset_deltas := offsets.map(it.y * pw + it.x)
+	patch_deltas := epf_sad_patch.map(it.y * pw + it.x)
 	mut output := [][]f32{cap: 3}
 	for _ in 0 .. 3 { output << []f32{len: input[0].samples.len} }
 	scale := parameters.sigma_scale * f32(1.65)
@@ -112,6 +145,7 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 	for y in 0 .. height {
 		for x in 0 .. width {
 			position := y * width + x
+			base := (y + epf_pad) * pw + x + epf_pad
 			gx := u64(origin_x) + u64(x)
 			gy := u64(origin_y) + u64(y)
 			value := epf_sigma_value(sigma, gx, gy)
@@ -129,11 +163,11 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 			mut sads := [12]f32{}
 			if pass != 2 {
 				for c in 0 .. 3 {
-					for i, offset in offsets {
+					for i, delta in offset_deltas {
 						mut distance := f32(0)
-						for patch in epf_sad_patch {
-							first := input[c].reflected(x + patch.x, y + patch.y)
-							second := input[c].reflected(x + offset.x + patch.x, y + offset.y + patch.y)
+						for pd in patch_deltas {
+							first := padded[c][base + pd]
+							second := padded[c][base + delta + pd]
 							distance += math.abs(first - second)
 						}
 						sads[i] = if pass == 0 {
@@ -144,11 +178,11 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 					}
 				}
 			}
-			for i, offset in offsets {
+			for i, delta in offset_deltas {
 				sad := if pass == 2 {
-					first := math.abs(input[0].reflected(x + offset.x, y + offset.y) - input[0].samples[position])
-					second := math.abs(input[1].reflected(x + offset.x, y + offset.y) - input[1].samples[position])
-					third := math.abs(input[2].reflected(x + offset.x, y + offset.y) - input[2].samples[position])
+					first := math.abs(padded[0][base + delta] - input[0].samples[position])
+					second := math.abs(padded[1][base + delta] - input[1].samples[position])
+					third := math.abs(padded[2][base + delta] - input[2].samples[position])
 					fused_f32(first, parameters.channel_scale[0], fused_f32(second, parameters.channel_scale[1], third * parameters.channel_scale[2]))
 				} else {
 					sads[i]
@@ -161,11 +195,10 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 				mut sample := input[c].samples[position]
 				for step in 0 .. offsets.len {
 					i := if pass == 2 { step } else { offsets.len - 1 - step }
-					offset := offsets[i]
 					sample = if pass == 2 {
-						fused_f32(weights[i], input[c].reflected(x + offset.x, y + offset.y), sample)
+						fused_f32(weights[i], padded[c][base + offset_deltas[i]], sample)
 					} else {
-						fused_f32(input[c].reflected(x + offset.x, y + offset.y), weights[i], sample)
+						fused_f32(padded[c][base + offset_deltas[i]], weights[i], sample)
 					}
 				}
 				output[c][position] = sample * inverse_weight

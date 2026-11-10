@@ -30,6 +30,7 @@ fn xyb_parameters(opsin OpsinInverseMatrix, intensity_target f32) !XybParameters
 
 // Output is linear RGB in the supplied inverse matrix's primaries. Selecting
 // an output color profile and applying its transfer curve are separate stages.
+@[direct_array_access]
 pub fn xyb_to_linear(input [3]FloatPlane, opsin OpsinInverseMatrix, intensity_target f32) ![3]FloatPlane {
 	params := xyb_parameters(opsin, intensity_target)!
 	for plane in input {

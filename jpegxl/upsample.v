@@ -34,6 +34,7 @@ fn upsample_kernels(factor int, weights []f32) ![][25]f32 {
 // Expand each sample through the source's symmetric 5x5 polyphase kernels.
 // The final row/column may be cropped when the encoded dimensions were rounded
 // up. Mirrored source borders and neighborhood min/max clamping are retained.
+@[direct_array_access]
 pub fn upsample_plane(input FloatPlane, factor int, weights []f32, width int, height int) !FloatPlane {
 	input.validate()!
 	kernels := upsample_kernels(factor, weights)!

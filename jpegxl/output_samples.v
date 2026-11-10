@@ -44,6 +44,7 @@ pub fn premultiply_output_row(color []f32, alpha []f32) ![]f32 {
 
 // Matches native SIMD round-to-nearest-even after the source's positional
 // dither. Scalar source fallback uses ties-away; that fallback is not this API.
+@[direct_array_access]
 pub fn quantize_output_row(input []f32, x u32, y u32, channel u32, bits u32) ![]u8 {
 	if bits == 0 || bits > 8 || input.len > 1048576 {
 		return error('Invalid JPEG XL quantized output row')

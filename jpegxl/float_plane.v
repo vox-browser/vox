@@ -15,6 +15,7 @@ fn (plane FloatPlane) validate() ! {
 	}
 }
 
+@[direct_array_access]
 fn (plane FloatPlane) at_border(x int, y int) f32 {
 	px := if x < 0 {
 		0

@@ -26,6 +26,7 @@ fn srgb_rational_polynomial(x f32, p [5]f32, q [5]f32) f32 {
 
 // Preserve the source renderer's signed rational approximation, threshold
 // comparisons and fused Horner evaluation. The source does not clamp here.
+@[direct_array_access]
 pub fn srgb_transfer(input FloatPlane, direction SrgbTransferDirection) !FloatPlane {
 	input.validate()!
 	mut result := []f32{len: input.samples.len}
