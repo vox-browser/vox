@@ -12,9 +12,18 @@ import url
 fn load_browser_imported_style_sheet(document &dom.Document, address string) ?css.ImportedStyleSheetSource {
 	resource := fetch_browser_resource(address, document.base_url().serialize(),
 		document.url.serialize(), 'stylesheet') or { return none }
+	mut content_type := ''
+	for header in resource.response_headers {
+		if header.name.to_lower() == 'content-type' { content_type = header.value }
+	}
 	return css.ImportedStyleSheetSource{
 		css_text:     resource.body
 		response_url: resource.final_url
+		content_type: content_type
+		// This adapter does not retain the redirect chain's Fetch tainting.
+		// Keep the quirks-mode MIME exemption disabled rather than inferring
+		// CORS-same-origin from the last URL of a potentially opaque response.
+		cors_same_origin: false
 	}
 }
 

@@ -3,6 +3,7 @@ module css
 import platform
 import dom
 import os
+import mimesniff
 
 // dom <-> css bridge
 // ==================
@@ -519,6 +520,10 @@ pub struct ImportedStyleSheetSource {
 pub:
 	css_text string
 	response_url string
+	content_type string
+	// Set only when the transport establishes a CORS-same-origin response;
+	// comparing the final URL alone loses cross-origin redirect tainting.
+	cors_same_origin bool
 }
 
 // The embedding browser supplies its stylesheet transport and cache. Keeping
@@ -540,6 +545,11 @@ fn read_imported_stylesheet(document &dom.Document, reference string, base_url s
 	if !resolved_url.starts_with('https://') && !resolved_url.starts_with('http://') { return none }
 	loader := remote_style_sheet_loader_ or { return none }
 	source := loader(document, resolved_url) or { return none }
+	if mime := mimesniff.MimeType.parse(source.content_type) {
+		if mime.essence() != 'text/css' && !(document.in_quirks_mode() && source.cors_same_origin) {
+			return none
+		}
+	}
 	return source.css_text, source.response_url
 }
 
