@@ -555,14 +555,26 @@ fn read_imported_stylesheet(document &dom.Document, reference string, base_url s
 
 // The text of remote stylesheets that the browser fetched for links that
 // scripts inserted after the document's initial resources, by resolved URL.
-__global remote_link_style_sheets = map[string]string{}
+__global remote_link_style_sheets = map[string]ImportedStyleSheetSource{}
 
 // Record a fetched remote link stylesheet. The next style synchronization
 // installs it for each link that references it.
 pub fn set_remote_link_style_sheet(resolved_url string, css_text string) {
+	set_remote_link_style_sheet_response(resolved_url, ImportedStyleSheetSource{
+		css_text: css_text
+		response_url: resolved_url
+	})
+}
+
+pub fn set_remote_link_style_sheet_response(resolved_url string, source ImportedStyleSheetSource) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	remote_link_style_sheets[resolved_url.clone()] = css_text.clone()
+	remote_link_style_sheets[resolved_url.clone()] = ImportedStyleSheetSource{
+		css_text: source.css_text.clone()
+		response_url: source.response_url.clone()
+		content_type: source.content_type.clone()
+		cors_same_origin: source.cors_same_origin
+	}
 }
 
 pub fn has_remote_link_style_sheet(resolved_url string) bool {
@@ -575,11 +587,20 @@ pub fn link_style_sheet_url(reference string, base_url string) ?string {
 }
 
 fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(string, string) {
+	if type_ := link.get_attribute_ns(none, 'type') {
+		mime := mimesniff.MimeType.parse(type_) or { return none }
+		if mime.essence() != 'text/css' { return none }
+	}
 	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
 	if path := local_path_for_stylesheet_url(resolved_url) {
 		return os.read_file(path) or { return none }, resolved_url
 	}
-	css_text := remote_link_style_sheets[resolved_url] or { return none }
+	source := remote_link_style_sheets[resolved_url] or { return none }
+	if mime := mimesniff.MimeType.parse(source.content_type) {
+		assume_css_in_quirks_mode := link.document().in_quirks_mode()
+			&& dom.URL{value: source.response_url}.origin().is_same_origin(link.document().origin())
+		if mime.essence() != 'text/css' && !assume_css_in_quirks_mode { return none }
+	}
 	// The browser inlines a parsed remote link's sheet as the <style> after it.
 	if inlined := link.as_node().next_sibling() {
 		if element := inlined.as_element() {
@@ -589,7 +610,7 @@ fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(
 			}
 		}
 	}
-	return css_text, resolved_url
+	return source.css_text, source.response_url
 }
 
 fn load_imported_stylesheets(document &dom.Document, mut sheet CSSStyleSheet, location string, mut active_urls map[string]bool) {

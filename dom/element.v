@@ -6017,6 +6017,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		mut link := unsafe { &HTMLLinkElement(&e) }
 		link.set_linked_style_sheet_media(value_or_empty)
 	}
+	if e.is_html_element() && e.local_name() == 'link' && local_name == 'type' {
+		link := unsafe { &HTMLLinkElement(&e) }
+		if link.link_element_model_ != unsafe { nil }
+			&& link.link_type_attribute_changed_callback_ != unsafe { nil } {
+			link.link_type_attribute_changed_callback_(link.link_element_model_, old_value, value)
+		}
+	}
 
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }

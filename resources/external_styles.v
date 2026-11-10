@@ -64,6 +64,9 @@ fn link_stylesheet_applies(link &dom.Element, preferred_set_name string) bool {
 	if 'stylesheet' !in relations || link.has_attribute('disabled') {
 		return false
 	}
+	if !html.is_supported_style_sheet_type_attribute(link.get_attribute_ns(none, 'type')) {
+		return false
+	}
 	title := link.get_attribute_value('title')
 	if title == '' {
 		return 'alternate' !in relations
@@ -183,10 +186,11 @@ fn (mut app BrowserApp) request_script_inserted_stylesheets() bool {
 			continue
 		}
 		identity := link.as_node().unique_id()
-		if app.script_stylesheet_links[identity] == resolved_url { continue }
-		app.script_stylesheet_links[identity] = resolved_url
 		native_link := unsafe { &dom.HTMLLinkElement(link) }
-		if native_link.linked_style_sheet_from_resource_ {
+		model := html.html_link_element_model_for_dom_element(native_link)
+		if app.script_stylesheet_links[identity] == resolved_url && !model.is_stylesheet_loading() { continue }
+		app.script_stylesheet_links[identity] = resolved_url
+		if native_link.linked_style_sheet_from_resource_ && !model.is_stylesheet_loading() {
 			continue
 		}
 		if resource := app.script_stylesheet_responses[resolved_url] {
@@ -258,7 +262,17 @@ fn (mut app BrowserApp) install_script_inserted_stylesheet(resource PreloadedRes
 		response_headers: filtered.response_headers.map(adblock.ResponseHeader{ name: it.name.clone(), value: it.value.clone() })
 	}
 	app.script_stylesheet_responses[resource.url.clone()] = retained
-	if retained.error == '' { css.set_remote_link_style_sheet(resource.url, retained.body) }
+	if retained.error == '' {
+		mut content_type := ''
+		for header in retained.response_headers {
+			if header.name.to_lower() == 'content-type' { content_type = header.value }
+		}
+		css.set_remote_link_style_sheet_response(resource.url, css.ImportedStyleSheetSource{
+			css_text: retained.body
+			response_url: if retained.final_url == '' { retained.url } else { retained.final_url }
+			content_type: content_type
+		})
+	}
 	mut installed := false
 	for link in css.query_selector_all(app.document.as_node(), 'link[rel][href]') {
 		if !link_stylesheet_applies(link, preferred_style_sheet_set_name(app.document.as_node())) {

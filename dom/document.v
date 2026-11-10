@@ -716,6 +716,8 @@ pub type HTMLLinkHasLoadedIconCallback = fn (voidptr) bool
 
 pub type HTMLLinkLoadFaviconCallback = fn (voidptr) bool
 
+pub type HTMLLinkTypeAttributeChangedCallback = fn (voidptr, ?string, ?string)
+
 @[heap]
 pub struct HTMLLinkElement {
 	HTMLElement
@@ -723,6 +725,7 @@ pub mut:
 	link_element_model_            voidptr = unsafe { nil }
 	link_has_loaded_icon_callback_ HTMLLinkHasLoadedIconCallback = unsafe { nil }
 	link_load_favicon_callback_    HTMLLinkLoadFaviconCallback   = unsafe { nil }
+	link_type_attribute_changed_callback_ HTMLLinkTypeAttributeChangedCallback = unsafe { nil }
 	// LinkStyle::sheet is CSS-owned, as with StyleElementBase's sheet.
 	linked_style_sheet_               voidptr
 	linked_style_sheet_scope_         ?&Node

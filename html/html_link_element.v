@@ -10,6 +10,7 @@ module html
 import css
 import dom
 import fetch
+import mimesniff
 
 pub enum LinkResourceKind {
 	stylesheet
@@ -92,6 +93,7 @@ mut:
 	rel_                          string
 	href_                         string
 	type_                         string
+	type_attribute_present_       bool
 	media_                        string
 	sizes_                        string
 	disabled_                     bool
@@ -183,6 +185,7 @@ fn attach_html_link_element_model(element &dom.HTMLLinkElement, model &HTMLLinkE
 	mutable_element.link_element_model_ = voidptr(model)
 	mutable_element.link_has_loaded_icon_callback_ = link_model_has_loaded_icon
 	mutable_element.link_load_favicon_callback_ = link_model_load_favicon
+	mutable_element.link_type_attribute_changed_callback_ = link_model_type_attribute_changed
 	mut node := link_dom_element(element).as_node()
 	node.set_adopted_from_hook(dom.NodeAdoptedFromHook{
 		target: voidptr(model)
@@ -201,6 +204,7 @@ pub fn html_link_element_model_for_dom_element(element &dom.HTMLLinkElement) &HT
 	model.rel_ = dom_element.get_attribute_value('rel')
 	model.href_ = dom_element.get_attribute_value('href')
 	model.type_ = dom_element.get_attribute_value('type')
+	model.type_attribute_present_ = dom_element.get_attribute_ns(none, 'type') != none
 	model.media_ = dom_element.get_attribute_value('media')
 	model.sizes_ = dom_element.get_attribute_value('sizes')
 	model.disabled_ = dom_element.has_attribute('disabled')
@@ -254,6 +258,41 @@ pub fn (link &HTMLLinkElementModel) href() string {
 
 pub fn (mut link HTMLLinkElementModel) set_type(value string) {
 	link.type_ = value
+	link.type_attribute_present_ = true
+}
+
+fn link_model_type_attribute_changed(target voidptr, old_value ?string, value ?string) {
+	mut model := unsafe { &HTMLLinkElementModel(target) }
+	model.type_ = value or { '' }
+	model.type_attribute_present_ = value != none
+	if element := model.element_ {
+		model.connected_ = link_dom_element(element).as_node().is_browsing_context_connected()
+	}
+	if model.connected_ && model.has_relation('stylesheet') && old_value != value
+		&& !(is_supported_style_sheet_type_attribute(old_value) && is_supported_style_sheet_type_attribute(value)) {
+		model.fetch_and_process_linked_resource()
+	}
+}
+
+pub fn is_supported_style_sheet_type_attribute(value ?string) bool {
+	type_ := value or { return true }
+	mime := mimesniff.MimeType.parse(type_) or { return false }
+	return mime.essence() == 'text/css'
+}
+
+fn (link &HTMLLinkElementModel) supports_style_sheet_type() bool {
+	if element := link.element_ {
+		return is_supported_style_sheet_type_attribute(link_dom_element(element).get_attribute_ns(none, 'type'))
+	}
+	return is_supported_style_sheet_type_attribute(if link.type_attribute_present_ { ?string(link.type_) } else { none })
+}
+
+fn (mut link HTMLLinkElementModel) clear_loaded_style_sheet() {
+	link.loaded_style_sheet_ = none
+	if element := link.element_ {
+		mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
+		dom_link.remove_linked_style_sheet()
+	}
 }
 
 pub fn (link &HTMLLinkElementModel) type_() string {
@@ -382,6 +421,10 @@ pub fn (mut link HTMLLinkElementModel) icon_linked_resource_fetch_setup_steps(mu
 }
 
 pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_steps(mut request LinkRequest) bool {
+	if !link.supports_style_sheet_type() {
+		link.clear_loaded_style_sheet()
+		return false
+	}
 	if link.disabled_ {
 		return false
 	}
@@ -465,6 +508,10 @@ pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource
 
 pub fn (mut link HTMLLinkElementModel) set_external_stylesheet_fetcher(enabled bool) {
 	link.external_stylesheet_fetcher_ = enabled
+}
+
+pub fn (link &HTMLLinkElementModel) is_stylesheet_loading() bool {
+	return link.stylesheet_loading_
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_dns_prefetch_resource() {
@@ -733,17 +780,22 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 			return
 		}
 	}
-	mut success := request_succeeded
-	mime_from_response := ascii_lowercase_string(response.content_type.split(';')[0].trim_space())
-	mime := if link.type_ != '' { ascii_lowercase_string(link.type_) } else { mime_from_response }
-	if mime != '' && mime != 'text/css' {
-		success = false
+	mut success := request_succeeded && link.supports_style_sheet_type()
+	mut assume_css_in_quirks_mode := false
+	if document := link.resource_document() {
+		if resource_url := response.url {
+			assume_css_in_quirks_mode = document.in_quirks_mode()
+				&& document.origin().is_same_origin(resource_url.origin())
+		}
 	}
-	link.loaded_style_sheet_ = none
-	if element := link.element_ {
-		mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
-		dom_link.remove_linked_style_sheet()
+	// Only the response metadata determines the resource's type. An absent
+	// or invalid Content-Type retains the interoperable CSS fallback.
+	if mime := mimesniff.MimeType.parse(response.content_type) {
+		if mime.essence() != 'text/css' && !assume_css_in_quirks_mode {
+			success = false
+		}
 	}
+	link.clear_loaded_style_sheet()
 	if success {
 		link.loaded_style_sheet_ = response.body.bytestr()
 		if element := link.element_ {
@@ -846,10 +898,10 @@ pub fn html_link_element_finished_loading_critical_style_subresources(element &d
 
 pub fn html_link_element_attribute_changed(element &dom.HTMLLinkElement, name string, old_value ?string, value ?string, namespace_ ?string) {
 	mut dom_element := link_dom_element(element)
-	dom_element.attribute_changed(name, old_value, value, namespace_)
 	mut model := unsafe { &HTMLLinkElementModel(html_link_element_model_for_dom_element(element)) }
+	dom_element.attribute_changed(name, old_value, value, namespace_)
 	if name == 'type' {
-		model.type_ = ascii_lowercase_string(value or { '' })
+		// Element's actual attribute dispatch calls the model hook above.
 		return
 	}
 	old_relations := link_relation_tokens(model.rel_)
