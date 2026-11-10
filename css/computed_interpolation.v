@@ -1936,6 +1936,9 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 		Display.from_short(.flow_root)
 	}
 	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
+	// The wrapper is the positioned box, so its static position must keep
+	// the table's original block- or inline-level display.
+	wrapper.set_display_before_box_type_transformation(c.display_before_box_type_transformation())
 	for property_id in [PropertyID.position, .position_anchor, .top, .right, .bottom, .left, .float_,
 		.clear, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start,
 		.align_self, .justify_self, .baseline_source, .order, .margin_top, .margin_right, .margin_bottom,
