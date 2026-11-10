@@ -736,6 +736,19 @@ pub fn inline_style_for_element(element &dom.Element) ?&CSSStyleProperties {
 	return inline_style_for_abstract_element(dom.AbstractElement.new(element, none))
 }
 
+// An out-of-range CSSUnitValue is stored wrapped in a CSSMathSum, so the
+// declaration's text is the wrapped calc(), not the value's own serialization.
+fn serialized_text_for_internal_representation(value MutableStylePropertyMapValue, internal_representation &dom.StyleValue) !string {
+	if value is CSSStyleValue {
+		if numeric := value.numeric_value_ {
+			if numeric is CSSUnitValue && internal_representation.css_text.starts_with('calc(') {
+				return internal_representation.css_text
+			}
+		}
+	}
+	return serialized_text_from_mutable_style_property_map_value(value)!
+}
+
 fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
 	return match value {
 		CSSStyleValue { value.to_string()! }
@@ -2378,15 +2391,46 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property Prop
 				css_text: value.css_text
 			}
 		}
-		property_id := property.id() or { return none }
+		mut property_id := property.id() or { return none }
 		dom_computed := element.computed_properties() or { return none }
 		computed := computed_properties_from_dom(dom_computed) or { return none }
+		context := LogicalAliasMappingContext{
+			writing_mode: computed.writing_mode()
+			direction:    computed.direction()
+		}
+		if property_is_shorthand(property_id) {
+			return computed_shorthand_style_value(computed, property_id, context)
+		}
+		// Logical aliases have no computed value of their own; they share the
+		// physical property's for this element's writing mode and direction.
+		if property_is_logical_alias(property_id) {
+			property_id = map_logical_alias_to_physical_property(property_id, context)
+		}
 		return computed.property(property_id, .yes)
 	}
 	if declaration := property_map.declaration {
 		return declaration.get_property_style_value(property)
 	}
 	return none
+}
+
+// A shorthand has no computed value of its own. Compose it from its longhands'
+// computed values: one value when they all agree, otherwise all of them.
+fn computed_shorthand_style_value(computed &ComputedProperties, shorthand PropertyID, context LogicalAliasMappingContext) ?&dom.StyleValue {
+	mut texts := []string{}
+	for longhand in generated_expanded_longhands_for_shorthand(shorthand) {
+		physical := if property_is_logical_alias(longhand) {
+			map_logical_alias_to_physical_property(longhand, context)
+		} else {
+			longhand
+		}
+		if property_is_shorthand(physical) { return none }
+		value := computed.property(physical, .yes) or { return none }
+		texts << dom_style_value_to_css_text(value)
+	}
+	if texts.len == 0 { return none }
+	if texts.all(it == texts[0]) { return &dom.StyleValue{css_text: texts[0]} }
+	return &dom.StyleValue{css_text: texts.join(' ')}
 }
 
 fn (mut property_map StylePropertyMapReadOnly) get_serialized_style_value(property PropertyNameAndID) ?string {
@@ -2521,7 +2565,7 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 		}
 		internal_representation := create_an_internal_representation(property, value)!
 		values_to_set << internal_representation
-		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
+		serialized_values << serialized_text_for_internal_representation(value, internal_representation)!
 	}
 
 	// 10. Set props[property] to values to set.
@@ -2592,8 +2636,9 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 		if mutable_style_property_map_value_is_unresolved(property, value) {
 			return error('Cannot append a CSSUnparsedValue or CSSVariableReferenceValue')
 		}
-		value_list << create_an_internal_representation(property, value)!
-		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
+		internal_representation := create_an_internal_representation(property, value)!
+		value_list << internal_representation
+		serialized_values << serialized_text_for_internal_representation(value, internal_representation)!
 	}
 
 	// 11. Append the entries of temp values to props[property].

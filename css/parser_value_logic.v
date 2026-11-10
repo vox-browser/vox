@@ -11988,14 +11988,9 @@ fn (mut parser Parser) parse_text_indent_value(mut tokens ComponentValueStream) 
 
 // https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value
 fn (mut parser Parser) parse_opacity_value(mut tokens ComponentValueStream) ?StyleValue {
-	value := parser.parse_number_percentage_value(mut tokens) or { return none }
-
-	// Percentages map to the range [0,1] for opacity values
-	if value is PercentageStyleValue {
-		return StyleValue(NumberStyleValue.create(value.percentage().as_fraction()))
-	}
-
-	return value
+	// A specified percentage stays a percentage; StyleComputer.compute_opacity
+	// maps it to the range [0,1] as the computed number.
+	return parser.parse_number_percentage_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentValueStream) ?StyleValue {
