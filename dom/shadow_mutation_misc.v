@@ -3530,6 +3530,16 @@ fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.Mime
 	mut host_element := ?&Element(none)
 	if type_.is_image() {
 		mut img_element := create_element(document, 'img', namespace_html_, none, none, false)!
+		mut image := unsafe { &HTMLImageElement(img_element) }
+		image.is_image_document_image_ = true
+		if mut body := document.body() {
+			mut body_style := body.style_for_bindings()
+			body_style.set_declarations_from_text('display: flex; min-height: 100vh; margin: 0;')
+			body.set_inline_style(body_style)
+		}
+		mut image_style := img_element.style_for_bindings()
+		image_style.set_declarations_from_text('position: static; flex: none; max-width: 100vw; max-height: 100vh; margin: auto; background-color: hsl(0, 0%, 90%);')
+		img_element.set_inline_style(image_style)
 		img_element.set_attribute_value('src', url_string)
 		host_element = img_element
 	} else if type_.type_() == 'video' {

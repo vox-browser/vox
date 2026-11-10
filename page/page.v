@@ -326,6 +326,11 @@ fn page_device_pixel_scale_callback(target voidptr) f64 {
 	return model.device_scale
 }
 
+fn page_zoom_level_callback(target voidptr) f64 {
+	model := unsafe { &Page(target) }
+	return model.client_.zoom_level()
+}
+
 fn page_preferred_color_scheme_callback(target voidptr) string {
 	model := unsafe { &Page(target) }
 	return model.preferred_color_scheme()
@@ -551,6 +556,7 @@ pub fn Page.create(device_scale f64) !&Page {
 		did_update_resource_count_callback: page_did_update_resource_count_callback
 		did_change_title_callback: page_did_change_title_callback
 		device_pixel_scale_callback: page_device_pixel_scale_callback
+		page_zoom_level_callback: page_zoom_level_callback
 		did_allocate_backing_stores_callback: page_did_allocate_backing_stores_callback
 		did_update_editing_history_callback: page_did_update_editing_history_callback
 		preferred_color_scheme_callback: page_preferred_color_scheme_callback

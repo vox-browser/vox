@@ -3209,6 +3209,7 @@ pub:
 	did_update_resource_count_callback   fn (voidptr, int) = unsafe { nil }
 	did_change_title_callback            fn (voidptr, string) = unsafe { nil }
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
+	page_zoom_level_callback             fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 	did_update_editing_history_callback  fn (voidptr, bool, bool) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
@@ -14134,6 +14135,11 @@ pub fn (p &Page) device_pixels_per_css_pixel() f64 {
 		return p.device_pixel_scale_callback(p.target)
 	}
 	return 1.0
+}
+
+pub fn (p &Page) page_zoom_level() f64 {
+	if p.target == unsafe { nil } || p.page_zoom_level_callback == unsafe { nil } { return 1 }
+	return p.page_zoom_level_callback(p.target)
 }
 
 pub fn (p &Page) preferred_color_scheme() string {

@@ -6799,6 +6799,10 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 // document. The V implementation observes referenced elements by walking the
 // live document instead of retaining a document-specific observer/registry.
 pub fn (mut e Element) adopted_from(_ &Document) {
+	if e.is_html_element() && e.local_name() == 'img' {
+		mut image := unsafe { &HTMLImageElement(&e) }
+		image.is_image_document_image_ = false
+	}
 	if e.is_svg_element() && e.local_name() == 'use' {
 		e.svg_use_process_the_url()
 	}
