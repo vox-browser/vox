@@ -19,6 +19,40 @@ fn typed_find_call(mut vm VM, name string, receiver Value, arguments []Value) !V
 	return call(mut vm, Value.from_object(function.object), receiver, arguments)
 }
 
+fn test_typed_array_find_short_circuits_large_views_without_collecting_indices() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := Object.create(vm.realm(), none)
+	length := u32(0x80000004)
+	// Uninitialized native backing storage commits virtual address space without
+	// touching every page. Only the two tested bytes become resident.
+	owner := OwnedPrimitiveBackingStore.create_uninitialized(uint(length))!
+	mut buffer := ArrayBufferObject.create_with_data_block(vm.realm(),
+		DataBlock.from_owned_store(owner, false), parent)
+	defer { buffer.detach_buffer() }
+	buffer.overwrite(0, [u8(17)])
+	buffer.overwrite(uint(length - 1), [u8(42)])
+	array := TypedArray.create(vm.realm(), .uint8, length, buffer, parent)
+	for name in ['find', 'findIndex', 'findLast', 'findLastIndex'] {
+		descending := name.starts_with('findLast')
+		expected_index := if descending { length - 1 } else { u32(0) }
+		expected_value := if descending { 42 } else { 17 }
+		callback := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype,
+			fn [expected_index, expected_value] (mut vm VM) !Value {
+			assert vm.argument(0).number == expected_value
+			assert vm.argument(1).number == f64(expected_index)
+			return Value.from_bool(true)
+		}, 3, PropertyName.from_str('predicate'), none)
+		result := typed_find_call(mut vm, name, Value.from_object(array.object),
+			[Value.from_object(callback.object)])!
+		assert result.number == if name.ends_with('Index') {
+			f64(expected_index)
+		} else {
+			f64(expected_value)
+		}
+	}
+}
+
 fn test_typed_array_find_direction_early_exit_and_value_captured_before_predicate_mutation() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
