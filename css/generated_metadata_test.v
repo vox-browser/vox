@@ -1844,7 +1844,7 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	}).css_text == 'italic'
 	assert (interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .yes) or {
 		panic('could not discretely interpolate oblique font style')
-	}).css_text == 'oblique'
+	}).css_text == 'oblique 20deg'
 	assert interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .no) == none
 	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900', 0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'
