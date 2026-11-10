@@ -584,10 +584,12 @@ fn (mut serializer StructuredSerializer) serialize_value(value dom.JSValue, for_
 		}
 		.error_object {
 			serializer.write_tag(.error_object)
+			// InternalError is native to LibJS, but is not a structured-clone Error name.
+			error_type := if object.error_type == .internal_error { StructuredErrorType.error } else { object.error_type }
 			if serializer.type_ == .storage {
-				serializer.write_string(structured_error_type_name(object.error_type))!
+				serializer.write_string(structured_error_type_name(error_type))!
 			} else {
-				serializer.write_u8(u8(object.error_type))
+				serializer.write_u8(u8(error_type))
 			}
 			// Source message/cause are optional UTF16 descriptor values, not
 			// a mandatory message or a recursively cloned cause object.
