@@ -40,6 +40,7 @@ mut:
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
 	box_model_percentage_basis_ ?CSSPixels
+ had_clearance_ bool
  collapsed_flow_margin_bottom_ ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
 	used_grid_template_columns    []CSSPixels
@@ -86,6 +87,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
 		box_model_percentage_basis_: rare.box_model_percentage_basis_
+ had_clearance_: rare.had_clearance_
  collapsed_flow_margin_bottom_:rare.collapsed_flow_margin_bottom_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
 		used_grid_template_columns: rare.used_grid_template_columns.clone()
@@ -217,6 +219,17 @@ pub fn (u &UsedValues) has_rare_data() bool {
 pub fn (u &UsedValues) has_line_clamp_point() bool {
 	rare := u.rare_ or { return false }
 	return rare.has_line_clamp_point_
+}
+
+fn (u &UsedValues) had_clearance() bool {
+	rare := u.rare_ or { return false }
+	return rare.had_clearance_
+}
+
+fn (mut u UsedValues) set_had_clearance(value bool) {
+	if u.had_clearance() == value { return }
+	mut rare := u.ensure_rare_data()
+	rare.had_clearance_ = value
 }
 
 pub fn (mut u UsedValues) set_has_line_clamp_point(value bool) {
