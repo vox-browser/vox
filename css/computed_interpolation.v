@@ -9481,7 +9481,7 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
 		.backface_visibility, .background_attachment, .clip, .filter, .mask_image, .mix_blend_mode,
-		.opacity, .perspective, .perspective_origin, .rotate, .scale, .transform,
+		.opacity, .overflow_x, .overflow_y, .perspective, .perspective_origin, .rotate, .scale, .transform,
 		.transform_origin, .transform_style, .translate {
 			true
 		}
@@ -9517,7 +9517,7 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
 		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
 		.overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap,
-		.overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks,
+		.pointer_events, .position_area, .position_try_fallbacks,
 		.position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color,
 		.scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor,
 		.position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color,
