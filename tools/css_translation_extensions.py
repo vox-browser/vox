@@ -140,6 +140,11 @@ PROPERTIES = {
         'initial': 'fixed', 'requires-computation': 'never',
         'valid-identifiers': ['fixed', 'content'],
     },
+    'hyphenate-character': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never', 'valid-types': ['string'],
+        'valid-identifiers': ['auto'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',

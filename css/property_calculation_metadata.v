@@ -216,6 +216,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'font-synthesis-small-caps' { return .font_synthesis_small_caps }
 	if name == 'font-synthesis-position' { return .font_synthesis_position }
 	if name == 'hyphens' { return .hyphens }
+	if name == 'hyphenate-character' { return .hyphenate_character }
 	if name == 'field-sizing' { return .field_sizing }
 	if name == 'text-align-last' { return .text_align_last }
 	// Keep bucket selection scalar; wrap the result once after a full match.
@@ -3256,6 +3257,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'font-synthesis-small-caps' }
 		.font_synthesis_position { 'font-synthesis-position' }
 		.hyphens { 'hyphens' }
+		.hyphenate_character { 'hyphenate-character' }
 		.field_sizing { 'field-sizing' }
 		.text_align_last { 'text-align-last' }
 		.webkit_box_orient { '-webkit-box-orient' }
@@ -3730,6 +3732,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.hyphenate_character { true }
 		.text_align_last { true }
 		.interpolate_size { true }
 		.text_orientation { true }
@@ -3774,6 +3777,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'auto' }
 		.font_synthesis_position { 'auto' }
 		.hyphens { 'manual' }
+		.hyphenate_character { 'auto' }
 		.field_sizing { 'fixed' }
 		.text_align_last { 'auto' }
 		.webkit_box_orient { 'horizontal' }
@@ -4239,6 +4243,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			AnimationType.discrete
 		}
 		.hyphens { AnimationType.discrete }
+		.hyphenate_character { AnimationType.discrete }
 		.field_sizing { AnimationType.discrete }
 		.text_align_last { AnimationType.discrete }
 		.backface_visibility { AnimationType.discrete }
@@ -4281,6 +4286,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.hyphenate_character { true }
 		.field_sizing { true }
 		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
@@ -4342,6 +4348,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.hyphenate_character { true }
 		.field_sizing { true }
 		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
@@ -4525,6 +4532,7 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.hyphenate_character { value_type == .string }
 		.fit_tolerance { value_type in [.length,.percentage] }
 
 		.baseline_shift { value_type in [.length,.percentage] }
@@ -4761,6 +4769,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'oblique-only']
 		}
 		.hyphens { lowercase_value in ['none', 'manual', 'auto'] }
+		.hyphenate_character { lowercase_value in ['auto'] }
 		.field_sizing { lowercase_value in ['fixed', 'content'] }
 		.text_align_last { lowercase_value in ['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'] }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {

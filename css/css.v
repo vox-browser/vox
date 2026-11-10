@@ -471,6 +471,7 @@ pub enum PropertyID {
 	interpolate_size
 	text_align_last
 	field_sizing
+	hyphenate_character
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

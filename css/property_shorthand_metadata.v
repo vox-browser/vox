@@ -58,7 +58,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
 				.grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas,
-				.grid_template_columns, .grid_template_rows, .height, .hyphens, .image_rendering, .inline_size,
+				.grid_template_columns, .grid_template_rows, .height, .hyphenate_character, .hyphens, .image_rendering, .inline_size,
 				.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
 				.isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing,
 				.line_height, .list_style_image, .list_style_position, .list_style_type,
@@ -421,7 +421,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
 				.grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas,
-				.grid_template_columns, .grid_template_rows, .height, .hyphens, .image_rendering, .inline_size,
+				.grid_template_columns, .grid_template_rows, .height, .hyphenate_character, .hyphens, .image_rendering, .inline_size,
 				.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
 				.isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing,
 				.line_height, .list_style_image, .list_style_position, .list_style_type,
@@ -781,6 +781,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.font_synthesis, .all]
 		}
 		.hyphens { [.all] }
+		.hyphenate_character { [.all] }
 		.field_sizing { [.all] }
 		.text_align_last { [.all] }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type {
