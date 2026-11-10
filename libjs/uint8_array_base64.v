@@ -106,6 +106,16 @@ pub fn uint8_array_prototype_set_from_base64(mut vm VM, primitives PrimitiveObje
 	return Value.from_object(object)
 }
 
+// Ladybird 986504619b4f: reject an oversized result before copying the input.
+fn uint8_array_base64_output_length(mut vm VM, length uint, omit_padding bool) !uint {
+	full_groups := checked_js_string_length_product(mut vm, length / 3, 4,
+		.string_size_must_not_overflow)!
+	remaining := length % 3
+	final_group := if remaining == 0 { uint(0) } else if omit_padding { remaining + 1 } else { uint(4) }
+	return checked_js_string_length_sum(mut vm, full_groups, final_group,
+		.string_size_must_not_overflow)
+}
+
 pub fn uint8_array_prototype_to_base64(mut vm VM, primitives PrimitiveObjectPrototypes) !Value {
 	options_value := vm.argument(0)
 	array := validate_uint8_array(mut vm, primitives)!
@@ -116,6 +126,8 @@ pub fn uint8_array_prototype_to_base64(mut vm VM, primitives PrimitiveObjectProt
 		alphabet = parse_base64_alphabet(mut vm, options)!
 		omit_padding = options.get(mut vm, PropertyName.from_str('omitPadding'))!.to_boolean()
 	}
-	bytes := get_uint8_array_bytes(mut vm, array)!
+	length := uint8_array_byte_length(mut vm, array)!
+	uint8_array_base64_output_length(mut vm, length, omit_padding)!
+	bytes := array.viewed_buffer.read_bytes(uint(array.byte_offset), length)
 	return Value.from_string(vm.create_string(encode_base64_codec(bytes, alphabet, omit_padding)))
 }

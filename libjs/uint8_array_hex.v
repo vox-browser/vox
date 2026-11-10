@@ -92,9 +92,13 @@ pub fn uint8_array_prototype_set_from_hex(mut vm VM, prototypes PrimitiveObjectP
 
 pub fn uint8_array_prototype_to_hex(mut vm VM, prototypes PrimitiveObjectPrototypes) !Value {
 	array := validate_uint8_array(mut vm, prototypes)!
-	bytes := get_uint8_array_bytes(mut vm, array)!
+	length := uint8_array_byte_length(mut vm, array)!
+	// Ladybird 986504619b4f: validate before copying or allocating the result.
+	out_length := checked_js_string_length_product(mut vm, length, 2,
+		.string_size_must_not_overflow)!
+	bytes := array.viewed_buffer.read_bytes(uint(array.byte_offset), length)
 	hex_digits := '0123456789abcdef'
-	mut out := []u16{cap: bytes.len * 2}
+	mut out := []u16{cap: int(out_length)}
 	for byte in bytes {
 		out << u16(hex_digits[byte >> 4])
 		out << u16(hex_digits[byte & 0xf])

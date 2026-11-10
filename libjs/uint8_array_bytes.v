@@ -21,13 +21,17 @@ pub fn validate_uint8_array(mut vm VM, prototypes PrimitiveObjectPrototypes) !&T
 	return array
 }
 
-pub fn get_uint8_array_bytes(mut vm VM, array &TypedArray) ![]u8 {
+fn uint8_array_byte_length(mut vm VM, array &TypedArray) !uint {
 	record := make_typed_array_with_buffer_witness_record(array, .seq_cst)
 	if is_typed_array_out_of_bounds(record) {
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
-	return array.viewed_buffer.read_bytes(uint(array.byte_offset),
-		uint(typed_array_length(record)))
+	return uint(typed_array_length(record))
+}
+
+pub fn get_uint8_array_bytes(mut vm VM, array &TypedArray) ![]u8 {
+	length := uint8_array_byte_length(mut vm, array)!
+	return array.viewed_buffer.read_bytes(uint(array.byte_offset), length)
 }
 
 pub fn set_uint8_array_bytes(mut vm VM, mut array TypedArray, bytes []u8) {
