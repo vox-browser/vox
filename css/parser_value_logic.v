@@ -25,6 +25,8 @@ pub mut:
 	// The channel keywords of the relative color being parsed, which its
 	// components and their math functions may reference.
 	relative_color_channels []string
+	// Whether the size keyword of a calc-size() calculation may appear.
+	allow_calc_size_keyword bool
 }
 
 pub fn Parser.from_component_values(component_values []ComponentValue) Parser {
@@ -8220,6 +8222,7 @@ fn (mut parser Parser) parse_quotes_value(mut tokens ComponentValueStream) ?Styl
 // https://drafts.csswg.org/css-flexbox-1/#propdef-flex-basis
 fn (mut parser Parser) parse_flex_basis_value(mut tokens ComponentValueStream) ?StyleValue {
 	if value := parse_stretch_sizing_keyword(mut tokens) { return value }
+	if value := parser.parse_calc_size_value(.flex_basis, mut tokens) { return value }
 	mut transaction := tokens.clone()
 	if value := parse_property_keyword_value(mut transaction, ['auto', 'content']) {
 		tokens = transaction
@@ -10587,6 +10590,7 @@ fn property_is_max_size_for_value_logic(property_id PropertyID) bool {
 
 fn (mut parser Parser) parse_sizing_value(property_id PropertyID, mut tokens ComponentValueStream) ?StyleValue {
 	if value := parse_stretch_sizing_keyword(mut tokens) { return value }
+	if value := parser.parse_calc_size_value(property_id, mut tokens) { return value }
 	mut transaction := tokens.clone()
 	allowed_keywords := if property_is_max_size_for_value_logic(property_id) {
 		['max-content', 'min-content', 'none']

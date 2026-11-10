@@ -25,6 +25,7 @@ type CalcNode = CalcNumeric
 	| CalcAnchorSize
 	| CalcTreeCounting
 	| CalcChannel
+	| CalcSizeKeyword
 
 // The kind of a numeric leaf, mirroring the C++ NumericValue variant.
 enum CalcNumericKind {
@@ -98,6 +99,11 @@ struct CalcTreeCounting {
 struct CalcChannel {
 	name string
 }
+
+// The size keyword of a calc-size() calculation: a <length> standing for the
+// resolved basis, supplied at used-value time.
+// https://drafts.csswg.org/css-values-5/#valdef-calc-size-size
+struct CalcSizeKeyword {}
 
 // anchor() is a non-math calculation leaf whose length is supplied by layout
 // after the anchor box and the inset axis are known.
@@ -654,6 +660,9 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 		return parser.parse_calc_function_node(component_value.function(), allow_tree_counting_functions)
 	}
 	if component_value.is(.ident) {
+		if parser.allow_calc_size_keyword && equals_ignoring_ascii_case(component_value.token().ident(), 'size') {
+			return CalcNode(CalcSizeKeyword{})
+		}
 		if parser.relative_color_channels.len > 0 {
 			name := to_ascii_lowercase(component_value.token().ident())
 			if name in parser.relative_color_channels {
@@ -736,7 +745,7 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 			}
 			return node
 		}
-		CalcTreeCounting, CalcChannel {
+		CalcTreeCounting, CalcChannel, CalcSizeKeyword {
 			return node
 		}
 		CalcAnchor, CalcAnchorSize {
@@ -827,7 +836,7 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		CalcTreeCounting, CalcChannel {
 			return NumericType.new()
 		}
-		CalcAnchor, CalcAnchorSize {
+		CalcAnchor, CalcAnchorSize, CalcSizeKeyword {
 			return NumericType.with_type(.length, 1)
 		}
 		CalcSum {
@@ -974,6 +983,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 		}
 		CalcChannel {
 			return node.name
+		}
+		CalcSizeKeyword {
+			return 'size'
 		}
 		CalcAnchor {
 			return node.style_value.serialize(.normal)

@@ -1019,6 +1019,10 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	} else {
 		width = resolve_layout_content_size(unsafe { &Node(box) }, preferred_width, iterator.available_space.width.to_px_or_zero(), state, true) or { CSSPixels.new(0) }
 	}
+	if size_has_keyword_calc_size(preferred_width) {
+		width = resolve_calc_size_for_box(computed, state, preferred_width, true, width,
+			if iterator.available_space.width.is_definite() { ?CSSPixels(iterator.available_space.width.to_px_or_zero()) } else { ?CSSPixels(none) })
+	}
 	// A percentage maximum is cyclic while measuring an atomic inline's
 	// intrinsic contribution. Keep its initial 'none' value in that pass;
 	// resolving it against the placeholder zero erases the containing flex
@@ -1031,6 +1035,7 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	} else {
 		width = clamp_layout_content_size(box_node, width, iterator.available_space.width.to_px_or_zero(), state, true)
 	}
+	width = apply_intrinsic_width_limits(mut iterator.state, box_node, state, width, iterator.available_space.width)
 	state.set_content_width(width)
 
 	preferred_height := computed.size_value(.height)

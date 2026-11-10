@@ -161,11 +161,15 @@ fn clamp_layout_content_size_with_stretch_basis(node &Node, value CSSPixels, per
 	computed := node.computed_values()
 	constraint := if width { used_values.width_constraint } else { used_values.height_constraint }
 	if constraint != .none { return result }
-	if computed.size_value(if width { .max_width } else { .max_height }).is_stretch() {
-		result = css_pixels_min(result, stretch_fit_content_size(node, used_values, stretch_basis, width))
+	maximum_limit := computed.size_value(if width { .max_width } else { .max_height })
+	if maximum_limit.is_stretch() {
+		result = css_pixels_min(result, resolve_calc_size_for_box(computed, used_values, maximum_limit, width,
+			stretch_fit_content_size(node, used_values, stretch_basis, width), percentage_basis))
 	}
-	if computed.size_value(if width { .min_width } else { .min_height }).is_stretch() {
-		result = css_pixels_max(result, stretch_fit_content_size(node, used_values, stretch_basis, width))
+	minimum_limit := computed.size_value(if width { .min_width } else { .min_height })
+	if minimum_limit.is_stretch() {
+		result = css_pixels_max(result, resolve_calc_size_for_box(computed, used_values, minimum_limit, width,
+			stretch_fit_content_size(node, used_values, stretch_basis, width), percentage_basis))
 	}
 	minimum_size := computed.size_value(if width { .min_width } else { .min_height })
 	if !minimum_size.is_stretch() {

@@ -1214,7 +1214,22 @@ fn calculate_fit_content_height(mut state LayoutState, box &Box, width CSSPixels
 // Resolve the box's preferred block size to a used content-box size before
 // inside layout. Unlike the legacy length-only helper, this handles intrinsic
 // sizing keywords and the ratio-dependent auto axis.
+// A height given as a calc-size() with a keyword basis resolves its calculation
+// against the height that keyword gives the box.
 fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, containing_block_height ?f64) ?f64 {
+	resolved := resolve_content_height_for_node_before_calc_size(mut state, node, used_values, containing_block_height) or {
+		return none
+	}
+	computed := node.computed_values()
+	size := computed.size_value(.height)
+	if !size_has_keyword_calc_size(size) {
+		return resolved
+	}
+	basis := if height := containing_block_height { ?CSSPixels(css_px(height)) } else { ?CSSPixels(none) }
+	return resolve_calc_size_for_box(computed, used_values, size, false, css_px(resolved), basis).to_double()
+}
+
+fn resolve_content_height_for_node_before_calc_size(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, containing_block_height ?f64) ?f64 {
 	computed := node.computed_values()
 	size := computed.size_value(.height)
 	box := unsafe { &Node(node) }.as_box() or {
@@ -1308,6 +1323,25 @@ fn clamp_content_height_for_node(mut state LayoutState, node &NodeWithStyle, use
 fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, property css.PropertyID, adjustment f64, containing_block_height ?f64) ?CSSPixels {
 	computed := node.computed_values()
 	size := computed.size_value(property)
+	limit := content_height_limit_for_node_before_calc_size(mut state, node, used_values, size, property,
+		adjustment, containing_block_height) or {
+		// NB: Outside flex and grid layout, the automatic minimum size is zero,
+		//     which a minimum given as a calc-size() with an auto basis resolves against.
+		if property == .min_height && size.is_auto() && size.calc_size() != none {
+			return resolve_calc_size_for_box(computed, used_values, size, false, CSSPixels.new(0),
+				if height := containing_block_height { ?CSSPixels(css_px(height)) } else { ?CSSPixels(none) })
+		}
+		return none
+	}
+	if !size_has_keyword_calc_size(size) {
+		return limit
+	}
+	return resolve_calc_size_for_box(computed, used_values, size, false, limit,
+		if height := containing_block_height { ?CSSPixels(css_px(height)) } else { ?CSSPixels(none) })
+}
+
+fn content_height_limit_for_node_before_calc_size(mut state LayoutState, node &NodeWithStyle, used_values &UsedValues, size css.Size, property css.PropertyID, adjustment f64, containing_block_height ?f64) ?CSSPixels {
+	computed := node.computed_values()
 	if size.is_stretch() {
 		if used_values.height_constraint != .none { return none }
 		if unsafe { &Node(node) }.is_flex_item() && !flex_stretch_basis_is_definite(used_values, false) { return none }

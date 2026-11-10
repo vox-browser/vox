@@ -6564,6 +6564,13 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 		last := style_value_logic_from_dom(property_id,to) or { return none }
 		if clip_path_reference_box(first) != clip_path_reference_box(last) { return interpolate_discrete(from,to,delta,allow_discrete) }
 	}
+	// https://drafts.csswg.org/css-values-5/#interpolate-calc-size
+	if property_accepts_calc_size(property_id)
+		&& animation_type_from_longhand_property(property_id) == .by_computed_value {
+		if value := interpolate_calc_size_values(element, property_id, from, to, delta) {
+			return value
+		}
+	}
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
 	match animation_type_from_longhand_property(property_id) {
@@ -9066,6 +9073,11 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 			return none
 		}
 		return dom_style_value_from_value_logic(result)
+	}
+	if property_accepts_calc_size(property_id) {
+		if result := composite_calc_size_values(property_id, underlying, animated) {
+			return dom_style_value_from_value_logic(result)
+		}
 	}
 	if property_id == .font_size_adjust {
 		if result := composite_font_size_adjust_metric(underlying,animated,composite_operation) {
@@ -11832,6 +11844,11 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	effect := unsafe { &KeyframeEffect(animation) }
 	output_progress := effect.output_progress or { return }
 	key_frame_set := effect.key_frame_set or { return }
+	// The element's interpolate-size governs keyword size interpolation.
+	previous_interpolation_style := enter_calc_size_interpolation_style(&computed_properties)
+	defer {
+		leave_calc_size_interpolation_style(previous_interpolation_style)
+	}
 	if key_frame_set.keyframes_by_key.len < 2 {
 		return
 	}

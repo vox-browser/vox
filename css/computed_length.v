@@ -58,10 +58,20 @@ fn computed_properties_length_percentage_to_px(c &ComputedProperties, property_i
 				return none
 			}
 			CalculatedStyleValue {}
+			FunctionStyleValue {
+				if box.value.name_ != calc_size_function_name {
+					return none
+				}
+			}
 			else { return none }
 		}
 	}
-	typed := style_value_logic_from_dom(property_id, value) or { return none }
+	mut typed := style_value_logic_from_dom(property_id, value) or { return none }
+	// A calc-size() with a calculation or any basis acts as that calculation;
+	// one with a keyword basis has no length here, like the keyword.
+	if style_value_is_calc_size(typed) {
+		typed = StyleValue(calc_size_retained_equivalent(typed) or { return none })
+	}
 	// SVG accepts a unitless <number> for these presentation properties. In
 	// user space that number is a CSS pixel, matching SVGLength::value() and
 	// Ladybird's computed LengthPercentage representation.

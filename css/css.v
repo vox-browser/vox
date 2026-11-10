@@ -2705,6 +2705,8 @@ pub mut:
 	anchor_resolver_context   voidptr
 	// Channel values of a relative color's origin, for its channel keywords.
 	relative_color_channels []RelativeColorChannel
+	// The resolved basis that a calc-size() calculation's size keyword stands for.
+	calc_size_px ?f64
 }
 
 pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {
@@ -3745,6 +3747,8 @@ pub mut:
 	type_              SizeType
 	// Keyword sizes retain no unused length/percentage owner.
 	length_percentage_ ?LengthPercentage = ?LengthPercentage(none)
+	// The calc-size() this size was given as; it acts as its basis otherwise.
+	calc_size_ ?FunctionStyleValue
 }
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {
@@ -3818,7 +3822,9 @@ pub fn Size.from_style_value(value StyleValue) Size {
 			}
 		}
 		FunctionStyleValue {
-			if value.name() == 'fit-content' {
+			if value.name() == calc_size_function_name {
+				size_from_calc_size(value)
+			} else if value.name() == 'fit-content' {
 				Size.make_fit_content(LengthPercentage.from_style_value_logic(value.value()))
 			} else {
 				Size.make_auto()

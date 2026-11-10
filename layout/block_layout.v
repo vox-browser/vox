@@ -167,6 +167,13 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	} else if computed_width.is_fit_content() {
 		intrinsic_width = calculate_fit_content_width(mut state, box_as_box, available_width)
 	}
+	width_percentage_basis := if available_width.is_definite() { ?CSSPixels(available_width.to_px_or_zero()) } else { ?CSSPixels(none) }
+	if size_has_keyword_calc_size(computed_width) {
+		// NB: A calc-size() with an auto basis resolves against the inline size
+		//     auto gives the box, and is then used like a specified width.
+		basis_width := intrinsic_width or { block_fill_content_width(box.computed_values(), used_values, available_width.to_px_or_zero().to_double()) }
+		intrinsic_width = resolve_calc_size_for_box(box.computed_values(), used_values, computed_width, true, basis_width, width_percentage_basis)
+	}
 	compute_block_used_width_with_override(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), intrinsic_width)
 
 	// calculate_inner_width() also accepts intrinsic sizing keywords for the
@@ -174,26 +181,44 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	// CSS 2.1 width equation above; apply keyword constraints in max-then-min
 	// order, matching FormattingContext::compute_width().
 	mut clamped := used_values.content_width()
-	max_size := box.computed_values().size_value(.max_width)
+	computed_style := box.computed_values()
+	max_size := computed_style.size_value(.max_width)
 	if max_size.is_stretch() && available_width.is_definite() {
-		clamped = css_pixels_min(clamped, stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true))
+		maximum := stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true)
+		clamped = css_pixels_min(clamped, resolve_calc_size_for_box(computed_style, used_values, max_size, true, maximum, width_percentage_basis))
 	}
 	if max_size.is_intrinsic_sizing_constraint() {
 		maximum := intrinsic_width_for_size(mut state, box_as_box, max_size, available_width)
-		clamped = css_pixels_min(clamped, maximum)
+		clamped = css_pixels_min(clamped, resolve_calc_size_for_box(computed_style, used_values, max_size, true, maximum, width_percentage_basis))
 	}
-	min_size := box.computed_values().size_value(.min_width)
+	min_size := computed_style.size_value(.min_width)
 	if min_size.is_stretch() && available_width.is_definite() {
-		clamped = css_pixels_max(clamped, stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true))
+		minimum := stretch_fit_content_size(box_node, used_values, available_width.to_px_or_zero(), true)
+		clamped = css_pixels_max(clamped, resolve_calc_size_for_box(computed_style, used_values, min_size, true, minimum, width_percentage_basis))
 	}
 	if min_size.is_intrinsic_sizing_constraint() {
 		minimum := intrinsic_width_for_size(mut state, box_as_box, min_size, available_width)
-		clamped = css_pixels_max(clamped, minimum)
+		clamped = css_pixels_max(clamped, resolve_calc_size_for_box(computed_style, used_values, min_size, true, minimum, width_percentage_basis))
+	}
+	// NB: Outside flex and grid layout, the automatic minimum size is zero,
+	//     which a minimum given as a calc-size() with an auto basis resolves against.
+	if min_size.is_auto() && min_size.calc_size() != none {
+		clamped = css_pixels_max(clamped, resolve_calc_size_for_box(computed_style, used_values, min_size, true, CSSPixels.new(0), width_percentage_basis))
 	}
 	if clamped.raw_value() != used_values.content_width().raw_value() {
 		used_values.set_content_width(clamped)
 		resolve_auto_margins(box.computed_values(), mut used_values, available_width.to_px_or_zero().to_double(), clamped.to_double())
 	}
+}
+
+// The fill-available content width that an auto width gives a block-level
+// box in normal flow, with auto margins treated as zero (CSS 2.1 §10.3.3).
+fn block_fill_content_width(computed &css.ComputedValues, used_values &UsedValues, containing_block_width f64) CSSPixels {
+	edges := used_values.border_left.to_double() + used_values.padding_left.to_double() + used_values.padding_right.to_double() + used_values.border_right.to_double()
+	margin_left := if property_is_auto(computed, .margin_left) { 0.0 } else { used_values.margin_left.to_double() }
+	margin_right := if property_is_auto(computed, .margin_right) { 0.0 } else { used_values.margin_right.to_double() }
+	width := containing_block_width - margin_left - margin_right - edges
+	return css_px(if width < 0.0 { 0.0 } else { width })
 }
 
 fn intrinsic_width_for_size(mut state LayoutState, box &Box, size css.Size, available_width AvailableSize) CSSPixels {
@@ -367,7 +392,9 @@ fn resolve_definite_content_height(computed &css.ComputedValues, containing_bloc
 	if property_is_auto(computed, .height) {
 		return none
 	}
-	if property_is_percentage(computed, .height) {
+	// A calculation, including the one a calc-size() acts as, resolves its
+	// percentages against the containing block like a plain percentage.
+	if property_is_percentage(computed, .height) || computed.size_value(.height).contains_percentage() {
 		basis := containing_block_height or { return none }
 		return computed.length_percentage_to_px(.height, basis)
 	}

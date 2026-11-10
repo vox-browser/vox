@@ -11284,7 +11284,7 @@ fn reify_calc_node(node CalcNode) !CSSNumericValue {
 				}
 			}
 		}
-		CalcAnchor, CalcAnchorSize, CalcRandom, CalcTreeCounting, CalcChannel {
+		CalcAnchor, CalcAnchorSize, CalcRandom, CalcTreeCounting, CalcChannel, CalcSizeKeyword {
 			return error('Unable to reify this math function.')
 		}
 	}
