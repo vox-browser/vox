@@ -16,6 +16,12 @@ struct CalcResult {
 	type_ NumericType
 }
 
+// CSS comparison functions order negative zero before positive zero.
+// NaN propagation is handled by the caller before comparing numeric values.
+fn calc_comparison_less_than(left f64, right f64) bool {
+	return left < right || (left == 0 && right == 0 && math.signbit(left) && !math.signbit(right))
+}
+
 fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
 	match node {
 		CalcNumeric {
@@ -340,7 +346,7 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 					minimum = math.nan()
 					continue
 				}
-				if results[index].value < minimum {
+				if calc_comparison_less_than(results[index].value, minimum) {
 					minimum = results[index].value
 				}
 			}
@@ -357,7 +363,7 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 					maximum = math.nan()
 					continue
 				}
-				if results[index].value > maximum {
+				if calc_comparison_less_than(maximum, results[index].value) {
 					maximum = results[index].value
 				}
 			}
@@ -378,10 +384,10 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 				}
 			}
 			mut clamped := central
-			if clamped > maximum {
+			if calc_comparison_less_than(maximum, clamped) {
 				clamped = maximum
 			}
-			if clamped < minimum {
+			if calc_comparison_less_than(clamped, minimum) {
 				clamped = minimum
 			}
 			return CalcResult{

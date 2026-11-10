@@ -1,5 +1,7 @@
 module css
 
+import math
+
 // Parse-time simplification of a calc() tree, ported from the C++
 // simplify_a_calculation_tree run with an empty resolution context. This folds the
 // constant parts of the expression so the serialized specified value matches upstream
@@ -532,11 +534,13 @@ fn simplify_calc_min_or_max(name string, strategy string, children []CalcNode, c
 			if matching_index >= 0 {
 				existing := simplified_children[matching_index]
 				if existing is CalcNumeric {
-					should_replace := if name == 'min' {
-						child.value < existing.value
+					is_preferred := if name == 'min' {
+						calc_comparison_less_than(child.value, existing.value)
 					} else {
-						child.value > existing.value
+						calc_comparison_less_than(existing.value, child.value)
 					}
+					should_replace := !math.is_nan(existing.value)
+						&& (math.is_nan(child.value) || is_preferred)
 					if should_replace {
 						simplified_children[matching_index] = child
 					}
