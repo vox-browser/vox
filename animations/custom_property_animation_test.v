@@ -305,3 +305,31 @@ fn test_iteration_composition_uses_the_final_keyframe_for_interior_intervals() {
 	document.update_animated_style_if_needed()
 	assert animated_style_value(target, .margin_left) == '70px'
 }
+
+fn test_drop_shadow_iteration_composition_clamps_color_after_interpolation() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'filter': 'drop-shadow(rgb(0, 0, 0) 0px 0px 0px)'}},
+		BaseKeyframe{properties: {'filter': 'drop-shadow(rgb(120, 120, 120) 10px 10px 10px)'}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(2500))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .filter) == 'drop-shadow(rgb(255, 255, 255) 25px 25px 25px)'
+}
+
+fn test_drop_shadow_accumulation_uses_premultiplied_color_channels() {
+	mut document, target := connected_animation_target('filter:drop-shadow(rgba(100,20,0,0.5) 4px 6px)')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'filter': 'drop-shadow(rgba(0,0,100,0.5) 2px 4px)'}},
+		BaseKeyframe{properties: {'filter': 'drop-shadow(rgba(0,0,100,0.5) 2px 4px)'}},
+	], .accumulate)!
+	timeline.set_current_time(TimeValue.milliseconds(500))
+	animation.update()
+	document.update_animated_style_if_needed()
+	assert animated_style_value(target, .filter) == 'drop-shadow(rgb(50, 10, 50) 6px 10px)'
+}

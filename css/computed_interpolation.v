@@ -8808,20 +8808,12 @@ fn filter_style_value_add_optional_lengths(a ?StyleValue, b ?StyleValue) ?StyleV
 	return StyleValue(LengthStyleValue.create(Length.make_px(a_value + b_value)))
 }
 
-fn filter_style_value_saturating_channel_add(a u8, b u8) u8 {
-	sum := int(a) + int(b)
-	if sum > 255 {
-		return 255
-	}
-	return u8(sum)
-}
-
 fn filter_style_value_accumulate_colors(underlying ?StyleValue, animated ?StyleValue) ?StyleValue {
 	underlying_value := underlying or { return animated }
-	animated_value := animated or { return animated }
-	underlying_color := underlying_value.to_color(ColorResolutionContext{}) or { return animated }
-	animated_color := animated_value.to_color(ColorResolutionContext{}) or { return animated }
-	return StyleValue(ColorStyleValue.create_from_color(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(), animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(), animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(), animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(), animated_color.alpha())), .legacy, none))
+	animated_value := animated or { return underlying }
+	// Keep out-of-gamut endpoints until the sampled color is interpolated.
+	// Adding quantized channels here both clamps too early and ignores alpha.
+	return composite_colors(underlying_value, animated_value, ColorResolutionContext{}) or { return animated }
 }
 
 fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated FilterStyleValue) ?FilterStyleValue {
