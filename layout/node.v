@@ -322,6 +322,11 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 		ancestor = mutable_current.parent()
 	}
 
+	// An out-of-flow box does not contribute to its ancestors' intrinsic
+	// sizes. Its own cache and the layout-update flags above still change.
+	if n.is_absolutely_positioned() {
+		return
+	}
 	// Intrinsic sizes are independent of the dirty-bit early exit above. Clear
 	// every ancestor cache up to an abspos or SVG-root boundary.
 	ancestor = n.parent()
