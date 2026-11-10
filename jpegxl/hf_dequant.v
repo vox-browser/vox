@@ -55,9 +55,12 @@ fn dequantize_hf_block_into(coefficients [3][]i32, matrices DequantMatrices, par
 	for channel in coefficients {
 		if channel.len != num { return error('Invalid JPEG XL HF coefficient storage') }
 	}
-	for weight in table.samples {
-		if !math.is_finite(weight) || weight <= 0 { return error('Invalid JPEG XL dequantization weight') }
+	mut weights_valid := true
+	for i in 0 .. table.samples.len {
+		weight := table.samples[i]
+		if !math.is_finite(weight) || weight <= 0 { weights_valid = false }
 	}
+	if !weights_valid { return error('Invalid JPEG XL dequantization weight') }
 	scaled_y := params.quantizer.inverse_global_scale() / f32(params.raw_quant)
 	x_multiplier := math.powf(f32(1) / f32(1.25), f32(params.x_qm_scale) - f32(2))
 	b_multiplier := math.powf(f32(1) / f32(1.25), f32(params.b_qm_scale) - f32(2))

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-import math
-
 // The source stores each coefficient matrix with its longest side contiguous.
 // Rows/columns describe the spatial output, including its transpose convention.
 @[direct_array_access]
@@ -22,9 +20,7 @@ pub fn inverse_dct_plane(rows int, columns int, coefficients []f32) !FloatPlane 
 	if !valid || coefficients.len != rows * columns {
 		return error('Invalid JPEG XL inverse DCT plane geometry')
 	}
-	for value in coefficients {
-		if !math.is_finite(value) { return error('Nonfinite JPEG XL DCT coefficient') }
-	}
+	if !all_finite(coefficients) { return error('Nonfinite JPEG XL DCT coefficient') }
 	mut output := []f32{len: coefficients.len}
 	mut vector := []f32{len: if rows > columns { rows } else { columns }}
 	inverse_dct_plane_into(rows, columns, coefficients, mut output, mut vector)!

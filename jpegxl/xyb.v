@@ -38,7 +38,7 @@ pub fn xyb_to_linear(input [3]FloatPlane, opsin OpsinInverseMatrix, intensity_ta
 		if plane.width != input[0].width || plane.height != input[0].height {
 			return error('Incompatible JPEG XL XYB plane geometry')
 		}
-		for value in plane.samples { if !math.is_finite(value) { return error('Nonfinite JPEG XL XYB sample') } }
+		if !all_finite(plane.samples) { return error('Nonfinite JPEG XL XYB sample') }
 	}
 	mut samples := [3][]f32{}
 	for c in 0 .. 3 { samples[c] = []f32{len: input[c].samples.len} }

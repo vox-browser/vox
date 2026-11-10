@@ -30,9 +30,7 @@ fn srgb_rational_polynomial(x f32, p [5]f32, q [5]f32) f32 {
 @[direct_array_access]
 pub fn srgb_transfer(input FloatPlane, direction SrgbTransferDirection) !FloatPlane {
 	input.validate()!
-	for sample in input.samples {
-		if !math.is_finite(sample) { return error('Nonfinite JPEG XL sRGB transfer sample') }
-	}
+	if !all_finite(input.samples) { return error('Nonfinite JPEG XL sRGB transfer sample') }
 	// Validation is separate and both curve branches are evaluated, so the
 	// loops have no early exits or calls and vectorize. sqrtf equals the
 	// float result of a double sqrt: double rounding is innocuous for sqrt.

@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-import math
-
 // The original 32x32 blue-noise ranks are attributed in DITHER_NOTICE.md.
 const output_dither_ranks = $embed_file('data/dither_32x32.bin')
 
+@[direct_array_access]
 pub fn modular_integer_row_to_f32(input []i32, bits u32, storage ModularStorage) ![]f32 {
 	if bits == 0 || bits > 31 || input.len > 1048576 {
 		return error('Invalid JPEG XL integer output row')
 	}
 	scale := f32(1) / f32((u64(1) << bits) - 1)
 	mut result := []f32{len: input.len}
-	for i, value in input {
+	for i in 0 .. input.len {
+		value := input[i]
 		result[i] = f32(if storage == .signed16 { i32(i16(value)) } else { value }) * scale
 	}
 	return result
@@ -21,24 +21,27 @@ pub fn modular_integer_row_to_f32(input []i32, bits u32, storage ModularStorage)
 
 // Whole channels use the frame sample budget rather than the row limit; each
 // sample is converted exactly as modular_integer_row_to_f32 does.
+@[direct_array_access]
 pub fn modular_integer_plane_to_f32(input []i32, bits u32, storage ModularStorage) ![]f32 {
 	if bits == 0 || bits > 31 || input.len > 67108864 {
 		return error('Invalid JPEG XL integer output plane')
 	}
 	scale := f32(1) / f32((u64(1) << bits) - 1)
 	mut result := []f32{len: input.len}
-	for i, value in input {
+	for i in 0 .. input.len {
+		value := input[i]
 		result[i] = f32(if storage == .signed16 { i32(i16(value)) } else { value }) * scale
 	}
 	return result
 }
 
+@[direct_array_access]
 pub fn premultiply_output_row(color []f32, alpha []f32) ![]f32 {
 	if color.len != alpha.len || color.len > 1048576 {
 		return error('Invalid JPEG XL premultiplied output row')
 	}
 	mut result := []f32{len: color.len}
-	for i, value in color { result[i] = value * alpha[i] }
+	for i in 0 .. color.len { result[i] = color[i] * alpha[i] }
 	return result
 }
 
