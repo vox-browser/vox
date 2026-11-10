@@ -347,6 +347,8 @@ fn flex_base_height(mut state LayoutState, item &Node, container_height ?CSSPixe
 	}
 	used_basis_is_content := basis.is_content
 		|| (basis.size.is_auto() && computed.size_value(.height).is_auto())
+		|| (basis.size.is_auto() && computed.size_value(.height).contains_percentage()
+			&& container_height == none)
 		|| (basis.size.contains_percentage() && container_height == none)
 	if used_basis_is_content {
 		if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, false) {
