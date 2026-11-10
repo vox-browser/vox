@@ -89,7 +89,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
-				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_anchor,
+				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
 				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
@@ -452,7 +452,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
-				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_anchor,
+				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
 				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
@@ -781,6 +781,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.font_synthesis, .all]
 		}
 		.hyphens { [.all] }
+		.text_align_last { [.all] }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type {
 			[.all]
 		}

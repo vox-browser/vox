@@ -129,6 +129,12 @@ PROPERTIES = {
         }
         for name in ['weight', 'style', 'small-caps', 'position']
     },
+    'text-align-last': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'start', 'end', 'left', 'right', 'center', 'justify',
+                              'match-parent'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',

@@ -469,6 +469,7 @@ pub enum PropertyID {
 	fit_tolerance
 	grid_lanes_pack
 	interpolate_size
+	text_align_last
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
