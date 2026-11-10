@@ -294,6 +294,9 @@ pub fn query_command_enabled(document &dom.Document, command string) !bool {
 	// for the cut command and the paste command.
 	// NOTE: cut and paste are actually in the Clipboard commands section
 	if lowercase_command in ['defaultparagraphseparator', 'stylewithcss', 'usecss'] {
+		if range_ := active_range(document) {
+			return range_.start_container().is_editable_or_editing_host()
+		}
 		return true
 	}
 
