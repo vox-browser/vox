@@ -24,6 +24,7 @@ fn upsample_frame_planes(input [3]FloatPlane, frame FrameHeader, transform Custo
 }
 
 fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform CustomTransformData) ![3]FloatPlane {
+	if raw.spline_cache != none { return error('JPEG XL spline frames require the complete rendering stage') }
 	restored := restore_vardct_frame(raw, frame_filter_geometry(frame))!
 	upsampled := upsample_frame_planes(restored, frame, transform)!
 	if noise := raw.noise {

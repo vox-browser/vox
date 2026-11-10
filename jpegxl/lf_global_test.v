@@ -67,11 +67,15 @@ fn test_lf_global_vardct_omits_color_planes_and_empty_modular_header() {
 }
 
 fn test_lf_global_rejects_feature_streams_and_invalid_geometry_before_input() {
-	for flag in [u64(2), 16] {
+	for flag in [u64(2)] {
 		mut reader := new_bit_reader([u8(255)])
 		if _ := reader.read_lf_global(FileHeader{}, FrameHeader{ width: 8, height: 8, flags: flag, restoration: RestorationFilter.default() }) { assert false }
 		assert reader.position == 0
 	}
+	mut unsupported := new_bit_reader([u8(255)])
+	if _ := unsupported.read_lf_global(FileHeader{ metadata: ImageMetadata{ xyb_encoded: false } },
+		FrameHeader{ width: 8, height: 8, flags: 16, restoration: RestorationFilter.default() }) { assert false }
+	assert unsupported.position == 0
 	mut reader := new_bit_reader([u8(255)])
 	if _ := reader.read_lf_global(FileHeader{}, FrameHeader{ restoration: RestorationFilter.default() }) { assert false }
 	assert reader.position == 0

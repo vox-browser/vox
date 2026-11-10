@@ -10,6 +10,7 @@ pub:
 	extra_channels []ModularChannel
 	noise          ?NoiseParams
 	color_correlation ColorCorrelationParams
+	spline_cache      ?SplineDrawCache
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
@@ -198,5 +199,5 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 	return VarDctFramePlanes{ planes: planes,
 		epf_maps: VarDctEpfMaps{ width: bw, height: bh, raw_quant: raw_quant, transform_ids: transforms, sharpness: sharpness },
 		quantizer: context.quantizer, extra_channels: modular.reconstruct(storage)!, noise: global.noise,
-		color_correlation: context.color_correlation }
+		color_correlation: context.color_correlation, spline_cache: global.spline_cache }
 }
