@@ -423,10 +423,22 @@ pub fn html_table_cell_element_cell_index(cell &dom.HTMLTableCellElement) i32 {
 
 pub fn html_table_cell_element_default_role(cell &dom.HTMLTableCellElement) ?aria.Role {
 	element := unsafe { &dom.Element(cell) }
+	mut ancestor := element.as_node().parent_element()
+	mut table_ancestor := ?&dom.Element(none)
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_html_element() && current.local_name() == 'table' {
+			table_ancestor = current
+			break
+		}
+		ancestor = current.as_node().parent_element()
+	}
+	// Cells outside a table have no implicit role, including header roles.
+	table := table_ancestor or { return none }
 	if element.local_name() == 'th' {
-		mut ancestor := element.as_node().parent_element()
-		for ancestor != none {
-			current := ancestor or { break }
+		mut header_ancestor := element.as_node().parent_element()
+		for header_ancestor != none {
+			current := header_ancestor or { break }
 			scope := element.get_attribute_value('scope')
 			if scope == 'columnheader' || current.local_name() == 'thead' {
 				return .columnheader
@@ -434,23 +446,15 @@ pub fn html_table_cell_element_default_role(cell &dom.HTMLTableCellElement) ?ari
 			if scope == 'rowheader' || current.local_name() == 'tbody' {
 				return .rowheader
 			}
-			ancestor = current.as_node().parent_element()
+			header_ancestor = current.as_node().parent_element()
 		}
 	}
-	mut ancestor := element.as_node().parent_element()
-	for ancestor != none {
-		current := ancestor or { break }
-		if current.local_name() == 'table' {
-			role := html_element_role_or_default(current) or { return none }
-			if role in [.grid, .gridcell] {
-				return .gridcell
-			}
-			if role == .table {
-				return .cell
-			}
-			return none
-		}
-		ancestor = current.as_node().parent_element()
+	role := html_element_role_or_default(table) or { return none }
+	if role in [.grid, .gridcell] {
+		return .gridcell
+	}
+	if role == .table {
+		return .cell
 	}
 	return none
 }
