@@ -116,8 +116,11 @@ pub fn (mut parameter RenderAudioParam) clear_inputs() {
 // https://webaudio.github.io/web-audio-api/#computedvalue
 pub fn (mut parameter RenderAudioParam) compute(mut graph RenderGraph,
 	context RenderContext, mut output []f32) {
+	if output.len == 0 { return }
 	if parameter.automation_rate_ == .k_rate {
-		value := parameter.timeline_.value_at_time(context.quantum_start_time())
+		mut first_sample := output[..1]
+		parameter.timeline_.sample(context.quantum_start_time(), 0, mut first_sample)
+		value := output[0]
 		for frame in 0 .. output.len {
 			output[frame] = value
 		}
