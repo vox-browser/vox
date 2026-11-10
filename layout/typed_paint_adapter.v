@@ -3751,7 +3751,13 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		filter = filter.mapped_from_user_space(painting.Affine{to_page.a, to_page.b, to_page.c,
 			to_page.d, to_page.e, to_page.f})
 	}
-	backdrop_filter := resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
+	// The backdrop belongs to the box's own painting, even when a visible
+	// descendant still records commands inside this box's effect node.
+	backdrop_filter := if computed.visibility() == .visible {
+		resolve_css_filter(computed.backdrop_filter(), computed, color_context, paint_element, border_box_bounds)
+	} else {
+		painting.ResolvedCSSFilter{}
+	}
 	if styled_element := paint_element {
 		text_color = computed.color()
 		color_context.current_color = text_color
