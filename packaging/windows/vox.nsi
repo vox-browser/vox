@@ -49,6 +49,22 @@ Section "Install"
 		MessageBox MB_ICONSTOP "Extraction failed (exit code $0). The installation cannot continue."
 		Abort
 	${EndIf}
+	; File and protocol associations (per-user). This registers Vox as
+	; available for documents and links; it does not steal defaults,
+	; which Windows guards behind the Settings app.
+	WriteRegStr HKCU "Software\Classes\.html" "" "VoxHTML"
+	WriteRegStr HKCU "Software\Classes\.htm" "" "VoxHTML"
+	WriteRegStr HKCU "Software\Classes\.xhtml" "" "VoxHTML"
+	WriteRegStr HKCU "Software\Classes\VoxHTML" "" "Vox HTML Document"
+	WriteRegStr HKCU "Software\Classes\VoxHTML\shell\open\command" "" '"$INSTDIR\vox.exe" "%1"'
+	WriteRegStr HKCU "Software\Classes\http" "" "URL:HyperText Transfer Protocol"
+	WriteRegStr HKCU "Software\Classes\http" "URL Protocol" ""
+	WriteRegStr HKCU "Software\Classes\http\shell\open\command" "" '"$INSTDIR\vox.exe" "%1"'
+	WriteRegStr HKCU "Software\Classes\https" "" "URL:HyperText Transfer Protocol Secure"
+	WriteRegStr HKCU "Software\Classes\https" "URL Protocol" ""
+	WriteRegStr HKCU "Software\Classes\https\shell\open\command" "" '"$INSTDIR\vox.exe" "%1"'
+	; App Paths so `vox` resolves from Run and the command line.
+	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\App Paths\vox.exe" "" "$INSTDIR\vox.exe"
 	; Shortcuts
 	CreateDirectory "$SMPROGRAMS\${APPNAME}"
 	CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\vox.exe"
@@ -69,6 +85,13 @@ Section "Uninstall"
 	Delete "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk"
 	RMDir "$SMPROGRAMS\${APPNAME}"
 	Delete "$DESKTOP\${APPNAME}.lnk"
+	DeleteRegKey HKCU "Software\Classes\VoxHTML"
+	DeleteRegKey HKCU "Software\Classes\.html"
+	DeleteRegKey HKCU "Software\Classes\.htm"
+	DeleteRegKey HKCU "Software\Classes\.xhtml"
+	DeleteRegKey HKCU "Software\Classes\http\shell\open\command"
+	DeleteRegKey HKCU "Software\Classes\https\shell\open\command"
+	DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\App Paths\vox.exe"
 	DeleteRegKey HKCU "Software\${APPNAME}"
 	DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
 SectionEnd
