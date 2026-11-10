@@ -248,7 +248,6 @@ pub fn (mut context OfflineAudioContext) start_rendering() OfflineRenderResult {
 			}
 		}
 	}
-	context.rendering_started = true
 	buffer := new_audio_buffer(context.number_of_channels, context.length, context.base.sample_rate) or {
 		return OfflineRenderResult{
 			promise: AudioPromise{
@@ -257,6 +256,7 @@ pub fn (mut context OfflineAudioContext) start_rendering() OfflineRenderResult {
 			}
 		}
 	}
+	context.rendering_started = true
 	context.rendered_buffer = buffer
 	mut renderer := OfflineAudioRenderer.create(context.base.control_messages,
 		context.base.destination.id, int(context.number_of_channels), int(context.length),

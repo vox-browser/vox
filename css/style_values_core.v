@@ -8909,14 +8909,15 @@ pub fn (style_value StyleValue) is_computationally_independent() bool {
 		FunctionStyleValue {
 			return style_value.value().is_computationally_independent()
 		}
-		LightDarkStyleValue, TreeCountingFunctionStyleValue {
+		LightDarkStyleValue {
+			return style_value.light[0].is_computationally_independent()
+				&& style_value.dark[0].is_computationally_independent()
+		}
+		TreeCountingFunctionStyleValue {
 			return false
 		}
-		KeywordStyleValue {
-			if style_value.keyword() != .currentcolor && style_value.has_color() {
-				return false
-			}
-		}
+		// System colors and light-dark() are independent even though the color
+		// scheme decides their computed color (CSSWG issue 12735).
 		else {}
 	}
 

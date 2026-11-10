@@ -33,6 +33,11 @@ math[display="inline" i] {
   math-style: compact;
 }
 
+/* AD-HOC: Match other engines by leaving MathML links without an underline. */
+a:any-link {
+  text-decoration: none;
+}
+
 /* <mrow>-like elements */
 semantics > :not(:first-child) {
   display: none;

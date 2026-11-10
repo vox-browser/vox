@@ -143,15 +143,15 @@ fn math_variadic(mut vm VM, name string) !Value {
 	for index in 0 .. vm.argument_count() { coerced << vm.argument(index).to_number(mut vm)!.number }
 	if name == 'hypot' { for number in coerced { if math.is_inf(number, 0) { return Value.from_f64(math.inf(1)) } } }
 	mut result := if name == 'max' { math.inf(-1) } else if name == 'min' { math.inf(1) } else { 0.0 }
-	mut only_zero := true
 	for number in coerced {
 		if math.is_nan(number) { return Value.from_f64(math.nan()) }
-		if name == 'hypot' { only_zero = only_zero && number == 0; result += number * number }
+		// Ladybird 85afacea93a8: hypot scales before squaring, avoiding
+		// intermediate overflow/underflow and retaining positive zero.
+		if name == 'hypot' { result = math.hypot(result, number) }
 		else if name == 'max' {
 			if (number == 0 && !math.signbit(number) && result == 0 && math.signbit(result)) || number > result { result = number }
 		} else if (number == 0 && math.signbit(number) && result == 0 && !math.signbit(result)) || number < result { result = number }
 	}
-	if name == 'hypot' { return Value.from_f64(if only_zero { 0.0 } else { math.sqrt(result) }) }
 	return Value.from_f64(result)
 }
 

@@ -231,3 +231,20 @@ fn test_first_letter_stops_before_atomic_inline_flex_and_grid_content() {
   else { assert wrappers.len == 0 }
  }
 }
+
+fn test_first_letter_descendant_style_rebuild_marks_the_pseudo_owner() {
+	mut document := html.parse_document('<!doctype html><style>p::first-letter{font-size:32px}</style><p id="p"><em id="first">Alpha</em>Beta</p>')
+	document.set_browsing_context(&dom.BrowsingContext{})
+	_ = run_document_layout(document, 300, 100) or { panic('missing layout') }
+	mut first := document.get_element_by_id('first') or { panic('missing inline') }
+	owner := document.get_element_by_id('p') or { panic('missing owner') }
+	first.set_attribute_value('style', 'display:none')
+	document.update_style()
+	assert owner.as_node().needs_layout_tree_update_()
+	document.update_layout(.debugging)
+	result := document_layout_result(document) or { panic('missing updated layout') }
+	wrappers := first_letter_wrappers(result.root)
+	assert wrappers.len == 1
+	letter := wrappers[0].children()[0].as_text_node() or { panic('missing first letter') }
+	assert letter.text_for_rendering() == 'B'
+}

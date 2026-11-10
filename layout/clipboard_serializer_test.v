@@ -3,6 +3,27 @@ module layout
 import editing
 import html
 
+fn test_styled_clipboard_accumulator_preserves_boxless_whitespace_in_visible_structure() {
+	document := html.parse_document('<!doctype html><div id="selection"><p>first</p> \n <p>second</p></div>')
+	_ = run_document_layout(document, 300, 100) or { panic('missing layout') }
+	container := document.get_element_by_id('selection') or { panic('missing container') }
+	mut whitespace := container.as_node().children_as_vector()[1]
+	assert whitespace.is_text()
+	whitespace.clear_layout_node_and_paintable()
+	mut range_ := document.create_range()
+	range_.select_node_contents(container.as_node()) or { panic(err) }
+	selection := editing.StyledMarkupSelection.new(range_)
+	accumulator := editing.StyledMarkupAccumulator.new(&selection)
+	mut found := false
+	for mapping in accumulator.serialized_text() {
+		if voidptr(mapping.source.as_node()) == voidptr(whitespace) {
+			assert mapping.serialized.data() == ' \n '
+			found = true
+		}
+	}
+	assert found
+}
+
 fn test_plain_text_clipboard_serializer_uses_rendered_structure() {
 	document := html.parse_document('<!doctype html><style>body{margin:0}.hidden{display:none}.blocked{user-select:none}p{margin:0}</style><body><div id="selection"><p>first<span class="hidden">secret</span><span class="blocked">blocked</span></p><p>second<br>line<img alt="[bird]"></p><table><tr><td>A</td><td>B</td></tr><tr><td>C</td></tr></table></div></body>')
 	_ := run_document_layout(document, 800, 600) or { panic('layout failed') }

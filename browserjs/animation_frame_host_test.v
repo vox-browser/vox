@@ -69,7 +69,7 @@ fn test_native_frame_callback_uses_real_rendering_task_document_origin_receiver_
 		&& settings.realm().callback_execution_depth == 0
 }
 
-fn test_native_frame_pending_cancel_nested_order_and_source_executing_snapshot() {
+fn test_native_frame_pending_and_executing_cancellation_release_callback_roots() {
 	$if !darwin { return }
 	mut runtime := Runtime.create()
 	mut document, page_ := frame_host_document()
@@ -83,13 +83,12 @@ fn test_native_frame_pending_cancel_nested_order_and_source_executing_snapshot()
 	runtime.evaluate_host(r'globalThis.order=[];globalThis.orderTimes=[];const cancelled=requestAnimationFrame(()=>order.push("cancelled"));cancelAnimationFrame(cancelled);let second;requestAnimationFrame(now=>{order.push("first");orderTimes.push(now);cancelAnimationFrame(second);requestAnimationFrame(later=>{order.push("nested");orderTimes.push(later)});const pending=requestAnimationFrame(()=>order.push("cancelled-nested"));cancelAnimationFrame(pending)});second=requestAnimationFrame(now=>{order.push("second");orderTimes.push(now)});')!
 	assert runtime.protected_values_.len == baseline + 2
 	frame_host_opportunity(host, page_)
-	// Pinned source cancels the pending map; the moved executing snapshot runs.
-	assert runtime.evaluate_host('order.join(",")')! == 'first,second'
+	assert runtime.evaluate_host('order.join(",")')! == 'first'
 	assert runtime.protected_values_.len == baseline + 1
 	assert host.window.has_animation_frame_callbacks()
 	frame_host_opportunity(host, page_)
-	assert runtime.evaluate_host('order.join(",")')! == 'first,second,nested'
-	assert runtime.evaluate_host('orderTimes[0]===orderTimes[1]&&orderTimes[2]>=orderTimes[1]')! == 'true'
+	assert runtime.evaluate_host('order.join(",")')! == 'first,nested'
+	assert runtime.evaluate_host('orderTimes[1]>=orderTimes[0]')! == 'true'
 	assert runtime.protected_values_.len == baseline
 }
 

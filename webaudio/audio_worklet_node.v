@@ -76,28 +76,16 @@ pub fn (render_node &AudioWorkletRenderNode) for_each_param(
 	}
 }
 
-fn audio_param_value_at_time(parameter &AudioParam, time f64) f32 {
-	mut value := if parameter.timeline.has_events() {
-		parameter.timeline.value_at_time(time)
-	} else {
-		parameter.current_value
-	}
-	if value < parameter.min_value {
-		value = parameter.min_value
-	}
-	if value > parameter.max_value {
-		value = parameter.max_value
-	}
-	return value
-}
-
 fn audio_worklet_parameter_block(parameter &AudioParam, start_frame u64, sample_rate f32,
 	quantum_size int) []f32 {
 	block_length := if parameter.automation_rate == .a_rate { quantum_size } else { 1 }
 	mut block := []f32{len: block_length}
-	for frame in 0 .. block_length {
-		time := f64(start_frame + u64(frame)) / f64(sample_rate)
-		block[frame] = audio_param_value_at_time(parameter, time)
+	mut timeline := unsafe { &AudioParamTimeline(parameter.timeline) }
+	period := if parameter.automation_rate == .a_rate { 1.0 / f64(sample_rate) } else { 0.0 }
+	timeline.sample(f64(start_frame) / f64(sample_rate), period, mut block)
+	for index, value in block {
+		block[index] = if value < parameter.min_value { parameter.min_value }
+			else if value > parameter.max_value { parameter.max_value } else { value }
 	}
 	return block
 }

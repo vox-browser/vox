@@ -475,7 +475,7 @@ pub fn (mut processor SourceBufferProcessor) run_coded_frame_eviction(new_data_s
 		}
 	}
 
-	if processor.total_buffered_bytes() + new_data_size < current_capacity {
+	if processor.total_buffered_bytes() + new_data_size <= current_capacity {
 		processor.buffer_full_flag_ = false
 	}
 }

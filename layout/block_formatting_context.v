@@ -1009,11 +1009,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	} else if marker.chromium_symbol_marker() {
 		// ListMarker::InlineMarginsForOutside(): offset plus 7px padding
 		// and the symbol rectangle's additional 1px inline inset.
-		left_boundary.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
+		left_boundary.minus(list_item_state.border_box_left())
+			.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
 	} else if direction == .ltr {
-		left_boundary.minus(marker_state.content_width())
+		left_boundary.minus(list_item_state.border_box_left()).minus(marker_state.content_width())
 	} else {
-		content_width_before_marker.minus(right_intrusion)
+		content_width_before_marker.plus(list_item_state.border_box_right()).minus(right_intrusion)
 	}
 	offset_x := if marker.document().font_rendering_policy() == .chromium {
 		marker_offset_x

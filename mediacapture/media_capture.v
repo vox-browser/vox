@@ -795,16 +795,23 @@ enum MediaDevicesTaskKind {
 	device_change
 }
 
+// Only an exact deviceId is a requirement; bare and ideal values are preferences.
+pub struct DeviceIdConstraint {
+pub:
+	device_ids []string
+	is_required bool
+}
+
 struct MediaDevicesTask {
 	kind                 MediaDevicesTaskKind
 	device_promise       &MediaDeviceListPromise = unsafe { nil }
 	stream_promise       &MediaStreamPromise = unsafe { nil }
-	requested_device_ids ?[]string
+	device_id_constraint ?DeviceIdConstraint
 }
 
 struct PendingGetUserMediaRequest {
 	promise              &MediaStreamPromise
-	requested_device_ids ?[]string
+	device_id_constraint ?DeviceIdConstraint
 }
 
 @[heap]
@@ -992,11 +999,11 @@ pub fn (media_devices &MediaDevices) create_list_of_device_info_objects(device_l
 	return result
 }
 
-pub fn (mut media_devices MediaDevices) queue_get_user_media_task(promise &MediaStreamPromise, requested_device_ids ?[]string) {
+pub fn (mut media_devices MediaDevices) queue_get_user_media_task(promise &MediaStreamPromise, device_id_constraint ?DeviceIdConstraint) {
 	media_devices.tasks << MediaDevicesTask{
 		kind: .get_user_media
 		stream_promise: promise
-		requested_device_ids: requested_device_ids
+		device_id_constraint: device_id_constraint
 	}
 }
 
@@ -1028,7 +1035,7 @@ pub fn (mut media_devices MediaDevices) process_pending_get_user_media_requests(
 	pending := media_devices.pending_get_user_media_requests.clone()
 	media_devices.pending_get_user_media_requests.clear()
 	for request in pending {
-		media_devices.queue_get_user_media_task(request.promise, request.requested_device_ids)
+		media_devices.queue_get_user_media_task(request.promise, request.device_id_constraint)
 	}
 }
 
@@ -1087,7 +1094,7 @@ pub fn (mut media_devices MediaDevices) get_user_media(constraints ?MediaStreamC
 		promise.reject('NotSupportedError: Video capture is not supported')
 		return promise
 	}
-	requested_device_ids := if constraint_value.audio == .constrained {
+	device_id_constraint := if constraint_value.audio == .constrained {
 		extract_device_id_constraint(constraint_value.audio_constraints.device_id)
 	} else {
 		none
@@ -1096,11 +1103,11 @@ pub fn (mut media_devices MediaDevices) get_user_media(constraints ?MediaStreamC
 		|| !media_devices.environment.audio_device_cache_ready {
 		media_devices.pending_get_user_media_requests << PendingGetUserMediaRequest{
 			promise: promise
-			requested_device_ids: requested_device_ids
+			device_id_constraint: device_id_constraint
 		}
 		return promise
 	}
-	media_devices.queue_get_user_media_task(promise, requested_device_ids)
+	media_devices.queue_get_user_media_task(promise, device_id_constraint)
 	return promise
 }
 
@@ -1137,7 +1144,7 @@ pub fn (mut media_devices MediaDevices) run_next_task() bool {
 			resolve_media_device_info_list_promise(mut promise, media_devices.create_list_of_device_info_objects(media_devices.stored_device_list))
 		}
 		.get_user_media {
-			media_devices.run_get_user_media_task(task.stream_promise, task.requested_device_ids)
+			media_devices.run_get_user_media_task(task.stream_promise, task.device_id_constraint)
 		}
 		.device_change {
 			media_devices.device_change_event_count++
@@ -1152,16 +1159,17 @@ pub fn (mut media_devices MediaDevices) run_until_idle() {
 	}
 }
 
-fn (mut media_devices MediaDevices) run_get_user_media_task(promise_pointer &MediaStreamPromise, requested_device_ids ?[]string) {
+fn (mut media_devices MediaDevices) run_get_user_media_task(promise_pointer &MediaStreamPromise, device_id_constraint ?DeviceIdConstraint) {
 	mut promise := unsafe { &MediaStreamPromise(promise_pointer) }
 	mut candidates := media_devices.environment.audio_devices.filter(it.kind == .audioinput)
 	if candidates.len == 0 {
 		promise.reject('NotFoundError: No audio input devices available')
 		return
 	}
-	if ids := requested_device_ids {
-		if ids.len > 0 {
-			candidates = candidates.filter(it.dom_device_id in ids)
+	device_ids_are_known := candidates.any(it.dom_device_id.len > 0)
+	if constraint := device_id_constraint {
+		if constraint.is_required && device_ids_are_known {
+			candidates = candidates.filter(it.dom_device_id in constraint.device_ids)
 			if candidates.len == 0 {
 				promise.reject('NotFoundError: Requested audio input device not found')
 				return
@@ -1176,6 +1184,22 @@ fn (mut media_devices MediaDevices) run_get_user_media_task(promise_pointer &Med
 		&& media_devices.environment.microphone_permission == .prompt {
 		mut environment := unsafe { &MediaCaptureEnvironment(media_devices.environment) }
 		environment.microphone_permission = .granted
+	}
+	// The post-permission list is the source of truth for selection. A missing
+	// preferred device falls back to this list; a missing exact device rejects.
+	candidates = media_devices.current_audio_device_snapshot().filter(it.kind == .audioinput)
+	if candidates.len == 0 {
+		promise.reject('NotFoundError: No audio input devices available')
+		return
+	}
+	if constraint := device_id_constraint {
+		matching := candidates.filter(it.dom_device_id in constraint.device_ids)
+		if matching.len > 0 {
+			candidates = matching.clone()
+		} else if constraint.is_required {
+			promise.reject('NotFoundError: Requested audio input device not found')
+			return
+		}
 	}
 	media_devices.set_device_information_exposure(true, false, true)
 	mut selected := candidates[0]
@@ -1234,7 +1258,10 @@ pub fn extract_dom_string_constraint_values(constraint ConstrainDOMString) ?[]st
 	}
 }
 
-pub fn extract_device_id_constraint(device_id_value ?ConstrainDOMString) ?[]string {
+pub fn extract_device_id_constraint(device_id_value ?ConstrainDOMString) ?DeviceIdConstraint {
 	value := device_id_value or { return none }
-	return extract_dom_string_constraint_values(value)
+	is_required := value.kind == .parameters && value.parameters.exact != none
+	ids := extract_dom_string_constraint_values(value) or { []string{} }
+	if ids.len == 0 && !is_required { return none }
+	return DeviceIdConstraint{device_ids: ids, is_required: is_required}
 }

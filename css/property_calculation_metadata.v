@@ -3968,7 +3968,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.font_weight { 'normal' }
 		.font_width { 'normal' }
 		.gap { 'normal' }
-		.grid { 'auto' }
+		.grid { 'none' }
 		.grid_area { 'auto' }
 		.grid_auto_columns { 'auto' }
 		.grid_auto_flow { 'row' }
@@ -3979,7 +3979,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.grid_row { 'auto' }
 		.grid_row_end { 'auto' }
 		.grid_row_start { 'auto' }
-		.grid_template { 'auto' }
+		.grid_template { 'none' }
 		.grid_template_areas { 'none' }
 		.grid_template_columns { 'none' }
 		.grid_template_rows { 'none' }

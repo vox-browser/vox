@@ -163,3 +163,19 @@ fn test_audio_param_owns_synchronized_render_parameter() {
 	parameter.set_automation_rate(.k_rate)!
 	assert parameter.render_param().automation_rate() == .k_rate
 }
+
+fn test_zero_channel_output_is_pulled_as_mono_silence() {
+	mut graph := RenderGraph.create()
+	mut source := RenderNode.create(1, 0, 1, 4, 0)
+	mut destination := RenderNode.create(2, 1, 1, 4, 1)
+	destination.set_process_callback(render_graph_destination_process)
+	graph.apply_control_messages([
+		ControlMessage{kind: .add_node, render_node: source},
+		ControlMessage{kind: .add_node, render_node: destination},
+		ControlMessage{kind: .replace_connections, node_id: 1, node_connections: [OutgoingNodeConnection{destination: 2}]},
+	])
+	graph.set_destination(2)
+	graph.render_quantum(RenderContext{sample_rate: 48_000, quantum_size: 4})
+	assert destination.output(0).channel_count() == 1
+	assert destination.output(0).channel(0) == [f32(0), 0, 0, 0]
+}

@@ -60,7 +60,7 @@ pub fn (model &HTMLTextAreaElementModel) is_html_textarea_element() bool {
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_relevant_value(value string) ! {
-	model.set_value(value)
+	model.replace_value(value)
 }
 
 fn (mut model HTMLTextAreaElementModel) sync_text_node_to_raw_value() {

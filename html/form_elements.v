@@ -90,7 +90,8 @@ pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTe
 	default_value := dom_element.as_node().child_text_content()
 	control := FormAssociatedElement.create(dom_element)
 	mut text := FormAssociatedTextControlElement.create(control, default_value)
-	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .dom)
+	// Initializing the model's value is not a DOM selection operation.
+	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .value_change)
 	mut model := &HTMLTextAreaElementModel{
 		element: element
 		control: control
@@ -130,18 +131,24 @@ pub fn (model &HTMLTextAreaElementModel) value() string {
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {
+	if model.replace_value(value) {
+		length := u32(form_string_to_utf16(model.value()).len)
+		model.text.set_the_selection_range(length, length, .none, .value_change)
+	}
+}
+
+// Replacements made by editing and setRangeText choose their selection later.
+fn (mut model HTMLTextAreaElementModel) replace_value(value string) bool {
 	old_value := model.value()
 	model.set_raw_value(value)
 	model.text.dirty_value_flag = true
 	model.dirty_value = true
 	model.value_user_edited = false
-	if model.value() != old_value {
-		model.sync_text_node_to_raw_value()
-		length := u32(form_string_to_utf16(model.value()).len)
-		model.text.set_the_selection_range(length, length, .none, .dom)
-	}
+	changed := model.value() != old_value
+	if changed { model.sync_text_node_to_raw_value() }
 	model.update_placeholder_visibility()
 	model.update_validity()
+	return changed
 }
 
 pub fn (model &HTMLTextAreaElementModel) text_length() u32 {

@@ -58,13 +58,6 @@ fn test_string_character_constructors_preserve_upstream_units_and_supplementary_
 		0xdbff,
 		0xdfff,
 	]
-	// The current source narrows integral Numbers before validating their range.
-	assert string_units_call(mut vm, true, [Value.from_f64(4294967296.0),
-		Value.from_f64(-4294967296.0), Value.from_f64(4294967361.0)])!.as_string().utf16.data == [
-		u16(0),
-		0,
-		65,
-	]
 }
 
 @[heap]
@@ -112,7 +105,8 @@ fn test_string_character_constructors_convert_left_to_right_once_and_stop_on_err
 			}
 		}
 	}
-	for number in [math.nan(), math.inf(1), math.inf(-1), -5.0, 1.5, f64(0x123ffff), f64(0x110000)] {
+	for number in [math.nan(), math.inf(1), math.inf(-1), -5.0, 1.5, f64(0x123ffff), f64(0x110000),
+		4294967296.0, -4294967296.0, 4294967361.0, -4294967231.0, 9007199254740992.0] {
 		if _ := string_units_call(mut vm, true, [Value.from_f64(number), arguments[2]]) {
 			assert false
 		} else {

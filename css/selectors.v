@@ -2942,13 +2942,8 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 						return true
 					}
 				}
-				.tag_name {
+				.tag_name, .universal {
 					if simple_selector.qualified_name().name.name.len == 0 || simple_index != 0 {
-						return true
-					}
-				}
-				.universal {
-					if simple_selector.qualified_name().name.name.len == 0 {
 						return true
 					}
 				}
