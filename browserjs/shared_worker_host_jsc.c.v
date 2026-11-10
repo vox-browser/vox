@@ -150,6 +150,11 @@ fn (mut host SharedWorkerHost) construct(args []voidptr) ! {
 		return
 	}
 	if remote.process == none {
+		if count_worker_processes_for_site(worker_process_site_key(host.settings))
+			>= maximum_worker_processes_per_top_level_origin {
+			remote.finish(true)
+			return
+		}
 		startup := encode_worker_startup(WorkerStartup{url: url, options: options,
 			outside: host.settings.serialize(), creation_time: highresolutiontime.unsafe_shared_current_time(), is_shared: true})!
 		mut process := WorkerProcess.spawn(host.executable) or { remote.finish(true); return }
