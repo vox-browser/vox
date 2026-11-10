@@ -51,6 +51,25 @@ fn test_document_loader_uses_translated_plaintext_tokenizer_sequence() {
 	assert document.get_elements_by_tag_name('b').length() == 0
 }
 
+// Ladybird d3a9bd05d525ef32df935d28a027229e4dd86ec6.
+fn test_plaintext_document_wraps_lines_and_follows_color_scheme_despite_response_csp() {
+	associated := parse_document('<!doctype html>')
+	body := 'a'.repeat(500).bytes()
+	mut document := dom.load_document(loading_navigation_params(associated, 'text/plain', body), body)?
+	document.set_policy_container(&dom.PolicyContainer{
+		csp_list: [parse_response_csp_policy("style-src 'none'", .enforce, document.origin())]
+	})
+	document.set_ready_to_run_scripts()
+	pre := document.get_elements_by_tag_name('pre').item(0)?
+	assert pre.get_attribute('style') == none
+	assert pre.el_inline_style()?.declarations_text == 'word-wrap: break-word; white-space: pre-wrap;'
+	assert !pre.el_inline_style()?.awaits_content_security_policy_check
+	meta := document.get_elements_by_tag_name('meta').item(0)?
+	assert meta.get_attribute_value('name') == 'color-scheme'
+	assert meta.get_attribute_value('content') == 'light dark'
+	assert pre.as_node().text_content()? == body.bytestr()
+}
+
 fn test_document_loader_uses_translated_mime_sniffing() {
 	associated := parse_document('<!doctype html>')
 	body := [u8(0x89), `P`, `N`, `G`, 0x0d, 0x0a, 0x1a, 0x0a]
