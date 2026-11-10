@@ -697,6 +697,13 @@ pub fn (subtle_crypto &SubtleCrypto) derive_bits(params DeriveParams, base_key &
 		return pbkdf2_derive_bits(Pbkdf2Params{ ...params, name: normalized, hash: hash }, base_key, length_bits)
 	}
 	if params is EcdhKeyDeriveParams {
+		// These public key, algorithm, and output-size checks precede the
+		// private-key validation in the deriveBits operation's specification.
+		if normalized in ['X25519', 'X448'] {
+			validate_exchange_public_key(normalized, params, length_bits)!
+		} else if normalized == 'ECDH' {
+			validate_ecdh_public_key(params, length_bits)!
+		}
 		validate_operation_key(base_key, normalized, .derive_bits)!
 		if normalized in ['X25519', 'X448'] { return derive_exchange_bits(normalized, EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
 		if normalized == 'ECDH' { return ecdh_derive_bits(EcdhKeyDeriveParams{ ...params, name: normalized }, base_key, length_bits) }
