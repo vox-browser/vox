@@ -6565,7 +6565,19 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 }
 
 // --- Lifecycle callbacks ---
+fn (e &Element) report_title_change_to_page() {
+	navigable := e.as_node().navigable() or { return }
+	if !navigable.is_traversable() { return }
+	document := e.document()
+	if document == unsafe { nil } || document.page() == unsafe { nil } { return }
+	mut page := unsafe { &Page(document.page()) }
+	page.client_page_did_change_title(document.title())
+}
+
 pub fn (mut e Element) inserted() {
+	if e.as_node().is_html_title_element() && e.is_connected() {
+		e.report_title_change_to_page()
+	}
 	if mut inline_style := e.inline_style_ {
 		if inline_style.awaits_content_security_policy_check && e.is_connected() {
 			inline_style.awaits_content_security_policy_check = false
@@ -6648,6 +6660,9 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 }
 
 pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
+	if e.as_node().is_html_title_element() && old_root.is_document() {
+		e.report_title_change_to_page()
+	}
 	mut node := unsafe { &Node(e.as_node()) }
 	node.in_editable_subtree_ = false
 	node.layout_node_ = unsafe { nil }
@@ -6790,6 +6805,9 @@ pub fn (mut e Element) adopted_from(_ &Document) {
 
 pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 	_ = metadata
+	if e.as_node().is_html_title_element() && e.is_connected() {
+		e.report_title_change_to_page()
+	}
 	e.set_needs_style_update(true)
 
 	if e.child_style_uses_tree_counting_function {
