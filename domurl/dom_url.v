@@ -169,10 +169,14 @@ pub fn (mut url DOMURL) set_search(value string) {
 		}
 		return
 	}
-	input := if value.starts_with('?') { value[1..] } else { value }
+	// Basic URL parsing removes ASCII tabs/newlines even in query state.
+	input := (if value.starts_with('?') { value[1..] } else { value }).replace('\t', '').replace('\r',
+		'').replace('\n', '')
 	url.record = url.record.with_query(input)
+	// The query record holds the URL-encoded, normalized result. URLSearchParams
+	// must reflect that result rather than the setter's unparsed input.
 	if mut query := url.query_object {
-		query.list = url_decode(input)
+		query.list = url_decode(url.record.query or { '' })
 	}
 }
 
