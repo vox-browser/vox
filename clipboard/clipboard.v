@@ -145,8 +145,8 @@ pub fn os_specific_well_known_format(mime_type_string string) string {
 	}
 }
 
-pub fn check_clipboard_read_permission(has_transient_activation bool) bool {
-	return has_transient_activation
+pub fn check_clipboard_read_permission(has_transient_activation bool, is_running_from_paste bool) bool {
+	return has_transient_activation && is_running_from_paste
 }
 
 pub fn check_clipboard_write_permission(has_transient_activation bool) bool {
@@ -188,12 +188,13 @@ mut:
 	event_loop_              &html.EventLoop = unsafe { nil }
 	document_                ?&dom.Document
 	has_transient_activation bool
+	system_clipboard_data_being_pasted_ ?[]SystemClipboardItem
 	active_write_operations  []&ClipboardWriteOperation
 }
 
-// create wires the renderer-side API to its explicit system clipboard
-// boundary. Activation is deliberately mutable because Window's transient
-// activation is consumed/updated independently of this object.
+// create wires the API to its per-tab clipboard boundary and native document.
+// Standalone adapters without a Window can supply activation explicitly; an
+// associated native Window always remains the activation authority.
 pub fn Clipboard.create(backend &SystemClipboardBackend, event_loop &html.EventLoop, document ?&dom.Document) &Clipboard {
 	return &Clipboard{
 		backend_: backend
@@ -214,6 +215,31 @@ pub fn (mut board Clipboard) set_has_transient_activation(value bool) {
 	board.has_transient_activation = value
 }
 
+fn (board &Clipboard) has_transient_user_activation() bool {
+	if document := board.document_ {
+		if window := document.get_window() {
+			return window.has_transient_activation()
+		}
+	}
+	return board.has_transient_activation
+}
+
+// The embedder calls this only while dispatching a paste of the system
+// clipboard authorized by its own Paste command or shortcut. A synthetic
+// paste event or a handed-over text insertion must not enter this scope.
+// Reads capture their own copy before the asynchronous permission task runs.
+pub fn (mut board Clipboard) during_system_clipboard_paste(data []SystemClipboardItem, steps fn()) {
+	previous := board.system_clipboard_data_being_pasted_
+	board.system_clipboard_data_being_pasted_ = clone_system_clipboard_items(data)
+	defer { board.system_clipboard_data_being_pasted_ = previous }
+	steps()
+}
+
+fn (board &Clipboard) pasted_data_snapshot() ?[]SystemClipboardItem {
+	data := board.system_clipboard_data_being_pasted_ or { return none }
+	return clone_system_clipboard_items(data)
+}
+
 pub fn (board &Clipboard) backend() &SystemClipboardBackend {
 	return board.backend_
 }
@@ -221,15 +247,17 @@ pub fn (board &Clipboard) backend() &SystemClipboardBackend {
 // https://w3c.github.io/clipboard-apis/#dom-clipboard-read
 pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardReadPromise {
 	mut promise := ClipboardReadPromise.pending()
-	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
-		if !check_clipboard_read_permission(board.has_transient_activation) {
-			promise.reject('NotAllowedError: Clipboard reading is only allowed through user activation')
+	pasted_data := board.pasted_data_snapshot()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, formats, pasted_data] () {
+		if !check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none) {
+			promise.reject('NotAllowedError: Clipboard reading is only allowed while the user pastes')
 			return
 		}
-			html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats] () {
+		data := pasted_data or { []SystemClipboardItem{} }
+		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats, data] () {
 			mut items := []&ClipboardItem{}
 			snapshot_change_count := board.backend_.change_count()
-			for system_item in board.backend_.items() {
+			for system_item in data {
 				mut item := ClipboardItem.create_empty()
 				for system_representation in system_item.system_clipboard_representations {
 					// File-backed native entries are available to an explicit user paste,
@@ -271,13 +299,15 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 // https://w3c.github.io/clipboard-apis/#dom-clipboard-readtext
 pub fn (board &Clipboard) read_text() &ClipboardTextPromise {
 	mut promise := ClipboardTextPromise.pending()
-	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise] () {
-		if !check_clipboard_read_permission(board.has_transient_activation) {
-			promise.reject('NotAllowedError: Clipboard reading is only allowed through user activation')
+	pasted_data := board.pasted_data_snapshot()
+	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, pasted_data] () {
+		if !check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none) {
+			promise.reject('NotAllowedError: Clipboard reading is only allowed while the user pastes')
 			return
 		}
-		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise] () {
-			for item in board.backend_.items() {
+		data := pasted_data or { []SystemClipboardItem{} }
+		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [mut promise, data] () {
+			for item in data {
 				for representation in item.system_clipboard_representations {
 					data := representation.byte_data() or { continue }
 					if os_specific_well_known_format(representation.mime_type) == 'text/plain' {
@@ -296,7 +326,7 @@ pub fn (board &Clipboard) read_text() &ClipboardTextPromise {
 pub fn (board &Clipboard) write(data []&ClipboardItem) &ClipboardVoidPromise {
 	mut promise := ClipboardVoidPromise.pending()
 	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, data, mut promise] () {
-		if !check_clipboard_write_permission(board.has_transient_activation) {
+		if !check_clipboard_write_permission(board.has_transient_user_activation()) {
 			promise.reject('NotAllowedError: Clipboard writing is only allowed through user activation')
 			return
 		}
@@ -316,7 +346,7 @@ pub fn (board &Clipboard) write(data []&ClipboardItem) &ClipboardVoidPromise {
 pub fn (board &Clipboard) write_text(data string) &ClipboardVoidPromise {
 	mut promise := ClipboardVoidPromise.pending()
 	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, data, mut promise] () {
-		if !check_clipboard_write_permission(board.has_transient_activation) {
+		if !check_clipboard_write_permission(board.has_transient_user_activation()) {
 			promise.reject('NotAllowedError: Clipboard writing is only allowed through user activation')
 			return
 		}

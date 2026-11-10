@@ -3,6 +3,28 @@ module clipboard
 import fileapi
 import html
 
+struct ClipboardPasteReadResult {
+mut:
+	text &ClipboardTextPromise = unsafe { nil }
+	items &ClipboardReadPromise = unsafe { nil }
+}
+
+fn clipboard_test_read_text_from_paste(mut board Clipboard) &ClipboardTextPromise {
+	mut result := &ClipboardPasteReadResult{}
+	board.during_system_clipboard_paste(board.backend().items(), fn [board, mut result] () {
+		result.text = board.read_text()
+	})
+	return result.text
+}
+
+fn clipboard_test_read_from_paste(mut board Clipboard, formats ClipboardUnsanitizedFormats) &ClipboardReadPromise {
+	mut result := &ClipboardPasteReadResult{}
+	board.during_system_clipboard_paste(board.backend().items(), fn [board, mut result, formats] () {
+		result.items = board.read(formats)
+	})
+	return result.items
+}
+
 fn drain_clipboard_test_event_loop(mut event_loop html.EventLoop) {
 	mut iterations := 0
 	for event_loop.task_queue().has_runnable_tasks() {
@@ -64,7 +86,7 @@ fn test_clipboard_write_text_and_read_text_cross_backend_boundary_asynchronously
 	assert backend.items()[0].system_clipboard_representations[0].byte_data()?.bytestr() == 'hello, clipboard'
 	assert backend.presentation_styles() == ['unspecified']
 
-	read := board.read_text()
+	read := clipboard_test_read_text_from_paste(mut board)
 	assert read.state() == .pending
 	drain_clipboard_test_event_loop(mut event_loop)
 	assert read.state() == .fulfilled
@@ -89,7 +111,7 @@ fn test_clipboard_read_text_skips_file_backed_native_entries() {
 	mut board := Clipboard.create(backend, event_loop, none)
 	board.set_has_transient_activation(true)
 
-	read := board.read_text()
+	read := clipboard_test_read_text_from_paste(mut board)
 	drain_clipboard_test_event_loop(mut event_loop)
 	assert read.state() == .fulfilled
 	assert read.text() == 'public'
@@ -129,7 +151,7 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 	mut board := Clipboard.create(backend, event_loop, none)
 	board.set_has_transient_activation(true)
 
-	read := board.read(ClipboardUnsanitizedFormats{
+	read := clipboard_test_read_from_paste(mut board, ClipboardUnsanitizedFormats{
 		unsanitized: ['text/html']
 	})
 	drain_clipboard_test_event_loop(mut event_loop)
