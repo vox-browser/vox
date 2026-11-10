@@ -104,9 +104,22 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 		alpha_plane := render_alpha_plane(extra_channels[0], file, frame, storage)!
 		alpha_samples = alpha_plane.samples
 	}
-	output := if metadata.xyb_encoded {
-		linear := xyb_to_linear(restored, color.opsin, color.intensity_target)!
-		[srgb_transfer(linear[0], .from_linear)!, srgb_transfer(linear[1], .from_linear)!, srgb_transfer(linear[2], .from_linear)!]!
+	// XYB converts to linear and sRGB row by row below, through the same span
+	// functions as xyb_to_linear and srgb_transfer and with their checks.
+	xyb := metadata.xyb_encoded
+	mut xyb_params := XybParameters{}
+	if xyb {
+		xyb_params = xyb_parameters(color.opsin, color.intensity_target)!
+		for plane in restored {
+			plane.validate()!
+			if plane.width != restored[0].width || plane.height != restored[0].height {
+				return error('Incompatible JPEG XL XYB plane geometry')
+			}
+			if !all_finite(plane.samples) { return error('Nonfinite JPEG XL XYB sample') }
+		}
+	}
+	output := if xyb {
+		restored
 	} else if frame.do_ycbcr {
 		converted := ycbcr_to_rgb_planes(restored[..])!
 		[converted[0],converted[1],converted[2]]!
@@ -125,13 +138,35 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	mut alpha_bytes := []u8{len: if has_alpha { width } else { 0 }}
 	mut rows := [3][]u8{}
 	for c in 0 .. 3 { rows[c] = []u8{len: width} }
+	mut linear_rows := [3][]f32{}
+	mut srgb_rows := [3][]f32{}
+	if xyb {
+		if restored[0].width != width || restored[0].height != int(file.size.height) {
+			return error('Incorrect JPEG XL output plane geometry')
+		}
+		for c in 0 .. 3 {
+			linear_rows[c] = []f32{len: width}
+			srgb_rows[c] = []f32{len: width}
+		}
+	}
 	for y in 0 .. int(file.size.height) {
 		start := y * width
 		end := start + width
 		alpha := if has_alpha { alpha_samples[start..end] } else { []f32{} }
 		if has_alpha { quantize_output_row_into(alpha, 0, u32(y), 3, 8, mut alpha_bytes)! }
+		if xyb {
+			unsafe {
+				xyb_to_linear_span(xyb_params, &f32(restored[0].samples.data) + start,
+					&f32(restored[1].samples.data) + start, &f32(restored[2].samples.data) + start,
+					&f32(linear_rows[0].data), &f32(linear_rows[1].data), &f32(linear_rows[2].data), width)
+			}
+			for c in 0 .. 3 {
+				if !all_finite(linear_rows[c]) { return error('Nonfinite JPEG XL sRGB transfer sample') }
+				unsafe { srgb_from_linear_span(&f32(linear_rows[c].data), &f32(srgb_rows[c].data), width) }
+			}
+		}
 		for c in 0 .. 3 {
-			color_row := output[c].samples[start..end]
+			color_row := if xyb { srgb_rows[c] } else { output[c].samples[start..end] }
 			row := if should_premultiply { premultiply_output_row(color_row, alpha)! } else { color_row }
 			quantize_output_row_into(row, 0, u32(y), u32(c), 8, mut rows[c])!
 		}

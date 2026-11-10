@@ -35,24 +35,39 @@ pub fn srgb_transfer(input FloatPlane, direction SrgbTransferDirection) !FloatPl
 	// loops have no early exits or calls and vectorize. sqrtf equals the
 	// float result of a double sqrt: double rounding is innocuous for sqrt.
 	mut result := []f32{len: input.samples.len}
-	if direction == .from_linear {
-		for i in 0 .. input.samples.len {
-			bits := math.f32_bits(input.samples[i])
-			absolute := math.f32_from_bits(bits & 0x7fffffff)
-			linear := absolute * f32(12.92)
-			curve := srgb_rational_polynomial(math.sqrtf(absolute), linear_to_srgb_p, linear_to_srgb_q)
-			converted := if absolute < f32(0.0031308) { linear } else { curve }
-			result[i] = math.f32_from_bits((math.f32_bits(converted) & 0x7fffffff) | (bits & 0x80000000))
-		}
-	} else {
-		for i in 0 .. input.samples.len {
-			bits := math.f32_bits(input.samples[i])
-			absolute := math.f32_from_bits(bits & 0x7fffffff)
-			linear := absolute * (f32(1) / f32(12.92))
-			curve := srgb_rational_polynomial(absolute, srgb_to_linear_p, srgb_to_linear_q)
-			converted := if absolute < f32(0.04045) { linear } else { curve }
-			result[i] = math.f32_from_bits((math.f32_bits(converted) & 0x7fffffff) | (bits & 0x80000000))
+	unsafe {
+		if direction == .from_linear {
+			srgb_from_linear_span(&f32(input.samples.data), &f32(result.data), input.samples.len)
+		} else {
+			srgb_to_linear_span(&f32(input.samples.data), &f32(result.data), input.samples.len)
 		}
 	}
 	return FloatPlane{ width: input.width, height: input.height, samples: result }
+}
+
+// Encode `count` finite linear samples with the sRGB curve. Both curve
+// branches are evaluated, so the loop has no calls or exits and vectorizes;
+// sqrtf equals the float of a double sqrt (double rounding is innocuous).
+@[direct_array_access]
+fn srgb_from_linear_span(input &f32, output &f32, count int) {
+	for i in 0 .. count {
+		bits := math.f32_bits(unsafe { input[i] })
+		absolute := math.f32_from_bits(bits & 0x7fffffff)
+		linear := absolute * f32(12.92)
+		curve := srgb_rational_polynomial(math.sqrtf(absolute), linear_to_srgb_p, linear_to_srgb_q)
+		converted := if absolute < f32(0.0031308) { linear } else { curve }
+		unsafe { output[i] = math.f32_from_bits((math.f32_bits(converted) & 0x7fffffff) | (bits & 0x80000000)) }
+	}
+}
+
+@[direct_array_access]
+fn srgb_to_linear_span(input &f32, output &f32, count int) {
+	for i in 0 .. count {
+		bits := math.f32_bits(unsafe { input[i] })
+		absolute := math.f32_from_bits(bits & 0x7fffffff)
+		linear := absolute * (f32(1) / f32(12.92))
+		curve := srgb_rational_polynomial(absolute, srgb_to_linear_p, srgb_to_linear_q)
+		converted := if absolute < f32(0.04045) { linear } else { curve }
+		unsafe { output[i] = math.f32_from_bits((math.f32_bits(converted) & 0x7fffffff) | (bits & 0x80000000)) }
+	}
 }

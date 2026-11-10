@@ -42,10 +42,24 @@ pub fn xyb_to_linear(input [3]FloatPlane, opsin OpsinInverseMatrix, intensity_ta
 	}
 	mut samples := [3][]f32{}
 	for c in 0 .. 3 { samples[c] = []f32{len: input[c].samples.len} }
-	for i in 0 .. input[0].samples.len {
-		x := input[0].samples[i]
-		y := input[1].samples[i]
-		b := input[2].samples[i]
+	unsafe {
+		xyb_to_linear_span(params, &f32(input[0].samples.data), &f32(input[1].samples.data),
+			&f32(input[2].samples.data), &f32(samples[0].data), &f32(samples[1].data),
+			&f32(samples[2].data), input[0].samples.len)
+	}
+	mut result := [3]FloatPlane{}
+	for c in 0 .. 3 { result[c] = FloatPlane{ width: input[c].width, height: input[c].height, samples: samples[c] } }
+	return result
+}
+
+// Convert `count` XYB samples to linear RGB. Plane conversion and the fused
+// row output path both use this loop, so their arithmetic is identical.
+@[direct_array_access]
+fn xyb_to_linear_span(params XybParameters, xs &f32, ys &f32, bs &f32, out0 &f32, out1 &f32, out2 &f32, count int) {
+	for i in 0 .. count {
+		x := unsafe { xs[i] }
+		y := unsafe { ys[i] }
+		b := unsafe { bs[i] }
 		l := y + x - params.bias_cbrt[0]
 		m := y - x - params.bias_cbrt[1]
 		s := b - params.bias_cbrt[2]
@@ -58,13 +72,10 @@ pub fn xyb_to_linear(input [3]FloatPlane, opsin OpsinInverseMatrix, intensity_ta
 		linear_l := fused_f32(l2, scaled_l, params.scaled_bias[0])
 		linear_m := fused_f32(m2, scaled_m, params.scaled_bias[1])
 		linear_s := fused_f32(s2, scaled_s, params.scaled_bias[2])
-		for c in 0 .. 3 {
-			row := c * 3
-			samples[c][i] = fused_f32(params.matrix[row], linear_l,
-				fused_f32(params.matrix[row + 1], linear_m, params.matrix[row + 2] * linear_s))
+		unsafe {
+			out0[i] = fused_f32(params.matrix[0], linear_l, fused_f32(params.matrix[1], linear_m, params.matrix[2] * linear_s))
+			out1[i] = fused_f32(params.matrix[3], linear_l, fused_f32(params.matrix[4], linear_m, params.matrix[5] * linear_s))
+			out2[i] = fused_f32(params.matrix[6], linear_l, fused_f32(params.matrix[7], linear_m, params.matrix[8] * linear_s))
 		}
 	}
-	mut result := [3]FloatPlane{}
-	for c in 0 .. 3 { result[c] = FloatPlane{ width: input[c].width, height: input[c].height, samples: samples[c] } }
-	return result
 }
