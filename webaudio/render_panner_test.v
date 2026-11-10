@@ -124,3 +124,19 @@ fn test_panner_render_node_exposes_only_its_six_source_parameters() {
 	})
 	assert observation.count == 6
 }
+
+fn test_panner_distance_models_apply_their_distinct_bounds() {
+	for model in [DistanceModelType.inverse, .exponential] {
+		assert compute_distance_gain(100, PannerRenderConfig{distance_model: model, max_distance: 2}) == 0.01
+		assert compute_distance_gain(0, PannerRenderConfig{distance_model: model, ref_distance: 0}) == 0
+		assert compute_distance_gain(10, PannerRenderConfig{distance_model: model, ref_distance: 0}) == 0
+	}
+	config := PannerRenderConfig{distance_model: .linear, ref_distance: 10, max_distance: 2}
+	assert compute_distance_gain(0, config) == 1
+	assert compute_distance_gain(6, config) == 0.5
+	assert compute_distance_gain(12, config) == 0
+	assert compute_distance_gain(5, PannerRenderConfig{distance_model: .linear, ref_distance: 5, max_distance: 5, rolloff_factor: 0.25}) == 0.75
+	panner := panner_render_test_node(AudioVector3{100, 0, 0}, AudioVector3{1, 0, 0}, 1)
+	render_panner_test_quantum(panner, [f32(1)], PannerRenderConfig{max_distance: 2})
+	assert math.abs(panner.render_node().output(0).channel(1)[0] - 0.01) < 0.000001
+}

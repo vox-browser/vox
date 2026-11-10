@@ -97,37 +97,30 @@ pub:
 
 // https://webaudio.github.io/web-audio-api/#Spatialization-distance-effects
 fn compute_distance_gain(distance f64, config PannerRenderConfig) f64 {
-	minimum_distance := if config.ref_distance < config.max_distance {
-		config.ref_distance
-	} else {
-		config.max_distance
-	}
-	maximum_distance := if config.ref_distance > config.max_distance {
-		config.ref_distance
-	} else {
-		config.max_distance
-	}
-	clamped_distance := panner_clamp(distance, minimum_distance, maximum_distance)
 	match config.distance_model {
 		.linear {
+			minimum_distance := math.min(config.ref_distance, config.max_distance)
+			maximum_distance := math.max(config.ref_distance, config.max_distance)
 			rolloff_factor := panner_clamp(config.rolloff_factor, 0, 1)
-			if config.ref_distance == config.max_distance {
+			if minimum_distance == maximum_distance {
 				return 1.0 - rolloff_factor
 			}
-			return 1.0 - rolloff_factor * (clamped_distance - config.ref_distance) / (config.max_distance - config.ref_distance)
+			distance_ := panner_clamp(distance, minimum_distance, maximum_distance)
+			return 1.0 - rolloff_factor * (distance_ - minimum_distance) / (maximum_distance - minimum_distance)
 		}
 		.inverse {
-			denominator := config.ref_distance + config.rolloff_factor * (clamped_distance - config.ref_distance)
-			if denominator == 0 {
-				return 1
+			if config.ref_distance == 0 {
+				return 0
 			}
-			return config.ref_distance / denominator
+			distance_ := math.max(distance, config.ref_distance)
+			return config.ref_distance / (config.ref_distance + config.rolloff_factor * (distance_ - config.ref_distance))
 		}
 		.exponential {
 			if config.ref_distance == 0 {
-				return 1
+				return 0
 			}
-			return math.pow(clamped_distance / config.ref_distance, -config.rolloff_factor)
+			distance_ := math.max(distance, config.ref_distance)
+			return math.pow(distance_ / config.ref_distance, -config.rolloff_factor)
 		}
 	}
 }
