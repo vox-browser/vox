@@ -3180,7 +3180,7 @@ fn parser_strip_important(mut declaration Declaration) {
 		return
 	}
 	mut bang_index := -1
-	for i := important_index - 1; i > 0; i-- {
+	for i := important_index - 1; i >= 0; i-- {
 		value := declaration.value[i]
 		if value.is_delim(u32(`!`)) {
 			bang_index = i
