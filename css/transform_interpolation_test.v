@@ -58,3 +58,9 @@ fn test_matrix_accumulation_composes_tilted_rotations() {
 	accumulated := accumulate_transform_matrices(underlying, animated) or { panic('not accumulated') }
 	assert transform_matrices_match(accumulated, transform_matrix_of('translateX(200px) rotate3d(1, 1, 0, 45deg)'))
 }
+
+fn test_rotate3d_interpolation_takes_the_shortest_path() {
+	// transform-interpolation-verify-reftests: rotateX(360deg) is the identity,
+	// so halfway to rotateZ(90deg) is rotateZ(45deg), not its opposite turn.
+	assert_interpolated_matrix('rotateX(360deg)', 'rotateZ(90deg)', 0.5, 'rotateZ(45deg)')
+}

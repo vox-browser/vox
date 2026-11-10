@@ -8230,7 +8230,21 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 			StyleValue(AngleStyleValue.create(Angle.make_degrees(angle))),
 		])
 	}
-	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis, from_angle), interpolation_axis_angle_to_quaternion(to_axis, to_angle), delta)
+	mut from_quaternion := interpolation_axis_angle_to_quaternion(from_axis, from_angle)
+	to_quaternion := interpolation_axis_angle_to_quaternion(to_axis, to_angle)
+	// A quaternion and its negation are the same rotation. A negative dot
+	// product would slerp the long way around, so negate one input to take
+	// the shortest path, as other engines do.
+	mut product := 0.0
+	for index in 0 .. 4 {
+		product += from_quaternion[index] * to_quaternion[index]
+	}
+	if product < 0 {
+		for index in 0 .. 4 {
+			from_quaternion[index] = -from_quaternion[index]
+		}
+	}
+	quaternion := interpolation_slerp(from_quaternion, to_quaternion, delta)
 	sin_half_angle := math.sqrt(math.max(0.0, 1.0 - quaternion[3] * quaternion[3]))
 	mut axis := FloatVector3{
 		x: quaternion[0]
@@ -8241,6 +8255,11 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 		axis.x /= sin_half_angle
 		axis.y /= sin_half_angle
 		axis.z /= sin_half_angle
+	} else {
+		// The rotation angle is zero, so the axis is arbitrary.
+		axis = FloatVector3{
+			z: 1
+		}
 	}
 	angle := 2.0 * math.acos(clamp_f64(quaternion[3], -1, 1)) * 180.0 / math.pi
 	_ = allow_discrete
