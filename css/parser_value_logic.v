@@ -1913,6 +1913,9 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.hyphens {
 			return parse_property_keyword_value(mut tokens, ['none', 'manual', 'auto'])
 		}
+		.text_emphasis_style {
+			return parser.parse_text_emphasis_style_value(mut tokens)
+		}
 		.text_emphasis_position {
 			return parser.parse_text_emphasis_position_value(mut tokens)
 		}

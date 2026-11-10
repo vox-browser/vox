@@ -160,6 +160,12 @@ PROPERTIES = {
         'requires-computation': 'never',
         'valid-identifiers': ['auto', 'over', 'under', 'left', 'right'],
     },
+    'text-emphasis-style': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'none',
+        'requires-computation': 'cascaded-value', 'valid-types': ['string'],
+        'valid-identifiers': ['none', 'filled', 'open', 'dot', 'circle', 'double-circle',
+                              'triangle', 'sesame'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',
@@ -184,7 +190,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over']
+KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over', 'filled', 'open', 'dot', 'double-circle', 'triangle', 'sesame']
 
 
 def extend_properties(properties):

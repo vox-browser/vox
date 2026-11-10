@@ -12832,6 +12832,7 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 
 	return match property_id {
 		.shape_outside { dom_style_value_from_value_logic(shape_outside_without_default_box(typed_absolutized_value)) }
+		.text_emphasis_style { compute_text_emphasis_style(absolutized_value, property_source.get(.writing_mode)) }
 		.animation_range_start, .animation_range_end { compute_animation_range_endpoint(absolutized_value, property_id == .animation_range_start) }
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)

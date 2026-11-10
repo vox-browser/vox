@@ -2171,6 +2171,12 @@ pub enum Keyword {
 	sideways
 	no_limit
 	over
+	filled
+	open
+	dot
+	double_circle
+	triangle
+	sesame
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3101,6 +3107,12 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.visible_fill { 'visiblefill' }
 		.visible_stroke { 'visiblestroke' }
 		.painted { 'painted' }
+		.filled { 'filled' }
+		.open { 'open' }
+		.dot { 'dot' }
+		.double_circle { 'double-circle' }
+		.triangle { 'triangle' }
+		.sesame { 'sesame' }
 		.over { 'over' }
 		.no_limit { 'no-limit' }
 	}
@@ -3138,6 +3150,12 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'visiblefill' { return .visible_fill }
 	if name == 'visiblestroke' { return .visible_stroke }
 	if name == 'painted' { return .painted }
+	if name == 'filled' { return .filled }
+	if name == 'open' { return .open }
+	if name == 'dot' { return .dot }
+	if name == 'double-circle' { return .double_circle }
+	if name == 'triangle' { return .triangle }
+	if name == 'sesame' { return .sesame }
 	if name == 'over' { return .over }
 	if name == 'no-limit' { return .no_limit }
 	// Keep bucket selection scalar; wrap the result once after a full match.
