@@ -31,6 +31,7 @@ struct FetchMemoryCacheEntry {
 	request_time     i64
 	response_time    i64
 mut:
+	last_access_time                   i64
 	response_body                      []u8
 	javascript_bytecode_cache          ?[]u8
 	javascript_bytecode_cache_vary_key ?u64
@@ -1794,7 +1795,8 @@ pub fn clear_http_memory_cache() {
 fn update_javascript_bytecode_cache_entries(entries []FetchMemoryCacheEntry, request_headers &http.HeaderList, vary_key u64, javascript_bytecode_cache []u8) []FetchMemoryCacheEntry {
 	mut updated := entries.clone()
 	for mut entry in updated {
-		if http.create_vary_key(request_headers, entry.response_headers) != entry.vary_key {
+		request_vary_key := http.create_vary_key(request_headers, entry.response_headers) or { continue }
+		if request_vary_key != entry.vary_key {
 			continue
 		}
 		entry.javascript_bytecode_cache = javascript_bytecode_cache.clone()

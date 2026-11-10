@@ -289,6 +289,7 @@ pub fn evaluate(request Request, received_response Response, options ReuseOption
 		|| contains_directive(request_control, 'no-store') || has_header(request.headers, 'Range')
 		|| contains_directive(response_control, 'no-store') || response.status < 200
 		|| response.status == 206 || '*' in vary_names(response.headers)
+		|| 'cookie' in vary_names(response.headers)
 		|| has_unterminated_quoted_string(header_value(response.headers, 'Cache-Control') or { '' }) {
 		return Decision{}
 	}
