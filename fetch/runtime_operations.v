@@ -466,7 +466,10 @@ pub fn select_response_from_cache(request &Request) ?&Response {
 	}
 	key := fetch_cache_partition_key(request) or { return none }
 	entries := fetch_http_memory_cache_complete[key] or { return none }
-	for entry in entries {
+	// RFC 9111: If several stored representations match, prefer the most
+	// recently stored one. A later Vary field set can match an earlier one.
+	for index := entries.len - 1; index >= 0; index-- {
+		entry := entries[index]
 		if http.create_vary_key(request.header_list, entry.response_headers) != entry.vary_key {
 			continue
 		}
@@ -608,6 +611,12 @@ fn finalize_response_body_in_cache(request &Request, response &Response, respons
 	// retain every expired generation indefinitely.
 	complete_entries = complete_entries.filter(it.vary_key != entry.vary_key)
 	complete_entries << entry
+	// Keep at most 16 recently completed variants per URL/partition. Entries
+	// are in completion order; evict the oldest variant without touching
+	// still-in-flight producers or their response tokens.
+	for complete_entries.len > 16 {
+		complete_entries.delete(0)
+	}
 	fetch_http_memory_cache_complete[key] = complete_entries
 }
 
