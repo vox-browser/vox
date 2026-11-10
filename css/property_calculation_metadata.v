@@ -184,6 +184,7 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'line-break' { return .line_break }
 	if name == 'grid-lanes-direction' { return .grid_lanes_direction }
 	if name == 'fit-tolerance' { return .fit_tolerance }
 	if name == 'grid-lanes-pack' { return .grid_lanes_pack }
@@ -3230,6 +3231,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.line_break { 'line-break' }
 		.grid_lanes_direction { 'grid-lanes-direction' }
 		.fit_tolerance { 'fit-tolerance' }
 		.grid_lanes_pack { 'grid-lanes-pack' }
@@ -3740,6 +3742,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
 		.text_emphasis_style { true }
 		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
@@ -3764,6 +3767,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.line_break { 'auto' }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { 'normal' }
 		.interpolate_size { 'numeric-only' }
 
@@ -4226,6 +4230,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.line_break { AnimationType.discrete }
 		.grid_lanes_direction, .grid_lanes_pack { AnimationType.discrete }
 		.fit_tolerance { AnimationType.by_computed_value }
 
@@ -4306,6 +4311,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
 		.text_emphasis_style { true }
 		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
@@ -4372,6 +4378,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
 		.text_emphasis_style { true }
 		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
@@ -4764,6 +4771,7 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.line_break { lowercase_value in ['auto', 'loose', 'normal', 'strict', 'anywhere'] }
 		.grid_lanes_direction { lowercase_value in ['normal','row','column','fill-reverse','track-reverse'] }
 		.fit_tolerance { lowercase_value in ['normal','infinite'] }
 		.grid_lanes_pack { lowercase_value in ['normal','dense'] }

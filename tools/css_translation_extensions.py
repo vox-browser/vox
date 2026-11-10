@@ -1,6 +1,11 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'line-break': {
+        'style-group': 'InheritedTextValues', 'animation-type': 'discrete', 'inherited': True,
+        'initial': 'auto', 'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'loose', 'normal', 'strict', 'anywhere'],
+    },
     'interpolate-size': {
         'style-group': 'InheritedUIValues', 'affects-layout': False, 'animation-type': 'none',
         'inherited': True, 'initial': 'numeric-only', 'requires-computation': 'never',
@@ -190,7 +195,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over', 'filled', 'open', 'dot', 'double-circle', 'triangle', 'sesame']
+KEYWORDS = ['loose', 'any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over', 'filled', 'open', 'dot', 'double-circle', 'triangle', 'sesame']
 
 
 def extend_properties(properties):

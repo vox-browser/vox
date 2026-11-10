@@ -2162,6 +2162,7 @@ pub enum Keyword {
 	any
 	numeric_only
 	allow_keywords
+	loose
 	bounding_box
 	visible_painted
 	visible_fill
@@ -3102,6 +3103,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.any { 'any' }
 		.numeric_only { 'numeric-only' }
 		.allow_keywords { 'allow-keywords' }
+		.loose { 'loose' }
 		.bounding_box { 'bounding-box' }
 		.visible_painted { 'visiblepainted' }
 		.visible_fill { 'visiblefill' }
@@ -3145,6 +3147,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'any' { return .any }
 	if name == 'numeric-only' { return .numeric_only }
 	if name == 'allow-keywords' { return .allow_keywords }
+	if name == 'loose' { return .loose }
 	if name == 'bounding-box' { return .bounding_box }
 	if name == 'visiblepainted' { return .visible_painted }
 	if name == 'visiblefill' { return .visible_fill }
