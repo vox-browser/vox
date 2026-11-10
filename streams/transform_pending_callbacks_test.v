@@ -94,6 +94,30 @@ fn test_transform_backpressure_wait_marks_write_in_flight_before_starting_callba
 	assert writable.state() == .errored
 }
 
+// Ladybird daead28014e59f15bc0862901d10618adf31856d: cancellation can
+// clear the transform algorithm before a queued write continuation resumes.
+fn test_transform_write_released_by_read_then_cancel_does_not_enqueue_after_close() {
+	mut jobs := &TransformCallbackJobs{}
+	realm := jobs.realm(758)
+	mut stream := TransformStream.create(realm, Transformer{}, QueuingStrategy{}, QueuingStrategy{}) or { panic(err) }
+	mut readable := stream.readable()
+	mut writable := stream.writable()
+	mut reader := readable.get_default_reader() or { panic(err) }
+	mut writer := writable.get_writer() or { panic(err) }
+	jobs.drain()
+	written := writer.write(string_value('blocked input'))
+	jobs.drain()
+	assert written.state() == .pending
+	read := reader.read()
+	cancelled := reader.cancel(undefined_value())
+	assert stream.transform_algorithm_ == none
+	assert readable.state() == .closed
+	jobs.drain()
+	assert cancelled.state() == .fulfilled
+	assert read.result().done
+	assert written.state() == .fulfilled
+}
+
 fn test_transform_pending_flush_retains_finish_and_output_until_fulfillment() {
 	mut jobs := &TransformCallbackJobs{}
 	realm := jobs.realm(753)

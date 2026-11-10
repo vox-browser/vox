@@ -38,7 +38,12 @@ fn (mut stream TransformStream) invoke_transform_promise(chunk Value) &webidl.Pr
 	}
 	outputs := if algorithm := stream.transform_algorithm_ {
 		algorithm(chunk) or { return rejected_callback_exception(stream.realm_, err) }
-	} else { [chunk] }
+	} else {
+		// A write waiting on backpressure can resume after cancellation cleared
+		// the algorithms. The default identity algorithm is installed at setup;
+		// an absent algorithm here has no work left to perform.
+		return resolved_callback_promise(stream.realm_)
+	}
 	mut controller := stream.controller_
 	for output in outputs {
 		controller.enqueue(output) or { return rejected_callback_exception(stream.realm_, err) }
