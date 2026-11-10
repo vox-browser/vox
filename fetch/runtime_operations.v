@@ -508,6 +508,44 @@ pub fn select_response_from_cache(request &Request) ?&Response {
 	return response
 }
 
+fn unmatched_cache_entries(entries []FetchMemoryCacheEntry, request_headers &http.HeaderList) []FetchMemoryCacheEntry {
+	mut retained := []FetchMemoryCacheEntry{}
+	for entry in entries {
+		if vary_key := http.create_vary_key(request_headers, entry.response_headers) {
+			if vary_key == entry.vary_key { continue }
+		} else {
+			continue
+		}
+		retained << entry
+	}
+	return retained
+}
+
+fn retire_matching_cached_responses(key string, request_headers &http.HeaderList) {
+	if entries := fetch_http_memory_cache_complete[key] {
+		retained := unmatched_cache_entries(entries, request_headers)
+		if retained.len == 0 { fetch_http_memory_cache_complete.delete(key) }
+		else { fetch_http_memory_cache_complete[key] = retained }
+	}
+	// Older streams must not republish a representation after a non-storable
+	// replacement has retired it. Their tokens no longer name pending entries.
+	if entries := fetch_http_memory_cache_pending[key] {
+		retained := unmatched_cache_entries(entries, request_headers)
+		if retained.len == 0 { fetch_http_memory_cache_pending.delete(key) }
+		else { fetch_http_memory_cache_pending[key] = retained }
+	}
+}
+
+fn invalidate_response_in_cache(request &Request) {
+	partition := determine_the_http_cache_partition(request) or { return }
+	for method in ['GET', 'HEAD'] {
+		key := fetch_memory_cache_key(partition, request.current_url(), method)
+		fetch_http_memory_cache_complete.delete(key)
+		// A completion of an invalidated producer must not publish its bytes.
+		fetch_http_memory_cache_pending.delete(key)
+	}
+}
+
 pub fn store_response_in_cache(request &Request, mut response Response) {
 	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store { return }
 	mut internal := response.cache_storage_response()
@@ -517,8 +555,12 @@ pub fn store_response_in_cache(request &Request, mut response Response) {
 	}
 	key := fetch_cache_partition_key(request) or { return }
 	headers := http.remove_connection_specific_fields(internal.header_list)
-	vary_key := http.create_vary_key(request.header_list, headers) or { return }
+	vary_key := http.create_vary_key(request.header_list, headers) or {
+		retire_matching_cached_responses(key, request.header_list)
+		return
+	}
 	if !http.is_cacheable_response(internal.status, headers) {
+		retire_matching_cached_responses(key, request.header_list)
 		return
 	}
 	if fetch_http_memory_cache_next_response_token == u64(0xffffffffffffffff) { return }

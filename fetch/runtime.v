@@ -1353,6 +1353,10 @@ fn finish_http_network_or_cache_fetch(params &FetchParams, http_request &Request
 			}
 		}
 		controller.set_pending_request(none)
+		if forward_response.status >= 200 && forward_response.status <= 399
+			&& http_request.method !in ['GET', 'HEAD', 'OPTIONS', 'TRACE'] {
+			invalidate_response_in_cache(http_request)
+		}
 		store_response_in_cache(http_request, mut forward_response)
 		finalize_response_in_cache(http_request, forward_response)
 	}
