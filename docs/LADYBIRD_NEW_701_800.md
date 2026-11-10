@@ -240,10 +240,44 @@ default Boehm build and the optimized prealloc `-gc none` runtime. A fresh
 native image raises the upstream page to **24/38**; the only changed subtest is
 the drop-shadow case. The cohort stays at **98/100, 5,354/5,356**.
 
-The remaining 14 failures on that page are transform accumulation (eight
+The remaining 14 failures on that page were transform accumulation (eight
 cases), box-shadow and discrete filter-list accumulation, the discrete
 `align-content` value, `calc-size()` and operand order in complex math
 functions.
+
+## Transform, shadow and filter composition
+
+Four follow-ups raise the upstream page from **24/38 to 35/38**. Each native
+image (the optimized prealloc `-gc none` runtime) leaves the fixed 100-page
+cohort at **98/100, 5,354/5,356**, with no missing assertions and no changed
+subtest outside the targeted ones.
+
+| Commit | Change | Page |
+| --- | --- | ---: |
+| `4a9127ca4` | Transform lists add by concatenation and accumulate per css-transforms-2: the longest common-primitive prefix accumulates per function (scale factors as Va + Vb - 1), the rest as decomposed matrices. Iteration composition folds the final list's mismatched suffix into one matrix, so doubling matches accumulating the final keyframe once per iteration. | 32/38 |
+| `0edb40a13` | The resolved transform is 2D only when m33 and m44 are 1. Upstream (and the previous port) also accepted m33 = -1, collapsing `rotate3d(1, 1, 0, 180deg)` to `matrix()`. | 33/38 |
+| `8c8c9ff45` | `box-shadow` and `text-shadow` lists add by concatenation and accumulate pairwise after padding with blank shadows; different `inset` keywords fall back to replacement. | 34/38 |
+| `72756b77a` | Different color filter functions no longer interpolate into each other, so `brightness() contrast()` to `contrast() brightness()` is discrete, as upstream. | 35/38 |
+
+Upstream Ladybird does not import this page, and its Rust compositing only
+accumulates the individual `translate`, `rotate` and `scale` properties, so
+the transform and shadow composition go beyond upstream parity. Focused
+tests for every change pass in the default Boehm build and the prealloc
+`-gc none` runtime. The keyframe-effect, keyframe scalar, compositor,
+color-composition and affine-transform test files also pass;
+`animations/animation_test.v` and `css/transformation_value_export_test.v`
+fail to compile before running for reasons unrelated to these changes.
+
+Three failures remain:
+
+- **`align-content`** expects `flow-end`, which is not an `align-content`
+  value; this is treated as an expectation error and left unchanged.
+- **`calc-size()`** is not supported by the parser at all.
+- **Operand order in complex math** wants the accumulated term written as
+  `2 * max(20px, 15%)`. Iteration accumulation adds the final value
+  repeatedly, so the term appears as `max(20px, 15%) + max(20px, 15%)`, before
+  the current term as required. Matching the exact form needs accumulation
+  to scale the final value by the iteration count.
 
 ## Mixed length/percentage accumulation diagnostic
 
