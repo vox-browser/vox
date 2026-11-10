@@ -860,15 +860,21 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		gfx_filter = compatibility_transformed_css_filter(filter, box.paint_transform)
 	}
 	isolated_surface := box.chromium_compositor_surface
-	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface {
-		own_state = tree.append(painting.EffectsVisualData{
+	has_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface
+	// Filter the source before applying the element's clips and masks. The
+	// outer nodes then clip the filtered result, including blur and shadows.
+	effects_inside_clips := gfx_filter != none && (box.clips().css_clip != none
+		|| box.clips().clip_path != none || box.clips().svg_mask != none || box.clips().svg_clip != none)
+	effects_data := painting.EffectsVisualData{
 			opacity: box.opacity
 			blend_mode: box.mix_blend_mode
 			filter: gfx_filter
 			isolated: isolated_surface
 			svg_graphics_opacity: box.layout_handle != unsafe { nil }
 				&& unsafe { &Node(box.layout_handle) }.is_svg_box()
-		}, own_state)
+	}
+	if has_effects && !effects_inside_clips {
+		own_state = tree.append(effects_data, own_state)
 		box.own_effects_visual_context_idx = own_state
 	}
 	if compatibility_box_has_own_transform_context(box) {
@@ -913,6 +919,10 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	if svg_clip := box.clips().svg_clip {
 		own_state = tree.append(*svg_clip, own_state)
+	}
+	if has_effects && effects_inside_clips {
+		own_state = tree.append(effects_data, own_state)
+		box.own_effects_visual_context_idx = own_state
 	}
 	box.accumulated_visual_context_index = own_state
 	if box.canvas().paints_canvas_background && box.own_scroll_frame_index > 0 {
