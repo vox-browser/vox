@@ -36,6 +36,10 @@ pub:
 	is_known      bool
 }
 
+fn (entry BinaryStackEntry) slot_count() int {
+	return if entry.is_known && entry.concrete_type.kind == .v128 { 2 } else { 1 }
+}
+
 pub fn (entry BinaryStackEntry) is_of_kind(kind BinaryValueKind) bool {
 	return !entry.is_known || entry.concrete_type.kind == kind
 }
@@ -105,6 +109,7 @@ pub struct BinaryValidationStack {
 mut:
 	entries        []BinaryStackEntry
 	max_known_size int
+	slot_count_    int
 }
 
 pub fn BinaryValidationStack.create(validator &BinaryInstructionValidator, context BinaryTypeContext) &BinaryValidationStack {
@@ -112,6 +117,8 @@ pub fn BinaryValidationStack.create(validator &BinaryInstructionValidator, conte
 }
 
 pub fn (stack &BinaryValidationStack) size() int { return stack.entries.len }
+
+fn (stack &BinaryValidationStack) slot_height() int { return stack.slot_count_ }
 
 pub fn (stack &BinaryValidationStack) maximum_known_size() int { return stack.max_known_size }
 
@@ -124,10 +131,13 @@ pub fn (stack &BinaryValidationStack) at(index int) BinaryStackEntry { return st
 pub fn (stack &BinaryValidationStack) type_context() BinaryTypeContext { return stack.context }
 
 pub fn (mut stack BinaryValidationStack) resize(size int) {
-	if size < stack.entries.len {
-		stack.entries.trim(size)
-	} else {
-		for stack.entries.len < size { stack.entries << BinaryStackEntry{} }
+	for stack.entries.len > size {
+		entry := stack.entries.pop()
+		stack.slot_count_ -= entry.slot_count()
+	}
+	for stack.entries.len < size {
+		stack.entries << BinaryStackEntry{}
+		stack.slot_count_++
 	}
 	if size > stack.max_known_size { stack.max_known_size = size }
 }
@@ -138,11 +148,14 @@ pub fn (mut stack BinaryValidationStack) take_last() !BinaryStackEntry {
 	if stack.size() == frame.initial_size {
 		return error('CompileError: invalid stack state, expected <any> but got <nothing>')
 	}
-	return stack.entries.pop()
+	entry := stack.entries.pop()
+	stack.slot_count_ -= entry.slot_count()
+	return entry
 }
 
 pub fn (mut stack BinaryValidationStack) append(entry BinaryStackEntry) {
 	stack.entries << entry
+	stack.slot_count_ += entry.slot_count()
 	if stack.size() > stack.max_known_size { stack.max_known_size = stack.size() }
 }
 
@@ -169,6 +182,7 @@ pub fn (mut stack BinaryValidationStack) take_and_put(kinds []BinaryValueKind, k
 
 pub fn (mut stack BinaryValidationStack) release_vector() []BinaryStackEntry {
 	stack.max_known_size = 0
+	stack.slot_count_ = 0
 	entries := stack.entries
 	stack.entries = []BinaryStackEntry{}
 	return entries

@@ -192,6 +192,7 @@ fn (mut registry BinaryTypeRegistry) intern_group(types []BinaryDefinedType, gro
 }
 
 pub fn canonicalize_binary_module_types(types []BinaryDefinedType) ![]&BinaryCanonicalType {
+	validate_binary_subtyping_depths(types)!
 	mut resolved := []&BinaryCanonicalType{}
 	mut type_index := u32(0)
 	for u64(type_index) < u64(types.len) {

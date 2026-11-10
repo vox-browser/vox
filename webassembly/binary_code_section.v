@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webassembly
 
-// Constants.h's per-local-type parser allocation limit.
-const binary_max_function_locals_per_type = u32(42069)
+// The JS API's implementation limit includes the local declarations.
+const binary_max_function_size = u32(7654321)
 
 pub struct BinaryLocals {
 pub:
@@ -48,13 +48,18 @@ fn parse_code_section(mut decoder Decoder) ![]BinaryFunctionBody {
 		if u64(size) > u64(decoder.bytes.len - decoder.offset) {
 			return error('CompileError: function body extends beyond code section')
 		}
+		if size > binary_max_function_size {
+			return error('CompileError: function body too large')
+		}
 		mut body_decoder := Decoder{ bytes: decoder.bytes[decoder.offset..decoder.offset + int(size)] }
 		local_groups := body_decoder.u32_leb()!
 		mut locals := []BinaryLocals{}
+		mut declared_local_count := u64(0)
 		for _ in 0 .. local_groups {
 			local_count := body_decoder.u32_leb()!
-			if local_count > binary_max_function_locals_per_type {
-				return error('CompileError: function local count exceeds source allocation limit')
+			declared_local_count += u64(local_count)
+			if declared_local_count > u64(max_u32) {
+				return error('CompileError: too many locals')
 			}
 			locals << BinaryLocals{ count: local_count, type_: parse_binary_value_type(mut body_decoder)! }
 		}
