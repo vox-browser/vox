@@ -1913,6 +1913,11 @@ fn (e &Element) make_html_uppercased_qualified_name() string {
 }
 
 pub fn (e &Element) html_uppercased_qualified_name() string {
+	// Adoption can move an HTML element into an XML document. The cached
+	// uppercase name is only applicable while its current document is HTML.
+	if e.namespace_uri() or { '' } != namespace_html_uri || e.document().document_type() != .html {
+		return e.qualified_name_str()
+	}
 	if cached := e.cached_uppercase_name() {
 		return cached
 	}
