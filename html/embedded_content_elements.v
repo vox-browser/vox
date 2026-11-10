@@ -571,7 +571,13 @@ pub fn (mut iframe HTMLIFrameElementModel) run_iframe_load_event_steps() {
 	if iframe.container.content_navigable() == none {
 		return
 	}
+	mut child_document := iframe.container.content_document_without_origin_check()
+	if child := child_document {
+		if child.should_mute_iframe_load() { return }
+	}
+	if mut child := child_document { child.set_iframe_load_in_progress(true) }
 	iframe.fire_event('load')
+	if mut child := child_document { child.set_iframe_load_in_progress(false) }
 }
 
 pub fn html_iframe_element_attribute_changed(element &dom.HTMLIFrameElement, name string, old_value ?string, value ?string, namespace_ ?string) {
