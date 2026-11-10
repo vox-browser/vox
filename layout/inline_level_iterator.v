@@ -522,6 +522,18 @@ fn (mut iterator InlineLevelIterator) compute_relative_inset(node &NodeWithStyle
 	compute_relative_inset_for_node(node, mut used_values, iterator.containing_block_used_values)
 }
 
+// Out-of-flow boxes consume no inline edges. Any end edges pending after one
+// must precede the next in-flow item, rather than follow that item's content.
+fn (mut iterator InlineLevelIterator) carry_trailing_metrics_past_out_of_flow_box() {
+	trailing := iterator.extra_trailing_metrics or { return }
+	iterator.extra_trailing_metrics = none
+	mut leading := iterator.extra_leading_metrics or { InlineExtraBoxMetrics{} }
+	leading.margin = leading.margin.plus(trailing.margin)
+	leading.border = leading.border.plus(trailing.border)
+	leading.padding = leading.padding.plus(trailing.padding)
+	iterator.extra_leading_metrics = leading
+}
+
 fn (mut iterator InlineLevelIterator) next_inline_node_in_pre_order(current &Node, stay_within &Node) ?&Node {
 	if child := current.first_child() {
 		if (child.display().is_inline_outside() || child.is_out_of_flow()
@@ -752,6 +764,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 			has_unattached_inline_start_edges = leading.margin.raw_value() != 0
 				|| leading.border.raw_value() != 0 || leading.padding.raw_value() != 0
 		}
+		iterator.carry_trailing_metrics_past_out_of_flow_box()
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .absolutely_positioned_element
@@ -760,6 +773,7 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		}
 	}
 	if current.is_floating() {
+		iterator.carry_trailing_metrics_past_out_of_flow_box()
 		iterator.skip_to_next()
 		return InlineLevelItem{
 			type_: .floating_element
