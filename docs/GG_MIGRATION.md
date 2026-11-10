@@ -1,7 +1,7 @@
 # Migrating from Skia to vlib/gg
 
 Vox currently renders through two Skia builds: LibWeb's Skia (CPU raster,
-`libLadybirdVSkiaText.dylib` and the `skia/` module) and the pinned Chromium
+`libLadybirdVSkiaText.dylib`; the `skia/` module was removed on 2026-11-10) and the pinned Chromium
 Skia Graphite builds (`libVoxGraphite.dylib` on Metal and
 `libVoxGraphiteDawn.dylib` for pictures). Brave parity depends on reproducing
 Chromium's Skia output exactly. The migration replaces Skia with `gg.canvas`, a
@@ -104,7 +104,7 @@ the four V selection cases and 55 build/comparison-tool checks pass.
 The requested binary-size reduction remains unfinished. `otool -L` confirms
 both Vox and `libLadybirdVSkiaText.dylib` directly link `libskia.dylib`.
 The Graphite and Dawn picture libraries also retain their Skia implementation.
-The `skia/` package still supplies canvas paths/text/filters and shadows (font
+The `skia/` package, removed on 2026-11-10, then supplied canvas paths/text/filters and shadows (font
 validation, pixel readback and bitmap export have since moved to Skia-free
 code; see [Removing Skia](#removing-skia-started-2026-11-06)); the native text
 bridge creates Skia fonts and blobs before invoking GG. Removing these links now would leave required symbols and
@@ -601,12 +601,12 @@ integer arguments as one `i32` array.
 | `skia.draw_glyph_run` (`vox_skia_canvas_glyphs`) | Canvas 2D `fillText()` without filters | `cpuraster.fill_canvas_glyphs` on macOS, with CoreText doing exactly what `SkTypeface_Mac` and `SkScalerContext_Mac` ask of it (the font from the file's bytes, `SkCTFontCreateExactCopy()` at the strike's text size, advances and bounding rects through `fTransform`, glyphs drawn into the offscreen `CGBitmapContext`, CoreGraphics' inline point and size transforms evaluated without fused multiply-adds): `SkScalerContextRec`'s relaxed 2x2, `computeMatrices(kVertical)` with its Givens rotation, the quarter-pixel `SkPackedGlyphID` positions and rounding, `generateMetrics()`'s bounds rounding and outset, `SkTMaskGamma<3, 3, 3>`'s default sRGB tables selected by the paint's luminance color (a gradient's average stop color, gray for patterns), the blob's conservative quick reject from the typeface bounds, and `Draw::paintMasks()` through the existing blitters and anti-aliased clip; glyphs over 256 pixels per em are the 64-point strike's outlines (`generatePath()`'s 4x request through `SkCTPathGeometrySink`) filled like `SkCanvas::drawPath()`, concatenated onto the canvas matrix in `SkM44`'s float arithmetic or mapped first under a shader; color typefaces make ARGB32 strikes drawn whole by `Draw::drawSprite()` (sprite blitters, or a clamped image shader where the clip cuts them), and glyphs without outlines stay masks at path sizes; 80,000 random runs over two seeds (22,710 of them drawing, about 1,300 path-sized) and 10,000 color emoji runs (2,960 drawing) exact in both default and `-prod -gc none` builds. Declines faces past the first of a collection (Skia's CoreText manager cannot open them either), color glyphs 8192 or more pixels wide and non-finite positions; Linux uses the FreeType outline, bitmap and COLRv0 routes; COLRv1 remains pending |
 | `skia.draw_path` and `draw_glyph_run` color filters | Canvas 2D `filter` lists of grayscale, sepia, saturate, hue-rotate, invert, opacity, brightness and contrast on fills, strokes and `fillText()` | `cpuraster.ColorFilter`: `SkImageFilters::ColorFilter()`'s composed `SkMatrixColorFilter`s, moved into the paint by `SkCanvasPriv::ImageToColorFilter()` and folded by `SkBlitter::Choose()`'s `RemoveColorFilter()`: `filterColor4f()`'s one-pixel highp pipeline for a solid color (then the legacy blitter when it fits in bytes, else the constant pipeline, highp through `unbounded_uniform_color` when a channel exceeds alpha), `SkColorFilterShader` stages after gradients and patterns, `CheckFastPath()` and `nothingToDraw()` seeing the filter, and the filtered luminance color for glyph mask gamma; 200,000 random filtered draws over two seeds exact in both default and `-prod -gc none` builds. Filters that change transparent black decline (they need an image filter layer) |
 | `skia.draw_path` and `draw_glyph_run` filter layers | Canvas 2D filters on fills, strokes and text | `cpuraster.draw_filter_layer` and `draw_blur_filter_chain` cover scale/translate blur and drop-shadow layers, every composite mode, color matrices around one spatial filter and throughout repeated blur lists. Rotated layers, chains containing further shadow nodes, sigmas over 135, transparency-flooding matrices and tiling retain fallback. Native fixtures and comparison receipts are linked below. |
-| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | Remaining: further spatial chains, general rotated layers, SVG graphs, integer-source spatial resampling, source clipping on spatial draws, large-sigma rescaling and tiling. Direct image filters already cover aligned sources, fractional-source surfaces, deferred conversion and paint alpha. |
-| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | Untiled outer shadows and strictly nested inner shadows with rectangular or proven containing rounded outer casters use V. Retained text shadows on macOS also use V for scale/translate transforms, including all smoothing modes, large outlines, variable and color fonts. Intersecting or unproven inner contours, rotated/skewed text layers, sigma over 135 and tiled surfaces retain native fallback; Linux bitmap and COLRv0 glyphs use V composition; COLRv1 remains pending |
+| Rest of `skia.draw_path`, `draw_glyph_run` (`canvas_raster.cpp`, `canvas_chromium_raster.h`) | Canvas 2D | **Removed 2026-11-10.** Draws the exact ports decline (rotated or skewed filter layers, SVG `url()` graphs, flooding color matrices, unported chain positions) use `cpuraster/general_filter.v`'s device-space layer; it is faithful but not bit-identical. Chromium-mode filtered `drawImage()` on macOS uses the exact CPU bitmap-space port instead of the Dawn picture replay. See [Removing the Skia module](#removing-the-skia-module-2026-11-10) |
+| `skia.rasterize_shadow` (`shadow_raster.cpp`) | Portable (sokol/Linux) shadows | **Removed 2026-11-10.** `cpuraster.rasterize_shadow` keeps the exact outer, nested inner and text-shadow ports; intersecting inner contours, rotated/skewed text layers and other declines use the device-space fallback, and surfaces past 8,191 pixels draw in tiles |
 | `libLadybirdVSkiaText.dylib` (`native_skia_text_darwin.cpp` and headers, 65 entry points) | macOS native painter (`native_capture_darwin.m`), HarfBuzz advances, glyph intercepts, PNG ICC | Not started: fonts and blobs feeding GG text, images and decode cache, gradients, shadows, blurs, SVG turbulence, command groups, SkPicture recording, Ganesh GPU canvas |
 | `libVoxGraphite.dylib` (`native_graphite_darwin.mm`) | Loaded by the bridge | Shapes and paths partly through GG adapters; images, shadows, canvas presentation and pictures remain |
 | `libVoxGraphiteDawn.dylib` | Picture playback | Not started |
-| Linux `pkg-config skia` | Canvas and portable shadows | Remains until those ports land |
+| Linux `pkg-config skia` | Canvas and portable shadows | **Removed 2026-11-10.** The Linux browser builds and links without Skia; `tools/build_linux_skia.py` remains only for the differential oracle |
 
 SVG fill/stroke geometry queries now use `cpuraster.path_hit_test`; the
 production `vox_skia_path_hit_test` entry point and C transport are removed.
@@ -716,6 +716,83 @@ join the pinned differential inputs (`b5634a8cc`). See the
 Linux staging now keeps UI2 under `Build/linux/modules` (`6c96821cf`); its real
 staging check preserved all 140 entries in the shared macOS UI2 tree. This avoids
 replacing host module symlinks with guest-only paths during concurrent builds.
+
+
+## Removing the Skia module (2026-11-10)
+
+The `skia/` V module and its native bridges (`canvas_raster.cpp`,
+`canvas_chromium_raster.h`, `shadow_raster.cpp` and their headers) are
+removed. This was the only Skia dependency of the Linux browser and the only
+place V code linked `libskia` directly.
+
+- **Canvas 2D** (`html/canvas_raster.v`) calls `cpuraster` directly. Every draw
+  the exact ports cover keeps their Skia-identical pixels. Draws they decline
+  used to fall back to Skia; they now use `cpuraster/general_filter.v`. That
+  fallback evaluates the original `SkImageFilter` graph in device space: the
+  unfiltered draw into a layer around the clip, blur (the raster blur engine,
+  including its downsampled path above sigma 135), drop shadow, color
+  matrices, Chromium's opacity table, and SVG `url()` graphs (blur, erode,
+  dilate, merge, offset, linear/sRGB conversion, color matrix, filter-region
+  crop), then a restore through the clip with the blender. CSS parameters map
+  through the drawing transform. Rotated and skewed layers use the per-axis
+  device scale, which is exact for similarity transforms and isotropic blurs.
+- **Glyph runs** the ports cannot open draw nothing, as Skia's font manager and
+  `drawTextBlob()`'s bounds check did (faces past the first in a macOS
+  collection, non-finite positions).
+- **Chromium-mode filtered `drawImage()`** on macOS used the Dawn picture
+  replay. It now uses the exact CPU port of Chromium's bitmap-space policy
+  (`draw_canvas_image_filtered(..., bitmap_filter: true)`), then the fallback.
+- **Portable shadows** (`cpuraster.rasterize_shadow`) keep the exact outer,
+  nested inner and text-shadow ports. Inner holes that cross the outer shape
+  use a DstOut difference, rotated or skewed text shadows use the same
+  device-space layer, and surfaces wider or taller than 8,191 pixels draw in
+  translated tiles.
+- **Path hit testing**, the packed path type and the shadow command types
+  moved into `cpuraster` (`PackedPath`, `PackedPathHitTest`, `ShadowCommand`).
+
+The fallback results are faithful, not bit-identical. On draws both paths can
+take, the fallback stays within 3 of 255 per channel of the exact port for a
+scaled blur and a drop shadow (`cpuraster/general_filter_test.v`).
+
+The HTML canvas parity suite (`html/canvas_cpu_raster_test.v`) used
+`skia.draw_path()` as its in-repository oracle. Before removal, all its
+comparisons passed on Linux and their 128 results were frozen as SHA-256
+hashes in `html/testdata/canvas_cpu_raster_hashes.json`. The suite now compares
+against those hashes. The differential suite in `vox-tests` keeps comparing
+the exact ports against the pinned Skia. The macOS compile of this
+browser-sized test exceeds the 12 GiB shared memory guard, as before, so it
+runs on Linux.
+
+Verification (2026-11-10):
+
+- **macOS:** nine cpuraster suites pass, with the new
+  `general_filter_test.v`, `shadow_command_test.v` and `packed_path_test.v`
+  (the latter two moved from `skia/`). The full browser type-checks without
+  the module (`-b c -check`). The FMA audit over a build that includes the
+  fallback finds zero contracted operations (170 explicit). The first audit
+  found 19 contractions in the new code, which were split into separate
+  statements.
+- **Linux (Ubuntu 24.04 aarch64 VM):** the moved and new cpuraster tests, the
+  portable-shadow and SVG pointer-event layout tests, and all five HTML canvas
+  suites pass, including all 128 frozen Skia-parity hashes. A full browser
+  build (C backend, `-O0`) links FreeType, HarfBuzz, Fontconfig,
+  JavaScriptCoreGTK, EGL/GLES and the system libraries. `readelf`, `ldd` and
+  the symbol table contain no Skia. `--headless-smoke` passes. An Xvfb
+  screenshot renders outer, inset and rotated text shadows through
+  `cpuraster.rasterize_shadow`. Canvas readback returns the exact fill color
+  and a blurred edge for a rotated `blur()` layer. FastC in that VM's V cannot
+  compile a `json2` generic instance in browser-tab code; this is unrelated to
+  Skia, and the C backend builds.
+- **Linux canvas elements** are drawn correctly into their bitmaps but are not
+  presented on screen: the portable painter's `draw_canvas` command only has a
+  macOS body. This predates the change.
+
+Implementation: `8abf9a7a7`; Linux build and CI: `856f6977b`. See the
+[verification receipt](https://github.com/vox-browser/vox-tests/blob/77b442f592e3406e6e903d5040e44dd64fb756e5/evidence/gg-migration/skia-module-removal-20261110.json).
+
+Still on Skia: `libLadybirdVSkiaText.dylib` (the macOS native painter's Skia
+backend), `libVoxGraphite.dylib` and `libVoxGraphiteDawn.dylib`. The macOS
+browser therefore still loads `libskia.dylib` through those libraries.
 
 ## Hacker News performance (2026-11-06)
 
