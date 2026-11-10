@@ -840,6 +840,10 @@ fn parser_end_navigable_container_is_rendered(document &dom.Document) bool {
 	navigable := document.navigable() or { return true }
 	container := navigable.container() or { return true }
 	element := container.as_element() or { return true }
+	// The completion task owns the child arena. Styles refreshed on its
+	// container must instead survive with the parent document.
+	mut allocations := enter_html_document_storage(element.document())
+	defer { allocations.finish() }
 	return element.document().update_style_for_element(element, true)
 }
 

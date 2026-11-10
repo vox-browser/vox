@@ -143,6 +143,7 @@ mut:
 	entry   ArenaEntry
 	previous &RetainedArena = unsafe { nil }
 	redirect RetainedAllocationScope
+	restore_retained_owner bool
 }
 
 pub fn (mut storage RetainedArena) enter() RetainedArenaScope {
@@ -163,8 +164,16 @@ pub fn (mut storage RetainedArena) enter_nested() RetainedArenaScope {
 	$if prealloc {
 		mut state := arena_state()
 		if storage.arena.entered {
-			assert voidptr(state.retained) == voidptr(storage)
-			return RetainedArenaScope{redirect: enter_retained_allocations()}
+			// A child can query its parent while both document arenas are on
+			// the stack. Redirect to the parent's current tail without entering
+			// its arena again; the enclosing scope already owns its lease.
+			previous := state.retained
+			state.retained = storage
+			return RetainedArenaScope{
+				previous: previous
+				redirect: enter_retained_allocations()
+				restore_retained_owner: true
+			}
 		}
 		storage.retain()
 		previous := state.retained
@@ -176,6 +185,13 @@ pub fn (mut storage RetainedArena) enter_nested() RetainedArenaScope {
 
 pub fn (mut scope RetainedArenaScope) finish() {
 	scope.redirect.finish()
+	$if prealloc {
+		if scope.restore_retained_owner {
+			arena_thread_state.retained = scope.previous
+			scope.restore_retained_owner = false
+			return
+		}
+	}
 	if scope.storage == unsafe { nil } { return }
 	mut storage := scope.storage
 	scope.storage = unsafe { nil }

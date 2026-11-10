@@ -3,6 +3,8 @@ module html
 
 import dom
 import css
+import page
+import platform
 
 @[heap]
 struct ParserEndLayoutProbe {
@@ -225,4 +227,55 @@ fn test_parser_end_completion_rechecks_layout_started_resource_delays() {
 	assert state.phase() == .completed
 	assert !document.has_html_parser_end_state()
 	assert !document.anything_is_delaying_the_load_event()
+}
+
+fn test_parser_end_container_style_query_keeps_parent_storage_and_restores_child_owner() {
+	$if !prealloc { return }
+	for parent_already_entered in [false, true] {
+		page_owner := page.Page.create(1)!
+		url := dom.URL{value: 'https://parser-parent-storage.example/'}
+		mut parent := create_navigation_document_for_page(url, url.origin(), none,
+			unsafe { &dom.Page(page_owner) })!
+		parent.enable_native_storage()
+		mut parent_scope := enter_html_document_storage(parent)
+		parse_html_from_a_string(parent, '<!doctype html><iframe id="frame" style="display:block"></iframe>')
+		mut frame := parent.get_element_by_id('frame')?
+		mut navigable := create_child_navigable_for_element(frame)!
+		mut child := navigable.active_document()?
+		child.enable_native_storage()
+		defer {
+			navigable.host_navigable().remove_from_all_navigables()
+			child.finalize()
+			child.release_native_storage()
+			parent.finalize()
+			parent.release_native_storage()
+		}
+		parent_storage := parent.native_storage()
+		child_storage := child.native_storage()
+		assert voidptr(parent_storage) != voidptr(child_storage)
+		css.css_style_computer_for(parent)
+		parent.update_style()
+		previous_style := frame.el_computed_properties()?
+		assert !previous_style.display().is_none()
+		// Model a parent mutation after the first readiness layout but before
+		// the child's completion task checks whether its container is rendered.
+		frame.set_attribute_value('style', 'display:none')
+		if !parent_already_entered { parent_scope.finish() }
+
+		mut child_scope := enter_html_document_storage(child)
+		assert !parser_end_navigable_container_is_rendered(child)
+		assert voidptr(platform.current_retained_arena()) == voidptr(child_storage)
+		child_payload := 'child allocation after the parent query'.repeat(32)
+		assert child_storage.arena.contains(child_payload.str)
+		style := frame.el_computed_properties()?
+		assert voidptr(style) != voidptr(previous_style)
+		assert style.display().is_none()
+		assert parent_storage.arena.contains(style)
+		assert !child_storage.arena.contains(style)
+		child_scope.finish()
+		if parent_already_entered {
+			assert voidptr(platform.current_retained_arena()) == voidptr(parent_storage)
+		}
+		parent_scope.finish()
+	}
 }
