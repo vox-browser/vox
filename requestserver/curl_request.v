@@ -61,6 +61,13 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &fetch.Request(input) }
 	pending := fetch.PendingResponse.create(mut request, none)
+	// Validate at the boundary that grants network access, including callers
+	// that construct a Fetch request without going through Request's bindings.
+	if !http.is_method(request.method) || http.is_forbidden_method(request.method) {
+		mut output := unsafe { pending }
+		output.resolve(fetch.Response.network_error('Invalid or forbidden request method'))
+		return pending
+	}
 	if filtered_response := request.apply_adblock() {
 		mut output := unsafe { pending }
 		output.resolve(filtered_response)
