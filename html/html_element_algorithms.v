@@ -54,9 +54,6 @@ pub fn html_element_attribute_changed(element &dom.HTMLElement, name string, old
 	if name == 'nonce' && namespace_ == none {
 		mutable_element.set_cryptographic_nonce(value or { '' })
 	}
-	if name == 'inert' {
-		mutable_element.set_subtree_inertness(value != none)
-	}
 	if namespace_ == none && name == 'popover' && mutable_element.popover_visibility_state() == .showing && !popover_optional_string_equal(html_element_popover_value_to_state(old_value), html_element_popover_value_to_state(value)) {
 		html_element_hide_popover(element, .yes, .yes, .no, .yes, none) or {}
 	}
@@ -75,19 +72,7 @@ pub fn html_element_cloned(element &dom.HTMLElement, copy &dom.Node, clone_child
 pub fn html_element_inserted(element &dom.HTMLElement) {
 	mut dom_element := dom_element_from_html_element(element)
 	dom_element.inserted()
-	mut parent := dom_element.as_node().parent_element()
-	for parent != none {
-		ancestor := parent or { break }
-		if ancestor.is_html_element() {
-			ancestor_html := unsafe { &dom.HTMLElement(ancestor) }
-			if ancestor_html.inert() && !dom_element.has_attribute('inert') {
-				mut mutable_element := unsafe { &dom.HTMLElement(element) }
-				mutable_element.set_subtree_inertness(true)
-			}
-			break
-		}
-		parent = ancestor.as_node().parent_element()
-	}
+
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-translate
@@ -815,18 +800,7 @@ pub fn html_element_removed_from(element &dom.HTMLElement, old_parent ?&dom.Node
 	if html_element_popover(element) != none {
 		html_element_hide_popover(element, .no, .no, .no, .yes, none) or {}
 	}
-	if parent_node := old_parent {
-		mut parent_element := parent_node.as_element()
-		if parent_element == none {
-			parent_element = parent_node.parent_element()
-		}
-		if parent := parent_element {
-			if parent.is_html_element() && unsafe { &dom.HTMLElement(parent) }.inert() && !dom_element.has_attribute('inert') {
-				mut mutable_element := unsafe { &dom.HTMLElement(element) }
-				mutable_element.set_subtree_inertness(false)
-			}
-		}
-	}
+
 }
 
 pub fn html_element_is_form_associated_custom_element(element &dom.HTMLElement) bool {

@@ -4293,14 +4293,9 @@ pub fn (n &Node) is_default_namespace(namespace_ ?string) bool {
 
 pub fn (n &Node) is_inert() bool {
 	if element := n.as_element() {
-		if element.has_attribute('inert') || (element.is_html_element() && unsafe { &HTMLElement(element) }.inert()) {
-			return true
-		}
+		if element.has_attribute('inert') { return true }
 	}
-	if enclosing := n.enclosing_html_element() {
-		return enclosing.inert() || enclosing.has_attribute('inert')
-	}
-	return false
+	return nearest_html_element_is_inert(n)
 }
 
 // https://dom.spec.whatwg.org/#in-a-document-tree

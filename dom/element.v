@@ -4772,27 +4772,65 @@ pub fn (mut e Element) set_popover_target_element(value ?&Element) {
 
 
 
-pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
-	element.set_inert(is_inert)
-	element_node := unsafe { &Node(&element) }
-	element_node.visit_subtree(fn [is_inert] (node &Node) TraversalDecision {
-		descendant := node.as_element() or { return .@continue }
-		if !descendant.is_html_element() {
-			return .@continue
+// Inertness crosses a shadow root through its host.
+fn nearest_html_element_is_inert(start ?&Node) bool {
+	mut current := start
+	for current != none {
+		node := current or { break }
+		if element := node.as_element() {
+			if element.is_html_element() {
+				return unsafe { &HTMLElement(element) }.inert() || element.has_attribute('inert')
+			}
 		}
-		mut html_descendant := unsafe { &HTMLElement(descendant) }
-		if descendant.has_attribute('inert') {
-			return .skip_children_and_continue
-		}
-		html_descendant.set_inert(is_inert)
-		return .@continue
-	})
+		current = node.parent_or_shadow_host()
+	}
+	return false
 }
 
+fn repaint_after_inertness_change(node &Node) {
+	mut mutable_node := unsafe { &Node(node) }
+	if mut layout_node := node.unsafe_layout_node() {
+		layout_node.is_editable_or_editing_host_ = !node.is_inert() && node.is_editable_or_editing_host()
+		if layout_node.is_editing_host_ != node.is_editing_host() {
+			layout_node.is_editing_host_ = node.is_editing_host()
+			mutable_node.set_needs_layout_update(.editable_state_change)
+		}
+	}
+	mutable_node.set_needs_repaint(.paint_commands_and_hit_test_list)
+}
 
+pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
+	element_node := unsafe { &Node(&element) }
+	states := previous_read_write_states(element_node)
+	if element.inert() != is_inert {
+		element.set_inert(is_inert)
+		repaint_after_inertness_change(element_node)
+	}
+	element_node.visit_shadow_including_descendants(fn [is_inert] (node &Node) TraversalDecision {
+		if descendant := node.as_element() {
+			if descendant.is_html_element() {
+				if descendant.has_attribute('inert') {
+					return .skip_children_and_continue
+				}
+				mut html_descendant := unsafe { &HTMLElement(descendant) }
+				if html_descendant.inert() == is_inert { return .@continue }
+				html_descendant.set_inert(is_inert)
+			}
+		}
+		repaint_after_inertness_change(node)
+		return .@continue
+	})
+	invalidate_previous_read_write_states(states)
+}
 
-
-
+fn (mut element Element) update_inherited_inertness() {
+	if !element.is_html_element() || element.has_attribute('inert') { return }
+	inert := nearest_html_element_is_inert(element.as_node().parent_or_shadow_host())
+	mut html_element := unsafe { &HTMLElement(&element) }
+	if html_element.inert() != inert {
+		html_element.set_subtree_inertness(inert)
+	}
+}
 
 
 pub fn (element &HTMLElement) popover() ?string {
@@ -6023,7 +6061,8 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }
-		html_element.set_subtree_inertness(value != none)
+		html_element.set_subtree_inertness(value != none
+			|| nearest_html_element_is_inert(e.as_node().parent_or_shadow_host()))
 	}
 	if local_name == 'contenteditable' && e.is_html_element() {
 		states := if !option_string_equal(old_value, value) {
@@ -6575,6 +6614,9 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 pub fn (mut e Element) inserted() {
+	if nearest_html_element_is_inert(e.as_node().parent_or_shadow_host()) {
+		e.update_inherited_inertness()
+	}
 	if mut inline_style := e.inline_style_ {
 		if inline_style.awaits_content_security_policy_check && e.is_connected() {
 			inline_style.awaits_content_security_policy_check = false
@@ -6657,6 +6699,11 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 }
 
 pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
+	// Descendants remain parented inside the detached subtree; an explicit
+	// inert ancestor there must continue to govern them.
+	if nearest_html_element_is_inert(old_ancestor) {
+		e.update_inherited_inertness()
+	}
 	mut node := unsafe { &Node(e.as_node()) }
 	node.in_editable_subtree_ = false
 	node.layout_node_ = unsafe { nil }
@@ -6733,6 +6780,7 @@ pub fn (mut e Element) moved_from(old_parent ?&Node) {
 }
 
 pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
+	e.update_inherited_inertness()
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
 	// Language is inherited through the parent/host chain but cached on every

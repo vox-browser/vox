@@ -11,7 +11,7 @@ struct PreviousReadWriteState {
 fn previous_read_write_states(root &Node) []PreviousReadWriteState {
 	mut states := []PreviousReadWriteState{}
 	states_ptr := &states
-	root.visit_inclusive_subtree(fn [states_ptr] (node &Node) TraversalDecision {
+	root.visit_shadow_including_inclusive_descendants(fn [states_ptr] (node &Node) TraversalDecision {
 		if element := node.as_element() {
 			dom_ptr_push(states_ptr, PreviousReadWriteState{element, element.matches_read_write_pseudo_class()})
 		}
@@ -26,7 +26,7 @@ pub fn (element &Element) matches_read_write_pseudo_class() bool {
 	if element.is_html_element() && element.local_name() in ['input', 'textarea'] {
 		return !element.has_attribute('readonly') && element.matches_enabled_pseudo_class()
 	}
-	return element.as_node().is_editable_or_editing_host()
+	return !element.as_node().is_inert() && element.as_node().is_editable_or_editing_host()
 }
 
 fn (mut element Element) invalidate_style_after_read_write_state_change(was_read_write bool) {
