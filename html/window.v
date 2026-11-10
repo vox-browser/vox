@@ -11,6 +11,7 @@ module html
 import css
 import dom
 import math
+import platform
 import requestidlecallback
 import speech
 import time
@@ -147,9 +148,39 @@ fn get_noopener_for_window_open(source_document &dom.Document, tokenized_feature
 
 fn window_storage_hub() &StorageHub {
 	if html_window_storage_hub == unsafe { nil } {
+		persistent := platform.enter_persistent()
 		html_window_storage_hub = StorageHub.create()
+		platform.leave_persistent(persistent)
 	}
 	return html_window_storage_hub
+}
+
+// Storage bottles are keyed by origin for the whole process. Create them, and
+// the keys that find them, outside the calling document's arena.
+fn window_storage_bottle(local bool, key string) &StorageBottle {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	if local {
+		if bottle := html_window_local_storage_bottles[key] { return bottle }
+		created := StorageBottle.create(5 * 1024 * 1024)
+		html_window_local_storage_bottles[key] = created
+		return created
+	}
+	if bottle := html_window_session_storage_bottles[key] { return bottle }
+	created := StorageBottle.create(5 * 1024 * 1024)
+	html_window_session_storage_bottles[key] = created
+	return created
+}
+
+fn register_window_storage_retirement(document &dom.Document, storage &Storage) {
+	if document.native_storage() == unsafe { nil } { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut owner := unsafe { &dom.Document(document) }
+	owner.add_native_storage_cleanup(fn [storage] () {
+		mut hub := storage.hub_
+		if hub != unsafe { nil } { hub.remove_storage(storage) }
+	})
 }
 
 fn window_current_time_ms() f64 {
@@ -432,16 +463,13 @@ pub fn (mut window WindowModel) local_storage() !&Storage {
 		return storage
 	}
 	key := window.associated_document().origin().serialize()
-	bottle := html_window_local_storage_bottles[key] or {
-		created := StorageBottle.create(5 * 1024 * 1024)
-		html_window_local_storage_bottles[key] = created
-		created
-	}
+	bottle := window_storage_bottle(true, key)
 	mut hub := window_storage_hub()
 	storage := Storage.create(.local, bottle, mut hub, window.associated_document().origin(), window.storage_traversable_id(), window.associated_document().url)
 	window.local_storage_bottle_ = bottle
 	window.storage_hub_ = hub
 	window.local_storage_ = storage
+	register_window_storage_retirement(window.associated_document(), storage)
 	return storage
 }
 
@@ -451,16 +479,13 @@ pub fn (mut window WindowModel) session_storage() !&Storage {
 		return storage
 	}
 	key := '${window.storage_traversable_id()}|${window.associated_document().origin().serialize()}'
-	bottle := html_window_session_storage_bottles[key] or {
-		created := StorageBottle.create(5 * 1024 * 1024)
-		html_window_session_storage_bottles[key] = created
-		created
-	}
+	bottle := window_storage_bottle(false, key)
 	mut hub := window_storage_hub()
 	storage := Storage.create(.session, bottle, mut hub, window.associated_document().origin(), window.storage_traversable_id(), window.associated_document().url)
 	window.session_storage_bottle_ = bottle
 	window.storage_hub_ = hub
 	window.session_storage_ = storage
+	register_window_storage_retirement(window.associated_document(), storage)
 	return storage
 }
 

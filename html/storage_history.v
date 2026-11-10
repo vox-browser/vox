@@ -8,6 +8,7 @@
 module html
 
 import dom
+import platform
 import webidl
 
 pub enum StorageType {
@@ -86,8 +87,22 @@ pub fn Storage.create(type_ StorageType, bottle &StorageBottle, mut hub StorageH
 		traversable_id_: traversable_id
 		document_url_:   document_url
 	}
+	// The hub is process-wide; its list must not grow in a document arena.
+	persistent := platform.enter_persistent()
 	hub.storages_ << storage
+	platform.leave_persistent(persistent)
 	return storage
+}
+
+// A retiring document's Storage objects leave the hub before its arena is
+// released, so later broadcasts cannot reach them.
+pub fn (mut hub StorageHub) remove_storage(storage &Storage) {
+	for index, candidate in hub.storages_ {
+		if voidptr(candidate) == voidptr(storage) {
+			hub.storages_.delete(index)
+			return
+		}
+	}
 }
 
 pub fn (storage &Storage) type_() StorageType {
@@ -123,16 +138,22 @@ pub fn (mut storage Storage) set_item(key string, value string) ! {
 			return error('QuotaExceededError: storage quota exceeded')
 		}
 	}
+	// Bottles outlive the documents that write them: keep their keys,
+	// values and buckets in persistent storage.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if key !in bottle.entries {
-		bottle.keys << key
+		bottle.keys << key.clone()
 	}
-	bottle.entries[key] = value
+	bottle.entries[key] = value.clone()
 	storage.broadcast(key, old_value, value)
 }
 
 pub fn (mut storage Storage) remove_item(key string) {
 	mut bottle := storage.storage_bottle
 	old_value := bottle.entries[key] or { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	bottle.entries.delete(key)
 	bottle.keys = bottle.keys.filter(it != key)
 	storage.broadcast(key, old_value, none)
@@ -143,12 +164,18 @@ pub fn (mut storage Storage) clear() {
 	if bottle.keys.len == 0 {
 		return
 	}
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	bottle.entries.clear()
 	bottle.keys.clear()
 	storage.broadcast(none, none, none)
 }
 
+// Records go to other documents' Storage objects, which can outlive this
+// caller's arena; callers enter persistent storage and the strings are copied.
 fn (mut storage Storage) broadcast(key ?string, old_value ?string, new_value ?string) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	for remote in storage.hub_.storages_ {
 		if remote == &storage || remote.type_ != storage.type_
 			|| !remote.origin_.is_same_origin(storage.origin_) {
@@ -159,9 +186,9 @@ fn (mut storage Storage) broadcast(key ?string, old_value ?string, new_value ?st
 		}
 		mut mutable_remote := unsafe { &Storage(remote) }
 		mutable_remote.events_ << StorageEventRecord{
-			key:          key
-			old_value:    old_value
-			new_value:    new_value
+			key:          if text := key { ?string(text.clone()) } else { none }
+			old_value:    if text := old_value { ?string(text.clone()) } else { none }
+			new_value:    if text := new_value { ?string(text.clone()) } else { none }
 			url:          storage.document_url_.serialize()
 			storage_area: remote
 		}
