@@ -2849,6 +2849,20 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 		}
 	}
 	if !option_string_equal(old_value, value) {
+		if namespace_ == none && e.is_html_element() && e.local_name() in ['td', 'th']
+			&& local_name in ['colspan', 'rowspan'] {
+			mut ancestor := e.as_node().parent()
+			for ancestor != none {
+				mut node := ancestor or { break }
+				if table := node.as_element() {
+					if table.is_html_element() && table.local_name() == 'table' {
+						node.set_needs_layout_tree_update(true, .table_cell_span_attribute)
+						break
+					}
+				}
+				ancestor = node.parent()
+			}
+		}
 		e.invalidate_style_after_attribute_change(local_name, old_value, value)
 	}
 }

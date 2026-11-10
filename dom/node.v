@@ -111,6 +111,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	shadow_root_set_inner_html
 	style_change
 	svg_resource_element_removed
+	table_cell_span_attribute
 }
 
 pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUpdateReason) string {
@@ -135,6 +136,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.shadow_root_set_inner_html { 'ShadowRootSetInnerHTML' }
 		.style_change { 'StyleChange' }
 		.svg_resource_element_removed { 'SVGResourceElementRemoved' }
+		.table_cell_span_attribute { 'TableCellSpanAttribute' }
 	}
 }
 
