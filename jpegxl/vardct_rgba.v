@@ -172,14 +172,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 		}
 		if identity {
 			// Identity orientation stores rows in order; pitch is width * 4.
-			mut index := y * pitch
-			for x in 0 .. width {
-				pixels[index] = rows[0][x]
-				pixels[index + 1] = rows[1][x]
-				pixels[index + 2] = rows[2][x]
-				pixels[index + 3] = if has_alpha { alpha_bytes[x] } else { 255 }
-				index += 4
-			}
+			interleave_rgba_row(mut pixels, y * pitch, rows, alpha_bytes, has_alpha, width)
 			continue
 		}
 		for x in 0 .. width {
@@ -190,4 +183,35 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 		}
 	}
 	return RgbaImage{ width: int(display.width), height: int(display.height), pitch: pitch, pixels: pixels }
+}
+
+// Writes width RGBA pixels at pixels[start..]. Each row holds width bytes and
+// pixels holds start + width * 4 bytes, which the caller ensures.
+@[direct_array_access]
+fn interleave_rgba_row(mut pixels []u8, start int, rows [3][]u8, alpha []u8, has_alpha bool, width int) {
+	if start < 0 || start + width * 4 > pixels.len || rows[0].len < width || rows[1].len < width
+		|| rows[2].len < width || (has_alpha && alpha.len < width) {
+		panic('Invalid JPEG XL output row')
+	}
+	r := rows[0]
+	g := rows[1]
+	b := rows[2]
+	mut index := start
+	if has_alpha {
+		for x in 0 .. width {
+			pixels[index] = r[x]
+			pixels[index + 1] = g[x]
+			pixels[index + 2] = b[x]
+			pixels[index + 3] = alpha[x]
+			index += 4
+		}
+		return
+	}
+	for x in 0 .. width {
+		pixels[index] = r[x]
+		pixels[index + 1] = g[x]
+		pixels[index + 2] = b[x]
+		pixels[index + 3] = 255
+		index += 4
+	}
 }

@@ -82,9 +82,7 @@ fn validate_epf(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, or
 		if u64(blocks.width) < columns || u64(blocks.height) < rows {
 			return error('JPEG XL EPF sigma map does not cover the plane')
 		}
-		for value in blocks.samples {
-			if !math.is_finite(value) { return error('Invalid JPEG XL EPF block sigma') }
-		}
+		if !all_finite(blocks.samples) { return error('Invalid JPEG XL EPF block sigma') }
 	} else if !math.is_finite(sigma.inverse_sigma) {
 		return error('Invalid JPEG XL EPF constant sigma')
 	}
@@ -103,6 +101,15 @@ fn epf_weight(sad f32, inverse_sigma f32) f32 {
 // The widest EPF reach is a two-sample offset plus the one-sample SAD patch.
 const epf_pad = 3
 
+// The mirror rule of reflected() for one coordinate in a dimension of n > 0 samples.
+@[inline]
+fn epf_reflect_index(v int, n int) int {
+	mut p := v % (n * 2)
+	if p < 0 { p += n * 2 }
+	if p >= n { p = n * 2 - 1 - p }
+	return p
+}
+
 // Copy a plane into a border of epf_pad samples filled by the same mirror rule
 // as reflected(), so the filter reads neighbours without per-sample folding.
 @[direct_array_access]
@@ -112,17 +119,26 @@ fn epf_padded(plane FloatPlane) []f32 {
 	mut out := []f32{len: pw * ph}
 	// An empty plane has no samples to filter, so its border is never read.
 	if plane.width == 0 || plane.height == 0 { return out }
+	if plane.samples.len < plane.width * plane.height { panic('Invalid JPEG XL EPF plane') }
+	width := plane.width
+	mut left := [epf_pad]int{}
+	mut right := [epf_pad]int{}
+	for i in 0 .. epf_pad {
+		left[i] = epf_reflect_index(i - epf_pad, width)
+		right[i] = epf_reflect_index(width + i, width)
+	}
+	src := unsafe { &f32(plane.samples.data) }
+	dst := unsafe { &f32(out.data) }
 	for y in 0 .. ph {
-		sy := y - epf_pad
-		inner := sy >= 0 && sy < plane.height
-		for x in 0 .. pw {
-			sx := x - epf_pad
-			out[y * pw + x] = if inner && sx >= 0 && sx < plane.width {
-				plane.samples[sy * plane.width + sx]
-			} else {
-				plane.reflected(sx, sy)
+		row := unsafe { src + epf_reflect_index(y - epf_pad, plane.height) * width }
+		line := unsafe { dst + y * pw }
+		for i in 0 .. epf_pad {
+			unsafe {
+				line[i] = row[left[i]]
+				line[epf_pad + width + i] = row[right[i]]
 			}
 		}
+		unsafe { vmemcpy(line + epf_pad, row, width * int(sizeof(f32))) }
 	}
 	return out
 }
@@ -192,7 +208,9 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 	mut up_next := []f32{len: if pass == 1 { width } else { 0 }}
 	mut left := []f32{len: if pass == 1 { width + 1 } else { 0 }}
 	mut weights := []f32{len: n * width}
-	mut inverse_sigma := []f32{len: width}
+	mut inner_sigma := []f32{len: width}
+	mut border_sigma := []f32{len: width}
+	mut cached_sigma_key := i64(-1)
 	mut inverse_weight := []f32{len: width}
 	mut skip := []bool{len: width}
 	mut acc := []f32{len: width}
@@ -206,16 +224,20 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 		row_start := y * width
 		border_row := gy % 8 == 0 || gy % 8 == 7
 		block_row := int(gy / 8) * block_width
-		for x in 0 .. width {
-			gx := u64(origin_x) + u64(x)
-			value := if block_width > 0 { unsafe { block_data[block_row + int(gx / 8)] } } else { sigma.inverse_sigma }
-			skip[x] = epf_min_sigma > value
-			inverse_sigma[x] = value * if border_row || gx % 8 == 0 || gx % 8 == 7 {
-				border_scale
-			} else {
-				scale
+		// Sigma is constant within an 8x8 block, so both row variants of the scaled
+		// inverse sigma and the skip flags change only with the block row.
+		sigma_key := if block_width > 0 { i64(gy / 8) } else { i64(0) }
+		if sigma_key != cached_sigma_key {
+			cached_sigma_key = sigma_key
+			for x in 0 .. width {
+				gx := u64(origin_x) + u64(x)
+				value := if block_width > 0 { unsafe { block_data[block_row + int(gx / 8)] } } else { sigma.inverse_sigma }
+				skip[x] = epf_min_sigma > value
+				border_sigma[x] = value * border_scale
+				inner_sigma[x] = value * if gx % 8 == 0 || gx % 8 == 7 { border_scale } else { scale }
 			}
 		}
+		inverse_sigma := if border_row { unsafe { &f32(border_sigma.data) } } else { unsafe { &f32(inner_sigma.data) } }
 		if pass == 0 {
 			for i in 0 .. n {
 				epf_offset_sads(unsafe { &f32(sads.data) + i * width }, padded, row_base, offset_deltas[i],
@@ -242,7 +264,7 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 							fused_f32(math.abs(p1[b + delta] - p1[b]), parameters.channel_scale[1],
 							math.abs(p2[b + delta] - p2[b]) * parameters.channel_scale[2]))
 					}
-					weight := epf_weight(sad, inverse_sigma[x])
+					weight := epf_weight(sad, unsafe { inverse_sigma[x] })
 					unsafe { wrow[x] = weight }
 					inverse_weight[x] += weight
 				}
@@ -260,7 +282,7 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 				}
 			}
 			for x in 0 .. width {
-				weight := epf_weight(unsafe { src[x] }, inverse_sigma[x])
+				weight := epf_weight(unsafe { src[x] }, unsafe { inverse_sigma[x] })
 				unsafe { wrow[x] = weight }
 				inverse_weight[x] += weight
 			}
