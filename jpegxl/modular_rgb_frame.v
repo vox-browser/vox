@@ -24,7 +24,7 @@ fn validate_modular_rgb_frame(file FileHeader, frame FrameHeader) ! {
 
 // Normalize original-profile integers before color restoration and image
 // upsampling. The final owner applies alpha and positional byte quantization.
-fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, patch_refs []PatchFrameReference) ![3]FloatPlane {
+fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, mut patch FramePatchContext) ![3]FloatPlane {
 	validate_modular_rgb_frame(file, frame)!
 	if frame.has_patches() != (raw.patches != none) { return error('JPEG XL patch dictionary disagrees with the frame') }
 	gray := file.metadata.color_encoding.color_space == .gray
@@ -46,7 +46,7 @@ fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame Frame
 	}
 	mut restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
 	if patches := raw.patches {
-		restored = apply_frame_patches(restored, patches, patch_refs)!
+		restored = patch.apply(restored, patches)!
 	}
 	return upsample_frame_planes(restored, frame, file.transform)
 }

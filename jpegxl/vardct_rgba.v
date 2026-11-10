@@ -38,6 +38,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	storage := if metadata.modular_16bit_sufficient { ModularStorage.signed16 } else { ModularStorage.signed32 }
 	mut references := []LfFrameReference{len: 4}
 	mut patch_refs := []PatchFrameReference{len: 4}
+	mut patch := FramePatchContext{}
 	mut frame := FrameHeader{ restoration: RestorationFilter.default() }
 	mut restored := [3]FloatPlane{}
 	mut extra_channels := []ModularChannel{}
@@ -48,9 +49,6 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 		if frame.frame_type == .reference_only {
 			patch_refs[int(frame.save_as_reference)] = decode_patch_reference_frame(file, frame, storage, mut reader)!
 			continue
-		}
-		if frame.has_patches() && metadata.extra_channels.len != 0 {
-			return error('JPEG XL patches with extra channels are not supported')
 		}
 		if frame.frame_type != .lf && (!frame.is_last || frame.frame_type != .regular || frame.lf_level != 0 || frame.needs_blending()
 			|| frame.width != file.size.width || frame.height != file.size.height || frame.x0 != 0 || frame.y0 != 0) {
@@ -78,17 +76,19 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 		}
 		if frame.encoding == .modular {
 			raw := decode_modular_frame_refs(file, frame, storage, patch_refs.map(it.info), mut sections)!
+			colors := if metadata.xyb_encoded || metadata.color_encoding.color_space != .gray { 3 } else { 1 }
+			patch = new_frame_patch_context(file, frame, storage, patch_refs, raw.channels[colors..])!
 			if metadata.xyb_encoded {
-				restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha, patch_refs)!
+				restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha, mut patch)!
 				extra_channels = raw.channels[3..]
 			} else {
-				restored = render_modular_rgb_frame(raw, file, frame, storage, patch_refs)!
-				colors := if metadata.color_encoding.color_space == .gray { 1 } else { 3 }
+				restored = render_modular_rgb_frame(raw, file, frame, storage, mut patch)!
 				extra_channels = raw.channels[colors..]
 			}
 		} else {
 			raw := decode_vardct_frame_with_refs(file, frame, storage, reference, patch_refs.map(it.info), mut sections)!
-			restored = render_vardct_frame(raw, frame, file.transform, patch_refs)!
+			patch = new_frame_patch_context(file, frame, storage, patch_refs, raw.extra_channels)!
+			restored = render_vardct_frame(raw, frame, file.transform, mut patch)!
 			extra_channels = raw.extra_channels
 		}
 		found = true
@@ -98,7 +98,9 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	if reader.available_bits() != 0 { return error('Unhandled JPEG XL VarDCT trailing payload') }
 	if extra_channels.len != metadata.extra_channels.len { return error('Incorrect JPEG XL output extra channel count') }
 	mut alpha_samples := []f32{}
-	if extra_channels.len == 1 {
+	if patch.extra.len == 1 {
+		alpha_samples = patch.extra[0].samples
+	} else if extra_channels.len == 1 {
 		alpha_plane := render_alpha_plane(extra_channels[0], file, frame, storage)!
 		alpha_samples = alpha_plane.samples
 	}

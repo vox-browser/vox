@@ -12,6 +12,7 @@ fn test_patch_reference_frames_match_native_pixels() {
 	mut modular := 0
 	mut grouped := 0
 	mut gray := 0
+	mut alpha := 0
 	for line in $embed_file('testdata/patch-frame-files.tsv').to_string().split_into_lines() {
 		if line == '' || line.starts_with('#') { continue }
 		f := line.split('\t')
@@ -36,9 +37,10 @@ fn test_patch_reference_frames_match_native_pixels() {
 		if visible.encoding == .vardct { vardct++ } else { modular++ }
 		if visible.num_groups() > 1 { grouped++ }
 		if file.metadata.color_encoding.color_space == .gray { gray++ }
+		if file.metadata.extra_channels.len == 1 { alpha++ }
 		count++
 	}
-	assert count == 32 && vardct > 0 && modular > 0 && grouped > 0 && gray == 2
+	assert count == 44 && vardct > 0 && modular > 0 && grouped > 0 && gray == 2 && alpha == 12
 }
 
 fn test_patch_streams_require_reference_slots_before_reading() {

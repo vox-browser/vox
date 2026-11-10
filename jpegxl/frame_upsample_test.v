@@ -31,7 +31,8 @@ fn test_frame_upsampling_filters_at_coded_resolution_and_preserves_edge_crop() {
 	mut samples := []f32{len: 64, init: 1000}
 	for y in 0 .. 6 { for x in 0 .. 7 { samples[y*8+x] = f32((x+y*13)%17)/32 } }
 	p := FloatPlane{ width: 8, height: 8, samples: samples }
-	actual := render_vardct_frame(VarDctFramePlanes{ planes: [p,p,p]! }, frame, transform, []PatchFrameReference{})!
+	mut patch := FramePatchContext{}
+	actual := render_vardct_frame(VarDctFramePlanes{ planes: [p,p,p]! }, frame, transform, mut patch)!
 	for c in 0 .. 3 {
 		cropped := crop_float_plane(p, 0, 0, 7, 6)!
 		filtered := gaborish_plane(cropped, frame.restoration.gab_weights[c*2], frame.restoration.gab_weights[c*2+1])!

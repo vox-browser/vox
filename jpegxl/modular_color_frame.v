@@ -30,10 +30,11 @@ fn validate_modular_xyb_frame_alpha(file FileHeader, frame FrameHeader, allow_al
 // Render opaque modular XYB planes in source color space, before the final
 // color conversion. LF saving and visible output share this stage ordering.
 pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage) ![3]FloatPlane {
-	return render_modular_xyb_frame_impl(raw, file, frame, storage, false, []PatchFrameReference{})
+	mut patch := FramePatchContext{}
+	return render_modular_xyb_frame_impl(raw, file, frame, storage, false, mut patch)
 }
 
-fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, allow_alpha bool, patch_refs []PatchFrameReference) ![3]FloatPlane {
+fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, allow_alpha bool, mut patch FramePatchContext) ![3]FloatPlane {
 	validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
 	if raw.channels.len != 3 + file.metadata.extra_channels.len { return error('Invalid JPEG XL modular XYB channel count') }
 	for c, channel in raw.channels {
@@ -51,7 +52,7 @@ fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame 
 	planes := modular_xyb_planes(raw.channels[..3], raw.quantization, storage)!
 	mut restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
 	if patches := raw.patches {
-		restored = apply_frame_patches(restored, patches, patch_refs)!
+		restored = patch.apply(restored, patches)!
 	}
 	upsampled := upsample_frame_planes(restored, frame, file.transform)!
 	return apply_frame_noise(upsampled, raw.noise, frame, ColorCorrelationParams{})
