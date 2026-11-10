@@ -2141,9 +2141,17 @@ pub fn (mut n Node) invalidate_style_with_properties(reason StyleInvalidationRea
 	}
 }
 
+// https://dom.spec.whatwg.org/#concept-child-text-content
 pub fn (n &Node) child_text_content() string {
 	if !n.is_parent_node() {
 		return ''
+	}
+	// The concatenation of one text node is its immutable data. In particular,
+	// keep parser-inserted inline scripts from allocating another source copy.
+	if n.children.len == 1 && n.children[0].is_text() {
+		if data := n.children[0].character_data() {
+			return data.data()
+		}
 	}
 	return n.collect_text_content(false)
 }

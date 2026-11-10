@@ -2,6 +2,41 @@ module dom
 
 import platform
 
+fn test_only_text_child_reuses_immutable_data_and_survives_replacement() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	mut script := document.create_element('script')!
+	mut script_node := script.as_node()
+	mut text := document.create_text_node('const message = "é中😀";'.repeat(1024))
+	script_node.append_child(text.as_node())!
+	original := text.data()
+	content := script_node.child_text_content()
+	assert content == original
+	assert voidptr(content.str) == voidptr(original.str)
+	text.set_data('replacement')
+	assert content == original
+	assert script_node.child_text_content() == 'replacement'
+	script_node.append_child(document.create_text_node(' tail').as_node())!
+	assert script_node.child_text_content() == 'replacement tail'
+}
+
+fn test_only_cdata_child_shares_data_but_non_text_children_are_ignored() {
+	mut document := Document.create(url_about_blank())
+	defer { document.finalize() }
+	document.set_document_type(.xml)
+	mut fragment := document.create_document_fragment()
+	cdata := document.create_cdata_section('é中😀')!
+	fragment.append_child(cdata.as_node())!
+	content := fragment.child_text_content()
+	assert content == cdata.data()
+	assert voidptr(content.str) == voidptr(cdata.data().str)
+	assert cdata.as_node().child_text_content() == ''
+	mut parent := document.create_element('root')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(document.create_comment('ignored').as_node())!
+	assert parent_node.child_text_content() == ''
+}
+
 fn test_text_content_collectors_preserve_tree_order_unicode_and_shadow_boundaries() {
 	mut document := Document.create(url_about_blank())
 	defer { document.finalize() }
