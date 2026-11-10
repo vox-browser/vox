@@ -58,6 +58,7 @@ mut:
 	event_type_           string
 	data_                 string
 	pending_input_        string
+	stream_bom_processed_ bool
 	with_credentials_     bool
 	ready_state_          EventSourceReadyState = .connecting
 	fetch_hook_           ?EventSourceFetchHook
@@ -157,6 +158,9 @@ pub fn (mut source EventSource) receive_response(response EventSourceResponse) {
 		source.fail_the_connection()
 		return
 	}
+	// Reconnection starts a new event stream, whose first UTF-8 BOM is ignored.
+	source.pending_input_ = ''
+	source.stream_bom_processed_ = false
 	source.announce_the_connection()
 	source.feed(response.body)
 	source.end_of_body(false)
@@ -237,6 +241,18 @@ fn (mut source EventSource) process_line(line string) {
 // and treating CR, LF, and CRLF as line endings.
 pub fn (mut source EventSource) feed(chunk string) {
 	source.pending_input_ += chunk
+	if !source.stream_bom_processed_ {
+		// UTF-8 decoding ignores just the initial BOM. Retain incomplete BOM
+		// prefixes between chunks rather than interpreting them as field bytes.
+		bom := '\xef\xbb\xbf'
+		if source.pending_input_.len < bom.len && bom.starts_with(source.pending_input_) {
+			return
+		}
+		if source.pending_input_.starts_with(bom) {
+			source.pending_input_ = source.pending_input_[bom.len..]
+		}
+		source.stream_bom_processed_ = true
+	}
 	for source.pending_input_.len > 0 {
 		mut break_index := -1
 		for index, byte in source.pending_input_.bytes() {
