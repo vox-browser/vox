@@ -80,19 +80,21 @@ pub fn typed_array_prototype_last_index_of(mut vm VM, prototypes PrimitiveObject
 		f64(length - 1)
 	}
 	if math.is_inf(n, -1) { return Value.from_i32(-1) }
-	mut k := if n >= 0 {
-		i32(math.min(n, f64(i32(length) - 1)))
+	k := if n >= 0 {
+		u32(math.min(n, f64(length - 1)))
 	} else {
 		relative := f64(length) + n
-		if relative < 0 { i32(-1) } else { i32(relative) }
+		if relative < 0 { return Value.from_i32(-1) }
+		u32(relative)
 	}
-	for k >= 0 {
-		key := PropertyName.from_number(u32(k))
+	mut end := k + 1
+	for end > 0 {
+		end--
+		key := PropertyName.from_number(end)
 		if array.object.has_property(key) {
 			value := array.object.get(mut vm, key)!
-			if is_strictly_equal(search, value) { return Value.from_i32(k) }
+			if is_strictly_equal(search, value) { return Value.from_f64(f64(end)) }
 		}
-		k--
 	}
 	return Value.from_i32(-1)
 }
