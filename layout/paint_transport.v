@@ -1332,6 +1332,31 @@ fn background_image_layer_blend_mode(layer BackgroundImageLayer) painting.BlendM
 	return .normal
 }
 
+// Ladybird 6852ca42e970c1ecda7ac48ce17a2ca3622aee3f: a local background's
+// positioning area follows the scrollable area, retaining its origin insets.
+fn background_positioning_rect(box &BlockBox, layer BackgroundImageLayer) LayoutRect {
+	origin := background_box_rect(box, layer.origin)
+	if layer.attachment != 'local' || box.is_viewport_scroller {
+		return origin
+	}
+	if box.layout_handle != unsafe { nil } {
+		node := unsafe { &Node(box.layout_handle) }
+		if node.is_viewport() || !node.is_scroll_container() {
+			return origin
+		}
+	} else if !box.has_scrollable_overflow {
+		return origin
+	}
+	scrollable_area := box.scrollable_overflow or { return origin }
+	padding := background_box_rect(box, 'padding-box')
+	return LayoutRect{
+		x: scrollable_area.x + origin.x - padding.x
+		y: scrollable_area.y + origin.y - padding.y
+		width: scrollable_area.width + origin.width - padding.width
+		height: scrollable_area.height + origin.height - padding.height
+	}
+}
+
 fn retained_background_layer_data(layer BackgroundImageLayer, gradient_pattern bool) ?&PaintBackgroundLayerData {
 	computed_layer := layer.computed_layer or { return none }
 	return &PaintBackgroundLayerData{
@@ -2362,7 +2387,7 @@ fn (b &BlockBox) record_paint_commands_for_entries(entries []PaintOrderEntry, se
 			}
 			for layer_index := box.decorations().background_images.len - 1; layer_index >= 0; layer_index-- {
 				layer := box.decorations().background_images[layer_index]
-				origin := background_box_rect(box, layer.origin)
+				origin := background_positioning_rect(box, layer)
 				image_destination := if box.snaps_background_rect && layer.clip == 'border-box'
 					&& !box.canvas().paints_canvas_background && !box.table_cell
 					&& !box.uses_collapsed_borders {
