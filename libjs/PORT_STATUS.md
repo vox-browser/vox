@@ -161,6 +161,17 @@ includes comments and blank lines. This package is counted separately from the
 
 ### Frontend
 
+- Preserve mapped-arguments scope metadata when a non-arrow function declares
+  `var arguments` before using its arguments object
+  ([Ladybird `159e288ee23a`](https://github.com/LadybirdBrowser/ladybird/commit/159e288ee23a9575252a16e0102c0ffaef3ff17c),
+  2026-11-09). Function declarations retain their own shadowing flag, while
+  lexical declarations, parameters and arrow-function vars remain shadows.
+  `arguments_scope_test.v` covers ordinary functions, methods, generators,
+  async functions, nested/block declarations and true shadows. The regression
+  fails before the fix and passes after it; this is frontend metadata coverage,
+  not execution coverage for untranslated function bytecode. The separate
+  upstream Date parser, JIT and function-codegen fixes have no corresponding
+  implementation in the current V runtime; browser execution uses JavaScriptCore.
 - Validate duplicates against the complete parameter list, reject duplicate
   method parameters, and validate inherited strict-mode destructured bindings
   (`77bf4206544`, `8a64784d467`).
