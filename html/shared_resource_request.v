@@ -9,6 +9,7 @@
 module html
 
 import dom
+import platform
 
 pub enum SharedResourceRequestState {
 	new_
@@ -51,6 +52,8 @@ mut:
 __global (
 	html_shared_resource_requests                  map[string]&SharedResourceRequest
 	html_shared_resource_memory_cache_touch_serial u64
+	// Native-storage documents whose retirement removes their entries.
+	html_shared_resource_request_owners map[voidptr]bool
 )
 
 fn shared_resource_request_key(document &dom.Document, url dom.URL) string {
@@ -68,8 +71,35 @@ pub fn SharedResourceRequest.get_or_create(document &dom.Document, url dom.URL) 
 		document: document
 	}
 	request.touch_memory_cache_entry()
+	// Upstream keeps this map on the Document. This one is process-wide, so its
+	// buckets and keys must not grow inside the caller's document arena, and a
+	// document's entries leave it when that document's storage is released.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	html_shared_resource_requests[key] = request
+	register_shared_resource_request_owner(document)
 	return request
+}
+
+fn register_shared_resource_request_owner(document &dom.Document) {
+	if document.native_storage() == unsafe { nil } { return }
+	owner := voidptr(document)
+	if owner in html_shared_resource_request_owners { return }
+	html_shared_resource_request_owners[owner] = true
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.add_native_storage_cleanup(fn [owner] () {
+		remove_shared_resource_requests_for_document(owner)
+	})
+}
+
+fn remove_shared_resource_requests_for_document(owner voidptr) {
+	html_shared_resource_request_owners.delete(owner)
+	prefix := '${u64(owner)}\x00'
+	mut keys := []string{}
+	for key, _ in html_shared_resource_requests {
+		if key.starts_with(prefix) { keys << key }
+	}
+	for key in keys { html_shared_resource_requests.delete(key) }
 }
 
 pub fn shared_resource_request_for_document_and_url(document &dom.Document, url dom.URL) ?&SharedResourceRequest {
