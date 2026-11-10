@@ -3,6 +3,56 @@ module html
 import dom
 import editing
 
+__global rich_paste_fragment_parse_count int
+
+fn rich_paste_counted_fragment_parse(target voidptr, context &dom.Element, markup string, shadow_roots dom.AllowDeclarativeShadowRoots, mode dom.ParserScriptingMode) ![]&dom.Node {
+	rich_paste_fragment_parse_count++
+	assert mode == .inert
+	return dom_html_fragment_parse_callback(target, context, markup, shadow_roots, mode)
+}
+
+// Ladybird c6e8828f2edd3be091039b59e149c185a4807511.
+fn test_rich_paste_inserts_the_sanitized_foreign_tree_after_a_single_inert_parse() {
+	mut document, host, text, manager := live_editing_document('seed')
+	mut selection := document.get_selection()?
+	selection.collapse(text.as_node(), 4)!
+	hook := document.html_fragment_parsing_hook()?
+	document.set_html_fragment_parsing_hook(dom.DocumentHTMLFragmentParsingHook{
+		...hook
+		parse_fragment: rich_paste_counted_fragment_parse
+	})
+	rich_paste_fragment_parse_count = 0
+	mut mutable_manager := unsafe { &dom.EditingHostManager(manager) }
+	mutable_manager.handle_insert_from_clipboard(dom.input_type_insert_from_paste, 'plain',
+		'<svg><noscript>&lt;/svg&gt;&lt;script&gt;evil()&lt;/script&gt;&lt;img src=x onerror=&quot;evil()&quot;&gt;</noscript></svg>')
+	assert rich_paste_fragment_parse_count == 1
+	assert document.get_elements_by_tag_name('script').length() == 0
+	assert document.get_elements_by_tag_name('img').length() == 0
+	assert host.as_node().text_content()? == 'seed</svg><script>evil()</script><img src=x onerror="evil()">'
+	assert host.inner_html()!.contains('<svg><noscript>&lt;/svg&gt;')
+	assert document.exec_command('undo', false, '')!
+	assert host.as_node().text_content()? == 'seed'
+}
+
+fn test_pasted_fragment_keeps_node_identity_and_bypasses_only_script_injection_sinks() {
+	mut document, host, text, _ := live_editing_document('seed')
+	mut selection := document.get_selection()?
+	selection.collapse(text.as_node(), 4)!
+	document.enforce_meta_csp("require-trusted-types-for 'script'")
+	range_ := selection.range()?
+	fragment := editing.sanitize_clipboard_html(range_, '<b id="inspected">safe</b>')!
+	inspected := fragment.as_node().first_child()?
+	assert document.insert_pasted_fragment(fragment, dom.input_type_insert_from_paste)!
+	assert document.get_element_by_id('inspected')?.as_node() == inspected
+	assert host.as_node().text_content()? == 'seedsafe'
+	mut rejected := false
+	range_.create_contextual_fragment('<script>unsafe()</script>') or {
+		rejected = true
+		unsafe { nil }
+	}
+	assert rejected
+}
+
 @[heap]
 struct LiveEditingInputObservation {
 mut:

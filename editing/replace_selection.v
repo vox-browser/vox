@@ -373,7 +373,22 @@ pub fn replace_selection_with_fragment(document &dom.Document, value string) !do
 	if !range_.collapsed() {
 		return error('replacement requires a collapsed selection')
 	}
-	replacement_fragment := ReplacementFragment.new(range_, value)!
+	history := begin_editing_proxy_mutation(range_.start_container())
+	fragment := range_.create_contextual_fragment(value) or {
+		end_editing_proxy_mutation(history)
+		return err
+	}
+	end_editing_proxy_mutation(history)
+	return replace_selection_with_document_fragment(document, fragment)
+}
+
+pub fn replace_selection_with_document_fragment(document &dom.Document, fragment &dom.DocumentFragment) !dom.BoundaryPoint {
+	selection := document.get_selection() or { return error('document has no selection') }
+	range_ := selection.range() or { return error('document has no active range') }
+	if !range_.collapsed() {
+		return error('replacement requires a collapsed selection')
+	}
+	replacement_fragment := ReplacementFragment.from_fragment(range_, fragment)
 	mut inserted_content := InsertedContent.new(replacement_fragment.children())
 	if inserted_content.is_empty() {
 		return range_.start()

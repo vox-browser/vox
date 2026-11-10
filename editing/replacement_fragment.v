@@ -140,6 +140,12 @@ pub fn ReplacementFragment.new(range &dom.Range, value string) !&ReplacementFrag
 		end_editing_proxy_mutation(history)
 	}
 	fragment := range.create_contextual_fragment(value)!
+	return ReplacementFragment.from_fragment(range, fragment)
+}
+
+pub fn ReplacementFragment.from_fragment(range &dom.Range, fragment &dom.DocumentFragment) &ReplacementFragment {
+	history := begin_editing_proxy_mutation(range.start_container())
+	defer { end_editing_proxy_mutation(history) }
 	mut fragment_node := fragment.as_node()
 	remove_formatting_whitespace_between_blocks(mut fragment_node)
 

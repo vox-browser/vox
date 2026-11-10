@@ -19,7 +19,21 @@ pub fn exec_command(mut document dom.Document, command string, show_ui bool, val
 	return exec_command_internal(mut document, command, show_ui, value, .yes, none)
 }
 
-pub fn exec_command_internal(mut document dom.Document, command string, _ bool, value string, dispatch_input_event DispatchInputEvent, user_input_type ?string) !bool {
+pub fn exec_command_internal(mut document dom.Document, command string, show_ui bool, value string, dispatch_input_event DispatchInputEvent, user_input_type ?string) !bool {
+	return exec_command_with_fragment(mut document, command, show_ui, value, dispatch_input_event, user_input_type, none)
+}
+
+fn pasted_fragment_has_interchange_newline(node &dom.Node) bool {
+	if element := node.as_element() {
+		if element.has_class('Apple-interchange-newline') { return true }
+	}
+	for child in node.children_as_vector() {
+		if pasted_fragment_has_interchange_newline(child) { return true }
+	}
+	return false
+}
+
+fn exec_command_with_fragment(mut document dom.Document, command string, _ bool, value string, dispatch_input_event DispatchInputEvent, user_input_type ?string, pasted_fragment ?&dom.DocumentFragment) !bool {
 	// AD-HOC: This is not directly mentioned in the spec, but all major browsers limit editing API calls to HTML documents
 	if !document.is_html_document() {
 		return error('InvalidStateError: execCommand is only supported on HTML documents')
@@ -106,7 +120,9 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 			// INTEROP: An Apple-interchange-newline represents an intentional paragraph boundary, not a fragment-ending
 			//          placeholder. Blink and WebKit preserve the destination paragraph's trailing break in this case.
 			paste_started_in_text_node = input_type == dom.input_type_insert_from_paste
-				&& range_.start_container().is_text() && !value.contains('Apple-interchange-newline')
+				&& range_.start_container().is_text() && !(if fragment := pasted_fragment {
+					pasted_fragment_has_interchange_newline(fragment.as_node())
+				} else { value.contains('Apple-interchange-newline') })
 		}
 	}
 	mut paste_start_block := ?&dom.Node(none)
@@ -169,7 +185,10 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 
 	// 5. Take the action for command, passing value to the instructions as an argument.
 	document.set_running_editing_command_action(true)
-	command_result := if definition.action == unsafe { nil } {
+	command_result := if fragment := pasted_fragment {
+		assert definition.command == command_insert_html
+		insert_pasted_fragment_action(mut document, fragment)
+	} else if definition.action == unsafe { nil } {
 		false
 	} else {
 		definition.action(mut document, value)

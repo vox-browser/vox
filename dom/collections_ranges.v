@@ -3357,6 +3357,12 @@ pub fn (r &Range) get_bounding_client_rect() DOMRect {
 pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment {
 	// 1. Let compliantString be the result of invoking the Get Trusted Type compliant string algorithm.
 	compliant_string := r.start_container_.document().trusted_types_compliant_html(fragment, 'range-create-contextual-fragment')!
+	return r.create_contextual_fragment_with_scripting_mode(compliant_string, .fragment)
+}
+
+// Internal callers such as user paste supply ordinary markup and explicitly
+// choose inert parsing. The script-facing entry point above retains its sink check.
+pub fn (r &Range) create_contextual_fragment_with_scripting_mode(fragment string, scripting_mode ParserScriptingMode) !&DocumentFragment {
 	// 2. Let node be this's start node.
 	node := r.start_container_
 	// 3. Let element be null.
@@ -3382,8 +3388,7 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 		return error('InvalidStateError: Could not determine a context element')
 	}
 
-	// 7. Parse in Fragment mode so script elements are not marked parser-inserted or already started.
-	return context_element.parse_fragment_with_scripting_mode(compliant_string, .fragment)
+	return context_element.parse_fragment_with_scripting_mode(fragment, scripting_mode)
 }
 
 pub fn (r &Range) for_each_contained(callback fn(&Node) TraversalDecision) {

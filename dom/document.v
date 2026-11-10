@@ -2032,7 +2032,9 @@ pub type DocumentEditingQueryCommandCallback = fn (voidptr, &Document, string) !
 
 pub type DocumentEditingQueryCommandValueCallback = fn (voidptr, &Document, string) !string
 
-pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !string
+pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !&DocumentFragment
+
+pub type DocumentEditingInsertPastedFragmentCallback = fn (voidptr, &Document, &DocumentFragment, string) !bool
 
 pub struct DocumentEditingCommandHook {
 pub:
@@ -2044,6 +2046,7 @@ pub:
 	query_command_supported DocumentEditingQueryCommandCallback          = unsafe { nil }
 	query_command_value     DocumentEditingQueryCommandValueCallback     = unsafe { nil }
 	sanitize_clipboard_html DocumentEditingSanitizeClipboardHTMLCallback = unsafe { nil }
+	insert_pasted_fragment DocumentEditingInsertPastedFragmentCallback = unsafe { nil }
 }
 
 pub type DocumentEditingHistoryCallback = fn (voidptr)
@@ -4733,7 +4736,7 @@ pub fn (mut d Document) dispatch_event_simple(event_name string, bubbles bool) {
 	document_node.dispatch_event_simple(event_name, bubbles)
 }
 
-pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !string {
+pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !&DocumentFragment {
 	hook := d.editing_command_hook_ or {
 		return error('clipboard HTML sanitizer is not installed')
 	}
@@ -10442,6 +10445,12 @@ pub fn (mut d Document) exec_command_internal(command string, show_ui bool, valu
 		return false
 	}
 	return hook.exec_command(hook.target, d, command, show_ui, value, user_input_type)!
+}
+
+pub fn (mut d Document) insert_pasted_fragment(fragment &DocumentFragment, user_input_type string) !bool {
+	hook := d.editing_command_hook_ or { return false }
+	if hook.insert_pasted_fragment == unsafe { nil } { return false }
+	return hook.insert_pasted_fragment(hook.target, d, fragment, user_input_type)!
 }
 
 pub fn (d &Document) query_command_enabled(command string) !bool {

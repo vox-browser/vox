@@ -3910,15 +3910,17 @@ pub fn (mut manager EditingHostManager) handle_insert_from_clipboard(input_type 
 			}
 		}
 	}
-	sanitized_html := document.sanitize_clipboard_html(range, markup) or {
+	fragment := document.sanitize_clipboard_html(range, markup) or {
 		manager.handle_insert(input_type, plain_text)
 		return
 	}
-	if sanitized_html == '' {
+	if !fragment.as_node().has_children() {
 		manager.handle_insert(input_type, plain_text)
 		return
 	}
-	document.exec_command_internal('insertHTML', false, sanitized_html, input_type) or {}
+	// Insert exactly the tree inspected by the sanitizer. Serializing and
+	// reparsing can turn inert foreign content into active HTML elements.
+	document.insert_pasted_fragment(fragment, input_type) or {}
 }
 
 pub fn (mut manager EditingHostManager) select_all() {
