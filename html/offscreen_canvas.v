@@ -1,4 +1,5 @@
 // Copyright (c) 2025, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -422,9 +423,16 @@ pub fn (context &OffscreenCanvasRenderingContext2D) measure_text(text string) &T
 	replaced := text.replace('\t', ' ').replace('\n', ' ').replace('\r', ' ').replace('\f', ' ')
 	run := canvas_text_run_for_canvas_state(&context.CanvasState, replaced, 0)
 	font_metrics := run.font().pixel_metrics()
+	baseline_offset := canvas_text_baseline_offset(context.drawing_state.text_baseline, font_metrics)
+	em_ascent, em_descent := canvas_em_square_ascent_and_descent(font_metrics)
 	metrics.set_width(f64(run.width()))
-	metrics.set_font_bounding_box_ascent(f64(font_metrics.ascent))
-	metrics.set_font_bounding_box_descent(f64(font_metrics.descent))
+	metrics.set_font_bounding_box_ascent(f64(font_metrics.ascent) - baseline_offset)
+	metrics.set_font_bounding_box_descent(f64(font_metrics.descent) + baseline_offset)
+	metrics.set_em_height_ascent(em_ascent - baseline_offset)
+	metrics.set_em_height_descent(em_descent + baseline_offset)
+	metrics.set_hanging_baseline(f64(font_metrics.ascent) * 0.8 - baseline_offset)
+	metrics.set_alphabetic_baseline(-baseline_offset)
+	metrics.set_ideographic_baseline(-f64(font_metrics.descent) - baseline_offset)
 	return metrics
 }
 
