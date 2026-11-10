@@ -2962,8 +2962,8 @@ fn test_svg_image_uses_image_paintable_contain_sizing_and_resolved_href() {
 	assert image.height == 60
 	assert image.image().image_url == 'https://example.test/picture.png'
 	assert image.image().image_size == 'contain'
-	assert image.image().image_position_x == '25%'
-	assert image.image().image_position_y == '75%'
+	assert image.image().image_position_x == '50%'
+	assert image.image().image_position_y == '50%'
 	assert image.image().image_rendering == .pixelated
 	paintable := image.image_paintable or { panic('missing retained ImagePaintable') }
 	assert paintable.is_svg_image
@@ -3344,14 +3344,14 @@ fn test_svg_mask_retains_image_paintable_between_group_opacity_boundaries() {
 	assert image.kind == .image
 	assert image.image_url == 'https://example.test/mask.png'
 	assert image.image_rect == LayoutRect{10, 12, 80, 40}
-	assert image.image_position_x == '25%'
-	assert image.image_position_y == '75%'
+	assert image.image_position_x == '50%'
+	assert image.image_position_y == '50%'
 	assert image.image_rendering == .crisp_edges
 	image_paintable := image.image_paintable or { panic('mask image lost its ImagePaintable') }
 	assert image_paintable.is_svg_image
 	assert image_paintable.image_rect == painting.Rect{10, 12, 80, 40}
-	assert image_paintable.object_position.offset_x.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 25
-	assert image_paintable.object_position.offset_y.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 75
+	assert image_paintable.object_position.offset_x.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 50
+	assert image_paintable.object_position.offset_y.to_px(image_paintable.resolution_context, css.CSSPixels.new(100)).to_double() == 50
 	assert image.transform == [f64(1), 0, 0, 1, 0, 0]!
 	assert mask.mask_operations[2].kind == .end_opacity
 	assert mask.cache_key != 0

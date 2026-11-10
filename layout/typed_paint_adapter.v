@@ -3402,7 +3402,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					if object_bounding_box_units {
 						to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
 					}
-					object_position := computed.object_position()
+					image_fit, object_position := svg_image_fit(element)
 					image_rect := painting.Rect{
 						x: used.offset.x().to_double()
 						y: used.offset.y().to_double()
@@ -3424,7 +3424,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 							image_rendering: computed.image_rendering()
 							image_paintable: painting.ImagePaintable{
 								image_rect: image_rect
-								object_fit: .contain
+								object_fit: image_fit
 								object_position: object_position
 								resolution_context: computed.length_resolution_context()
 								image_rendering: computed.image_rendering()
@@ -4044,8 +4044,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	if node.is_svg_image_box() {
 		if svg_image_element := element {
 			replaced_image_url = resolved_svg_image_url(svg_image_element)
-			replaced_image_size = 'contain'
-			object_position := computed.object_position()
+			image_fit, object_position := svg_image_fit(svg_image_element)
+			replaced_image_size = if image_fit == .fill { 'fill' } else if image_fit == .cover { 'cover' } else { 'contain' }
 			replaced_image_position_x = object_position.offset_x.to_string()
 			replaced_image_position_y = object_position.offset_y.to_string()
 		}
@@ -4071,13 +4071,20 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				default_size := css.CSSPixelSize.new(CSSPixels.nearest_value_for(mapped_bounds.width),
 					CSSPixels.nearest_value_for(mapped_bounds.height))
 				concrete_size := css.run_default_sizing_algorithm(none, none, svg_background_natural_size(svg_document), default_size)
+				mut image_fit := css.ObjectFit.contain
+				mut image_position := css.Position{}
+				if image_element := element {
+					image_fit, image_position = svg_image_fit(image_element)
+				}
 				if fitted := painting.get_replaced_box_painting_rect(viewport_rect, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()},
-					.contain, computed.object_position(), computed.length_resolution_context()) {
+					image_fit, image_position, computed.length_resolution_context()) {
 					converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
 					device := converter.rounded_device_rect(fitted)
 					nested_viewport_document = svg_document
 					nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
-						nested_layout_size: if node.document().font_rendering_policy() == .chromium {
+						nested_layout_size: if image_fit == .fill {
+							?painting.Size(painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()})
+						} else if node.document().font_rendering_policy() == .chromium {
 							?painting.Size(painting.Size{fitted.width, fitted.height})
 						} else {
 							none
@@ -4091,6 +4098,13 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	if replaced_image_url != '' || node.is_image_box() {
+		mut image_fit := computed.object_fit()
+		mut image_position := computed.object_position()
+		if node.is_svg_image_box() {
+			if image_element := element {
+				image_fit, image_position = svg_image_fit(image_element)
+			}
+		}
 		mut replaced_intrinsic_size := ?css.SizeWithAspectRatio(none)
 		if image_box := node.as_box() {
 			replaced_intrinsic_size = image_box.natural_size()
@@ -4116,8 +4130,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				bottom: used.border_bottom.to_double()
 				left: used.border_left.to_double()
 			}
-			object_fit: computed.object_fit()
-			object_position: computed.object_position()
+			object_fit: image_fit
+			object_position: image_position
 			resolution_context: computed.length_resolution_context()
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
