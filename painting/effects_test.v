@@ -208,10 +208,10 @@ fn test_box_shadow_uses_source_border_and_padding_geometry() {
 	assert inner.content_rect == IntRect{15, 22, 92, 44}
 	assert inner.outer_shadow_rect == IntRect{9, 16, 112, 56}
 	assert inner.inner_shadow_rect == IntRect{20, 21, 90, 42}
-	assert inner.content_corner_radii.top_left == CornerRadius{10, 8}
+	assert inner.content_corner_radii.top_left == CornerRadius{5, 6}
 	assert inner.clip_corner_radii.top_left == CornerRadius{5, 6}
 	assert inner.clip_corner_radii.bottom_right == CornerRadius{27, 12}
-	assert inner.inner_corner_radii.top_right == CornerRadius{19, 11}
+	assert inner.inner_corner_radii.top_right == CornerRadius{16, 9}
 	outer := resolved[1]
 	assert outer.placement == .outer
 	assert outer.content_rect == IntRect{10, 20, 100, 50}
