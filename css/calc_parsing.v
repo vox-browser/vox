@@ -322,11 +322,8 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 		})
 	}
 	if call_arguments.len == 1 {
-		// CSS Values 4 defaults B to 1 only when A is a <number>.
-		value_type := call_arguments[0].numeric_type() or { return none }
-		if !value_type.matches_number(none) {
-			return none
-		}
+		// Add the default interval before the common type check, preserving
+		// percentage hints in dimension-canceling calculations.
 		call_arguments << CalcNode(CalcNumeric{
 			kind: .number
 			value: 1.0
