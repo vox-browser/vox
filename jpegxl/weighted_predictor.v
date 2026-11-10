@@ -3,6 +3,7 @@
 module jpegxl
 
 import math
+import math.bits
 
 pub struct WeightedPrediction {
 pub:
@@ -67,21 +68,29 @@ pub fn (mut state WeightedPredictorState) restore_rows(rows WeightedPredictorRow
 	copy(mut state.predictor_errors[..state.width + 1], rows.predictor_errors)
 }
 
+// floor(log2(value)), and 0 for values 0 and 1.
+@[inline]
 fn predictor_floor_log2(value u64) int {
-	mut bits := 0
-	mut v := value
-	for v > 1 {
-		v >>= 1
-		bits++
-	}
-	return bits
+	return if value > 1 { bits.len_64(value) - 1 } else { 0 }
+}
+
+// floor(2^24 / (index + 1)) for the indices below 64 that the predictor uses.
+const predictor_divisors = predictor_divisor_table()
+
+fn predictor_divisor_table() [64]u32 {
+	mut table := [64]u32{}
+	for i in 0 .. 64 { table[i] = u32(16777216 / (i + 1)) }
+	return table
 }
 
 // Exact integer lookup from the source: floor(2^24 / (index + 1)).
+@[inline]
 fn predictor_divisor(index u32) u32 {
-	return u32(16777216 / (index + 1))
+	return if index < 64 { predictor_divisors[index] } else { u32(16777216 / (index + 1)) }
 }
 
+// Indices stay below 2 * (width + 1), the buffer length, once 0 <= x < width.
+@[direct_array_access]
 pub fn (mut state WeightedPredictorState) predict_and_property(x int, y int, data PredictionData) !WeightedPrediction {
 	if x < 0 || x >= state.width || y < 0 {
 		return error('Invalid JPEG XL weighted predictor position')
@@ -104,9 +113,9 @@ pub fn (mut state WeightedPredictorState) predict_and_property(x int, y int, dat
 	north_west_error := i64(state.errors[previous + 1 + north_west])
 	north_east_error := i64(state.errors[previous + 1 + north_east])
 	mut property := west_error
-	for candidate in [north_error, north_west_error, north_east_error] {
-		if math.abs(candidate) > math.abs(property) { property = candidate }
-	}
+	if math.abs(north_error) > math.abs(property) { property = north_error }
+	if math.abs(north_west_error) > math.abs(property) { property = north_west_error }
+	if math.abs(north_east_error) > math.abs(property) { property = north_east_error }
 	north := i64(data.top) * 8
 	west := i64(data.left) * 8
 	north_east_value := i64(data.topright) * 8
@@ -134,6 +143,8 @@ pub fn (mut state WeightedPredictorState) predict_and_property(x int, y int, dat
 	return WeightedPrediction{ value: (prediction + 3) >> 3, property: i32(property) }
 }
 
+// Indices stay below 2 * (width + 1), the buffer length, once 0 <= x < width.
+@[direct_array_access]
 pub fn (mut state WeightedPredictorState) update_errors(correct i32, x int, y int) ! {
 	if x < 0 || x >= state.width || y < 0 {
 		return error('Invalid JPEG XL weighted predictor position')

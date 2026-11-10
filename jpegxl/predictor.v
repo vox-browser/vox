@@ -68,6 +68,31 @@ pub fn PredictionData.from_rows(row []i32, row_top []i32, row_toptop []i32, x in
 	}
 }
 
+// from_rows for a position the caller has already bounded: 0 <= x < row.len
+// and every previous row as long as `row`. Same neighbours, no Result.
+@[direct_array_access; inline]
+fn prediction_data_in_rows(row []i32, row_top []i32, row_toptop []i32, x int, y int) PredictionData {
+	left := if x > 0 {
+		row[x - 1]
+	} else if y > 0 {
+		row_top[0]
+	} else {
+		i32(0)
+	}
+	top := if y > 0 { row_top[x] } else { left }
+	topleft := if x > 0 && y > 0 { row_top[x - 1] } else { left }
+	topright := if x + 1 < row.len && y > 0 { row_top[x + 1] } else { top }
+	return PredictionData{
+		left:          left
+		top:           top
+		toptop:        if y > 1 { row_toptop[x] } else { top }
+		topleft:       topleft
+		topright:      topright
+		leftleft:      if x > 1 { row[x - 2] } else { left }
+		toprightright: if x + 2 < row.len && y > 0 { row_top[x + 2] } else { topright }
+	}
+}
+
 pub fn (d PredictionData) update_for_interior_row(row_top []i32, row_toptop []i32, x int, current i32, needs_toptop bool) !PredictionData {
 	if row_top.len < 5 || x <= 1 || x >= row_top.len - 2
 		|| (needs_toptop && x >= row_toptop.len) {
