@@ -669,6 +669,7 @@ pub struct HTMLFormElement {
 	HTMLElement
 pub mut:
 	associated_elements_ []&Element
+	form_element_model_  voidptr = unsafe { nil }
 }
 
 @[heap]
