@@ -30,9 +30,6 @@ fn kmac_sign(params KmacParams, key &CryptoKey, message []u8) ![]u8 {
 fn generate_kmac_key(params KmacKeyGenParams, extractable bool, usages []KeyUsage) !&CryptoKey {
 	kmac_validate_usages(usages)!
 	length := params.length or { kmac_default_length(params.name)! }
-	if length == 0 {
-		return error('OperationError: Invalid key length')
-	}
 	// The upstream shared generate_random_key helper takes u16 bit lengths.
 	material := rand.bytes(int(u16(length) / 8)) or {
 		return error('OperationError: Key generation failed: ${err}')
@@ -55,7 +52,7 @@ fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, ext
 		}
 		if usages.len > 0 {
 			if use := jwk.use {
-				if use != 'sign' { return error('DataError: Invalid use in JsonWebKey') }
+				if use != 'sig' { return error('DataError: Invalid use in JsonWebKey') }
 			}
 		}
 		validate_jwk_key_ops(jwk, usages)!
@@ -67,7 +64,7 @@ fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, ext
 	}
 	mut length := u32(data.len * 8)
 	if requested := params.length {
-		if requested > length || requested <= length - 8 {
+		if requested > length || length - requested >= 8 {
 			return error('DataError: Invalid data size')
 		}
 		length = requested
