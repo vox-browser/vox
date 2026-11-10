@@ -58,11 +58,8 @@ for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig freetype2 harfbuzz i
     fi
 done
 mkdir -p "$build_dir"
-if command -v cargo >/dev/null 2>&1; then
-    CARGO_TARGET_DIR="$cache_dir/rust-jpegxl" cargo build --quiet --release --locked \
-        --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
-    cp "$cache_dir/rust-jpegxl/release/libvox_jpegxl.so" "$build_dir/libVoxJPEGXL.so"
-fi
+# JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.
+rm -f "$build_dir/libVoxJPEGXL.so"
 if pkg-config --exists libavif; then
     python3 "$repo_dir/tools/build_native_avif.py" --output "$build_dir/libVoxAVIF.so"
 else

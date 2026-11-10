@@ -29,7 +29,6 @@ jobs:
       # FastC must support JSON enum attributes and dynamic-array decoding.
       # XML allocation fixes: https://github.com/vlang/v/pull/32104
       V_REVISION: f7f3add7af3c4615ba5dbedc06e18f76ef604346
-      RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
       LADYBIRD_V_GC: ${{ matrix.gc }}
       VOX_ARENA_POISON: '1'
@@ -73,8 +72,6 @@ jobs:
             libwebp-dev libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core \
             xvfb xauth xdotool scrot
           pkg-config --modversion javascriptcoregtk-4.1
-          rustup toolchain install stable --profile minimal --no-self-update
-          rustc --version
 
       - name: Check tab process exit diagnostics
         if: ${{ !cancelled() && steps.system_dependencies.outcome == 'success' && matrix.gc == 'boehm' }}
