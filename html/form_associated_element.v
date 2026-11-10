@@ -925,8 +925,8 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement st
 	replacement_units := form_string_to_utf16(replacement)
 	actual_start := if int(start) > value_units.len { value_units.len } else { int(start) }
 	actual_end := if int(end) > value_units.len { value_units.len } else { int(end) }
-	old_selection_start := int(text.selection_start_)
-	old_selection_end := int(text.selection_end_)
+	old_selection_start := int(text.selection_start())
+	old_selection_end := int(text.selection_end())
 	mut result := value_units[..actual_start].clone()
 	result << replacement_units
 	result << value_units[actual_end..]
@@ -967,7 +967,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement st
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_range_text_at_selection(replacement string) ! {
-	text.set_range_text(replacement, text.selection_start_, text.selection_end_, .preserve)!
+	text.set_range_text(replacement, text.selection_start(), text.selection_end(), .preserve)!
 }
 
 // The two upstream WebIDL overloads converge on the explicit-range overload
