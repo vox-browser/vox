@@ -273,8 +273,16 @@ pub fn html_option_element_disabled(option &dom.HTMLOptionElement) bool {
 	if element.has_attribute('disabled') {
 		return true
 	}
-	parent := option_node(option).parent_element() or { return false }
-	return parent.local_name() == 'optgroup' && parent.has_attribute('disabled')
+	mut ancestor := option_node(option).parent_element()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_html_element() {
+			if current.local_name() in ['select', 'hr', 'datalist', 'option'] { return false }
+			if current.local_name() == 'optgroup' { return current.has_attribute('disabled') }
+		}
+		ancestor = current.as_node().parent_element()
+	}
+	return false
 }
 
 pub fn html_option_element_ask_for_a_reset(option &dom.HTMLOptionElement) {
