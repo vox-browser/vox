@@ -39,7 +39,7 @@ fn generate_kmac_key(params KmacKeyGenParams, extractable bool, usages []KeyUsag
 			return error('OperationError: Key generation failed: ${err}')
 		}
 	}
-	return CryptoKey.create(.secret, extractable, KmacKeyAlgorithm{ name: params.name, length: length }, usages, material)
+	return CryptoKey.create(.secret, extractable, KmacKeyAlgorithm{ name: params.name, length: length }, normalize_key_usages(usages), material)
 }
 
 fn import_kmac_key(params KmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {

@@ -18,7 +18,7 @@ pub fn generate_hmac_key(params HmacKeyGenParams, extractable bool, usages []Key
 	if length == 0 { return error('OperationError: Invalid length') }
 	// The source generate_random_key helper takes u16 and floors bits to bytes.
 	material := rand.bytes(int(u16(length) / 8)) or { return error('OperationError: Key generation failed: ${err}') }
-	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{ name: 'HMAC', hash: params.hash, length: length }, usages, material)
+	return CryptoKey.create(.secret, extractable, HmacKeyAlgorithm{ name: 'HMAC', hash: params.hash, length: length }, normalize_key_usages(usages), material)
 }
 
 fn hmac_jwk_algorithm(hash string) !string {
