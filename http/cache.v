@@ -98,6 +98,17 @@ pub fn extract_cache_control_duration_directive(cache_control string, directive 
 	return seconds * 1000
 }
 
+// Vox's memory cache does not synthesize conditional 304 responses. Send
+// requests bearing their own preconditions to the network rather than serving
+// a stored unconditional 200 response.
+pub fn cache_request_has_preconditions(headers &HeaderList) bool {
+	for name in ['If-Match', 'If-None-Match', 'If-Modified-Since',
+		'If-Unmodified-Since', 'If-Range'] {
+		if headers.contains(name) { return true }
+	}
+	return false
+}
+
 pub fn is_cacheable_request(method string, request_headers &HeaderList) bool {
 	if method !in ['GET', 'HEAD'] {
 		return false
@@ -107,7 +118,7 @@ pub fn is_cacheable_request(method string, request_headers &HeaderList) bool {
 			return false
 		}
 	}
-	return !request_headers.contains('Range')
+	return !request_headers.contains('Range') && !cache_request_has_preconditions(request_headers)
 }
 
 fn is_heuristically_cacheable_status(status_code u32) bool {
@@ -134,7 +145,8 @@ pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
 	}
 	// The network layer can add Cookie after the cache lookup, so neither
 	// wildcard nor cookie-dependent variants are safe to store here.
-	if vary_header_names(headers).any(it in ['*', 'cookie']) {
+	vary_names := vary_header_names(headers)
+	if vary_names.len > 32 || vary_names.any(it in ['*', 'cookie']) {
 		return false
 	}
 	cache_control := headers.get('Cache-Control')
