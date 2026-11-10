@@ -44,7 +44,7 @@ fn import_hmac_key(params HmacImportParams, format KeyFormat, material []u8, ext
 		}
 		if usages.len > 0 {
 			if use := jwk.use {
-				if use != 'sign' { return error('DataError: Invalid use in JsonWebKey') }
+				if use != 'sig' { return error('DataError: Invalid use in JsonWebKey') }
 			}
 		}
 		validate_jwk_key_ops(jwk, usages)!
