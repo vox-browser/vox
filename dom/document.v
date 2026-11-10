@@ -5346,6 +5346,8 @@ pub mut:
 	navigation_id          ?string
 	about_base_url         ?URL
 	is_initial_about_blank bool
+	iframe_load_in_progress bool
+	mute_iframe_load       bool
 	opener_policy          OpenerPolicy
 
 	// Browsing context
@@ -8823,6 +8825,11 @@ pub fn (mut d Document) open_document() !&Document {
 
 	// 13. Set is_initial_about_blank to false.
 	d.is_initial_about_blank = false
+
+	// 14. A stream opened while the iframe is firing load must not cause
+	// a second load event. A later document.open() outside that dispatch
+	// unmutes its next load again.
+	d.mute_iframe_load = d.iframe_load_in_progress
 
 	// 15. Set to no-quirks mode.
 	d.set_quirks_mode(.no)
@@ -12806,6 +12813,18 @@ pub fn (d &Document) get_is_initial_about_blank() bool {
 
 pub fn (mut d Document) set_is_initial_about_blank(b bool) {
 	d.is_initial_about_blank = b
+}
+
+pub fn (d &Document) is_iframe_load_in_progress() bool {
+	return d.iframe_load_in_progress
+}
+
+pub fn (mut d Document) set_iframe_load_in_progress(value bool) {
+	d.iframe_load_in_progress = value
+}
+
+pub fn (d &Document) should_mute_iframe_load() bool {
+	return d.mute_iframe_load
 }
 
 // --- about_base_url ---
