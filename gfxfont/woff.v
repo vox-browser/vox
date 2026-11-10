@@ -74,8 +74,8 @@ pub fn convert_woff_to_sfnt(buffer []u8) ![]u8 {
 		binary.big_endian_put_u32_at(mut output, u32(font_buffer_offset),
 			table_directory_offset + 8)
 		binary.big_endian_put_u32_at(mut output, orig_length, table_directory_offset + 12)
-		// The pinned source advances by orig_length here, without padding.
-		font_buffer_offset += int(orig_length)
+		// Every reconstructed sfnt table starts on a four-byte boundary.
+		font_buffer_offset += int((orig_length + u32(3)) & u32(0xfffffffc))
 	}
 	if u64(total_sfnt_size) != expected_total_sfnt_size {
 		return error('Invalid WOFF total sfnt size')
