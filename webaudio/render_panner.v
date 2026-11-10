@@ -260,15 +260,17 @@ pub fn (mut panner PannerRenderNode) process(mut graph RenderGraph,
 	input := render_node.pull_input(mut graph, context, 0)
 	mut output := unsafe { &AudioBus(render_node.output(0)) }
 	output.set_channel_count(2)
-	if input.is_silent() {
-		output.zero()
-		return
-	}
+	// Source and listener automation must update their shared intrinsic values
+	// even when no audible samples need spatialization.
 	mut parameters := panner.params_.as_array()
 	parameters << panner.listener_params_.as_array()
 	for index, parameter in parameters {
 		mut mutable_parameter := unsafe { &RenderAudioParam(parameter) }
 		mutable_parameter.compute(mut graph, context, mut panner.param_values_[index])
+	}
+	if input.is_silent() {
+		output.zero()
+		return
 	}
 	mut output_left := []f32{len: context.quantum_size}
 	mut output_right := []f32{len: context.quantum_size}
