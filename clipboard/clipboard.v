@@ -151,8 +151,9 @@ pub enum ClipboardReadPermission {
 	granted_for_own_origin_data
 }
 
-pub fn check_clipboard_read_permission(has_transient_activation bool, is_running_from_paste bool) ClipboardReadPermission {
-	if !has_transient_activation { return .denied }
+pub fn check_clipboard_read_permission(has_transient_activation bool, is_running_from_paste bool, has_focus bool) ClipboardReadPermission {
+	// https://w3c.github.io/clipboard-apis/#privacy-async
+	if !has_focus || !has_transient_activation { return .denied }
 	return if is_running_from_paste { .granted } else { .granted_for_own_origin_data }
 }
 
@@ -248,7 +249,8 @@ fn (board &Clipboard) pasted_data_snapshot() ?[]SystemClipboardItem {
 }
 
 fn (board &Clipboard) data_allowed_by_read_permission(pasted_data ?[]SystemClipboardItem) ![]SystemClipboardItem {
-	permission := check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none)
+	has_focus := if document := board.document_ { document.has_focus() } else { false }
+	permission := check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none, has_focus)
 	if permission == .granted {
 		return pasted_data or { []SystemClipboardItem{} }
 	}

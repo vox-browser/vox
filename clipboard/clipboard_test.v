@@ -1,7 +1,20 @@
 module clipboard
 
+import dom
 import fileapi
 import html
+
+fn clipboard_test_focused_document() &dom.Document {
+	mut document := dom.Document.create(dom.URL{value: 'https://clipboard.test/'})
+	navigable := &dom.Navigable{
+		active_document_: document
+		is_top_level_traversable_: true
+		html_model_handle_: voidptr(document)
+		is_focused_callback_: fn (_ voidptr) bool { return true }
+	}
+	document.set_cached_navigable(navigable)
+	return document
+}
 
 struct ClipboardPasteReadResult {
 mut:
@@ -74,7 +87,9 @@ fn test_clipboard_operations_require_transient_activation() {
 fn test_clipboard_write_text_and_read_text_cross_backend_boundary_asynchronously() {
 	mut event_loop := html.EventLoop.create(.window)
 	backend := SystemClipboardBackend.create()
-	mut board := Clipboard.create(backend, event_loop, none)
+	mut document := clipboard_test_focused_document()
+	defer { document.finalize() }
+	mut board := Clipboard.create(backend, event_loop, document)
 	board.set_has_transient_activation(true)
 
 	write := board.write_text('hello, clipboard')
@@ -108,7 +123,9 @@ fn test_clipboard_read_text_skips_file_backed_native_entries() {
 			]
 		},
 	], ['unspecified'])
-	mut board := Clipboard.create(backend, event_loop, none)
+	mut document := clipboard_test_focused_document()
+	defer { document.finalize() }
+	mut board := Clipboard.create(backend, event_loop, document)
 	board.set_has_transient_activation(true)
 
 	read := clipboard_test_read_text_from_paste(mut board)
@@ -148,7 +165,9 @@ fn test_clipboard_read_builds_items_and_ignores_unknown_native_formats() {
 			]
 		},
 	], ['inline', 'attachment', 'unspecified'])
-	mut board := Clipboard.create(backend, event_loop, none)
+	mut document := clipboard_test_focused_document()
+	defer { document.finalize() }
+	mut board := Clipboard.create(backend, event_loop, document)
 	board.set_has_transient_activation(true)
 
 	read := clipboard_test_read_from_paste(mut board, ClipboardUnsanitizedFormats{
