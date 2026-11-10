@@ -11177,9 +11177,9 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 		fae.element_id_changed()
 	}
 	// Update potentially named elements list
-	if element.id() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.get_name() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 	// Update element-by-id map
@@ -11196,7 +11196,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	for fae in d.form_associated_elements_with_form_attribute {
 		fae.element_with_id_was_added_or_removed()
 	}
-	if is_potentially_named_element_by_id(element) {
+	if is_potentially_named_element_by_id(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 	if id := element.id() {
@@ -11219,15 +11219,15 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 }
 
 pub fn (mut d Document) element_name_changed(element &Element) {
-	if element.get_name() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.id() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 }
 
 pub fn (mut d Document) element_with_name_was_added(element &Element) {
-	if is_potentially_named_element(element) {
+	if is_potentially_named_element(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 }
@@ -11397,6 +11397,12 @@ pub fn is_potentially_named_element(element &Element) bool {
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem-filter
 pub fn is_potentially_named_element_by_id(element &Element) bool {
 	return element.is_html_element() && element.local_name() in ['img', 'object']
+}
+
+fn should_be_in_potentially_named_elements(element &Element) bool {
+	return ((element.get_name() != none && is_potentially_named_element(element))
+		|| (element.id() != none && is_potentially_named_element_by_id(element)))
+		&& element.as_node().root().is_document()
 }
 
 pub fn insert_in_tree_order(mut elements []&Element, element &Element) {
