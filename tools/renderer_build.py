@@ -34,8 +34,11 @@ def main():
     if args.receipt:
         args.receipt.write_text(json.dumps(dict(default='skia' if args.skia == '1' else 'gg',
             compiler=compiler, gg_adapters=args.skia != '1', skia_free=False,
-            skia_required_for=['text preparation and fallback', 'canvas', 'shadows',
-                               'bitmap export', 'recording and picture playback']), indent=2)+'\n')
+            # Canvas 2D, portable shadows and bitmap export use cpuraster; the
+            # macOS native painter and Graphite libraries still link Skia.
+            skia_required_for=['text preparation and fallback',
+                               'native painter images, gradients, shadows and filters',
+                               'recording and picture playback']), indent=2)+'\n')
     print(compiler)
 
 
