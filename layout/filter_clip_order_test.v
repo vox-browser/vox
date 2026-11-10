@@ -5,10 +5,11 @@ module layout
 import painting
 
 // Ladybird 51929bd7fefea35081cf82a2b2b5d1ad6b97f4a3.
-fn test_clips_apply_to_the_filtered_result() {
+fn test_clips_apply_to_the_filtered_result_without_moving_blending_inside_the_clip() {
 	for clip_kind in ['css', 'path', 'mask'] {
 		mut box := BlockBox{
 			opacity: 0.5
+			mix_blend_mode: .multiply
 			own_paint_transform: [f64(2), 0, 0, 2, 0, 0]!
 			filter_data: retained_block_box_filter(BlockBoxFilterData{
 				filter: painting.ResolvedCSSFilter{
@@ -23,13 +24,27 @@ fn test_clips_apply_to_the_filtered_result() {
 		}
 		mut tree := painting.new_accumulated_visual_context_tree()
 		assign_compatibility_visual_contexts(mut box, none, map[u64]&BlockBox{}, mut tree)
-		effects := tree.node_at(box.own_effects_visual_context_idx)
-		assert effects.data is painting.EffectsVisualData
-		assert box.accumulated_visual_context_index == box.own_effects_visual_context_idx
-		clip := tree.node_at(effects.parent_index)
+
+		inner := tree.node_at(box.accumulated_visual_context_index)
+		assert inner.data is painting.EffectsVisualData
+		inner_effects := inner.data as painting.EffectsVisualData
+		assert inner_effects.filter != none
+		assert inner_effects.opacity == 1.0
+		assert inner_effects.blend_mode == .normal
+
+		clip := tree.node_at(inner.parent_index)
 		assert clip.data is painting.ClipVisualData || clip.data is painting.ClipPathVisualData
 			|| clip.data is painting.SVGMaskVisualData
 		assert clip.parent_index == box.own_transform_visual_context_idx
+
+		transform := tree.node_at(box.own_transform_visual_context_idx)
+		outer := tree.node_at(transform.parent_index)
+		assert outer.data is painting.EffectsVisualData
+		outer_effects := outer.data as painting.EffectsVisualData
+		assert outer_effects.filter == none
+		assert outer_effects.opacity == 0.5
+		assert outer_effects.blend_mode == .multiply
+		assert box.own_effects_visual_context_idx == transform.parent_index
 	}
 }
 

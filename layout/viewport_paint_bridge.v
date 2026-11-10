@@ -866,19 +866,31 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	isolated_surface := box.chromium_compositor_surface
 	has_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface
-	// Filter the source before applying the element's clips and masks. The
-	// outer nodes then clip the filtered result, including blur and shadows.
+	// Filter the source before applying the element's clips and masks. Final
+	// opacity/blending/isolation must remain outside those clips so blending
+	// still sees the element's real backdrop instead of a mask's transparent
+	// intermediate surface.
 	effects_inside_clips := gfx_filter != none && (box.clips().css_clip != none
 		|| box.clips().clip_path != none || box.clips().svg_mask != none || box.clips().svg_clip != none)
 	effects_data := painting.EffectsVisualData{
-			opacity: box.opacity
-			blend_mode: box.mix_blend_mode
-			filter: gfx_filter
-			isolated: isolated_surface
-			svg_graphics_opacity: box.layout_handle != unsafe { nil }
-				&& unsafe { &Node(box.layout_handle) }.is_svg_box()
+		opacity: box.opacity
+		blend_mode: box.mix_blend_mode
+		filter: gfx_filter
+		isolated: isolated_surface
+		svg_graphics_opacity: box.layout_handle != unsafe { nil }
+			&& unsafe { &Node(box.layout_handle) }.is_svg_box()
 	}
-	if has_effects && !effects_inside_clips {
+	if effects_inside_clips {
+		// Keep a stable outer effect node even when its current opacity is 1 so
+		// compositor opacity samples never get patched onto the inner filter.
+		own_state = tree.append(painting.EffectsVisualData{
+			opacity: effects_data.opacity
+			blend_mode: effects_data.blend_mode
+			isolated: effects_data.isolated
+			svg_graphics_opacity: effects_data.svg_graphics_opacity
+		}, own_state)
+		box.own_effects_visual_context_idx = own_state
+	} else if has_effects {
 		own_state = tree.append(effects_data, own_state)
 		box.own_effects_visual_context_idx = own_state
 	}
@@ -925,9 +937,10 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	if svg_clip := box.clips().svg_clip {
 		own_state = tree.append(*svg_clip, own_state)
 	}
-	if has_effects && effects_inside_clips {
-		own_state = tree.append(effects_data, own_state)
-		box.own_effects_visual_context_idx = own_state
+	if effects_inside_clips {
+		own_state = tree.append(painting.EffectsVisualData{
+			filter: gfx_filter
+		}, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
 	if box.canvas().paints_canvas_background && box.own_scroll_frame_index > 0 {
