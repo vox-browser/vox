@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Vox
+Comment=A new browser engine written 100% in V + UI2
+Exec=vox %U
+Icon=vox
+Type=Application
+Categories=Network;WebBrowser;
+StartupWMClass=vox
+Terminal=false
