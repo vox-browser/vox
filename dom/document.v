@@ -11468,16 +11468,7 @@ pub fn (d &Document) supported_property_names() []string {
 			continue
 		}
 		local_name := element.local_name()
-		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
-			'embed',
-			'object',
-		] || is_exposed(element)) {
-			if name := element.get_name() {
-				if name != '' && name !in names {
-					names << name
-				}
-			}
-		}
+		// When one element contributes both, its id precedes its name.
 		if local_name == 'object' && is_exposed(element) {
 			if id := element.id() {
 				if id != '' && id !in names {
@@ -11489,6 +11480,16 @@ pub fn (d &Document) supported_property_names() []string {
 			if id := element.id() {
 				if id != '' && id !in names {
 					names << id
+				}
+			}
+		}
+		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
+			'embed',
+			'object',
+		] || is_exposed(element)) {
+			if name := element.get_name() {
+				if name != '' && name !in names {
+					names << name
 				}
 			}
 		}
