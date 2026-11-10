@@ -977,7 +977,7 @@ fn calculate_intrinsic_flex_width(mut state LayoutState, container &Node, constr
 			if transferred := flex_formatting_context_transferred_size_suggestion(item, item_state, true) {
 				base = transferred
 			} else {
-				base = if constraint == .min_content {
+				base = if constraint == .min_content && styled.computed_values().flex_shrink() != 0 {
 					calculate_min_content_width(mut state, box)
 				} else {
 					calculate_max_content_width(mut state, box)
