@@ -1307,6 +1307,8 @@ pub mut:
 	delta_mode    u32
 	wheel_delta_x i32
 	wheel_delta_y i32
+	// Platform events may legitimately have a rounded legacy delta of zero.
+	has_platform_wheel_delta bool
 }
 
 @[heap]
@@ -1333,6 +1335,14 @@ fn legacy_wheel_delta_from_delta(delta f64) i32 {
 		return 0
 	}
 	return i32(math.round_to_even(legacy_delta))
+}
+
+// Legacy wheelDelta is expressed in 120 units per notch. Discrete devices
+// already supply notch-scaled deltas; precise touchpads report pixels, with
+// three legacy units per pixel (120 units per 40-pixel line).
+fn legacy_wheel_delta_from_platform_delta(delta f64, precise bool) i32 {
+	scaled := delta * if precise { 3.0 } else { 1.0 }
+	return legacy_wheel_delta_from_delta(math.trunc(scaled))
 }
 
 fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelEvent {
@@ -1384,12 +1394,12 @@ fn new_wheel_event(event_name string, init WheelEventInit, trusted bool) &WheelE
 		delta_y_:    init.delta_y
 		delta_z_:    init.delta_z
 		delta_mode_: init.delta_mode
-		wheel_delta_x_: if init.wheel_delta_x != 0 {
+		wheel_delta_x_: if init.has_platform_wheel_delta || init.wheel_delta_x != 0 {
 			init.wheel_delta_x
 		} else {
 			legacy_wheel_delta_from_delta(init.delta_x)
 		}
-		wheel_delta_y_: if init.wheel_delta_y != 0 {
+		wheel_delta_y_: if init.has_platform_wheel_delta || init.wheel_delta_y != 0 {
 			init.wheel_delta_y
 		} else {
 			legacy_wheel_delta_from_delta(init.delta_y)
@@ -1416,6 +1426,13 @@ pub fn WheelEvent.create_for_constructor(event_name string, event_init WheelEven
 }
 
 pub fn WheelEvent.create_from_platform_event(view voidptr, event_name string, screen CSSPixelPoint_, page CSSPixelPoint_, client CSSPixelPoint_, offset CSSPixelPoint_, delta_x f64, delta_y f64, button i16, buttons u16, modifiers u32) &WheelEvent {
+	return WheelEvent.create_from_platform_event_with_precision(view, event_name, screen, page,
+		client, offset, delta_x, delta_y, false, button, buttons, modifiers)
+}
+
+// Platform precision is a UI input property, not a DOM WheelEvent deltaMode.
+// Constructors and synthetic dispatch retain their existing legacy defaults.
+pub fn WheelEvent.create_from_platform_event_with_precision(view voidptr, event_name string, screen CSSPixelPoint_, page CSSPixelPoint_, client CSSPixelPoint_, offset CSSPixelPoint_, delta_x f64, delta_y f64, precise bool, button i16, buttons u16, modifiers u32) &WheelEvent {
 	mut event := new_wheel_event(event_name, WheelEventInit{
 		MouseEventInit: MouseEventInit{
 			EventModifierInit: EventModifierInit{
@@ -1442,6 +1459,9 @@ pub fn WheelEvent.create_from_platform_event(view voidptr, event_name string, sc
 		delta_x:    delta_x
 		delta_y:    delta_y
 		delta_mode: dom_delta_pixel
+		wheel_delta_x: legacy_wheel_delta_from_platform_delta(delta_x, precise)
+		wheel_delta_y: legacy_wheel_delta_from_platform_delta(delta_y, precise)
+		has_platform_wheel_delta: true
 	}, true)
 	event.page_x_ = page.x()
 	event.page_y_ = page.y()
