@@ -59,12 +59,33 @@ fn ecdsa_verify(params EcdsaParams, key &CryptoKey, signature []u8, message []u8
 	return native_ec_verify(curve, key.internal_handle_ as EcPublicKeyHandle, signature, digest)
 }
 
-fn ecdh_derive_bits(params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
-	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+fn validate_ecdh_public_key(params EcdhKeyDeriveParams, length ?u32) ! {
 	public_key := params.public_key
 	if public_key.type_ != .public_key {
 		return error('InvalidAccessError: Public key is not a public key')
 	}
+	// Check the algorithm name before extracting EC-specific algorithm data.
+	// A foreign public key must not be cast to an EcKeyAlgorithm.
+	if public_key.algorithm_name() != params.name || public_key.algorithm !is EcKeyAlgorithm {
+		return error('InvalidAccessError: Algorithm mismatch')
+	}
+	public_algorithm := public_key.algorithm as EcKeyAlgorithm
+	max_bytes := ec_scalar_size(public_algorithm.named_curve)
+	if max_bytes == 0 { return error('InvalidAccessError: Unsupported public key curve') }
+	if bits := length {
+		if u64(bits) > u64(max_bytes) * 8 {
+			return error('OperationError: Length is too large')
+		}
+	}
+}
+
+fn ecdh_derive_bits(params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
+	validate_ecdh_public_key(params, length)!
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	if key.algorithm !is EcKeyAlgorithm {
+		return error('InvalidAccessError: Algorithm mismatch')
+	}
+	public_key := params.public_key
 	algorithm := key.algorithm as EcKeyAlgorithm
 	public_algorithm := public_key.algorithm as EcKeyAlgorithm
 	if algorithm.name != public_algorithm.name {
