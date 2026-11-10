@@ -96,6 +96,19 @@ fn test_text_decoder_stream_preserves_split_sequences_and_bom() {
 	}
 }
 
+fn test_native_transform_decoder_does_not_retain_consumed_output() {
+	mut decoder := TextDecoderStream.create('utf-8', TextDecoderOptions{})!
+	assert decoder.decode_chunk([u8(0xef)])! == ''
+	assert decoder.decode_chunk([u8(0xbb), 0xbf, `A`, 0xe2])! == 'A'
+	assert decoder.decode_chunk([u8(0x82), 0xac])! == '€'
+	for _ in 0 .. 1000 {
+		assert decoder.decode_chunk('streamed text'.bytes())! == 'streamed text'
+	}
+	assert decoder.decode_chunk([u8(0xe2), 0x82])! == ''
+	assert decoder.flush()! == '�'
+	assert decoder.chunks().len == 0
+}
+
 fn test_utf8_stream_boundary_validation() {
 	assert is_utf8_continuation_byte(0x80)
 	assert !is_utf8_continuation_byte(0x40)
