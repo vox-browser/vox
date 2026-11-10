@@ -2938,19 +2938,27 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 				row_gap, row_basis)
 		}
 		inline_alignment := grid_inline_alignment(container, placement.item)
+		percentage_height_basis := if grid_item_has_preferred_aspect_ratio(placement.item)
+			&& !placement.item.is_replaced_box() && !container.display().is_grid_lanes_inside() {
+			grid_fixed_row_span_size(rows, placement, row_gap)
+		} else if container_state.has_definite_height() {
+			?CSSPixels(container_state.content_height())
+		} else { none }
+		inline_stretches := inline_alignment == .stretch || (inline_alignment == .normal
+			&& grid_normal_alignment_stretches(placement.item, true, percentage_height_basis))
 		width_is_auto := placement.item.computed_values().size_value(.width).is_auto()
 		has_auto_inline_margin := property_is_auto(placement.item.computed_values(), .margin_left)
 			|| property_is_auto(placement.item.computed_values(), .margin_right)
 		mut forced_width := if placement.item.is_table_wrapper() {
 			?CSSPixels(resolve_grid_table_wrapper_width(mut state, placement.item, mut item_state,
 				area_width, inline_alignment))
-		} else if inline_alignment in [.normal, .stretch] && width_is_auto
+		} else if inline_stretches && width_is_auto
 			&& !placement.item.is_replaced_box()
 			&& !has_auto_inline_margin {
 			?CSSPixels(area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)))
 		} else if width_is_auto && !placement.item.is_replaced_box() {
-			if transferred := grid_item_width_from_definite_height(placement.item,item_state,
-				if container_state.has_definite_height() { ?CSSPixels(container_state.content_height()) } else { none }) {
+			if transferred := grid_item_width_from_definite_height(placement.item, item_state,
+				percentage_height_basis) {
 				?CSSPixels(transferred)
 			} else if box := placement.item.as_box() {
 				?CSSPixels(calculate_fit_content_width(mut state, box, AvailableSize.make_definite(area_width)))
@@ -2964,11 +2972,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			forced_width =
 				clamp_layout_content_size(placement.item, width, area_width, item_state, true)
 		}
-		item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
-			container_state.content_height()
-		} else {
-			none
-		}, forced_width, none)
+		item_state = layout_independent_child(mut state, placement.item, mut container_state,
+			area_width, percentage_height_basis, forced_width, none)
 		if enable_block_reuse && seed_grid_auto_item_block_height(placement.item, item_state, container_state.has_definite_height())
 			&& diagnose_block_reuse {
 			eprintln('Vox grid intrinsic block reuse: width=${item_state.content_width().raw_value()} height=${item_state.content_height().raw_value()}')
@@ -3272,7 +3277,14 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		top_margin_auto := property_is_auto(placement.item.computed_values(), .margin_top)
 		bottom_margin_auto := property_is_auto(placement.item.computed_values(), .margin_bottom)
   mut final_item_width := item_state.content_width()
-  if orthogonal_columns_changed && placement.item.computed_values().size_value(.width).is_auto()
+  transferred_width := if placement.item.computed_values().size_value(.width).is_auto()
+   && !placement.item.is_replaced_box() && inline_alignment != .stretch
+   && (inline_alignment != .normal || !grid_normal_alignment_stretches(placement.item, true, area_height)) {
+   grid_item_width_from_definite_height(placement.item, item_state, area_height)
+  } else { none }
+  if transferred := transferred_width {
+   final_item_width = clamp_layout_content_size(placement.item, transferred, area_width, item_state, true)
+  } else if orthogonal_columns_changed && placement.item.computed_values().size_value(.width).is_auto()
    && inline_alignment in [.normal,.stretch] && !left_margin_auto && !right_margin_auto && !placement.item.is_replaced_box() {
    final_item_width = clamp_layout_content_size(placement.item,area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)),area_width,item_state,true)
   } else if orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container)
@@ -3283,19 +3295,19 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
   }
 		mut forced_item_height := ?CSSPixels(none)
 		if (block_alignment == .stretch || (block_alignment == .normal
-			&& !placement.item.is_replaced_box()))
+			&& !placement.item.is_replaced_box()
+			&& grid_normal_alignment_stretches(placement.item, false, area_height)))
 			&& placement.item.computed_values().size_value(.height).is_auto() && !top_margin_auto
 			&& !bottom_margin_auto {
 			forced_item_height = area_height.minus(flex_or_grid_item_outer_block_edges(item_state))
-		} else if placement.item.is_replaced_box()
-			&& placement.item.computed_values().size_value(.height).is_auto() {
+		} else if placement.item.computed_values().size_value(.height).is_auto() {
 			if box := placement.item.as_box() {
 				if box.has_preferred_aspect_ratio() {
 					// Final grid item sizing transfers the resolved inline size
 					// through the preferred ratio using its content- or border-box
 					// semantics before block-axis min/max constraints are applied.
 					forced_item_height = intrinsic_content_height_from_aspect_ratio(box,
-						item_state, item_state.content_width())
+						item_state, final_item_width)
 				}
 			}
 		} else if !placement.item.computed_values().size_value(.height).is_auto() {
@@ -3314,11 +3326,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 					|| !flex_subtree_depends_on_definite_height(mut state, placement.item)) {
 				item_state.set_has_definite_height(true)
 			} else {
-				item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
-					container_state.content_height()
-				} else {
-					none
-				}, final_item_width, clamped_height)
+				item_state = layout_independent_child(mut state, placement.item, mut container_state,
+					area_width, area_height, final_item_width, clamped_height)
 			}
 		} else if placement.item.is_replaced_box()
 			&& (placement.item.computed_values().size_value(.height).contains_percentage()
