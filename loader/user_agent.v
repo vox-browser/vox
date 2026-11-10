@@ -79,6 +79,18 @@ pub fn default_user_agent() string {
 	return 'Mozilla/5.0 (${ua_platform_string()}) ${browser_name}/${browser_version} ${compatibility_token}'
 }
 
+// navigator.platform follows the platform tokens exposed by other browsers,
+// rather than the host's literal uname spelling on macOS and Windows.
 pub fn default_platform() string {
-	return '${os_string()} ${cpu_string()}'
+	$if macos {
+		return 'MacIntel'
+	} $else $if ios {
+		return 'iPhone'
+	} $else $if windows {
+		return 'Win32'
+	} $else $if android {
+		return 'Linux ${cpu_string()}'
+	} $else {
+		return '${os_string()} ${cpu_string()}'
+	}
 }
