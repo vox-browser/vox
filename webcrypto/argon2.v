@@ -4,7 +4,7 @@ module webcrypto
 
 fn argon2_derive_bits(params Argon2Params, key &CryptoKey, length ?u32) ![]u8 {
 	bits := length or { return error('OperationError: Length must be equal or greater than 32') }
-	if bits < 32 { return error('OperationError: Length must be equal or greater than 32') }
+	if bits < 32 || bits % 8 != 0 { return error('OperationError: Length must be equal or greater than 32 and a multiple of 8') }
 	if version := params.version {
 		if version != 19 { return error('OperationError: Invalid algorithm version') }
 	}
