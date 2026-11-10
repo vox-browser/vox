@@ -648,11 +648,7 @@ fn calc_arc_result(radians f64, min_degrees f64, max_degrees f64, input_type Num
 }
 
 fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) ?CalcResult {
-	// Unlike round(), mod()/rem() require the two resolved arguments to have the
-	// same type, not merely types that can be made consistent.
-	if numerator.type_ != divisor.type_ {
-		return none
-	}
+	numeric_type := numerator.type_.consistent_type(divisor.type_) or { return none }
 	value := if is_rem {
 		math.fmod(numerator.value, divisor.value)
 	} else {
@@ -660,7 +656,7 @@ fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) ?CalcR
 	}
 	return CalcResult{
 		value: value
-		type_: numerator.type_
+		type_: numeric_type
 	}
 }
 
