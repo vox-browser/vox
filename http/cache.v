@@ -188,7 +188,10 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 			return max_age
 		}
 	}
-	if expires := parse_http_date(headers.get('Expires')) {
+	if expires_header := headers.get('Expires') {
+		// An invalid Expires value means already expired, not permission to
+		// fall through to a Last-Modified freshness heuristic.
+		expires := parse_http_date(expires_header) or { return 0 }
 		date := parse_http_date(headers.get('Date')) or { time.now().unix_milli() }
 		return expires - date
 	}
