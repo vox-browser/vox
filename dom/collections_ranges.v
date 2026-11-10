@@ -800,9 +800,11 @@ pub fn (mut n NamedNodeMap) visit_edges(mut visitor CellVisitor) {
 pub fn (n &NamedNodeMap) supported_property_names() []string {
 	// 1. Let names be the qualified names of the attributes in this NamedNodeMap object's attribute list, with duplicates omitted, in order.
 	mut names := []string{cap: n.attrs.len}
+	mut seen := map[string]bool{}
 	for attribute in n.attrs {
 		attribute_name := attribute.name()
-		if attribute_name !in names {
+		if attribute_name !in seen {
+			seen[attribute_name] = true
 			names << attribute_name
 		}
 	}
@@ -812,6 +814,20 @@ pub fn (n &NamedNodeMap) supported_property_names() []string {
 	}
 	// 3. Return names.
 	return names
+}
+
+pub fn (n &NamedNodeMap) is_supported_property_name(name string) bool {
+	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri && n.element.document().document_type() == .html {
+		if name != to_ascii_lowercase(name) {
+			return false
+		}
+	}
+	for attribute in n.attrs {
+		if attribute.name() == name {
+			return true
+		}
+	}
+	return false
 }
 
 // https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem

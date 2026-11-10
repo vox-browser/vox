@@ -423,6 +423,12 @@ pub fn (object &PlatformObject) is_named_property_exposed_on_object(key Property
 	if key.is_symbol() || !object.is_supported_property_name(key.name) {
 		return false
 	}
+	return object.is_supported_named_property_exposed_on_object(key)
+}
+
+// Own-key enumeration already obtained these names from supported_property_names.
+// Keep the visibility checks without rebuilding that list for each name.
+fn (object &PlatformObject) is_supported_named_property_exposed_on_object(key PropertyKey) bool {
 	if object.ordinary_get_own_property(key) != none {
 		return false
 	}
@@ -687,8 +693,10 @@ pub fn (_ &PlatformObject) eligible_for_own_property_enumeration_fast_path() boo
 	return false
 }
 
-fn append_unique_key(mut keys []PropertyKey, key PropertyKey) {
-	if key !in keys {
+fn append_unique_key(mut keys []PropertyKey, mut seen map[string]bool, key PropertyKey) {
+	storage_key := key.storage_key()
+	if storage_key !in seen {
+		seen[storage_key] = true
 		keys << key
 	}
 }
@@ -700,10 +708,11 @@ pub fn (object &PlatformObject) internal_own_property_keys() []PropertyKey {
 		return object.ordinary_property_order_.clone()
 	}
 	mut keys := []PropertyKey{}
+	mut seen := map[string]bool{}
 	if flags.supports_indexed_properties {
 		mut index := u32(0)
 		for object.is_supported_property_index(index) {
-			append_unique_key(mut keys, property_key(index.str()))
+			append_unique_key(mut keys, mut seen, property_key(index.str()))
 			if index == 4294967294 {
 				break
 			}
@@ -713,19 +722,19 @@ pub fn (object &PlatformObject) internal_own_property_keys() []PropertyKey {
 	if flags.supports_named_properties {
 		for name in object.supported_property_names() {
 			key := property_key(name)
-			if object.is_named_property_exposed_on_object(key) {
-				append_unique_key(mut keys, key)
+			if object.is_supported_named_property_exposed_on_object(key) {
+				append_unique_key(mut keys, mut seen, key)
 			}
 		}
 	}
 	for key in object.ordinary_property_order_ {
 		if !key.is_symbol() {
-			append_unique_key(mut keys, key)
+			append_unique_key(mut keys, mut seen, key)
 		}
 	}
 	for key in object.ordinary_property_order_ {
 		if key.is_symbol() {
-			append_unique_key(mut keys, key)
+			append_unique_key(mut keys, mut seen, key)
 		}
 	}
 	return keys

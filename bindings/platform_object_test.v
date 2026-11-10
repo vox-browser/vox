@@ -13,6 +13,50 @@ mut:
 	deleter_log []string
 }
 
+@[heap]
+struct SupportedNamesEnumerationState {
+mut:
+	names_calls int
+	checks int
+}
+
+fn test_own_keys_checks_supported_names_once_and_preserves_visibility_and_order() {
+	realm := platform_object_test_realm()
+	mut prototype := PlatformObject.create(realm)
+	assert prototype.define_ordinary_property(property_key('blocked'), data_property_descriptor(dom.js_number(1), true, true, true))
+	mut state := &SupportedNamesEnumerationState{}
+	mut object := PlatformObject.create_with_prototype(prototype)
+	object.configure_legacy_platform_object(LegacyPlatformObjectFlags{
+		supports_indexed_properties: true
+		supports_named_properties: true
+	}, LegacyPlatformObjectHooks{
+		item_value: fn (_ &WrapperWorld, _ &html.ScriptingRealm, index u32) ?dom.JSValue {
+			if index < 2 { return dom.js_number(index) }
+			return none
+		}
+		supported_property_names: fn [mut state] () []string {
+			state.names_calls++
+			return ['0', 'visible', 'visible', 'blocked', 'ordinary']
+		}
+		is_supported_property_name: fn [mut state] (name string) bool {
+			state.checks++
+			return name in ['0', 'visible', 'blocked', 'ordinary']
+		}
+	})
+	assert object.define_ordinary_property(property_key('ordinary'), data_property_descriptor(dom.js_number(2), true, true, true))
+	assert object.define_ordinary_property(symbol_property_key('visible'), data_property_descriptor(dom.js_number(3), true, true, true))
+	assert object.internal_own_property_keys() == [property_key('0'), property_key('1'),
+		property_key('visible'), property_key('ordinary'), symbol_property_key('visible')]
+	assert state.names_calls == 1
+	assert state.checks == 0
+	assert object.is_named_property_exposed_on_object(property_key('visible'))
+	assert !object.is_named_property_exposed_on_object(property_key('missing'))
+	assert !object.is_named_property_exposed_on_object(property_key('blocked'))
+	assert !object.is_named_property_exposed_on_object(property_key('ordinary'))
+	assert !object.is_named_property_exposed_on_object(symbol_property_key('visible'))
+	assert state.checks == 4
+}
+
 fn platform_object_test_realm() &html.ScriptingRealm {
 	reset_main_thread_vm_for_testing()
 	return create_a_principal_javascript_realm()
