@@ -73,8 +73,9 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 		layer_crop: true,
 		layer_bounds: map_filter_bounds(IRect{int(src.left), int(src.top), int(src.right), int(src.bottom)}, mapped),
 		default_sampling: default_sampling, smoothing: smoothing, alpha: alpha, filter: filter}
-	if stages.len == 0 && src == Rect{0, 0, f32(image.width), f32(image.height)}
-		&& large_filter_resolves_source_first(total, ctm, step.sigma) {
+	// Native drawSpecial resolves the extracted bitmap subset, with its
+	// original row stride, before these large-filter downsampling steps.
+	if stages.len == 0 && large_filter_resolves_source_first(total, ctm, step.sigma) {
 		return draw_large_resolved_source_filter(mut pixels, width, height, pitch, alpha_type,
 			ctm, dst, foreground, mode, clips, step)
 	}
@@ -117,6 +118,7 @@ fn draw_resampled_image_filter(mut pixels []u8, width int, height int, pitch int
 	// A first real blur can precede a shadow. Keep its source view available
 	// so each branch can choose raw storage or resolve its own visible crop.
 	prepared := CanvasFilterStep{...step, layer_stages: stages, pre_color: []MatrixColorFilter{},
+		source_rescale_ready: stages.len == 0 && large_filter_uses_identity_rescale(ctm, step.sigma),
 		source_reset: reset, source_layer_bounds: foreground.layer_bounds,
 		source_image: true, source_padding: true, source_per_request: stages.any(it.kind == .drop_shadow), source_color_info: FilterImageInfo{},
 		source_foreground: if deferred_foreground || stages.any(it.kind == .drop_shadow) { ?FilterImageView(foreground) } else { none }}

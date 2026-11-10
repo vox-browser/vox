@@ -1,7 +1,10 @@
 from pathlib import Path
+import errno
+import os
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 import raster_tests
 
@@ -42,6 +45,33 @@ class RasterSuiteTests(unittest.TestCase):
         (checkout / 'extra.py').write_text('changed\n')
         with self.assertRaisesRegex(ValueError, 'uncommitted'):
             raster_tests.validate_checkout(checkout, self.revision)
+
+    def test_concurrent_fetch_validates_the_winning_checkout(self):
+        for dirty in (False, True):
+            checkout = self.root / ('dirty-cache' if dirty else 'clean-cache')
+
+            def publish_other_checkout(temporary, destination):
+                subprocess.run(['git', 'clone', '--quiet', str(self.source), str(destination)], check=True)
+                if dirty:
+                    (destination / 'extra.py').write_text('changed\n')
+                # Exercise the platform's real error for a populated target.
+                return os.rename(temporary, destination)
+
+            with self.subTest(dirty=dirty), mock.patch.object(Path, 'rename', autospec=True,
+                                                             side_effect=publish_other_checkout):
+                if dirty:
+                    with self.assertRaisesRegex(ValueError, 'uncommitted'):
+                        raster_tests.ensure_checkout(str(self.source), self.revision, checkout)
+                else:
+                    self.assertEqual(raster_tests.ensure_checkout(str(self.source), self.revision,
+                                                                  checkout), checkout)
+            self.assertEqual(list(self.root.glob('.vox-tests-*')), [])
+
+    def test_other_publication_errors_are_propagated(self):
+        with mock.patch.object(Path, 'rename', side_effect=PermissionError(errno.EACCES, 'denied')):
+            with self.assertRaises(PermissionError):
+                raster_tests.ensure_checkout(str(self.source), self.revision, self.root / 'cache')
+        self.assertEqual(list(self.root.glob('.vox-tests-*')), [])
 
     def test_wrong_revision_and_missing_explicit_checkout_fail_closed(self):
         with self.assertRaisesRegex(ValueError, 'revision differs'):
