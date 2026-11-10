@@ -4982,8 +4982,12 @@ pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() 
 					return true
 				}
 			}
+			ancestor = if parent := element.element_to_inherit_style_from(none) {
+				parent.as_node()
+			} else { none }
+		} else {
+			ancestor = current.parent_or_shadow_host()
 		}
-		ancestor = current.parent_or_shadow_host()
 	}
 	return false
 }
