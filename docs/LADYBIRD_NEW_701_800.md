@@ -262,22 +262,47 @@ subtest outside the targeted ones.
 Upstream Ladybird does not import this page, and its Rust compositing only
 accumulates the individual `translate`, `rotate` and `scale` properties, so
 the transform and shadow composition go beyond upstream parity. Focused
-tests for every change pass in the default Boehm build and the prealloc
-`-gc none` runtime. The keyframe-effect, keyframe scalar, compositor,
-color-composition and affine-transform test files also pass;
-`animations/animation_test.v` and `css/transformation_value_export_test.v`
-fail to compile before running for reasons unrelated to these changes.
+tests for every change pass in the default Boehm build. The keyframe-effect,
+keyframe scalar, compositor, color-composition and affine-transform test files
+also pass.
 
-Three failures remain:
+Follow-up `d3b9195dc` scales a calc-valued final keyframe by the iteration
+count (`count * final`) instead of adding it once per iteration, so two
+iterations of `max(20px, 15%)` serialize as `2 * max(20px, 15%)` ahead of the
+current term. Plain sums simplify to the same values as before. The page
+reaches **36/38**; the cohort stays at **98/100, 5,354/5,356**.
+
+### Prealloc assertions were not checked under `-prod`
+
+V3's C backend drops every `assert` when compiling with `-prod`
+(`vlib/v/gen/c/stmt.v`), including in test files: a failing test built with
+`-prod -prealloc -gc none` exits 0. The earlier "prealloc `-gc none` runtime"
+results in this report, including the 12- and 14-function claims above, came
+from such builds and only establish compilation and crash-free execution.
+Rebuilt without `-prod`, the prealloc runtime does check assertions, and these
+files pass there: `animations/custom_property_animation_test.v` (all functions
+from both sessions), `css/resolved_transform_test.v`,
+`animations/animation_test.v` and `css/transformation_value_export_test.v`.
+Native page and cohort results are unaffected: they come from the browser's
+harness output, not V assertions.
+
+`4697d6c52` and `4165bc2aa` fix the two test files that did not compile:
+`animation_test.v` propagated an Option with `!`, and
+`transformation_value_export_test.v` used helpers defined only in another test
+file. Its unsupported-argument check now expects the unresolved `var()` source
+to export as retained text, which `d4e0535e4` made intentional.
+
+Two failures remain on the page:
 
 - **`align-content`** expects `flow-end`, which is not an `align-content`
   value; this is treated as an expectation error and left unchanged.
-- **`calc-size()`** is not supported by the parser at all.
-- **Operand order in complex math** wants the accumulated term written as
-  `2 * max(20px, 15%)`. Iteration accumulation adds the final value
-  repeatedly, so the term appears as `max(20px, 15%) + max(20px, 15%)`, before
-  the current term as required. Matching the exact form needs accumulation
-  to scale the final value by the iteration count.
+- **`calc-size()`** is not supported at all. Upstream Ladybird at the pinned
+  revision passes its imported `calc-size` and `interpolate-size` tests, so
+  porting it is a separate, large translation slice.
+
+The two failing cohort assertions below are also recorded as **Fail** in
+upstream Ladybird's own expectations at the pinned revision, so Vox matches
+upstream there.
 
 ## Mixed length/percentage accumulation diagnostic
 
