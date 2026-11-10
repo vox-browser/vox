@@ -1341,7 +1341,8 @@ fn legacy_wheel_delta_from_delta(delta f64) i32 {
 // already supply notch-scaled deltas; precise touchpads report pixels, with
 // three legacy units per pixel (120 units per 40-pixel line).
 fn legacy_wheel_delta_from_platform_delta(delta f64, precise bool) i32 {
-	scaled := delta * if precise { 3.0 } else { 1.0 }
+	factor := if precise { 3.0 } else { 1.0 }
+	scaled := delta * factor
 	return legacy_wheel_delta_from_delta(math.trunc(scaled))
 }
 
