@@ -46,11 +46,15 @@ fn (mut p HTMLParser) handle_initial(mut token HTMLToken) {
 		doctype.set_system_id(p.own_tokenizer_string(token.doctype.system_identifier))
 		mut doc_node := p.document_as_node()
 		doc_node.append_child(doctype.as_node()) or {}
-		p.document_.set_quirks_mode(p.which_quirks_mode(token))
+		if p.document_.url_string() != 'about:srcdoc' {
+			p.document_.set_quirks_mode(p.which_quirks_mode(token))
+		}
 		p.insertion_mode = .before_html
 		return
 	}
-	p.document_.set_quirks_mode(.yes)
+	if p.document_.url_string() != 'about:srcdoc' {
+		p.document_.set_quirks_mode(.yes)
+	}
 	p.insertion_mode = .before_html
 	p.process_using_the_rules_for(.before_html, mut token)
 }
