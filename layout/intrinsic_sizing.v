@@ -384,8 +384,9 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 }
 
 // FormattingContext::should_treat_max_width_as_none(). In particular, a
-// percentage max-width that is cyclic during intrinsic sizing must not be
-// resolved against the zero placeholder width of the throwaway state.
+// cyclic percentage max-width behaves as none for max-content and for a
+// non-replaced box's min-content size. A replaced box's min-content maximum
+// instead resolves against zero.
 fn should_treat_max_width_as_none(state &LayoutState, box &Node, available_width AvailableSize) bool {
 	max_width := box.computed_values().size_value(.max_width)
 	if max_width.is_stretch() && !available_width.is_definite() { return true }

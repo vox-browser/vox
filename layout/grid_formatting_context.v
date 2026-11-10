@@ -2592,9 +2592,12 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 			}
 	}
 
-	// A cyclic percentage maximum behaves as none for an intrinsic contribution.
+	// A replaced box's cyclic percentage max-width resolves against zero for
+	// its min-content contribution. Resolve the inner size before adding the
+	// margins, borders and padding; max-content and non-replaced boxes still
+	// treat a cyclic percentage maximum as none.
 	maximum := item.computed_values().size_value(.max_width)
-	if !maximum.contains_percentage() && !should_treat_max_width_as_none(state, item,
+	if !should_treat_max_width_as_none(state, item,
 		if constraint == .min_content { AvailableSize.make_min_content() } else { AvailableSize.make_max_content() }) {
 		if maximum_size := resolve_layout_content_size(item, maximum, CSSPixels.new(0),
 			item_state, true) {

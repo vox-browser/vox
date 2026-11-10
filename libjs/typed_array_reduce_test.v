@@ -17,6 +17,39 @@ fn typed_reduce_call(mut vm VM, name string, receiver Value, arguments []Value) 
 	return call(mut vm, Value.from_object(function.object), receiver, arguments)
 }
 
+fn test_typed_array_reduce_right_visits_large_unsigned_indices() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := Object.create(vm.realm(), none)
+	length := u32(0x80000004)
+	owner := OwnedPrimitiveBackingStore.create_uninitialized(uint(length))!
+	mut buffer := ArrayBufferObject.create_with_data_block(vm.realm(),
+		DataBlock.from_owned_store(owner, false), parent)
+	defer { buffer.detach_buffer() }
+	buffer.overwrite(uint(length - 2), [u8(17), 42])
+	array := TypedArray.create(vm.realm(), .uint8, length, buffer, parent)
+	for with_initial in [false, true] {
+		expected_index := if with_initial { length - 1 } else { length - 2 }
+		expected_value := if with_initial { 42 } else { 17 }
+		expected_accumulator := if with_initial { 99 } else { 42 }
+		callback := NativeFunction.create(mut vm, vm.realm(), vm.realm().function_prototype,
+			fn [expected_index, expected_value, expected_accumulator] (mut vm VM) !Value {
+			assert vm.argument(0).number == expected_accumulator
+			assert vm.argument(1).number == expected_value
+			assert vm.argument(2).number == f64(expected_index)
+			// End after the first visit; the test must not walk billions of bytes.
+			return throw_completion(Value.from_i32(123))
+		}, 4, PropertyName.from_str('callback'), none)
+		mut arguments := [Value.from_object(callback.object)]
+		if with_initial { arguments << Value.from_i32(99) }
+		if _ := typed_reduce_call(mut vm, 'reduceRight', Value.from_object(array.object), arguments) {
+			assert false, 'reduceRight skipped a large unsigned index'
+		} else {
+			assert thrown_value(err).number == 123
+		}
+	}
+}
+
 fn test_typed_array_reduce_initial_value_presence_empty_singleton_and_error_ordering() {
 	mut vm := VM.create()
 	base := create_simple_execution_context(mut vm)

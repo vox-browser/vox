@@ -75,6 +75,11 @@ pub fn canonical_numeric_index_string(key PropertyName, mode CanonicalIndexMode)
 	// UTF-16 comparison enforces the source's untrimmed numeric round trip.
 	number := string_to_number(argument)
 	if utf16_string(format_f64_value(number)) == argument {
+		// Array indices below 2^32 - 1 use numeric PropertyNames. The last
+		// u32 value remains a string key, but is still a typed-array index.
+		if number == 4294967295.0 {
+			return CanonicalIndex.create(.index, u32(4294967295))
+		}
 		return CanonicalIndex.create(.numeric, 0)
 	}
 	return CanonicalIndex{}

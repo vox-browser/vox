@@ -6623,8 +6623,8 @@ pub fn (mut e Element) inserted() {
 	if e.is_svg_element() {
 		e.update_use_elements_that_reference_this()
 		e.note_svg_paint_resource_description_may_have_changed()
-		if e.local_name() == 'use' && e.document().is_completely_loaded() {
-			e.svg_use_process_the_url()
+		if e.local_name() == 'use' {
+			e.svg_use_inserted()
 		}
 	}
 
@@ -6772,13 +6772,20 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
-// SVGUseElement::adopted_from(). URL parsing is document-relative, so an
-// adopted use element must resolve and clone its target from its new owner
-// document. The V implementation observes referenced elements by walking the
-// live document instead of retaining a document-specific observer/registry.
+// SVGUseElement::adopted_from(). Drop the old document's clone during adoption;
+// inserted() resolves the reference again after the use element connects.
+// Building a clone here would add new nodes to the ongoing adopting traversal.
+// The V implementation walks the live document rather than keeping an observer.
 pub fn (mut e Element) adopted_from(_ &Document) {
 	if e.is_svg_element() && e.local_name() == 'use' {
-		e.svg_use_process_the_url()
+		e.svg_use_clone_element_tree_as_our_shadow_tree(none)
+		if reference := e.svg_use_reference_url() {
+			if !e.svg_use_reference_is_same_document(reference) {
+				// The embedder supplies fetched resources synchronously. It can
+				// prepare the new document's resource without populating our tree.
+				_ = e.document().svg_use_resource_document(reference)
+			}
+		}
 	}
 
 	// HTMLStyleElement::adopted_from() and SVGStyleElement::adopted_from().
@@ -7228,6 +7235,23 @@ fn (e &Element) svg_use_referenced_element() ?&Element {
 	return e.document().get_element_by_id(url_percent_decode(fragment))
 }
 
+fn (mut e Element) svg_use_inserted() {
+	// Nested use instances are initialized by the cloning pass, after their
+	// shadow-tree base is established. Ordinary insertion must leave them alone.
+	if shadow := e.as_node().root().as_shadow_root() {
+		if shadow.is_user_agent_internal() {
+			return
+		}
+	}
+	if !e.is_connected() {
+		return
+	}
+	// Detached uses miss target changes observed by the document walk. Resolve
+	// again on every connection, clearing a retained clone if its target is gone.
+	// This includes an author's shadow tree and a cached external reference.
+	e.svg_use_process_the_url()
+}
+
 fn svg_use_target_has_cycle(target &Element, mut visiting map[i64]bool) bool {
 	key := target.as_node().unique_id().value()
 	if visiting[key] {
@@ -7294,19 +7318,17 @@ fn (mut e Element) svg_use_clone_element_tree_as_our_shadow_tree(target ?&Elemen
 		}
 	}
 	shadow_node.append_child(clone_node) or {}
-	// Initial loading has not run inserted()'s document-complete branch yet.
-	// Nested instances need their adopted shadow-tree base before first layout.
-	if !e.document().is_completely_loaded() {
-		clone_node.for_each_in_subtree(fn (node &Node) TraversalDecision {
-			if element := node.as_element() {
-				if element.is_svg_element() && element.local_name() == 'use' {
-					mut nested := unsafe { &Element(element) }
-					nested.svg_use_process_the_url()
-				}
+	// inserted() leaves UA shadow-tree clones alone. Initialize their nested
+	// instances here, once they have the adopted shadow-tree reference base.
+	clone_node.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		if element := node.as_element() {
+			if element.is_svg_element() && element.local_name() == 'use' {
+				mut nested := unsafe { &Element(element) }
+				nested.svg_use_process_the_url()
 			}
-			return .@continue
-		})
-	}
+		}
+		return .@continue
+	})
 }
 
 fn (mut e Element) svg_use_process_the_url() {

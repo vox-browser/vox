@@ -2,6 +2,17 @@
 
 Audited: 2026-10-02.
 
+## November 1 upstream correctness ports — 2026-11-10
+
+Five commits from Ladybird's November 1 landing set are translated here:
+array iterator indices retain their Number value beyond `INT32_MAX`;
+typed-array find visits indices lazily; `reduceRight` and `lastIndexOf` retain
+unsigned indices; copying a typed array checks the target element-size limit;
+and the canonical string key `4294967295` is an integer index. The separate
+4-GiB buffer and `size_t` representation migration is deferred, so existing
+allocation limits and storage representations remain in effect. The browser
+still defaults to JavaScriptCore. See the [complete audit and validation](../docs/upstream-sync/2026-11-01.md).
+
 The frontend baseline comes from `medvednikov/libjs_v` commit
 `9824cc3fad0910215f0f4de43fb108bb7575f6c7` (2026-02-24). The upstream reference is
 `~/code/3rd/ladybird/Libraries/LibJS` at
