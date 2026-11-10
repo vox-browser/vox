@@ -2,8 +2,8 @@
 
 `check_translation_corpora.v` runs V tests against independently generated,
 checked-in reference records. It never writes expected results. The regex
-runtime, YUV conversion and GB18030 generator no longer need a Rust compiler.
-JPEG XL still uses its Rust decoder and test tool pending a complete V port.
+runtime, YUV conversion, GB18030 generator and JPEG XL decoder no longer need a
+Rust compiler; no Rust remains in the build.
 
 Run from the canonical checkout, with current V:
 

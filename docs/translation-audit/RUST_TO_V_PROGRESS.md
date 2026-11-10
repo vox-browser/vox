@@ -773,3 +773,22 @@ is claimed. [The Gaussian report](JPEGXL_V_SPLINE_RASTER.md) records pins and
 the fixed fused profile. Feature streams, complete frames, reference ownership
 and production/developer-tool replacement remain. Production JPEG XL and its
 native developer test still require Rust.
+
+
+## Rust removed from the build on 2026-11-10
+
+The browser now decodes JPEG XL with the V `jpegxl` package inside a thread
+scratch scope. `native_jpegxl_rust/`, `native/include/native_jpegxl.h`,
+`tools/test_jpegxl.py`, `tools/native_jpegxl_test.cpp`, the Cargo steps in both
+build scripts and the CI Rust toolchain setup are removed. The repository has
+no Rust sources or Cargo manifests left.
+
+Before the switch, this round added spline frames, patch reference frames
+(with alpha), modular XYB noise, large modular channels and trailing-bit
+tolerance. A survey of 278 decodes (WPT, jxl crate tests and libjxl 0.11.1
+text images) matches the native output byte for byte for all 196 decodes the
+native decoder accepted; only one layered multi-frame file is unsupported.
+`images/jpegxl_test.v` passes with the production compiler in its default mode
+and with `-prealloc -gc none`. The V decoder remains about 5x slower than the
+Rust crate on a 2268x1512 photo (7.97 vs 1.37 billion instructions).
+See [the JPEG XL status](../../jpegxl/PORT_STATUS.md#production-decoder-2026-11-10).

@@ -1,9 +1,9 @@
 # JPEG XL V decoder port
 
-The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package decodes complete modular streams, grouped raw
-frames and bounded lossless/opaque VarDCT subsets to final RGBA. It does not replace
-the production decoder or remove that final Rust dependency yet.
+The browser decodes JPEG XL with this package (`images/jpegxl.v`); the Rust
+helper `native_jpegxl_rust/`, its native bridge and `tools/test_jpegxl.py` were
+removed on 2026-11-10. See [Production decoder](#production-decoder-2026-11-10)
+for the supported subset, parity evidence and the remaining speed gap.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
 `6513ef8722db71eea2b3806ea71b8d9b39481f214af295788d7ceb4d3395eb9e`.
@@ -721,3 +721,29 @@ The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
 and rejection rules. The Rust decoder and its build/test dependencies must then
 be removed together.
+
+## Production decoder (2026-11-10)
+
+`decode_rgba` replaces the Rust helper for the same static 8-bit sRGB/gray
+subset: VarDCT and modular (XYB and original-profile) frames, LF frames,
+alpha, upsampling, chroma subsampling, noise, splines and patches, including
+libjxl's patch reference-only frames with alpha. Animations, non-sRGB
+profiles, non-8-bit output and multi-frame layered composition are rejected.
+
+Additions in this round: spline LFGlobal state and drawing; reference-only
+patch frames and patch application (color and alpha); noise in modular XYB
+frames; whole-channel integer conversion for images above 1 Mi samples; and
+ignoring trailing bits in modular sections as the source does.
+
+Parity: `native_corpus_test.v` (WPT and jxl crate files), `patch_frame_test.v`
+(44 libjxl 0.11.1 text images, 12 with alpha) and `spline_frame_test.v` (42
+files) compare exact straight and paint RGBA8 hashes recorded from the pinned
+native decoder. Across 278 decodes of WPT, jxl crate and generated files, all
+196 that the native decoder accepted match byte for byte and the other 80 are
+rejected by both; only the layered `spline_on_first_frame.jxl` remains
+unsupported. The full 106-file package passes with default GC and `-gc none`.
+
+Speed: hardware `fmaf`, padded and row-vectorized EPF, and removing bounds
+checks from kernels indexed only by validated geometry cut a 2268x1512 VarDCT
+decode from 28.07 to 7.97 billion retired instructions. The Rust crate needed
+about 1.37 billion, so the V decoder is still roughly 5x slower on photos.
