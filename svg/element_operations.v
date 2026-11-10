@@ -364,6 +364,28 @@ pub fn (element &Element) path_length() f64 {
 	return element.number_attribute('pathLength', 0)
 }
 
+// Keep authored pathLength separate from getTotalLength(), which always
+// reports the actual geometry length. Percentages in the dash array and
+// offset have already resolved to user units before this calibration.
+pub fn (element &Element) calibrated_stroke_dashes(path Path, dashes []f64, offset f64) ([]f64, f64) {
+	if dashes.len == 0 || element.tag !in ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect'] {
+		return dashes, offset
+	}
+	author_length := parse_single_number(element.attributes['pathLength'] or { '' }) or {
+		return dashes, offset
+	}
+	if author_length == 0 {
+		// For compatibility, zero pathLength paints a solid stroke, including
+		// dash arrays containing zero-length dashes or gaps.
+		return []f64{}, 0
+	}
+	if author_length > 0 {
+		scale := path.length() / author_length
+		return dashes.map(it * scale), offset * scale
+	}
+	return dashes, offset
+}
+
 pub fn (element &Element) in1() string {
 	return element.attributes['in'] or { '' }
 }

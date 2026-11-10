@@ -6201,6 +6201,12 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	if e.is_svg_element() {
+		if local_name == 'pathLength'
+			&& e.local_name() in ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect']
+			&& !option_string_equal(old_value, value) {
+			mut node := unsafe { &Node(e.as_node()) }
+			node.set_needs_layout_update(.style_change)
+		}
 		if e.local_name() == 'use' && local_name in ['href', 'xlink:href'] {
 			e.svg_use_process_the_url()
 		}
