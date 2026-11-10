@@ -60,11 +60,16 @@ pub fn determine_the_scroll_into_view_position(target &Element, block ScrollLogi
 // passes the target border box once and projects it outward after each scroll.
 pub fn determine_the_scroll_into_view_position_from_rect(target &Element, target_bounding_border_box Rect,
 	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, scrolling_box &Node) CSSPixelPoint_ {
+	return determine_scroll_into_view_position_with_margin(target_bounding_border_box,
+		target.document().scroll_margin_for_element(target), block, inline_, scrolling_box)
+}
+
+fn determine_scroll_into_view_position_with_margin(target_bounding_border_box Rect, margin ScrollMarginData,
+	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, scrolling_box &Node) CSSPixelPoint_ {
 	geometry := scroll_into_view_geometry(scrolling_box) or { return CSSPixelPoint_{} }
 	mut target_rect := target_bounding_border_box
 	// FIXME: The pinned source does not yet implement other block/inline directions.
 	// AD-HOC: Source applies scroll-margin to the passed target border box.
-	margin := target.document().scroll_margin_for_element(target)
 	target_rect.x -= margin.left
 	target_rect.y -= margin.top
 	target_rect.width += margin.left + margin.right
@@ -196,8 +201,28 @@ fn scroll_into_view_project_target(target Rect, scrolling_box &Node, position CS
 pub fn scroll_an_element_into_view_with_promise(target &Element, behavior ScrollBehavior,
 	block ScrollLogicalPosition, inline_ ScrollLogicalPosition, container ?&Element,
 	promise ?&webidl.Promise) {
+	scroll_target_rect_into_view(target.document(), target.as_node().parent(),
+		target.get_bounding_client_rect(), target.document().scroll_margin_for_element(target),
+		behavior, block, inline_, container, promise)
+}
+
+// Find-in-page and text fragments scroll to the beginning of their range.
+// A containing element or the union of a long passage can span the viewport
+// while the beginning of the actual match is still outside it.
+pub fn scroll_a_range_into_view(target &Range, behavior ScrollBehavior,
+	block ScrollLogicalPosition, inline_ ScrollLogicalPosition) {
+	rects := target.get_client_rects()
+	first := rects.item(0) or { return }
+	scroll_target_rect_into_view(target.start_container().document(), target.common_ancestor_container(),
+		Rect{first.x, first.y, first.width, first.height}, ScrollMarginData{},
+		behavior, block, inline_, none, none)
+}
+
+fn scroll_target_rect_into_view(document &Document, first_ancestor ?&Node, initial_rect Rect,
+	margin ScrollMarginData, behavior ScrollBehavior, block ScrollLogicalPosition,
+	inline_ ScrollLogicalPosition, container ?&Element, promise ?&webidl.Promise) {
 	mut scrolling_boxes := []&Node{}
-	mut ancestor := target.as_node().parent()
+	mut ancestor := first_ancestor
 	for ancestor != none {
 		scrolling_box := ancestor or { break }
 		if layout_node := scrolling_box.layout_node() {
@@ -209,11 +234,11 @@ pub fn scroll_an_element_into_view_with_promise(target &Element, behavior Scroll
 		}
 		ancestor = scrolling_box.parent()
 	}
-	mut target_rect := target.get_bounding_client_rect()
+	mut target_rect := initial_rect
 	mut ancestor_promises := []&webidl.Promise{}
 	for scrolling_box in scrolling_boxes {
-		if target.document().origin() != scrolling_box.document().origin() { break }
-		position := determine_the_scroll_into_view_position_from_rect(target, target_rect,
+		if document.origin() != scrolling_box.document().origin() { break }
+		position := determine_scroll_into_view_position_with_margin(target_rect, margin,
 			block, inline_, scrolling_box)
 		if !scrolling_box.is_document() {
 			target_rect = scroll_into_view_project_target(target_rect, scrolling_box, position)

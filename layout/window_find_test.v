@@ -35,6 +35,23 @@ fn test_window_find_selects_real_rendered_ranges_without_wrap_or_no_match_select
 	assert (selection.range() or { panic('lost selection') }) == second
 }
 
+fn test_find_scrolls_the_matched_range_into_view_and_wraps_back_to_its_beginning() {
+	document, _, pointer := window_find_fixture('<style>html,body{margin:0}#wide{margin:0;width:1200px}#far{position:absolute;left:600px;top:200px}</style><pre id="wide">needle</pre><span id="far">needle</span>')
+	mut owner := unsafe { &page.Page(pointer) }
+	assert owner.find_in_page(page.FindInPageQuery{string_: 'needle'}).total_match_count? == 2
+	assert owner.find_in_page_next_match().current_match_index == 1
+	selection := document.get_selection()?
+	far := selection.range()?
+	far_rect := far.get_client_rects().item(0)?
+	assert far_rect.x >= 0 && far_rect.x + far_rect.width <= 300
+	assert far_rect.y >= 0 && far_rect.y + far_rect.height <= 100
+	assert owner.find_in_page_next_match().current_match_index == 0
+	first := selection.range()?
+	first_rect := first.get_client_rects().item(0)?
+	assert first_rect.x >= 0 && first_rect.x + first_rect.width <= 300
+	assert first_rect.y >= 0 && first_rect.y + first_rect.height <= 100
+}
+
 fn test_page_find_uses_current_selection_and_clears_only_when_requested() {
 	document, _, pointer := window_find_fixture('<p id="p">one one one</p>')
 	mut owner := unsafe { &page.Page(pointer) }

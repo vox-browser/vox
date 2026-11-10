@@ -89,16 +89,13 @@ fn (mut p Page) select_rendered_find_match(matches []&dom.Range, clear_on_no_mat
 	}
 	p.clear_selection()
 	range := matches[p.find_match_index_]
-	ancestor := range.common_ancestor_container()
-	document := ancestor.document()
+	document := range.start_container().document()
 	if document.get_window() == none { return }
 	selection := document.get_selection() or { return }
 	mut mutable_selection := unsafe { &dom.Selection(selection) }
 	mutable_selection.add_range(range)
 	p.selected_match = FindMatch{ document_id: document.url_string(), start: range.start_offset(), end: range.end_offset(), range: range }
-	if element := ancestor.parent_element() {
-		_ = dom.scroll_an_element_into_view(element, .instant, .nearest, .nearest, none)
-	}
+	dom.scroll_a_range_into_view(range, .instant, .nearest, .nearest)
 }
 
 fn page_find_from_window_callback(target voidptr, query string) bool {
