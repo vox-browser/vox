@@ -692,25 +692,24 @@ fn style_sheet_state_set_media(sheet voidptr, media string) {
 // HTMLLinkElement::process_stylesheet_resource's CSS-owned sheet installation.
 // The link retains the same object exposed through LinkStyle::sheet.
 pub fn install_link_style_sheet(owner &dom.HTMLLinkElement, css_text string, location string, alternate bool) &CSSStyleSheet {
-	return install_link_style_sheet_with_base(owner, css_text, location, location, alternate)
+	return install_link_style_sheet_with_base(owner, css_text, location, alternate, none)
 }
 
-// A redirect changes the stylesheet's URL resolution base, but CSSOM href
-// remains the initial linked URL. Imports and URL values parse against the
-// final response URL, while the sheet's location stays the requested URL.
-pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text string, location string, base_url string, alternate bool) &CSSStyleSheet {
+// A redirected sheet keeps its request URL as its CSSOM location, while
+// relative resources and imported sheets resolve against the response URL.
+pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text string, location string, alternate bool, base_url ?string) &CSSStyleSheet {
 	mut link := unsafe { &dom.HTMLLinkElement(owner) }
 	link.remove_linked_style_sheet()
 	element := unsafe { &dom.Element(owner) }
 	scope_node := element.as_node().document_or_shadow_root_style_scope_node()
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
-	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, base_url)
-	sheet.base.set_location(location)
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, base_url or { location })
+	sheet.base.location = location
 	sheet.set_base_url(base_url)
 	// Cache-only synchronization has no CORS response to approve. A Fetch
 	// completion can replace this flag with its response's origin-clean state.
-	origin_clean := if dom.URL{ value: base_url }.origin().is_same_origin(element.document().origin()) {
+	origin_clean := if dom.URL{ value: location }.origin().is_same_origin(element.document().origin()) {
 		StyleSheetListOriginClean.yes
 	} else { StyleSheetListOriginClean.no }
 	title := if element.as_node().in_a_document_tree() {
