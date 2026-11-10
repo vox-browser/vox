@@ -1,3 +1,7 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
 module libjs
 
 // Scope analysis for the parser — translated from scope_collector.rs.
@@ -40,6 +44,10 @@ const var_flag_forbidden_var = u16(1 << 5)
 const var_flag_bound = u16(1 << 6)
 const var_flag_parameter_candidate = u16(1 << 7)
 const var_flag_referenced_in_formal_parameters = u16(1 << 8)
+// Function-level declarations are also vars, but unlike `var arguments` they
+// replace the implicit arguments object. Keep that identity out of the flags
+// used to reject lexical redeclarations.
+const var_flag_function_declaration = u16(1 << 9)
 
 // === Data structures ===
 
@@ -457,7 +465,7 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 	}
 
 	if scope_level != .not_top_level && scope_level != .module_top_level {
-		sc.records[index].variable(fn_name.data).flags |= var_flag_var
+		sc.records[index].variable(fn_name.data).flags |= var_flag_var | var_flag_function_declaration
 		sc.records[index].variable(fn_name.data).var_identifier = name_identifier
 	} else {
 		key := fn_name.str()
@@ -746,14 +754,21 @@ fn (sc &ScopeCollector) has_declaration_in_current_function(name []u16) bool {
 	}
 	fn_scope := last_function_scope(sc.current, sc.records)
 	stop := if fn_scope >= 0 { sc.records[fn_scope].parent } else { -1 }
+	mut declaring_flags := var_flag_lexical | var_flag_var | var_flag_parameter_candidate
+	if fn_scope >= 0 && sc.records[fn_scope].scope_type == .function_scope
+		&& !sc.records[fn_scope].is_arrow_function {
+		// A var in a function with its own arguments object is that object's
+		// binding. Arrow functions have no implicit object and keep a real var.
+		// Catch parameters still shadow it, including simple catches marked as vars.
+		declaring_flags = var_flag_lexical | var_flag_function | var_flag_function_declaration
+			| var_flag_parameter_candidate | var_flag_catch_parameter
+	}
 	mut si := sc.current
 	for si >= 0 {
 		if si == stop {
 			break
 		}
-		if sc.records[si].has_flag(name,
-			var_flag_lexical | var_flag_var | var_flag_parameter_candidate)
-		{
+		if sc.records[si].has_flag(name, declaring_flags) {
 			return true
 		}
 		if sc.records[si].has_hoistable_function_named(name) {

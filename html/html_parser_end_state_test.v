@@ -3,6 +3,8 @@ module html
 
 import dom
 import css
+import page
+import platform
 
 @[heap]
 struct ParserEndLayoutProbe {
@@ -159,4 +161,121 @@ fn test_parser_end_flushes_readiness_layout_after_dom_content_loaded_listeners()
 		return document.readiness() == .complete
 	})
 	assert document.readiness() == .complete
+}
+
+@[heap]
+struct ParserEndLateResourceProbe {
+mut:
+	calls           int
+	resource_added  bool
+	resource_loaded bool
+	load_delayer    dom.DocumentLoadEventDelayer
+}
+
+fn parser_end_discover_late_resource(target voidptr, document &dom.Document, _ f64, _ f64, _ bool) voidptr {
+	mut probe := unsafe { &ParserEndLateResourceProbe(target) }
+	probe.calls++
+	if probe.resource_added && !probe.resource_loaded {
+		probe.resource_loaded = true
+		mut owner := unsafe { &dom.Document(document) }
+		probe.load_delayer = dom.DocumentLoadEventDelayer.new(mut owner)
+	}
+	return unsafe { nil }
+}
+
+// Ladybird 03ada6df57bf: a task between the initial readiness check and the
+// completion task can add a CSS image whose request starts in layout.
+fn test_parser_end_completion_rechecks_layout_started_resource_delays() {
+	mut document := parse_document('<!doctype html><p id="target">late image</p>')
+	defer { document.finalize() }
+	_ = WindowModel.create_top_level(document, none, 'parser-end-late-resource')!
+	document.update_readiness(.interactive)
+	probe := &ParserEndLateResourceProbe{}
+	document.set_layout_update_hook(dom.DocumentLayoutUpdateHook{
+		target: probe
+		callback: parser_end_discover_late_resource
+	})
+	mut state := HTMLParserEndState.create(document, none)
+	document.set_html_parser_end_state(voidptr(state), html_parser_end_state_schedule_callback)
+	state.phase_ = .waiting_for_load_event_delay
+	queue_a_task(.dom_manipulation, main_thread_event_loop(), document, fn [document, probe] () {
+		mut target := document.get_element_by_id('target') or { panic('missing target') }
+		target.set_attribute_value('style', 'background-image: url(late.png)')
+		mut pending := unsafe { &ParserEndLateResourceProbe(probe) }
+		pending.resource_added = true
+	})
+	state.check_progress()
+	assert state.phase() == .completion_queued
+	assert probe.calls == 1
+	assert !document.anything_is_delaying_the_load_event()
+
+	process_event_loop_until(fn [state] () bool {
+		return state.phase() != .completion_queued
+	})
+	assert state.phase() == .waiting_for_load_event_delay
+	assert document.readiness() == .interactive
+	assert document.has_html_parser_end_state()
+	assert probe.calls >= 2
+	assert probe.resource_loaded
+	assert document.anything_is_delaying_the_load_event()
+
+	mut completed := unsafe { &ParserEndLateResourceProbe(probe) }
+	completed.load_delayer.finish()
+	process_event_loop_until(fn [document] () bool {
+		return document.readiness() == .complete
+	})
+	assert state.phase() == .completed
+	assert !document.has_html_parser_end_state()
+	assert !document.anything_is_delaying_the_load_event()
+}
+
+fn test_parser_end_container_style_query_keeps_parent_storage_and_restores_child_owner() {
+	$if !prealloc { return }
+	for parent_already_entered in [false, true] {
+		page_owner := page.Page.create(1)!
+		url := dom.URL{value: 'https://parser-parent-storage.example/'}
+		mut parent := create_navigation_document_for_page(url, url.origin(), none,
+			unsafe { &dom.Page(page_owner) })!
+		parent.enable_native_storage()
+		mut parent_scope := enter_html_document_storage(parent)
+		parse_html_from_a_string(parent, '<!doctype html><iframe id="frame" style="display:block"></iframe>')
+		mut frame := parent.get_element_by_id('frame')?
+		mut navigable := create_child_navigable_for_element(frame)!
+		mut child := navigable.active_document()?
+		child.enable_native_storage()
+		defer {
+			navigable.host_navigable().remove_from_all_navigables()
+			child.finalize()
+			child.release_native_storage()
+			parent.finalize()
+			parent.release_native_storage()
+		}
+		parent_storage := parent.native_storage()
+		child_storage := child.native_storage()
+		assert voidptr(parent_storage) != voidptr(child_storage)
+		css.css_style_computer_for(parent)
+		parent.update_style()
+		previous_style := frame.el_computed_properties()?
+		assert !previous_style.display().is_none()
+		// Model a parent mutation after the first readiness layout but before
+		// the child's completion task checks whether its container is rendered.
+		frame.set_attribute_value('style', 'display:none')
+		if !parent_already_entered { parent_scope.finish() }
+
+		mut child_scope := enter_html_document_storage(child)
+		assert !parser_end_navigable_container_is_rendered(child)
+		assert voidptr(platform.current_retained_arena()) == voidptr(child_storage)
+		child_payload := 'child allocation after the parent query'.repeat(32)
+		assert child_storage.arena.contains(child_payload.str)
+		style := frame.el_computed_properties()?
+		assert voidptr(style) != voidptr(previous_style)
+		assert style.display().is_none()
+		assert parent_storage.arena.contains(style)
+		assert !child_storage.arena.contains(style)
+		child_scope.finish()
+		if parent_already_entered {
+			assert voidptr(platform.current_retained_arena()) == voidptr(parent_storage)
+		}
+		parent_scope.finish()
+	}
 }

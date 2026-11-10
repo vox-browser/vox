@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -238,15 +239,21 @@ fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &
 // layout in a throwaway LayoutState; it must not read geometry left behind by
 // the normal layout pass.
 fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
-	if unsafe { &Node(box) }.is_replaced_box() {
-		computed := box.computed_values()
-		width := computed.size_value(.width)
-		if width.is_percentage() {
-			return width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
+	node := unsafe { &Node(box) }
+	computed := box.computed_values()
+	width := computed.size_value(.width)
+	if node.resolves_cyclic_percentages_like_replaced_box() && width.contains_percentage() {
+		styled := node.as_node_with_style() or { return CSSPixels.new(0) }
+		return resolve_layout_content_size(node, width, CSSPixels.new(0), state.get(styled), true) or {
+			CSSPixels.new(0)
 		}
+	}
+	// A cyclic percentage max-width compresses replaced boxes only. Text
+	// controls retain their normal intrinsic width for max-width:100%.
+	if node.is_replaced_box() {
 		max_width := computed.size_value(.max_width)
 		if max_width.is_percentage() {
-			return max_width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
+			return max_width.to_px(layout_length_resolution_context(node), CSSPixels.new(0))
 		}
 	}
 	if transferred_width := calculate_transferred_width_for_replaced_element(mut state, box) {
@@ -255,7 +262,6 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	if auto_width := box.auto_content_box_size().width {
 		return auto_width
 	}
-	node := unsafe { &Node(box) }
 	// An outer SVG's descendants do not become its intrinsic contribution when
 	// its own height and viewBox ratio determine the missing natural width.
 	if node.is_svg_svg_box() {
