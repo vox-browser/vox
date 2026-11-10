@@ -52,6 +52,8 @@ pub struct TextNodeChunkIterator {
 	grapheme_boundaries    []int
 	line_boundaries        []bool
 	word_break             css.WordBreak
+	// `line-break: anywhere` disregards `word-break: keep-all`.
+	line_break_anywhere bool
 	text_direction_mode    TextDirectionMode
 	font                   &platform.Font = unsafe { nil }
 	font_variant_caps      css.FontVariantCaps
@@ -147,6 +149,18 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 			if code_units[index - 1] == 0xad { line_boundaries[index] = false }
 		}
 	}
+	line_break_anywhere := should_wrap_lines
+		&& text_node.Node.computed_values().line_break() == .anywhere
+	if line_break_anywhere {
+		// https://drafts.csswg.org/css-text-3/#valdef-line-break-anywhere
+		// "There is a soft wrap opportunity around every typographic character
+		// unit ... disregarding any prohibition against line breaks."
+		for boundary in text_node.grapheme_boundaries_for_rendered_text() {
+			if boundary >= 0 && boundary < line_boundaries.len {
+				line_boundaries[boundary] = true
+			}
+		}
+	}
 	mut iterator := &TextNodeChunkIterator{
 		text_node: text_node
 		should_wrap_lines_: should_wrap_lines
@@ -165,6 +179,7 @@ fn TextNodeChunkIterator.new_with_direction(text_node &TextNode, should_wrap_lin
 		// collecting innerText must not initialize the Unicode line segmenter.
 		line_boundaries: line_boundaries
 		word_break: text_node.Node.computed_values().word_break()
+		line_break_anywhere: line_break_anywhere
 		text_direction_mode: text_direction_mode
 		font: rendering_font
 		font_variant_caps: text_node.Node.computed_values().font_variant_caps()
@@ -261,7 +276,7 @@ fn (iterator &TextNodeChunkIterator) is_at_line_break_opportunity() bool {
 			}
 		}
 	}
-	if iterator.word_break == .keep_all {
+	if iterator.word_break == .keep_all && !iterator.line_break_anywhere {
 		if iterator.current_index > 0 && iterator.current_index < iterator.code_units.len {
 			previous := code_point_before_utf16(iterator.code_units, iterator.current_index)
 			current := code_point_at_utf16(iterator.code_units, iterator.current_index)

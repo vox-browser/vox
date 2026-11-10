@@ -2219,6 +2219,12 @@ pub fn (n &TextNode) font_for_rendering() &platform.Font {
 
 pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 	mut mutable_node := unsafe { &TextNode(n) }
+	if mutable_node.line_segmenter_ != unsafe { nil }
+		&& !mutable_node.line_segmenter_.is_ascii_line_fast_path()
+		&& mutable_node.line_segmenter_.line_break_mode != n.line_break_mode() {
+		// A `line-break` or language change retailors the Unicode segmenter.
+		mutable_node.line_segmenter_ = unsafe { nil }
+	}
 	if mutable_node.line_segmenter_ == unsafe { nil } {
 		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 		defer { platform.leave_persistent(persistent) }
@@ -2228,10 +2234,32 @@ pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 		} else {
 			mut document := unsafe { &dom.Document(n.Node.document()) }
 			mutable_node.line_segmenter_ = document.line_segmenter().clone()
+			mutable_node.line_segmenter_.line_break_mode = n.line_break_mode()
 			mutable_node.line_segmenter_.set_segmented_text(text)
 		}
 	}
 	return mutable_node.line_segmenter_
+}
+
+// The ICU tailoring of the text's `line-break` value. Only `loose` depends on
+// the content language (Rust text_chunker.rs LineSegmenter::new()); `anywhere`
+// replaces the segmenter's opportunities in the chunk iterator.
+fn (n &TextNode) line_break_mode() dom.LineBreakMode {
+	return match n.Node.computed_values().line_break() {
+		.loose {
+			match dom.LineBreakLanguage.from_tag(text_node_hyphenation_language(unsafe { &Node(n) })) {
+				.japanese { dom.LineBreakMode.loose_japanese }
+				.chinese { dom.LineBreakMode.loose_chinese }
+				.other { dom.LineBreakMode.loose }
+			}
+		}
+		.normal {
+			dom.LineBreakMode.normal
+		}
+		.auto, .strict, .anywhere {
+			dom.LineBreakMode.strict
+		}
+	}
 }
 
 pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {

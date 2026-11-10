@@ -3483,6 +3483,8 @@ pub mut:
 	segmented_text       string
 	granularity          SegmenterGranularity = .grapheme
 	ascii_line_fast_path bool
+	// Line granularity only; the ASCII fast path breaks the same in every mode.
+	line_break_mode LineBreakMode
 }
 
 pub enum SegmenterGranularity {
@@ -3496,6 +3498,7 @@ pub fn (s &Segmenter) clone() &Segmenter {
 		segmented_text: s.segmented_text
 		granularity: s.granularity
 		ascii_line_fast_path: s.ascii_line_fast_path
+		line_break_mode: s.line_break_mode
 	}
 }
 
