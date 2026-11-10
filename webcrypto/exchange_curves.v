@@ -45,9 +45,15 @@ fn validate_exchange_public_key(name string, params EcdhKeyDeriveParams, length 
 }
 
 fn derive_exchange_bits(name string, params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
-	validate_exchange_public_key(name, params, length)!
+	// Only X25519 validates public parameters before the private key type.
+	if name == 'X25519' {
+		validate_exchange_public_key(name, params, length)!
+	}
 	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
 	public_key := params.public_key
+	if public_key.type_ != .public_key {
+		return error('InvalidAccessError: Public key is not a public key')
+	}
 	if public_key.algorithm_name() != key.algorithm_name() {
 		return error('InvalidAccessError: Algorithm mismatch')
 	}
