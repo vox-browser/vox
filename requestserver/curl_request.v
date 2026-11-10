@@ -75,6 +75,12 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 			return pending
 		}
 	}
+	if request.current_url().scheme() !in ['http', 'https']
+		|| fetch.block_bad_port(request) == .blocked {
+		mut output := unsafe { pending }
+		output.resolve(fetch.Response.network_error('Unsupported URL scheme or blocked port'))
+		return pending
+	}
 	if filtered_response := request.apply_adblock() {
 		mut output := unsafe { pending }
 		output.resolve(filtered_response)
@@ -135,6 +141,8 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_REDIR_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
 	// Match document navigation's process-local trust configuration. libcurl's
 	// API does not read the curl command-line tool's CA environment variables.
 	// Keep its certificate and hostname verification enabled.
