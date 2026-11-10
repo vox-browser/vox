@@ -8277,10 +8277,11 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			return .@continue
 		})
 
-		// Transfer NodeIterators rooted at `node` from old_document to this document.
+		// Transfer NodeIterators rooted anywhere in the adopted subtree, including
+		// shadow trees, so removal and finalization use their root's new document.
 		mut node_iterators_to_transfer := []&NodeIterator{}
 		for node_iterator in old_document.node_iterators {
-			if voidptr(node_iterator.root) == voidptr(node) {
+			if node_iterator.root.is_shadow_including_inclusive_descendant_of(node) {
 				node_iterators_to_transfer << node_iterator
 			}
 		}
