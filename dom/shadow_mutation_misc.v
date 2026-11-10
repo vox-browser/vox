@@ -3504,7 +3504,7 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 	if document.document_ready_to_run_scripts() {
 		encoding := html_parser_run_text_document(document, navigation_params.response_body, type_, url)
 		document.set_encoding(encoding)
-		append_title_to_document_head(document, document.url_string()) or {}
+		// Keep document text limited to the response body, without a filename title.
 	} else {
 		document_pointer := voidptr(document)
 		data := navigation_params.response_body.clone()
@@ -3512,7 +3512,6 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 			mut document := unsafe { &Document(document_pointer) }
 			encoding := html_parser_run_text_document(document, data, type_, url)
 			document.set_encoding(encoding)
-			append_title_to_document_head(document, document.url_string()) or {}
 		})
 	}
 
