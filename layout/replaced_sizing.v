@@ -1,4 +1,5 @@
 // Copyright (c) 2018-2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -368,7 +369,7 @@ fn should_treat_width_as_auto(state &LayoutState, box &Box, available_space Avai
 
 	// https://drafts.csswg.org/css-sizing-3/#cyclic-percentage-contribution
 	if computed_width.contains_percentage() {
-		if !node.is_replaced_box() && available_space.width.is_min_content() {
+		if !node.resolves_cyclic_percentages_like_replaced_box() && available_space.width.is_min_content() {
 			return true
 		}
 		if available_space.width.is_max_content() {

@@ -1,3 +1,7 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
 module layout
 
 import dom
@@ -1928,6 +1932,12 @@ pub fn (n &Node) is_list_item_box() bool {
 
 pub fn (n &Node) is_replaced_box() bool {
 	return n.is_replaced_box_
+}
+
+// CSS Sizing 3: cyclic percentage widths of compressible text controls
+// resolve against zero for min-content contributions, like replaced boxes.
+fn (n &Node) resolves_cyclic_percentages_like_replaced_box() bool {
+	return n.is_replaced_box() || n.is_text_input_box() || n.is_textarea_box()
 }
 
 pub fn (n &Node) is_navigable_container_viewport() bool {
