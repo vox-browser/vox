@@ -1738,7 +1738,10 @@ fn cssom_resolved_transform(computed &ComputedProperties, layout_node &dom.Layou
 	}
 
 	epsilon := 1.1920929e-7
-	is_2d := math.abs(transform.at(0, 2)) <= epsilon && math.abs(transform.at(1, 2)) <= epsilon && math.abs(transform.at(2, 0)) <= epsilon && math.abs(transform.at(2, 1)) <= epsilon && math.abs(transform.at(2, 3)) <= epsilon && math.abs(transform.at(3, 0)) <= epsilon && math.abs(transform.at(3, 1)) <= epsilon && math.abs(transform.at(3, 2)) <= epsilon && math.abs(math.abs(transform.at(2, 2)) - 1) <= epsilon && math.abs(math.abs(transform.at(3, 3)) - 1) <= epsilon
+	// https://drafts.fxtf.org/geometry/#dommatrixreadonly-is-2d
+	// m33 and m44 must be 1. Upstream compares abs(m33) - 1, which also treats
+	// a half turn about a tilted axis (m33 = -1) as 2D and drops its z flip.
+	is_2d := math.abs(transform.at(0, 2)) <= epsilon && math.abs(transform.at(1, 2)) <= epsilon && math.abs(transform.at(2, 0)) <= epsilon && math.abs(transform.at(2, 1)) <= epsilon && math.abs(transform.at(2, 3)) <= epsilon && math.abs(transform.at(3, 0)) <= epsilon && math.abs(transform.at(3, 1)) <= epsilon && math.abs(transform.at(3, 2)) <= epsilon && math.abs(transform.at(2, 2) - 1) <= epsilon && math.abs(transform.at(3, 3) - 1) <= epsilon
 	if is_2d {
 		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.transform, .matrix, [
 			StyleValue(NumberStyleValue.create(transform.at(0, 0))),
