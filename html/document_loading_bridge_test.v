@@ -1,6 +1,7 @@
 module html
 
 import dom
+import css
 
 fn loading_navigation_params(associated &dom.Document, mime_type string, body []u8) &dom.NavigationParams {
 	return &dom.NavigationParams{
@@ -68,6 +69,17 @@ fn test_plaintext_document_wraps_lines_and_follows_color_scheme_despite_response
 	assert meta.get_attribute_value('name') == 'color-scheme'
 	assert meta.get_attribute_value('content') == 'light dark'
 	assert pre.as_node().text_content()? == body.bytestr()
+}
+
+// Ladybird 9344a9b90ae74072ea207a0cc2139901e0a80fb7.
+fn test_standalone_image_uses_a_light_gray_backdrop() {
+	associated := parse_document('<!doctype html>')
+	body := [u8(0x89), `P`, `N`, `G`, 0x0d, 0x0a, 0x1a, 0x0a]
+	mut document := dom.load_document(loading_navigation_params(associated, 'image/png', body), body)?
+	image := document.get_elements_by_tag_name('img').item(0)?
+	computer := css.StyleComputer.new(document)
+	computed := computer.compute_style(dom.AbstractElement.new(image, none))
+	assert (computed.property(.background_color, .no) or { panic('background') }).css_text == 'rgb(230, 230, 230)'
 }
 
 fn test_document_loader_uses_translated_mime_sniffing() {

@@ -3357,7 +3357,7 @@ fn append_media_document_style(document &Document) ! {
             margin: auto;
         }
         img {
-            background-color: #fff;
+            background-color: hsl(0, 0%, 90%);
         }
     ')
 	head := document.head() or { return }
