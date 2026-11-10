@@ -43,8 +43,11 @@ mut:
 // in their inline-flow parent, but block-level pseudo-element boxes are
 // anonymous and climb out of InlineNode ancestors. Table-internal pseudo boxes
 // stay so table fixup can group them with their table-internal siblings.
+// Absolutely positioned pseudo boxes also stay inside their originating inline,
+// before its end padding, just like an absolutely positioned DOM child.
 fn pseudo_element_box_climbs_out_of_inline(node &Node) bool {
-	if !node.is_generated_for_pseudo_element() || child_is_inline_level(node) {
+	if !node.is_generated_for_pseudo_element() || child_is_inline_level(node)
+		|| node.is_absolutely_positioned() {
 		return false
 	}
 	display := node.display()
