@@ -374,3 +374,35 @@ fn test_transform_keyframe_composition_adds_and_accumulates_lists() {
 	assert transform_at(transform_frames('scale(2) rotate(90deg)', 'scale(2) rotate(90deg)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'scale(4, 4) matrix3d(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1)'
 	assert transform_at(transform_frames('rotate(90deg) scale(2)', 'rotate(90deg) scale(2)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'matrix3d(0, 4, 0, 0, -4, 0, 0, 0, 0, 0, 1, 0, 30, 0, 0, 1)'
 }
+
+fn box_shadow_at(from string, to string, underlying string, composite css.CompositeOperation, milliseconds f64) !string {
+	mut document, target := connected_animation_target(underlying)!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'box-shadow': from}},
+		BaseKeyframe{properties: {'box-shadow': to}},
+	], composite)!
+	timeline.set_current_time(TimeValue.milliseconds(milliseconds))
+	animation.update()
+	document.update_animated_style_if_needed()
+	return animated_style_value(target, .box_shadow)
+}
+
+fn test_box_shadow_iteration_composition_accumulates_and_clamps_after_sampling() {
+	from := 'rgb(0, 0, 0) 0px 0px 0px 0px'
+	to := 'rgb(120, 120, 120) 10px 10px 10px 0px'
+	assert box_shadow_at(from, to, '', .replace, 2000)! == 'rgb(240, 240, 240) 20px 20px 20px 0px'
+	assert box_shadow_at(from, to, '', .replace, 2500)! == 'rgb(255, 255, 255) 25px 25px 25px 0px'
+}
+
+fn test_box_shadow_keyframe_composition_adds_and_accumulates_lists() {
+	shadow := 'rgb(120, 120, 120) 10px 10px 10px 0px'
+	assert box_shadow_at(shadow, shadow, 'box-shadow: rgb(0, 0, 0) 0px 0px 0px 0px', .add, 0)! == 'rgb(0, 0, 0) 0px 0px 0px 0px, rgb(120, 120, 120) 10px 10px 10px 0px'
+	assert box_shadow_at(shadow, shadow, 'box-shadow: ${shadow}', .accumulate, 0)! == 'rgb(240, 240, 240) 20px 20px 20px 0px'
+	// Shadows with different inset keywords cannot accumulate and replace.
+	assert box_shadow_at(shadow, shadow, 'box-shadow: ${shadow} inset', .accumulate, 0)! == shadow
+	// The shorter list is padded with transparent blank shadows.
+	list := 'rgb(10, 20, 30) 1px 2px 3px 4px, rgb(0, 0, 0) 5px 5px'
+	assert box_shadow_at(list, list, 'box-shadow: rgb(100, 100, 100) 10px 10px 10px 10px', .accumulate, 0)! == 'rgb(110, 120, 130) 11px 12px 13px 14px, rgb(0, 0, 0) 5px 5px 0px 0px'
+}

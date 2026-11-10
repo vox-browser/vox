@@ -8929,6 +8929,12 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 		}
 		return dom_style_value_from_value_logic(result)
 	}
+	if property_id in [.box_shadow, .text_shadow] {
+		result := composite_shadow_lists(property_id, underlying, animated, composite_operation) or {
+			return none
+		}
+		return dom_style_value_from_value_logic(result)
+	}
 	if property_id == .font_size_adjust {
 		if result := composite_font_size_adjust_metric(underlying,animated,composite_operation) {
 			return dom_style_value_from_value_logic(result)
