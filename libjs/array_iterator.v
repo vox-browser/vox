@@ -47,8 +47,8 @@ pub fn (mut iterator ArrayIterator) next(mut vm VM, array_prototype &Object) !It
 	// The pinned source increments the current slot after the observable length
 // getter; it does not overwrite a change made by a reentrant next call.
 	iterator.index++
-	// Preserve the pinned source's i32 index conversion for keys and entry pairs.
-	index_number := Value.from_i32(i32(index))
+	// Array-like indices can exceed INT32_MAX; keep their exact Number value.
+	index_number := Value.from_f64(f64(index))
 	if iterator.iteration_kind == .key { return IteratorStepValue{value: index_number} }
 	element := array.get(mut vm, PropertyName.from_str(index.str()))!
 	if iterator.iteration_kind == .value { return IteratorStepValue{value: element} }

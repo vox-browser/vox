@@ -126,23 +126,25 @@ fn test_array_iterator_preserves_saved_index_across_reentrant_length_access() {
 	assert iterator.next(mut vm, parent)!.done
 }
 
-fn test_array_iterator_uses_decimal_element_keys_and_pinned_i32_key_conversion() {
+fn test_array_iterator_keeps_large_numeric_indices_and_decimal_element_keys() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	parent := Object.create(vm.realm(), none)
 	mut target := Object.create(vm.realm(), none)
-	target.define_direct_property(PropertyName.from_str('length'), Value.from_f64(4294967298), 7)
-	target.define_direct_property(PropertyName.from_str('4294967296'), Value.from_i32(42), 7)
-	for kind in [PropertyKind.key, .value, .key_and_value] {
-		mut iterator := ArrayIterator.create(vm.realm(), Value.from_object(target), kind, parent)
-		iterator.index = 4294967296
-		result := iterator.next(mut vm, parent)!
-		assert !result.done && iterator.index == 4294967297
-		match kind {
-			.key { assert result.value.number == 0 }
-			.value { assert result.value.number == 42 }
-			.key_and_value {
-				assert create_list_from_array_like(mut vm, result.value, unsafe { nil })! == [Value.from_i32(0), Value.from_i32(42)]
+	target.define_direct_property(PropertyName.from_str('length'), Value.from_f64(9007199254740991), 7)
+	for index in [u64(2147483647), 2147483648, 4294967295, 4294967296, 9007199254740990] {
+		target.define_direct_property(PropertyName.from_str(index.str()), Value.from_i32(42), 7)
+		for kind in [PropertyKind.key, .value, .key_and_value] {
+			mut iterator := ArrayIterator.create(vm.realm(), Value.from_object(target), kind, parent)
+			iterator.index = index
+			result := iterator.next(mut vm, parent)!
+			assert !result.done && iterator.index == index + 1
+			match kind {
+				.key { assert result.value.number == f64(index) }
+				.value { assert result.value.number == 42 }
+				.key_and_value {
+					assert create_list_from_array_like(mut vm, result.value, unsafe { nil })! == [Value.from_f64(f64(index)), Value.from_i32(42)]
+				}
 			}
 		}
 	}
