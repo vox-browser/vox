@@ -1443,11 +1443,13 @@ fn computed_interpolation_property_computation_order() ComputedInterpolationProp
 	}
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	// GeneratedCSSPropertyID.cpp puts dependency-bearing properties first. math-depth feeds font-size,
+	// GeneratedCSSPropertyID.cpp puts dependency-bearing properties first. writing-mode determines
+	// the axes of logical viewport units, including font sizes; math-depth feeds font-size,
 	// the font set feeds font-relative units, line-height feeds lh units, color-scheme feeds
 	// light-dark(), and background-image determines coordinated background-list lengths.
 	manual_order := [
-		PropertyID.math_depth,
+		PropertyID.writing_mode,
+		.math_depth,
 		.font_family,
 		.font_feature_settings,
 		.font_kerning,
@@ -11385,6 +11387,7 @@ pub fn (s &StyleComputer) recascade_font_size_if_needed(abstract_element dom.Abs
 			font_metrics_depend_on_viewport_metrics: current_size_depends_on_viewport_metrics
 				|| inherited_font_metrics_depend_on_viewport_metrics
 			root_font_metrics_depend_on_viewport_metrics: s.root_element_font_metrics_depend_on_viewport_metrics
+			subject_inline_axis_is_horizontal: ancestor_computed.writing_mode() == .horizontal_tb
 		}
 		resolution_context.set_did_resolve_viewport_relative_length(&did_resolve_viewport_relative_length)
 		current_size = length.to_px(resolution_context)
@@ -16029,14 +16032,20 @@ pub fn (s &StyleComputer) computation_context_cache_is_empty() bool {
 }
 
 pub fn (s &StyleComputer) get_computation_context_for_property(property_id PropertyID, computed_properties &ComputedProperties, abstract_element ?dom.AbstractElement) ComputationContext {
+	// writing-mode precedes font computation. Use the inherited font context
+	// here so it cannot populate the generic cache before font metrics are ready.
 	font_computation_property := property_id in [.color_scheme, .font_family, .font_feature_settings,
 		.font_kerning, .font_optical_sizing, .font_size, .font_style, .font_variant_alternates,
 		.font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures,
 		.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
-		.font_width, .math_depth, .text_rendering]
+		.font_width, .math_depth, .text_rendering, .writing_mode]
 	if font_computation_property {
 		if cached := s.cached_font_computation_context {
-			return cached
+			// The target writing mode may have been computed since this cache
+			// was populated. Refresh its axis without changing inherited metrics.
+			mut context := cached
+			context.length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
+			return context
 		}
 		// StyleComputer::get_computation_context_for_property() deliberately
 		// resolves font-relative units against the inheritance parent. The
@@ -16097,10 +16106,14 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 
 	if property_id == .line_height {
 		if cached := s.cached_line_height_computation_context {
-			return cached
+			mut context := cached
+			context.length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
+			return context
 		}
 	} else if cached := s.cached_generic_computation_context {
-		return cached
+		mut context := cached
+		context.length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
+		return context
 	}
 	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 	mut root_font_metrics := s.root_element_font_metrics
