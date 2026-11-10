@@ -172,9 +172,11 @@ pub fn split_the_parent_of_nodes(node_list []&dom.Node) {
 	// 10. If the last member of node list is an inline node other than a br, and the first child of original parent is
 	//     a br, and original parent is not an inline node, remove the first child of original parent from original
 	//     parent.
-	if is_inline_node(last_node) && !last_node.is_html_br_element() && first_child.is_html_br_element()
-		&& !is_inline_node(original_parent) {
-		remove_node(first_child)
+	if original_parent_first_child := original_parent.first_child() {
+		if is_inline_node(last_node) && !last_node.is_html_br_element()
+			&& original_parent_first_child.is_html_br_element() && !is_inline_node(original_parent) {
+			remove_node(original_parent_first_child)
+		}
 	}
 
 	// 11. If original parent has no children:
