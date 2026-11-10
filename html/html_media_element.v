@@ -206,7 +206,8 @@ mut:
 	source_candidate_types_     []string
 	network_state_              MediaNetworkState
 	ready_state_                MediaReadyState
-	has_fired_loadeddata_         bool
+	// The initial resource selection can run before load_element().
+	first_data_load_event_since_load_start_ bool = true
 	seeking_                    bool
 	current_playback_position_  f64
 	official_playback_position_ f64
@@ -1078,7 +1079,7 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 
 fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
 	// A new load resets the per-resource loadeddata event guard.
-	element.has_fired_loadeddata_ = false
+	element.first_data_load_event_since_load_start_ = true
 	// Upstream load step 5 cancels only this element's outstanding media tasks.
 	element.remove_queued_media_element_tasks()
 	element_pointer := voidptr(&element)
@@ -1568,8 +1569,8 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	// element received media data without previously invoking load().
 	if element.network_state_ != .empty && old_state == .have_metadata
 		&& int(state) >= int(MediaReadyState.have_current_data) {
-		if !element.has_fired_loadeddata_ {
-			element.has_fired_loadeddata_ = true
+		if element.first_data_load_event_since_load_start_ {
+			element.first_data_load_event_since_load_start_ = false
 			element_pointer := voidptr(&element)
 			element.queue_a_media_element_task(fn [element_pointer] () {
 				mut media := unsafe { &HTMLMediaElement(element_pointer) }
