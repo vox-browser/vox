@@ -3,6 +3,28 @@ module fetch
 import dom
 import streams
 
+// Ladybird 9c56cf0cb8582a7311cd4957076a5e06cdde7e42.
+fn test_consuming_a_buffered_opaque_response_keeps_its_public_filter() {
+	state := &ResponseHandoverObservation{}
+	mut params := handover_test_params(state)
+	params.algorithms = FetchAlgorithms.create(FetchAlgorithmsInput{
+		process_response_consume_body: fn [state] (response &Response, result BodyBytes) {
+			assert response.response_type == .opaque
+			assert response.body == none
+			assert response.status == 0
+			mut observation := unsafe { &ResponseHandoverObservation(state) }
+			observation.results << result
+		}
+	})
+	mut internal := Response.create()
+	internal.set_body_bytes('buffered image bytes'.bytes())
+	opaque := filtered_response(internal, .opaque)
+	fetch_response_handover(params, opaque)
+	assert state.results.len == 1
+	assert state.results[0].bytes == 'buffered image bytes'.bytes()
+	assert params.request.done
+}
+
 @[heap]
 struct ResponseHandoverObservation {
 mut:

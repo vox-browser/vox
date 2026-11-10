@@ -101,11 +101,15 @@ pub fn fetch_response_handover(params &FetchParams, response &Response) {
 		// Fully reading a response is asynchronous: pending read promises retain
 		// these callbacks until the producer supplies bytes, closes, or errors.
 		accumulator := &FetchBodyAccumulator{}
-		body.incrementally_read(fn [accumulator] (chunk []u8) {
+		has_in_memory_body := body.source_kind == .bytes
+		body.incrementally_read(fn [accumulator, has_in_memory_body] (chunk []u8) {
+			// Drain the stream for its completion/error semantics, but do not
+			// reconstruct bytes that the internal response already retains.
+			if has_in_memory_body { return }
 			mut result := unsafe { &FetchBodyAccumulator(accumulator) }
 			result.bytes << chunk
-		}, fn [params, response, accumulator] () {
-			bytes := if response_body := response.body {
+		}, fn [params, response, internal_response, accumulator] () {
+			bytes := if response_body := internal_response.body {
 				if response_body.source_kind == .bytes {
 					response_body.bytes()
 				} else {
