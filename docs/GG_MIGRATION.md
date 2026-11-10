@@ -2208,3 +2208,121 @@ find no direct or transitive Skia dependency. Its direct libraries are
 FreeType, libm and libc. Browser integration still uses installed Skia;
 full-browser Linux compile/link/run without it remains open. See the
 [native cases, setup error, cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/655628b3d28da2c41312f5af653c2071b22f294b/evidence/gg-migration/large-minified-image-shadows-20261109.json).
+
+
+### Large filters of minified source subsets (2026-11-09)
+
+`fb9c8e5af` extends initial source resolution to cropped images when native
+rescale requires it before progressive downsampling. The extracted bitmap
+keeps its original row stride and layer crop. Fractional subsets retain their
+AA surface; shadow merge retains the original deferred foreground.
+
+At seed 20261221 the baseline accepts 47 of 500 requests; the candidate accepts
+336 of the same cohort. Final default C cohorts on macOS and Linux both match
+1,418 of 2,000 requests at seed 20261222, declining 582. Optimized macOS/no-GC
+matches 686 of 1,000 at seed 20261223, declining 314. Counts include no-ops;
+all completed cohorts finish with unchanged input pins. Fourteen independent
+native regressions verify on each platform, covering integer, fractional,
+clipped and flipped source subsets across blur and shadow filters.
+
+Focused C/FastC suites, Linux browser typechecking, Linux HTML canvas
+integration and the C FMA audit pass (zero contracted, 189 explicit). The
+standalone Linux production/no-GC executable runs all eight registered image
+test functions with Skia unavailable to pkg-config. Link/readelf/ldd checks
+find no direct or transitive Skia dependency; direct libraries are FreeType,
+libm and libc. Browser integration still uses installed Skia development
+files. Full-browser Linux compile/link/run without Skia remains open. See the
+[guarded comparisons and dependency proof](https://github.com/vox-browser/vox-tests/blob/a0a230fb6b113ac5935d7a758a6805add64031c3/evidence/gg-migration/large-minified-source-subsets-20261109.json).
+
+
+### Source shaders at the large-blur rescale boundary (2026-11-09)
+
+`46f124838` handles large blur and shadow filters whose native rescale factors
+round to zero downsampling steps. The identity shader pass still samples and
+converts the source with paint alpha and incoming color filters. Outgoing
+filters and the original shadow foreground stay deferred. Actual decimation
+keeps its existing eligibility checks.
+
+The fixed-sigma 135.01 baseline accepts 29 of 500 requests at seed 20261231;
+the candidate accepts 385 of that same cohort. Wider final cohorts cycle
+sigmas from 135.001 through 135.14 across the step-count boundary: macOS and
+Linux each match 1,387 of 2,000 requests at seed 20270101, declining 613.
+Optimized macOS/no-GC matches 699 of 1,000 at seed 20270102, declining 301.
+Counts include no-ops; completed cohorts retain unchanged inputs. Sixteen
+independent native fixtures verify on both platforms, and a neighboring
+unsupported request verifies atomic fallback.
+
+Focused C/FastC suites, Linux browser typechecking and HTML canvas integration
+pass. The C FMA audit finds zero contracted operations (189 explicit). The
+standalone Linux production/no-GC executable runs all nine registered image
+test functions with Skia unavailable to pkg-config; link/readelf/ldd checks
+find no Skia dependency, with FreeType, libm and libc as direct libraries.
+A full-browser Linux C compile with Skia hidden instead fails at link time on
+Skia symbols from the canvas and shadow bridges. Full-browser Skia removal
+therefore remains open; the passing component is not that result.
+
+`0eddb82df` also fixes concurrent suite-cache publication: macOS/Linux can
+report a nonempty-directory error after another fetch wins. The launcher now
+validates that winner and still rejects dirty checkouts and unrelated I/O
+errors. All six Python tests pass on both platforms. The [guarded evidence,
+cache race and full-browser link failure](https://github.com/vox-browser/vox-tests/blob/6f101eac79a7d6a1157d427be98c8d964801d48c/evidence/gg-migration/large-identity-source-rescale-20261109.json)
+remain in vox-tests; passing V checks disable compatibility fallback.
+
+
+### Deferred sources in large-filter downsampling (2026-11-09)
+
+`4afcb4d89` combines image sampling, source conversion, paint alpha and incoming
+color effects with the first downsample when native rescale keeps the source
+transform deferred. Subset bounds analysis selects the original backing store
+or a strict bitmap subset before nearest or mipmapped sampling. Progressive
+passes retain their own quantized surfaces; outgoing effects and the original
+shadow foreground remain deferred.
+
+At seed 20270111 the baseline accepts 233 of 500 requests; the candidate
+matches 479 of the same cohort. Final macOS and Linux C cohorts each match
+1,919 of 2,000 at seed 20270112, declining 81. Optimized macOS/no-GC matches
+955 of 1,000 at seed 20270113, declining 45. Counts include no-ops, and completed
+cohorts retain unchanged inputs under the 3 GiB guard. Twenty-three independent
+native fixtures verify on both platforms, including flips, source clipping,
+P3/alpha effects, an offscreen shadow and a rejected negative blur. Enlarged
+source, scaled-CTM and neighboring step-boundary declines now have positive
+native expectations; unsupported near-integer and skewed controls stay atomic.
+
+Focused C suites on both platforms, macOS FastC, Linux browser typechecking
+and HTML canvas integration pass. The C FMA audit finds zero contracted
+operations (189 explicit). The standalone Linux production/no-GC executable
+runs all ten registered image test functions with Skia unavailable to
+pkg-config; link/readelf/ldd checks find no Skia dependency, with FreeType,
+libm and libc as direct libraries. Full-browser integration still uses Skia;
+its canvas/shadow bridges remain compiled. See the [native cases, guarded
+comparisons and component dependency proof](https://github.com/vox-browser/vox-tests/blob/b230c6245b878cb5cfaac64b1ed5c2debb8c20da/evidence/gg-migration/large-direct-source-rescale-20261109.json).
+
+
+### Near-integer sources in real large-filter rescale passes (2026-11-09)
+
+`c03df8cc6` retains nearly integer source transforms during actual downsampling,
+including deferred P3 conversion, paint alpha and incoming color effects.
+Exact integer translations without pending effects keep their raw-pixel path.
+Default sampling retains native N32 shader-context eligibility; mipmapped
+sources and deferred paint alpha use the raster pipeline.
+
+At seed 20270121 the baseline accepts 78 of 500 requests; the candidate
+matches 469 of that same cohort. Final macOS and Linux C cohorts each match
+1,929 of 2,000 at seed 20270122, declining 71. Optimized macOS/no-GC matches
+960 of 1,000 at seed 20270123, declining 40. Counts include no-ops; completed
+cohorts retain unchanged inputs under the 3 GiB guard. Twenty-three native
+fixtures verify on each platform, covering both scale directions around 1,
+near-limit and larger sigmas, exact composed transforms with color effects,
+raw-pixel reuse, a rejected negative shadow blur and an offscreen shadow.
+The former near-integer decline now has a positive native expectation;
+the skewed control remains atomic.
+
+Focused C suites on both platforms, macOS FastC, Linux browser typechecking
+and HTML canvas integration pass. The initial browser check hit a concurrent
+layout edit; the receipt retains that failure and the successful retry after
+its correction. The C FMA audit finds zero contracted operations (189 explicit).
+The standalone Linux production/no-GC executable runs all eleven registered
+image test functions with Skia unavailable to pkg-config; link/readelf/ldd
+checks find no Skia dependency, with FreeType, libm and libc as direct libraries.
+Full-browser integration still uses Skia. See the [native cases, guarded
+comparisons, integration retry and component linkage](https://github.com/vox-browser/vox-tests/blob/620abd5a99c04452effdd18a4d7be01f786f1b7e/evidence/gg-migration/large-near-source-rescale-20261109.json).

@@ -1,5 +1,17 @@
 module cpuraster
 
+// Near the raster sigma limit, rescale() applies the source shader at
+// identity scale. Sampling and color effects still resolve in that pass.
+fn large_filter_uses_identity_rescale(ctm SkAffine, sigma f32) bool {
+	if sigma < 0 || !is_finite_f32(sigma) { return false }
+	sx, sy := blur_layer_sigma(math_abs32(sigma * ctm.sx)), blur_layer_sigma(math_abs32(sigma * ctm.sy))
+	if !is_finite_f32(sx) || !is_finite_f32(sy)
+		|| (sx <= image_blur_max_sigma && sy <= image_blur_max_sigma) { return false }
+	rx := if sx > image_blur_max_sigma { image_blur_max_sigma / sx } else { f32(1) }
+	ry := if sy > image_blur_max_sigma { image_blur_max_sigma / sy } else { f32(1) }
+	return filter_downscale_steps(rx) == 0 && filter_downscale_steps(ry) == 0
+}
+
 // rescale() resolves a deferred minification before progressive downsampling
 // when composing the two scales would omit source pixels. Near-identity
 // downsampling and mappings that do not require this pass stay deferred.
@@ -17,10 +29,10 @@ fn large_filter_resolves_source_first(source SkAffine, ctm SkAffine, sigma f32) 
 		|| (ys > 0 && filter_downscale_steps(ny) > ys)
 }
 
-// This initial resolve applies image sampling, paint alpha and incoming color
-// filters together. The subsequent blur consumes that premultiplied surface;
-// outgoing color filters remain deferred until restore.
-fn draw_large_resolved_source_filter(mut pixels []u8, width int, height int, pitch int, alpha_type int, ctm SkAffine, dst Rect, view FilterImageView, mode BlendMode, clips []Path, step CanvasFilterStep) bool {
+// Resolve source effects separately when required, or combine them with the
+// first downsample. Both paths leave outgoing color effects and the original
+// shadow foreground deferred until restore and merge.
+fn draw_large_source_filter(mut pixels []u8, width int, height int, pitch int, alpha_type int, ctm SkAffine, dst Rect, view FilterImageView, mode BlendMode, clips []Path, step CanvasFilterStep, deferred ?DeferredRescaleImage) bool {
 	mut target := new_canvas_target(mut pixels, width, height, pitch, alpha_type)
 	rc := canvas_raster_clip(width, height, clips)
 	bounds := step.source_draw_bounds or { dst }
@@ -44,10 +56,10 @@ fn draw_large_resolved_source_filter(mut pixels []u8, width int, height int, pit
 		skif_outset(map_filter_bounds(desired, affine_invert(offset) or { return false }), 1, 1)
 	} else { desired }
 	output := requested.intersect(skif_outset(view.layer_bounds, rx, ry)) or { IRect{} }
-	resolved := if output.is_empty() { FilterResult{} } else {
+	resolved := if deferred != none || output.is_empty() { FilterResult{} } else {
 		resolve_filter_image_view(view, skif_outset(output, rx, ry)) or { return false }
 	}
-	blurred := scaled_blur_filter_view(resolved, requested, sx, sy, none, false) or { return false }
+	blurred := scaled_blur_input_view(resolved, requested, sx, sy, none, false, deferred) or { return false }
 	if drop {
 		max_dim := math_max_int(2 * math_max_int(desired.width(), desired.height()), 2048)
 		merged := spatial_filter_merge(SpatialFilterValue{view: view},
