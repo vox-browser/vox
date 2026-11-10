@@ -9200,6 +9200,15 @@ pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue 
 	if style_value is KeywordStyleValue {
 		return style_value.reify(associated_property)
 	}
+	// From Ladybird 80f89cee2ac8, Rust/src/css/typed_om.rs.
+	// Copyright (c) 2026-present, the Ladybird developers.
+	// SPDX-License-Identifier: BSD-2-Clause
+	if style_value is ShorthandStyleValue {
+		serialized_value := style_value.serialize(.normal)
+		if is_css_wide_keyword_string(serialized_value) {
+			return CSSStyleValue.from_keyword(CSSKeywordValue.create(serialized_value))
+		}
+	}
 	if style_value is NumberStyleValue {
 		return style_value.reify(associated_property)
 	}
