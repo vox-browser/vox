@@ -78,6 +78,9 @@ struct FilterResult {
 	// instead of anti-aliasing the image edge. Blur output is initialized,
 	// but its surrounding pixels are not known to be transparent.
 	transparent_boundary bool
+	// Initialized blur padding can contain color and may be sampled during
+	// rescale, but does not permit clamping to a transparent boundary.
+	initialized_boundary bool
 	origin_x     int
 	origin_y     int
 	layer_bounds IRect
@@ -111,6 +114,7 @@ fn (f FilterResult) subset(bounds IRect) FilterResult {
 		...new_filter_result(f.image.make_subset(sub), image_bounds.left, image_bounds.top)
 		color_info: f.color_info
 		transparent_boundary: f.transparent_boundary
+		initialized_boundary: f.initialized_boundary
 	}
 }
 
