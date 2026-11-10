@@ -356,7 +356,9 @@ pub fn (mut node RenderNode) pull_input(mut graph RenderGraph, context RenderCon
 	mut source_buses := []&AudioBus{}
 	for connection in node.input_connections_[input_index] {
 		if bus := graph.pull_output(connection.source, connection.output_index, context) {
-			source_buses << bus
+			if bus.channel_count() > 0 {
+				source_buses << bus
+			}
 		}
 	}
 	mut input_bus := unsafe { &AudioBus(node.input_buses_[input_index]) }
