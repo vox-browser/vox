@@ -2,7 +2,7 @@ module html
 
 import dom
 
-fn test_canvas_skia_commands_preserve_top_down_native_surface_rows() {
+fn test_canvas_raster_commands_preserve_top_down_native_surface_rows() {
 	mut canvas := OffscreenCanvas.create(2, 3)!
 	mut context := canvas.get_context(.canvas_2d, none)!
 	context.drawing_state.fill_style = FillOrStrokeStyle.from_color(dom.Color{ r: 255, a: 255 })

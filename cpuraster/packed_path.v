@@ -1,12 +1,22 @@
-module skia
+module cpuraster
 
-import cpuraster
+// A canvas or SVG path packed as LibGfx segments, twelve floats each: the
+// verb, the end point, then control points and arc parameters.
+pub struct PackedPath {
+pub:
+	segments []f32
+	even_odd bool
+}
+
+pub fn (p PackedPath) path() Path {
+	return canvas_path(p.segments, p.even_odd)
+}
 
 // Geometry queries share Canvas replay's path decoder, caps and joins. Paint
 // colors and opacity are deliberately absent: the caller selects hit regions.
-pub struct PathHitTest {
+pub struct PackedPathHitTest {
 pub:
-	path        Path
+	path        PackedPath
 	x           f32
 	y           f32
 	areas       u8 = 3 // fill = 1, stroke = 2
@@ -20,30 +30,30 @@ pub:
 	transform   [6]f32 = [f32(1), 0, 0, 1, 0, 0]!
 }
 
-pub fn path_hit_test(query PathHitTest) bool {
+pub fn packed_path_hit_test(query PackedPathHitTest) bool {
 	if query.path.segments.len == 0 || query.path.segments.len % 12 != 0 || query.areas == 0 {
 		return false
 	}
-	return cpuraster.path_hit_test(cpuraster.PathHitTest{
-		path:        cpuraster.canvas_path(query.path.segments, query.path.even_odd)
+	return path_hit_test(PathHitTest{
+		path:        query.path.path()
 		x:           query.x
 		y:           query.y
 		areas:       query.areas
 		width:       query.width
 		miter:       query.miter
 		cap:         if query.cap == 0 {
-			cpuraster.StrokeCap.butt
+			StrokeCap.butt
 		} else if query.cap == 1 {
-			cpuraster.StrokeCap.round
+			StrokeCap.round
 		} else {
-			cpuraster.StrokeCap.square
+			StrokeCap.square
 		}
 		join:        if query.join == 0 {
-			cpuraster.StrokeJoin.round
+			StrokeJoin.round
 		} else if query.join == 1 {
-			cpuraster.StrokeJoin.bevel
+			StrokeJoin.bevel
 		} else {
-			cpuraster.StrokeJoin.miter
+			StrokeJoin.miter
 		}
 		dashes:      query.dashes
 		dash_offset: query.dash_offset

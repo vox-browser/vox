@@ -11,7 +11,7 @@ import math
 // gradient fill stage and premul, in lowp (unfused float math, rounded to
 // 16-bit lanes) or highp (NEON, fused mad) like the rest of the pipeline.
 
-// A Canvas2D gradient in skia.Style's encoding: kind 1 linear, 2 radial and
+// A Canvas2D gradient in the canvas style encoding: kind 1 linear, 2 radial and
 // 3 conic; stops are offset, red, green, blue and alpha.
 pub struct CanvasGradient {
 pub:

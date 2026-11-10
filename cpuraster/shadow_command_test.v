@@ -1,4 +1,4 @@
-module skia
+module cpuraster
 
 import platform
 
@@ -86,7 +86,7 @@ fn test_shadow_retains_visual_context_path_clip_before_command_transform() {
 		color: 0xff0000ff
 		transform: [f32(1), 0, 0, 1, 0, 0]!
 		outer: ShadowRect{ rect: [f32(0), 0, 32, 32]! }
-		clips: [ShadowClip{ is_path: true, path: Path{ segments: segments }, transform: [f32(1), 0, 0, 1, 0, 0]! }]
+		clips: [ShadowClip{ is_path: true, path: PackedPath{ segments: segments }, transform: [f32(1), 0, 0, 1, 0, 0]! }]
 	})!
 	assert shadow_test_alpha(pixels, 32, 4, 4) == 255
 	assert shadow_test_alpha(pixels, 32, 28, 28) == 0

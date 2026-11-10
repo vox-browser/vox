@@ -21,7 +21,6 @@ def main():
     groups = [
         ("platform", ["unicode_case_mapping"], ["icu-uc", "icu-i18n"]),
         ("gfxfont", ["woff2"], ["libwoff2dec"] if args.os == 'windows' else []),
-        ("skia", ["canvas_raster", "shadow_raster"], ["skia"]),
     ]
     if args.os == 'windows':
         groups.append(('webgl', ['native_windows'], ['angleproject']))

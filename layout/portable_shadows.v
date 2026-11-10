@@ -6,7 +6,7 @@ module layout
 import css
 import math
 import platform
-import skia
+import cpuraster
 
 pub struct PortableShadowBitmap {
 pub:
@@ -17,8 +17,8 @@ pub:
 	pixels []u8
 }
 
-fn shadow_rect(x f64, y f64, width f64, height f64, radii BoxRadii) skia.ShadowRect {
-	return skia.ShadowRect{
+fn shadow_rect(x f64, y f64, width f64, height f64, radii BoxRadii) cpuraster.ShadowRect {
+	return cpuraster.ShadowRect{
 		rect: [f32(x), f32(y), f32(width), f32(height)]!
 		radii: [f32(radii.top_left.x), f32(radii.top_left.y), f32(radii.top_right.x), f32(radii.top_right.y), f32(radii.bottom_right.x), f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y)]!
 	}
@@ -74,20 +74,20 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 	color := css.parse_color_string(command.color) or { return error('Invalid shadow color') }
 	alpha := u32(math.max(f64(0), math.min(f64(255), math.floor(f64(color.a) * command.opacity + .5))))
 	content := shadow_rect(geometry.content_rect.x, geometry.content_rect.y, geometry.content_rect.width, geometry.content_rect.height, geometry.content_radii)
-	mut clips := []skia.ShadowClip{}
+	mut clips := []cpuraster.ShadowClip{}
 	if command.clip_list != unsafe { nil } {
 		for clip in command.clip_list.items {
 			if clip.is_svg_mask || clip.is_svg_content_mask { continue }
-			clips << skia.ShadowClip{
+			clips << cpuraster.ShadowClip{
 				shape: shadow_rect(clip.rect.x, clip.rect.y, clip.rect.width, clip.rect.height, clip.corner_radii)
 				transform: portable_shadow_transform(clip.transform, pixel_scale, left, top)
-				path: skia.Path{ segments: clip.path_data, even_odd: clip.path_even_odd }
+				path: cpuraster.PackedPath{ segments: clip.path_data, even_odd: clip.path_even_odd }
 				is_path: clip.is_path
 			}
 		}
 	}
 	if clip := command.recording_clip {
-		clips << skia.ShadowClip{
+		clips << cpuraster.ShadowClip{
 			shape: shadow_rect(clip.x, clip.y, clip.width, clip.height, BoxRadii{})
 			transform: portable_shadow_transform(command.transform, pixel_scale, left, top)
 		}
@@ -110,7 +110,7 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 		glyphs = run.glyph_indices()
 		positions = run.glyph_positions().map(f32(it))
 	}
-	native := skia.ShadowCommand{
+	native := cpuraster.ShadowCommand{
 		kind: if command.kind == 'paint_outer_box_shadow' { 0 } else if command.kind == 'paint_inner_box_shadow' { 1 } else { 2 }
 		color: (alpha << 24) | (u32(color.r) << 16) | (u32(color.g) << 8) | u32(color.b)
 		blur: f32(command.blur)
@@ -133,6 +133,6 @@ pub fn rasterize_portable_shadow(command PaintCommand, pixel_scale f64) !Portabl
 		y: f32(top / pixel_scale)
 		width: width
 		height: height
-		pixels: skia.rasterize_shadow(width, height, native)!
+		pixels: cpuraster.rasterize_shadow(width, height, native)!
 	}
 }
