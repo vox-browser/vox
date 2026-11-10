@@ -5,7 +5,8 @@
 // `v run build_browser.vsh` builds the browser for the current host through x.imp
 // flows. macOS and Linux delegate to their existing shell builders; Windows uses
 // tools/build_windows_browser.py (MinGW + installed native dependencies).
-// `package-zip` produces a portable Windows zip once the binary exists.
+// `package-zip` produces a portable Windows zip; `package-installer` turns it
+// into an NSIS setup executable.
 import os
 import x.imp
 
@@ -87,6 +88,22 @@ ctx.add_flow(
 			return error('imp: package-zip is a Windows flow')
 		}
 		imp.system_args(['python3', 'tools/package_windows_zip.py'])!
+	}
+)
+ctx.add_flow(
+	id:    'package-installer'
+	help:  'build an NSIS installer from the portable zip'
+	takes: ['Build/windows/vox-portable.zip']
+	gives: ['Build/windows/Vox-0.1.3-setup.exe']
+	check: .none
+	flow:  fn (_ imp.Flow) ! {
+		if os.user_os() != 'windows' {
+			return error('imp: package-installer is a Windows flow')
+		}
+		if !imp.check_binary(['makensis'], panic: false) {
+			return error('imp: makensis (NSIS) is required; see https://nsis.sourceforge.io/')
+		}
+		imp.system_args(['makensis', 'packaging/windows/vox.nsi'])!
 	}
 )
 ctx.add_auto_flow(.clean)
