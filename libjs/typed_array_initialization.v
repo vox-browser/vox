@@ -114,9 +114,7 @@ pub fn initialize_typed_array_from_typed_array(mut vm VM, mut array TypedArray, 
 		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'TypedArray')
 	}
 	length := typed_array_length(record)
-	if uint(length) > (~uint(0)) / element_size {
-		return vm.throw_error_type(.range_error, .invalid_length, 'typed array')
-	}
+	validate_typed_array_length(mut vm, uint(length), element_size)!
 	byte_length := element_size * uint(length)
 	buffer := if array.kind == source.kind {
 		clone_array_buffer(mut vm, source_buffer, source_offset, byte_length)!
