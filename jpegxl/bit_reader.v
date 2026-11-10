@@ -25,6 +25,13 @@ pub fn (b &BitReader) peek(n int) !u64 {
 		return error('Invalid JPEG XL bit count')
 	}
 	if n == 0 { return 0 }
+	return b.peek_bits(n)
+}
+
+// peek for 0 <= n <= 56 at a nonnegative position, which the caller ensures.
+// Bits past the end of the data read as zero, as with peek.
+@[direct_array_access; inline]
+fn (b &BitReader) peek_bits(n int) u64 {
 	start := b.position / 8
 	offset := b.position % 8
 	if start + 8 <= b.data.len {
@@ -42,6 +49,15 @@ pub fn (b &BitReader) peek(n int) !u64 {
 		value |= u64(b.data[start + i]) << (i * 8)
 	}
 	return (value >> offset) & ((u64(1) << n) - 1)
+}
+
+// read_optimistic without a Result, for callers whose widths are known to
+// be within 0..56; the position is checked later with check_end().
+@[inline]
+fn (mut b BitReader) read_bits_optimistic(n int) u64 {
+	value := b.peek_bits(n)
+	b.position += n
+	return value
 }
 
 pub fn (mut b BitReader) read(n int) !u64 {
