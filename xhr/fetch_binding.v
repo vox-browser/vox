@@ -59,31 +59,75 @@ fn (mut request XMLHttpRequest) start_async_fetch_if_bound() ! {
 	fetch_request := request.create_fetch_request()
 	request.fetch_request_ = fetch_request
 	algorithms := fetch.FetchAlgorithms.create(fetch.FetchAlgorithmsInput{
-		process_request_body_chunk_length: fn [mut request] (length u64) {
+		process_request_body_chunk_length: fn [mut request, fetch_request] (length u64) {
+			if !request.is_active_fetch_request(fetch_request) { return }
 			request.receive_upload_chunk_length(length)
 		}
-		process_request_end_of_body: fn [mut request] () {
+		process_request_end_of_body: fn [mut request, fetch_request] () {
+			if !request.is_active_fetch_request(fetch_request) { return }
 			request.complete_upload()
 		}
-		process_response: fn [mut request] (response &fetch.Response) {
-			request.receive_fetch_response(response)
+		process_response: fn [mut request, fetch_request] (response &fetch.Response) {
+			if !request.is_active_fetch_request(fetch_request) { return }
+			request.receive_fetch_response(fetch_request, response)
 		}
 	})
-	request.fetch_controller_ = fetch.fetch(fetch_request, algorithms, host, .no)
-	if request.timeout_ms != 0 {
-		request.stop_timeout_timer()
-		mut timer := platform.Timer.create_single_shot(int(request.timeout_ms), fn [mut request, fetch_request] () {
-			if !fetch_request.done {
-				request.timed_out = true
-				request.fetch_controller_.terminate()
-				request.handle_errors() or { panic(err) }
-			}
-			request.stop_timeout_timer()
-		})
-		request.timeout_timer_ = timer
-		request.timeout_timer_active = true
-		timer.start()
+	request.async_request_ = none
+	send_start_time := xhr_monotonic_now()
+	mut controller := fetch.fetch(fetch_request, algorithms, host, .no)
+	// A host may deliver callbacks synchronously. Do not overwrite a controller
+	// installed by reentrant open()/send(), or arm a completed request's timer.
+	current_request := request.fetch_request_ or {
+		controller.terminate()
+		return
 	}
+	if voidptr(current_request) != voidptr(fetch_request) {
+		controller.terminate()
+		return
+	}
+	request.fetch_controller_ = controller
+	if !request.send_flag {
+		if !fetch_request.done { controller.terminate() }
+		return
+	}
+	request.async_send_start_time_ = send_start_time
+	request.async_request_ = fetch_request
+	request.restart_timeout_timer()
+}
+
+fn (request &XMLHttpRequest) is_active_fetch_request(fetch_request &fetch.Request) bool {
+	current_request := request.fetch_request_ or { return false }
+	return request.send_flag && voidptr(current_request) == voidptr(fetch_request)
+}
+
+fn (mut request XMLHttpRequest) restart_timeout_timer() {
+	request.stop_timeout_timer()
+	if !request.send_flag || request.synchronous || request.timeout_ms == 0 { return }
+	fetch_request := request.async_request_ or { return }
+	if fetch_request.done { return }
+	// Changing timeout keeps its deadline relative to the original send().
+	// An already elapsed deadline is scheduled without a new timeout period.
+	elapsed_ms := (xhr_monotonic_now() - request.async_send_start_time_) / 1_000_000
+	timeout_ms := i64(request.timeout_ms)
+	remaining_ms := if elapsed_ms < timeout_ms { timeout_ms - elapsed_ms } else { i64(0) }
+	fetch_controller := request.fetch_controller_
+	mut timer := platform.Timer.create_single_shot(int(remaining_ms), fn [mut request, fetch_request, fetch_controller] () {
+		active_request := request.async_request_ or { return }
+		if voidptr(active_request) != voidptr(fetch_request)
+			|| voidptr(request.fetch_controller_) != voidptr(fetch_controller) { return }
+		// Clear ownership before error events can start another request.
+		request.stop_timeout_timer()
+		request.async_request_ = none
+		if !fetch_request.done {
+			request.timed_out = true
+			mut controller := fetch_controller
+			controller.terminate()
+			request.handle_errors() or { panic(err) }
+		}
+	})
+	request.timeout_timer_ = timer
+	request.timeout_timer_active = true
+	timer.start()
 }
 
 @[heap]
@@ -162,19 +206,25 @@ fn (request &XMLHttpRequest) queue_body_read_task(algorithm fn ()) {
 	panic('XHR relevant global object does not provide its networking task destination')
 }
 
-fn (mut request XMLHttpRequest) receive_fetch_response(response &fetch.Response) {
+fn (mut request XMLHttpRequest) receive_fetch_response(fetch_request &fetch.Request, response &fetch.Response) {
 	request.fetch_response_ = response
 	request.receive_headers(project_fetch_response(response)) or { return }
-	if request.response_.network_error != none || request.state != .headers_received { return }
+	if !request.is_active_fetch_request(fetch_request)
+		|| request.response_.network_error != none || request.state != .headers_received { return }
 	if mut body := response.fetch_response_body() {
-		body.incrementally_read(fn [mut request] (bytes []u8) {
-			request.queue_body_read_task(fn [mut request, bytes] () { request.receive_chunk(bytes) })
-		}, fn [mut request] () {
-			request.queue_body_read_task(fn [mut request] () {
+		body.incrementally_read(fn [mut request, fetch_request] (bytes []u8) {
+			request.queue_body_read_task(fn [mut request, fetch_request, bytes] () {
+				if !request.is_active_fetch_request(fetch_request) { return }
+				request.receive_chunk(bytes)
+			})
+		}, fn [mut request, fetch_request] () {
+			request.queue_body_read_task(fn [mut request, fetch_request] () {
+				if !request.is_active_fetch_request(fetch_request) { return }
 				request.handle_response_end_of_body() or { panic(err) }
 			})
-		}, fn [mut request] (_ string) {
-			request.queue_body_read_task(fn [mut request] () {
+		}, fn [mut request, fetch_request] (_ string) {
+			request.queue_body_read_task(fn [mut request, fetch_request] () {
+				if !request.is_active_fetch_request(fetch_request) { return }
 				error_response := fetch.Response.network_error('A network error occurred processing body.')
 				request.fetch_response_ = error_response
 				request.response_ = project_fetch_response(error_response)
