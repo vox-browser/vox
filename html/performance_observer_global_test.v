@@ -70,7 +70,7 @@ fn test_resource_buffer_overflow_does_not_suppress_native_observer_delivery() {
 	observer.observe(performancetimeline.PerformanceObserverInit{ type_: 'resource' })!
 	performance.add_entry(performancetimeline.PerformanceEntry.new('first', 'resource', 1, 0))
 	performance.add_entry(performancetimeline.PerformanceEntry.new('overflow', 'resource', 2, 0))
-	assert performance.get_entries().map(it.name) == ['first']
+	assert performance.get_entries_by_type('resource').map(it.name) == ['first']
 	drain_native_performance_tasks(owner)
 	assert state.names == ['first', 'overflow']
 	observer.disconnect()

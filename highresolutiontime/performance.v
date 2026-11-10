@@ -53,7 +53,7 @@ mut:
 pub fn Performance.create(host PerformanceHost) &Performance {
 	return &Performance{
 		host: host
-		timeline: performancetimeline.PerformanceTimeline.new(performancetimeline.supported_entry_types)
+		timeline: performancetimeline.PerformanceTimeline.new(performancetimeline.supported_entry_types_for_global(host.window_context))
 		time_origin_timestamp: get_time_origin_timestamp(host.time)
 	}
 }

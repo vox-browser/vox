@@ -27,7 +27,9 @@ fn test_performance_entry_json_and_registry_names() {
 	assert json.entry_type == 'resource'
 	assert json.start_time == 2.5
 	assert json.duration == 4.5
-	assert entry_types.len == 11
+	assert entry_types.len == 12
 	assert supported_entry_types == ['mark', 'measure', 'resource']
+	assert supported_entry_types_for_global(true) == ['mark', 'measure', 'resource', 'visibility-state']
+	assert supported_entry_types_for_global(false) == supported_entry_types
 	assert 'resourcetimingbufferfull' in event_names
 }

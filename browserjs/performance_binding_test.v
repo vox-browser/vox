@@ -46,9 +46,9 @@ fn test_performance_binding_uses_owning_clock_and_shared_observer_wrappers() {
 	performance.mark('later', usertiming.PerformanceMarkOptions{ start_time: 20 })!
 	performance.mark('first', usertiming.PerformanceMarkOptions{ start_time: 3 })!
 	assert runtime.evaluate_host(r'
- globalThis.saved=performance.getEntries()[0];globalThis.received=null;
+ globalThis.saved=performance.getEntriesByType("mark")[0];globalThis.received=null;
  globalThis.observer=new PerformanceObserver(list=>received=list.getEntries()[0]);observer.observe({type:"mark",buffered:true});
- const entries=performance.getEntries(),snapshot=JSON.parse(JSON.stringify(performance));
+ const entries=performance.getEntriesByType("mark"),snapshot=JSON.parse(JSON.stringify(performance));
  performance===globalThis.performance&&performance instanceof Performance&&performance instanceof EventTarget&&Object.prototype.toString.call(performance)==="[object Performance]"&&entries.map(e=>e.name).join(",")==="first,later"&&entries[0]===saved&&saved instanceof PerformanceEntry&&performance.getEntriesByType("mark")[0]===saved&&performance.getEntriesByName("first","mark")[0]===saved&&performance.getEntriesByType("unknown").length===0&&Object.keys(snapshot).join(",")==="timeOrigin"&&Number.isFinite(snapshot.timeOrigin);
  ')! == 'true'
 	before := performance.now()
@@ -80,12 +80,12 @@ fn test_performance_binding_brands_before_conversion_and_clears_native_buffers()
  let brands=0;for(const call of [()=>Performance.prototype.getEntriesByName.call({},text),()=>Performance.prototype.now.call({}),()=>Object.getOwnPropertyDescriptor(Performance.prototype,"timeOrigin").get.call({}),()=>new Performance(),()=>performance.getEntriesByType(),()=>performance.setResourceTimingBufferSize()]){try{call()}catch(e){if(e instanceof TypeError)brands++}}
  const marker={};let same=false;try{performance.getEntriesByType({toString(){throw marker}})}catch(e){same=e===marker}
  const result=performance.clearMarks(text);performance.setResourceTimingBufferSize({valueOf(){order.push("size");return 2}});
- brands===6&&same&&result===undefined&&order.join(",")==="string,size"&&performance.getEntries()[0].name==="keep";
+ brands===6&&same&&result===undefined&&order.join(",")==="string,size"&&performance.getEntriesByType("mark")[0].name==="keep";
  ')! == 'true'
 	assert performance.get_entries_by_name('remove', none).len == 0
 	assert performance.resource_timing_buffer_size == 2
-	assert runtime.evaluate_host('performance.clearMarks();performance.clearMeasures();performance.getEntries().length')! == '0'
-	assert performance.get_entries().len == 0
+	assert runtime.evaluate_host('performance.clearMarks();performance.clearMeasures();performance.getEntriesByType("mark").length')! == '0'
+	assert performance.get_entries_by_type('mark').len == 0
 	assert runtime.evaluate_host('globalThis.nativePerformance=performance;performance=123;performance===123&&nativePerformance instanceof Performance')! == 'true'
 }
 
@@ -149,10 +149,10 @@ fn test_performance_mark_constructor_keeps_entries_out_of_the_timeline_and_suppo
  const json=PerformanceEntry.prototype.toJSON.call(direct);
  direct.name==="direct"&&direct.entryType==="mark"&&direct.startTime===3&&direct.duration===0&&direct.detail.answer===42&&
  child instanceof ChildMark&&child instanceof PerformanceMark&&Object.getPrototypeOf(child)===ChildMark.prototype&&
- Object.getPrototypeOf(fallback)===PerformanceMark.prototype&&performance.getEntries().length===0&&
+ Object.getPrototypeOf(fallback)===PerformanceMark.prototype&&performance.getEntriesByType("mark").length===0&&
  Object.keys(json).join(",")==="name,entryType,startTime,duration";
  ')! == 'true'
-	assert scope.performance().get_entries().len == 0
+	assert scope.performance().get_entries_by_type('mark').len == 0
 }
 
 fn test_performance_mark_detail_is_cloned_on_creation_and_every_read() {
@@ -191,9 +191,9 @@ fn test_performance_mark_conversion_order_brands_and_failed_validation_do_not_pu
  let reserved=false;try{performance.mark("navigationStart",{detail})}catch(e){reserved=e instanceof DOMException&&e.name==="SyntaxError"&&e.code===12}
  const zero=performance.mark("zero",{startTime:-0});
  brands===1&&untouched&&order&&errors===10&&reserved&&Object.is(zero.startTime,-0)&&
- performance.getEntries().length===2&&performance.getEntriesByName("x").length===0&&markOrder.length===5;
+ performance.getEntriesByType("mark").length===2&&performance.getEntriesByName("x").length===0&&markOrder.length===5;
  ')! == 'true'
-	assert scope.performance().get_entries().len == 2
+	assert scope.performance().get_entries_by_type('mark').len == 2
 }
 
 fn test_performance_mark_exceptions_preserve_identity_and_leave_observers_and_buffers_empty() {
@@ -209,9 +209,9 @@ fn test_performance_mark_exceptions_preserve_identity_and_leave_observers_and_bu
  }
  let clones=0;for(const value of [()=>0,Symbol("detail")]){try{performance.mark("x",{detail:value})}catch(e){if(e instanceof DOMException&&e.name==="DataCloneError")clones++}}
  let nested=0;try{performance.mark("x",{startTime:-1,detail:{get fail(){nested++;return 1}}})}catch(e){}
- preserved===5&&clones===2&&nested===0&&performance.getEntries().length===0&&failedMarkObserver.takeRecords().length===0;
+ preserved===5&&clones===2&&nested===0&&performance.getEntriesByType("mark").length===0&&failedMarkObserver.takeRecords().length===0;
  ')! == 'true'
-	assert scope.performance().get_entries().len == 0
+	assert scope.performance().get_entries_by_type('mark').len == 0
 }
 
 fn test_javascript_mark_observers_keep_the_same_wrapper_after_clear_and_collection() {
@@ -221,7 +221,7 @@ fn test_javascript_mark_observers_keep_the_same_wrapper_after_clear_and_collecti
 	assert runtime.evaluate_host(r'
  globalThis.markDeliveries=[];globalThis.markObserver=new PerformanceObserver(list=>markDeliveries.push(list.getEntries()[0]));markObserver.observe({type:"mark"});
  globalThis.observedMark=performance.mark("queued",{startTime:5,detail:{keep:42}});
- const same=performance.getEntriesByType("mark")[0]===observedMark;performance.clearMarks("queued");same&&performance.getEntries().length===0;
+ const same=performance.getEntriesByType("mark")[0]===observedMark;performance.clearMarks("queued");same&&performance.getEntriesByType("mark").length===0;
  ')! == 'true'
 	gc_collect()
 	C.JSGarbageCollect(runtime.context)

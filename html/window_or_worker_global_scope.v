@@ -721,22 +721,26 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) relevant_performance_entry_tup
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) queue_performance_entry(entry PerformanceEntry) {
 	mut performance := scope.performance()
 	performance.timeline.queue_entry(performance_entry_object(entry))
+	mut interested := performance.timeline.observer_task_queued
 	for observer in scope.registered_observers_ {
 		if entry.entry_type in observer.entry_types {
 			mut mutable_observer := unsafe { &PerformanceObserverRecord(observer) }
 			mutable_observer.queued_entries << entry
+			interested = true
 		}
 	}
-	scope.queue_the_performance_observer_task()
+	if interested { scope.queue_the_performance_observer_task() }
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_performance_entry(entry PerformanceEntry) {
 	mut tuple := scope.relevant_performance_entry_tuple(entry.entry_type)
+	native := performance_entry_object(entry)
+	if maximum := native.max_buffer_size { tuple.max_buffer_size = uint(maximum) }
 	if tuple.max_buffer_size == 0 || tuple.performance_entry_buffer.len < tuple.max_buffer_size {
 		tuple.performance_entry_buffer << entry
-		mut performance := scope.performance()
-		performance.timeline.buffer_entry(performance_entry_object(entry))
 	}
+	mut performance := scope.performance()
+	performance.timeline.buffer_entry(native)
 }
 
 pub fn (mut scope WindowOrWorkerGlobalScopeMixin) process_performance_observers() {
@@ -1161,7 +1165,5 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) trusted_types() &GlobalScopeTr
 }
 
 pub fn (scope &WindowOrWorkerGlobalScopeMixin) supported_entry_types() []string {
-	return ['element', 'event', 'first-input', 'largest-contentful-paint', 'layout-shift',
-		'long-animation-frame', 'longtask', 'mark', 'measure', 'navigation', 'paint', 'resource',
-		'taskattribution', 'visibility-state']
+	return performancetimeline.supported_entry_types_for_global(scope.associated_window_ != none)
 }

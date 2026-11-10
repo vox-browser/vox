@@ -1696,6 +1696,7 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 	window.location_ = location
 	window.Window.location_ = unsafe { &dom.Location(location) }
 	document_with_html_hooks.set_window(unsafe { &dom.Window(window) })
+	document_with_html_hooks.flush_initial_visibility_state_entry()
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_active_document(document)
 	mutable_context.set_window_proxy(proxy)

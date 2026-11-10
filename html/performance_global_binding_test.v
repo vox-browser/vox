@@ -57,14 +57,16 @@ fn test_global_performance_retains_identity_and_uses_real_settings_and_entry_buf
 	measurement := performance.measure('span', highresolutiontime.StartOrMeasureOptions(usertiming.PerformanceMeasureOptions{ start: usertiming.StringOrTimestamp('same'), duration: 5 }), none)!
 	assert measurement.entry.start_time == 3
 	assert measurement.entry.duration == 5
-	assert scope.filter_buffer_map_by_name_and_type(none, none).len == 3
+	assert scope.filter_buffer_map_by_name_and_type(none, none).len == 4
 	assert state.names.len == 0
 	drain_performance_owner(owner)
 	assert state.names == ['same', 'same', 'span']
 	performance.clear_marks('same')
 	assert scope.filter_buffer_map_by_name_and_type(none, 'mark').len == 0
 	performance.clear_measures(none)
-	assert performance.get_entries().len == 0
+	assert performance.get_entries_by_type('mark').len == 0
+	assert performance.get_entries_by_type('measure').len == 0
+	assert performance.get_entries_by_type('visibility-state').len == 1
 }
 
 fn test_global_resource_timing_overflow_dispatches_actual_event_and_reentrant_buffer_clear() {
@@ -83,12 +85,12 @@ fn test_global_resource_timing_overflow_dispatches_actual_event_and_reentrant_bu
 	second := performancetimeline.PerformanceEntry.new('second', 'resource', 2, 0)
 	performance.add_entry(first)
 	performance.add_entry(second)
-	assert performance.get_entries() == [first]
+	assert performance.get_entries_by_type('resource') == [first]
 	assert scope.resource_timing_buffer_current_size() == 1
 	assert state.full_events == 0
 	drain_performance_owner(owner)
 	assert state.full_events == 1
-	assert performance.get_entries() == [second]
+	assert performance.get_entries_by_type('resource') == [second]
 	performance.set_onresourcetimingbufferfull(none)
 	if _ := performance.onresourcetimingbufferfull() {
 		assert false
@@ -131,5 +133,6 @@ fn test_worker_performance_has_its_own_real_global_and_window_name_restrictions(
 		assert err.msg().contains('requires a Window')
 	}
 	mut window_scope := window.window_or_worker_global_scope()
-	assert window_scope.performance().get_entries().len == 0
+	assert window_scope.performance().get_entries_by_type('mark').len == 0
+	assert window_scope.performance().get_entries_by_type('visibility-state').len == 1
 }

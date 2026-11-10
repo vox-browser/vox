@@ -39,7 +39,7 @@ fn test_worker_performance_uses_its_own_clock_timeline_and_native_receiver() {
 		assert runtime.evaluate_host(r'
  let brands=0;for(const call of [()=>Performance.prototype.now.call({}),()=>new Performance()]){try{call()}catch(e){if(e instanceof TypeError)brands++}}
  const entries=performance.getEntries();
- brands===2&&performance instanceof Performance&&performance instanceof EventTarget&&Object.prototype.toString.call(performance)==="[object Performance]"&&entries.length===1&&entries[0].name==="worker mark"&&entries[0]===performance.getEntriesByName("worker mark")[0]&&performance.toJSON().timeOrigin===performance.timeOrigin&&!("timing" in performance)&&!("navigation" in performance)&&typeof document==="undefined";
+ brands===2&&performance instanceof Performance&&performance instanceof EventTarget&&Object.prototype.toString.call(performance)==="[object Performance]"&&entries.length===1&&entries[0].name==="worker mark"&&entries[0]===performance.getEntriesByName("worker mark")[0]&&performance.toJSON().timeOrigin===performance.timeOrigin&&!("timing" in performance)&&!("navigation" in performance)&&typeof document==="undefined"&&typeof VisibilityStateEntry==="undefined"&&!PerformanceObserver.supportedEntryTypes.includes("visibility-state");
  ')! == 'true'
 	}
 }
