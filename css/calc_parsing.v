@@ -294,25 +294,24 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 	mut strategy := 'nearest'
 	mut numeric_lists := argument_lists.clone()
 
-	// An optional leading <rounding-strategy> keyword.
-	if argument_lists.len == 3 {
+	// The strategy is optional whether the rounding interval is explicit or
+	// defaults to 1, so round(up, A) is valid alongside round(A).
+	if argument_lists.len >= 2 {
 		first := argument_lists[0]
 		mut probe := ComponentValueStream.new(first)
 		probe.consume_whitespace()
 		if keyword_token := probe.consume() {
 			probe.consume_whitespace()
 			if keyword_token.is(.ident) && !probe.has_more_tokens() {
-				strategy = calc_rounding_strategy_from_string(keyword_token.token().ident()) or {
-					return none
+				if parsed_strategy := calc_rounding_strategy_from_string(keyword_token.token().ident()) {
+					strategy = parsed_strategy
+					numeric_lists = argument_lists[1..].clone()
 				}
-				numeric_lists = argument_lists[1..].clone()
-			} else {
-				return none
 			}
 		}
 	}
 
-	if numeric_lists.len != 2 {
+	if numeric_lists.len < 1 || numeric_lists.len > 2 {
 		return none
 	}
 	mut call_arguments := []CalcNode{}
@@ -320,6 +319,18 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 		mut stream := ComponentValueStream.new(argument)
 		call_arguments << (parser.parse_a_calculation(mut stream, allow_tree_counting_functions) or {
 			return none
+		})
+	}
+	if call_arguments.len == 1 {
+		// CSS Values 4 defaults B to 1 only when A is a <number>.
+		value_type := call_arguments[0].numeric_type() or { return none }
+		if !value_type.matches_number(none) {
+			return none
+		}
+		call_arguments << CalcNode(CalcNumeric{
+			kind: .number
+			value: 1.0
+			type_: NumericType.new()
 		})
 	}
 	return build_calc_function('round', call_arguments, strategy)
