@@ -4607,7 +4607,10 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			}
 			text := fragment.text() or { continue }
 			computed := fragment.style_source().computed_values()
-			font_metrics := fragment.style_source().first_available_font().pixel_metrics()
+			raw_font_metrics := fragment.style_source().first_available_font().pixel_metrics()
+			font_metrics := if fragment.layout_node_.document().font_rendering_policy() == .libweb {
+				libweb_layout_font_metrics(raw_font_metrics)
+			} else { raw_font_metrics }
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
 			mut background_color_clip := 'border-box'

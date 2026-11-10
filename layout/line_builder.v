@@ -1173,7 +1173,24 @@ fn layout_inline_font_metrics(node &Node, font &platform.Font) platform.FontPixe
 	// still contributes a zero strut and baseline to inline layout.
 	if node.computed_values().font_size().raw_value()==0 { return platform.FontPixelMetrics{} }
 	document := node.document()
-	return font.inline_metrics_at_scale(document.display_device_pixel_ratio() / document.layout_coordinate_scale())
+	metrics := font.inline_metrics_at_scale(document.display_device_pixel_ratio() / document.layout_coordinate_scale())
+	if document.font_rendering_policy() == .libweb {
+		return libweb_layout_font_metrics(metrics)
+	}
+	return metrics
+}
+
+// Ladybird 54df53de9371976709ffdd350b3a00c1a775dbc7: HTML line boxes count
+// ascent/descent in whole CSS pixels and put the odd leading pixel below text.
+fn libweb_layout_font_metrics(metrics platform.FontPixelMetrics) platform.FontPixelMetrics {
+	return platform.FontPixelMetrics{
+		...metrics
+		ascent: f32(math.round_to_even(f64(metrics.ascent)))
+		descent: f32(math.round_to_even(f64(metrics.descent)))
+		line_gap: 0
+		floor_inline_leading: true
+		inline_leading_scale: 1
+	}
 }
 
 fn inline_half_leading(leading CSSPixels, metrics platform.FontPixelMetrics) CSSPixels {
