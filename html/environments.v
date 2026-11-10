@@ -76,6 +76,7 @@ pub:
 	state     string
 }
 
+@[heap]
 pub struct ServiceWorkerRegistrationRecordModel {
 pub:
 	storage_key string
@@ -87,6 +88,8 @@ pub:
 
 @[heap]
 pub struct ServiceWorkerRegistrationObjectModel {
+	// Keep the registration's identity alive while its cached wrapper exists.
+	registration_ &ServiceWorkerRegistrationRecordModel
 pub:
 	storage_key string
 	scope_url   dom.URL
@@ -120,7 +123,7 @@ mut:
 	universal_global_scope_              &UniversalGlobalScopeMixin = unsafe { nil }
 	storage_manager_                     &storageapi.StorageManager = unsafe { nil }
 	resolved_module_set_                 []ResolvedModuleRecord
-	service_worker_registration_objects_ map[string]&ServiceWorkerRegistrationObjectModel
+	service_worker_registration_objects_ map[u64]&ServiceWorkerRegistrationObjectModel
 	service_worker_objects_              map[string]&ServiceWorkerObjectModel
 	worker_agents_starting_              []&WorkerAgentParent
 	fetch_group_                         FetchGroup
@@ -672,11 +675,12 @@ pub fn (mut settings EnvironmentSettingsObject) get_service_worker_object(record
 }
 
 pub fn (mut settings EnvironmentSettingsObject) get_service_worker_registration_object(registration &ServiceWorkerRegistrationRecordModel) &ServiceWorkerRegistrationObjectModel {
-	key := '${registration.storage_key}\0${registration.scope_url.serialize()}'
+	key := u64(voidptr(registration))
 	if object := settings.service_worker_registration_objects_[key] {
 		return object
 	}
 	mut object := &ServiceWorkerRegistrationObjectModel{
+		registration_: registration
 		storage_key: registration.storage_key
 		scope_url: registration.scope_url
 	}
