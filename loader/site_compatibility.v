@@ -172,6 +172,17 @@ mut:
 	rules_ []SiteCompatibilityRule
 }
 
+// WebCompat/twitch.tv.json: Twitch's desktop routing rejects the Ladybird
+// product token. Restrict this override to its HTTPS origin and subdomains.
+pub fn default_site_compatibility_data() SiteCompatibilityData {
+	mut data := SiteCompatibilityData{}
+	data.add_rule(SiteCompatibilityRule.create([
+		'https://twitch.tv/*',
+		'https://*.twitch.tv/*',
+	], [.hide_ladybird], []) or { panic('Invalid built-in Twitch compatibility rule: ${err}') })
+	return data
+}
+
 pub fn SiteCompatibilityData.from_json(value json2.Any) !SiteCompatibilityData {
 	if value !is []json2.Any {
 		return error('Site-compatibility data must be a JSON array')
