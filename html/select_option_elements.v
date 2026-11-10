@@ -141,7 +141,7 @@ pub fn html_option_element_attribute_changed(option &dom.HTMLOptionElement, name
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-value
 pub fn html_option_element_value(option &dom.HTMLOptionElement) string {
-	return option_dom_element(option).get_attribute('value') or { html_option_element_text(option) }
+	return option_dom_element(option).get_attribute_ns(none, 'value') or { html_option_element_text(option) }
 }
 
 pub fn set_html_option_element_value(option &dom.HTMLOptionElement, value string) {
@@ -181,7 +181,7 @@ pub fn set_html_option_element_text(option &dom.HTMLOptionElement, text string) 
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-label
 pub fn html_option_element_label(option &dom.HTMLOptionElement) string {
-	return option_dom_element(option).get_attribute('label') or { html_option_element_text(option) }
+	return option_dom_element(option).get_attribute_ns(none, 'label') or { html_option_element_text(option) }
 }
 
 pub fn set_html_option_element_label(option &dom.HTMLOptionElement, label string) {
