@@ -7,6 +7,7 @@
 // milliseconds, matching the Unix millisecond timestamps used by the V port.
 module http
 
+import cachepolicy
 import strconv
 import time
 
@@ -25,24 +26,6 @@ fn cache_ascii_lowercase(value string) string {
 		}
 	}
 	return bytes.bytestr()
-}
-
-// RFC 9111: An unclosed quoted-string may hide a no-store directive from
-// the list-based Cache-Control scanner. Such responses are not cacheable.
-fn cache_control_has_unterminated_quote(value string) bool {
-	mut quoted := false
-	mut escaped := false
-	for byte in value.bytes() {
-		if quoted && !escaped && byte == `\\` {
-			escaped = true
-			continue
-		}
-		if !escaped && byte == `"` {
-			quoted = !quoted
-		}
-		escaped = false
-	}
-	return quoted
 }
 
 // Header field names are case-insensitive, while quoted field values are not.
@@ -139,7 +122,8 @@ pub fn vary_header_names(headers &HeaderList) []string {
 	return names
 }
 
-pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
+pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool {
+	headers := remove_connection_specific_fields(received_headers)
 	if status_code < 200 || status_code == 206 {
 		return false
 	}
@@ -151,11 +135,7 @@ pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
 	}
 	cache_control := headers.get('Cache-Control')
 	if value := cache_control {
-		if cache_control_has_unterminated_quote(value) {
-			return false
-		}
-	}
-	if value := cache_control {
+		if cachepolicy.has_unterminated_quoted_string(value) { return false }
 		if contains_cache_control_directive(value, 'must-understand') {
 			if !is_heuristically_cacheable_status(status_code) && status_code != 304 {
 				return false
@@ -182,21 +162,19 @@ pub fn is_header_exempted_from_cache_storage(name string) bool {
 		'x-ladybird-request-time-offset']
 }
 
+pub fn remove_connection_specific_fields(headers &HeaderList) &HeaderList {
+	fields := cachepolicy.storage_headers(headers.headers().map(cachepolicy.Header{
+		name: it.name, value: it.value
+	}))
+	mut result := HeaderList.create()
+	for field in fields { result.append(Header{ name: field.name, value: field.value }) }
+	return result
+}
+
 pub fn store_header_and_trailer_fields(headers &HeaderList) &HeaderList {
-	mut connection_options := []string{}
-	if options := headers.get('Connection') {
-		for option in get_decode_and_split_header_value(options) {
-			name := cache_ascii_lowercase(option.trim('\t '))
-			if name != '' && name !in connection_options {
-				connection_options << name
-			}
-		}
-	}
 	mut stored := HeaderList.create()
-	for header in headers.headers() {
-		// RFC 9111: Connection also nominates headers that must not be stored.
-		if !is_header_exempted_from_cache_storage(header.name)
-			&& cache_ascii_lowercase(header.name) !in connection_options {
+	for header in remove_connection_specific_fields(headers).headers() {
+		if !is_header_exempted_from_cache_storage(header.name) {
 			stored.append(header)
 		}
 	}

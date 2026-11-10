@@ -508,7 +508,8 @@ pub fn store_response_in_cache(request &Request, mut response Response) {
 	if internal.cache_storage_retired_ || internal.cache_entry_token_ != 0 {
 		return
 	}
-	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(internal.status, internal.header_list) {
+	headers := http.remove_connection_specific_fields(internal.header_list)
+	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(internal.status, headers) {
 		return
 	}
 	key := fetch_cache_partition_key(request) or { return }
@@ -522,11 +523,11 @@ pub fn store_response_in_cache(request &Request, mut response Response) {
 	mut entries := fetch_http_memory_cache_pending[key] or { []FetchMemoryCacheEntry{} }
 	entries << FetchMemoryCacheEntry{
 		response_token: internal.cache_entry_token_
-		vary_key: http.create_vary_key(request.header_list, internal.header_list)
+		vary_key: http.create_vary_key(request.header_list, headers)
 		status_code: internal.status
 		reason_phrase: internal.status_message
 		request_headers: http.store_header_and_trailer_fields(request.header_list)
-		response_headers: http.store_header_and_trailer_fields(internal.header_list)
+		response_headers: http.store_header_and_trailer_fields(headers)
 		request_time: request.request_time
 		response_time: time.now().unix_milli()
 		javascript_bytecode_cache: internal.javascript_bytecode_cache()
@@ -605,7 +606,7 @@ fn finalize_response_body_in_cache(request &Request, response &Response, respons
 		|| internal.cache_storage_retired_ {
 		return
 	}
-	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(internal.status, internal.header_list) {
+	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(entry.status_code, entry.response_headers) {
 		return
 	}
 	entry.response_body = response_body.clone()

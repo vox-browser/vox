@@ -66,7 +66,8 @@ pub fn discard_disk_entry(path string) {
 // Store one measured response. Timing is never synthesized while reading old
 // entries. The historical companion names remain usable for diagnostics, but
 // every cache adapter reads through read_disk_entry rather than raw files.
-pub fn store_disk_response(path string, final_url string, body string, response Response, limit int) bool {
+pub fn store_disk_response(path string, final_url string, body string, received_response Response, limit int) bool {
+	response := Response{ ...received_response, headers: storage_headers(received_response.headers) }
 	os.rm(path + '.timing.json') or {}
 	os.rm(path + '.status') or {}
 	if forbids_storage(response.headers) {
@@ -139,7 +140,9 @@ pub fn read_disk_entry(path string, limit int) ?DiskEntry {
 	if record['integrity'] != disk_integrity(final_url, status, encoded_headers, body) {
 		return none
 	}
-	headers := disk_headers(encoded_headers) or { return none }
+	// Validate the original receipt before filtering. Older entries may still
+	// contain connection-specific fields, which must not be replayed either.
+	headers := storage_headers(disk_headers(encoded_headers) or { return none })
 	return DiskEntry{
 		final_url: final_url
 		body:      body
