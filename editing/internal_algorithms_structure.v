@@ -879,11 +879,13 @@ pub fn outdent(node &dom.Node) {
 		// 5. Let preceding siblings be the precedings siblings of target, and let following siblings be the followings
 		//    siblings of target.
 		mut preceding_siblings := []&dom.Node{}
-		mut sibling := target_node.previous_sibling()
+		// Both lists must be in tree order for indent's adjacent-parent checks.
+		mut sibling := current.first_child()
 		for {
 			current_sibling := sibling or { break }
+			if voidptr(current_sibling) == voidptr(target_node) { break }
 			preceding_siblings << current_sibling
-			sibling = current_sibling.previous_sibling()
+			sibling = current_sibling.next_sibling()
 		}
 		mut following_siblings := []&dom.Node{}
 		sibling = target_node.next_sibling()
