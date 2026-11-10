@@ -96,8 +96,9 @@ pub fn (header Header) extract_header_values() ?[]string {
 		'access-control-allow-methods'] {
 		return extract_token_headers(header.value)
 	}
-	// 1#field-name headers: one or more tokens (an empty list is a failure).
-	if lowercased_name in ['access-control-request-headers', 'accept-ranges'] {
+	// 1#token headers: one or more tokens (an empty list is a failure).
+	// Referrer-Policy is a comma-separated list of policy tokens too.
+	if lowercased_name in ['access-control-request-headers', 'accept-ranges', 'referrer-policy'] {
 		headers := extract_token_headers(header.value) or { return none }
 		if headers.len == 0 {
 			return none
