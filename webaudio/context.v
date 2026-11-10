@@ -268,8 +268,7 @@ pub fn (mut context AudioContext) resume() AudioPromise {
 			message: 'InvalidStateError: Audio context is already closed'
 		}
 	}
-	// Preserve current upstream behavior (including its assignment to true).
-	context.suspended_by_user = true
+	context.suspended_by_user = false
 	context.base.state = .running
 	context.base.rendering_state = .running
 	context.set_renderer_callbacks()

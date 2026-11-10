@@ -34,9 +34,11 @@ fn test_realtime_context_state_transitions_and_destination_constraints() {
 	assert context.base.render_quantum_size() == 128
 	assert context.base.onstatechange_count == 1
 	assert context.suspend().state == .fulfilled
+	assert context.suspended_by_user
 	assert context.base.state == .suspended
 	assert context.base.onstatechange_count == 1
 	assert context.resume().state == .fulfilled
+	assert !context.suspended_by_user
 	assert context.base.onstatechange_count == 1
 	assert context.close().state == .fulfilled
 	assert context.base.onstatechange_count == 2
