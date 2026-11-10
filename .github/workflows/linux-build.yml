@@ -172,26 +172,9 @@ jobs:
             --report "$RUNNER_TEMP/vox-tab-codec-$LADYBIRD_V_GC.json" --timeout 540 -- \
             python3 tools/test_tab_metadata_codec.py --v "$V_BIN" --gc "$LADYBIRD_V_GC"
 
-      - name: Cache pinned Skia
-        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: Build/deps
-          key: linux-skia-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/build_linux_skia.py') }}
-
-      - name: Build Skia
-        id: skia
-        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
-        timeout-minutes: 45
-        run: |
-          python3 tools/run_memory_bounded.py \
-            --lock "$RUNNER_TEMP/vox-skia-build.lock" \
-            --report "$RUNNER_TEMP/vox-skia-build.json" --timeout 2400 -- \
-            python3 tools/build_linux_skia.py
-
       - name: Build native dependencies
         id: native_dependencies
-        if: ${{ !cancelled() && steps.skia.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.toolchain.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           export PKG_CONFIG_PATH="$GITHUB_WORKSPACE/Build/deps/lib/pkgconfig"
@@ -200,14 +183,14 @@ jobs:
             --report "$RUNNER_TEMP/vox-native-build.json" --timeout 300 -- \
             python3 tools/build_linux_native.py
 
-      - name: Check native Skia linking and rendering
+      - name: Check portable shadow and canvas rasterization
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
         timeout-minutes: 10
         run: |
           python3 tools/run_memory_bounded.py \
-            --lock "$RUNNER_TEMP/vox-skia-test.lock" \
-            --report "$RUNNER_TEMP/vox-skia-test.json" --timeout 300 -- \
-            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" skia/shadow_test.v
+            --lock "$RUNNER_TEMP/vox-raster-test.lock" \
+            --report "$RUNNER_TEMP/vox-raster-test.json" --timeout 300 -- \
+            python3 tools/test_linux_native.py --gc "$LADYBIRD_V_GC" cpuraster/shadow_command_test.v
 
       - name: Check structured storage integer codecs
         if: ${{ !cancelled() && steps.native_dependencies.outcome == 'success' }}
