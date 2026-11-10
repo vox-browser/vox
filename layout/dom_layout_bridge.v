@@ -7,6 +7,7 @@ import os
 __global dom_layout_callbacks = dom.LayoutNodeCallbacks{
 	generated_content_text_callback: layout_generated_accessible_text
 	find_matching_text_callback: find_matching_layout_text
+	inline_word_range_callback: layout_inline_word_range
 	apply_style_callback: apply_style_to_layout_node
 	apply_animated_style_callback: apply_animated_style_to_layout_node
 	apply_color_style_callback: apply_inherited_color_style_to_layout_node
