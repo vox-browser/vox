@@ -88,3 +88,19 @@ fn test_arrow_var_arguments_does_not_use_the_enclosing_arguments_object() {
 	assert arrow.is_arrow_function
 	assert_arguments_parameter_mapping(arrow, false)
 }
+
+fn test_catch_arguments_keeps_parameters_local_inside_the_catch_scope() {
+	for body in [
+		'try { throw [2]; } catch (arguments) { return arguments[0] + a; }',
+		'try { throw [2]; } catch (arguments) { { return arguments[0] + a; } }',
+		'try { throw { arguments: [2] }; } catch ({ arguments }) { return arguments[0] + a; }',
+	] {
+		function := arguments_scope_function('function f(a) { ${body} }', 'f')
+		assert_arguments_parameter_mapping(function, false)
+	}
+}
+
+fn test_catch_arguments_does_not_shadow_the_arguments_object_after_the_catch() {
+	function := arguments_scope_function('function f(a) { try { throw [2]; } catch (arguments) { arguments[0] = 3; } return arguments[0] + a; }', 'f')
+	assert_arguments_parameter_mapping(function, true)
+}

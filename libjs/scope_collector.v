@@ -759,8 +759,9 @@ fn (sc &ScopeCollector) has_declaration_in_current_function(name []u16) bool {
 		&& !sc.records[fn_scope].is_arrow_function {
 		// A var in a function with its own arguments object is that object's
 		// binding. Arrow functions have no implicit object and keep a real var.
+		// Catch parameters still shadow it, including simple catches marked as vars.
 		declaring_flags = var_flag_lexical | var_flag_function | var_flag_function_declaration
-			| var_flag_parameter_candidate
+			| var_flag_parameter_candidate | var_flag_catch_parameter
 	}
 	mut si := sc.current
 	for si >= 0 {
