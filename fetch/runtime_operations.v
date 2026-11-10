@@ -297,6 +297,9 @@ pub fn (mut record FetchRecord) set_fetch_controller(controller ?&FetchControlle
 pub fn (mut pending PendingResponse) run_callback() {
 	response := pending.response_ or { return }
 	callback := pending.callback_ or { return }
+	// Transfer the one-shot callback to its queued task. The pending response
+	// may outlive that task while its body is still streaming.
+	pending.callback_ = none
 	pending_pointer := unsafe { &PendingResponse(pending) }
 	deferred_invoke_for_request(pending_pointer.request, fn [pending_pointer, response, callback] () {
 		callback(response)
