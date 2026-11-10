@@ -4819,6 +4819,11 @@ pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
 	if element.inert() != is_inert {
 		element.set_inert(is_inert)
 		repaint_after_inertness_change(element_node)
+		// Attribute-change steps run after the new inert attribute is visible,
+		// so the root snapshot can already contain its new :read-write state.
+		// Use the stored inertness transition to notify its selector dependents.
+		mut root_element := unsafe { &Element(&element) }
+		root_element.invalidate_read_write_selector_dependencies()
 	}
 	element_node.visit_shadow_including_descendants(fn [is_inert] (node &Node) TraversalDecision {
 		if descendant := node.as_element() {

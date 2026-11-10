@@ -33,6 +33,10 @@ fn (mut element Element) invalidate_style_after_read_write_state_change(was_read
 	if was_read_write == element.matches_read_write_pseudo_class() {
 		return
 	}
+	element.invalidate_read_write_selector_dependencies()
+}
+
+fn (mut element Element) invalidate_read_write_selector_dependencies() {
 	mut node := element.as_node()
 	if element.document().style_computer().invalidation_plan_callback == unsafe { nil } {
 		node.invalidate_style(.other)
