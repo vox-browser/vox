@@ -3304,9 +3304,9 @@ pub fn (n &Node) get_parent(event &Event) ?&EventTarget {
 }
 
 pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayoutTreeUpdateReason) {
-	if value && reason in [.node_insert_before, .node_remove, .node_set_text_content] {
+	if value {
 		if owner := n.first_letter_owner_for_layout_subtree_from(&n) {
-			if owner.as_node() != &n {
+			if voidptr(owner.as_node()) != voidptr(&n) {
 				mut owner_node := unsafe { &Node(owner.as_node()) }
 				owner_node.set_needs_layout_tree_update(true, reason)
 			}
