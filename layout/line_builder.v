@@ -225,14 +225,22 @@ fn (mut builder LineBuilder) append_block_level_box(box &Box, block_bottom CSSPi
 // LineBuilder::did_introduce_clearance(). A forced break with `clear` grows
 // the preceding line through the clearance edge and starts the new line there.
 fn (mut builder LineBuilder) did_introduce_clearance(clearance CSSPixels) {
-	if clearance.raw_value() <= builder.current_block_offset.raw_value() {
-		return
-	}
 	line_count := builder.containing_block_used_values.line_boxes.len
-	if line_count > 1 {
-		builder.containing_block_used_values.line_boxes[line_count - 2].bottom_ = clearance
+	// Moving around a full-width float can leave empty lines between the
+	// clearing break and the current line. Grow the line the break ended,
+	// retaining its block start and paint baseline.
+	for index := line_count - 2; index >= 0; index-- {
+		mut line := &builder.containing_block_used_values.line_boxes[index]
+		if line.is_empty() {
+			continue
+		}
+		if clearance.raw_value() > line.bottom_.raw_value() {
+			line.block_length_ = line.block_length_.plus(clearance.minus(line.bottom_))
+			line.bottom_ = clearance
+		}
+		break
 	}
-	builder.current_block_offset = clearance
+	builder.current_block_offset = css_pixels_max(builder.current_block_offset, clearance)
 	builder.recalculate_available_space()
 }
 
