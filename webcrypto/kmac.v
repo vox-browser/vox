@@ -31,8 +31,13 @@ fn generate_kmac_key(params KmacKeyGenParams, extractable bool, usages []KeyUsag
 	kmac_validate_usages(usages)!
 	length := params.length or { kmac_default_length(params.name)! }
 	// The upstream shared generate_random_key helper takes u16 bit lengths.
-	material := rand.bytes(int(u16(length) / 8)) or {
-		return error('OperationError: Key generation failed: ${err}')
+	// Zero-length KMAC keys are valid: avoid asking the OS RNG for zero bytes.
+	material := if length == 0 {
+		[]u8{}
+	} else {
+		rand.bytes(int(u16(length) / 8)) or {
+			return error('OperationError: Key generation failed: ${err}')
+		}
 	}
 	return CryptoKey.create(.secret, extractable, KmacKeyAlgorithm{ name: params.name, length: length }, usages, material)
 }
