@@ -254,17 +254,19 @@ fn calc_type_matches(numeric_type NumericType, kind CalcMatchKind, percentages_r
 // Try to parse a calc that resolves to the given kind. Consumes from `tokens` only on success.
 fn (mut parser Parser) parse_calculated_value_of_kind(mut tokens ComponentValueStream, kind CalcMatchKind) ?StyleValue {
 	mut transaction := tokens.clone()
-	context := parser.calculation_context()
+	mut context := parser.calculation_context()
+	if !calc_kind_allows_percentages(kind, context.percentages_resolve_as) {
+		// Percentages here resolve against nothing. Any percentage invalidates
+		// the calculation, even one that cancels out (calc(10% * 1deg / 1%)),
+		// so check the source before parsing simplifies it away.
+		if tokens.index < tokens.values.len && component_value_contains_percentage(tokens.values[tokens.index]) {
+			return none
+		}
+		context.percentages_resolve_as = none
+	}
 	value := parser.parse_calculated_value_with_context(mut transaction, context, parser.context_allows_tree_counting_functions()) or { return none }
 	if value is CalculatedStyleValue {
 		numeric_type := value.numeric_type() or { return none }
-		if !calc_kind_allows_percentages(kind, context.percentages_resolve_as) {
-			for node in value.node {
-				if calc_node_contains_percentage(node) {
-					return none
-				}
-			}
-		}
 		if calc_type_matches(numeric_type, kind, context.percentages_resolve_as) {
 			tokens = transaction
 			return value
@@ -291,21 +293,14 @@ fn calc_kind_allows_percentages(kind CalcMatchKind, percentages_resolve_as ?Valu
 	return resolves_as == dimension
 }
 
-fn calc_node_contains_percentage(node CalcNode) bool {
-	match node {
-		CalcNumeric {
-			return node.kind == .percentage
-		}
-		CalcSum, CalcProduct, CalcNegate, CalcInvert, CalcFunction, CalcRandom {
-			for child in node.children {
-				if calc_node_contains_percentage(child) {
-					return true
-				}
-			}
-		}
-		else {}
+fn component_value_contains_percentage(component_value ComponentValue) bool {
+	if component_value.is_function() {
+		return component_value.function().value.any(component_value_contains_percentage(it))
 	}
-	return false
+	if component_value.is_block() {
+		return component_value.block().value.any(component_value_contains_percentage(it))
+	}
+	return component_value.is_token() && component_value.token().type_ == .percentage
 }
 
 fn (mut parser Parser) parse_calc_function_node(function Function, allow_tree_counting_functions bool) ?CalcNode {
@@ -915,8 +910,12 @@ fn calc_function_numeric_type(name string, children []CalcNode) ?NumericType {
 		}
 		'atan2' {
 			// consistent <number>|<dimension>|<percentage> in, <angle> out.
-			calc_consistent_children_type(children) or { return none }
-			return NumericType.with_type(.angle, 1)
+			// The arguments' percent hint carries over, so atan2(90px, 100%)
+			// matches <angle> only where percentages resolve against lengths.
+			consistent := calc_consistent_children_type(children) or { return none }
+			mut result := NumericType.with_type(.angle, 1)
+			result.percent_hint = consistent.percent_hint
+			return result
 		}
 		'pow', 'sqrt', 'exp', 'log' {
 			// <number> in, <number> out.
