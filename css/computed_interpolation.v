@@ -9619,6 +9619,14 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 	if property_id in [.container_name, .container_type] {
 		invalidation.recompute_descendant_styles = true
 	}
+	// overflow:clip expands the existing visual clip by these margins. Layout
+	// alone does not refresh the accumulated visual-context values.
+	if property_id in [.overflow_clip_margin_top, .overflow_clip_margin_right,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_left,
+		.overflow_clip_margin_block_start, .overflow_clip_margin_block_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_inline_end] {
+		invalidation.ensure_accumulated_visual_contexts_at_least(.update_values)
+	}
 	if property_affects_hit_testing(property_id) {
 		invalidation.affects_hit_testing = true
 	}
