@@ -1009,6 +1009,7 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	// Offsets and relative insets are final. Overflow measurement and DOM
 	// projection read this geometry without changing the containing-block chain.
 	coordinates := begin_paint_coordinate_session(state)
+	commit_line_clamp_edges(mut state, root)
 	measure_document_scrollable_overflow(mut state, root)
 	coordinates.finish()
 	geometry_scratch.finish()

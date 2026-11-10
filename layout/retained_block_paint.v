@@ -86,7 +86,7 @@ fn retained_paint_box_can_share(box &BlockBox) bool {
 		&& box.media().nested_viewport_paintable == none && box.media().form_control_kind == ''
 		&& box.media().fieldset_paintable == none && !box.has_svg_path() && !box.media().is_svg_image
 		&& box.marker_shape == '' && box.overlay == none && !box.has_scrollable_overflow
-		&& box.clips().css_clip == none && box.clips().clip_path == none && box.clips().svg_clip == none && box.clips().svg_mask == none
+		&& box.clips().clip_decided_by_parent == none && box.clips().css_clip == none && box.clips().clip_path == none && box.clips().svg_clip == none && box.clips().svg_mask == none
 		&& !box.filters().filter.has_filters() && !box.filters().backdrop_filter.has_filters()
 		&& !box.uses_own_paint_transform_4x4 && affine_is_compact_identity(box.paint_transform)
 		&& retained_paint_rect_can_translate(box.border_box(), 0, 0)
@@ -124,6 +124,10 @@ fn fill_block_box_from_typed_layout_shallow(node &Node, state &LayoutState,
 				return
 			}
 			used := state.try_get(styled) or {
+				output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
+				return
+			}
+			if used.clip_decided_by_parent() != none {
 				output = uncached_block_box_from_typed_layout_shallow(node, state, ancestor_transform)
 				return
 			}

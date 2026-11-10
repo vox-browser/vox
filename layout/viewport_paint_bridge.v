@@ -835,6 +835,11 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	box.fixed_to_viewport = fixed_to_viewport
 
 	mut own_state := inherited_state
+	// The parent decides this clip in layout space. The float's own sticky
+	// displacement, effect and transform must remain inside it.
+	if clip := box.clips().clip_decided_by_parent {
+		own_state = tree.append(compatibility_clip_visual_data(box, *clip, BoxRadii{}), own_state)
+	}
 	mut enters_3d_sorting_plane := false
 	mut needs_synthetic_3d_plane := false
 	if box.layout_handle != unsafe { nil } {

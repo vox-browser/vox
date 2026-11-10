@@ -4312,6 +4312,15 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
+	mut clip_decided_by_parent := ?LayoutRect(none)
+	if clip := used.clip_decided_by_parent() {
+		clip_decided_by_parent = LayoutRect{
+			x: clip.x.plus(position.x()).minus(used.padding_left).minus(used.border_left).to_double()
+			y: clip.y.plus(position.y()).minus(used.padding_top).minus(used.border_top).to_double()
+			width: clip.width.to_double()
+			height: clip.height.to_double()
+		}
+	}
 	mut scrollable_overflow := ?LayoutRect(none)
 	if overflow := used.scrollable_overflow_rect() {
 		scrollable_overflow = LayoutRect{
@@ -4507,6 +4516,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		})
 
 		clip_data: retained_block_box_clip(BlockBoxClipData{
+			clip_decided_by_parent: retained_box_paint_payload(clip_decided_by_parent)
 			css_clip: retained_box_paint_payload(css_clip)
 			clip_path: retained_box_paint_payload(clip_path)
 			svg_clip: retained_box_paint_payload(svg_clip)
