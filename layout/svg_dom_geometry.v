@@ -5,13 +5,12 @@ import css
 import dom
 import math
 import painting
-import skia
 import svg
 
 pub struct SVGDOMGeometry {
 pub:
 	path svg.Path
-	packed_path skia.Path
+	packed_path cpuraster.PackedPath
 	bounds dom.DOMRect
 	stroke_width f64
 	stroke_cap int
@@ -49,7 +48,7 @@ pub fn svg_dom_geometry(element &dom.Element) SVGDOMGeometry {
 	bounds := svg_path_bounds(path) or { svg.Rect{} }
 	return SVGDOMGeometry{
 		path:path
-		packed_path:skia.Path{segments:projection.packed_segments,even_odd:computed.fill_rule() == .evenodd}
+		packed_path:cpuraster.PackedPath{segments:projection.packed_segments,even_odd:computed.fill_rule() == .evenodd}
 		bounds:dom.DOMRect{x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height}
 		stroke_width:svg_used_stroke_width(unsafe { &css.ComputedValues(computed) },math.sqrt((viewport_width*viewport_width+viewport_height*viewport_height)/2),element.document().font_rendering_policy() == .chromium)
 		stroke_cap:match computed.stroke_linecap() { .butt { 0 } .round { 1 } .square { 2 } }
@@ -66,7 +65,7 @@ pub fn (geometry SVGDOMGeometry) point_at_length(distance f64) svg.Point {
 }
 
 pub fn (geometry SVGDOMGeometry) contains_point(x f64,y f64,stroke bool) bool {
-	return skia.path_hit_test(skia.PathHitTest{path:geometry.packed_path,x:f32(x),y:f32(y),areas:if stroke { u8(2) } else { u8(1) },width:f32(geometry.stroke_width),cap:geometry.stroke_cap,join:geometry.stroke_join,miter:f32(geometry.stroke_miter),dashes:geometry.dashes,dash_offset:f32(geometry.dash_offset)})
+	return cpuraster.packed_path_hit_test(cpuraster.PackedPathHitTest{path:geometry.packed_path,x:f32(x),y:f32(y),areas:if stroke { u8(2) } else { u8(1) },width:f32(geometry.stroke_width),cap:geometry.stroke_cap,join:geometry.stroke_join,miter:f32(geometry.stroke_miter),dashes:geometry.dashes,dash_offset:f32(geometry.dash_offset)})
 }
 
 // Legacy SVG rectangle queries share pointer-event regions with native hits.

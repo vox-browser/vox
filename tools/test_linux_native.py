@@ -22,7 +22,8 @@ CASES = [
     "browserjs/runtime_test.v", "browserjs/host_function_test.v",
     "browserjs/event_target_binding_test.v", "adblock/engine_test.v",
     "requestserver/curl_transport_test.v", "requestserver/font_fetch_transport_test.v",
-    "layout/portable_shadows_test.v", "html/canvas_skia_raster_test.v",
+    "layout/portable_shadows_test.v", "html/canvas_raster_test.v",
+    "cpuraster/shadow_command_test.v", "cpuraster/packed_path_test.v",
     "webcrypto/openssl_compat_test.v",
 ]
 

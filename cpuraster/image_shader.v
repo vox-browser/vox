@@ -16,7 +16,7 @@ import math
 // premultiplied sRGB. Lowp exists only for the decal and clamp nearest
 // stages, bilerp_clamp_8888 and premul.
 
-// RGBA_8888 image pixels, as skia.Style's kind 4 fields describe them.
+// RGBA_8888 image pixels, as a canvas pattern style describes them.
 pub struct CanvasBitmap {
 	// Native services and filter layers use N32; public canvas images are RGBA.
 	native_n32 bool = true
@@ -37,7 +37,7 @@ fn (b &CanvasBitmap) installs() bool {
 		&& b.pixels.len >= b.pitch * (b.height - 1) + b.width * 4
 }
 
-// A Canvas2D pattern in skia.Style's kind 4 encoding: RGBA_8888 pixels.
+// A Canvas2D pattern in the canvas style's pattern encoding: RGBA_8888 pixels.
 pub struct CanvasPattern {
 pub:
 	pixels        []u8

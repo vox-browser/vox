@@ -9,7 +9,7 @@ import math
 // with the composite operation's blender, and readPixels() returns the
 // premultiplied surface.
 
-// Segments use skia.Path's encoding: 12 floats per segment, kind (0 move,
+// Segments use PackedPath's encoding: 12 floats per segment, kind (0 move,
 // 1 line, 2 quad, 3 cubic, 4 SVG arc, 5 close), point, two control points,
 // radii, x-axis rotation in radians, large-arc and sweep flags.
 pub fn canvas_path(segments []f32, even_odd bool) Path {
