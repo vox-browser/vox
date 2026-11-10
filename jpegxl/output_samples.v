@@ -19,6 +19,20 @@ pub fn modular_integer_row_to_f32(input []i32, bits u32, storage ModularStorage)
 	return result
 }
 
+// Whole channels use the frame sample budget rather than the row limit; each
+// sample is converted exactly as modular_integer_row_to_f32 does.
+pub fn modular_integer_plane_to_f32(input []i32, bits u32, storage ModularStorage) ![]f32 {
+	if bits == 0 || bits > 31 || input.len > 67108864 {
+		return error('Invalid JPEG XL integer output plane')
+	}
+	scale := f32(1) / f32((u64(1) << bits) - 1)
+	mut result := []f32{len: input.len}
+	for i, value in input {
+		result[i] = f32(if storage == .signed16 { i32(i16(value)) } else { value }) * scale
+	}
+	return result
+}
+
 pub fn premultiply_output_row(color []f32, alpha []f32) ![]f32 {
 	if color.len != alpha.len || color.len > 1048576 {
 		return error('Invalid JPEG XL premultiplied output row')

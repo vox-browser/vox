@@ -22,7 +22,7 @@ fn render_alpha_plane(channel ModularChannel, file FileHeader, frame FrameHeader
 		|| channel.height != int((size.height + factor - 1) / factor) {
 		return error('Invalid JPEG XL alpha rendering geometry')
 	}
-	samples := modular_integer_row_to_f32(channel.samples, 8, storage)!
+	samples := modular_integer_plane_to_f32(channel.samples, 8, storage)!
 	plane := FloatPlane{ width: channel.width, height: channel.height, samples: samples }
 	if factor == 1 { return plane }
 	weights := match factor {

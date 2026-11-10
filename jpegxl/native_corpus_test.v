@@ -22,7 +22,7 @@ fn test_native_corpus_files_match_native_rgba() {
 	assert count == native_corpus_expected_files
 }
 
-const native_corpus_expected_files = 2
+const native_corpus_expected_files = 3
 
 // RLE-coded and plain modular streams of the same image leave trailing bits
 // in their single combined section; like the source, they still decode.
@@ -31,4 +31,16 @@ fn test_modular_section_trailing_bits_are_ignored() {
 	rle := decode_rgba(os.read_bytes(os.join_path(dir, 'modular_rle_fast_path.jxl'))!, false)!
 	plain := decode_rgba(os.read_bytes(os.join_path(dir, 'modular_rle_fast_path_without_lz77.jxl'))!, false)!
 	assert rle.pixels == plain.pixels
+}
+
+// Whole modular channels can exceed the one-row sample limit; the plane
+// converter keeps the per-sample conversion and the frame sample budget.
+fn test_modular_integer_planes_convert_beyond_the_row_limit() {
+	samples := []i32{len: 1048577, init: index % 256}
+	if _ := modular_integer_row_to_f32(samples, 8, .signed32) { assert false }
+	plane := modular_integer_plane_to_f32(samples, 8, .signed32)!
+	assert plane.len == samples.len
+	assert plane[0] == 0 && plane[255] == 1 && plane[1048576] == 0
+	assert plane[..1024] == modular_integer_row_to_f32(samples[..1024], 8, .signed32)!
+	if _ := modular_integer_plane_to_f32([]i32{len: 1}, 0, .signed32) { assert false }
 }

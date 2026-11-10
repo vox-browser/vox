@@ -41,7 +41,7 @@ fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame Frame
 	for c in 0 .. 3 {
 		channel := raw.channels[if gray { 0 } else { c }]
 		planes[c] = FloatPlane{ width: channel.width, height: channel.height,
-			samples: modular_integer_row_to_f32(channel.samples, 8, storage)! }
+			samples: modular_integer_plane_to_f32(channel.samples, 8, storage)! }
 	}
 	restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
 	return upsample_frame_planes(restored, frame, file.transform)
