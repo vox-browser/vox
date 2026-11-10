@@ -99,3 +99,19 @@ fn test_translations_mixing_zero_lengths_and_percentages_stay_percentages() {
 	assert transform_interpolated('translateY(0%)', 'translateX(50%)', 0.5) == 'translate(25%, 0%)'
 	assert transform_interpolated('translate(50%)', 'translate(100%, 50%)', 0.5) == 'translate(75%, 25%)'
 }
+
+fn test_extrapolated_shadow_blur_radii_stay_non_negative() {
+	document := dom.Document.create(dom.url_about_blank())
+	element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'div') or { panic(err) }
+	for property in [PropertyID.text_shadow, .box_shadow] {
+		from := &dom.StyleValue{ css_text: 'rgb(10, 20, 30) 1px 2px 3px' }
+		to := &dom.StyleValue{ css_text: 'rgb(10, 20, 30) 0px 0px 0px' }
+		result := interpolate_box_shadow(element, InterpolationCalculationContext.for_property(property), from, to, 1.5, .no) or {
+			panic('shadow interpolation failed')
+		}
+		parsed := parse_css_value_logic(.box_shadow, result.css_text) or { panic(result.css_text) }
+		shadow := (parsed as StyleValueList).value_at(0, false) as ShadowStyleValue
+		assert shadow.offset_x().serialize(.normal) == '-0.5px', result.css_text
+		assert shadow.blur_radius().serialize(.normal) == '0px', result.css_text
+	}
+}

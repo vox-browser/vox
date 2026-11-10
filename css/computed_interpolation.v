@@ -8483,6 +8483,12 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 		color_context = color_resolution_context_for_layout_node(layout_node)
 	}
 
+	mut blur_context := calculation_context
+	blur_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
+	blur_context.accepted_type_ranges[.length] = AcceptedTypeRange{
+		min: 0
+		max: math.max_f64
+	}
 	mut result := []StyleValue{cap: from_shadows.len}
 	for i in 0 .. from_shadows.len {
 		from_shadow := from_shadows[i]
@@ -8493,7 +8499,8 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 
 		offset_x := interpolate_style_value(calculation_context, from_shadow.offset_x(), to_shadow.offset_x(), delta, allow_discrete) or { return none }
 		offset_y := interpolate_style_value(calculation_context, from_shadow.offset_y(), to_shadow.offset_y(), delta, allow_discrete) or { return none }
-		blur_radius := interpolate_style_value(calculation_context, from_shadow.blur_radius(), to_shadow.blur_radius(), delta, allow_discrete) or { return none }
+		// A blur radius is never negative, even when extrapolating.
+		blur_radius := interpolate_style_value(blur_context, from_shadow.blur_radius(), to_shadow.blur_radius(), delta, allow_discrete) or { return none }
 		spread_distance := interpolate_style_value(calculation_context, from_shadow.spread_distance(), to_shadow.spread_distance(), delta, allow_discrete) or {
 			return none
 		}
