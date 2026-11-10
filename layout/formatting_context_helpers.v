@@ -578,6 +578,13 @@ fn layout_box_baseline_for_inline(state &LayoutState, box &Node) CSSPixels {
  return layout_box_baseline_in_context(state,box,if source == 'first' { .first } else { .last },false,source == 'auto' && box.document().font_rendering_policy() == .chromium)
 }
 
+// Ladybird a8cff13249e769020c4c102fdec51a9cf9dd1ac2.
+fn content_baseline_with_button_scroll_clamp(box &Node, used &UsedValues, baseline CSSPixels) CSSPixels {
+	if !node_uses_button_layout(box) || !box.is_scroll_container() { return baseline }
+	border_top := used.margin_top
+	return css_pixels_min(css_pixels_max(baseline, border_top), border_top.plus(used.border_box_height()))
+}
+
 // Chromium's text controls ignore the overflow of their internal editor when
 // they act as inline blocks, so the editor's text supplies the control's
 // baseline instead of the editor's bottom margin edge.
@@ -645,11 +652,11 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 		if baseline := box_state.derived_first_baseline() { return box_state.margin_box_top().plus(baseline) }
 	} else if baseline_set == .first {
 		if baseline := box_state.derived_first_baseline() {
-			return box_state.margin_box_top().plus(baseline)
+			return content_baseline_with_button_scroll_clamp(box, box_state, box_state.margin_box_top().plus(baseline))
 		}
 	} else {
 		if baseline := box_state.derived_last_baseline() {
-			return box_state.margin_box_top().plus(baseline)
+			return content_baseline_with_button_scroll_clamp(box, box_state, box_state.margin_box_top().plus(baseline))
 		}
 	}
 
@@ -657,7 +664,7 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 	// `overflow: clip` is non-visible but does not establish one, so it keeps
 	// the same content-derived baseline as visible overflow.
 	derive_from_content := source != 'auto' || baseline_set == .first || is_flex_or_grid_container || line_clamp_is_active(computed)
-		|| ignores_overflow || !box.is_scroll_container()
+		|| node_uses_button_layout(box) || ignores_overflow || !box.is_scroll_container()
 	if derive_from_content && box_state.line_boxes.len > 0 {
 		mut line_index := if baseline_set == .first { 0 } else { box_state.line_boxes.len - 1 }
 		for index in 0 .. box_state.line_boxes.len {
@@ -674,7 +681,7 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 		line := box_state.line_boxes[line_index]
 		if !line.has_block_level_box() {
 			line_top := line.bottom().minus(line.block_length())
-			return box_state.margin_box_top().plus(line_top).plus(line.baseline())
+			return content_baseline_with_button_scroll_clamp(box, box_state, box_state.margin_box_top().plus(line_top).plus(line.baseline()))
 		}
 		// A line hosting an interrupting block takes that block's baseline.
 		block_child := line.fragments_[0].layout_node()
@@ -686,8 +693,8 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 		}
 		child_offset_from_margin_edge :=
 			block_child_state.offset.y().minus(block_child_state.margin_box_top())
-		return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
-			block_child, baseline_set, ignores_overflow, inline_block_algorithm))
+		return content_baseline_with_button_scroll_clamp(box, box_state, box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
+			block_child, baseline_set, ignores_overflow, inline_block_algorithm)))
 	}
 
 	if child := layout_box_child_to_derive_baseline_from(state, box, baseline_set) {
@@ -704,8 +711,8 @@ fn layout_box_baseline_in_context(state &LayoutState, box &Node, requested_basel
 				child_state.offset.y().minus(child_state.margin_box_top())
 			child_ignores_overflow := ignores_overflow
 				|| (is_input && box.document().font_rendering_policy() == .chromium)
-			return box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
-				child, baseline_set, child_ignores_overflow, inline_block_algorithm))
+			return content_baseline_with_button_scroll_clamp(box, box_state, box_state.margin_box_top().plus(child_offset_from_margin_edge).plus(layout_box_baseline_in_context(state,
+				child, baseline_set, child_ignores_overflow, inline_block_algorithm)))
 		}
 	}
 
