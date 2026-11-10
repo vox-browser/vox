@@ -264,9 +264,8 @@ fn svg_element_model(element &dom.Element) svg.Element {
 	// renderer owns decoded bitmap resources, so retain the equivalent absolute
 	// resource URL on the standalone graph model for replay-time lookup.
 	if element.local_name() == 'feImage' {
-		if image_url := element.document().encoding_parse_and_serialize_url(svg_image_href(element)) {
-			attributes['href'] = image_url
-		}
+		attributes['href'] = resolved_svg_image_url(element)
+		attributes.delete('xlink:href')
 	}
 	mut children := []svg.Element{}
 	mut direct_text := ''

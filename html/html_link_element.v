@@ -393,6 +393,9 @@ pub fn (link &HTMLLinkElementModel) create_link_options() &LinkProcessingOptions
 pub fn (link &HTMLLinkElementModel) create_link_request(options &LinkProcessingOptions) ?&LinkRequest {
 	assert options.href != ''
 	url := dom.dom_url_parse(options.href, options.base_url, 'UTF-8') or { return none }
+	if document := link.resource_document() {
+		if document.is_svg_image_document() && url.scheme() != 'data' { return none }
+	}
 	return &LinkRequest{
 		url: url
 		destination: options.destination
@@ -515,6 +518,9 @@ pub fn (link &HTMLLinkElementModel) is_stylesheet_loading() bool {
 }
 
 pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_dns_prefetch_resource() {
+	if document := link.resource_document() {
+		if document.is_svg_image_document() { return }
+	}
 	if link.href_ == '' {
 		return
 	}
@@ -660,6 +666,9 @@ pub fn (mut link HTMLLinkElementModel) fetch_and_process_linked_modulepreload_re
 }
 
 pub fn (mut link HTMLLinkElementModel) preconnect(options &LinkProcessingOptions) {
+	if document := link.resource_document() {
+		if document.is_svg_image_document() { return }
+	}
 	if options.href == '' {
 		return
 	}

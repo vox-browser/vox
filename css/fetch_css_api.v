@@ -26,6 +26,7 @@ pub mut:
 	origin       string
 	origin_object ?dom.Origin
 	client ?fetch.RequestClient
+	is_svg_image bool
 }
 
 pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetchEnvironmentSettings {
@@ -35,6 +36,7 @@ pub fn CSSFetchEnvironmentSettings.from_document(document &dom.Document) CSSFetc
 		origin: document.origin().serialize()
 		origin_object: document.origin()
 		client: if provider := css_fetch_client_provider_ { provider(document) } else { none }
+		is_svg_image: document.is_svg_image_document()
 	}
 }
 
@@ -154,6 +156,7 @@ fn fetch_a_style_resource_impl(url_value StyleResourceURL, css_rule_or_declarati
 
 	// 2. Let settingsObject be cssRuleOrDeclaration's relevant settings object.
 	environment_settings := css_rule_or_declaration.environment_settings_object
+	if environment_settings.is_svg_image && dom.URL{value: parsed_url}.scheme() != 'data' { return none }
 
 	// 3. Let req be a new request whose url is parsedUrl, whose destination is destination, mode is corsMode,
 	//    origin is environmentSettings's origin, credentials mode is "same-origin", use-url-credentials flag is set,

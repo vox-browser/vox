@@ -539,6 +539,7 @@ pub fn install_remote_style_sheet_loader(loader ?RemoteStyleSheetLoader) {
 
 fn read_imported_stylesheet(document &dom.Document, reference string, base_url string) ?(string, string) {
 	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
+	if document.is_svg_image_document() && dom.URL{value: resolved_url}.scheme() != 'data' { return none }
 	if path := local_path_for_stylesheet_url(resolved_url) {
 		return os.read_file(path) or { return none }, resolved_url
 	}
@@ -592,6 +593,7 @@ fn read_link_stylesheet(link &dom.Element, reference string, base_url string) ?(
 		if mime.essence() != 'text/css' { return none }
 	}
 	resolved_url := resolve_stylesheet_url(reference, base_url) or { return none }
+	if link.document().is_svg_image_document() && dom.URL{value: resolved_url}.scheme() != 'data' { return none }
 	if path := local_path_for_stylesheet_url(resolved_url) {
 		return os.read_file(path) or { return none }, resolved_url
 	}

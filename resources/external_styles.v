@@ -10,6 +10,7 @@ import platform
 import url
 
 fn load_browser_imported_style_sheet(document &dom.Document, address string) ?css.ImportedStyleSheetSource {
+	if document.is_svg_image_document() && dom.URL{value: address}.scheme() != 'data' { return none }
 	resource := fetch_browser_resource(address, document.base_url().serialize(),
 		document.url.serialize(), 'stylesheet') or { return none }
 	mut content_type := ''
@@ -60,6 +61,10 @@ fn link_is_style_preload(link &dom.Element) bool {
 }
 
 fn link_stylesheet_applies(link &dom.Element, preferred_set_name string) bool {
+	if link.document().is_svg_image_document() {
+		address := dom.dom_url_parse(link.get_attribute_value('href'), link.document().base_url(), 'UTF-8') or { return false }
+		if address.scheme() != 'data' { return false }
+	}
 	relations := link_relations(link)
 	if 'stylesheet' !in relations || link.has_attribute('disabled') {
 		return false

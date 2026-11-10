@@ -467,6 +467,7 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	}
 	trimmed_source := source.trim_space()
 	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
+	if document.is_svg_image_document() && parsed_url.scheme() != 'data' { return none }
 	serialized := parsed_url.serialize()
 	if parsed_url.scheme() in ['http', 'https'] {
 		return remote_svg_image_source(document, parsed_url)
@@ -593,6 +594,10 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		return none
 	}
 	trimmed_source := source.trim_space()
+	if document.is_svg_image_document() {
+		resource_url := document.encoding_parse_url(trimmed_source) or { return none }
+		if resource_url.scheme() != 'data' { return none }
+	}
 	mut parsed_url := ?dom.URL(none)
 	serialized := if trimmed_source.starts_with('data:') {
 		trimmed_source

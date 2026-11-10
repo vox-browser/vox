@@ -565,6 +565,10 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		}
 		return
 	}
+	if image.document_.is_svg_image_document() && url.scheme() != 'data' {
+		image.handle_failed_fetch()
+		return
+	}
 	if previous_url == url.serialize() && image.current_request_.state() == .completely_available {
 		image.pending_request_ = none
 		image.stop_delaying_document_load_event()

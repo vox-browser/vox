@@ -123,6 +123,11 @@ fn request_csp_global(mut request Request) &csp.GlobalContext {
 // report-only CSP observes the original URL, then eligible mixed content is
 // upgraded, then bad-port, mixed-content, enforced CSP and integrity checks run.
 fn apply_request_security_policies(mut request Request) bool {
+	// SVG images are self-contained; block before preload/cache/transport and
+	// reapply this check after filtering rewrites or HTTP redirects.
+	if request.client_is_svg_image && request.current_url().scheme() != 'data' {
+		return true
+	}
 	mut global := request_csp_global(mut request)
 	before_upgrade := csp_request(request)
 	csp.report_content_security_policy_violations_for_request(mut global, before_upgrade)

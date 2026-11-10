@@ -19,15 +19,19 @@ mut:
 fn resolve_css_paint_image_url(node &Node, source string, base_url ?string) string {
 	base := if explicit := base_url { dom.URL{value: explicit} } else { node.document().base_url() }
 	encoding := if base_url != none { '' } else { node.document().encoding_or_default() }
-	viewport := node.root_viewport() or { return parse_css_paint_image_url(source, base, encoding) }
+	viewport := node.root_viewport() or {
+		return allowed_paint_image_url(node.document(), parse_css_paint_image_url(source, base, encoding))
+	}
 	mut session := viewport.paint_svg_sources_
-	if session == unsafe { nil } { return parse_css_paint_image_url(source, base, encoding) }
+	if session == unsafe { nil } {
+		return allowed_paint_image_url(node.document(), parse_css_paint_image_url(source, base, encoding))
+	}
 	base_text := base.serialize()
 	key := '${encoding.len}:${encoding}${base_text.len}:${base_text}${source}'
-	if resolved := session.resolved_urls[key] { return resolved }
+	if resolved := session.resolved_urls[key] { return allowed_paint_image_url(node.document(), resolved) }
 	resolved := parse_css_paint_image_url(source, base, encoding)
 	session.resolved_urls[key] = resolved
-	return resolved
+	return allowed_paint_image_url(node.document(), resolved)
 }
 
 fn parse_css_paint_image_url(source string, base dom.URL, encoding string) string {
@@ -62,6 +66,9 @@ fn (scope PaintSVGSourceScope) finish() {
 }
 
 fn svg_image_source_for_paint(node &Node, source string) ?SVGImageSource {
+	if !image_source_allowed_for_paint(node.document(), source) {
+		return none
+	}
 	viewport := node.root_viewport() or {
 		return svg_image_source_for_source(node.document(), source)
 	}

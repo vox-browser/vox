@@ -1690,6 +1690,9 @@ fn browser_decoded_image_data_for_type(resource_url dom.URL, bytes []u8, mime_es
 
 fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLImageElementModel,
 	resource_url dom.URL) !html.DecodedImageData {
+	if unsafe { &dom.Element(element) }.document().is_svg_image_document() && resource_url.scheme() != 'data' {
+		return error('SVG image documents may only load data URLs')
+	}
 	if resource_url.scheme() == 'blob' {
 		return browser_fetch_blob_image(element, model, resource_url)
 	}
@@ -1702,6 +1705,7 @@ fn browser_fetch_image_request(element &dom.HTMLImageElement, model &html.HTMLIm
 }
 
 fn browser_image_request_allows_cached_bytes(element &dom.HTMLImageElement, model &html.HTMLImageElementModel, resource_url dom.URL) bool {
+	if unsafe { &dom.Element(element) }.document().is_svg_image_document() && resource_url.scheme() != 'data' { return false }
 	if resource_url.scheme() !in ['http', 'https'] || model.crossorigin() == .no_cors {
 		return true
 	}
