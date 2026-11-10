@@ -8,10 +8,18 @@ fn C.vox_adblock_json_unlock()
 
 fn init() {
 	$if prealloc {
-		// The decoder publishes per-type field tables. Build this tiny table in
-		// startup storage before any fetch thread or disposable parser uses it;
-		// no filter engine, assets or JavaScript context are initialized here.
+		// The encoder and decoder each publish a per-type field table in a
+		// process-wide static on first use, in the caller's current arena.
+		// Build every transport struct's tables in startup storage: the first
+		// request check can run inside a document's native storage (the New
+		// Tab page), and fetch workers keep reading the tables after that
+		// document retires. No filter engine, assets or JavaScript context are
+		// initialized here.
 		_ = json2.decode[DocumentFilters]('{}') or { panic(err) }
+		_ = json2.decode[Decision]('{}') or { panic(err) }
+		_ = json2.encode(Request{}, escape_unicode: true)
+		_ = json2.encode([ResponseHeader{}], escape_unicode: true)
+		_ = json2.encode(RequestLog{}, escape_unicode: true)
 	}
 }
 
