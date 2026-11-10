@@ -393,6 +393,11 @@ fn regex_class_set_syntax(character rune) bool {
 	return character in [`(`, `)`, `{`, `}`, `/`, `-`, `|`]
 }
 
+// ClassSetReservedPunctuator; Ladybird 7d40499c017a.
+fn regex_class_set_reserved_punctuator(character rune) bool {
+	return character in [`&`, `-`, `!`, `#`, `%`, `,`, `:`, `;`, `<`, `=`, `>`, `@`, rune(96), `~`]
+}
+
 fn regex_class_set_double(character rune) bool {
 	return character in [`&`, `!`, `#`, `$`, `%`, `*`, `+`, `,`, `.`, `:`, `;`, `<`, `=`, `>`,
 		`?`, `@`, `^`, rune(96), `~`]
