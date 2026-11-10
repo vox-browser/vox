@@ -4,6 +4,7 @@ import browserjs
 import dom
 import html
 import json2
+import platform
 
 struct BrowserStorageOperation {
 	area  string
@@ -20,6 +21,18 @@ struct BrowserStorageResult {
 	error     string
 }
 
+// json2 publishes each struct's field metadata once for the process, in the
+// arena current at first use. Storage calls run inside the calling document's
+// arena, which navigation releases; build the metadata in base storage first.
+fn warm_browser_storage_json_metadata() {
+	$if prealloc {
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		if _ := json2.decode[BrowserStorageOperation]('{}') {}
+		_ = json2.encode(BrowserStorageResult{}, escape_unicode: true)
+	}
+}
+
 // Expose the owning WindowModel's native storage bottles before publisher
 // scriptlets and page scripts execute. Storage contents stay in the translated
 // HTML storage records, including their quota and origin/traversable ownership.
@@ -32,6 +45,7 @@ fn install_browser_page_storage(document &dom.Document, runtime &browserjs.Runti
 	}
 	window_pointer := document.get_window() or { return error('Web Storage requires its owning Window') }
 	window := unsafe { &html.WindowModel(window_pointer) }
+	warm_browser_storage_json_metadata()
 	mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 	mutable_runtime.define_host_function('__voxNativePageStorage', fn [window, document] (input string) !string {
 		operation := json2.decode[BrowserStorageOperation](input)!
