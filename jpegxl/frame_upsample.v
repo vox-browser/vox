@@ -23,9 +23,43 @@ fn upsample_frame_planes(input [3]FloatPlane, frame FrameHeader, transform Custo
 	return output
 }
 
+// Draw cached spline segments into the three restored color planes. As in the
+// source pipeline, this runs after Gaborish/EPF and before image upsampling,
+// so the cache uses coded frame coordinates. Extra channels are unchanged.
+fn draw_frame_splines(input [3]FloatPlane, cache SplineDrawCache) ![3]FloatPlane {
+	if cache.segments.len == 0 { return input }
+	width := input[0].width
+	height := input[0].height
+	for c in 0 .. 3 {
+		input[c].validate()!
+		if input[c].width != width || input[c].height != height {
+			return error('Invalid JPEG XL spline plane geometry')
+		}
+	}
+	if cache.width != width || cache.height != height {
+		return error('JPEG XL spline cache does not match the frame')
+	}
+	mut samples := [3][]f32{}
+	for c in 0 .. 3 { samples[c] = input[c].samples.clone() }
+	mut row := [][]f32{len: 3}
+	for y in 0 .. height {
+		start := y * width
+		for c in 0 .. 3 { row[c] = samples[c][start..start + width].clone() }
+		cache.draw_row(mut row, 0, y)!
+		for c in 0 .. 3 {
+			for x in 0 .. width { samples[c][start + x] = row[c][x] }
+		}
+	}
+	return [FloatPlane{ width: width, height: height, samples: samples[0] },
+		FloatPlane{ width: width, height: height, samples: samples[1] },
+		FloatPlane{ width: width, height: height, samples: samples[2] }]!
+}
+
 fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform CustomTransformData) ![3]FloatPlane {
-	if raw.spline_cache != none { return error('JPEG XL spline frames require the complete rendering stage') }
-	restored := restore_vardct_frame(raw, frame_filter_geometry(frame))!
+	mut restored := restore_vardct_frame(raw, frame_filter_geometry(frame))!
+	if cache := raw.spline_cache {
+		restored = draw_frame_splines(restored, cache)!
+	}
 	upsampled := upsample_frame_planes(restored, frame, transform)!
 	if noise := raw.noise {
 		if noise.lut == [8]f32{} { return upsampled }
