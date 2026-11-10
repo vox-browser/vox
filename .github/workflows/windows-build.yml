@@ -76,4 +76,4 @@ jobs:
         run: '"$GITHUB_WORKSPACE/.cache/v-pinned/v" version'
 
       - name: Show x.imp build flows
-        run: '"$GITHUB_WORKSPACE/.cache/v-pinned/v" run build_browser.vsh --help'
+        run: '"$GITHUB_WORKSPACE/.cache/v-pinned/v" run build_browser.vsh help'
