@@ -82,6 +82,8 @@
   constructor(){throw new TypeError("Illegal CSSNumericArray constructor");}
   *[Symbol.iterator](){for(let i=0;i<this.length;i++)yield this[i];}
  }
+ // Value iterable interfaces get forEach(), entries(), keys() and values() like Array.
+ for(const constructor of [CSSNumericArray,CSSUnparsedValue,CSSTransformValue])for(const name of ["forEach","entries","keys","values"])Object.defineProperty(constructor.prototype,name,{value:Array.prototype[name],writable:true,enumerable:true,configurable:true});
  function numericArray(values){const object=Object.create(CSSNumericArray.prototype);Object.defineProperty(object,"length",{value:values.length});for(let i=0;i<values.length;i++)Object.defineProperty(object,i,{value:values[i],enumerable:true});return object;}
  function mathConstructor(kind,args,prototype){
   if(!args.length||(["negate","invert"].includes(kind)&&args.length!==1)||(kind==="clamp"&&args.length!==3))throw new TypeError("Invalid math arguments");
