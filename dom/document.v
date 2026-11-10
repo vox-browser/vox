@@ -5345,6 +5345,7 @@ pub mut:
 	// Navigation
 	navigation_id          ?string
 	about_base_url         ?URL
+	base_url_override       ?URL
 	is_initial_about_blank bool
 	iframe_load_in_progress bool
 	mute_iframe_load       bool
@@ -6256,19 +6257,10 @@ pub fn (mut d Document) set_url(url URL) {
 
 // fallback_base_url - https://html.spec.whatwg.org/multipage/urls-and-fetching.html#fallback-base-url
 pub fn (d &Document) fallback_base_url() URL {
-	// 1. If document is an iframe srcdoc document, return about base URL.
-	if url_matches_about_srcdoc(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
+	// about:blank and about:srcdoc inherit the supplied about base URL.
+	if url_matches_about_srcdoc(d.url) || url_matches_about_blank(d.url) {
+		if about_base := d.about_base_url { return about_base }
 	}
-	// 2. If document's URL matches about:blank and about base URL is non-null, return it.
-	if url_matches_about_blank(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
-	}
-	// 3. Return document's URL.
 	return d.url
 }
 
@@ -6276,7 +6268,9 @@ pub fn (d &Document) fallback_base_url() URL {
 pub fn (d &Document) base_url() URL {
 	// 1. If there is no base element with href, return fallback base URL.
 	base_element := d.first_base_element_with_href_in_tree_order() or {
-		return d.fallback_base_url()
+		// A cloned Document keeps the source document's effective base even
+		// when it has no base element of its own.
+		return d.base_url_override or { d.fallback_base_url() }
 	}
 	// 2. Return the frozen base URL of the first base element with href.
 	if base_element.frozen_base_url_initialized_ {
@@ -12834,6 +12828,18 @@ pub fn (d &Document) get_about_base_url() ?URL {
 
 pub fn (mut d Document) set_about_base_url(url ?URL) {
 	d.about_base_url = url
+}
+
+pub fn (d &Document) get_the_base_url() URL {
+	return d.base_url()
+}
+
+pub fn (mut d Document) set_base_url_override(url ?URL) {
+	if d.base_url_override == url { return }
+	old_document_url := d.url
+	old_base_url := d.base_url()
+	d.base_url_override = url
+	d.respond_to_base_url_changes(old_document_url, old_base_url)
 }
 
 // --- source ---
