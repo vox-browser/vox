@@ -153,6 +153,10 @@ pub fn (mut controller FetchController) set_report_timing_steps(callback ReportT
 	controller.report_timing_steps_ = callback
 }
 
+pub fn (controller &FetchController) has_report_timing_steps() bool {
+	return controller.report_timing_steps_ != none
+}
+
 pub fn (mut controller FetchController) set_next_manual_redirect_steps(callback ManualRedirectSteps) {
 	controller.next_manual_redirect_steps_ = callback
 }

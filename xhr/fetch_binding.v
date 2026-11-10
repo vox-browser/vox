@@ -181,7 +181,9 @@ fn (mut request XMLHttpRequest) start_synchronous_fetch_if_bound() ! {
 		request.timed_out = true
 		request.fetch_controller_.terminate()
 	}
-	request.fetch_controller_.report_timing()
+	if !request.timed_out || request.fetch_controller_.has_report_timing_steps() {
+		request.fetch_controller_.report_timing()
+	}
 	request.handle_response_end_of_body()!
 }
 
