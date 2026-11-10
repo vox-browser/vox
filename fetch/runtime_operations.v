@@ -466,7 +466,8 @@ pub fn determine_the_http_cache_partition(request &Request) ?NetworkPartitionKey
 pub fn select_response_from_cache(request &Request) ?&Response {
 	if !fetch_http_memory_cache_enabled { return none }
 	if request.cache_mode in [.no_store, .reload, .no_cache]
-		|| !http.is_cacheable_request(request.method, request.header_list) {
+		|| !http.is_cacheable_request(request.method, request.header_list)
+		|| http.has_preconditions(request.header_list) {
 		return none
 	}
 	key := fetch_cache_partition_key(request) or { return none }
@@ -511,7 +512,7 @@ pub fn store_response_in_cache(request &Request, mut response Response) {
 	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store { return }
 	mut internal := response.cache_storage_response()
 	if internal.cache_storage_retired_ || internal.cache_entry_token_ != 0 { return }
-	if !http.is_cacheable_request(request.method, request.header_list) {
+	if !http.is_cacheable_request(request.method, request.header_list) || internal.status == 304 {
 		return
 	}
 	key := fetch_cache_partition_key(request) or { return }

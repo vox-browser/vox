@@ -286,9 +286,11 @@ pub fn evaluate(request Request, received_response Response, options ReuseOption
 	request_control := control_directives(request.headers)
 	response_control := control_directives(response.headers)
 	if request.method !in ['GET', 'HEAD'] || request.mode in [.no_store, .reload]
+		|| request.headers.any(it.name.to_lower() in ['if-match', 'if-none-match',
+			'if-modified-since', 'if-unmodified-since', 'if-range'])
 		|| contains_directive(request_control, 'no-store') || has_header(request.headers, 'Range')
 		|| contains_directive(response_control, 'no-store') || response.status < 200
-		|| response.status == 206 || '*' in vary_names(response.headers)
+		|| response.status in [u32(206), 304] || '*' in vary_names(response.headers)
 		|| 'cookie' in vary_names(response.headers)
 		|| has_unterminated_quoted_string(header_value(response.headers, 'Cache-Control') or { '' }) {
 		return Decision{}
