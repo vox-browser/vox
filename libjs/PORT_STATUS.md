@@ -1540,6 +1540,13 @@ fixtures above validate that older dependency's paths, not full 9.1.0 parity.
 and fmt locations. Checked-in fixtures keep ordinary V builds independent of the
 native oracle. Regeneration is byte-exact.
 
+The ten Rust-based regex oracle drivers named in the following paragraphs
+(`tools/libjs_regex_*_corpus.py`) were retired when Rust was removed from the
+repository; see [the reference-corpus guide](../tools/REFERENCE_CORPORA.md).
+Their checked-in fixtures are frozen independent records, verified by
+`tools/check_translation_corpora.v --suite regex`. The regeneration commands
+below record how the fixtures were produced and can no longer be run.
+
 LibRegex core helpers additionally match 36,166 native Rust cases exactly in
 both GC modes (`0586dcb0`). The fixture covers quantifiers, builtin-class
 complements, property-kind decoding, WTF-16 encoding, program offsets and jump
