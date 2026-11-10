@@ -1651,6 +1651,9 @@ fn (mut p Parser) parse_import_statement() Statement {
 	module_specifier := p.consume_module_specifier()
 	attributes := p.parse_with_clause()
 	p.consume_or_insert_semicolon()
+	for entry in entries {
+		p.scope_collector.add_import_binding(entry.local_name.data, start.line, start.column)
+	}
 
 	return p.statement(start, StatementKind{
 		tag:         .import_stmt

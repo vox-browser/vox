@@ -48,6 +48,7 @@ const var_flag_referenced_in_formal_parameters = u16(1 << 8)
 // replace the implicit arguments object. Keep that identity out of the flags
 // used to reject lexical redeclarations.
 const var_flag_function_declaration = u16(1 << 9)
+const var_flag_import = u16(1 << 10)
 
 // === Data structures ===
 
@@ -415,7 +416,7 @@ fn (mut sc ScopeCollector) add_lexical_declaration(name []u16, declaration_line 
 		return
 	}
 	flags := sc.records[index].variable(name).flags
-	if flags & (var_flag_var | var_flag_forbidden_lexical | var_flag_function | var_flag_lexical) != 0 {
+	if flags & (var_flag_var | var_flag_forbidden_lexical | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
 		sc.already_declared_error(name, declaration_line, declaration_column)
 	}
 	sc.records[index].variable(name).flags |= var_flag_lexical
@@ -437,7 +438,7 @@ fn (mut sc ScopeCollector) add_var_declaration(name []u16, id &Identifier, decla
 	mut scope_index := index
 	for {
 		existing_flags := sc.records[scope_index].variable(name).flags
-		if existing_flags & (var_flag_lexical | var_flag_function | var_flag_forbidden_var) != 0 {
+		if existing_flags & (var_flag_lexical | var_flag_function | var_flag_forbidden_var | var_flag_import) != 0 {
 			sc.already_declared_error(name, declaration_line, declaration_column)
 		}
 		sc.records[scope_index].variable(name).flags |= var_flag_var
@@ -475,7 +476,7 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 			var_flag_empty
 		}
 
-		if existing_flags & (var_flag_var | var_flag_lexical) != 0 {
+		if existing_flags & (var_flag_var | var_flag_lexical | var_flag_import) != 0 {
 			sc.already_declared_error(fn_name.data, declaration_line, declaration_column)
 		}
 
@@ -497,6 +498,17 @@ fn (mut sc ScopeCollector) add_function_declaration(fn_name Utf16String, name_id
 
 		sc.records[index].variable(fn_name.data).flags |= var_flag_function
 	}
+}
+
+// Imported names are lexical module bindings, including for redeclaration checks.
+fn (mut sc ScopeCollector) add_import_binding(name []u16, declaration_line u32, declaration_column u32) {
+	index := sc.current
+	if index < 0 { return }
+	flags := sc.records[index].variable(name).flags
+	if flags & (var_flag_var | var_flag_function | var_flag_lexical | var_flag_import) != 0 {
+		sc.already_declared_error(name, declaration_line, declaration_column)
+	}
+	sc.records[index].variable(name).flags |= var_flag_import
 }
 
 fn (mut sc ScopeCollector) add_catch_parameter_pattern(name_slices [][]u16) {
@@ -943,8 +955,11 @@ fn (mut sc ScopeCollector) resolve_identifiers(index int, initiated_by_eval bool
 		}
 
 		if sc.records[index].scope_type == .program_scope {
+			// Module declarations live in the module environment, not the global one.
+			is_module_declaration := sc.records[index].scope_level == .module_top_level
+				&& var_flags & (var_flag_var | var_flag_lexical | var_flag_function | var_flag_import) != 0
 			can_use_global := !(suppress_globals || group.used_inside_with_statement
-				|| initiated_by_eval)
+				|| initiated_by_eval || is_module_declaration)
 			if can_use_global {
 				for id in group.identifiers {
 					unsafe {
