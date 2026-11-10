@@ -10,6 +10,7 @@ module html
 
 import dom
 import libjs
+import platform
 import webidl
 
 pub enum ErrorInPromise {
@@ -98,7 +99,21 @@ pub fn prepare_to_run_script(mut realm ScriptingRealm) {
 		vm.push_execution_context(mut context)
 	}
 	realm.script_execution_depth++
-	html_scripting_execution_context_stack << &realm
+	push_scripting_execution_context(&realm)
+}
+
+// The execution context stack is process-wide, while scripts usually run with
+// their document's native storage entered. Grow it only in persistent storage:
+// a buffer allocated in the first scripted document's arena would be freed
+// when that document retires, and the next script would push into it.
+fn push_scripting_execution_context(realm &ScriptingRealm) {
+	if html_scripting_execution_context_stack.len < html_scripting_execution_context_stack.cap {
+		html_scripting_execution_context_stack << realm
+		return
+	}
+	persistent := platform.enter_persistent()
+	html_scripting_execution_context_stack << realm
+	platform.leave_persistent(persistent)
 }
 
 pub fn clean_up_after_running_script(mut realm ScriptingRealm) {
