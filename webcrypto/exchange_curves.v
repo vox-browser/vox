@@ -29,12 +29,25 @@ fn generate_exchange_key(name string, extractable bool, usages []KeyUsage) !Gene
 	}
 }
 
-fn derive_exchange_bits(name string, params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
-	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+fn validate_exchange_public_key(name string, params EcdhKeyDeriveParams, length ?u32) ! {
 	public_key := params.public_key
 	if public_key.type_ != .public_key {
 		return error('InvalidAccessError: Public key is not a public key')
 	}
+	if public_key.algorithm_name() != name {
+		return error('InvalidAccessError: Algorithm mismatch')
+	}
+	if bits := length {
+		if u64(bits) > u64(exchange_key_size(name)) * 8 {
+			return error('OperationError: Length is too large')
+		}
+	}
+}
+
+fn derive_exchange_bits(name string, params EcdhKeyDeriveParams, key &CryptoKey, length ?u32) ![]u8 {
+	validate_exchange_public_key(name, params, length)!
+	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
+	public_key := params.public_key
 	if public_key.algorithm_name() != key.algorithm_name() {
 		return error('InvalidAccessError: Algorithm mismatch')
 	}
