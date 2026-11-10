@@ -61,15 +61,20 @@ fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform Custo
 		restored = draw_frame_splines(restored, cache)!
 	}
 	upsampled := upsample_frame_planes(restored, frame, transform)!
-	if noise := raw.noise {
-		if noise.lut == [8]f32{} { return upsampled }
-		size := frame.size_upsampled()
-		random := generate_noise_fields(int(size.width), int(size.height), 1, 0)!
-		mut convolved := [3]FloatPlane{}
-		for c in 0 .. 3 { convolved[c] = convolve_noise_plane(random[c])! }
-		// Fix the verified reference profile across hosts. The explicit full
-		// precision color-stage API remains available for other source profiles.
-		return add_noise_planes(upsampled, convolved, noise, raw.color_correlation, .bfloat16)
-	}
-	return upsampled
+	return apply_frame_noise(upsampled, raw.noise, frame, raw.color_correlation)
+}
+
+// Noise follows image upsampling. The single visible still frame uses the
+// source's (visible index 1, non-visible index 0) seeds. Modular frames pass
+// the default color correlation, as the source does.
+fn apply_frame_noise(input [3]FloatPlane, params ?NoiseParams, frame FrameHeader, correlation ColorCorrelationParams) ![3]FloatPlane {
+	noise := params or { return input }
+	if noise.lut == [8]f32{} { return input }
+	size := frame.size_upsampled()
+	random := generate_noise_fields(int(size.width), int(size.height), 1, 0)!
+	mut convolved := [3]FloatPlane{}
+	for c in 0 .. 3 { convolved[c] = convolve_noise_plane(random[c])! }
+	// Fix the verified reference profile across hosts. The explicit full
+	// precision color-stage API remains available for other source profiles.
+	return add_noise_planes(input, convolved, noise, correlation, .bfloat16)
 }

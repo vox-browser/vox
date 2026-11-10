@@ -22,7 +22,7 @@ fn test_native_corpus_files_match_native_rgba() {
 	assert count == native_corpus_expected_files
 }
 
-const native_corpus_expected_files = 3
+const native_corpus_expected_files = 4
 
 // RLE-coded and plain modular streams of the same image leave trailing bits
 // in their single combined section; like the source, they still decode.

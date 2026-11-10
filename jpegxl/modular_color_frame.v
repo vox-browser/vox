@@ -11,7 +11,7 @@ fn validate_modular_xyb_frame_alpha(file FileHeader, frame FrameHeader, allow_al
 	if frame.encoding != .modular || !file.metadata.xyb_encoded
 		|| file.metadata.extra_channels.len > 1 || (!allow_alpha && file.metadata.extra_channels.len != 0)
 		|| frame.extra_upsampling.len != file.metadata.extra_channels.len || !frame.is444() || frame.has_lf_frame()
-		|| frame.has_patches() || frame.has_splines() || frame.has_noise() || frame.do_ycbcr {
+		|| frame.has_patches() || frame.has_splines() || frame.do_ycbcr {
 		return error('Unsupported JPEG XL modular XYB rendering services')
 	}
 	for i, extra in file.metadata.extra_channels {
@@ -46,7 +46,9 @@ fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame 
 			return error('Incorrect JPEG XL modular XYB frame geometry')
 		}
 	}
+	if frame.has_noise() != (raw.noise != none) { return error('JPEG XL modular XYB noise parameters disagree with the frame') }
 	planes := modular_xyb_planes(raw.channels[..3], raw.quantization, storage)!
 	restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
-	return upsample_frame_planes(restored, frame, file.transform)
+	upsampled := upsample_frame_planes(restored, frame, file.transform)!
+	return apply_frame_noise(upsampled, raw.noise, frame, ColorCorrelationParams{})
 }

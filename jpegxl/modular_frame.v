@@ -6,6 +6,7 @@ pub struct ModularFramePlanes {
 pub:
 	quantization LfQuantFactors
 	channels     []ModularChannel
+	noise        ?NoiseParams
 }
 
 fn finish_modular_section(mut reader BitReader, index int, unused bool) ! {
@@ -79,5 +80,5 @@ pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularS
 		}
 	}
 	if combined { finish_modular_section(mut sections[0], 0, false)! }
-	return ModularFramePlanes{ quantization: global.quantization, channels: state.reconstruct(storage)! }
+	return ModularFramePlanes{ quantization: global.quantization, channels: state.reconstruct(storage)!, noise: global.noise }
 }

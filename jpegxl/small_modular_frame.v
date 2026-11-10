@@ -44,17 +44,20 @@ fn modular_frame_channel_info(file FileHeader, frame FrameHeader, colors int) ![
 
 struct ModularGlobalPlan {
 	quantization LfQuantFactors
+	noise        ?NoiseParams
 	tree         ?ModularTree
 	header       ModularGroupHeader
 	plan         ModularTransformPlan
 }
 
 fn (mut reader BitReader) read_modular_global_plan(file FileHeader, frame FrameHeader) !ModularGlobalPlan {
-	if frame.encoding != .modular || frame.has_patches() || frame.has_noise() || frame.has_splines() {
+	if frame.encoding != .modular || frame.has_patches() || frame.has_splines() {
 		return error('JPEG XL frame requires unsupported global-section services')
 	}
 	infos := small_modular_channel_info(file, frame)!
 	limits := modular_stream_limits(infos)!
+	// LFGlobal order: patches, splines, noise, then LF dequantization.
+	noise := if frame.has_noise() { ?NoiseParams(reader.read_noise()!) } else { ?NoiseParams(none) }
 	quantization := reader.read_lf_quant_factors()!
 	mut global := ?ModularTree(none)
 	if reader.read(1)! != 0 {
@@ -64,12 +67,13 @@ fn (mut reader BitReader) read_modular_global_plan(file FileHeader, frame FrameH
 	}
 	header := reader.read_modular_group_header()!
 	plan := plan_modular_transforms(infos, header, limits)!
-	return ModularGlobalPlan{ quantization: quantization, tree: global, header: header, plan: plan }
+	return ModularGlobalPlan{ quantization: quantization, noise: noise, tree: global, header: header, plan: plan }
 }
 
 // Decode all raw planes when every coded channel belongs to the global section.
 // Color conversion, filters, orientation, later frames and grouped channels are separate.
 pub fn (mut reader BitReader) decode_small_modular_frame(file FileHeader, frame FrameHeader, storage ModularStorage) !SmallModularFrame {
+	if frame.has_noise() { return error('JPEG XL frame requires unsupported global-section services') }
 	global := reader.read_modular_global_plan(file, frame)!
 	plan := global.plan
 	for id in plan.coded {
