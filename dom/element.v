@@ -5979,14 +5979,14 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 			}
 		}
 	}
-	// HTMLElement's base hook and body/frameset WindowEventHandlers run after
-	// Element's attribute steps, including the pinned source namespace FIXME.
+	// Only null-namespace attributes install HTML, SVG, MathML or Window
+	// event handlers, matching the Trusted Types event-handler sink boundary.
 	defer {
 		namespace := e.namespace_uri() or { '' }
-		if ((e.is_html_element() || (namespace_ == none && namespace in [namespace_svg_uri,
-			'http://www.w3.org/1998/Math/MathML'])) && is_global_event_handler_content_attribute(local_name))
+		if namespace_ == none && (((e.is_html_element() || namespace in [namespace_svg_uri,
+			'http://www.w3.org/1998/Math/MathML']) && is_global_event_handler_content_attribute(local_name))
 			|| (e.is_html_element() && e.local_name() in ['body', 'frameset']
-				&& is_window_event_handler_content_attribute(local_name)) {
+				&& is_window_event_handler_content_attribute(local_name))) {
 			unsafe { &EventTarget(&e) }.element_event_handler_attribute_changed(local_name, value)
 		}
 	}
