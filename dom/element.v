@@ -3285,7 +3285,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 		if parent := node.parent() {
 			if parent_element := parent.as_element() {
 				name := parent_element.local_name()
-				if name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext'] || (name == 'noscript' && !node.is_scripting_disabled()) {
+				if parent_element.is_html_element() && (name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext'] || (name == 'noscript' && !node.is_scripting_disabled())) {
 					return character_data.data()
 				}
 			}
@@ -3606,7 +3606,7 @@ pub fn (e &Element) is_void_element() bool {
 }
 
 pub fn (e &Element) serializes_as_void() bool {
-	return e.is_void_element() || e.local_name() in ['basefont', 'bgsound', 'frame', 'keygen']
+	return e.is_html_element() && (e.is_void_element() || e.local_name() in ['basefont', 'bgsound', 'frame', 'keygen'])
 }
 
 // --- Bounding rects ---
