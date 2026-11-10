@@ -2422,3 +2422,39 @@ still uses installed Skia. Short optimized comparisons do not resolve the
 retained long-run no-GC resource failure or the inherited FastC saved-canvas
 degenerate-gradient failure. See the [native cases, guarded comparisons and
 component dependency proof](https://github.com/vox-browser/vox-tests/blob/80233f56cec916a70526a4af6628b51a20a892e7/evidence/gg-migration/zero-stage-image-blurs-20261109.json).
+
+
+### Identity-kernel tails after large blurs (2026-11-09)
+
+`82c466c87` handles a large blur at the last mapped non-identity stage of a
+pure-blur chain. Later identity kernels preserve its deferred image and carry
+their incoming color effects through restoration. The complete original list
+still supplies fast bounds and requests. A later real kernel on either axis
+continues to decline atomically, including when a transform makes sigma .02
+non-identity. Image sources still need an earlier real blur to resolve them.
+
+At seed 20270311 the canvas baseline accepts 10 of 500 requests; the candidate
+matches 275. The image baseline declines all 500; the candidate matches 366.
+Final canvas cohorts at seed 20270312 match 587 of 1,000 on macOS and 605 on
+Linux, declining 413 and 395; platform glyph backends/fonts differ. Final image
+cohorts each match 696 of 1,000, declining 304. Optimized macOS/no-GC at seed
+20270313 matches 59 of 100 canvas requests and 70 of 100 image requests,
+declining 41 and 30. Counts include no-ops; all completed candidate cohorts
+retain unchanged inputs under the 3 GiB guard.
+
+Twenty-eight canvas and 26 image native fixtures verify on each platform,
+covering identity tails, color effects, alpha/P3, clips, composites, dashed
+strokes, fractional subsets, scaling/reflection, near-integer mappings and
+larger content. Two initial Linux reference verifications used the previous
+fixture pin with empty Linux expectations; both complete reruns passed after
+the captured hashes were published. The receipt retains those setup failures.
+Focused C suites, selected macOS FastC tests, Linux browser typechecking and
+HTML canvas integration pass. The FMA audit finds zero contracted operations
+(189 explicit). Separate Linux production/no-GC executables run all 19
+filter-layer and 14 source-image test functions with Skia unavailable to
+pkg-config; link/readelf/ldd checks find no Skia dependency. Direct libraries
+are FreeType, libm and libc. Full-browser integration still uses installed
+Skia. Short optimized cohorts do not resolve the retained long-run no-GC
+resource failure or inherited FastC saved-canvas degenerate-gradient failure.
+See the [native cases, guarded comparisons, setup failures and component
+proofs](https://github.com/vox-browser/vox-tests/blob/7bbc2a2fca7ed1332b72c162003bcd07b1066e23/evidence/gg-migration/large-blur-identity-tails-20261109.json).
