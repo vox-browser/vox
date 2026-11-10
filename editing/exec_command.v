@@ -135,6 +135,11 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 			canonicalize_collapsed_selection_for_editing(mut mutable_selection)
 		}
 	}
+	// Focusing the editing host while moving the caret can remove the selection.
+	// Commands with an affected editing host require an active range.
+	if affected_editing_host != none && active_range(document) == none {
+		return false
+	}
 
 	// AD-HOC: Record the mutations performed by the command action on the editing history, so the user can undo them.
 	//         end_recording() is a no-op if the guard below already ended the recording.
