@@ -3632,6 +3632,11 @@ fn viewport_hit_test_with_culling(target voidptr, x f64, y f64, type_ dom.HitTes
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
 				}
+				if type_ == .text_cursor {
+					if caret := compatibility_caret_in_box_lines(box, mut memo) {
+						return caret
+					}
+				}
 				if element := element_for_paint_node_id(candidate_node_id) {
 					candidate := dom.HitTestResult{
 						element: element
