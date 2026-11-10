@@ -576,6 +576,7 @@ pub mut:
 @[heap]
 pub struct MutationObserver {
 pub mut:
+	creation_index_ u64
 	callback_    ?&CallbackType
 	delivery_queue_ ?&MutationObserverDeliveryQueue
 	transient_nodes_ []&Node
@@ -2736,19 +2737,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		}
 		return .@continue
 	})
-	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
-	for ancestor := ?&Node(parent); ancestor != none;  {
-		inclusive_ancestor := ancestor or { break }
-		for registered in inclusive_ancestor.registered_observers() {
-			if registered.options().subtree {
-				transient_observer := TransientRegisteredObserver.create(registered.observer(), registered.options(), registered)
-				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
-				mut observer := unsafe { &MutationObserver(registered.observer()) }
-				observer.add_transient_registered_node(&n)
-			}
-		}
-		ancestor = inclusive_ancestor.parent()
-	}
+	transient_delivery_queues := n.add_transient_registered_observers(parent)
 	if !suppress_observers {
 		mut removed := []&Node{}
 		removed << &n
@@ -2762,6 +2751,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		mut mutable_doc := unsafe { &Document(doc) }
 		mutable_doc.bump_dom_tree_version()
 	}
+	finish_transient_observer_notifications(transient_delivery_queues, doc)
 }
 
 // https://dom.spec.whatwg.org/#concept-node-replace
@@ -2903,6 +2893,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 			assign_slottables(slot)
 		}
 	}
+	transient_delivery_queues := n.add_transient_registered_observers(old_parent)
 	if child_node := child {
 		for _, live_range in dom_live_ranges {
 			mut range := unsafe { &Range(live_range) }
@@ -2958,6 +2949,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		mut mutable_doc := unsafe { &Document(doc) }
 		mutable_doc.bump_dom_tree_version()
 	}
+	finish_transient_observer_notifications(transient_delivery_queues, doc)
 }
 
 // https://dom.spec.whatwg.org/#clone-a-single-node
@@ -4564,7 +4556,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 			for existing in delivery_queues { if voidptr(existing) == voidptr(queue) { present = true; break } }
 			if !present { delivery_queues << queue }
 		} else if document != unsafe { nil } {
-			document.pending_mutation_observers << observer
+			document.add_pending_mutation_observer(observer)
 		}
 	}
 	// Schedule only after every interested observer has its record. Native host
