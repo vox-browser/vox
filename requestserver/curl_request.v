@@ -186,6 +186,8 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	if native.headers_ != unsafe { nil } {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HTTPHEADER, native.headers_), C.CURLE_OK)
 	}
+	// A proxy's CONNECT response describes the tunnel, not the origin.
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_SUPPRESS_CONNECT_HEADERS, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_HEADERFUNCTION, curl_header_received), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HEADERDATA, native), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_WRITEFUNCTION, curl_data_received), C.CURLE_OK)
@@ -247,6 +249,7 @@ fn curl_header_received(buffer voidptr, size uint, count uint, owner voidptr) ui
 				return length
 			}
 		}
+		return length
 	}
 	if line.trim_space() == '' && C.vox_curl_status(request.easy_) >= 200 {
 		if !request.transfer_headers_to_client_if_needed() { return 0 }
