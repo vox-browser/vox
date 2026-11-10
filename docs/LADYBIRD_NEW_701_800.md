@@ -199,6 +199,52 @@ and the separately labelled proposed-correction **100/100, 5,356/5,356** result,
 with no missing assertions. The wrapping checks execute on source-matched
 images; the older published bundle is not used to validate this change.
 
+## Ordinary-property iteration accumulation
+
+Follow-up `cf7c6a33f` fixes a separate gap found while investigating the two
+remaining cases: iteration accumulation was applied to registered custom
+properties but omitted for ordinary CSS properties. The sampler now computes
+the final keyframe once, accumulates it into both interval endpoints after
+keyframe compositing, then interpolates and clamps the result. Interior
+intervals also use the final keyframe. The shared helper puts the final value
+first, as required by the
+[effect-value procedure](https://drafts.csswg.org/web-animations-2/#the-effect-value-of-a-keyframe-animation-effect),
+and preserves the current endpoint when accumulation is unsupported. Numeric
+accumulation retains its bounded binary-doubling implementation.
+
+All **12 focused animation test functions pass** in the optimized prepared
+prealloc runtime with `-gc none`; compiler and runtime guards exit 0. Five new
+functions fail on the previous implementation, while the discrete-value and
+filter-identity control already passes. The checks cover lengths, numbers,
+mixed percentage calculations, opacity, unclamped color endpoints, additive
+keyframes and interior intervals, alongside the existing custom-property
+regressions.
+
+An additional unchanged official WPT page,
+`web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`,
+reports all **38 tests**, with **5/38 passing** on r17. This page is outside the
+fixed 100-page Ladybird cohort. Its WPT revision is
+`57bbaa12ff3515848cc0b3d3791791086a563047`, and its SHA-256 is
+`aca4226f20a14185adeb4806a6fb0d8056a645d17974058790530b7400bfb4c2`.
+A fresh native image of `cf7c6a33f` raises that page to **23/38** with no
+regressions. The fixed 100-page cohort is unchanged at **98/100,
+5,354/5,356**, with no missing assertions. No proposed expectation overrides
+are used for these checks.
+
+Follow-up `9e600c3d6` accumulates drop-shadow colors through the shared
+premultiplied color composition instead of adding quantized RGBA channels.
+The old path clamped before interpolation (RGB 248 instead of 255 at the third
+iteration) and ignored alpha when accumulating translucent shadows. Two new
+focused functions fail on the previous implementation; all 14 pass with the
+default Boehm build and the optimized prealloc `-gc none` runtime. A fresh
+native image raises the upstream page to **24/38**; the only changed subtest is
+the drop-shadow case. The cohort stays at **98/100, 5,354/5,356**.
+
+The remaining 14 failures on that page are transform accumulation (eight
+cases), box-shadow and discrete filter-list accumulation, the discrete
+`align-content` value, `calc-size()` and operand order in complex math
+functions.
+
 ## Mixed length/percentage accumulation diagnostic
 
 The comma-list and space-list pages each retain one failing iteration-accumulation
