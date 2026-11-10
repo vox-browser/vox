@@ -58,7 +58,7 @@ mut:
 	event_type_           string
 	data_                 string
 	pending_input_        string
-	stream_bom_processed_ bool
+	is_start_of_stream_   bool = true
 	with_credentials_     bool
 	ready_state_          EventSourceReadyState = .connecting
 	fetch_hook_           ?EventSourceFetchHook
@@ -158,9 +158,6 @@ pub fn (mut source EventSource) receive_response(response EventSourceResponse) {
 		source.fail_the_connection()
 		return
 	}
-	// Reconnection starts a new event stream, whose first UTF-8 BOM is ignored.
-	source.pending_input_ = ''
-	source.stream_bom_processed_ = false
 	source.announce_the_connection()
 	source.feed(response.body)
 	source.end_of_body(false)
@@ -180,6 +177,12 @@ pub fn (mut source EventSource) announce_the_connection() {
 	if source.ready_state_ == .closed {
 		return
 	}
+	// Parser buffers belong to one response stream. In particular, a partial
+	// line or CR from a failed connection must not precede the next stream's BOM.
+	source.pending_input_ = ''
+	source.data_ = ''
+	source.event_type_ = ''
+	source.is_start_of_stream_ = true
 	source.ready_state_ = .open
 	open_event := dom.Event.create('open', dom.EventInit{})
 	unsafe { &dom.EventTarget(source) }.dispatch_event(open_event)
@@ -216,7 +219,14 @@ pub fn (mut source EventSource) fail_the_connection() {
 	unsafe { &dom.EventTarget(source) }.dispatch_event(error_event)
 }
 
-fn (mut source EventSource) process_line(line string) {
+fn (mut source EventSource) process_line(input string) {
+	mut line := input
+	if source.is_start_of_stream_ {
+		source.is_start_of_stream_ = false
+		// Partial lines have already been joined, so a BOM split across feed()
+		// chunks is removed here too. Later U+FEFF characters are stream data.
+		if line.starts_with('\ufeff') { line = line['\ufeff'.len..] }
+	}
 	if line == '' {
 		source.dispatch_the_event()
 		return
@@ -241,18 +251,6 @@ fn (mut source EventSource) process_line(line string) {
 // and treating CR, LF, and CRLF as line endings.
 pub fn (mut source EventSource) feed(chunk string) {
 	source.pending_input_ += chunk
-	if !source.stream_bom_processed_ {
-		// UTF-8 decoding ignores just the initial BOM. Retain incomplete BOM
-		// prefixes between chunks rather than interpreting them as field bytes.
-		bom := '\xef\xbb\xbf'
-		if source.pending_input_.len < bom.len && bom.starts_with(source.pending_input_) {
-			return
-		}
-		if source.pending_input_.starts_with(bom) {
-			source.pending_input_ = source.pending_input_[bom.len..]
-		}
-		source.stream_bom_processed_ = true
-	}
 	for source.pending_input_.len > 0 {
 		mut break_index := -1
 		for index, byte in source.pending_input_.bytes() {
