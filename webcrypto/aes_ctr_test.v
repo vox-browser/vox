@@ -22,6 +22,35 @@ fn test_aes_ctr_native_source_vectors_with_full_width_counter() {
 	}
 }
 
+fn test_aes_ctr_rejects_input_after_counter_space_is_exhausted() {
+	subtle := SubtleCrypto.create()
+	vector := aes_ctr_source_vectors[0]
+	key := subtle.import_key(.raw, hex.decode(vector.key_hex)!, 'AES-CTR', false, [
+		.encrypt,
+		.decrypt,
+	], '')!
+	params := AesCtrParams{
+		counter: []u8{len: 16}
+		length: 1
+	}
+	within_capacity := []u8{len: 32}
+	ciphertext := subtle.encrypt(params, key, within_capacity)!
+	assert subtle.decrypt(params, key, ciphertext)! == within_capacity
+	for size in [33, 48] {
+		input := []u8{len: size}
+		if _ := subtle.encrypt(params, key, input) {
+			assert false
+		} else {
+			assert err.msg() == 'OperationError: AES-CTR counter would repeat'
+		}
+		if _ := subtle.decrypt(params, key, input) {
+			assert false
+		} else {
+			assert err.msg() == 'OperationError: AES-CTR counter would repeat'
+		}
+	}
+}
+
 fn test_aes_ctr_source_counter_length_precedes_width_and_provider_failures() {
 	key := CryptoKey.create(.secret, false, KeyAlgorithm{}, [], [])
 	for decrypt in [false, true] {

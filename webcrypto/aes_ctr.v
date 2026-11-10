@@ -7,6 +7,12 @@ fn aes_ctr_crypt(params AesCtrParams, key &CryptoKey, input []u8, decrypt bool) 
 	if params.counter.len != 16 { return error('OperationError: Invalid counter length') }
 	if params.length == 0 || params.length > 128 { return error('OperationError: Invalid length') }
 	if input.len == 0 { return native_aes_ctr(decrypt, key.handle_, input, params.counter) }
+	// WebCrypto permits wrapping the selected counter bits, but an operation
+	// must not consume more than the counter space or it would repeat keystream.
+	required_blocks := (u64(input.len) + 15) / 16
+	if params.length < 64 && required_blocks > (u64(1) << params.length) {
+		return error('OperationError: AES-CTR counter would repeat')
+	}
 	// EVP increments the whole block. Restart it when the low length bits wrap
 	// so carries cannot change the nonce portion of the counter.
 	mut counter := params.counter.clone()
