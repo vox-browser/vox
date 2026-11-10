@@ -665,13 +665,25 @@ pub fn (mut window WindowModel) speech_synthesis() &speech.SpeechSynthesis {
 	return synthesis
 }
 
+// https://html.spec.whatwg.org/multipage/timers-and-user-prompts.html#cannot-show-simple-dialogs
+pub fn (window &WindowModel) cannot_show_simple_dialogs() bool {
+	if document := window.Window.associated_document() {
+		if document.active_sandboxing_flag_bits() & u32(SandboxingFlag.sandboxed_modals) != 0 {
+			return true
+		}
+	}
+	return main_thread_event_loop().termination_nesting_level != 0
+}
+
 pub fn (window &WindowModel) alert(message string) {
+	if window.cannot_show_simple_dialogs() { return }
 	if hook := window.host_configuration_.alert_hook {
 		hook(message)
 	}
 }
 
 pub fn (window &WindowModel) confirm(message ?string) bool {
+	if window.cannot_show_simple_dialogs() { return false }
 	if hook := window.host_configuration_.confirm_hook {
 		return hook(message or { '' })
 	}
@@ -679,6 +691,7 @@ pub fn (window &WindowModel) confirm(message ?string) bool {
 }
 
 pub fn (window &WindowModel) prompt(message ?string, default_ ?string) ?string {
+	if window.cannot_show_simple_dialogs() { return none }
 	if hook := window.host_configuration_.prompt_hook {
 		return hook(message or { '' }, default_ or { '' })
 	}
