@@ -430,3 +430,26 @@ fn test_filter_lists_with_mismatched_functions_are_discrete() {
 	assert filter_at(from, to, 2500)! == 'contrast(4) brightness(4)'
 	assert filter_at('brightness(1) contrast(1)', 'brightness(2) contrast(2)', 500)! == 'brightness(1.5) contrast(1.5)'
 }
+
+fn test_iteration_composition_scales_complex_math_terms_by_the_iteration_count() {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	css.register_property_for_document(mut document, css.PropertyDefinition{
+		name: '--length-percentage'
+		syntax: '<length-percentage>'
+		inherits: false
+		initial_value: '0px'
+	})!
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'--length-percentage': 'min(10px, 5%)'}},
+		BaseKeyframe{properties: {'--length-percentage': 'max(20px, 15%)'}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(2000))
+	animation.update()
+	document.needs_full_style_update = true
+	document.update_style()
+	// The accumulated final value is written once, as 2 * max(...), ahead of
+	// the current start value.
+	assert custom_style_value(target, '--length-percentage') == 'calc((1 * ((2 * max(20px, 15%)) + min(10px, 5%))) + (0 * ((2 * max(20px, 15%)) + max(20px, 15%))))'
+}
