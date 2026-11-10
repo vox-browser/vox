@@ -1051,9 +1051,9 @@ pub fn (element &HTMLMediaElement) can_play_type(type_ string) CanPlayTypeResult
 		return .empty
 	}
 	supported := if parts[0] == 'video' {
-		parts[1] in ['webm', 'mp4', 'mpeg', 'ogg']
+		parts[1] in ['webm', 'mp4', 'mpeg', 'ogg', 'quicktime']
 	} else if parts[0] == 'audio' {
-		parts[1] in ['flac', 'mp3', 'mpeg', 'ogg', 'wav', 'webm']
+		parts[1] in ['aac', 'flac', 'mp3', 'mpeg', 'ogg', 'wav', 'webm', 'mp4', 'x-m4a']
 	} else {
 		false
 	}
