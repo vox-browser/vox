@@ -3646,8 +3646,16 @@ pub fn (n &Node) flat_tree_parent() ?&Node {
 			return html_slot_element_as_node(slot)
 		}
 	}
-	// Otherwise, this is the parent or shadow host.
-	return n.parent_or_shadow_host()
+	// A shadow root is not part of the flat tree: its children have the host
+	// as their parent, including when finding a common click-event target.
+	parent := n.parent_or_shadow_host() or { return none }
+	if shadow_root := parent.as_shadow_root() {
+		if host := shadow_root.host() {
+			return host.as_node()
+		}
+		return none
+	}
+	return parent
 }
 
 pub fn (n &Node) flat_tree_parent_element() ?&Element {
