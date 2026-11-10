@@ -2480,6 +2480,13 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration_with_values(decl
 	params := parser.parsing_params()
 	for index, declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
+			// Parsing preserves an earlier important declaration; equal priority
+			// still uses the last value. CSSOM setters replace unconditionally.
+			if previous := result.custom_properties[declaration.name] {
+				if previous.important == .yes && declaration.important != .yes {
+					continue
+				}
+			}
 			value_text := if original := declaration.original_value_text {
 				if parser.raw_rules_transient { original.clone() } else { original }
 			} else {
