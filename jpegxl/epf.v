@@ -127,11 +127,40 @@ fn epf_padded(plane FloatPlane) []f32 {
 	return out
 }
 
-// Each pass runs row by row: per-offset SADs, weights and the weighted sum are
-// computed for a whole row in separate loops over x, which the C compiler can
-// vectorize. Every pixel keeps the source's operation order: channel-major
-// SAD accumulation, weights summed in offset order, and the same fused
-// multiply-adds for the weighted sum.
+// Channel-accumulated SADs of one offset for `count` consecutive pixels whose
+// first padded index is `base`, in the source's channel-major order.
+@[direct_array_access]
+fn epf_offset_sads(out &f32, padded [3][]f32, base int, delta int, patch_deltas [5]int, channel_scale [3]f32, count int, pass int) {
+	for x in 0 .. count { unsafe { out[x] = 0 } }
+	for c in 0 .. 3 {
+		src := unsafe { &f32(padded[c].data) }
+		scale := channel_scale[c]
+		for x in 0 .. count {
+			b := base + x
+			mut distance := f32(0)
+			for k in 0 .. 5 {
+				pd := patch_deltas[k]
+				distance += unsafe { math.abs(src[b + pd] - src[b + delta + pd]) }
+			}
+			unsafe {
+				out[x] = if pass == 0 {
+					fused_f32(scale, distance, out[x])
+				} else {
+					fused_f32(distance, scale, out[x])
+				}
+			}
+		}
+	}
+}
+
+// Each pass runs row by row with loops over x that the C compiler vectorizes.
+// Every pixel keeps the source's operation order: channel-major SAD
+// accumulation, weights summed in offset order and the same fused
+// multiply-adds for the weighted sum. A SAD is symmetric in its two patches
+// (|a - b| and |b - a| are bit-identical and summed in the same order), so for
+// opposite offsets o and -o, sad(-o) at p equals sad(o) at p - o. Pass 1
+// computes only its up and left SADs and reads down and right from the next
+// row and column.
 @[direct_array_access]
 fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, origin_x u32, origin_y u32, pass int) ![]FloatPlane {
 	validate_epf(input, parameters, sigma, origin_x, origin_y)!
@@ -150,73 +179,89 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 	for c in 0 .. 3 { output[c] = []f32{len: input[0].samples.len} }
 	scale := parameters.sigma_scale * f32(1.65)
 	border_scale := scale * parameters.border_sad_multiplier
-	mut sads := [][]f32{len: n, init: []f32{len: width}}
-	mut weights := [][]f32{len: n, init: []f32{len: width}}
+	mut block_data := unsafe { &f32(nil) }
+	mut block_width := 0
+	if blocks := sigma.blocks {
+		block_data = unsafe { &f32(blocks.samples.data) }
+		block_width = blocks.width
+	}
+	// Pass 0 keeps one SAD row per offset; pass 1 keeps up rows for y and y + 1
+	// and a left row one sample wider than the plane.
+	mut sads := []f32{len: if pass == 0 { n * width } else { 0 }}
+	mut up_current := []f32{len: if pass == 1 { width } else { 0 }}
+	mut up_next := []f32{len: if pass == 1 { width } else { 0 }}
+	mut left := []f32{len: if pass == 1 { width + 1 } else { 0 }}
+	mut weights := []f32{len: n * width}
 	mut inverse_sigma := []f32{len: width}
 	mut inverse_weight := []f32{len: width}
 	mut skip := []bool{len: width}
+	mut acc := []f32{len: width}
+	if pass == 1 && height > 0 {
+		epf_offset_sads(unsafe { &f32(up_current.data) }, padded, epf_pad * pw + epf_pad, offset_deltas[0],
+			patch_deltas, parameters.channel_scale, width, pass)
+	}
 	for y in 0 .. height {
 		gy := u64(origin_y) + u64(y)
 		row_base := (y + epf_pad) * pw + epf_pad
 		row_start := y * width
+		border_row := gy % 8 == 0 || gy % 8 == 7
+		block_row := int(gy / 8) * block_width
 		for x in 0 .. width {
 			gx := u64(origin_x) + u64(x)
-			value := epf_sigma_value(sigma, gx, gy)
+			value := if block_width > 0 { unsafe { block_data[block_row + int(gx / 8)] } } else { sigma.inverse_sigma }
 			skip[x] = epf_min_sigma > value
-			inverse_sigma[x] = value * if gx % 8 in [u64(0), 7] || gy % 8 in [u64(0), 7] {
+			inverse_sigma[x] = value * if border_row || gx % 8 == 0 || gx % 8 == 7 {
 				border_scale
 			} else {
 				scale
 			}
 		}
-		if pass != 2 {
+		if pass == 0 {
 			for i in 0 .. n {
-				dst := unsafe { &f32(sads[i].data) }
-				for x in 0 .. width { unsafe { dst[x] = 0 } }
+				epf_offset_sads(unsafe { &f32(sads.data) + i * width }, padded, row_base, offset_deltas[i],
+					patch_deltas, parameters.channel_scale, width, pass)
 			}
-			for c in 0 .. 3 {
-				src := unsafe { &f32(padded[c].data) }
-				channel_scale := parameters.channel_scale[c]
-				for i in 0 .. n {
-					dst := unsafe { &f32(sads[i].data) }
-					delta := offset_deltas[i]
-					for x in 0 .. width {
-						b := row_base + x
-						mut distance := f32(0)
-						for k in 0 .. 5 {
-							pd := patch_deltas[k]
-							distance += unsafe { math.abs(src[b + pd] - src[b + delta + pd]) }
-						}
-						unsafe {
-							dst[x] = if pass == 0 {
-								fused_f32(channel_scale, distance, dst[x])
-							} else {
-								fused_f32(distance, channel_scale, dst[x])
-							}
-						}
-					}
-				}
-			}
+		} else if pass == 1 {
+			epf_offset_sads(unsafe { &f32(up_next.data) }, padded, row_base + pw, offset_deltas[0],
+				patch_deltas, parameters.channel_scale, width, pass)
+			epf_offset_sads(unsafe { &f32(left.data) }, padded, row_base, offset_deltas[1],
+				patch_deltas, parameters.channel_scale, width + 1, pass)
 		}
 		for x in 0 .. width { inverse_weight[x] = 1 }
 		for i in 0 .. n {
-			delta := offset_deltas[i]
-			wrow := unsafe { &f32(weights[i].data) }
-			srow := unsafe { &f32(sads[i].data) }
-			for x in 0 .. width {
-				sad := if pass == 2 {
+			wrow := unsafe { &f32(weights.data) + i * width }
+			if pass == 2 {
+				delta := offset_deltas[i]
+				p0 := unsafe { &f32(padded[0].data) }
+				p1 := unsafe { &f32(padded[1].data) }
+				p2 := unsafe { &f32(padded[2].data) }
+				for x in 0 .. width {
 					b := row_base + x
-					position := row_start + x
-					first := math.abs(padded[0][b + delta] - input[0].samples[position])
-					second := math.abs(padded[1][b + delta] - input[1].samples[position])
-					third := math.abs(padded[2][b + delta] - input[2].samples[position])
-					fused_f32(first, parameters.channel_scale[0], fused_f32(second, parameters.channel_scale[1], third * parameters.channel_scale[2]))
-				} else {
-					unsafe { srow[x] }
+					sad := unsafe {
+						fused_f32(math.abs(p0[b + delta] - p0[b]), parameters.channel_scale[0],
+							fused_f32(math.abs(p1[b + delta] - p1[b]), parameters.channel_scale[1],
+							math.abs(p2[b + delta] - p2[b]) * parameters.channel_scale[2]))
+					}
+					weight := epf_weight(sad, inverse_sigma[x])
+					unsafe { wrow[x] = weight }
+					inverse_weight[x] += weight
 				}
-				weight := epf_weight(sad, inverse_sigma[x])
+				continue
+			}
+			// Pass 1 offsets are up, left, right and down.
+			src := if pass == 0 {
+				unsafe { &f32(sads.data) + i * width }
+			} else {
+				match i {
+					0 { unsafe { &f32(up_current.data) } }
+					1 { unsafe { &f32(left.data) } }
+					2 { unsafe { &f32(left.data) + 1 } }
+					else { unsafe { &f32(up_next.data) } }
+				}
+			}
+			for x in 0 .. width {
+				weight := epf_weight(unsafe { src[x] }, inverse_sigma[x])
 				unsafe { wrow[x] = weight }
-				// inverse_weight accumulates the total here and is inverted below.
 				inverse_weight[x] += weight
 			}
 		}
@@ -225,24 +270,27 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 			src := unsafe { &f32(padded[c].data) }
 			inp := unsafe { &f32(input[c].samples.data) }
 			out := unsafe { &f32(output[c].data) }
+			for x in 0 .. width { acc[x] = unsafe { inp[row_start + x] } }
+			for step in 0 .. n {
+				i := if pass == 2 { step } else { n - 1 - step }
+				wrow := unsafe { &f32(weights.data) + i * width }
+				base := row_base + offset_deltas[i]
+				if pass == 2 {
+					for x in 0 .. width { acc[x] = fused_f32(unsafe { wrow[x] }, unsafe { src[base + x] }, acc[x]) }
+				} else {
+					for x in 0 .. width { acc[x] = fused_f32(unsafe { src[base + x] }, unsafe { wrow[x] }, acc[x]) }
+				}
+			}
 			for x in 0 .. width {
-				position := row_start + x
-				if skip[x] {
-					unsafe { out[position] = inp[position] }
-					continue
+				unsafe {
+					out[row_start + x] = if skip[x] { inp[row_start + x] } else { acc[x] * inverse_weight[x] }
 				}
-				b := row_base + x
-				mut sample := unsafe { inp[position] }
-				for step in 0 .. n {
-					i := if pass == 2 { step } else { n - 1 - step }
-					weight := weights[i][x]
-					sample = if pass == 2 {
-						fused_f32(weight, unsafe { src[b + offset_deltas[i]] }, sample)
-					} else {
-						fused_f32(unsafe { src[b + offset_deltas[i]] }, weight, sample)
-					}
-				}
-				unsafe { out[position] = sample * inverse_weight[x] }
+			}
+		}
+		if pass == 1 {
+			// Swap the two row buffers; neither is shared outside this function.
+			unsafe {
+				up_current, up_next = up_next, up_current
 			}
 		}
 	}
