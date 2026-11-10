@@ -426,6 +426,7 @@ pub fn (mut link HTMLLinkElementModel) icon_linked_resource_fetch_setup_steps(mu
 pub fn (mut link HTMLLinkElementModel) stylesheet_linked_resource_fetch_setup_steps(mut request LinkRequest) bool {
 	if !link.supports_style_sheet_type() {
 		link.clear_loaded_style_sheet()
+		link.cancel_pending_stylesheet_load()
 		return false
 	}
 	if link.disabled_ {
@@ -466,6 +467,20 @@ fn (mut link HTMLLinkElementModel) stop_delaying_document_load_event() {
 	}
 	link.document_load_event_delayer_ = none
 	link.document_load_event_delaying_ = false
+}
+
+fn (mut link HTMLLinkElementModel) cancel_pending_stylesheet_load() {
+	if !link.stylesheet_loading_ && !link.document_load_event_delaying_ {
+		return
+	}
+	link.stylesheet_loading_ = false
+	if element := link.element_ {
+		mut dom_element := link_dom_element(element)
+		mut document := unsafe { &dom.Document(dom_element.document()) }
+		document.remove_from_script_blocking_style_sheet_set(dom_element)
+		dom_element.unblock_rendering()
+	}
+	link.stop_delaying_document_load_event()
 }
 
 pub fn (mut link HTMLLinkElementModel) adopted_from(_ &dom.Document) {

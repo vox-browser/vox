@@ -93,6 +93,27 @@ fn test_dom_stylesheet_type_changes_remove_and_refetch_without_reloading_support
 	assert css.style_sheet_for_owner_node(document, element) != none
 }
 
+fn test_unsupported_type_cancels_pending_stylesheet_load_state() {
+	mut document, mut element, mut model := stylesheet_mime_test_document()!
+	defer { document.finalize() }
+	model.set_fetch_hook(none)
+	model.set_external_stylesheet_fetcher(true)
+	model.set_parser_state(true, true)
+	model.fetch_and_process_linked_resource()
+	assert model.is_stylesheet_loading()
+	assert model.document_load_event_delaying_
+	assert document.has_pending_style_sheet_requests()
+	assert document.document_script_blocking_style_sheet_set().any(voidptr(it) == voidptr(element))
+	assert document.is_render_blocking_element(element)
+
+	element.set_attribute_value('type', 'text/plain')
+	assert !model.is_stylesheet_loading()
+	assert !model.document_load_event_delaying_
+	assert !document.has_pending_style_sheet_requests()
+	assert !document.document_script_blocking_style_sheet_set().any(voidptr(it) == voidptr(element))
+	assert !document.is_render_blocking_element(element)
+}
+
 fn test_link_mime_quirk_is_limited_to_quirks_documents_and_same_origin_response_urls() {
 	for quirks in [false, true] {
 		for same_origin in [false, true] {
