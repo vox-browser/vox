@@ -1,5 +1,11 @@
 # Skia to gg.canvas migration tools
 
+The CPU differential suite and generated receipts now live in
+[vox-browser/vox-tests](https://github.com/vox-browser/vox-tests). Vox pins an
+exact revision in `tools/raster_tests.json`. The `test_cpu_raster.sh` entry point
+below is a launcher; use `python3 tools/raster_tests.py TOOL [ARGS...]` for native
+fixture capture and FMA tools. GPU and browser comparison tools remain here.
+
 These tools verify that `gg.canvas` (in the V repository) reproduces the pixels
 of the pinned Chromium Skia that Vox currently uses, bit for bit.
 

@@ -7,6 +7,16 @@ Skia Graphite builds (`libVoxGraphite.dylib` on Metal and
 Chromium's Skia output exactly. The migration replaces Skia with `gg.canvas`, a
 new `vlib/gg` module, without changing any pixel of the passing tests.
 
+
+The CPU differential suite and large generated verification receipts live in
+[vox-browser/vox-tests](https://github.com/vox-browser/vox-tests). Vox pins the
+suite in `tools/raster_tests.json`; `tools/raster_tests.py` fetches that exact
+revision, verifies a clean checkout and runs it against this canonical source.
+The existing `tools/gg_migration/test_cpu_raster.sh` command remains a launcher.
+Small focused unit tests and their frozen inputs stay in `cpuraster/`. New
+bulk receipts belong in the test repository, with a concise result here.
+Historical receipts below retain their original bytes and source identities.
+
 ## Approach
 
 `gg.canvas` reproduces Skia rather than approximating it:
@@ -21,7 +31,7 @@ new `vlib/gg` module, without changing any pixel of the passing tests.
   output.
 - **CPU arithmetic.** Ported geometry uses the same float operations. Skia is
   built with `-ffp-contract=off`; the V code avoids expressions that clang
-  would contract into FMAs, and `tools/gg_migration/fma_audit.py` enforces it.
+  would contract into FMAs, and `tools/raster_tests.py fma_audit.py` enforces it.
 - **Verification.** `tools/gg_migration` runs scene scripts through the pinned
   Skia (an oracle linked against `libskia.a`) and through `gg.canvas`, compares
   every byte, and traces both Metal command streams to locate the first
@@ -100,7 +110,7 @@ code; see [Removing Skia](#removing-skia-started-2026-11-06)); the native text
 bridge creates Skia fonts and blobs before invoking GG. Removing these links now would leave required symbols and
 rendering operations unimplemented. Runtime environment selection cannot
 eliminate compiled dependencies. See the
-[default-selection receipt](gg-migration/default-20261106.json) for the verified
+[default-selection receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/default-20261106.json) for the verified
 selection, pixel tests and dependency audit. Skia-free rendering still requires
 the ports listed under Remaining work.
 
@@ -131,7 +141,7 @@ pixel hashes. The text cache, text pixels and draw-list tests also pass with
 tests. The Windows GLCORE regression test compiles the embedded loader with
 MinGW, and a separate GLCORE executable cross-build links successfully. Native
 Windows execution and Linux runtime tests were not run. See the
-[review-fix receipt](gg-migration/pr-reviews-20261105.json) for source pins,
+[review-fix receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/pr-reviews-20261105.json) for source pins,
 commands, actual exits and retained failures.
 
 The follow-up review confirmed those implementation fixes and found three text
@@ -140,7 +150,7 @@ helper tests still referencing Darwin-only definitions on other platforms.
 cross-target checks omitted `text_test.v`; verification now typechecks all 12
 canvas test files for both Linux and Windows (24 checks), then runs the text
 and platform test files on macOS. All pass. This follow-up changes only tests;
-see its [verification receipt](gg-migration/pr-review-followup-20261105.json).
+see its [verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/pr-review-followup-20261105.json).
 
 A fresh review of `b434ae7005` reproduced two further state-management bugs.
 `6c8b7be581` clears pending clip usage, order and depth when a draw list is
@@ -150,7 +160,7 @@ save if layer creation fails, preserving the caller's save and matrix. Both
 regressions failed before the fixes and pass afterwards. All 12 canvas test files,
 three affected files with `-gc none`, and six Linux/Windows type checks pass.
 The new Metal pixel test also checks that clearing pending usage preserves the
-active clip geometry. See the [fresh-review receipt](gg-migration/review-20261106.json).
+active clip geometry. See the [fresh-review receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/review-20261106.json).
 
 The 262-fixture stage22 browser result below remains pinned to `ff4cd6dc66`;
 it does not validate a production browser built with this newer review-fix head.
@@ -266,7 +276,7 @@ renderer: zero differing scenes. On identical layer inputs the previous
 per-edge AA renderer was missing; the new renderer draws all 192 exactly.
 The remaining layer declines are gradient limitations (68 linear color space,
 30 without dithering, 65 general conical, 24 over eight stops, 17 degenerate).
-See the [focused verification receipt](gg-migration/focused-20261105.json) for
+See the [focused verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/focused-20261105.json) for
 input hashes, executable identities, commands, actual exits and raw evidence.
 All ten canvas test files pass; the layer test also passes with `-gc none`.
 
@@ -347,7 +357,7 @@ bold and aliased masks, shader/float-color/perspective/LCD rejection, row paddin
 and immutable frame snapshots. The original implementation fails the first
 case because it never invokes GG. Both existing text-adapter test runs pass,
 normally and with `-prod -gc none`. These are correctness checks, with no speed
-claim. See the [clipped-text receipt](gg-migration/clipped-text-20261106.json)
+claim. See the [clipped-text receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/clipped-text-20261106.json)
 for input and executable hashes, actual exits and retained failures.
 
 Production receipt `20261106-101340-fca9026b` builds this adapter with the
@@ -448,7 +458,7 @@ Both GG adapter test files pass normally and with `-prod -gc none`, including
 original-backend comparisons for clips, affine SVG parents, singular matrices,
 row padding and unchanged pixels after an unsupported batch. The assembly audit
 finds zero fused multiply-adds in `ggshape__*`. See the
-[non-scaling stroke receipt](gg-migration/non-scaling-20261105.json) for pins,
+[non-scaling stroke receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/non-scaling-20261105.json) for pins,
 commands, exits, retained failed attempts and raw evidence. These checks exercise
 the adapter directly and do not establish browser acceptance.
 
@@ -526,7 +536,7 @@ resource files and automatically pins its source and fixture manifest
 (`1fac432a7`); all 14 capture-tool checks pass. The full browser run preceded
 that final tool change and used an equivalent per-launch hash extension for
 its font, runner and manifest. See the
-[stage22 receipt](gg-migration/stage22-20261105.json) for commands, build
+[stage22 receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/stage22-20261105.json) for commands, build
 identities, coverage, actual exits, rejected attempts and retained raw evidence.
 The older `49a4b05f` capture remains baseline evidence in the non-scaling receipt.
 
@@ -568,7 +578,7 @@ gamut matrices, sampling matrices). The disassembly shows which operations
 fuse: this Skia is built with `-ffp-contract=off`, so only explicit `mad()`
 (`fmla`/`fmls`) fuses. Ports must keep every other product in its own
 statement, because clang fuses `a + b * c` written in one V expression;
-`tools/gg_migration/fma_audit.py --contracted-only` lists any it finds. V
+`tools/raster_tests.py fma_audit.py --contracted-only` lists any it finds. V
 calls `dlsym` pointers without prototypes, so oracle entry points take their
 integer arguments as one `i32` array.
 
@@ -653,7 +663,7 @@ HTML check pass. The full-browser type check passes and the final FMA audit
 reports zero contracted multiply-adds. All ten final memory-guard receipts
 have actual child exit zero. These are focused correctness checks, with no
 production-browser, Linux-build or performance claim. See the
-[verification receipt](gg-migration/drop-shadow-20261108.json) for source and
+[verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/drop-shadow-20261108.json) for source and
 oracle hashes, commands, exits and the unsuccessful intermediate candidates.
 
 Linux dependency audit: `build-linux-browser.sh` still requires `skia.pc`;
@@ -675,7 +685,7 @@ corners, rotated/skewed clips, content holes, and zero, negative, tiny and
 positive blur values. Focused V and native shadow tests pass; the FMA audit
 reports zero contracted operations. The tests preserved local fast-bounds
 rejection, hard clipping of nearly integral holes and the separate 24.8
-rectangle coverage algorithm. See the [verification receipt](gg-migration/portable-outer-shadow-20261108.json).
+rectangle coverage algorithm. See the [verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/portable-outer-shadow-20261108.json).
 
 Inner/text shadows, tiled surfaces and the other dependencies above remain
 open. A new Linux VM now mounts the canonical checkout and has its system
@@ -690,7 +700,7 @@ rectangle tests also pass on Ubuntu 24.04 aarch64 in normal and `-prod -gc none`
 modes, with compiler fallback disabled. The nested inner-shadow tests pass on
 Linux too. `e3e879076` supplies the GNU feature flag needed by glibc's combined
 trigonometry function. These module tests do not establish a Skia-free browser
-link; see the [nested-shadow/Linux receipt](gg-migration/nested-inner-shadow-20261108.json).
+link; see the [nested-shadow/Linux receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/nested-inner-shadow-20261108.json).
 
 `fa8188a4e` ports retained text shadows through an unbounded blur layer and one
 SrcIn tint on restore. It also adds retained-text baseline snapping, the
@@ -701,7 +711,7 @@ variable/color fonts, large glyphs and invalid blur. All 23 raster/native shadow
 test files pass and the FMA audit stays clean. The earlier 10,000-case AA and
 default-smoothing cohorts also passed. Headers and native oracle includes now
 join the pinned differential inputs (`b5634a8cc`). See the
-[retained-text receipt](gg-migration/retained-text-shadow-20261108.json).
+[retained-text receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/retained-text-shadow-20261108.json).
 
 Linux staging now keeps UI2 under `Build/linux/modules` (`6c96821cf`); its real
 staging check preserved all 140 entries in the shared macOS UI2 tree. This avoids
@@ -773,7 +783,7 @@ The benchmark and post-endpoint pixel capture are committed in `890da6bb9`;
 `fa96f3caf` adds the continuous reversal schedule and scrolling-only mode.
 All 91 focused measurement-tool checks pass; both completed cohorts and the
 live check exit zero under their memory guards. See the
-[performance receipt](gg-migration/hacker-news-performance-20261106.json) for
+[performance receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/hacker-news-performance-20261106.json) for
 every trial, executable/resource hashes, CPU diagnostics, host loads, actual
 exits and the retained raw PNGs/logs. Reproduction commands are in the
 [tool instructions](../tools/gg_migration/README.md).
@@ -819,7 +829,7 @@ Across 20,000 runs in each build mode, 18,631 are exact (5,326 painted, about
 cases still retain fallback in this slice. Focused Linux tests pass normally
 and with `-prod -gc none`, including hashes captured from native FreeType;
 macOS's normal CoreText glyph/filter/text-shadow tests still pass. The FMA audit
-reports zero contracted operations. See the [outline verification receipt](gg-migration/freetype-outlines-20261108.json).
+reports zero contracted operations. See the [outline verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/freetype-outlines-20261108.json).
 
 `38d1c9223` gives Linux its own production queue, receipts, memory locks and
 publication lease under `Build/linux/production-build`. Its focused Linux
@@ -844,7 +854,7 @@ match in the normal build (849 painted). The portable fixture's native hashes
 pass on Linux normally and with `-prod -gc none`; all 25 CPU raster test files
 pass on macOS, and the FMA audit reports zero contracted operations. The
 comparison tooling now pins font files and fixture data throughout each run.
-See the [bitmap and mipmap receipt](gg-migration/bitmap-glyphs-mipmaps-20261108.json),
+See the [bitmap and mipmap receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/bitmap-glyphs-mipmaps-20261108.json),
 including the failed diagnostic attempts and their corrections. COLR paint
 graphs, oversized glyphs, other filters, the browser bridges and their Skia
 links still remain; this is not a completed browser dependency removal.
@@ -861,7 +871,7 @@ text color. Over two seeds, all 48,971 supported runs match exactly; 1,029
 invalid-face runs decline. This includes 10,000 normal runs and 20,000
 production runs at seed 20261106 plus 20,000 normal runs at seed 20261108.
 Focused Linux golden-image tests and CoreText regression tests pass; the FMA
-audit reports zero contracted operations. See the [COLRv0 receipt](gg-migration/colrv0-glyphs-20261108.json).
+audit reports zero contracted operations. See the [COLRv0 receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/colrv0-glyphs-20261108.json).
 The broad Linux module run passes 25 files and exposes two platform-dependent
 SVG arc/stroke hashes in `aaclip_test.v`; native Linux verification is pending.
 COLRv1 graphs and the browser's remaining native dependencies are still open.
@@ -885,9 +895,9 @@ The fixture capture tool records 60 complete native inputs and output hashes
 on each platform. Its macOS outputs equal the frozen macOS test references;
 32 Linux hashes differ. The earlier arc investigation is resolved: platform
 libm and pixel-layout behavior require native Linux references. See the
-[Linux raster report](gg-migration/linux-rgba-raster-20261108.json),
-[macOS fixture inputs](gg-migration/macos-native-raster-fixtures-20261108.json)
-and [Linux fixture inputs](gg-migration/linux-native-raster-fixtures-20261108.json).
+[Linux raster report](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/linux-rgba-raster-20261108.json),
+[macOS fixture inputs](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/macos-native-raster-fixtures-20261108.json)
+and [Linux fixture inputs](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/linux-native-raster-fixtures-20261108.json).
 These are module checks. The browser still links Skia; bitmap export sampling,
 remaining filters, tiled draws, boolean shadows and native browser bridges
 still require work.
@@ -899,7 +909,7 @@ still require work.
 bitmap exports. All 448 exhaustive configurations and 20,016 random exports
 match in both normal and production builds. A native boundary fixture retains
 the differing Linux and macOS row selection. See the
-[bitmap export receipt](gg-migration/linux-bitmap-export-20261108.json).
+[bitmap export receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/linux-bitmap-export-20261108.json).
 
 `f58b137ad` enables single drop-shadow layers under scales and translations.
 Saved layers have transparent borders; blur output has initialized borders
@@ -909,7 +919,7 @@ one-pixel padding too. Of 20,000 attempts per mode, 15,330 supported macOS
 draws match in both normal and production builds; on Linux 16,298 match.
 Unsupported draws preserve the destination. Focused platform and production
 checks pass, and the arithmetic audit reports zero contracted operations.
-See the [scaled-shadow receipt](gg-migration/scaled-drop-shadow-20261108.json),
+See the [scaled-shadow receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/scaled-drop-shadow-20261108.json),
 including native fixture inputs and the failed intermediate experiments.
 
 The full Linux browser type check also passes. This does not establish a
@@ -933,7 +943,7 @@ matches 18,608 supported drop-shadow draws. Four focused test files pass on
 each platform, including Linux production mode, and 14 native fixtures cover
 the clearing and runtime blend modes through an AA clip. The FMA audit reports
 zero contracted operations. See the
-[composite-filter receipt](gg-migration/filter-composites-20261108.json).
+[composite-filter receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/filter-composites-20261108.json).
 Mixed filters, rotated layers, tiled draws and the native browser bridges
 remain open.
 
@@ -953,7 +963,7 @@ Of 20,000 attempts, 6,123 supported comparisons match on macOS and Linux at
 seed 20261106; 6,223 match in production mode at seed 20261108. These counts
 include no-ops and both CPU policies. Image/filter/bitmap-glyph focused tests
 and HTML canvas integration pass. The FMA audit reports zero contracted
-operations. See the [filtered-image receipt](gg-migration/filtered-images-20261108.json)
+operations. See the [filtered-image receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/filtered-images-20261108.json)
 for source identities, native fixture inputs, exact declines and failures.
 This is CPU verification; Skia-free browser compilation and GPU image parity
 remain open.
@@ -972,7 +982,7 @@ with 13,255 declines; production seed 20261108 matches 6,870 with 13,130
 declines. Counts include no-ops and the existing bitmap-space policy. Focused
 macOS and Linux production image tests pass, and the arithmetic audit reports
 zero contracted operations. See the
-[transformed-image receipt](gg-migration/transformed-images-20261108.json).
+[transformed-image receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/transformed-images-20261108.json).
 Linear mipmaps, clearing blends under general transforms, fractional source
 subsets, image-space blur/drop-shadow, GPU parity and browser dependency
 removal remain open.
@@ -992,7 +1002,7 @@ declines. Counts include no-ops and the existing bitmap-space policy. All 26
 CPU raster test files pass on macOS; the image and mipmap files also pass in
 Linux production mode. The FMA audit reports zero contracted operations and
 170 explicit operations. See the
-[linear-sampling receipt](gg-migration/linear-image-sampling-20261108.json).
+[linear-sampling receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/linear-image-sampling-20261108.json).
 Clearing blends under general transforms, fractional source subsets, direct
 image-space blur/drop-shadow, mixed filters, general rotated layers, GPU
 parity and full browser dependency removal remain open.
@@ -1013,7 +1023,7 @@ no-ops and both CPU policies. All 26 CPU raster test files pass on macOS,
 and the image tests pass in Linux production mode. The FMA audit reports zero
 contracted operations. The full Linux browser type check passes in 40.23
 seconds with 4.75 GB sampled peak RSS. See the
-[image-composite receipt](gg-migration/image-filter-composites-20261108.json).
+[image-composite receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/image-filter-composites-20261108.json).
 The browser still links Skia; the type check does not establish a Skia-free
 compile, link or run. Rotated linear restores, source clipping, direct image
 blur/drop-shadow, mixed filters and native browser bridges remain open.
@@ -1032,7 +1042,7 @@ with 10,945 declines; production seed 20261108 matches 9,161 with 10,839
 declines. Counts include no-ops and both CPU policies. Focused image tests
 pass on macOS and in Linux production mode; the FMA audit reports zero
 contracted operations. See the
-[source-clipping receipt](gg-migration/image-source-clipping-20261108.json).
+[source-clipping receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/image-source-clipping-20261108.json).
 The remaining source-image, filter-layer and native bridge work still retains
 Skia dependencies in the browser.
 
@@ -1051,7 +1061,7 @@ At seed 20261106, 9,057 of 20,000 comparisons match on both platforms with
 Counts include no-ops and both CPU policies. All 26 CPU raster test files
 pass; the image tests also pass in Linux production mode. The FMA audit
 reports zero contracted operations and 175 explicit operations. See the
-[rotated-restore receipt](gg-migration/rotated-image-restores-20261108.json).
+[rotated-restore receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/rotated-image-restores-20261108.json).
 Blur/drop-shadow source images, mixed filters, general rotated filter layers
 and native bridges still retain browser Skia dependencies.
 
@@ -1071,7 +1081,7 @@ on Linux at seed 20261106. Filtered-image comparisons also pass: 9,727
 on Linux and 9,856 in macOS production mode, including no-ops and both CPU
 policies. All 26 CPU raster files and the focused Linux production tests
 pass. The FMA audit reports zero contracted operations. See the
-[mixed-filter receipt](gg-migration/mixed-filter-layers-20261108.json).
+[mixed-filter receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/mixed-filter-layers-20261108.json).
 Color filters before drop-shadow, repeated spatial filters, rotated layers,
 SVG graphs, source-image blur/drop-shadow and native bridges remain open;
 the browser still retains Skia dependencies.
@@ -1092,7 +1102,7 @@ at seed 20261108, and 16,760 on Linux at seed 20261106. The unchanged
 single-shadow corpus still matches 17,475 supported draws. Focused production
 tests pass on both platforms, and the FMA audit reports zero contracted
 operations. See the
-[prefiltered-shadow receipt](gg-migration/prefiltered-drop-shadows-20261108.json).
+[prefiltered-shadow receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/prefiltered-drop-shadows-20261108.json).
 Spatial filter chains, rotated layers, SVG graphs, image-space blur/drop-shadow
 and native browser bridges still retain Skia dependencies.
 
@@ -1109,7 +1119,7 @@ Of 20,000 attempts, 17,490 supported comparisons match on macOS at seed
 20261106, 17,435 in production mode at seed 20261108, and 18,459 on Linux
 at seed 20261106. All 26 CPU raster test files pass, the focused Linux
 production tests pass, and the FMA audit reports zero contracted operations.
-See the [repeated-blur receipt](gg-migration/repeated-blurs-20261108.json).
+See the [repeated-blur receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/repeated-blurs-20261108.json).
 Color matrices within repeated spatial chains, drop-shadow chains, rotated
 layers, SVG graphs, image-space spatial filters and native bridges remain
 open; the browser still retains Skia dependencies.
@@ -1127,7 +1137,7 @@ with 6,739 declines. Production seed 20261108 matches 13,321 with 6,679
 declines. Counts include no-ops and both CPU policies. Focused image tests
 pass on macOS and in Linux production mode; the FMA audit reports zero
 contracted operations. See the
-[bitmap-color receipt](gg-migration/bitmap-color-filters-20261108.json).
+[bitmap-color receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/bitmap-color-filters-20261108.json).
 This validates the explicit CPU policy; the existing macOS Dawn dispatch is
 unchanged. Direct image-space spatial filters, remaining spatial chains,
 rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
@@ -1136,21 +1146,21 @@ rotated layers, SVG graphs and native bridges retain browser Skia dependencies.
 ### Portable Linux shadow blending (2026-11-08)
 
 Portable box shadows now select blending for the explicit RGBA surface instead of native N32. Two native fixtures freeze faint inner and outer shadows on both platforms. The isolated regression tests pass on macOS and Linux production builds; 20,000 existing Linux inner-shadow attempts also match, including 5,364 painted results.
-See the [verification receipt](gg-migration/shadow-rgba-20261108.json).
+See the [verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/shadow-rgba-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
 
 
 ### Linux rounded-clip convexity (2026-11-08)
 
 Axis-preserving transforms now retain rounded-rectangle convexity on Linux, matching immutable SkPathData. The legacy macOS path behavior is preserved. A frozen mask regression covers the quarter-turn rounding difference. Both platforms match 20,000 rounded-rectangle and difference-clip cases; Linux also matches 20,000 outer-shadow attempts, including 3,285 painted results.
-See the [verification receipt](gg-migration/rounded-clip-convexity-20261108.json).
+See the [verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/rounded-clip-convexity-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
 
 
 ### Nested rounded inner shadows (2026-11-08)
 
 Portable inner shadows now accept strictly nested rounded contours when bounding-box corners or concentric corner ellipses prove containment. Six native fixtures cover curved outer bounds, scales, rotations, antialiased overlap and concentric insets. The 20,000-attempt corpora match on macOS (5,134 painted), production macOS (5,167 painted) and Linux (5,155 painted). All 27 CPU raster test files pass; the FMA audit reports zero contracted operations. Intersections and shared edges still require the native fallback.
-See the [verification receipt](gg-migration/rounded-inner-shadows-20261108.json).
+See the [verification receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/rounded-inner-shadows-20261108.json).
 The browser still retains Skia dependencies; no Skia-free link or run is claimed.
 
 
@@ -1166,7 +1176,7 @@ Of 20,000 attempts, 16,044 supported comparisons match on macOS at seed
 20261106, 16,079 in production mode at seed 20261108, and 16,985 on Linux
 at seed 20261106. All 27 CPU raster test files and focused Linux production
 tests pass. The FMA audit reports zero contracted operations. See the
-[blur/color-chain receipt](gg-migration/blur-color-chains-20261108.json).
+[blur/color-chain receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/blur-color-chains-20261108.json).
 Drop-shadow chains, general rotated layers, SVG graphs, image-space spatial
 filters and native bridges still retain browser Skia dependencies.
 
@@ -1185,7 +1195,7 @@ at seed 20261106, and 19,016 match in production mode at seed 20261108.
 The existing Linux filtered-image corpus matches 13,283 supported draws.
 All 27 CPU raster files, canvas integration tests and focused Linux
 production tests pass. The FMA audit reports zero contracted operations.
-See the [aligned-image receipt](gg-migration/aligned-image-layers-20261108.json).
+See the [aligned-image receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/aligned-image-layers-20261108.json).
 General source-image transforms, fractional subsets, paint alpha and color
 conversion still require work, as do the remaining filter graphs and native
 bridges. The browser retains Skia dependencies.
@@ -1205,7 +1215,7 @@ seed 20261106, and 18,771 match in production mode at seed 20261108. The
 existing Linux image-filter corpus matches 13,330 supported draws. All 27
 CPU raster files, canvas integration tests and focused Linux production tests
 pass; the FMA audit reports zero contracted operations. See the
-[source color-state receipt](gg-migration/source-image-color-state-20261108.json).
+[source color-state receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/source-image-color-state-20261108.json).
 Nonintegral mappings, source-image paint alpha, remaining spatial chains,
 rotated layers, SVG graphs, tiling and native bridges retain Skia dependencies.
 
@@ -1228,7 +1238,7 @@ checks its existing output and the direct fractional service separately.
 The full current Linux browser typecheck passes in 50.18 seconds with 4.72 GB
 sampled peak RSS after refreshing the VM UI2 dependency. Skia libraries were
 available during that check. See the
-[fractional-image receipt](gg-migration/fractional-image-layers-20261108.json).
+[fractional-image receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/fractional-image-layers-20261108.json).
 Source-image paint alpha, integer-source resampling, rotations, remaining
 spatial chains, SVG graphs, tiling and native bridges retain Skia dependencies.
 
@@ -1247,7 +1257,7 @@ seed 20261106, and 18,801 match in production mode at seed 20261108. The
 existing Linux image-filter corpus matches 13,685 supported draws. All 27
 CPU raster files, canvas integration tests and focused Linux production tests
 pass; the FMA audit reports zero contracted operations. See the
-[paint-alpha receipt](gg-migration/source-image-paint-alpha-20261108.json).
+[paint-alpha receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/source-image-paint-alpha-20261108.json).
 Integer-source spatial resampling, source clipping, general rotated layers,
 remaining spatial chains, SVG graphs, tiling and native bridges still retain
 Skia dependencies.
@@ -1267,7 +1277,7 @@ macOS and Linux. Production mode matches 8,349 at seed 20261109. The original
 Linux filtered-image corpus matches 14,397 supported draws. All 27 CPU raster
 files, the canvas integration test and focused Linux production tests pass;
 the FMA audit reports zero contracted operations. Counts include no-ops and
-explicit declines. See the [resampling receipt](gg-migration/resampled-image-blurs-20261108.json).
+explicit declines. See the [resampling receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/resampled-image-blurs-20261108.json).
 
 Source clipping, scaled shadow foregrounds, all-identity lists, near-integer
 transforms, general rotated layers, remaining spatial chains, SVG graphs,
@@ -1291,7 +1301,7 @@ full canonical Linux browser typecheck passes with Skia available; no Skia-free
 browser compile/link/run is established. The FMA audit reports zero contracted
 operations. Counts include no-ops and explicit declines; nine new native
 fixtures and the initial failing checks are in the
-[clipping receipt](gg-migration/spatial-source-clipping-20261108.json).
+[clipping receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/spatial-source-clipping-20261108.json).
 
 Scaled shadow foregrounds, all-identity and nearly integer source mappings,
 general rotated layers, remaining spatial chains, SVG graphs, intersecting
@@ -1311,7 +1321,7 @@ At seed 20261108, 17,281 of 20,000 attempts are supported and exact on both
 platforms; production mode matches 17,298 at seed 20261109. All 27 CPU raster
 files, canvas integration and focused Linux production tests pass. The FMA
 audit reports zero contracted operations. Counts include no-ops and explicit
-declines. See the [identity-blur receipt](gg-migration/identity-image-blurs-20261108.json).
+declines. See the [identity-blur receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/identity-image-blurs-20261108.json).
 
 Identity lists without color matrices, nearly integer deferred mappings,
 scaled shadow foregrounds and the previously listed graph/native work remain
@@ -1333,7 +1343,7 @@ filtered-image corpus matches 15,427 supported draws. All 27 CPU raster files,
 canvas integration and focused Linux production tests pass; the FMA audit
 reports zero contracted operations. The full canonical Linux typecheck also
 passes with Skia available. Counts include no-ops. See the
-[identity-sampling receipt](gg-migration/identity-image-sampling-20261108.json).
+[identity-sampling receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/identity-image-sampling-20261108.json).
 
 Nearly integer deferred mappings, scaled shadow foregrounds and the previously
 listed graph/native work remain open. The browser still links Skia; a full
@@ -1360,7 +1370,7 @@ Linux production builds. Canvas integration, the FMA audit (zero contracted
 operations) and the full canonical Linux typecheck pass. Counts include
 no-ops and explicit declines. Initial sampling/sprite failures and two
 transient, unrelated regex compile failures are retained in the
-[near-integer receipt](gg-migration/near-integer-image-filters-20261108.json).
+[near-integer receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/near-integer-image-filters-20261108.json).
 
 Rounding-induced layer crops, scaled shadow foregrounds, remaining spatial
 chains, rotations, SVG graphs, intersecting boolean shadows, large-sigma
@@ -1384,7 +1394,7 @@ scales .125, .1, .05 and .025 in nearest and linear mipmap modes. The portable
 regressions pass in default and production builds on macOS and Linux. Another
 2,000 macOS and 10,000 Linux mipmap-level comparisons pass. Production sampling
 arithmetic is unchanged; comments explain the intentional fallback. See the
-[native review verification](gg-migration/mipmap-review-native-20261108.json).
+[native review verification](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/mipmap-review-native-20261108.json).
 
 
 ### Scaled source-image drop shadows (2026-11-08)
@@ -1412,7 +1422,7 @@ resampled shadow blurs, nearly integer shadow mappings and rounding-induced
 layer crops. General spatial chains, rotations, SVG graphs, boolean shadows,
 large-sigma rescaling, tiling and native/GPU bridges remain. The browser still
 links Skia; a Skia-free Linux browser compile/link/run is unverified. See the
-[scaled-source shadow receipt](gg-migration/scaled-source-image-shadows-20261108.json).
+[scaled-source shadow receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/scaled-source-image-shadows-20261108.json).
 
 
 ### Nearly integer source-image shadows (2026-11-08)
@@ -1433,7 +1443,7 @@ This small forwarding change reuses the preceding slice's broader checks.
 Counts include no-ops and explicit declines. Rounding-induced crops and
 identity/invalid resampled shadow blurs still decline, and the remaining
 filter graphs, native/GPU services and Skia-free browser link/run remain
-unfinished. See the [near-integer shadow receipt](gg-migration/near-integer-image-shadows-20261108.json).
+unfinished. See the [near-integer shadow receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/near-integer-image-shadows-20261108.json).
 
 
 ### Deferred identity and rejected source-image shadow blurs (2026-11-08)
@@ -1462,7 +1472,7 @@ production image tests. Initial concurrent-edit compile failures and a
 comparison rejected by the input guard are retained without pass credit.
 The differential harness now enables globals for shared module diagnostics.
 Concurrent pixel-readback work is preserved outside these commits and PR
-changes. See the [identity-shadow receipt](gg-migration/identity-source-image-shadows-20261108.json).
+changes. See the [identity-shadow receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/identity-source-image-shadows-20261108.json).
 
 Rounding-induced crops, nearest/fractional-offset resolve surfaces, further
 spatial chains, rotations, SVG graphs, boolean shadows, large-sigma rescaling,
@@ -1499,7 +1509,7 @@ A full Skia-free browser compile/link/run remains unverified.
 
 Rounding-induced crops, additional spatial chains, rotated layers, SVG graphs,
 intersecting boolean shadows, large-sigma rescaling, tiling and native/GPU
-bridges remain. The [resolve-surface receipt](gg-migration/resolved-source-image-shadows-20261109.json)
+bridges remain. The [resolve-surface receipt](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/resolved-source-image-shadows-20261109.json)
 retains source and binary identities, native hashes, the Linux dependency
 inspection and initial failures without full-cohort pass credit.
 
@@ -1540,7 +1550,7 @@ still links Skia; a complete Skia-free browser compile/link/run is unverified.
 
 Direct source-image mixed graphs, rotated layers, SVG graphs, boolean shadow
 intersections, large-sigma rescaling, tiling and native/GPU bridges remain.
-See the [checks, native fixtures and retained failures](gg-migration/spatial-filter-chains-20261109.json).
+See the [checks, native fixtures and retained failures](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/spatial-filter-chains-20261109.json).
 
 
 ### Mixed spatial graphs on source images (2026-11-09)
@@ -1578,7 +1588,7 @@ General resampled integer-source mixed graphs still decline, along with the
 remaining crops, rotations, SVG graphs, boolean shadows, large-sigma/tiling
 paths and native/GPU bridges. The requested Skia-free full-browser Linux
 compile/link/run remains unverified. See the
-[source-image graph checks and native fixtures](gg-migration/source-spatial-chains-20261109.json).
+[source-image graph checks and native fixtures](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/source-spatial-chains-20261109.json).
 
 
 ### Mixed spatial graphs after source-image resampling (2026-11-09)
@@ -1617,7 +1627,7 @@ Resampled graphs that branch into a shadow before a real blur keep the native
 fallback so their original foreground stays deferred. Remaining crops,
 rotations, SVG graphs, boolean shadows, large-sigma/tiling paths and native/GPU
 bridges also remain. See the
-[resampling graph checks and retained failures](gg-migration/resampled-spatial-chains-20261109.json).
+[resampling graph checks and retained failures](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/resampled-spatial-chains-20261109.json).
 
 
 ### Path containment and SVG hit testing (2026-11-09)
@@ -1653,7 +1663,7 @@ Its only direct libraries are FreeType, libm and libc, with no direct or
 transitive Skia linkage. This verifies the geometry component. The complete
 browser still links Skia and its older production bundle cannot validate this
 change. Full-browser Linux compile/link/run without Skia remains unverified.
-See the [receipts, native fixtures and retained interrupted checks](gg-migration/path-hit-geometry-20261109.json).
+See the [receipts, native fixtures and retained interrupted checks](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/path-hit-geometry-20261109.json).
 
 
 ### Resampled chains beginning with a real shadow (2026-11-09)
@@ -1681,7 +1691,7 @@ Linux production/no-GC image-test binary runs all 39 registered tests with
 Skia unavailable to pkg-config and no direct or transitive Skia linkage.
 Its direct libraries are FreeType, libm and libc. The complete browser still
 links Skia, and full-browser Linux compile/link/run without it remains open.
-See the [source identities, fixtures and guarded check results](gg-migration/shadow-first-spatial-chains-20261109.json).
+See the [source identities, fixtures and guarded check results](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/shadow-first-spatial-chains-20261109.json).
 
 
 ### Resampled chains beginning with an identity shadow (2026-11-09)
@@ -1715,7 +1725,7 @@ Skia development files; the complete browser still links Skia.
 Rejected mixed-graph blur nodes, rounding-induced crops, rotated layers, SVG
 filters, boolean shadows, large-sigma/tiling paths and native/GPU bridges
 remain. A full Skia-free Linux browser compile/link/run is still unverified.
-See the [native platform expectations, checks and retained setup failures](gg-migration/identity-first-spatial-chains-20261109.json).
+See the [native platform expectations, checks and retained setup failures](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/identity-first-spatial-chains-20261109.json).
 
 
 ### Rejected blur branches in mixed shadow graphs (2026-11-09)
@@ -1747,7 +1757,7 @@ Skia unavailable to pkg-config and no direct or transitive Skia linkage.
 Its direct libraries are FreeType, libm and libc. The browser typecheck uses
 installed Skia development files, and the complete browser still links Skia.
 Full-browser Linux compile/link/run without Skia remains unverified.
-See the [native branch-reset fixtures and guarded checks](gg-migration/rejected-shadow-graphs-20261109.json).
+See the [native branch-reset fixtures and guarded checks](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/rejected-shadow-graphs-20261109.json).
 
 
 ### Cropped deferred image views (2026-11-09)
@@ -1784,7 +1794,7 @@ bundle predates this change.
 Raw near-integer real-blur crop/resampling cases and other layer crops remain,
 along with rotated layers, SVG graphs, boolean shadows, large-sigma/tiling
 paths and native/GPU services. Full-browser Linux compile/link/run without
-Skia remains unverified. See the [native crop cases, baseline probes and guarded checks](gg-migration/deferred-image-crops-20261109.json).
+Skia remains unverified. See the [native crop cases, baseline probes and guarded checks](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/deferred-image-crops-20261109.json).
 
 ### Color-filter image crops and clearing restores (2026-11-09)
 
@@ -1820,7 +1830,7 @@ was not used to validate this fix; its parsed source manifest predates it.
 
 Raw near-integer real-blur crops, rotated saved layers, SVG graphs, boolean
 shadows, large-sigma/tiling paths and native/GPU services remain. See the
-[original mismatch, native fixtures, input pins and Linux linkage](gg-migration/color-image-crops-20261109.json).
+[original mismatch, native fixtures, input pins and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/color-image-crops-20261109.json).
 
 ### Nearly integer blur source crops (2026-11-09)
 
@@ -1853,7 +1863,7 @@ typecheck uses installed Skia development files. The shared production bundle
 was not used to validate this slice. The complete browser still links Skia;
 full-browser Linux compile/link/run without it remains unverified.
 
-See the [baseline declines, eighteen native cases, input pins and Linux linkage](gg-migration/near-integer-blur-crops-20261109.json).
+See the [baseline declines, eighteen native cases, input pins and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/near-integer-blur-crops-20261109.json).
 
 ### Cropped first-shadow image branches (2026-11-09)
 
@@ -1885,7 +1895,7 @@ typecheck uses installed Skia development files, and the shared production
 bundle was not used to validate this slice. The complete browser still links
 Skia; full-browser Linux compile/link/run without it remains unverified.
 
-See the [native branch cases, source pins and Linux linkage](gg-migration/first-shadow-image-crops-20261109.json).
+See the [native branch cases, source pins and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/first-shadow-image-crops-20261109.json).
 
 ### Cropped image graphs with prior blurs (2026-11-09)
 
@@ -1919,7 +1929,7 @@ full-browser Linux compile/link/run without it remains unverified.
 
 Other crop/bounds cases, rotated saved layers, SVG graphs, boolean shadows,
 large-sigma/tiling paths and native/GPU services remain. See the
-[independent native expectations, guarded checks and Linux linkage](gg-migration/prior-blur-image-crops-20261109.json).
+[independent native expectations, guarded checks and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/prior-blur-image-crops-20261109.json).
 
 ### Original source-image layer bounds (2026-11-09)
 
@@ -1956,7 +1966,7 @@ no foreign source edits are included in this slice.
 The browser typecheck uses installed Skia development files. The shared
 production bundle was not used to validate this change. The complete browser
 still links Skia; full-browser Linux compile/link/run without it remains
-unverified. See the [original failure, native cases, source pins and Linux linkage](gg-migration/source-image-layer-bounds-20261109.json).
+unverified. See the [original failure, native cases, source pins and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/source-image-layer-bounds-20261109.json).
 
 ### Large single-blur layers (2026-11-09)
 
@@ -2008,7 +2018,7 @@ development files. The older shared bundle does not contain this change and
 was not used to validate it. The complete browser still links Skia; full
 Linux browser compilation, linking and execution without it remain open.
 
-See the [native fixtures, failed attempts, final checks and Linux linkage](gg-migration/large-blur-rescaling-20261109.json).
+See the [native fixtures, failed attempts, final checks and Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/large-blur-rescaling-20261109.json).
 
 ### Large aligned and fractional source-image blurs (2026-11-09)
 
@@ -2048,7 +2058,7 @@ These checks verify the component. The browser typecheck uses installed Skia
 development files, and the older production bundle was not used to validate
 this slice. Complete Linux browser compilation, linking and execution without
 Skia remain open. See the [native expectations, baseline, guarded cohorts and
-Linux linkage](gg-migration/large-source-image-blurs-20261109.json).
+Linux linkage](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/large-source-image-blurs-20261109.json).
 
 ### Near-integer large blurs with skipped downsampling (2026-11-09)
 
@@ -2090,4 +2100,58 @@ and cannot validate it.
 The Linux typecheck uses installed Skia development files. The shared bundle
 was not used to validate this slice, and complete browser compilation, linking
 and execution without Skia remain open. See the [native fixtures, guarded
-checks and integration failures](gg-migration/large-near-integer-image-blurs-20261109.json).
+checks and integration failures](https://github.com/vox-browser/vox-tests/blob/a50c0037a29324ced47b3f6ad410171e52e248e6/evidence/gg-migration/large-near-integer-image-blurs-20261109.json).
+
+
+### External parity suite and large canvas shadows (2026-11-09)
+
+The CPU differential suite and all 68 generated receipts (517,447 lines)
+now live in `vox-browser/vox-tests`. Imported receipts retain their exact
+bytes and original SHA-256 hashes. Vox keeps a pinned launcher and small
+focused unit tests. Four launcher checks and twenty production-manifest
+checks pass; new bulk evidence belongs in the test repository.
+
+`e9c57e1fc` adds large saved-canvas drop shadows using the rescaled blur,
+deferred tint/offset and foreground merge. Native N32 rules survive a
+resolved shadow intermediate on Linux. All 58 large-blur fixtures, including
+22 new shadow cases, verify on macOS and Linux. Through the external launcher,
+macOS matches 112 of 128 large-shadow requests and Linux matches 111 of 128
+(seed 20261181). Optimized macOS/no-GC matches 110 of 128 (seed 20261182).
+Other requests decline; counts include no-ops. All cohorts finish with
+unchanged inputs under the 3 GiB guard. The C FMA audit passes with zero
+contracted operations (189 explicit).
+
+The standalone Linux production/no-GC executable runs all five registered
+large-blur test functions with Skia unavailable to pkg-config; its link,
+`readelf` and `ldd` checks find no Skia dependency. This is component evidence.
+The current browser typecheck stops at a CSS highlight-selector error before
+execution. The inherited FastC degenerate-gradient failure remains open.
+The complete browser still links Skia; full Linux compile/link/run without
+it remains unverified. See the [retained checks and failures](https://github.com/vox-browser/vox-tests/blob/b61c01f7326843d005cad1f3e5f9a1269da5db2f/evidence/gg-migration/external-suite-and-large-shadows-20261109.json).
+
+
+### Large source-image drop shadows (2026-11-09)
+
+`24e007856` retains original image coordinates, RGBA filtering rules and
+source alpha/color metadata through large shadow blur and merge. An eligible
+deferred foreground is drawn from its original view. This covers aligned
+sources, prescribed fractional AA surfaces and eligible near-integer sources;
+other deferred large mappings keep their guards.
+
+The baseline declines all 500 attempts at seed 20261191; the candidate matches
+395 of that same 500. Final default C cohorts match 1,563 of 2,000 on both
+macOS and Linux at seed 20261192, declining 437. Optimized macOS/no-GC matches
+777 of 1,000 at seed 20261193, declining 223. Counts include no-ops; every
+completed cohort retains unchanged input pins. Twenty-two independent native
+shadow fixtures verify on each platform. Their bulk inputs and receipts live
+in `vox-tests`; the focused V regression uses compact hashes and existing inputs.
+
+Focused C/FastC image suites, Linux HTML canvas integration, the full Linux
+browser typecheck and the C FMA audit pass (zero contracted, 189 explicit).
+The standalone Linux production/no-GC image executable explicitly runs all
+five test functions with Skia unavailable to pkg-config. Its link command,
+`readelf` and `ldd` show no direct or transitive Skia dependency. This verifies
+the component: the browser integration checks still use installed Skia, and
+full Linux browser compile/link/run without it remains open. The older shared
+bundle was not used to validate this change. See the [native cases, guarded
+cohorts and component linkage](https://github.com/vox-browser/vox-tests/blob/202eeab62636f300465f78280e3fc9e7ce9a31c3/evidence/gg-migration/large-source-image-shadows-20261109.json).
