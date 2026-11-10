@@ -84,7 +84,10 @@ static int ladybird_v_append_audio_frame(SwrContext **resampler,
     int output_capacity = swr_get_out_samples(*resampler, frame->nb_samples);
     if (output_capacity < 0)
         return -1;
-    size_t required = (*frame_count + (size_t)output_capacity) * (size_t)*channel_count;
+    size_t required = 0;
+    if (!ladybird_v_audio_sample_capacity(*frame_count, (uint64_t)output_capacity,
+            (uint64_t)*channel_count, &required))
+        return -1;
     if (required > *sample_capacity) {
         if (required > SIZE_MAX / sizeof(float))
             return -1;
@@ -205,8 +208,10 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
         int output_capacity = swr_get_out_samples(resampler, 0);
         if (output_capacity <= 0)
             break;
-        size_t required = (frame_count + (size_t)output_capacity)
-            * (size_t)channel_count;
+        size_t required = 0;
+        if (!ladybird_v_audio_sample_capacity(frame_count, (uint64_t)output_capacity,
+                (uint64_t)channel_count, &required))
+            goto cleanup;
         if (required > sample_capacity) {
             if (required > SIZE_MAX / sizeof(float))
                 goto cleanup;
