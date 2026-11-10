@@ -788,7 +788,11 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			p.flags.new_target_is_valid = true
 			p.flags.allow_super_property_lookup = true
 			p.scope_collector.open_static_init_scope()
+			// A static block's patterns must not consume an enclosing pattern's names.
+			saved_pattern_bound_names := p.pattern_bound_names.clone()
+			p.pattern_bound_names = []BoundName{}
 			children := p.parse_statement_list(false)
+			p.pattern_bound_names = saved_pattern_bound_names
 			p.flags = saved_flags
 			p.consume_token(.curly_close)
 			scope := ScopeData.shared_with_children(children)
