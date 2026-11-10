@@ -68,6 +68,13 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 		output.resolve(fetch.Response.network_error('Invalid or forbidden request method'))
 		return pending
 	}
+	for header in request.header_list.headers() {
+		if !http.is_header_name(header.name) || !http.is_header_value(header.value) {
+			mut output := unsafe { pending }
+			output.resolve(fetch.Response.network_error('Invalid request header'))
+			return pending
+		}
+	}
 	if filtered_response := request.apply_adblock() {
 		mut output := unsafe { pending }
 		output.resolve(filtered_response)
