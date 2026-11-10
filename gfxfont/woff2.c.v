@@ -37,6 +37,9 @@ fn C.vox_woff2_convert_to_ttf(data &u8, size uint, output_size &uint) &u8
 fn C.vox_woff2_free(data voidptr)
 
 pub fn convert_woff2_to_sfnt(data []u8) ![]u8 {
+	if woff2_decompressed_table_data_size(data)! > woff2_max_output_size {
+		return error('Decompressed WOFF2 table data is too big')
+	}
 	mut size := uint(0)
 	output := C.vox_woff2_convert_to_ttf(data.data, uint(data.len), &size)
 	if output == unsafe { nil } { return error('Failed to convert the WOFF2 font to TTF') }
