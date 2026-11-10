@@ -120,18 +120,34 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	mut pixels := []u8{len: pitch * int(display.height)}
 	has_alpha := extra_channels.len == 1
 	should_premultiply := has_alpha && premultiply && !metadata.extra_channels[0].alpha_associated
+	width := int(file.size.width)
+	identity := metadata.orientation == .identity
+	mut alpha_bytes := []u8{len: if has_alpha { width } else { 0 }}
+	mut rows := [3][]u8{}
+	for c in 0 .. 3 { rows[c] = []u8{len: width} }
 	for y in 0 .. int(file.size.height) {
-		start := y * int(file.size.width)
-		end := start + int(file.size.width)
+		start := y * width
+		end := start + width
 		alpha := if has_alpha { alpha_samples[start..end] } else { []f32{} }
-		alpha_bytes := if has_alpha { quantize_output_row(alpha, 0, u32(y), 3, 8)! } else { []u8{} }
-		mut rows := [][]u8{cap: 3}
+		if has_alpha { quantize_output_row_into(alpha, 0, u32(y), 3, 8, mut alpha_bytes)! }
 		for c in 0 .. 3 {
 			color_row := output[c].samples[start..end]
 			row := if should_premultiply { premultiply_output_row(color_row, alpha)! } else { color_row }
-			rows << quantize_output_row(row, 0, u32(y), u32(c), 8)!
+			quantize_output_row_into(row, 0, u32(y), u32(c), 8, mut rows[c])!
 		}
-		for x in 0 .. int(file.size.width) {
+		if identity {
+			// Identity orientation stores rows in order; pitch is width * 4.
+			mut index := y * pitch
+			for x in 0 .. width {
+				pixels[index] = rows[0][x]
+				pixels[index + 1] = rows[1][x]
+				pixels[index + 2] = rows[2][x]
+				pixels[index + 3] = if has_alpha { alpha_bytes[x] } else { 255 }
+				index += 4
+			}
+			continue
+		}
+		for x in 0 .. width {
 			dx, dy := metadata.orientation.display_pixel(u32(x), u32(y), file.size)!
 			index := int(dy) * pitch + int(dx) * 4
 			for c in 0 .. 3 { pixels[index + c] = rows[c][x] }

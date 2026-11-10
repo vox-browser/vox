@@ -31,6 +31,15 @@ fn adjust_hf_quant_bias(value i32, channel int, biases [4]f32) f32 {
 // placement and replacing the LF coefficients belong to the inverse transform.
 @[direct_array_access]
 pub fn dequantize_hf_block(coefficients [3][]i32, matrices DequantMatrices, params HfDequantParameters) ![3][]f32 {
+	return dequantize_hf_block_into(coefficients, matrices, params, none)
+}
+
+// With `buffers`, results are written into their first `num` values (each must
+// hold the block's coefficient count) instead of fresh arrays.
+// matrix_for_transform checks the table holds 3 * num samples and every
+// coefficient channel is checked to hold num values.
+@[direct_array_access]
+fn dequantize_hf_block_into(coefficients [3][]i32, matrices DequantMatrices, params HfDequantParameters, buffers ?[3][]f32) ![3][]f32 {
 	if params.quantizer.global_scale < 1 || params.quantizer.global_scale > 73728 || params.raw_quant == 0 || params.x_qm_scale > 7 || params.b_qm_scale > 7 {
 		return error('Invalid JPEG XL HF quantization scale')
 	}
@@ -56,7 +65,20 @@ pub fn dequantize_hf_block(coefficients [3][]i32, matrices DequantMatrices, para
 	x_cc := cc.y_to_x(params.x_color_factor)
 	b_cc := cc.y_to_b(params.b_color_factor)
 	mut result := [3][]f32{}
-	for c in 0 .. 3 { result[c] = []f32{len: num} }
+	if supplied := buffers {
+		for c in 0 .. 3 {
+			if supplied[c].len < num { return error('Invalid JPEG XL dequantization buffer') }
+			result[c] = unsafe { supplied[c][..num] }
+		}
+	} else {
+		for c in 0 .. 3 { result[c] = []f32{len: num} }
+	}
+	dequantize_hf_values(coefficients, table, num, scales, x_cc, b_cc, params, mut result)
+	return result
+}
+
+@[direct_array_access]
+fn dequantize_hf_values(coefficients [3][]i32, table DequantMatrix, num int, scales [3]f32, x_cc f32, b_cc f32, params HfDequantParameters, mut result [3][]f32) {
 	for k in 0 .. num {
 		mut dequantized := [3]f32{}
 		for c in 0 .. 3 {
@@ -68,5 +90,4 @@ pub fn dequantize_hf_block(coefficients [3][]i32, matrices DequantMatrices, para
 		result[1][k] = dequantized[1]
 		result[2][k] = fused_f32(b_cc, dequantized[1], dequantized[2])
 	}
-	return result
 }

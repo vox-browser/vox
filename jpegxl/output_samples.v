@@ -44,33 +44,37 @@ pub fn premultiply_output_row(color []f32, alpha []f32) ![]f32 {
 
 // Matches native SIMD round-to-nearest-even after the source's positional
 // dither. Scalar source fallback uses ties-away; that fallback is not this API.
-@[direct_array_access]
 pub fn quantize_output_row(input []f32, x u32, y u32, channel u32, bits u32) ![]u8 {
-	if bits == 0 || bits > 8 || input.len > 1048576 {
+	mut result := []u8{len: input.len}
+	quantize_output_row_into(input, x, y, channel, bits, mut result)!
+	return result
+}
+
+fn C.rintf(f32) f32
+
+// quantize_output_row into the first input.len bytes of `out`. In-range values
+// round half to even with rintf, which is the default IEEE rounding the
+// source's SIMD path uses; NaN and nonpositive values become 0. The loop has
+// no early exits so it vectorizes.
+@[direct_array_access]
+fn quantize_output_row_into(input []f32, x u32, y u32, channel u32, bits u32, mut out []u8) ! {
+	if bits == 0 || bits > 8 || input.len > 1048576 || out.len < input.len {
 		return error('Invalid JPEG XL quantized output row')
 	}
 	maximum := f32((u32(1) << bits) - 1)
-	ranks := output_dither_ranks.to_bytes()
+	ranks := output_dither_ranks.data()
 	row := int((u64(y) + u64(channel) * 13) % 32) * 32
-	mut result := []u8{len: input.len}
-	for i, value in input {
-		column := int((u64(x) + u64(i) + u64(channel) * 23) % 32)
-		dither := (f32(2) * f32(ranks[row + column]) - f32(255)) / f32(512)
-		scaled := value * maximum
+	first := int((u64(x) + u64(channel) * 23) % 32)
+	for i in 0 .. input.len {
+		column := (first + i) & 31
+		dither := (f32(2) * f32(unsafe { ranks[row + column] }) - f32(255)) / f32(512)
+		scaled := input[i] * maximum
 		dithered := scaled + dither
-		if math.is_nan(dithered) || dithered <= 0 {
-			result[i] = 0
-		} else if dithered >= maximum {
-			result[i] = u8(maximum)
+		rounded := C.rintf(dithered)
+		out[i] = if dithered > 0 {
+			if dithered >= maximum { u8(maximum) } else { u8(rounded) }
 		} else {
-			whole := int(dithered)
-			fraction := dithered - f32(whole)
-			result[i] = u8(whole + if fraction > f32(0.5) || (fraction == f32(0.5) && whole & 1 != 0) {
-				1
-			} else {
-				0
-			})
+			u8(0)
 		}
 	}
-	return result
 }
