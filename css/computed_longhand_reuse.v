@@ -537,7 +537,7 @@ fn (s &StyleComputer) computed_longhand_reuse_key(element dom.AbstractElement,
 	cascaded &CascadedProperties, inherited ?&ComputedProperties, recascaded_font bool) ?ComputedLonghandReuseKey {
 	if s.computed_property_page_batch_depth_ == 0 || recascaded_font
 		|| element.pseudo_element() != none || !element.element().is_html_element()
-		|| element.element().local_name() == 'html' {
+		|| element.element().local_name() == 'html' || is_quirks_table(element) {
 		return none
 	}
 	parent := inherited or { return none }

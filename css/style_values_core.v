@@ -1275,6 +1275,7 @@ pub enum Keyword {
 	libweb_buttonfacehover
 	libweb_center
 	libweb_inherit_or_center
+	libweb_quirk_inherit
 	libweb_left
 	libweb_link
 	libweb_palette_active_link
@@ -2208,6 +2209,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.libweb_buttonfacehover { '-libweb-buttonfacehover' }
 		.libweb_center { '-libweb-center' }
 		.libweb_inherit_or_center { '-libweb-inherit-or-center' }
+		.libweb_quirk_inherit { '-libweb-quirk-inherit' }
 		.libweb_left { '-libweb-left' }
 		.libweb_link { '-libweb-link' }
 		.libweb_palette_active_link { '-libweb-palette-active-link' }
@@ -7856,6 +7858,10 @@ pub fn keyword_from_string(input string) ?Keyword {
 					match name {
 						'-libweb-palette-ruler' {
 							value = Keyword.libweb_palette_ruler
+							found = true
+						}
+						'-libweb-quirk-inherit' {
+							value = Keyword.libweb_quirk_inherit
 							found = true
 						}
 						else {}

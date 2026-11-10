@@ -11058,6 +11058,8 @@ pub mut:
 	animation_layout_compositor_only_ bool
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
+	quirks_body_identity_ u64
+	quirks_body_used_color_ ?Color
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -11901,6 +11903,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(4, diagnostic_scope_start) }
 
+	// Resolve the UA winner after cascade rollback and before longhand caching.
+	resolve_quirks_table_color(abstract_element, mut cascaded_properties)
 	mut properties := computed_properties_with_initial_values()
 	s.prepare_computed_property_page_recycling(properties)
 	properties.viewport_rect_ = s.viewport_rect_

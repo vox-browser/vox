@@ -1158,6 +1158,11 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 			return parser.parse_position_visibility_value(mut tokens)
 		}
 		.background_color, .border_block_end_color, .border_block_start_color, .border_bottom_color, .border_inline_end_color, .border_inline_start_color, .border_left_color, .border_right_color, .border_top_color, .color, .column_rule_color, .flood_color, .outline_color, .stop_color, .webkit_text_fill_color {
+			if property_id == .color && parser.context.is_ua_style_sheet == .yes {
+				if value := parser.parse_all_as_single_keyword_value(mut tokens, .libweb_quirk_inherit) {
+					return value
+				}
+			}
 			return parser.parse_color_value(mut tokens)
 		}
 		.color_scheme {
