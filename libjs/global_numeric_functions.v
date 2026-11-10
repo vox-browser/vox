@@ -78,9 +78,40 @@ fn global_parse_float(mut vm VM) !Value {
 	return Value.from_f64(math.nan())
 }
 
+fn parse_int_digit(unit u16, radix int) ?u32 {
+	digit := match unit {
+		u16(`0`)...u16(`9`) { int(unit - u16(`0`)) }
+		u16(`a`)...u16(`z`) { int(unit - u16(`a`)) + 10 }
+		u16(`A`)...u16(`Z`) { int(unit - u16(`A`)) + 10 }
+		else { -1 }
+	}
+	if digit < 0 || digit >= radix { return none }
+	return u32(digit)
+}
+
+// Accumulate power-of-two radices exactly, then round once. Bits discarded
+// after the u64 fills contribute a sticky bit below the rounding position.
+fn power_of_two_radix_digits_to_f64(units []u16, radix int, bits_per_digit int) f64 {
+	mut mantissa := u64(0)
+	mut exponent := 0
+	mut sticky := false
+	for unit in units {
+		digit := parse_int_digit(unit, radix) or { panic('invalid parseInt digit') }
+		if mantissa >> (64 - bits_per_digit) == 0 {
+			mantissa = (mantissa << bits_per_digit) | u64(digit)
+		} else {
+			exponent = if exponent <= 0x7fffffff - bits_per_digit {
+				exponent + bits_per_digit
+			} else { 0x7fffffff }
+			sticky = sticky || digit != 0
+		}
+	}
+	if sticky { mantissa |= 1 }
+	return f64(mantissa) * math.pow(2.0, f64(exponent))
+}
+
 fn global_parse_int(mut vm VM) !Value {
-	// 19.2.5 parseInt ( string, radix ): retain upstream's repeated double
-	// multiply/add accumulation, including rounding at each iteration.
+	// 19.2.5 parseInt ( string, radix ).
 	input := vm.argument(0).to_primitive_string(mut vm)!
 	units := input.utf16.data
 	mut start := 0
@@ -103,24 +134,33 @@ fn global_parse_int(mut vm VM) !Value {
 		start += 2
 		radix = 16
 	}
-	mut had_digits := false
-	mut number := 0.0
-	for unit in units[start..] {
-		// AK::parse_ascii_base36_digit after is_ascii_alphanumeric.
-		digit := match unit {
-			u16(`0`)...u16(`9`) { int(unit - u16(`0`)) }
-			u16(`a`)...u16(`z`) { int(unit - u16(`a`)) + 10 }
-			u16(`A`)...u16(`Z`) { int(unit - u16(`A`)) + 10 }
-			else { -1 }
-		}
-
-		if digit < 0 || digit >= radix { break
-		 }
-		had_digits = true
-		number *= radix
-		number += digit
+	mut end := start
+	for end < units.len {
+		if _ := parse_int_digit(units[end], radix) { end++ } else { break }
 	}
-	if !had_digits { return Value.from_f64(math.nan()) }
+	if end == start { return Value.from_f64(math.nan()) }
+	digits := units[start..end]
+	mut number := 0.0
+	if radix in [2, 4, 8, 16, 32] {
+		bits_per_digit := match radix {
+			2 { 1 }
+			4 { 2 }
+			8 { 3 }
+			16 { 4 }
+			else { 5 }
+		}
+		number = power_of_two_radix_digits_to_f64(digits, radix, bits_per_digit)
+	} else if radix == 10 && digits.len > 15 {
+		// Convert the whole decimal run to avoid rounding at each multiply/add.
+		number = atof64_rounding_overflow(encode_utf16(digits, false)) or {
+			panic('a decimal digit run must parse as f64')
+		}
+	} else {
+		for unit in digits {
+			digit := parse_int_digit(unit, radix) or { panic('invalid parseInt digit') }
+			number = number * f64(radix) + f64(digit)
+		}
+	}
 	return Value.from_f64(sign * number)
 }
 
