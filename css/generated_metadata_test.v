@@ -89,6 +89,12 @@ fn test_pseudo_element_property_whitelists() {
 	assert int(PseudoElement.details_content) == int(dom.PseudoElement.details_content)
 	assert pseudo_element_from_string('slider-track') == .slider_track
 	assert pseudo_element_from_string('-webkit-slider-thumb') == .slider_thumb
+	assert pseudo_element_from_string('color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-moz-color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-webkit-color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-webkit-color-swatch-wrapper') == .webkit_color_swatch_wrapper
+	assert int(PseudoElement.color_swatch) == int(dom.PseudoElement.color_swatch)
+	assert int(PseudoElement.webkit_color_swatch_wrapper) == int(dom.PseudoElement.webkit_color_swatch_wrapper)
 	assert !is_has_allowed_pseudo_element(.slotted)
 	assert is_pseudo_element_root(.view_transition)
 }

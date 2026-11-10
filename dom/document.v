@@ -4967,6 +4967,8 @@ pub enum PseudoElement {
 	view_transition_new
 	view_transition_old
 	highlight
+	color_swatch
+	webkit_color_swatch_wrapper
 	known_pseudo_element_count
 	unknown_webkit
 }

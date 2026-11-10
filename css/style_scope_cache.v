@@ -1949,6 +1949,8 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.view_transition_new { .view_transition_new }
 		.view_transition_old { .view_transition_old }
 		.highlight { .highlight }
+		.color_swatch { .color_swatch }
+		.webkit_color_swatch_wrapper { .webkit_color_swatch_wrapper }
 		.known_pseudo_element_count { .known_pseudo_element_count }
 		.unknown_webkit { .unknown_webkit }
 	}

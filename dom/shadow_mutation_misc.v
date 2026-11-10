@@ -4513,6 +4513,8 @@ pub fn pseudo_element_name(pseudo PseudoElement) string {
 		.view_transition_new { 'view-transition-new' }
 		.view_transition_old { 'view-transition-old' }
 		.highlight { 'highlight' }
+		.color_swatch { 'color-swatch' }
+		.webkit_color_swatch_wrapper { '-webkit-color-swatch-wrapper' }
 		.known_pseudo_element_count, .unknown_webkit { '' }
 	}
 }
