@@ -1543,6 +1543,11 @@ fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) 
 	html_popover_close_watcher_managers.delete(u64(voidptr(document)))
 	mut window := unsafe { &WindowModel(target) }
 	mut mutable_document := unsafe { &dom.Document(document) }
+	if window.navigator_ != unsafe { nil } {
+		if mut devices := window.navigator_.media_devices_ {
+			devices.stop_all_sources()
+		}
+	}
 	if window.global_scope_ != unsafe { nil } {
 		if window.global_scope_.make_disappear_all_web_sockets() {
 			mutable_document.make_unsalvageable('websocket')
