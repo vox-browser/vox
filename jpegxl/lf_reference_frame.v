@@ -36,8 +36,8 @@ fn decode_lf_reference_frame(file FileHeader, frame FrameHeader, storage Modular
 		raw := decode_modular_frame(file, frame, storage, mut sections)!
 		// LF storage owns only the three source-color planes. Extra channels
 		// are decoded and validated, but never premultiply the saved reference.
-		return render_modular_xyb_frame_impl(raw, file, frame, storage, true)
+		return render_modular_xyb_frame_impl(raw, file, frame, storage, true, []PatchFrameReference{})
 	}
 	raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
-	return render_vardct_frame(raw, frame, file.transform)
+	return render_vardct_frame(raw, frame, file.transform, []PatchFrameReference{})
 }

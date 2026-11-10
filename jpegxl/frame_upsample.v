@@ -55,8 +55,12 @@ fn draw_frame_splines(input [3]FloatPlane, cache SplineDrawCache) ![3]FloatPlane
 		FloatPlane{ width: width, height: height, samples: samples[2] }]!
 }
 
-fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform CustomTransformData) ![3]FloatPlane {
+fn render_vardct_frame(raw VarDctFramePlanes, frame FrameHeader, transform CustomTransformData, patch_refs []PatchFrameReference) ![3]FloatPlane {
+	if frame.has_patches() != (raw.patches != none) { return error('JPEG XL patch dictionary disagrees with the frame') }
 	mut restored := restore_vardct_frame(raw, frame_filter_geometry(frame))!
+	if patches := raw.patches {
+		restored = apply_frame_patches(restored, patches, patch_refs)!
+	}
 	if cache := raw.spline_cache {
 		restored = draw_frame_splines(restored, cache)!
 	}

@@ -37,6 +37,7 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	context := file.frame_header_context()
 	storage := if metadata.modular_16bit_sufficient { ModularStorage.signed16 } else { ModularStorage.signed32 }
 	mut references := []LfFrameReference{len: 4}
+	mut patch_refs := []PatchFrameReference{len: 4}
 	mut frame := FrameHeader{ restoration: RestorationFilter.default() }
 	mut restored := [3]FloatPlane{}
 	mut extra_channels := []ModularChannel{}
@@ -44,6 +45,13 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 	for _ in 0 .. 64 {
 		frame = reader.read_frame_header(context)!
 		frame.postprocess(context)!
+		if frame.frame_type == .reference_only {
+			patch_refs[int(frame.save_as_reference)] = decode_patch_reference_frame(file, frame, storage, mut reader)!
+			continue
+		}
+		if frame.has_patches() && metadata.extra_channels.len != 0 {
+			return error('JPEG XL patches with extra channels are not supported')
+		}
 		if frame.frame_type != .lf && (!frame.is_last || frame.frame_type != .regular || frame.lf_level != 0 || frame.needs_blending()
 			|| frame.width != file.size.width || frame.height != file.size.height || frame.x0 != 0 || frame.y0 != 0) {
 			return error('JPEG XL VarDCT output requires one full visible frame')
@@ -69,18 +77,18 @@ fn decode_image_rgba_impl(input []u8, premultiply bool, mode ImageRgbaMode) !Rgb
 			continue
 		}
 		if frame.encoding == .modular {
-			raw := decode_modular_frame(file, frame, storage, mut sections)!
+			raw := decode_modular_frame_refs(file, frame, storage, patch_refs.map(it.info), mut sections)!
 			if metadata.xyb_encoded {
-				restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha)!
+				restored = render_modular_xyb_frame_impl(raw, file, frame, storage, allow_alpha, patch_refs)!
 				extra_channels = raw.channels[3..]
 			} else {
-				restored = render_modular_rgb_frame(raw, file, frame, storage)!
+				restored = render_modular_rgb_frame(raw, file, frame, storage, patch_refs)!
 				colors := if metadata.color_encoding.color_space == .gray { 1 } else { 3 }
 				extra_channels = raw.channels[colors..]
 			}
 		} else {
-			raw := decode_vardct_frame_with_lf(file, frame, storage, reference, mut sections)!
-			restored = render_vardct_frame(raw, frame, file.transform)!
+			raw := decode_vardct_frame_with_refs(file, frame, storage, reference, patch_refs.map(it.info), mut sections)!
+			restored = render_vardct_frame(raw, frame, file.transform, patch_refs)!
 			extra_channels = raw.extra_channels
 		}
 		found = true

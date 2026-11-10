@@ -11,6 +11,7 @@ pub:
 	noise          ?NoiseParams
 	color_correlation ColorCorrelationParams
 	spline_cache      ?SplineDrawCache
+	patches           ?PatchesDictionary
 }
 
 fn validate_vardct_frame_subset(file FileHeader, frame FrameHeader) ! {
@@ -86,10 +87,14 @@ pub fn decode_vardct_frame(file FileHeader, frame FrameHeader, storage ModularSt
 }
 
 pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage ModularStorage, reference ?[3]FloatPlane, mut sections []BitReader) !VarDctFramePlanes {
+	return decode_vardct_frame_with_refs(file, frame, storage, reference, []PatchReferenceInfo{}, mut sections)
+}
+
+pub fn decode_vardct_frame_with_refs(file FileHeader, frame FrameHeader, storage ModularStorage, reference ?[3]FloatPlane, patch_refs []PatchReferenceInfo, mut sections []BitReader) !VarDctFramePlanes {
 	validate_vardct_frame_reference(file, frame, reference)!
 	if sections.len != int(frame.num_toc_entries()) { return error('Incorrect JPEG XL VarDCT section count') }
 	combined := sections.len == 1
-	global := sections[0].read_lf_global(file, frame)!
+	global := sections[0].read_lf_global_refs(file, frame, patch_refs)!
 	context := global.vardct or { return error('Missing JPEG XL VarDCT LF context') }
 	mut modular := new_modular_frame_state(global.modular_plan, frame)!
 	unused_global := modular.read_global(mut sections[0], global.modular_header, global.tree, storage)!
@@ -199,5 +204,5 @@ pub fn decode_vardct_frame_with_lf(file FileHeader, frame FrameHeader, storage M
 	return VarDctFramePlanes{ planes: planes,
 		epf_maps: VarDctEpfMaps{ width: bw, height: bh, raw_quant: raw_quant, transform_ids: transforms, sharpness: sharpness },
 		quantizer: context.quantizer, extra_channels: modular.reconstruct(storage)!, noise: global.noise,
-		color_correlation: context.color_correlation, spline_cache: global.spline_cache }
+		color_correlation: context.color_correlation, spline_cache: global.spline_cache, patches: global.patches }
 }

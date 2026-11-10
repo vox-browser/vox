@@ -5,8 +5,8 @@ module jpegxl
 fn validate_modular_rgb_frame(file FileHeader, frame FrameHeader) ! {
 	validate_small_lossless_file(file)!
 	validate_modular_group_geometry(frame)!
-	if frame.encoding != .modular || frame.frame_type != .regular || frame.lf_level != 0
-		|| !frame.is444() || frame.do_ycbcr || frame.has_lf_frame() || frame.has_patches()
+	if frame.encoding != .modular || frame.frame_type !in [.regular, .reference_only] || frame.lf_level != 0
+		|| !frame.is444() || frame.do_ycbcr || frame.has_lf_frame()
 		|| frame.has_splines() || frame.has_noise() || frame.extra_upsampling.len != file.metadata.extra_channels.len {
 		return error('Unsupported JPEG XL modular RGB rendering services')
 	}
@@ -24,8 +24,9 @@ fn validate_modular_rgb_frame(file FileHeader, frame FrameHeader) ! {
 
 // Normalize original-profile integers before color restoration and image
 // upsampling. The final owner applies alpha and positional byte quantization.
-fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage) ![3]FloatPlane {
+fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, patch_refs []PatchFrameReference) ![3]FloatPlane {
 	validate_modular_rgb_frame(file, frame)!
+	if frame.has_patches() != (raw.patches != none) { return error('JPEG XL patch dictionary disagrees with the frame') }
 	gray := file.metadata.color_encoding.color_space == .gray
 	colors := if gray { 1 } else { 3 }
 	if raw.channels.len != colors + file.metadata.extra_channels.len { return error('Invalid JPEG XL modular RGB channel count') }
@@ -43,6 +44,9 @@ fn render_modular_rgb_frame(raw ModularFramePlanes, file FileHeader, frame Frame
 		planes[c] = FloatPlane{ width: channel.width, height: channel.height,
 			samples: modular_integer_plane_to_f32(channel.samples, 8, storage)! }
 	}
-	restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
+	mut restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
+	if patches := raw.patches {
+		restored = apply_frame_patches(restored, patches, patch_refs)!
+	}
 	return upsample_frame_planes(restored, frame, file.transform)
 }

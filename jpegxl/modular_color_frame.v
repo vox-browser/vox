@@ -11,7 +11,7 @@ fn validate_modular_xyb_frame_alpha(file FileHeader, frame FrameHeader, allow_al
 	if frame.encoding != .modular || !file.metadata.xyb_encoded
 		|| file.metadata.extra_channels.len > 1 || (!allow_alpha && file.metadata.extra_channels.len != 0)
 		|| frame.extra_upsampling.len != file.metadata.extra_channels.len || !frame.is444() || frame.has_lf_frame()
-		|| frame.has_patches() || frame.has_splines() || frame.do_ycbcr {
+		|| frame.has_splines() || frame.do_ycbcr {
 		return error('Unsupported JPEG XL modular XYB rendering services')
 	}
 	for i, extra in file.metadata.extra_channels {
@@ -30,10 +30,10 @@ fn validate_modular_xyb_frame_alpha(file FileHeader, frame FrameHeader, allow_al
 // Render opaque modular XYB planes in source color space, before the final
 // color conversion. LF saving and visible output share this stage ordering.
 pub fn render_modular_xyb_frame(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage) ![3]FloatPlane {
-	return render_modular_xyb_frame_impl(raw, file, frame, storage, false)
+	return render_modular_xyb_frame_impl(raw, file, frame, storage, false, []PatchFrameReference{})
 }
 
-fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, allow_alpha bool) ![3]FloatPlane {
+fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame FrameHeader, storage ModularStorage, allow_alpha bool, patch_refs []PatchFrameReference) ![3]FloatPlane {
 	validate_modular_xyb_frame_alpha(file, frame, allow_alpha)!
 	if raw.channels.len != 3 + file.metadata.extra_channels.len { return error('Invalid JPEG XL modular XYB channel count') }
 	for c, channel in raw.channels {
@@ -47,8 +47,12 @@ fn render_modular_xyb_frame_impl(raw ModularFramePlanes, file FileHeader, frame 
 		}
 	}
 	if frame.has_noise() != (raw.noise != none) { return error('JPEG XL modular XYB noise parameters disagree with the frame') }
+	if frame.has_patches() != (raw.patches != none) { return error('JPEG XL patch dictionary disagrees with the frame') }
 	planes := modular_xyb_planes(raw.channels[..3], raw.quantization, storage)!
-	restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
+	mut restored := restore_modular_frame(planes, frame_filter_geometry(frame))!
+	if patches := raw.patches {
+		restored = apply_frame_patches(restored, patches, patch_refs)!
+	}
 	upsampled := upsample_frame_planes(restored, frame, file.transform)!
 	return apply_frame_noise(upsampled, raw.noise, frame, ColorCorrelationParams{})
 }

@@ -7,6 +7,7 @@ pub:
 	quantization LfQuantFactors
 	channels     []ModularChannel
 	noise        ?NoiseParams
+	patches      ?PatchesDictionary
 }
 
 fn finish_modular_section(mut reader BitReader, index int, unused bool) ! {
@@ -48,11 +49,15 @@ fn decode_modular_group_bucket(mut reader BitReader, frame FrameHeader, infos []
 // Decode whole raw modular planes by stitching coded tiles before reversing
 // global transforms. Rendering, partial recovery and frame composition are separate.
 pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularStorage, mut sections []BitReader) !ModularFramePlanes {
+	return decode_modular_frame_refs(file, frame, storage, []PatchReferenceInfo{}, mut sections)
+}
+
+pub fn decode_modular_frame_refs(file FileHeader, frame FrameHeader, storage ModularStorage, patch_refs []PatchReferenceInfo, mut sections []BitReader) !ModularFramePlanes {
 	validate_modular_group_geometry(frame)!
 	if frame.num_toc_entries() > u64(max_permutation_entries) || sections.len != int(frame.num_toc_entries()) {
 		return error('Incorrect JPEG XL modular frame section count')
 	}
-	global := sections[0].read_modular_global_plan(file, frame)!
+	global := sections[0].read_modular_global_plan_refs(file, frame, patch_refs)!
 	mut state := new_modular_frame_state(global.plan, frame)!
 	unused_global := state.read_global(mut sections[0], global.header, global.tree, storage)!
 	combined := sections.len == 1
@@ -80,5 +85,5 @@ pub fn decode_modular_frame(file FileHeader, frame FrameHeader, storage ModularS
 		}
 	}
 	if combined { finish_modular_section(mut sections[0], 0, false)! }
-	return ModularFramePlanes{ quantization: global.quantization, channels: state.reconstruct(storage)!, noise: global.noise }
+	return ModularFramePlanes{ quantization: global.quantization, channels: state.reconstruct(storage)!, noise: global.noise, patches: global.patches }
 }
