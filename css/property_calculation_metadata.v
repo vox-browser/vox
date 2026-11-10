@@ -216,6 +216,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'font-synthesis-small-caps' { return .font_synthesis_small_caps }
 	if name == 'font-synthesis-position' { return .font_synthesis_position }
 	if name == 'hyphens' { return .hyphens }
+	if name == 'text-emphasis-position' { return .text_emphasis_position }
 	if name == 'hyphenate-limit-lines' { return .hyphenate_limit_lines }
 	if name == 'hyphenate-limit-chars' { return .hyphenate_limit_chars }
 	if name == 'hyphenate-character' { return .hyphenate_character }
@@ -3259,6 +3260,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'font-synthesis-small-caps' }
 		.font_synthesis_position { 'font-synthesis-position' }
 		.hyphens { 'hyphens' }
+		.text_emphasis_position { 'text-emphasis-position' }
 		.hyphenate_limit_lines { 'hyphenate-limit-lines' }
 		.hyphenate_limit_chars { 'hyphenate-limit-chars' }
 		.hyphenate_character { 'hyphenate-character' }
@@ -3736,6 +3738,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
 		.hyphenate_limit_chars { true }
 		.hyphenate_character { true }
@@ -3783,6 +3786,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'auto' }
 		.font_synthesis_position { 'auto' }
 		.hyphens { 'manual' }
+		.text_emphasis_position { 'auto' }
 		.hyphenate_limit_lines { 'no-limit' }
 		.hyphenate_limit_chars { 'auto' }
 		.hyphenate_character { 'auto' }
@@ -4251,6 +4255,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			AnimationType.discrete
 		}
 		.hyphens { AnimationType.discrete }
+		.text_emphasis_position { AnimationType.discrete }
 		.hyphenate_limit_lines { AnimationType.by_computed_value }
 		.hyphenate_limit_chars { AnimationType.by_computed_value }
 		.hyphenate_character { AnimationType.discrete }
@@ -4296,6 +4301,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
 		.hyphenate_limit_chars { true }
 		.hyphenate_character { true }
@@ -4360,6 +4366,7 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.text_emphasis_position { true }
 		.hyphenate_limit_lines { true }
 		.hyphenate_limit_chars { true }
 		.hyphenate_character { true }
@@ -4787,6 +4794,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'oblique-only']
 		}
 		.hyphens { lowercase_value in ['none', 'manual', 'auto'] }
+		.text_emphasis_position { lowercase_value in ['auto', 'over', 'under', 'left', 'right'] }
 		.hyphenate_limit_lines { lowercase_value in ['no-limit'] }
 		.hyphenate_limit_chars { lowercase_value in ['auto'] }
 		.hyphenate_character { lowercase_value in ['auto'] }

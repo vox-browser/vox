@@ -474,6 +474,7 @@ pub enum PropertyID {
 	hyphenate_character
 	hyphenate_limit_chars
 	hyphenate_limit_lines
+	text_emphasis_position
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow

@@ -91,7 +91,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
 				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
-				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
+				.text_decoration_style, .text_decoration_thickness, .text_emphasis_position, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
 				.text_underline_offset, .text_underline_position, .text_wrap_mode, .text_wrap_style,
 				.timeline_scope, .top, .touch_action, .transform, .transform_box, .transform_origin,
@@ -454,7 +454,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
 				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
-				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
+				.text_decoration_style, .text_decoration_thickness, .text_emphasis_position, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
 				.text_underline_offset, .text_underline_position, .text_wrap_mode, .text_wrap_style,
 				.timeline_scope, .top, .touch_action, .transform, .transform_box, .transform_origin,
@@ -781,6 +781,7 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.font_synthesis, .all]
 		}
 		.hyphens { [.all] }
+		.text_emphasis_position { [.all] }
 		.hyphenate_limit_lines { [.all] }
 		.hyphenate_limit_chars { [.all] }
 		.hyphenate_character { [.all] }

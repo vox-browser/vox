@@ -155,6 +155,11 @@ PROPERTIES = {
         'requires-computation': 'cascaded-value',
         'valid-types': ['integer [0,∞]'], 'valid-identifiers': ['no-limit'],
     },
+    'text-emphasis-position': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'over', 'under', 'left', 'right'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',
@@ -179,7 +184,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit']
+KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over']
 
 
 def extend_properties(properties):
