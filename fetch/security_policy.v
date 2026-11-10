@@ -132,12 +132,12 @@ fn apply_request_security_policies(mut request Request) bool {
 	} else {
 		none
 	}
-	request.url_list[0] = mixedcontentcore.upgraded_request_url(request.url(), destination, (request.initiator or {
+	request.url_list[request.url_list.len - 1] = mixedcontentcore.upgraded_request_url(request.current_url(), destination, (request.initiator or {
 		Initiator.download
 	}) == .image_set, context)
 	policy_request := csp_request(request)
 	return block_bad_port(request) == .blocked
-		|| mixedcontentcore.should_request_be_blocked(request.url(), destination, context)
+		|| mixedcontentcore.should_request_be_blocked(request.current_url(), destination, context)
 		|| csp.should_request_be_blocked_by_content_security_policy(mut global, policy_request) == .blocked
 		|| csp.should_request_be_blocked_by_integrity_policy(policy_request) == .blocked
 }
