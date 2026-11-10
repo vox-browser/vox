@@ -467,10 +467,10 @@ pub fn query_command_value(document &dom.Document, command string) !string {
 
 	// 1. If command is not supported or has no value, return the empty string.
 	definition := find_command_definition(command) or { return '' }
-	value_override := document.command_value_override(definition.command)
-	if definition.value == unsafe { nil } && value_override == none {
+	if definition.value == unsafe { nil } {
 		return ''
 	}
+	value_override := document.command_value_override(definition.command)
 
 	// 2. If command is "fontSize" and its value override is set, convert the value override to an
 	//    integer number of pixels and return the legacy font size for the result.
