@@ -50,6 +50,9 @@ pub fn (mut controller FetchController) set_pending_request(request ?&Request) {
 // FetchController.cpp: retain the actual Requests::Request stop boundary.
 pub fn (mut controller FetchController) set_pending_network_request(request ?RequestServerRequest) {
 	controller.pending_network_request_ = request
+	// Host callbacks may return a handle after cancellation, including while
+	// stopping another handle reenters this setter. Do not revive the fetch.
+	if controller.state_ != .ongoing { controller.stop_request() }
 }
 
 pub fn (controller &FetchController) timing_info() ?&FetchTimingInfo {

@@ -188,6 +188,7 @@ pub fn (controller &FetchController) extract_full_timing_info() &FetchTimingInfo
 pub fn (mut controller FetchController) abort(reason ?string) {
 	controller.state_ = .aborted
 	controller.serialized_abort_reason_ = reason or { 'AbortError' }
+	controller.stop_request()
 }
 
 pub fn (controller &FetchController) serialized_abort_reason() ?string {
@@ -204,6 +205,7 @@ pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() str
 
 pub fn (mut controller FetchController) terminate() {
 	controller.state_ = .terminated
+	controller.stop_request()
 }
 
 pub fn (mut controller FetchController) stop_fetch() {
@@ -224,13 +226,13 @@ pub fn (mut controller FetchController) stop_fetch() {
 }
 
 pub fn (mut controller FetchController) stop_request() {
-	assert controller.state_ == .stopped
-	if request := controller.pending_network_request_ {
-		if stop := request.stop { stop() }
-		controller.pending_network_request_ = none
-	}
+	assert controller.state_ != .ongoing
 	controller.pending_request_stopped_ = true
 	controller.pending_request_ = none
+	if request := controller.pending_network_request_ {
+		controller.pending_network_request_ = none
+		if stop := request.stop { stop() }
+	}
 }
 
 pub fn (mut controller FetchController) next_fetch_task_id() u64 {
