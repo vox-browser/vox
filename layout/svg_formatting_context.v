@@ -136,7 +136,7 @@ fn (mut context SVGFormattingContext) run(mut svg_box_state UsedValues) {
 	svg_box_state.set_has_definite_height(true)
 
 	element := svg_element_for_layout_node(context.context_box) or { return }
-	mut active_view_box := svg.parse_viewbox(element.get_attribute_value('viewBox'))
+	mut active_view_box := active_svg_view_box(element)
 	mut image_dimension_view_box := false
 	if active_view_box == none
 		&& (context.context_box.is_svg_mask_box() || context.context_box.is_svg_clip_box()) {

@@ -339,6 +339,7 @@ pub fn ImageBox.new(document &dom.Document, element &dom.Element, computed_value
 	box.svg_image_document_ = if isolated := available_html_svg_image_document(element) {
 		isolated
 	} else { svg_image_document_for_source(document, source) }
+	box.refresh_svg_natural_size()
 	box.auto_content_box_size_ = box.natural_size_
 	return box
 }
@@ -358,6 +359,7 @@ pub fn ImageBox.new_generated(document &dom.Document, computed_values &css.Compu
 		}
 	}
 	box.svg_image_document_ = svg_image_document_for_source(document, source)
+	box.refresh_svg_natural_size()
 	box.auto_content_box_size_ = box.natural_size_
 	return box
 }
@@ -412,6 +414,7 @@ pub fn ImageBox.new_content_replacement(document &dom.Document, element &dom.Ele
 		}
 	}
 	box.svg_image_document_ = svg_image_document_for_source(document, source)
+	box.refresh_svg_natural_size()
 	box.auto_content_box_size_ = box.natural_size_
 	return box
 }
@@ -468,7 +471,9 @@ fn svg_image_source_for_source(document &dom.Document, source string) ?SVGImageS
 	trimmed_source := source.trim_space()
 	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
 	if document.is_svg_image_document() && parsed_url.scheme() != 'data' { return none }
-	serialized := parsed_url.serialize()
+	mut resource_url := parsed_url
+	resource_url.set_fragment(none)
+	serialized := resource_url.serialize()
 	if parsed_url.scheme() in ['http', 'https'] {
 		return remote_svg_image_source(document, parsed_url)
 	}
@@ -594,18 +599,12 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 		return none
 	}
 	trimmed_source := source.trim_space()
-	if document.is_svg_image_document() {
-		resource_url := document.encoding_parse_url(trimmed_source) or { return none }
-		if resource_url.scheme() != 'data' { return none }
-	}
-	mut parsed_url := ?dom.URL(none)
-	serialized := if trimmed_source.starts_with('data:') {
-		trimmed_source
-	} else {
-		parsed := document.encoding_parse_url(source) or { return none }
-		parsed_url = parsed
-		parsed.serialize()
-	}
+	parsed_url := document.encoding_parse_url(trimmed_source) or { return none }
+	fragment := parsed_url.fragment() or { '' }
+	if document.is_svg_image_document() && parsed_url.scheme() != 'data' { return none }
+	mut resource_url := parsed_url
+	resource_url.set_fragment(none)
+	serialized := resource_url.serialize()
 	if serialized.starts_with('data:') {
 		comma := serialized.index(',') or { return none }
 		metadata := serialized[..comma].to_lower()
@@ -632,7 +631,7 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 			return none
 		}
 		if metadata.starts_with('data:image/svg+xml') {
-			return svg_image_natural_size(data.bytestr())
+			return svg_image_natural_size_with_fragment(data.bytestr(), fragment)
 		}
 		if dimensions := encoded_image_dimensions(data) {
 			return size_with_optional_aspect_ratio(CSSPixels.new(dimensions.width), CSSPixels.new(dimensions.height))
@@ -650,11 +649,10 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	}
 	mut path := serialized
 	if serialized.starts_with('file://') {
-		parsed := parsed_url or { return none }
-		path = url.percent_decode(parsed.serialize_path()).bytestr()
+		path = url.percent_decode(parsed_url.serialize_path()).bytestr()
 	} else if serialized.starts_with('http://') || serialized.starts_with('https://') {
 		image_source := svg_image_source_for_source(document, source) or { return none }
-		return svg_image_natural_size(image_source.source)
+		return svg_image_natural_size_with_fragment(image_source.source, fragment)
 	} else if serialized.contains('://') {
 		return none
 	}
@@ -663,7 +661,7 @@ fn image_intrinsic_size_for_source(document &dom.Document, source string) ?css.S
 	}
 	if path.to_lower().ends_with('.svg') {
 		svg_source := os.read_file(path) or { return none }
-		return svg_image_natural_size(svg_source)
+		return svg_image_natural_size_with_fragment(svg_source, fragment)
 	}
 	data := os.read_bytes(path) or { return none }
 	if dimensions := encoded_image_dimensions(data) {
@@ -774,6 +772,10 @@ fn xml_start_tag_attribute(tag string, requested_name string) ?string {
 }
 
 fn svg_image_natural_size(source string) ?css.SizeWithAspectRatio {
+	return svg_image_natural_size_with_fragment(source, '')
+}
+
+fn svg_image_natural_size_with_fragment(source string, fragment string) ?css.SizeWithAspectRatio {
 	start := source.index('<svg') or { return none }
 	end := source.index_after('>', start) or { return none }
 	start_tag := source[start..end + 1]
@@ -791,7 +793,11 @@ fn svg_image_natural_size(source string) ?css.SizeWithAspectRatio {
 		view_box_text := xml_start_tag_attribute(start_tag, 'viewBox') or {
 			xml_start_tag_attribute(start_tag, 'viewbox') or { '' }
 		}
-		if view_box := svg.parse_viewbox(view_box_text) {
+		mut active_view_box := svg.parse_viewbox(view_box_text)
+		if specification := svg.parse_view_specification(svg.decode_fragment_identifier(fragment)) {
+			if view_box := specification.view_box { active_view_box = view_box }
+		}
+		if view_box := active_view_box {
 			if view_box.width > 0 && view_box.height > 0 {
 				aspect_ratio = css.CSSPixelFraction.new(CSSPixels.nearest_value_for(view_box.width), CSSPixels.nearest_value_for(view_box.height))
 			}
@@ -1012,7 +1018,15 @@ pub fn (mut box ImageBox) reset_for_relayout() {
 	} else if source != old_source {
 		box.svg_image_document_ = svg_image_document_for_source(box.document_, source)
 	}
+	box.refresh_svg_natural_size()
 	box.auto_content_box_size_ = box.natural_size_
+}
+
+fn (mut box ImageBox) refresh_svg_natural_size() {
+	if isolated := box.svg_image_document_ {
+		box.natural_size_ = natural_size_at_resolution(svg_background_natural_size(isolated),
+			box.source_resolution_)
+	}
 }
 
 pub fn (box &ImageBox) svg_image_document() ?&dom.Document {

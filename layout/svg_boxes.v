@@ -192,7 +192,7 @@ fn negotiate_svg_natural_metrics(element &dom.Element) css.SizeWithAspectRatio {
 		}
 	}
 	if aspect_ratio == none {
-		if view_box := svg.parse_viewbox(element.get_attribute_value('viewBox')) {
+		if view_box := active_svg_view_box(element) {
 			view_box_width := css.CSSPixels.nearest_value_for(view_box.width)
 			view_box_height := css.CSSPixels.nearest_value_for(view_box.height)
 			if view_box_width.raw_value() != 0 && view_box_height.raw_value() != 0 {
