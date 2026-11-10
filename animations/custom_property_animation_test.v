@@ -406,3 +406,27 @@ fn test_box_shadow_keyframe_composition_adds_and_accumulates_lists() {
 	list := 'rgb(10, 20, 30) 1px 2px 3px 4px, rgb(0, 0, 0) 5px 5px'
 	assert box_shadow_at(list, list, 'box-shadow: rgb(100, 100, 100) 10px 10px 10px 10px', .accumulate, 0)! == 'rgb(110, 120, 130) 11px 12px 13px 14px, rgb(0, 0, 0) 5px 5px 0px 0px'
 }
+
+fn filter_at(from string, to string, milliseconds f64) !string {
+	mut document, target := connected_animation_target('')!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, [
+		BaseKeyframe{properties: {'filter': from}},
+		BaseKeyframe{properties: {'filter': to}},
+	], .replace)!
+	timeline.set_current_time(TimeValue.milliseconds(milliseconds))
+	animation.update()
+	document.update_animated_style_if_needed()
+	return animated_style_value(target, .filter)
+}
+
+fn test_filter_lists_with_mismatched_functions_are_discrete() {
+	from := 'brightness(1) contrast(1)'
+	to := 'contrast(2) brightness(2)'
+	assert filter_at(from, to, 500)! == to
+	// The final list cannot accumulate onto the mismatched first list.
+	assert filter_at(from, to, 2000)! == from
+	assert filter_at(from, to, 2500)! == 'contrast(4) brightness(4)'
+	assert filter_at('brightness(1) contrast(1)', 'brightness(2) contrast(2)', 500)! == 'brightness(1.5) contrast(1.5)'
+}

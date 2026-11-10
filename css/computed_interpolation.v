@@ -8354,8 +8354,11 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 			}
 		}
 		FilterOperationColor {
-			if to is FilterOperationColor {
-				operation := if delta >= 0.5 { to.operation } else { from.operation }
+			// Different color filter functions, such as brightness() and
+			// contrast(), do not interpolate. The caller then makes the whole
+			// list discrete, as upstream does.
+			if to is FilterOperationColor && to.operation == from.operation {
+				operation := from.operation
 				mut filter_context := calculation_context
 				filter_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
 				filter_context.accepted_type_ranges[.number] = AcceptedTypeRange{
