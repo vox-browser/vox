@@ -509,7 +509,7 @@ fn collect_details_descendants_assignment(node &dom.Node, summary ?&dom.Node, mu
 		if !is_summary && child.is_slottable() {
 			output << child
 		}
-		collect_details_descendants_assignment(child, summary, mut output)
+		// Only direct children can be assigned to a details element's slots.
 	}
 }
 
