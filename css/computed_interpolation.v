@@ -8923,6 +8923,12 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 	}
 	underlying := style_value_logic_from_dom(property_id, underlying_value) or { return none }
 	animated := style_value_logic_from_dom(property_id, animated_value) or { return none }
+	if property_id == .transform {
+		result := composite_transform_lists(underlying, animated, composite_operation) or {
+			return none
+		}
+		return dom_style_value_from_value_logic(result)
+	}
 	if property_id == .font_size_adjust {
 		if result := composite_font_size_adjust_metric(underlying,animated,composite_operation) {
 			return dom_style_value_from_value_logic(result)

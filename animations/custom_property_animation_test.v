@@ -333,3 +333,44 @@ fn test_drop_shadow_accumulation_uses_premultiplied_color_channels() {
 	document.update_animated_style_if_needed()
 	assert animated_style_value(target, .filter) == 'drop-shadow(rgb(50, 10, 50) 6px 10px)'
 }
+
+fn transform_at(frames []BaseKeyframe, underlying string, composite css.CompositeOperation, milliseconds f64) !string {
+	mut document, target := connected_animation_target(underlying)!
+	defer { document.finalize() }
+	mut timeline := AnimationTimeline.new()
+	mut animation := iteration_animation(target, timeline, frames, composite)!
+	timeline.set_current_time(TimeValue.milliseconds(milliseconds))
+	animation.update()
+	document.update_animated_style_if_needed()
+	return animated_style_value(target, .transform)
+}
+
+fn transform_frames(from string, to string) []BaseKeyframe {
+	return [BaseKeyframe{properties: {'transform': from}}, BaseKeyframe{properties: {'transform': to}}]
+}
+
+fn test_transform_iteration_composition_accumulates_matching_functions() {
+	// Scale factors accumulate as Va + Vb - 1; other arguments add.
+	assert transform_at(transform_frames('scale(1)', 'scale(2)'), '', .replace, 2000)! == 'scale(3, 3)'
+	assert transform_at(transform_frames('scale(1)', 'scale(2)'), '', .replace, 2500)! == 'scale(3.5, 3.5)'
+	assert transform_at(transform_frames('scale(0)', 'scale(2)'), '', .replace, 2500)! == 'scale(3, 3)'
+	assert transform_at(transform_frames('none', 'translateX(10px)'), '', .replace, 2500)! == 'translate(25px, 0px)'
+	assert transform_at(transform_frames('rotate3d(1, 1, 0, 0deg)', 'rotate3d(1, 1, 0, 90deg)'), '', .replace, 2500)! == 'rotate3d(0.707107, 0.707107, 0, 225deg)'
+}
+
+fn test_transform_iteration_composition_accumulates_mismatched_lists_as_matrices() {
+	// The final list's matrix is accumulated once per iteration, even when the
+	// final list itself would accumulate function by function.
+	frames := transform_frames('translateX(0px) scale(2)', 'scale(3) translateX(10px)')
+	assert transform_at(frames, '', .replace, 2000)! == 'matrix3d(6, 0, 0, 0, 0, 6, 0, 0, 0, 0, 1, 0, 60, 0, 0, 1)'
+	assert transform_at(frames, '', .replace, 2500)! == 'matrix3d(6.5, 0, 0, 0, 0, 6.5, 0, 0, 0, 0, 1, 0, 135, 0, 0, 1)'
+	assert transform_at(transform_frames('translateX(0px)', 'scale(2) translateX(10px)'), '', .replace, 2500)! == 'matrix3d(3.5, 0, 0, 0, 0, 3.5, 0, 0, 0, 0, 1, 0, 80, 0, 0, 1)'
+	assert transform_at(transform_frames('matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,30,1)', 'matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,0,0,50,1)'), '', .replace, 2500)! == 'matrix3d(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 140, 1)'
+}
+
+fn test_transform_keyframe_composition_adds_and_accumulates_lists() {
+	frames := transform_frames('rotate(90deg)', 'rotate(90deg)')
+	assert transform_at(frames, 'transform: translateX(10px)', .add, 0)! == 'translate(10px, 0px) rotate(90deg)'
+	assert transform_at(transform_frames('scale(2) rotate(90deg)', 'scale(2) rotate(90deg)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'scale(4, 4) matrix3d(0, 1, 0, 0, -1, 0, 0, 0, 0, 0, 1, 0, 10, 0, 0, 1)'
+	assert transform_at(transform_frames('rotate(90deg) scale(2)', 'rotate(90deg) scale(2)'), 'transform: scale(3) translateX(10px)', .accumulate, 0)! == 'matrix3d(0, 4, 0, 0, -4, 0, 0, 0, 0, 0, 1, 0, 30, 0, 0, 1)'
+}

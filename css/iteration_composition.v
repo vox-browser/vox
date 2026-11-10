@@ -18,6 +18,13 @@ fn accumulate_animation_iterations(property ?PropertyID, value &dom.StyleValue, 
 	mut remaining := u64(math.min(math.floor(count), 9007199254740991.0))
 	mut result := unsafe { value }
 	mut increment := unsafe { final_value }
+	if id := property {
+		if id == .transform {
+			if normalized := transform_iteration_increment(final_value, value) {
+				increment = normalized
+			}
+		}
+	}
 	for remaining > 0 {
 		if remaining & 1 != 0 {
 			result = composite_iteration_value(property, increment, result) or { return result }
