@@ -150,13 +150,17 @@ fn export_mldsa_key(format KeyFormat, key &CryptoKey) ![]u8 {
 }
 
 fn mldsa_sign(params Ed448Params, key &CryptoKey, message []u8) ![]u8 {
+	context := params.context or { []u8{} }
+	if context.len > 255 { return error('OperationError: Context is too long') }
 	if key.type_ != .private_key { return error('InvalidAccessError: Key is not a private key') }
-	return native_mldsa_sign(params.name, key.internal_handle_ as MldsaPrivateKeyHandle, message, params.context or { []u8{} })
+	return native_mldsa_sign(params.name, key.internal_handle_ as MldsaPrivateKeyHandle, message, context)
 }
 
 fn mldsa_verify(params Ed448Params, key &CryptoKey, signature []u8, message []u8) !bool {
+	context := params.context or { []u8{} }
+	if context.len > 255 { return error('OperationError: Context is too long') }
 	if key.type_ != .public_key { return error('InvalidAccessError: Key is not a public key') }
-	return native_mldsa_verify(params.name, key.internal_handle_ as MldsaPublicKeyHandle, signature, message, params.context or { []u8{} })
+	return native_mldsa_verify(params.name, key.internal_handle_ as MldsaPublicKeyHandle, signature, message, context)
 }
 
 fn import_mldsa_jwk(name string, jwk JsonWebKey, usages []KeyUsage, extractable bool) !&CryptoKey {
