@@ -1,3 +1,10 @@
+// Copyright (c) 2020-2025, Andreas Kling <andreas@ladybird.org>
+// Copyright (c) 2021, Luke Wilde <lukew@serenityos.org>
+// Copyright (c) 2023-2024, Shannon Booth <shannon@serenityos.org>
+// Copyright (c) 2025, Lorenz Ackermann <me@lorenzackermann.xyz>
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
 @[has_globals]
 module html
 
@@ -829,6 +836,13 @@ fn parser_end_waits_for_rendering_fonts(document &dom.Document) bool {
 	return false
 }
 
+fn parser_end_navigable_container_is_rendered(document &dom.Document) bool {
+	navigable := document.navigable() or { return true }
+	container := navigable.container() or { return true }
+	element := container.as_element() or { return true }
+	return element.document().update_style_for_element(element, true)
+}
+
 fn (mut state HTMLParserEndState) advance_to_asap_scripts_phase() {
 	document := state.document
 	generation := state.document_stream_generation
@@ -871,6 +885,11 @@ fn (mut state HTMLParserEndState) complete() {
 		if mutable_document.has_scripts_to_execute_as_soon_as_possible() {
 			end_state.phase_ = .waiting_for_asap_scripts
 			return
+		}
+		// An intervening task can give an element an image that only starts
+		// loading during layout. Include that load before completing readiness.
+		if mutable_document.is_fully_active() && parser_end_navigable_container_is_rendered(document) {
+			mutable_document.update_layout(.document_readiness_complete)
 		}
 		if mutable_document.anything_is_delaying_the_load_event()
 			|| mutable_document.pending_module_readiness_scripts > 0 {
