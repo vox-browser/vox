@@ -265,7 +265,7 @@ struct BackgroundRepetitionAxis {
 }
 
 fn background_repetition_axis(mode Repetition, area_length css.CSSPixels,
-	image_length css.CSSPixels, uses_float_modulo bool) BackgroundRepetitionAxis {
+	image_length css.CSSPixels) BackgroundRepetitionAxis {
 	if image_length.raw_value() <= 0 {
 		return BackgroundRepetitionAxis{}
 	}
@@ -284,14 +284,8 @@ fn background_repetition_axis(mode Repetition, area_length css.CSSPixels,
 			if whole_images <= 1 {
 				BackgroundRepetitionAxis{false, false, image_length}
 			} else {
-				// BackgroundPainting.cpp preserves an observable implementation quirk:
-				// horizontal spacing uses doubles, while vertical spacing passes floats
-				// to fmod. Round both operands and the result through f32 on that path.
-				space := if uses_float_modulo {
-					f64(f32(math.mod(f64(area_length.to_float()), f64(image_length.to_float()))))
-				} else {
-					math.mod(area_length.to_double(), image_length.to_double())
-				}
+				// Preserve fractional CSS pixels on both axes, including tall boxes.
+				space := math.mod(area_length.to_double(), image_length.to_double())
 				gap := css.CSSPixels.nearest_value_for(space / f64(whole_images - 1))
 				BackgroundRepetitionAxis{true, true, image_length.plus(gap)}
 			}
@@ -342,8 +336,8 @@ pub fn background_tile_plan(layer ResolvedBackgroundLayer, scroll_offset Point,
 	}
 	image_width := css.CSSPixels.nearest_value_for(layer.image_rect.width)
 	image_height := css.CSSPixels.nearest_value_for(layer.image_rect.height)
-	x_axis := background_repetition_axis(layer.repeat_x, area_width, image_width, false)
-	y_axis := background_repetition_axis(layer.repeat_y, area_height, image_height, true)
+	x_axis := background_repetition_axis(layer.repeat_x, area_width, image_width)
+	y_axis := background_repetition_axis(layer.repeat_y, area_height, image_height)
 	base_x := area_x.plus(css.CSSPixels.nearest_value_for(layer.position_x))
 	base_y := area_y.plus(css.CSSPixels.nearest_value_for(layer.position_y))
 	start_x := first_visible_background_tile_position(base_x, x_axis.step, css.CSSPixels.nearest_value_for(clip.left()), x_axis.repeats)
