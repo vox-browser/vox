@@ -211,3 +211,25 @@ fn test_property_write_source_operand_is_validated_before_execution() {
 	executable.instructions[0].src = Operand.constant(0)
 	executable.validate(0)!
 }
+
+// Ladybird 74a0613d1d798d90562a25af9aeb7abac6d2cfb5.
+fn test_computed_writes_reject_nullish_bases_before_key_conversion() {
+	for base in ['null', 'undefined'] {
+		for prefix in ['', '"use strict"; '] {
+			mut vm := VM.create()
+			context := create_simple_execution_context(mut vm)
+			host := mutation_host(mut vm)
+			mut order := &MutationOrder{}
+			install_mutation_order(mut vm, mut order, host, false)
+			if _ := run_property_mutation(mut vm, '${prefix}${base}[key]=rhs();') {
+				assert false
+			} else {
+				assert thrown_value(err).as_object().error_kind()? == .type_error
+			}
+			assert order.events == ['rhs']
+			assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 2
+			assert vm.running_execution_context() == context
+			assert vm.interpreter_stack().depth() == 0
+		}
+	}
+}
