@@ -2835,7 +2835,7 @@ pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, par
 				copy_shadow_root.set_keep_custom_element_registry_null(shadow_root.keep_custom_element_registry_null())
 				copy_shadow_root_node := unsafe { &Node(copy_shadow_root) }
 				for child in shadow_root_as_node(shadow_root).children {
-					child.clone_node_with_registry(doc, subtree, copy_shadow_root_node, unsafe { nil })!
+					child.clone_node_with_registry(doc, true, copy_shadow_root_node, unsafe { nil })!
 				}
 			}
 		}
