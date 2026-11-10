@@ -6,6 +6,7 @@
 module html
 
 import dom
+import webidl
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#extract-error
 pub struct ErrorInformation {
@@ -49,9 +50,26 @@ fn first_nonempty_error_location(locations []ErrorSourceLocation) ?ErrorSourceLo
 	return none
 }
 
+fn error_message_prefixed_with_name(name string, message string) string {
+	if message == '' { return name }
+	if name == '' { return message }
+	return '${name}: ${message}'
+}
+
+fn exception_report_message(exception dom.JSValue, context ErrorExtractionContext) string {
+	// A DOMException's name and message are prototype accessors, so an own
+	// message lookup misses them. Read the retained native exception instead.
+	if native := exception.native_value_ {
+		if details := webidl.dom_exception_report_details(native) {
+			return error_message_prefixed_with_name(details.name, details.message)
+		}
+	}
+	return context.own_message or { 'Uncaught exception: ${exception.to_string_value()}' }
+}
+
 // https://html.spec.whatwg.org/multipage/webappapis.html#extract-error
 pub fn extract_error_information(exception dom.JSValue, context ErrorExtractionContext) ErrorInformation {
-	message := context.own_message or { 'Uncaught exception: ${exception.to_string_value()}' }
+	message := exception_report_message(exception, context)
 	mut filename := ''
 	mut lineno := uint(0)
 	mut colno := uint(0)
