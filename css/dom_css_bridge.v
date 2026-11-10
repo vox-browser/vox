@@ -704,12 +704,13 @@ pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text s
 	scope_node := element.as_node().document_or_shadow_root_style_scope_node()
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
-	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, base_url or { location })
+	resource_base_url := base_url or { location }
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, resource_base_url)
 	sheet.base.location = location
 	sheet.set_base_url(base_url)
 	// Cache-only synchronization has no CORS response to approve. A Fetch
 	// completion can replace this flag with its response's origin-clean state.
-	origin_clean := if dom.URL{ value: location }.origin().is_same_origin(element.document().origin()) {
+	origin_clean := if dom.URL{ value: resource_base_url }.origin().is_same_origin(element.document().origin()) {
 		StyleSheetListOriginClean.yes
 	} else { StyleSheetListOriginClean.no }
 	title := if element.as_node().in_a_document_tree() {
