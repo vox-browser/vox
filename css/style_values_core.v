@@ -2159,6 +2159,9 @@ pub enum Keyword {
 	flow_end
 	flip_x
 	flip_y
+	any
+	numeric_only
+	allow_keywords
 	bounding_box
 	visible_painted
 	visible_fill
@@ -3088,6 +3091,9 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.flow_end { 'flow-end' }
 		.flip_x { 'flip-x' }
 		.flip_y { 'flip-y' }
+		.any { 'any' }
+		.numeric_only { 'numeric-only' }
+		.allow_keywords { 'allow-keywords' }
 		.bounding_box { 'bounding-box' }
 		.visible_painted { 'visiblepainted' }
 		.visible_fill { 'visiblefill' }
@@ -3120,6 +3126,9 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'flow-end' { return .flow_end }
 	if name == 'flip-x' { return .flip_x }
 	if name == 'flip-y' { return .flip_y }
+	if name == 'any' { return .any }
+	if name == 'numeric-only' { return .numeric_only }
+	if name == 'allow-keywords' { return .allow_keywords }
 	if name == 'bounding-box' { return .bounding_box }
 	if name == 'visiblepainted' { return .visible_painted }
 	if name == 'visiblefill' { return .visible_fill }

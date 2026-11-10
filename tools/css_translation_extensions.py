@@ -1,6 +1,11 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'interpolate-size': {
+        'style-group': 'InheritedUIValues', 'affects-layout': False, 'animation-type': 'none',
+        'inherited': True, 'initial': 'numeric-only', 'requires-computation': 'never',
+        'valid-identifiers': ['numeric-only', 'allow-keywords'],
+    },
     'grid-lanes-pack': {
         'initial':'normal','animation-type':'discrete','requires-computation':'never',
         'valid-identifiers':['normal','dense'],
@@ -148,7 +153,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
 
 
 def extend_properties(properties):

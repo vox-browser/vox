@@ -187,6 +187,7 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'grid-lanes-direction' { return .grid_lanes_direction }
 	if name == 'fit-tolerance' { return .fit_tolerance }
 	if name == 'grid-lanes-pack' { return .grid_lanes_pack }
+	if name == 'interpolate-size' { return .interpolate_size }
 
 	if name == 'overscroll-behavior-x' { return .overscroll_behavior_x }
 	if name == 'overscroll-behavior-y' { return .overscroll_behavior_y }
@@ -3225,6 +3226,7 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.grid_lanes_direction { 'grid-lanes-direction' }
 		.fit_tolerance { 'fit-tolerance' }
 		.grid_lanes_pack { 'grid-lanes-pack' }
+		.interpolate_size { 'interpolate-size' }
 
 		.overscroll_behavior_x { 'overscroll-behavior-x' }
 		.overscroll_behavior_y { 'overscroll-behavior-y' }
@@ -3724,6 +3726,7 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.interpolate_size { true }
 		.text_orientation { true }
 		.forced_color_adjust { true }
 		.font_palette { true }
@@ -3742,6 +3745,7 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { 'normal' }
+		.interpolate_size { 'numeric-only' }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { 'auto' }
 
@@ -4708,6 +4712,7 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 		.grid_lanes_direction { lowercase_value in ['normal','row','column','fill-reverse','track-reverse'] }
 		.fit_tolerance { lowercase_value in ['normal','infinite'] }
 		.grid_lanes_pack { lowercase_value in ['normal','dense'] }
+		.interpolate_size { lowercase_value in ['numeric-only','allow-keywords'] }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { lowercase_value in ['auto','contain','none','chain'] }
 

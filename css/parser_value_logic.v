@@ -948,7 +948,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
-		.forced_color_adjust, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+		.forced_color_adjust, .interpolate_size, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
         .grid_lanes_pack { return parse_property_keyword_value(mut tokens,['normal','dense']) }
         .grid_lanes_direction {
             first := parse_property_keyword_value(mut tokens,['normal','row','column']) or { return none }
