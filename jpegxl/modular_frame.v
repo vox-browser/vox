@@ -9,16 +9,13 @@ pub:
 }
 
 fn finish_modular_section(mut reader BitReader, index int, unused bool) ! {
-	// The pinned decoder ignores bounded section payloads when there are no
-	// coded pixels (some encoders still emit an empty entropy stream).
-	if unused {
-		reader.skip(reader.available_bits())!
-		return
-	}
-	reader.align_to_byte()!
-	if reader.available_bits() != 0 {
-		return error('JPEG XL modular section ${index} has ${reader.available_bits()} unhandled bits at ${reader.position}')
-	}
+	// The pinned decoder bounds every section and rejects over-reads, but it
+	// never requires a section to be fully consumed. Encoders may leave an
+	// empty entropy stream when no pixels are coded, and valid streams can
+	// carry trailing bits after the last symbol; both are ignored.
+	_ = index
+	_ = unused
+	reader.skip(reader.available_bits())!
 }
 
 fn decode_modular_group_bucket(mut reader BitReader, frame FrameHeader, infos []ModularChannelInfo, indices []int, lf bool, group u64, stream u32, tree ?ModularTree, storage ModularStorage, mut coded []ModularChannel, mut written []u64) !bool {

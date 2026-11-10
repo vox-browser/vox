@@ -1,0 +1,3 @@
+# Pinned native jxl 0.7.0 (libvox_jpegxl) RGBA8 output: file, width, height, file SHA256, straight SHA256, paint SHA256, origin
+modular_rle_fast_path.jxl	8	8	b4bacd6c0ab45a38a3738b9ff4f96945cc110019544e7b0be6b58e295951fee6	8151f920d7ea124d57101c9701512fcc9bac38ccb81ee8c1574adbaa21ab4caa	8151f920d7ea124d57101c9701512fcc9bac38ccb81ee8c1574adbaa21ab4caa	jxl-0.7.0 tests/testdata
+modular_rle_fast_path_without_lz77.jxl	8	8	7b55ba7118b89289a9f333fe495d8e095d79af9941833257dab41932ab98bd47	8151f920d7ea124d57101c9701512fcc9bac38ccb81ee8c1574adbaa21ab4caa	8151f920d7ea124d57101c9701512fcc9bac38ccb81ee8c1574adbaa21ab4caa	jxl-0.7.0 tests/testdata
