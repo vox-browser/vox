@@ -5,6 +5,7 @@
 // Copyright (c) 2024, Andreas Kling <andreas@ladybird.org>
 // Copyright (c) 2024-2025, Altomani Gianluca <altomanigianluca@gmail.com>
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 // SubtleCrypto.cpp generateKey, CryptoAlgorithms.cpp parameters, and pinned
 // Meta/Generators/libweb_bindings/to_idl_value.py sequence/enum conversion.
@@ -68,11 +69,10 @@ fn (host &CryptoHost) convert_crypto_usages(value voidptr) ![]webcrypto.KeyUsage
 }
 
 fn (host &CryptoHost) crypto_hash_identifier(value voidptr) !webidl.Value {
-	// The pinned helper asserts for non-string/non-object hash input. Preserve
-	// the existing typed adapter's explicit rejection at that unsupported edge.
-	if !C.JSValueIsString(host.runtime.context, value) && !C.JSValueIsObject(host.runtime.context, value) {
-		return error('TypeError: Algorithm identifier must be a string or object')
+	if C.JSValueIsUndefined(host.runtime.context, value) {
+		return error('TypeError: hash is required')
 	}
+	// AlgorithmIdentifier uses DOMString conversion for non-object values.
 	return host.normalize_digest(value, C.JSValueIsObject(host.runtime.context, value))
 }
 
