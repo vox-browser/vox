@@ -8,6 +8,24 @@ import compress.zlib
 import encoding.binary
 import math.bits
 
+struct WoffTableOutput {
+mut:
+	bytes    []u8
+	written  int
+	exceeded bool
+}
+
+fn copy_woff_table_chunk(chunk []u8, userdata voidptr) int {
+	mut output := unsafe { &WoffTableOutput(userdata) }
+	if chunk.len > output.bytes.len - output.written {
+		output.exceeded = true
+		return 0
+	}
+	copy(mut output.bytes[output.written..output.written + chunk.len], chunk)
+	output.written += chunk.len
+	return chunk.len
+}
+
 pub fn convert_woff_to_sfnt(buffer []u8) ![]u8 {
 	if buffer.len < 44 { return error('Truncated WOFF header') }
 	if binary.big_endian_u32(buffer) != 0x774f4646 { return error('Invalid WOFF signature') }
@@ -58,12 +76,16 @@ pub fn convert_woff_to_sfnt(buffer []u8) ![]u8 {
 		}
 		table := buffer[int(offset)..int(u64(offset) + comp_length)]
 		if comp_length < orig_length {
-			decompressed := zlib.decompress(table)!
-			if u64(orig_length) != u64(decompressed.len) {
+			// Stream into the allocated table slot and abort as soon as a chunk
+			// exceeds orig_length. The decoder keeps only a bounded overshoot.
+			mut table_output := WoffTableOutput{
+				bytes: unsafe { output[font_buffer_offset..font_buffer_offset + int(orig_length)] }
+			}
+			decompressed_size := zlib.decompress_with_callback(table, copy_woff_table_chunk,
+				&table_output)!
+			if table_output.exceeded || u64(decompressed_size) != u64(orig_length) {
 				return error('Invalid decompressed WOFF table length')
 			}
-			copy(mut output[font_buffer_offset..font_buffer_offset + int(orig_length)],
-				decompressed)
 		} else {
 			if comp_length != orig_length { return error('Invalid uncompressed WOFF table length') }
 			copy(mut output[font_buffer_offset..font_buffer_offset + int(orig_length)], table)
