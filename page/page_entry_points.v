@@ -23,7 +23,15 @@ pub fn (p &Page) palette() string {
 }
 
 pub fn (p &Page) web_exposed_screen_area() PixelRect {
-	return p.client_.screen_rect()
+	// PageClient reports the screen in device pixels. Screen dimensions and
+	// device-width media queries expose CSS pixels without applying page zoom.
+	rect := p.client_.screen_rect()
+	return PixelRect{
+		x: rect.x / p.device_scale
+		y: rect.y / p.device_scale
+		width: rect.width / p.device_scale
+		height: rect.height / p.device_scale
+	}
 }
 
 pub fn (p &Page) web_exposed_available_screen_area() PixelRect {
