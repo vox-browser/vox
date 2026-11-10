@@ -4,13 +4,26 @@ import dom
 import html
 import layout
 
-// css/css-text/i18n/*/css-text-line-break-*: a 6em box holds 文文文文文文, so
+// css/css-text/i18n/*/css-text-line-break-*: the box holds 文文文文文文, so
 // the character under test either starts the second line (test and ref with
 // <br> after the sixth 文 agree) or pulls the sixth 文 down with it (the ref
 // with <br> after the fifth 文 agrees).
-fn line_break_layout_offsets(language string, line_break string, character string) (int, int, int) {
+// The box holds exactly six 文 in whatever face the test environment selects,
+// whose advance need not be 1em.
+fn line_break_layout_box_width(language string) int {
 	mut document := html.parse_document('<!doctype html><style>body{margin:0}
-		div{font-size:20px;line-height:20px;width:125px}</style>
+		span{font-size:20px;line-height:20px;display:inline-block}</style>
+		<span id="probe" lang="${language}">文文文文文文</span>')
+	defer { document.finalize() }
+	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
+	element := document.get_element_by_id('probe') or { panic('missing probe') }
+	return html.html_element_offset_width(unsafe { &dom.HTMLElement(element) }) + 2
+}
+
+fn line_break_layout_offsets(language string, line_break string, character string) (int, int, int) {
+	width := line_break_layout_box_width(language)
+	mut document := html.parse_document('<!doctype html><style>body{margin:0}
+		div{font-size:20px;line-height:20px;width:${width}px}</style>
 		<div lang="${language}" style="line-break:${line_break}">文文文文文文${character}字<span id="test">字</span></div>
 		<div lang="${language}">文文文文文文<br>${character}字<span id="sixth">字</span></div>
 		<div lang="${language}">文文文文文<br>文${character}字<span id="fifth">字</span></div>')
