@@ -2,10 +2,11 @@
 ;
 ; Produces Vox-<version>-setup.exe from the portable zip built by
 ; `v run build_browser.vsh package-zip` (Build/windows/vox-portable.zip).
-; Run:  makensis packaging/windows/vox.nsi
+; Run from the repository root:  makensis packaging/windows/vox.nsi
 ;
-; Requirements: NSIS 3.x. The zip must exist next to this script's
-; parent packaging/ directory at build time (see package-installer flow).
+; Requirements: NSIS 3.x. The zip is embedded into the installer at
+; compile time (see package-installer flow); the setup EXE needs no
+; sidecar files at install time.
 
 !define APPNAME "Vox"
 !define APPVERSION "0.1.3"
@@ -20,10 +21,12 @@ InstallDirRegKey HKCU "Software\${APPNAME}" "InstallDir"
 RequestExecutionLevel user
 
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
 
 !define MUI_ABORTWARNING
 
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "..\..\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -34,10 +37,18 @@ RequestExecutionLevel user
 !insertmacro MUI_LANGUAGE "English"
 
 Section "Install"
+	; Stage the embedded portable zip, then extract it into $INSTDIR.
+	; A missing zip fails here at compile time, not silently at install.
+	SetOutPath "$PLUGINSDIR"
+	File "Build\windows\vox-portable.zip"
 	SetOutPath "$INSTDIR"
-	; Extract the portable zip that sits next to this installer.
 	DetailPrint "Extracting ${ZIPFILE}..."
-	nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath ''$EXEDIR\${ZIPFILE}'' -DestinationPath ''$INSTDIR'' -Force"'
+	nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath ''$PLUGINSDIR\${ZIPFILE}'' -DestinationPath ''$INSTDIR'' -Force"'
+	Pop $0
+	${If} $0 != 0
+		MessageBox MB_ICONSTOP "Extraction failed (exit code $0). The installation cannot continue."
+		Abort
+	${EndIf}
 	; Shortcuts
 	CreateDirectory "$SMPROGRAMS\${APPNAME}"
 	CreateShortcut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\vox.exe"
