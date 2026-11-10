@@ -2522,7 +2522,8 @@ pub fn (e &Element) client_width() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
+	// INTEROP: The result is rounded to the nearest integer rather than truncated, as browsers do.
+	return int(math.round((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientheight
@@ -2536,7 +2537,8 @@ pub fn (e &Element) client_height() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
+	// INTEROP: The result is rounded to the nearest integer rather than truncated, as browsers do.
+	return int(math.round((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom
@@ -3687,8 +3689,26 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 	return bounding_rect_from_client_rects(e.get_client_rects())
 }
 
+// https://drafts.csswg.org/css-tables-3/#table-wrapper-box
+// The box that CSSOM View geometry describes. For a table, this is the table
+// wrapper box, which is the principal box and contains the caption boxes.
+pub fn (e &Element) principal_layout_node() ?&LayoutNode {
+	layout := e.as_node().layout_node() or { return none }
+	if !layout.display_.is_table_inside() {
+		return layout
+	}
+	if parent := layout.parent() {
+		if parent.is_table_wrapper() {
+			return parent
+		}
+	}
+	return layout
+}
+
 fn compute_client_rects_assuming_layout_clean(e &Element) []CSSPixelRect_ {
-	layout := e.as_node().layout_node() or { return [] }
+	// INTEROP: For a table, the spec lists the table box and its caption boxes
+	// separately. Chrome reports the table wrapper box, which is their union.
+	layout := e.principal_layout_node() or { return [] }
 	if !layout.has_geometry_ {
 		return []
 	}
@@ -4086,7 +4106,7 @@ pub fn (mut e Element) scroll_width() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
+			return int(math.round((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale()))
 		}
 	}
 	return 0
@@ -4105,7 +4125,7 @@ pub fn (mut e Element) scroll_height() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
+			return int(math.round((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale()))
 		}
 	}
 	return 0
