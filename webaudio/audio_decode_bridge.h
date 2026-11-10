@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "audio_decode_limits.h"
 
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
@@ -61,6 +62,9 @@ static int ladybird_v_append_audio_frame(SwrContext **resampler,
     AVFrame *frame, int target_sample_rate, float **samples,
     size_t *frame_count, size_t *sample_capacity, int *channel_count)
 {
+    if (!ladybird_v_audio_sample_rate_supported((uint64_t)frame->sample_rate)
+        || !ladybird_v_audio_sample_rate_supported((uint64_t)target_sample_rate))
+        return -1;
     if (*resampler == NULL) {
         if (frame->ch_layout.nb_channels <= 0 || frame->ch_layout.nb_channels > 32
             || frame->sample_rate <= 0)
@@ -119,7 +123,8 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
     (void)requested_sample_rate;
     return NULL;
 #else
-    if (bytes == NULL || byte_count <= 0 || requested_sample_rate <= 0
+    if (bytes == NULL || byte_count <= 0
+        || !ladybird_v_audio_sample_rate_supported((uint64_t)requested_sample_rate)
         || output_channels == NULL || output_frames == NULL
         || output_sample_rate == NULL)
         return NULL;

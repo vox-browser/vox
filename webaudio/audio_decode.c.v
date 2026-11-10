@@ -15,6 +15,8 @@ fn C.ladybird_v_decode_audio(bytes &u8, byte_count int, requested_sample_rate in
 
 fn C.ladybird_v_free_decoded_audio(samples &f32)
 
+fn C.ladybird_v_audio_sample_rate_supported(rate u64) bool
+
 struct DecodedAudioData {
 	channels    [][]f32
 	sample_rate f32
@@ -84,6 +86,9 @@ fn resample_decoded_channels(channels [][]f32, input_rate u32, output_rate u32) 
 }
 
 fn decode_wave_audio(bytes []u8, requested_sample_rate u32) !DecodedAudioData {
+	if !C.ladybird_v_audio_sample_rate_supported(requested_sample_rate) {
+		return error('EncodingError: Audio sample rate is outside the supported range')
+	}
 	if bytes.len < 12 || !wave_bytes_equal(bytes, 0, 'RIFF')
 		|| !wave_bytes_equal(bytes, 8, 'WAVE') {
 		return error('EncodingError: Unable to decode audio data')
@@ -126,6 +131,9 @@ fn decode_wave_audio(bytes []u8, requested_sample_rate u32) !DecodedAudioData {
 		|| data_offset < 0 || data_size < int(block_alignment) {
 		return error('EncodingError: Invalid WAVE audio data')
 	}
+	if !C.ladybird_v_audio_sample_rate_supported(sample_rate) {
+		return error('EncodingError: WAVE sample rate is outside the supported range')
+	}
 	frame_count := data_size / int(block_alignment)
 	mut channels := [][]f32{len: int(channel_count), init: []f32{len: frame_count}}
 	for frame in 0 .. frame_count {
@@ -142,6 +150,10 @@ fn decode_wave_audio(bytes []u8, requested_sample_rate u32) !DecodedAudioData {
 }
 
 fn decode_audio_bytes(bytes []u8, requested_sample_rate f32) !DecodedAudioData {
+	if math.is_nan(requested_sample_rate) || math.is_inf(requested_sample_rate, 0)
+		|| requested_sample_rate < 3000 || requested_sample_rate > 768000 {
+		return error('EncodingError: Audio sample rate is outside the supported range')
+	}
 	if bytes.len == 0 {
 		return error('EncodingError: Unable to decode audio data')
 	}
