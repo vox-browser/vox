@@ -32,16 +32,16 @@ mut:
 
 __global worker_host_bindings_ = map[voidptr]&WorkerHost{}
 
-// One site cannot exhaust the host's process table by constructing workers.
-// The top-level origin identifies the browsing session's site; use the local
-// origin for embeds that have not received their top-level metadata yet.
+// Bound live dedicated/shared processes within this host process, grouped by
+// top-level origin. Session-wide and same-site accounting needs a shared broker.
+// Use the local origin when top-level metadata has not arrived yet.
 const maximum_worker_processes_per_top_level_origin = 64
 
 fn worker_process_site_key(settings &html.EnvironmentSettingsObject) string {
 	if origin := settings.fetch_request_client_top_level_origin() {
-		return origin.serialize()
+		return origin.serialize_for_ipc()
 	}
-	return settings.origin().serialize()
+	return settings.origin().serialize_for_ipc()
 }
 
 fn count_worker_processes_for_site(site_key string) int {
