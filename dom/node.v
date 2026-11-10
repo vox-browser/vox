@@ -1232,7 +1232,7 @@ pub fn (n &Node) has_event_listener(type_ string) bool {
 
 // https://dom.spec.whatwg.org/#dom-node-baseuri
 pub fn (n &Node) base_uri() string {
-	// Return this's node document's document base URL, serialized.
+	// The cloned document's base override takes precedence over the fallback.
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return ''
@@ -3012,6 +3012,8 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 		document_copy.set_document_type(source_document.document_type())
 		document_copy.set_quirks_mode(source_document.mode())
 		document_copy.set_allow_declarative_shadow_roots(source_document.allow_declarative_shadow_roots())
+		// DOM clone records the source's effective base before cloning children.
+		document_copy.set_base_url_override(source_document.get_the_base_url())
 		if custom_element_registry_is_scoped(source_document.custom_element_registry()) {
 			document_copy.set_custom_element_registry(source_document.custom_element_registry())
 		}
@@ -4659,6 +4661,11 @@ pub fn install_element_cloning_steps(steps ElementCloningSteps) {
 }
 
 pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
+	if n.is_document() && copy.is_document() {
+		original := unsafe { &Document(n) }
+		mut cloned_document := unsafe { &Document(copy) }
+		cloned_document.set_about_base_url(original.get_about_base_url())
+	}
 	if element := n.as_element() {
 		if element.is_html_element() && element.local_name() == 'template' {
 			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!
