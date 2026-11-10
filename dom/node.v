@@ -3109,7 +3109,10 @@ pub fn (mut n Node) recompute_editable_subtree_flag() bool {
 	} else if element := n.as_element() {
 		if element.is_html_element() {
 			state := html_content_editable_state(element)
-			if state == 'true' || state == 'plaintext-only' {
+			if element.local_name() in ['select', 'optgroup', 'option'] {
+				// Editing may remove the control, but must not edit its contents.
+				new_value = false
+			} else if state == 'true' || state == 'plaintext-only' {
 				new_value = true
 			} else if state == 'false' {
 				new_value = false
@@ -3190,7 +3193,7 @@ pub fn (n &Node) is_editable() bool {
 // https://html.spec.whatwg.org/multipage/interaction.html#editing-host
 pub fn (n &Node) is_editing_host() bool {
 	element := n.as_element() or { return false }
-	if !element.is_html_element() {
+	if !element.is_html_element() || element.local_name() in ['select', 'optgroup', 'option'] {
 		return false
 	}
 	state := html_content_editable_state(element)
