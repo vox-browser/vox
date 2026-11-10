@@ -311,8 +311,10 @@ pub fn command_delete_action(mut document dom.Document, _ string) bool {
 
 	// 9. Repeat the following steps:
 	for {
-		// AD-HOC: If start node is not a Node, return false. This prevents a crash by dereferencing a null pointer in
-		//         step 1 below. Edits outside of <body> might be prohibited: https://github.com/w3c/editing/issues/405
+		// Do not climb into the Document and later collapse the selection into a doctype.
+		if start_node.is_document() {
+			return false
+		}
 
 		// 1. If start offset is zero, set start offset to the index of start node and then set
 		//    start node to its parent.
