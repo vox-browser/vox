@@ -32,6 +32,9 @@ fn hmac_jwk_algorithm(hash string) !string {
 }
 
 fn import_hmac_key(params HmacImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
+	if requested := params.length {
+		if requested == 0 { return error('DataError: Invalid key length') }
+	}
 	hmac_validate_usages(usages)!
 	mut data := material.clone()
 	if format == .jwk {
