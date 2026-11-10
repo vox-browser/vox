@@ -70,6 +70,10 @@ pub fn (mut renderer RealtimeAudioRenderer) set_playback_stream(channel_count in
 	if renderer.shutting_down_ {
 		return
 	}
+	if renderer.device_channel_count_ != channel_count {
+		renderer.pending_samples_.clear()
+		renderer.playhead_ = 0
+	}
 	renderer.device_channel_count_ = channel_count
 	renderer.device_sample_rate_ = sample_rate
 	renderer.device_bus_ = AudioBus.create(channel_count, renderer.quantum_size_)
