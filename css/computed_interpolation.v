@@ -8057,8 +8057,6 @@ fn interpolation_decompose_matrix(matrix FloatMatrix4x4) ?InterpolationDecompose
 	if basis[1].x > basis[0].y {
 		rotation[2] = -rotation[2]
 	}
-	// Browser coordinates are left-handed because positive Y points down.
-	rotation[2] = -rotation[2]
 
 	return InterpolationDecomposedMatrix{
 		translation: translation
@@ -8085,30 +8083,34 @@ fn interpolation_recompose_matrix(values InterpolationDecomposedMatrix) FloatMat
 	y := values.rotation[1]
 	z := values.rotation[2]
 	w := values.rotation[3]
+	// The rotation matrix is indexed by row and then column, the inverse of
+	// how decomposition reads the rotation out of the matrix columns.
 	mut rotation := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 	rotation[0][0] = 1 - 2 * (y * y + z * z)
-	rotation[1][0] = 2 * (x * y - z * w)
-	rotation[2][0] = 2 * (x * z + y * w)
-	rotation[0][1] = 2 * (x * y + z * w)
+	rotation[0][1] = 2 * (x * y - z * w)
+	rotation[0][2] = 2 * (x * z + y * w)
+	rotation[1][0] = 2 * (x * y + z * w)
 	rotation[1][1] = 1 - 2 * (x * x + z * z)
-	rotation[2][1] = 2 * (y * z - x * w)
-	rotation[0][2] = 2 * (x * z - y * w)
-	rotation[1][2] = 2 * (y * z + x * w)
+	rotation[1][2] = 2 * (y * z - x * w)
+	rotation[2][0] = 2 * (x * z - y * w)
+	rotation[2][1] = 2 * (y * z + x * w)
 	rotation[2][2] = 1 - 2 * (x * x + y * y)
 	mut recomposed := cssom_multiply_transform_matrices(interpolation_float_matrix_from_rows(rows), interpolation_float_matrix_from_rows(rotation))
 
+	// As in the specification's pseudo-code, one temporary matrix carries the
+	// skews, and each step only clears the entry the previous step set.
+	mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 	if values.skew.z != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 		skew[1][2] = values.skew.z
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
 	if values.skew.y != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[1][2] = 0
 		skew[0][2] = values.skew.y
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
 	if values.skew.x != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[0][2] = 0
 		skew[0][1] = values.skew.x
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
