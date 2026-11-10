@@ -130,11 +130,7 @@ fn test_data_view_getters_and_numeric_methods_recompute_fixed_and_tracking_bound
 		Value.from_i32(42)])!.is_undefined()
 	assert view_method(mut vm, tracking, 'getUint8', [Value.from_i32(1)])!.number == 42
 	for name in ['byteOffset', 'byteLength'] {
-		if _ := fixed.object.get(mut vm, PropertyName.from_str(name)) {
-			assert false
-		} else {
-			assert thrown_value(err).as_object().error_kind()? == .type_error
-		}
+		assert fixed.object.get(mut vm, PropertyName.from_str(name))!.number == 0
 	}
 	if _ := view_method(mut vm, tracking, 'getUint16', [Value.from_i32(1)]) {
 		assert false
@@ -153,6 +149,11 @@ fn test_data_view_getters_and_numeric_methods_recompute_fixed_and_tracking_bound
 	buffer.detach_buffer()
 	for view in [fixed, tracking] {
 		assert voidptr(view.object.get(mut vm, PropertyName.from_str('buffer'))!.as_object()) == voidptr(buffer.object)
+		for name in ['byteOffset', 'byteLength'] {
+			value := view.object.get(mut vm, PropertyName.from_str(name))!
+			assert value.is_number() && value.number == 0
+			assert 1.0 / value.number > 0 // Require positive zero.
+		}
 		if _ := view_method(mut vm, view, 'getUint8', []Value{}) {
 			assert false
 		} else {
