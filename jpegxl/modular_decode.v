@@ -52,7 +52,7 @@ pub fn (mut reader BitReader) decode_modular_channels(mut channels []ModularChan
 				wp := weighted.predict_and_property(x, y, data)!
 				compute_modular_properties(data, x, y, references[x * reference_count..(x + 1) * reference_count], wp, mut properties)!
 				prediction := tree.predict_modular(data, wp.value, properties)!
-				residual := symbols.read_signed(tree.histograms, int(prediction.context), mut reader)!
+				residual := symbols.read_signed(&tree.histograms, int(prediction.context), mut reader)!
 				value := make_modular_pixel(residual, prediction.multiplier, prediction.guess)
 				weighted.update_errors(value, x, y)!
 				current[x] = value

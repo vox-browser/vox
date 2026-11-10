@@ -27,6 +27,15 @@ pub fn (b &BitReader) peek(n int) !u64 {
 	if n == 0 { return 0 }
 	start := b.position / 8
 	offset := b.position % 8
+	if start + 8 <= b.data.len {
+		// n <= 56 and offset <= 7, so eight bytes hold every requested bit. The
+		// C compiler folds this little-endian composition into one load.
+		p := unsafe { &u8(b.data.data) + start }
+		word := unsafe {
+			u64(p[0]) | (u64(p[1]) << 8) | (u64(p[2]) << 16) | (u64(p[3]) << 24) | (u64(p[4]) << 32) | (u64(p[5]) << 40) | (u64(p[6]) << 48) | (u64(p[7]) << 56)
+		}
+		return (word >> offset) & ((u64(1) << n) - 1)
+	}
 	count := math.min((n + offset + 7) / 8, math.max(0, b.data.len - start))
 	mut value := u64(0)
 	for i in 0 .. count {

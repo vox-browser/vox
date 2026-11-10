@@ -89,7 +89,7 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 	stride := extra_channels + 1
 	hist := reader.read_histograms(10, true)!
 	mut symbols := SymbolReader.new(hist, mut reader, none)!
-	num_refs := int(symbols.read_unsigned(hist, 0, mut reader)!)
+	num_refs := int(symbols.read_unsigned(&hist, 0, mut reader)!)
 	max_refs := 1024 + pixels / 4
 	max_patches := max_refs * 4
 	max_blendings := max_patches * 4
@@ -102,12 +102,12 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 	mut total := 0
 	mut next_size := 1
 	for _ in 0 .. num_refs {
-		ref := int(symbols.read_unsigned(hist, 1, mut reader)!)
+		ref := int(symbols.read_unsigned(&hist, 1, mut reader)!)
 		if ref >= 4 { return error('Invalid JPEG XL patch reference slot') }
-		x0 := int(symbols.read_unsigned(hist, 3, mut reader)!)
-		y0 := int(symbols.read_unsigned(hist, 3, mut reader)!)
-		w := int(symbols.read_unsigned(hist, 2, mut reader)!) + 1
-		h := int(symbols.read_unsigned(hist, 2, mut reader)!) + 1
+		x0 := int(symbols.read_unsigned(&hist, 3, mut reader)!)
+		y0 := int(symbols.read_unsigned(&hist, 3, mut reader)!)
+		w := int(symbols.read_unsigned(&hist, 2, mut reader)!) + 1
+		h := int(symbols.read_unsigned(&hist, 2, mut reader)!) + 1
 		if ref >= references.len || !references[ref].available {
 			return error('Missing JPEG XL patch reference')
 		}
@@ -118,7 +118,7 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 		if w > source.width || h > source.height || x0 > source.width - w || y0 > source.height - h {
 			return error('JPEG XL patch exceeds its source')
 		}
-		count := int(symbols.read_unsigned(hist, 7, mut reader)!) + 1
+		count := int(symbols.read_unsigned(&hist, 7, mut reader)!) + 1
 		if count > max_patches - total || count > 1048576 - total {
 			return error('Too many JPEG XL patch positions')
 		}
@@ -134,12 +134,12 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 			mut x := 0
 			mut y := 0
 			if i == 0 {
-				x = int(symbols.read_unsigned(hist, 4, mut reader)!)
-				y = int(symbols.read_unsigned(hist, 4, mut reader)!)
+				x = int(symbols.read_unsigned(&hist, 4, mut reader)!)
+				y = int(symbols.read_unsigned(&hist, 4, mut reader)!)
 			} else {
-				x = positions.last().x + int(symbols.read_signed(hist, 6, mut reader)!)
+				x = positions.last().x + int(symbols.read_signed(&hist, 6, mut reader)!)
 				if x < 0 { return error('Negative JPEG XL patch x offset') }
-				y = positions.last().y + int(symbols.read_signed(hist, 6, mut reader)!)
+				y = positions.last().y + int(symbols.read_signed(&hist, 6, mut reader)!)
 				if y < 0 { return error('Negative JPEG XL patch y offset') }
 			}
 			if w > width || h > height || x > width - w || y > height - h {
@@ -147,11 +147,11 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 			}
 			for _ in 0 .. stride {
 				// The original parser narrows to u8 before checking the enum.
-				value := u8(symbols.read_unsigned(hist, 5, mut reader)!)
+				value := u8(symbols.read_unsigned(&hist, 5, mut reader)!)
 				if value > 7 { return error('Invalid JPEG XL patch blend mode') }
 				mode := unsafe { PatchBlendMode(value) }
 				alpha := if mode.uses_alpha() && stride > 2 {
-					int(symbols.read_unsigned(hist, 8, mut reader)!)
+					int(symbols.read_unsigned(&hist, 8, mut reader)!)
 				} else {
 					0
 				}
@@ -159,7 +159,7 @@ pub fn (mut reader BitReader) read_patches(width int, height int, extra_channels
 					return error('Invalid JPEG XL patch alpha channel')
 				}
 				clamp := if mode.uses_clamp() {
-					symbols.read_unsigned(hist, 9, mut reader)! != 0
+					symbols.read_unsigned(&hist, 9, mut reader)! != 0
 				} else {
 					false
 				}
