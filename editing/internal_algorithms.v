@@ -442,12 +442,28 @@ pub fn is_collapsed_line_break(node &dom.Node) bool {
 	}
 
 	// that begins a line box which has nothing else in it, and therefore has zero height.
-	// AD-HOC: We check this on the DOM level by seeing if the next node is neither a non-empty text node nor a <br>.
-	next_sibling := node.next_sibling() or { return true }
-	if next_sibling.is_text() {
-		return editing_text_data(next_sibling) == ''
+	// The line can continue after inline ancestors, up to the block or editing host.
+	mut block := block_node_of_node(node)
+	if editing_host := node.editing_host() {
+		if current_block := block {
+			if current_block.is_inclusive_ancestor_of(editing_host) { block = editing_host }
+		} else {
+			block = editing_host
+		}
 	}
-	return !next_sibling.is_html_br_element()
+	mut following := node.next_in_pre_order(block)
+	for {
+		current := following or { break }
+		following = current.next_in_pre_order(block)
+		if current.is_text() {
+			if is_whitespace_node(current) { continue }
+			return false
+		}
+		if !current.is_element() { continue }
+		if !is_inline_node(current) { return true }
+		if editing_ignores_content(current) { return false }
+	}
+	return true
 }
 
 // https://w3c.github.io/editing/docs/execCommand/#collapsed-whitespace-node
