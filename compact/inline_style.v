@@ -59,6 +59,10 @@ fn compact_inline_style_query(root &dom.Node, source string, runtime &browserjs.
 		mut mutable_runtime := unsafe { &browserjs.Runtime(runtime) }
 		mutable_runtime.mark_document_state_dirty()
 		mutable_runtime.mark_document_replay_effects()
+		// CSSStyleDeclaration mutators are [CEReactions]: the style attribute's
+		// attributeChangedCallback runs before the method returns.
+		mut reaction_document := unsafe { &dom.Document(element.document()) }
+		reaction_document.invoke_custom_element_reactions()
 	}
 	// Keep response buffers in the caller's temporary allocation scope.
 	allocation_scope.finish()

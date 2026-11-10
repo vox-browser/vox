@@ -1226,6 +1226,17 @@ pub fn (mut properties CSSStyleProperties) remove_property(property_name string)
 }
 
 pub fn (mut properties CSSStyleProperties) remove_property_internal(property PropertyNameAndID) !string {
+	removed, removed_value := properties.remove_declarations(property)!
+	if removed {
+		properties.update_style_attribute()
+		properties.invalidate_owners(.style_sheet_changed)
+	}
+	return removed_value
+}
+
+// Removes property's declarations without writing the style attribute, for
+// callers that update the attribute once after replacing the value.
+fn (mut properties CSSStyleProperties) remove_declarations(property PropertyNameAndID) !(bool, string) {
 	properties.ensure_declarations_parsed()
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
@@ -1240,7 +1251,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 			removed = true
 		}
 	} else {
-		property_id := property.id() or { return '' }
+		property_id := property.id() or { return false, '' }
 		removed_value = properties.get_property_value(string_from_property_id(property_id))
 		longhands := if property_is_shorthand(property_id) {
 			generated_expanded_longhands_for_shorthand(property_id)
@@ -1256,12 +1267,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 		}
 		if removed { properties.clear_typed_properties_cache() }
 	}
-
-	if removed {
-		properties.update_style_attribute()
-		properties.invalidate_owners(.style_sheet_changed)
-	}
-	return removed_value
+	return removed, removed_value
 }
 
 pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
@@ -2500,7 +2506,9 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 	mut props := unsafe { &CSSStyleProperties(property_map.declaration) }
 
 	// 7. If props[property] exists, remove it.
-	props.remove_property(property.name())!
+	// NB: The style attribute is written once, after the new value is set, so
+	//     mutation observers and attributeChangedCallback see a single change.
+	_, _ := props.remove_declarations(property)!
 
 	// 8. Let values to set be an empty list.
 	mut values_to_set := []&dom.StyleValue{}
@@ -2561,6 +2569,11 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 	// 5. If any of the items in values are a CSSUnparsedValue or CSSVariableReferenceValue object, throw a TypeError.
 	// FIXME: This is done as part of step 10, because we need to detect if a string value would be an CSSUnparsedValue
 	//        or CSSVariableReferenceValue. Spec issue: https://github.com/w3c/css-houdini-drafts/issues/1157
+
+	// NB: Appending no values leaves props[property] unchanged.
+	if values.len == 0 {
+		return
+	}
 
 	// 6. Let props be the value of this's [[declarations]] internal slot.
 	mut props := unsafe { &CSSStyleProperties(property_map.declaration) }
