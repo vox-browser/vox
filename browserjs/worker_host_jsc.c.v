@@ -32,6 +32,40 @@ mut:
 
 __global worker_host_bindings_ = map[voidptr]&WorkerHost{}
 
+// One site cannot exhaust the host's process table by constructing workers.
+// The top-level origin identifies the browsing session's site; use the local
+// origin for embeds that have not received their top-level metadata yet.
+const maximum_worker_processes_per_top_level_origin = 64
+
+fn worker_process_site_key(settings &html.EnvironmentSettingsObject) string {
+	if origin := settings.fetch_request_client_top_level_origin() {
+		return origin.serialize()
+	}
+	return settings.origin().serialize()
+}
+
+fn count_worker_processes_for_site(site_key string) int {
+	mut count := 0
+	// Dedicated workers are owned by their parent Runtime's WorkerHost.
+	for _, host in worker_host_bindings_ {
+		if host.closed || worker_process_site_key(host.settings) != site_key { continue }
+		for _, remote in host.workers {
+			if remote.process != none { count++ }
+		}
+	}
+	// A shared worker is a single process, even if several connections own it.
+	for _, remote in remote_shared_workers_ {
+		if remote.closed || remote.process == none { continue }
+		for owner in remote.owners {
+			if !owner.closed && worker_process_site_key(owner.host.settings) == site_key {
+				count++
+				break
+			}
+		}
+	}
+	return count
+}
+
 pub fn WorkerHost.create(settings &html.EnvironmentSettingsObject, executable string) !&WorkerHost {
 	if executable == '' || executable.contains('\x00') { return error('Invalid worker executable') }
 	persistent := platform.enter_persistent()
@@ -140,6 +174,11 @@ fn (mut host WorkerHost) construct(receiver voidptr, args []voidptr) !voidptr {
 		outside: host.settings.serialize()
 		creation_time: highresolutiontime.unsafe_shared_current_time()
 	}) or {
+		host.queue_failure(remote)
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	}
+	if count_worker_processes_for_site(worker_process_site_key(host.settings))
+		>= maximum_worker_processes_per_top_level_origin {
 		host.queue_failure(remote)
 		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
 	}
