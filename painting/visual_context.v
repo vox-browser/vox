@@ -59,6 +59,9 @@ pub:
 	matrix                  Affine
 	matrix_4x4              css.FloatMatrix4x4
 	uses_matrix_4x4         bool
+	// A nested 3D context remains part of the plane it is flattened into.
+	establishes_sorting_context bool
+	// Participants start from their context's inherited cull state.
 	resets_backface_culling bool
 }
 
@@ -533,13 +536,18 @@ fn (tree &AccumulatedVisualContextTree) inline_context_is_backface_culled(index 
 	}
 	mut accumulated := css.FloatMatrix4x4.identity()
 	mut culled := false
+	mut culled_outside_sorting_context := false
 	for reverse_index := count - 1; reverse_index >= 0; reverse_index-- {
 		node_index := chain[reverse_index]
 		node := tree.nodes[node_index]
 		accumulated = accumulated.multiply(visual_context_local_matrix(node, snapshot))
 		matrices[reverse_index] = accumulated
-		if node.data is TransformVisualData && node.data.resets_backface_culling {
-			culled = false
+		if node.data is TransformVisualData {
+			if node.data.establishes_sorting_context {
+				culled_outside_sorting_context = culled
+			} else if node.data.resets_backface_culling {
+				culled = culled_outside_sorting_context
+			}
 		}
 		if node.data is BackfaceVisibilityVisualData {
 			// The general walk records index 0 and every processed node, including
@@ -566,14 +574,19 @@ fn (tree &AccumulatedVisualContextTree) context_is_backface_culled_with_depth_fa
 	mut accumulated := css.FloatMatrix4x4.identity()
 	mut matrices := map[int]css.FloatMatrix4x4{}
 	mut culled := false
+	mut culled_outside_sorting_context := false
 	matrices[0] = accumulated
 	for reverse_index := chain.len - 1; reverse_index >= 0; reverse_index-- {
 		node_index := chain[reverse_index]
 		node := tree.nodes[node_index]
 		accumulated = accumulated.multiply(visual_context_local_matrix(node, snapshot))
 		matrices[node_index] = accumulated
-		if node.data is TransformVisualData && node.data.resets_backface_culling {
-			culled = false
+		if node.data is TransformVisualData {
+			if node.data.establishes_sorting_context {
+				culled_outside_sorting_context = culled
+			} else if node.data.resets_backface_culling {
+				culled = culled_outside_sorting_context
+			}
 		}
 		if node.data is BackfaceVisibilityVisualData {
 			plane_root := matrices[node.data.plane_root_index] or {
