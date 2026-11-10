@@ -1953,6 +1953,12 @@ fn (mut p Parser) parse_with_clause() []ImportAttribute {
 		if p.match_token(.string_literal) {
 			token := p.consume()
 			value, _ := p.parse_string_value(token)
+			for attribute in attributes {
+				if attribute.key == key {
+					p.syntax_error('Duplicate import attribute key')
+					break
+				}
+			}
 			attributes << ImportAttribute{
 				key:   key
 				value: value
