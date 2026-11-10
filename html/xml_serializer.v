@@ -77,6 +77,30 @@ pub fn (s &XMLSerializer) serialize_to_string(root &dom.Node) !string {
 // https://w3c.github.io/DOM-Parsing/#dfn-add
 fn xml_add_prefix_to_namespace_prefix_map(mut prefix_map map[string][]OptName, prefix OptName, namespace_value OptName) {
 	key := ns_map_key(namespace_value)
+	// A local declaration or element prefix can shadow an inherited binding.
+	// Remove that prefix from the other namespaces before it can be reused for
+	// an attribute or descendant. Replace candidate arrays so the caller's
+	// inherited map remains unchanged when this map is a local clone.
+	for existing_key in prefix_map.keys() {
+		if existing_key == key {
+			continue
+		}
+		candidates := prefix_map[existing_key]
+		if prefix !in candidates {
+			continue
+		}
+		mut remaining := []OptName{cap: candidates.len}
+		for candidate in candidates {
+			if candidate != prefix {
+				remaining << candidate
+			}
+		}
+		if remaining.len == 0 {
+			prefix_map.delete(existing_key)
+		} else {
+			prefix_map[existing_key] = remaining
+		}
+	}
 	// 1-2. Retrieve the candidates list; if null, create a new list with prefix as its only item.
 	if key in prefix_map {
 		// 3. Otherwise, append prefix to the end of candidates list.

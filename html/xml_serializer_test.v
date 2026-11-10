@@ -229,6 +229,76 @@ fn test_xml_serializer_does_not_rebind_an_ancestor_prefix_for_a_child_attribute(
 	assert parsed_child.get_attribute_ns('urn:a', 'c')? == '3'
 }
 
+fn test_xml_serializer_element_prefix_rebinding_preserves_attribute_namespaces_and_sibling_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut parent := document.create_element_ns('urn:a', 'p:parent')!
+	mut child := document.create_element_ns('urn:b', 'p:child')!
+	child.set_attribute_ns_for_bindings('urn:a', 'attr', 'child')!
+	mut sibling := document.create_element_ns(none, 'sibling')!
+	sibling.set_attribute_ns_for_bindings('urn:a', 'attr', 'sibling')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node())!
+	parent_node.append_child(sibling.as_node())!
+	markup := serialize(parent_node)
+	assert markup == '<p:parent xmlns:p="urn:a"><p:child xmlns:p="urn:b" xmlns:ns1="urn:a" ns1:attr="child"/><sibling p:attr="sibling"/></p:parent>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?
+	assert parsed_child.as_element()?.namespace_uri()? == 'urn:b'
+	assert parsed_child.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'child'
+	assert parsed_child.as_element()?.get_attribute_ns('urn:b', 'attr') == none
+	assert parsed_child.next_sibling()?.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'sibling'
+}
+
+fn test_xml_serializer_explicit_prefix_rebinding_can_restore_an_ancestor_binding() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:b')!
+	child.set_attribute_ns_for_bindings('urn:a', 'attr', 'child')!
+	mut grandchild := document.create_element_ns(none, 'grandchild')!
+	grandchild.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	grandchild.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'restored')!
+	grandchild.set_attribute_ns_for_bindings('urn:b', 'other', 'other namespace')!
+	mut child_node := child.as_node()
+	child_node.append_child(grandchild.as_node())!
+	mut root_node := root.as_node()
+	root_node.append_child(child_node)!
+	markup := serialize(root_node)
+	assert markup == '<root xmlns:p="urn:a"><child xmlns:p="urn:b" xmlns:ns1="urn:a" ns1:attr="child"><grandchild xmlns:p="urn:a" p:attr="restored" xmlns:ns2="urn:b" ns2:other="other namespace"/></child></root>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?
+	assert parsed_child.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'child'
+	parsed_grandchild := parsed_child.first_child()?.as_element()?
+	assert parsed_grandchild.get_attribute_ns(namespace_.xmlns, 'p')? == 'urn:a'
+	assert parsed_grandchild.get_attribute_ns('urn:a', 'attr')? == 'restored'
+	assert parsed_grandchild.get_attribute_ns('urn:b', 'other')? == 'other namespace'
+}
+
+fn test_xml_serializer_prefix_rebinding_keeps_other_prefixes_for_the_namespace() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:q', 'urn:a')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:b')!
+	child.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'value')!
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node())!
+	markup := serialize(root_node)
+	assert markup == '<root xmlns:q="urn:a" xmlns:p="urn:a"><child xmlns:p="urn:b" q:attr="value"/></root>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?.as_element()?
+	assert parsed_child.get_attribute_ns('urn:a', 'attr')? == 'value'
+	assert parsed_child.get_attribute_ns('urn:b', 'attr') == none
+}
+
 fn test_xml_serializer_attribute_whitespace_survives_a_round_trip() {
 	mut document := dom.Document.create(dom.url_about_blank())
 	defer { document.finalize() }
