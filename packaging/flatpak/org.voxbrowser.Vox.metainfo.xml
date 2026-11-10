@@ -2,6 +2,9 @@
 <component type="desktop-application">
   <id>org.voxbrowser.Vox</id>
   <launchable type="desktop-id">org.voxbrowser.Vox.desktop</launchable>
+  <provides>
+    <binary>vox</binary>
+  </provides>
   <name>Vox</name>
   <summary>A new browser engine written 100% in V + UI2</summary>
   <description>
