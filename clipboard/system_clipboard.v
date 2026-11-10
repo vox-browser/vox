@@ -8,6 +8,7 @@
 // encoding used by tests and embedders.
 module clipboard
 
+import dom
 import html
 
 pub type SystemClipboardData = []u8 | html.SelectedFile
@@ -193,15 +194,23 @@ fn clone_system_clipboard_items(items []SystemClipboardItem) []SystemClipboardIt
 	return result
 }
 
-// SystemClipboardBackend is the browser-process side of the translation. A
-// real embedder can copy its native clipboard into this object before reads
-// and consume the last written snapshot after writes.
+struct ClipboardOriginWrite {
+	origin dom.Origin
+	traversable &dom.Navigable = unsafe { nil }
+	items []SystemClipboardItem
+}
+
+// SystemClipboardBackend is the browser-process side of the translation, with
+// one instance per tab. The embedder copies the current native clipboard into
+// it before reads and consumes the last written snapshot after writes. It
+// retains the tab's last page write separately from the current native data.
 @[heap]
 pub struct SystemClipboardBackend {
 mut:
 	items_               []SystemClipboardItem
 	presentation_styles_ []string
 	change_count_        uint
+	last_write_by_page_   ?ClipboardOriginWrite
 }
 
 pub fn SystemClipboardBackend.create() &SystemClipboardBackend {
@@ -224,4 +233,54 @@ pub fn (mut backend SystemClipboardBackend) replace_items(items []SystemClipboar
 	backend.items_ = clone_system_clipboard_items(items)
 	backend.presentation_styles_ = presentation_styles.clone()
 	backend.change_count_++
+}
+
+// The writing document's native identity supplies the origin and tab; neither
+// is supplied by the calling script. External clipboard changes do not erase
+// this record, since identical data still tells its author nothing new.
+pub fn (mut backend SystemClipboardBackend) replace_items_written_by(items []SystemClipboardItem, presentation_styles []string, document &dom.Document) {
+	backend.replace_items(items, presentation_styles)
+	navigable := document.navigable() or { return }
+	traversable := navigable.traversable_navigable() or { return }
+	backend.last_write_by_page_ = ClipboardOriginWrite{
+		origin: document.origin()
+		traversable: traversable
+		items: clone_system_clipboard_items(items)
+	}
+}
+
+// A native clipboard may omit representations or reorder them. Every current
+// representation must nevertheless be byte data, with the exact MIME name and
+// bytes previously written by this origin in this tab. File-backed entries
+// and additional/changed representations reject the entire read.
+pub fn (backend &SystemClipboardBackend) items_written_by(document &dom.Document) []SystemClipboardItem {
+	written := backend.last_write_by_page_ or { return []SystemClipboardItem{} }
+	navigable := document.navigable() or { return []SystemClipboardItem{} }
+	traversable := navigable.traversable_navigable() or { return []SystemClipboardItem{} }
+	if voidptr(traversable) != voidptr(written.traversable)
+		|| !document.origin().is_same_origin(written.origin)
+		|| backend.items_.len == 0 {
+		return []SystemClipboardItem{}
+	}
+	for item in backend.items_ {
+		if item.system_clipboard_representations.len == 0 {
+			return []SystemClipboardItem{}
+		}
+		for representation in item.system_clipboard_representations {
+			data := representation.byte_data() or { return []SystemClipboardItem{} }
+			mut found := false
+			for written_item in written.items {
+				for original in written_item.system_clipboard_representations {
+					original_data := original.byte_data() or { continue }
+					if original.mime_type == representation.mime_type && original_data == data {
+						found = true
+						break
+					}
+				}
+				if found { break }
+			}
+			if !found { return []SystemClipboardItem{} }
+		}
+	}
+	return backend.items()
 }

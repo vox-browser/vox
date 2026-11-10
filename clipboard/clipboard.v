@@ -145,8 +145,15 @@ pub fn os_specific_well_known_format(mime_type_string string) string {
 	}
 }
 
-pub fn check_clipboard_read_permission(has_transient_activation bool, is_running_from_paste bool) bool {
-	return has_transient_activation && is_running_from_paste
+pub enum ClipboardReadPermission {
+	denied
+	granted
+	granted_for_own_origin_data
+}
+
+pub fn check_clipboard_read_permission(has_transient_activation bool, is_running_from_paste bool) ClipboardReadPermission {
+	if !has_transient_activation { return .denied }
+	return if is_running_from_paste { .granted } else { .granted_for_own_origin_data }
 }
 
 pub fn check_clipboard_write_permission(has_transient_activation bool) bool {
@@ -240,6 +247,29 @@ fn (board &Clipboard) pasted_data_snapshot() ?[]SystemClipboardItem {
 	return clone_system_clipboard_items(data)
 }
 
+fn (board &Clipboard) data_allowed_by_read_permission(pasted_data ?[]SystemClipboardItem) ![]SystemClipboardItem {
+	permission := check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none)
+	if permission == .granted {
+		return pasted_data or { []SystemClipboardItem{} }
+	}
+	if permission == .granted_for_own_origin_data {
+		if document := board.document_ {
+			data := board.backend_.items_written_by(document)
+			if data.len > 0 { return data }
+		}
+	}
+	return error('NotAllowedError: Clipboard reading is only allowed while the user pastes')
+}
+
+fn (board &Clipboard) write_backend_items(items []SystemClipboardItem, presentation_styles []string) {
+	mut backend := board.backend_
+	if document := board.document_ {
+		backend.replace_items_written_by(items, presentation_styles, document)
+	} else {
+		backend.replace_items(items, presentation_styles)
+	}
+}
+
 pub fn (board &Clipboard) backend() &SystemClipboardBackend {
 	return board.backend_
 }
@@ -249,11 +279,10 @@ pub fn (board &Clipboard) read(formats ClipboardUnsanitizedFormats) &ClipboardRe
 	mut promise := ClipboardReadPromise.pending()
 	pasted_data := board.pasted_data_snapshot()
 	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, formats, pasted_data] () {
-		if !check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none) {
-			promise.reject('NotAllowedError: Clipboard reading is only allowed while the user pastes')
+		data := board.data_allowed_by_read_permission(pasted_data) or {
+			promise.reject(err.msg())
 			return
 		}
-		data := pasted_data or { []SystemClipboardItem{} }
 		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, mut promise, formats, data] () {
 			mut items := []&ClipboardItem{}
 			snapshot_change_count := board.backend_.change_count()
@@ -301,11 +330,10 @@ pub fn (board &Clipboard) read_text() &ClipboardTextPromise {
 	mut promise := ClipboardTextPromise.pending()
 	pasted_data := board.pasted_data_snapshot()
 	html.queue_a_task(.permissions, board.event_loop_, board.document_, fn [board, mut promise, pasted_data] () {
-		if !check_clipboard_read_permission(board.has_transient_user_activation(), pasted_data != none) {
-			promise.reject('NotAllowedError: Clipboard reading is only allowed while the user pastes')
+		data := board.data_allowed_by_read_permission(pasted_data) or {
+			promise.reject(err.msg())
 			return
 		}
-		data := pasted_data or { []SystemClipboardItem{} }
 		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [mut promise, data] () {
 			for item in data {
 				for representation in item.system_clipboard_representations {
@@ -351,8 +379,7 @@ pub fn (board &Clipboard) write_text(data string) &ClipboardVoidPromise {
 			return
 		}
 		html.queue_a_task(.clipboard, board.event_loop_, board.document_, fn [board, data, mut promise] () {
-			mut backend := board.backend_
-			backend.replace_items([
+			board.write_backend_items([
 				SystemClipboardItem{
 					system_clipboard_representations: [
 						SystemClipboardRepresentation{
@@ -451,8 +478,7 @@ fn (mut operation ClipboardWriteOperation) process() {
 		system_items << native_write.item
 		presentation_styles << native_write.presentation_style
 	}
-	mut backend := operation.clipboard.backend_
-	backend.replace_items(system_items, presentation_styles)
+	operation.clipboard.write_backend_items(system_items, presentation_styles)
 	mut promise := operation.promise
 	promise.resolve()
 	operation.complete()
