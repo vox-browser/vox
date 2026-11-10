@@ -595,6 +595,10 @@ fn (mut host BrowserChildDocumentHost) poll(mut messages []string) bool {
 					if active.get_is_initial_about_blank() && !browser_child_frame_stays_blank(child.element) {
 						return
 					}
+					if active.should_mute_iframe_load() { return }
+					mut child_document := unsafe { &dom.Document(active) }
+					child_document.set_iframe_load_in_progress(true)
+					defer { child_document.set_iframe_load_in_progress(false) }
 					child.element.as_node().dispatch_event(dom.Event.create('load', dom.EventInit{}))
 				})
 			}
