@@ -140,6 +140,75 @@ fn svg_use_test_document_with_nested_symbol(address string) !&Document {
 	return document
 }
 
+fn test_svg_use_reconnection_refreshes_a_target_changed_while_detached() {
+	for adopt_in_same_document in [false, true] {
+		mut document := svg_use_test_document_with_nested_symbol('https://example.test/image.svg')!
+		mut root_node := document.document_element()?.as_node()
+		mut target := document.get_element_by_id('leaf')?
+		mut use_element := svg_use_test_element(mut document, 'use')
+		use_element.set_attribute_value('href', '#leaf')
+		root_node.append_child(use_element.as_node())!
+		assert svg_use_test_instance(use_element)?.get_attribute_value('data-owner') == document.url.serialize()
+
+		if adopt_in_same_document {
+			document.adopt_node(use_element.as_node())
+		} else {
+			mut use_node := use_element.as_node()
+			use_node.remove(false)
+		}
+		assert !use_element.is_connected()
+		assert voidptr(use_element.document()) == voidptr(document)
+		target.set_attribute_value('data-owner', 'updated')
+		// The connected-document observer cannot refresh this detached instance.
+		assert svg_use_test_instance(use_element)?.get_attribute_value('data-owner') == document.url.serialize()
+		root_node.append_child(use_element.as_node())!
+		assert svg_use_test_instance(use_element)?.get_attribute_value('data-owner') == 'updated'
+		document.finalize()
+	}
+}
+
+fn test_svg_use_reconnection_clears_a_target_removed_while_detached() {
+	mut document := svg_use_test_document_with_nested_symbol('https://example.test/image.svg')!
+	defer { document.finalize() }
+	mut root_node := document.document_element()?.as_node()
+	mut use_element := svg_use_test_element(mut document, 'use')
+	use_element.set_attribute_value('href', '#leaf')
+	root_node.append_child(use_element.as_node())!
+	assert svg_use_test_instance(use_element) != none
+
+	mut use_node := use_element.as_node()
+	use_node.remove(false)
+	mut target_node := document.get_element_by_id('leaf')?.as_node()
+	target_node.remove(false)
+	assert svg_use_test_instance(use_element) != none
+	root_node.append_child(use_node)!
+	assert svg_use_test_instance(use_element) == none
+}
+
+fn test_svg_use_reconnection_resolves_a_target_replaced_while_detached() {
+	mut document := svg_use_test_document_with_nested_symbol('https://example.test/image.svg')!
+	defer { document.finalize() }
+	mut root_node := document.document_element()?.as_node()
+	mut use_element := svg_use_test_element(mut document, 'use')
+	use_element.set_attribute_value('href', '#leaf')
+	root_node.append_child(use_element.as_node())!
+	assert svg_use_test_instance(use_element)?.local_name() == 'rect'
+
+	mut use_node := use_element.as_node()
+	use_node.remove(false)
+	mut target_node := document.get_element_by_id('leaf')?.as_node()
+	target_node.remove(false)
+	mut replacement := svg_use_test_element(mut document, 'circle')
+	replacement.set_attribute_value('id', 'leaf')
+	replacement.set_attribute_value('data-owner', 'replacement')
+	root_node.append_child(replacement.as_node())!
+	assert svg_use_test_instance(use_element)?.local_name() == 'rect'
+	root_node.append_child(use_node)!
+	instance := svg_use_test_instance(use_element)?
+	assert instance.local_name() == 'circle'
+	assert instance.get_attribute_value('data-owner') == 'replacement'
+}
+
 fn test_svg_use_from_an_adopted_fragment_initializes_nested_instances_after_connection() {
 	mut old_document := Document.create(URL{ value: 'https://old.example/template' })
 	mut new_document := svg_use_test_document_with_nested_symbol('https://new.example/image.svg')!

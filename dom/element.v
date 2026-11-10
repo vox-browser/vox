@@ -7246,15 +7246,10 @@ fn (mut e Element) svg_use_inserted() {
 	if !e.is_connected() {
 		return
 	}
-	if shadow := e.shadow_root() {
-		if shadow.as_node().has_children() {
-			return
-		}
-	}
+	// Detached uses miss target changes observed by the document walk. Resolve
+	// again on every connection, clearing a retained clone if its target is gone.
 	// This includes an author's shadow tree and a cached external reference.
-	if target := e.svg_use_referenced_element() {
-		e.svg_use_clone_element_tree_as_our_shadow_tree(target)
-	}
+	e.svg_use_process_the_url()
 }
 
 fn svg_use_target_has_cycle(target &Element, mut visiting map[i64]bool) bool {
