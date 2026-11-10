@@ -145,6 +145,16 @@ PROPERTIES = {
         'requires-computation': 'never', 'valid-types': ['string'],
         'valid-identifiers': ['auto'],
     },
+    'hyphenate-limit-chars': {
+        'animation-type': 'by-computed-value', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'cascaded-value', 'max-values': 3,
+        'valid-types': ['integer'], 'valid-identifiers': ['auto'],
+    },
+    'hyphenate-limit-lines': {
+        'animation-type': 'by-computed-value', 'inherited': True, 'initial': 'no-limit',
+        'requires-computation': 'cascaded-value',
+        'valid-types': ['integer [0,∞]'], 'valid-identifiers': ['no-limit'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',
@@ -169,7 +179,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit']
 
 
 def extend_properties(properties):

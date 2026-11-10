@@ -2169,6 +2169,7 @@ pub enum Keyword {
 	painted
 	mixed
 	sideways
+	no_limit
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3099,6 +3100,7 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.visible_fill { 'visiblefill' }
 		.visible_stroke { 'visiblestroke' }
 		.painted { 'painted' }
+		.no_limit { 'no-limit' }
 	}
 }
 
@@ -3134,6 +3136,7 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'visiblefill' { return .visible_fill }
 	if name == 'visiblestroke' { return .visible_stroke }
 	if name == 'painted' { return .painted }
+	if name == 'no-limit' { return .no_limit }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false

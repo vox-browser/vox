@@ -1913,6 +1913,12 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		.hyphens {
 			return parse_property_keyword_value(mut tokens, ['none', 'manual', 'auto'])
 		}
+		.hyphenate_limit_lines {
+			return parser.parse_hyphenate_limit_lines_value(mut tokens)
+		}
+		.hyphenate_limit_chars {
+			return parser.parse_hyphenate_limit_chars_value(mut tokens)
+		}
 		.hyphenate_character {
 			return parser.parse_hyphenate_character_value(mut tokens)
 		}
