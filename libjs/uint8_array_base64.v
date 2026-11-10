@@ -27,6 +27,10 @@ fn parse_base64_last_chunk_handling(mut vm VM, options &Object) !Base64LastChunk
 }
 
 pub fn from_base64(mut vm VM, text Utf16String, alphabet Base64Alphabet, handling Base64LastChunkHandling, max_length ?uint) Uint8ArrayDecodeResult {
+	// With no output capacity, FromBase64 must not inspect the input.
+	if capacity := max_length {
+		if capacity == 0 { return Uint8ArrayDecodeResult{} }
+	}
 	units := text.as_slice()
 	capacity := max_length or { base64_decode_capacity(units) }
 	result := decode_base64_codec(units, capacity, alphabet, handling)
