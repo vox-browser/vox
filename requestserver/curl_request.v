@@ -140,7 +140,11 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
-	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	// Fetch authorizes credentials explicitly. curl must not synthesize an
+	// Authorization header from the URL regardless of the credentials mode.
+	transport_url := request.current_url().with_username('').with_password('')
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, transport_url.serialize().str), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_DISALLOW_USERNAME_IN_URL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_REDIR_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
 	// Match document navigation's process-local trust configuration. libcurl's
