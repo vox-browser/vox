@@ -5368,7 +5368,10 @@ pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
 
 pub fn (e &Element) matches_link_pseudo_class() bool {
 	name := e.local_name()
-	return ((e.is_html_element() && (name == 'a' || name == 'area')) || (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
+	is_mathml_anchor := name == 'a'
+		&& (e.namespace_uri() or { '' }) == 'http://www.w3.org/1998/Math/MathML'
+	return ((e.is_html_element() && (name == 'a' || name == 'area'))
+		|| (e.is_svg_element() && name == 'a') || is_mathml_anchor) && e.has_attribute('href')
 }
 
 // https://drafts.csswg.org/selectors/#visited-pseudo
