@@ -841,6 +841,10 @@ pub fn (binding &SubtleCryptoBinding) encapsulate_key(algorithm webidl.Value, ke
 		bits := MLKEM.create().encapsulate(AlgorithmParams{ name: normalized.name }, key)!
 		shared_bytes := bits.shared_key or { return error('OperationError: Encapsulation produced no shared key') }
 		mut shared_key := normalized_import(shared_params, .raw_secret, shared_bytes, extractable, copied_usages)!
+		if copied_usages.len == 0 {
+			shared_key.destroy()
+			return error('SyntaxError: usages must not be empty')
+		}
 		shared_key.set_extractable(extractable)
 		shared_key.set_usages(normalize_key_usages(copied_usages))
 		return webidl.object_value(encapsulated_key(realm, EncapsulatedKey{ shared_key: shared_key, ciphertext: bits.ciphertext }))
@@ -866,6 +870,10 @@ pub fn (binding &SubtleCryptoBinding) decapsulate_key(algorithm webidl.Value, ke
 		binding_validate_key(key, normalized.name, .decapsulate_key)!
 		shared_bytes := MLKEM.create().decapsulate(AlgorithmParams{ name: normalized.name }, key, bytes)!
 		mut shared_key := normalized_import(shared_params, .raw_secret, shared_bytes, extractable, copied_usages)!
+		if copied_usages.len == 0 {
+			shared_key.destroy()
+			return error('SyntaxError: usages must not be empty')
+		}
 		shared_key.set_extractable(extractable)
 		shared_key.set_usages(normalize_key_usages(copied_usages))
 		return crypto_key(realm, shared_key)
