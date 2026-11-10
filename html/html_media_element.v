@@ -2532,7 +2532,11 @@ pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
 pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingStatus) {
 	match status {
 		.complete {
+			generation := element.fetch_generation_
 			element.fire_event('progress')
+			// A progress listener can start a new load synchronously. Do not
+			// finish that replacement load or emit the old load's suspend event.
+			if generation != element.fetch_generation_ { return }
 			element.network_state_ = .idle
 			element.fire_event('suspend')
 			element.update_ready_state()
