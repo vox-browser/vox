@@ -6,6 +6,7 @@ import css
 import dom
 import fetch
 import html
+import http
 import requestserver
 import xhr
 import x.json2
@@ -222,7 +223,12 @@ fn (mut host XMLHttpRequestHost) call(input string, runtime &Runtime) !string {
 	match method {
 		'listen' { host.bind_listener(record, runtime, key, upload, object)! }
 		'open' { request.open(canvas_host_string(args[0]), canvas_host_string(args[1]), canvas_host_bool(args[2]), xhr_host_optional_string(args[3]), xhr_host_optional_string(args[4]))! }
-		'setRequestHeader' { request.set_request_header(canvas_host_string(args[0]), canvas_host_string(args[1]))! }
+		'setRequestHeader' {
+			// JSON carries the WebIDL ByteString bytes as Unicode code points.
+			// Restore those bytes at the bridge before the typed XHR validates them.
+			header := http.Header.isomorphic_encode_utf8(canvas_host_string(args[0]), canvas_host_string(args[1]))
+			request.set_request_header(header.name, header.value)!
+		}
 		'send' {
 			if document_input := object['document'] {
 				document_key := canvas_host_string(document_input)
