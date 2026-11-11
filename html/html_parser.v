@@ -1730,13 +1730,35 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 			last_node = node
 		}
 
-		// 14. Insert lastNode at the appropriate place with commonAncestor as override target.
+		// 14. Find the adjusted insertion location with commonAncestor as the override target.
 		adjusted_location := p.find_appropriate_place_for_inserting_node_with_override(common_ancestor)
 		mut adjusted_parent := adjusted_location.parent or { return .do_nothing }
-		record_parser_insertion_location(adjusted_location)
-		adjusted_parent.insert_before(last_node.as_node(), adjusted_location.insert_before_sibling, false)
+		mut last_node_to_insert := last_node.as_node()
+		// 15. Remove lastNode from its old parent before checking reinsertion validity.
+		if last_node_to_insert.parent() != none {
+			last_node_to_insert.remove(false)
+		}
+		// 16. Script may have changed either node during parsing. Drop invalid moves.
+		target_accepts_element := if document := adjusted_parent.as_document() {
+			document.document_element() == none
+		} else {
+			true
+		}
+		reference_is_child := if reference := adjusted_location.insert_before_sibling {
+			if parent := reference.parent() { same_node(parent, adjusted_parent) } else { false }
+		} else {
+			true
+		}
+		if last_node_to_insert.parent() == none
+			&& !last_node_to_insert.is_host_including_inclusive_ancestor_of(adjusted_parent)
+			&& target_accepts_element && reference_is_child {
+			adjusted_parent.ensure_pre_insertion_validity(unsafe { nil }, last_node_to_insert,
+				adjusted_location.insert_before_sibling) or { panic(err) }
+			record_parser_insertion_location(adjusted_location)
+			adjusted_parent.insert_before(last_node_to_insert, adjusted_location.insert_before_sibling, false)
+		}
 
-		// 15. Create a new element for formattingElement's token, with furthestBlock as intended parent.
+		// 17. Create a new element for formattingElement's token, with furthestBlock as intended parent.
 		formatting_element_index := p.list_of_active_formatting_elements.find_index(formatting_element) or {
 			return .do_nothing
 		}
@@ -1745,7 +1767,7 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 		token_data := p.list_of_active_formatting_elements.parser_owned_token(fe_token)
 		new_element := p.create_element_for(token_data, ns_html, furthest_block.as_node())
 
-		// 16. Move furthestBlock's children into the new element.
+		// 18. Move furthestBlock's children into the new element.
 		mut fb_node := furthest_block.as_node()
 		mut new_element_node := new_element.as_node()
 		for child in fb_node.children_as_vector() {
@@ -1753,17 +1775,17 @@ fn (mut p HTMLParser) run_the_adoption_agency_algorithm(token &HTMLToken) Adopti
 			new_element_node.append_child(removed) or {}
 		}
 
-		// 17. Append the new element to furthestBlock.
+		// 19. Append the new element to furthestBlock.
 		fb_node.append_child(new_element.as_node()) or {}
 
-		// 18. Remove formattingElement from AFE, insert new element at bookmark.
+		// 20. Remove formattingElement from AFE, insert new element at bookmark.
 		if formatting_element_index < bookmark {
 			bookmark--
 		}
 		p.list_of_active_formatting_elements.remove(formatting_element)
 		p.list_of_active_formatting_elements.insert_at(bookmark, new_element, token_data)
 
-		// 19. Remove formattingElement from the stack, insert new element below furthestBlock.
+		// 21. Remove formattingElement from the stack, insert new element below furthestBlock.
 		p.stack_of_open_elements.remove(formatting_element)
 		p.stack_of_open_elements.insert_immediately_below(new_element, furthest_block)
 	}
