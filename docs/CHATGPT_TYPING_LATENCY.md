@@ -92,12 +92,38 @@ feature disabled as well; that fixture problem predates this change.
 Layout-module `_test.v` files currently exhaust the 10 GiB compiler limit
 even at an unmodified checkout, so the focused tests live in `browserapp/`.
 
+## Layer leaf deferral in reused frames (`889e8d552`)
+
+Each keystroke frame reuses the previous viewport pixels and repaints one
+damage rectangle (96 of 109 paint commands skipped). The composer is a
+compositor layer whose picture is published within the command replay, yet
+its border and shadows were also rasterized immediately as leaves, because
+frames stored for scroll reuse disabled deferral to protect speculative root
+pictures that publish after the store. Those frames now defer leaves into
+non-speculative compositor-layer pictures only. On ChatGPT the border and two
+of the three shadows defer; the third shadow's blur extends beyond the layer's
+publication bounds and stays immediate.
+`VOX_DISABLE_REUSED_FRAME_LAYER_DEFERRAL=1` restores the previous behavior.
+
+A fixed-composer fixture's final frame is byte-identical between the new
+mode, the control and complete repaints. Live ChatGPT, same private `-prod`
+bundle, three alternating pairs (switch on → off):
+
+| Pair | Instructions/key | `present` median |
+| --- | --- | --- |
+| 1 | 319.1 M → 288.4 M | 71.2 → 63.4 ms |
+| 2 | 327.0 M → 308.3 M | 73.7 → 55.9 ms |
+| 3 | 326.0 M → 295.7 M | 50.0 → 48.9 ms |
+
+Host load averages were 27–32.
+
 ## Remaining work
 
-- **Frame drawing** is now the largest per-keystroke cost: the composer's
-  corner-shape box and CSS effect layer re-record a picture every frame,
-  serialize it with embedded font bytes, create a new IOSurface/Metal texture
-  and wait for a synchronous GPU readback.
+- **Frame drawing** remains the largest per-keystroke cost: the composer
+  layer's picture is serialized with embedded font bytes and re-rasterized as
+  GPU tiles with a synchronous readback every frame, and its outermost shadow
+  still rasterizes as an immediate leaf. The script-commit relayout's style
+  pass and SVG icon paths follow.
 - **Cosmetic-filter refresh per script commit.** The light-DOM id/class token
   stamp is scoped to GitHub; other sites re-survey on any attribute change and
   query the filter worker every commit even when the tokens are unchanged.
