@@ -2593,6 +2593,9 @@ pub fn (mut element HTMLMediaElement) handle_media_source_failure(promises []&do
 		code: .src_not_supported
 		message: message
 	}
+	// Close the source before dropping the playback state it still references.
+	// Resource-fetch failures may detach even though they end at NO_SOURCE.
+	element.detach_attached_media_source()
 	element.forget_media_resource_specific_tracks()
 	element.network_state_ = .no_source
 	element.set_show_poster(true)
