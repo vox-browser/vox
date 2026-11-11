@@ -117,18 +117,40 @@ bundle, three alternating pairs (switch on → off):
 
 Host load averages were 27–32.
 
+## Layer typefaces and shadow deferral (`3e4d96329`, `54727569c`)
+
+Each keystroke republishes the composer layer's picture. Its serialization
+embedded the complete system font file, which the GPU decoder compared again
+byte by byte. Layer publications now lease fonts by 16-byte token through a
+typefaces-only `SharedPicturePixelsScope`; image encoding is unchanged
+(`VOX_DISABLE_SHARED_LAYER_TYPEFACES=1` restores embedded fonts). Same-binary
+ChatGPT pairs: 324–339 M → 304–310 M instructions per keystroke (3/3).
+
+The composer's outer shadow still rasterized immediately with its own GPU
+readback, because its fallback-bitmap blur margin did not fit the layer's
+publication bounds. The picture records the shadow's three-sigma blur extent,
+beyond which the mask blur paints nothing; shadows now defer when that extent
+fits (`VOX_DEFER_CONTOURED_SHADOWS_BY_FALLBACK_MARGIN=1` restores the old
+test). Same-binary pairs: next frame publication medians 26.7/26.3/26.3 →
+21.9/21.8/21.5 ms. Native tests rasterize leased/embedded pictures and
+deferred/immediate wide and overflowing shadows with identical pixels; the
+fixed-composer fixture's final frame is byte-identical across the new path,
+the control and complete repaints. On a quiet host a keystroke now takes
+about 5–7 ms to handle and 20–22 ms to the next frame publication.
+
 ## Remaining work
 
-- **Frame drawing** remains the largest per-keystroke cost: the composer
-  layer's picture is serialized with embedded font bytes and re-rasterized as
-  GPU tiles with a synchronous readback every frame, and its outermost shadow
-  still rasterizes as an immediate leaf. The script-commit relayout's style
-  pass and SVG icon paths follow.
-- **Cosmetic-filter refresh per script commit.** The light-DOM id/class token
-  stamp is scoped to GitHub; other sites re-survey on any attribute change and
-  query the filter worker every commit even when the tokens are unchanged.
-- The fast path covers text controls only. Other edits still lay out every
-  uncached ancestor; a general size-unchanged relayout boundary in the
-  retained block/grid caches would extend it.
+A 10 s main-thread sample now spends about half its time idle. The rest:
+
+- **Layer picture raster** (~25% of frame time): the composer layer is
+  re-rasterized as GPU tiles with a synchronous readback every keystroke.
+- **Script-commit shell relayout**: cosmetic-filter token survey and worker
+  query, cookie-banner walk, and the pending style flush. The light-DOM
+  id/class token stamp is still scoped to GitHub.
+- **Rendering-update style**: per-keystroke style recomputation plus sampling
+  of the page's running CSS animations.
+- **Paint-tree projection** rebuilt after each fast text-control relayout.
+- **Full-window bitmap copy** (`CGBitmapContextCreateImage`) and the tab
+  session poll, which locks and rewrites `state.json` on every frame.
 - Vox ignores `field-sizing` in layout; textarea growth here comes from its
   content-derived automatic height, not from the property.
