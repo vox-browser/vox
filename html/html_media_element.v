@@ -1778,6 +1778,9 @@ pub fn (element &HTMLMediaElement) current_playback_position() f64 {
 pub fn (mut element HTMLMediaElement) set_official_playback_position(position f64) {
 	element.official_playback_position_ = position
 	element.official_playback_position_task_generation_ = main_thread_event_loop().task_generation()
+	// Keep synchronous currentTime and ended reads in agreement after a seek
+	// or load, without waiting for the next event-loop step-1 boundary.
+	element.update_ended_attribute()
 }
 
 pub fn (mut element HTMLMediaElement) set_current_time(value f64) {
@@ -2269,8 +2272,17 @@ pub fn (mut element HTMLMediaElement) upon_has_ended_playback_possibly_changed()
 	run_when_event_loop_reaches_step_1(fn [element_pointer] () {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		// The cached attribute reflects the live owner at the last step-1 boundary.
-		media.set_ended(media.has_ended_playback() && media.direction_of_playback() == .forwards)
+		media.update_ended_attribute()
 	})
+}
+
+pub fn (mut element HTMLMediaElement) update_ended_attribute() {
+	// Resource teardown releases the manager before readyState is reset.
+	if !element.playback_manager_ready_ {
+		element.set_ended(false)
+		return
+	}
+	element.set_ended(element.has_ended_playback() && element.direction_of_playback() == .forwards)
 }
 
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
