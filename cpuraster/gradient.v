@@ -908,6 +908,66 @@ fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 	return c
 }
 
+// shade_lowp() for count <= 64 pixels of a linear gradient from (x, y),
+// four lanes per pixel into colors: the same stages, with the matrix type
+// selected once and the coordinates computed before the fill.
+@[direct_array_access]
+fn (g &GradientShader) shade_lowp_linear_span(x int, y int, count int, mut colors [256]u32) {
+	m := g.matrix
+	mask := m.type_mask()
+	sy := f32(y) + f32(0.5)
+	mut ts := [64]f32{}
+	if mask == 0 {
+		for i in 0 .. count {
+			ts[i] = f32(x + i) + f32(0.5)
+		}
+	} else if mask == affine_translate_mask {
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			ts[i] = sx + m.tx
+		}
+	} else if mask & affine_affine_mask == 0 {
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			xs := sx * m.sx
+			ts[i] = m.tx + xs
+		}
+	} else {
+		yk := sy * m.kx
+		inner_x := m.tx + yk
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			xs := sx * m.sx
+			ts[i] = inner_x + xs
+		}
+	}
+	if g.clamp {
+		for i in 0 .. count {
+			ts[i] = lowp_fmin(lowp_fmax(0, ts[i]), 1)
+		}
+	}
+	for i in 0 .. count {
+		t := ts[i]
+		idx := g.fill.index(t)
+		mut c := [4]u32{}
+		for k in 0 .. 4 {
+			scaled := t * g.fill.factors[k][idx]
+			v := g.fill.biases[k][idx] + scaled
+			clamped := if k == 3 { v } else { lowp_fmin(lowp_fmax(0, v), 1) }
+			times := clamped * f32(255)
+			c[k] = f32_to_u16(times + f32(0.5))
+		}
+		if g.premul {
+			for k in 0 .. 3 {
+				c[k] = lowp_div255(u16w(c[k] * c[3]))
+			}
+		}
+		for k in 0 .. 4 {
+			colors[i * 4 + k] = c[k]
+		}
+	}
+}
+
 // cast<U16>(float) on arm64: fcvtzu saturates and maps NaN to 0, then the
 // 16-bit narrowing keeps the low bits.
 @[inline]

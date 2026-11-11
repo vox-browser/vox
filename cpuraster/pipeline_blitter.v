@@ -604,23 +604,42 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 @[direct_array_access]
 fn (mut b PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset int) {
 	shader := b.shader
+	if shader.geometry == .linear {
+		mut colors := [256]u32{}
+		mut done := 0
+		for done < count {
+			n := if count - done < 64 { count - done } else { 64 }
+			shader.shade_lowp_linear_span(x + done, y, n, mut colors)
+			for i in 0 .. n {
+				b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+					colors[i * 4 + 2], colors[i * 4 + 3])
+			}
+			done += n
+		}
+		return
+	}
 	for i in 0 .. count {
 		src := shader.shade_lowp(x + i, y)
-		r := lowp_min(src[0], 255)
-		g := lowp_min(src[1], 255)
-		bl := lowp_min(src[2], 255)
-		a := lowp_min(src[3], 255)
-		o := offset + i * 4
-		inv_a := lowp_inv(a)
-		nr := u16w(r + lowp_div255(u16w(u32(b.pixels[o]) * inv_a)))
-		ng := u16w(g + lowp_div255(u16w(u32(b.pixels[o + 1]) * inv_a)))
-		nb := u16w(bl + lowp_div255(u16w(u32(b.pixels[o + 2]) * inv_a)))
-		na := u16w(a + lowp_div255(u16w(u32(b.pixels[o + 3]) * inv_a)))
-		b.pixels[o] = u8(lowp_min(nr, 255))
-		b.pixels[o + 1] = u8(lowp_min(ng, 255))
-		b.pixels[o + 2] = u8(lowp_min(nb, 255))
-		b.pixels[o + 3] = u8(lowp_min(na, 255))
+		b.blend_lowp_over(offset + i * 4, src[0], src[1], src[2], src[3])
 	}
+}
+
+// clamp_01, srcover and store_8888 of one lowp color at offset o.
+@[direct_array_access; inline]
+fn (mut b PipelineBlitter) blend_lowp_over(o int, sr u32, sg u32, sb u32, sa u32) {
+	r := lowp_min(sr, 255)
+	g := lowp_min(sg, 255)
+	bl := lowp_min(sb, 255)
+	a := lowp_min(sa, 255)
+	inv_a := lowp_inv(a)
+	nr := u16w(r + lowp_div255(u16w(u32(b.pixels[o]) * inv_a)))
+	ng := u16w(g + lowp_div255(u16w(u32(b.pixels[o + 1]) * inv_a)))
+	nb := u16w(bl + lowp_div255(u16w(u32(b.pixels[o + 2]) * inv_a)))
+	na := u16w(a + lowp_div255(u16w(u32(b.pixels[o + 3]) * inv_a)))
+	b.pixels[o] = u8(lowp_min(nr, 255))
+	b.pixels[o + 1] = u8(lowp_min(ng, 255))
+	b.pixels[o + 2] = u8(lowp_min(nb, 255))
+	b.pixels[o + 3] = u8(lowp_min(na, 255))
 }
 
 @[direct_array_access]
