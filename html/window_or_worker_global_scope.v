@@ -840,7 +840,12 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_resource_timing_entry(entr
 	}
 	if !scope.resource_timing_full_pending_ {
 		scope.resource_timing_full_pending_ = true
-		queue_a_task(.performance_timeline, scope.responsible_event_loop(), none, fn [mut scope] () {
+		// Associate the task with the window's document, as the observer task
+		// does, so it is discarded with a destroyed document instead of running
+		// on a global scope whose document storage has been released.
+		mut document := ?&dom.Document(none)
+		if window := scope.associated_window_ { document = window.associated_document() }
+		queue_a_task(.performance_timeline, scope.responsible_event_loop(), document, fn [mut scope] () {
 			scope.fire_resource_timing_buffer_full_event()
 		})
 	}
