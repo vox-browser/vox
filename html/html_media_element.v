@@ -2619,13 +2619,20 @@ pub fn (mut element HTMLMediaElement) forget_media_resource_specific_tracks() {
 }
 
 pub fn (mut element HTMLMediaElement) on_playback_manager_state_change(buffering bool) {
+	// Publish readiness before the seeking/ended events this transition queues,
+	// while keeping durationchange and loadedmetadata ahead of that publication.
+	element.playback_has_future_data_ = !buffering
+	element_pointer := voidptr(&element)
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if int(media.ready_state_) >= int(MediaReadyState.have_metadata) {
+			media.update_ready_state()
+		}
+	})
 	if element.seeking_ && !buffering {
 		element.finish_seeking_element()
 	}
-	element.playback_has_future_data_ = !buffering
-	if int(element.ready_state_) >= int(MediaReadyState.have_metadata) {
-		element.update_ready_state()
-	}
+	element.upon_has_ended_playback_possibly_changed()
 }
 
 pub fn (mut element HTMLMediaElement) add_text_track(kind TextTrackKind, label string, language string) &TextTrack {
