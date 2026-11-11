@@ -881,7 +881,8 @@ fn run_document_layout_with_current_style(document &dom.Document, viewport_width
 		}
 	}
 	timing_checkpoint = layout_timing_checkpoint('    build_tree_total', timing_checkpoint)
-	return finish_document_layout(document, root, viewport_width, viewport_height, timing_checkpoint)
+	return finish_document_layout_with_reuse(document, root, viewport_width, viewport_height,
+		timing_checkpoint, !needs_layout_tree_rebuild)
 }
 
 struct SizeQueryContainerGeometry {
@@ -950,36 +951,12 @@ fn invalidate_size_queries_after_geometry_commit(previous map[u64]SizeQueryConta
 	}
 }
 
-fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
-	load_instruction_stage := processmetrics.begin_instruction_stage('layout_geometry')
-	defer { load_instruction_stage.finish() }
-	mut timing_checkpoint := initial_checkpoint
-	viewport := root.as_viewport() or { return none }
-	// Restore current propagation facts on retained trees as well as new trees.
-	if root_element := viewport_document_element_box(root) {
-		mut mutable_viewport := unsafe { &Node(root) }
-		propagate_root_styles_to_viewport(root_element, mut mutable_viewport)
-	}
-	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
-	// text before geometry consumes the replaced element's natural dimensions.
-	root.for_each_in_inclusive_subtree(fn (node &Node) dom.TraversalDecision {
-		if image_box := node.as_image_box() {
-			mut mutable_image_box := unsafe { &ImageBox(image_box) }
-			mutable_image_box.reset_for_relayout()
-		}
-		return .@continue
-	})
-	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
-	// is created. Install the opaque bridge before layout as well, so algorithms
-	// which run during layout (notably list-item ordinal resolution) observe the
-	// same complete layout tree. Geometry is refreshed after layout below.
-	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
-	prepared_attachment := prepare_dom_layout_attachment(root)
-	initial_root_placeholder := prepared_attachment.root
-	mut mutable_document := unsafe { &dom.Document(document) }
-	mutable_document.set_layout_viewport(&dom.LayoutViewport{
-		root_node: initial_root_placeholder
-	})
+// The complete geometry of one document pass: formatting contexts, absolute
+// and relative positioning, and scrollable overflow.
+fn run_document_geometry(document &dom.Document, root &Node, viewport &Viewport, viewport_width f64,
+	viewport_height f64, started u64) (&LayoutState, u64) {
+	geometry_started := started
+	mut timing_checkpoint := started
 	mut state := LayoutState.new()
 	mut previous_backoff := unsafe { &RetainedBlockBackoffTable(nil) }
 	if previous := document_layout_result(document) {
@@ -997,7 +974,6 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	}
 	defer { state.release_measurement_chunk_pool() }
 	mut geometry_scratch := begin_document_geometry_scratch(document)
-	geometry_started := timing_checkpoint
 	layout_viewport(mut state, viewport, viewport_width * document.layout_coordinate_scale(),
 		viewport_height * document.layout_coordinate_scale())
 	timing_checkpoint = layout_timing_checkpoint('      formatting_contexts', timing_checkpoint)
@@ -1026,6 +1002,61 @@ fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64
 	if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
 		eprintln('Ladybird V timing:     geometry ${(timing_checkpoint - geometry_started) / 1_000_000} ms')
 	}
+	return state, timing_checkpoint
+}
+
+fn finish_document_layout(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64) ?DocumentLayoutResult {
+	return finish_document_layout_with_reuse(document, root, viewport_width, viewport_height,
+		initial_checkpoint, false)
+}
+
+// `same_tree`: the layout tree was not rebuilt since the previous pass, so
+// every change since then was reported through Node.set_needs_layout_update().
+fn finish_document_layout_with_reuse(document &dom.Document, root &Node, viewport_width f64, viewport_height f64, initial_checkpoint u64, same_tree bool) ?DocumentLayoutResult {
+	load_instruction_stage := processmetrics.begin_instruction_stage('layout_geometry')
+	defer { load_instruction_stage.finish() }
+	mut timing_checkpoint := initial_checkpoint
+	viewport := root.as_viewport() or { return none }
+	// Restore current propagation facts on retained trees as well as new trees.
+	if root_element := viewport_document_element_box(root) {
+		mut mutable_viewport := unsafe { &Node(root) }
+		propagate_root_styles_to_viewport(root_element, mut mutable_viewport)
+	}
+	// ImagePaintable::reset_for_relayout() refreshes image availability and alt
+	// text before geometry consumes the replaced element's natural dimensions.
+	replaced_signature := reset_images_and_sign_replaced_sizes(root, u64(0xcbf29ce484222325))
+	pass := committed_layout_pass(document, viewport_width, viewport_height, replaced_signature)
+	// TreeBuilder upstream associates each DOM node with its Layout::Node as it
+	// is created. Install the opaque bridge before layout as well, so algorithms
+	// which run during layout (notably list-item ordinal resolution) observe the
+	// same complete layout tree. Geometry is refreshed after layout below.
+	previous_query_container_geometry := snapshot_size_query_container_geometry(root)
+	prepared_attachment := prepare_dom_layout_attachment(root)
+	initial_root_placeholder := prepared_attachment.root
+	mut mutable_document := unsafe { &dom.Document(document) }
+	mutable_document.set_layout_viewport(&dom.LayoutViewport{
+		root_node: initial_root_placeholder
+	})
+	mut state := unsafe { &LayoutState(nil) }
+	mut previous_state := unsafe { &LayoutState(nil) }
+	if previous := document_layout_result(document) {
+		if same_tree && voidptr(previous.root) == voidptr(root) { previous_state = previous.state }
+	}
+	if previous_state != unsafe { nil } {
+		if relaid := relayout_dirty_text_controls(document, root, previous_state, pass) {
+			state = relaid
+			if verify_text_control_relayout {
+				full, _ := run_document_geometry(document, root, viewport, viewport_width,
+					viewport_height, timing_checkpoint)
+				verify_text_control_geometry(state, full)
+			}
+		}
+	}
+	if state == unsafe { nil } {
+		state, timing_checkpoint = run_document_geometry(document, root, viewport, viewport_width,
+			viewport_height, timing_checkpoint)
+	}
+	state.committed_pass_ = pass
 	root_placeholder := commit_dom_layout_attachment(root, state, prepared_attachment)
 	mutable_document.set_layout_viewport(&dom.LayoutViewport{
 		root_node: root_placeholder

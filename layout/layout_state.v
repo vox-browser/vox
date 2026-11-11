@@ -1409,6 +1409,13 @@ mut:
 	previous_inline_layouts_ map[u64]&RetainedInlineLayout
 	paint_coordinates_ &PaintCoordinateSession = unsafe { nil }
 	measurement_scratch_ MeasurementScratchScope
+	// Text-control relayout (text_control_relayout.v): the final inner layout
+	// of each text control, this committed pass's inputs, and the invalidations
+	// recorded against it until the next pass.
+	text_control_layouts_ map[u32]TextControlInnerLayout
+	committed_pass_ CommittedLayoutPass
+	dirty_text_controls_ []&Node
+	general_layout_invalidation_ bool
 }
 
 pub fn LayoutState.new() &LayoutState {

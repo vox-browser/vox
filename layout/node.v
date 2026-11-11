@@ -286,6 +286,7 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 		n.needs_layout_update_ = false
 		return
 	}
+	note_layout_invalidation_origin(n)
 	if n.needs_layout_update_ {
 		return
 	}
