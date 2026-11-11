@@ -209,6 +209,7 @@ mut:
 	// The initial resource selection can run before load_element().
 	first_data_load_event_since_load_start_ bool = true
 	seeking_                    bool
+	prevent_next_loop_while_paused_ bool
 	current_playback_position_  f64
 	official_playback_position_ f64
 	official_playback_position_task_generation_ u64
@@ -1802,7 +1803,14 @@ pub fn (mut element HTMLMediaElement) fast_seek(value f64) {
 	element.seek_element(value, .approximate_for_speed)
 }
 
+pub fn (mut element HTMLMediaElement) seek_from_media_controls(value f64) {
+	element.set_current_time(value)
+	// Keep a paused scrub at the endpoint without changing the loop attribute.
+	element.prevent_next_loop_while_paused_ = true
+}
+
 pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode) {
+	element.prevent_next_loop_while_paused_ = false
 	element.set_show_poster(false)
 	if element.ready_state_ == .have_nothing {
 		return
@@ -1991,9 +1999,6 @@ pub fn (mut element HTMLMediaElement) play_element() {
 			})
 		} else {
 			element.notify_about_playing()
-			if !element.seeking_ && element.official_playback_position_ == element.duration_ {
-				element.reached_end_of_media_playback()
-			}
 		}
 	} else if int(element.ready_state_) >= int(MediaReadyState.have_future_data) {
 		promises := element.take_pending_play_promises()
@@ -2301,9 +2306,11 @@ pub fn (mut element HTMLMediaElement) update_ended_attribute() {
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 	element.upon_has_ended_playback_possibly_changed()
 	if element.loop() {
-		if !element.paused_ {
-			element.seek_element(0, .accurate)
+		if element.prevent_next_loop_while_paused_ {
+			if element.paused_ { return }
+			element.prevent_next_loop_while_paused_ = false
 		}
+		element.seek_element(0, .accurate)
 		return
 	}
 	element_pointer := voidptr(&element)
