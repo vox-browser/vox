@@ -470,9 +470,43 @@ fn (mut host ModuleHost) consume_script(mut operation BrowserModuleOperation, sc
 }
 
 fn (mut host ModuleHost) fail_load(operation &BrowserModuleOperation, message string) {
+	if operation.preload {
+		// A failed preload leaves the module map empty, as if it never ran:
+		// the imports that joined it fetch the module themselves.
+		mut waiters := host.in_flight[operation.key] or { return }
+		host.in_flight.delete(operation.key)
+		if waiters.len == 0 { return }
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
+		host.in_flight[operation.key] = waiters
+		mut first := waiters[0]
+		host.fetch_module(mut first)
+		return
+	}
 	mut waiters := host.in_flight[operation.key] or { [operation] }
 	host.in_flight.delete(operation.key)
 	for mut waiting in waiters { host.reject(mut waiting, message) }
+}
+
+// https://html.spec.whatwg.org/multipage/links.html#link-type-modulepreload
+// JavaScriptCore requests an import only after parsing its importer, so a
+// page's preloaded chunks would otherwise arrive one import level at a time.
+// The preload fills the module map; an import that arrives while it is in
+// flight joins it instead of starting a second fetch.
+pub fn (mut host ModuleHost) preload(key string, options html.ScriptFetchOptions) {
+	if host.closed || host.runtime == unsafe { nil } || key in host.in_flight { return }
+	if host.settings.module_map().get(dom.URL{ value: key }, 'javascript-or-wasm') != none { return }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	mut operation := &BrowserModuleOperation{
+		key:      key
+		source:   BrowserModuleSource{ base: key, options: options }
+		preload:  true
+		finished: true
+	}
+	host.operations << operation
+	host.in_flight[key] = []&BrowserModuleOperation{}
+	host.fetch_module(mut operation)
 }
 
 fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
@@ -498,6 +532,13 @@ fn (mut host ModuleHost) load(key string, resolve voidptr, reject voidptr) ! {
 		return
 	}
 	host.in_flight[key] = [operation]
+	host.fetch_module(mut operation)
+}
+
+fn (mut host ModuleHost) fetch_module(mut operation BrowserModuleOperation) {
+	mut runtime := unsafe { &Runtime(host.runtime) }
+	key := operation.key
+	entry := operation.source
 	url := dom.URL{ value: key }
 	owner := voidptr(host)
 	op := voidptr(operation)

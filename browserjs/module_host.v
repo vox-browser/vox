@@ -20,6 +20,9 @@ struct BrowserModuleOperation {
 	source  BrowserModuleSource
 	resolve voidptr
 	reject  voidptr
+	// A modulepreload fetch: it fills the module map and hands its result to
+	// the imports that joined it, but has no JavaScript promise of its own.
+	preload bool
 mut:
 	controller ?&fetch.FetchController
 	finished   bool
