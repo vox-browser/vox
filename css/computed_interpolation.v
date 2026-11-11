@@ -12316,7 +12316,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	// The root element establishes the root font metrics used by rem/rlh for every
 	// subsequently computed descendant. This is the mutable update performed by
 	// StyleComputer::compute_properties() after its longhand computation loop.
-	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element() && abstract_element.element().local_name().to_lower() == 'html' {
+	if abstract_element.pseudo_element() == none && abstract_element.element().is_document_element() {
 		mut mutable_computer := unsafe { &StyleComputer(s) }
 		mutable_computer.root_element_font_metrics = s.calculate_root_element_font_metrics(properties)
 		mutable_computer.root_element_font_metrics_depend_on_viewport_metrics = properties.font_metrics_depend_on_viewport_metrics()
@@ -16318,6 +16318,11 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 		context.length_resolution_context.subject_inline_axis_is_horizontal = computed_properties.writing_mode() == .horizontal_tb
 		return context
 	}
+	is_document_element := if current := abstract_element {
+		current.pseudo_element() == none && current.element().is_document_element()
+	} else {
+		false
+	}
 	mut font_metrics := computed_interpolation_font_metrics_for_style(computed_properties, s.font_computer_)
 	mut root_font_metrics := s.root_element_font_metrics
 	if property_id == .line_height {
@@ -16333,21 +16338,14 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 				}
 			}
 		}
-		if root := s.document_.document_element() {
-			if current := abstract_element {
-				if voidptr(current.element()) == voidptr(root) {
-					root_font_metrics = font_metrics
-				}
-			}
+		if is_document_element {
+			root_font_metrics = font_metrics
 		}
 	} else {
 		font_metrics.line_height = computed_properties.line_height()
-		if root := s.document_.document_element() {
-			if current := abstract_element {
-				if voidptr(current.element()) == voidptr(root) {
-					root_font_metrics = font_metrics
-				}
-			}
+		if is_document_element {
+			root_font_metrics = font_metrics
+		} else if root := s.document_.document_element() {
 			root_abstract := dom.AbstractElement.new(root, none)
 			if root_dom_computed := root_abstract.computed_properties() {
 				if root_computed := computed_properties_from_dom(root_dom_computed) {
@@ -16362,16 +16360,8 @@ pub fn (s &StyleComputer) get_computation_context_for_property(property_id Prope
 			font_metrics: font_metrics
 			root_font_metrics: root_font_metrics
 			font_metrics_depend_on_viewport_metrics: computed_properties.font_metrics_depend_on_viewport_metrics()
-			root_font_metrics_depend_on_viewport_metrics: if root := s.document_.document_element() {
-				if current := abstract_element {
-					if voidptr(current.element()) == voidptr(root) {
-						computed_properties.font_metrics_depend_on_viewport_metrics()
-					} else {
-						s.root_element_font_metrics_depend_on_viewport_metrics
-					}
-				} else {
-					s.root_element_font_metrics_depend_on_viewport_metrics
-				}
+			root_font_metrics_depend_on_viewport_metrics: if is_document_element {
+				computed_properties.font_metrics_depend_on_viewport_metrics()
 			} else {
 				s.root_element_font_metrics_depend_on_viewport_metrics
 			}
