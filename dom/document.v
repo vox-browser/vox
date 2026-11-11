@@ -635,6 +635,7 @@ pub struct HTMLDetailsElement {
 pub mut:
 	details_toggle_task_id_   u64
 	details_toggle_old_state_ string
+	default_summary_          ?&HTMLSummaryElement
 	summary_slot_             ?&HTMLSlotElement
 	descendants_slot_         ?&HTMLSlotElement
 }

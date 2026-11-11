@@ -3796,18 +3796,8 @@ pub fn (e &Element) default_tab_index_value() int {
 		if e.local_name() in ['a', 'area', 'button', 'frame', 'iframe', 'input', 'object', 'select', 'textarea'] {
 			return 0
 		}
-		if e.local_name() == 'summary' {
-			if parent := e.as_node().parent_element() {
-				if is_html_element_with_local_name(parent, 'details') {
-					for child in parent.as_node().children_as_vector() {
-						if element := child.as_element() {
-							if is_html_element_with_local_name(element, 'summary') {
-								return if voidptr(element) == voidptr(e) { 0 } else { -1 }
-							}
-						}
-					}
-				}
-			}
+		if e.local_name() == 'summary' && html_summary_element_is_summary_for_its_parent_details(e) {
+			return 0
 		}
 	} else if e.local_name() == 'a' && (e.namespace_uri() or { '' }) in [namespace_svg_uri,
 		'http://www.w3.org/1998/Math/MathML'] {
