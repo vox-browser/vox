@@ -5,6 +5,7 @@ module dom
 pub struct LayoutNodeCallbacks {
 pub:
 	generated_content_text_callback fn (voidptr) ?string = unsafe { nil }
+	first_letter_owner_callback fn (voidptr) ?&Element = unsafe { nil }
 	find_matching_text_callback            fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
 	inline_word_range_callback             fn (voidptr, int) ?&Range = unsafe { nil }
 	apply_style_callback                   LayoutApplyStyleCallback                       = unsafe { nil }
@@ -73,4 +74,12 @@ pub fn (mut node LayoutNode) set_box_model(model LayoutBoxModel) {
 	}
 	if node.box_model_ != unsafe { nil } && *node.box_model_ == model { return }
 	node.box_model_ = &LayoutBoxModel{ ...model }
+}
+
+// A split text box records its first-letter owner in layout, which may be
+// across a slot or display:contents boundary from the DOM parent.
+pub fn (node &LayoutNode) first_letter_owner() ?&Element {
+	callback := node.bridge_callbacks().first_letter_owner_callback
+	if callback == unsafe { nil } { return none }
+	return callback(node.layout_handle)
 }
