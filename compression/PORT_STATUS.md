@@ -23,20 +23,25 @@ decoding, the readable/writable transform boundary, chunk copying, flush and
 close state, error propagation, end-of-stream validation, checksum validation,
 and rejection of data trailing a raw DEFLATE stream.
 
-The JavaScript binding owns a native zlib or Brotli decoder context for each
-DecompressionStream and uses the translated native TransformStream queues.
-Each write copies BufferSource internal slots, emits decoded bytes immediately,
-and preserves output produced before an invalid checksum or trailing-input
-error. Flush requires the codec end marker. Cancellation, errors and runtime
-shutdown release codec contexts. Both the current IDL name `brotli` and the
-existing `br` alias are accepted. The older complete-buffer model API remains
-available for internal callers.
+The JavaScript binding owns a zlib decoder context or a buffered Brotli
+decoder for each DecompressionStream and uses the translated native
+TransformStream queues. Each write copies BufferSource internal slots, emits
+zlib-family output immediately, and preserves output produced before an invalid
+checksum or trailing-input error. Flush requires the codec end marker.
+Cancellation, errors and runtime shutdown release codec contexts. Both the
+current IDL name `brotli` and the existing `br` alias are accepted. The older
+complete-buffer model API remains available for internal callers.
 
-Native decoding links zlib and libbrotlidec; Brotli encoding links
-libbrotlienc. The other encoders retain their valid stored-DEFLATE streaming
-implementation. Linux setup already installs libbrotli-dev. Native binding
-coverage does not establish all upstream compression tests or production
-browser acceptance.
+zlib-family decoding links zlib. Brotli decoding and encoding use vlib's pure V
+`x.compress.brotli` codec (quality 5, 4 MiB window for encoding) and link no
+Brotli library. That decoder takes a whole stream, so the incremental decoder
+buffers input and re-decodes once it has grown by a quarter (or on flush): a
+Brotli DecompressionStream emits its output when the stream's last meta-block
+arrives rather than per meta-block, and the total work stays linear. Bytes after
+the stream are located by decoding prefixes, so output before trailing input is
+still delivered. The other encoders retain their valid stored-DEFLATE streaming
+implementation. Native binding coverage does not establish all upstream
+compression tests or production browser acceptance.
 
 ## Verification
 

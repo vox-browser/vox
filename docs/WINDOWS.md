@@ -33,7 +33,7 @@ In an MSYS2 MinGW64 shell, the native packages are:
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
   mingw-w64-x86_64-python mingw-w64-x86_64-skia mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
-  mingw-w64-x86_64-woff2 mingw-w64-x86_64-openssl \
+  mingw-w64-x86_64-openssl \
   mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
 ```
 
