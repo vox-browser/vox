@@ -15,7 +15,7 @@ for test_name in native_chromium_contour_deferred_test native_chromium_corner_sh
     clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
         -I"$skia_root/include/skia" -I"$skia_root/include" \
         "$repo_dir/tools/$test_name.cpp" -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal \
+        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework IOSurface -framework Metal \
         -Wl,-rpath,"$skia_root/lib" -Wl,-rpath,"$graphite_dir" -o "$output_dir/$test_name"
     python3 "$repo_dir/tools/run_memory_bounded.py" --limit-gib 3 \
         --lock "$output_dir/$test_name.lock" --report "$output_dir/$test_name.json" -- "$output_dir/$test_name"
