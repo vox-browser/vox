@@ -287,6 +287,10 @@ pub fn (mut window WindowModel) window_open_steps_internal(url string, target_ s
 	mut target_context := window.browsing_context().choose_a_browsing_context(target)
 	mut window_type := WindowType.existing_or_none
 	if target_context == none {
+		// The auxiliary browsing context, its group and page outlive the
+		// opener's document, whose arena is entered while its script runs.
+		persistent := platform.enter_persistent()
+		defer { platform.leave_persistent(persistent) }
 		mut opener_context := window.browsing_context()
 		mut group := opener_context.group() or {
 			page := if source_document.page() == unsafe { nil } {
