@@ -74,11 +74,7 @@ pub fn glyph_run(pixels &u32, width i32, height i32, row_pixels i32, ct_font voi
 			text_gamma:    gamma
 		}
 	) or { return 0 }
-	for y in 0 .. h {
-		for x in 0 .. w {
-			surface.pixels[y * w + x] = unsafe { pixels[y * stride + x] }
-		}
-	}
+	copy_rows(surface.pixels.data, w, voidptr(pixels), stride, w, h)
 	mut m := [9]f32{}
 	for i in 0 .. 9 {
 		m[i] = unsafe { matrix[i] }
@@ -104,12 +100,21 @@ pub fn glyph_run(pixels &u32, width i32, height i32, row_pixels i32, ct_font voi
 	if !drawn {
 		return 0
 	}
-	for y in 0 .. h {
-		for x in 0 .. w {
-			unsafe {
-				pixels[y * stride + x] = surface.pixels[y * w + x]
-			}
+	copy_rows(voidptr(pixels), stride, surface.pixels.data, w, w, h)
+	return 1
+}
+
+// copy_rows copies height rows of width pixels between buffers whose rows
+// are destination_stride and source_stride pixels apart.
+fn copy_rows(destination voidptr, destination_stride int, source voidptr, source_stride int, width int, height int) {
+	if destination_stride == width && source_stride == width {
+		unsafe { vmemcpy(destination, source, width * height * 4) }
+		return
+	}
+	for y in 0 .. height {
+		unsafe {
+			vmemcpy(voidptr(usize(destination) + usize(y * destination_stride * 4)), voidptr(usize(source) +
+				usize(y * source_stride * 4)), width * 4)
 		}
 	}
-	return 1
 }
