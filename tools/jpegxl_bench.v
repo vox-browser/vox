@@ -1,6 +1,6 @@
 // Benchmark the pure V JPEG XL decoder (module jpegxl). Always build with -prod:
 //
-//   v -prod -memory-limit 10G -o /tmp/jpegxl_bench tools/jpegxl_bench.v
+//   v -prod -b c -cc clang -memory-limit 10G -o /tmp/jpegxl_bench tools/jpegxl_bench.v
 //   /tmp/jpegxl_bench                      # bench inputs below, 7 decodes each
 //   /tmp/jpegxl_bench -n 15 --paint a.jxl  # explicit files, premultiplied output
 //
