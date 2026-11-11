@@ -356,7 +356,10 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 	}
 	model.backing_store_manager_ = painting.BackingStoreManager.create(voidptr(model), navigable_backing_store_shrink_callback)
 	connect_navigable_model_to_host(model)
+	// The list is process-wide; never grow it inside a document arena.
+	persistent := platform.enter_persistent()
 	html_all_navigable_models << model
+	platform.leave_persistent(persistent)
 	if value := context {
 		model.context_ = value
 		model.synchronize_host_container(value)
@@ -2348,7 +2351,14 @@ pub fn (mut model NavigableModel) set_has_been_destroyed() {
 pub fn (mut model NavigableModel) remove_from_all_navigables() {
 	model.resolve_all_pending_main_thread_scrolls()
 	model.set_active_document(none)
-	html_all_navigable_models = html_all_navigable_models.filter(voidptr(it) != voidptr(&model))
+	// Remove in place: a filtered copy would reallocate the process-wide list
+	// in the arena of whichever document is being torn down.
+	for index, candidate in html_all_navigable_models {
+		if voidptr(candidate) == voidptr(&model) {
+			html_all_navigable_models.delete(index)
+			break
+		}
+	}
 }
 
 pub fn (model &NavigableModel) has_been_destroyed() bool {

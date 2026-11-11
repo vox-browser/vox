@@ -3942,7 +3942,14 @@ pub fn (mut n Navigable) set_active_document(document ?&Document) {
 
 pub fn (mut n Navigable) remove_from_all_navigables() {
 	n.set_active_document(none)
-	dom_all_navigables = dom_all_navigables.filter(voidptr(it) != voidptr(&n))
+	// Remove in place: a filtered copy would reallocate the process-wide list
+	// in the arena of whichever document is being torn down.
+	for index, candidate in dom_all_navigables {
+		if voidptr(candidate) == voidptr(&n) {
+			dom_all_navigables.delete(index)
+			break
+		}
+	}
 }
 
 fn register_navigable(navigable &Navigable) {
@@ -3951,7 +3958,9 @@ fn register_navigable(navigable &Navigable) {
 			return
 		}
 	}
+	persistent := platform.enter_persistent()
 	dom_all_navigables << navigable
+	platform.leave_persistent(persistent)
 }
 
 fn all_navigables() []&Navigable {
