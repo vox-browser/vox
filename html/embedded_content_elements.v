@@ -397,6 +397,7 @@ mut:
 	loading_lazy_                       bool
 	current_navigation_was_lazy_loaded_ bool
 	lazy_load_resumption_steps_         ?fn()
+	element_                           ?&dom.HTMLIFrameElement
 	event_target_                       &dom.EventTarget = unsafe { nil }
 	event_counts_                       map[string]int
 	pending_resource_start_time_        ?f64
@@ -418,6 +419,7 @@ pub fn html_iframe_element_model_for_dom_element(element &dom.HTMLIFrameElement)
 	}
 	dom_element := unsafe { &dom.Element(element) }
 	mut model := HTMLIFrameElementModel.create(dom_element.document().base_url(), dom_element.document().origin())
+	model.element_ = element
 	model.container.set_name(dom_element.get_attribute_value('name'))
 	model.container.set_src(dom_element.get_attribute_value('src'))
 	model.srcdoc_ = dom_element.get_attribute('srcdoc')
@@ -591,16 +593,23 @@ pub fn (mut iframe HTMLIFrameElementModel) removed_from_document() {
 }
 
 pub fn (mut iframe HTMLIFrameElementModel) run_iframe_load_event_steps() {
+	// document.open() owns these flags on the actual child Document. The
+	// standalone EmbeddedDocument record has no parser or stream lifecycle.
+	if element := iframe.element_ {
+		dom_element := unsafe { &dom.Element(element) }
+		if navigable := dom_element.as_node().content_navigable() {
+			mut child := navigable.active_document() or { return }
+			if child.should_mute_iframe_load() { return }
+			child.set_iframe_load_in_progress(true)
+			defer { child.set_iframe_load_in_progress(false) }
+			iframe.fire_event('load')
+			return
+		}
+	}
 	if iframe.container.content_navigable() == none {
 		return
 	}
-	mut child_document := iframe.container.content_document_without_origin_check()
-	if child := child_document {
-		if child.should_mute_iframe_load() { return }
-	}
-	if mut child := child_document { child.set_iframe_load_in_progress(true) }
 	iframe.fire_event('load')
-	if mut child := child_document { child.set_iframe_load_in_progress(false) }
 }
 
 pub fn html_iframe_element_attribute_changed(element &dom.HTMLIFrameElement, name string, old_value ?string, value ?string, namespace_ ?string) {
