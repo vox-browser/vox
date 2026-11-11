@@ -497,6 +497,11 @@ pub fn (object &Object) has_property(key PropertyName) bool {
 
 // 7.3.13 HasOwnProperty ( O, P ), https://tc39.es/ecma262/#sec-hasownproperty
 pub fn (object &Object) has_own_property(key PropertyName) bool {
+	// Ordinary properties need no descriptor construction. Exotic arrays and
+	// strings still answer through their virtual length/indexed properties.
+	if object.typed_array == none && object.array_object == none && object.string_object == none {
+		return object.find_own_property(key) >= 0
+	}
 	return object.internal_get_own_property(key) != none
 }
 
