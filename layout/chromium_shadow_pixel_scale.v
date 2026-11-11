@@ -40,7 +40,7 @@ fn paintable_box_paint_box_shadow_for_node(mut commands []PaintCommand, shadows 
 			color:               shadow.color.serialize()
 			srgb_color_data:     shadow.srgb_color_data
 			opacity:             opacity
-			force_dark_role:     .foreground
+			force_dark_role:     .background
 			force_dark_role_set: true
 			corner_radii:        chromium_shadow_spread_radii(radii, spread, rect)
 			box_shadow_data:     &PaintBoxShadowData{
