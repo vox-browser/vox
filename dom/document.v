@@ -10708,6 +10708,11 @@ fn resolve_intersection_observer_margin(value IntersectionObserverMarginValue, r
 
 // https://www.w3.org/TR/intersection-observer/#run-the-update-intersection-observations-steps
 pub fn (mut d Document) run_the_update_intersection_observations_steps(time f64) {
+	// Painting prepares this state independently. With no observations, there
+	// is no reason to flush paint and hit-testing properties here.
+	if d.intersection_observers.len == 0 {
+		return
+	}
 	// 1-2. Copy the observer list so callbacks/GC finalizers cannot mutate the
 	// registry while this rendering update walks it.
 	observer_list := d.intersection_observers.clone()
