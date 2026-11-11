@@ -1060,8 +1060,21 @@ pub fn (window &WindowModel) named_item_value(name string) dom.JSValue {
 }
 
 pub fn (mut window WindowModel) find(query string) bool {
-	if query == '' {
-		return false
+	document := window.associated_document()
+	if query == '' || !document.is_fully_active() { return false }
+	mut selection := document.get_selection() or { return false }
+	current_range := selection.range()
+	for candidate in document.find_matching_text(query, .case_insensitive) {
+		if current := current_range {
+			if position := dom.position_of_boundary_point_relative_to_other_boundary_point_in_flat_tree(candidate.start(), current.end()) {
+				if position == .before { continue }
+			}
+		}
+		start := candidate.start()
+		end := candidate.end()
+		selection.set_base_and_extent(start.node, start.offset, end.node, end.offset) or { return false }
+		selection.scroll_focus_into_view()
+		return true
 	}
-	return window.page().find_from_window(query)
+	return false
 }
