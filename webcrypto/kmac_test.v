@@ -55,6 +55,7 @@ fn test_kmac_key_generation_formats_and_metadata() {
 		assert (jwk.alg or { '' }) == expected_alg
 		assert jwk.ext or { false }
 		assert subtle.import_jwk(jwk, name, true, [.sign], '')!.handle() == raw
+		assert subtle.import_jwk(JsonWebKey{ ...jwk, use: 'sig' }, name, true, [.sign], '')!.handle() == raw
 		assert subtle.import_key(.jwk, subtle.export_key(.jwk, key)!, name, true, [.verify], '')!.handle() == raw
 	}
 	key := subtle.import_key(.raw_secret, []u8{len: 32, init: 42}, KmacImportParams{ name: 'KMAC128', length: u32(255) }, false, [.sign], '')!
@@ -98,11 +99,10 @@ fn test_kmac_parameter_and_error_validation() {
 	} else {
 		assert err.msg() == 'TypeError: outputLength is required'
 	}
-	if _ := subtle.generate_key(KmacKeyGenParams{ name: 'KMAC128', length: u32(0) }, false, [.sign]) {
-		assert false
-	} else {
-		assert err.msg().starts_with('OperationError:')
-	}
+	empty := subtle.generate_key(KmacKeyGenParams{ name: 'KMAC128', length: u32(0) }, false, [.sign])!.key or { panic('key') }
+	assert empty.handle().len == 0
+	assert (empty.algorithm as KmacKeyAlgorithm).length == 0
+	assert empty.usages == [KeyUsage.sign]
 	if _ := subtle.generate_key(KmacKeyGenParams{ name: 'KMAC128' }, false, [.encrypt]) {
 		assert false
 	} else {
@@ -122,7 +122,7 @@ fn test_kmac_parameter_and_error_validation() {
 	}
 	for jwk in [JsonWebKey{ kty: 'RSA', k: base64url_encode(key.handle()) },
 		JsonWebKey{ kty: 'oct', k: base64url_encode(key.handle()), alg: 'K256' },
-		JsonWebKey{ kty: 'oct', k: base64url_encode(key.handle()), use: 'sig' },
+		JsonWebKey{ kty: 'oct', k: base64url_encode(key.handle()), use: 'sign' },
 		JsonWebKey{ kty: 'oct', k: base64url_encode(key.handle()), key_ops: ['verify'] },
 		JsonWebKey{ kty: 'oct', k: base64url_encode(key.handle()), ext: false }] {
 		if _ := subtle.import_jwk(jwk, 'KMAC128', true, [.sign], '') {

@@ -57,21 +57,19 @@ fn test_kmac_source_generation_usage_and_common_error_order() {
 			} else {
 				assert err.msg() == "SyntaxError: Invalid key usage 'encrypt'"
 			}
-			if length != 0 {
-				key := KMAC.create().generate_key(KmacKeyGenParams{ name: name, length: length }, true, [
-					.verify,
-					.verify,
-					.sign,
-				])!.key or { panic('key') }
-				assert key.extractable && key.usages == [.verify, .verify, .sign]
-				assert (key.algorithm as KmacKeyAlgorithm).length == length
-				assert key.handle().len == int(u16(length) / 8)
-			}
+			key := KMAC.create().generate_key(KmacKeyGenParams{ name: name, length: length }, true, [
+				.verify,
+				.verify,
+				.sign,
+			])!.key or { panic('key') }
+			assert key.extractable && key.usages == [.sign, .verify]
+			assert (key.algorithm as KmacKeyAlgorithm).length == length
+			assert key.handle().len == int(u16(length) / 8)
 		}
 		if _ := subtle.generate_key(KmacKeyGenParams{ name: name, length: u32(0) }, false, []) {
 			assert false
 		} else {
-			assert err.msg() == 'OperationError: Invalid key length'
+			assert err.msg() == 'SyntaxError: usages must not be empty'
 		}
 		if _ := subtle.generate_key(KmacKeyGenParams{ name: name, length: u32(9) }, false, []) {
 			assert false
