@@ -43,6 +43,9 @@ mut:
 	request_body_ []u8
 	started_us_ i64
 	headers_us_ i64
+	// Lease on the native storage holding request_, params_ and their
+	// policy records; released when the transfer stops or finishes.
+	storage_lease_ voidptr
 }
 
 pub fn (mut connection CurlConnection) fetch_host() &fetch.FetchHost {
@@ -135,6 +138,7 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 		output.resolve(fetch.Response.network_error('Failed to initialize curl easy handle'))
 		return pending
 	}
+	native.lease_request_storage()
 	if object := request.body.body_object { native.request_body_ = object.bytes() }
 	else if request.body.kind == .bytes { native.request_body_ = request.body.bytes.clone() }
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native), C.CURLE_OK)
@@ -368,6 +372,24 @@ pub fn (mut request CurlRequest) stop() {
 	request.free_curl_structs()
 }
 
+// Only the arena's originating (main) thread may take or drop leases.
+fn (mut request CurlRequest) lease_request_storage() {
+	if !platform.is_main_thread() { return }
+	storage := fetch.request_client_storage(request.request_)
+	if storage == unsafe { nil } { return }
+	mut owner := unsafe { &platform.RetainedArena(storage) }
+	owner.retain()
+	request.storage_lease_ = storage
+}
+
+fn (mut request CurlRequest) release_request_storage() {
+	storage := request.storage_lease_
+	if storage == unsafe { nil } { return }
+	request.storage_lease_ = unsafe { nil }
+	mut owner := unsafe { &platform.RetainedArena(storage) }
+	owner.release()
+}
+
 fn (mut request CurlRequest) free_curl_structs() {
 	if request.finished_ { return }
 	request.finished_ = true
@@ -381,6 +403,8 @@ fn (mut request CurlRequest) free_curl_structs() {
 	if request.headers_ != unsafe { nil } { C.vox_curl_slist_free_all(request.headers_); request.headers_ = unsafe { nil } }
 	mut owner := unsafe { &CurlConnection(request.connection_) }
 	owner.requests_.delete(request.id_)
+	// Drop the storage lease last: releasing it can free the request records.
+	request.release_request_storage()
 }
 
 // CURL.cpp: curl_code_to_network_error; LibRequests/NetworkError.h text.
