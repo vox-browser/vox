@@ -4022,6 +4022,15 @@ pub fn (n &Navigable) has_been_destroyed() bool {
 	return n.has_been_destroyed_
 }
 
+// A detached subtree keeps its navigables until queued unload steps complete.
+pub fn (n &Navigable) is_in_a_destroyed_subtree() bool {
+	mut current := unsafe { &Navigable(n) }
+	for {
+		if current.has_been_destroyed() { return true }
+		current = current.parent() or { return false }
+	}
+}
+
 // The flag assignment from LocalNavigable::set_has_been_destroyed. Its other
 // scroll/hover/compositor teardown steps belong to the local HTML owner.
 pub fn (mut n Navigable) set_has_been_destroyed() {
@@ -9907,9 +9916,8 @@ pub fn (d &Document) is_fully_active() bool {
 	// A Document d is said to be fully active when d is the active document of a navigable navigable,
 	// and either navigable is a top-level traversable or navigable's parent has a fully active document.
 	nav := d.navigable() or { return false }
-	// The document can keep its navigable until unloading completes. Parent
-	// recursion applies the same guard to a destroyed ancestor's subtree.
-	if nav.has_been_destroyed() {
+	// The document can keep its navigable until unloading completes.
+	if nav.is_in_a_destroyed_subtree() {
 		return false
 	}
 
@@ -10122,7 +10130,9 @@ pub fn (d &Document) inclusive_ancestor_navigables() []&Navigable {
 // https://html.spec.whatwg.org/multipage/document-sequences.html#document-tree-child-navigables
 pub fn (d &Document) document_tree_child_navigables() []&Navigable {
 	// 1. If document's node navigable is null, return the empty list.
-	_ = d.navigable() or { return [] }
+	navigable := d.navigable() or { return [] }
+	// Destruction detaches the whole subtree before queued unload steps finish.
+	if navigable.is_in_a_destroyed_subtree() { return [] }
 	// 2. Let navigables be new list.
 	mut navigables := []&Navigable{}
 	// 3-4. Iterate all registered navigables.

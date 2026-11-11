@@ -965,10 +965,18 @@ pub fn (mut window WindowModel) external() &External {
 	return external
 }
 
+// The Window model retains browsing contexts while unload tasks are pending.
+// Apply the same detached-subtree guard as Document's child-navigable lookup.
+fn (window &WindowModel) document_tree_child_browsing_contexts() []&BrowsingContextModel {
+	navigable := window.associated_document().navigable() or { return [] }
+	if navigable.is_in_a_destroyed_subtree() { return [] }
+	return window.browsing_context().children()
+}
+
 // https://html.spec.whatwg.org/multipage/nav-history-apis.html#document-tree-child-navigable-target-name-property-set
 pub fn (window &WindowModel) document_tree_child_navigable_target_name_property_set() map[string]&BrowsingContextModel {
 	mut names := map[string]&BrowsingContextModel{}
-	for child in window.browsing_context().children() {
+	for child in window.document_tree_child_browsing_contexts() {
 		name := child.target_name()
 		if name == '' || name in names {
 			continue
@@ -988,7 +996,7 @@ fn is_window_named_element_by_name(element &dom.Element) bool {
 
 pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 	mut navigables := []&BrowsingContextModel{}
-	for child in window.browsing_context().children() {
+	for child in window.document_tree_child_browsing_contexts() {
 		if child.target_name() == name {
 			navigables << child
 		}
