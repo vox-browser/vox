@@ -441,6 +441,7 @@ mut:
 	memory_status                       BrowserMemoryStatus
 	memory_maintenance                  BrowserMemoryMaintenance
 	navigation_work_depth               int
+	load_frames                         LoadFrameThrottle
 	navigation_work_yielded             bool
 	deferred_navigation_input           ?DeferredNavigationInput
 	deferred_page_input                 []DeferredPageInput
@@ -7537,6 +7538,9 @@ fn (mut app BrowserApp) draw() {
 			&& C.vox_browser_has_paint_context() == 0 { return }
 	}
 	if app.navigation_work_depth > 0 { return }
+	frame_start := time.sys_mono_now()
+	if app.defer_loading_frame(frame_start) { return }
+	defer { app.finish_loading_frame(frame_start) }
 	preparation_instructions := processmetrics.begin_instruction_stage('frame_preparation')
 	paint_before_frame := app.paint_generation
 	app.poll_deferred_navigation_input()
@@ -8103,6 +8107,10 @@ fn browser_pointer_button_mask(button int) u32 {
 }
 
 fn (mut app BrowserApp) handle_event(event &gg.Event) {
+	if event.typ in [.mouse_down, .mouse_up, .mouse_scroll, .key_down, .key_up, .char, .touches_began,
+		.touches_moved, .touches_ended] {
+		app.note_page_input()
+	}
 	if app.align_wheel_to_frame(event) { return }
 	app.platform_pointer_modifiers = browser_pointer_modifiers(event.modifiers)
 	$if !vox_ui2 ? {
