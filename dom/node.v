@@ -4956,7 +4956,8 @@ fn (n &Node) name_or_description_with_ownership(target NameOrDescription, docume
 pub fn (n &Node) accessible_name(document &Document, should_compute_role ShouldComputeRole) !string {
 	mut visited_nodes := map[UniqueNodeID]bool{}
 	// User agents MUST compute an accessible name using the rules outlined below in the section titled Accessible Name and Description Computation.
-	return n.name_or_description(.name, document, mut visited_nodes, .no, should_compute_role)
+	name := n.name_or_description(.name, document, mut visited_nodes, .no, should_compute_role)!
+	return strip_and_collapse_ascii_whitespace(name)
 }
 
 // https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_description
@@ -4973,7 +4974,7 @@ pub fn (n &Node) accessible_description(document &Document) !string {
 		description := description_element.as_node().name_or_description(.name, document, mut visited_nodes, .yes, .yes)!
 		append_accessible_text(mut builder, description)
 	}
-	return builder.str()
+	return strip_and_collapse_ascii_whitespace(builder.str())
 }
 
 pub fn Node.first_valid_id(value string, document &Document) ?string {
