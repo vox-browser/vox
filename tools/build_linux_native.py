@@ -20,7 +20,6 @@ def main():
     version = subprocess.check_output(compiler + ["--version"])
     groups = [
         ("platform", ["unicode_case_mapping"], ["icu-uc", "icu-i18n"]),
-        ("gfxfont", ["woff2"], ["libwoff2dec"] if args.os == 'windows' else []),
     ]
     if args.os == 'windows':
         groups.append(('webgl', ['native_windows'], ['angleproject']))
