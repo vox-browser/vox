@@ -7,6 +7,7 @@ const disable_positioned_image_ratio_reuse = os.getenv('VOX_DISABLE_POSITIONED_I
 const disable_positioned_definite_image_reuse = os.getenv('VOX_DISABLE_POSITIONED_DEFINITE_IMAGE_REUSE') != ''
 const positioned_definite_image_reuse_diagnostics = os.getenv('VOX_POSITIONED_DEFINITE_IMAGE_REUSE_DIAGNOSTICS') != ''
 
+const disable_fixed_image_geometry_reuse = os.getenv('VOX_DISABLE_FIXED_IMAGE_GEOMETRY_REUSE') != ''
 const positioned_image_ratio_reuse_diagnostics = os.getenv('VOX_POSITIONED_IMAGE_RATIO_REUSE_DIAGNOSTICS') != ''
 
 __global positioned_image_ratio_reuse_reported bool
@@ -92,4 +93,31 @@ fn report_positioned_definite_image_reuse() {
 		positioned_definite_image_reuse_reported = true
 		eprintln('Vox definite image reuse: repainted positioned raster without intrinsic layout')
 	}
+}
+
+// An image whose width and height are both fixed lengths gets the same box
+// whatever it decodes to, in or out of flow: natural sizes only resolve
+// automatic sizes, and its intrinsic contributions are those lengths. A
+// percentage maximum (GitHub sets max-width:100% on every image) refers to the
+// containing block, never to the image. A flex or grid item's automatic
+// minimum is content-based, so such an item keeps its layout.
+fn image_geometry_is_fixed_by_style(node &Node) bool {
+	if disable_fixed_image_geometry_reuse { return false }
+	computed := node.computed_values()
+	if !positioned_image_size_is_definite(computed.width(), false)
+		|| !positioned_image_size_is_definite(computed.height(), false) {
+		return false
+	}
+	item := node.is_flex_item() || node.is_grid_item()
+	for minimum in [computed.min_width(), computed.min_height()] {
+		if minimum.is_auto() {
+			if item { return false }
+		} else if !positioned_image_size_is_definite(minimum, false) {
+			return false
+		}
+	}
+	for maximum in [computed.max_width(), computed.max_height()] {
+		if !maximum.is_none() && !maximum.is_length_percentage() { return false }
+	}
+	return true
 }
