@@ -865,6 +865,57 @@ every trial, executable/resource hashes, CPU diagnostics, host loads, actual
 exits and the retained raw PNGs/logs. Reproduction commands are in the
 [tool instructions](../tools/gg_migration/README.md).
 
+## Performance after removing the Skia module (2026-11-11)
+
+**Page rendering.** Hacker News on one production bundle (`e2c0baaf9`),
+alternating GG and the legacy Skia renderer (`VOX_USE_SKIA=1`) over seven
+load pairs and four continuous-scroll pairs, keeps every PNG identical.
+Load/capture main-process instructions (launch through encoded PNG) have
+medians of 2,351,195,275 for Skia and 2,395,174,453 for GG (+1.87%; all seven
+pairs higher). Scrolling is unchanged: median mean scroll FPS 59.8949 versus
+59.8934, median p95 interval 19.07 versus 19.35 ms. One hardware-counter
+scrolling diagnostic per variant retires 3.7% more instructions with GG but
+uses fewer cycles (4.65 versus 4.91 billion) and less CPU time (2,132 versus
+2,204 ms).
+
+**Canvas.** The vox-tests `CPU_RASTER_CHECKS=perf` mode draws eight fixed
+800x600 scenes through the former Skia bridge (the oracle) and through
+cpuraster, alternating sides, and requires identical final pixels. After the
+module removal, cpuraster was 2-4x slower on scaled images and gradients.
+Exactness-preserving changes (`064a03804`, `7a3d63d00`, `2824880a6`,
+`a1dc93e6e`, `0584ad2d0`, `ec8958e8a`) remove per-pixel bounds checks and
+closure allocations, filter two channels per word, and process gradient spans
+in batches. Twenty-one alternating batches (vox-tests `7ad0825`, host load
+about 20-30 on 18 CPUs, so medians, minimums and cycles are all shown):
+
+| Scene (draws) | Median ms Skia / cpuraster | Min ratio | Cycle ratio | Instructions Skia / cpuraster |
+| --- | ---: | ---: | ---: | ---: |
+| Rect fills (200) | 26.41 / 1.87 | 0.07 | 0.07 | 174.8M / 19.5M |
+| Circle fills (100) | 12.85 / 1.71 | 0.13 | 0.13 | 90.9M / 18.5M |
+| Hairline polylines (10) | 1.84 / 1.18 | 0.65 | 0.63 | 13.7M / 15.6M |
+| 4px round strokes (10) | 3.25 / 3.23 | 0.99 | 0.99 | 30.3M / 35.6M |
+| Linear gradient fills (50) | 8.83 / 8.61 | 0.97 | 0.95 | 63.9M / 89.7M |
+| Blurred shadows (50) | 7.13 / 3.12 | 0.46 | 0.44 | 46.7M / 39.3M |
+| Scaled 256->200x150 drawImage (50) | 12.13 / 14.14 | 1.03 | 1.21 | 99.7M / 136.9M |
+| Text runs, 30 glyphs (50) | 33.31 / 42.10 | 1.21 | 1.07 | 183.2M / 207.2M |
+
+Before these changes the same harness measured 667M instructions and
+44.3 ms for scaled drawImage and 268M instructions and 13.8 ms for
+gradients. The Skia column includes the bridge's per-draw path and paint
+conversion, which dominates the rect and circle scenes. Scaled images and
+text remain slower: Skia filters with NEON, and its global strike cache
+keeps glyph masks across draws, while cpuraster opens the face and
+rasterizes each glyph through CoreGraphics again for every draw.
+
+The differential cohorts stay exact after the changes (gradients, patterns,
+images, composites, strokes, glyphs, mipmaps, clips, non-anti-aliased fills,
+rounded rectangles, shadows, color filters and filter layers). The
+image-filter cohort exposes a gap that predates them and fails identically
+on the earlier code: a drop shadow whose blur is below the identity
+threshold, drawn from a source subset stretched over a
+`[-1e9, -1e9, 3e9, 3e9]` destination, samples a different source pixel than
+Skia (seed 20261131 case 3313; seed 1111 case 61).
+
 ## Remaining work
 
 Stage22's GG-enabled browser comparison and drawn/declined summary are complete.
