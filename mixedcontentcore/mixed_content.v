@@ -68,8 +68,8 @@ pub fn does_settings_prohibit_mixed_security_contexts(settings &EnvironmentSetti
 	return .does_not_restrict_mixed_security_contexts
 }
 
-// MixedContent/AbstractOperations.cpp upgrade algorithm. The request wrapper
-// assigns the returned URL to the first request URL record (not its redirect).
+// MixedContent/AbstractOperations.cpp upgrade algorithm. Main fetch runs it
+// again for redirects, so callers pass and replace the request's current URL.
 pub fn upgraded_request_url(url dom.URL, destination ?string, initiator_is_image_set bool, settings &EnvironmentSettings) dom.URL {
 	destination_value := destination or { return url }
 	if securecontexts.is_url_potentially_trustworthy(url) == .potentially_trustworthy
@@ -83,6 +83,9 @@ pub fn upgraded_request_url(url dom.URL, destination ?string, initiator_is_image
 }
 
 pub fn should_request_be_blocked(url dom.URL, destination ?string, settings &EnvironmentSettings) bool {
+	// Blob URLs resolve from the local store, including those created in an
+	// opaque-origin sandbox with a secure ancestor. They never use the network.
+	if url.scheme() == 'blob' { return false }
 	return does_settings_prohibit_mixed_security_contexts(settings) == .prohibits_mixed_security_contexts && securecontexts.is_url_potentially_trustworthy(url) != .potentially_trustworthy && !(destination or {
 		''
 	} == 'document' && settings.target_browsing_context_is_top_level)
@@ -95,6 +98,7 @@ pub fn should_response_be_blocked(response_url ?dom.URL, destination ?string, se
 		return false
 	}
 	if record := response_url {
+		if record.scheme() == 'blob' { return false }
 		return securecontexts.is_url_potentially_trustworthy(record) != .potentially_trustworthy
 	}
 	return true

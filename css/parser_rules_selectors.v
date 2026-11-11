@@ -1042,12 +1042,16 @@ fn (mut parser RuleSelectorParser) consume_a_declaration(mut input ParserTokenSt
 	if is_invalid_custom_property_name_string_local(declaration.name) {
 		return none
 	}
+	is_initial_value_descriptor := parser.rule_context.len > 0
+		&& parser.rule_context[parser.rule_context.len - 1] == .property
+		&& equals_ignoring_ascii_case(declaration.name, 'initial-value')
 	if is_a_custom_property_name_string(declaration.name) {
 		if !is_valid_optional_declaration_value(declaration.value) {
 			return none
 		}
 		declaration.original_value_text = parser_component_values_original_text(declaration.value)
-	} else if declaration_contains_a_curly_block_and_non_whitespace(declaration.value) {
+	} else if !is_initial_value_descriptor
+		&& declaration_contains_a_curly_block_and_non_whitespace(declaration.value) {
 		// Otherwise, if decl's value contains a top-level simple block with an associated token of <{-token>, and also
 		// contains any other non-<whitespace-token> value, return nothing.
 		return none

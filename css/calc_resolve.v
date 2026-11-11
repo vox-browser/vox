@@ -16,6 +16,12 @@ struct CalcResult {
 	type_ NumericType
 }
 
+// CSS comparison functions order negative zero before positive zero.
+// NaN propagation is handled by the caller before comparing numeric values.
+fn calc_comparison_less_than(left f64, right f64) bool {
+	return left < right || (left == 0 && right == 0 && math.signbit(left) && !math.signbit(right))
+}
+
 fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx CalculationResolutionContext) ?CalcResult {
 	match node {
 		CalcNumeric {
@@ -347,7 +353,7 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 					minimum = math.nan()
 					continue
 				}
-				if results[index].value < minimum {
+				if calc_comparison_less_than(results[index].value, minimum) {
 					minimum = results[index].value
 				}
 			}
@@ -364,7 +370,7 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 					maximum = math.nan()
 					continue
 				}
-				if results[index].value > maximum {
+				if calc_comparison_less_than(maximum, results[index].value) {
 					maximum = results[index].value
 				}
 			}
@@ -385,10 +391,10 @@ fn resolve_calc_function(node CalcFunction, calculation_context CalculationConte
 				}
 			}
 			mut clamped := central
-			if clamped > maximum {
+			if calc_comparison_less_than(maximum, clamped) {
 				clamped = maximum
 			}
-			if clamped < minimum {
+			if calc_comparison_less_than(clamped, minimum) {
 				clamped = minimum
 			}
 			return CalcResult{
@@ -649,11 +655,7 @@ fn calc_arc_result(radians f64, min_degrees f64, max_degrees f64, input_type Num
 }
 
 fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) ?CalcResult {
-	// Unlike round(), mod()/rem() require the two resolved arguments to have the
-	// same type, not merely types that can be made consistent.
-	if numerator.type_ != divisor.type_ {
-		return none
-	}
+	numeric_type := numerator.type_.consistent_type(divisor.type_) or { return none }
 	value := if is_rem {
 		math.fmod(numerator.value, divisor.value)
 	} else {
@@ -661,7 +663,7 @@ fn calc_mod_or_rem(numerator CalcResult, divisor CalcResult, is_rem bool) ?CalcR
 	}
 	return CalcResult{
 		value: value
-		type_: numerator.type_
+		type_: numeric_type
 	}
 }
 

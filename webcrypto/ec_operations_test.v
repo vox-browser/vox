@@ -213,6 +213,13 @@ fn test_ecdh_rejects_source_public_and_curve_mismatches() {
 	if _ := ECDH.create().derive_bits(EcdhKeyDeriveParams{ name: 'ECDH', public_key: invalid }, a.private_key, none) {
 		assert false
 	} else {
+		assert err.msg() == 'OperationError: Failed to compute secret: Invalid point size for curve'
+	}
+	// Correct-width coordinates still reach and exercise native point validation.
+	off_curve := CryptoKey.create_with_internal_handle(.public_key, true, a.public_key.algorithm, [], EcPublicKeyHandle{ x: []u8{len: 32}, y: []u8{len: 32} })
+	if _ := ECDH.create().derive_bits(EcdhKeyDeriveParams{ name: 'ECDH', public_key: off_curve }, a.private_key, none) {
+		assert false
+	} else {
 		assert err.msg().starts_with('OperationError: Failed to compute secret: EC_POINT_set_affine_coordinates')
 	}
 }

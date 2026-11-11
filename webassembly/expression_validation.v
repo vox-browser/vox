@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webassembly
 
+// Each scalar/unknown value takes one 64-bit slot; v128 takes two.
+const binary_max_function_stack_slots = 1 << 20
+
 pub struct BinaryExpressionTypeResult {
 pub:
 	result_types []BinaryStackEntry
@@ -23,6 +26,9 @@ pub fn (mut validator BinaryInstructionValidator) validate_expression(mut expres
 	mut is_constant_expression := true
 	for mut instruction in expression.instructions {
 		is_constant := validator.validate_instruction(mut instruction, mut stack)!
+		if stack.slot_height() > binary_max_function_stack_slots {
+			return error('CompileError: operand stack too deep')
+		}
 		is_constant_expression = is_constant_expression && is_constant
 	}
 	binary_take_reverse(result_types, mut stack)!

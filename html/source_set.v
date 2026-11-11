@@ -145,16 +145,25 @@ fn parse_srcset_descriptor(descriptor string) (bool, ?i32, ?f64, ?i32) {
 	}
 	last_character := descriptor[descriptor.len - 1]
 	number := descriptor[..descriptor.len - 1]
+	if last_character in [`w`, `h`] {
+		if number.len == 0 || !number.bytes().all(it >= `0` && it <= `9`) {
+			return false, none, none, none
+		}
+	}
 	if last_character == `w` {
 		value := strconv.parse_int(number, 10, 32) or { return false, none, none, none }
+		if value == 0 { return false, none, none, none }
 		return true, i32(value), none, none
 	}
 	if last_character == `x` {
+		if !is_valid_floating_point_number(number) { return false, none, none, none }
 		value := strconv.atof64(number) or { return false, none, none, none }
+		if value < 0 { return false, none, none, none }
 		return true, none, value, none
 	}
 	if last_character == `h` {
 		value := strconv.parse_int(number, 10, 32) or { return false, none, none, none }
+		if value == 0 { return false, none, none, none }
 		return true, none, none, i32(value)
 	}
 	return false, none, none, none

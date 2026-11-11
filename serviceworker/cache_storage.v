@@ -331,10 +331,12 @@ pub fn (cache &Cache) keys(request ?&fetch.Request, options CacheQueryOptions) C
 				state: .fulfilled
 			}
 		}
-		matches := cache.query_cache(query, options)
+		// Only requests are exposed. Cloning responses would tee every matched
+		// cached body and grow a chain of streams on each keys() call.
+		matches := query_cache_entries(cache.request_response_list, query, options, false)
 		mut requests := []&fetch.Request{cap: matches.len}
 		for entry in matches {
-			requests << entry.request
+			requests << entry.request.clone()
 		}
 		return CacheResult{
 			state:    .fulfilled
@@ -352,10 +354,9 @@ pub fn (cache &Cache) keys(request ?&fetch.Request, options CacheQueryOptions) C
 }
 
 pub fn (cache &Cache) batch_cache_operations(operations []&CacheBatchOperation) !bool {
-	mut backup := []&RequestResponse{cap: cache.request_response_list.elements.len}
-	for entry in cache.request_response_list.elements {
-		backup << clone_request_response(entry)
-	}
+	// Operations add and remove entries without mutating them. Copy the list,
+	// not its responses: cloning each response would tee its stored body.
+	backup := cache.request_response_list.elements.clone()
 	mut added_items := &RequestResponseList{}
 	mut removed_any_items := false
 	mut list := cache.request_response_list

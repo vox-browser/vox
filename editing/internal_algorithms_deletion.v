@@ -480,6 +480,24 @@ pub fn delete_the_selection(mut selection dom.Selection, block_merging bool, str
 		if !node.is_editable() {
 			continue
 		}
+		// Preserve the document's body/head and the head's content. The body's
+		// editable children are visited separately and can still be removed.
+		if node.is_html_body_element() {
+			continue
+		}
+		mut ancestor := ?&dom.Node(node)
+		mut is_in_head := false
+		for {
+			current := ancestor or { break }
+			if current.is_html_head_element() {
+				is_in_head = true
+				break
+			}
+			ancestor = current.parent()
+		}
+		if is_in_head {
+			continue
+		}
 		if !node.is_html_table_section_element() && !node.is_html_table_row_element()
 			&& !node.is_html_table_cell_element() {
 			node_list << node

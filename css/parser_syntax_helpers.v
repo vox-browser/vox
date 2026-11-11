@@ -253,6 +253,7 @@ fn parse_syntax_single_component(mut tokens ComponentValueTokenStream, limit_ide
 		end_token := tokens.consume_a_token()
 
 		if end_token.is_delim(u32(`>`)) && type_name.is(.ident)
+			&& !type_name.token().original_source_text().contains('\\')
 			&& is_supported_syntax_type_name(type_name.token().ident()) {
 			return SyntaxNode.create_type(type_name.token().ident())
 		}
@@ -289,7 +290,8 @@ fn parse_syntax_component(mut tokens ComponentValueTokenStream, limit_ident Limi
 		ident_token := tokens.consume_a_token()
 		end_token := tokens.consume_a_token()
 
-		if ident_token.is_ident('transform-list') && end_token.is_delim(u32(`>`)) {
+		if ident_token.is_ident('transform-list') && end_token.is_delim(u32(`>`))
+			&& !ident_token.token().original_source_text().contains('\\') {
 			return SyntaxNode.create_type('transform-list')
 		}
 		tokens.index = transform_list_index

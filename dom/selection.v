@@ -468,7 +468,11 @@ pub fn (navigator &CaretNavigator) canonical_location_for_editing(location Caret
 			}
 		}
 		if candidate := before {
-			if caret_can_descend_into(candidate) {
+			// A br after a block starts its own line; the boundary before it
+			// must not descend back into the preceding block.
+			after_is_br := if following := after { following.is_html_br_element() } else { false }
+			if caret_can_descend_into(candidate)
+				&& !(is_editing_prohibited_paragraph_child(candidate) && after_is_br) {
 				node = candidate
 				offset = candidate.length()
 				continue

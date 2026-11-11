@@ -35,7 +35,7 @@ fn test_document_named_properties_follow_upstream_element_filter_and_result_type
 
 	assert 'not-exposed' !in document.supported_property_names()
 	assert 'also-not-exposed' !in document.supported_property_names()
-	assert document.supported_property_names() == ['shared', 'first-id']
+	assert document.supported_property_names() == ['first-id', 'shared']
 
 	single := document.named_item_value('first-id')
 	assert single.element? == first

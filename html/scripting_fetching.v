@@ -504,7 +504,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		return
 	}
 	response_url := unsafe_response.url() or { url }
-	muted_errors := if unsafe_response.is_cors_cross_origin() {
+	muted_errors := if response.is_cors_cross_origin() {
 		MutedErrors.yes
 	} else {
 		MutedErrors.no
@@ -603,7 +603,7 @@ pub fn fetch_a_classic_worker_imported_script(url dom.URL, settings_object &Envi
 	}
 	source_text := decode_script_body(body, 'utf-8')!
 	response_url := unsafe_response.url() or { url }
-	return ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if unsafe_response.is_cors_cross_origin() {
+	return ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if response.is_cors_cross_origin() {
 		.yes
 	} else {
 		.no

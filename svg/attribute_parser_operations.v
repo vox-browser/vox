@@ -455,8 +455,19 @@ pub fn (mut parser AttributeParser) parse_elliptical_arc() Path {
 }
 
 pub fn (mut parser AttributeParser) parse_points() []Point {
+	mut points := []Point{}
 	parser.parse_whitespace()
-	return parser.parse_coordinate_pair_sequence()
+	for !parser.done() {
+		x := parser.parse_coordinate() or { return [] }
+		parser.parse_comma_whitespace()
+		if parser.done() {
+			break
+		}
+		y := parser.parse_coordinate() or { return [] }
+		points << Point{ x: x, y: y }
+		parser.parse_comma_whitespace()
+	}
+	return points
 }
 
 pub fn (mut parser AttributeParser) parse_table_values() []f64 {

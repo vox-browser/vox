@@ -35,11 +35,12 @@ fn test_code_section_retains_local_groups_real_bodies_and_function_boundaries() 
 }
 
 fn test_code_section_local_count_limit_and_malformed_body_framing() {
-	// 42069 = d5 c8 02; source Constants.h allows that count per local group.
-	compiled := compile_module(code_section_binary([u8(1), 6, 1, 0xd5, 0xc8, 2, 0x7f, 0x0b]))!
-	assert compiled.function_bodies[0].locals[0].count == 42069
+	// 50000 = d0 86 03; the limit counts all local groups and parameters.
+	compiled := compile_module(code_section_binary([u8(1), 6, 1, 0xd0, 0x86, 3, 0x7f, 0x0b]))!
+	assert compiled.function_bodies[0].locals[0].count == 50000
 	for payload in [[]u8{}, [u8(1)], [u8(1), 0], [u8(1), 2, 0, 0x41], [u8(1), 2, 0, 0x0b, 0],
-		[u8(1), 3, 0, 0x0b, 0x0b], [u8(1), 6, 1, 0xd6, 0xc8, 2, 0x7f, 0x0b],
+		[u8(1), 3, 0, 0x0b, 0x0b], [u8(1), 6, 1, 0xd1, 0x86, 3, 0x7f, 0x0b],
+		[u8(1), 10, 2, 0xa8, 0xc3, 1, 0x7f, 0xa9, 0xc3, 1, 0x7f, 0x0b],
 		[u8(1), 4, 1, 1, 0x78, 0x0b]] {
 		assert !validate(webidl.BufferSource.array_buffer(code_section_binary(payload)))
 	}

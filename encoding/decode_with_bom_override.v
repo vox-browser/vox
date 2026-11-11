@@ -17,10 +17,8 @@ pub fn convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_ma
 			return decode_replacement_to_utf8(bytes)
 		}
 		if registered_encoding == 'UTF-8' {
-			// Source calls the selected whole UTF8 decoder with IgnoreBOM::No.
-			// Sniffing removed the first BOM; the whole owner removes one
-			// further matching selected BOM before constructing its Off owner.
-			return decode_source_utf8_whole_to_utf8(bytes, true, false)
+			// Sniffing already removed the BOM; another U+FEFF is content.
+			return decode_source_utf8_whole_to_utf8(bytes, false, false)
 		}
 		if registered_encoding == 'Shift_JIS' {
 			// Source invokes the selected decoder's complete UTF8 operation.
@@ -28,15 +26,10 @@ pub fn convert_input_to_utf8_using_given_decoder_unless_there_is_a_byte_order_ma
 			return decode_source_shift_jis_whole_to_utf8(bytes, false)
 		}
 		if registered_encoding == 'UTF-16LE' || registered_encoding == 'UTF-16BE' {
-			// Source calls the selected Decoder's whole-input UTF8 operation.
-			// Sniffing already discarded the first BOM; this call removes
-			// one further matching BOM with IgnoreBOM::No/Replacement.
-			return decode_source_utf16_whole_to_utf8(bytes, registered_encoding == 'UTF-16BE', true, false)
+			return decode_source_utf16_whole_to_utf8(bytes, registered_encoding == 'UTF-16BE', false, false)
 		}
 	}
-	// Source passes IgnoreBOM::No and Replacement to the chosen decoder.
-	// Its Rust decode_with_bom_removal strips one further same-encoding BOM;
-	// it does not sniff a second BOM to replace the selected encoding.
-	mut decoder := TextDecoder.construct(actual_encoding, TextDecoderOptions{})!
+	// The selected decoder preserves any BOM left after the initial sniff.
+	mut decoder := TextDecoder.construct(actual_encoding, TextDecoderOptions{ ignore_bom: true })!
 	return decoder.decode(bytes, TextDecodeOptions{})
 }

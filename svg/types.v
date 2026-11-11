@@ -357,6 +357,7 @@ pub enum SvgLengthSource {
 pub struct SvgLengthResolutionContext {
 pub:
 	has_associated_element bool
+	subject_inline_axis_is_horizontal bool = true
 	viewport_width         f64 = 100
 	viewport_height        f64 = 100
 	container_width        f64

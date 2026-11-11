@@ -50,8 +50,8 @@ fn test_source_woff_rejects_invalid_headers_and_table_lengths() {
 	}
 }
 
-fn test_source_woff_keeps_unpadded_table_offsets_and_header_search_calculation() {
-	// A small source-conversion fixture observes the packed records directly;
+fn test_source_woff_aligns_table_offsets_and_keeps_header_search_calculation() {
+	// A small source-conversion fixture observes four-byte table alignment;
 	// font validity is checked separately by the actual Skia decoder above.
 	mut data := []u8{len: 109}
 	binary.big_endian_put_u32_at(mut data, 0x774f4646, 0)
@@ -72,9 +72,9 @@ fn test_source_woff_keeps_unpadded_table_offsets_and_header_search_calculation()
 	assert binary.big_endian_u16_at(font, 8) == 2
 	assert binary.big_endian_u16_at(font, 10) == u16(65520)
 	assert binary.big_endian_u32_at(font, 20) == 60
-	assert binary.big_endian_u32_at(font, 36) == 61
-	assert binary.big_endian_u32_at(font, 52) == 62
-	assert font[60..63].bytestr() == 'ABC'
+	assert binary.big_endian_u32_at(font, 36) == 64
+	assert binary.big_endian_u32_at(font, 52) == 68
+	assert font[60..72] == [u8(`A`), 0, 0, 0, `B`, 0, 0, 0, `C`, 0, 0, 0]
 }
 
 fn test_source_woff2_decoder_accepts_valid_fonts_and_tolerates_incorrect_declared_sfnt_size() {
@@ -82,11 +82,15 @@ fn test_source_woff2_decoder_accepts_valid_fonts_and_tolerates_incorrect_declare
 	assert typeface_data_is_valid(font, 0)
 	tolerated := convert_woff2_to_sfnt(source_font_fixture('incorrect_sfnt_size.woff2'))!
 	assert typeface_data_is_valid(tolerated, 0)
-	for name in ['incorrect_compressed_size.woff2', 'invalid_numtables.woff2'] {
+	for name, message in {
+		'incorrect_compressed_size.woff2': 'Failed to convert the WOFF2 font to TTF'
+		// The bounded directory parser rejects this before native decoding.
+		'invalid_numtables.woff2': 'UIntBase128 overflow'
+	} {
 		if _ := convert_woff2_to_sfnt(source_font_fixture(name)) {
 			assert false, name
 		} else {
-			assert err.msg() == 'Failed to convert the WOFF2 font to TTF'
+			assert err.msg() == message
 		}
 	}
 }

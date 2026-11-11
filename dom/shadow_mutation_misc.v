@@ -829,7 +829,7 @@ pub fn (slot &HTMLSlotElement) manually_assigned_nodes() []&Node {
 }
 
 pub fn (mut slot HTMLSlotElement) remove_manually_assigned_node(node &Node) {
-	slot.manually_assigned_nodes_ = slot.manually_assigned_nodes_.filter(it != node)
+	slot.manually_assigned_nodes_ = slot.manually_assigned_nodes_.filter(voidptr(it) != voidptr(node))
 }
 
 pub fn (mut slot HTMLSlotElement) set_manually_assigned_nodes(nodes []&Node) {
@@ -875,6 +875,8 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 
 	// 2. Let nodesSet be a new ordered set.
 	mut nodes_set := []&Node{}
+	slot_root := html_slot_element_as_node(&slot).root()
+	mut roots_of_previous_slots := []&Node{}
 
 	// 3. For each node of nodes:
 	for node in nodes {
@@ -886,6 +888,11 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 		if previous_slot := node.manual_slot_assignment() {
 			mut mutable_previous_slot := unsafe { &HTMLSlotElement(previous_slot) }
 			mutable_previous_slot.remove_manually_assigned_node(node)
+			previous_root := html_slot_element_as_node(previous_slot).root()
+			if voidptr(previous_root) != voidptr(slot_root)
+				&& !roots_of_previous_slots.any(voidptr(it) == voidptr(previous_root)) {
+				roots_of_previous_slots << previous_root
+			}
 		}
 
 		// 2. Set node's manual slot assignment to this.
@@ -893,7 +900,7 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 		mutable_node.set_manual_slot_assignment(&slot)
 
 		// 3. Append node to nodesSet.
-		if node !in nodes_set {
+		if !nodes_set.any(voidptr(it) == voidptr(node)) {
 			nodes_set << node
 		}
 	}
@@ -902,7 +909,11 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 	slot.manually_assigned_nodes_ = nodes_set
 
 	// 5. Run assign slottables for a tree for this's root.
-	assign_slottables_for_a_tree(html_slot_element_as_node(&slot).root())
+	assign_slottables_for_a_tree(slot_root)
+	// A slot in another tree must also lose the node and signal slotchange.
+	for previous_root in roots_of_previous_slots {
+		assign_slottables_for_a_tree(previous_root)
+	}
 }
 
 pub fn (node &Node) slottable_name() string {
@@ -3532,7 +3543,7 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 	if document.document_ready_to_run_scripts() {
 		encoding := html_parser_run_text_document(document, navigation_params.response_body, type_, url)
 		document.set_encoding(encoding)
-		append_title_to_document_head(document, document.url_string()) or {}
+		// Keep document text limited to the response body, without a filename title.
 	} else {
 		document_pointer := voidptr(document)
 		data := navigation_params.response_body.clone()
@@ -3540,7 +3551,6 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 			mut document := unsafe { &Document(document_pointer) }
 			encoding := html_parser_run_text_document(document, data, type_, url)
 			document.set_encoding(encoding)
-			append_title_to_document_head(document, document.url_string()) or {}
 		})
 	}
 

@@ -135,6 +135,11 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 			canonicalize_collapsed_selection_for_editing(mut mutable_selection)
 		}
 	}
+	// Focusing the editing host while moving the caret can remove the selection.
+	// Commands with an affected editing host require an active range.
+	if affected_editing_host != none && active_range(document) == none {
+		return false
+	}
 
 	// AD-HOC: Record the mutations performed by the command action on the editing history, so the user can undo them.
 	//         end_recording() is a no-op if the guard below already ended the recording.
@@ -191,17 +196,6 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 		}
 	}
 
-	// https://w3c.github.io/editing/docs/execCommand/#preserves-overrides
-	// After taking the action, if the active range is collapsed, it must restore states and values from the recorded
-	// list.
-	if overrides.len > 0 {
-		if selection := document.get_selection() {
-			if selection.is_collapsed() {
-				restore_states_and_values(mut document, overrides)
-			}
-		}
-	}
-
 	// NB: Canonicalize the caret the command produced before the ending selection is recorded, but only if the
 	//     command actually performed an edit; Chromium leaves the caret alone otherwise.
 	// INTEROP: A user cut or paste counts as an edit whenever its command ran: Chromium fires the input event and
@@ -213,6 +207,17 @@ pub fn exec_command_internal(mut document dom.Document, command string, _ bool, 
 		if selection := document.get_selection() {
 			mut mutable_selection := unsafe { &dom.Selection(selection) }
 			canonicalize_collapsed_selection_for_editing(mut mutable_selection)
+		}
+	}
+
+	// https://w3c.github.io/editing/docs/execCommand/#preserves-overrides
+	// After taking the action, if the active range is collapsed, it must restore states and values from the recorded
+	// list. Do this after canonicalizing the caret, since moving it unsets the overrides.
+	if overrides.len > 0 {
+		if selection := document.get_selection() {
+			if selection.is_collapsed() {
+				restore_states_and_values(mut document, overrides)
+			}
 		}
 	}
 
@@ -289,6 +294,9 @@ pub fn query_command_enabled(document &dom.Document, command string) !bool {
 	// for the cut command and the paste command.
 	// NOTE: cut and paste are actually in the Clipboard commands section
 	if lowercase_command in ['defaultparagraphseparator', 'stylewithcss', 'usecss'] {
+		if range_ := active_range(document) {
+			return range_.start_container().is_editable_or_editing_host()
+		}
 		return true
 	}
 
@@ -459,10 +467,10 @@ pub fn query_command_value(document &dom.Document, command string) !string {
 
 	// 1. If command is not supported or has no value, return the empty string.
 	definition := find_command_definition(command) or { return '' }
-	value_override := document.command_value_override(definition.command)
-	if definition.value == unsafe { nil } && value_override == none {
+	if definition.value == unsafe { nil } {
 		return ''
 	}
+	value_override := document.command_value_override(definition.command)
 
 	// 2. If command is "fontSize" and its value override is set, convert the value override to an
 	//    integer number of pixels and return the legacy font size for the result.

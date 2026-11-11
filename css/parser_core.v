@@ -854,6 +854,9 @@ fn filter_code_points(input string, encoding string) string {
 			last_was_carriage_return = false
 		}
 	}
+	if last_was_carriage_return {
+		builder.write_u8(`\n`)
+	}
 	return builder.str()
 }
 

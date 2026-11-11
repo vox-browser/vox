@@ -9073,16 +9073,18 @@ pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 		return true
 	}
 
-	// Only the predicate result escapes this query. The descendant list and
-	// traversal callback are temporary, even when a parser polls it every frame.
+	// Each container checks its own document's descendants. Walking descendant
+	// navigables here repeats that work exponentially and crosses lazy frames.
 	mut scratch := platform.begin_thread_scratch('load event delay traversal')
-	navigables := d.descendant_navigables()
+	navigables := dom_all_navigables.clone()
 	scratch.leave()
 	defer { scratch.finish() }
 	// Embedder delay hooks run outside the workspace so their retained updates
 	// keep the caller's allocation owner.
 	for navigable in navigables {
+		if navigable.has_been_destroyed_ { continue }
 		container := navigable.container() or { continue }
+		if voidptr(container.document()) != voidptr(d) || !container.is_connected() { continue }
 		if container.currently_delays_the_load_event() {
 			return true
 		}
@@ -11184,9 +11186,9 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 		fae.element_id_changed()
 	}
 	// Update potentially named elements list
-	if element.id() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.get_name() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 	// Update element-by-id map
@@ -11203,7 +11205,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	for fae in d.form_associated_elements_with_form_attribute {
 		fae.element_with_id_was_added_or_removed()
 	}
-	if is_potentially_named_element_by_id(element) {
+	if is_potentially_named_element_by_id(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 	if id := element.id() {
@@ -11226,15 +11228,15 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 }
 
 pub fn (mut d Document) element_name_changed(element &Element) {
-	if element.get_name() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.id() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 }
 
 pub fn (mut d Document) element_with_name_was_added(element &Element) {
-	if is_potentially_named_element(element) {
+	if is_potentially_named_element(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 }
@@ -11406,6 +11408,12 @@ pub fn is_potentially_named_element_by_id(element &Element) bool {
 	return element.is_html_element() && element.local_name() in ['img', 'object']
 }
 
+fn should_be_in_potentially_named_elements(element &Element) bool {
+	return ((element.get_name() != none && is_potentially_named_element(element))
+		|| (element.id() != none && is_potentially_named_element_by_id(element)))
+		&& element.as_node().root().is_document()
+}
+
 pub fn insert_in_tree_order(mut elements []&Element, element &Element) {
 	for existing in elements {
 		if existing == element {
@@ -11469,16 +11477,7 @@ pub fn (d &Document) supported_property_names() []string {
 			continue
 		}
 		local_name := element.local_name()
-		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
-			'embed',
-			'object',
-		] || is_exposed(element)) {
-			if name := element.get_name() {
-				if name != '' && name !in names {
-					names << name
-				}
-			}
-		}
+		// When one element contributes both, its id precedes its name.
 		if local_name == 'object' && is_exposed(element) {
 			if id := element.id() {
 				if id != '' && id !in names {
@@ -11490,6 +11489,16 @@ pub fn (d &Document) supported_property_names() []string {
 			if id := element.id() {
 				if id != '' && id !in names {
 					names << id
+				}
+			}
+		}
+		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
+			'embed',
+			'object',
+		] || is_exposed(element)) {
+			if name := element.get_name() {
+				if name != '' && name !in names {
+					names << name
 				}
 			}
 		}

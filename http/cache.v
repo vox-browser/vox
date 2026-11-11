@@ -8,7 +8,6 @@
 module http
 
 import cachepolicy
-import strconv
 import time
 
 pub enum CacheLifetimeStatus {
@@ -51,13 +50,28 @@ pub fn contains_cache_control_directive(cache_control string, directive string) 
 	return extract_cache_control_directive(cache_control, directive) != none
 }
 
+// RFC 9111 delta-seconds is one or more ASCII digits. Saturate overflows at
+// 2^31 seconds, as permitted by the specification, before converting to ms.
+fn parse_cache_delta_seconds(value string) ?i64 {
+	if value.len == 0 { return none }
+	maximum_seconds := u64(2_147_483_648)
+	mut seconds := u64(0)
+	for byte in value.bytes() {
+		if byte < `0` || byte > `9` { return none }
+		if seconds < maximum_seconds {
+			next := seconds * 10 + u64(byte - `0`)
+			seconds = if next > maximum_seconds { maximum_seconds } else { next }
+		}
+	}
+	return i64(seconds) * 1000
+}
+
 pub fn extract_cache_control_duration_directive(cache_control string, directive string, valueless_fallback ?i64) ?i64 {
 	value := extract_cache_control_directive(cache_control, directive) or { return none }
 	if value.len == 0 {
 		return valueless_fallback
 	}
-	seconds := strconv.parse_int(value, 10, 64) or { return none }
-	return seconds * 1000
+	return parse_cache_delta_seconds(value)
 }
 
 pub fn is_cacheable_request(method string, request_headers &HeaderList) bool {
@@ -119,7 +133,7 @@ pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool
 	if value := cache_control {
 		has_public = contains_cache_control_directive(value, 'public')
 		has_private = contains_cache_control_directive(value, 'private')
-		has_max_age = contains_cache_control_directive(value, 'max-age')
+		has_max_age = extract_cache_control_duration_directive(value, 'max-age', none) != none
 	}
 	return has_public || has_private || has_expires || has_max_age || is_heuristically_cacheable_status(status_code)
 }
@@ -223,7 +237,10 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 			return max_age
 		}
 	}
-	if expires := parse_http_date(headers.get('Expires')) {
+	if expires_header := headers.get('Expires') {
+		// An invalid Expires value means already expired, not permission to
+		// fall through to a Last-Modified freshness heuristic.
+		expires := parse_http_date(expires_header) or { return 0 }
 		date := parse_http_date(headers.get('Date')) or { time.now().unix_milli() }
 		return expires - date
 	}
@@ -247,8 +264,8 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 pub fn calculate_age(headers &HeaderList, request_time i64, response_time i64) i64 {
 	mut age_value := i64(0)
 	if age := headers.get('Age') {
-		if seconds := strconv.parse_int(age, 10, 64) {
-			age_value = seconds * 1000
+		if milliseconds := parse_cache_delta_seconds(age) {
+			age_value = milliseconds
 		}
 	}
 	now := time.now().unix_milli()

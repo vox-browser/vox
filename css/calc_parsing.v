@@ -546,10 +546,10 @@ fn build_calc_function(name string, arguments []CalcNode, strategy string) ?Calc
 // Upstream's math-function parser is generated from MathFunctions.json, where each function
 // carries a `parameter-validation` rule. `consistent` unifies the argument types through
 // consistent_type(), while `same` requires every argument to have the exact same type -
-// including its percent hint. mod(), rem(), and log() use `same`, so `mod(2em, 50%)` is
-// invalid for a <length-percentage> property even though `min(2em, 50%)` is not.
+// including its percent hint. Only log() uses `same`; mod()/rem() accept
+// consistent types, including mixed lengths and percentages in that context.
 fn calc_function_requires_same_parameter_types(name string) bool {
-	return name in ['log', 'mod', 'rem']
+	return name == 'log'
 }
 
 fn (mut parser Parser) parse_calc_arguments(values []ComponentValue, allow_tree_counting_functions bool) ?[]CalcNode {

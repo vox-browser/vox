@@ -732,20 +732,23 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 	p.scope_collector.open_catch_scope()
 
 	mut parameter := ?CatchBinding(none)
+	mut catch_names := []Utf16String{}
 	if p.match_token(.paren_open) {
 		p.consume()
 		if p.match_token(.curly_open) || p.match_token(.bracket_open) {
-			p.pattern_bound_names = []BoundName{}
 			pattern := p.parse_binding_pattern()
-			for bn in p.pattern_bound_names {
+			bound_names := p.pattern_bound_names.clone()
+			p.pattern_bound_names = []BoundName{}
+			for bn in bound_names {
 				p.check_identifier_name_for_assignment_validity(bn.name.data, false)
+				catch_names << bn.name.clone()
 			}
-			mut bound_name_slices := [][]u16{cap: p.pattern_bound_names.len}
-			for bn in p.pattern_bound_names {
+			mut bound_name_slices := [][]u16{cap: bound_names.len}
+			for bn in bound_names {
 				bound_name_slices << bn.name.data
 			}
 			p.scope_collector.add_catch_parameter_pattern(bound_name_slices)
-			for bn in p.pattern_bound_names {
+			for bn in bound_names {
 				p.scope_collector.register_identifier(bn.identifier, bn.name.data, none)
 			}
 			parameter = CatchBindingPattern{
@@ -760,6 +763,7 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 				Utf16String.from_slice(value.clone()))
 			p.scope_collector.register_identifier(id, value.clone(), none)
 			p.scope_collector.add_catch_parameter_identifier(value, id)
+			catch_names << id.name.clone()
 			parameter = CatchBindingIdentifier{
 				identifier: id
 			}
@@ -770,6 +774,36 @@ fn (mut p Parser) parse_catch_clause() CatchClause {
 	}
 
 	body := p.parse_block_statement()
+	if catch_names.len > 0 {
+		if scope := body.kind.scope {
+			mut lexical_names := map[string]bool{}
+			for child in scope.children {
+				match child.kind.tag {
+					.variable_declaration, .using_declaration {
+						if child.kind.tag == .using_declaration || child.kind.decl_kind != .var_kind {
+							for declaration in child.kind.declarations {
+								collect_binding_names_from_target(declaration.target, mut lexical_names)
+							}
+						}
+					}
+					.function_declaration {
+						if name := child.kind.func_name { lexical_names[name.name.str()] = true }
+					}
+					.class_declaration {
+						if data := child.kind.class_data {
+							if name := data.name { lexical_names[name.name.str()] = true }
+						}
+					}
+					else {}
+				}
+			}
+			for name in catch_names {
+				if name.str() in lexical_names {
+					p.syntax_error("Identifier '${name.str()}' already declared as catch parameter")
+				}
+			}
+		}
+	}
 
 	p.scope_collector.close_scope()
 

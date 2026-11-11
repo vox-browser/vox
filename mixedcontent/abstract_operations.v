@@ -4,7 +4,6 @@
 // Translation of MixedContent/AbstractOperations.{h,cpp}.
 module mixedcontent
 
-import dom
 import fetch
 import mixedcontentcore
 
@@ -56,7 +55,7 @@ pub fn upgrade_a_mixed_content_request_to_a_potentially_trustworthy_url_if_appro
 	} else {
 		none
 	}
-	request.url_list[0] = mixedcontentcore.upgraded_request_url(request.url(), destination,
+	request.url_list[request.url_list.len - 1] = mixedcontentcore.upgraded_request_url(request.current_url(), destination,
 		(request.initiator or { fetch.Initiator.download }) == .image_set,
 		algorithm_context(settings))
 }
@@ -68,7 +67,7 @@ pub fn should_fetching_request_be_blocked_as_mixed_content(request &fetch.Reques
 	} else {
 		none
 	}
-	return if mixedcontentcore.should_request_be_blocked(request.url(), destination,
+	return if mixedcontentcore.should_request_be_blocked(request.current_url(), destination,
 		algorithm_context(settings))
 	{
 		.blocked

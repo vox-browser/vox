@@ -2765,6 +2765,10 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 	}
 	previous_sibling := child.previous_sibling() or { unsafe { nil } }
 	mut removed_nodes := []&Node{}
+	// Adoption removes node from its old parent before child is removed,
+	// preserving mutation record order even when node and child are the same.
+	mut document := n.document()
+	document.adopt_node(node)
 	if child.parent() != none {
 		removed_nodes << child
 		mut mutable_child := unsafe { &Node(child) }
@@ -2823,7 +2827,7 @@ pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, par
 				copy_shadow_root.set_keep_custom_element_registry_null(shadow_root.keep_custom_element_registry_null())
 				copy_shadow_root_node := unsafe { &Node(copy_shadow_root) }
 				for child in shadow_root_as_node(shadow_root).children {
-					child.clone_node_with_registry(doc, subtree, copy_shadow_root_node, unsafe { nil })!
+					child.clone_node_with_registry(doc, true, copy_shadow_root_node, unsafe { nil })!
 				}
 			}
 		}
@@ -3105,7 +3109,10 @@ pub fn (mut n Node) recompute_editable_subtree_flag() bool {
 	} else if element := n.as_element() {
 		if element.is_html_element() {
 			state := html_content_editable_state(element)
-			if state == 'true' || state == 'plaintext-only' {
+			if element.local_name() in ['select', 'optgroup', 'option'] {
+				// Editing may remove the control, but must not edit its contents.
+				new_value = false
+			} else if state == 'true' || state == 'plaintext-only' {
 				new_value = true
 			} else if state == 'false' {
 				new_value = false
@@ -3186,7 +3193,7 @@ pub fn (n &Node) is_editable() bool {
 // https://html.spec.whatwg.org/multipage/interaction.html#editing-host
 pub fn (n &Node) is_editing_host() bool {
 	element := n.as_element() or { return false }
-	if !element.is_html_element() {
+	if !element.is_html_element() || element.local_name() in ['select', 'optgroup', 'option'] {
 		return false
 	}
 	state := html_content_editable_state(element)

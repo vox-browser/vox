@@ -311,8 +311,10 @@ pub fn command_delete_action(mut document dom.Document, _ string) bool {
 
 	// 9. Repeat the following steps:
 	for {
-		// AD-HOC: If start node is not a Node, return false. This prevents a crash by dereferencing a null pointer in
-		//         step 1 below. Edits outside of <body> might be prohibited: https://github.com/w3c/editing/issues/405
+		// Do not climb into the Document and later collapse the selection into a doctype.
+		if start_node.is_document() {
+			return false
+		}
 
 		// 1. If start offset is zero, set start offset to the index of start node and then set
 		//    start node to its parent.
@@ -1533,7 +1535,8 @@ pub fn command_insert_linebreak_action(mut document dom.Document, _ string) bool
 	//         However, padding line breaks (needed for empty last lines) should still be <br> because they won't
 	//         appear in .textContent, making the content easier to work with programmatically.
 	if white_space_collapse := resolved_keyword(start_node, 'white-space-collapse') {
-		if white_space_collapse in ['preserve', 'preserve-breaks'] {
+		if white_space_collapse in ['preserve', 'preserve-breaks']
+			&& !white_space_is_from_default_style(start_node) {
 			if start_node.is_text() {
 				insert_data(editing_character_data(start_node), start_offset, '\n') or { panic(err) }
 				selection.collapse(start_node, start_offset + 1) or { panic(err) }
@@ -1541,12 +1544,27 @@ pub fn command_insert_linebreak_action(mut document dom.Document, _ string) bool
 					selection.collapse(start_node.parent(), start_node.index() + 1) or { panic(err) }
 					br := editing_create_html_element(document, 'br').as_node()
 					insert_node_into_range(editing_active_range(document), br) or { panic(err) }
+					// The range insertion spans the padding br; restore the caret after the newline.
+					selection.collapse(start_node, start_node.length()) or { panic(err) }
 				}
 				return true
 			}
 			if start_node.editing_host_is_plaintext_only() {
 				text := document.create_text_node('\n').as_node()
 				insert_node_into_range(editing_active_range(document), text) or { panic(err) }
+				selection.collapse(text, 1) or { panic(err) }
+				return true
+			}
+			// At an element boundary, insert a newline text node and, if needed,
+			// a padding br that makes the empty last line visible.
+			if start_node.is_element() {
+				text := document.create_text_node('\n').as_node()
+				insert_node_into_range(range_, text) or { panic(err) }
+				selection.collapse(text.parent(), text.index() + 1) or { panic(err) }
+				if text.next_sibling() == none {
+					br := editing_create_html_element(document, 'br').as_node()
+					insert_node_into_range(editing_active_range(document), br) or { panic(err) }
+				}
 				selection.collapse(text, 1) or { panic(err) }
 				return true
 			}
@@ -1568,7 +1586,7 @@ pub fn command_insert_linebreak_action(mut document dom.Document, _ string) bool
 	//     result, then call insertNode(extra br) on the active range.
 	if is_collapsed_line_break(br) {
 		extra_br := editing_create_html_element(document, 'br').as_node()
-		insert_node_into_range(range_, extra_br) or { panic(err) }
+		insert_node_into_range(editing_active_range(document), extra_br) or { panic(err) }
 
 		// INTEROP: The range insertion leaves the range spanning extra br; Chromium keeps the caret collapsed
 		//          between the two line breaks.

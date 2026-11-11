@@ -25,9 +25,18 @@ pub:
 // https://w3c.github.io/webappsec-subresource-integrity/#hash-functions
 const supported_hash_functions = ['sha256', 'sha384', 'sha512']
 
+fn ascii_lowercase(input string) string {
+	mut bytes := input.bytes()
+	for index, byte in bytes {
+		if byte >= `A` && byte <= `Z` { bytes[index] = byte + 0x20 }
+	}
+	return bytes.bytestr()
+}
+
 pub fn is_supported_hash_function(algorithm string) bool {
+	normalized := ascii_lowercase(algorithm)
 	for supported_hash_function in supported_hash_functions {
-		if algorithm == supported_hash_function {
+		if normalized == supported_hash_function {
 			return true
 		}
 	}
@@ -70,24 +79,32 @@ pub fn parse_metadata(metadata string) []Metadata {
 	// 2. For each item returned by splitting metadata on spaces:
 	//    (Splitting on spaces does not keep empty items; such items are also filtered by step 7.)
 	for item in metadata.split(' ') {
-		// 1. Let hash-with-opt-token-list be item split on U+003F (?).
-		hash_with_opt_token_list := item.split('?')
-		// 2. Let hash-expression be hash-with-opt-token-list[0].
-		hash_expression := hash_with_opt_token_list[0]
-		// 3. Let base64-value be the empty string.
-		mut base64_value := ''
-		// 4. Let hash-expr-token-list be hash-expression split on U+002D (-).
-		hash_expr_token_list := hash_expression.split('-')
-		// 5. Let algorithm be hash-expr-token-list[0].
-		algorithm := hash_expr_token_list[0]
-		// 6. If hash-expr-token-list[1] exists, set base64-value to it.
-		if hash_expr_token_list.len > 1 {
-			base64_value = hash_expr_token_list[1]
-		}
-		// 7. If algorithm is not a recognized hash function, continue.
+		// Options follow '?'. Split the expression only at its first '-',
+		// because a base64url digest can contain further hyphens.
+		expression := item.all_before('?')
+		separator := expression.index('-') or { continue }
+		algorithm := ascii_lowercase(expression[..separator])
 		if !is_supported_hash_function(algorithm) {
 			continue
 		}
+		base64_value := expression[separator + 1..]
+		// CSP's base64-value grammar requires at least one alphabet byte and
+		// permits at most two trailing padding characters.
+		mut data_end := base64_value.len
+		for _ in 0 .. 2 {
+			if data_end == 0 || base64_value[data_end - 1] != `=` { break }
+			data_end--
+		}
+		if data_end == 0 { continue }
+		mut valid := true
+		for byte in base64_value[..data_end].bytes() {
+			if !(byte >= `A` && byte <= `Z`) && !(byte >= `a` && byte <= `z`)
+				&& !(byte >= `0` && byte <= `9`) && byte !in [`+`, `/`, `-`, `_`] {
+				valid = false
+				break
+			}
+		}
+		if !valid { continue }
 		// 8-9. Append «["alg" → algorithm, "val" → base64-value]» to result.
 		result << Metadata{
 			algorithm: algorithm
@@ -132,6 +149,11 @@ pub fn get_strongest_metadata_from_set(set []Metadata) []Metadata {
 	return result
 }
 
+// Compare standard and URL-safe base64 with or without trailing padding.
+fn normalize_base64_value(value string) string {
+	return value.trim_right('=').replace('-', '+').replace('_', '/')
+}
+
 // https://w3c.github.io/webappsec-subresource-integrity/#does-response-match-metadatalist
 pub fn do_bytes_match_metadata_list(bytes []u8, metadata_list string) !bool {
 	// 1. Let parsedMetadata be the result of parsing metadataList.
@@ -147,7 +169,7 @@ pub fn do_bytes_match_metadata_list(bytes []u8, metadata_list string) !bool {
 		// 1-3. actualValue = applying item's alg to bytes.
 		actual_value := apply_algorithm_to_bytes(item.algorithm, bytes)!
 		// 4. If actualValue is a case-sensitive match for expectedValue, return true.
-		if actual_value == item.base64_value {
+		if normalize_base64_value(actual_value) == normalize_base64_value(item.base64_value) {
 			return true
 		}
 	}

@@ -215,20 +215,17 @@ pub fn parse_points(input string) []Point {
 	mut points := []Point{}
 	scanner.whitespace()
 	for !scanner.done() {
-		x := scanner.number() or {
-			if points.len == 0 {
-				return []
-			}
+		x := scanner.number() or { return [] }
+		scanner.comma_whitespace()
+		// An unmatched final coordinate is dropped; malformed coordinates
+		// invalidate the whole points list.
+		if scanner.done() {
 			break
 		}
-		scanner.comma_whitespace()
-		y := scanner.number() or { break }
+		y := scanner.number() or { return [] }
 		points << Point{
 			x: x
 			y: y
-		}
-		if scanner.done() {
-			break
 		}
 		scanner.comma_whitespace()
 	}

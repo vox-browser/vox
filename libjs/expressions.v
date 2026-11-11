@@ -822,8 +822,20 @@ fn (mut p Parser) parse_new_expression() Expression {
 		p.parse_expression(precedence_member, .right, forbidden)
 	}
 
-	if callee.kind.tag == .import_call && !callee_starts_with_grouping_paren {
-		p.syntax_error('Cannot call new on dynamic import')
+	// ImportCall is a CallExpression, so its unparenthesized member and tagged
+	// template chains cannot become the MemberExpression operand of `new`.
+	if !callee_starts_with_grouping_paren {
+		mut base := callee
+		for {
+			if base.kind.tag == .member {
+				if object := base.kind.object { base = *object } else { break }
+			} else if base.kind.tag == .tagged_template_literal {
+				if tag := base.kind.tag_expr { base = *tag } else { break }
+			} else { break }
+		}
+		if base.kind.tag == .import_call {
+			p.syntax_error('Cannot call new on dynamic import')
+		}
 	}
 
 	if p.match_token(.paren_open) {

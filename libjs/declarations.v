@@ -788,7 +788,11 @@ fn (mut p Parser) parse_class_element(class_start Position, mut found_private_na
 			p.flags.new_target_is_valid = true
 			p.flags.allow_super_property_lookup = true
 			p.scope_collector.open_static_init_scope()
+			// A static block's patterns must not consume an enclosing pattern's names.
+			saved_pattern_bound_names := p.pattern_bound_names.clone()
+			p.pattern_bound_names = []BoundName{}
 			children := p.parse_statement_list(false)
+			p.pattern_bound_names = saved_pattern_bound_names
 			p.flags = saved_flags
 			p.consume_token(.curly_close)
 			scope := ScopeData.shared_with_children(children)
@@ -1653,6 +1657,9 @@ fn (mut p Parser) parse_import_statement() Statement {
 	module_specifier := p.consume_module_specifier()
 	attributes := p.parse_with_clause()
 	p.consume_or_insert_semicolon()
+	for entry in entries {
+		p.scope_collector.add_import_binding(entry.local_name.data, start.line, start.column)
+	}
 
 	return p.statement(start, StatementKind{
 		tag:         .import_stmt
@@ -1952,6 +1959,12 @@ fn (mut p Parser) parse_with_clause() []ImportAttribute {
 		if p.match_token(.string_literal) {
 			token := p.consume()
 			value, _ := p.parse_string_value(token)
+			for attribute in attributes {
+				if attribute.key == key {
+					p.syntax_error('Duplicate import attribute key')
+					break
+				}
+			}
 			attributes << ImportAttribute{
 				key:   key
 				value: value
