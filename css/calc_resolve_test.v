@@ -94,6 +94,9 @@ fn test_resolve_stepped_functions() {
 	assert approx(resolved_px('round(down, 4.6px, 1px)', empty)?, 4)
 	assert approx(resolved_px('round(up, 4.2px, 1px)', empty)?, 5)
 	assert approx(resolved_px('round(to-zero, -4.6px, 1px)', empty)?, -4)
+	assert approx(resolved_number('round(4.6)')?, 5)
+	assert approx(resolved_number('round(up, 4.2)')?, 5)
+	assert approx(resolved_number('round(down, 4.6)')?, 4)
 	// Resolve mixed arguments in the property's length-percentage context.
 	basis := CalculationResolutionContext{
 		percentage_basis: CalculationPercentageBasis(Length.make_px(200))
