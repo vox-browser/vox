@@ -42,10 +42,28 @@ pub fn (mut reader BitReader) decode_modular_channels(mut channels []ModularChan
 	} else {
 		0
 	}
+	// Properties 0 and 1 (channel and stream) are constant within a channel, so
+	// the tree is pruned of splits on them once per channel.
+	mut channel_nodes := []ModularTreeNode{cap: tree.nodes.len}
+	mut sources := []int{cap: tree.nodes.len}
 	for c in 0 .. channels.len {
 		width := channels[c].width
 		height := channels[c].height
 		if width == 0 || height == 0 { continue }
+		if !prune_modular_tree_into(tree.nodes, [i32(c), i32(stream_id), 0]!, 2, mut channel_nodes, mut sources) {
+			channel_nodes.clear()
+			channel_nodes << tree.nodes
+		}
+		// The weighted predictor only matters when a reachable leaf predicts with
+		// it or a reachable split tests its property (15).
+		mut channel_weighted := false
+		if uses_weighted {
+			for node in channel_nodes {
+				if (node.is_leaf && node.predictor == .weighted) || (!node.is_leaf && node.property == 15) {
+					channel_weighted = true
+				}
+			}
+		}
 		if u64(width) * u64(reference_count) > 67108864 {
 			return error('JPEG XL modular reference limit exceeded')
 		}
@@ -63,8 +81,9 @@ pub fn (mut reader BitReader) decode_modular_channels(mut channels []ModularChan
 			properties[2] = i32(y)
 			for x in 0 .. width {
 				data := prediction_data_in_rows(current, top, toptop, x, y)
-				wp := if uses_weighted { weighted.predict_and_property(x, y, data)! } else { WeightedPrediction{} }
-				mut leaf := tree.nodes[0]
+				// 0 <= x < width, the predictor's width, and y >= 0.
+				wp := if channel_weighted { weighted.predict_in_bounds(x, y, data) } else { WeightedPrediction{} }
+				mut leaf := channel_nodes[0]
 				if !leaf.is_leaf {
 					// Same values as compute_modular_properties; property 9 carries
 					// the previous pixel's gradient into property 8.
@@ -84,8 +103,8 @@ pub fn (mut reader BitReader) decode_modular_channels(mut channels []ModularChan
 					for r in 0 .. reference_count { properties[16 + r] = references[x * reference_count + r] }
 					mut index := u32(0)
 					mut found := false
-					for _ in 0 .. tree.nodes.len {
-						node := tree.nodes[int(index)]
+					for _ in 0 .. channel_nodes.len {
+						node := channel_nodes[int(index)]
 						if node.is_leaf {
 							leaf = node
 							found = true
@@ -98,7 +117,7 @@ pub fn (mut reader BitReader) decode_modular_channels(mut channels []ModularChan
 				guess := i64(u64(leaf.predictor.predict_one(data, wp.value)) + u64(i64(leaf.offset)))
 				residual := symbols.read_signed(&tree.histograms, int(leaf.context), mut reader)!
 				value := make_modular_pixel(residual, leaf.multiplier, guess)
-				if uses_weighted { weighted.update_errors(value, x, y)! }
+				if channel_weighted { weighted.update_errors_in_bounds(value, x, y) }
 				current[x] = value
 				channels[c].samples[y * width + x] = modular_storage_value(value, storage)
 			}

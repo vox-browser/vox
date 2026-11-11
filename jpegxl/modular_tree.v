@@ -128,3 +128,46 @@ pub fn (tree ModularTree) walk(properties []i32) !ModularTreeNode {
 	}
 	return error('Empty or cyclic JPEG XL modular tree')
 }
+
+// Follows splits on the properties below `count`, whose values are `fixed`,
+// from `start` to the first leaf or other split. The tree must have passed
+// validate_modular_tree, which bounds every path.
+@[direct_array_access]
+fn modular_tree_resolve(nodes []ModularTreeNode, start int, fixed [3]i32, count int) int {
+	mut index := start
+	for _ in 0 .. nodes.len {
+		node := nodes[index]
+		if node.is_leaf || int(node.property) >= count { break }
+		index = int(if fixed[int(node.property)] > node.threshold { node.left } else { node.right })
+	}
+	return index
+}
+
+// Writes into `out` the tree reachable from the root of a validated tree, with
+// every split on a property below `count` (at most 3: channel, stream and row)
+// resolved by its `fixed` value. Any pixel whose first `count` properties have
+// those values reaches the same leaf in both trees. Returns false, leaving the
+// caller to use the original tree, if the copy would be larger than it.
+@[direct_array_access]
+fn prune_modular_tree_into(nodes []ModularTreeNode, fixed [3]i32, count int, mut out []ModularTreeNode, mut sources []int) bool {
+	out.clear()
+	sources.clear()
+	if nodes.len == 0 { return false }
+	root := modular_tree_resolve(nodes, 0, fixed, count)
+	out << nodes[root]
+	sources << root
+	for i := 0; i < out.len; i++ {
+		node := nodes[sources[i]]
+		if node.is_leaf { continue }
+		if out.len + 2 > nodes.len { return false }
+		left := modular_tree_resolve(nodes, int(node.left), fixed, count)
+		right := modular_tree_resolve(nodes, int(node.right), fixed, count)
+		out[i] = ModularTreeNode{ ...node, left: u32(out.len), right: u32(out.len + 1) }
+		out << nodes[left]
+		sources << left
+		out << nodes[right]
+		sources << right
+	}
+	return true
+}
+

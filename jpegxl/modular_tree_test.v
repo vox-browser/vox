@@ -105,3 +105,88 @@ fn test_modular_tree_ranges_depth_and_traversal_are_bounded() {
 		assert reader.position == 0
 	}
 }
+
+// Builds a random tree over properties 0 .. 5. Each split's threshold lies in
+// the range its path leaves for that property (-4 ..= 4 at the root), so the
+// tree validates; each leaf's context is its own index, identifying it.
+fn random_prune_tree(seed u32, splits int) []ModularTreeNode {
+	mut state := seed
+	mut nodes := [ModularTreeNode{ is_leaf: true }]
+	mut lows := [[i32(-4)].repeat(6)]
+	mut highs := [[i32(4)].repeat(6)]
+	mut leaves := [0]
+	for _ in 0 .. splits {
+		state = state * 1664525 + 1013904223
+		slot := int(state >> 8) % leaves.len
+		pick := leaves[slot]
+		state = state * 1664525 + 1013904223
+		property := int((state >> 8) % 6)
+		low := lows[pick][property]
+		high := highs[pick][property]
+		if low >= high { continue }
+		state = state * 1664525 + 1013904223
+		threshold := low + i32((state >> 8) % u32(high - low))
+		leaves.delete(slot)
+		nodes[pick] = ModularTreeNode{ property: u8(property), threshold: threshold, left: u32(nodes.len),
+			right: u32(nodes.len + 1) }
+		mut left_lows := lows[pick].clone()
+		left_lows[property] = threshold + 1
+		mut right_highs := highs[pick].clone()
+		right_highs[property] = threshold
+		leaves << nodes.len
+		leaves << nodes.len + 1
+		nodes << ModularTreeNode{ is_leaf: true }
+		lows << left_lows
+		highs << highs[pick].clone()
+		nodes << ModularTreeNode{ is_leaf: true }
+		lows << lows[pick].clone()
+		highs << right_highs
+	}
+	for i in 0 .. nodes.len {
+		if nodes[i].is_leaf { nodes[i] = ModularTreeNode{ is_leaf: true, context: u32(i), multiplier: 1 } }
+	}
+	return nodes
+}
+
+fn prune_test_leaf(nodes []ModularTreeNode, properties []i32) u32 {
+	mut index := 0
+	for !nodes[index].is_leaf {
+		node := nodes[index]
+		index = int(if properties[int(node.property)] > node.threshold { node.left } else { node.right })
+	}
+	return nodes[index].context
+}
+
+// A pruned tree reaches the same leaf as the original for every pixel whose
+// fixed properties match, and only keeps splits on the remaining properties.
+fn test_pruned_modular_trees_reach_the_same_leaves() {
+	mut out := []ModularTreeNode{}
+	mut sources := []int{}
+	mut state := u32(12345)
+	for seed in 0 .. 200 {
+		nodes := random_prune_tree(u32(seed) * 7919 + 1, 1 + seed % 40 * 3)
+		validate_modular_tree(nodes, 6)!
+		for count in 1 .. 4 {
+			for _ in 0 .. 8 {
+				mut fixed := [3]i32{}
+				for i in 0 .. 3 {
+					state = state * 1664525 + 1013904223
+					fixed[i] = i32((state >> 8) % 9) - 4
+				}
+				assert prune_modular_tree_into(nodes, fixed, count, mut out, mut sources)
+				assert out.len <= nodes.len
+				for node in out { assert node.is_leaf || int(node.property) >= count }
+				validate_modular_tree(out, 6)!
+				for _ in 0 .. 32 {
+					mut properties := []i32{len: 6}
+					for i in 0 .. 6 {
+						state = state * 1664525 + 1013904223
+						properties[i] = if i < count { fixed[i] } else { i32((state >> 8) % 9) - 4 }
+					}
+					assert prune_test_leaf(out, properties) == prune_test_leaf(nodes, properties)
+				}
+			}
+		}
+	}
+	assert !prune_modular_tree_into([]ModularTreeNode{}, [3]i32{}, 2, mut out, mut sources)
+}

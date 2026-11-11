@@ -89,12 +89,17 @@ fn predictor_divisor(index u32) u32 {
 	return if index < 64 { predictor_divisors[index] } else { u32(16777216 / (index + 1)) }
 }
 
-// Indices stay below 2 * (width + 1), the buffer length, once 0 <= x < width.
-@[direct_array_access]
 pub fn (mut state WeightedPredictorState) predict_and_property(x int, y int, data PredictionData) !WeightedPrediction {
 	if x < 0 || x >= state.width || y < 0 {
 		return error('Invalid JPEG XL weighted predictor position')
 	}
+	return state.predict_in_bounds(x, y, data)
+}
+
+// predict_and_property for 0 <= x < width and y >= 0, which the caller ensures.
+// Indices stay below 2 * (width + 1), the buffer length.
+@[direct_array_access]
+fn (mut state WeightedPredictorState) predict_in_bounds(x int, y int, data PredictionData) WeightedPrediction {
 	stride := state.width + 1
 	current := if y & 1 != 0 { 0 } else { stride }
 	previous := if y & 1 != 0 { stride } else { 0 }
@@ -143,12 +148,17 @@ pub fn (mut state WeightedPredictorState) predict_and_property(x int, y int, dat
 	return WeightedPrediction{ value: (prediction + 3) >> 3, property: i32(property) }
 }
 
-// Indices stay below 2 * (width + 1), the buffer length, once 0 <= x < width.
-@[direct_array_access]
 pub fn (mut state WeightedPredictorState) update_errors(correct i32, x int, y int) ! {
 	if x < 0 || x >= state.width || y < 0 {
 		return error('Invalid JPEG XL weighted predictor position')
 	}
+	state.update_errors_in_bounds(correct, x, y)
+}
+
+// update_errors for 0 <= x < width and y >= 0, which the caller ensures.
+// Indices stay below 2 * (width + 1), the buffer length.
+@[direct_array_access]
+fn (mut state WeightedPredictorState) update_errors_in_bounds(correct i32, x int, y int) {
 	stride := state.width + 1
 	current := if y & 1 != 0 { 0 } else { stride }
 	previous := if y & 1 != 0 { stride } else { 0 }
