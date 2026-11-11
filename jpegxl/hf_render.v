@@ -49,7 +49,11 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 	mut dct_input := []f32{len: 64}
 	mut dct_output := []f32{len: 64}
 	mut dct_vector := []f32{len: 64}
+	// Quantization tables whose weights have been validated.
+	mut checked_tables := [17]bool{}
 	for block in blocks {
+		table_index := block.transform.quant_table_index()
+		if table_index < 0 || table_index >= 17 { return error('Invalid JPEG XL quantization table index') }
 		dims := block.transform.covered_blocks()
 		count := dims[0] * dims[1] * 64
 		color_index := (block.y / 8) * color_width + block.x / 8
@@ -69,7 +73,8 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 			x_color_factor: colors.y_to_x[color_index]
 			b_color_factor: colors.y_to_b[color_index]
 			biases: rendering.biases
-		}, dequant_buffers)!
+		}, dequant_buffers, checked_tables[table_index])!
+		checked_tables[table_index] = true
 		for c in [1, 0, 2]! {
 			h := params.horizontal_shift[c]
 			v := params.vertical_shift[c]
