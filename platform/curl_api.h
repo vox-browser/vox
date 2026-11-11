@@ -29,13 +29,13 @@ typedef struct {
 #include <pthread.h>
 #include <stdio.h>
 // Keep libcurl and its TLS/compression dependencies lazy. Both native Fetch
-// and cancellable browser resource requests resolve the same library.
-// Production rpaths name the same vcpkg library the linker selected; a test
-// binary without them uses the system library that -lcurl linked before.
+// and cancellable browser resource requests resolve the same library:
+// Homebrew's OpenSSL-based curl (`brew install curl`), then the system library.
 VOX_NATIVE_STATE VoxCurlApi vox_curl_loaded_api;
 VOX_NATIVE_STATE pthread_once_t vox_curl_load_once VOX_NATIVE_STATE_INIT(PTHREAD_ONCE_INIT);
 static void vox_curl_load_api(void) {
-    void* library = dlopen("@rpath/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
+    void* library = dlopen("/opt/homebrew/opt/curl/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
+    if (!library) library = dlopen("/usr/local/opt/curl/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!library) library = dlopen("/usr/lib/libcurl.4.dylib", RTLD_NOW | RTLD_LOCAL);
     if (!library) {
         fprintf(stderr, "Vox: cannot load libcurl: %s\n", dlerror());

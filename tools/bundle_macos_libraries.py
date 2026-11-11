@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Copy an app's third-party dylibs into the app and verify that it is self-contained.
 
-Production builds link vcpkg and Homebrew libraries through absolute search
+Production builds link Homebrew libraries through absolute search
 paths that exist only on the build machine. A release must carry them itself:
 copy every non-system library the bundle's Mach-O files load, including the
 libraries the browser opens with dlopen("@rpath/..."), into

@@ -10,31 +10,16 @@ $if linux {
 }
 // Use the ICU 78 that LibJS's property bridge binds by versioned name: Homebrew's
 // `icu4c@78` keg (`brew install icu4c@78`), whose headers select the same `_78`
-// API for every Unicode caller. A production build that still links the vcpkg
-// FFmpeg/Skia bridges passes `-d vox_vcpkg` to keep the single ICU they load.
-$if !vox_vcpkg ? {
-	$if arm64 {
-		#flag darwin -I/opt/homebrew/opt/icu4c@78/include
-		$if !vox_filter_worker_minimal_links ? {
-			#flag darwin /opt/homebrew/opt/icu4c@78/lib/libicuuc.78.dylib
-		}
-	} $else {
-		#flag darwin -I/usr/local/opt/icu4c@78/include
-		$if !vox_filter_worker_minimal_links ? {
-			#flag darwin /usr/local/opt/icu4c@78/lib/libicuuc.78.dylib
-		}
-	}
-} $else $if arm64 {
-	#flag darwin -I@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
+// API for every Unicode caller.
+$if arm64 {
+	#flag darwin -I/opt/homebrew/opt/icu4c@78/include
 	$if !vox_filter_worker_minimal_links ? {
-		#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib
-		#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+		#flag darwin /opt/homebrew/opt/icu4c@78/lib/libicuuc.78.dylib
 	}
 } $else {
-	#flag darwin -I@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/include
+	#flag darwin -I/usr/local/opt/icu4c@78/include
 	$if !vox_filter_worker_minimal_links ? {
-		#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib/libicuuc.dylib
-		#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+		#flag darwin /usr/local/opt/icu4c@78/lib/libicuuc.78.dylib
 	}
 }
 #flag darwin -lc++

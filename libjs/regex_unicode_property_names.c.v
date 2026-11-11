@@ -3,20 +3,11 @@ module libjs
 #flag -I @DIR
 #flag darwin -licucore
 // The property bridge binds ICU 78 explicitly. Homebrew's current ICU can have
-// a different ABI, so use its pinned `icu4c@78` keg (`brew install icu4c@78`),
-// or with `-d vox_vcpkg` the vcpkg ICU that the FFmpeg/Skia bridges load.
-$if !vox_vcpkg ? {
-	$if arm64 {
-		#flag darwin /opt/homebrew/opt/icu4c@78/lib/libicuuc.78.dylib
-	} $else {
-		#flag darwin /usr/local/opt/icu4c@78/lib/libicuuc.78.dylib
-	}
-} $else $if arm64 {
-	#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libicuuc.dylib
-	#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+// a different ABI, so use its pinned `icu4c@78` keg (`brew install icu4c@78`).
+$if arm64 {
+	#flag darwin /opt/homebrew/opt/icu4c@78/lib/libicuuc.78.dylib
 } $else {
-	#flag darwin @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib/libicuuc.dylib
-	#flag darwin -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/x64-osx-dynamic/lib
+	#flag darwin /usr/local/opt/icu4c@78/lib/libicuuc.78.dylib
 }
 #flag linux -licuuc
 #include "regex_unicode_property.h"
