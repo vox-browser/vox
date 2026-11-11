@@ -9907,6 +9907,11 @@ pub fn (d &Document) is_fully_active() bool {
 	// A Document d is said to be fully active when d is the active document of a navigable navigable,
 	// and either navigable is a top-level traversable or navigable's parent has a fully active document.
 	nav := d.navigable() or { return false }
+	// The document can keep its navigable until unloading completes. Parent
+	// recursion applies the same guard to a destroyed ancestor's subtree.
+	if nav.has_been_destroyed() {
+		return false
+	}
 
 	if nav.is_top_level_traversable() {
 		return true
