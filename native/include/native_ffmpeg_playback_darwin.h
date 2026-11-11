@@ -8,9 +8,6 @@ typedef struct {
     AVCodecContext *codec;
     AVPacket *packet;
     AVFrame *frame;
-    void *yuv_library;
-    __typeof__(&I420AlphaToABGR) alpha_to_rgba;
-    __typeof__(&I420ToABGR) opaque_to_rgba;
     int stream, width, height;
     double duration, next_time;
     bool pending, draining, finished, failed;
@@ -26,7 +23,6 @@ static void vox_ffmpeg_video_close(VoxFFmpegVideo *video) {
     if (video->packet) api->av_packet_free(&video->packet);
     if (video->codec) api->avcodec_free_context(&video->codec);
     if (video->format) api->avformat_close_input(&video->format);
-    if (video->yuv_library) dlclose(video->yuv_library);
     free(video->packed_planes);
     free(video);
 }
@@ -66,11 +62,6 @@ static VoxFFmpegVideo *vox_ffmpeg_video_open(const char *path) {
     video->packet = api->av_packet_alloc();
     video->frame = api->av_frame_alloc();
     if (!video->packet || !video->frame) goto fail;
-    video->yuv_library = dlopen("@rpath/libyuv.dylib", RTLD_LAZY | RTLD_LOCAL);
-    if (!video->yuv_library) goto fail;
-    video->alpha_to_rgba = dlsym(video->yuv_library, "I420AlphaToABGR");
-    video->opaque_to_rgba = dlsym(video->yuv_library, "I420ToABGR");
-    if (!video->alpha_to_rgba || !video->opaque_to_rgba) goto fail;
     return video;
 fail:
     vox_ffmpeg_video_close(video);
@@ -125,22 +116,21 @@ static bool vox_ffmpeg_video_next(VoxFFmpegVideo *video) {
 // playback clock. Paused polls neither decode nor publish duplicate frames.
 static bool vox_ffmpeg_video_convert(VoxFFmpegVideo *video, uint8_t *pixels) {
     AVFrame *frame = video->frame;
-    // Chromium defaults untagged SD video to limited BT.601. libyuv also
-    // preserves each 2x2 chroma sample for odd visible sizes; swscale instead
-    // stretches a 33-pixel plane over all 65 pixels of an odd-width video.
+    // Chromium defaults untagged SD video to limited BT.601, converted as
+    // libyuv's I420ToABGR/I420AlphaToABGR do (yuv/i420_bt601.v). That keeps
+    // each 2x2 chroma sample for odd visible sizes; swscale instead stretches
+    // a 33-pixel plane over all 65 pixels of an odd-width video.
     if (frame->color_range != AVCOL_RANGE_JPEG
         && (frame->colorspace == AVCOL_SPC_UNSPECIFIED
             || frame->colorspace == AVCOL_SPC_BT470BG
             || frame->colorspace == AVCOL_SPC_SMPTE170M)) {
-        if (frame->format == AV_PIX_FMT_YUVA420P)
-            return video->alpha_to_rgba(frame->data[0], frame->linesize[0],
+        if (frame->format == AV_PIX_FMT_YUVA420P || frame->format == AV_PIX_FMT_YUV420P) {
+            bool alpha = frame->format == AV_PIX_FMT_YUVA420P;
+            return vox_i420_bt601_to_rgba(frame->data[0], frame->linesize[0],
                 frame->data[1], frame->linesize[1], frame->data[2], frame->linesize[2],
-                frame->data[3], frame->linesize[3], pixels, video->width * 4,
-                video->width, video->height, 0) == 0;
-        if (frame->format == AV_PIX_FMT_YUV420P)
-            return video->opaque_to_rgba(frame->data[0], frame->linesize[0],
-                frame->data[1], frame->linesize[1], frame->data[2], frame->linesize[2],
-                pixels, video->width * 4, video->width, video->height) == 0;
+                alpha ? frame->data[3] : NULL, alpha ? frame->linesize[3] : 0, pixels,
+                video->width * 4, video->width, video->height);
+        }
     }
     return native_ffmpeg_convert_frame(video->api, frame, pixels, video->width * 4);
 }

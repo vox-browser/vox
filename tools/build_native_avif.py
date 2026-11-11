@@ -20,12 +20,16 @@ def main():
     output = args.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     if sys.platform == 'darwin':
-        import platform
-        sdk = args.sdk_root or REPO.parent / '3rd/ladybird/Build/release/vcpkg_installed' / (
-            'arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic')
-        flags = ['-I' + str(sdk / 'include'), '-L' + str(sdk / 'lib'), '-lavif',
-                 '-Wl,-rpath,' + str(sdk / 'lib'), '-dynamiclib',
-                 '-Wl,-install_name,@rpath/libVoxAVIF.dylib']
+        # Homebrew's libavif (`brew install libavif`) through pkg-config, or an
+        # explicit prefix holding include/avif and lib/libavif.
+        if args.sdk_root:
+            sdk = args.sdk_root.resolve()
+            flags = ['-I' + str(sdk / 'include'), '-L' + str(sdk / 'lib'), '-lavif',
+                     '-Wl,-rpath,' + str(sdk / 'lib')]
+        else:
+            flags = shlex.split(subprocess.check_output(
+                ['pkg-config', '--cflags', '--libs', 'libavif'], text=True))
+        flags += ['-dynamiclib', '-Wl,-install_name,@rpath/libVoxAVIF.dylib']
     elif sys.platform == 'linux':
         flags = shlex.split(subprocess.check_output(
             ['pkg-config', '--cflags', '--libs', 'libavif'], text=True))

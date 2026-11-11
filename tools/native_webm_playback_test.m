@@ -3,6 +3,46 @@
 #include <assert.h>
 #include <unistd.h>
 
+// The browser exports this converter from V (media/yuv_bridge.v). Declining
+// here keeps the bridge on its swscale path; these cases need only the
+// BT.601 path below.
+bool vox_yuv_u8_to_rgba(uint8_t *y, uint32_t y_stride, uint8_t *u, uint32_t u_stride,
+    uint8_t *v, uint32_t v_stride, uint32_t width, uint32_t height, bool subsampling_x,
+    bool subsampling_y, uint8_t *output, uint32_t stride, uint8_t range, uint8_t matrix) {
+    (void)y; (void)y_stride; (void)u; (void)u_stride; (void)v; (void)v_stride; (void)width;
+    (void)height; (void)subsampling_x; (void)subsampling_y; (void)output; (void)stride;
+    (void)range; (void)matrix;
+    return false;
+}
+
+// The browser exports vox_i420_bt601_to_rgba from V (yuv/i420_bt601.v). This
+// standalone copy uses the same kYuvI601Constants arithmetic.
+static uint8_t test_bt601_clamp(int value) {
+    value >>= 6;
+    return value < 0 ? 0 : value > 255 ? 255 : (uint8_t)value;
+}
+
+bool vox_i420_bt601_to_rgba(uint8_t *y, int32_t y_stride, uint8_t *u, int32_t u_stride,
+    uint8_t *v, int32_t v_stride, uint8_t *a, int32_t a_stride, uint8_t *output,
+    int32_t stride, int32_t width, int32_t height) {
+    if (!y || !u || !v || !output || width <= 0 || height <= 0 || stride < width * 4) return false;
+    for (int row = 0; row < height; ++row) {
+        const uint8_t *y_row = y + row * y_stride;
+        const uint8_t *u_row = u + (row >> 1) * u_stride, *v_row = v + (row >> 1) * v_stride;
+        const uint8_t *a_row = a ? a + row * a_stride : NULL;
+        uint8_t *out = output + row * stride;
+        for (int x = 0; x < width; ++x, out += 4) {
+            int luma = (int)(((uint32_t)y_row[x] * 0x0101u * 18997u) >> 16) - 1160;
+            int cb = u_row[x >> 1] - 128, cr = v_row[x >> 1] - 128;
+            out[0] = test_bt601_clamp(luma + cr * 102);
+            out[1] = test_bt601_clamp(luma - cb * 25 - cr * 52);
+            out[2] = test_bt601_clamp(luma + cb * 128);
+            out[3] = a_row ? a_row[x] : 255;
+        }
+    }
+    return true;
+}
+
 static void checkAlpha(void *media, const char *reference) {
     int32_t width = 0, height = 0;
     uint8_t *pixels = native_media_copy_frame(media, &width, &height);

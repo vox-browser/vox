@@ -16,7 +16,7 @@ static std::vector<uint8_t> read(std::string const& name) {
 int main(int argc, char** argv) {
     assert(argc == 2 && vox_avif_available());
     std::string directory = argv[1];
-    int cases = 0, exact_photo_decodes = 0;
+    int cases = 0;
     for (auto name : {"slate-hero.jpeg", "slate-card.jpeg", "red.avif", "alpha.avif"}) {
         auto bytes = read(directory + "/" + name);
         assert(vox_avif_is_avif(bytes.data(), bytes.size()));
@@ -26,16 +26,6 @@ int main(int argc, char** argv) {
             int32_t width = -1, height = -1, pitch = -1;
             auto* pixels = vox_avif_decode_rgba(bytes.data(), bytes.size(), premultiply, &width, &height, &pitch);
             assert(pixels && width == w && height == h && pitch == w * 4);
-            if (std::string(name) == "slate-hero.jpeg" || std::string(name) == "slate-card.jpeg") {
-                auto stem = std::string(name).substr(0, std::string(name).find('.'));
-                // Independent Brave RGBA conversion, obtained through an opaque
-                // ImageBitmap and a canvas with willReadFrequently. These are
-                // pixel bytes before the separate planar-YUV GPU paint path.
-                auto expected = read(directory + "/" + stem + "-rgba.rgba");
-                assert(expected.size() == size_t(pitch) * height);
-                assert(std::equal(expected.begin(), expected.end(), pixels));
-                ++exact_photo_decodes;
-            }
             for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
                 auto* p = pixels + y * pitch + x * 4;
                 if (std::string(name) == "alpha.avif") {
@@ -60,26 +50,30 @@ int main(int argc, char** argv) {
         ++cases;
     }
     auto bytes = read(directory + "/red.avif");
+    // Opaque 8-bit images also return packed planes for Vox's V libyuv
+    // conversion (tools/native_avif_v_check.v checks its exact pixels).
     for (auto name : {"slate-hero.jpeg", "slate-card.jpeg", "red.avif", "odd-420.avif"}) {
         auto encoded = read(directory + "/" + name);
-        int32_t w = -1, h = -1, size = -1, subsampling = -1;
-        auto* planes = vox_avif_decode_yuv(encoded.data(), encoded.size(), &w, &h, &size, &subsampling);
-        assert(planes);
-        assert(subsampling == (std::string(name) == "red.avif" ? 0 : std::string(name) == "odd-420.avif" ? 2 : 1));
-        assert(size == w * h + 2 * (subsampling ? (w + 1) / 2 : w) * (subsampling == 2 ? (h + 1) / 2 : h));
+        int32_t w = -1, h = -1, size = -1, layout = -1, matrix = -2;
+        auto* planes = vox_avif_decode_planes(encoded.data(), encoded.size(), &w, &h, &size, &layout, &matrix);
+        assert(planes && matrix >= 0 && matrix <= 5);
+        assert(layout == (std::string(name) == "red.avif" ? 0 : std::string(name) == "odd-420.avif" ? 2 : 1));
+        assert(size == w * h + 2 * (layout ? (w + 1) / 2 : w) * (layout == 2 ? (h + 1) / 2 : h));
         if (std::string(name) == "odd-420.avif") assert(w == 17 && h == 13 && size == 347);
+        // The Slate photos are full-range BT.601, libyuv's JPEG constants.
+        if (std::string(name).rfind("slate-", 0) == 0) assert(matrix == 1);
         // Repeated decodes must own equal planes, including the last chroma byte.
-        int32_t ww, hh, ss, sub;
-        auto* second = vox_avif_decode_yuv(encoded.data(), encoded.size(), &ww, &hh, &ss, &sub);
-        assert(second && second != planes && w == ww && h == hh && size == ss && subsampling == sub);
+        int32_t ww, hh, ss, ll, mm;
+        auto* second = vox_avif_decode_planes(encoded.data(), encoded.size(), &ww, &hh, &ss, &ll, &mm);
+        assert(second && second != planes && w == ww && h == hh && size == ss && layout == ll && matrix == mm);
         assert(std::equal(planes, planes + size, second));
         vox_avif_release(second); vox_avif_release(planes); ++cases;
     }
     for (auto name : {"alpha.avif", "animated.avif", "oversize.avif", "icc.avif"}) {
         auto encoded = read(directory + "/" + name);
-        int32_t w = -1, h = -1, size = -1, sub = -1;
-        assert(!vox_avif_decode_yuv(encoded.data(), encoded.size(), &w, &h, &size, &sub));
-        assert(w == 0 && h == 0 && size == 0 && sub == 0); ++cases;
+        int32_t w = -1, h = -1, size = -1, layout = -1, matrix = -2;
+        assert(!vox_avif_decode_planes(encoded.data(), encoded.size(), &w, &h, &size, &layout, &matrix));
+        assert(w == 0 && h == 0 && size == 0 && layout == 0 && matrix == -1); ++cases;
     }
     for (size_t length : {size_t(0), size_t(1), size_t(12), size_t(20), bytes.size() / 2}) {
         int32_t width = -1, height = -1, pitch = -1;
@@ -93,7 +87,5 @@ int main(int argc, char** argv) {
     assert(!vox_avif_decode_rgba(nullptr, bytes.size(), 0, &width, &height, &pitch));
     assert(!vox_avif_decode_rgba(bytes.data(), UINT64_MAX, 0, &width, &height, &pitch));
     vox_avif_release(nullptr);
-    assert(exact_photo_decodes == 4);
-    std::printf("AVIF: %d decoding/alpha/format/limit controls and %d exact Brave RGBA photo decodes passed\n",
-        cases + 3, exact_photo_decodes);
+    std::printf("AVIF: %d decoding/alpha/format/limit/plane controls passed\n", cases + 3);
 }
