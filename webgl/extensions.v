@@ -17,7 +17,9 @@ struct ExtensionDescriptor {
 const available_extensions = [
 	ExtensionDescriptor{
 		name:            'ANGLE_instanced_arrays'
-		required_native: ['GL_ANGLE_instanced_arrays']
+		// ANGLE_instanced_arrays is the standard WebGL API name. Its
+		// implementation uses native core instancing, with no ANGLE backend.
+		required_native: ['GL_ARB_instanced_arrays']
 		version:         WebGLVersion.webgl1
 		implemented:     true
 	},
@@ -100,8 +102,7 @@ const available_extensions = [
 	},
 	ExtensionDescriptor{
 		name:               'WEBGL_compressed_texture_s3tc'
-		required_native:    ['GL_EXT_texture_compression_dxt1', 'GL_ANGLE_texture_compression_dxt3',
-			'GL_ANGLE_texture_compression_dxt5']
+		required_native:    ['GL_EXT_texture_compression_s3tc']
 		implemented:        true
 		compressed_formats: [compressed_rgb_s3tc_dxt1_ext, compressed_rgba_s3tc_dxt1_ext,
 			compressed_rgba_s3tc_dxt3_ext, compressed_rgba_s3tc_dxt5_ext]
@@ -121,7 +122,7 @@ const available_extensions = [
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_depth_texture'
-		required_native: ['GL_ANGLE_depth_texture']
+		required_native: ['GL_OES_depth_texture']
 		version:         WebGLVersion.webgl1
 	},
 	ExtensionDescriptor{
@@ -230,7 +231,7 @@ const available_extensions = [
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_compressed_texture_etc'
-		required_native: ['GL_ANGLE_compressed_texture_etc']
+		required_native: ['GL_ARB_ES3_compatibility']
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_compressed_texture_etc1'
@@ -242,15 +243,15 @@ const available_extensions = [
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_multi_draw'
-		required_native: ['GL_ANGLE_multi_draw']
+		required_native: ['GL_EXT_multi_draw_arrays']
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_polygon_mode'
-		required_native: ['GL_ANGLE_polygon_mode']
+		required_native: ['GL_NV_polygon_mode']
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_provoking_vertex'
-		required_native: ['GL_ANGLE_provoking_vertex']
+		required_native: ['GL_ARB_provoking_vertex']
 		version:         WebGLVersion.webgl2
 	},
 	ExtensionDescriptor{
@@ -260,7 +261,7 @@ const available_extensions = [
 	},
 	ExtensionDescriptor{
 		name:            'WEBGL_stencil_texturing'
-		required_native: ['GL_ANGLE_stencil_texturing']
+		required_native: ['GL_ARB_stencil_texturing']
 		version:         WebGLVersion.webgl2
 	},
 	ExtensionDescriptor{

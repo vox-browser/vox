@@ -4,6 +4,7 @@
 void* vox_egl_create(int version);
 int vox_egl_make_current(void* handle);
 void vox_egl_destroy(void* handle);
+void vox_gl_release_current(void);
 void* vox_gl_fence_sync(unsigned condition, unsigned flags);
 unsigned vox_gl_client_wait_sync(void* sync, unsigned flags, unsigned long long timeout);
 void vox_gl_wait_sync(void* sync, unsigned flags, unsigned long long timeout);
@@ -12,6 +13,8 @@ int vox_gl_get_sync_parameter(void* sync, unsigned pname);
 unsigned vox_gl_get_error(void);
 int vox_gl_is_object(int kind, unsigned handle);
 char const* vox_gl_string(unsigned name);
+int vox_gl_extension_count(void);
+char const* vox_gl_extension_at(unsigned index);
 void vox_gl_request_extension(char const* name);
 void vox_egl_free_surface(void* handle);
 int vox_egl_allocate_surface(void* handle, int width, int height, int depth, int stencil);

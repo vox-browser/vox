@@ -44,8 +44,8 @@ fn test_source_shader_creation_retains_owned_record_for_actual_native_zero() {
 		context.lose_context_from_compositor_loss()
 		assert context.native.is_lost()
 		mut zero_shaders := []&WebGLShader{}
-		// The production loss path destroys EGL and unbinds its current context.
-		// ANGLE itself supplies zero here; this test installs no substitute backend.
+		// The production loss path destroys and unbinds its native GL context.
+		// The backend supplies zero here; this test installs no substitute backend.
 		for type_ in [vertex_shader, fragment_shader] {
 			native_handle := C.vox_gl_create_shader(type_)
 			assert native_handle == 0

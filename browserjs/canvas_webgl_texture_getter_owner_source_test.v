@@ -46,7 +46,7 @@ fn test_public_texture_getter_preserves_source_early_gates_and_lod_return_shape(
 			C.vox_gl_tex_parameterf(webgl.texture_2d, 0x813a, -2.5)
 		}
 		if runtime.evaluate_host('gl.getExtension("EXT_texture_filter_anisotropic")!==null')! == 'true' {
-			println('actual public ANGLE anisotropy extension enabled')
+			println('actual public native anisotropy extension enabled')
 			names << u32(0x84fe)
 		}
 		for target in [u32(webgl.texture_2d), u32(0xffff)] {

@@ -23,7 +23,8 @@ def main():
         ("gfxfont", ["woff2"], ["libwoff2dec"] if args.os == 'windows' else []),
     ]
     if args.os == 'windows':
-        groups.append(('webgl', ['native_windows'], ['angleproject']))
+        # WGL and the OpenGL declarations come from the MinGW Windows SDK.
+        groups.append(('webgl', ['native_windows'], []))
     for package, names, dependencies in groups:
         flags = shlex.split(subprocess.check_output(
             ["pkg-config", "--cflags", *dependencies], text=True)) if dependencies else []

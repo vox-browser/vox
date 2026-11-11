@@ -2,12 +2,16 @@
 
 Vox can be compiled for Windows x86-64 with current V and MinGW-w64. The build
 uses the shared V/UI2 chrome, GG/Sokol window host, Skia raster services,
-HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
+HarfBuzz, ICU, native OpenGL, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
 window host uses Direct3D 11, with WARP software rendering when hardware device
 creation fails. The fallback lives in Vox's graphics adapter; the shared V and
 Sokol installations do not need changes.
 The V graphics adapter also supplies shaders that consume GG's column-major
 projection and texture matrices correctly in HLSL, including the font atlas.
+WebGL uses its own offscreen WGL OpenGL 4.3 core context and the system OpenGL
+driver. It does not require an ANGLE installation or bundled EGL/GLES DLLs.
+The window host's Direct3D fallback does not supply a WebGL driver; context creation fails
+when the system cannot provide the required OpenGL context.
 
 The native `build_browser.vsh`/`x.imp` browser flow and portable ZIP packaging remain
 release scaffolding. Use the dedicated helper below for this compilation path.
@@ -34,7 +38,7 @@ pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
   mingw-w64-x86_64-python mingw-w64-x86_64-skia mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-woff2 mingw-w64-x86_64-openssl \
-  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
+  mingw-w64-x86_64-curl
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The

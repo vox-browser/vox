@@ -16,7 +16,7 @@ sudo apt-get update
 sudo apt-get install build-essential clang ninja-build generate-ninja pkg-config \
     python3 git curl ca-certificates libjavascriptcoregtk-4.1-dev libglib2.0-dev \
     libharfbuzz-dev libicu-dev libwoff-dev libbrotli-dev libcurl4-openssl-dev \
-    libssl-dev libegl1-mesa-dev libgles2-mesa-dev libgl1-mesa-dev libxi-dev \
+    libssl-dev libegl1-mesa-dev libgl1-mesa-dev libxi-dev \
     libxcursor-dev libxrandr-dev libx11-dev libasound2-dev libgc-dev \
     libfreetype-dev libfontconfig-dev libwebp-dev libpng-dev libjpeg-dev \
     fonts-liberation2 fonts-dejavu-core
@@ -254,8 +254,11 @@ Linux uses the existing portable painter, with retained shaped text and V
 (`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
 integration and the macOS video-frame decoder also remain platform-specific.
-WebGL requires an ANGLE EGL/GLES installation; distribution Mesa alone reports
-it unavailable. The native adapter preserves ANGLE's robust-buffer interface.
+WebGL uses the system EGL/OpenGL 4.3 core driver, including Mesa, with an
+offscreen context. No ANGLE installation or ANGLE-specific extensions are required.
+Context creation requires EGL 1.5 or EGL 1.4 with `EGL_KHR_create_context`.
+Context creation reports WebGL unavailable if the native driver cannot provide
+the requested context.
 System OpenSSL 3.0 supports ordinary crypto operations; newer algorithms require
 their provider versions (Argon2: 3.2+, ML-KEM/ML-DSA: 3.5+). Unsupported operations
 return errors, including signature contexts an older provider cannot honor.

@@ -316,6 +316,8 @@ fn (mut host CanvasWebGLHost) parameter(context &webgl.WebGLRenderingContext, va
 }
 
 pub fn (mut host CanvasWebGLHost) call(input string) !string {
+	// A native offscreen canvas may borrow the Linux window's GL thread.
+	defer { webgl.release_native_current() }
 	request := wg_object(json2.decode[json2.Any](input)!)!
 	result := host.dispatch(request) or {
 		message := err.msg()

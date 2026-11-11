@@ -16,6 +16,8 @@ v -enable-globals .
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
+WebGL - native CGL/OpenGL 4.1 on macOS, WGL/OpenGL 4.3 on Windows, and system EGL/OpenGL 4.3 on Linux. See [native backend requirements and compatibility](docs/NATIVE_WEBGL.md).
+
 GUI - V UI2
 
 JS - JavaScriptCore/V8/Vox JS engine (still WIP)

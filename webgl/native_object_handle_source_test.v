@@ -127,7 +127,7 @@ fn test_source_shader_proxy_id_and_sync_base_zero_remain_distinct_from_native_ha
 	assert !sync.object.handle_for_deletion(context.identity(), context.context_generation())!.has_value
 	C.vox_gl_delete_sync(sync.native_handle_)
 	assert C.vox_gl_get_error() == no_error
-	// ANGLE itself produces zero after the real production EGL-loss path.
+	// The native backend produces zero after the real production context-loss path.
 	context.lose_context_from_compositor_loss()
 	assert C.vox_gl_create_shader(vertex_shader) == 0
 	mut zero := context.create_shader(vertex_shader) or { panic('zero native shader record') }

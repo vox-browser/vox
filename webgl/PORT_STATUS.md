@@ -2274,10 +2274,12 @@ the new native file passed after fixing its test field spelling in
 `source-active-texture-public-gc-none.log`. This removes source-body cache/gates;
 the actual-driver error-retention boundary is recorded separately above.
 
-`native_egl.h`/`native_egl.c.v` create real EGL/ANGLE contexts using the Metal
-backend on macOS and the source compositor configuration. `pkg-config egl
-glesv2` resolves those libraries. Context loss destroys the native namespace;
-restoration creates a fresh context.
+`native_egl.h`/`native_egl.c.v` retain the service ABI while creating native
+CGL contexts on macOS, WGL contexts on Windows, and system EGL/OpenGL contexts
+on Linux. ANGLE is no longer a build or runtime dependency. Context loss
+destroys the native namespace; restoration creates a fresh context. See
+[`docs/NATIVE_WEBGL.md`](../docs/NATIVE_WEBGL.md) for driver requirements and
+the remaining shader-validation limitations of the native adapter.
 
 The direct backend executes the translated buffer/vertex commands, indexed and
 instanced draws, raster state, shader compilation/linking/reflection, typed

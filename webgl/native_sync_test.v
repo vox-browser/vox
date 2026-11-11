@@ -1,6 +1,6 @@
 module webgl
 
-fn test_webgl_sync_wait_and_queries_use_actual_angle_gpu_results() {
+fn test_webgl_sync_wait_and_queries_use_actual_native_gpu_results() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	assert !context.native.is_lost()
 	mut sync := context.fence_sync(sync_gpu_commands_complete, 0) or { panic('native fence failed') }

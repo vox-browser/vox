@@ -102,7 +102,7 @@ pub fn (mut context WebGLRenderingContext) read_pixels(x int, y int, width int, 
 }
 
 // WebGL{,2}RenderingContextOverloads::read_pixels: the destination view's
-// capacity and element offset reach ANGLE's robust read, before any write-back.
+// capacity and element offset reach the bounded native read before any write-back.
 pub fn (mut context WebGLRenderingContext) read_pixels_into(x int, y int, width int, height int, format GLenum, type_ GLenum, mut pixels []u8, dst_offset u64, element_size u64) {
 	context.native.make_current()
 	if context.version == .webgl2 && pixel_pack_buffer in context.bound_buffers {

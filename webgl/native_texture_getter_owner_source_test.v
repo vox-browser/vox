@@ -41,7 +41,7 @@ fn test_texture_getter_preserves_source_extension_version_gates_and_driver_owner
 		assert texture_2d !in context.bound_texture_objects
 		assert C.vox_gl_get_error() == no_error
 		if _ := context.get_extension('EXT_texture_filter_anisotropic', false) {
-			println('actual ANGLE anisotropy extension enabled')
+			println('actual native anisotropy extension enabled')
 			names << GLenum(0x84fe)
 		}
 		for target in [texture_2d, GLenum(0xffff)] {

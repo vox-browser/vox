@@ -5,8 +5,8 @@ module webgl
 fn test_source_sync_handle_returns_proxy_pointer_with_separate_actual_driver_mapping() {
 	mut context := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
 	mut other := WebGLRenderingContext.new(.webgl2, WebGLContextAttributes{}, [])
-	// ANGLE can use small integer native GLsync values, so independent real
-	// driver fences force the tested Source IDs away from their native mapping.
+	// Drivers may use small integer native GLsync values, so independent real
+	// fences force the tested Source IDs away from their native mapping.
 	context.native.make_current()
 	mut reserved := []voidptr{}
 	for _ in 0 .. 8 {

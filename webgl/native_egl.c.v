@@ -3,19 +3,20 @@
 module webgl
 
 $if macos {
-	#pkgconfig --cflags egl glesv2
+	#flag -framework OpenGL
 } $else $if windows {
 	#flag @DIR/../Build/deps/windows/native/webgl.a
-	#pkgconfig angleproject
+	#flag -lopengl32 -lgdi32 -luser32
 } $else {
-	#pkgconfig egl glesv2
+	#pkgconfig egl gl
+	#flag -pthread
 }
-#flag darwin -Wl,-rpath,/opt/homebrew/lib
 #include "@DIR/native_egl.h"
 
 fn C.vox_egl_create(int) voidptr
 fn C.vox_egl_make_current(voidptr) int
 fn C.vox_egl_destroy(voidptr)
+fn C.vox_gl_release_current()
 fn C.vox_gl_fence_sync(u32, u32) voidptr
 fn C.vox_gl_client_wait_sync(voidptr, u32, u64) u32
 fn C.vox_gl_wait_sync(voidptr, u32, u64)
@@ -24,9 +25,17 @@ fn C.vox_gl_get_sync_parameter(voidptr, u32) int
 fn C.vox_gl_get_error() u32
 fn C.vox_gl_is_object(int,u32) int
 fn C.vox_gl_string(u32) &char
+fn C.vox_gl_extension_count() int
+fn C.vox_gl_extension_at(u32) &char
 fn C.vox_gl_parameter_shape(u32,int) int
 fn C.vox_gl_parameter(u32,int,&f64)
 fn C.vox_gl_request_extension(&char)
+
+// Return the Linux render thread to its borrowed GLX window context.
+// Other platforms and callers without a window context need no restoration.
+pub fn release_native_current() {
+	C.vox_gl_release_current()
+}
 
 fn native_gl_string(name GLenum) string {
 	value := C.vox_gl_string(name)
@@ -35,8 +44,58 @@ fn native_gl_string(name GLenum) string {
 }
 
 fn native_gl_extensions() []string {
-	mut extensions := native_gl_string(0x1f03).split(' ').filter(it.len > 0)
-	extensions << native_gl_string(0x93a8).split(' ').filter(it.len > 0)
+	mut extensions := []string{}
+	count := C.vox_gl_extension_count()
+	for index in 0 .. count {
+		value := C.vox_gl_extension_at(u32(index))
+		if value != unsafe { nil } {
+			name := unsafe { cstring_to_vstring(value).clone() }
+			if name.len > 0 && name !in extensions {
+				extensions << name
+			}
+		}
+	}
+	// Native contexts require desktop GL 4.1 on macOS and GL 4.3 elsewhere.
+	// Promoted core features need not appear in the driver's extension strings,
+	// so expose their canonical capability names to the WebGL extension registry.
+	mut capabilities := [
+		'GL_ARB_instanced_arrays',
+		'GL_EXT_blend_minmax',
+		'GL_OES_element_index_uint',
+		'GL_OES_standard_derivatives',
+		'GL_OES_vertex_array_object',
+		'GL_EXT_draw_buffers',
+		'GL_OES_depth_texture',
+		'GL_EXT_frag_depth',
+		'GL_EXT_shader_texture_lod',
+		'GL_EXT_color_buffer_float',
+		'GL_OES_texture_float',
+		'GL_OES_texture_float_linear',
+		'GL_OES_texture_half_float',
+		'GL_OES_texture_half_float_linear',
+		'GL_EXT_float_blend',
+	]
+	$if !macos {
+		// ETC2/EAC compression is core in GL 4.3. On macOS it remains
+		// optional and is exposed only when the driver reports the extension.
+		capabilities << 'GL_ARB_ES3_compatibility'
+	}
+	// Desktop GL has core sRGB textures; S3TC remains driver-dependent.
+	if 'GL_EXT_texture_compression_s3tc' in extensions
+		|| 'GL_NV_texture_compression_s3tc' in extensions {
+		capabilities << 'GL_EXT_texture_compression_s3tc_srgb'
+	}
+	if 'GL_ARB_texture_filter_anisotropic' in extensions {
+		capabilities << 'GL_EXT_texture_filter_anisotropic'
+	}
+	if 'GL_NV_texture_compression_s3tc' in extensions {
+		capabilities << 'GL_EXT_texture_compression_s3tc'
+	}
+	for capability in capabilities {
+		if capability !in extensions {
+			extensions << capability
+		}
+	}
 	return extensions
 }
 fn C.vox_egl_free_surface(voidptr)
