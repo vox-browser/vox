@@ -11,8 +11,8 @@ pub mut:
 	done bool
 }
 
-// The source's IterationResult retains the value getter's completion until
-// IteratorStepValue consumes it. IteratorStep itself does not throw that error.
+// IteratorStep only checks completion. Its value is an undefined sentinel;
+// IteratorStepValue requests and consumes the value getter's completion.
 pub struct IterationResult {
 pub:
 	done  Value
@@ -76,6 +76,10 @@ pub fn iterator_value(mut vm VM, result &Object) !Value {
 }
 
 pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
+	return iterator_step_impl(mut vm, mut record, false)
+}
+
+fn iterator_step_impl(mut vm VM, mut record IteratorRecord, with_value bool) !IteratorStep {
 	// Builtin marker fast paths are pending; this is the source's ordinary path.
 	result := iterator_next(mut vm, mut record, none)!
 	done := result.get(mut vm, PropertyName.from_str('done')) or {
@@ -86,7 +90,9 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 		record.done = true
 		return IteratorStep{done: true}
 	}
-	value := if yielded := iterator_value(mut vm, result) {
+	value := if !with_value {
+		normal_completion(js_undefined())
+	} else if yielded := iterator_value(mut vm, result) {
 		normal_completion(yielded)
 	} else {
 		completion_from_error(err)
@@ -95,7 +101,7 @@ pub fn iterator_step(mut vm VM, mut record IteratorRecord) !IteratorStep {
 }
 
 pub fn iterator_step_value(mut vm VM, mut record IteratorRecord) !IteratorStepValue {
-	step := iterator_step(mut vm, mut record)!
+	step := iterator_step_impl(mut vm, mut record, true)!
 	if step.done { return IteratorStepValue{done: true, value: js_undefined()} }
 	if step.result.value.is_error() {
 		record.done = true
