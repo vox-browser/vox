@@ -87,23 +87,23 @@ pub fn (mut reader BitReader) read_modular_tree(size_limit int) !ModularTree {
 		// Retain the source's inclusive limit: limit + 1 nodes can finish a tree.
 		if nodes.len > size_limit { return error('JPEG XL modular tree exceeds size limit') }
 		pending--
-		property_code := symbols.read_unsigned(tree_histograms, 1, mut reader)!
+		property_code := symbols.read_unsigned(&tree_histograms, 1, mut reader)!
 		if property_code > 0 {
 			property := property_code - 1
 			if property > 255 { return error('Invalid JPEG XL modular tree property') }
 			if property > max_property { max_property = property }
-			threshold := symbols.read_signed(tree_histograms, 0, mut reader)!
+			threshold := symbols.read_signed(&tree_histograms, 0, mut reader)!
 			left := u32(nodes.len + pending + 1)
 			nodes << ModularTreeNode{ property: u8(property), threshold: threshold, left: left, right: left + 1 }
 			pending += 2
 		} else {
-			predictor := predictor_from_id(symbols.read_unsigned(tree_histograms, 2, mut reader)!)!
-			offset := symbols.read_signed(tree_histograms, 3, mut reader)!
-			multiplier_log := symbols.read_unsigned(tree_histograms, 4, mut reader)!
+			predictor := predictor_from_id(symbols.read_unsigned(&tree_histograms, 2, mut reader)!)!
+			offset := symbols.read_signed(&tree_histograms, 3, mut reader)!
+			multiplier_log := symbols.read_unsigned(&tree_histograms, 4, mut reader)!
 			if multiplier_log >= 31 {
 				return error('JPEG XL tree multiplier exponent is too large')
 			}
-			multiplier_bits := symbols.read_unsigned(tree_histograms, 5, mut reader)!
+			multiplier_bits := symbols.read_unsigned(&tree_histograms, 5, mut reader)!
 			multiplier := (u64(multiplier_bits) + 1) << multiplier_log
 			if multiplier > u64(0xffffffff) { return error('JPEG XL tree multiplier is too large') }
 			nodes << ModularTreeNode{ is_leaf: true, predictor: predictor, offset: offset, multiplier: u32(multiplier), context: leaf_id }

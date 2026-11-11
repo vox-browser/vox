@@ -896,6 +896,11 @@ fn dom_pseudo_element_for_layout_node(pseudo_element ?css.PseudoElement) ?dom.Ps
 		.marker { dom.PseudoElement.marker }
 		.placeholder { dom.PseudoElement.placeholder }
 		.selection { dom.PseudoElement.selection }
+		.highlight { dom.PseudoElement.highlight }
+		.target_text { dom.PseudoElement.target_text }
+		.spelling_error { dom.PseudoElement.spelling_error }
+		.grammar_error { dom.PseudoElement.grammar_error }
+		.search_text { dom.PseudoElement.search_text }
 		.backdrop { dom.PseudoElement.backdrop }
 		else { none }
 	}

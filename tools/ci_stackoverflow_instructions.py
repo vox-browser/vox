@@ -140,7 +140,7 @@ class Run:
                            cwd=ROOT, check=True)
             shared = git("diff", "--name-only", baseline, candidate, "--", "tools",
                          "build-linux-browser.sh", "build-prod-browser.sh",
-                         "Tests/Browser/Brave/sites/stackoverflow", "native_jpegxl_rust")
+                         "Tests/Browser/Brave/sites/stackoverflow")
             if shared:
                 raise ValueError("Build/observer/workload inputs differ:\n" + shared)
         state = {"baseline": baseline, "candidate": candidate, "dependencies": dict(dependencies), "builds": {}}
@@ -152,8 +152,6 @@ class Run:
             ("host-disk", ["df", "-h", str(ROOT)]), ("host-cpu", ["lscpu"]),
             ("host-packages", ["dpkg-query", "-W"]),
             ("host-clang", ["clang", "--version"]),
-            ("host-rust", ["rustc", "--version", "--verbose"]),
-            ("host-cargo", ["cargo", "--version"]),
             ("host-valgrind", ["valgrind", "--version"]),
         ):
             self.command(name, command, bounded=False)

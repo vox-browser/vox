@@ -26,6 +26,16 @@ struct DiskTimingRecord {
 	version       string = '1'
 }
 
+fn init() {
+	$if prealloc {
+		// json2 publishes each struct's field metadata once for the process, in
+		// the arena current at first use. Cache publication encodes inside a
+		// thread scratch scope that is freed right after; build it at startup.
+		_ = json2.encode([Header{}], escape_unicode: true)
+		_ = json2.encode(DiskTimingRecord{})
+	}
+}
+
 fn disk_integrity(final_url string, status string, encoded_headers string, body string) string {
 	// Fixed-length digests make the field boundaries unambiguous without
 	// constructing another complete copy of a potentially large image body.

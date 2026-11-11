@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
+import math
+
 pub struct FloatPlane {
 pub:
 	width   int
@@ -15,6 +17,7 @@ fn (plane FloatPlane) validate() ! {
 	}
 }
 
+@[direct_array_access]
 fn (plane FloatPlane) at_border(x int, y int) f32 {
 	px := if x < 0 {
 		0
@@ -31,4 +34,15 @@ fn (plane FloatPlane) at_border(x int, y int) f32 {
 		y
 	}
 	return plane.samples[py * plane.width + px]
+}
+
+// Whether every value is finite. An indexed loop with direct access, unlike a
+// for-in loop, compiles without per-element calls and vectorizes.
+@[direct_array_access]
+fn all_finite(values []f32) bool {
+	mut finite := true
+	for i in 0 .. values.len {
+		if !math.is_finite(values[i]) { finite = false }
+	}
+	return finite
 }

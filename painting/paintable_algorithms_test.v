@@ -773,8 +773,8 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 	assert plan.x_step == 33.328125
 	assert !background_tile_plan(space_layer, Point{}, Rect{0, 0, 100, 20}).can_use_repeated_bitmap()
 
-	// The source computes horizontal `space` with doubles but vertical `space`
-	// with floats. Large valid CSS coordinates make that quirk observable.
+	// Ladybird f347d88af69b: both axes preserve the fractional remainder in
+	// double precision. A float remainder would push the last tile too far.
 	large_space_layer := ResolvedBackgroundLayer{
 		...space_layer
 		background_positioning_area: Rect{0, 0, 1_000_000.015625, 1_000_000.015625}
@@ -783,7 +783,11 @@ fn test_background_tiles_matches_cpp_space_and_attachment_geometry() {
 	}
 	large_plan := background_tile_plan(large_space_layer, Point{}, large_space_layer.background_positioning_area)
 	assert large_plan.x_step == 350_000
-	assert large_plan.y_step == 350_000.015625
+	assert large_plan.y_step == 350_000
+	large_tiles := background_tiles(large_space_layer, Point{}, large_space_layer.background_positioning_area)
+	assert large_tiles.len == 9
+	assert large_tiles.last().right() == large_space_layer.background_positioning_area.right()
+	assert large_tiles.last().bottom() == large_space_layer.background_positioning_area.bottom()
 }
 
 fn test_border_color_matches_inset_and_outset_hsv_adjustment() {

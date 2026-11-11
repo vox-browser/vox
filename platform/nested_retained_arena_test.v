@@ -52,3 +52,42 @@ fn test_embedded_owner_can_reenter_from_its_persistent_cache_section() {
 	owner.release()
 	assert base_before[0] == `e` && base_after[base_after.len - 1] == `g`
 }
+
+fn test_child_can_query_an_entered_parent_and_restore_its_workspace() {
+	$if !prealloc { return }
+	mut parent := new_retained_arena('queried parent')
+	mut child := new_retained_arena('querying child')
+	mut parent_scope := parent.enter()
+	parent_before := nested_owner_runtime_string('p', 1024)
+	mut child_scope := child.enter_nested()
+	child_before := nested_owner_runtime_string('c', 1024)
+	mut workspace := new_arena('child query workspace')
+	entry := workspace.enter()
+
+	mut query_scope := parent.enter_nested()
+	assert voidptr(current_retained_arena()) == voidptr(parent)
+	parent_during := nested_owner_runtime_string('q', 3 * 1024 * 1024)
+	assert parent.arena.contains(parent_during.str)
+	query_scope.finish()
+	assert voidptr(current_retained_arena()) == voidptr(child)
+	query_scope.finish()
+	assert voidptr(current_retained_arena()) == voidptr(child)
+	workspace_after := nested_owner_runtime_string('w', 1024)
+	assert workspace.contains(workspace_after.str)
+	workspace.leave(entry)
+	workspace.release()
+
+	child_after := nested_owner_runtime_string('d', 3 * 1024 * 1024)
+	assert child.arena.contains(child_before.str) && child.arena.contains(child_after.str)
+	child_scope.finish()
+	assert voidptr(current_retained_arena()) == voidptr(parent)
+	parent_after := nested_owner_runtime_string('r', 3 * 1024 * 1024)
+	assert parent.arena.contains(parent_before.str) && parent.arena.contains(parent_after.str)
+	assert parent_before[0] == `p` && parent_during[parent_during.len - 1] == `q`
+	parent_scope.finish()
+	parent.release()
+	assert parent.arena.usage().used == 0
+	assert child_before[0] == `c` && child_after[child_after.len - 1] == `d`
+	child.release()
+	assert child.arena.usage().used == 0
+}

@@ -13,6 +13,25 @@ pub fn inverse_dct_vector(input []f32) ![]f32 {
 	return inverse_dct_values(input)
 }
 
+// Transform the first `n` values of `vector` in place, with the same kernels
+// as inverse_dct_values. Lengths up to 32 use no allocation.
+fn inverse_dct_in_place(mut vector []f32, n int) ! {
+	if n > vector.len { return error('Invalid JPEG XL DCT vector length') }
+	data := unsafe { &f32(vector.data) }
+	match n {
+		2 { inverse_dct_2_in_place(data) }
+		4 { inverse_dct_4_in_place(data) }
+		8 { inverse_dct_8_in_place(data) }
+		16 { inverse_dct_16_in_place(data) }
+		32 { inverse_dct_32_in_place(data) }
+		64, 128, 256 {
+			values := inverse_dct_large_owned(vector[..n])
+			for i in 0 .. n { vector[i] = values[i] }
+		}
+		else { return error('Unsupported JPEG XL DCT vector length') }
+	}
+}
+
 fn inverse_dct_values(input []f32) ![]f32 {
 	return match input.len {
 		2 { inverse_dct_2(input) }
@@ -27,19 +46,40 @@ fn inverse_dct_values(input []f32) ![]f32 {
 
 
 fn inverse_dct_2(input []f32) []f32 {
-	v0 := input[0]
-	v1 := input[1]
+	mut output := []f32{len: 2}
+	for i in 0 .. 2 { output[i] = input[i] }
+	inverse_dct_2_in_place(unsafe { &f32(output.data) })
+	return output
+}
+
+// In place over 2 contiguous values; every input is read before any write.
+@[direct_array_access]
+fn inverse_dct_2_in_place(data &f32) {
+	v0 := unsafe { data[0] }
+	v1 := unsafe { data[1] }
 	v2 := v0 + v1
 	v3 := v0 - v1
-	return [v2, v3]
+	unsafe {
+		data[0] = v2
+		data[1] = v3
+	}
 }
 
 
 fn inverse_dct_4(input []f32) []f32 {
-	v0 := input[0]
-	v1 := input[1]
-	v2 := input[2]
-	v3 := input[3]
+	mut output := []f32{len: 4}
+	for i in 0 .. 4 { output[i] = input[i] }
+	inverse_dct_4_in_place(unsafe { &f32(output.data) })
+	return output
+}
+
+// In place over 4 contiguous values; every input is read before any write.
+@[direct_array_access]
+fn inverse_dct_4_in_place(data &f32) {
+	v0 := unsafe { data[0] }
+	v1 := unsafe { data[1] }
+	v2 := unsafe { data[2] }
+	v3 := unsafe { data[3] }
 	v4 := v0 + v2
 	v5 := v0 - v2
 	v6 := v1 + v3
@@ -52,19 +92,33 @@ fn inverse_dct_4(input []f32) []f32 {
 	mul_1 := f32(1.3065629648763764)
 	v12 := fused_f32(v9, mul_1, v5)
 	v13 := fused_f32(-v9, mul_1, v5)
-	return [v10, v12, v13, v11]
+	unsafe {
+		data[0] = v10
+		data[1] = v12
+		data[2] = v13
+		data[3] = v11
+	}
 }
 
 
 fn inverse_dct_8(input []f32) []f32 {
-	v0 := input[0]
-	v1 := input[1]
-	v2 := input[2]
-	v3 := input[3]
-	v4 := input[4]
-	v5 := input[5]
-	v6 := input[6]
-	v7 := input[7]
+	mut output := []f32{len: 8}
+	for i in 0 .. 8 { output[i] = input[i] }
+	inverse_dct_8_in_place(unsafe { &f32(output.data) })
+	return output
+}
+
+// In place over 8 contiguous values; every input is read before any write.
+@[direct_array_access]
+fn inverse_dct_8_in_place(data &f32) {
+	v0 := unsafe { data[0] }
+	v1 := unsafe { data[1] }
+	v2 := unsafe { data[2] }
+	v3 := unsafe { data[3] }
+	v4 := unsafe { data[4] }
+	v5 := unsafe { data[5] }
+	v6 := unsafe { data[6] }
+	v7 := unsafe { data[7] }
 	v8 := v0 + v4
 	v9 := v0 - v4
 	v10 := v2 + v6
@@ -105,27 +159,45 @@ fn inverse_dct_8(input []f32) []f32 {
 	mul_7 := f32(2.5629154477415055)
 	v38 := fused_f32(v29, mul_7, v15)
 	v39 := fused_f32(-v29, mul_7, v15)
-	return [v32, v34, v36, v38, v39, v37, v35, v33]
+	unsafe {
+		data[0] = v32
+		data[1] = v34
+		data[2] = v36
+		data[3] = v38
+		data[4] = v39
+		data[5] = v37
+		data[6] = v35
+		data[7] = v33
+	}
 }
 
 
 fn inverse_dct_16(input []f32) []f32 {
-	v0 := input[0]
-	v1 := input[1]
-	v2 := input[2]
-	v3 := input[3]
-	v4 := input[4]
-	v5 := input[5]
-	v6 := input[6]
-	v7 := input[7]
-	v8 := input[8]
-	v9 := input[9]
-	v10 := input[10]
-	v11 := input[11]
-	v12 := input[12]
-	v13 := input[13]
-	v14 := input[14]
-	v15 := input[15]
+	mut output := []f32{len: 16}
+	for i in 0 .. 16 { output[i] = input[i] }
+	inverse_dct_16_in_place(unsafe { &f32(output.data) })
+	return output
+}
+
+// In place over 16 contiguous values; every input is read before any write.
+@[direct_array_access]
+fn inverse_dct_16_in_place(data &f32) {
+	v0 := unsafe { data[0] }
+	v1 := unsafe { data[1] }
+	v2 := unsafe { data[2] }
+	v3 := unsafe { data[3] }
+	v4 := unsafe { data[4] }
+	v5 := unsafe { data[5] }
+	v6 := unsafe { data[6] }
+	v7 := unsafe { data[7] }
+	v8 := unsafe { data[8] }
+	v9 := unsafe { data[9] }
+	v10 := unsafe { data[10] }
+	v11 := unsafe { data[11] }
+	v12 := unsafe { data[12] }
+	v13 := unsafe { data[13] }
+	v14 := unsafe { data[14] }
+	v15 := unsafe { data[15] }
 	v16 := v0 + v8
 	v17 := v0 - v8
 	v18 := v4 + v12
@@ -238,43 +310,69 @@ fn inverse_dct_16(input []f32) []f32 {
 	mul_23 := f32(5.1011486186891553)
 	v102 := fused_f32(v81, mul_23, v41)
 	v103 := fused_f32(-v81, mul_23, v41)
-	return [v88, v90, v92, v94, v96, v98, v100, v102, v103, v101, v99, v97, v95, v93, v91, v89]
+	unsafe {
+		data[0] = v88
+		data[1] = v90
+		data[2] = v92
+		data[3] = v94
+		data[4] = v96
+		data[5] = v98
+		data[6] = v100
+		data[7] = v102
+		data[8] = v103
+		data[9] = v101
+		data[10] = v99
+		data[11] = v97
+		data[12] = v95
+		data[13] = v93
+		data[14] = v91
+		data[15] = v89
+	}
 }
 
 
 fn inverse_dct_32(input []f32) []f32 {
-	v0 := input[0]
-	v1 := input[1]
-	v2 := input[2]
-	v3 := input[3]
-	v4 := input[4]
-	v5 := input[5]
-	v6 := input[6]
-	v7 := input[7]
-	v8 := input[8]
-	v9 := input[9]
-	v10 := input[10]
-	v11 := input[11]
-	v12 := input[12]
-	v13 := input[13]
-	v14 := input[14]
-	v15 := input[15]
-	v16 := input[16]
-	v17 := input[17]
-	v18 := input[18]
-	v19 := input[19]
-	v20 := input[20]
-	v21 := input[21]
-	v22 := input[22]
-	v23 := input[23]
-	v24 := input[24]
-	v25 := input[25]
-	v26 := input[26]
-	v27 := input[27]
-	v28 := input[28]
-	v29 := input[29]
-	v30 := input[30]
-	v31 := input[31]
+	mut output := []f32{len: 32}
+	for i in 0 .. 32 { output[i] = input[i] }
+	inverse_dct_32_in_place(unsafe { &f32(output.data) })
+	return output
+}
+
+// In place over 32 contiguous values; every input is read before any write.
+@[direct_array_access]
+fn inverse_dct_32_in_place(data &f32) {
+	v0 := unsafe { data[0] }
+	v1 := unsafe { data[1] }
+	v2 := unsafe { data[2] }
+	v3 := unsafe { data[3] }
+	v4 := unsafe { data[4] }
+	v5 := unsafe { data[5] }
+	v6 := unsafe { data[6] }
+	v7 := unsafe { data[7] }
+	v8 := unsafe { data[8] }
+	v9 := unsafe { data[9] }
+	v10 := unsafe { data[10] }
+	v11 := unsafe { data[11] }
+	v12 := unsafe { data[12] }
+	v13 := unsafe { data[13] }
+	v14 := unsafe { data[14] }
+	v15 := unsafe { data[15] }
+	v16 := unsafe { data[16] }
+	v17 := unsafe { data[17] }
+	v18 := unsafe { data[18] }
+	v19 := unsafe { data[19] }
+	v20 := unsafe { data[20] }
+	v21 := unsafe { data[21] }
+	v22 := unsafe { data[22] }
+	v23 := unsafe { data[23] }
+	v24 := unsafe { data[24] }
+	v25 := unsafe { data[25] }
+	v26 := unsafe { data[26] }
+	v27 := unsafe { data[27] }
+	v28 := unsafe { data[28] }
+	v29 := unsafe { data[29] }
+	v30 := unsafe { data[30] }
+	v31 := unsafe { data[31] }
 	v32 := v0 + v16
 	v33 := v0 - v16
 	v34 := v8 + v24
@@ -563,5 +661,38 @@ fn inverse_dct_32(input []f32) []f32 {
 	mul_63 := f32(10.1900081235480329)
 	v254 := fused_f32(v209, mul_63, v105)
 	v255 := fused_f32(-v209, mul_63, v105)
-	return [v224, v226, v228, v230, v232, v234, v236, v238, v240, v242, v244, v246, v248, v250, v252, v254, v255, v253, v251, v249, v247, v245, v243, v241, v239, v237, v235, v233, v231, v229, v227, v225]
+	unsafe {
+		data[0] = v224
+		data[1] = v226
+		data[2] = v228
+		data[3] = v230
+		data[4] = v232
+		data[5] = v234
+		data[6] = v236
+		data[7] = v238
+		data[8] = v240
+		data[9] = v242
+		data[10] = v244
+		data[11] = v246
+		data[12] = v248
+		data[13] = v250
+		data[14] = v252
+		data[15] = v254
+		data[16] = v255
+		data[17] = v253
+		data[18] = v251
+		data[19] = v249
+		data[20] = v247
+		data[21] = v245
+		data[22] = v243
+		data[23] = v241
+		data[24] = v239
+		data[25] = v237
+		data[26] = v235
+		data[27] = v233
+		data[28] = v231
+		data[29] = v229
+		data[30] = v227
+		data[31] = v225
+	}
 }

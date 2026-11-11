@@ -41,9 +41,8 @@ Use the latest UI2: run `v up ui2` for an installed module, or
 that live checkout directly without copying or pinning it. CI fetches upstream
 HEAD on every run and records the resolved V and UI2 commit IDs in its receipt
 artifacts. See the [UI2 adapter guide](../tools/ui2/README.md) for focused checks.
-Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
-helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
-when Cargo is available, the build compiles that helper from its lockfile.
+Regex and JPEG XL decoding are implemented in V; the build requires no Rust
+compiler or Cargo.
 On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
 absolute executable path, or a path relative to the directory from which you
 invoke the build script. The build resolves that path before changing directories.

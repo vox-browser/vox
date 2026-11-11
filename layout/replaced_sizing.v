@@ -1,4 +1,5 @@
 // Copyright (c) 2018-2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -18,6 +19,7 @@ struct ReplacedBoxModel {
 	// Used-value substitutions supplied by anchor positioning and stretch-fit
 	// sizing. The computed declarations remain unchanged for CSSOM.
 	size_overrides map[css.PropertyID]css.Size
+	available_space ?AvailableSpace
 }
 
 fn replaced_size_value(node &Node, model ReplacedBoxModel, property css.PropertyID) css.Size {
@@ -51,7 +53,8 @@ fn chromium_auto_svg_transfers_block_size(node &Node) bool {
 		&& box.preferred_aspect_ratio() != none
 }
 
-fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace, box_model ReplacedBoxModel) CSSPixelSize {
+fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace, supplied_model ReplacedBoxModel) CSSPixelSize {
+	box_model := ReplacedBoxModel{...supplied_model, available_space:available_space}
 	node := unsafe { &Node(box) }
 	width_basis := available_space.width.to_px_or_zero()
 	height_basis := available_space.height.to_px_or_zero()
@@ -109,10 +112,14 @@ fn compute_replaced_size_with_box_model(box &Box, available_space AvailableSpace
 		}
 	} else if intrinsic_width := intrinsic.width {
 		width = intrinsic_width
-		if intrinsic_height := intrinsic.height {
+		if preferred_ratio := ratio {
+			if !node.computed_values().aspect_ratio().use_natural_aspect_ratio_if_available {
+				height = width.divided_by_fraction(preferred_ratio)
+			} else if intrinsic_height := intrinsic.height {
+				height = intrinsic_height
+			} else { height = width.divided_by_fraction(preferred_ratio) }
+		} else if intrinsic_height := intrinsic.height {
 			height = intrinsic_height
-		} else if intrinsic_ratio := ratio {
-			height = width.divided_by_fraction(intrinsic_ratio)
 		} else {
 			height = CSSPixels.nearest_value_for(150 * node.document().layout_coordinate_scale())
 		}
@@ -221,6 +228,22 @@ fn replaced_box_sizing_edges(node &Node, box_model ReplacedBoxModel, width bool)
 
 fn resolve_replaced_content_size(node &Node, size css.Size, size_basis CSSPixels, box_model ReplacedBoxModel, width bool) ?CSSPixels {
 	if size.is_stretch() { return replaced_stretch_fit_content_size(node, size_basis, box_model, width) }
+	if node.is_replaced_box() && (size.is_min_content() || size.is_max_content() || size.is_fit_content()) {
+		box := node.as_box() or { return none }
+		// Replaced intrinsic sizes transfer an independently specified opposite
+		// axis through the ratio. Remove this axis's constraints for the probe,
+		// otherwise a fit-content minimum would recursively constrain itself.
+		mut overrides := box_model.size_overrides.clone()
+		overrides[if width { css.PropertyID.width } else { .height }] = css.Size.make_auto()
+		overrides[if width { css.PropertyID.min_width } else { .min_height }] = css.Size.make_auto()
+		overrides[if width { css.PropertyID.max_width } else { .max_height }] = css.Size.make_none()
+		available := box_model.available_space or {
+			AvailableSpace.new(if width { AvailableSize.make_definite(size_basis) } else { AvailableSize.make_indefinite() },
+				if width { AvailableSize.make_indefinite() } else { AvailableSize.make_definite(size_basis) })
+		}
+		result := compute_replaced_size_with_box_model(box, available, ReplacedBoxModel{...box_model, size_overrides:overrides})
+		return if width { result.width() } else { result.height() }
+	}
 	resolved := resolve_layout_size(node, size, size_basis) or { return none }
 	return css_pixels_max(CSSPixels.new(0), resolved.minus(replaced_box_sizing_edges(node, box_model, width)))
 }
@@ -368,7 +391,7 @@ fn should_treat_width_as_auto(state &LayoutState, box &Box, available_space Avai
 
 	// https://drafts.csswg.org/css-sizing-3/#cyclic-percentage-contribution
 	if computed_width.contains_percentage() {
-		if !node.is_replaced_box() && available_space.width.is_min_content() {
+		if !node.resolves_cyclic_percentages_like_replaced_box() && available_space.width.is_min_content() {
 			return true
 		}
 		if available_space.width.is_max_content() {

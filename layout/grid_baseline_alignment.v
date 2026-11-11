@@ -10,6 +10,7 @@ struct GridBaselineSubject {
 	area_end CSSPixels
 	baseline CSSPixels
 	outer_size CSSPixels
+	parent_offset CSSPixels
 }
 
 // A percentage preferred size stays cyclic with an intrinsic track even
@@ -32,7 +33,7 @@ fn grid_baseline_group_reversed(container &Node,item &Node,horizontal bool) bool
 fn grid_alignment_baseline_from_low(state &LayoutState,container &Node,item &Node,horizontal bool,set BaselineSet,reversed bool) CSSPixels {
  if horizontal && !grid_is_vertical(item) && resolve_dominant_baseline_metric(container.computed_values())!=.central {
   used := state.get(item.as_node_with_style() or { return CSSPixels.new(0) })
-  return used.margin_left.plus(if reversed { used.border_box_width() } else { CSSPixels.new(0) })
+  return used.margin_left
  }
  return grid_baseline_from_low(state,container,item,horizontal,set,0)
 }
@@ -91,14 +92,14 @@ fn grid_content_baseline_from_low(state &LayoutState, container &Node, item &Nod
 	return used.margin_top.plus(if central { used.border_box_height().divided_by_float(2) } else { used.border_box_height() })
 }
 
-fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placements []GridItemPlacement,
+fn align_grid_baseline_subjects(mut state LayoutState, container &Node, column_subjects []GridItemPlacement, row_subjects []GridItemPlacement,
 	width CSSPixels, height CSSPixels, columns []GridTrack, rows []GridTrack,
 	column_gap CSSPixels, row_gap CSSPixels, column_leading CSSPixels, row_leading CSSPixels) {
 	for horizontal in [false,true] {
 		if container.display().is_grid_lanes_inside() && grid_lanes_axis_is_horizontal(container)!=horizontal { continue }
 		mut subjects := []GridBaselineSubject{}
 		mut shared := map[int]CSSPixels{}
-		for placement in placements {
+		for placement in if horizontal { column_subjects } else { row_subjects } {
 			item := placement.item
 			words := grid_alignment_text(container,item,horizontal).split(' ')
 			if words.len == 0 || words.last() != 'baseline' { continue }
@@ -134,20 +135,38 @@ fn align_grid_baseline_subjects(mut state LayoutState, container &Node, placemen
 			extent := if horizontal { area_width } else { grid_track_range_size(rows,placement.row,placement.row_span,row_gap) }
 			baseline := grid_alignment_baseline_from_low(state,container,item,horizontal,if last { .last } else { .first },reversed)
 			outer := if horizontal { used.margin_box_width() } else { used.margin_box_height() }
-			candidate := if from_end { start.plus(extent).minus(outer.minus(baseline)) } else { start.plus(baseline) }
+			axis_reversed := grid_axis_reversed(container,horizontal)
+			extra_start := if horizontal { if axis_reversed { placement.inline_end_extra } else { placement.inline_start_extra } } else { if axis_reversed { placement.block_end_extra } else { placement.block_start_extra } }
+			extra_end := if horizontal { if axis_reversed { placement.inline_start_extra } else { placement.inline_end_extra } } else { if axis_reversed { placement.block_start_extra } else { placement.block_end_extra } }
+			candidate := if from_end { start.plus(extent).minus(outer.minus(baseline).plus(extra_end)) } else { start.plus(baseline).plus(extra_start) }
 			if previous := shared[group] {
 				shared[group] = if from_end { css_pixels_min(previous,candidate) } else { css_pixels_max(previous,candidate) }
 			} else { shared[group] = candidate }
-			subjects << GridBaselineSubject{item:item,group:group,from_end:from_end,area_start:start,area_end:start.plus(extent),baseline:baseline,outer_size:outer}
+			subjects << GridBaselineSubject{item:item,group:group,from_end:from_end,area_start:start,area_end:start.plus(extent),baseline:baseline,outer_size:outer,parent_offset:grid_baseline_parent_offset(state,container,item,horizontal)}
 		}
 		for subject in subjects {
 			styled := subject.item.as_node_with_style() or { continue }
 			mut used := state.get_mutable(styled)
 			baseline := shared[subject.group] or { continue }
-			if horizontal { used.set_content_x(baseline.minus(subject.baseline).plus(used.margin_box_left())) }
-			else { used.set_content_y(baseline.minus(subject.baseline).plus(used.margin_box_top())) }
+			if horizontal { used.set_content_x(baseline.minus(subject.baseline).plus(used.margin_box_left()).minus(subject.parent_offset)) }
+			else { used.set_content_y(baseline.minus(subject.baseline).plus(used.margin_box_top()).minus(subject.parent_offset)) }
 		}
 	}
+}
+
+// Flattened subgrid subjects align in their ancestor's tracks while retaining
+// offsets relative to their own containing block.
+fn grid_baseline_parent_offset(state &LayoutState,container &Node,item &Node,horizontal bool) CSSPixels {
+ mut result := CSSPixels.new(0)
+ mut parent := item.containing_block()
+ for _ in 0..64 {
+  node := unsafe { &Node(parent or { break }) }
+  if layout_nodes_same(node,container) { break }
+  used := state.get(node.as_node_with_style() or { break })
+  result=result.plus(if horizontal { used.offset.x() } else { used.offset.y() })
+  parent=node.containing_block()
+ }
+ return result
 }
 
 fn grid_baseline_track(placement GridItemPlacement, horizontal bool, end bool) int {

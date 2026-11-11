@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
+import math
+
 pub struct HfGroupColorMap {
 pub:
 	y_to_x []i32
@@ -41,13 +43,22 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 		}
 		samples[c] = []f32{len: lf[c].width * lf[c].height * 64}
 	}
+	// Reused across blocks: dequantized coefficients sized for the largest
+	// transform seen so far, and 8x8 DCT input/output/vector scratch.
+	mut dequant_buffers := [3][]f32{}
+	mut dct_input := []f32{len: 64}
+	mut dct_output := []f32{len: 64}
+	mut dct_vector := []f32{len: 8}
 	for block in blocks {
 		dims := block.transform.covered_blocks()
 		count := dims[0] * dims[1] * 64
 		color_index := (block.y / 8) * color_width + block.x / 8
 		quantized := [coefficients[0][block.offset..block.offset + count],
 			coefficients[1][block.offset..block.offset + count], coefficients[2][block.offset..block.offset + count]]!
-		dequantized := dequantize_hf_block(quantized, matrices, HfDequantParameters{
+		if dequant_buffers[0].len < count {
+			for c in 0 .. 3 { dequant_buffers[c] = []f32{len: count} }
+		}
+		dequantized := dequantize_hf_block_into(quantized, matrices, HfDequantParameters{
 			transform: block.transform
 			storage: rendering.storage
 			quantizer: rendering.quantizer
@@ -58,13 +69,32 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 			x_color_factor: colors.y_to_x[color_index]
 			b_color_factor: colors.y_to_b[color_index]
 			biases: rendering.biases
-		})!
-		for c in [1, 0, 2] {
+		}, dequant_buffers)!
+		for c in [1, 0, 2]! {
 			h := params.horizontal_shift[c]
 			v := params.vertical_shift[c]
 			x := block.x >> h
 			y := block.y >> v
 			if (x << h) != block.x || (y << v) != block.y { continue }
+			if block.transform == .dct {
+				// inverse_hf_transform(.dct, ...) without allocating: the LF value
+				// replaces coefficient 0 and both inputs must be finite.
+				lf_value := lf[c].samples[y * lf[c].width + x]
+				if !math.is_finite(lf_value) { return error('Nonfinite JPEG XL LF coefficient') }
+				for k in 0 .. 64 {
+					value := dequantized[c][k]
+					if !math.is_finite(value) { return error('Nonfinite JPEG XL HF coefficient') }
+					dct_input[k] = value
+				}
+				dct_input[0] = lf_value
+				inverse_dct_plane_into(8, 8, dct_input, mut dct_output, mut dct_vector)!
+				stride := lf[c].width * 8
+				for iy in 0 .. 8 {
+					destination := (y * 8 + iy) * stride + x * 8
+					for ix in 0 .. 8 { samples[c][destination + ix] = dct_output[iy * 8 + ix] }
+				}
+				continue
+			}
 			mut low := []f32{len: dims[0] * dims[1]}
 			for iy in 0 .. dims[1] {
 				for ix in 0 .. dims[0] { low[iy * dims[0] + ix] = lf[c].samples[(y + iy) * lf[c].width + x + ix] }

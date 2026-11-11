@@ -1279,31 +1279,33 @@ fn (mut p Parser) parse_binding_pattern() BindingPattern {
 					|| p.match_token(.numeric_literal) || p.match_token(.big_int_literal) {
 					entry_start := p.position()
 
-					if p.match_token(.string_literal) || p.match_token(.numeric_literal) {
-						needs_alias = true
-					}
+					needs_alias = !p.match_identifier_name()
 
 					entry_is_keyword = p.current_token.token_type.is_identifier_name()
 						&& !p.match_identifier()
 
-					if p.match_token(.string_literal) {
+					if needs_alias {
+						// PropName uses the literal's value, not its token spelling.
+						// Ladybird 85fbe3d0d067de1e36573e20dc4421dda83c50a0.
 						token := p.consume_property_key_token()
-						value, _ := p.parse_string_value(token)
-						mut id := p.make_identifier(entry_start, value)
-						p.scope_collector.register_identifier(id, id.name.data, none)
-						entry_name = BindingEntryName{
-							kind:       .identifier_kind
-							identifier: id
+						name_value := match token.token_type {
+							.string_literal {
+								value, _ := p.parse_string_value(token)
+								value
+							}
+							.numeric_literal {
+								utf16_string(format_f64_value(parse_numeric_value(p.token_value(token))))
+							}
+							.big_int_literal {
+								digits := string_from_utf16_lossy(p.token_value(token)).trim_string_right('n').replace('_', '')
+								integer := string_to_bigint(utf16_string(digits)) or {
+									panic('The lexer only produces valid BigInt literals')
+								}
+								utf16_string(integer.big_integer.str())
+							}
+							else { panic('Expected a literal property key') }
 						}
-					} else if p.match_token(.big_int_literal) {
-						token := p.consume_property_key_token()
-						value := p.token_value(token)
-						name_value := if value.len > 0 && value[value.len - 1] == ch(`n`) {
-							value[..value.len - 1].clone()
-						} else {
-							value.clone()
-						}
-						mut id := p.make_identifier(entry_start, Utf16String.from_slice(name_value))
+						mut id := p.make_identifier(entry_start, name_value)
 						p.scope_collector.register_identifier(id, id.name.data, none)
 						entry_name = BindingEntryName{
 							kind:       .identifier_kind

@@ -166,10 +166,13 @@ fn decode_iso_language(value u16) string {
 	return if language == 'und' { '' } else { language }
 }
 
-fn iso_handler_name(bytes []u8, handler ISOBoxHeader) string {
+fn iso_handler_name(bytes []u8, handler ISOBoxHeader) !string {
 	start := handler.content_start + 24
 	if start >= handler.end {
 		return ''
+	}
+	if handler.end - start > maximum_metadata_string_size {
+		return error('Handler name is too large')
 	}
 	mut end := start
 	for end < handler.end && bytes[end] != 0 {
@@ -217,6 +220,11 @@ fn iso_sample_entry_child_offset(bytes []u8, entry ISOBoxHeader, type_ MediaSour
 }
 
 fn validate_iso_sample_entry_configuration(bytes []u8, entry ISOBoxHeader, type_ MediaSourceTrackType) ! {
+	// Vox retains the complete sample entry as its codec configuration. Bound
+	// that retained representation before any clone, including unknown boxes.
+	if entry.end - entry.start > maximum_codec_configuration_size {
+		return error('Codec configuration sample entry is too large')
+	}
 	child_offset := iso_sample_entry_child_offset(bytes, entry, type_)!
 	// The compact synthetic entries used by the translation tests omit the
 	// standard sample-entry fields. A missing configuration record is valid for
@@ -321,7 +329,7 @@ fn parse_iso_track(bytes []u8, trak ISOBoxHeader) !ISOTrackContext {
 			codec_id: codec_id
 			codec_private: sample_descriptions[0].clone()
 			language: language
-			label: iso_handler_name(bytes, handler)
+			label: iso_handler_name(bytes, handler)!
 		}
 		timescale: timescale
 		sample_description_count: sample_description_count

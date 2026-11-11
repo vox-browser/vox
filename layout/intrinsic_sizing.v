@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -238,15 +239,21 @@ fn calculate_transferred_width_for_replaced_element(mut state LayoutState, box &
 // layout in a throwaway LayoutState; it must not read geometry left behind by
 // the normal layout pass.
 fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
-	if unsafe { &Node(box) }.is_replaced_box() {
-		computed := box.computed_values()
-		width := computed.size_value(.width)
-		if width.is_percentage() {
-			return width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
+	node := unsafe { &Node(box) }
+	computed := box.computed_values()
+	width := computed.size_value(.width)
+	if node.resolves_cyclic_percentages_like_replaced_box() && width.contains_percentage() {
+		styled := node.as_node_with_style() or { return CSSPixels.new(0) }
+		return resolve_layout_content_size(node, width, CSSPixels.new(0), state.get(styled), true) or {
+			CSSPixels.new(0)
 		}
+	}
+	// A cyclic percentage max-width compresses replaced boxes only. Text
+	// controls retain their normal intrinsic width for max-width:100%.
+	if node.is_replaced_box() {
 		max_width := computed.size_value(.max_width)
 		if max_width.is_percentage() {
-			return max_width.to_px(layout_length_resolution_context(unsafe { &Node(box) }), CSSPixels.new(0))
+			return max_width.to_px(layout_length_resolution_context(node), CSSPixels.new(0))
 		}
 	}
 	if transferred_width := calculate_transferred_width_for_replaced_element(mut state, box) {
@@ -255,7 +262,6 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	if auto_width := box.auto_content_box_size().width {
 		return auto_width
 	}
-	node := unsafe { &Node(box) }
 	// An outer SVG's descendants do not become its intrinsic contribution when
 	// its own height and viewBox ratio determine the missing natural width.
 	if node.is_svg_svg_box() {
@@ -271,13 +277,15 @@ fn calculate_min_content_width(mut state LayoutState, box &Box) CSSPixels {
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	height_basis := intrinsic_width_inline_height_basis(state,box)
+	repeat_adjustment := intrinsic_width_repeat_adjustment(state,box)
 	if cached := cache.min_content_width {
-		if cache.min_content_width_height_ == height_basis { return cached }
+		if cache.min_content_width_height_ == height_basis && cache.min_content_width_repeat_adjustment_==repeat_adjustment { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .min_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.min_content_width = result
 	cache.min_content_width_height_ = height_basis
+	cache.min_content_width_repeat_adjustment_=repeat_adjustment
 	return result
 }
 
@@ -367,19 +375,22 @@ fn calculate_max_content_width(mut state LayoutState, box &Box) CSSPixels {
 	mut mutable_box := unsafe { &Box(box) }
 	mut cache := mutable_box.cached_intrinsic_sizes()
 	height_basis := intrinsic_width_inline_height_basis(state,box)
+	repeat_adjustment := intrinsic_width_repeat_adjustment(state,box)
 	if cached := cache.max_content_width {
-		if cache.max_content_width_height_ == height_basis { return cached }
+		if cache.max_content_width_height_ == height_basis && cache.max_content_width_repeat_adjustment_==repeat_adjustment { return cached }
 	}
 	result := calculate_content_width_with_constraint(mut state, box, .max_content)
 	cache = mutable_box.cached_intrinsic_sizes()
 	cache.max_content_width = result
 	cache.max_content_width_height_ = height_basis
+	cache.max_content_width_repeat_adjustment_=repeat_adjustment
 	return result
 }
 
 // FormattingContext::should_treat_max_width_as_none(). In particular, a
-// percentage max-width that is cyclic during intrinsic sizing must not be
-// resolved against the zero placeholder width of the throwaway state.
+// cyclic percentage max-width behaves as none for max-content and for a
+// non-replaced box's min-content size. A replaced box's min-content maximum
+// instead resolves against zero.
 fn should_treat_max_width_as_none(state &LayoutState, box &Node, available_width AvailableSize) bool {
 	max_width := box.computed_values().size_value(.max_width)
 	if max_width.is_stretch() && !available_width.is_definite() { return true }
@@ -486,6 +497,17 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, box_node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, box_node, box_node)
 	mut box_state := throwaway.get_mutable(box_styled)
+	if source := source_state.try_get(box_styled) {
+		if basis := source.box_model_percentage_basis() { box_state.set_box_model_percentage_basis(basis) }
+	}
+	if containing := box_node.containing_block() {
+		box_state.set_containing_block_used_values(throwaway.get_mutable(unsafe { &NodeWithStyle(containing) }))
+	}
+	if containing := box_state.containing_block_used_values() {
+		resolve_box_model_edges(box_node.computed_values(), mut box_state, containing.content_width().to_double())
+	} else {
+		resolve_box_model_edges(box_node.computed_values(), mut box_state, 0)
+	}
 	// The measured inline axis is indefinite; the independently resolved
 	// block axis remains a valid input to percentage and aspect-ratio sizing.
 	if source := source_state.try_get(box_styled) {
@@ -515,7 +537,7 @@ fn calculate_content_width_with_constraint(mut source_state LayoutState, box &Bo
 		}
 		return calculate_table_grid_intrinsic_width(mut throwaway, box_node, percentage_basis, constraint)
 	}
-	if box_node.display().is_flex_inside() {
+	if box_node.display().is_flex_inside() && !(box_node.is_fieldset_box() && grid_is_vertical(box_node)) {
 		return calculate_intrinsic_flex_width(mut throwaway, box_node, constraint)
 	}
 	if box_node.display().is_grid_inside() {
@@ -665,6 +687,7 @@ fn intrinsic_outer_width_contribution(mut state LayoutState, box &Box, constrain
 // min- and max-content measures from that same state.
 fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutState, box &Box, constraint SizeConstraint, values &UsedValues, containing_width CSSPixels) CSSPixels {
 	node := unsafe { &Node(box) }
+	if inline_measurement_marker_is_external(node) { return CSSPixels.new(0) }
 	styled := node.as_node_with_style() or { return CSSPixels.new(0) }
 	preferred_width := definite_preferred_intrinsic_width(node, values, containing_width)
 	mut inner := if width := preferred_width {
@@ -699,7 +722,7 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 			inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 		} else if preferred.is_fit_content() {
 			inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, AvailableSize.make_definite(containing_width)))
-		} else if !preferred.contains_percentage() {
+		} else if !preferred.contains_percentage() && !preferred.is_stretch() {
 			if resolved := resolve_layout_content_size(node, preferred, containing_width, values, true) {
 				// A definite preferred width determines the box's content width in
 				// the intrinsic-layout pass. Its descendants do not floor that width;
@@ -732,8 +755,10 @@ fn intrinsic_outer_width_contribution_with_resolved_box_model(mut state LayoutSt
 		inner = css_pixels_max(inner, calculate_max_content_width(mut state, box))
 	} else if min_width.is_fit_content() {
 		inner = css_pixels_max(inner, calculate_fit_content_width(mut state, box, available_width))
-	} else if minimum := resolve_layout_content_size(node, min_width, containing_width, values, true) {
-		inner = css_pixels_max(inner, minimum)
+	} else if !min_width.is_stretch() {
+		if minimum := resolve_layout_content_size(node, min_width, containing_width, values, true) {
+			inner = css_pixels_max(inner, minimum)
+		}
 	}
 	return inner.plus(flex_or_grid_item_outer_inline_edges(values))
 }
@@ -765,7 +790,7 @@ fn flex_formatting_context_adjust_cross_size_through_aspect_ratio_for_main_size_
 
 fn flex_cross_width_behaves_as_auto(item &Node, item_state &UsedValues, constraint SizeConstraint) bool {
 	preferred := item.computed_values().size_value(.width)
-	if preferred.is_auto() {
+	if preferred.is_auto() || preferred.is_stretch() {
 		return true
 	}
 	if preferred.contains_percentage() {
@@ -1147,6 +1172,14 @@ fn calculate_content_height_with_constraint(mut source_state LayoutState, box &B
 	populate_intrinsic_containing_block_chain(mut throwaway, mut source_state, node)
 	populate_intrinsic_external_containing_blocks(mut throwaway, mut source_state, node, node)
 	mut values := throwaway.get_mutable(styled)
+ if source := source_state.try_get(styled) {
+  if basis := source.box_model_percentage_basis() { values.set_box_model_percentage_basis(basis) }
+ }
+ if containing := node.containing_block() {
+  parent := throwaway.get_mutable(unsafe { &NodeWithStyle(containing) })
+  values.set_containing_block_used_values(parent)
+  resolve_box_model_edges(node.computed_values(),mut values,parent.content_width().to_double())
+ }
 	values.height_constraint = constraint
 	values.set_indefinite_content_height()
 	values.set_content_width(width)
@@ -1187,7 +1220,8 @@ fn resolve_content_height_for_node(mut state LayoutState, node &NodeWithStyle, u
 	box := unsafe { &Node(node) }.as_box() or {
 		return resolve_definite_content_height(computed, containing_block_height)
 	}
-	if size.is_stretch() && containing_block_height != none {
+	if size.is_stretch() && containing_block_height != none && used_values.height_constraint == .none
+		&& (!unsafe { &Node(node) }.is_flex_item() || flex_stretch_basis_is_definite(used_values, false)) {
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(containing_block_height), false).to_double()
 	}
 	if size.is_auto() || size.is_stretch() {
@@ -1275,6 +1309,8 @@ fn content_height_limit_for_node(mut state LayoutState, node &NodeWithStyle, use
 	computed := node.computed_values()
 	size := computed.size_value(property)
 	if size.is_stretch() {
+		if used_values.height_constraint != .none { return none }
+		if unsafe { &Node(node) }.is_flex_item() && !flex_stretch_basis_is_definite(used_values, false) { return none }
 		basis := containing_block_height or { return none }
 		return stretch_fit_content_size(unsafe { &Node(node) }, used_values, css_px(basis), false)
 	}
@@ -1329,4 +1365,10 @@ fn intrinsic_width_inline_height_basis(state &LayoutState,box &Box) ?CSSPixels {
  values := state.try_get(node.as_node_with_style() or { return none }) or { return none }
  if values.has_definite_height() { return values.content_height() }
  return none
+}
+
+fn intrinsic_width_repeat_adjustment(state &LayoutState,box &Box) CSSPixels {
+ node := unsafe { &Node(box) }
+ if !node.display().is_grid_inside() { return CSSPixels.new(0) }
+ return grid_repeat_used_box_adjustment(state,node,true)
 }

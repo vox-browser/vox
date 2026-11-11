@@ -1,6 +1,11 @@
 import unittest
+import hashlib
+import json
+from pathlib import Path
+import tempfile
 
 from ladybird_native_cohort import assess, catalog_ids, expectation_names
+from wpt_expectation_errata import load_expectation_errata
 
 
 class CohortTests(unittest.TestCase):
@@ -39,6 +44,78 @@ class CohortTests(unittest.TestCase):
         self.assertTrue(assess(payload, ['one'], 0)['all_pass'])
         payload['tests'][1]['status'] = 1
         self.assertFalse(assess(payload, ['one'], 0)['all_pass'])
+
+
+class ExpectationErrataTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.page = self.root / 'test.html'
+        self.original = b'test({\n  expected: "50px"\n}, "unchanged test name");\n'
+        self.page.write_bytes(self.original)
+        self.manifest = self.root / 'errata.json'
+        self.data = dict(format='vox-wpt-expectation-errata-v1', ladybird_revision='pinned',
+            corrections=[dict(case='test', source_sha256=hashlib.sha256(self.original).hexdigest(),
+                original_assertion='  expected: "50px"', corrected_assertion='  expected: "250px"',
+                reason='Documented numeric accumulation correction')])
+
+    def load(self):
+        self.manifest.write_text(json.dumps(self.data))
+        return load_expectation_errata(self.manifest, self.root, 'pinned',
+                                      [dict(id='test', url='/test.html')])
+
+    def test_served_correction_preserves_exported_bytes_and_records_both_hashes(self):
+        overrides, applied = self.load()
+        served = overrides['/test.html'][0]
+        self.assertEqual(self.page.read_bytes(), self.original)
+        self.assertEqual(served, self.original.replace(b'50px', b'250px'))
+        self.assertEqual(applied[0]['source_sha256'], hashlib.sha256(self.original).hexdigest())
+        self.assertEqual(applied[0]['served_sha256'], hashlib.sha256(served).hexdigest())
+
+    def test_changed_revision_or_source_fails_closed(self):
+        self.data['ladybird_revision'] = 'different'
+        with self.assertRaises(ValueError):
+            self.load()
+        self.data['ladybird_revision'] = 'pinned'
+        self.page.write_bytes(self.original + b'changed')
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_harness_control_flow_changes_and_duplicate_corrections_are_rejected(self):
+        correction = self.data['corrections'][0]
+        for value in ['  expected: "250px"; done()', '  expected: "</script>"',
+                      'setup({timeout: 99999})', '  expected: "250px"\n// injected']:
+            correction['corrected_assertion'] = value
+            with self.assertRaises(ValueError):
+                self.load()
+        correction['corrected_assertion'] = '  expected: "250px"'
+        self.data['corrections'].append(dict(correction))
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_missing_or_ambiguous_assertion_and_unselected_case_are_rejected(self):
+        correction = self.data['corrections'][0]
+        correction['original_assertion'] = '  expected: "missing"'
+        with self.assertRaises(ValueError):
+            self.load()
+        correction['original_assertion'] = '  expected: "50px"'
+        self.original += self.original
+        self.page.write_bytes(self.original)
+        correction['source_sha256'] = hashlib.sha256(self.original).hexdigest()
+        with self.assertRaises(ValueError):
+            self.load()
+        correction['case'] = 'not-selected'
+        with self.assertRaises(ValueError):
+            self.load()
+
+    def test_query_variants_cannot_receive_unlisted_corrections(self):
+        self.manifest.write_text(json.dumps(self.data))
+        for cases in [[dict(id='test', url='/test.html?variant=1')],
+                      [dict(id='test', url='/test.html'),
+                       dict(id='other', url='/test.html?variant=2')]]:
+            with self.assertRaises(ValueError):
+                load_expectation_errata(self.manifest, self.root, 'pinned', cases)
 
 
 if __name__ == '__main__':

@@ -43,9 +43,14 @@ pub fn svg_dom_geometry(element &dom.Element) SVGDOMGeometry {
 	box := SVGGeometryBox.new(element.document(),element,computed)
 	node := unsafe { &Node(box) }
 	viewport := css.CSSPixelSize.new(css.CSSPixels.nearest_value_for(viewport_width),css.CSSPixels.nearest_value_for(viewport_height))
-	path := svg.geometry_path(svg_geometry_element_model(node,element,viewport),viewport_width,viewport_height)
+	model := svg_geometry_element_model(node,element,viewport)
+	path := svg.geometry_path(model,viewport_width,viewport_height)
 	projection := svg_paint_path_projection(path,if computed.fill_rule() == .evenodd { painting.WindingRule.even_odd } else { painting.WindingRule.nonzero },true,true)
 	bounds := svg_path_bounds(path) or { svg.Rect{} }
+	percentage_basis := (viewport_width+viewport_height)/2
+	dashes, dash_offset := model.calibrated_stroke_dashes(path,
+		resolved_svg_stroke_dasharray(computed,percentage_basis),
+		unsafe { &css.ComputedValues(computed) }.stroke_dashoffset().to_px(computed.length_resolution_context(),css.CSSPixels.nearest_value_for(percentage_basis)).to_double())
 	return SVGDOMGeometry{
 		path:path
 		packed_path:cpuraster.PackedPath{segments:projection.packed_segments,even_odd:computed.fill_rule() == .evenodd}
@@ -54,8 +59,8 @@ pub fn svg_dom_geometry(element &dom.Element) SVGDOMGeometry {
 		stroke_cap:match computed.stroke_linecap() { .butt { 0 } .round { 1 } .square { 2 } }
 		stroke_join:match computed.stroke_linejoin() { .round { 0 } .bevel { 1 } else { 2 } }
 		stroke_miter:computed.stroke_miterlimit()
-		dashes:resolved_svg_stroke_dasharray(computed,(viewport_width+viewport_height)/2).map(f32(it))
-		dash_offset:unsafe { &css.ComputedValues(computed) }.stroke_dashoffset().to_px(computed.length_resolution_context(),css.CSSPixels.nearest_value_for((viewport_width+viewport_height)/2)).to_double()
+		dashes:dashes.map(f32(it))
+		dash_offset:dash_offset
 	}
 }
 

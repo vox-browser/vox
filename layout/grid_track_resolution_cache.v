@@ -17,6 +17,7 @@ struct GridTrackResolutionKey {
 	definite bool
 	implicit_before int
 	required int
+	repeat_adjustment CSSPixels
 	font_policy dom.FontRenderingPolicy
 }
 
@@ -62,14 +63,15 @@ fn grid_track_list_is_context_free(list css.GridTrackSizeList) bool {
 fn resolve_grid_axis_tracks_in_state(mut state LayoutState, container &Node, columns bool,
 	available CSSPixels, gap CSSPixels, definite bool, implicit_before int, required int) []GridTrack {
 	computed := container.computed_values()
-	list := grid_axis_template(container, columns)
+	list := grid_template_with_used_repeat_counts(state,container,grid_axis_template(container,columns),available,gap,definite,columns)
 	implicit := grid_axis_implicit_tracks(container, columns)
 	mut pool := state.measurement_chunk_pool_
-	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed {
+	if disable_grid_track_resolution_reuse || pool == unsafe { nil } || pool.closed || grid_lanes_repeat_reads_items(container,list,available) {
 		return resolve_grid_tracks_for_axis(container, list, implicit, available, gap, definite, implicit_before, required, columns)
 	}
 	key := GridTrackResolutionKey{
 		columns: columns
+ repeat_adjustment:grid_repeat_used_box_adjustment(state,container,columns)
 		available: available
 		gap: gap
 		definite: definite

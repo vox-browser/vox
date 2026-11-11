@@ -91,6 +91,10 @@ fn (mut properties CSSStyleProperties) set_rule_base_url(base_url string) {
 			value_with_base.base_url = base_url
 		}
 	}
+	for _, property in properties.custom_properties {
+		mut value_with_base := unsafe { &dom.StyleValue(property.value) }
+		value_with_base.base_url = base_url
+	}
 }
 
 fn (mut properties CSSStyleProperties) set_rule_resource_owner(sheet ?&CSSStyleSheet) {

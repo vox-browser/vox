@@ -49,7 +49,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 				.corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cursor,
 				.cx, .cy, .d, .display, .dominant_baseline, .empty_cells, .fill, .fill_opacity,
-				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
+				.fill_rule, .field_sizing, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
 				.font_size, .font_style,
@@ -58,7 +58,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
 				.grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas,
-				.grid_template_columns, .grid_template_rows, .height, .hyphens, .image_rendering, .inline_size,
+				.grid_template_columns, .grid_template_rows, .height, .hyphenate_character, .hyphenate_limit_chars, .hyphenate_limit_lines, .hyphens, .image_rendering, .inline_size,
 				.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
 				.isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing,
 				.line_height, .list_style_image, .list_style_position, .list_style_type,
@@ -89,9 +89,9 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
-				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_anchor,
+				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
-				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
+				.text_decoration_style, .text_decoration_thickness, .text_emphasis_style, .text_emphasis_position, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
 				.text_underline_offset, .text_underline_position, .text_wrap_mode, .text_wrap_style,
 				.timeline_scope, .top, .touch_action, .transform, .transform_box, .transform_origin,
@@ -100,7 +100,7 @@ pub fn generated_longhands_for_shorthand(property_id PropertyID) []PropertyID {
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .grid_lanes_direction, .fit_tolerance, .grid_lanes_pack]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .grid_lanes_direction, .fit_tolerance, .grid_lanes_pack, .interpolate_size, .line_break]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -412,7 +412,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.corner_start_end_shape, .corner_start_start_shape, .corner_top_left_shape,
 				.corner_top_right_shape, .counter_increment, .counter_reset, .counter_set, .cursor,
 				.cx, .cy, .d, .display, .dominant_baseline, .empty_cells, .fill, .fill_opacity,
-				.fill_rule, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
+				.fill_rule, .field_sizing, .filter, .flex_basis, .flex_direction, .flex_grow, .flex_shrink,
 				.flex_wrap, .float_, .flood_color, .flood_opacity, .font_family,
 				.font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing,
 				.font_size, .font_style,
@@ -421,7 +421,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.font_variant_numeric, .font_variant_position, .font_variation_settings, .font_weight,
 				.font_width, .grid_auto_columns, .grid_auto_flow, .grid_auto_rows, .grid_column_end,
 				.grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas,
-				.grid_template_columns, .grid_template_rows, .height, .hyphens, .image_rendering, .inline_size,
+				.grid_template_columns, .grid_template_rows, .height, .hyphenate_character, .hyphenate_limit_chars, .hyphenate_limit_lines, .hyphens, .image_rendering, .inline_size,
 				.inset_block_end, .inset_block_start, .inset_inline_end, .inset_inline_start,
 				.isolation, .justify_content, .justify_items, .justify_self, .left, .letter_spacing,
 				.line_height, .list_style_image, .list_style_position, .list_style_type,
@@ -452,9 +452,9 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.scrollbar_width, .shape_image_threshold, .shape_margin, .shape_outside,
 				.shape_rendering, .stop_color, .stop_opacity, .stroke, .stroke_dasharray,
 				.stroke_dashoffset, .stroke_linecap, .stroke_linejoin, .stroke_miterlimit,
-				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_anchor,
+				.stroke_opacity, .stroke_width, .tab_size, .table_layout, .text_align, .text_align_last, .text_anchor,
 				.text_decoration_color, .text_decoration_line, .text_decoration_skip_ink,
-				.text_decoration_style, .text_decoration_thickness, .text_indent, .text_justify,
+				.text_decoration_style, .text_decoration_thickness, .text_emphasis_style, .text_emphasis_position, .text_indent, .text_justify,
 				.text_overflow, .text_rendering, .text_shadow, .text_transform,
 				.text_underline_offset, .text_underline_position, .text_wrap_mode, .text_wrap_style,
 				.timeline_scope, .top, .touch_action, .transform, .transform_box, .transform_origin,
@@ -463,7 +463,7 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 				.vector_effect, .vertical_align, .view_timeline_axis, .view_timeline_inset,
 				.view_timeline_name, .view_transition_name, .visibility, .white_space_collapse,
 				.white_space_trim, .widows, .width, .will_change, .word_break, .word_spacing,
-				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .grid_lanes_direction, .fit_tolerance, .grid_lanes_pack]
+				.writing_mode, .x, .y, .z_index, .text_box_edge, .text_box_trim, .font_size_adjust, .font_palette, .forced_color_adjust, .text_orientation, .border_shape, .alignment_baseline, .baseline_shift, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .grid_lanes_direction, .fit_tolerance, .grid_lanes_pack, .interpolate_size, .line_break]
 		}
 		.animation {
 			[.animation_duration, .animation_timing_function, .animation_delay,
@@ -737,7 +737,8 @@ pub fn generated_expanded_longhands_for_shorthand(property_id PropertyID) []Prop
 
 pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 	return match property_id {
-		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { [.all] }
+		.line_break { [.all] }
+		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack, .interpolate_size { [.all] }
 		.overscroll_behavior_x, .overscroll_behavior_y { [.overscroll_behavior,.all] }
 		.overscroll_behavior_inline, .overscroll_behavior_block { [.all] }
 		.alignment_baseline, .baseline_shift, .baseline_source { [.all] }
@@ -781,6 +782,13 @@ pub fn generated_shorthands_for_longhand(property_id PropertyID) []PropertyID {
 			[.font_synthesis, .all]
 		}
 		.hyphens { [.all] }
+		.text_emphasis_style { [.all] }
+		.text_emphasis_position { [.all] }
+		.hyphenate_limit_lines { [.all] }
+		.hyphenate_limit_chars { [.all] }
+		.hyphenate_character { [.all] }
+		.field_sizing { [.all] }
+		.text_align_last { [.all] }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type {
 			[.all]
 		}

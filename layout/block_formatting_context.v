@@ -314,7 +314,7 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 // parent's content height.
 fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(mut state LayoutState, box &NodeWithStyle) CSSPixels {
 	box_node := unsafe { &Node(box) }
-	if box_node.has_size_containment() {
+	if box_node.has_size_containment_in_axis(false) {
 		return box_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 	}
 	box_state := state.get(box)
@@ -856,7 +856,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.unregister_block_container_y_position_update()
 		}
 	}
-	if definite_content_height == none && box_as_node.has_size_containment() {
+	if definite_content_height == none && box_as_node.has_size_containment_in_axis(false) {
 		intrinsic_height := box_as_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		content_height_from_children = intrinsic_height.to_double()
 	}
@@ -1009,11 +1009,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	} else if marker.chromium_symbol_marker() {
 		// ListMarker::InlineMarginsForOutside(): offset plus 7px padding
 		// and the symbol rectangle's additional 1px inline inset.
-		left_boundary.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
+		left_boundary.minus(list_item_state.border_box_left())
+			.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
 	} else if direction == .ltr {
-		left_boundary.minus(marker_state.content_width())
+		left_boundary.minus(list_item_state.border_box_left()).minus(marker_state.content_width())
 	} else {
-		content_width_before_marker.minus(right_intrusion)
+		content_width_before_marker.plus(list_item_state.border_box_right()).minus(right_intrusion)
 	}
 	offset_x := if marker.document().font_rendering_policy() == .chromium {
 		marker_offset_x
@@ -1175,7 +1176,7 @@ fn (mut bfc BlockFormattingContext) introduce_clearance(clear css.Clear, directi
 	}
 	current_y := css_px(bfc.y_offset_of_current_block_container)
 	hypothetical_y := if chromium {
-		current_y.plus(css_px(bfc.margin_state.current_collapsed_margin()))
+		current_y.plus(css_px(bfc.margin_state.pending_margin_for_next_box()))
 	} else {
 		current_y
 	}

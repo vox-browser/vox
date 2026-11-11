@@ -2159,6 +2159,10 @@ pub enum Keyword {
 	flow_end
 	flip_x
 	flip_y
+	any
+	numeric_only
+	allow_keywords
+	loose
 	bounding_box
 	visible_painted
 	visible_fill
@@ -2166,6 +2170,14 @@ pub enum Keyword {
 	painted
 	mixed
 	sideways
+	no_limit
+	over
+	filled
+	open
+	dot
+	double_circle
+	triangle
+	sesame
 }
 
 pub fn (keyword Keyword) is_css_wide_keyword() bool {
@@ -3088,11 +3100,23 @@ pub fn string_from_keyword(keyword Keyword) string {
 		.flow_end { 'flow-end' }
 		.flip_x { 'flip-x' }
 		.flip_y { 'flip-y' }
+		.any { 'any' }
+		.numeric_only { 'numeric-only' }
+		.allow_keywords { 'allow-keywords' }
+		.loose { 'loose' }
 		.bounding_box { 'bounding-box' }
 		.visible_painted { 'visiblepainted' }
 		.visible_fill { 'visiblefill' }
 		.visible_stroke { 'visiblestroke' }
 		.painted { 'painted' }
+		.filled { 'filled' }
+		.open { 'open' }
+		.dot { 'dot' }
+		.double_circle { 'double-circle' }
+		.triangle { 'triangle' }
+		.sesame { 'sesame' }
+		.over { 'over' }
+		.no_limit { 'no-limit' }
 	}
 }
 
@@ -3120,11 +3144,23 @@ pub fn keyword_from_string(input string) ?Keyword {
 	if name == 'flow-end' { return .flow_end }
 	if name == 'flip-x' { return .flip_x }
 	if name == 'flip-y' { return .flip_y }
+	if name == 'any' { return .any }
+	if name == 'numeric-only' { return .numeric_only }
+	if name == 'allow-keywords' { return .allow_keywords }
+	if name == 'loose' { return .loose }
 	if name == 'bounding-box' { return .bounding_box }
 	if name == 'visiblepainted' { return .visible_painted }
 	if name == 'visiblefill' { return .visible_fill }
 	if name == 'visiblestroke' { return .visible_stroke }
 	if name == 'painted' { return .painted }
+	if name == 'filled' { return .filled }
+	if name == 'open' { return .open }
+	if name == 'dot' { return .dot }
+	if name == 'double-circle' { return .double_circle }
+	if name == 'triangle' { return .triangle }
+	if name == 'sesame' { return .sesame }
+	if name == 'over' { return .over }
+	if name == 'no-limit' { return .no_limit }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := Keyword.negative_infinity
 	mut found := false
@@ -8909,14 +8945,15 @@ pub fn (style_value StyleValue) is_computationally_independent() bool {
 		FunctionStyleValue {
 			return style_value.value().is_computationally_independent()
 		}
-		LightDarkStyleValue, TreeCountingFunctionStyleValue {
+		LightDarkStyleValue {
+			return style_value.light[0].is_computationally_independent()
+				&& style_value.dark[0].is_computationally_independent()
+		}
+		TreeCountingFunctionStyleValue {
 			return false
 		}
-		KeywordStyleValue {
-			if style_value.keyword() != .currentcolor && style_value.has_color() {
-				return false
-			}
-		}
+		// System colors and light-dark() are independent even though the color
+		// scheme decides their computed color (CSSWG issue 12735).
 		else {}
 	}
 
@@ -9200,6 +9237,15 @@ pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue 
 	if style_value is KeywordStyleValue {
 		return style_value.reify(associated_property)
 	}
+	// From Ladybird 80f89cee2ac8, Rust/src/css/typed_om.rs.
+	// Copyright (c) 2026-present, the Ladybird developers.
+	// SPDX-License-Identifier: BSD-2-Clause
+	if style_value is ShorthandStyleValue {
+		serialized_value := style_value.serialize(.normal)
+		if is_css_wide_keyword_string(serialized_value) {
+			return CSSStyleValue.from_keyword(CSSKeywordValue.create(serialized_value))
+		}
+	}
 	if style_value is NumberStyleValue {
 		return style_value.reify(associated_property)
 	}
@@ -9215,7 +9261,31 @@ pub fn (style_value StyleValue) reify(associated_property string) CSSStyleValue 
 	if style_value is UnresolvedStyleValue {
 		return CSSStyleValue.from_unparsed(style_value.reify(associated_property))
 	}
+	if style_value is CalculatedStyleValue {
+		return reify_calculated_style_value(style_value, associated_property)
+	}
 	return CSSStyleValue.create(associated_property, style_value)
+}
+
+// https://drafts.css-houdini.org/css-typed-om-1/#reify-a-math-expression
+// A calc() whose tree simplified to a single value still reifies as a math
+// expression, a CSSMathSum holding that value. Math functions without a
+// CSSMath interface fall back to a plain CSSStyleValue.
+fn reify_calculated_style_value(value CalculatedStyleValue, associated_property string) CSSStyleValue {
+	if value.node.len == 1 {
+		if numeric := reify_calc_node(value.node[0]) {
+			reified := if numeric is CSSUnitValue {
+				type_ := NumericType.create_from_unit(numeric.unit()) or { NumericType.new() }
+				CSSNumericValue(CSSMathSum.create(type_, CSSNumericArray.create([numeric])))
+			} else {
+				numeric
+			}
+			mut result := CSSStyleValue.from_numeric(reified)
+			result.associated_property = associated_property
+			return result
+		}
+	}
+	return CSSStyleValue.create(associated_property, StyleValue(value))
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#subdivide-into-iterations
@@ -10328,6 +10398,15 @@ pub fn CSSStyleValue.parse_a_css_style_value(property_name string, css_text stri
 	}
 
 	// 4. Subdivide into iterations whole value, according to property, and let values be the result.
+	// NB: A box-side shorthand whose longhands all have the same value is that
+	//     value, e.g. `margin-block: 10px` reifies as CSS.px(10).
+	if whole_value is ShorthandStyleValue && typed_om_reifies_uniform_shorthand(whole_value.shorthand_) {
+		longhand_values := whole_value.values()
+		if longhand_values.len > 0 && longhand_values.all(it.to_string() == longhand_values[0].to_string())
+			&& longhand_values[0] !is ShorthandStyleValue {
+			return [longhand_values[0].reify(property.name())]
+		}
+	}
 	values := whole_value.subdivide_into_iterations(property)
 
 	// 5. For each value in values, replace it with the result of reifying value for property.
@@ -10475,11 +10554,27 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 			return true
 		}
 		property_id := property.id() or { return false }
-		keyword_from_string(value.value_) or { return false }
-		return property_accepts_keyword_string(property_id, value.value_)
+		if _ := keyword_from_string(value.value_) {
+			if property_accepts_keyword_string(property_id, value.value_) {
+				return true
+			}
+		}
+		// Keyword groups, enumerated value types and <custom-ident> are not in
+		// the accepted keyword table; the property's own grammar decides.
+		return typed_om_text_matches_property(property_id, value.value_)
 	}()
 	if perform_type_check == .yes && !matches_grammar {
 		return error("Property '${property.name()}' does not accept the keyword '${value.value_}'")
+	}
+	if perform_type_check == .yes && !is_css_wide_keyword_string(value.value_) {
+		if property_id := property.id() {
+			if !(keyword_from_string(value.value_) != none && property_accepts_keyword_string(property_id, value.value_)) {
+				mut parser := Parser.from_css_text(value.value_)
+				if parsed := parser.parse_css_value(property_id) {
+					return parsed
+				}
+			}
+		}
 	}
 
 	//     If any component of property's CSS grammar has a limited numeric range, and the corresponding part of value
@@ -10500,6 +10595,24 @@ pub fn (value CSSKeywordValue) create_an_internal_representation(property Proper
 		return StyleValue(KeywordStyleValue.create(keyword))
 	}
 	return StyleValue(CustomIdentStyleValue.create(value.value_))
+}
+
+// Typed OM sets <opacity-value> percentages on the opacity properties; the
+// shape-image-threshold grammar there is <number> only.
+fn typed_om_accepts_opacity_percentage(property_id PropertyID) bool {
+	return property_accepts_type(property_id, .opacity) && property_id != .shape_image_threshold
+}
+
+fn typed_om_reifies_uniform_shorthand(property_id PropertyID) bool {
+	return property_id in [.margin, .margin_block, .margin_inline, .padding, .padding_block, .padding_inline,
+		.inset, .inset_block, .inset_inline, .scroll_margin, .scroll_margin_block, .scroll_margin_inline,
+		.scroll_padding, .scroll_padding_block, .scroll_padding_inline]
+}
+
+// Whether text is a complete, valid value of property_id.
+fn typed_om_text_matches_property(property_id PropertyID, text string) bool {
+	mut parser := Parser.from_css_text(text)
+	return parser.parse_css_value(property_id) != none
 }
 
 // https://drafts.css-houdini.org/css-typed-om-1/#rectify-a-keywordish-value
@@ -11663,8 +11776,10 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 	style_value := match value {
 		Number {
 			// NB: Number before Integer, because a custom property accepts either and we want to avoid rounding in that case.
-			if property_accepts_type(property_id, .number) {
-				if property_accepts_number(property_id, value.value()) {
+			// <opacity-value> is <number> | <percentage>.
+			if property_accepts_type(property_id, .number) || property_accepts_type(property_id, .opacity) {
+				// <opacity-value> is clamped only when computed.
+				if property_accepts_number(property_id, value.value()) || property_accepts_type(property_id, .opacity) {
 					?StyleValue(StyleValue(NumberStyleValue.create(value.value())))
 				} else {
 					?StyleValue(wrap_in_math_sum(value))
@@ -11681,8 +11796,8 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 			}
 		}
 		Percentage {
-			if property_accepts_type(property_id, .percentage) {
-				if property_accepts_percentage(property_id, value) {
+			if property_accepts_type(property_id, .percentage) || typed_om_accepts_opacity_percentage(property_id) {
+				if property_accepts_percentage(property_id, value) || typed_om_accepts_opacity_percentage(property_id) {
 					?StyleValue(StyleValue(PercentageStyleValue.create(value)))
 				} else {
 					?StyleValue(wrap_in_math_sum(value))
@@ -11759,7 +11874,25 @@ pub fn (unit_value CSSUnitValue) create_an_internal_representation(property Prop
 		}
 	}
 
-	return style_value or { error('Property does not accept values of this type.') }
+	result := style_value or { return error('Property does not accept values of this type.') }
+	// The value must match the property's grammar on its own: counter-increment
+	// takes <integer> only after a counter name, for example.
+	if !typed_om_value_matches_property(property_id, result) {
+		return error('Property does not accept values of this type.')
+	}
+	return result
+}
+
+// Whether a numeric internal representation is a complete value of property_id.
+// Out-of-range values have already been wrapped in calc(), which the grammar
+// accepts; in-range values are also probed as calc() so that a range-checked
+// literal (like a negative width) does not reject a value set through Typed OM.
+fn typed_om_value_matches_property(property_id PropertyID, value StyleValue) bool {
+	text := value.to_string()
+	if typed_om_text_matches_property(property_id, text) {
+		return true
+	}
+	return !text.starts_with('calc(') && typed_om_text_matches_property(property_id, 'calc(${text})')
 }
 
 pub fn (unit_value CSSUnitValue) create_calculation_node(context CalculationContext) !CalculationNode {

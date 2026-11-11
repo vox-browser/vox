@@ -64,6 +64,13 @@ fn inline_measurement_root_is_closed(root &Node, context ?&BlockFormattingContex
 
 fn inline_measurement_root_is_closed_with_policy(root &Node,
 	context ?&BlockFormattingContext, extended_roots bool) bool {
+	// First-line shaping retains a separate pseudo style. Until that style is
+	// part of the reusable input signature, compute these lines afresh.
+	if dom_node := root.dom_node() {
+		if element := dom_node.as_element() {
+			if css.computed_properties_for_pseudo_element(element, .first_line) != none { return false }
+		}
+	}
 	closed := if extended_roots && !disable_extended_inline_measurement_roots {
 		measurement_inline_workspace_is_closed(root)
 	} else { inline_layout_workspace_is_closed(root, true) }

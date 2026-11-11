@@ -13,6 +13,26 @@ fn typed_search_call(mut vm VM, name string, array &TypedArray, arguments []Valu
 	return call(mut vm, Value.from_object(function.object), Value.from_object(array.object), arguments)
 }
 
+fn test_typed_array_last_index_of_preserves_indices_above_int32_max() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := Object.create(vm.realm(), none)
+	length := u32(0x80000004)
+	owner := OwnedPrimitiveBackingStore.create_uninitialized(uint(length))!
+	mut buffer := ArrayBufferObject.create_with_data_block(vm.realm(),
+		DataBlock.from_owned_store(owner, false), parent)
+	defer { buffer.detach_buffer() }
+	buffer.overwrite(uint(length - 2), [u8(17), 42])
+	array := TypedArray.create(vm.realm(), .uint8, length, buffer, parent)
+	assert typed_search_call(mut vm, 'lastIndexOf', array, [Value.from_i32(42)])!.number == f64(length - 1)
+	assert typed_search_call(mut vm, 'lastIndexOf', array, [Value.from_i32(42),
+		Value.from_f64(math.inf(1))])!.number == f64(length - 1)
+	assert typed_search_call(mut vm, 'lastIndexOf', array, [Value.from_i32(17),
+		Value.from_i32(-2)])!.number == f64(length - 2)
+	assert typed_search_call(mut vm, 'lastIndexOf', array, [Value.from_i32(42),
+		Value.from_f64(-f64(length) - 1)])!.number == -1
+}
+
 fn test_typed_array_search_distinguishes_nan_signed_zero_and_strict_type_identity() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

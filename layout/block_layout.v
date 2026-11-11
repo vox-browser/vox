@@ -142,7 +142,15 @@ fn compute_block_used_width_for_node(mut state LayoutState, box &NodeWithStyle, 
 	}
 	// HTML button layout: an auto inline size is fit-content instead of the
 	// normal fill-available size of a block-level box.
-	if computed_width.is_auto() && box.computed_values().writing_mode() != .horizontal_tb {
+ mut orthogonal_inline_size := false
+ if containing := box_node.containing_block() {
+  orthogonal_inline_size = box.computed_values().writing_mode()==.horizontal_tb && unsafe { &Node(containing) }.computed_values().writing_mode()!=.horizontal_tb
+ }
+ if computed_width.is_auto() && orthogonal_inline_size {
+  // The inline size of an orthogonal block is shrink-to-fit; applying the
+  // horizontal normal-flow fill equation can erase all of its content width.
+  intrinsic_width=calculate_fit_content_width(mut state,box_as_box,available_width)
+ } else if computed_width.is_auto() && box.computed_values().writing_mode() != .horizontal_tb {
 		// A vertical flow's automatic block size is content based. The
 		// horizontal block width equation would stretch it across the viewport.
 		intrinsic_width = calculate_max_content_width(mut state,box_as_box)
@@ -402,6 +410,12 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 			automatic_content_width: box.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 			automatic_content_height: box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
+	} else if box.has_inline_size_containment() {
+		if box.computed_values().writing_mode() == .horizontal_tb {
+			result = FormattingContextResult{...result, automatic_content_width:box.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }}
+		} else {
+			result = FormattingContextResult{...result, automatic_content_height:box.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }}
+		}
 	}
 	return result
 }
@@ -422,6 +436,7 @@ fn layout_inside_independent_formatting_context_without_containment_override(mut
 
 fn layout_uncached_independent_formatting_context(mut state LayoutState, box &Node, mut box_state UsedValues, layout_mode LayoutMode, available_space AvailableSpace) FormattingContextResult {
 	platform.cooperative_work_checkpoint()
+ if vertical := layout_vertical_table_wrapper(mut state,box,mut box_state) { return vertical }
 	if box.is_svg_svg_box() {
 		return run_root_svg_formatting_context(mut state, box, mut box_state, available_space)
 	}

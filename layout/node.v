@@ -1,3 +1,7 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
 module layout
 
 import dom
@@ -318,6 +322,11 @@ pub fn (mut n Node) set_needs_layout_update(value bool) {
 		ancestor = mutable_current.parent()
 	}
 
+	// An out-of-flow box does not contribute to its ancestors' intrinsic
+	// sizes. Its own cache and the layout-update flags above still change.
+	if n.is_absolutely_positioned() {
+		return
+	}
 	// Intrinsic sizes are independent of the dirty-bit early exit above. Clear
 	// every ancestor cache up to an abspos or SVG-root boundary.
 	ancestor = n.parent()
@@ -599,6 +608,12 @@ pub fn (n &Node) has_size_containment() bool {
 	}
 	computed := n.computed_values()
 	return computed.contain().size_containment || computed.container_type().is_size_container
+		|| computed.content_visibility() == .hidden
+}
+
+fn (n &Node) has_size_containment_in_axis(width bool) bool {
+	return n.has_size_containment() || (n.has_inline_size_containment()
+		&& width == (n.computed_values().writing_mode() == .horizontal_tb))
 }
 
 // https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override
@@ -637,14 +652,14 @@ pub fn (n &Node) has_layout_containment() bool {
 		return false
 	}
 	computed := n.computed_values()
-	return computed.contain().layout_containment || computed.content_visibility() == .auto_
+	return computed.contain().layout_containment || computed.content_visibility() in [.auto_, .hidden]
 }
 
 pub fn (n &Node) has_style_containment() bool {
 	computed := n.computed_values()
 	container_type := computed.container_type()
 	return computed.contain().style_containment || container_type.is_size_container
-		|| container_type.is_inline_size_container || computed.content_visibility() == .auto_
+		|| container_type.is_inline_size_container || computed.content_visibility() in [.auto_, .hidden]
 }
 
 pub fn (n &Node) has_paint_containment() bool {
@@ -653,7 +668,7 @@ pub fn (n &Node) has_paint_containment() bool {
 		return false
 	}
 	computed := n.computed_values()
-	return computed.contain().paint_containment || computed.content_visibility() == .auto_
+	return computed.contain().paint_containment || computed.content_visibility() in [.auto_, .hidden]
 }
 
 fn layout_input_type_allows_readonly(element &dom.Element) bool {
@@ -1659,6 +1674,8 @@ pub mut:
 	max_content_width         ?CSSPixels
 	min_content_width_height_ ?CSSPixels
 	max_content_width_height_ ?CSSPixels
+	min_content_width_repeat_adjustment_ CSSPixels
+	max_content_width_repeat_adjustment_ CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
 mut:
 	font_generation_ u64
@@ -1789,6 +1806,20 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 			height: node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
 	}
+	mut result := n.uncontained_auto_content_box_size()
+	if unsafe { &Node(n) }.has_inline_size_containment() {
+		node := unsafe { &Node(n) }
+		if node.computed_values().writing_mode() == .horizontal_tb {
+			result.width = node.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
+		} else {
+			result.height = node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
+		}
+		result.aspect_ratio = none
+	}
+	return result
+}
+
+fn (n &Box) uncontained_auto_content_box_size() css.SizeWithAspectRatio {
 	if chromium_menu_list(unsafe { &Node(n) }) {
 		return chromium_menu_list_auto_size(unsafe { &Node(n) })
 	}
@@ -1928,6 +1959,12 @@ pub fn (n &Node) is_list_item_box() bool {
 
 pub fn (n &Node) is_replaced_box() bool {
 	return n.is_replaced_box_
+}
+
+// CSS Sizing 3: cyclic percentage widths of compressible text controls
+// resolve against zero for min-content contributions, like replaced boxes.
+fn (n &Node) resolves_cyclic_percentages_like_replaced_box() bool {
+	return n.is_replaced_box() || n.is_text_input_box() || n.is_textarea_box()
 }
 
 pub fn (n &Node) is_navigable_container_viewport() bool {

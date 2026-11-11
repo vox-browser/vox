@@ -71,12 +71,12 @@ pub fn decode_permutation(size int, skip int, histograms Histograms, mut reader 
 	if size < 0 || size > max_permutation_entries || skip < 0 || skip > size {
 		return error('Invalid JPEG XL permutation dimensions')
 	}
-	end := symbols.read_unsigned(histograms, permutation_context(u32(size)), mut reader)!
+	end := symbols.read_unsigned(&histograms, permutation_context(u32(size)), mut reader)!
 	if u64(end) > u64(size - skip) { return error('Invalid JPEG XL permutation end') }
 	mut code := []u32{cap: int(end)}
 	mut previous := u32(0)
 	for i in 0 .. int(end) {
-		value := symbols.read_unsigned(histograms, permutation_context(previous), mut reader)!
+		value := symbols.read_unsigned(&histograms, permutation_context(previous), mut reader)!
 		reader.check_end()!
 		if u64(value) >= u64(size - skip - i) {
 			return error('Invalid JPEG XL entropy-coded Lehmer rank')

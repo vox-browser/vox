@@ -8,6 +8,7 @@
 module html
 
 import dom
+import platform
 
 fn form_control_selected_text_callback(element &dom.Element) ?string {
 	if !element.is_html_element() {
@@ -90,7 +91,8 @@ pub fn HTMLTextAreaElementModel.create(element &dom.HTMLTextAreaElement) &HTMLTe
 	default_value := dom_element.as_node().child_text_content()
 	control := FormAssociatedElement.create(dom_element)
 	mut text := FormAssociatedTextControlElement.create(control, default_value)
-	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .dom)
+	// Initializing the model's value is not a DOM selection operation.
+	text.set_the_selection_range(u32(form_string_to_utf16(default_value).len), u32(form_string_to_utf16(default_value).len), .none, .value_change)
 	mut model := &HTMLTextAreaElementModel{
 		element: element
 		control: control
@@ -130,18 +132,24 @@ pub fn (model &HTMLTextAreaElementModel) value() string {
 }
 
 pub fn (mut model HTMLTextAreaElementModel) set_value(value string) {
+	if model.replace_value(value) {
+		length := u32(form_string_to_utf16(model.value()).len)
+		model.text.set_the_selection_range(length, length, .none, .value_change)
+	}
+}
+
+// Replacements made by editing and setRangeText choose their selection later.
+fn (mut model HTMLTextAreaElementModel) replace_value(value string) bool {
 	old_value := model.value()
 	model.set_raw_value(value)
 	model.text.dirty_value_flag = true
 	model.dirty_value = true
 	model.value_user_edited = false
-	if model.value() != old_value {
-		model.sync_text_node_to_raw_value()
-		length := u32(form_string_to_utf16(model.value()).len)
-		model.text.set_the_selection_range(length, length, .none, .dom)
-	}
+	changed := model.value() != old_value
+	if changed { model.sync_text_node_to_raw_value() }
 	model.update_placeholder_visibility()
 	model.update_validity()
+	return changed
 }
 
 pub fn (model &HTMLTextAreaElementModel) text_length() u32 {
@@ -516,17 +524,29 @@ mut:
 	last_submission_          ?FormSubmission
 }
 
-__global html_form_element_models []&HTMLFormElementModel
-
+// The model lives on its form element, like the button and image models. A
+// process-wide list kept models from retired documents, whose arenas had been
+// released, and later lookups read them (and matched reused addresses).
 pub fn HTMLFormElementModel.create(element &dom.HTMLFormElement) &HTMLFormElementModel {
 	if existing := html_form_element_model_for(element) {
 		return existing
+	}
+	// Allocate with the element's document, not a caller's temporary arena.
+	form_element := unsafe { &dom.Element(element) }
+	mut storage := form_element.document().native_storage()
+	mut allocations := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocations = storage.enter_nested() }
+	persistent := platform.enter_persistent_if(storage == unsafe { nil } && platform.transient_arena_entered())
+	defer {
+		platform.leave_persistent(persistent)
+		allocations.finish()
 	}
 	model := &HTMLFormElementModel{
 		element: element
 		event_target_: unsafe { &dom.EventTarget(element) }
 	}
-	html_form_element_models << model
+	mut mutable_element := unsafe { &dom.HTMLFormElement(element) }
+	mutable_element.form_element_model_ = voidptr(model)
 	return model
 }
 
@@ -539,12 +559,8 @@ pub fn (mut form HTMLFormElementModel) set_constructing_entry_list(value bool) {
 }
 
 fn html_form_element_model_for(element &dom.HTMLFormElement) ?&HTMLFormElementModel {
-	for model in html_form_element_models {
-		if voidptr(model.element) == voidptr(element) {
-			return model
-		}
-	}
-	return none
+	if element.form_element_model_ == unsafe { nil } { return none }
+	return unsafe { &HTMLFormElementModel(element.form_element_model_) }
 }
 
 fn form_model_element(form &HTMLFormElementModel) &dom.Element {

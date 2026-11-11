@@ -1065,7 +1065,8 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 			glyph_index:          int(info.codepoint)
 			position:             GlyphPosition{
 				x: point_x + offset_x
-				y: f32(f64(position.y_offset) / resolution)
+				// HarfBuzz uses upward-positive font space; replay uses downward-positive y.
+				y: f32(f64(-i64(position.y_offset)) / resolution)
 			}
 			advance:              advance
 			offset_x:             offset_x

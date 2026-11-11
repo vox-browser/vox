@@ -25,7 +25,7 @@ fn tree_source_result(mut reader BitReader, limit int) !string {
 	mut symbols := SymbolReader.new(hist, mut reader, none)!
 	mut output := []string{}
 	for i in 0 .. 8 {
-		output << symbols.read_unsigned(hist, i % ((tree.nodes.len + 1) / 2), mut reader)!.str()
+		output << symbols.read_unsigned(&hist, i % ((tree.nodes.len + 1) / 2), mut reader)!.str()
 	}
 	mut valid := 1
 	symbols.check_final_state(hist, reader) or { valid = 0 }

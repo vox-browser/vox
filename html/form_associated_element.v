@@ -18,6 +18,7 @@ pub enum SelectionDirection {
 pub enum SelectionSource {
 	ui
 	dom
+	value_change
 }
 
 pub enum SelectionMode {
@@ -746,7 +747,7 @@ fn form_associated_text_control_set_selection(target voidptr, start u32, end u32
 		.forward { .forward }
 		.backward { .backward }
 		.none { .none }
-	}, .dom)
+	}, .value_change)
 }
 
 fn form_associated_text_control_relevant_value(target voidptr) string {
@@ -756,7 +757,7 @@ fn form_associated_text_control_relevant_value(target voidptr) string {
 
 fn form_associated_text_control_replace_range(target voidptr, replacement string, start u32, end u32) bool {
 	mut text := unsafe { &FormAssociatedTextControlElement(target) }
-	text.set_range_text(replacement, start, end, .preserve) or { return false }
+	text.set_range_text_with_source(replacement, start, end, .preserve, .value_change) or { return false }
 	if mut text_node := text.text_node_ {
 		text_node.set_data(text.relevant_value())
 	}
@@ -914,6 +915,10 @@ pub fn (mut text FormAssociatedTextControlElement) set_selection_direction_bindi
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement string, start u32, end u32, selection_mode SelectionMode) ! {
+	text.set_range_text_with_source(replacement, start, end, selection_mode, .dom)!
+}
+
+pub fn (mut text FormAssociatedTextControlElement) set_range_text_with_source(replacement string, start u32, end u32, selection_mode SelectionMode, source SelectionSource) ! {
 	if !text.selection_or_range_applies() {
 		return error('InvalidStateError: setRangeText does not apply')
 	}
@@ -963,7 +968,10 @@ pub fn (mut text FormAssociatedTextControlElement) set_range_text(replacement st
 			}
 		}
 	}
-	text.set_the_selection_range(u32(selection_start), u32(selection_end), .none, .dom)
+	text.set_the_selection_range(u32(selection_start), u32(selection_end), .none, source)
+	if source == .dom {
+		text.control.element.document().notify_editing_history_selection_changed()
+	}
 }
 
 pub fn (mut text FormAssociatedTextControlElement) set_range_text_at_selection(replacement string) ! {
@@ -994,7 +1002,7 @@ pub fn (mut text FormAssociatedTextControlElement) set_the_selection_range(start
 	text.selection_end_affinity_ = .downstream
 	text.selection_direction_ = direction
 	if was_modified {
-		if source == .dom || text.selection_start_ != text.selection_end_ {
+		if source == .dom || (source == .ui && text.selection_start_ != text.selection_end_) {
 			element := text.control.element
 			document := element.document()
 			queue_a_task(.user_interaction, main_thread_event_loop(), document, fn [element] () {
@@ -1059,7 +1067,7 @@ pub fn (mut text FormAssociatedTextControlElement) handle_insert(input_type stri
 	}
 	removed_data := form_utf16_to_string(old_units[clamped_start..clamped_end])
 	history.begin_proxy_mutation()
-	text.set_range_text(data_for_insertion, selection_start, selection_end, .end) or {
+	text.set_range_text_with_source(data_for_insertion, selection_start, selection_end, .end, .value_change) or {
 		history.end_proxy_mutation()
 		history.end_recording()
 		return err
@@ -1123,7 +1131,7 @@ pub fn (mut text FormAssociatedTextControlElement) handle_delete(input_type stri
 	clamped_end := if int(end) > old_units.len { old_units.len } else { int(end) }
 	removed_data := form_utf16_to_string(old_units[clamped_start..clamped_end])
 	history.begin_proxy_mutation()
-	text.set_range_text('', start, end, .end) or {
+	text.set_range_text_with_source('', start, end, .end, .value_change) or {
 		history.end_proxy_mutation()
 		history.end_recording()
 		return err

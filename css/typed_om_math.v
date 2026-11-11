@@ -161,7 +161,11 @@ pub fn (value CSSMathValue) create_an_internal_representation(property PropertyN
 		return error('Property does not accept values of this type.')
 	}
 
-	return StyleValue(CalculatedStyleValue.create(node, type_, context))
+	result := StyleValue(CalculatedStyleValue.create(node, type_, context))
+	if perform_type_check == .yes && !typed_om_value_matches_property(property_id, result) {
+		return error('Property does not accept values of this type.')
+	}
+	return result
 }
 
 pub fn (value CSSMathValue) create_calculation_node(context CalculationContext) !CalculationNode {
@@ -232,10 +236,10 @@ fn css_numeric_type_matches_property(type_ NumericType, property_id PropertyID, 
 		return property_accepts_type(property_id, .length)
 	}
 	if type_.matches_number(percentages_resolve_as) {
-		return property_accepts_type(property_id, .number)
+		return property_accepts_type(property_id, .number) || property_accepts_type(property_id, .opacity)
 	}
 	if type_.matches_percentage() {
-		return property_accepts_type(property_id, .percentage)
+		return property_accepts_type(property_id, .percentage) || typed_om_accepts_opacity_percentage(property_id)
 	}
 	if type_.matches_resolution(percentages_resolve_as) {
 		return property_accepts_type(property_id, .resolution)

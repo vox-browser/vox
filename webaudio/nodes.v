@@ -550,13 +550,13 @@ pub fn (mut context BaseAudioContext) create_buffer_source(options AudioBufferSo
 	node.queue_render_node_creation(AudioBufferSourceRenderNode.create(node.id, int(render_quantum_size), playback_rate.render_param(), detune.render_param()).render_node())
 	mut source := AudioBufferSourceNode{
 		node: node
-		buffer: options.buffer
 		playback_rate: playback_rate
 		detune: detune
 		loop_: options.loop_
 		loop_start: options.loop_start
 		loop_end: options.loop_end
 	}
+	source.set_buffer(options.buffer)!
 	source.queue_parameters_update(none, false)
 	return source
 }

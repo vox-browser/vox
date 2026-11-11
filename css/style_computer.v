@@ -571,15 +571,15 @@ fn map_logical_alias_to_physical_property(property_id PropertyID, context Logica
 }
 
 fn is_pseudo_font_property(name string) bool {
-	return name in ['font', 'font-family', 'font-feature-settings', 'font-language-override',
-		'font-size', 'font-style', 'font-variant', 'font-variant-alternates', 'font-variant-caps',
+	return name in ['font', 'font-family', 'font-feature-settings', 'font-language-override', 'font-kerning',
+		'font-size', 'font-size-adjust', 'font-style', 'font-variant', 'font-variant-alternates', 'font-variant-caps',
 		'font-variant-east-asian', 'font-variant-emoji', 'font-variant-ligatures',
 		'font-variant-numeric', 'font-variant-position', 'font-variation-settings', 'font-weight',
 		'font-width']
 }
 
 fn is_pseudo_background_property(name string) bool {
-	return name in ['background', 'background-attachment', 'background-clip', 'background-color',
+	return name in ['background', 'background-attachment', 'background-blend-mode', 'background-clip', 'background-color',
 		'background-image', 'background-origin', 'background-position', 'background-position-x',
 		'background-position-y', 'background-repeat', 'background-size']
 }
@@ -637,7 +637,8 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 	name := string_from_property_id(property_id)
 	return match pseudo_element {
 		.first_line {
-			pseudo_element_supports_common_text_properties(name, true)
+			name != 'word-break' && (pseudo_element_supports_common_text_properties(name, true)
+				|| name in ['text-shadow', 'text-underline-position'])
 		}
 		.placeholder {
 			pseudo_element_supports_common_text_properties(name, false)
@@ -645,7 +646,7 @@ fn pseudo_element_supports_property(pseudo_element dom.PseudoElement, property_i
 		.first_letter {
 			pseudo_element_supports_common_text_properties(name, true) || is_pseudo_margin_property(name) || is_pseudo_padding_property(name) || is_pseudo_border_property(name) || name in ['box-shadow', 'float']
 		}
-		.selection, .highlight {
+		.selection, .highlight, .target_text, .spelling_error, .grammar_error, .search_text {
 			name in ['color', 'background-color', 'text-shadow', 'stroke-width', 'text-underline-offset'] || is_pseudo_text_decoration_property(name)
 		}
 		else {
@@ -1118,7 +1119,7 @@ fn (s &StyleComputer) recompute_style_with_invalidation(mut abstract_element dom
 		})
 	}
 
-	pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter,
+	pseudo_elements := [dom.PseudoElement.before, .after, .selection, .first_letter, .first_line,
 		.backdrop, .marker]!
 	process_backdrop := element.rendered_in_top_layer()
 	process_marker := had_list_marker || computed.display().is_list_item()
@@ -1203,7 +1204,12 @@ struct InheritedStyleOldValue {
 // place, preserving the cascaded-property and computed-style objects exactly as
 // upstream does.
 fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_element dom.AbstractElement) RequiredInvalidationAfterStyleChange {
-	if s.target_animation_uses_inherited_endpoints(*abstract_element) {
+	// A first-line style inherits through the originating element as well.
+	// Refresh its cascade alongside inherited font/color changes instead of
+	// leaving layout with the previous pseudo's immutable font snapshot.
+	if s.target_animation_uses_inherited_endpoints(*abstract_element)
+		|| (abstract_element.pseudo_element() == none
+			&& computed_properties_for_pseudo_element(abstract_element.element(), .first_line) != none) {
 		mut changed_custom_properties := false
 		invalidation,_ := s.recompute_style_with_invalidation(mut abstract_element,&changed_custom_properties)
 		return invalidation

@@ -57,8 +57,9 @@ Additional notices already accompany the components in the repository:
   [BSD license](layout/resources/chromium/LICENSE).
 - [es-module-lexer](browserjs/vendor/es-module-lexer-1.7.0/LICENSE).
 - [simdutf-derived fixtures](libjs/licenses/simdutf-MIT.txt).
-- Test resources such as [jQuery](Tests/Browser/fixtures/jquery-2.1.1.LICENSE.txt)
-  and [Ahem](Tests/Browser/Brave/resources/Ahem-LICENSE.txt).
+- Test resources such as [jQuery](Tests/Browser/fixtures/jquery-2.1.1.LICENSE.txt),
+  [Ahem](Tests/Browser/Brave/resources/Ahem-LICENSE.txt), and the
+  [Noto Sans Arabic shaping subset](platform/testdata/NotoSansArabic-OFL.txt).
 
 Vox's `GPL-2.0-or-later` grant allows choosing GPL version 3 or later when
 distributing the combined browser with its uBlock Origin integration. That

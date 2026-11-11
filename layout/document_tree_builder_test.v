@@ -1,3 +1,7 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+//
+// SPDX-License-Identifier: BSD-2-Clause
+
 module layout
 
 import dom
@@ -934,19 +938,44 @@ fn test_list_style_image_uses_a_generated_image_child() {
 	assert image.source() == image_url
 }
 
-fn test_inside_marker_joins_the_trailing_anonymous_inline_wrapper() {
-	document := html.parse_document('<!doctype html><style>li { list-style-position: inside }</style><ul><li id="item"><div>block</div></li></ul>')
-	root := build_layout_tree(document) or { panic('no layout tree') }
-	item_node := document_tree_builder_node_with_id(root, 'item') or { panic('no list item') }
-	marker := (item_node.as_list_item_box() or { panic('item is not ListItemBox') }).marker() or {
-		panic('list item has no marker')
+// Ladybird e479099ae2e95969a75b5429cbef2fe5759fa795.
+fn test_inside_marker_precedes_block_children_and_joins_the_leading_inline_run() {
+	for contents in ['<div id="block">block</div>',
+		'inline first<div id="block">block</div>',
+		'<div id="block">block</div>then inline'] {
+		mut document := html.parse_document('<!doctype html><style>li { list-style-position: inside }</style><ul><li id="item">${contents}</li></ul>')
+		defer { document.finalize() }
+		root := build_layout_tree(document) or { panic('no layout tree') }
+		item_node := document_tree_builder_node_with_id(root, 'item') or { panic('no list item') }
+		marker := (item_node.as_list_item_box() or { panic('item is not ListItemBox') }).marker() or {
+			panic('list item has no marker')
+		}
+		assert item_node.child_count() == if contents.ends_with('then inline') { 3 } else { 2 }
+		wrapper := item_node.children()[0]
+		assert wrapper.is_anonymous()
+		assert wrapper.children_are_inline()
+		assert voidptr(wrapper) == voidptr(marker.parent() or { panic('marker has no parent') })
+		assert voidptr(marker) == voidptr(wrapper.first_child() or { panic('wrapper has no marker') })
+		block := document_tree_builder_node_with_id(root, 'block') or { panic('no block child') }
+		assert voidptr(item_node.children()[1]) == voidptr(block)
+		assert wrapper.child_count() == if contents.starts_with('inline') { 2 } else { 1 }
 	}
-	assert item_node.child_count() == 2
-	wrapper := item_node.children()[1]
-	assert wrapper.is_anonymous()
-	assert wrapper.children_are_inline()
-	assert voidptr(wrapper) == voidptr(marker.parent() or { panic('marker has no parent') })
-	assert voidptr(marker) == voidptr(wrapper.first_child() or { panic('wrapper has no marker') })
+}
+
+fn test_summary_inside_marker_precedes_its_nested_list_item() {
+	mut document := html.parse_document('<!doctype html><details><summary id="summary"><li id="nested">hello</li></summary></details>')
+	defer { document.finalize() }
+	root := build_layout_tree(document) or { panic('no layout tree') }
+	summary := document_tree_builder_node_with_id(root, 'summary') or { panic('no summary') }
+	nested := document_tree_builder_node_with_id(root, 'nested') or { panic('no nested item') }
+	marker := (summary.as_list_item_box() or { panic('summary is not a list item') }).marker() or {
+		panic('summary has no marker')
+	}
+	assert summary.child_count() == 2
+	wrapper := summary.children()[0]
+	assert wrapper.is_anonymous() && wrapper.children_are_inline()
+	assert voidptr(wrapper.first_child() or { panic('wrapper has no marker') }) == voidptr(marker)
+	assert voidptr(summary.children()[1]) == voidptr(nested)
 }
 
 fn test_marker_preserves_literal_string_list_style_type() {

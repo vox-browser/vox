@@ -33,6 +33,11 @@ fn should_serialize_node(node &dom.Node) bool {
 		return true
 	}
 
+	if is_ascii_whitespace_text(node) {
+		parent := node.parent_element() or { return false }
+		return should_serialize_node(parent.as_node())
+	}
+
 	element := node.as_element() or { return false }
 	computed := element.el_computed_properties() or { return false }
 	return computed.display().is_contents()

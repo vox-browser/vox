@@ -43,7 +43,7 @@ if [ ! -x "$browser" ] \
     || find "$repo_dir/tools/ui2" -type f -newer "$browser" -print -quit | grep -q . \
     || find "$repo_dir" \
     \( -path "$repo_dir/Build" -o -path "$repo_dir/.git" \) -prune -o \
-    -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' -o -name '*.h' -o -name '*.rs' -o -name 'Cargo.toml' -o -name 'Cargo.lock' \) ! -name '*_test.v' \
+    -type f \( -name '*.v' -o -name '*.m' -o -name '*.cpp' -o -name '*.h' \) ! -name '*_test.v' \
     ! -path "$repo_dir/tools/*" -newer "$browser" -print -quit | grep -q .; then
     "$repo_dir/build-prod-browser.sh"
 fi

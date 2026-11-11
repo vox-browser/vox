@@ -2,21 +2,9 @@ module main
 
 import dom
 import gg
+import jpegxl
+import platform
 import sokol.gfx
-
-#include "@VMODROOT/native/include/native_jpegxl.h"
-
-$if macos {
-	#flag -Wl,-rpath,@VMODROOT/Build/v
-}
-$if linux {
-	#flag -Wl,-rpath,@VMODROOT/Build/linux
-}
-
-fn C.vox_jpegxl_available() int
-fn C.vox_jpegxl_decode_rgba(&u8, u64, &i32, &i32, &i32) &u8
-fn C.vox_jpegxl_decode_paint_rgba(&u8, u64, &i32, &i32, &i32) &u8
-fn C.vox_jpegxl_free(&u8, u64)
 
 fn image_bytes_are_jpegxl(bytes []u8) bool {
 	return (bytes.len >= 2 && bytes[0] == 0xff && bytes[1] == 0x0a)
@@ -28,26 +16,23 @@ fn browser_decode_jpegxl_image_bytes(bytes []u8) !&dom.Bitmap_ {
 	return browser_jpegxl_bitmap(bytes, false)
 }
 
+// The pure V decoder handles static 8-bit sRGB/gray images. Its float planes
+// and intermediate buffers stay in a thread scratch scope; only the final RGBA
+// rows are copied to the caller's allocation target.
 fn browser_jpegxl_bitmap(bytes []u8, premultiply bool) !&dom.Bitmap_ {
 	if !image_bytes_are_jpegxl(bytes) { return error('Invalid JPEG XL signature') }
-	mut width := i32(0)
-	mut height := i32(0)
-	mut pitch := i32(0)
-	decoded := if premultiply {
-		C.vox_jpegxl_decode_paint_rgba(bytes.data, u64(bytes.len), &width, &height, &pitch)
-	} else {
-		C.vox_jpegxl_decode_rgba(bytes.data, u64(bytes.len), &width, &height, &pitch)
-	}
-	if decoded == unsafe { nil } {
+	scratch := platform.begin_thread_scratch('JPEG XL decode')
+	defer { scratch.finish() }
+	decoded := jpegxl.decode_rgba(bytes, premultiply) or {
+		scratch.leave()
 		return error('Invalid or unsupported static sRGB JPEG XL image')
 	}
-	defer { C.vox_jpegxl_free(decoded, u64(pitch) * u64(height)) }
-	mut pixels := []u8{len: int(pitch) * int(height)}
-	unsafe { vmemcpy(pixels.data, decoded, pixels.len) }
+	scratch.leave()
+	pixels := decoded.pixels.clone()
 	return &dom.Bitmap_{
-		width:                    int(width)
-		height:                   int(height)
-		pitch:                    int(pitch)
+		width:                    decoded.width
+		height:                   decoded.height
+		pitch:                    decoded.pitch
 		data:                     pixels
 		native_rows_are_top_down: true
 	}

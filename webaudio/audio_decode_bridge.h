@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "audio_decode_limits.h"
 
 #ifdef LADYBIRD_V_HAS_FFMPEG
 #include <libavcodec/avcodec.h>
@@ -61,6 +62,9 @@ static int ladybird_v_append_audio_frame(SwrContext **resampler,
     AVFrame *frame, int target_sample_rate, float **samples,
     size_t *frame_count, size_t *sample_capacity, int *channel_count)
 {
+    if (!ladybird_v_audio_sample_rate_supported((uint64_t)frame->sample_rate)
+        || !ladybird_v_audio_sample_rate_supported((uint64_t)target_sample_rate))
+        return -1;
     if (*resampler == NULL) {
         if (frame->ch_layout.nb_channels <= 0 || frame->ch_layout.nb_channels > 32
             || frame->sample_rate <= 0)
@@ -80,7 +84,10 @@ static int ladybird_v_append_audio_frame(SwrContext **resampler,
     int output_capacity = swr_get_out_samples(*resampler, frame->nb_samples);
     if (output_capacity < 0)
         return -1;
-    size_t required = (*frame_count + (size_t)output_capacity) * (size_t)*channel_count;
+    size_t required = 0;
+    if (!ladybird_v_audio_sample_capacity(*frame_count, (uint64_t)output_capacity,
+            (uint64_t)*channel_count, &required))
+        return -1;
     if (required > *sample_capacity) {
         if (required > SIZE_MAX / sizeof(float))
             return -1;
@@ -119,7 +126,8 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
     (void)requested_sample_rate;
     return NULL;
 #else
-    if (bytes == NULL || byte_count <= 0 || requested_sample_rate <= 0
+    if (bytes == NULL || byte_count <= 0
+        || !ladybird_v_audio_sample_rate_supported((uint64_t)requested_sample_rate)
         || output_channels == NULL || output_frames == NULL
         || output_sample_rate == NULL)
         return NULL;
@@ -200,8 +208,10 @@ static float *ladybird_v_decode_audio(const uint8_t *bytes, int byte_count,
         int output_capacity = swr_get_out_samples(resampler, 0);
         if (output_capacity <= 0)
             break;
-        size_t required = (frame_count + (size_t)output_capacity)
-            * (size_t)channel_count;
+        size_t required = 0;
+        if (!ladybird_v_audio_sample_capacity(frame_count, (uint64_t)output_capacity,
+                (uint64_t)channel_count, &required))
+            goto cleanup;
         if (required > sample_capacity) {
             if (required > SIZE_MAX / sizeof(float))
                 goto cleanup;

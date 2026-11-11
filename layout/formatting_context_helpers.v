@@ -134,6 +134,10 @@ fn resolve_layout_content_size(node &Node, size css.Size, percentage_basis CSSPi
 }
 
 fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPixels, used_values &UsedValues, width bool) CSSPixels {
+	return clamp_layout_content_size_with_stretch_basis(node, value, percentage_basis, percentage_basis, used_values, width)
+}
+
+fn clamp_layout_content_size_with_stretch_basis(node &Node, value CSSPixels, percentage_basis CSSPixels, stretch_basis CSSPixels, used_values &UsedValues, width bool) CSSPixels {
 	edges := if used_values.is_collapsed_borders_table_box() {
 		if width {
 			used_values.border_box_left().plus(used_values.border_box_right())
@@ -155,11 +159,19 @@ fn clamp_layout_content_size(node &Node, value CSSPixels, percentage_basis CSSPi
 		.max_height
 	}, value.to_double(), percentage_basis.to_double(), edges.to_double()))
 	computed := node.computed_values()
+	constraint := if width { used_values.width_constraint } else { used_values.height_constraint }
+	if constraint != .none { return result }
 	if computed.size_value(if width { .max_width } else { .max_height }).is_stretch() {
-		result = css_pixels_min(result, stretch_fit_content_size(node, used_values, percentage_basis, width))
+		result = css_pixels_min(result, stretch_fit_content_size(node, used_values, stretch_basis, width))
 	}
 	if computed.size_value(if width { .min_width } else { .min_height }).is_stretch() {
-		result = css_pixels_max(result, stretch_fit_content_size(node, used_values, percentage_basis, width))
+		result = css_pixels_max(result, stretch_fit_content_size(node, used_values, stretch_basis, width))
+	}
+	minimum_size := computed.size_value(if width { .min_width } else { .min_height })
+	if !minimum_size.is_stretch() {
+		if minimum := resolve_layout_content_size(node, minimum_size, percentage_basis, used_values, width) {
+			result = css_pixels_max(result, minimum)
+		}
 	}
 	return result
 }
@@ -262,13 +274,20 @@ fn resolve_relative_insets(mut state LayoutState, root &Node) {
 // optional content width/height. This is the shared parent/child handshake used
 // by flex, grid, table, and replaced-with-children formatting contexts.
 fn layout_independent_child(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels) &UsedValues {
-	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, forced_height, false, true)
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, forced_height, false, true, false)
+}
+
+// The parent already applied min/max constraints using its final flex line.
+// Keep the original containing block for percentage descendants and avoid
+// applying the same stretch constraint again against that different size.
+fn layout_independent_child_with_resolved_height(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height CSSPixels) &UsedValues {
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, forced_height, false, true, true)
 }
 
 fn layout_independent_child_with_forced_height_definiteness(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, forced_height_is_definite bool) &UsedValues {
 	return layout_independent_child_with_height_mode(mut state, child, mut containing_state,
 		containing_width, containing_height, forced_width, forced_height, false,
-		forced_height_is_definite)
+		forced_height_is_definite, false)
 }
 
 // TableFormattingContext::compute_table_height() initially uses a definite
@@ -276,7 +295,7 @@ fn layout_independent_child_with_forced_height_definiteness(mut state LayoutStat
 // with the independent formatting context's automatic height. The authored
 // height remains a row minimum and vertical alignment supplies the difference.
 fn layout_independent_child_using_automatic_height(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, available_content_height ?CSSPixels) &UsedValues {
-	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, available_content_height, true, true)
+	return layout_independent_child_with_height_mode(mut state, child, mut containing_state, containing_width, containing_height, forced_width, available_content_height, true, true, false)
 }
 
 fn measure_automatic_button_content_height(mut source_state LayoutState, button &Node, button_state &UsedValues) CSSPixels {
@@ -331,7 +350,7 @@ fn make_button_content_box_definite(mut state LayoutState, button &Node, mut but
 	return true
 }
 
-fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, use_automatic_height bool, forced_height_is_definite bool) &UsedValues {
+fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node, mut containing_state UsedValues, containing_width CSSPixels, containing_height ?CSSPixels, forced_width ?CSSPixels, forced_height ?CSSPixels, use_automatic_height bool, forced_height_is_definite bool, parent_resolved_height bool) &UsedValues {
 	styled := child.as_node_with_style() or { panic('formatting-context child must have style') }
 	computed := styled.computed_values()
 	mut child_state := state.get_mutable(styled)
@@ -383,7 +402,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 		}
 	}
 	if resolved_height := definite_height {
-		if !use_automatic_height {
+		if !use_automatic_height && !parent_resolved_height {
 			mut containing_block_height := ?f64(none)
 			if height := containing_height {
 				containing_block_height = height.to_double()
@@ -443,7 +462,7 @@ fn layout_independent_child_with_height_mode(mut state LayoutState, child &Node,
 	} else {
 		inside.automatic_content_height
 	}
-	if !use_automatic_height {
+	if !use_automatic_height && !parent_resolved_height {
 		height = clamp_content_height_for_node(mut state, styled, child_state, height, if basis := containing_height {
 			basis.to_double()
 		} else {

@@ -164,14 +164,16 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 	writing_mode := containing_block.computed_values().writing_mode()
 	mut item_buffers := acquire_inline_item_buffers(unsafe { &Node(containing_block) }.document())
 	mut iterator := new_inline_iterator_with_item_storage(mut state, containing_block, containing_block_used_values, layout_mode, available_space, parent_block_context, item_buffers.arena)
+	first_line_style_source := iterator.prepare_first_line_items()
 	// This iterator's item records are consumed by value. Published line
 	// fragments retain their own node and glyph references, so the temporary
 	// outer item buffer has no owner after this formatting run completes.
 	defer {
-		if item_buffers.arena == unsafe { nil } { unsafe { iterator.items.free() } }
+		iterator.release_item_vectors()
 		item_buffers.finish()
 	}
 	mut line_builder := LineBuilder.new_with_block_context(mut state, containing_block, containing_block_used_values, if writing_mode == .horizontal_tb { available_space.width } else { available_space.height }, direction, writing_mode, parent_block_context)
+	line_builder.first_line_style_source = first_line_style_source
 	line_builder.intrinsic_width_only = width_only
 	wrap_breaks := optimized_text_wrap_breaks(containing_block, iterator, line_builder,
 		layout_mode, width_only, available_space, parent_block_context)
@@ -334,8 +336,7 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 			}
 			.text {
 				node := item.node or { continue }
-				text_node := node.as_text_node() or { continue }
-				style := text_node.Node.computed_values()
+				style := inline_item_style_source(item).computed_values()
 				if style.text_wrap_mode() == .wrap {
 					is_whitespace := item.is_all_whitespace
 					mut next_width := CSSPixels.new(0)
@@ -412,11 +413,13 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 							line_builder.break_if_needed(projected_width)
 						}
 					}
+					if iterator.resume_ordinary_items_after_break(item) { continue }
 					if overflow_break_allowed {
 						break_overflowing_text_item(mut line_builder, mut item)
 						previous_text_item_allows_overflow_break_after = true
 					}
 				}
+				if iterator.resume_ordinary_items_after_break(item) { continue }
 				line_builder.append_text_item(item, style.line_height())
 			}
 		}
@@ -542,6 +545,11 @@ fn run_uncached_inline_formatting_context_for_width(mut state LayoutState, conta
 
 fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLevelItem) {
 	for {
+		// A split on the first line changes the pending remainder's cascade.
+		// Let the iterator resume it at the same UTF-16 offset in ordinary
+		// text before fitting or shaping another line.
+		if item.style_source != none && line_builder.first_line_style_source != none
+			&& line_builder.containing_block_used_values.line_boxes.len > 1 { return }
 		remaining_width := line_builder.remaining_width_for_overflow_break() or { return }
 		if line_builder.projected_text_sequence_width(item, []).raw_value() <= remaining_width.raw_value() {
 			return
@@ -560,7 +568,7 @@ fn break_overflowing_text_item(mut line_builder LineBuilder, mut item InlineLeve
 			continue
 		}
 		item = remainder
-		line_builder.append_text_item(prefix, (prefix.node or { return }).computed_values().line_height())
+		line_builder.append_text_item(prefix, inline_item_style_source(prefix).computed_values().line_height())
 		line_builder.note_soft_wrap_opportunity()
 		line_builder.break_line(.no, none)
 	}
@@ -928,7 +936,9 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 fn apply_line_clamp(containing_block &BlockContainer, mut used UsedValues,
 	mut state LayoutState, layout_mode LayoutMode, available_space AvailableSpace,
 	parent_block_context ?&BlockFormattingContext) {
-	if layout_mode == .intrinsic_sizing || !line_clamp_is_active(containing_block.computed_values()) {
+	// A vertical flow's intrinsic physical width is its block extent. Keep the
+	// same retained lines for that measurement and its exported baselines.
+	if (layout_mode == .intrinsic_sizing && containing_block.computed_values().writing_mode()==.horizontal_tb) || !line_clamp_is_active(containing_block.computed_values()) {
 		if context := parent_block_context {
 			mut mutable_context := unsafe { &BlockFormattingContext(context) }
 			if mutable_context.has_line_clamp() {

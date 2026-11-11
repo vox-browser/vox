@@ -20,7 +20,7 @@ fn entropy_fixture_result(contexts int, allow_lz77 bool, width u32, reads int, r
 	optional_width := if width == 0 { ?u32(none) } else { ?u32(width) }
 	mut symbols := SymbolReader.new(hist, mut input, optional_width)!
 	mut values := []string{}
-	for i in 0 .. reads { values << symbols.read_unsigned(hist, i % contexts, mut input)!.str() }
+	for i in 0 .. reads { values << symbols.read_unsigned(&hist, i % contexts, mut input)!.str() }
 	valid := if _ := symbols.check_final_state(hist, input) { 1 } else { 0 }
 	return '${info}|${map_.join(',')}|${single.join(',')}|${values.join(',')}|${valid}'
 }

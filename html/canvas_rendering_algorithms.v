@@ -1,4 +1,5 @@
 // Copyright (c) 2020-2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -92,6 +93,31 @@ fn canvas_text_run_for_canvas_state(state &CanvasState, text string, initial_x f
 	return canvas_text_run(mutable_state.drawing_state, text, initial_x)
 }
 
+// The em square is as tall as the font size, divided at the alphabetic
+// baseline in the same proportion as the font's ascent and descent.
+fn canvas_em_square_ascent_and_descent(metrics platform.FontPixelMetrics) (f64, f64) {
+	font_height := f64(metrics.ascent) + f64(metrics.descent)
+	ascent := if font_height > 0 {
+		f64(metrics.size) * f64(metrics.ascent) / font_height
+	} else {
+		f64(metrics.size) / 2.0
+	}
+	return ascent, f64(metrics.size) - ascent
+}
+
+// https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-textbaseline
+fn canvas_text_baseline_offset(baseline CanvasTextBaseline, metrics platform.FontPixelMetrics) f64 {
+	em_ascent, em_descent := canvas_em_square_ascent_and_descent(metrics)
+	return match baseline {
+		.top { em_ascent }
+		.hanging { f64(metrics.ascent) * 0.8 }
+		.middle { (em_ascent - em_descent) / 2.0 }
+		.alphabetic { 0.0 }
+		.ideographic { -f64(metrics.descent) }
+		.bottom { -em_descent }
+	}
+}
+
 fn canvas_text_transform(state DrawingState, font &platform.Font, text_width f64,
 	max_width ?f64) CanvasAffineTransform {
 	mut transform := CanvasAffineTransform{}
@@ -126,14 +152,7 @@ fn canvas_text_transform(state DrawingState, font &platform.Font, text_width f64
 	if alignment_offset != 0 {
 		transform = canvas_transform_multiply(CanvasAffineTransform{ e: alignment_offset }, transform)
 	}
-	metrics := font.pixel_metrics()
-	baseline_offset := match state.text_baseline {
-		.top { f64(metrics.ascent) }
-		.hanging { f64(metrics.ascent) * 0.8 }
-		.middle { f64(metrics.ascent - metrics.descent) / 2.0 }
-		.ideographic, .bottom { -f64(metrics.descent) }
-		else { 0.0 }
-	}
+	baseline_offset := canvas_text_baseline_offset(state.text_baseline, font.pixel_metrics())
 	if baseline_offset != 0 {
 		transform = canvas_transform_multiply(CanvasAffineTransform{ f: baseline_offset }, transform)
 	}

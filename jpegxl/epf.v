@@ -46,6 +46,7 @@ const epf_wide = [EpfOffset{ y: -2 }, EpfOffset{ x: -1, y: -1 }, EpfOffset{ y: -
 const epf_sad_patch = [EpfOffset{ y: -1 }, EpfOffset{ x: -1 }, EpfOffset{}, EpfOffset{ x: 1 },
 	EpfOffset{ y: 1 }]
 
+@[direct_array_access]
 fn (plane FloatPlane) reflected(x int, y int) f32 {
 	mut px := x % (plane.width * 2)
 	mut py := y % (plane.height * 2)
@@ -99,78 +100,201 @@ fn epf_weight(sad f32, inverse_sigma f32) f32 {
 	return if value < 0 { f32(0) } else { value }
 }
 
+// The widest EPF reach is a two-sample offset plus the one-sample SAD patch.
+const epf_pad = 3
+
+// Copy a plane into a border of epf_pad samples filled by the same mirror rule
+// as reflected(), so the filter reads neighbours without per-sample folding.
+@[direct_array_access]
+fn epf_padded(plane FloatPlane) []f32 {
+	pw := plane.width + 2 * epf_pad
+	ph := plane.height + 2 * epf_pad
+	mut out := []f32{len: pw * ph}
+	// An empty plane has no samples to filter, so its border is never read.
+	if plane.width == 0 || plane.height == 0 { return out }
+	for y in 0 .. ph {
+		sy := y - epf_pad
+		inner := sy >= 0 && sy < plane.height
+		for x in 0 .. pw {
+			sx := x - epf_pad
+			out[y * pw + x] = if inner && sx >= 0 && sx < plane.width {
+				plane.samples[sy * plane.width + sx]
+			} else {
+				plane.reflected(sx, sy)
+			}
+		}
+	}
+	return out
+}
+
+// Channel-accumulated SADs of one offset for `count` consecutive pixels whose
+// first padded index is `base`, in the source's channel-major order.
+@[direct_array_access]
+fn epf_offset_sads(out &f32, padded [3][]f32, base int, delta int, patch_deltas [5]int, channel_scale [3]f32, count int, pass int) {
+	for x in 0 .. count { unsafe { out[x] = 0 } }
+	for c in 0 .. 3 {
+		src := unsafe { &f32(padded[c].data) }
+		scale := channel_scale[c]
+		for x in 0 .. count {
+			b := base + x
+			mut distance := f32(0)
+			for k in 0 .. 5 {
+				pd := patch_deltas[k]
+				distance += unsafe { math.abs(src[b + pd] - src[b + delta + pd]) }
+			}
+			unsafe {
+				out[x] = if pass == 0 {
+					fused_f32(scale, distance, out[x])
+				} else {
+					fused_f32(distance, scale, out[x])
+				}
+			}
+		}
+	}
+}
+
+// Each pass runs row by row with loops over x that the C compiler vectorizes.
+// Every pixel keeps the source's operation order: channel-major SAD
+// accumulation, weights summed in offset order and the same fused
+// multiply-adds for the weighted sum. A SAD is symmetric in its two patches
+// (|a - b| and |b - a| are bit-identical and summed in the same order), so for
+// opposite offsets o and -o, sad(-o) at p equals sad(o) at p - o. Pass 1
+// computes only its up and left SADs and reads down and right from the next
+// row and column.
+@[direct_array_access]
 fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, origin_x u32, origin_y u32, pass int) ![]FloatPlane {
 	validate_epf(input, parameters, sigma, origin_x, origin_y)!
 	if pass < 0 || pass > 2 { return error('Unsupported JPEG XL EPF pass') }
 	offsets := if pass == 0 { epf_wide } else { epf_cross }
+	n := offsets.len
 	width := input[0].width
 	height := input[0].height
-	mut output := [][]f32{cap: 3}
-	for _ in 0 .. 3 { output << []f32{len: input[0].samples.len} }
+	pw := width + 2 * epf_pad
+	padded := [epf_padded(input[0]), epf_padded(input[1]), epf_padded(input[2])]!
+	mut offset_deltas := [12]int{}
+	for i in 0 .. n { offset_deltas[i] = offsets[i].y * pw + offsets[i].x }
+	mut patch_deltas := [5]int{}
+	for k in 0 .. 5 { patch_deltas[k] = epf_sad_patch[k].y * pw + epf_sad_patch[k].x }
+	mut output := [3][]f32{}
+	for c in 0 .. 3 { output[c] = []f32{len: input[0].samples.len} }
 	scale := parameters.sigma_scale * f32(1.65)
 	border_scale := scale * parameters.border_sad_multiplier
+	mut block_data := unsafe { &f32(nil) }
+	mut block_width := 0
+	if blocks := sigma.blocks {
+		block_data = unsafe { &f32(blocks.samples.data) }
+		block_width = blocks.width
+	}
+	// Pass 0 keeps one SAD row per offset; pass 1 keeps up rows for y and y + 1
+	// and a left row one sample wider than the plane.
+	mut sads := []f32{len: if pass == 0 { n * width } else { 0 }}
+	mut up_current := []f32{len: if pass == 1 { width } else { 0 }}
+	mut up_next := []f32{len: if pass == 1 { width } else { 0 }}
+	mut left := []f32{len: if pass == 1 { width + 1 } else { 0 }}
+	mut weights := []f32{len: n * width}
+	mut inverse_sigma := []f32{len: width}
+	mut inverse_weight := []f32{len: width}
+	mut skip := []bool{len: width}
+	mut acc := []f32{len: width}
+	if pass == 1 && height > 0 {
+		epf_offset_sads(unsafe { &f32(up_current.data) }, padded, epf_pad * pw + epf_pad, offset_deltas[0],
+			patch_deltas, parameters.channel_scale, width, pass)
+	}
 	for y in 0 .. height {
+		gy := u64(origin_y) + u64(y)
+		row_base := (y + epf_pad) * pw + epf_pad
+		row_start := y * width
+		border_row := gy % 8 == 0 || gy % 8 == 7
+		block_row := int(gy / 8) * block_width
 		for x in 0 .. width {
-			position := y * width + x
 			gx := u64(origin_x) + u64(x)
-			gy := u64(origin_y) + u64(y)
-			value := epf_sigma_value(sigma, gx, gy)
-			if epf_min_sigma > value {
-				for c in 0 .. 3 { output[c][position] = input[c].samples[position] }
-				continue
-			}
-			inverse_sigma := value * if gx % 8 in [u64(0), 7] || gy % 8 in [u64(0), 7] {
+			value := if block_width > 0 { unsafe { block_data[block_row + int(gx / 8)] } } else { sigma.inverse_sigma }
+			skip[x] = epf_min_sigma > value
+			inverse_sigma[x] = value * if border_row || gx % 8 == 0 || gx % 8 == 7 {
 				border_scale
 			} else {
 				scale
 			}
-			mut weights := [12]f32{}
-			mut total := f32(1)
-			mut sads := [12]f32{}
-			if pass != 2 {
-				for c in 0 .. 3 {
-					for i, offset in offsets {
-						mut distance := f32(0)
-						for patch in epf_sad_patch {
-							first := input[c].reflected(x + patch.x, y + patch.y)
-							second := input[c].reflected(x + offset.x + patch.x, y + offset.y + patch.y)
-							distance += math.abs(first - second)
-						}
-						sads[i] = if pass == 0 {
-							fused_f32(parameters.channel_scale[c], distance, sads[i])
-						} else {
-							fused_f32(distance, parameters.channel_scale[c], sads[i])
-						}
+		}
+		if pass == 0 {
+			for i in 0 .. n {
+				epf_offset_sads(unsafe { &f32(sads.data) + i * width }, padded, row_base, offset_deltas[i],
+					patch_deltas, parameters.channel_scale, width, pass)
+			}
+		} else if pass == 1 {
+			epf_offset_sads(unsafe { &f32(up_next.data) }, padded, row_base + pw, offset_deltas[0],
+				patch_deltas, parameters.channel_scale, width, pass)
+			epf_offset_sads(unsafe { &f32(left.data) }, padded, row_base, offset_deltas[1],
+				patch_deltas, parameters.channel_scale, width + 1, pass)
+		}
+		for x in 0 .. width { inverse_weight[x] = 1 }
+		for i in 0 .. n {
+			wrow := unsafe { &f32(weights.data) + i * width }
+			if pass == 2 {
+				delta := offset_deltas[i]
+				p0 := unsafe { &f32(padded[0].data) }
+				p1 := unsafe { &f32(padded[1].data) }
+				p2 := unsafe { &f32(padded[2].data) }
+				for x in 0 .. width {
+					b := row_base + x
+					sad := unsafe {
+						fused_f32(math.abs(p0[b + delta] - p0[b]), parameters.channel_scale[0],
+							fused_f32(math.abs(p1[b + delta] - p1[b]), parameters.channel_scale[1],
+							math.abs(p2[b + delta] - p2[b]) * parameters.channel_scale[2]))
 					}
+					weight := epf_weight(sad, inverse_sigma[x])
+					unsafe { wrow[x] = weight }
+					inverse_weight[x] += weight
+				}
+				continue
+			}
+			// Pass 1 offsets are up, left, right and down.
+			src := if pass == 0 {
+				unsafe { &f32(sads.data) + i * width }
+			} else {
+				match i {
+					0 { unsafe { &f32(up_current.data) } }
+					1 { unsafe { &f32(left.data) } }
+					2 { unsafe { &f32(left.data) + 1 } }
+					else { unsafe { &f32(up_next.data) } }
 				}
 			}
-			for i, offset in offsets {
-				sad := if pass == 2 {
-					first := math.abs(input[0].reflected(x + offset.x, y + offset.y) - input[0].samples[position])
-					second := math.abs(input[1].reflected(x + offset.x, y + offset.y) - input[1].samples[position])
-					third := math.abs(input[2].reflected(x + offset.x, y + offset.y) - input[2].samples[position])
-					fused_f32(first, parameters.channel_scale[0], fused_f32(second, parameters.channel_scale[1], third * parameters.channel_scale[2]))
+			for x in 0 .. width {
+				weight := epf_weight(unsafe { src[x] }, inverse_sigma[x])
+				unsafe { wrow[x] = weight }
+				inverse_weight[x] += weight
+			}
+		}
+		for x in 0 .. width { inverse_weight[x] = f32(1) / inverse_weight[x] }
+		for c in 0 .. 3 {
+			src := unsafe { &f32(padded[c].data) }
+			inp := unsafe { &f32(input[c].samples.data) }
+			out := unsafe { &f32(output[c].data) }
+			for x in 0 .. width { acc[x] = unsafe { inp[row_start + x] } }
+			for step in 0 .. n {
+				i := if pass == 2 { step } else { n - 1 - step }
+				wrow := unsafe { &f32(weights.data) + i * width }
+				base := row_base + offset_deltas[i]
+				if pass == 2 {
+					for x in 0 .. width { acc[x] = fused_f32(unsafe { wrow[x] }, unsafe { src[base + x] }, acc[x]) }
 				} else {
-					sads[i]
+					for x in 0 .. width { acc[x] = fused_f32(unsafe { src[base + x] }, unsafe { wrow[x] }, acc[x]) }
 				}
-				weights[i] = epf_weight(sad, inverse_sigma)
-				total += weights[i]
 			}
-			inverse_weight := f32(1) / total
-			for c in 0 .. 3 {
-				mut sample := input[c].samples[position]
-				for step in 0 .. offsets.len {
-					i := if pass == 2 { step } else { offsets.len - 1 - step }
-					offset := offsets[i]
-					sample = if pass == 2 {
-						fused_f32(weights[i], input[c].reflected(x + offset.x, y + offset.y), sample)
-					} else {
-						fused_f32(input[c].reflected(x + offset.x, y + offset.y), weights[i], sample)
-					}
+			for x in 0 .. width {
+				unsafe {
+					out[row_start + x] = if skip[x] { inp[row_start + x] } else { acc[x] * inverse_weight[x] }
 				}
-				output[c][position] = sample * inverse_weight
+			}
+		}
+		if pass == 1 {
+			// Swap the two row buffers; neither is shared outside this function.
+			unsafe {
+				up_current, up_next = up_next, up_current
 			}
 		}
 	}
-	return output.map(FloatPlane{ width: width, height: height, samples: it })
+	return [FloatPlane{ width: width, height: height, samples: output[0] },
+		FloatPlane{ width: width, height: height, samples: output[1] },
+		FloatPlane{ width: width, height: height, samples: output[2] }]
 }

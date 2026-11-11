@@ -148,7 +148,15 @@ fn compact_reflected_attributes_bootstrap() string {
   positive(textarea,"cols","cols",20);positive(textarea,"rows","rows",2);
  }
  const select=typeof HTMLSelectElement==="function"?HTMLSelectElement.prototype:null;
- if(select){boolean(select,"multiple","multiple");boolean(select,"required","required");}
+ if(select){
+  boolean(select,"multiple","multiple");boolean(select,"required","required");
+  // Unlike input.size, select.size allows zero and defaults to zero.
+  define(select,"size",function(){
+   const value=this.getAttribute("size"),match=value===null?null:integer.exec(value);
+   if(match){const parsed=parseInt(match[1],10);if(parsed>=0&&parsed<=2147483647)return parsed;}
+   return 0;
+  },function(value){let converted=(+value)>>>0;if(converted>2147483647)converted=0;this.setAttribute("size",String(converted));});
+ }
  const form=typeof HTMLFormElement==="function"?HTMLFormElement.prototype:null;
  if(typeof HTMLIFrameElement==="function")plainString(HTMLIFrameElement.prototype,"name","name");
  if(form){

@@ -68,7 +68,7 @@ fn test_regex_candidate_first_filter_keeps_raw_literals_ranges_properties_and_so
 	})
 }
 
-fn test_regex_candidate_start_skips_surrogate_interiors_only_for_nonempty_unicode_patterns() {
+fn test_regex_candidate_start_skips_surrogate_interiors_for_all_unicode_patterns() {
 	input := RegexInput(RegexUtf16Input{
 		units: [u16(0xd801), 0xdc00, 0xdc00]
 	})
@@ -80,7 +80,7 @@ fn test_regex_candidate_start_skips_surrogate_interiors_only_for_nonempty_unicod
 			hints := RegexPatternHints{
 				can_match_empty: can_match_empty
 			}
-			expected := if unicode && !can_match_empty { uint(2) } else { uint(1) }
+			expected := if unicode { uint(2) } else { uint(1) }
 			assert regex_next_candidate_start(program, input, hints, 1)? == expected
 			assert regex_next_candidate_start(program, input, hints, 2)? == 2
 			assert regex_next_candidate_start(program, input, hints, 3)? == 3
@@ -88,6 +88,24 @@ fn test_regex_candidate_start_skips_surrogate_interiors_only_for_nonempty_unicod
 		}
 	}
 	assert regex_next_candidate_start(RegexProgram{}, RegexUtf16Input{}, RegexPatternHints{}, 0)? == 0
+}
+
+fn test_empty_regex_vm_searches_keep_unicode_surrogate_pairs_whole() {
+	input := RegexInput(RegexUtf16Input{ units: [u16(0xd83d), 0xde00] })
+	for mode in 0 .. 3 {
+		mut engine := RegexEngine.compile('(?:)'.runes(), RegexAstFlags{
+			unicode: mode == 1
+			unicode_sets: mode == 2
+		})!
+		mut output := []i32{len: 6, init: -1}
+		count := engine.find_all(input, 0, mut output)
+		assert count == if mode == 0 { 3 } else { 2 }
+		if mode == 0 {
+			assert output == [i32(0), 0, 1, 1, 2, 2]
+		} else {
+			assert output[..4] == [i32(0), 0, 2, 2]
+		}
+	}
 }
 
 fn test_regex_candidate_anchor_hints_test_previous_code_unit_including_the_end_position() {

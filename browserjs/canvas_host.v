@@ -623,6 +623,11 @@ fn (mut host CanvasHost) call_request(request map[string]json2.Any) !string {
 				'fontBoundingBoxDescent':   json2.Any(metrics.font_bounding_box_descent())
 				'actualBoundingBoxAscent':  json2.Any(metrics.actual_bounding_box_ascent())
 				'actualBoundingBoxDescent': json2.Any(metrics.actual_bounding_box_descent())
+				'emHeightAscent':          json2.Any(metrics.em_height_ascent())
+				'emHeightDescent':         json2.Any(metrics.em_height_descent())
+				'hangingBaseline':         json2.Any(metrics.hanging_baseline())
+				'alphabeticBaseline':      json2.Any(metrics.alphabetic_baseline())
+				'ideographicBaseline':     json2.Any(metrics.ideographic_baseline())
 			})
 		}
 		'fillText', 'strokeText' {

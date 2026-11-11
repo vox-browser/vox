@@ -948,7 +948,7 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 	// represented with the currently translated PropertyID enum. The generated
 	// property grammar tables are not available in this V port yet.
 	match property_id {
-		.forced_color_adjust, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
+		.forced_color_adjust, .line_break, .interpolate_size, .text_orientation, .alignment_baseline, .baseline_source, .overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { return parse_property_keyword_value_from_metadata(property_id, mut tokens) }
         .grid_lanes_pack { return parse_property_keyword_value(mut tokens,['normal','dense']) }
         .grid_lanes_direction {
             first := parse_property_keyword_value(mut tokens,['normal','row','column']) or { return none }
@@ -1912,6 +1912,27 @@ fn (mut parser Parser) parse_css_value_for_property_tokens(property_id PropertyI
 		}
 		.hyphens {
 			return parse_property_keyword_value(mut tokens, ['none', 'manual', 'auto'])
+		}
+		.text_emphasis_style {
+			return parser.parse_text_emphasis_style_value(mut tokens)
+		}
+		.text_emphasis_position {
+			return parser.parse_text_emphasis_position_value(mut tokens)
+		}
+		.hyphenate_limit_lines {
+			return parser.parse_hyphenate_limit_lines_value(mut tokens)
+		}
+		.hyphenate_limit_chars {
+			return parser.parse_hyphenate_limit_chars_value(mut tokens)
+		}
+		.hyphenate_character {
+			return parser.parse_hyphenate_character_value(mut tokens)
+		}
+		.field_sizing {
+			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
+		}
+		.text_align_last {
+			return parse_property_keyword_value_from_metadata(property_id, mut tokens)
 		}
 		.z_index {
 			return parser.parse_z_index_value(mut tokens)
@@ -11967,14 +11988,9 @@ fn (mut parser Parser) parse_text_indent_value(mut tokens ComponentValueStream) 
 
 // https://drafts.csswg.org/css-color-4/#typedef-opacity-opacity-value
 fn (mut parser Parser) parse_opacity_value(mut tokens ComponentValueStream) ?StyleValue {
-	value := parser.parse_number_percentage_value(mut tokens) or { return none }
-
-	// Percentages map to the range [0,1] for opacity values
-	if value is PercentageStyleValue {
-		return StyleValue(NumberStyleValue.create(value.percentage().as_fraction()))
-	}
-
-	return value
+	// A specified percentage stays a percentage; StyleComputer.compute_opacity
+	// maps it to the range [0,1] as the computed number.
+	return parser.parse_number_percentage_value(mut tokens)
 }
 
 fn (mut parser Parser) parse_number_percentage_none_value(mut tokens ComponentValueStream) ?StyleValue {

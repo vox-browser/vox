@@ -669,6 +669,7 @@ pub struct HTMLFormElement {
 	HTMLElement
 pub mut:
 	associated_elements_ []&Element
+	form_element_model_  voidptr = unsafe { nil }
 }
 
 @[heap]
@@ -4570,63 +4571,57 @@ pub fn (d &Document) visit_shadow_including_descendants(callback fn (&Node) Trav
 }
 
 pub fn (mut d Document) notify_each_document_observer_completely_loaded() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_completely_loaded() {
 			callback()
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) notify_each_document_observer_visibility_state() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_visibility_state_observer() {
 			callback(d.visibility_state)
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) notify_each_document_observer_became_inactive() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_became_inactive() {
 			callback()
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) notify_each_document_observer_became_active() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_became_active() {
 			callback()
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) notify_each_document_observer_readiness() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_readiness_observer() {
 			callback(d.readiness)
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) notify_each_document_observer_page_showing() {
-	d.document_observers_being_notified = d.document_observers.clone()
-	for observer in d.document_observers_being_notified {
+	observers := d.document_observers.clone()
+	for observer in observers {
 		if callback := observer.document_page_showing_observer() {
 			callback(d.page_showing)
 		}
 	}
-	d.document_observers_being_notified.clear()
 }
 
 pub fn (mut d Document) evaluate_media_rules() {
@@ -4957,6 +4952,10 @@ pub enum PseudoElement {
 	view_transition_new
 	view_transition_old
 	highlight
+	target_text
+	spelling_error
+	grammar_error
+	search_text
 	known_pseudo_element_count
 	unknown_webkit
 }
@@ -5699,7 +5698,6 @@ pub mut:
 	navigable_                              &Navigable = unsafe { nil }
 	temporary_document_for_fragment_parsing TemporaryDocumentForFragmentParsing = .no
 	media_query_lists                       []&MediaQueryList
-	document_observers_being_notified       []&DocumentObserver
 	// Extra fields for implementations
 	implementation_            &DOMImplementation = unsafe { nil }
 	location_                  &Location = unsafe { nil }
@@ -5969,9 +5967,6 @@ pub fn (mut d Document) visit_edges(mut visitor CellVisitor) {
 
 	for ni in d.node_iterators {
 		visitor.visit(ni)
-	}
-	for obs in d.document_observers_being_notified {
-		visitor.visit(obs)
 	}
 
 	for pse in d.pending_scroll_events {

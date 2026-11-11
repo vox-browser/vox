@@ -37,6 +37,10 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_cancel_fetch_t
 pub fn (settings &EnvironmentSettingsObject) fetch_request_client_deferred_invoke(algorithm fn ()) {
 	mut owner := platform.current_retained_arena()
 	if document := settings.responsible_document() {
+		// A destroyed document's fetches are terminated. Its native storage,
+		// which holds the requests' policy containers, may already have been
+		// released, so a late response must not continue main fetch.
+		if document.has_been_destroyed() { return }
 		storage := document.native_storage()
 		if storage != unsafe { nil } { owner = storage }
 	}

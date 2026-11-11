@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-import math
-
 // LF inputs are in the transform's covered-block order; coefficients retain the
 // dequantization table order. Neither input is modified.
 pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32) !FloatPlane {
@@ -11,12 +9,8 @@ pub fn inverse_hf_transform(transform HfTransform, lf []f32, coefficients []f32)
 	if lf.len != blocks[0] * blocks[1] || coefficients.len != lf.len * 64 {
 		return error('Invalid JPEG XL inverse transform storage')
 	}
-	for value in lf {
-		if !math.is_finite(value) { return error('Nonfinite JPEG XL LF coefficient') }
-	}
-	for value in coefficients {
-		if !math.is_finite(value) { return error('Nonfinite JPEG XL HF coefficient') }
-	}
+	if !all_finite(lf) { return error('Nonfinite JPEG XL LF coefficient') }
+	if !all_finite(coefficients) { return error('Nonfinite JPEG XL HF coefficient') }
 	mut output := coefficients.clone()
 	output[0] = lf[0]
 	match transform {

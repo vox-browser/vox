@@ -2,6 +2,17 @@
 
 Audited: 2026-10-02.
 
+## November 1 upstream correctness ports — 2026-11-10
+
+Five commits from Ladybird's November 1 landing set are translated here:
+array iterator indices retain their Number value beyond `INT32_MAX`;
+typed-array find visits indices lazily; `reduceRight` and `lastIndexOf` retain
+unsigned indices; copying a typed array checks the target element-size limit;
+and the canonical string key `4294967295` is an integer index. The separate
+4-GiB buffer and `size_t` representation migration is deferred, so existing
+allocation limits and storage representations remain in effect. The browser
+still defaults to JavaScriptCore. See the [complete audit and validation](../docs/upstream-sync/2026-11-01.md).
+
 The frontend baseline comes from `medvednikov/libjs_v` commit
 `9824cc3fad0910215f0f4de43fb108bb7575f6c7` (2026-02-24). The upstream reference is
 `~/code/3rd/ladybird/Libraries/LibJS` at
@@ -161,6 +172,17 @@ includes comments and blank lines. This package is counted separately from the
 
 ### Frontend
 
+- Preserve mapped-arguments scope metadata when a non-arrow function declares
+  `var arguments` before using its arguments object
+  ([Ladybird `159e288ee23a`](https://github.com/LadybirdBrowser/ladybird/commit/159e288ee23a9575252a16e0102c0ffaef3ff17c),
+  2026-11-09). Function declarations retain their own shadowing flag, while
+  lexical declarations, parameters and arrow-function vars remain shadows.
+  `arguments_scope_test.v` covers ordinary functions, methods, generators,
+  async functions, nested/block declarations and true shadows. The regression
+  fails before the fix and passes after it; this is frontend metadata coverage,
+  not execution coverage for untranslated function bytecode. The separate
+  upstream Date parser, JIT and function-codegen fixes have no corresponding
+  implementation in the current V runtime; browser execution uses JavaScriptCore.
 - Validate duplicates against the complete parameter list, reject duplicate
   method parameters, and validate inherited strict-mode destructured bindings
   (`77bf4206544`, `8a64784d467`).
@@ -1517,6 +1539,13 @@ fixtures above validate that older dependency's paths, not full 9.1.0 parity.
 `--upstream`, `--build-dir` and `--dependency-prefix` select source/generated-header
 and fmt locations. Checked-in fixtures keep ordinary V builds independent of the
 native oracle. Regeneration is byte-exact.
+
+The ten Rust-based regex oracle drivers named in the following paragraphs
+(`tools/libjs_regex_*_corpus.py`) were retired when Rust was removed from the
+repository; see [the reference-corpus guide](../tools/REFERENCE_CORPORA.md).
+Their checked-in fixtures are frozen independent records, verified by
+`tools/check_translation_corpora.v --suite regex`. The regeneration commands
+below record how the fixtures were produced and can no longer be run.
 
 LibRegex core helpers additionally match 36,166 native Rust cases exactly in
 both GC modes (`0586dcb0`). The fixture covers quantifiers, builtin-class
