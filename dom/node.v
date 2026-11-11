@@ -4968,7 +4968,7 @@ pub fn (n &Node) accessible_description(document &Document) !string {
 	mut builder := strings.new_builder(0)
 	for id in described_by.fields() {
 		description_element := document.get_element_by_id(id) or { continue }
-		description := description_element.as_node().name_or_description(.description, document, mut visited_nodes, .no, .yes)!
+		description := description_element.as_node().name_or_description(.name, document, mut visited_nodes, .no, .yes)!
 		append_accessible_text(mut builder, description)
 	}
 	return builder.str()
