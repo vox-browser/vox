@@ -169,6 +169,70 @@ fn epf_offset_sads(out &f32, padded [3][]f32, base int, delta int, patch_deltas 
 	}
 }
 
+// The pass 2 SAD of one pixel: its three channel differences to the sample at
+// `delta`, accumulated from the last channel as in the source.
+@[inline]
+fn epf_pixel_sad(p0 &f32, p1 &f32, p2 &f32, x int, delta int, cs0 f32, cs1 f32, cs2 f32) f32 {
+	return unsafe {
+		fused_f32(math.abs(p0[x + delta] - p0[x]), cs0, fused_f32(math.abs(p1[x + delta] - p1[x]), cs1,
+			math.abs(p2[x + delta] - p2[x]) * cs2))
+	}
+}
+
+// `kept` where mask is all ones and `filtered` where it is zero. The bitwise
+// form lets the C compiler vectorize the output loops.
+@[inline]
+fn epf_select(mask u32, kept f32, filtered f32) f32 {
+	return math.f32_from_bits((math.f32_bits(kept) & mask) | (math.f32_bits(filtered) & ~mask))
+}
+
+// out[i] = |src[start + i] - src[start + i + delta]| for i in 0 .. count: the
+// per-sample terms of a SAD with offset delta, in the operand order of
+// epf_offset_sads.
+@[direct_array_access]
+fn epf_abs_diff_row(out &f32, src &f32, start int, delta int, count int) {
+	for i in 0 .. count {
+		unsafe {
+			out[i] = math.abs(src[start + i] - src[start + i + delta])
+		}
+	}
+}
+
+// The three channel rows in ring slot `slot` of a difference buffer holding
+// three rows of `stride` samples per channel.
+@[inline]
+fn epf_ring_rows(base &f32, slot int, stride int) [3]&f32 {
+	return unsafe { [base + slot * stride, base + (3 + slot) * stride, base + (6 + slot) * stride]! }
+}
+
+// Pass 1 SADs of `count` pixels from per-channel difference rows. For channel c,
+// above, middle and below point at its difference rows for the pixel row
+// before, at and after the SAD row, indexed from column -1. The five terms are
+// added in the source's patch order (up, left, centre, right, down).
+@[direct_array_access]
+fn epf_cross_sads(out &f32, above [3]&f32, middle [3]&f32, below [3]&f32, channel_scale [3]f32, count int) {
+	a0 := above[0]
+	a1 := above[1]
+	a2 := above[2]
+	m0 := middle[0]
+	m1 := middle[1]
+	m2 := middle[2]
+	b0 := below[0]
+	b1 := below[1]
+	b2 := below[2]
+	cs0 := channel_scale[0]
+	cs1 := channel_scale[1]
+	cs2 := channel_scale[2]
+	for x in 0 .. count {
+		unsafe {
+			d0 := f32(0) + a0[x + 1] + m0[x] + m0[x + 1] + m0[x + 2] + b0[x + 1]
+			d1 := f32(0) + a1[x + 1] + m1[x] + m1[x + 1] + m1[x + 2] + b1[x + 1]
+			d2 := f32(0) + a2[x + 1] + m2[x] + m2[x + 1] + m2[x + 2] + b2[x + 1]
+			out[x] = fused_f32(d2, cs2, fused_f32(d1, cs1, fused_f32(d0, cs0, f32(0))))
+		}
+	}
+}
+
 // Each pass runs row by row with loops over x that the C compiler vectorizes.
 // Every pixel keeps the source's operation order: channel-major SAD
 // accumulation, weights summed in offset order and the same fused
@@ -212,11 +276,29 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 	mut border_sigma := []f32{len: width}
 	mut cached_sigma_key := i64(-1)
 	mut inverse_weight := []f32{len: width}
-	mut skip := []bool{len: width}
-	mut acc := []f32{len: width}
+	// All ones where sigma is too small to filter.
+	mut skip := []u32{len: width}
+	mut acc := []f32{len: if pass == 0 { width } else { 0 }}
+	// Pass 1 SAD terms are vertical (up) and horizontal (left) absolute
+	// differences, each shared by five SADs. Three rows of each are kept per
+	// channel, from column -1: vertical through column width and horizontal
+	// through column width + 1. Row r lives in slot (r + 3) % 3.
+	vw := width + 2
+	hw := width + 3
+	mut vertical := []f32{len: if pass == 1 { 9 * vw } else { 0 }}
+	mut horizontal := []f32{len: if pass == 1 { 9 * hw } else { 0 }}
 	if pass == 1 && height > 0 {
 		epf_offset_sads(unsafe { &f32(up_current.data) }, padded, epf_pad * pw + epf_pad, offset_deltas[0],
 			patch_deltas, parameters.channel_scale, width, pass)
+		for c in 0 .. 3 {
+			src := unsafe { &f32(padded[c].data) }
+			for r in 0 .. 2 {
+				epf_abs_diff_row(unsafe { &f32(vertical.data) + (c * 3 + (r + 3) % 3) * vw }, src,
+					(r + epf_pad) * pw + epf_pad - 1, offset_deltas[0], vw)
+				epf_abs_diff_row(unsafe { &f32(horizontal.data) + (c * 3 + (r - 1 + 3) % 3) * hw }, src,
+					(r - 1 + epf_pad) * pw + epf_pad - 1, offset_deltas[1], hw)
+			}
+		}
 	}
 	for y in 0 .. height {
 		gy := u64(origin_y) + u64(y)
@@ -232,7 +314,7 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 			for x in 0 .. width {
 				gx := u64(origin_x) + u64(x)
 				value := if block_width > 0 { unsafe { block_data[block_row + int(gx / 8)] } } else { sigma.inverse_sigma }
-				skip[x] = epf_min_sigma > value
+				skip[x] = if epf_min_sigma > value { u32(0xffffffff) } else { u32(0) }
 				border_sigma[x] = value * border_scale
 				inner_sigma[x] = value * if gx % 8 == 0 || gx % 8 == 7 { border_scale } else { scale }
 			}
@@ -244,68 +326,137 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 					patch_deltas, parameters.channel_scale, width, pass)
 			}
 		} else if pass == 1 {
-			epf_offset_sads(unsafe { &f32(up_next.data) }, padded, row_base + pw, offset_deltas[0],
-				patch_deltas, parameters.channel_scale, width, pass)
-			epf_offset_sads(unsafe { &f32(left.data) }, padded, row_base, offset_deltas[1],
-				patch_deltas, parameters.channel_scale, width + 1, pass)
+			// Add vertical row y + 2 and horizontal row y + 1, then form the up SADs
+			// of row y + 1 and the left SADs of row y.
+			vbase := unsafe { &f32(vertical.data) }
+			hbase := unsafe { &f32(horizontal.data) }
+			v_above := epf_ring_rows(vbase, y % 3, vw)
+			v_middle := epf_ring_rows(vbase, (y + 1) % 3, vw)
+			v_below := epf_ring_rows(vbase, (y + 2) % 3, vw)
+			h_above := epf_ring_rows(hbase, (y + 2) % 3, hw)
+			h_middle := epf_ring_rows(hbase, y % 3, hw)
+			h_below := epf_ring_rows(hbase, (y + 1) % 3, hw)
+			for c in 0 .. 3 {
+				src := unsafe { &f32(padded[c].data) }
+				epf_abs_diff_row(v_below[c], src, row_base + 2 * pw - 1, offset_deltas[0], vw)
+				epf_abs_diff_row(h_below[c], src, row_base + pw - 1, offset_deltas[1], hw)
+			}
+			epf_cross_sads(unsafe { &f32(up_next.data) }, v_above, v_middle, v_below, parameters.channel_scale, width)
+			epf_cross_sads(unsafe { &f32(left.data) }, h_above, h_middle, h_below, parameters.channel_scale, width + 1)
 		}
-		for x in 0 .. width { inverse_weight[x] = 1 }
-		for i in 0 .. n {
-			wrow := unsafe { &f32(weights.data) + i * width }
-			if pass == 2 {
-				delta := offset_deltas[i]
-				p0 := unsafe { &f32(padded[0].data) }
-				p1 := unsafe { &f32(padded[1].data) }
-				p2 := unsafe { &f32(padded[2].data) }
+		if pass == 0 {
+			for x in 0 .. width { inverse_weight[x] = 1 }
+			for i in 0 .. n {
+				wrow := unsafe { &f32(weights.data) + i * width }
+				src := unsafe { &f32(sads.data) + i * width }
 				for x in 0 .. width {
-					b := row_base + x
-					sad := unsafe {
-						fused_f32(math.abs(p0[b + delta] - p0[b]), parameters.channel_scale[0],
-							fused_f32(math.abs(p1[b + delta] - p1[b]), parameters.channel_scale[1],
-							math.abs(p2[b + delta] - p2[b]) * parameters.channel_scale[2]))
-					}
-					weight := epf_weight(sad, unsafe { inverse_sigma[x] })
+					weight := epf_weight(unsafe { src[x] }, unsafe { inverse_sigma[x] })
 					unsafe { wrow[x] = weight }
 					inverse_weight[x] += weight
 				}
-				continue
 			}
-			// Pass 1 offsets are up, left, right and down.
-			src := if pass == 0 {
-				unsafe { &f32(sads.data) + i * width }
-			} else {
-				match i {
-					0 { unsafe { &f32(up_current.data) } }
-					1 { unsafe { &f32(left.data) } }
-					2 { unsafe { &f32(left.data) + 1 } }
-					else { unsafe { &f32(up_next.data) } }
-				}
-			}
-			for x in 0 .. width {
-				weight := epf_weight(unsafe { src[x] }, unsafe { inverse_sigma[x] })
-				unsafe { wrow[x] = weight }
-				inverse_weight[x] += weight
-			}
-		}
-		for x in 0 .. width { inverse_weight[x] = f32(1) / inverse_weight[x] }
-		for c in 0 .. 3 {
-			src := unsafe { &f32(padded[c].data) }
-			inp := unsafe { &f32(input[c].samples.data) }
-			out := unsafe { &f32(output[c].data) }
-			for x in 0 .. width { acc[x] = unsafe { inp[row_start + x] } }
-			for step in 0 .. n {
-				i := if pass == 2 { step } else { n - 1 - step }
-				wrow := unsafe { &f32(weights.data) + i * width }
-				base := row_base + offset_deltas[i]
-				if pass == 2 {
-					for x in 0 .. width { acc[x] = fused_f32(unsafe { wrow[x] }, unsafe { src[base + x] }, acc[x]) }
-				} else {
+			for x in 0 .. width { inverse_weight[x] = f32(1) / inverse_weight[x] }
+			for c in 0 .. 3 {
+				src := unsafe { &f32(padded[c].data) }
+				inp := unsafe { &f32(input[c].samples.data) }
+				out := unsafe { &f32(output[c].data) }
+				for x in 0 .. width { acc[x] = unsafe { inp[row_start + x] } }
+				for step in 0 .. n {
+					i := n - 1 - step
+					wrow := unsafe { &f32(weights.data) + i * width }
+					base := row_base + offset_deltas[i]
 					for x in 0 .. width { acc[x] = fused_f32(unsafe { src[base + x] }, unsafe { wrow[x] }, acc[x]) }
 				}
+				for x in 0 .. width {
+					unsafe {
+						kept := inp[row_start + x]
+						filtered := acc[x] * inverse_weight[x]
+						out[row_start + x] = epf_select(skip[x], kept, filtered)
+					}
+				}
 			}
-			for x in 0 .. width {
-				unsafe {
-					out[row_start + x] = if skip[x] { inp[row_start + x] } else { acc[x] * inverse_weight[x] }
+		} else {
+			// The four cross offsets are up, left, right and down. Their weights
+			// are summed in that order and kept for the three channels.
+			w0 := unsafe { &f32(weights.data) }
+			w1 := unsafe { w0 + width }
+			w2 := unsafe { w1 + width }
+			w3 := unsafe { w2 + width }
+			if pass == 1 {
+				s0 := unsafe { &f32(up_current.data) }
+				s1 := unsafe { &f32(left.data) }
+				s2 := unsafe { s1 + 1 }
+				s3 := unsafe { &f32(up_next.data) }
+				for x in 0 .. width {
+					unsafe {
+						a := epf_weight(s0[x], inverse_sigma[x])
+						b := epf_weight(s1[x], inverse_sigma[x])
+						c := epf_weight(s2[x], inverse_sigma[x])
+						d := epf_weight(s3[x], inverse_sigma[x])
+						w0[x] = a
+						w1[x] = b
+						w2[x] = c
+						w3[x] = d
+						inverse_weight[x] = f32(1) / ((((f32(1) + a) + b) + c) + d)
+					}
+				}
+			} else {
+				p0 := unsafe { &f32(padded[0].data) + row_base }
+				p1 := unsafe { &f32(padded[1].data) + row_base }
+				p2 := unsafe { &f32(padded[2].data) + row_base }
+				cs0 := parameters.channel_scale[0]
+				cs1 := parameters.channel_scale[1]
+				cs2 := parameters.channel_scale[2]
+				for x in 0 .. width {
+					unsafe {
+						a := epf_weight(epf_pixel_sad(p0, p1, p2, x, offset_deltas[0], cs0, cs1, cs2), inverse_sigma[x])
+						b := epf_weight(epf_pixel_sad(p0, p1, p2, x, offset_deltas[1], cs0, cs1, cs2), inverse_sigma[x])
+						c := epf_weight(epf_pixel_sad(p0, p1, p2, x, offset_deltas[2], cs0, cs1, cs2), inverse_sigma[x])
+						d := epf_weight(epf_pixel_sad(p0, p1, p2, x, offset_deltas[3], cs0, cs1, cs2), inverse_sigma[x])
+						w0[x] = a
+						w1[x] = b
+						w2[x] = c
+						w3[x] = d
+						inverse_weight[x] = f32(1) / ((((f32(1) + a) + b) + c) + d)
+					}
+				}
+			}
+			for c in 0 .. 3 {
+				src := unsafe { &f32(padded[c].data) + row_base }
+				inp := unsafe { &f32(input[c].samples.data) + row_start }
+				out := unsafe { &f32(output[c].data) + row_start }
+				up := unsafe { src + offset_deltas[0] }
+				lt := unsafe { src + offset_deltas[1] }
+				rt := unsafe { src + offset_deltas[2] }
+				dn := unsafe { src + offset_deltas[3] }
+				if pass == 2 {
+					// Offset order with the weight as the first factor.
+					for x in 0 .. width {
+						unsafe {
+							kept := inp[x]
+							mut v := kept
+							v = fused_f32(w0[x], up[x], v)
+							v = fused_f32(w1[x], lt[x], v)
+							v = fused_f32(w2[x], rt[x], v)
+							v = fused_f32(w3[x], dn[x], v)
+							filtered := v * inverse_weight[x]
+							out[x] = epf_select(skip[x], kept, filtered)
+						}
+					}
+				} else {
+					// Reverse offset order with the sample as the first factor.
+					for x in 0 .. width {
+						unsafe {
+							kept := inp[x]
+							mut v := kept
+							v = fused_f32(dn[x], w3[x], v)
+							v = fused_f32(rt[x], w2[x], v)
+							v = fused_f32(lt[x], w1[x], v)
+							v = fused_f32(up[x], w0[x], v)
+							filtered := v * inverse_weight[x]
+							out[x] = epf_select(skip[x], kept, filtered)
+						}
+					}
 				}
 			}
 		}
