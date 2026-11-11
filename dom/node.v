@@ -4776,7 +4776,7 @@ fn (n &Node) name_or_description_with_ownership(target NameOrDescription, docume
 						}
 						continue
 					}
-					result := referenced_node.name_or_description_with_ownership(target, document, mut visited_nodes, .no, .yes, ownership)!
+					result := referenced_node.name_or_description_with_ownership(target, document, mut visited_nodes, .yes, .yes, ownership)!
 					accumulated_text.write_string(' ')
 					accumulated_text.write_string(result)
 				}
@@ -4862,7 +4862,9 @@ fn (n &Node) name_or_description_with_ownership(target NameOrDescription, docume
 		// F. Name From Content: Otherwise, if the current node's role allows name from content, or if the current node
 		//    is referenced by aria-labelledby, aria-describedby, or is a native host language text alternative element
 		//    (e.g. label in HTML), or is a descendant of a native host language text alternative element:
-		if element_allows_accessible_name_from_content(element, should_compute_role) || element_is_referenced_for_accessibility(element) || is_descendant == .yes {
+		// A reference grants name-from-content only during that IDREF traversal,
+		// not when the referenced element computes its own accessible name.
+		if element_allows_accessible_name_from_content(element, should_compute_role) || is_descendant == .yes {
 			// Generated content and counter values must be current before step F,
 			// including the first accessibility query before an initial layout.
 			mut mutable_document := unsafe { &Document(document) }
@@ -4968,7 +4970,7 @@ pub fn (n &Node) accessible_description(document &Document) !string {
 	mut builder := strings.new_builder(0)
 	for id in described_by.fields() {
 		description_element := document.get_element_by_id(id) or { continue }
-		description := description_element.as_node().name_or_description(.name, document, mut visited_nodes, .no, .yes)!
+		description := description_element.as_node().name_or_description(.name, document, mut visited_nodes, .yes, .yes)!
 		append_accessible_text(mut builder, description)
 	}
 	return builder.str()
