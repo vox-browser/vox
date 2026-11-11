@@ -583,17 +583,60 @@ fn (s &BitmapProcState) filter_scale(x int, y int, mut colors []u32, at int, n i
 	y0, y1, wy := unpack_filter(s.pack(saturate_to_fixed(fy), s.height - 1, s.filter_one_y))
 	decal := s.tile == .clamp && u32(fixed3232_to_int(fx)) < u32(max_x)
 		&& u32(fixed3232_to_int(i64(u64(fx) + u64(dx * i64(n - 1))))) < u32(max_x)
-	for i in 0 .. n {
-		packed := if decal {
-			fixed_fx := saturate_to_fixed(fx)
-			(u32(fixed_fx >> 12) << 14) | u32((fixed_fx >> 16) + 1)
-		} else {
-			s.pack(saturate_to_fixed(fx), max_x, s.filter_one_x)
+	// s.pixel() of both rows, with the span's invariants in locals.
+	pixels := s.pixels
+	row0 := y0 * s.row_bytes
+	row1 := y1 * s.row_bytes
+	scale := s.alpha_scale
+	if n > 128 {
+		for i in 0 .. n {
+			packed := if decal {
+				fixed_fx := saturate_to_fixed(fx)
+				(u32(fixed_fx >> 12) << 14) | u32((fixed_fx >> 16) + 1)
+			} else {
+				s.pack(saturate_to_fixed(fx), max_x, s.filter_one_x)
+			}
+			fx += dx
+			x0, x1, wx := unpack_filter(packed)
+			colors[at + i] = filter_and_scale_by_alpha(wx, wy, load32_unchecked(pixels, row0 + x0 * 4),
+				load32_unchecked(pixels, row0 + x1 * 4), load32_unchecked(pixels, row1 + x0 * 4),
+				load32_unchecked(pixels, row1 + x1 * 4), scale)
 		}
-		fx += dx
-		x0, x1, wx := unpack_filter(packed)
-		colors[at + i] = filter_and_scale_by_alpha(wx, wy, s.pixel(x0, y0), s.pixel(x1, y0),
-			s.pixel(x0, y1), s.pixel(x1, y1), s.alpha_scale)
+		return
+	}
+	// Gather the samples, then filter them in a separate loop whose uniform
+	// integer arithmetic the C compiler can vectorize.
+	mut wxs := [128]u32{}
+	mut p00 := [128]u32{}
+	mut p01 := [128]u32{}
+	mut p10 := [128]u32{}
+	mut p11 := [128]u32{}
+	if decal {
+		for i in 0 .. n {
+			fixed_fx := saturate_to_fixed(fx)
+			packed := (u32(fixed_fx >> 12) << 14) | u32((fixed_fx >> 16) + 1)
+			fx += dx
+			x0, x1, wx := unpack_filter(packed)
+			wxs[i] = wx
+			p00[i] = load32_unchecked(pixels, row0 + x0 * 4)
+			p01[i] = load32_unchecked(pixels, row0 + x1 * 4)
+			p10[i] = load32_unchecked(pixels, row1 + x0 * 4)
+			p11[i] = load32_unchecked(pixels, row1 + x1 * 4)
+		}
+	} else {
+		for i in 0 .. n {
+			packed := s.pack(saturate_to_fixed(fx), max_x, s.filter_one_x)
+			fx += dx
+			x0, x1, wx := unpack_filter(packed)
+			wxs[i] = wx
+			p00[i] = load32_unchecked(pixels, row0 + x0 * 4)
+			p01[i] = load32_unchecked(pixels, row0 + x1 * 4)
+			p10[i] = load32_unchecked(pixels, row1 + x0 * 4)
+			p11[i] = load32_unchecked(pixels, row1 + x1 * 4)
+		}
+	}
+	for i in 0 .. n {
+		colors[at + i] = filter_and_scale_by_alpha(wxs[i], wy, p00[i], p01[i], p10[i], p11[i], scale)
 	}
 }
 
