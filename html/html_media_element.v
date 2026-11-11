@@ -1552,6 +1552,7 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 	if old_state == state {
 		return
 	}
+	was_potentially_playing := element.potentially_playing()
 	was_buffering := element.blocked()
 	element.ready_state_ = state
 	if was_buffering != element.blocked() {
@@ -1594,6 +1595,21 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		// independently of whether this crossing queued the first-data event.
 		element.finish_delaying_load_event()
 	}
+	if int(old_state) >= int(MediaReadyState.have_future_data)
+		&& int(state) <= int(MediaReadyState.have_current_data) {
+		if was_potentially_playing && !element.ended() && element.error_ == none {
+			element_pointer := voidptr(&element)
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.dispatch_time_update_event()
+			})
+			element.queue_a_media_element_task(fn [element_pointer] () {
+				mut media := unsafe { &HTMLMediaElement(element_pointer) }
+				media.fire_event('waiting')
+			})
+		}
+		return
+	}
 	// Both Source branches queue canplay before notifying about playing. Take
 	// the pending promise batch now, before any queued listener can call play().
 	if element.network_state_ != .empty
@@ -1632,9 +1648,6 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 			element.notify_about_playing()
 		}
 		return
-	}
-	if int(state) < int(MediaReadyState.have_future_data) && int(old_state) >= int(MediaReadyState.have_future_data) && !element.paused_ {
-		element.fire_event('waiting')
 	}
 }
 
@@ -1917,7 +1930,7 @@ pub fn (_ &HTMLMediaElement) stalled() bool {
 }
 
 pub fn (element &HTMLMediaElement) potentially_playing() bool {
-	return !element.paused_ && !element.ended() && !element.blocked()
+	return !element.paused_ && !element.ended() && element.error_ == none && !element.blocked()
 }
 
 pub fn (mut element HTMLMediaElement) play() &dom.Promise {
