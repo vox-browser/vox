@@ -1974,10 +1974,11 @@ fn (mut p Parser) parse_method_definition(is_async bool, is_generator bool, meth
 	insights.might_need_arguments_object = p.flags.function_might_need_arguments_object
 	p.flags.function_might_need_arguments_object = saved_might_need_arguments
 
-	// Class constructors always need a function environment for `this` binding.
+	// Only derived constructors always need a function environment for `this`:
+	// super() binds it there. Base constructors retain the body's own insights.
 	if method_kind == .constructor {
 		insights.uses_this = true
-		insights.uses_this_from_environment = true
+		if p.class_has_super_class { insights.uses_this_from_environment = true }
 	}
 
 	function_id := p.function_table.insert(JsFunctionData{
