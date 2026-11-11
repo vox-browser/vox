@@ -1865,8 +1865,9 @@ pub fn (mut element HTMLMediaElement) seek_element(value f64, mode MediaSeekMode
 			media.finish_seeking_element()
 		})
 	}
-	// Source's ad-hoc seek commit samples the clock after requesting the seek.
-	element.set_official_playback_position(element.current_playback_position())
+	// The manager seeks to the clamped target, while currentTime immediately
+	// reflects the value requested by currentTime/fastSeek in this task.
+	element.set_official_playback_position(value)
 }
 
 pub fn (mut element HTMLMediaElement) finish_seeking_element() {
