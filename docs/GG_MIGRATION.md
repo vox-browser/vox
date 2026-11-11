@@ -881,35 +881,39 @@ uses fewer cycles (4.65 versus 4.91 billion) and less CPU time (2,132 versus
 **Canvas.** The vox-tests `CPU_RASTER_CHECKS=perf` mode draws eight fixed
 800x600 scenes through the former Skia bridge (the oracle) and through
 cpuraster, alternating sides, and requires identical final pixels. After the
-module removal, cpuraster was 2-4x slower on scaled images and gradients.
-Exactness-preserving changes (`064a03804`, `7a3d63d00`, `2824880a6`,
-`a1dc93e6e`, `0584ad2d0`, `ec8958e8a`) remove per-pixel bounds checks and
-closure allocations, filter two channels per word, and process gradient spans
-in batches. Twenty-one alternating batches (vox-tests `7ad0825`, host load
-about 20-30 on 18 CPUs, so medians, minimums and cycles are all shown):
+module removal, cpuraster was 2-4x slower on scaled images and gradients and
+rasterized every glyph of every fillText() again. Exactness-preserving changes
+(`064a03804`, `7a3d63d00`, `2824880a6`, `a1dc93e6e`, `0584ad2d0`, `ec8958e8a`,
+`533e8d8ed`, `2de5b20c5`) remove per-pixel bounds checks and closure
+allocations, filter two channels per word in a loop clang vectorizes, process
+gradient spans in batches and keep each canvas context's glyph masks in a
+`GlyphCache`. Twenty-one alternating batches (vox-tests `a404a33`, host load
+about 17-26 on 18 CPUs, so medians, minimums and cycles are all shown):
 
 | Scene (draws) | Median ms Skia / cpuraster | Min ratio | Cycle ratio | Instructions Skia / cpuraster |
 | --- | ---: | ---: | ---: | ---: |
-| Rect fills (200) | 26.41 / 1.87 | 0.07 | 0.07 | 174.8M / 19.5M |
-| Circle fills (100) | 12.85 / 1.71 | 0.13 | 0.13 | 90.9M / 18.5M |
-| Hairline polylines (10) | 1.84 / 1.18 | 0.65 | 0.63 | 13.7M / 15.6M |
-| 4px round strokes (10) | 3.25 / 3.23 | 0.99 | 0.99 | 30.3M / 35.6M |
-| Linear gradient fills (50) | 8.83 / 8.61 | 0.97 | 0.95 | 63.9M / 89.7M |
-| Blurred shadows (50) | 7.13 / 3.12 | 0.46 | 0.44 | 46.7M / 39.3M |
-| Scaled 256->200x150 drawImage (50) | 12.13 / 14.14 | 1.03 | 1.21 | 99.7M / 136.9M |
-| Text runs, 30 glyphs (50) | 33.31 / 42.10 | 1.21 | 1.07 | 183.2M / 207.2M |
+| Rect fills (200) | 30.12 / 1.89 | 0.07 | 0.07 | 174.9M / 19.5M |
+| Circle fills (100) | 13.02 / 1.66 | 0.13 | 0.13 | 91.3M / 18.5M |
+| Hairline polylines (10) | 2.14 / 1.17 | 0.64 | 0.61 | 13.6M / 15.6M |
+| 4px round strokes (10) | 3.99 / 3.83 | 1.03 | 0.96 | 30.4M / 35.5M |
+| Linear gradient fills (50) | 9.57 / 8.44 | 1.05 | 0.94 | 64.2M / 89.6M |
+| Blurred shadows (50) | 8.62 / 3.25 | 0.46 | 0.41 | 46.7M / 39.4M |
+| Scaled 256->200x150 drawImage (50) | 12.30 / 8.42 | 0.79 | 0.72 | 100.2M / 104.3M |
+| Text runs, 30 glyphs (50) | 33.75 / 2.15 | 0.08 | 0.07 | 185.3M / 30.9M |
 
 Before these changes the same harness measured 667M instructions and
-44.3 ms for scaled drawImage and 268M instructions and 13.8 ms for
-gradients. The Skia column includes the bridge's per-draw path and paint
-conversion, which dominates the rect and circle scenes. Scaled images and
-text remain slower: Skia filters with NEON, and its global strike cache
-keeps glyph masks across draws, while cpuraster opens the face and
-rasterizes each glyph through CoreGraphics again for every draw.
+44.3 ms for scaled drawImage, 268M instructions and 13.8 ms for gradients,
+and 207M instructions for text. The Skia column includes the bridge's
+per-draw path, paint and typeface conversion, which dominates the rect,
+circle and text scenes. Round strokes and gradients are at parity; Skia's
+NEON pipeline still retires fewer instructions there.
 
 The differential cohorts stay exact after the changes (gradients, patterns,
-images, composites, strokes, glyphs, mipmaps, clips, non-anti-aliased fills,
-rounded rectangles, shadows, color filters and filter layers). The
+images, resampled and large image layers, composites, strokes, glyphs in
+CoreText and FreeType modes, text and outer shadows, mipmaps, clips,
+non-anti-aliased fills, rounded rectangles, shadows, color filters and filter
+layers). Every glyph comparison also draws through one shared `GlyphCache`,
+which must reproduce the uncached pixels. The
 image-filter cohort exposes a gap that predates them and fails identically
 on the earlier code: a drop shadow whose blur is below the identity
 threshold, drawn from a source subset stretched over a
