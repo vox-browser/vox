@@ -701,11 +701,34 @@ fn append_unique_key(mut keys []PropertyKey, mut seen map[string]bool, key Prope
 	}
 }
 
+// OrdinaryOwnPropertyKeys keeps array-index strings first in numeric order,
+// followed by other strings and symbols in their creation order.
+pub fn (object &PlatformObject) ordinary_own_property_keys() []PropertyKey {
+	mut indices := []u32{}
+	mut strings := []PropertyKey{}
+	mut symbols := []PropertyKey{}
+	for key in object.ordinary_property_order_ {
+		if index := key.array_index() {
+			indices << index
+		} else if key.is_symbol() {
+			symbols << key
+		} else {
+			strings << key
+		}
+	}
+	indices.sort()
+	mut keys := []PropertyKey{cap: object.ordinary_property_order_.len}
+	for index in indices { keys << property_key(index.str()) }
+	keys << strings
+	keys << symbols
+	return keys
+}
+
 // https://webidl.spec.whatwg.org/#legacy-platform-object-ownpropertykeys
 pub fn (object &PlatformObject) internal_own_property_keys() []PropertyKey {
-	flags := object.legacy_flags_ or { return object.ordinary_property_order_.clone() }
+	flags := object.legacy_flags_ or { return object.ordinary_own_property_keys() }
 	if flags.has_global_interface_attribute {
-		return object.ordinary_property_order_.clone()
+		return object.ordinary_own_property_keys()
 	}
 	mut keys := []PropertyKey{}
 	mut seen := map[string]bool{}
@@ -727,15 +750,8 @@ pub fn (object &PlatformObject) internal_own_property_keys() []PropertyKey {
 			}
 		}
 	}
-	for key in object.ordinary_property_order_ {
-		if !key.is_symbol() {
-			append_unique_key(mut keys, mut seen, key)
-		}
-	}
-	for key in object.ordinary_property_order_ {
-		if key.is_symbol() {
-			append_unique_key(mut keys, mut seen, key)
-		}
+	for key in object.ordinary_own_property_keys() {
+		append_unique_key(mut keys, mut seen, key)
 	}
 	return keys
 }
