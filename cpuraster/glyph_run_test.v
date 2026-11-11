@@ -275,3 +275,91 @@ fn test_mask_gamma_tables() {
 		assert table[255] == 255
 	}
 }
+
+// A context's glyph cache returns the same masks as rasterizing every
+// draw: repeated runs, other colors (mask gamma), transforms (strikes),
+// sizes, gradients, clips and filters, before and after the cache purges
+// strikes past its bound.
+fn test_glyph_cache_draws_match_uncached_draws() {
+	mut cache := new_glyph_cache()
+	mut cases := []GlyphTestCase{}
+	for round in 0 .. 3 {
+		for i in 0 .. 30 {
+			cases << GlyphTestCase{
+				size:        f32(9 + i % 7) + f32(round) * f32(0.5)
+				glyphs:      [u16(36 + i % 20), 70, u16(50 + i % 9), 81]
+				positions:   [f32(0), 0, 7.3, 0, 15.6, 0.25, 23.1, 0]
+				translation: [f32(2 + i % 5) + f32(0.25 * f32(i % 4)), f32(18 + i % 9)]!
+				transform:   if i % 3 == 0 {
+					[f32(1), 0, 0, 1, 0, 0]!
+				} else {
+					[f32(0.9 + f32(i % 4) * 0.1), f32(i % 2) * 0.2, 0, 1.1, 1, 0]!
+				}
+				color:       [u32(0xff000000), 0xffffffff, 0xc0306090, 0xff20a040][i % 4]
+				gradient:    i % 5 == 4
+				clip:        i % 6 == 5
+			}
+		}
+	}
+	mut drawn := 0
+	for c in cases {
+		transform := if c.transform == [6]f32{} { [f32(1), 0, 0, 1, 0, 0]! } else { c.transform }
+		style := if c.gradient {
+			?CanvasPaintStyle(CanvasGradient{
+				kind:  1
+				x1:    44
+				y1:    30
+				stops: [f32(0), 1, 0, 0, 1, 1, 0, 0.5, 1, 1]
+			})
+		} else {
+			?CanvasPaintStyle(none)
+		}
+		mut clips := []Path{}
+		if c.clip {
+			clips << rect_path(Rect{4, 6, 30, 34})
+		}
+		mut expected := glyph_test_background()
+		mut actual := glyph_test_background()
+		ok := fill_canvas_glyphs(mut expected, 48, 40, 192, 2, glyph_test_run(c), transform, c.color,
+			style, 1, .src_over, clips, none)
+		cached := fill_canvas_glyphs_cached(mut cache, mut actual, 48, 40, 192, 2, glyph_test_run(c),
+			transform, c.color, style, 1, .src_over, clips, none)
+		assert ok == cached
+		assert expected == actual
+		if ok && expected != glyph_test_background() {
+			drawn++
+		}
+	}
+	assert drawn > cases.len / 2
+	assert cache.strikes.len > 0 && cache.strikes.len <= glyph_cache_max_strikes
+	assert cache.order.len == cache.strikes.len
+	assert cache.faces.len == 1
+	// A blurred filter layer draws the run again through the same cache.
+	filter := new_canvas_filter([CanvasFilterStep{kind: .blur, sigma: 1.5}])
+	for _ in 0 .. 2 {
+		mut expected := glyph_test_background()
+		mut actual := glyph_test_background()
+		assert fill_canvas_glyphs(mut expected, 48, 40, 192, 2, glyph_test_run(cases[0]), [f32(1), 0,
+			0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, [], filter)
+		assert fill_canvas_glyphs_cached(mut cache, mut actual, 48, 40, 192, 2, glyph_test_run(cases[0]),
+			[f32(1), 0, 0, 1, 0, 0]!, 0xff000000, none, 1, .src_over, [], filter)
+		assert expected == actual
+	}
+}
+
+// Runs whose face cannot open decline with or without a cache, leaving no
+// face facts behind.
+fn test_glyph_cache_declines_unopenable_faces() {
+	mut cache := new_glyph_cache()
+	mut px := glyph_test_background()
+	run := CanvasGlyphRun{
+		font_path: '/nonexistent/font.ttf'
+		font_size: 12
+		glyphs:    [u16(36)]
+		positions: [f32(0), 0]
+	}
+	assert !fill_canvas_glyphs_cached(mut cache, mut px, 48, 40, 192, 2, run, [f32(1), 0, 0, 1, 0,
+		0]!, 0xff000000, none, 1, .src_over, [], none)
+	assert px == glyph_test_background()
+	assert cache.faces.len == 0
+}

@@ -627,7 +627,7 @@ pub fn draw_general_canvas_glyphs(mut pixels []u8, width int, height int, pitch 
 	return draw_general_filter_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
 		specs, space, none, mode, fn [run, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
 		fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, run, t, color, style, global_alpha,
-			.src_over, layer_clips, none, true)
+			.src_over, layer_clips, none, true, unsafe { nil })
 		return true
 	})
 }

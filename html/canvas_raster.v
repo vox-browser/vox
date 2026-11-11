@@ -288,10 +288,15 @@ fn (mut context OffscreenCanvasRenderingContext2D) paint_canvas_glyph_run(run &p
 	// decline take the device-space fallback.
 	supported, color_filter := canvas_cpu_filter(filters)
 	cpu_style := canvas_cpu_style(native_style)
+	// The context's glyph cache keeps typeface facts and masks across
+	// draws, as Skia's strike cache does.
+	if context.glyph_cache == unsafe { nil } {
+		context.glyph_cache = cpuraster.new_glyph_cache()
+	}
 	mut painted := native_style.kind <= 4 && supported
-		&& cpuraster.fill_canvas_glyphs(mut mutable_bitmap.data, bitmap.width, bitmap.height,
-		bitmap.pitch, int(bitmap.alpha_type), cpu_run, native_transform, native_style.color, cpu_style,
-		f32(state.global_alpha), mode, clips, color_filter)
+		&& cpuraster.fill_canvas_glyphs_cached(mut context.glyph_cache, mut mutable_bitmap.data,
+		bitmap.width, bitmap.height, bitmap.pitch, int(bitmap.alpha_type), cpu_run, native_transform,
+		native_style.color, cpu_style, f32(state.global_alpha), mode, clips, color_filter)
 	if !painted {
 		painted = cpuraster.draw_general_canvas_glyphs(mut mutable_bitmap.data, bitmap.width,
 			bitmap.height, bitmap.pitch, int(bitmap.alpha_type), cpu_run, native_transform,
