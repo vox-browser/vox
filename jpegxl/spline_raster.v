@@ -25,9 +25,7 @@ pub fn (cache SplineDrawCache) draw_row(mut row [][]f32, row_x int, row_y int) !
 	}
 	for samples in row {
 		if samples.len != width { return error('Invalid JPEG XL spline color row shape') }
-		for sample in samples {
-			if !math.is_finite(sample) { return error('JPEG XL spline background must be finite') }
-		}
+		if !all_finite(samples) { return error('JPEG XL spline background must be finite') }
 	}
 	first := cache.row_starts[row_y]
 	last := cache.row_starts[row_y + 1]

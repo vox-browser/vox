@@ -29,7 +29,7 @@ pub fn add_noise_planes(input [3]FloatPlane, random [3]FloatPlane, noise NoisePa
 		for plane in [input[c], random[c]] {
 			plane.validate()!
 			if plane.width != input[0].width || plane.height != input[0].height
-				|| plane.samples.any(!math.is_finite(it)) { return error('Invalid JPEG XL noise plane geometry or samples') }
+				|| !all_finite(plane.samples) { return error('Invalid JPEG XL noise plane geometry or samples') }
 		}
 	}
 	for value in noise.lut { if !math.is_finite(value) { return error('Nonfinite JPEG XL noise LUT') } }

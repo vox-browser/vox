@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-import math
-
 pub struct FloatPlane {
 pub:
 	width   int
@@ -36,15 +34,17 @@ fn (plane FloatPlane) at_border(x int, y int) f32 {
 	return plane.samples[py * plane.width + px]
 }
 
-// Whether every value is finite. An indexed loop with direct access, unlike a
-// for-in loop, compiles without per-element calls and vectorizes.
+// Whether every value is finite. An f32 is infinite or NaN exactly when its
+// exponent bits are all set, as math.is_finite finds after widening; the
+// branch-free test over the bits vectorizes.
 @[direct_array_access]
 fn all_finite(values []f32) bool {
-	mut finite := true
+	data := unsafe { &u32(values.data) }
+	mut nonfinite := u32(0)
 	for i in 0 .. values.len {
-		if !math.is_finite(values[i]) { finite = false }
+		nonfinite |= u32((unsafe { data[i] } & 0x7f800000) == 0x7f800000)
 	}
-	return finite
+	return nonfinite == 0
 }
 
 // Copies a width x height rectangle of samples from src, whose rows start
