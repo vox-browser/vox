@@ -644,211 +644,215 @@ fn (mut iterator InlineLevelIterator) resolve_text_direction_from_context() plat
 }
 
 fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
-	current := iterator.current_node or { return none }
-	if text_node := current.as_text_node() {
-		if !iterator.has_text_node_context {
-			iterator.enter_text_node(text_node)
-		}
-		mut context := &iterator.text_node_context
-		is_first_chunk := context.next_chunk_index == 0
-		if context.next_chunk_index >= context.chunks.len {
-			if context.chunks.len == 0 {
-				iterator.transfer_skipped_inline_metrics_to_previous_item()
+	// Nodes with no item advance in a loop, so long runs of empty inlines
+	// and exhausted text nodes do not consume one stack frame per node.
+	for {
+		current := iterator.current_node or { return none }
+		if text_node := current.as_text_node() {
+			if !iterator.has_text_node_context {
+				iterator.enter_text_node(text_node)
 			}
-			iterator.has_text_node_context = false
-			iterator.text_node_context = InlineTextNodeContext{}
-			iterator.previous_chunk_can_break_after = false
+			mut context := &iterator.text_node_context
+			is_first_chunk := context.next_chunk_index == 0
+			if context.next_chunk_index >= context.chunks.len {
+				if context.chunks.len == 0 {
+					iterator.transfer_skipped_inline_metrics_to_previous_item()
+				}
+				iterator.has_text_node_context = false
+				iterator.text_node_context = InlineTextNodeContext{}
+				iterator.previous_chunk_can_break_after = false
+				iterator.skip_to_next()
+				continue
+			}
+			chunk := context.chunks[context.next_chunk_index]
+			context.next_chunk_index++
+			is_last_chunk := context.next_chunk_index >= context.chunks.len
+			mut text_type := chunk.text_type
+			if text_type in [.ltr, .rtl] {
+				context.last_known_direction = text_type
+			}
+			if context.should_respect_linebreaks && chunk.has_breaking_newline {
+				text_type = if chunk.is_all_whitespace { .end_padding } else { text_type }
+			}
+			if text_type == .context_dependent {
+				text_type = iterator.resolve_text_direction_from_context()
+			}
+			if context.should_respect_linebreaks && chunk.has_breaking_newline {
+				return InlineLevelItem{
+					type_: .forced_break
+					node: current
+					offset_in_node: chunk.start
+					length_in_node: chunk.length
+				}
+			}
+			computed := text_node.Node.computed_values()
+			// Item generation is synchronous. Resolve immutable text-node spacing
+			// once for this context, after preserved-break-only chunks return.
+			if !context.spacing_resolved {
+				context.letter_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .letter_spacing)
+				context.word_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .word_spacing)
+				context.spacing_resolved = true
+			}
+			letter_spacing := context.letter_spacing
+			word_spacing := context.word_spacing
+			mut shaped_text := chunk.view
+			mut x := 0.0
+			if chunk.has_breaking_tab {
+				tab_size := computed.tab_size()
+				tab_width := if tab_size.is_length {
+					resolve_font_dependent_length_for_node(unsafe { &Node(text_node) }, tab_size.length).to_double()
+				} else {
+					tab_size.number * (f64(chunk.font.glyph_width(u32(` `))) + word_spacing + letter_spacing)
+				}
+				accumulated := iterator.accumulated_width_for_tabs.to_double()
+				mut stop_distance := if accumulated > 0 && tab_width > 0 {
+					math.ceil(accumulated / tab_width) * tab_width - accumulated
+				} else {
+					tab_width
+				}
+				if stop_distance < f64(chunk.font.glyph_width(u32(`0`))) * 0.5 {
+					stop_distance += tab_width
+				}
+				mut tab_count := 0
+				for character in shaped_text.runes() {
+					if character != `\t` {
+						break
+					}
+					tab_count++
+				}
+				stop_distance *= tab_count
+				units := utf16_code_units_for_line_box(shaped_text)
+				shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
+				x = stop_distance
+			}
+			shaped := if run := context.chromium_context_run {
+				chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
+					iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+				}
+			} else {
+				chromium_segmented_context_slice_with_cursor(context.chromium_segment_runs, chunk,
+					mut context.chromium_slice_cursor) or {
+					iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+				}
+			}
+			glyph_run := shaped.glyph_run
+			chunk_width := shaped_inline_width(glyph_run, x)
+			is_empty_editable := chunk.length == 0 && text_node.produces_line_box_fragment_when_empty_
+			is_generated_empty_string := is_empty_editable
+				|| (text_node.retains_empty_generated_fragment_ && chunk.length == 0)
+			mut item := InlineLevelItem{
+				type_: .text
+				node: current
+				glyph_run: glyph_run
+				offset_in_node: chunk.start
+				length_in_node: chunk.length
+				width: chunk_width
+				is_collapsible_whitespace: context.should_collapse_whitespace && chunk.is_all_whitespace
+					&& !is_generated_empty_string
+				is_all_whitespace: chunk.is_all_whitespace
+				can_break_before: iterator.previous_chunk_can_break_after
+				trailing_whitespace: if chunk.is_all_whitespace {
+					TrailingWhitespace{
+						length_in_code_units: chunk.length
+						inline_size: chunk_width
+					}
+				} else {
+					TrailingWhitespace{
+						length_in_code_units: shaped.trailing_whitespace.length_in_code_units
+						inline_size: CSSPixels.nearest_value_for(shaped.trailing_whitespace.advance)
+					}
+				}
+			}
+			iterator.previous_chunk_can_break_after = chunk.can_break_after
+			iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
+			// Empty generated text still closes its pseudo-element and any enclosing
+			// inline boxes. Their end edges must advance later content and markers.
+			return item
+		}
+
+		if current.is_absolutely_positioned() {
+			mut has_unattached_inline_start_edges := false
+			if leading := iterator.extra_leading_metrics {
+				has_unattached_inline_start_edges = leading.margin.raw_value() != 0
+					|| leading.border.raw_value() != 0 || leading.padding.raw_value() != 0
+			}
+			iterator.carry_trailing_metrics_past_out_of_flow_box()
 			iterator.skip_to_next()
-			return iterator.generate_next_item()
+			return InlineLevelItem{
+				type_: .absolutely_positioned_element
+				node: current
+				preceded_by_unattached_inline_start_edges: has_unattached_inline_start_edges
+			}
 		}
-		chunk := context.chunks[context.next_chunk_index]
-		context.next_chunk_index++
-		is_last_chunk := context.next_chunk_index >= context.chunks.len
-		mut text_type := chunk.text_type
-		if text_type in [.ltr, .rtl] {
-			context.last_known_direction = text_type
+		if current.is_floating() {
+			iterator.carry_trailing_metrics_past_out_of_flow_box()
+			iterator.skip_to_next()
+			return InlineLevelItem{
+				type_: .floating_element
+				node: current
+			}
 		}
-		if context.should_respect_linebreaks && chunk.has_breaking_newline {
-			text_type = if chunk.is_all_whitespace { .end_padding } else { text_type }
-		}
-		if text_type == .context_dependent {
-			text_type = iterator.resolve_text_direction_from_context()
-		}
-		if context.should_respect_linebreaks && chunk.has_breaking_newline {
+		if current.is_break_node() {
+			iterator.skip_to_next()
 			return InlineLevelItem{
 				type_: .forced_break
 				node: current
-				offset_in_node: chunk.start
-				length_in_node: chunk.length
 			}
 		}
-		computed := text_node.Node.computed_values()
-		// Item generation is synchronous. Resolve immutable text-node spacing
-		// once for this context, after preserved-break-only chunks return.
-		if !context.spacing_resolved {
-			context.letter_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .letter_spacing)
-			context.word_spacing = resolved_text_spacing_for_shaping(unsafe { &Node(text_node) }, .word_spacing)
-			context.spacing_resolved = true
+		if current.is_list_item_marker_box() {
+			marker := current.as_list_item_marker_box() or { return none }
+			if marker.list_style_position() != .inside {
+				// An outside marker owns an independent inline formatting context and
+				// does not participate in the list item's principal inline run.
+			iterator.next_node = current.next_sibling()
+			iterator.skip_to_next()
+			continue
 		}
-		letter_spacing := context.letter_spacing
-		word_spacing := context.word_spacing
-		mut shaped_text := chunk.view
-		mut x := 0.0
-		if chunk.has_breaking_tab {
-			tab_size := computed.tab_size()
-			tab_width := if tab_size.is_length {
-				resolve_font_dependent_length_for_node(unsafe { &Node(text_node) }, tab_size.length).to_double()
-			} else {
-				tab_size.number * (f64(chunk.font.glyph_width(u32(` `))) + word_spacing + letter_spacing)
-			}
-			accumulated := iterator.accumulated_width_for_tabs.to_double()
-			mut stop_distance := if accumulated > 0 && tab_width > 0 {
-				math.ceil(accumulated / tab_width) * tab_width - accumulated
-			} else {
-				tab_width
-			}
-			if stop_distance < f64(chunk.font.glyph_width(u32(`0`))) * 0.5 {
-				stop_distance += tab_width
-			}
-			mut tab_count := 0
-			for character in shaped_text.runes() {
-				if character != `\t` {
-					break
-				}
-				tab_count++
-			}
-			stop_distance *= tab_count
-			units := utf16_code_units_for_line_box(shaped_text)
-			shaped_text = string_from_utf16_code_units_for_line_box(units[tab_count..])
-			x = stop_distance
 		}
-		shaped := if run := context.chromium_context_run {
-			chromium_context_slice_with_cursor(run, chunk, mut context.chromium_slice_cursor) or {
-				iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+		if !current.is_box() {
+			if current.is_inline_node() && current.child_count() == 0 {
+				iterator.transfer_skipped_inline_metrics_to_previous_item()
 			}
-		} else {
-			chromium_segmented_context_slice_with_cursor(context.chromium_segment_runs, chunk,
-				mut context.chromium_slice_cursor) or {
-				iterator.shape_chunk_text_for_layout(text_node, chunk.start, f32(x), f32(letter_spacing), f32(word_spacing), shaped_text, chunk.font, text_type)
+			iterator.skip_to_next()
+			continue
+		}
+
+		box := current.as_box() or { return none }
+		if is_inline_flow_interrupting_block(current) && !current.is_list_item_marker_box() {
+			iterator.skip_to_next()
+			return InlineLevelItem{
+				type_: .block_level_box
+				node: current
 			}
 		}
-		glyph_run := shaped.glyph_run
-		chunk_width := shaped_inline_width(glyph_run, x)
-		is_empty_editable := chunk.length == 0 && text_node.produces_line_box_fragment_when_empty_
-		is_generated_empty_string := is_empty_editable
-			|| (text_node.retains_empty_generated_fragment_ && chunk.length == 0)
+		iterator.dimension_box_on_line(box)
+		styled := current.as_node_with_style() or { return none }
+		box_state := iterator.state.get(styled)
+		horizontal := iterator.containing_block.computed_values().writing_mode() == .horizontal_tb
 		mut item := InlineLevelItem{
-			type_: .text
+			type_: .element
 			node: current
-			glyph_run: glyph_run
-			offset_in_node: chunk.start
-			length_in_node: chunk.length
-			width: chunk_width
-			is_collapsible_whitespace: context.should_collapse_whitespace && chunk.is_all_whitespace
-				&& !is_generated_empty_string
-			is_all_whitespace: chunk.is_all_whitespace
-			can_break_before: iterator.previous_chunk_can_break_after
-			trailing_whitespace: if chunk.is_all_whitespace {
-				TrailingWhitespace{
-					length_in_code_units: chunk.length
-					inline_size: chunk_width
-				}
-			} else {
-				TrailingWhitespace{
-					length_in_code_units: shaped.trailing_whitespace.length_in_code_units
-					inline_size: CSSPixels.nearest_value_for(shaped.trailing_whitespace.advance)
-				}
-			}
+			width: if horizontal { box_state.content_width() } else { box_state.content_height() }
+			padding_start: if horizontal { box_state.padding_left } else { box_state.padding_top }
+			padding_end: if horizontal { box_state.padding_right } else { box_state.padding_bottom }
+			border_start: if horizontal { box_state.border_left } else { box_state.border_top }
+			border_end: if horizontal { box_state.border_right } else { box_state.border_bottom }
+			margin_start: if horizontal { box_state.margin_left } else { box_state.margin_top }
+			margin_end: if horizontal { box_state.margin_right } else { box_state.margin_bottom }
 		}
-		iterator.previous_chunk_can_break_after = chunk.can_break_after
-		iterator.add_extra_box_model_metrics_to_item(mut item, is_first_chunk, is_last_chunk)
-		// Empty generated text still closes its pseudo-element and any enclosing
-		// inline boxes. Their end edges must advance later content and markers.
+		iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
+		if current.is_list_item_marker_box() {
+			// Treat an inside marker atomically in its list item's IFC; its own text
+			// was already laid out by layout_list_item_marker().
+			iterator.next_node = current.next_sibling()
+		}
+		// Blink's line breaker always offers a soft wrap opportunity after an
+		// atomic inline, whatever character follows it, such as 4chan's thread
+		// status icon followed by `&nbsp;[Reply]`.
+		iterator.previous_chunk_can_break_after = current.document().font_rendering_policy() == .chromium
+		iterator.skip_to_next()
 		return item
 	}
-
-	if current.is_absolutely_positioned() {
-		mut has_unattached_inline_start_edges := false
-		if leading := iterator.extra_leading_metrics {
-			has_unattached_inline_start_edges = leading.margin.raw_value() != 0
-				|| leading.border.raw_value() != 0 || leading.padding.raw_value() != 0
-		}
-		iterator.carry_trailing_metrics_past_out_of_flow_box()
-		iterator.skip_to_next()
-		return InlineLevelItem{
-			type_: .absolutely_positioned_element
-			node: current
-			preceded_by_unattached_inline_start_edges: has_unattached_inline_start_edges
-		}
-	}
-	if current.is_floating() {
-		iterator.carry_trailing_metrics_past_out_of_flow_box()
-		iterator.skip_to_next()
-		return InlineLevelItem{
-			type_: .floating_element
-			node: current
-		}
-	}
-	if current.is_break_node() {
-		iterator.skip_to_next()
-		return InlineLevelItem{
-			type_: .forced_break
-			node: current
-		}
-	}
-	if current.is_list_item_marker_box() {
-		marker := current.as_list_item_marker_box() or { return none }
-		if marker.list_style_position() != .inside {
-			// An outside marker owns an independent inline formatting context and
-			// does not participate in the list item's principal inline run.
-		iterator.next_node = current.next_sibling()
-		iterator.skip_to_next()
-		return iterator.generate_next_item()
-	}
-	}
-	if !current.is_box() {
-		if current.is_inline_node() && current.child_count() == 0 {
-			iterator.transfer_skipped_inline_metrics_to_previous_item()
-		}
-		iterator.skip_to_next()
-		return iterator.generate_next_item()
-	}
-
-	box := current.as_box() or { return none }
-	if is_inline_flow_interrupting_block(current) && !current.is_list_item_marker_box() {
-		iterator.skip_to_next()
-		return InlineLevelItem{
-			type_: .block_level_box
-			node: current
-		}
-	}
-	iterator.dimension_box_on_line(box)
-	styled := current.as_node_with_style() or { return none }
-	box_state := iterator.state.get(styled)
-	horizontal := iterator.containing_block.computed_values().writing_mode() == .horizontal_tb
-	mut item := InlineLevelItem{
-		type_: .element
-		node: current
-		width: if horizontal { box_state.content_width() } else { box_state.content_height() }
-		padding_start: if horizontal { box_state.padding_left } else { box_state.padding_top }
-		padding_end: if horizontal { box_state.padding_right } else { box_state.padding_bottom }
-		border_start: if horizontal { box_state.border_left } else { box_state.border_top }
-		border_end: if horizontal { box_state.border_right } else { box_state.border_bottom }
-		margin_start: if horizontal { box_state.margin_left } else { box_state.margin_top }
-		margin_end: if horizontal { box_state.margin_right } else { box_state.margin_bottom }
-	}
-	iterator.add_extra_box_model_metrics_to_item(mut item, true, true)
-	if current.is_list_item_marker_box() {
-		// Treat an inside marker atomically in its list item's IFC; its own text
-		// was already laid out by layout_list_item_marker().
-		iterator.next_node = current.next_sibling()
-	}
-	// Blink's line breaker always offers a soft wrap opportunity after an
-	// atomic inline, whatever character follows it, such as 4chan's thread
-	// status icon followed by `&nbsp;[Reply]`.
-	iterator.previous_chunk_can_break_after = current.document().font_rendering_policy() == .chromium
-	iterator.skip_to_next()
-	return item
 }
 
 fn (iterator &InlineLevelIterator) shape_text_for_layout(text_node &TextNode, initial_x f32, letter_spacing f32, word_spacing f32, text string, font &platform.Font, text_type platform.GlyphRunTextType) platform.ShapedText {
