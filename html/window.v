@@ -981,6 +981,11 @@ pub fn (window &WindowModel) document_tree_child_navigable_target_name_property_
 	return names
 }
 
+// Window exposes frame names through their navigables, rather than as named elements.
+fn is_window_named_element_by_name(element &dom.Element) bool {
+	return element.is_html_element() && element.local_name() in ['embed', 'form', 'img', 'object']
+}
+
 pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 	mut navigables := []&BrowsingContextModel{}
 	for child in window.browsing_context().children() {
@@ -995,6 +1000,7 @@ pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 			// document order, exactly as in Window::named_objects().
 			continue
 		}
+		if !is_window_named_element_by_name(element) { continue }
 		if element_name := element.get_name() {
 			if element_name == name {
 				elements << element
@@ -1011,10 +1017,9 @@ pub fn (window &WindowModel) named_objects(name string) WindowNamedObjects {
 fn window_named_collection_elements(collection &WindowNamedCollection) []&dom.Element {
 	mut elements := []&dom.Element{}
 	for element in collection.root.descendant_elements() {
-		local_name := element.local_name()
 		mut name_matches := false
 		if element_name := element.get_name() {
-			name_matches = local_name in ['embed', 'form', 'img', 'object'] && element_name == collection.name
+			name_matches = is_window_named_element_by_name(element) && element_name == collection.name
 		}
 		mut id_matches := false
 		if id := element.id() {
