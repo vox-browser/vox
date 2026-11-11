@@ -390,6 +390,38 @@ fn (mut buffer SourceBuffer) run_append_error_algorithm() {
 	mutable_media_source.run_end_of_stream_algorithm(.decode)
 }
 
+fn source_track_event_timestamp(media_source &MediaSource) f64 {
+	global := media_source.relevant_global_object()
+	if global.data.kind == .window {
+		window := unsafe { &dom.Window(global) }
+		if document := window.associated_document() {
+			settings_handle := document.relevant_settings_object()
+			if settings_handle != unsafe { nil } {
+				settings := unsafe { &html.EnvironmentSettingsObject(settings_handle) }
+				if voidptr(settings.global_object()) == voidptr(global) {
+					return settings.global_relative_event_timestamp()
+				}
+			}
+		}
+	}
+	// Standalone sources retain the same event clock as other MSE events.
+	return media_source.create_associated_event('addtrack').time_stamp()
+}
+
+fn queue_track_list_addtrack_events(media_source &MediaSource, media_element &html.HTMLMediaElement, source_tracks &dom.EventTarget, element_tracks &dom.EventTarget, track html.TrackEventTrack) {
+	// Each list uses its owner's task source and event clock. A MediaSource
+	// can have a different creation global from its attached media element.
+	media_source.queue_a_media_source_task(fn [media_source, source_tracks, track] () {
+		event := html.TrackEvent.create('addtrack', html.TrackEventInit{track: track})
+		mut base_event := unsafe { &dom.Event(event) }
+		base_event.set_time_stamp(source_track_event_timestamp(media_source))
+		source_tracks.dispatch_event(base_event)
+	})
+	media_element.queue_a_media_element_task(fn [media_element, element_tracks, track] () {
+		media_element.fire_track_add_event(element_tracks, track)
+	})
+}
+
 fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration ?f64, tracks []WebMTrackInfo) {
 	mut media_source := buffer.media_source_ or { return }
 	if math.is_nan(media_source.duration()) {
@@ -408,15 +440,19 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 		}
 		match track.type_ {
 			.audio {
-				audio_track := media_element.on_audio_track_added(metadata)
+				audio_track := media_element.on_audio_track_added_for_source_buffer(metadata)
 				mut list := buffer.audio_tracks_
 				list.add_track(audio_track)
+				queue_track_list_addtrack_events(media_source, media_element, &list.EventTarget,
+					&media_element.audio_tracks().EventTarget, html.TrackEventTrack.from_audio(audio_track))
 				has_active_track = true
 			}
 			.video {
-				video_track := media_element.on_video_track_added(metadata)
+				video_track := media_element.on_video_track_added_for_source_buffer(metadata)
 				mut list := buffer.video_tracks_
 				list.add_track(video_track)
+				queue_track_list_addtrack_events(media_source, media_element, &list.EventTarget,
+					&media_element.video_tracks().EventTarget, html.TrackEventTrack.from_video(video_track))
 				has_active_track = true
 			}
 			.text {
@@ -429,6 +465,8 @@ fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration 
 				source_list.add_track(text_track)
 				mut element_list := media_element.text_tracks()
 				element_list.add_track(text_track)
+				queue_track_list_addtrack_events(media_source, media_element, &source_list.EventTarget,
+					&element_list.EventTarget, html.TrackEventTrack.from_text(text_track))
 			}
 		}
 	}

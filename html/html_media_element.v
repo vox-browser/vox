@@ -2458,7 +2458,7 @@ pub fn (mut element HTMLMediaElement) update_video_frame_and_timeline() {
 	}
 }
 
-fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, track TrackEventTrack) {
+pub fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, track TrackEventTrack) {
 	event := TrackEvent.create('addtrack', TrackEventInit{track: track})
 	mut base_event := unsafe { &dom.Event(event) }
 	if document := element.document() {
@@ -2471,6 +2471,15 @@ fn (element &HTMLMediaElement) fire_track_add_event(target &dom.EventTarget, tra
 }
 
 pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMetadata) &AudioTrack {
+	return element.add_audio_track(metadata, true)
+}
+
+// MSE queues notifications after adding this same track to both track lists.
+pub fn (mut element HTMLMediaElement) on_audio_track_added_for_source_buffer(metadata MediaTrackMetadata) &AudioTrack {
+	return element.add_audio_track(metadata, false)
+}
+
+fn (mut element HTMLMediaElement) add_audio_track(metadata MediaTrackMetadata, fire_addtrack_event bool) &AudioTrack {
 	element_pointer := voidptr(&element)
 	track := AudioTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track &AudioTrack, enabled bool) {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
@@ -2492,20 +2501,39 @@ pub fn (mut element HTMLMediaElement) on_audio_track_added(metadata MediaTrackMe
 			list.dispatch_event(event)
 		})
 	}
+	enable := !element.audio_tracks_.tracks().any(it.enabled)
+	if !fire_addtrack_event {
+		// MSE initializes activation before inserting the track, so it does not
+		// queue an initial change event ahead of the queued addtrack events.
+		mutable_track.enabled = enable
+	}
 	element.audio_tracks_.add_track(track)
-	enable := !element.audio_tracks_.tracks().any(voidptr(it) != voidptr(track) && it.enabled)
 	if enable {
-		mutable_track.set_enabled(true)
+		if fire_addtrack_event {
+			mutable_track.set_enabled(true)
+		} else {
+			element.set_audio_track_enabled(track, true)
+		}
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if enable { 'main' } else { 'translation' }
 	}
-	element.fire_track_add_event(&element.audio_tracks_.EventTarget, TrackEventTrack.from_audio(track))
+	if fire_addtrack_event {
+		element.fire_track_add_event(&element.audio_tracks_.EventTarget, TrackEventTrack.from_audio(track))
+	}
 	element.request_paint_command_rebuild()
 	return track
 }
 
 pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMetadata) &VideoTrack {
+	return element.add_video_track(metadata, true)
+}
+
+pub fn (mut element HTMLMediaElement) on_video_track_added_for_source_buffer(metadata MediaTrackMetadata) &VideoTrack {
+	return element.add_video_track(metadata, false)
+}
+
+fn (mut element HTMLMediaElement) add_video_track(metadata MediaTrackMetadata, fire_addtrack_event bool) &VideoTrack {
 	element_pointer := voidptr(&element)
 	track := VideoTrack.create(metadata, media_element_noop_change_task, fn [element_pointer] (track ?&VideoTrack) {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
@@ -2527,15 +2555,22 @@ pub fn (mut element HTMLMediaElement) on_video_track_added(metadata MediaTrackMe
 			list.dispatch_event(event)
 		})
 	}
-	element.video_tracks_.add_track(track)
 	should_select := element.video_tracks_.selected_index() == -1
+	if !fire_addtrack_event { mutable_track.selected = should_select }
+	element.video_tracks_.add_track(track)
 	if should_select {
-		mutable_track.set_selected(true)
+		if fire_addtrack_event {
+			mutable_track.set_selected(true)
+		} else {
+			element.set_selected_video_track(track)
+		}
 	}
 	if metadata.kind == none {
 		mutable_track.base.kind = if should_select { 'main' } else { 'translation' }
 	}
-	element.fire_track_add_event(&element.video_tracks_.EventTarget, TrackEventTrack.from_video(track))
+	if fire_addtrack_event {
+		element.fire_track_add_event(&element.video_tracks_.EventTarget, TrackEventTrack.from_video(track))
+	}
 	return track
 }
 
