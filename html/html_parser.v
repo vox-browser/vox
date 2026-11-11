@@ -442,6 +442,9 @@ fn (mut p HTMLParser) increment_script_nesting_level() {
 fn (mut p HTMLParser) decrement_script_nesting_level() {
 	assert p.script_nesting_level > 0
 	p.script_nesting_level--
+	if p.script_nesting_level == 0 {
+		p.schedule_resume_check()
+	}
 }
 
 fn (mut p HTMLParser) register_parser_inserted_script(element &dom.Element, token &HTMLToken) {
@@ -610,6 +613,10 @@ pub fn (mut p HTMLParser) schedule_resume_check() {
 }
 
 fn (mut p HTMLParser) resume_after_parser_blocking_script() {
+	// A synchronous event-loop spin can deliver readiness while the script
+	// that wrote this pending script is still running. Its outermost return
+	// requeues the check through decrement_script_nesting_level().
+	if p.script_nesting_level != 0 { return }
 	if !p.parser_pause_flag || p.aborted || p.stop_parsing || p.document_.has_been_destroyed()
 		|| p.document_stream_generation != p.document_.html_parser_stream_generation() {
 		return
