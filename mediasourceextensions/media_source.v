@@ -180,13 +180,27 @@ pub fn (mut source MediaSource) set_duration(duration f64) ! {
 			return error('InvalidStateError: A SourceBuffer is still updating')
 		}
 	}
-	source.run_duration_change_algorithm(duration)
+	source.run_duration_change_algorithm(duration)!
 }
 
-pub fn (mut source MediaSource) run_duration_change_algorithm(duration f64) {
-	if source.duration_ == duration {
-		return
+pub fn (mut source MediaSource) run_duration_change_algorithm(duration f64) ! {
+	if source.duration_ == duration { return }
+	mut highest_presentation_timestamp := f64(0)
+	mut highest_end_time := f64(0)
+	for index in 0 .. source.source_buffers_.length() {
+		buffer := source.source_buffers_.item(index) or { continue }
+		start := buffer.highest_presentation_timestamp()
+		end := buffer.highest_end_time()
+		if start > highest_presentation_timestamp { highest_presentation_timestamp = start }
+		if end > highest_end_time { highest_end_time = end }
 	}
+	if duration < highest_presentation_timestamp {
+		return error('InvalidStateError: Duration would truncate buffered coded frames')
+	}
+	source.assign_duration_change(math.max(duration, highest_end_time))
+}
+
+pub fn (mut source MediaSource) assign_duration_change(duration f64) {
 	source.duration_ = duration
 	if mut media_element := source.media_element_assigned_to_ {
 		media_element.media_source_set_duration(duration)
@@ -227,7 +241,7 @@ pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamE
 			end := buffer.highest_end_time()
 			if end > highest_end_time { highest_end_time = end }
 		}
-		source.run_duration_change_algorithm(highest_end_time)
+		source.assign_duration_change(highest_end_time)
 	}
 	// FIXME: Signal completion and decode/network errors to the media element.
 }

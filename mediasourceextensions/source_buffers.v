@@ -393,7 +393,7 @@ fn (mut buffer SourceBuffer) run_append_error_algorithm() {
 fn (mut buffer SourceBuffer) on_first_initialization_segment_processed(duration ?f64, tracks []WebMTrackInfo) {
 	mut media_source := buffer.media_source_ or { return }
 	if math.is_nan(media_source.duration()) {
-		media_source.run_duration_change_algorithm(duration or { math.inf(1) })
+		media_source.assign_duration_change(duration or { math.inf(1) })
 	}
 	mut media_element := media_source.media_element_assigned_to() or { return }
 	mut has_active_track := false
@@ -464,8 +464,12 @@ fn (mut buffer SourceBuffer) update_ready_state_and_duration_after_coded_frame_p
 	media_element.media_source_update_buffered_ranges(ranges)
 	group_end_timestamp := buffer.processor_.group_end_timestamp()
 	if group_end_timestamp > media_source.duration() {
-		media_source.run_duration_change_algorithm(group_end_timestamp)
+		media_source.assign_duration_change(group_end_timestamp)
 	}
+}
+
+pub fn (buffer &SourceBuffer) highest_presentation_timestamp() f64 {
+	return buffer.processor_.highest_presentation_timestamp()
 }
 
 pub fn (buffer &SourceBuffer) highest_end_time() f64 {

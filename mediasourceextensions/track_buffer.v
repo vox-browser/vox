@@ -48,18 +48,24 @@ struct FrameRun {
 mut:
 	frames             []DemuxedCodedFrame
 	presentation_start f64
+	highest_presentation_start f64
 	presentation_end   f64
 }
 
 fn (mut run FrameRun) recalculate_bounds() {
 	if run.frames.len == 0 {
 		run.presentation_start = 0
+		run.highest_presentation_start = 0
 		run.presentation_end = 0
 		return
 	}
 	run.presentation_start = run.frames[0].timestamp
+	run.highest_presentation_start = run.presentation_start
 	run.presentation_end = run.frames[0].timestamp + run.frames[0].duration
 	for frame in run.frames[1..] {
+		if frame.timestamp > run.highest_presentation_start {
+			run.highest_presentation_start = frame.timestamp
+		}
 		if frame.timestamp < run.presentation_start {
 			run.presentation_start = frame.timestamp
 		}
@@ -141,6 +147,14 @@ pub fn (demuxer &TrackBufferDemuxer) get_preferred_track_for_type(type_ MediaSou
 
 pub fn (demuxer &TrackBufferDemuxer) duration_of_track(_ WebMTrackInfo) f64 {
 	return 0
+}
+
+pub fn (demuxer &TrackBufferDemuxer) highest_presentation_timestamp() f64 {
+	mut highest := f64(0)
+	for run in demuxer.runs_ {
+		if run.highest_presentation_start > highest { highest = run.highest_presentation_start }
+	}
+	return highest
 }
 
 pub fn (demuxer &TrackBufferDemuxer) highest_end_time() f64 {

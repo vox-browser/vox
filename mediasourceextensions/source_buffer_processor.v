@@ -147,6 +147,15 @@ pub fn (processor &SourceBufferProcessor) track_buffers() map[u64]&TrackBuffer {
 	return processor.track_buffers_.clone()
 }
 
+pub fn (processor &SourceBufferProcessor) highest_presentation_timestamp() f64 {
+	mut highest := f64(0)
+	for _, track_buffer in processor.track_buffers_ {
+		start := track_buffer.demuxer.highest_presentation_timestamp()
+		if start > highest { highest = start }
+	}
+	return highest
+}
+
 pub fn (processor &SourceBufferProcessor) highest_end_time() f64 {
 	mut highest := f64(0)
 	for _, track_buffer in processor.track_buffers_ {
