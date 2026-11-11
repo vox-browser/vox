@@ -9,8 +9,8 @@ struct RegexCompilerOrderedRange {
 }
 
 fn regex_compiler_sort_ranges(mut ranges []RegexCharRange) {
-	// Preserve Rust's stable equal-start ordering; the VM's large-range binary
-	// search is right-biased, so reordering equal starts can change its answer.
+	// Binary search in the VM requires sorted, disjoint ranges. Merge ranges
+	// that overlap or touch so an inner range cannot hide an enclosing one.
 	mut ordered := []RegexCompilerOrderedRange{cap: ranges.len}
 	for index, value in ranges {
 		ordered << RegexCompilerOrderedRange{ value: value, index: index }
@@ -22,7 +22,22 @@ fn regex_compiler_sort_ranges(mut ranges []RegexCharRange) {
 		if a.index > b.index { return 1 }
 		return 0
 	})
-	for index, item in ordered { ranges[index] = item.value }
+	mut merged_count := 0
+	for item in ordered {
+		range := item.value
+		if merged_count > 0 {
+			last := ranges[merged_count - 1]
+			if range.start <= last.end || (last.end < 0xffffffff && range.start == last.end + 1) {
+				if range.end > last.end {
+					ranges[merged_count - 1] = RegexCharRange{ start: last.start, end: range.end }
+				}
+				continue
+			}
+		}
+		ranges[merged_count] = range
+		merged_count++
+	}
+	ranges.trim(merged_count)
 }
 
 fn (mut c RegexBytecodeCompiler) point_string(points []u32) {
