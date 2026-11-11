@@ -101,7 +101,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate(size uint, capacity uint, 
 			return allocator.allocate_small_storage(size, zero_fill)
 		}
 	}
-	return allocator.allocate_large_storage(size, capacity, zero_fill, guard_size)
+	return allocator.allocate_large_storage(size, capacity, guard_size)
 }
 
 fn (mut allocator PrimitiveStorageAllocator) allocate_small_storage(size uint, zero_fill ZeroFillNewBytes) !PrimitiveStorageAllocation {
@@ -137,7 +137,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_from_new_slab(class_index 
 	return PrimitiveStorageAllocation{ offset: slab_offset, capacity: slot_size, reservation_size: slot_size, committed_size: slot_size, small_allocation: PrimitiveStorageSmallAllocation{ size_class_index: class_index, slab_index: slab_index, slot_index: 0 } }
 }
 
-fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, capacity uint, zero_fill ZeroFillNewBytes, guard_size uint) !PrimitiveStorageAllocation {
+fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, capacity uint, guard_size uint) !PrimitiveStorageAllocation {
 	allocator.ensure_cage()!
 	rounded_capacity := round_storage_up_to_page(capacity)
 	rounded_guard_size := round_storage_up_to_page(guard_size)
@@ -151,7 +151,7 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_large_storage(size uint, c
 			return err
 		}
 	}
-	if zero_fill == .yes && size > 0 { unsafe { C.memset(allocator.cage_base + offset, 0, size) } }
+	// Freshly committed anonymous pages are zeroed lazily by the operating system.
 	return PrimitiveStorageAllocation{ offset: offset, capacity: capacity, reservation_size: reservation_size, committed_size: committed_size }
 }
 
@@ -178,11 +178,14 @@ fn (mut allocator PrimitiveStorageAllocator) allocate_cage_range(requested_size 
 
 fn (mut allocator PrimitiveStorageAllocator) resize(mut allocation PrimitiveStorageAllocation, old_size uint, new_size uint, zero_fill ZeroFillNewBytes) ! {
 	assert new_size <= allocation.capacity
+	old_committed_size := allocation.committed_size
 	if allocation.small_allocation == none {
 		allocator.commit_large_storage(mut allocation, new_size)!
 	}
-	if zero_fill == .yes && new_size > old_size {
-		unsafe { C.memset(allocator.data(allocation, old_size), 0, new_size - old_size) }
+	// Only the previously committed tail can still contain old data.
+	zero_fill_end := math.min(new_size, old_committed_size)
+	if zero_fill == .yes && zero_fill_end > old_size {
+		unsafe { C.memset(allocator.data(allocation, old_size), 0, zero_fill_end - old_size) }
 	}
 }
 
@@ -208,7 +211,7 @@ fn (mut allocator PrimitiveStorageAllocator) reallocate(old_allocation Primitive
 	if bytes_to_copy > 0 {
 		unsafe { C.memcpy(allocator.cage_base + allocation.offset, allocator.cage_base + old_allocation.offset, bytes_to_copy) }
 	}
-	if zero_fill == .yes && new_size > old_size {
+	if zero_fill == .yes && new_size > old_size && allocation.small_allocation != none {
 		unsafe { C.memset(allocator.cage_base + allocation.offset + old_size, 0, new_size - old_size) }
 	}
 	return allocation
