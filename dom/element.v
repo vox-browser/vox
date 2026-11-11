@@ -7061,6 +7061,21 @@ pub fn (e &Element) get_an_elements_target(target ?string) string {
 	return ''
 }
 
+// https://html.spec.whatwg.org/multipage/dom.html#advisory-information
+pub fn (e &Element) advisory_information() string {
+	for current := ?&Element(e); current != none; {
+		element := current or { break }
+		if element.is_html_element() {
+			if title := element.get_attribute('title') {
+				// An empty title stops inheritance and means no advisory information.
+				return title.replace('\r\n', '\n').replace('\r', '\n')
+			}
+		}
+		current = element.as_node().flat_tree_parent_element()
+	}
+	return ''
+}
+
 // https://html.spec.whatwg.org/multipage/links.html#get-an-element's-noopener
 pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFeatureNoOpener {
 	_ = url

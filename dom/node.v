@@ -1250,7 +1250,7 @@ pub fn (n &Node) enclosing_link_element() ?&HTMLAnchorElement {
 				return unsafe { &HTMLAnchorElement(element) }
 			}
 		}
-		current = node.parent()
+		current = node.flat_tree_parent()
 	}
 	return none
 }
