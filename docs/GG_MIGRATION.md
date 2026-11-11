@@ -878,6 +878,17 @@ scrolling diagnostic per variant retires 3.7% more instructions with GG but
 uses fewer cycles (4.65 versus 4.91 billion) and less CPU time (2,132 versus
 2,204 ms).
 
+`VOX_PROFILE_INSTRUCTIONS` checkpoints place the whole gap in the final painted
+frame (layout attach to frame completion): 148.1M instructions with Skia and
+199.7M with GG (medians of seven). The GG text adapter copied each run's raster
+region into a gg.canvas surface and back one bounds-checked pixel at a time;
+`0f920c4be`/`8bca8a7a8` copy rows. On the rebuilt bundle (receipt
+`20261111-083210-ab5858e7`) the final frame costs 150.0M with Skia and 181.0M
+with GG, and launch-to-PNG medians are 2,310,080,617 for Skia and 2,298,753,850
+for GG (-0.49%, inside the ±40M spread between runs), with every load and
+scroll pixel check exact and 59.90 FPS for both. The remaining frame cost is
+gg.canvas' scalar glyph-mask blitting, which lives in V's `gg.canvas`.
+
 **Canvas.** The vox-tests `CPU_RASTER_CHECKS=perf` mode draws eight fixed
 800x600 scenes through the former Skia bridge (the oracle) and through
 cpuraster, alternating sides, and requires identical final pixels. After the
