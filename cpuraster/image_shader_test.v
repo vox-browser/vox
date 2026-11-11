@@ -259,3 +259,50 @@ fn test_blit_row_s32a_opaque_shortcuts_match_the_blend() {
 		assert pixels == expected, 'source ${source:08x}'
 	}
 }
+
+// NEON's per-byte filter_and_scale_by_alpha(), wrapping each 16-bit lane.
+fn neon_filter_and_scale_by_alpha(x u32, y u32, a00 u32, a01 u32, a10 u32, a11 u32, scale u32) u32 {
+	mut out := u32(0)
+	for c in 0 .. 4 {
+		shift := u32(8 * c)
+		p00 := (a00 >> shift) & 0xff
+		p01 := (a01 >> shift) & 0xff
+		p10 := (a10 >> shift) & 0xff
+		p11 := (a11 >> shift) & 0xff
+		mut t := (p01 * (16 - y)) * x
+		t = (t + (p11 * y) * x) & 0xffff
+		t = (t + (p00 * (16 - y)) * (16 - x)) & 0xffff
+		t = (t + (p10 * y) * (16 - x)) & 0xffff
+		if scale < 256 {
+			t = ((t >> 8) * scale) & 0xffff
+		}
+		out |= ((t >> 8) & 0xff) << shift
+	}
+	return out
+}
+
+// The two-bytes-per-word bilinear filter equals NEON's per-byte lanes for
+// every weight pair and alpha scale, including saturated channels.
+fn test_word_bilinear_filter_matches_neon_lanes() {
+	mut seed := u32(0x9e3779b9)
+	mut quads := [[u32(0xffffffff), 0xffffffff, 0xffffffff, 0xffffffff],
+		[u32(0), 0, 0, 0], [u32(0xff00ff00), 0x00ff00ff, 0xffff0000, 0x0000ffff]]
+	for _ in 0 .. 200 {
+		mut quad := []u32{len: 4}
+		for k in 0 .. 4 {
+			seed = seed * 1664525 + 1013904223
+			quad[k] = seed
+		}
+		quads << quad
+	}
+	for q in quads {
+		for scale in [u32(256), 255, 200, 128, 1, 0] {
+			for y in u32(0) .. 16 {
+				for x in u32(0) .. 16 {
+					assert filter_and_scale_by_alpha(x, y, q[0], q[1], q[2], q[3], scale) == neon_filter_and_scale_by_alpha(x,
+						y, q[0], q[1], q[2], q[3], scale)
+				}
+			}
+		}
+	}
+}
