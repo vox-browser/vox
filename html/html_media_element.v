@@ -1508,7 +1508,8 @@ pub fn (mut element HTMLMediaElement) restart_fetch_at_offset(offset u64) ! {
 	if failure := element.verify_response_or_get_failure_reason(response, false) {
 		return error(failure)
 	}
-	element.last_fetch_offset_ = offset
+	// A server may ignore Range and return the entire resource instead.
+	element.last_fetch_offset_ = if response.status == 200 { u64(0) } else { offset }
 	element.process_media_data(.ongoing)
 }
 
