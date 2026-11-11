@@ -7061,7 +7061,7 @@ pub fn (e &Element) get_an_elements_target(target ?string) string {
 pub fn (e &Element) get_an_elements_noopener(url URL, target string) TokenizedFeatureNoOpener {
 	_ = url
 	// 1. If element's link types include the noopener or noreferrer keyword, then return true.
-	rel := to_ascii_lowercase(e.get_attribute_value('rel'))
+	rel := to_ascii_lowercase(e.get_attribute_ns(none, 'rel') or { '' })
 	link_types := split_on_ascii_whitespace(rel)
 	if 'noopener' in link_types || 'noreferrer' in link_types {
 		return .yes
