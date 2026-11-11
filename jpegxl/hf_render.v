@@ -44,11 +44,11 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 		samples[c] = []f32{len: lf[c].width * lf[c].height * 64}
 	}
 	// Reused across blocks: dequantized coefficients sized for the largest
-	// transform seen so far, and 8x8 DCT input/output/vector scratch.
+	// transform seen so far, and 8x8 DCT input/output/transform scratch.
 	mut dequant_buffers := [3][]f32{}
 	mut dct_input := []f32{len: 64}
 	mut dct_output := []f32{len: 64}
-	mut dct_vector := []f32{len: 8}
+	mut dct_vector := []f32{len: 64}
 	for block in blocks {
 		dims := block.transform.covered_blocks()
 		count := dims[0] * dims[1] * 64
