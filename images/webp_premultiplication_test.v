@@ -65,26 +65,7 @@ fn test_chromium_webp_paint_truncates_alpha_without_changing_decoder_pixels() {
 			'Tests/Browser/Brave/input/decode-alpha-tagged.webp'))!
 		tagged_image := app.create_image_from_resource_bytes('https://webp.test/tagged.webp',
 			tagged)!
-		if tagged_bitmap := chromium_tagged_webp_paint_bitmap(tagged) {
-			assert tagged_image.nr_channels == 7
-			assert tagged_bitmap.data[..4] == [u8(127), 64, 0, 128]
-			assert unsafe { (&u8(tagged_image.data)).vbytes(4) } == [u8(127), 64, 0, 128]
-		} else {
-			// Unit-only builds can omit the optional isolated Skia backend.
-			assert tagged_image.nr_channels == 6
-		}
-	}
-}
-
-fn test_chromium_tagged_webp_keeps_publisher_source_colors_for_gpu_upload() {
-	$if macos {
-		bytes := os.read_bytes(os.join_path(@VMODROOT,
-			'Tests/Browser/Brave/sites/engadget/bodies/d0abc28efd5dff5763262ebf44cd2245e65c9b890600d0b57a6a6488a9c26dca'))!
-		if bitmap := chromium_tagged_webp_paint_bitmap(bytes) {
-			assert bitmap.width == 428 && bitmap.height == 241 && bitmap.pitch == 1712
-			// The opaque source pixels survive the decode; the browser pixel
-			// regression checks color conversion after native GPU upload.
-			assert bitmap.data[..12] == [u8(95), 107, 121, 255, 94, 105, 120, 255, 96, 108, 122, 255]
-		}
+		// ICC-tagged WebP decodes straight before its color transform.
+		assert tagged_image.nr_channels == 6
 	}
 }

@@ -43,8 +43,6 @@ def main():
                       (reference / 'build.log').read_text().splitlines()
                       if line.startswith('Building Vox (single C) with: '))
     options, cflags = build_line.split(' -cflags ', 1)
-    # Historical receipts can predate the built-in planar converter.
-    cflags += ' -DLADYBIRD_V_HAS_V_YUV'
     options = shlex.split(options)
     if '-prod' not in options or '-parallel-cc' in options:
         raise ValueError('Reference must be literal single-unit V -prod')
@@ -53,10 +51,9 @@ def main():
                     if (Path(folder) / 'compiler/v').is_file())
     clang = subprocess.check_output(['xcrun', '--find', 'clang'], text=True).strip()
     native = ROOT / 'Build/v/Vox.app/Contents/MacOS'
-    skia = ROOT.parent / '3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic'
-    ldflags = (f'-Wl,-dead_strip,-dead_strip_dylibs '
-               f'-L{native} -lLadybirdVSkiaText -Wl,-rpath,@executable_path '
-               f'-Wl,-rpath,{skia}/lib -lc++ {skia}/lib/libicuuc.dylib -Wl,-rpath,{skia}/lib')
+    # Native dependencies (ICU, FFmpeg, AVIF) come from Homebrew through the V
+    # sources' own flags or runtime dlopen; the bundle links no native bridge.
+    ldflags = '-Wl,-dead_strip,-dead_strip_dylibs -Wl,-rpath,@executable_path'
     base = [str(compiler), *options, '-cflags', cflags, '-ldflags', ldflags]
     environment = dict(os.environ, V_MACOS_V3_NO_FALLBACK='1', VFLAGS='', CFLAGS='', LDFLAGS='')
     launcher = output / 'compiler-launcher'

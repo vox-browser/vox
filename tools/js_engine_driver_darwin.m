@@ -34,9 +34,9 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-// Only the browser links the renderer bridge. Helpers that inherit
-// DYLD_INSERT_LIBRARIES (the adblock filter process) skip the driver.
-extern void ladybird_v_skia_set_root_raster_scroll_y(double) __attribute__((weak_import));
+// Helpers that inherit DYLD_INSERT_LIBRARIES (the adblock filter process)
+// skip the driver.
+static const char adblock_helper[] = "VoxAdblockWorker";
 
 enum { kMaximumContexts = 512 };
 static JSGlobalContextRef contexts[kMaximumContexts];
@@ -390,7 +390,7 @@ static void wait_for_window(void)
 
 __attribute__((constructor)) static void boot(void)
 {
-    if (!ladybird_v_skia_set_root_raster_scroll_y) return;
+    if (!strcmp(getprogname(), adblock_helper)) return;
     // Script-worker children re-execute Vox with private --vox-* arguments.
     char **arguments = *_NSGetArgv();
     for (int i = 1; arguments[i]; i++)

@@ -32,7 +32,6 @@ def main():
     fragment_path.write_text(fragment)
     executable = output / "native_idle_memory_test"
     command = ["clang", "-O2", "-fobjc-arc", "-fblocks",
-               "-DLADYBIRD_V_HAS_SKIA_TEXT",
                '-DVOX_NATIVE_MEMORY_FRAGMENT="' + str(fragment_path) + '"',
                str(test), "-framework", "Cocoa", "-framework", "CoreImage",
                "-framework", "QuartzCore", "-framework", "IOSurface", "-o", str(executable)]

@@ -153,15 +153,15 @@ class PreciseScrollTests(unittest.TestCase):
     def test_packaged_codec_change_invalidates_completed_measurement(self):
         self.check_isolated_launch(False, mutate_packaged=True)
 
-    def test_explicit_image_renderer_is_loaded_and_pinned(self):
-        self.check_isolated_launch(False, image_bridge=True)
+    def test_bundled_native_library_is_loaded_and_pinned(self):
+        self.check_isolated_launch(False, native_image=True)
 
-    def test_image_renderer_change_invalidates_completed_measurement(self):
-        self.check_isolated_launch(False, image_bridge=True, mutate_image=True)
+    def test_bundled_native_library_change_invalidates_completed_measurement(self):
+        self.check_isolated_launch(False, native_image=True, mutate_image=True)
 
     def check_isolated_launch(self, allow_fixture_navigation, v_profile_reset=False,
                               capture_faults=False, mutate_worker=False, mutate_packaged=False,
-                              image_bridge=False, mutate_image=False, disable_gpu_canvas=False,
+                              native_image=False, mutate_image=False, disable_gpu_canvas=False,
                               diagnostic_environment=None, zoom=None, sample_stalls_ms=None):
         seeded = {}
         if allow_fixture_navigation:
@@ -186,12 +186,9 @@ class PreciseScrollTests(unittest.TestCase):
             def compile_probe(command, **kwargs):
                 Path(command[-1]).write_bytes(b"fixture probe")
 
-            renderer = binary.parent / 'libLadybirdVSkiaText.dylib'
-            renderer.write_bytes(b'fixture renderer')
-            if image_bridge:
-                image_renderer = root / 'candidate/libVoxGraphite.dylib'
-                image_renderer.parent.mkdir()
-                image_renderer.write_bytes(b'fixture image renderer')
+            if native_image:
+                avif = binary.parent / 'libVoxAVIF.dylib'
+                avif.write_bytes(b'fixture AVIF library')
             worker = binary.parent / 'VoxAdblockWorker'
             worker.write_bytes(b'fixture worker')
             if mutate_packaged:
@@ -226,14 +223,12 @@ class PreciseScrollTests(unittest.TestCase):
                 kwargs["stdout"].write(log_for())
                 if sample_stalls_ms is not None:
                     kwargs['stdout'].write(f'SCROLL_STALL_DIAGNOSTIC threshold_ms={sample_stalls_ms} samples=0 frames=0 dropped=0 failures=0\n')
-                kwargs["stdout"].write('SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex='
-                                       + os.fsencode(renderer).hex() + '\n')
-                if image_bridge:
-                    self.assertIn(str(image_renderer), env['DYLD_INSERT_LIBRARIES'].split(':'))
-                    kwargs["stdout"].write('SCROLL_IMAGE name=libVoxGraphite.dylib path_hex='
-                                           + os.fsencode(image_renderer).hex() + '\n')
+                if native_image:
+                    self.assertNotIn(str(avif), env['DYLD_INSERT_LIBRARIES'].split(':'))
+                    kwargs["stdout"].write('SCROLL_IMAGE name=libVoxAVIF.dylib path_hex='
+                                           + os.fsencode(avif).hex() + '\n')
                     if mutate_image:
-                        image_renderer.write_bytes(b'changed image renderer')
+                        avif.write_bytes(b'changed AVIF library')
                 if mutate_worker:
                     worker.write_bytes(b'changed worker')
                     if mutate_worker == 'restore':
@@ -259,8 +254,6 @@ class PreciseScrollTests(unittest.TestCase):
                 arguments.append("--capture-faults")
             if sample_stalls_ms is not None:
                 arguments.extend(['--sample-stalls-ms', str(sample_stalls_ms)])
-            if image_bridge:
-                arguments.extend(['--image-renderer-bridge', str(image_renderer)])
             for name,value in (diagnostic_environment or {}).items():
                 arguments.extend(['--env',name+'='+value])
             with mock.patch.object(measure_precise_scroll.sys, "platform", "darwin"), \
@@ -293,10 +286,10 @@ class PreciseScrollTests(unittest.TestCase):
                 self.assertFalse((output / 'summary.json').exists())
                 return
             self.assertTrue(evidence["valid"])
-            if image_bridge:
-                self.assertEqual(evidence['image_renderer_bridge'], str(image_renderer))
-                self.assertEqual(evidence['source_and_binary_sha256'][str(image_renderer)],
-                                 hashlib.sha256(b'fixture image renderer').hexdigest())
+            self.assertEqual(evidence['native_images'], {'libVoxAVIF.dylib': str(avif)} if native_image else {})
+            if native_image:
+                self.assertEqual(evidence['source_and_binary_sha256'][str(avif)],
+                                 hashlib.sha256(b'fixture AVIF library').hexdigest())
             self.assertEqual(evidence["diagnostic_only"], bool(v_profile_reset or capture_faults
                              or diagnostic_environment or sample_stalls_ms is not None))
             header = Path(measure_precise_scroll.__file__).with_name("precise_scroll_faults.h")
@@ -382,13 +375,21 @@ class PreciseScrollTests(unittest.TestCase):
                 measure_precise_scroll.runtime_input_paths(
                     binary, {'VOX_ADBLOCK_ENGINE_ASSETS': str(selected)}, checkout)
 
-    def test_native_images_reject_shared_paths_missing_records_and_malformed_paths(self):
+    def test_native_images_reject_shared_paths_unknown_libraries_and_malformed_paths(self):
         binary = Path('/tmp/selected bundle/Vox')
-        name = 'libLadybirdVSkiaText.dylib'
+        name = 'libVoxAVIF.dylib'
         selected = binary.parent / name
         good = f'SCROLL_IMAGE name={name} path_hex={os.fsencode(selected).hex()}\n'
         self.assertEqual(measure_precise_scroll.verify_native_images(good, binary), {name: str(selected.resolve())})
-        for bad in ['', good.replace(os.fsencode(selected).hex(), os.fsencode('/tmp/Build/v/' + name).hex()),
+        engine = binary.parent / 'libVoxJSCOnV8.dylib'
+        both = good + f'SCROLL_IMAGE name={engine.name} path_hex={os.fsencode(engine).hex()}\n'
+        self.assertEqual(measure_precise_scroll.verify_native_images(both, binary),
+                         {name: str(selected.resolve()), engine.name: str(engine.resolve())})
+        # The helpers are optional; a page that loads none records no identity.
+        self.assertEqual(measure_precise_scroll.verify_native_images('', binary), {})
+        unknown = binary.parent / 'libUnknown.dylib'
+        for bad in [good.replace(os.fsencode(selected).hex(), os.fsencode('/tmp/Build/v/' + name).hex()),
+                    f'SCROLL_IMAGE name={unknown.name} path_hex={os.fsencode(unknown).hex()}\n',
                     f'SCROLL_IMAGE name={name} path_hex=invalid\n',
                     f'SCROLL_IMAGE name=../{name} path_hex={os.fsencode(selected).hex()}\n']:
             with self.subTest(log=bad), self.assertRaises(ValueError):
@@ -460,7 +461,7 @@ class PreciseScrollTests(unittest.TestCase):
     def test_native_observer_records_the_library_actually_loaded(self):
         with tempfile.TemporaryDirectory(prefix='native image ü ') as temporary:
             root = Path(temporary)
-            library = root / 'libLadybirdVSkiaText.dylib'
+            library = root / 'libVoxAVIF.dylib'
             stub = root / 'library.c'
             stub.write_text('int fixture_value(void) { return 17; }\n')
             subprocess.run(['clang', '-dynamiclib', str(stub), '-o', str(library)], check=True)
@@ -719,72 +720,6 @@ class RecordedNativeFaultTests(unittest.TestCase):
     def test_installed_fault_recorder_alone_is_not_a_fault(self):
         log = 'SCROLL_FAULT_RECORDER installed\nSCROLL_FAULT_IMAGE header=100000000\n' + log_for()
         self.assertEqual(summarize(log, 12)['completed_inputs'], 12)
-
-
-class ExplicitNativeCandidateIdentityTests(unittest.TestCase):
-    def test_declared_image_backend_requires_exact_loaded_identity(self):
-        binary = Path('/bundle/Vox')
-        image = Path('/candidate/libVoxGraphite.dylib')
-        native = binary.parent / 'libLadybirdVSkiaText.dylib'
-        lines = ['SCROLL_IMAGE name=' + path.name + ' path_hex=' + os.fsencode(path).hex()
-                 for path in [native, image]]
-        log = '\n'.join(lines)
-        selected = measure_precise_scroll.verify_native_images(log, binary, image_bridge=image)
-        self.assertEqual(selected[image.name], str(image))
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, binary)
-        with self.assertRaisesRegex(ValueError, 'Missing selected image'):
-            measure_precise_scroll.verify_native_images(lines[0], binary, image_bridge=image)
-        wrong = log.replace(os.fsencode(image).hex(), os.fsencode(binary.parent / image.name).hex())
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(wrong, binary, image_bridge=image)
-
-    def test_declared_candidate_keeps_other_libraries_in_bundle(self):
-        binary = Path('/bundle/Vox')
-        candidate = Path('/candidate/libLadybirdVSkiaText.dylib')
-        log = '\n'.join('SCROLL_IMAGE name=' + name + ' path_hex=' + os.fsencode(path).hex()
-                        for name, path in [('libLadybirdVSkiaText.dylib', candidate),
-                                           ('libVoxGraphite.dylib', binary.parent / 'libVoxGraphite.dylib')])
-        images = measure_precise_scroll.verify_native_images(log, binary, candidate)
-        self.assertEqual(images['libLadybirdVSkiaText.dylib'], str(candidate))
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, binary)
-
-    def test_declared_picture_backend_requires_exact_loaded_identity(self):
-        binary = Path('/bundle/Vox')
-        picture = Path('/candidate/libVoxGraphiteDawn.dylib')
-        native = binary.parent / 'libLadybirdVSkiaText.dylib'
-        lines = ['SCROLL_IMAGE name=' + path.name + ' path_hex=' + os.fsencode(path).hex()
-                 for path in [native, picture]]
-        log = '\n'.join(lines)
-        selected = measure_precise_scroll.verify_native_images(log, binary, picture_bridge=picture)
-        self.assertEqual(selected[picture.name], str(picture))
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, binary)
-        with self.assertRaisesRegex(ValueError, 'Missing selected picture'):
-            measure_precise_scroll.verify_native_images(lines[0], binary, picture_bridge=picture)
-        wrong = log.replace(os.fsencode(picture).hex(),
-                            os.fsencode(binary.parent / picture.name).hex())
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(wrong, binary, picture_bridge=picture)
-        unrelated = Path('/candidate/libVoxGraphite.dylib')
-        log += '\nSCROLL_IMAGE name=' + unrelated.name + ' path_hex=' + os.fsencode(unrelated).hex()
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, binary, picture_bridge=picture)
-
-    def test_declared_candidate_rejects_the_original_bridge(self):
-        binary = Path('/bundle/Vox')
-        path = binary.parent / 'libLadybirdVSkiaText.dylib'
-        log = 'SCROLL_IMAGE name=libLadybirdVSkiaText.dylib path_hex=' + os.fsencode(path).hex()
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, binary, Path('/candidate/libLadybirdVSkiaText.dylib'))
-
-    def test_candidate_does_not_authorize_an_external_gpu_backend(self):
-        path = Path('/candidate/libVoxGraphite.dylib')
-        log = 'SCROLL_IMAGE name=libVoxGraphite.dylib path_hex=' + os.fsencode(path).hex()
-        with self.assertRaises(ValueError):
-            measure_precise_scroll.verify_native_images(log, Path('/bundle/Vox'),
-                                                       Path('/candidate/libLadybirdVSkiaText.dylib'))
 
 
 if __name__ == "__main__":

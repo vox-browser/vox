@@ -195,9 +195,7 @@ fn C.native_draw_line_srgb(from_x f32, from_y f32, to_x f32, to_y f32, thickness
 
 fn C.native_draw_rounded_rect_srgb(x f32, y f32, width f32, height f32, top_left_x f32, top_left_y f32, top_right_x f32, top_right_y f32, bottom_right_x f32, bottom_right_y f32, bottom_left_x f32, bottom_left_y f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32, color gg.Color, fill int, thickness f32, anti_alias int)
 
-fn C.native_begin_skia_command_group(x f32, y f32, width f32, height f32, transform_a f32, transform_b f32, transform_c f32, transform_d f32, transform_e f32, transform_f f32, page_x f32, page_y f32, scroll_y f32, canvas_width f32, canvas_height f32)
 
-fn C.native_end_skia_command_group()
 
 fn C.native_draw_outer_box_shadow_srgb(source_x f32, source_y f32, source_width f32, source_height f32, source_radius f32, clip_x f32, clip_y f32, clip_width f32, clip_height f32, clip_radius f32, blur f32, color gg.Color)
 
@@ -5075,14 +5073,6 @@ fn (mut app BrowserApp) create_image_from_resource_bytes(image_url string, bytes
 			// Share the document decoder's pixels with native image and background
 			// painting. Animated streams keep AppKit's frame provider below.
 			if app.ctx.native_rendering {
-				if app.document != unsafe { nil } && app.document.font_rendering_policy() == .chromium {
-					if bitmap := chromium_tagged_webp_paint_bitmap(bytes) {
-						mut image := gg.Image{width: bitmap.width, height: bitmap.height,
-							nr_channels: 7, ok: true, data: bitmap.data.data}
-						image.id = app.ctx.cache_image(image)
-						return image
-					}
-				}
 				// Resource publication supplies a completed body, even when HTTP
 				// delivered it in chunks. Transport progress does not create an
 				// incremental RGB paint generator. Existing decoded images are
@@ -5886,21 +5876,9 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 			}
 		}
 	}
-	if command.kind == 'begin_skia_command_group' {
-		$if macos {
-			if app.ctx.native_rendering {
-				matrix := normalized_paint_transform(command.transform)
-				C.native_begin_skia_command_group(f32(command.x), f32(command.y), f32(command.width), f32(command.height), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, 0, f32(app.ctx.width), f32(app.ctx.height))
-			}
-		}
-		return
-	}
-	if command.kind == 'end_skia_command_group' {
-		$if macos {
-			if app.ctx.native_rendering {
-				C.native_end_skia_command_group()
-			}
-		}
+	// A command group only marks its extent for scroll raster reuse and clip
+	// depth; the native painter draws its member commands directly.
+	if command.kind in ['begin_skia_command_group', 'end_skia_command_group'] {
 		return
 	}
 	if command.kind == 'begin_css_effect_layer' {
@@ -8445,9 +8423,6 @@ fn main() {
 	}
 	needs_native_font_replay := !options.headless_smoke && !options.headless_layout_tree
 	$if macos {
-		$if vox_gg_canvas ? {
-			install_gg_canvas_renderers()
-		}
 		if needs_native_font_replay {
 			C.native_prevent_app_nap()
 		}

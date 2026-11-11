@@ -118,7 +118,7 @@ class ProductionBuildTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             mac = root / 'Build/production-build'
-            prior = dict(id='mac-request', renderer='skia', c_mode='single')
+            prior = dict(id='mac-request', c_mode='single')
             build.write_json(mac / 'request.json', prior)
             build.write_json(mac / 'latest.json', dict(executable_sha256='mac-binary'))
             def compile(repo, stage, receipt, environment):
@@ -131,46 +131,12 @@ class ProductionBuildTests(unittest.TestCase):
                 build.enqueue(root, background=False)
                 state = build.production_state_dir(root)
                 self.assertEqual(state, root / 'Build/linux/production-build')
-                self.assertEqual(json.loads((state / 'request.json').read_text())['renderer'], 'gg')
                 self.assertEqual(build.build_pending(root, compile, foreground=True), 0)
             self.assertEqual((root / 'Build/linux/vox').read_bytes(), b'linux-browser')
             self.assertEqual(json.loads((mac / 'request.json').read_text()), prior)
             self.assertEqual(json.loads((mac / 'latest.json').read_text())['executable_sha256'], 'mac-binary')
             self.assertTrue((root / 'Build/linux/production-build/bundle.lock').exists())
             self.assertFalse((mac / 'bundle.lock').exists())
-
-    def test_explicit_pending_legacy_request_survives_automatic_requests(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);state=build.production_state_dir(root)
-            with patch.object(build,'validate_repository'), patch.object(build,'git',return_value=b'head'):
-                build.enqueue(root,background=False,renderer='skia')
-                build.enqueue(root,background=False)
-                pending=json.loads((state/'request.json').read_text())
-                self.assertEqual(pending['renderer'],'skia')
-                build.write_json(state/'started.json',dict(id=pending['id']))
-                build.enqueue(root,background=False)
-                self.assertEqual(json.loads((state/'request.json').read_text())['renderer'],'gg')
-
-    @unittest.skipUnless(sys.platform=='darwin','macOS application-directory publication')
-    def test_renderer_change_is_not_lost_when_source_inputs_are_unchanged(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root=Path(directory);self.app(root/'Build/v',b'old')
-            state=build.production_state_dir(root)
-            build.write_json(state/'request.json',dict(id='one',renderer='gg'))
-            modes=[]
-            def compile(repo,stage,receipt,environment):
-                mode=environment['VOX_USE_SKIA'];modes.append(mode)
-                self.app(stage,mode.encode())
-                build.write_json(receipt/'renderer.json',dict(default='skia' if mode=='1' else 'gg',skia_free=False))
-                if len(modes)==1:
-                    build.write_json(state/'request.json',dict(id='two',renderer='skia'))
-                return 0
-            with patch.object(build,'validate_repository'), patch.object(build,'repository_state',return_value=dict(head='same')):
-                self.assertEqual(build.build_pending(root,compile),0)
-            self.assertEqual(modes,['0','1'])
-            result=json.loads((state/'latest.json').read_text())
-            self.assertEqual(result['renderer']['default'],'skia')
-            self.assertFalse(result['renderer']['skia_free'])
 
     def test_literal_prod_request_survives_automatic_requests_and_can_be_reset(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -409,7 +375,6 @@ class ProductionBuildTests(unittest.TestCase):
                 'main.v', 'layout/paint.v', 'layout/test_helpers.v',
                 'native/include/native_browser_tab_titles_test_darwin.h',
                 'tools/test_runtime_bridge.h', 'tools/native_runtime_test.h',
-                'tools/build_mac_graphite.py',
                 'tools/prepare_ui2.py', 'tools/adblock-worker-mini/main.v',
                 'adblock/engine.snapshot.bin', 'packaging/Vox.entitlements.plist',
             ]
@@ -605,12 +570,11 @@ class ProductionBuildTests(unittest.TestCase):
             self.assertEqual(old.read_bytes(), b'new commit')
 
     def test_auto_build_drops_measurement_overrides_and_keeps_dependency_locations(self):
-        env = dict(PATH='bin', V_BIN='/compiler/v', GIT_DIR='other', VOX_PRIVATE_GRAPHITE_HELPER='probe',
+        env = dict(PATH='bin', V_BIN='/compiler/v', GIT_DIR='other', VOX_PRIVATE_PROFILE='probe',
                    VOX_PHASE_DIAGNOSTICS='1', LADYBIRD_V_PROFILE='trace',
-                   LADYBIRD_SOURCE_DIR='/upstream', LADYBIRD_VCPKG_TRIPLET='arm64-osx-dynamic')
+                   LADYBIRD_SOURCE_DIR='/upstream')
         cleaned = build.production_environment(env)
-        self.assertEqual(cleaned, {k: env[k] for k in ('PATH', 'V_BIN', 'LADYBIRD_SOURCE_DIR',
-                                                      'LADYBIRD_VCPKG_TRIPLET')})
+        self.assertEqual(cleaned, {k: env[k] for k in ('PATH', 'V_BIN', 'LADYBIRD_SOURCE_DIR')})
 
     def test_hook_installation_is_idempotent_and_preserves_custom_hooks(self):
         with tempfile.TemporaryDirectory() as directory:

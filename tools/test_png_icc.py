@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Check native PNG ICC metadata, source color spaces and image caches on macOS."""
+"""Check native PNG ICC extraction, metadata tagging and PNG headers on macOS."""
 
 import argparse
 import json
 import os
-import platform
 from pathlib import Path
 import struct
 import subprocess
@@ -92,47 +91,17 @@ def main():
     compile_command = ['clang', '-fobjc-arc', '-O1', '-g', '-fsanitize=address',
                        '-fno-omit-frame-pointer', '-I' + str(REPO), '-framework', 'Foundation',
                        '-lz', str(REPO / 'tools/native_png_icc_test.m'), '-o', str(executable)]
-    upstream = Path(os.environ.get('LADYBIRD_SOURCE_DIR', REPO.parent / '3rd/ladybird'))
-    triplet = os.environ.get('LADYBIRD_VCPKG_TRIPLET',
-                            'arm64-osx-dynamic' if platform.machine() == 'arm64' else 'x64-osx-dynamic')
-    skia = upstream / 'Build/release/vcpkg_installed' / triplet
-    native = output / 'native_skia_image_color_profile_test'
-    webp = output / 'native_webp_color_profile_test'
-    cache = output / 'native_graphite_raster_cache_test'
     headers = output / 'native_png_headers_test'
     headers_compile = ['clang', '-fobjc-arc', '-O1', '-g', '-fsanitize=address',
                        '-fno-omit-frame-pointer', '-I' + str(REPO),
                        '-framework', 'Cocoa', '-framework', 'ImageIO', '-lz',
                        str(REPO / 'tools/native_png_headers_test.m'), '-o', str(headers)]
-    native_compile = ['clang++', '-std=c++20', '-O1', '-g', '-fno-rtti', '-fsanitize=address',
-                      '-fno-omit-frame-pointer', '-x', 'objective-c++',
-                      '-I' + str(skia / 'include/skia'), '-I' + str(skia / 'include'),
-                      str(REPO / 'tools/native_skia_image_color_profile_test.cpp'),
-                      '-L' + str(skia / 'lib'), '-lskia', '-Wl,-rpath,' + str(skia / 'lib')]
-    for framework in ['CoreFoundation', 'CoreGraphics', 'CoreText', 'Foundation', 'Metal', 'IOSurface']:
-        native_compile += ['-framework', framework]
-    native_compile += ['-o', str(native)]
-    webp_compile = ['clang++', '-std=c++20', '-O1', '-g', '-fno-rtti', '-fsanitize=address',
-                    '-fno-omit-frame-pointer', '-I' + str(skia / 'include/skia'),
-                    '-I' + str(skia / 'include'),
-                    str(REPO / 'tools/native_webp_color_profile_test.cpp'),
-                    '-L' + str(skia / 'lib'), '-lskia', '-Wl,-rpath,' + str(skia / 'lib'),
-                    '-o', str(webp)]
     for name, command, limit in [
         ('compile', compile_command, '12'),
         ('runtime', [sys.executable, str(Path(__file__).resolve()), '--execute', str(executable),
                      '--output-dir', str(output)], '3'),
         ('headers-compile', headers_compile, '12'),
         ('headers-runtime', [str(headers)], '3'),
-        ('source-compile', native_compile, '12'),
-        ('source-runtime', [str(native)], '3'),
-        ('webp-source-compile', webp_compile, '12'),
-        ('webp-source-runtime', [str(webp), str(REPO / 'Tests/Browser/Brave/sites/engadget/bodies' /
-                                 'd0abc28efd5dff5763262ebf44cd2245e65c9b890600d0b57a6a6488a9c26dca')], '3'),
-        ('cache-compile', ['clang++', '-std=c++20', '-O1', '-g', '-fsanitize=address',
-                           '-fno-omit-frame-pointer', str(REPO / 'tools/native_graphite_raster_cache_test.cpp'),
-                           '-o', str(cache)], '12'),
-        ('cache-runtime', [str(cache)], '3'),
     ]:
         with (output / (name + '.log')).open('x') as log:
             result = subprocess.run([sys.executable, str(REPO / 'tools/run_memory_bounded.py'),

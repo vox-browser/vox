@@ -15,14 +15,11 @@ set -eu
 #
 # Environment overrides:
 #   V_BIN                     V compiler executable
-#   VOX_USE_SKIA=1             build the explicit legacy renderer (default: GG adapters)
 #   UI2_SOURCE_DIR            UI2 checkout (defaults to ~/.vmodules/ui2)
 #   LADYBIRD_V_GC            default: prealloc on macOS, boehm on Linux
 #                            accepts boehm, boehm_full, prealloc, or none
 #   LADYBIRD_V_PROFILE       V profiling report path (unset for normal builds)
 #   LADYBIRD_V_PROFILE_FNS   comma-separated C function names to profile
-#   LADYBIRD_SOURCE_DIR       upstream Ladybird checkout used for Skia
-#   LADYBIRD_VCPKG_TRIPLET    upstream vcpkg triplet directory
 #   VOX_BUILD_SCRATCH_DIR     compiler output root (defaults to Build/v)
 #   VOX_BUILD_C_MODE          parallel (default) or single; set by the build supervisor
 #   VOX_V8=1                  experimental: compile with -d vox_v8, which implements the
@@ -70,7 +67,7 @@ case "$(uname -s)" in
 esac
 # Target the app's declared minimum macOS; otherwise clang stamps the host OS
 # as the minimum version. Export it before any native helper is compiled: the
-# bundled Skia text and AVIF bridges are built ahead of the browser, and a
+# AVIF helper is built ahead of the browser, and a
 # build worker that is already running does not see the deploy environment.
 MACOSX_DEPLOYMENT_TARGET=$(plutil -extract LSMinimumSystemVersion raw -o - "$repo_dir/packaging/Info.plist")
 export MACOSX_DEPLOYMENT_TARGET
@@ -119,14 +116,6 @@ if [ ! -x "$v_compiler" ]; then
     exit 1
 fi
 
-# GG is the production default. Keep the shared parallel compiler intact while
-# older installations can use the existing GG-capable compiler. An explicit
-# V_BIN is authoritative: fail if it cannot compile the requested renderer.
-explicit_v_flag=
-if [ -n "${V_BIN:-}" ]; then explicit_v_flag=--explicit; fi
-v_compiler=$(python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" \
-    --skia "${VOX_USE_SKIA:-0}" $explicit_v_flag --fallback "$HOME/code/v-gg/v")
-
 # The browser owns temporary and retained allocations through scoped arenas.
 # Keep the default on that ownership path; collector modes are explicit
 # diagnostic overrides.
@@ -140,8 +129,7 @@ case "$gc_mode" in
 esac
 
 case "$(uname -m)" in
-    arm64|aarch64) default_vcpkg_triplet=arm64-osx-dynamic ;;
-    x86_64|amd64) default_vcpkg_triplet=x64-osx-dynamic ;;
+    arm64|aarch64|x86_64|amd64) ;;
     *)
         echo "Unsupported macOS architecture: $(uname -m)" >&2
         exit 1
@@ -183,65 +171,21 @@ if [ "$gc_mode" = boehm ] || [ "$gc_mode" = boehm_full ]; then
 fi
 # Mach-O keeps referenced entry points and initializers. Drop unreachable native
 # backends and their unreferenced dylibs from the production executable.
-extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs"
-upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
-vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
-skia_root="$upstream_dir/Build/release/vcpkg_installed/$vcpkg_triplet"
-# V sources link Homebrew's FreeType and ICU 78 by default. While this script
-# still links the vcpkg Skia/FFmpeg/AVIF bridges, select vcpkg's copies instead
-# so a bundle never loads two FreeTypes or two ICUs.
-vcpkg_define=""
-if [ -d "$skia_root/lib" ]; then
-    vcpkg_define="-d vox_vcpkg"
-fi
-# The browser exports the planar converter from media/yuv_bridge.v. Its pure V
-# implementation preserves the previous decoder's integer color quantization.
-extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_V_YUV"
+# Helper libraries (AVIF, JPEG XL, the optional V8 bridge) are installed
+# beside the executable and resolve through @executable_path.
+extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs -Wl,-rpath,@executable_path"
+# Native dependencies come from Homebrew (see README.md). AVIF and FFmpeg are
+# optional: without them the bundle omits AVIF decoding and video playback.
 avif_library=""
-if [ -f "$skia_root/lib/libavif.dylib" ] && [ -f "$skia_root/include/avif/avif.h" ]; then
+if pkg-config --exists libavif 2>/dev/null; then
     avif_library="$build_dir/libVoxAVIF.dylib"
-    python3 "$repo_dir/tools/build_native_avif.py" --sdk-root "$skia_root" --output "$avif_library"
+    python3 "$repo_dir/tools/build_native_avif.py" --output "$avif_library"
 fi
-bridge_library=""
-graphite_library=""
-dawn_library=""
-if [ -f "$skia_root/lib/libskia.dylib" ] && [ -d "$skia_root/include/skia/include" ]; then
-    graphite_library="$build_dir/libVoxGraphite.dylib"
-    if [ -n "${VOX_PRIVATE_GRAPHITE_HELPER:-}" ]; then
-        python3 "$VOX_PRIVATE_GRAPHITE_HELPER" --repo "$repo_dir" \
-            --skia-root "$skia_root" --output "$graphite_library"
-    else
-        python3 "$repo_dir/tools/build_mac_graphite.py" --skia-root "$skia_root" \
-            --output "$graphite_library"
-    fi
-    dawn_library="$build_dir/libVoxGraphiteDawn.dylib"
-    python3 "$repo_dir/tools/build_mac_graphite_dawn.py" --skia-root "$skia_root" \
-        --output "$dawn_library"
-    bridge_library="$build_dir/libLadybirdVSkiaText.dylib"
-    snapshot_deflate=$(python3 "$repo_dir/tools/build_snapshot_deflate.py")
-    cp "$snapshot_deflate/libdeflate-1.24/COPYING" "$resources_dir/libdeflate-LICENSE.txt"
-    clang++ -std=c++20 -O3 -fno-rtti -fPIC -dynamiclib -x objective-c++ \
-		-I"$skia_root/include/skia" -I"$skia_root/include" \
-		-DLADYBIRD_V_HAS_SNAPSHOT_DEFLATE -I"$snapshot_deflate/libdeflate-1.24" \
-		"$repo_dir/native_skia_text_darwin.cpp" \
-        -x none "$snapshot_deflate/snapshot-build/libdeflate.a" \
-        "-Wl,-unexported_symbol,_libdeflate_*" \
-        -L"$skia_root/lib" -lskia \
-        -framework CoreFoundation -framework CoreGraphics -framework CoreText -framework Foundation -framework Metal -framework IOSurface \
-        -Wl,-rpath,"$skia_root/lib" \
-        -Wl,-install_name,@rpath/libLadybirdVSkiaText.dylib \
-        -o "$bridge_library"
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_SKIA_TEXT"
-    extra_ldflags="$extra_ldflags -L$build_dir -lLadybirdVSkiaText -Wl,-rpath,@executable_path -Wl,-rpath,$skia_root/lib -lc++"
-fi
-if [ -f "$skia_root/lib/libavformat.dylib" ] && [ -f "$skia_root/include/libavformat/avformat.h" ]; then
-    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG -I$skia_root/include"
-    # Adding the vcpkg include root also selects that ICU's versioned C API
-    # declarations in the LibUnicode bridges, so link its matching runtime.
-    # Other modules also add Homebrew ICU search paths. Use the exact library
-    # so their earlier -L flags cannot select a different ICU major version.
-    # Codec entry points load on first use through native/include/native_ffmpeg_darwin.h.
-    extra_ldflags="$extra_ldflags $skia_root/lib/libicuuc.dylib -Wl,-rpath,$skia_root/lib"
+# FFmpeg's libraries load on first use (native/include/native_ffmpeg_darwin.h),
+# at the major versions of these headers; only the headers are needed here.
+if pkg-config --exists libavformat libavcodec libavutil libswscale 2>/dev/null; then
+    ffmpeg_cflags=$(pkg-config --cflags libavformat libavcodec libavutil libswscale)
+    extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_FFMPEG $ffmpeg_cflags"
 fi
 
 # `-d vox_v8` (VOX_V8=1) is an experimental compile-time backend: the
@@ -266,7 +210,7 @@ if [ "${VOX_V8:-0}" = 1 ]; then
         "$repo_dir/browserjs/v8/jsc_on_v8.cpp" "$v8_runtime" \
         -framework CoreFoundation -Wl,-rpath,"$v8_root/lib" \
         -Wl,-install_name,@rpath/libVoxJSCOnV8.dylib -o "$v8_library"
-    extra_ldflags="$extra_ldflags -L$build_dir -lVoxJSCOnV8 -Wl,-rpath,@executable_path"
+    extra_ldflags="$extra_ldflags -L$build_dir -lVoxJSCOnV8"
 fi
 
 # This V checkout currently selects both the C and native `time.zoneinfo`
@@ -303,15 +247,8 @@ fi
 # V drivers without manifest defaults need the backend passed explicitly.
 v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
-set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf $vcpkg_define \
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
-# Verify the staged compiler's actual library too. Legacy builds are explicit;
-# unsupported default compilers must not silently produce a Skia-default app.
-python3 "$repo_dir/tools/renderer_build.py" "$v_compiler" --explicit \
-    --skia "${VOX_USE_SKIA:-0}" --receipt "$VOX_BUILD_RECEIPT_DIR/renderer.json" >/dev/null
-if [ "${VOX_USE_SKIA:-0}" != 1 ]; then
-    set -- "$@" -d vox_gg_canvas
-fi
 if [ "${VOX_KEEP_C:-0}" = 1 ]; then
     set -- "$@" -keepc
 fi
@@ -387,7 +324,7 @@ fi
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
-set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf $vcpkg_define -d vox_filter_worker_minimal_links \
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then
@@ -519,41 +456,9 @@ else
     rm -f "$binary_dir/libVoxAVIF.dylib"
 fi
 
-if [ -n "$bridge_library" ]; then
-    bridge_resource_tmp=$(mktemp "$binary_dir/.skia-bridge.XXXXXX")
-    cp "$bridge_library" "$bridge_resource_tmp"
-    chmod 755 "$bridge_resource_tmp"
-    mv -f "$bridge_resource_tmp" "$binary_dir/libLadybirdVSkiaText.dylib"
-    if command -v codesign >/dev/null 2>&1; then
-        codesign --force --sign - "$binary_dir/libLadybirdVSkiaText.dylib" >/dev/null
-    fi
-else
-    rm -f "$binary_dir/libLadybirdVSkiaText.dylib"
-fi
-
-if [ -n "$graphite_library" ]; then
-    graphite_resource_tmp=$(mktemp "$binary_dir/.graphite-bridge.XXXXXX")
-    cp "$graphite_library" "$graphite_resource_tmp"
-    chmod 755 "$graphite_resource_tmp"
-    mv -f "$graphite_resource_tmp" "$binary_dir/libVoxGraphite.dylib"
-    if command -v codesign >/dev/null 2>&1; then
-        codesign --force --sign - "$binary_dir/libVoxGraphite.dylib" >/dev/null
-    fi
-else
-    rm -f "$binary_dir/libVoxGraphite.dylib"
-fi
-
-if [ -n "$dawn_library" ]; then
-    dawn_resource_tmp=$(mktemp "$binary_dir/.dawn-bridge.XXXXXX")
-    cp "$dawn_library" "$dawn_resource_tmp"
-    chmod 755 "$dawn_resource_tmp"
-    mv -f "$dawn_resource_tmp" "$binary_dir/libVoxGraphiteDawn.dylib"
-    if command -v codesign >/dev/null 2>&1; then
-        codesign --force --sign - "$binary_dir/libVoxGraphiteDawn.dylib" >/dev/null
-    fi
-else
-    rm -f "$binary_dir/libVoxGraphiteDawn.dylib"
-fi
+# Earlier bundles shipped Skia bridges; Vox no longer builds or loads them.
+rm -f "$binary_dir/libLadybirdVSkiaText.dylib" "$binary_dir/libVoxGraphite.dylib" \
+    "$binary_dir/libVoxGraphiteDawn.dylib" "$resources_dir/libdeflate-LICENSE.txt"
 
 if [ -n "$v8_library" ]; then
     v8_resource_tmp=$(mktemp "$binary_dir/.v8-backend.XXXXXX")

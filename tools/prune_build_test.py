@@ -41,7 +41,7 @@ class PruneBuildTests(unittest.TestCase):
             write(build / 'fresh-job/log.txt', mtime=time.time())
             for name in ('deps/skia/lib.a', 'libregex/libregex.a', 'pixel-tools/pixel_diff',
                          'production-build/latest.json', 'v/Vox.app/Contents/MacOS/Vox',
-                         'v/libVoxGraphite.dylib'):
+                         'v/libVoxAVIF.dylib'):
                 write(build / name)
             write(build / 'v/compiler-output.abc123/Vox.o')
             write(build / 'v/Vox-profile.c')

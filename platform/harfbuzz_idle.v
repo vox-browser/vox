@@ -48,7 +48,7 @@ fn release_unused_harfbuzz_fonts() {
 	if !released { return }
 	harfbuzz_emoji_attempted = false
 	harfbuzz_cache_generation++
-	skia_system_face_advances_lookup.bitmap_faces.clear()
+	harfbuzz_bitmap_face_cache.faces.clear()
 	$if macos {
 		// Freed native font tables otherwise remain in malloc's free-page cache.
 		// Zero requests all available unused pages; live allocations stay valid.
