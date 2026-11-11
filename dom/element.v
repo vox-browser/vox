@@ -6538,12 +6538,12 @@ pub fn (e &Element) has_hidden_ancestor() bool {
 }
 
 // Returns true when this element's id is mentioned by another element's
-// aria-labelledby attribute somewhere in the same root subtree.
+// aria-labelledby or aria-describedby attribute in the same root subtree.
 //
 // The C++ implementation consults Web::ARIA::AriaData, which collects every
 // IDREF-list ARIA attribute. The translated ARIA module depends on DOM and
 // therefore cannot be imported here without a cycle, so this DOM-side bridge
-// scans aria-labelledby tokens directly.
+// scans the naming and description IDREF tokens directly.
 pub fn (e &Element) is_referenced() bool {
 	id := e.id() or { return false }
 	root := e.as_node().root()
@@ -6553,10 +6553,12 @@ pub fn (e &Element) is_referenced() bool {
 fn id_referenced_in_subtree(node &Node, id string) bool {
 	if element := node.as_element() {
 		if element.is_html_element() {
-			if labelled_by := element.get_attribute('aria-labelledby') {
-				for token in labelled_by.fields() {
-					if token == id {
-						return true
+			for attribute in ['aria-labelledby', 'aria-describedby'] {
+				if references := element.get_attribute(attribute) {
+					for token in references.fields() {
+						if token == id {
+							return true
+						}
 					}
 				}
 			}
