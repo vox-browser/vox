@@ -93,6 +93,15 @@ fn (mut app BrowserApp) suspend_displayed_page_for_back_forward_cache(add_histor
 	return app.cache_displayed_page(from_index)
 }
 
+// A replacing navigation drops the current entry and, like any new entry,
+// every forward entry. Neither cached page remains reachable.
+fn (mut app BrowserApp) discard_replaced_history_entry_cache() bool {
+	app.back_forward_cache.traversal_from_index = -1
+	app.evict_back_forward_cached_pages(.after_index, app.history_index)
+	app.evict_back_forward_cached_pages(.at_index, app.history_index)
+	return false
+}
+
 fn (mut app BrowserApp) cache_displayed_page(history_index int) bool {
 	if history_index < 0 || history_index >= app.history.len || app.back_forward_cache_blocker() != '' {
 		return false

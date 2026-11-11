@@ -3,6 +3,7 @@ module main
 import contentsecuritypolicy as csp
 import html
 import url
+import x.json2
 
 // LocalNavigable::evaluate_javascript_url: non-string completion values leave
 // the active document in place. In particular, javascript:void(0) is not a fetch.
@@ -53,4 +54,28 @@ fn (mut app BrowserApp) navigate_javascript_url(address url.URL) {
 		app.install_loaded_page(loaded, false)
 		app.update_current_history_entry(loaded)
 	}
+}
+
+// Location's href setters, assign(), replace() and reload() share the bridge's
+// pending navigation string. The realm records which method produced the
+// destination: replace() commits in place of the current history entry, so a
+// page that forwards itself (such as a script challenge) is not reached again
+// by traversal, and reload() fetches the current entry again.
+fn (mut app BrowserApp) navigate_from_script(destination string, base string) {
+	mode := app.take_script_navigation_mode(destination)
+	if mode == 'reload' {
+		app.reload()
+		return
+	}
+	app.replace_next_navigation_history = mode == 'replace'
+	app.navigate(resolve_document_reference(destination, base), true)
+	app.replace_next_navigation_history = false
+}
+
+fn (mut app BrowserApp) take_script_navigation_mode(destination string) string {
+	if app.js_runtime == unsafe { nil } { return '' }
+	mode := app.js_runtime.evaluate_host('typeof __ladybirdTakeNavigationMode==="function"?__ladybirdTakeNavigationMode(${json2.encode(destination)}):""') or {
+		return ''
+	}
+	return mode
 }

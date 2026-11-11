@@ -29,8 +29,9 @@ fn vox_service_navigation_ui() i32 {
 }
 
 struct DeferredNavigationInput {
-	address       string
-	add_history   bool
+	address         string
+	add_history     bool
+	replace_history bool
 	history_delta int
 	is_history    bool
 }
@@ -172,6 +173,7 @@ fn (mut app BrowserApp) poll_deferred_navigation_input() {
 	if input.is_history {
 		app.history_go(input.history_delta)
 	} else {
+		app.replace_next_navigation_history = input.replace_history
 		app.navigate(address, input.add_history)
 	}
 }

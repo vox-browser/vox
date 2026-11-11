@@ -1984,7 +1984,7 @@ fn javascript_bootstrap() string {
 		// call debug, trace, group and time freely; a missing method throws
 		// before the page renders. Output keeps the existing log record.
 		'const console = (function () { const logs = function () { return __state.logs; }, text = function (values) { return Array.prototype.map.call(values, String).join(" "); }, counts = new Map(), timers = new Map(); let indent = ""; const print = function (prefix, values) { logs().push(indent + prefix + text(values)); }; const label = function (value) { return value === undefined ? "default" : String(value); }; const now = function () { return typeof performance !== "undefined" ? performance.now() : Date.now(); }; return { log: function () { print("", arguments); }, info: function () { print("", arguments); }, warn: function () { print("", arguments); }, error: function () { print("", arguments); }, debug: function () { print("", arguments); }, trace: function () { print("Trace: ", arguments); }, dir: function (item) { print("", [item]); }, dirxml: function () { print("", arguments); }, table: function (data) { print("", [data]); }, assert: function (condition) { if (condition) return; const data = Array.prototype.slice.call(arguments, 1); print("Assertion failed" + (data.length ? ": " : ""), data); }, clear: function () {}, count: function (name) { const key = label(name), value = (counts.get(key) || 0) + 1; counts.set(key, value); print("", [key + ": " + value]); }, countReset: function (name) { const key = label(name); if (counts.has(key)) counts.set(key, 0); else print("", ["Count for " + key + " does not exist"]); }, group: function () { if (arguments.length) print("", arguments); indent += "  "; }, groupCollapsed: function () { if (arguments.length) print("", arguments); indent += "  "; }, groupEnd: function () { indent = indent.slice(2); }, time: function (name) { const key = label(name); if (timers.has(key)) print("", ["Timer " + key + " already exists"]); else timers.set(key, now()); }, timeLog: function (name) { const key = label(name); if (!timers.has(key)) { print("", ["Timer " + key + " does not exist"]); return; } print("", [key + ": " + (now() - timers.get(key)) + " ms"].concat(Array.prototype.slice.call(arguments, 1))); }, timeEnd: function (name) { const key = label(name); if (!timers.has(key)) { print("", ["Timer " + key + " does not exist"]); return; } print("", [key + ": " + (now() - timers.get(key)) + " ms"]); timers.delete(key); } }; })();',
-		'const location = {},__LocationURL=globalThis.URL; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __state.navigate = String(v); } }); for(const name of ["protocol","host","hostname","port","pathname","search","hash"]){Object.defineProperty(location,name,{enumerable:true,get:function(){return new __LocationURL(__state.location)[name];},set:function(value){const record=new __LocationURL(__state.location);record[name]=value;__state.navigate=record.href;}});} Object.defineProperty(location,"origin",{enumerable:true,get:function(){return new __LocationURL(__state.location).origin;}}); location.toString=function(){return __state.location;};',
+		'const location = {},__LocationURL=globalThis.URL; let __locationNavigationMode="",__locationNavigationURL=""; const __locationNavigate=function(address,mode){__state.navigate=address;__locationNavigationURL=address;__locationNavigationMode=mode;}; Object.defineProperty(location, "href", { get: function () { return __state.location; }, set: function (v) { __locationNavigate(String(v),""); } }); for(const name of ["protocol","host","hostname","port","pathname","search","hash"]){Object.defineProperty(location,name,{enumerable:true,get:function(){return new __LocationURL(__state.location)[name];},set:function(value){const record=new __LocationURL(__state.location);record[name]=value;__locationNavigate(record.href,"");}});} Object.defineProperty(location,"origin",{enumerable:true,get:function(){return new __LocationURL(__state.location).origin;}}); location.toString=function(){return __state.location;}; location.assign=function(address){if(arguments.length===0)throw new TypeError("Location.assign requires 1 argument");__locationNavigate(String(address),"");}; location.replace=function(address){if(arguments.length===0)throw new TypeError("Location.replace requires 1 argument");__locationNavigate(String(address),"replace");}; location.reload=function(){__locationNavigate(__state.location,"reload");}; globalThis.__ladybirdTakeNavigationMode=function(address){const mode=__locationNavigationURL===address?__locationNavigationMode:"";__locationNavigationMode="";__locationNavigationURL="";return mode;};',
 		'Object.defineProperty(document,"location",{get:function(){return location;},set:function(value){location.href=value;},enumerable:true,configurable:true});',
 		'const __observeHistoryURL=globalThis.__ladybirdObserveHistoryURL;delete globalThis.__ladybirdObserveHistoryURL;__observeHistoryURL(function(url){__state.location=url;});',
 		'const __documentCookie=globalThis.__ladybirdDocumentCookie,__documentCookieException=globalThis.DOMException; function __callDocumentCookie(input){try{return __documentCookie(input);}catch(error){const message=String(error.message);if(message.indexOf("SecurityError:")===0)throw new __documentCookieException(message.slice(14).trim(),"SecurityError");throw error;}} Object.defineProperty(document,"cookie",{enumerable:true,configurable:true,get:function(){return __callDocumentCookie("get");},set:function(value){__callDocumentCookie("set:"+String(value));}});',
@@ -2004,7 +2004,7 @@ fn javascript_bootstrap() string {
 		'window.__ladybirdFinalize = function (withoutLogs) { return __compactTakePendingDOMState(true,withoutLogs!==true,true); }; window.__ladybirdTakePendingDOMMutations=function(){return __compactTakePendingDOMState(false,false,false);}; window.__ladybirdTakeTaskOutput=__compactTakeTaskOutput;',
 		'window.__ladybirdClearLogs = function () { __state.logs = []; };',
 		// The back/forward cache keeps a realm whose navigation request was consumed.
-		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; };',
+		'window.__ladybirdClearNavigation = function () { __state.navigate = ""; __ladybirdTakeNavigationMode(""); };',
 		compact_event_dispatch_bootstrap(),
 		compact_mutation_observer_bootstrap(),
 		'__compactInstallNativeAttributeMutations();',
@@ -3412,7 +3412,7 @@ fn (mut app BrowserApp) poll_javascript_tasks() {
 	app.synchronize_javascript_task_paint(replayed_effects)
 	app.update_window_title()
 	if destination := commit.navigation {
-		if destination != '' { app.navigate(resolve_document_reference(destination, app.document.url.serialize()), true) }
+		if destination != '' { app.navigate_from_script(destination, app.document.url.serialize()) }
 	}
 }
 
@@ -3518,7 +3518,7 @@ fn (mut app BrowserApp) dispatch_javascript_event(name string, element &dom.Elem
 	replayed_effects := app.js_runtime.take_document_replay_effects()
 	app.synchronize_javascript_task_paint(replayed_effects)
 	if destination != '' {
-		app.navigate(resolve_document_reference(destination, app.address), true)
+		app.navigate_from_script(destination, app.address)
 		// A script navigation also consumes the pending link default action
 		// when the native input scope defers its generation change.
 		return true
@@ -3857,6 +3857,11 @@ fn document_has_window_event_handlers(document &dom.Document) bool {
 fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history bool) {
 	load_instruction_stage := processmetrics.begin_instruction_stage('document_install')
 	defer { load_instruction_stage.finish() }
+	// A location.replace() commit overwrites the current entry; its outgoing
+	// page can no longer be reached by traversal, so it is not cached.
+	replace_history := add_history && app.history_replacement_generation == app.navigation_generation
+		&& app.history_index >= 0 && app.history_index < app.history.len
+	app.history_replacement_generation = -1
 	if add_history { app.save_history_scroll_position() }
 	app.dismiss_browser_popup()
 	loaded := if is_browser_history_url(input_loaded.url) {
@@ -3873,7 +3878,11 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	mut outgoing := app.document_session()
 	initiator_origin := if outgoing.document != unsafe { nil } { ?dom.Origin(outgoing.document.origin()) } else { none }
 	previous_document := if outgoing.document != unsafe { nil } { ?&dom.Document(outgoing.document) } else { ?&dom.Document(none) }
-	back_forward_cached := app.suspend_displayed_page_for_back_forward_cache(add_history)
+	back_forward_cached := if replace_history {
+		app.discard_replaced_history_entry_cache()
+	} else {
+		app.suspend_displayed_page_for_back_forward_cache(add_history)
+	}
 	mut incoming := new_document_session()
 	incoming.markup = loaded.markup
 	incoming.content_type = loaded.content_type
@@ -4029,12 +4038,17 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 		if app.history_index + 1 < app.history.len {
 			app.history = app.history[..app.history_index + 1].clone()
 		}
-		app.history << HistoryEntry{
+		entry := HistoryEntry{
 			url: loaded.url
 			markup: loaded.markup
 			content_type: loaded.content_type
 			response_headers: loaded.response_headers
 			response_status: loaded.response_status
+		}
+		if replace_history {
+			app.history[app.history_index] = entry
+		} else {
+			app.history << entry
 		}
 		app.history_index = app.history.len - 1
 	}
@@ -4066,7 +4080,7 @@ fn (mut app BrowserApp) install_loaded_page(input_loaded LoadedPage, add_history
 	app.update_window_title()
 	if destination := javascript_navigation {
 		if destination != '' && destination != loaded.url {
-			app.navigate(resolve_document_reference(destination, loaded.url), true)
+			app.navigate_from_script(destination, loaded.url)
 		}
 	}
 }
@@ -4092,8 +4106,10 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	defer {
 		$if gcboehm ? { C.GC_reachable_here(address.str) }
 	}
+	replace_history := add_history && app.replace_next_navigation_history
+	app.replace_next_navigation_history = false
 	if app.navigation_work_depth > 0 {
-		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history}
+		app.deferred_navigation_input = DeferredNavigationInput{address: address, add_history: add_history, replace_history: replace_history}
 		return
 	}
 	base := if app.history_index >= 0 && app.history_index < app.history.len {
@@ -4104,6 +4120,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	resolved := resolve_url(address, base)
 	if resolved in [browser_history_url, browser_new_tab_url] {
 		app.navigation_generation++
+		app.history_replacement_generation = if replace_history { app.navigation_generation } else { -1 }
 		app.pending_navigation = none
 		app.cancel_navigation_fetch()
 		app.cancel_page_preload()
@@ -4126,6 +4143,7 @@ fn (mut app BrowserApp) navigate(address string, add_history bool) {
 	app.load_status = 'Loading ${resolved}'
 	app.status = app.load_status
 	app.navigation_generation++
+	app.history_replacement_generation = if replace_history { app.navigation_generation } else { -1 }
 	app.pending_navigation = none
 	app.cancel_navigation_fetch()
 	app.cancel_page_preload()

@@ -23,6 +23,11 @@ mut:
 	pending_page_preload           ?PendingPagePreload
 	navigation_preloaded_resources map[string]PreloadedResource
 	pending_native_navigation      ?string
+	// location.replace() commits its navigation in place of the current
+	// session history entry. The request applies to the next navigate() call;
+	// the generation then identifies the navigation whose commit replaces.
+	replace_next_navigation_history bool
+	history_replacement_generation  int = -1
 }
 
 struct HistoryEntry {
