@@ -2055,6 +2055,12 @@ pub fn (mut e Element) set_attribute_node_ns_for_bindings(attr &Attr_) !&Attr_ {
 	return attrs.set_attribute(attr)!
 }
 
+pub fn (mut e Element) ensure_attribute_capacity(capacity int) {
+	if capacity <= 0 { return }
+	mut attrs := e.ensure_attributes()
+	attrs.attrs.ensure_cap(capacity)
+}
+
 // https://dom.spec.whatwg.org/#dom-element-appendattribute
 pub fn (mut e Element) append_attribute_by_name(name string, value string) {
 	mut attrs := e.ensure_attributes()

@@ -1339,6 +1339,7 @@ fn (mut p HTMLParser) create_element_for(token &HTMLToken, namespace_ ?string, i
 	}
 	// Append each attribute in the token to element. Foreign-content attributes
 	// carry a prefix and namespace from adjust_foreign_attributes().
+	element.ensure_attribute_capacity(token.attributes.len)
 	for attribute in token.attributes {
 		if attribute.prefix != none || attribute.namespace_ != none {
 			element.set_attribute_value_ns(p.own_tokenizer_string(attribute.local_name), p.own_tokenizer_string(attribute.value), p.own_tokenizer_optional_string(attribute.prefix), p.own_tokenizer_optional_string(attribute.namespace_))
