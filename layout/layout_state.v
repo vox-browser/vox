@@ -40,6 +40,7 @@ mut:
 	relative_inset_basis_width_   ?CSSPixels
 	relative_inset_basis_height_  ?CSSPixels
 	box_model_percentage_basis_ ?CSSPixels
+ had_clearance_ bool
  collapsed_flow_margin_bottom_ ?CSSPixels
 	abspos_containing_block_rect_ ?css.CSSPixelRect
 	used_grid_template_columns    []CSSPixels
@@ -63,6 +64,7 @@ mut:
 	hidden_by_collapsed_columns_ bool
 	has_line_clamp_point_         bool
 	is_invisible_for_line_clamp_  bool
+	clip_decided_by_parent_       ?css.CSSPixelRect
 	derived_first_baseline_       ?CSSPixels
 	derived_last_baseline_        ?CSSPixels
 	derived_vertical_first_baseline_ ?CSSPixels
@@ -86,6 +88,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		relative_inset_basis_width_: rare.relative_inset_basis_width_
 		relative_inset_basis_height_: rare.relative_inset_basis_height_
 		box_model_percentage_basis_: rare.box_model_percentage_basis_
+ had_clearance_: rare.had_clearance_
  collapsed_flow_margin_bottom_:rare.collapsed_flow_margin_bottom_
 		abspos_containing_block_rect_: rare.abspos_containing_block_rect_
 		used_grid_template_columns: rare.used_grid_template_columns.clone()
@@ -109,6 +112,7 @@ fn (rare &UsedValuesRareData) clone() &UsedValuesRareData {
 		hidden_by_collapsed_columns_: rare.hidden_by_collapsed_columns_
 		has_line_clamp_point_: rare.has_line_clamp_point_
 		is_invisible_for_line_clamp_: rare.is_invisible_for_line_clamp_
+		clip_decided_by_parent_: rare.clip_decided_by_parent_
 		derived_first_baseline_: rare.derived_first_baseline_
 		derived_last_baseline_: rare.derived_last_baseline_
 		derived_vertical_first_baseline_: rare.derived_vertical_first_baseline_
@@ -219,6 +223,17 @@ pub fn (u &UsedValues) has_line_clamp_point() bool {
 	return rare.has_line_clamp_point_
 }
 
+fn (u &UsedValues) had_clearance() bool {
+	rare := u.rare_ or { return false }
+	return rare.had_clearance_
+}
+
+fn (mut u UsedValues) set_had_clearance(value bool) {
+	if u.had_clearance() == value { return }
+	mut rare := u.ensure_rare_data()
+	rare.had_clearance_ = value
+}
+
 pub fn (mut u UsedValues) set_has_line_clamp_point(value bool) {
 	if u.has_line_clamp_point() == value { return }
 	mut rare := u.ensure_rare_data()
@@ -234,6 +249,18 @@ pub fn (mut u UsedValues) set_invisible_for_line_clamp(value bool) {
 	if u.is_invisible_for_line_clamp() == value { return }
 	mut rare := u.ensure_rare_data()
 	rare.is_invisible_for_line_clamp_ = value
+	rare.clip_decided_by_parent_ = if value { ?css.CSSPixelRect(css.CSSPixelRect{}) } else { none }
+}
+
+fn (u &UsedValues) clip_decided_by_parent() ?css.CSSPixelRect {
+	rare := u.rare_ or { return none }
+	return rare.clip_decided_by_parent_
+}
+
+fn (mut u UsedValues) set_clip_decided_by_parent(clip ?css.CSSPixelRect) {
+	if u.clip_decided_by_parent() == clip { return }
+	mut rare := u.ensure_rare_data()
+	rare.clip_decided_by_parent_ = clip
 }
 
 pub fn (u &UsedValues) node() &NodeWithStyle {

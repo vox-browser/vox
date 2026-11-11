@@ -4067,6 +4067,19 @@ pub fn (mut loader FontLoader) start_loading_next_url() {
 	url := loader.urls[0]
 	loader.urls.delete(0)
 	loader.has_received_font_data_ = false
+	// Engine-only SVG image documents can use the file-font adapter below
+	// without an installed Fetch host. Apply their resource policy before
+	// either boundary, and keep trying permitted fallback sources.
+	if loader.rule_or_declaration_.environment_settings_object.is_svg_image {
+		resolved_url := resolve_a_style_resource_url(url, loader.rule_or_declaration_) or {
+			loader.try_next_url_or_fail()
+			return
+		}
+		if dom.URL{value: resolved_url}.scheme() != 'data' {
+			loader.try_next_url_or_fail()
+			return
+		}
+	}
 	if host := loader.font_computer.font_fetch_host() {
 		loader_handle := voidptr(&loader)
 		loader.fetch_controller_ = fetch_a_style_resource(url, loader.rule_or_declaration_, .font, .cors,

@@ -84,10 +84,13 @@ fn test_ec_compressed_unprefixed_raw_and_source_validation_boundary() {
 		mut unprefixed := point.x.clone()
 		unprefixed << point.y
 		assert subtle.import_key(.raw, unprefixed, params, true, [.verify], '')!.internal_handle() == key.internal_handle()
-		// Source raw parser neither checks curve membership nor the named scalar width.
+		// Raw imports must validate curve membership just like SPKI and JWK.
 		raw_bad := [u8(4), 0, 0]
-		parsed := subtle.import_key(.raw, raw_bad, params, true, [.verify], '')!
-		assert (parsed.internal_handle() as EcPublicKeyHandle).x == [u8(0)]
+		if _ := subtle.import_key(.raw, raw_bad, params, true, [.verify], '') {
+			assert false
+		} else {
+			assert err.msg() == 'DataError: Invalid key'
+		}
 		if _ := subtle.import_key(.spki, ec_test_key_info(vector.curve, raw_bad, false), params, true, [.verify], '') {
 			assert false
 		} else {
@@ -99,15 +102,17 @@ fn test_ec_compressed_unprefixed_raw_and_source_validation_boundary() {
 			assert err.msg() == 'DataError: Failed to parse key'
 		}
 	}
-	// Compressed size chooses the decoding curve before attaching requested metadata.
+	// A compressed point decoded using its width must also match the requested curve.
 	vector := ec_format_vectors[0]
 	p256 := subtle.import_key(.spki, hex.decode(vector.spki)!, EcKeyImportParams{ name: 'ECDSA', named_curve: 'P-256' }, true, [.verify], '')!
 	point := p256.internal_handle() as EcPublicKeyHandle
 	mut compressed := [u8(2 + (point.y.last() & 1))]
 	compressed << point.x
-	wrong_curve := subtle.import_key(.raw, compressed, EcKeyImportParams{ name: 'ECDSA', named_curve: 'P-384' }, true, [.verify], '')!
-	assert (wrong_curve.algorithm as EcKeyAlgorithm).named_curve == 'P-384'
-	assert wrong_curve.internal_handle() == p256.internal_handle()
+	if _ := subtle.import_key(.raw, compressed, EcKeyImportParams{ name: 'ECDSA', named_curve: 'P-384' }, true, [.verify], '') {
+		assert false
+	} else {
+		assert err.msg().starts_with('DataError:')
+	}
 	if _ := subtle.import_key(.spki, hex.decode(vector.spki)!, EcKeyImportParams{ name: 'ECDSA', named_curve: 'P-384' }, true, [.verify], '') {
 		assert false
 	} else {

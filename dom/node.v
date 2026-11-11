@@ -681,6 +681,7 @@ pub struct HTMLImageElement {
 	HTMLElement
 pub mut:
 	image_element_model_        voidptr = unsafe { nil }
+	is_image_document_image_    bool
 	dimension_attribute_source_ ?&Element
 }
 

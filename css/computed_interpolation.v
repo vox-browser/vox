@@ -9652,7 +9652,7 @@ fn is_stacking_context_creating_value_boundary(property_id PropertyID, value ?&d
 fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 	return match property_id {
 		.backface_visibility, .background_attachment, .clip, .filter, .mask_image, .mix_blend_mode,
-		.opacity, .perspective, .perspective_origin, .rotate, .scale, .transform,
+		.opacity, .overflow_x, .overflow_y, .perspective, .perspective_origin, .rotate, .scale, .transform,
 		.transform_origin, .transform_style, .translate {
 			true
 		}
@@ -9688,7 +9688,7 @@ fn property_rebuilds_accumulated_visual_contexts(property_id PropertyID) bool {
 		.overflow_clip_margin_bottom, .overflow_clip_margin_inline_end,
 		.overflow_clip_margin_inline_start, .overflow_clip_margin_left,
 		.overflow_clip_margin_right, .overflow_clip_margin_top, .overflow_inline, .overflow_wrap,
-		.overflow_x, .overflow_y, .pointer_events, .position_area, .position_try_fallbacks,
+		.pointer_events, .position_area, .position_try_fallbacks,
 		.position_try_order, .scroll_behavior, .scroll_timeline_axis, .scrollbar_color,
 		.scrollbar_gutter, .shape_margin, .shape_rendering, .position, .position_anchor,
 		.position_visibility, .scroll_timeline_name, .shape_image_threshold, .stop_color,
@@ -11240,6 +11240,8 @@ pub mut:
 	animation_layout_compositor_only_ bool
 	longhand_reuse_cache_ &ComputedLonghandReuseCache = unsafe { nil }
 	simple_var_properties_ &SimpleVarPropertyCache = unsafe { nil }
+	quirks_body_identity_ u64
+	quirks_body_used_color_ ?Color
 }
 
 pub fn StyleComputer.new(document &dom.Document) &StyleComputer {
@@ -12090,6 +12092,8 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 	diagnostic_scope_start := begin_diagnostic_instruction_scope()
 	defer { record_diagnostic_instruction_scope(4, diagnostic_scope_start) }
 
+	// Resolve the UA winner after cascade rollback and before longhand caching.
+	resolve_quirks_table_color(abstract_element, mut cascaded_properties)
 	mut properties := computed_properties_with_initial_values()
 	s.prepare_computed_property_page_recycling(properties)
 	properties.viewport_rect_ = s.viewport_rect_

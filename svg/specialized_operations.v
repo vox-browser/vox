@@ -683,7 +683,18 @@ pub fn (viewport &SvgViewport) active_view_element() ?Element {
 }
 
 pub fn (mut viewport SvgViewport) set_active_view_element(element ?Element) {
+	viewport.set_active_view(element, none)
+}
+
+pub fn (mut viewport SvgViewport) set_active_view(element ?Element, specification_viewbox ?ViewBox) {
 	viewport.active_view_element_ = element
+	viewport.view_specification_viewbox = specification_viewbox
+}
+
+pub fn (viewport &SvgViewport) active_view_box_of_svg_view() ?ViewBox {
+	if box := viewport.view_specification_viewbox { return box }
+	if element := viewport.active_view_element_ { return element.active_view_box() }
+	return none
 }
 
 pub fn (_ &SvgViewport) is_svg_container() bool {
@@ -733,11 +744,9 @@ pub fn (viewport &SvgViewport) negotiate_natural_metrics() NaturalMetrics {
 		}
 	}
 	if aspect_ratio == none {
-		if active_view := viewport.active_view_element_ {
-			if box := active_view.active_view_box() {
-				if box.width != 0 || box.height != 0 {
-					aspect_ratio = box.width / box.height
-				}
+		if box := viewport.active_view_box_of_svg_view() {
+			if box.width != 0 && box.height != 0 {
+				aspect_ratio = box.width / box.height
 			}
 		}
 	}

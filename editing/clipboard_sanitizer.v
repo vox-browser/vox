@@ -35,8 +35,9 @@ fn append_clipboard_element(elements &[]&dom.Element, element &dom.Element) {
 	}
 }
 
-pub fn sanitize_clipboard_html(range &dom.Range, html string) !string {
-	fragment := range.create_contextual_fragment(html)!
+pub fn sanitize_clipboard_html(range &dom.Range, html string) !&dom.DocumentFragment {
+	// A script missed by the sanitizer must remain inert when inserted.
+	fragment := range.create_contextual_fragment_with_scripting_mode(html, .inert)!
 	mut active_elements := []&dom.Element{}
 	active_elements_pointer := &active_elements
 	mut fragment_node := fragment.as_node()
@@ -61,5 +62,5 @@ pub fn sanitize_clipboard_html(range &dom.Range, html string) !string {
 		mut node := unsafe { &dom.Node(active_elements[index - 1]) }
 		node.remove(false)
 	}
-	return fragment_node.serialize_fragment(.no, .inner)
+	return fragment
 }

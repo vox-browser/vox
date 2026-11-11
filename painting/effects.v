@@ -1,3 +1,6 @@
+// Copyright (c) 2026-present, the Ladybird developers.
+// SPDX-License-Identifier: BSD-2-Clause
+
 module painting
 
 import math
@@ -572,7 +575,15 @@ pub fn paint_box_shadow(bordered_content_rect Rect, borderless_content_rect Rect
 			mut outer_shadow_rect := device_content.translated(offset)
 			inner_shadow_rect := outer_shadow_rect.inflated(-spread, -spread, -spread, -spread)
 			outer_shadow_rect = outer_shadow_rect.inflated(blur + offset.y, blur + abs_int(offset.x), blur + abs_int(offset.y), blur + offset.x)
-			mut inner_corners := corner_radii
+			// Inset shadows follow the padding edge, not the outer border edge.
+			// https://drafts.csswg.org/css-backgrounds/#shadow-shape
+			mut padding_radii := border_radii
+			padding_radii.shrink(borderless_content_rect.top() - bordered_content_rect.top(),
+				bordered_content_rect.right() - borderless_content_rect.right(),
+				bordered_content_rect.bottom() - borderless_content_rect.bottom(),
+				borderless_content_rect.left() - bordered_content_rect.left())
+			padding_corners := padding_radii.as_corners(converter)
+			mut inner_corners := padding_corners
 			inner_corners.adjust_for_spread_distance(-spread)
 			mut clip_radii := border_radii
 			clip_radii.shrink(borders_data.top.width, borders_data.right.width, borders_data.bottom.width, borders_data.left.width)
@@ -581,7 +592,7 @@ pub fn paint_box_shadow(bordered_content_rect Rect, borderless_content_rect Rect
 				color: layer.color
 				blur_radius: blur
 				content_rect: device_content
-				content_corner_radii: corner_radii
+				content_corner_radii: padding_corners
 				clip_corner_radii: clip_radii.as_corners(converter)
 				outer_shadow_rect: outer_shadow_rect
 				inner_shadow_rect: inner_shadow_rect

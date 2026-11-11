@@ -11,7 +11,7 @@ fn test_stylesheet_bom_overrides_transport_and_environment_encoding() {
 		assert css_decode_bytes('windows-1252', 'utf-8', bytes)! == 'html{--image:url(image.png)}'
 		url := 'https://encoding.test/${big_endian}.css'
 		set_remote_link_style_sheet(url, bytes.bytestr())
-		text := remote_link_style_sheets[url]
+		text := remote_link_style_sheets[url].css_text
 		assert text == 'html{--image:url(image.png)}'
 		assert parse_css_stylesheet_with_parser(text, url).rules.rules.len == 1
 		mut document := dom.Document.create(dom.URL{value:'https://encoding.test/page.html'})

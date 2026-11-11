@@ -205,6 +205,12 @@ pub interface RequestClient {
 	fetch_request_client_policy_container() RequestPolicyContainer
 }
 
+// Optional client capability: decoded SVG documents have a more restrictive
+// resource policy than ordinary SVG documents loaded as pages.
+pub interface SVGImageRequestClient {
+	fetch_request_client_is_svg_image() bool
+}
+
 // Infrastructure::Request::ReservedClientType is HTML::Environment, distinct
 // from the EnvironmentSettingsObject stored in client.
 pub interface RequestReservedClient {
@@ -233,6 +239,7 @@ pub mut:
 	// Typed observable projection of the environment used by ReferrerPolicy.
 	// A Window client uses document_url; other clients use creation_url.
 	client_is_window               bool
+	client_is_svg_image            bool
 	client_is_top_level_window     bool
 	client_origin_opaque           bool
 	client_document_url            ?dom.URL
@@ -309,6 +316,9 @@ pub fn (mut request Request) set_client(client RequestClient) {
 	request.client = client
 	request.client_present = true
 	request.client_is_window = client.fetch_request_client_is_window()
+	request.client_is_svg_image = if client is SVGImageRequestClient {
+		client.fetch_request_client_is_svg_image()
+	} else { false }
 	request.client_is_top_level_window = client.fetch_request_client_is_top_level_window()
 	request.client_origin_opaque = client.fetch_request_client_origin().value == 'opaque'
 	request.client_document_url = client.fetch_request_client_document_url()
@@ -320,6 +330,7 @@ pub fn (mut request Request) clear_client() {
 	request.client = none
 	request.client_present = false
 	request.client_is_window = false
+	request.client_is_svg_image = false
 	request.client_is_top_level_window = false
 	request.client_origin_opaque = false
 	request.client_document_url = none
@@ -446,6 +457,7 @@ pub fn (request &Request) clone() &Request {
 		}
 		client: request.client
 		client_is_window: request.client_is_window
+		client_is_svg_image: request.client_is_svg_image
 		client_is_top_level_window: request.client_is_top_level_window
 		client_origin_opaque: request.client_origin_opaque
 		client_document_url: request.client_document_url

@@ -3407,7 +3407,7 @@ fn append_media_document_style(document &Document) ! {
             margin: auto;
         }
         img {
-            background-color: #fff;
+            background-color: hsl(0, 0%, 90%);
         }
     ')
 	head := document.head() or { return }
@@ -3579,6 +3579,16 @@ fn load_media_document(navigation_params &NavigationParams, type_ mimesniff.Mime
 	mut host_element := ?&Element(none)
 	if type_.is_image() {
 		mut img_element := create_element(document, 'img', namespace_html_, none, none, false)!
+		mut image := unsafe { &HTMLImageElement(img_element) }
+		image.is_image_document_image_ = true
+		if mut body := document.body() {
+			mut body_style := body.style_for_bindings()
+			body_style.set_declarations_from_text('display: flex; min-height: 100vh; margin: 0;')
+			body.set_inline_style(body_style)
+		}
+		mut image_style := img_element.style_for_bindings()
+		image_style.set_declarations_from_text('position: static; flex: none; max-width: 100vw; max-height: 100vh; margin: auto; background-color: hsl(0, 0%, 90%);')
+		img_element.set_inline_style(image_style)
 		img_element.set_attribute_value('src', url_string)
 		host_element = img_element
 	} else if type_.type_() == 'video' {
@@ -3959,15 +3969,17 @@ pub fn (mut manager EditingHostManager) handle_insert_from_clipboard(input_type 
 			}
 		}
 	}
-	sanitized_html := document.sanitize_clipboard_html(range, markup) or {
+	fragment := document.sanitize_clipboard_html(range, markup) or {
 		manager.handle_insert(input_type, plain_text)
 		return
 	}
-	if sanitized_html == '' {
+	if !fragment.as_node().has_children() {
 		manager.handle_insert(input_type, plain_text)
 		return
 	}
-	document.exec_command_internal('insertHTML', false, sanitized_html, input_type) or {}
+	// Insert exactly the tree inspected by the sanitizer. Serializing and
+	// reparsing can turn inert foreign content into active HTML elements.
+	document.insert_pasted_fragment(fragment, input_type) or {}
 }
 
 pub fn (mut manager EditingHostManager) select_all() {
@@ -4550,6 +4562,8 @@ pub fn pseudo_element_name(pseudo PseudoElement) string {
 		.view_transition_new { 'view-transition-new' }
 		.view_transition_old { 'view-transition-old' }
 		.highlight { 'highlight' }
+		.color_swatch { 'color-swatch' }
+		.webkit_color_swatch_wrapper { '-webkit-color-swatch-wrapper' }
 		.known_pseudo_element_count, .unknown_webkit { '' }
 	}
 }

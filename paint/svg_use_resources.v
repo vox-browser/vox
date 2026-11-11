@@ -22,6 +22,7 @@ fn install_browser_svg_use_resources(document &dom.Document, resources map[strin
 
 fn browser_resolve_svg_use_document(target voidptr, address dom.URL) ?&dom.Document {
 	mut owner := unsafe { &BrowserSVGUseResources(target) }
+	if owner.owner.is_svg_image_document() && address.scheme() != 'data' { return none }
 	if address.scheme() !in ['http', 'https']
 		|| !address.origin().is_same_origin(owner.owner.origin()) { return none }
 	key := address.serialize().all_before('#')

@@ -1955,6 +1955,8 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.view_transition_new { .view_transition_new }
 		.view_transition_old { .view_transition_old }
 		.highlight { .highlight }
+		.color_swatch { .color_swatch }
+		.webkit_color_swatch_wrapper { .webkit_color_swatch_wrapper }
 		.target_text { .target_text }
 		.spelling_error { .spelling_error }
 		.grammar_error { .grammar_error }

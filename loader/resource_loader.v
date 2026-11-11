@@ -101,6 +101,7 @@ pub fn ResourceLoader.create() &ResourceLoader {
 	return &ResourceLoader{
 		user_agent_:       default_user_agent()
 		platform_:         default_platform()
+		site_compatibility_data_: default_site_compatibility_data()
 		hsts_policies:     map[string]HSTSPolicy{}
 		preloaded_hsts_policies: map[string]bool{}
 		resources:         map[string]StoredResource{}

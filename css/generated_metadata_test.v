@@ -89,6 +89,12 @@ fn test_pseudo_element_property_whitelists() {
 	assert int(PseudoElement.details_content) == int(dom.PseudoElement.details_content)
 	assert pseudo_element_from_string('slider-track') == .slider_track
 	assert pseudo_element_from_string('-webkit-slider-thumb') == .slider_thumb
+	assert pseudo_element_from_string('color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-moz-color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-webkit-color-swatch') == .color_swatch
+	assert pseudo_element_from_string('-webkit-color-swatch-wrapper') == .webkit_color_swatch_wrapper
+	assert int(PseudoElement.color_swatch) == int(dom.PseudoElement.color_swatch)
+	assert int(PseudoElement.webkit_color_swatch_wrapper) == int(dom.PseudoElement.webkit_color_swatch_wrapper)
 	assert !is_has_allowed_pseudo_element(.slotted)
 	assert is_pseudo_element_root(.view_transition)
 }
@@ -1844,7 +1850,7 @@ fn test_custom_property_interpolation_matches_css_animation_rules() {
 	}).css_text == 'italic'
 	assert (interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .yes) or {
 		panic('could not discretely interpolate oblique font style')
-	}).css_text == 'oblique'
+	}).css_text == 'oblique 20deg'
 	assert interpolate_property(element, .font_style, italic_font_style, angled_oblique_font_style, 0.75, .no) == none
 	assert interpolate_test_property(element, .font_variation_settings, '"wght" 100', '"wght" 900', 0.5) == '"wght" 500'
 	assert interpolate_test_property(element, .filter, 'none', 'blur(10px)', 0.5) == 'blur(5px)'

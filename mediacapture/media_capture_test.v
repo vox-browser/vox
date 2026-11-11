@@ -63,6 +63,32 @@ fn capture_test_environment() &MediaCaptureEnvironment {
 	}
 }
 
+fn test_stop_all_sources_ends_tracks_and_invalidates_pending_capture_start() {
+	mut devices := MediaDevices.create(capture_test_document(&CaptureTestFocus{}), capture_test_environment())
+	first := devices.get_user_media(MediaStreamConstraints{audio: .enabled})
+	second := devices.get_user_media(MediaStreamConstraints{audio: .enabled})
+	devices.run_until_idle()
+	assert first.state() == .fulfilled && second.state() == .fulfilled
+	first_stream := first.stream()?
+	second_stream := second.stream()?
+	mut first_track := first_stream.get_audio_tracks()[0]
+	mut second_track := second_stream.get_audio_tracks()[0]
+	assert devices.media_stream_track_sources.len == 2
+	first_track.stop()
+	assert devices.media_stream_track_sources.len == 1
+	second_track.ensure_audio_capture_started()
+	request_id := second_track.capture_request_id()
+	devices.stop_all_sources()
+	assert devices.media_stream_track_sources.len == 0
+	assert first_track.track_ready_state() == .ended
+	assert second_track.track_ready_state() == .ended
+	assert !first_stream.active() && !second_stream.active()
+	second_track.complete_audio_capture_start(request_id, true)
+	assert !second_track.capture_start_pending()
+	assert !second_track.capture_stream_active()
+	devices.stop_all_sources()
+}
+
 fn test_device_info_json_and_supported_constraints() {
 	device := MediaDeviceInfo.create('mic', .audioinput, 'Microphone', 'group')
 	json := device.to_json()

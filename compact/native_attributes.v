@@ -179,15 +179,10 @@ fn (mut binding CompactElementQueryBinding) native_attribute_query(key string, s
 		'names' { return json2.encode(element.get_attribute_names()) }
 		'length' { return json2.encode(element.attribute_list_size()) }
 		'supportedNames' {
-			mut names := []string{}
-			for name in element.get_attribute_names() {
-				if name in names { continue }
-				if element.is_html_element() && element.document().is_html_document() && name.bytes().any(it >= `A` && it <= `Z`) {
-					continue
-				}
-				names << name
-			}
-			return json2.encode(names)
+			return json2.encode(element.attributes().supported_property_names())
+		}
+		'supportsName' {
+			return json2.encode(element.attributes().is_supported_property_name(query.name))
 		}
 		'getNode', 'getNodeNS', 'item' {
 			mut candidate := ?&dom.Attr_(none)

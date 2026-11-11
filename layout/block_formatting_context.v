@@ -281,9 +281,6 @@ fn box_should_avoid_floats(box &Node) bool {
 // margins are adjoining (they collapse "through" the box): it establishes no BFC, has zero border-box
 // height, has no clearance, and every in-flow child also collapses through.
 fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
-	if box.computed_values().clear() != .none_ {
-		return false
-	}
 	if creates_block_formatting_context(box) {
 		return false
 	}
@@ -292,6 +289,9 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 		return false
 	}
 	box_state := state.try_get(box) or { return false }
+	// A clear declaration only separates margins when placement actually
+	// introduces clearance. No matching float means the margins still adjoin.
+	if box_state.had_clearance() { return false }
 	if box_state.border_box_height().to_double() != 0 {
 		return false
 	}
@@ -580,6 +580,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 	container_origin := state.get(block_container).cumulative_offset()
 	clearance := bfc.introduce_clearance(computed.clear(), block_container.computed_values().direction(),
 		container_origin.y(), box.document().font_rendering_policy() == .chromium)
+	box_state.set_had_clearance(clearance != none)
 	bfc.update_block_waiting_for_final_y_position()
 
 	y := bfc.y_offset_of_current_block_container

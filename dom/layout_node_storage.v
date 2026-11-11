@@ -6,6 +6,7 @@ pub struct LayoutNodeCallbacks {
 pub:
 	generated_content_text_callback fn (voidptr) ?string = unsafe { nil }
 	find_matching_text_callback            fn (voidptr, string, CaseSensitivity) []&Range = unsafe { nil }
+	inline_word_range_callback             fn (voidptr, int) ?&Range = unsafe { nil }
 	apply_style_callback                   LayoutApplyStyleCallback                       = unsafe { nil }
 	apply_animated_style_callback          LayoutApplyAnimatedStyleCallback               = unsafe { nil }
 	apply_color_style_callback             LayoutApplyColorStyleCallback                  = unsafe { nil }
@@ -48,6 +49,16 @@ __global (
 pub fn (node &LayoutNode) bridge_callbacks() &LayoutNodeCallbacks {
 	if node.callbacks_ == unsafe { nil } { return &empty_layout_node_callbacks }
 	return node.callbacks_
+}
+
+// Layout joins the rendered text on either side of ordinary inline elements.
+// A missing result keeps the embedder's single-node word selection policy.
+// A successful query returns a temporary live Range. The caller finalizes it
+// after consuming its boundary points.
+pub fn (node &LayoutNode) inline_word_range(offset int) ?&Range {
+	callback := node.bridge_callbacks().inline_word_range_callback
+	if node.layout_handle == unsafe { nil } || callback == unsafe { nil } { return none }
+	return callback(node.layout_handle, offset)
 }
 
 pub fn (node &LayoutNode) box_model() &LayoutBoxModel {

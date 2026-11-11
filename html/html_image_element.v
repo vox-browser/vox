@@ -193,6 +193,7 @@ mut:
 	event_counts_              map[string]int
 	dimension_attribute_source ?&dom.Element
 	last_seen_viewport_size_   [2]f64
+	image_document_zoom_level_ ?f64
 	form_control_              ?&FormAssociatedElement
 	load_event_delayer_        ?dom.DocumentLoadEventDelayer
 	alt_text_node_             ?&dom.Text
@@ -310,6 +311,7 @@ pub fn html_image_element_model_for_dom_element(element &dom.HTMLImageElement) &
 	model.update_alt_text_shadow_tree()
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.register_viewport_client(image_viewport_client(model))
+	if element.is_image_document_image_ { model.update_image_document_zoom() }
 	return model
 }
 
@@ -561,6 +563,10 @@ pub fn (mut image HTMLImageElementModel) update_the_image_data_impl(restart_anim
 		if !maybe_omit_events || previous_url != '' {
 			image.fire_event('error')
 		}
+		return
+	}
+	if image.document_.is_svg_image_document() && url.scheme() != 'data' {
+		image.handle_failed_fetch()
 		return
 	}
 	if previous_url == url.serialize() && image.current_request_.state() == .completely_available {
@@ -1161,11 +1167,24 @@ pub fn (mut image HTMLImageElementModel) add_callbacks_to_image_request(image_re
 }
 
 pub fn (mut image HTMLImageElementModel) did_set_viewport_rect(viewport_rect dom.Rect) {
+	if zoom := image.image_document_zoom_level_ {
+		current_zoom := if image.document_.has_page() { image.document_.page().page_zoom_level() } else { f64(1) }
+		if zoom != current_zoom { image.update_image_document_zoom() }
+	}
 	if viewport_rect.size() == image.last_seen_viewport_size_ {
 		return
 	}
 	image.last_seen_viewport_size_ = viewport_rect.size()
 	image.react_to_changes_in_the_environment()
+}
+
+fn (mut image HTMLImageElementModel) update_image_document_zoom() {
+	element := image.element_ or { return }
+	zoom := if image.document_.has_page() { image.document_.page().page_zoom_level() } else { f64(1) }
+	image.image_document_zoom_level_ = zoom
+	style := css.inline_style(image_dom_element(element))
+	style.set_property('max-width', '${100 * zoom}vw')
+	style.set_property('max-height', '${100 * zoom}vh')
 }
 
 // https://html.spec.whatwg.org/multipage/images.html#img-environment-changes
@@ -1190,6 +1209,11 @@ pub fn (mut image HTMLImageElementModel) react_to_changes_in_the_environment() {
 }
 
 pub fn (mut image HTMLImageElementModel) adopted_from(old_document &dom.Document) {
+	image.image_document_zoom_level_ = none
+	if element := image.element_ {
+		mut native_image := unsafe { &dom.HTMLImageElement(element) }
+		native_image.is_image_document_image_ = false
+	}
 	old_document_mut := unsafe { &dom.Document(old_document) }
 	mut mutable_old_document := unsafe { old_document_mut }
 	mutable_old_document.unregister_viewport_client(image_viewport_client(&image))

@@ -47,6 +47,24 @@ fn test_background_attachment_rebuilds_accumulated_visual_contexts() {
 	assert !property_rebuilds_accumulated_visual_contexts(.background_color)
 }
 
+// Ladybird 148b0c0ec65a6c34dece2ae76c85197187b44915.
+fn test_overflow_changes_rebuild_accumulated_visual_contexts() {
+	for property in [PropertyID.overflow_x, .overflow_y] {
+		assert property_rebuilds_accumulated_visual_contexts(property)
+		for values in [['visible', 'hidden'], ['hidden', 'visible'], ['clip', 'scroll']] {
+			old_value := dom_style_value_from_value_logic(parse_css_value_logic(property, values[0]) or { panic('old value') })
+			new_value := dom_style_value_from_value_logic(parse_css_value_logic(property, values[1]) or { panic('new value') })
+			invalidation := compute_property_invalidation(property, old_value, new_value)
+			// Vox currently rebuilds layout boxes for overflow changes. That
+			// stronger invalidation also rebuilds their visual contexts and
+			// intentionally does not retain a redundant context-only flag.
+			assert invalidation.needs_layout_tree_rebuild()
+				|| invalidation.accumulated_visual_contexts() == .rebuild
+			assert invalidation.invalidates_hit_test_display_list()
+		}
+	}
+}
+
 fn test_hit_testing_property_metadata_matches_upstream() {
 	for property_id in [
 		PropertyID.border_bottom_left_radius,

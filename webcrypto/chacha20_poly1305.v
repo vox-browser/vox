@@ -1,3 +1,4 @@
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
@@ -40,6 +41,7 @@ fn import_chacha_key(format KeyFormat, material []u8, extractable bool, usages [
 		jwk := decode_json_web_key_dictionary(material)!
 		if (jwk.kty or { '' }) != 'oct' { return error('DataError: Invalid key type') }
 		data = parse_jwk_symmetric_key(jwk)!
+		if data.len != 32 { return error('DataError: Key data must be 256 bits') }
 		if alg := jwk.alg {
 			if alg != 'C20P' { return error('DataError: Invalid alg field') }
 		}
@@ -52,7 +54,6 @@ fn import_chacha_key(format KeyFormat, material []u8, extractable bool, usages [
 		if ext := jwk.ext {
 			if !ext && extractable { return error('DataError: Invalid ext field') }
 		}
-		// The pinned JWK branch does not check key size; the cipher validates it.
 	} else {
 		return error('NotSupportedError: Only raw-secret and jwk formats are supported')
 	}

@@ -89,18 +89,29 @@ pub fn (stream &TextDecoderStream) chunks() []string {
 	return stream.chunks_.clone()
 }
 
-pub fn (mut stream TextDecoderStream) decode_and_enqueue_chunk(chunk []u8) !string {
+// A native TransformStream already owns its output queue. These methods keep
+// only incremental decoder state, without retaining another copy of each
+// string after the consumer has read it.
+pub fn (mut stream TextDecoderStream) decode_chunk(chunk []u8) !string {
 	mut output := TextDecoderOutputQueue{}
 	stream.process_an_item(chunk, false, mut output)!
-	decoded := stream.serialize_io_queue(mut output)!
+	return stream.serialize_io_queue(mut output)
+}
+
+pub fn (mut stream TextDecoderStream) flush() !string {
+	mut output := TextDecoderOutputQueue{}
+	stream.process_an_item([], true, mut output)!
+	return stream.serialize_io_queue(mut output)
+}
+
+pub fn (mut stream TextDecoderStream) decode_and_enqueue_chunk(chunk []u8) !string {
+	decoded := stream.decode_chunk(chunk)!
 	stream.enqueue_decoded_output(decoded)
 	return decoded
 }
 
 pub fn (mut stream TextDecoderStream) flush_and_enqueue() !string {
-	mut output := TextDecoderOutputQueue{}
-	stream.process_an_item([], true, mut output)!
-	decoded := stream.serialize_io_queue(mut output)!
+	decoded := stream.flush()!
 	stream.enqueue_decoded_output(decoded)
 	return decoded
 }

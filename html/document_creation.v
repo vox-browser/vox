@@ -25,6 +25,7 @@ fn document_lifecycle_hook(window &WindowModel) dom.DocumentLifecycleHook {
 		queue_an_element_task:            document_queue_an_element_task
 		run_unloading_cleanup_steps:      document_run_unloading_cleanup_steps
 		timer_visibility_state_changed:   document_timer_visibility_state_changed
+		queue_visibility_state_entry:     document_queue_visibility_state_entry
 		timer_audio_play_state_changed:   document_timer_audio_play_state_changed
 	}
 }

@@ -56,8 +56,7 @@ enum GridFlexibleMinimumPhase {
 fn grid_flexible_minimum_phase_dominates(track GridTrack, phase GridFlexibleMinimumPhase, columns bool, available_size AvailableSize) bool {
 	return match phase {
 		.intrinsic {
-			available_size.is_max_content() || (!columns && available_size.is_min_content())
-				|| track.minimum_intrinsic
+			available_size.is_max_content() || track.minimum_intrinsic
 		}
 		.min_content { track.min_content_min || track.max_content_min }
 		.limited_max_content { track.auto_min || track.max_content_min }
@@ -1616,7 +1615,7 @@ fn distribute_grid_item_contribution_across_intrinsic_track_bases(mut tracks []G
 		affected := match phase {
 			.minimum_contribution { track.minimum_intrinsic }
 			.min_content_contribution { track.min_content_min || track.max_content_min }
-			.max_content_contribution { track.auto_min || track.max_content_min }
+			.max_content_contribution { (track.auto_min && !track.min_content_max) || track.max_content_min }
 		}
 		if affected {
 			affected_tracks << index
@@ -1873,7 +1872,8 @@ fn grid_content_based_minimum_from_outer_contribution(item &Node, item_state &Us
 		fixed_maximum_sum = fixed_maximum_sum.plus(tracks[index].fixed_max_size)
 	}
 	if all_maximums_are_fixed {
-		content_minimum = css_pixels_min(content_minimum, fixed_maximum_sum)
+		content_minimum = css_pixels_min(content_minimum,
+			css_pixels_max(fixed_maximum_sum.minus(edges), CSSPixels.new(0)))
 	}
 	maximum := item.computed_values().size_value(if columns {
 		css.PropertyID.max_width
@@ -1999,9 +1999,9 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 			// repeats that work even when the result cannot affect any track.
 			needs_minimum := phase in [.intrinsic, .limited_max_content]
 			needs_min_content := phase == .min_content || (phase == .intrinsic
-				&& (available_size.is_max_content() || (!columns && available_size.is_min_content())))
+				&& available_size.is_max_content() && total_flex != 0)
 			needs_max_content := phase == .max_content || (phase == .limited_max_content
-				&& !(total_flex == 0 && flex_item_is_scroll_container(placement.item)))
+				&& total_flex != 0)
 			minimum_contribution := (if !needs_minimum {
 				CSSPixels.new(0)
 			} else if columns {
@@ -2032,8 +2032,7 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 			}).plus(placement.sizing_extra(columns))
 			mut item_contribution := match phase {
 				.intrinsic {
-					if available_size.is_max_content()
-						|| (!columns && available_size.is_min_content()) {
+					if available_size.is_max_content() && total_flex != 0 {
 						grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, min_content_contribution, minimum_contribution)
 					} else {
 						minimum_contribution
@@ -2041,7 +2040,7 @@ fn increase_grid_flexible_tracks_for_spanning_items(mut state LayoutState, conta
 				}
 				.min_content { min_content_contribution }
 				.limited_max_content {
-					if total_flex == 0 && flex_item_is_scroll_container(placement.item) {
+					if total_flex == 0 {
 						minimum_contribution
 					} else {
 						grid_limited_content_contribution(state, container, container_state, available_size, columns, tracks, start, span, max_content_contribution, minimum_contribution)
@@ -2323,6 +2322,9 @@ fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_t
 
 fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedValues, available_height_is_definite bool) bool {
 	preferred := item.computed_values().size_value(.height)
+	if preferred.is_fit_content() {
+		return true
+	}
 	if preferred.is_auto() || preferred.is_stretch() {
 		if box := item.as_box() {
 			if _ := box.preferred_aspect_ratio() {
@@ -2383,7 +2385,7 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	mut inner := CSSPixels.new(0)
 	if height := grid_orthogonal_baseline_intrinsic_height(mut state,item,item_state) {
 		inner=height
-	} else if preferred_behaves_as_auto || (constraint == .max_content && preferred.is_fit_content()) {
+	} else if preferred_behaves_as_auto {
 		inner = if constraint == .min_content {
 			calculate_min_content_height(mut state, box, item_state.content_width())
 		} else {
@@ -2397,12 +2399,6 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 		inner = calculate_min_content_height(mut state, box, item_state.content_width())
 	} else if preferred.is_max_content() {
 		inner = calculate_max_content_height(mut state, box, item_state.content_width())
-	} else if preferred.is_fit_content() {
-		inner = calculate_fit_content_height(mut state, box, item_state.content_width(), if available_height_is_definite {
-			AvailableSize.make_definite(percentage_basis)
-		} else {
-			AvailableSize.make_indefinite()
-		})
 	} else if preferred.is_auto() {
 		if box.has_preferred_aspect_ratio() {
 			inner = intrinsic_content_height_from_aspect_ratio(box, item_state,
@@ -2544,15 +2540,12 @@ fn grid_limited_content_contribution(state &LayoutState, container &Node, contai
 	return contribution
 }
 
-// GridFormattingContext::calculate_min_content_contribution(). A scroll
-// container whose preferred inline size behaves as auto contributes zero
-// content in the column dimension; its box-model edges still participate.
-// This is intentionally column-only: upstream retains the content height of
-// scroll containers for row min-content sizing.
+// GridFormattingContext::calculate_min_content_contribution(). Scrollable
+// overflow affects the automatic minimum, not the min-content contribution.
 fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, constraint SizeConstraint) CSSPixels {
 	box := item.as_box() or { return CSSPixels.new(0) }
 	preferred := item.computed_values().size_value(.width)
-	preferred_behaves_as_auto := preferred.is_auto() || preferred.contains_percentage()
+	preferred_behaves_as_auto := preferred.is_auto() || preferred.contains_percentage() || preferred.is_fit_content()
 	styled := item.as_node_with_style() or { return CSSPixels.new(0) }
 	mut item_state := state.get_mutable(styled)
 	containing_width := if containing := item_state.containing_block_used_values() {
@@ -2571,18 +2564,12 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 	mut inner := CSSPixels.new(0)
 	if width := grid_orthogonal_baseline_intrinsic_width(mut state,item) {
 		inner=width
-	} else if constraint == .min_content && preferred_behaves_as_auto
-		&& flex_item_is_scroll_container(item) {
-		// Scroll containers contribute no content to a column min-content size.
 	} else if preferred_behaves_as_auto {
 		inner = if constraint == .min_content {
 			calculate_min_content_width(mut state, box)
 		} else {
 			calculate_max_content_width(mut state, box)
 		}
-	} else if preferred.is_fit_content() {
-		inner = calculate_fit_content_width(mut state, box,
-			AvailableSize.make_definite(containing_width))
 	} else if preferred.is_min_content() {
 		inner = calculate_min_content_width(mut state, box)
 	} else if preferred.is_max_content() {
@@ -2800,7 +2787,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
     minimum := grid_clamp_minimum_for_baseline_shim(state,placement.item,columns,placement.column,span,column_gap,grid_item_minimum_outer_inline_contribution(mut state,placement.item,columns,placement.column,span,column_gap).plus(placement.sizing_extra(true)).plus(shim),shim,true)
     min_content := grid_intrinsic_outer_width_contribution(mut state,placement.item,.min_content).plus(placement.sizing_extra(true)).plus(shim)
     max_content := grid_intrinsic_outer_width_contribution(mut state,placement.item,.max_content).plus(placement.sizing_extra(true)).plus(shim)
-    group << ChromiumGridSpanningContribution{start:placement.column,span:span,minimum:if width_is_intrinsic { grid_limited_content_contribution(state,container,container_state,available_space.width,true,columns,placement.column,span,min_content,minimum) } else { minimum },min_content:min_content,max_content:if available_space.width.is_max_content() { grid_limited_content_contribution(state,container,container_state,available_space.width,true,columns,placement.column,span,max_content,minimum) } else { max_content }}
+    group << ChromiumGridSpanningContribution{start:placement.column,span:span,minimum:if available_space.width.is_max_content() { grid_limited_content_contribution(state,container,container_state,available_space.width,true,columns,placement.column,span,min_content,minimum) } else { minimum },min_content:min_content,max_content:if available_space.width.is_max_content() { grid_limited_content_contribution(state,container,container_state,available_space.width,true,columns,placement.column,span,max_content,minimum) } else { max_content }}
    }
    chromium_grid_resolve_spanning_group(mut columns,group,column_gap)
    continue
@@ -2816,7 +2803,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			minimum_contribution=grid_clamp_minimum_for_baseline_shim(state,placement.item,columns,placement.column,placement.column_span,column_gap,minimum_contribution,baseline_column_shims[voidptr(placement.item)],true)
 			min_content_contribution := grid_intrinsic_outer_width_contribution(mut state,
 				placement.item, .min_content).plus(placement.sizing_extra(true)).plus(baseline_column_shims[voidptr(placement.item)])
-			phase_one_contribution := if width_is_intrinsic {
+			phase_one_contribution := if available_space.width.is_max_content() {
 				grid_limited_content_contribution(state, container, container_state, available_space.width, true, columns, placement.column, placement.column_span, min_content_contribution, minimum_contribution)
 			} else {
 				minimum_contribution
@@ -2966,19 +2953,27 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 				row_gap, row_basis)
 		}
 		inline_alignment := grid_inline_alignment(container, placement.item)
+		percentage_height_basis := if grid_item_has_preferred_aspect_ratio(placement.item)
+			&& !placement.item.is_replaced_box() && !container.display().is_grid_lanes_inside() {
+			grid_fixed_row_span_size(rows, placement, row_gap)
+		} else if container_state.has_definite_height() {
+			?CSSPixels(container_state.content_height())
+		} else { none }
+		inline_stretches := inline_alignment == .stretch || (inline_alignment == .normal
+			&& grid_normal_alignment_stretches(placement.item, true, percentage_height_basis))
 		width_is_auto := placement.item.computed_values().size_value(.width).is_auto()
 		has_auto_inline_margin := property_is_auto(placement.item.computed_values(), .margin_left)
 			|| property_is_auto(placement.item.computed_values(), .margin_right)
 		mut forced_width := if placement.item.is_table_wrapper() {
 			?CSSPixels(resolve_grid_table_wrapper_width(mut state, placement.item, mut item_state,
 				area_width, inline_alignment))
-		} else if inline_alignment in [.normal, .stretch] && width_is_auto
+		} else if inline_stretches && width_is_auto
 			&& !placement.item.is_replaced_box()
 			&& !has_auto_inline_margin {
 			?CSSPixels(area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)))
 		} else if width_is_auto && !placement.item.is_replaced_box() {
-			if transferred := grid_item_width_from_definite_height(placement.item,item_state,
-				if container_state.has_definite_height() { ?CSSPixels(container_state.content_height()) } else { none }) {
+			if transferred := grid_item_width_from_definite_height(placement.item, item_state,
+				percentage_height_basis) {
 				?CSSPixels(transferred)
 			} else if box := placement.item.as_box() {
 				?CSSPixels(calculate_fit_content_width(mut state, box, AvailableSize.make_definite(area_width)))
@@ -2992,11 +2987,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			forced_width =
 				clamp_layout_content_size(placement.item, width, area_width, item_state, true)
 		}
-		item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
-			container_state.content_height()
-		} else {
-			none
-		}, forced_width, none)
+		item_state = layout_independent_child(mut state, placement.item, mut container_state,
+			area_width, percentage_height_basis, forced_width, none)
 		if enable_block_reuse && seed_grid_auto_item_block_height(placement.item, item_state, container_state.has_definite_height())
 			&& diagnose_block_reuse {
 			eprintln('Vox grid intrinsic block reuse: width=${item_state.content_width().raw_value()} height=${item_state.content_height().raw_value()}')
@@ -3036,7 +3028,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 				group << ChromiumGridSpanningContribution{
 					start: placement.row
 					span: placement.row_span
-					minimum: if available_space.height.is_intrinsic_sizing_constraint() {
+					minimum: if available_space.height.is_max_content() {
 						grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
 					} else {
 						minimum_contribution
@@ -3066,7 +3058,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			min_content_contribution := grid_item_outer_block_content_contribution(mut state,
 				placement.item, item_state, .min_content, container_state.has_definite_height(),
 				row_basis, spanned_track_size).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
-			phase_one_contribution := if available_space.height.is_intrinsic_sizing_constraint() {
+			phase_one_contribution := if available_space.height.is_max_content() {
 				grid_limited_content_contribution(state, container, container_state, available_space.height, false, rows, placement.row, placement.row_span, min_content_contribution, minimum_contribution)
 			} else {
 				minimum_contribution
@@ -3300,7 +3292,14 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		top_margin_auto := property_is_auto(placement.item.computed_values(), .margin_top)
 		bottom_margin_auto := property_is_auto(placement.item.computed_values(), .margin_bottom)
   mut final_item_width := item_state.content_width()
-  if orthogonal_columns_changed && placement.item.computed_values().size_value(.width).is_auto()
+  transferred_width := if placement.item.computed_values().size_value(.width).is_auto()
+   && !placement.item.is_replaced_box() && inline_alignment != .stretch
+   && (inline_alignment != .normal || !grid_normal_alignment_stretches(placement.item, true, area_height)) {
+   grid_item_width_from_definite_height(placement.item, item_state, area_height)
+  } else { none }
+  if transferred := transferred_width {
+   final_item_width = clamp_layout_content_size(placement.item, transferred, area_width, item_state, true)
+  } else if orthogonal_columns_changed && placement.item.computed_values().size_value(.width).is_auto()
    && inline_alignment in [.normal,.stretch] && !left_margin_auto && !right_margin_auto && !placement.item.is_replaced_box() {
    final_item_width = clamp_layout_content_size(placement.item,area_width.minus(flex_or_grid_item_outer_inline_edges(item_state)),area_width,item_state,true)
   } else if orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container)
@@ -3317,19 +3316,19 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
    forced_item_height=item_state.content_height()
   }
 		if (block_alignment == .stretch || (block_alignment == .normal
-			&& !placement.item.is_replaced_box()))
+			&& !placement.item.is_replaced_box()
+			&& grid_normal_alignment_stretches(placement.item, false, area_height)))
 			&& placement.item.computed_values().size_value(.height).is_auto() && !top_margin_auto
 			&& !bottom_margin_auto {
 			forced_item_height = area_height.minus(flex_or_grid_item_outer_block_edges(item_state))
-		} else if placement.item.is_replaced_box()
-			&& placement.item.computed_values().size_value(.height).is_auto() {
+		} else if placement.item.computed_values().size_value(.height).is_auto() {
 			if box := placement.item.as_box() {
 				if box.has_preferred_aspect_ratio() {
 					// Final grid item sizing transfers the resolved inline size
 					// through the preferred ratio using its content- or border-box
 					// semantics before block-axis min/max constraints are applied.
 					forced_item_height = intrinsic_content_height_from_aspect_ratio(box,
-						item_state, item_state.content_width())
+						item_state, final_item_width)
 				}
 			}
 		} else if !placement.item.computed_values().size_value(.height).is_auto() {
@@ -3349,11 +3348,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 					|| !flex_subtree_depends_on_definite_height(mut state, placement.item)) {
 				item_state.set_has_definite_height(true)
 			} else {
-				item_state = layout_independent_child_with_resolved_height(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
-					container_state.content_height()
-				} else {
-					none
-				}, final_item_width, clamped_height)
+				item_state = layout_independent_child_with_resolved_height(mut state, placement.item, mut container_state,
+					area_width, area_height, final_item_width, clamped_height)
 			}
 		} else if placement.item.is_replaced_box()
 			&& (placement.item.computed_values().size_value(.height).contains_percentage()

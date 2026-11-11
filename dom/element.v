@@ -3306,7 +3306,7 @@ fn serialize_html_node(node &Node, serializable_shadow_roots SerializableShadowR
 		if parent := node.parent() {
 			if parent_element := parent.as_element() {
 				name := parent_element.local_name()
-				if name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext'] || (name == 'noscript' && !node.is_scripting_disabled()) {
+				if parent_element.is_html_element() && (name in ['style', 'script', 'xmp', 'iframe', 'noembed', 'noframes', 'plaintext'] || (name == 'noscript' && !node.is_scripting_disabled())) {
 					return character_data.data()
 				}
 			}
@@ -3627,7 +3627,7 @@ pub fn (e &Element) is_void_element() bool {
 }
 
 pub fn (e &Element) serializes_as_void() bool {
-	return e.is_void_element() || e.local_name() in ['basefont', 'bgsound', 'frame', 'keygen']
+	return e.is_html_element() && (e.is_void_element() || e.local_name() in ['basefont', 'bgsound', 'frame', 'keygen'])
 }
 
 // --- Bounding rects ---
@@ -6109,6 +6109,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		mut link := unsafe { &HTMLLinkElement(&e) }
 		link.set_linked_style_sheet_media(value_or_empty)
 	}
+	if e.is_html_element() && e.local_name() == 'link' && local_name == 'type' {
+		link := unsafe { &HTMLLinkElement(&e) }
+		if link.link_element_model_ != unsafe { nil }
+			&& link.link_type_attribute_changed_callback_ != unsafe { nil } {
+			link.link_type_attribute_changed_callback_(link.link_element_model_, old_value, value)
+		}
+	}
 
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }
@@ -6664,7 +6671,19 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 }
 
 // --- Lifecycle callbacks ---
+fn (e &Element) report_title_change_to_page() {
+	navigable := e.as_node().navigable() or { return }
+	if !navigable.is_traversable() { return }
+	document := e.document()
+	if document == unsafe { nil } || document.page() == unsafe { nil } { return }
+	mut page := unsafe { &Page(document.page()) }
+	page.client_page_did_change_title(document.title())
+}
+
 pub fn (mut e Element) inserted() {
+	if e.as_node().is_html_title_element() && e.is_connected() {
+		e.report_title_change_to_page()
+	}
 	if nearest_html_element_is_inert(e.as_node().parent_or_shadow_host()) {
 		e.update_inherited_inertness()
 	}
@@ -6750,6 +6769,9 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 }
 
 pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
+	if e.as_node().is_html_title_element() && old_root.is_document() {
+		e.report_title_change_to_page()
+	}
 	// Descendants remain parented inside the detached subtree; an explicit
 	// inert ancestor there must continue to govern them.
 	if nearest_html_element_is_inert(old_ancestor) {
@@ -6885,6 +6907,10 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 // Building a clone here would add new nodes to the ongoing adopting traversal.
 // The V implementation walks the live document rather than keeping an observer.
 pub fn (mut e Element) adopted_from(_ &Document) {
+	if e.is_html_element() && e.local_name() == 'img' {
+		mut image := unsafe { &HTMLImageElement(&e) }
+		image.is_image_document_image_ = false
+	}
 	if e.is_svg_element() && e.local_name() == 'use' {
 		e.svg_use_clone_element_tree_as_our_shadow_tree(none)
 		if reference := e.svg_use_reference_url() {
@@ -6905,6 +6931,9 @@ pub fn (mut e Element) adopted_from(_ &Document) {
 
 pub fn (mut e Element) children_changed(metadata ChildrenChangedMetadata) {
 	_ = metadata
+	if e.as_node().is_html_title_element() && e.is_connected() {
+		e.report_title_change_to_page()
+	}
 	e.set_needs_style_update(true)
 
 	if e.child_style_uses_tree_counting_function {

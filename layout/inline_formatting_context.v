@@ -881,7 +881,10 @@ fn apply_block_ellipsis(containing_block &BlockContainer, mut used UsedValues,
 	}
 	mut block_offset := line.bottom().minus(line.block_length())
 	mut block_length := containing_block.computed_values().line_height()
-	mut baseline := font_baseline_for_line_height(font.pixel_metrics(), block_length)
+	baseline_metrics := if style_source.document().font_rendering_policy() == .libweb {
+		layout_inline_font_metrics(style_source, font)
+	} else { font.pixel_metrics() }
+	mut baseline := font_baseline_for_line_height(baseline_metrics, block_length)
 	for index := line.fragments_.len - 1; index >= 0; index-- {
 		fragment := line.fragments_[index]
 		if fragment.is_fully_truncated() {

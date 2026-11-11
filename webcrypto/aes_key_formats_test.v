@@ -72,10 +72,8 @@ fn test_aes_source_jwk_required_fields_and_validation_order() {
 			'NotSupportedError: Only raw and jwk formats are supported')
 		aes_format_error(name, .jwk, JsonWebKey{ kty: 'RSA', ext: false }, [usage],
 			'DataError: Invalid key type')
-		missing := if name == 'AES-CBC' {
+		missing := if name in ['AES-CBC', 'AES-KW'] {
 			"DataError: JWK has no 'k' field"
-		} else if name == 'AES-KW' {
-			"DataError: Missing 'alg' field"
 		} else {
 			"DataError: Missing 'k' field"
 		}
@@ -85,16 +83,13 @@ fn test_aes_source_jwk_required_fields_and_validation_order() {
 			k:   base64url_encode([]u8{len: 16})
 			alg: 'A128${name[4..]}'
 		}
-		if name == 'AES-CBC' {
-			assert import_aes_key(name, .jwk, JsonWebKey{
-				...base
-				alg: none
-			}.to_json().bytes(), true, [usage])!.handle().len == 16
-		} else {
-			aes_format_error(name, .jwk, JsonWebKey{ ...base, alg: none, ext: false }, [
-				usage,
-			], "DataError: Missing 'alg' field")
-		}
+		assert import_aes_key(name, .jwk, JsonWebKey{
+			...base
+			alg: none
+		}.to_json().bytes(), true, [usage])!.handle().len == 16
+		aes_format_error(name, .jwk, JsonWebKey{ ...base, alg: none, ext: false }, [
+			usage,
+		], 'DataError: Invalid ext field')
 		aes_format_error(name, .jwk, JsonWebKey{ ...base, k: none }, [usage], if name in [
 			'AES-CTR',
 			'AES-GCM',

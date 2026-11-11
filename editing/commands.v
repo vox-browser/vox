@@ -1354,6 +1354,14 @@ pub fn command_insert_html_action(mut document dom.Document, value string) bool 
 	resulting_value := document.trusted_types_compliant_html(value, 'document-exec-command') or {
 		return false
 	}
+	return insert_html(mut document, resulting_value, none)
+}
+
+pub fn insert_pasted_fragment_action(mut document dom.Document, fragment &dom.DocumentFragment) bool {
+	return insert_html(mut document, '', fragment)
+}
+
+fn insert_html(mut document dom.Document, value string, pasted_fragment ?&dom.DocumentFragment) bool {
 
 	// 2. Delete the selection.
 	mut selection := editing_selection(document)
@@ -1371,7 +1379,11 @@ pub fn command_insert_html_action(mut document dom.Document, value string) bool 
 	// INTEROP: Chromium preserves a collapsible space immediately before pasted inline content by converting it to a
 	//          non-breaking space, just as it does when inserting text at the same boundary.
 	canonicalize_whitespace(range_.start(), true)
-	replace_selection_with_fragment(document, resulting_value) or {}
+	if fragment := pasted_fragment {
+		replace_selection_with_document_fragment(document, fragment) or { return false }
+	} else {
+		replace_selection_with_fragment(document, value) or { return false }
+	}
 	return true
 }
 

@@ -192,6 +192,21 @@ fn test_preflight_cache_matches_method_header_partition_origin_url_and_credentia
 	assert cache.entries.len == 0
 }
 
+// Ladybird 1846f0b2342946948551e9115f11d0957fb404cd: a cached wildcard
+// has the same credentials restriction as a live preflight response.
+fn test_cached_method_wildcard_does_not_authorize_credentialed_methods() {
+	for mode in [CredentialsMode.omit, .same_origin, .include] {
+		mut request := preflight_test_request()
+		request.credentials_mode = mode
+		mut cache := PreflightCache{}
+		cache.cache_method(request, 'PUT', 60 * time.second)
+		cache.cache_method(request, '*', 60 * time.second)
+		assert cache.is_a_method_cache_entry_match(request, 'PUT')
+		assert cache.is_a_method_cache_entry_match(request, 'DELETE') == (mode != .include)
+		assert cache.is_a_method_cache_entry_match(request, '*')
+	}
+}
+
 fn test_preflight_cache_rejects_expired_entries_and_refreshes_matches() {
 	mut cache := PreflightCache.the()
 	cache.entries.clear()

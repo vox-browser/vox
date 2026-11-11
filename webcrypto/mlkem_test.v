@@ -101,10 +101,11 @@ fn test_mlkem_generation_usages_key_variants_and_source_error_order() {
 		decapsulated := subtle.decapsulate_key(name, pair.private_key, encapsulation.ciphertext or { panic('cipher') }, 'AES-GCM', true, [.encrypt])!
 		assert shared_key.handle() == decapsulated.handle()
 		for shared_name in ['AES-OCB', 'KMAC128', 'KMAC256'] {
-			encapsulated_key := subtle.encapsulate_key(name, pair.public_key, shared_name, true, [])!
+			shared_usage := if shared_name == 'AES-OCB' { KeyUsage.encrypt } else { KeyUsage.sign }
+			encapsulated_key := subtle.encapsulate_key(name, pair.public_key, shared_name, true, [shared_usage])!
 			secret := encapsulated_key.shared_key or { panic('shared key') }
-			decoded := subtle.decapsulate_key(name, pair.private_key, encapsulated_key.ciphertext or { panic('ciphertext') }, shared_name, true, [])!
-			assert secret.algorithm_name() == shared_name && secret.usages.len == 0
+			decoded := subtle.decapsulate_key(name, pair.private_key, encapsulated_key.ciphertext or { panic('ciphertext') }, shared_name, true, [shared_usage])!
+			assert secret.algorithm_name() == shared_name && secret.usages == [shared_usage]
 			assert secret.handle() == decoded.handle()
 		}
 		if _ := subtle.encapsulate_bits(name, pair.public_key) {
@@ -220,21 +221,23 @@ fn test_mlkem_async_key_methods_use_key_usage_and_source_shared_import_rules() {
 	subtle := SubtleCrypto.create()
 	public_key := subtle.import_key(.raw_public, hex.decode(fixture.public_hex)!, fixture.name, true, [.encapsulate_key], '')!
 	private_key := subtle.import_key(.raw_seed, hex.decode(fixture.seed_hex)!, fixture.name, true, [.decapsulate_key], '')!
-	// Source KEM key methods directly invoke import and permit empty shared usages.
+	// Shared secret keys require nonempty usages after the import operation.
 	encapsulated := binding.encapsulate_key(webidl.string_value(fixture.name), public_key, webidl.string_value('AES-GCM'), true, [])
 	host.work[0]()
 	assert encapsulated.state == .pending
 	host.settle[0]()
-	assert encapsulated.state == .fulfilled
-	shared_key := crypto_key_from_value(encapsulated.result.object_value['sharedKey'])!
-	assert shared_key.usages.len == 0 && shared_key.handle().len == 32
-	ciphertext := encapsulated.result.object_value['ciphertext'].buffer_value or { panic('ciphertext') }
+	assert encapsulated.state == .rejected
+	assert encapsulated.result.object_value['name'].string_value == 'SyntaxError'
+	valid := subtle.encapsulate_key(fixture.name, public_key, 'AES-GCM', true, [.encrypt])!
+	shared_key := valid.shared_key or { panic('shared key') }
+	ciphertext := webidl.BufferSource.array_buffer(valid.ciphertext or { panic('ciphertext') })
 	decapsulated := binding.decapsulate_key(webidl.string_value(fixture.name), private_key, ciphertext, webidl.string_value('AES-GCM'), true, [])
 	host.work[1]()
 	assert decapsulated.state == .pending
 	host.settle[1]()
-	assert decapsulated.state == .fulfilled
-	assert crypto_key_from_value(decapsulated.result)!.handle() == shared_key.handle()
+	assert decapsulated.state == .rejected
+	assert decapsulated.result.object_value['name'].string_value == 'SyntaxError'
+	assert subtle.decapsulate_key(fixture.name, private_key, webidl.get_buffer_source_copy(ciphertext), 'AES-GCM', true, [.encrypt])!.handle() == shared_key.handle()
 	// The public importKey still applies its common empty-secret-usages check.
 	imported := binding.import_key(.raw, webidl.buffer_source_value(webidl.BufferSource.array_buffer([]u8{len: 32})), webidl.string_value('AES-GCM'), true, [])
 	host.work[2]()

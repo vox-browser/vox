@@ -91,6 +91,7 @@ pub fn (box &BlockBox) scroll_snap() &BlockBoxScrollSnapData {
 
 pub struct BlockBoxClipData {
 pub:
+	clip_decided_by_parent ?&LayoutRect
 	css_clip  ?&LayoutRect
 	clip_path ?&painting.ClipPathVisualData
 	svg_clip  ?&painting.SVGClipVisualData
@@ -185,7 +186,7 @@ pub fn retained_block_box_scroll_snap(value BlockBoxScrollSnapData) &BlockBoxScr
 }
 
 pub fn retained_block_box_clip(value BlockBoxClipData) &BlockBoxClipData {
-	if value.css_clip == none && value.clip_path == none && value.svg_clip == none && value.svg_mask == none {
+	if value.clip_decided_by_parent == none && value.css_clip == none && value.clip_path == none && value.svg_clip == none && value.svg_mask == none {
 		return unsafe { nil }
 	}
 	return &BlockBoxClipData{ ...value }

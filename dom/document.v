@@ -717,6 +717,8 @@ pub type HTMLLinkHasLoadedIconCallback = fn (voidptr) bool
 
 pub type HTMLLinkLoadFaviconCallback = fn (voidptr) bool
 
+pub type HTMLLinkTypeAttributeChangedCallback = fn (voidptr, ?string, ?string)
+
 @[heap]
 pub struct HTMLLinkElement {
 	HTMLElement
@@ -724,6 +726,7 @@ pub mut:
 	link_element_model_            voidptr = unsafe { nil }
 	link_has_loaded_icon_callback_ HTMLLinkHasLoadedIconCallback = unsafe { nil }
 	link_load_favicon_callback_    HTMLLinkLoadFaviconCallback   = unsafe { nil }
+	link_type_attribute_changed_callback_ HTMLLinkTypeAttributeChangedCallback = unsafe { nil }
 	// LinkStyle::sheet is CSS-owned, as with StyleElementBase's sheet.
 	linked_style_sheet_               voidptr
 	linked_style_sheet_scope_         ?&Node
@@ -1725,6 +1728,8 @@ pub type DocumentQueueSelectionchangeEventTaskCallback = fn (voidptr, &Document,
 
 pub type DocumentQueueElementTaskCallback = fn (voidptr, &Element, TaskSource, fn ())
 
+pub type DocumentVisibilityStateEntryCallback = fn (voidptr, &Document, bool)
+
 pub struct DocumentLifecycleHook {
 pub:
 	script_element_post_connection fn (voidptr, &Element) = unsafe { nil }
@@ -1745,6 +1750,7 @@ pub:
 	queue_an_element_task            DocumentQueueElementTaskCallback = unsafe { nil }
 	run_unloading_cleanup_steps      DocumentLifecycleCallback = unsafe { nil }
 	timer_visibility_state_changed   DocumentLifecycleCallback = unsafe { nil }
+	queue_visibility_state_entry     DocumentVisibilityStateEntryCallback = unsafe { nil }
 	timer_audio_play_state_changed   DocumentLifecycleCallback = unsafe { nil }
 }
 
@@ -2030,7 +2036,9 @@ pub type DocumentEditingQueryCommandCallback = fn (voidptr, &Document, string) !
 
 pub type DocumentEditingQueryCommandValueCallback = fn (voidptr, &Document, string) !string
 
-pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !string
+pub type DocumentEditingSanitizeClipboardHTMLCallback = fn (voidptr, &Range, string) !&DocumentFragment
+
+pub type DocumentEditingInsertPastedFragmentCallback = fn (voidptr, &Document, &DocumentFragment, string) !bool
 
 pub struct DocumentEditingCommandHook {
 pub:
@@ -2042,6 +2050,7 @@ pub:
 	query_command_supported DocumentEditingQueryCommandCallback          = unsafe { nil }
 	query_command_value     DocumentEditingQueryCommandValueCallback     = unsafe { nil }
 	sanitize_clipboard_html DocumentEditingSanitizeClipboardHTMLCallback = unsafe { nil }
+	insert_pasted_fragment DocumentEditingInsertPastedFragmentCallback = unsafe { nil }
 }
 
 pub type DocumentEditingHistoryCallback = fn (voidptr)
@@ -3204,6 +3213,7 @@ pub:
 	did_update_resource_count_callback   fn (voidptr, int) = unsafe { nil }
 	did_change_title_callback            fn (voidptr, string) = unsafe { nil }
 	device_pixel_scale_callback          fn (voidptr) f64 = unsafe { nil }
+	page_zoom_level_callback             fn (voidptr) f64 = unsafe { nil }
 	did_allocate_backing_stores_callback fn (voidptr, int, int) = unsafe { nil }
 	did_update_editing_history_callback  fn (voidptr, bool, bool) = unsafe { nil }
 	preferred_color_scheme_callback      fn (voidptr) string = unsafe { nil }
@@ -4737,7 +4747,7 @@ pub fn (mut d Document) dispatch_event_simple(event_name string, bubbles bool) {
 	document_node.dispatch_event_simple(event_name, bubbles)
 }
 
-pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !string {
+pub fn (d &Document) sanitize_clipboard_html(range &Range, html string) !&DocumentFragment {
 	hook := d.editing_command_hook_ or {
 		return error('clipboard HTML sanitizer is not installed')
 	}
@@ -4964,6 +4974,8 @@ pub enum PseudoElement {
 	view_transition_new
 	view_transition_old
 	highlight
+	color_swatch
+	webkit_color_swatch_wrapper
 	target_text
 	spelling_error
 	grammar_error
@@ -5588,6 +5600,7 @@ pub mut:
 
 	// Visibility
 	visibility_state VisibilityState = .hidden
+	initial_visibility_state_entry_pending_ bool
 
 	// Last modified
 	last_modified_ ?string
@@ -9257,6 +9270,9 @@ pub fn (mut d Document) update_the_visibility_state(state VisibilityState) {
 	// 2. Set document's visibility state to visibilityState.
 	d.visibility_state = state
 
+	// 3. Queue the entry before running visibility-change steps and events.
+	d.queue_visibility_state_entry(false)
+
 	// 5. Run the view transition page visibility change steps with document.
 	d.view_transition_page_visibility_change_steps()
 
@@ -9277,7 +9293,8 @@ pub fn (mut d Document) set_initial_visibility_state(state VisibilityState) {
 	if hook := d.lifecycle_hook_ {
 		d.run_lifecycle_callback(hook.timer_visibility_state_changed)
 	}
-	// TODO: The pinned source still queues no initial VisibilityStateEntry.
+	d.initial_visibility_state_entry_pending_ = true
+	d.queue_visibility_state_entry(true)
 	// Source AD-HOC: retain both initial snapshots before the first rendering
 	// update, so an intervening viewport or scale change still fires resize.
 	if d.last_viewport_size == none {
@@ -9285,6 +9302,27 @@ pub fn (mut d Document) set_initial_visibility_state(state VisibilityState) {
 		d.last_viewport_size = [viewport_size[0], viewport_size[1]]!
 		d.last_visual_viewport_state = d.current_visual_viewport_state()
 	}
+}
+
+fn (mut d Document) queue_visibility_state_entry(initial bool) {
+	hook := d.lifecycle_hook_ or { return }
+	if hook.queue_visibility_state_entry == unsafe { nil } { return }
+	if initial {
+		// Navigation creates a Window and settings before attaching the new
+		// Document. Its Performance time origin is unavailable until that
+		// association, and a reused Window may still own the outgoing one.
+		if d.window == unsafe { nil } { return }
+		associated := d.window.associated_document() or { return }
+		if associated != &d { return }
+	}
+	hook.queue_visibility_state_entry(hook.target, d, initial)
+	if initial { d.initial_visibility_state_entry_pending_ = false }
+}
+
+// The compact Window constructor can attach the global after its navigable
+// has set initial visibility. Publish that entry once its real owner exists.
+pub fn (mut d Document) flush_initial_visibility_state_entry() {
+	if d.initial_visibility_state_entry_pending_ { d.queue_visibility_state_entry(true) }
 }
 
 // --- Media queries ---
@@ -10450,6 +10488,12 @@ pub fn (mut d Document) exec_command_internal(command string, show_ui bool, valu
 		return false
 	}
 	return hook.exec_command(hook.target, d, command, show_ui, value, user_input_type)!
+}
+
+pub fn (mut d Document) insert_pasted_fragment(fragment &DocumentFragment, user_input_type string) !bool {
+	hook := d.editing_command_hook_ or { return false }
+	if hook.insert_pasted_fragment == unsafe { nil } { return false }
+	return hook.insert_pasted_fragment(hook.target, d, fragment, user_input_type)!
 }
 
 pub fn (d &Document) query_command_enabled(command string) !bool {
@@ -14164,6 +14208,11 @@ pub fn (p &Page) device_pixels_per_css_pixel() f64 {
 		return p.device_pixel_scale_callback(p.target)
 	}
 	return 1.0
+}
+
+pub fn (p &Page) page_zoom_level() f64 {
+	if p.target == unsafe { nil } || p.page_zoom_level_callback == unsafe { nil } { return 1 }
+	return p.page_zoom_level_callback(p.target)
 }
 
 pub fn (p &Page) preferred_color_scheme() string {

@@ -352,6 +352,7 @@ mut:
 	audio_capture_stream_active bool
 	audio_capture_start_pending bool
 	audio_capture_request_id    u64
+	media_devices_              ?&MediaDevices
 }
 
 fn next_provider_id() u64 {
@@ -412,6 +413,10 @@ pub fn (mut track MediaStreamTrack) stop() {
 	track.stop_audio_capture()
 	track.state_ = .ended
 	track.update_audio_silence_state()
+	if mut devices := track.media_devices_ {
+		devices.media_stream_track_sources.delete(track.provider_id_)
+		track.media_devices_ = none
+	}
 }
 
 pub fn (mut track MediaStreamTrack) end() {
@@ -827,7 +832,7 @@ mut:
 	stored_device_list                   []StoredDevice
 	can_expose_camera_info               bool
 	can_expose_microphone_info           bool
-	media_stream_track_sources           map[u64]bool
+	media_stream_track_sources           map[u64]&MediaStreamTrack
 	pending_enumerate_devices_requests   []&MediaDeviceListPromise
 	pending_get_user_media_requests      []PendingGetUserMediaRequest
 	pending_request_state_change_listener_ ?&dom.IDLEventListener
@@ -876,6 +881,19 @@ pub fn (mut media_devices MediaDevices) finalize() {
 		window_target.remove_event_listener_without_options('blur', listener)
 	}
 	media_devices.pending_request_state_change_listener_ = none
+}
+
+// https://w3c.github.io/mediacapture-main/#dfn-stop-all-sources
+// A window's capture sources must end during document unload even when a
+// different realm still retains their tracks. Drop ownership before stopping
+// them, since stopping a native capture can itself finish pending work.
+pub fn (mut media_devices MediaDevices) stop_all_sources() {
+	tracks := media_devices.media_stream_track_sources.values()
+	media_devices.media_stream_track_sources.clear()
+	for track in tracks {
+		mut mutable_track := unsafe { &MediaStreamTrack(track) }
+		mutable_track.stop()
+	}
 }
 
 pub fn (media_devices &MediaDevices) get_supported_constraints() MediaTrackSupportedConstraints {
@@ -1219,7 +1237,8 @@ fn (mut media_devices MediaDevices) run_get_user_media_task(promise_pointer &Med
 	})
 	mut stream := MediaStream.create_empty()
 	stream.append_track(track)
-	media_devices.media_stream_track_sources[track.provider_id()] = true
+	track.media_devices_ = media_devices
+	media_devices.media_stream_track_sources[track.provider_id()] = track
 	resolve_media_stream_promise(mut promise, stream)
 }
 

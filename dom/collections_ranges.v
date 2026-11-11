@@ -800,9 +800,11 @@ pub fn (mut n NamedNodeMap) visit_edges(mut visitor CellVisitor) {
 pub fn (n &NamedNodeMap) supported_property_names() []string {
 	// 1. Let names be the qualified names of the attributes in this NamedNodeMap object's attribute list, with duplicates omitted, in order.
 	mut names := []string{cap: n.attrs.len}
+	mut seen := map[string]bool{}
 	for attribute in n.attrs {
 		attribute_name := attribute.name()
-		if attribute_name !in names {
+		if attribute_name !in seen {
+			seen[attribute_name] = true
 			names << attribute_name
 		}
 	}
@@ -812,6 +814,20 @@ pub fn (n &NamedNodeMap) supported_property_names() []string {
 	}
 	// 3. Return names.
 	return names
+}
+
+pub fn (n &NamedNodeMap) is_supported_property_name(name string) bool {
+	if n.element != unsafe { nil } && n.element.namespace_uri() or { '' } == namespace_html_uri && n.element.document().document_type() == .html {
+		if name != to_ascii_lowercase(name) {
+			return false
+		}
+	}
+	for attribute in n.attrs {
+		if attribute.name() == name {
+			return true
+		}
+	}
+	return false
 }
 
 // https://dom.spec.whatwg.org/#dom-namednodemap-getnameditem
@@ -3357,6 +3373,12 @@ pub fn (r &Range) get_bounding_client_rect() DOMRect {
 pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment {
 	// 1. Let compliantString be the result of invoking the Get Trusted Type compliant string algorithm.
 	compliant_string := r.start_container_.document().trusted_types_compliant_html(fragment, 'range-create-contextual-fragment')!
+	return r.create_contextual_fragment_with_scripting_mode(compliant_string, .fragment)
+}
+
+// Internal callers such as user paste supply ordinary markup and explicitly
+// choose inert parsing. The script-facing entry point above retains its sink check.
+pub fn (r &Range) create_contextual_fragment_with_scripting_mode(fragment string, scripting_mode ParserScriptingMode) !&DocumentFragment {
 	// 2. Let node be this's start node.
 	node := r.start_container_
 	// 3. Let element be null.
@@ -3382,8 +3404,7 @@ pub fn (r &Range) create_contextual_fragment(fragment string) !&DocumentFragment
 		return error('InvalidStateError: Could not determine a context element')
 	}
 
-	// 7. Parse in Fragment mode so script elements are not marked parser-inserted or already started.
-	return context_element.parse_fragment_with_scripting_mode(compliant_string, .fragment)
+	return context_element.parse_fragment_with_scripting_mode(fragment, scripting_mode)
 }
 
 pub fn (r &Range) for_each_contained(callback fn(&Node) TraversalDecision) {

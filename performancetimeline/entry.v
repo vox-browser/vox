@@ -28,6 +28,7 @@ pub const entry_types = [
 	'navigation',
 	'paint',
 	'resource',
+	'visibility-state',
 ]
 
 pub const event_names = ['resourcetimingbufferfull']
@@ -35,6 +36,12 @@ pub const event_names = ['resourcetimingbufferfull']
 // HighResolutionTime/SupportedPerformanceTypes.h is the current implementation
 // capability list; entry_types above is the complete registry vocabulary.
 pub const supported_entry_types = ['mark', 'measure', 'resource']
+
+pub fn supported_entry_types_for_global(window_context bool) []string {
+	mut result := supported_entry_types.clone()
+	if window_context { result << 'visibility-state' }
+	return result
+}
 
 // PerformanceEntry is the shared translated base value. Concrete entry types
 // retain their specialised state and expose this value through performance_entry().

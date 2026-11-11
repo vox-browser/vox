@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 //
 // SPDX-License-Identifier: BSD-2-Clause
 
@@ -845,6 +846,10 @@ pub fn (subtle_crypto &SubtleCrypto) encapsulate_key(algorithm string, key &Cryp
 	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
     normalized_usages := normalize_key_usages_for_operation(usages)
 	mut shared_key := import_kem_shared_secret(shared_name, shared_key_bits, extractable, normalized_usages)!
+	if normalized_usages.len == 0 {
+		shared_key.destroy()
+		return error('SyntaxError: usages must not be empty')
+	}
     shared_key.set_extractable(extractable)
     shared_key.set_usages(normalized_usages)
 	return EncapsulatedKey{
@@ -862,6 +867,10 @@ pub fn (subtle_crypto &SubtleCrypto) decapsulate_key(algorithm string, key &Cryp
 	shared_name := normalize_an_algorithm(shared_key_algorithm, 'importKey')!
     normalized_usages := normalize_key_usages_for_operation(usages)
     mut shared_key := import_kem_shared_secret(shared_name, bits, extractable, normalized_usages)!
+	if normalized_usages.len == 0 {
+		shared_key.destroy()
+		return error('SyntaxError: usages must not be empty')
+	}
     shared_key.set_extractable(extractable)
     shared_key.set_usages(normalized_usages)
     return shared_key

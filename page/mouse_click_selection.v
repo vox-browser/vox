@@ -22,9 +22,19 @@ pub fn (mut handler EventHandler) select_mouse_text(document &dom.Document, posi
 		if !node.is_text() { return }
 		text := unsafe { &dom.Text(node) }.data()
 		if click_count == 2 {
-			range := word_range(text, start.offset)
-			start = dom.BoundaryPoint{ node: node, offset: range.start }
-			end = dom.BoundaryPoint{ node: node, offset: range.end }
+			mut inline_range := ?&dom.Range(none)
+			if layout_node := node.layout_node() {
+				inline_range = layout_node.inline_word_range(start.offset)
+			}
+			if mut range := inline_range {
+				start = dom.BoundaryPoint{ node: range.start_container(), offset: range.start_offset() }
+				end = dom.BoundaryPoint{ node: range.end_container(), offset: range.end_offset() }
+				range.finalize()
+			} else {
+				range := word_range(text, start.offset)
+				start = dom.BoundaryPoint{ node: node, offset: range.start }
+				end = dom.BoundaryPoint{ node: node, offset: range.end }
+			}
 			handler.selection_mode_ = .word
 		} else {
 			scope := if target := document.active_input_events_target(node) {

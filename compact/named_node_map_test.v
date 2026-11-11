@@ -3,6 +3,31 @@ module main
 import browserjs
 import html
 
+// Ladybird a77aced1a001b62604dc39474fe658f06ad124c4.
+fn test_compact_large_named_node_map_keeps_duplicate_and_uppercase_name_rules() {
+	mut document := html.parse_document('<!doctype html>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'about:blank', [r'
+const element=document.createElement("div");
+for(let i=0;i<3000;i++)element.setAttribute("data-"+i,String(i));
+element.setAttributeNS(null,"Uppercase","hidden");
+element.setAttributeNS("urn:a","duplicate","first");
+element.setAttributeNS("urn:b","duplicate","second");
+const attributes=element.attributes,names=Object.getOwnPropertyNames(attributes);
+if(attributes.length!==3003||names.length!==6004)throw new Error("enumeration length");
+if(names[0]!=="0"||names[3002]!=="3002"||names[3003]!=="data-0"||names[names.length-1]!=="duplicate")throw new Error("enumeration order");
+if(names.includes("Uppercase")||names.filter(name=>name==="duplicate").length!==1)throw new Error("named property filtering");
+if(!("data-1234" in attributes)||"missing" in attributes||"Uppercase" in attributes||"uppercase" in attributes)throw new Error("supported names");
+if(attributes.duplicate.value!=="first")throw new Error("first duplicate wins");
+'], runtime, mut messages)
+	assert messages == []string{}
+}
+
 fn test_compact_attributes_support_jquery_option_value_hook() {
 	mut document := html.parse_document('<!doctype html><select id="filter"><option value="standart">По бампам</option><option value="timestamp">По времени</option><option>Text only</option></select>')
 	mut runtime := browserjs.Runtime.create()

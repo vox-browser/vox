@@ -835,6 +835,11 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	box.fixed_to_viewport = fixed_to_viewport
 
 	mut own_state := inherited_state
+	// The parent decides this clip in layout space. The float's own sticky
+	// displacement, effect and transform must remain inside it.
+	if clip := box.clips().clip_decided_by_parent {
+		own_state = tree.append(compatibility_clip_visual_data(box, *clip, BoxRadii{}), own_state)
+	}
 	mut enters_3d_sorting_plane := false
 	mut establishes_sorting_context := false
 	mut needs_synthetic_3d_plane := false
@@ -863,15 +868,33 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		gfx_filter = compatibility_transformed_css_filter(filter, box.paint_transform)
 	}
 	isolated_surface := box.chromium_compositor_surface
-	if box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface {
+	has_effects := box.opacity < 1.0 || box.mix_blend_mode != .normal || gfx_filter != none || isolated_surface
+	// Filter the source before applying the element's clips and masks. Final
+	// opacity/blending/isolation must remain outside those clips so blending
+	// still sees the element's real backdrop instead of a mask's transparent
+	// intermediate surface.
+	effects_inside_clips := gfx_filter != none && (box.clips().css_clip != none
+		|| box.clips().clip_path != none || box.clips().svg_mask != none || box.clips().svg_clip != none)
+	effects_data := painting.EffectsVisualData{
+		opacity: box.opacity
+		blend_mode: box.mix_blend_mode
+		filter: gfx_filter
+		isolated: isolated_surface
+		svg_graphics_opacity: box.layout_handle != unsafe { nil }
+			&& unsafe { &Node(box.layout_handle) }.is_svg_box()
+	}
+	if effects_inside_clips {
+		// Keep a stable outer effect node even when its current opacity is 1 so
+		// compositor opacity samples never get patched onto the inner filter.
 		own_state = tree.append(painting.EffectsVisualData{
-			opacity: box.opacity
-			blend_mode: box.mix_blend_mode
-			filter: gfx_filter
-			isolated: isolated_surface
-			svg_graphics_opacity: box.layout_handle != unsafe { nil }
-				&& unsafe { &Node(box.layout_handle) }.is_svg_box()
+			opacity: effects_data.opacity
+			blend_mode: effects_data.blend_mode
+			isolated: effects_data.isolated
+			svg_graphics_opacity: effects_data.svg_graphics_opacity
 		}, own_state)
+		box.own_effects_visual_context_idx = own_state
+	} else if has_effects {
+		own_state = tree.append(effects_data, own_state)
 		box.own_effects_visual_context_idx = own_state
 	}
 	if compatibility_box_has_own_transform_context(box) {
@@ -918,6 +941,11 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 	}
 	if svg_clip := box.clips().svg_clip {
 		own_state = tree.append(*svg_clip, own_state)
+	}
+	if effects_inside_clips {
+		own_state = tree.append(painting.EffectsVisualData{
+			filter: gfx_filter
+		}, own_state)
 	}
 	box.accumulated_visual_context_index = own_state
 	if box.canvas().paints_canvas_background && box.own_scroll_frame_index > 0 {
@@ -3639,6 +3667,11 @@ fn viewport_hit_test_with_culling(target voidptr, x f64, y f64, type_ dom.HitTes
 				if candidate_node_id == 0 || !box.visible_for_pointer_events()
 					|| !compatibility_box_contains_hit_test_point_at(box, box.stacking_context, mut memo) {
 					continue
+				}
+				if type_ == .text_cursor {
+					if caret := compatibility_caret_in_box_lines(box, mut memo) {
+						return caret
+					}
 				}
 				if element := element_for_paint_node_id(candidate_node_id) {
 					candidate := dom.HitTestResult{

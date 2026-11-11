@@ -70,7 +70,9 @@ pub fn (mut cache PreflightCache) is_a_method_cache_entry_match(request &Request
 fn (mut cache PreflightCache) method_cache_entry_match(request &Request, method string) ?&Entry {
 	for mut entry in cache.entries {
 		cached_method := entry.method or { continue }
-		if !equals_ignoring_ascii_case(cached_method, method) && cached_method != '*' {
+		// Like a live preflight, '*' covers other methods only without credentials.
+		wildcard_matches := request.credentials_mode != .include && cached_method == '*'
+		if !equals_ignoring_ascii_case(cached_method, method) && !wildcard_matches {
 			continue
 		}
 		if PreflightCache.is_cache_entry_match(entry, request) {

@@ -1207,9 +1207,16 @@ fn (s &StyleComputer) recompute_inherited_style_with_invalidation(mut abstract_e
 	// A first-line style inherits through the originating element as well.
 	// Refresh its cascade alongside inherited font/color changes instead of
 	// leaving layout with the previous pseudo's immutable font snapshot.
-	if s.target_animation_uses_inherited_endpoints(*abstract_element)
+	if is_quirks_table(*abstract_element) || s.target_animation_uses_inherited_endpoints(*abstract_element)
 		|| (abstract_element.pseudo_element() == none
 			&& computed_properties_for_pseudo_element(abstract_element.element(), .first_line) != none) {
+		// The animation-only inherited walk does not maintain the selector
+		// ancestor filter. A table's full cascade still needs that context.
+		mut computer := unsafe { &StyleComputer(s) }
+		filter_ancestors := if is_quirks_table(*abstract_element) {
+			computer.push_animation_recompute_ancestors(*abstract_element)
+		} else { []&dom.Element{} }
+		defer { for ancestor in filter_ancestors { computer.pop_ancestor(ancestor) } }
 		mut changed_custom_properties := false
 		invalidation,_ := s.recompute_style_with_invalidation(mut abstract_element,&changed_custom_properties)
 		return invalidation
@@ -1887,6 +1894,7 @@ fn style_computer_update_animated_style_callback(target voidptr) {
 			document.invalidate_stacking_context_tree()
 		}
 	}
+	style_computer.invalidate_animated_quirks_table_colors()
 }
 
 // Whether animation values for inherited properties, or custom properties,
@@ -1924,6 +1932,12 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 		style_computer.recompute_style(mut abstract_element)
 	}
 
+	prioritized_body := if is_quirks_html_root(node) { quirks_table_body(node.document()) } else { ?&dom.Element(none) }
+	if body := prioritized_body {
+		recompute_style_for_subtree(mut style_computer, body.as_node())
+	}
+	if is_quirks_html_root(node) { style_computer.remember_quirks_body_color() }
+
 	if element := element_opt {
 		if shadow_root := element.shadow_root() {
 			recompute_style_for_subtree(mut style_computer, unsafe { &dom.Node(shadow_root) })
@@ -1933,7 +1947,8 @@ pub fn recompute_style_for_subtree(mut style_computer StyleComputer, node &dom.N
 	mut child := node.first_child()
 	for {
 		current := child or { break }
-		recompute_style_for_subtree(mut style_computer, current)
+		is_prioritized_body := if body := prioritized_body { voidptr(current) == voidptr(body.as_node()) } else { false }
+		if !is_prioritized_body { recompute_style_for_subtree(mut style_computer, current) }
 		child = current.next_sibling()
 	}
 
@@ -2041,22 +2056,40 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 	children_need_inherited_style_update := !invalidation.is_none()
 	descendant_style_recompute_needed := ancestor_needs_descendant_style_recompute
 		|| node_invalidation.recompute_descendant_styles
+		// A wrapper with an unchanged explicit color must not stop the body's
+		// separate dependency from reaching tables deeper in its subtree.
+		|| (is_quirks_table_body(node) && style_computer.quirks_body_color_changed())
 	descendants_need_update := needs_full_style_update || node.child_needs_style_update()
 		|| children_need_inherited_style_update || recompute_custom_property_dependents
 		|| node_invalidation.needs_layout_tree_rebuild() || descendant_style_recompute_needed
 	hidden := ancestor_is_display_none || is_display_none
+	// A table can precede the body, or live outside it. Compute the body's
+	// inheritance chain first even under a hidden root, before any sibling
+	// table resolves the UA color. Visit the body only once in this pass.
+	prioritized_body := if is_quirks_html_root(node) { quirks_table_body(node.document()) } else { ?&dom.Element(none) }
+	if body := prioritized_body {
+		body_selection_changed := u64(body.as_node().unique_id().value()) != style_computer.quirks_body_identity_
+		body_invalidation := update_style_recursively(mut style_computer, body.as_node(),
+			children_need_inherited_style_update, recompute_custom_property_dependents,
+			node_invalidation.needs_layout_tree_rebuild(), descendant_style_recompute_needed || body_selection_changed, hidden)
+		if !is_display_none {
+			invalidation = required_invalidation_after_style_change_or(invalidation, body_invalidation)
+		}
+	}
+	body_dependency_changed := is_quirks_html_root(node) && style_computer.remember_quirks_body_color()
+	outside_body_needs_recompute := descendant_style_recompute_needed || body_dependency_changed
 	deferred, needs_deferred_refresh := style_computer.prepare_hidden_child_style_update(node,
-		hidden, descendants_need_update)
+		hidden, descendants_need_update || body_dependency_changed)
 	children_need_full_style_recompute := node_invalidation.needs_layout_tree_rebuild() || needs_deferred_refresh
-	if !deferred && (descendants_need_update || needs_deferred_refresh) {
+	if !deferred && (descendants_need_update || needs_deferred_refresh || body_dependency_changed) {
 		if element := element_opt {
 			if shadow_root := element.shadow_root() {
 				shadow_node := unsafe { &dom.Node(shadow_root) }
 				if needs_full_style_update || shadow_node.needs_style_update()
 					|| shadow_node.child_needs_style_update() || children_need_inherited_style_update
 					|| recompute_custom_property_dependents || children_need_full_style_recompute
-					|| descendant_style_recompute_needed {
-					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed, hidden)
+						|| outside_body_needs_recompute {
+					subtree_invalidation := update_style_recursively(mut style_computer, shadow_node, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, outside_body_needs_recompute, hidden)
 					if !is_display_none {
 						invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 					}
@@ -2067,11 +2100,12 @@ fn update_style_recursively(mut style_computer StyleComputer, node &dom.Node, ne
 		mut child := node.first_child()
 		for {
 			current := child or { break }
-			if needs_full_style_update || current.needs_style_update()
+			is_prioritized_body := if body := prioritized_body { voidptr(current) == voidptr(body.as_node()) } else { false }
+			if !is_prioritized_body && (needs_full_style_update || current.needs_style_update()
 				|| children_need_inherited_style_update || current.child_needs_style_update()
 				|| recompute_custom_property_dependents || children_need_full_style_recompute
-				|| descendant_style_recompute_needed {
-				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, descendant_style_recompute_needed, hidden)
+				|| outside_body_needs_recompute) {
+				subtree_invalidation := update_style_recursively(mut style_computer, current, children_need_inherited_style_update, recompute_custom_property_dependents, children_need_full_style_recompute, outside_body_needs_recompute, hidden)
 				if !is_display_none {
 					invalidation = required_invalidation_after_style_change_or(invalidation, subtree_invalidation)
 				}

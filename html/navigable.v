@@ -1811,9 +1811,14 @@ pub fn (mut model NavigableModel) evaluate_javascript_url(url dom.URL, new_docum
 	hook := model.javascript_url_hook_ or { return none }
 	source := javascript_url_source(url)
 	result := hook(source, active_document) or { return none }
+	// A javascript: replacement retains the target's creation sandbox as well
+	// as restrictions imposed by the active document's CSP policy container.
+	final_sandbox_flags := model.snapshot_target_snapshot_params().sandboxing_flags.union(
+		csp_derived_sandboxing_flags(active_document.policy_container()))
 	mut document := dom.Document.create(active_document.url)
 	document.set_document_type(.html)
 	document.set_content_type('text/html')
+	document.set_active_sandboxing_flag_bits(final_sandbox_flags.bits)
 	document.set_origin(new_document_origin)
 	document.set_navigation_id(navigation_id)
 	document.set_allow_declarative_shadow_roots(true)

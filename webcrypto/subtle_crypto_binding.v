@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 
 // SubtleCrypto.cpp's WebIDL operation boundary. The deferred host callback and
@@ -220,11 +221,17 @@ fn normalize_binding_algorithm(algorithm webidl.Value, operation string) !Normal
             continue
         }
         if field == 'hash' {
+			if property.kind == .undefined { return error('TypeError: hash is required') }
+			hash_value := if property.kind in [.null_, .boolean, .number, .bigint] {
+				webidl.string_value(webidl.to_string(property)!)
+			} else {
+				property
+			}
             // Normalize the nested digest at its source read position, before
             // later numeric/buffer fields. Preserve its copied dictionary for
             // the parameter body, including cSHAKE required fields.
-            _ = normalize_binding_algorithm(property, 'digest')!
-            object[field] = binding_value_to_json(property)!
+            _ = normalize_binding_algorithm(hash_value, 'digest')!
+            object[field] = binding_value_to_json(hash_value)!
             continue
         }
         if field in ['parallelism', 'memory', 'passes', 'version', 'outputLength'] {
@@ -841,6 +848,10 @@ pub fn (binding &SubtleCryptoBinding) encapsulate_key(algorithm webidl.Value, ke
 		bits := MLKEM.create().encapsulate(AlgorithmParams{ name: normalized.name }, key)!
 		shared_bytes := bits.shared_key or { return error('OperationError: Encapsulation produced no shared key') }
 		mut shared_key := normalized_import(shared_params, .raw_secret, shared_bytes, extractable, copied_usages)!
+		if copied_usages.len == 0 {
+			shared_key.destroy()
+			return error('SyntaxError: usages must not be empty')
+		}
 		shared_key.set_extractable(extractable)
 		shared_key.set_usages(normalize_key_usages(copied_usages))
 		return webidl.object_value(encapsulated_key(realm, EncapsulatedKey{ shared_key: shared_key, ciphertext: bits.ciphertext }))
@@ -866,6 +877,10 @@ pub fn (binding &SubtleCryptoBinding) decapsulate_key(algorithm webidl.Value, ke
 		binding_validate_key(key, normalized.name, .decapsulate_key)!
 		shared_bytes := MLKEM.create().decapsulate(AlgorithmParams{ name: normalized.name }, key, bytes)!
 		mut shared_key := normalized_import(shared_params, .raw_secret, shared_bytes, extractable, copied_usages)!
+		if copied_usages.len == 0 {
+			shared_key.destroy()
+			return error('SyntaxError: usages must not be empty')
+		}
 		shared_key.set_extractable(extractable)
 		shared_key.set_usages(normalize_key_usages(copied_usages))
 		return crypto_key(realm, shared_key)

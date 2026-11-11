@@ -44,7 +44,7 @@ pub fn (mut host FetchHost) install(mut runtime Runtime) ! {
 		name := host.runtime.binding_dom_string(host.argument(args, 0))!
 		return host.operate(name, args) or {
 			reason := host.runtime.binding_exception_value(err)
-			if name == 'fetch' || name.starts_with('body.') && name !in ['body.body', 'body.bodyUsed'] {
+			if name == 'fetch' || name.starts_with('body.') && name !in ['body.body', 'body.bodyUsed', 'body.textStream'] {
 				capability := host.runtime.create_javascript_promise()!
 				host.runtime.reject_javascript_promise(capability, reason)!
 				host.runtime.release_javascript_promise(capability)
@@ -525,6 +525,7 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 		}
 	}
 	if name.starts_with('body.') {
+		if name == 'body.textStream' { return host.body_text_stream(receiver) }
 		record := host.by_wrapper[receiver] or { return error('TypeError: Illegal Body receiver') }
 		mixin := match record.kind {
 			.request { unsafe { &fetch.RequestObject(record.native) }.body_mixin() }
@@ -539,6 +540,29 @@ fn (mut host FetchHost) operate(name string, args []voidptr) !voidptr {
 		return host.consume_body(name[5..], mixin)
 	}
 	return error('Unknown Fetch operation')
+}
+
+fn (host &FetchHost) body_text_stream(receiver voidptr) !voidptr {
+	mut owner := unsafe { &FetchHost(host) }
+	if receiver !in owner.by_wrapper {
+		// Resolve the native receiver across same-agent Window realms without
+		// consulting author-visible properties or allocating in the method realm.
+		group := C.JSContextGetGroup(host.runtime.context)
+		for _, candidate in fetch_bindings_ {
+			if candidate.closed || candidate.runtime.closed || candidate.runtime.context == unsafe { nil }
+				|| C.JSContextGetGroup(candidate.runtime.context) != group { continue }
+			if receiver in candidate.by_wrapper { owner = candidate; break }
+		}
+	}
+	record := owner.by_wrapper[receiver] or { return error('TypeError: Illegal Body receiver') }
+	mixin := match record.kind {
+		.request { unsafe { &fetch.RequestObject(record.native) }.body_mixin() }
+		.response { unsafe { &fetch.ResponseObject(record.native) }.body_mixin() }
+		else { return error('TypeError: Illegal Body receiver') }
+	}
+	readable := owner.runtime.readable_stream_host() or { return error('Fetch ReadableStream binding is unavailable') }
+	stream := owner.settings.body_text_stream_in_realm(mixin, readable.read_loop_realm())!
+	return owner.runtime.javascript_readable_stream(stream)
 }
 
 fn (mut host FetchHost) body_result(method string, bytes []u8, mime string) !voidptr {
@@ -829,7 +853,7 @@ const fetch_native_factory = r'(function(operate,byteString,global){
   }}).formData);
   property(target,"clone",({clone(){return operate(kind+".clone",this)}}).clone);
   for(const name of ["body","bodyUsed"])getter(target,name,"body."+name);
-  for(const name of ["text","json","arrayBuffer","bytes","blob"]){const method=({[name](){return operate("body."+name,this)}})[name];property(target,name,method)}
+  for(const name of ["text","json","arrayBuffer","bytes","blob","textStream"]){const method=({[name](){return operate("body."+name,this)}})[name];property(target,name,method)}
  }
  property(Response,"error",({error(){return operate("response.error")}}).error);
  property(Response,"redirect",({redirect(url){if(!arguments.length)throw new typeError("URL is required");return operate("response.redirect",undefined,url,arguments[1])}}).redirect);

@@ -1,3 +1,4 @@
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 // CryptoAlgorithms.cpp EC formats, Certificate.cpp, PK/EC.cpp and ASN1/DER.cpp.
 module webcrypto
@@ -260,9 +261,8 @@ fn import_ec_key(params EcKeyImportParams, format KeyFormat, material []u8, extr
 		if ec_scalar_size(params.named_curve) == 0 { return error('DataError: Invalid algorithm') }
 		validate_ec_usages(params.name, false, usages)!
 		handle = parse_ec_public(material) or { return error('DataError: Failed to parse key') }
-		// The pinned raw branch performs parsing without is_valid_point.
+		validate_ec_handle(params.named_curve, handle)!
 	} else {
-		// ECDH source dereferences an unset key here; expose failure at the host boundary.
 		return error('NotSupportedError: Invalid key format')
 	}
 	return CryptoKey.create_with_internal_handle(if private_key {

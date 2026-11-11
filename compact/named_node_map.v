@@ -67,7 +67,7 @@ const __compactAttributeNodes=(function(){
  function isIndex(property){return typeof property==="string"&&/^(0|[1-9][0-9]*)$/.test(property)&&Number(property)<4294967295;}
  function named(state,target,property){
   if(typeof property!=="string"||isIndex(property)||Reflect.has(target,property))return null;
-  return names(state).includes(property)?byName(state,property):null;
+  return native.call(state,"supportsName",{name:property})?byName(state,property):null;
  }
  function map(state){
   const target=Object.create(NamedNodeMap.prototype);

@@ -1062,16 +1062,6 @@ pub fn set_html_title_element_text(element &dom.HTMLTitleElement, value string) 
 pub fn html_title_element_children_changed(element &dom.HTMLTitleElement, metadata dom.ChildrenChangedMetadata) {
 	mut dom_element := unsafe { &dom.Element(element) }
 	dom_element.children_changed(metadata)
-	navigable := dom_element.as_node().navigable() or { return }
-	if !navigable.is_traversable() {
-		return
-	}
-	document := dom_element.document()
-	if document == unsafe { nil } || document.page() == unsafe { nil } {
-		return
-	}
-	mut page := unsafe { &dom.Page(document.page()) }
-	page.client_page_did_change_title(document.title())
 }
 
 pub fn html_slot_element_attribute_changed(slot &dom.HTMLSlotElement, local_name string, old_value ?string, value ?string, namespace_ ?string) {

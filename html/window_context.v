@@ -1543,6 +1543,11 @@ fn document_run_unloading_cleanup_steps(target voidptr, document &dom.Document) 
 	html_popover_close_watcher_managers.delete(u64(voidptr(document)))
 	mut window := unsafe { &WindowModel(target) }
 	mut mutable_document := unsafe { &dom.Document(document) }
+	if window.navigator_ != unsafe { nil } {
+		if mut devices := window.navigator_.media_devices_ {
+			devices.stop_all_sources()
+		}
+	}
 	if window.global_scope_ != unsafe { nil } {
 		if window.global_scope_.make_disappear_all_web_sockets() {
 			mutable_document.make_unsalvageable('websocket')
@@ -1691,6 +1696,7 @@ fn WindowModel.create_with_global(document &dom.Document, context &BrowsingConte
 	window.location_ = location
 	window.Window.location_ = unsafe { &dom.Location(location) }
 	document_with_html_hooks.set_window(unsafe { &dom.Window(window) })
+	document_with_html_hooks.flush_initial_visibility_state_entry()
 	mut mutable_context := unsafe { &BrowsingContextModel(context) }
 	mutable_context.set_active_document(document)
 	mutable_context.set_window_proxy(proxy)

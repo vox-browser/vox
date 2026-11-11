@@ -392,15 +392,14 @@ pub mut:
 	fit                  FitToViewBox
 	fallback_viewbox     ?ViewBox
 	active_view_element_ ?Element
+	view_specification_viewbox ?ViewBox
 	width                ?f64
 	height               ?f64
 }
 
 pub fn (viewport SvgViewport) active_viewbox() ?ViewBox {
-	if active_view := viewport.active_view_element_ {
-		if box := active_view.active_view_box() {
-			return box
-		}
+	if box := viewport.active_view_box_of_svg_view() {
+		return box
 	}
 	if box := viewport.fit.viewbox {
 		return box

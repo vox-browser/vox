@@ -1,10 +1,11 @@
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 module webcrypto
 
 import crypto.rand
 
-// The four pinned AES algorithms share these operations but differ in JWK
-// required fields and malformed-handle export behavior.
+// The AES algorithms share these operations but differ in supported formats
+// and malformed-handle export behavior.
 fn aes_validate_usages(name string, usages []KeyUsage) ! {
 	allowed := if name == 'AES-KW' { [KeyUsage.wrap_key, .unwrap_key] } else { [
 			KeyUsage.encrypt,
@@ -45,7 +46,6 @@ fn import_aes_key(name string, format KeyFormat, material []u8, extractable bool
 		if name in ['AES-CTR', 'AES-GCM'] && jwk.k == none {
 			return error("DataError: Missing 'k' field")
 		}
-		if name != 'AES-CBC' && jwk.alg == none { return error("DataError: Missing 'alg' field") }
 		data = parse_jwk_symmetric_key(jwk)!
 		bits := data.len * 8
 		if bits !in [128, 192, 256] { return error('DataError: Invalid key size: ${bits} bits') }

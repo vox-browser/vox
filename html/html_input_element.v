@@ -997,13 +997,16 @@ pub fn (mut model HTMLInputElementModel) create_text_input_shadow_tree() {
 pub fn (mut model HTMLInputElementModel) create_color_input_shadow_tree() {
 	mut element := input_element(&model)
 	shadow := element.attach_a_user_agent_shadow_root(.named)
-	mut border := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	border.set_attribute_value('style', 'width:fit-content;height:fit-content;padding:4px;border:1px solid ButtonBorder;background-color:ButtonFace;')
-	well := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
-	mut border_node := border.as_node()
-	append_input_shadow_child(mut border_node, well.as_node())
+	// Keep geometry in the UA stylesheet so author rules for the swatch
+	// pseudo-elements can override it (Ladybird a468d7109e4d).
+	mut wrapper := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
 	mut shadow_node := unsafe { &dom.Node(shadow) }
-	append_input_shadow_child(mut shadow_node, border.as_node())
+	append_input_shadow_child(mut shadow_node, wrapper.as_node())
+	wrapper.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.webkit_color_swatch_wrapper))
+	mut well := dom.create_element(element.document(), 'div', ns_html, none, none, false) or { return }
+	mut wrapper_node := wrapper.as_node()
+	append_input_shadow_child(mut wrapper_node, well.as_node())
+	well.set_associated_shadow_host_pseudo_element(int(css.PseudoElement.color_swatch))
 	model.color_well_element_ = well
 	model.update_color_well_element()
 }
@@ -1011,7 +1014,7 @@ pub fn (mut model HTMLInputElementModel) create_color_input_shadow_tree() {
 pub fn (mut model HTMLInputElementModel) update_color_well_element() {
 	if well := model.color_well_element_ {
 		mut mutable_well := unsafe { well }
-		mutable_well.set_attribute_value('style', 'width:32px;height:16px;border:1px solid ButtonBorder;box-sizing:border-box;background-color:${model.value_};')
+		mutable_well.set_attribute_value('style', 'background-color:${model.value_};')
 	}
 }
 

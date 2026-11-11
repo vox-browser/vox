@@ -129,18 +129,15 @@ fn test_chacha_source_formats_generation_and_jwk_error_order() {
 	assert key.algorithm_name() == 'ChaCha20-Poly1305'
 	assert !key.extractable
 	assert key.usages.len == 0
-	// Source JWK import admits every decoded width, including zero bytes.
+	// Validate key material during JWK import, before a cipher operation.
 	for size in [0, 1, 31, 33] {
-		admitted := SubtleCrypto.create().import_jwk(JsonWebKey{
+		if _ := SubtleCrypto.create().import_jwk(JsonWebKey{
 			...base
 			k: base64url_encode([]u8{len: size})
-		}, 'ChaCha20-Poly1305', true, [.encrypt], '')!
-		assert admitted.handle().len == size
-		assert SubtleCrypto.create().export_jwk(admitted)!.alg? == 'C20P'
-		if _ := algorithm.encrypt(AeadParams{ iv: []u8{len: 12} }, admitted, []) {
+		}, 'ChaCha20-Poly1305', true, [.encrypt], '') {
 			assert false
 		} else {
-			assert err.msg().ends_with('ChaCha20-Poly1305 key must be 32 bytes')
+			assert err.msg() == 'DataError: Key data must be 256 bits'
 		}
 	}
 	duplicated := [KeyUsage.encrypt, .encrypt]

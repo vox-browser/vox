@@ -33,8 +33,14 @@ fn dom_editing_query_command_value(_ voidptr, document &dom.Document, command st
 	return query_command_value(document, command)!
 }
 
-fn dom_editing_sanitize_clipboard_html(_ voidptr, range &dom.Range, html string) !string {
+fn dom_editing_sanitize_clipboard_html(_ voidptr, range &dom.Range, html string) !&dom.DocumentFragment {
 	return sanitize_clipboard_html(range, html)
+}
+
+fn dom_editing_insert_pasted_fragment(_ voidptr, document &dom.Document, fragment &dom.DocumentFragment, user_input_type string) !bool {
+	mut mutable_document := unsafe { &dom.Document(document) }
+	input_type := if user_input_type == '' { ?string(none) } else { ?string(user_input_type) }
+	return exec_command_with_fragment(mut mutable_document, 'insertHTML', false, '', .yes, input_type, fragment)
 }
 
 pub fn install_dom_editing_bridge(document &dom.Document) {
@@ -50,5 +56,6 @@ pub fn install_dom_editing_bridge(document &dom.Document) {
 		query_command_supported: dom_editing_query_command_supported
 		query_command_value:     dom_editing_query_command_value
 		sanitize_clipboard_html: dom_editing_sanitize_clipboard_html
+		insert_pasted_fragment: dom_editing_insert_pasted_fragment
 	})
 }

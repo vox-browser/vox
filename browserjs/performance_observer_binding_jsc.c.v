@@ -103,6 +103,7 @@ fn (mut runtime Runtime) performance_observer_entry(mut binding PerformanceObser
 	index := match entry.entry_type() {
 		'mark' { 4 }
 		'measure' { 6 }
+		'visibility-state' { 8 }
 		else { 2 }
 	}
 	value := runtime.retain_javascript_value(runtime.call_javascript_function(binding.make, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(index))])!)!
@@ -218,7 +219,7 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 		return C.vox_jsc_JSValueMakeNumber(runtime.context, f64(webidl.convert_to_int(runtime.webidl_value(args[2])!, 32, false, .no, .no)!))
 	}
 	if method == 'supported' {
-		values := performancetimeline.supported_entry_types.map(runtime.binding_string(it))
+		values := binding.scope.supported_entry_types().map(runtime.binding_string(it))
 		return C.vox_jsc_JSObjectMakeArray(runtime.context, uint(values.len), values.data, unsafe { nil })
 	}
 	if method == 'construct' {
@@ -315,6 +316,12 @@ fn (mut runtime Runtime) performance_observer_operation(mut binding PerformanceO
 		return runtime.performance_observer_entries(mut binding, entries)
 	}
 	entry := binding.entries[receiver] or { return runtime.event_binding_type_error('Illegal PerformanceEntry receiver') }
+	if method == 'visibilityBrand' {
+		if entry.entry_type() != 'visibility-state' {
+			return runtime.event_binding_type_error('Illegal VisibilityStateEntry receiver')
+		}
+		return C.vox_jsc_JSValueMakeUndefined(runtime.context)
+	}
 	if method in ['markDetail', 'measureDetail'] {
 		expected := if method == 'markDetail' { 'mark' } else { 'measure' }
 		if entry.entry_type() != expected {

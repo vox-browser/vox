@@ -6,7 +6,7 @@ module loader
 
 pub const browser_name = 'Ladybird'
 pub const browser_version = '1.0'
-pub const compatibility_token = 'Chrome/146.0.0.0 AppleWebKit/537.36 Safari/537.36'
+pub const compatibility_token = 'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36'
 pub const default_navigator_compatibility_mode = NavigatorCompatibilityMode.chrome
 
 pub fn cpu_string() string {

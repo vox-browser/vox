@@ -76,7 +76,7 @@ fn test_performance_observer_binding_buffered_records_brands_and_conversion() {
  let mode=false;try{observer.observe({entryTypes:["mark"]})}catch(e){mode=e instanceof DOMException&&e.name==="InvalidModificationError"}
  const marker={};let same=false;try{observer.observe({get type(){throw marker}})}catch(e){same=e===marker}
  globalThis.order=[];observer.observe({get buffered(){order.push("buffered");return false},get durationThreshold(){order.push("threshold");return {valueOf(){order.push("value");return 1}}},get entryTypes(){order.push("entries")},get type(){order.push("type");return "unsupported"}});
- records.length===1&&records[0].name==="before"&&observer instanceof Derived&&Object.isFrozen(PerformanceObserver.supportedEntryTypes)&&PerformanceObserver.supportedEntryTypes===PerformanceObserver.supportedEntryTypes&&PerformanceObserver.supportedEntryTypes.join(",")==="mark,measure,resource"&&errors===8&&mode&&same&&order.join(",")==="buffered,threshold,value,entries,type";
+ records.length===1&&records[0].name==="before"&&observer instanceof Derived&&Object.isFrozen(PerformanceObserver.supportedEntryTypes)&&PerformanceObserver.supportedEntryTypes===PerformanceObserver.supportedEntryTypes&&PerformanceObserver.supportedEntryTypes.join(",")==="mark,measure,resource,visibility-state"&&errors===8&&mode&&same&&order.join(",")==="buffered,threshold,value,entries,type";
  ')! == 'true'
 	drain_native_observer_binding(scope)
 	assert runtime.evaluate_host('called')! == '0'

@@ -164,6 +164,8 @@ pub enum PseudoElement {
 	view_transition_new
 	view_transition_old
 	highlight
+	color_swatch
+	webkit_color_swatch_wrapper
 	target_text
 	spelling_error
 	grammar_error
@@ -359,6 +361,8 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 		.view_transition_new { 'view-transition-new' }
 		.view_transition_old { 'view-transition-old' }
 		.highlight { 'highlight' }
+		.color_swatch { 'color-swatch' }
+		.webkit_color_swatch_wrapper { '-webkit-color-swatch-wrapper' }
 		.target_text { 'target-text' }
 		.spelling_error { 'spelling-error' }
 		.grammar_error { 'grammar-error' }
@@ -377,6 +381,8 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 		'search-text' { .search_text }
 		'cue' { .cue }
 		'highlight' { .highlight }
+		'color-swatch' { .color_swatch }
+		'-webkit-color-swatch-wrapper' { .webkit_color_swatch_wrapper }
 		'after' {
 			.after
 		}
@@ -457,6 +463,9 @@ pub fn pseudo_element_from_string(name string) PseudoElement {
 // spelling when it serializes while a canonical one does not.
 pub fn aliased_pseudo_element_from_string(name string) PseudoElement {
 	return match name.to_lower() {
+		'-moz-color-swatch', '-webkit-color-swatch' {
+			.color_swatch
+		}
 		'-moz-meter-bar', '-moz-progress-bar', '-moz-range-progress', '-webkit-progress-value' {
 			.slider_fill
 		}

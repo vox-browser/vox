@@ -4,7 +4,7 @@ module webcrypto
 import encoding.hex
 import webidl
 
-fn test_aes_ctr_native_source_vectors_width_validation_and_full_counter_increment() {
+fn test_aes_ctr_native_source_vectors_with_full_width_counter() {
 	subtle := SubtleCrypto.create()
 	for vector in aes_ctr_source_vectors {
 		key := subtle.import_key(.raw, hex.decode(vector.key_hex)!, 'AES-CTR', false, [
@@ -12,13 +12,42 @@ fn test_aes_ctr_native_source_vectors_width_validation_and_full_counter_incremen
 			.decrypt,
 		], '')!
 		input := hex.decode(vector.input_hex)!
-		for length in [u8(1), 7, 8, 31, 64, 128] {
+		for length in [u8(128)] {
 			params := AesCtrParams{ counter: hex.decode(vector.iv_hex)!, length: length }
 			output := subtle.encrypt(params, key, input)!
 			assert output.hex() == vector.output_hex
 			assert subtle.decrypt(params, key, output)! == input
 		}
 		assert subtle.encrypt(AesCtrParams{ counter: hex.decode(vector.iv_hex)!, length: 1 }, key, [])!.len == 0
+	}
+}
+
+fn test_aes_ctr_rejects_input_after_counter_space_is_exhausted() {
+	subtle := SubtleCrypto.create()
+	vector := aes_ctr_source_vectors[0]
+	key := subtle.import_key(.raw, hex.decode(vector.key_hex)!, 'AES-CTR', false, [
+		.encrypt,
+		.decrypt,
+	], '')!
+	params := AesCtrParams{
+		counter: []u8{len: 16}
+		length: 1
+	}
+	within_capacity := []u8{len: 32}
+	ciphertext := subtle.encrypt(params, key, within_capacity)!
+	assert subtle.decrypt(params, key, ciphertext)! == within_capacity
+	for size in [33, 48] {
+		input := []u8{len: size}
+		if _ := subtle.encrypt(params, key, input) {
+			assert false
+		} else {
+			assert err.msg() == 'OperationError: AES-CTR counter would repeat'
+		}
+		if _ := subtle.decrypt(params, key, input) {
+			assert false
+		} else {
+			assert err.msg() == 'OperationError: AES-CTR counter would repeat'
+		}
 	}
 }
 
@@ -66,7 +95,7 @@ fn test_aes_ctr_deferred_native_operation_copies_counter_and_length() {
 	mut members := {
 		'name':    webidl.string_value('AES-CTR')
 		'counter': webidl.buffer_source_value(counter)
-		'length':  webidl.number_value(1)
+		'length':  webidl.number_value(128)
 	}
 	promise := binding.encrypt(webidl.object_value(members), key, plaintext)
 	counter.write([]u8{len: 16}, 0)!

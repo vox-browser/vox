@@ -129,8 +129,14 @@ fn dom_loaded_text_parse_callback(_ voidptr, document &dom.Document, data []u8, 
 	mut parser := HTMLParser.create_with_open_input_stream(document)
 	mut tokenizer := parser.tokenizer()
 	tokenizer.update_insertion_point()
-	tokenizer.insert_input_at_insertion_point('<pre>\n')
+	tokenizer.insert_input_at_insertion_point('<meta name="color-scheme" content="light dark"><pre>\n')
 	parser.run()
+	if mut pre := document.get_elements_by_tag_name('pre').item(0) {
+		// User-agent presentation must not be blocked by the response CSP.
+		mut style := pre.style_for_bindings()
+		style.set_declarations_from_text('word-wrap: break-word; white-space: pre-wrap;')
+		pre.set_inline_style(style)
+	}
 	tokenizer = parser.tokenizer()
 	tokenizer.switch_to(.plaintext)
 	tokenizer.insert_input_at_insertion_point(decoded_input)

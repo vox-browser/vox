@@ -1,4 +1,5 @@
 // Copyright (c) 2026, Ladybird contributors
+// Copyright (c) 2026-present, the Ladybird developers.
 // SPDX-License-Identifier: BSD-2-Clause
 
 // Translation of the shared algorithms and parameter conversion entry points
@@ -32,7 +33,9 @@ pub fn hash_algorithm_identifier_from_value(value json2.Any) !HashAlgorithmIdent
 		}
 		name = algorithm_js_string(object, 'name')!
 	} else {
-		return error('TypeError: Algorithm identifier must be a string or object')
+		// A hash dictionary member uses the AlgorithmIdentifier union's
+		// DOMString conversion for primitive values, including null.
+		name = algorithm_js_string({'hash': value}, 'hash')!
 	}
 	normalized := normalize_an_algorithm(name, 'digest')!
 	if normalized in ['cSHAKE128', 'cSHAKE256'] {

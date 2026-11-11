@@ -1708,6 +1708,11 @@ fn css_mask_image_for_box(element &dom.Element, computed &css.ComputedProperties
 		if resolved_url == '' {
 			continue
 		}
+		if !image_source_allowed_for_paint(element.document(), resolved_url) {
+			// A failed mask image is transparent, rather than an absent mask.
+			operations << transparent_css_svg_mask_image(border_rect)
+			continue
+		}
 		if image_operations := css_svg_mask_image_operations(node, resolved_url, computed,
 			index, border_rect) {
 			operations << image_operations
@@ -3298,7 +3303,8 @@ fn resolved_svg_image_url(element &dom.Element) string {
 	if source == '' {
 		return ''
 	}
-	return element.document().encoding_parse_and_serialize_url(source) or { source }
+	resolved := element.document().encoding_parse_and_serialize_url(source) or { source }
+	return allowed_paint_image_url(element.document(), resolved)
 }
 
 fn collect_svg_vector_image_paint_operations(node &Node, image_url string,
@@ -3396,7 +3402,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 					if object_bounding_box_units {
 						to_page = outer_svg_viewport_transform_in_page_space(node, state).multiply(to_page)
 					}
-					object_position := computed.object_position()
+					image_fit, object_position := svg_image_fit(element)
 					image_rect := painting.Rect{
 						x: used.offset.x().to_double()
 						y: used.offset.y().to_double()
@@ -3418,7 +3424,7 @@ fn collect_svg_mask_paint_operations(node &Node, state &LayoutState,
 							image_rendering: computed.image_rendering()
 							image_paintable: painting.ImagePaintable{
 								image_rect: image_rect
-								object_fit: .contain
+								object_fit: image_fit
 								object_position: object_position
 								resolution_context: computed.length_resolution_context()
 								image_rendering: computed.image_rendering()
@@ -3981,7 +3987,9 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		replaced_image_bitmap = image_box.replaced_image_bitmap()
 		if image_box.source() != '' {
 			source := image_box.source()
-			replaced_image_url = node.document().encoding_parse_and_serialize_url(source) or { source }
+			resolved := node.document().encoding_parse_and_serialize_url(source) or { source }
+			replaced_image_url = allowed_paint_image_url(node.document(), resolved)
+			if replaced_image_url == '' { replaced_image_bitmap = none }
 			replaced_image_size = match computed.object_fit() {
 				.fill { '100% 100%' }
 				.contain { 'contain' }
@@ -3997,51 +4005,53 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		// platform image decoder. It records the isolated SVG document at the
 		// replaced element's concrete size and nests that display list here.
 		if svg_document := image_box.svg_image_document() {
-			mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
-			mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_color_scheme(node.document(), computed)))
-			nested_viewport_document = svg_document
-			natural_size := image_box.natural_size()
-			default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
-			concrete_size := css.run_default_sizing_algorithm(none, none, natural_size, default_size)
-			nested_rect_css := painting.get_replaced_box_painting_rect(painting.Rect{
-				x: position.x().to_double()
-				y: position.y().to_double()
-				width: used.content_width().to_double()
-				height: used.content_height().to_double()
-			}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context())
-			mut nested_rect_device := ?painting.IntRect(none)
-			mut nested_layout_size := ?painting.Size(none)
-			if fitted := nested_rect_css {
-				converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
-				nested_rect_device = converter.rounded_device_rect(fitted)
-				if node.document().font_rendering_policy() == .chromium {
-					nested_layout_size = painting.Size{fitted.width, fitted.height}
-				}
-			}
-			nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
-				nested_layout_size: nested_layout_size
-				viewport_rect: painting.Rect{
+			if image_source_allowed_for_paint(node.document(), image_box.source()) {
+				mut mutable_svg_document := unsafe { &dom.Document(svg_document) }
+				mutable_svg_document.set_svg_image_color_scheme(css.preferred_color_scheme_to_string(image_color_scheme(node.document(), computed)))
+				nested_viewport_document = svg_document
+				natural_size := image_box.natural_size()
+				default_size := css.CSSPixelSize.new(used.content_width(), used.content_height())
+				concrete_size := css.run_default_sizing_algorithm(none, none, natural_size, default_size)
+				nested_rect_css := painting.get_replaced_box_painting_rect(painting.Rect{
 					x: position.x().to_double()
 					y: position.y().to_double()
 					width: used.content_width().to_double()
 					height: used.content_height().to_double()
+				}, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()}, computed.object_fit(), computed.object_position(), computed.length_resolution_context())
+				mut nested_rect_device := ?painting.IntRect(none)
+				mut nested_layout_size := ?painting.Size(none)
+				if fitted := nested_rect_css {
+					converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
+					nested_rect_device = converter.rounded_device_rect(fitted)
+					if node.document().font_rendering_policy() == .chromium {
+						nested_layout_size = painting.Size{fitted.width, fitted.height}
+					}
 				}
-				nested_rect: if fitted := nested_rect_device {
-					painting.Rect{f64(fitted.x), f64(fitted.y), f64(fitted.width), f64(fitted.height)}
-				} else {
-					none
-				}
-				border_radii: painting.BorderRadiiData{
-					top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
-					top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
-					bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
-					bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
-				}
-				border_widths: painting.PixelBox{
-					top: used.border_top.to_double()
-					right: used.border_right.to_double()
-					bottom: used.border_bottom.to_double()
-					left: used.border_left.to_double()
+				nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
+					nested_layout_size: nested_layout_size
+					viewport_rect: painting.Rect{
+						x: position.x().to_double()
+						y: position.y().to_double()
+						width: used.content_width().to_double()
+						height: used.content_height().to_double()
+					}
+					nested_rect: if fitted := nested_rect_device {
+						painting.Rect{f64(fitted.x), f64(fitted.y), f64(fitted.width), f64(fitted.height)}
+					} else {
+						none
+					}
+					border_radii: painting.BorderRadiiData{
+						top_left: painting.BorderRadiusData{border_radii.top_left.x, border_radii.top_left.y}
+						top_right: painting.BorderRadiusData{border_radii.top_right.x, border_radii.top_right.y}
+						bottom_right: painting.BorderRadiusData{border_radii.bottom_right.x, border_radii.bottom_right.y}
+						bottom_left: painting.BorderRadiusData{border_radii.bottom_left.x, border_radii.bottom_left.y}
+					}
+					border_widths: painting.PixelBox{
+						top: used.border_top.to_double()
+						right: used.border_right.to_double()
+						bottom: used.border_bottom.to_double()
+						left: used.border_left.to_double()
+					}
 				}
 			}
 		}
@@ -4049,8 +4059,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 	if node.is_svg_image_box() {
 		if svg_image_element := element {
 			replaced_image_url = resolved_svg_image_url(svg_image_element)
-			replaced_image_size = 'contain'
-			object_position := computed.object_position()
+			image_fit, object_position := svg_image_fit(svg_image_element)
+			replaced_image_size = if image_fit == .fill { 'fill' } else if image_fit == .cover { 'cover' } else { 'contain' }
 			replaced_image_position_x = object_position.offset_x.to_string()
 			replaced_image_position_y = object_position.offset_y.to_string()
 		}
@@ -4076,13 +4086,20 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				default_size := css.CSSPixelSize.new(CSSPixels.nearest_value_for(mapped_bounds.width),
 					CSSPixels.nearest_value_for(mapped_bounds.height))
 				concrete_size := css.run_default_sizing_algorithm(none, none, svg_background_natural_size(svg_document), default_size)
+				mut image_fit := css.ObjectFit.contain
+				mut image_position := css.Position{}
+				if image_element := element {
+					image_fit, image_position = svg_image_fit(image_element)
+				}
 				if fitted := painting.get_replaced_box_painting_rect(viewport_rect, painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()},
-					.contain, computed.object_position(), computed.length_resolution_context()) {
+					image_fit, image_position, computed.length_resolution_context()) {
 					converter := painting.new_device_pixel_converter(1.0) or { panic(err) }
 					device := converter.rounded_device_rect(fitted)
 					nested_viewport_document = svg_document
 					nested_viewport_paintable = &painting.NavigableContainerViewportPaintable{
-						nested_layout_size: if node.document().font_rendering_policy() == .chromium {
+						nested_layout_size: if image_fit == .fill {
+							?painting.Size(painting.Size{concrete_size.width().to_double(), concrete_size.height().to_double()})
+						} else if node.document().font_rendering_policy() == .chromium {
 							?painting.Size(painting.Size{fitted.width, fitted.height})
 						} else {
 							none
@@ -4096,6 +4113,13 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	if replaced_image_url != '' || node.is_image_box() {
+		mut image_fit := computed.object_fit()
+		mut image_position := computed.object_position()
+		if node.is_svg_image_box() {
+			if image_element := element {
+				image_fit, image_position = svg_image_fit(image_element)
+			}
+		}
 		mut replaced_intrinsic_size := ?css.SizeWithAspectRatio(none)
 		if image_box := node.as_box() {
 			replaced_intrinsic_size = image_box.natural_size()
@@ -4121,8 +4145,8 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 				bottom: used.border_bottom.to_double()
 				left: used.border_left.to_double()
 			}
-			object_fit: computed.object_fit()
-			object_position: computed.object_position()
+			object_fit: image_fit
+			object_position: image_position
 			resolution_context: computed.length_resolution_context()
 			image_rendering: computed.image_rendering()
 			is_svg_image: node.is_svg_image_box()
@@ -4317,6 +4341,15 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		}
 	}
 	css_clip := paintable_box_get_clip_rect(node, computed, used, position)
+	mut clip_decided_by_parent := ?LayoutRect(none)
+	if clip := used.clip_decided_by_parent() {
+		clip_decided_by_parent = LayoutRect{
+			x: clip.x.plus(position.x()).minus(used.padding_left).minus(used.border_left).to_double()
+			y: clip.y.plus(position.y()).minus(used.padding_top).minus(used.border_top).to_double()
+			width: clip.width.to_double()
+			height: clip.height.to_double()
+		}
+	}
 	mut scrollable_overflow := ?LayoutRect(none)
 	if overflow := used.scrollable_overflow_rect() {
 		scrollable_overflow = LayoutRect{
@@ -4512,6 +4545,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 		})
 
 		clip_data: retained_block_box_clip(BlockBoxClipData{
+			clip_decided_by_parent: retained_box_paint_payload(clip_decided_by_parent)
 			css_clip: retained_box_paint_payload(css_clip)
 			clip_path: retained_box_paint_payload(clip_path)
 			svg_clip: retained_box_paint_payload(svg_clip)
@@ -4602,7 +4636,10 @@ fn uncached_text_lines_from_typed_layout(container &Node, used &UsedValues, stat
 			}
 			text := fragment.text() or { continue }
 			computed := fragment.style_source().computed_values()
-			font_metrics := fragment.style_source().first_available_font().pixel_metrics()
+			raw_font_metrics := fragment.style_source().first_available_font().pixel_metrics()
+			font_metrics := if fragment.layout_node_.document().font_rendering_policy() == .libweb {
+				libweb_layout_font_metrics(raw_font_metrics)
+			} else { raw_font_metrics }
 			mut color := css.Color{0, 0, 0, 255}
 			mut background := css.Color{0, 0, 0, 0}
 			mut background_color_clip := 'border-box'
