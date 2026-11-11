@@ -9336,7 +9336,7 @@ fn (mut d Document) queue_visibility_state_entry(initial bool) {
 		// association, and a reused Window may still own the outgoing one.
 		if d.window == unsafe { nil } { return }
 		associated := d.window.associated_document() or { return }
-		if associated != &d { return }
+		if voidptr(associated) != voidptr(&d) { return }
 	}
 	hook.queue_visibility_state_entry(hook.target, d, initial)
 	if initial { d.initial_visibility_state_entry_pending_ = false }
