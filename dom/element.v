@@ -6676,12 +6676,20 @@ pub fn (mut e Element) set_style_uses_tree_counting_function() {
 
 // --- Lifecycle callbacks ---
 fn (e &Element) report_title_change_to_page() {
-	navigable := e.as_node().navigable() or { return }
-	if !navigable.is_traversable() { return }
-	document := e.document()
-	if document == unsafe { nil } || document.page() == unsafe { nil } { return }
-	mut page := unsafe { &Page(document.page()) }
-	page.client_page_did_change_title(document.title())
+	mut document := e.document()
+	if document == unsafe { nil } { return }
+	document.report_title_change_to_page()
+}
+
+// HTMLTitleElement::set_text and the SVG document.title setter share this
+// operation. Keep the DOM mutations intact while coalescing page reports.
+pub fn (mut e Element) set_title_text(value string) {
+	mut document := e.document()
+	document.begin_title_change_report_batch()
+	defer { document.end_title_change_report_batch() }
+	mut node := e.as_node()
+	node.string_replace_all(value)
+	e.report_title_change_to_page()
 }
 
 pub fn (mut e Element) inserted() {
