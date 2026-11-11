@@ -10,6 +10,13 @@ fn load32(pixels []u8, offset int) u32 {
 	return u32(pixels[offset]) | (u32(pixels[offset + 1]) << 8) | (u32(pixels[offset + 2]) << 16) | (u32(pixels[offset + 3]) << 24)
 }
 
+// load32() for the sampling loops, whose tile procs have already pinned
+// every coordinate inside the image.
+@[direct_array_access; inline]
+fn load32_unchecked(pixels []u8, offset int) u32 {
+	return u32(pixels[offset]) | (u32(pixels[offset + 1]) << 8) | (u32(pixels[offset + 2]) << 16) | (u32(pixels[offset + 3]) << 24)
+}
+
 @[inline]
 fn store32(mut pixels []u8, offset int, value u32) {
 	pixels[offset] = u8(value)
@@ -90,6 +97,7 @@ fn fast_four_byte_interp(src u32, dst u32, weight u32) u32 {
 }
 
 // SkOpts::blit_row_color32(): per byte, ((dst * (256 - a)) >> 8) + color.
+@[direct_array_access]
 fn blit_row_color32(mut pixels []u8, offset int, count int, color u32) {
 	inv_a := 256 - (color >> 24)
 	for i in 0 .. count {
@@ -103,12 +111,17 @@ fn blit_row_color32(mut pixels []u8, offset int, count int, color u32) {
 }
 
 // SkBlitRow::Color32().
+@[direct_array_access]
 fn color32(mut pixels []u8, offset int, count int, color u32) {
 	match color >> 24 {
 		0 {}
 		255 {
 			for i in 0 .. count {
-				store32(mut pixels, offset + i * 4, color)
+				o := offset + i * 4
+				pixels[o] = u8(color)
+				pixels[o + 1] = u8(color >> 8)
+				pixels[o + 2] = u8(color >> 16)
+				pixels[o + 3] = u8(color >> 24)
 			}
 		}
 		else {
@@ -163,6 +176,7 @@ fn (mut b SolidBlitter) blit_h(x int, y int, width int) {
 	color32(mut b.pixels, b.offset(x, y), width, b.pm_color)
 }
 
+@[direct_array_access]
 fn (mut b SolidBlitter) blit_anti_h(x int, y int, mut aa []u8, mut runs []i16) {
 	if b.kind == .general && b.src_a == 0 {
 		return
@@ -183,8 +197,13 @@ fn (mut b SolidBlitter) blit_anti_h(x int, y int, mut aa []u8, mut runs []i16) {
 			}
 			.opaque {
 				if alpha == 255 {
+					color := b.pm_color
 					for k in 0 .. count {
-						store32(mut b.pixels, offset + k * 4, b.pm_color)
+						o := offset + k * 4
+						b.pixels[o] = u8(color)
+						b.pixels[o + 1] = u8(color >> 8)
+						b.pixels[o + 2] = u8(color >> 16)
+						b.pixels[o + 3] = u8(color >> 24)
 					}
 				} else if alpha > 0 {
 					color32(mut b.pixels, offset, count, alpha_mul_q(b.pm_color, alpha + 1))

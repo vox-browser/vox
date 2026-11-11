@@ -124,12 +124,37 @@ pub fn css_pixels_sqrt(value CSSPixels) CSSPixels {
 }
 
 pub fn CSSPixelFraction.from_values(numerator f64, denominator f64) CSSPixelFraction {
-	if CSSPixels.nearest_value_for(denominator).raw_value_ == 0 {
-		return CSSPixelFraction.new(CSSPixels.nearest_value_for(numerator / denominator),
-			CSSPixels.new(1))
+	if denominator == 0 || math.is_nan(numerator) || math.is_nan(denominator)
+		|| math.is_inf(numerator, 0) || math.is_inf(denominator, 0) {
+		return CSSPixelFraction.new(CSSPixels.nearest_value_for(numerator / denominator), CSSPixels.new(1))
 	}
-	return CSSPixelFraction.new(CSSPixels.nearest_value_for(numerator),
-		CSSPixels.nearest_value_for(denominator))
+	// Ratios have no pixel units. Scale both numbers together before storing
+	// their integer fraction, so 1.6 does not become 102/64 CSS pixels.
+	mut first := numerator
+	mut second := denominator
+	limit := f64(2147483647)
+	mut largest := math.max(math.abs(first), math.abs(second))
+	if largest > 0 && largest < 1 {
+		first /= largest
+		second /= largest
+		largest = 1
+	}
+	if largest > limit {
+		first = first / largest * limit
+		second = second / largest * limit
+		largest = limit
+	}
+	for _ in 0 .. 18 {
+		if (first == math.round(first) && second == math.round(second)) || largest > limit / 10 { break }
+		first *= 10
+		second *= 10
+		largest *= 10
+	}
+	mut first_raw := int(math.round(first))
+	mut second_raw := int(math.round(second))
+	if second_raw == 0 { first_raw = if first < 0 { -2147483647 } else { 2147483647 }; second_raw = if second < 0 { -1 } else { 1 } }
+	if first_raw == 0 && numerator != 0 { first_raw = if first < 0 { -1 } else { 1 }; second_raw = if second < 0 { -2147483647 } else { 2147483647 } }
+	return CSSPixelFraction.new(CSSPixels.from_raw(first_raw), CSSPixels.from_raw(second_raw))
 }
 
 pub fn (fraction CSSPixelFraction) numerator() CSSPixels {

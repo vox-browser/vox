@@ -6,6 +6,11 @@ import math
 
 pub fn lookup_modular_palette(palette ModularChannel, channel int, bit_depth u32, index i32, storage ModularStorage) !i32 {
 	palette.validate()!
+	return lookup_validated_palette(palette, channel, bit_depth, index, storage)
+}
+
+// lookup_modular_palette for a palette whose shape the caller has validated.
+fn lookup_validated_palette(palette ModularChannel, channel int, bit_depth u32, index i32, storage ModularStorage) !i32 {
 	if channel < 0 || (palette.width > 0 && channel >= palette.height) {
 		return error('Invalid JPEG XL palette channel')
 	}
@@ -71,10 +76,11 @@ pub fn inverse_modular_palette(indices ModularChannel, palette ModularChannel, b
 			for x in 0 .. indices.width {
 				mut index := modular_storage_value(indices.samples[y * indices.width + x], storage)
 				if clip { index = math.max(i32(0), math.min(index, i32(palette.width - 1))) }
-				entry := lookup_modular_palette(palette, c, depth, index, storage)!
-				data := PredictionData.from_rows(current, top, toptop, x, y)!
+				entry := lookup_validated_palette(palette, c, depth, index, storage)!
+				data := prediction_data_in_rows(current, top, toptop, x, y)
 				guess := if predictor == .weighted {
-					weighted.predict_and_property(x, y & 1, data)!.value
+					// The predictor has the channel's width, and 0 <= x < width.
+					weighted.predict_in_bounds(x, y & 1, data).value
 				} else {
 					predictor.predict_one(data, 0)
 				}
@@ -83,7 +89,7 @@ pub fn inverse_modular_palette(indices ModularChannel, palette ModularChannel, b
 				} else {
 					entry
 				}
-				if predictor == .weighted { weighted.update_errors(value, x, y & 1)! }
+				if predictor == .weighted { weighted.update_errors_in_bounds(value, x, y & 1) }
 				current[x] = value
 				result.samples[y * indices.width + x] = modular_storage_value(value, storage)
 			}

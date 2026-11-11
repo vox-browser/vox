@@ -46,7 +46,7 @@ fn (mut reader BitReader) read_context_map_depth(contexts int, depth int) ![]u8 
 		hist := reader.read_histograms_depth(1, contexts > 2, depth + 1)!
 		mut symbols := SymbolReader.new(hist, mut reader, none)!
 		for i in 0 .. contexts {
-			value := symbols.read_unsigned(hist, 0, mut reader)!
+			value := symbols.read_unsigned(&hist, 0, mut reader)!
 			if value > 255 { return error('Invalid JPEG XL context map value') }
 			map_[i] = u8(value)
 		}

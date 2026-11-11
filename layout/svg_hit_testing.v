@@ -3,7 +3,7 @@ module layout
 import css
 import math
 import painting
-import skia
+import cpuraster
 
 // The paint payload can omit transparent paints and use compact ellipse
 // commands. Retain the original geometry and specified paint presence for hits.
@@ -11,7 +11,7 @@ pub struct SVGPathHitData {
 	pointer_events css.PointerEvents
 	has_fill       bool
 	has_stroke     bool
-	path           skia.Path
+	path           cpuraster.PackedPath
 	text_cells     ?painting.Rect
 	bounding_box   ?painting.Rect
 	is_image       bool
@@ -70,7 +70,7 @@ fn (box &BlockBox) svg_contains_hit_test_point(point painting.Point) bool {
 	if cells := data.text_cells { return cells.contains(local) }
 	style := box.svg_path()
 	query_point := if style.non_scaling_stroke { point } else { local }
-	return skia.path_hit_test(skia.PathHitTest{
+	return cpuraster.packed_path_hit_test(cpuraster.PackedPathHitTest{
 		path:        data.path
 		x:           f32(query_point.x)
 		y:           f32(query_point.y)

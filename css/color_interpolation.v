@@ -675,7 +675,14 @@ fn style_value_to_color_components(style_value StyleValue, context CalculationRe
 		OKLabColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_.value, 1, context)?, resolve_with_reference_value(style_value.a_.value, 0.4, context)?, resolve_with_reference_value(style_value.b_.value, 0.4, context)?, resolve_alpha(style_value.alpha_.value, context)?) }
 		LCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_.value, 100, context)?, resolve_with_reference_value(style_value.c_.value, 150, context)?, resolve_hue(style_value.h_.value, context)?, resolve_alpha(style_value.alpha_.value, context)?) }
 		OKLCHColorStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.l_.value, 1, context)?, resolve_with_reference_value(style_value.c_.value, 0.4, context)?, resolve_hue(style_value.h_.value, context)?, resolve_alpha(style_value.alpha_.value, context)?) }
-		RGBColorStyleValue { interpolation_color_components(image_color_clamp(resolve_with_reference_value(style_value.r_.value, 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.g_.value, 255, context)?, 0, 255) / 255, image_color_clamp(resolve_with_reference_value(style_value.b_.value, 255, context)?, 0, 255) / 255, resolve_alpha(style_value.alpha_.value, context)?) }
+		RGBColorStyleValue {
+			mut channels := []f64{cap:3}
+			for channel in [style_value.r_.value, style_value.g_.value, style_value.b_.value] {
+				value := resolve_with_reference_value(channel, 255, context)?
+				channels << (if style_value.unclamped_animation_channels_ { value } else { image_color_clamp(value, 0, 255) }) / 255
+			}
+			interpolation_color_components(channels[0], channels[1], channels[2], resolve_alpha(style_value.alpha_.value, context)?)
+		}
 		ColorFunctionStyleValue { interpolation_color_components(resolve_with_reference_value(style_value.channels_[0], 1, context)?, resolve_with_reference_value(style_value.channels_[1], 1, context)?, resolve_with_reference_value(style_value.channels_[2], 1, context)?, resolve_alpha(style_value.alpha_.value, context)?) }
 		else { none }
 	}

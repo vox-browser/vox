@@ -51,7 +51,7 @@ pub fn (mut ans AnsReader) read(codes AnsCodes, context int, mut reader BitReade
 	offset := position + if alias { u32(bucket.alias_offset) } else { u32(0) }
 	next := (ans.state >> 12) * distance + offset
 	ans.state = if next < u32(1) << 16 {
-		(next << 16) | u32(reader.read_optimistic(16)!)
+		(next << 16) | u32(reader.read_bits_optimistic(16))
 	} else {
 		next
 	}

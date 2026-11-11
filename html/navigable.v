@@ -19,6 +19,7 @@ import math
 import mimesniff
 import page
 import painting
+import platform
 import rand
 
 __global (
@@ -355,7 +356,10 @@ pub fn NavigableModel.create(host &dom.Navigable, context ?&BrowsingContextModel
 	}
 	model.backing_store_manager_ = painting.BackingStoreManager.create(voidptr(model), navigable_backing_store_shrink_callback)
 	connect_navigable_model_to_host(model)
+	// The list is process-wide; never grow it inside a document arena.
+	persistent := platform.enter_persistent()
 	html_all_navigable_models << model
+	platform.leave_persistent(persistent)
 	if value := context {
 		model.context_ = value
 		model.synchronize_host_container(value)
@@ -1591,6 +1595,9 @@ fn (mut model NavigableModel) finish_navigation_fetch(entry &SessionHistoryEntry
 }
 
 fn (mut model NavigableModel) commit_navigation_entry(entry &SessionHistoryEntry, history_handling HistoryHandlingBehavior, document &dom.Document) {
+	// The session history list is owned by the navigable, not the document.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut next_step := 0
 	for existing in model.session_history_entries_ {
 		if existing.step is int {
@@ -1706,13 +1713,19 @@ pub fn perform_url_and_history_update_steps(document &dom.Document, new_url dom.
 		return error('InvalidStateError: navigable has no active history entry')
 	}
 	model.save_persisted_state_to_active_session_history_entry()
+	// The navigable's session history outlives the document whose script
+	// pushed or replaced this entry; keep the entry and its payload persistent.
+	persistent := platform.enter_persistent()
 	new_entry := &SessionHistoryEntry{
-		url: new_url
-		classic_history_api_state: serialized_data or { active_entry.classic_history_api_state }
+		url: persistent_session_history_url(new_url)
+		classic_history_api_state: persistent_serialization_record(serialized_data or {
+			active_entry.classic_history_api_state
+		})
 		document_state: active_entry.document_state
 		scroll_restoration_mode: active_entry.scroll_restoration_mode
 		scroll_position_data: active_entry.scroll_position_data
 	}
+	platform.leave_persistent(persistent)
 	history_handling := if document.get_is_initial_about_blank() {
 		HistoryHandlingBehavior.replace
 	} else {
@@ -1762,8 +1775,12 @@ fn (mut model NavigableModel) navigate_to_a_fragment(url dom.URL, history_handli
 		return
 	}
 	model.save_persisted_state_to_active_session_history_entry()
+	// Fragment entries join the navigable's session history, which outlives
+	// the document that navigated.
+	persistent := platform.enter_persistent()
 	mut entry := current.clone()
-	entry.url = url
+	entry.url = persistent_session_history_url(url)
+	platform.leave_persistent(persistent)
 	if state := entry.document_state {
 		mut mutable_state := unsafe { &DocumentState(state) }
 		mutable_state.set_document(model.active_document())
@@ -2334,7 +2351,14 @@ pub fn (mut model NavigableModel) set_has_been_destroyed() {
 pub fn (mut model NavigableModel) remove_from_all_navigables() {
 	model.resolve_all_pending_main_thread_scrolls()
 	model.set_active_document(none)
-	html_all_navigable_models = html_all_navigable_models.filter(voidptr(it) != voidptr(&model))
+	// Remove in place: a filtered copy would reallocate the process-wide list
+	// in the arena of whichever document is being torn down.
+	for index, candidate in html_all_navigable_models {
+		if voidptr(candidate) == voidptr(&model) {
+			html_all_navigable_models.delete(index)
+			break
+		}
+	}
 }
 
 pub fn (model &NavigableModel) has_been_destroyed() bool {

@@ -22,6 +22,7 @@ from browser_bundle_lease import canonical_bundle_lease
 from wpt_compare import clean_environment, discover_tests, upstream_testharness
 from wpt_fixtures import export_fixtures, verify_fixture_tree
 from wpt_upstream_server import UpstreamWPTServer
+from wpt_expectation_errata import load_expectation_errata
 
 REPO = Path(__file__).resolve().parents[1]
 REPORT = b'''if(typeof document!=="undefined"&&self===top){
@@ -117,12 +118,24 @@ def run(args):
     write(args.output / 'expected-names.json', expected)
     paths = [args.native, args.catalog, Path(__file__), REPO / 'compact/upstream_testharness_test.v',
              *[REPO / 'tools' / n for n in ['wpt_compare.py', 'wpt_upstream_server.py',
-               'wpt_fixtures.py', 'browser_bundle_lease.py', 'run_memory_bounded.py']]]
+               'wpt_fixtures.py', 'browser_bundle_lease.py', 'run_memory_bounded.py',
+               'wpt_expectation_errata.py']]]
+    errata_overrides, errata = {}, []
+    errata_sha = None
+    if args.expectation_errata:
+        paths.append(args.expectation_errata)
+        errata_sha = sha(args.expectation_errata)
+        errata_overrides, errata = load_expectation_errata(args.expectation_errata,
+            text_root / 'input/wpt-import', manifest['revision'], cases)
+    variant = 'proposed-expectation-errata' if errata else 'unmodified-upstream'
     bundle = REPO / 'Build/v/Vox.app'
     if bundle.exists():
         paths += [p for p in (bundle / 'Contents/MacOS').iterdir() if p.is_file()]
     pins = {str(p.resolve()): sha(p) for p in paths}
+    if args.expectation_errata and pins[str(args.expectation_errata.resolve())] != errata_sha:
+        raise RuntimeError('Expectation errata changed while loading')
     identity = dict(pins=pins, fixture_revision=manifest['revision'], changed_inputs=[],
+                    fixture_variant=variant, expectation_errata=errata,
                     scope='native document navigation, DOM, CSS, layout, JSC; no GUI or painting',
                     host=dict(cpu_count=os.cpu_count(), load=os.getloadavg()), command=sys.argv)
     write(args.output / 'identity.json', identity)
@@ -138,6 +151,7 @@ def run(args):
     overrides = {'/resources/testharness.js':
                  (upstream_testharness((root / 'resources/testharness.js').read_text()).encode(),
                   'text/javascript'), '/resources/testharnessreport.js': (REPORT, 'text/javascript')}
+    overrides.update(errata_overrides)
     rows, started = [], time.monotonic()
     lease = canonical_bundle_lease(bundle) if bundle.exists() else contextlib.nullcontext()
     with lease, (args.output / 'requests.jsonl').open('w') as requests:
@@ -185,7 +199,10 @@ def run(args):
                    missing_subtests=sum(len(r['missing_names']) for r in rows),
                    all_pass=len(rows) == len(cases) and all(r['all_pass'] for r in rows),
                    wall_seconds=time.monotonic() - started, inputs_unchanged=True,
+                   fixture_variant=variant, corrected_expectations=len(errata),
                    executable_sha256=sha(args.native))
+    # Passing a corrected variant cannot establish that the original tests pass.
+    summary['unmodified_upstream_all_pass'] = None if errata else summary['all_pass']
     write(args.output / 'summary.json', summary)
     print(json.dumps(summary), flush=True)
     return int(not summary['all_pass'])
@@ -201,6 +218,8 @@ def main():
     parser.add_argument('--wpt-root', type=Path, default=REPO.parent / '3rd/web-platform-tests')
     parser.add_argument('--fixture-cache', type=Path, default=Path.home() / '.cache/vox/wpt')
     parser.add_argument('--include', action='append', default=[])
+    parser.add_argument('--expectation-errata', type=Path,
+                        help='Explicit expectation-only corrections; labels results as modified fixtures')
     args = parser.parse_args()
     args.native, args.catalog, args.output = (p.resolve() for p in
                                              [args.native, args.catalog, args.output])

@@ -73,6 +73,14 @@ fn collect_inline_inputs_with_measurement_roots(node &Node, root bool,
 
 fn collect_inline_inputs_with_measurement_policy(node &Node, root bool,
 	extended_roots bool, marker_root bool, mut inputs []RetainedInlineInput) bool {
+	if root {
+		if dom_node := node.dom_node() {
+			if element := dom_node.as_element() {
+				// The snapshot currently records ordinary element styles only.
+				if css.computed_properties_for_pseudo_element(element, .first_line) != none { return false }
+			}
+		}
+	}
 	if extended_roots && !root && inline_measurement_marker_is_external(node) { return true }
 	if marker_root && !root && !node.is_text_node() { return false }
 	computed := node.computed_values()

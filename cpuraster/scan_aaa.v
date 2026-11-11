@@ -13,6 +13,7 @@ fn catch_overflow(alpha int) u8 {
 	return u8(alpha - (alpha >> 8))
 }
 
+@[direct_array_access]
 fn break_runs(mut runs []i16, mut alpha []u8, base int, x_in int, count int) {
 	mut x := x_in
 	mut i := base
@@ -47,6 +48,7 @@ fn break_runs(mut runs []i16, mut alpha []u8, base int, x_in int, count int) {
 }
 
 // SkAlphaRuns::add(); returns the next offsetX.
+@[direct_array_access]
 fn alpha_runs_add(mut runs []i16, mut alpha []u8, x_in int, start_alpha int, middle_count_in int, stop_alpha int, max_value int, offset_x int) int {
 	mut base := offset_x
 	mut last := base
@@ -186,6 +188,7 @@ fn (mut b AdditiveBlitter) runs_empty() bool {
 	return b.alpha[0] == 0 && b.runs[int(b.runs[0])] == 0
 }
 
+@[direct_array_access]
 fn (mut b AdditiveBlitter) flush() {
 	if b.curr_y >= b.top {
 		mut x := 0
@@ -224,15 +227,18 @@ fn (mut b AdditiveBlitter) finish() {
 	}
 }
 
+@[direct_array_access]
 fn add_alpha(mut alpha []u8, index int, delta u8) {
 	alpha[index] = catch_overflow(int(alpha[index]) + int(delta))
 }
 
+@[direct_array_access]
 fn safely_add_alpha(mut alpha []u8, index int, delta u8) {
 	alpha[index] = u8(math.min(255, int(alpha[index]) + int(delta)))
 }
 
 // blitAntiH(x, y, antialias[], len).
+@[direct_array_access]
 fn (mut b AdditiveBlitter) blit_anti_h_array(x_in int, y int, antialias []u8, start_in int, len_in int) {
 	mut x := x_in
 	mut start := start_in
@@ -269,6 +275,7 @@ fn (mut b AdditiveBlitter) blit_anti_h_array(x_in int, y int, antialias []u8, st
 }
 
 // blitAntiH(x, y, alpha).
+@[direct_array_access]
 fn (mut b AdditiveBlitter) blit_anti_h1(x_in int, y int, alpha u8) {
 	if b.kind == .mask {
 		row := b.get_row(y)
@@ -292,6 +299,7 @@ fn (mut b AdditiveBlitter) blit_anti_h1(x_in int, y int, alpha u8) {
 }
 
 // blitAntiH(x, y, width, alpha).
+@[direct_array_access]
 fn (mut b AdditiveBlitter) blit_anti_hw(x_in int, y int, width int, alpha u8) {
 	if b.kind == .mask {
 		row := b.get_row(y)
@@ -459,6 +467,7 @@ fn compute_alpha_below_line(mut alphas []u8, base int, l i32, r i32, dy i32, ful
 // no_mask_row without a mask.
 const no_mask_row = min_i32
 
+@[direct_array_access]
 fn blit_single_alpha(mut b AdditiveBlitter, y int, x int, alpha u8, full_alpha u8, mask_row int, no_real_blitter bool) {
 	if mask_row != no_mask_row {
 		if full_alpha == 255 && !no_real_blitter {
@@ -503,6 +512,7 @@ fn blit_full_alpha(mut b AdditiveBlitter, y int, x int, len int, full_alpha u8, 
 	}
 }
 
+@[direct_array_access]
 fn blit_aaa_trapezoid_row(mut b AdditiveBlitter, y int, ul i32, ur i32, ll i32, lr i32, l_dy i32, r_dy i32, full_alpha u8, mask_row int, no_real_blitter bool) {
 	big_l := fixed_floor_to_int(ul)
 	big_r := fixed_ceil_to_int(lr)
@@ -569,6 +579,7 @@ fn blit_aaa_trapezoid_row(mut b AdditiveBlitter, y int, ul i32, ur i32, ll i32, 
 	}
 }
 
+@[direct_array_access]
 fn blit_trapezoid_row(mut b AdditiveBlitter, y int, ul_in i32, ur_in i32, ll_in i32, lr_in i32, l_dy i32, r_dy i32, full_alpha u8, mask_row int, no_real_blitter bool) {
 	mut ul := ul_in
 	mut ur := ur_in
@@ -671,6 +682,7 @@ fn next_log2(value int) int {
 	return 32 - bits.leading_zeros_32(u32(value - 1))
 }
 
+@[direct_array_access]
 fn intro_sort(edges []Edge, mut list []int, depth_in int, left_in int, count_in int) {
 	mut depth := depth_in
 	mut left := left_in
@@ -694,6 +706,7 @@ fn intro_sort(edges []Edge, mut list []int, depth_in int, left_in int, count_in 
 	}
 }
 
+@[direct_array_access]
 fn insertion_sort(edges []Edge, mut list []int, left int, count int) {
 	right := left + count - 1
 	for next := left + 1; next <= right; next++ {

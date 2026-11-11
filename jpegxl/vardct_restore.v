@@ -13,7 +13,10 @@ pub fn restore_vardct_frame(raw VarDctFramePlanes, frame FrameHeader) ![3]FloatP
 		}
 		sigma = EpfSigma.vardct(raw.epf_maps, raw.quantizer, frame.restoration)!
 	}
-	return restore_frame_planes(raw.planes, frame, sigma)
+	if frame.is444() { return restore_frame_planes(raw.planes, frame, sigma) }
+	planes := expand_frame_chroma(raw.planes, frame)!
+	full := FrameHeader{ ...frame, jpeg_upsampling: [u32(0), 0, 0]!, max_hshift: 0, max_vshift: 0 }
+	return restore_frame_planes(planes, full, sigma)
 }
 
 // Modular frames use one positive sigma rather than a VarDCT block map.

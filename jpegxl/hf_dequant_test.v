@@ -94,3 +94,31 @@ fn test_hf_dequant_rejects_invalid_metadata_and_storage() {
 	tables[0] = DequantMatrix{ rows: 8, columns: 8, samples: []f32{len: 192} }
 	if _ := dequantize_hf_block(coefficients, DequantMatrices{ tables: tables }, params) { assert false }
 }
+
+// The branch-free bias adjustment and the qm multiplier table must reproduce the
+// source's scalar forms bit for bit, including the wrapping absolute value of
+// i32::MIN, signed zero, NaN and infinite biases.
+fn test_hf_dequant_branch_free_forms_match_scalar_source() {
+	mut values := [i32(0), 1, -1, 2, -2, 3, -3, 7, -7, 1000, -1000, 32767, -32768, 65535, -65536,
+		2147483647, -2147483647, -2147483648]
+	mut state := u32(0x9e3779b9)
+	for _ in 0 .. 2000 {
+		state = state * 1664525 + 1013904223
+		values << i32(state)
+		values << i32(state) >> (state % 31)
+	}
+	biases := [[f32(0.5), 0.25, 0.75, 0.125]!, [f32(-0.0), 0, 1e-30, 3e38]!,
+		[f32(1), -1, math.inf(1), f32(math.nan())]!, [f32(0.9), 0.2, 0.6, -0.01]!]
+	for set in biases {
+		for value in values {
+			for channel in 0 .. 3 {
+				expected := adjust_hf_quant_bias(value, channel, set)
+				actual := adjusted_hf_value(value, set[channel], set[3])
+				assert math.f32_bits(actual) == math.f32_bits(expected), 'value ${value}, channel ${channel}'
+			}
+		}
+	}
+	for scale in 0 .. 8 {
+		assert math.f32_bits(hf_qm_multipliers[scale]) == math.f32_bits(math.powf(f32(1) / f32(1.25), f32(scale) - f32(2)))
+	}
+}

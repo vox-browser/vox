@@ -10,7 +10,7 @@ import math
 import os
 import painting
 import platform
-import skia
+import cpuraster
 import svg
 import time
 
@@ -3860,7 +3860,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			pointer_events: computed.pointer_events()
 			has_fill: computed.fill() != none
 			has_stroke: computed.stroke() != none
-			path: skia.Path{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			path: cpuraster.PackedPath{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
 			bounding_box: if node.is_svg_text_box() {
 				svg_text_bounding_box_for_hit_testing(node, state)
 			} else { none }

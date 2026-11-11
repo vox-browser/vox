@@ -555,7 +555,7 @@ pub fn html_element_offset_width(element &dom.HTMLElement) int {
 	dom_element := dom_element_from_html_element(element)
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_width)
-	layout_node := dom_element.as_node().layout_node() or { return 0 }
+	layout_node := dom_element.principal_layout_node() or { return 0 }
 	return int(math.round((paintable_box_absolute_united_border_box_rect(layout_node) or {
 		return 0
 	}).width / document.layout_coordinate_scale()))
@@ -566,7 +566,7 @@ pub fn html_element_offset_height(element &dom.HTMLElement) int {
 	dom_element := dom_element_from_html_element(element)
 	mut document := unsafe { &dom.Document(dom_element.document()) }
 	document.update_layout_if_needed_for_node(dom_element.as_node(), .html_element_offset_height)
-	layout_node := dom_element.as_node().layout_node() or { return 0 }
+	layout_node := dom_element.principal_layout_node() or { return 0 }
 	return int(math.round((paintable_box_absolute_united_border_box_rect(layout_node) or {
 		return 0
 	}).height / document.layout_coordinate_scale()))

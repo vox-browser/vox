@@ -187,31 +187,9 @@ extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs"
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
 skia_root="$upstream_dir/Build/release/vcpkg_installed/$vcpkg_triplet"
-rust_cargo=${RUST_CARGO:-}
-if [ -z "$rust_cargo" ]; then
-    if command -v cargo >/dev/null 2>&1; then
-        rust_cargo=$(command -v cargo)
-    elif [ -x /opt/homebrew/opt/rustup/bin/cargo ]; then
-        rust_cargo=/opt/homebrew/opt/rustup/bin/cargo
-    fi
-fi
-# A fresh Cargo build fails to load its proc-macro crates (rustc reports
-# "can't find crate for thiserror_impl") whenever MACOSX_DEPLOYMENT_TARGET is
-# set. Build the JPEG XL helper without it; it keeps rustc's lower default
-# minimum, which the release accepts.
 # The browser exports the planar converter from media/yuv_bridge.v. Its pure V
 # implementation preserves the previous decoder's integer color quantization.
 extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_V_YUV"
-jpegxl_library=""
-if [ -n "$rust_cargo" ]; then
-    jpegxl_target_dir="$cache_dir/rust-jpegxl"
-    env -u MACOSX_DEPLOYMENT_TARGET PATH="$(dirname "$rust_cargo"):$PATH" CARGO_TARGET_DIR="$jpegxl_target_dir" \
-        "$rust_cargo" build --quiet --release --locked \
-        --manifest-path "$repo_dir/native_jpegxl_rust/Cargo.toml"
-    jpegxl_library="$build_dir/libVoxJPEGXL.dylib"
-    cp "$jpegxl_target_dir/release/libvox_jpegxl.dylib" "$jpegxl_library"
-    install_name_tool -id @rpath/libVoxJPEGXL.dylib "$jpegxl_library"
-fi
 avif_library=""
 if [ -f "$skia_root/lib/libavif.dylib" ] && [ -f "$skia_root/include/avif/avif.h" ]; then
     avif_library="$build_dir/libVoxAVIF.dylib"
@@ -519,17 +497,8 @@ mv -f "$compile_dir/Vox" "$binary_dir/Vox"
 python3 "$repo_dir/tools/localize_bundle_rpaths.py" "$binary_dir/Vox" "$build_dir"
 
 
-if [ -n "${jpegxl_library:-}" ]; then
-    jpegxl_resource_tmp=$(mktemp "$binary_dir/.jpegxl.XXXXXX")
-    cp "$jpegxl_library" "$jpegxl_resource_tmp"
-    chmod 755 "$jpegxl_resource_tmp"
-    mv -f "$jpegxl_resource_tmp" "$binary_dir/libVoxJPEGXL.dylib"
-    if command -v codesign >/dev/null 2>&1; then
-        codesign --force --sign - "$binary_dir/libVoxJPEGXL.dylib" >/dev/null
-    fi
-else
-    rm -f "$binary_dir/libVoxJPEGXL.dylib"
-fi
+# JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.
+rm -f "$binary_dir/libVoxJPEGXL.dylib"
 
 if [ -n "$avif_library" ]; then
     avif_resource_tmp=$(mktemp "$binary_dir/.avif.XXXXXX")

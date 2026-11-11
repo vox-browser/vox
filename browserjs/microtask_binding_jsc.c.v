@@ -44,7 +44,15 @@ pub fn (mut runtime Runtime) enqueue_javascript_microtask(callback voidptr) ! {
 			// Promise queue. Deliver through the owning HTML checkpoint when no
 			// JavaScript entry is already keeping that checkpoint deferred.
 			owner := voidptr(&runtime)
-			html.queue_a_task(.microtask, settings.responsible_event_loop(), none, fn [owner, mut binding, token] () {
+			// Discard the delivery with a destroyed document; the binding it
+			// reads belongs to that document's runtime. Only an active document
+			// is attached, so compact documents without a fully active
+			// navigable keep delivering.
+			mut delivery_document := ?&dom.Document(none)
+			if document := settings.responsible_document() {
+				if document.is_fully_active() { delivery_document = document }
+			}
+			html.queue_a_task(.microtask, settings.responsible_event_loop(), delivery_document, fn [owner, mut binding, token] () {
 				if binding.closed { return }
 				mut runtime := unsafe { &Runtime(owner) }
 				runtime.call_javascript_function(binding.enqueue, C.vox_jsc_JSValueMakeUndefined(runtime.context), [C.vox_jsc_JSValueMakeNumber(runtime.context, f64(token))]) or {

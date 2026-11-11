@@ -4774,6 +4774,13 @@ fn computed_custom_property_tokens_for_substitution(abstract_element dom.Abstrac
 			return arbitrary_substitution_guaranteed_invalid_value()
 		}
 	}
+	if registered := abstract_element.document().get_registered_custom_property(custom_property_name) {
+		if registered.syntax.contains('<url>') || registered.syntax.contains('<image>') {
+			value := compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property_name, mut guarded_contexts)
+			if typed := typed_style_value_logic_from_dom(value) { return typed.tokenize() }
+			return parse_component_values_for_value_logic(value.css_text)
+		}
+	}
 	computed := resolve_computed_custom_property_value(abstract_element, custom_property_name,
 		mut guarded_contexts)
 	if computed.kind == .substituted {

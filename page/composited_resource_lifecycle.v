@@ -39,7 +39,7 @@ pub fn (mut p Page) sync_media_element_video_sink_ticking() {
 		if state.is_video {
 			state.video_paint_facts_push_count++
 		}
-		p.media_elements[id] = state
+		p.store_media_element(id, state)
 	}
 }
 
@@ -49,7 +49,7 @@ pub fn (mut p Page) restore_all_media_element_video_sinks() {
 		if state.has_video_sink {
 			state.video_sink_attached = true
 			state.video_sink_restore_count++
-			p.media_elements[id] = state
+			p.store_media_element(id, state)
 		}
 	}
 }
@@ -60,7 +60,7 @@ pub fn (mut p Page) detach_all_media_element_video_sinks_after_compositor_lost()
 		if state.has_video_sink {
 			state.video_sink_attached = false
 			state.video_sink_detach_count++
-			p.media_elements[id] = state
+			p.store_media_element(id, state)
 		}
 	}
 }
@@ -79,7 +79,7 @@ pub fn (mut p Page) prepare_canvas_contexts_for_compositing() {
 		// HTMLCanvasElement pushes paint facts on every preparation pass, even
 		// when its content generation did not change.
 		state.paint_facts_push_count++
-		p.canvas_elements_[id] = state
+		p.store_canvas_element(id, state)
 	}
 
 	// Context preparation only records commands. Flushing here ensures canvas
@@ -98,7 +98,7 @@ pub fn (mut p Page) notify_all_canvas_elements_of_lost_backing_storage() {
 			.canvas_2d { state.backing_storage_loss_count++ }
 			.none {}
 		}
-		p.canvas_elements_[id] = state
+		p.store_canvas_element(id, state)
 	}
 }
 
@@ -108,7 +108,7 @@ pub fn (mut p Page) notify_all_webgl_contexts_lost() {
 		if state.context_kind == .webgl {
 			state.webgl_context_lost = true
 			state.webgl_connection_loss_count++
-			p.canvas_elements_[id] = state
+			p.store_canvas_element(id, state)
 		}
 	}
 }

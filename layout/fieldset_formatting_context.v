@@ -5,6 +5,7 @@
 module layout
 
 fn run_fieldset_formatting_context(mut state LayoutState, fieldset &FieldSetBox, mut fieldset_state UsedValues, available_space AvailableSpace) FormattingContextResult {
+ if grid_is_vertical(unsafe { &Node(fieldset) }) { return run_vertical_fieldset_formatting_context(mut state,fieldset,mut fieldset_state,available_space) }
 	legend := fieldset.rendered_legend() or {
 		mut ordinary_context := BlockFormattingContext.for_root(unsafe { &Node(fieldset) }, .normal, has_definite_inline_size(unsafe { &Node(fieldset) },fieldset_state))
 		height := ordinary_context.layout_block_level_children(mut state, unsafe { &Node(fieldset) }.as_node_with_style() or { return FormattingContextResult{} }, fieldset_state.content_width().to_double(), if available_space.height.is_definite() {

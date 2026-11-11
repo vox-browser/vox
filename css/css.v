@@ -468,6 +468,15 @@ pub enum PropertyID {
 	grid_lanes_direction
 	fit_tolerance
 	grid_lanes_pack
+	interpolate_size
+	text_align_last
+	field_sizing
+	hyphenate_character
+	hyphenate_limit_chars
+	hyphenate_limit_lines
+	text_emphasis_position
+	text_emphasis_style
+	line_break
 	webkit_font_smoothing
 	// Shorthands (not longhands; excluded from the longhand index/count).
 	overflow
@@ -603,7 +612,7 @@ pub fn ColorResolutionContext.for_computed_properties(computed &ComputedProperti
 fn color_resolution_context_for_computed_properties(computed &ComputedProperties, document &dom.Document, calculation_resolution_context CalculationResolutionContext) ColorResolutionContext {
 	preferred_scheme := preferred_color_scheme_from_string(document.preferred_color_scheme())
 	scheme := computed.color_scheme(preferred_scheme, document.supported_color_schemes())
-	initial_color := SystemColor.canvas_text(scheme)
+	initial_color := computed.highlight_originating_color_ or { SystemColor.canvas_text(scheme) }
 	initial_accent := SystemColor.accent_color(scheme)
 	base_context := ColorResolutionContext{
 		color_scheme: scheme
@@ -2696,6 +2705,8 @@ pub mut:
 	anchor_resolver_context   voidptr
 	// Channel values of a relative color's origin, for its channel keywords.
 	relative_color_channels []RelativeColorChannel
+	// The resolved basis that a calc-size() calculation's size keyword stands for.
+	calc_size_px ?f64
 }
 
 pub fn (context CalculationResolutionContext) percentage_basis_angle() ?Angle {
@@ -3736,6 +3747,8 @@ pub mut:
 	type_              SizeType
 	// Keyword sizes retain no unused length/percentage owner.
 	length_percentage_ ?LengthPercentage = ?LengthPercentage(none)
+	// The calc-size() this size was given as; it acts as its basis otherwise.
+	calc_size_ ?FunctionStyleValue
 }
 
 pub fn Size.new(type_ SizeType, length_percentage ?LengthPercentage) Size {
@@ -3809,7 +3822,9 @@ pub fn Size.from_style_value(value StyleValue) Size {
 			}
 		}
 		FunctionStyleValue {
-			if value.name() == 'fit-content' {
+			if value.name() == calc_size_function_name {
+				size_from_calc_size(value)
+			} else if value.name() == 'fit-content' {
 				Size.make_fit_content(LengthPercentage.from_style_value_logic(value.value()))
 			} else {
 				Size.make_auto()

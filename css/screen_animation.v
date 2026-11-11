@@ -1613,6 +1613,11 @@ pub fn start_needed_transitions_for_storage(previous_style &ComputedProperties, 
 	// For each element and property, the implementation must act as follows:
 	// NB: A DocumentTimeline's current time is always in milliseconds.
 	style_change_event_time := document_timeline.current_time_ms() or { return }
+	// The interpolate-size of the after-change style governs keyword size interpolation.
+	previous_interpolation_style := enter_calc_size_interpolation_style(&new_style)
+	defer {
+		leave_calc_size_interpolation_style(previous_interpolation_style)
+	}
 
 	// OPTIMIZATION: Instead of iterating over all properties we split the logic into two loops, one for the properties
 	//               which appear in transition-property and one for those which have existing transitions

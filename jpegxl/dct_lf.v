@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 module jpegxl
 
-import math
-
 fn (transform HfTransform) is_dct() bool {
 	return transform in [HfTransform.dct, .dct16x16, .dct32x32, .dct16x8, .dct8x16,
 		.dct32x8, .dct8x32, .dct32x16, .dct16x32, .dct64x64, .dct64x32, .dct32x64,
@@ -19,12 +17,8 @@ pub fn inject_dct_lf(transform HfTransform, lf []f32, coefficients []f32) ![]f32
 	if !transform.is_dct() || lf.len != rows * columns || coefficients.len != rows * columns * 64 {
 		return error('Invalid JPEG XL DCT LF geometry')
 	}
-	for value in lf {
-		if !math.is_finite(value) { return error('Nonfinite JPEG XL DCT LF input') }
-	}
-	for value in coefficients {
-		if !math.is_finite(value) { return error('Nonfinite JPEG XL DCT HF input') }
-	}
+	if !all_finite(lf) { return error('Nonfinite JPEG XL DCT LF input') }
+	if !all_finite(coefficients) { return error('Nonfinite JPEG XL DCT HF input') }
 	// Original dispatch uses ScalarDescriptor whenever either LF axis is < 4.
 	fused := rows >= 4 && columns >= 4
 	mut low := []f32{len: lf.len}

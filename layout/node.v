@@ -608,6 +608,12 @@ pub fn (n &Node) has_size_containment() bool {
 	}
 	computed := n.computed_values()
 	return computed.contain().size_containment || computed.container_type().is_size_container
+		|| computed.content_visibility() == .hidden
+}
+
+fn (n &Node) has_size_containment_in_axis(width bool) bool {
+	return n.has_size_containment() || (n.has_inline_size_containment()
+		&& width == (n.computed_values().writing_mode() == .horizontal_tb))
 }
 
 // https://drafts.csswg.org/css-sizing-4/#intrinsic-size-override
@@ -646,14 +652,14 @@ pub fn (n &Node) has_layout_containment() bool {
 		return false
 	}
 	computed := n.computed_values()
-	return computed.contain().layout_containment || computed.content_visibility() == .auto_
+	return computed.contain().layout_containment || computed.content_visibility() in [.auto_, .hidden]
 }
 
 pub fn (n &Node) has_style_containment() bool {
 	computed := n.computed_values()
 	container_type := computed.container_type()
 	return computed.contain().style_containment || container_type.is_size_container
-		|| container_type.is_inline_size_container || computed.content_visibility() == .auto_
+		|| container_type.is_inline_size_container || computed.content_visibility() in [.auto_, .hidden]
 }
 
 pub fn (n &Node) has_paint_containment() bool {
@@ -662,7 +668,7 @@ pub fn (n &Node) has_paint_containment() bool {
 		return false
 	}
 	computed := n.computed_values()
-	return computed.contain().paint_containment || computed.content_visibility() == .auto_
+	return computed.contain().paint_containment || computed.content_visibility() in [.auto_, .hidden]
 }
 
 fn layout_input_type_allows_readonly(element &dom.Element) bool {
@@ -1668,6 +1674,8 @@ pub mut:
 	max_content_width         ?CSSPixels
 	min_content_width_height_ ?CSSPixels
 	max_content_width_height_ ?CSSPixels
+	min_content_width_repeat_adjustment_ CSSPixels
+	max_content_width_repeat_adjustment_ CSSPixels
 	table_grid_width_measures ?&TableGridIntrinsicWidths
 mut:
 	font_generation_ u64
@@ -1798,6 +1806,20 @@ pub fn (n &Box) auto_content_box_size() css.SizeWithAspectRatio {
 			height: node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		}
 	}
+	mut result := n.uncontained_auto_content_box_size()
+	if unsafe { &Node(n) }.has_inline_size_containment() {
+		node := unsafe { &Node(n) }
+		if node.computed_values().writing_mode() == .horizontal_tb {
+			result.width = node.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
+		} else {
+			result.height = node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
+		}
+		result.aspect_ratio = none
+	}
+	return result
+}
+
+fn (n &Box) uncontained_auto_content_box_size() css.SizeWithAspectRatio {
 	if chromium_menu_list(unsafe { &Node(n) }) {
 		return chromium_menu_list_auto_size(unsafe { &Node(n) })
 	}
@@ -2197,6 +2219,12 @@ pub fn (n &TextNode) font_for_rendering() &platform.Font {
 
 pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 	mut mutable_node := unsafe { &TextNode(n) }
+	if mutable_node.line_segmenter_ != unsafe { nil }
+		&& !mutable_node.line_segmenter_.is_ascii_line_fast_path()
+		&& mutable_node.line_segmenter_.line_break_mode != n.line_break_mode() {
+		// A `line-break` or language change retailors the Unicode segmenter.
+		mutable_node.line_segmenter_ = unsafe { nil }
+	}
 	if mutable_node.line_segmenter_ == unsafe { nil } {
 		persistent := platform.enter_persistent_if(platform.transient_arena_entered())
 		defer { platform.leave_persistent(persistent) }
@@ -2206,10 +2234,32 @@ pub fn (n &TextNode) line_segmenter() &dom.Segmenter {
 		} else {
 			mut document := unsafe { &dom.Document(n.Node.document()) }
 			mutable_node.line_segmenter_ = document.line_segmenter().clone()
+			mutable_node.line_segmenter_.line_break_mode = n.line_break_mode()
 			mutable_node.line_segmenter_.set_segmented_text(text)
 		}
 	}
 	return mutable_node.line_segmenter_
+}
+
+// The ICU tailoring of the text's `line-break` value. Only `loose` depends on
+// the content language (Rust text_chunker.rs LineSegmenter::new()); `anywhere`
+// replaces the segmenter's opportunities in the chunk iterator.
+fn (n &TextNode) line_break_mode() dom.LineBreakMode {
+	return match n.Node.computed_values().line_break() {
+		.loose {
+			match dom.LineBreakLanguage.from_tag(text_node_hyphenation_language(unsafe { &Node(n) })) {
+				.japanese { dom.LineBreakMode.loose_japanese }
+				.chinese { dom.LineBreakMode.loose_chinese }
+				.other { dom.LineBreakMode.loose }
+			}
+		}
+		.normal {
+			dom.LineBreakMode.normal
+		}
+		.auto, .strict, .anywhere {
+			dom.LineBreakMode.strict
+		}
+	}
 }
 
 pub fn TextNode.new(document &dom.Document, dom_text_node &dom.Node, source_text string) &TextNode {

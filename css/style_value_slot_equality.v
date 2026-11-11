@@ -17,6 +17,7 @@ pub fn (a RGBColorStyleValue) == (b RGBColorStyleValue) bool {
 		&& a.color_syntax_ == b.color_syntax_
 		&& a.name_ == b.name_
 		&& a.preserve_float_alpha_ == b.preserve_float_alpha_
+		&& a.unclamped_animation_channels_ == b.unclamped_animation_channels_
 		&& a.relative_origin_ == b.relative_origin_
 		&& a.relative_alpha_ == b.relative_alpha_
 }

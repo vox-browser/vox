@@ -25,14 +25,39 @@ pub fn (b &BitReader) peek(n int) !u64 {
 		return error('Invalid JPEG XL bit count')
 	}
 	if n == 0 { return 0 }
+	return b.peek_bits(n)
+}
+
+// peek for 0 <= n <= 56 at a nonnegative position, which the caller ensures.
+// Bits past the end of the data read as zero, as with peek.
+@[direct_array_access; inline]
+fn (b &BitReader) peek_bits(n int) u64 {
 	start := b.position / 8
 	offset := b.position % 8
+	if start + 8 <= b.data.len {
+		// n <= 56 and offset <= 7, so eight bytes hold every requested bit. The
+		// C compiler folds this little-endian composition into one load.
+		p := unsafe { &u8(b.data.data) + start }
+		word := unsafe {
+			u64(p[0]) | (u64(p[1]) << 8) | (u64(p[2]) << 16) | (u64(p[3]) << 24) | (u64(p[4]) << 32) | (u64(p[5]) << 40) | (u64(p[6]) << 48) | (u64(p[7]) << 56)
+		}
+		return (word >> offset) & ((u64(1) << n) - 1)
+	}
 	count := math.min((n + offset + 7) / 8, math.max(0, b.data.len - start))
 	mut value := u64(0)
 	for i in 0 .. count {
 		value |= u64(b.data[start + i]) << (i * 8)
 	}
 	return (value >> offset) & ((u64(1) << n) - 1)
+}
+
+// read_optimistic without a Result, for callers whose widths are known to
+// be within 0..56; the position is checked later with check_end().
+@[inline]
+fn (mut b BitReader) read_bits_optimistic(n int) u64 {
+	value := b.peek_bits(n)
+	b.position += n
+	return value
 }
 
 pub fn (mut b BitReader) read(n int) !u64 {

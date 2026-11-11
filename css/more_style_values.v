@@ -429,6 +429,9 @@ pub fn (style_value FunctionStyleValue) absolutized(context ComputationContext) 
 }
 
 pub fn (style_value FunctionStyleValue) serialize(mode SerializationMode) string {
+	if style_value.name_ == calc_size_function_name {
+		return serialize_calc_size_function(style_value, mode)
+	}
 	return '${style_value.name_}(${style_value.value_[0].serialize(mode)})'
 }
 

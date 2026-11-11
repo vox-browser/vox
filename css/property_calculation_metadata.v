@@ -184,9 +184,11 @@ fn canonical_property_name_from_metadata(name string) string {
 }
 
 fn property_id_from_canonical_name(name string) ?PropertyID {
+	if name == 'line-break' { return .line_break }
 	if name == 'grid-lanes-direction' { return .grid_lanes_direction }
 	if name == 'fit-tolerance' { return .fit_tolerance }
 	if name == 'grid-lanes-pack' { return .grid_lanes_pack }
+	if name == 'interpolate-size' { return .interpolate_size }
 
 	if name == 'overscroll-behavior-x' { return .overscroll_behavior_x }
 	if name == 'overscroll-behavior-y' { return .overscroll_behavior_y }
@@ -215,6 +217,13 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 	if name == 'font-synthesis-small-caps' { return .font_synthesis_small_caps }
 	if name == 'font-synthesis-position' { return .font_synthesis_position }
 	if name == 'hyphens' { return .hyphens }
+	if name == 'text-emphasis-style' { return .text_emphasis_style }
+	if name == 'text-emphasis-position' { return .text_emphasis_position }
+	if name == 'hyphenate-limit-lines' { return .hyphenate_limit_lines }
+	if name == 'hyphenate-limit-chars' { return .hyphenate_limit_chars }
+	if name == 'hyphenate-character' { return .hyphenate_character }
+	if name == 'field-sizing' { return .field_sizing }
+	if name == 'text-align-last' { return .text_align_last }
 	// Keep bucket selection scalar; wrap the result once after a full match.
 	mut value := PropertyID.webkit_box_orient
 	mut found := false
@@ -3222,9 +3231,11 @@ fn property_id_from_canonical_name(name string) ?PropertyID {
 
 pub fn string_from_property_id(property_id PropertyID) string {
 	return match property_id {
+		.line_break { 'line-break' }
 		.grid_lanes_direction { 'grid-lanes-direction' }
 		.fit_tolerance { 'fit-tolerance' }
 		.grid_lanes_pack { 'grid-lanes-pack' }
+		.interpolate_size { 'interpolate-size' }
 
 		.overscroll_behavior_x { 'overscroll-behavior-x' }
 		.overscroll_behavior_y { 'overscroll-behavior-y' }
@@ -3252,6 +3263,13 @@ pub fn string_from_property_id(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'font-synthesis-small-caps' }
 		.font_synthesis_position { 'font-synthesis-position' }
 		.hyphens { 'hyphens' }
+		.text_emphasis_style { 'text-emphasis-style' }
+		.text_emphasis_position { 'text-emphasis-position' }
+		.hyphenate_limit_lines { 'hyphenate-limit-lines' }
+		.hyphenate_limit_chars { 'hyphenate-limit-chars' }
+		.hyphenate_character { 'hyphenate-character' }
+		.field_sizing { 'field-sizing' }
+		.text_align_last { 'text-align-last' }
 		.webkit_box_orient { '-webkit-box-orient' }
 		.webkit_font_smoothing { '-webkit-font-smoothing' }
 		.webkit_line_clamp { '-webkit-line-clamp' }
@@ -3724,6 +3742,14 @@ pub fn property_has_quirk(property_id PropertyID, quirk PropertyQuirk) bool {
 
 pub fn is_inherited_property(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
+		.text_emphasis_style { true }
+		.text_emphasis_position { true }
+		.hyphenate_limit_lines { true }
+		.hyphenate_limit_chars { true }
+		.hyphenate_character { true }
+		.text_align_last { true }
+		.interpolate_size { true }
 		.text_orientation { true }
 		.forced_color_adjust { true }
 		.font_palette { true }
@@ -3741,7 +3767,9 @@ pub fn is_inherited_property(property_id PropertyID) bool {
 
 pub fn property_initial_value_string(property_id PropertyID) string {
 	return match property_id {
+		.line_break { 'auto' }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { 'normal' }
+		.interpolate_size { 'numeric-only' }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { 'auto' }
 
@@ -3765,6 +3793,13 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 		.font_synthesis_small_caps { 'auto' }
 		.font_synthesis_position { 'auto' }
 		.hyphens { 'manual' }
+		.text_emphasis_style { 'none' }
+		.text_emphasis_position { 'auto' }
+		.hyphenate_limit_lines { 'no-limit' }
+		.hyphenate_limit_chars { 'auto' }
+		.hyphenate_character { 'auto' }
+		.field_sizing { 'fixed' }
+		.text_align_last { 'auto' }
 		.webkit_box_orient { 'horizontal' }
 		.webkit_font_smoothing { 'auto' }
 		.webkit_line_clamp { 'none' }
@@ -4195,6 +4230,7 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.line_break { AnimationType.discrete }
 		.grid_lanes_direction, .grid_lanes_pack { AnimationType.discrete }
 		.fit_tolerance { AnimationType.by_computed_value }
 
@@ -4228,6 +4264,13 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 			AnimationType.discrete
 		}
 		.hyphens { AnimationType.discrete }
+		.text_emphasis_style { AnimationType.discrete }
+		.text_emphasis_position { AnimationType.discrete }
+		.hyphenate_limit_lines { AnimationType.by_computed_value }
+		.hyphenate_limit_chars { AnimationType.by_computed_value }
+		.hyphenate_character { AnimationType.discrete }
+		.field_sizing { AnimationType.discrete }
+		.text_align_last { AnimationType.discrete }
 		.backface_visibility { AnimationType.discrete }
 		.scroll_snap_align, .scroll_snap_stop, .scroll_snap_type { AnimationType.discrete }
 		.scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
@@ -4268,6 +4311,14 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
+		.text_emphasis_style { true }
+		.text_emphasis_position { true }
+		.hyphenate_limit_lines { true }
+		.hyphenate_limit_chars { true }
+		.hyphenate_character { true }
+		.field_sizing { true }
+		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block, .overscroll_behavior { true }
@@ -4327,6 +4378,14 @@ pub fn property_multiplicity(property_id PropertyID) PropertyMultiplicity {
 
 pub fn property_affects_layout(property_id PropertyID) bool {
 	return match property_id {
+		.line_break { true }
+		.text_emphasis_style { true }
+		.text_emphasis_position { true }
+		.hyphenate_limit_lines { true }
+		.hyphenate_limit_chars { true }
+		.hyphenate_character { true }
+		.field_sizing { true }
+		.text_align_last { true }
 		.grid_lanes_direction, .fit_tolerance, .grid_lanes_pack { true }
 
 		.alignment_baseline, .baseline_shift, .baseline_source { true }
@@ -4389,6 +4448,9 @@ pub fn property_requires_computation_with_initial_value(property_id PropertyID) 
 
 pub fn property_requires_computation_with_cascaded_value(property_id PropertyID) bool {
 	return match property_id {
+		.text_emphasis_style { true }
+		.hyphenate_limit_lines { true }
+		.hyphenate_limit_chars { true }
 		.fit_tolerance { true }
 
 		.baseline_shift { true }
@@ -4508,6 +4570,10 @@ pub fn property_resolves_percentages_relative_to(property_id PropertyID) ?ValueT
 
 pub fn property_accepts_type(property_id PropertyID, value_type ValueType) bool {
 	return match property_id {
+		.text_emphasis_style { value_type == .string }
+		.hyphenate_limit_lines { value_type == .integer }
+		.hyphenate_limit_chars { value_type == .integer }
+		.hyphenate_character { value_type == .string }
 		.fit_tolerance { value_type in [.length,.percentage] }
 
 		.baseline_shift { value_type in [.length,.percentage] }
@@ -4705,9 +4771,11 @@ fn property_custom_ident_blacklist(property_id PropertyID) []string {
 fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 	lowercase_value := to_ascii_lowercase(value)
 	return match property_id {
+		.line_break { lowercase_value in ['auto', 'loose', 'normal', 'strict', 'anywhere'] }
 		.grid_lanes_direction { lowercase_value in ['normal','row','column','fill-reverse','track-reverse'] }
 		.fit_tolerance { lowercase_value in ['normal','infinite'] }
 		.grid_lanes_pack { lowercase_value in ['normal','dense'] }
+		.interpolate_size { lowercase_value in ['numeric-only','allow-keywords'] }
 
 		.overscroll_behavior_x, .overscroll_behavior_y, .overscroll_behavior_inline, .overscroll_behavior_block { lowercase_value in ['auto','contain','none','chain'] }
 
@@ -4743,6 +4811,13 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 			lowercase_value in ['auto', 'none', 'oblique-only']
 		}
 		.hyphens { lowercase_value in ['none', 'manual', 'auto'] }
+		.text_emphasis_style { lowercase_value in ['none', 'filled', 'open', 'dot', 'circle', 'double-circle', 'triangle', 'sesame'] }
+		.text_emphasis_position { lowercase_value in ['auto', 'over', 'under', 'left', 'right'] }
+		.hyphenate_limit_lines { lowercase_value in ['no-limit'] }
+		.hyphenate_limit_chars { lowercase_value in ['auto'] }
+		.hyphenate_character { lowercase_value in ['auto'] }
+		.field_sizing { lowercase_value in ['fixed', 'content'] }
+		.text_align_last { lowercase_value in ['auto', 'start', 'end', 'left', 'right', 'center', 'justify', 'match-parent'] }
 		.scroll_padding, .scroll_padding_block, .scroll_padding_block_end, .scroll_padding_block_start, .scroll_padding_bottom, .scroll_padding_inline, .scroll_padding_inline_end, .scroll_padding_inline_start, .scroll_padding_left, .scroll_padding_right, .scroll_padding_top {
 			lowercase_value == 'auto'
 		}
@@ -5208,6 +5283,9 @@ fn property_accepts_keyword_string(property_id PropertyID, value string) bool {
 pub fn property_accepted_type_ranges(property_id PropertyID) map[ValueType]AcceptedTypeRange {
 	mut ranges := map[ValueType]AcceptedTypeRange{}
 	match property_id {
+		.contain_intrinsic_width, .contain_intrinsic_height, .contain_intrinsic_inline_size, .contain_intrinsic_block_size {
+			ranges[.length] = AcceptedTypeRange{min:0, max:math.max_f32}
+		}
 		.fit_tolerance {
             ranges[.length] = AcceptedTypeRange{min:0,max:math.max_f32}
             ranges[.percentage] = AcceptedTypeRange{min:0,max:math.max_f32}
@@ -5398,6 +5476,8 @@ pub fn property_accepts_frequency(property_id PropertyID, value Frequency) bool 
 
 pub fn property_accepts_integer(property_id PropertyID, value i64) bool {
 	return match property_id {
+		.hyphenate_limit_lines { value >= 0 }
+		.hyphenate_limit_chars { true }
 		.column_count, .max_lines, .orphans, .widows {
 			value >= 1
 		}

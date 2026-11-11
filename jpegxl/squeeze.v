@@ -33,6 +33,7 @@ pub fn modular_squeeze_pair(average i32, residual i32, next_average i32, previou
 
 // Scalar whole-plane inverse. Transform scheduling supplies the output shift;
 // neighboring tiles and border continuation are separate operations.
+@[direct_array_access]
 pub fn inverse_modular_squeeze(average ModularChannel, residual ModularChannel, horizontal bool, storage ModularStorage, output_shift ?ModularShift) !ModularChannel {
 	average.validate()!
 	residual.validate()!
@@ -49,23 +50,39 @@ pub fn inverse_modular_squeeze(average ModularChannel, residual ModularChannel, 
 	height := if horizontal { average.height } else { average.height + residual.height }
 	mut output := ModularChannel.new(width, height, output_shift)!
 	if output.samples.len == 0 { return output }
-	for y in 0 .. residual.height {
-		for x in 0 .. residual.width {
-			value := modular_storage_value(average.samples[y * average.width + x], storage)
-			remainder := modular_storage_value(residual.samples[y * residual.width + x], storage)
-			next_x := if horizontal && x + 1 < average.width { x + 1 } else { x }
-			next_y := if !horizontal && y + 1 < average.height { y + 1 } else { y }
-			next := modular_storage_value(average.samples[next_y * average.width + next_x], storage)
-			previous := if horizontal {
-				if x > 0 { output.samples[y * width + 2 * x - 1] } else { value }
-			} else {
-				if y > 0 { output.samples[(2 * y - 1) * width + x] } else { value }
+	// Indexing is direct: validate() and ModularChannel.new give every channel
+	// width * height samples, and the dimension checks above bound each index.
+	if horizontal {
+		for y in 0 .. residual.height {
+			average_row := y * average.width
+			residual_row := y * residual.width
+			output_row := y * width
+			for x in 0 .. residual.width {
+				value := modular_storage_value(average.samples[average_row + x], storage)
+				remainder := modular_storage_value(residual.samples[residual_row + x], storage)
+				next_x := if x + 1 < average.width { x + 1 } else { x }
+				next := modular_storage_value(average.samples[average_row + next_x], storage)
+				previous := if x > 0 { output.samples[output_row + 2 * x - 1] } else { value }
+				pair := modular_squeeze_pair(value, remainder, next, previous)
+				output.samples[output_row + 2 * x] = modular_storage_value(pair[0], storage)
+				output.samples[output_row + 2 * x + 1] = modular_storage_value(pair[1], storage)
 			}
-			pair := modular_squeeze_pair(value, remainder, next, previous)
-			first := if horizontal { y * width + 2 * x } else { 2 * y * width + x }
-			second := first + if horizontal { 1 } else { width }
-			output.samples[first] = modular_storage_value(pair[0], storage)
-			output.samples[second] = modular_storage_value(pair[1], storage)
+		}
+	} else {
+		for y in 0 .. residual.height {
+			average_row := y * average.width
+			next_row := if y + 1 < average.height { (y + 1) * average.width } else { average_row }
+			residual_row := y * residual.width
+			first_row := 2 * y * width
+			for x in 0 .. residual.width {
+				value := modular_storage_value(average.samples[average_row + x], storage)
+				remainder := modular_storage_value(residual.samples[residual_row + x], storage)
+				next := modular_storage_value(average.samples[next_row + x], storage)
+				previous := if y > 0 { output.samples[first_row - width + x] } else { value }
+				pair := modular_squeeze_pair(value, remainder, next, previous)
+				output.samples[first_row + x] = modular_storage_value(pair[0], storage)
+				output.samples[first_row + width + x] = modular_storage_value(pair[1], storage)
+			}
 		}
 	}
 	if horizontal && average.width > residual.width {

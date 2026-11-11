@@ -10,6 +10,7 @@
 module html
 
 import dom
+import platform
 
 pub enum InitialInsertion {
 	no
@@ -93,12 +94,34 @@ mut:
 __global navigable_container_instances []&NavigableContainerModel
 
 pub fn NavigableContainerModel.create(base_url dom.URL, owner_origin dom.Origin) &NavigableContainerModel {
+	// The instance list is process-wide. A container created in scratch
+	// storage is made persistent; one in a document arena leaves the list
+	// when that arena is released, as upstream's weak instance set does.
+	transient := platform.transient_arena_entered()
+	storage := if transient { unsafe { &platform.RetainedArena(nil) } } else { platform.current_retained_arena() }
+	record_storage := platform.enter_persistent_if(transient)
 	container := &NavigableContainerModel{
 		base_url_: base_url
 		owner_origin_: owner_origin
 	}
+	platform.leave_persistent(record_storage)
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	navigable_container_instances << container
+	if storage != unsafe { nil } {
+		mut owner := unsafe { &platform.RetainedArena(storage) }
+		owner.add_cleanup(fn [container] () { remove_navigable_container_instance(container) })
+	}
 	return container
+}
+
+fn remove_navigable_container_instance(container &NavigableContainerModel) {
+	for index, candidate in navigable_container_instances {
+		if voidptr(candidate) == voidptr(container) {
+			navigable_container_instances.delete(index)
+			return
+		}
+	}
 }
 
 pub fn navigable_container_all_instances() []&NavigableContainerModel {

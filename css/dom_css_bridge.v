@@ -552,7 +552,7 @@ __global remote_link_style_sheets = map[string]string{}
 pub fn set_remote_link_style_sheet(resolved_url string, css_text string) {
 	persistent := platform.enter_persistent()
 	defer { platform.leave_persistent(persistent) }
-	remote_link_style_sheets[resolved_url.clone()] = css_text.clone()
+	remote_link_style_sheets[resolved_url.clone()] = decode_stylesheet_response_text(css_text)
 }
 
 pub fn has_remote_link_style_sheet(resolved_url string) bool {
@@ -705,7 +705,7 @@ pub fn install_link_style_sheet_with_base(owner &dom.HTMLLinkElement, css_text s
 	mut scope := css_style_scope_for_scope_node(scope_node)
 	mut list := scope.style_sheet_list()
 	resource_base_url := base_url or { location }
-	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), css_text, resource_base_url)
+	mut sheet := parse_css_style_sheet_for_owner_node(element.document(), decode_stylesheet_response_text(css_text), resource_base_url)
 	sheet.base.location = location
 	sheet.set_base_url(base_url)
 	// Cache-only synchronization has no CORS response to approve. A Fetch

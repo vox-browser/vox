@@ -7,6 +7,7 @@
 module html
 
 import dom
+import platform
 
 __global (
 	html_user_agent_browsing_context_groups = []&BrowsingContextGroup{}
@@ -30,6 +31,10 @@ mut:
 }
 
 pub fn BrowsingContextGroup.create(page &dom.Page) &BrowsingContextGroup {
+	// Groups belong to the user agent and outlive the documents that create
+	// them (for example through window.open).
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	group := &BrowsingContextGroup{
 		page_: page
 		registered_: true
@@ -78,7 +83,9 @@ pub fn (mut group BrowsingContextGroup) append(browsing_context &dom.BrowsingCon
 		}
 	}
 	if !present {
+		persistent := platform.enter_persistent()
 		group.browsing_context_set_ << browsing_context
+		platform.leave_persistent(persistent)
 	}
 	mut mutable_context := unsafe { &dom.BrowsingContext(browsing_context) }
 	mutable_context.group_handle = voidptr(&group)
@@ -91,7 +98,12 @@ fn (mut group BrowsingContextGroup) synchronize_typed_member(native &dom.Browsin
 	}
 	mut context := browsing_context_model_for_native(native)
 	context.group_ = &group
-	group.legacy_pending_model_members_ = group.legacy_pending_model_members_.filter(voidptr(it) != voidptr(context))
+	for index, candidate in group.legacy_pending_model_members_ {
+		if voidptr(candidate) == voidptr(context) {
+			group.legacy_pending_model_members_.delete(index)
+			break
+		}
+	}
 }
 
 pub fn (mut group BrowsingContextGroup) append_model(browsing_context &BrowsingContextModel) {
@@ -114,7 +126,9 @@ pub fn (mut group BrowsingContextGroup) append_model(browsing_context &BrowsingC
 			return
 		}
 	}
+	persistent := platform.enter_persistent()
 	group.legacy_pending_model_members_ << browsing_context
+	platform.leave_persistent(persistent)
 	mut mutable_context := unsafe { &BrowsingContextModel(browsing_context) }
 	mutable_context.group_ = &group
 }
@@ -155,7 +169,12 @@ pub fn (mut group BrowsingContextGroup) finalize() {
 	}
 	group.browsing_context_set_.clear()
 	group.legacy_pending_model_members_.clear()
-	html_user_agent_browsing_context_groups = html_user_agent_browsing_context_groups.filter(voidptr(it) != voidptr(&group))
+	for index, candidate in html_user_agent_browsing_context_groups {
+		if voidptr(candidate) == voidptr(&group) {
+			html_user_agent_browsing_context_groups.delete(index)
+			break
+		}
+	}
 	group.registered_ = false
 }
 

@@ -1,7 +1,8 @@
 # Vox on Linux
 
 The Linux executable uses the translated V engine, JavaScriptCoreGTK, GLib event
-sources, Fontconfig/HarfBuzz, Skia CPU services, and GG/Sokol's OpenGL window.
+sources, Fontconfig/HarfBuzz, the V `cpuraster` rasterizer, and GG/Sokol's OpenGL
+window. It does not depend on Skia.
 JavaScriptCore's C API is supplied by the `javascriptcoregtk-4.1` pkg-config
 package on Linux.
 The desktop path is X11, including XWayland. Headless modes need no display.
@@ -40,9 +41,8 @@ Use the latest UI2: run `v up ui2` for an installed module, or
 that live checkout directly without copying or pinning it. CI fetches upstream
 HEAD on every run and records the resolved V and UI2 commit IDs in its receipt
 artifacts. See the [UI2 adapter guide](../tools/ui2/README.md) for focused checks.
-Regex is implemented in V and requires no Rust compiler. The optional JPEG XL
-helper still requires Cargo and Rust 1.89 or newer, pending its V replacement;
-when Cargo is available, the build compiles that helper from its lockfile.
+Regex and JPEG XL decoding are implemented in V; the build requires no Rust
+compiler or Cargo.
 On Linux, `V_BIN` accepts a command on `PATH` (for example, `V_BIN=v`), an
 absolute executable path, or a path relative to the directory from which you
 invoke the build script. The build resolves that path before changing directories.
@@ -54,8 +54,6 @@ unsupported. The initial decoder checks ran on macOS; Linux runtime conformance
 for this path remains unverified.
 
 ```sh
-# Builds pinned Skia 144 under Build/deps; subsequent runs reuse it.
-python3 tools/build_linux_skia.py
 sh build-prod-browser.sh
 Build/linux/vox https://example.com
 ```
@@ -63,7 +61,7 @@ Build/linux/vox https://example.com
 The build selects Linux or macOS automatically. `build-linux-browser.sh` can
 also be called directly. Both builds use the current V compiler without falling
 back to the compatibility compiler. The shell entrypoint prepares the native
-archives, exports the local Skia package path, and stages the compiler modules
+archives and stages the compiler modules
 needed by the browser. Linux defaults to the distribution's threaded Boehm
 collector. `LADYBIRD_V_GC=prealloc sh build-prod-browser.sh` builds the full browser
 with the production arena allocator and no collector, using the same staged
@@ -85,17 +83,15 @@ Clang is the default C compiler. Set `CC=gcc` to build with GCC instead:
 CC=gcc sh build-prod-browser.sh
 ```
 
-The Skia bootstrap verifies its archive checksum and uses system codec/font
-libraries. Rerun it after updating the checkout to refresh the generated
-`skia.pc` link dependencies; unchanged compiled libraries are reused.
-A compatible system `skia.pc` can be supplied through `PKG_CONFIG_PATH`
-instead. Skia's [build documentation](https://skia.org/docs/user/build/) describes
-its GN/Ninja build and dependency options.
+Canvas 2D drawing and portable shadows use the V `cpuraster` module. Its exact
+Skia ports are compared against a pinned Linux Skia only by the external
+differential suite (`tools/raster_tests.py`); `tools/build_linux_skia.py` builds
+that oracle and is not needed to build or run the browser.
 
 ## Run and check
 
 The [Linux build workflow](../.github/workflows/linux-build.yml) installs the
-system dependencies on Ubuntu 24.04 and builds pinned V and Skia sources with
+system dependencies on Ubuntu 24.04 and builds pinned V sources with
 current upstream UI2 on pushes to `master` and on pull requests. Independent
 Boehm and prealloc jobs each build the full browser through the normal
 supervisor, run its headless smoke, and exercise its actual X11 window under Xvfb.
@@ -112,7 +108,7 @@ fails the aggregate gate. Parser script lifecycle and `document.write()` cases
 run with both Boehm and prealloc. This keeps an application compiler error from
 hiding parser, DOM, recording, and document-owner regressions. A separate fast
 preflight compiles the actual tab metadata codec with FastC in both allocation
-modes before Skia or the full browser build; it does not substitute the C
+modes before the native dependencies and the full browser build; it does not substitute the C
 backend for the production compiler.
 
 The V revision is pinned to `339affce1891514d11aeb7111f579845d966a138`,
@@ -254,8 +250,8 @@ canvas and shadow checks passed as well.
 
 ## Current platform boundary
 
-Linux uses the existing portable painter, with retained shaped text and Skia
-shadows. Advanced effects implemented solely in the Cocoa painter, including
+Linux uses the existing portable painter, with retained shaped text and V
+(`cpuraster`) shadows. Advanced effects implemented solely in the Cocoa painter, including
 some SVG paint servers, masks and filters, remain unported. Cocoa input-method
 integration and the macOS video-frame decoder also remain platform-specific.
 WebGL requires an ANGLE EGL/GLES installation; distribution Mesa alone reports

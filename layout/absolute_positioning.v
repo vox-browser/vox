@@ -609,8 +609,21 @@ fn layout_absolutely_positioned_box_once(mut state LayoutState, box &Node) {
 			forced_height = calculate_fit_content_height(mut state,sized_box,forced_width or { box_state.content_width() },AvailableSize.make_definite(available_height))
 		}
 	}
+	// NB: A calc-size() with a keyword basis resolves its calculation against
+	//     the size that keyword (or auto) gives the box.
 	if width := forced_width {
-		forced_width = clamp_layout_content_size(box, width, containing_width, box_state, true)
+		if size_has_keyword_calc_size(preferred_width) {
+			forced_width = resolve_calc_size_for_box(computed, box_state, preferred_width, true, width, containing_width)
+		}
+	}
+	if height := forced_height {
+		if size_has_keyword_calc_size(preferred_height) {
+			forced_height = resolve_calc_size_for_box(computed, box_state, preferred_height, false, height, containing_height)
+		}
+	}
+	if width := forced_width {
+		forced_width = apply_intrinsic_width_limits(mut state, box,  box_state,
+			clamp_layout_content_size(box, width, containing_width, box_state, true), AvailableSize.make_definite(containing_width))
 	}
 	if height := forced_height {
 		forced_height = clamp_layout_content_size(box, height, containing_height, box_state, false)

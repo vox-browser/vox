@@ -1431,6 +1431,8 @@ pub fn (mut rule CSSRule) set_style_sheet(style_sheet &CSSStyleSheet) {
 	} else {
 		rule.set_kind_data(CSSRuleKindData{ ...rule.kind_data(), loaded_style_sheet: style_sheet })
 	}
+	// The parent sheet's media evaluation memo must visit the new import.
+	invalidate_media_evaluation_candidates()
 	mut mutable_style_sheet := unsafe { &CSSStyleSheet(style_sheet) }
 	mutable_style_sheet.set_owner_css_rule(rule)
 
@@ -1842,6 +1844,9 @@ pub mut:
 mut:
 	shared_style_cache_revision_ u64
 	font_synchronization_had_rules_ bool
+	media_memo_document_ voidptr
+	media_memo_generation_ u64
+	media_memo_environment_ MediaEvaluationEnvironment
 }
 
 fn (rule &CSSRule) has_process_lifetime_sheet() bool {
@@ -2500,6 +2505,7 @@ pub fn (mut sheet CSSStyleSheet) load_pending_image_resources(document &dom.Docu
 
 // Returns whether the match state of any media queries changed after evaluation.
 pub fn (mut sheet CSSStyleSheet) evaluate_media_queries(document &dom.Document) bool {
+	if sheet.media_evaluation_is_current(document) { return false }
 	mut any_media_queries_changed_match_state := false
 
 	mut media := unsafe { &MediaList(sheet.base.media) }

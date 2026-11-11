@@ -38,7 +38,7 @@ pub fn property_is_list_valued(property_id PropertyID) bool {
 	return property_multiplicity(property_id) != .single
 }
 
-pub const number_of_longhand_properties = 379
+pub const number_of_longhand_properties = 388
 
 pub fn first_longhand_property_id() PropertyID {
 	return .accent_color
@@ -428,7 +428,16 @@ fn property_id_from_longhand_index(index int) ?PropertyID {
 		375 { PropertyID.grid_lanes_direction }
 		376 { PropertyID.fit_tolerance }
 		377 { PropertyID.grid_lanes_pack }
-		378 { PropertyID.webkit_font_smoothing }
+		378 { PropertyID.interpolate_size }
+		379 { PropertyID.text_align_last }
+		380 { PropertyID.field_sizing }
+		381 { PropertyID.hyphenate_character }
+		382 { PropertyID.hyphenate_limit_chars }
+		383 { PropertyID.hyphenate_limit_lines }
+		384 { PropertyID.text_emphasis_position }
+		385 { PropertyID.text_emphasis_style }
+		386 { PropertyID.line_break }
+		387 { PropertyID.webkit_font_smoothing }
 		else { none }
 	}
 }
@@ -725,6 +734,19 @@ pub fn element_style(element &dom.Element) &CSSStyleProperties {
 
 pub fn inline_style_for_element(element &dom.Element) ?&CSSStyleProperties {
 	return inline_style_for_abstract_element(dom.AbstractElement.new(element, none))
+}
+
+// An out-of-range CSSUnitValue is stored wrapped in a CSSMathSum, so the
+// declaration's text is the wrapped calc(), not the value's own serialization.
+fn serialized_text_for_internal_representation(value MutableStylePropertyMapValue, internal_representation &dom.StyleValue) !string {
+	if value is CSSStyleValue {
+		if numeric := value.numeric_value_ {
+			if numeric is CSSUnitValue && internal_representation.css_text.starts_with('calc(') {
+				return internal_representation.css_text
+			}
+		}
+	}
+	return serialized_text_from_mutable_style_property_map_value(value)!
 }
 
 fn serialized_text_from_mutable_style_property_map_value(value MutableStylePropertyMapValue) !string {
@@ -1217,6 +1239,17 @@ pub fn (mut properties CSSStyleProperties) remove_property(property_name string)
 }
 
 pub fn (mut properties CSSStyleProperties) remove_property_internal(property PropertyNameAndID) !string {
+	removed, removed_value := properties.remove_declarations(property)!
+	if removed {
+		properties.update_style_attribute()
+		properties.invalidate_owners(.style_sheet_changed)
+	}
+	return removed_value
+}
+
+// Removes property's declarations without writing the style attribute, for
+// callers that update the attribute once after replacing the value.
+fn (mut properties CSSStyleProperties) remove_declarations(property PropertyNameAndID) !(bool, string) {
 	properties.ensure_declarations_parsed()
 	if properties.is_readonly() {
 		return error('NoModificationAllowedError: Cannot modify readonly CSSStyleProperties')
@@ -1231,7 +1264,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 			removed = true
 		}
 	} else {
-		property_id := property.id() or { return '' }
+		property_id := property.id() or { return false, '' }
 		removed_value = properties.get_property_value(string_from_property_id(property_id))
 		longhands := if property_is_shorthand(property_id) {
 			generated_expanded_longhands_for_shorthand(property_id)
@@ -1247,12 +1280,7 @@ pub fn (mut properties CSSStyleProperties) remove_property_internal(property Pro
 		}
 		if removed { properties.clear_typed_properties_cache() }
 	}
-
-	if removed {
-		properties.update_style_attribute()
-		properties.invalidate_owners(.style_sheet_changed)
-	}
-	return removed_value
+	return removed, removed_value
 }
 
 pub fn (mut properties CSSStyleProperties) set_css_text(css_text string) ! {
@@ -1461,6 +1489,21 @@ pub fn (properties &CSSStyleProperties) get_direct_property(property PropertyNam
 				}
 			}
 			value := computed.property(property_id, .yes) or { return none }
+			if property_id in [.border_top_width, .border_right_width, .border_bottom_width, .border_left_width] {
+				style_id := match property_id {
+					.border_top_width { PropertyID.border_top_style }
+					.border_right_width { PropertyID.border_right_style }
+					.border_bottom_width { PropertyID.border_bottom_style }
+					else { PropertyID.border_left_style }
+				}
+				return StyleProperty{property_id:property_id,value:cssom_resolved_border_width(computed, property_id, style_id)}
+			}
+			if property_id in [.background_color, .border_bottom_color, .border_left_color, .border_right_color,
+				.border_top_color, .caret_color, .color, .column_rule_color, .outline_color,
+				.text_decoration_color, .webkit_text_fill_color] {
+				return StyleProperty{property_id:property_id,
+					value:cssom_resolve_color_style_value(value, ColorResolutionContext.for_computed_properties(computed, document))}
+			}
 			if property_id == .column_rule_width {
 				return StyleProperty{property_id:property_id,value:StyleComputer.compute_border_or_outline_width(value,document.device_pixels_per_css_pixel(),ComputationContext{})}
 			}
@@ -1723,7 +1766,10 @@ fn cssom_resolved_transform(computed &ComputedProperties, layout_node &dom.Layou
 	}
 
 	epsilon := 1.1920929e-7
-	is_2d := math.abs(transform.at(0, 2)) <= epsilon && math.abs(transform.at(1, 2)) <= epsilon && math.abs(transform.at(2, 0)) <= epsilon && math.abs(transform.at(2, 1)) <= epsilon && math.abs(transform.at(2, 3)) <= epsilon && math.abs(transform.at(3, 0)) <= epsilon && math.abs(transform.at(3, 1)) <= epsilon && math.abs(transform.at(3, 2)) <= epsilon && math.abs(math.abs(transform.at(2, 2)) - 1) <= epsilon && math.abs(math.abs(transform.at(3, 3)) - 1) <= epsilon
+	// https://drafts.fxtf.org/geometry/#dommatrixreadonly-is-2d
+	// m33 and m44 must be 1. Upstream compares abs(m33) - 1, which also treats
+	// a half turn about a tilted axis (m33 = -1) as 2D and drops its z flip.
+	is_2d := math.abs(transform.at(0, 2)) <= epsilon && math.abs(transform.at(1, 2)) <= epsilon && math.abs(transform.at(2, 0)) <= epsilon && math.abs(transform.at(2, 1)) <= epsilon && math.abs(transform.at(2, 3)) <= epsilon && math.abs(transform.at(3, 0)) <= epsilon && math.abs(transform.at(3, 1)) <= epsilon && math.abs(transform.at(3, 2)) <= epsilon && math.abs(transform.at(2, 2) - 1) <= epsilon && math.abs(transform.at(3, 3) - 1) <= epsilon
 	if is_2d {
 		return dom_style_value_from_value_logic(StyleValue(TransformationStyleValue.create(.transform, .matrix, [
 			StyleValue(NumberStyleValue.create(transform.at(0, 0))),
@@ -2345,15 +2391,46 @@ pub fn (mut property_map StylePropertyMapReadOnly) get_style_value(property Prop
 				css_text: value.css_text
 			}
 		}
-		property_id := property.id() or { return none }
+		mut property_id := property.id() or { return none }
 		dom_computed := element.computed_properties() or { return none }
 		computed := computed_properties_from_dom(dom_computed) or { return none }
+		context := LogicalAliasMappingContext{
+			writing_mode: computed.writing_mode()
+			direction:    computed.direction()
+		}
+		if property_is_shorthand(property_id) {
+			return computed_shorthand_style_value(computed, property_id, context)
+		}
+		// Logical aliases have no computed value of their own; they share the
+		// physical property's for this element's writing mode and direction.
+		if property_is_logical_alias(property_id) {
+			property_id = map_logical_alias_to_physical_property(property_id, context)
+		}
 		return computed.property(property_id, .yes)
 	}
 	if declaration := property_map.declaration {
 		return declaration.get_property_style_value(property)
 	}
 	return none
+}
+
+// A shorthand has no computed value of its own. Compose it from its longhands'
+// computed values: one value when they all agree, otherwise all of them.
+fn computed_shorthand_style_value(computed &ComputedProperties, shorthand PropertyID, context LogicalAliasMappingContext) ?&dom.StyleValue {
+	mut texts := []string{}
+	for longhand in generated_expanded_longhands_for_shorthand(shorthand) {
+		physical := if property_is_logical_alias(longhand) {
+			map_logical_alias_to_physical_property(longhand, context)
+		} else {
+			longhand
+		}
+		if property_is_shorthand(physical) { return none }
+		value := computed.property(physical, .yes) or { return none }
+		texts << dom_style_value_to_css_text(value)
+	}
+	if texts.len == 0 { return none }
+	if texts.all(it == texts[0]) { return &dom.StyleValue{css_text: texts[0]} }
+	return &dom.StyleValue{css_text: texts.join(' ')}
 }
 
 fn (mut property_map StylePropertyMapReadOnly) get_serialized_style_value(property PropertyNameAndID) ?string {
@@ -2473,7 +2550,9 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 	mut props := unsafe { &CSSStyleProperties(property_map.declaration) }
 
 	// 7. If props[property] exists, remove it.
-	props.remove_property(property.name())!
+	// NB: The style attribute is written once, after the new value is set, so
+	//     mutation observers and attributeChangedCallback see a single change.
+	_, _ := props.remove_declarations(property)!
 
 	// 8. Let values to set be an empty list.
 	mut values_to_set := []&dom.StyleValue{}
@@ -2486,7 +2565,7 @@ pub fn (mut property_map MutableStylePropertyMap) set(property_name string, valu
 		}
 		internal_representation := create_an_internal_representation(property, value)!
 		values_to_set << internal_representation
-		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
+		serialized_values << serialized_text_for_internal_representation(value, internal_representation)!
 	}
 
 	// 10. Set props[property] to values to set.
@@ -2535,6 +2614,11 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 	// FIXME: This is done as part of step 10, because we need to detect if a string value would be an CSSUnparsedValue
 	//        or CSSVariableReferenceValue. Spec issue: https://github.com/w3c/css-houdini-drafts/issues/1157
 
+	// NB: Appending no values leaves props[property] unchanged.
+	if values.len == 0 {
+		return
+	}
+
 	// 6. Let props be the value of this's [[declarations]] internal slot.
 	mut props := unsafe { &CSSStyleProperties(property_map.declaration) }
 
@@ -2552,8 +2636,9 @@ pub fn (mut property_map MutableStylePropertyMap) append(property_name string, v
 		if mutable_style_property_map_value_is_unresolved(property, value) {
 			return error('Cannot append a CSSUnparsedValue or CSSVariableReferenceValue')
 		}
-		value_list << create_an_internal_representation(property, value)!
-		serialized_values << serialized_text_from_mutable_style_property_map_value(value)!
+		internal_representation := create_an_internal_representation(property, value)!
+		value_list << internal_representation
+		serialized_values << serialized_text_for_internal_representation(value, internal_representation)!
 	}
 
 	// 11. Append the entries of temp values to props[property].

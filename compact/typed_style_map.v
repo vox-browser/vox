@@ -22,10 +22,64 @@ struct CompactTypedMapRequest {
 	rule string
 	computed bool
 	values []json2.Any
+	args []string
+	units []string
+}
+
+fn compact_numeric_to_numberish(value css.CSSNumericValue) css.CSSNumberish {
+	return match value {
+		css.CSSUnitValue { css.CSSNumberish(value) }
+		css.CSSMathSum { css.CSSNumberish(value) }
+		css.CSSMathProduct { css.CSSNumberish(value) }
+		css.CSSMathNegate { css.CSSNumberish(value) }
+		css.CSSMathInvert { css.CSSNumberish(value) }
+		css.CSSMathMin { css.CSSNumberish(value) }
+		css.CSSMathMax { css.CSSNumberish(value) }
+		css.CSSMathClamp { css.CSSNumberish(value) }
+	}
+}
+
+// CSSNumericValue methods: operands arrive serialized and are reparsed, which
+// preserves their numeric types.
+fn compact_numeric_method(request CompactTypedMapRequest) !string {
+	value := css.CSSNumericValue.parse(request.text)!
+	mut args := []css.CSSNumberish{}
+	for text in request.args { args << compact_numeric_to_numberish(css.CSSNumericValue.parse(text)!) }
+	if request.name == 'equals' { return json2.encode(value.equals_for_bindings(args)) }
+	if request.name == 'negate' { return json2.encode(compact_numberish_record(value.negate())) }
+	if request.name == 'invert' { return json2.encode(compact_numberish_record(value.invert()!)) }
+	result := match request.name {
+		'add' { value.add(args)! }
+		'sub' { value.sub(args)! }
+		'mul' { value.mul(args)! }
+		'div' { value.div(args)! }
+		'min' { value.min(args)! }
+		'max' { value.max(args)! }
+		'to' {
+			if request.units.len != 1 { return error('TypeError: Missing unit') }
+			css.CSSNumericValue(value.to(request.units[0])!)
+		}
+		else { return error('TypeError: Invalid CSSNumericValue method') }
+	}
+	return json2.encode(compact_numeric_style_record(result))
+}
+
+fn compact_numeric_type_record(value css.CSSNumericValue) json2.Any {
+	type_ := value.type_for_bindings()
+	mut result := map[string]json2.Any{}
+	if power := type_.length { result['length'] = power }
+	if power := type_.angle { result['angle'] = power }
+	if power := type_.time { result['time'] = power }
+	if power := type_.frequency { result['frequency'] = power }
+	if power := type_.resolution { result['resolution'] = power }
+	if power := type_.flex { result['flex'] = power }
+	if power := type_.percent { result['percent'] = power }
+	if hint := type_.percent_hint { result['percentHint'] = hint.str() }
+	return json2.Any(result)
 }
 
 fn compact_numeric_style_record(value css.CSSNumericValue) json2.Any {
-	mut result := {'text': json2.Any(value.to_string())}
+	mut result := {'text': json2.Any(value.to_string()), 'type': compact_numeric_type_record(value)}
 	if value is css.CSSUnitValue {
 		result['kind'] = 'unit'
 		result['value'] = value.value()
@@ -50,6 +104,84 @@ fn compact_numeric_style_record(value css.CSSNumericValue) json2.Any {
 	return result
 }
 
+fn compact_numberish_record(value css.CSSNumberish) json2.Any {
+	return compact_numeric_style_record(match value {
+		css.CSSUnitValue { css.CSSNumericValue(value) }
+		css.CSSMathSum { css.CSSNumericValue(value) }
+		css.CSSMathProduct { css.CSSNumericValue(value) }
+		css.CSSMathNegate { css.CSSNumericValue(value) }
+		css.CSSMathInvert { css.CSSNumericValue(value) }
+		css.CSSMathMin { css.CSSNumericValue(value) }
+		css.CSSMathMax { css.CSSNumericValue(value) }
+		css.CSSMathClamp { css.CSSNumericValue(value) }
+		f64 { css.CSSNumericValue(css.CSSUnitValue.create(value, 'number')) }
+	})
+}
+
+// Transform components cross the bridge as plain records; the JS shim rebuilds
+// CSSTranslate, CSSRotate, ... objects from them.
+fn compact_transform_component_record(component css.CSSTransformComponent) json2.Any {
+	mut result := {'is2D': json2.Any(component.is_2d())}
+	match component {
+		css.CSSTranslate {
+			result['type'] = 'translate'
+			result['x'] = compact_numeric_style_record(component.x())
+			result['y'] = compact_numeric_style_record(component.y())
+			result['z'] = compact_numeric_style_record(component.z())
+		}
+		css.CSSRotate {
+			result['type'] = 'rotate'
+			result['x'] = compact_numberish_record(component.x())
+			result['y'] = compact_numberish_record(component.y())
+			result['z'] = compact_numberish_record(component.z())
+			result['angle'] = compact_numeric_style_record(component.angle())
+		}
+		css.CSSScale {
+			result['type'] = 'scale'
+			result['x'] = compact_numberish_record(component.x())
+			result['y'] = compact_numberish_record(component.y())
+			result['z'] = compact_numberish_record(component.z())
+		}
+		css.CSSSkew {
+			result['type'] = 'skew'
+			result['ax'] = compact_numeric_style_record(component.ax())
+			result['ay'] = compact_numeric_style_record(component.ay())
+		}
+		css.CSSSkewX {
+			result['type'] = 'skewX'
+			result['ax'] = compact_numeric_style_record(component.ax())
+		}
+		css.CSSSkewY {
+			result['type'] = 'skewY'
+			result['ay'] = compact_numeric_style_record(component.ay())
+		}
+		css.CSSPerspective {
+			result['type'] = 'perspective'
+			length := component.length()
+			result['length'] = match length {
+				css.CSSKeywordValue { json2.Any({'kind':json2.Any('keyword'), 'value':json2.Any(length.value())}) }
+				css.CSSUnitValue { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathSum { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathProduct { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathNegate { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathInvert { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathMin { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathMax { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				css.CSSMathClamp { compact_numeric_style_record(css.CSSNumericValue(length)) }
+				string { json2.Any({'kind':json2.Any('keyword'), 'value':json2.Any(length)}) }
+			}
+		}
+		css.CSSMatrixComponent {
+			result['type'] = 'matrix'
+			m := component.matrix()
+			values := [m.m11_, m.m12_, m.m13_, m.m14_, m.m21_, m.m22_, m.m23_, m.m24_, m.m31_, m.m32_,
+				m.m33_, m.m34_, m.m41_, m.m42_, m.m43_, m.m44_]
+			result['matrix'] = json2.Any(values.map(json2.Any(it)))
+		}
+	}
+	return json2.Any(result)
+}
+
 fn compact_unparsed_style_segments(value &css.CSSUnparsedValue) []json2.Any {
 	mut result := []json2.Any{}
 	for token in value.tokens {
@@ -70,7 +202,14 @@ fn compact_typed_style_record(value css.CSSStyleValue) !json2.Any {
 	if unparsed := value.unparsed_value_ {
 		return json2.Any({'kind':json2.Any('unparsed'), 'segments':json2.Any(compact_unparsed_style_segments(unparsed))})
 	}
-	mut kind := if value.transform_value_ != none { 'transform' } else { 'style' }
+	if transform := value.transform_value_ {
+		mut components := []json2.Any{}
+		for component in transform.transforms_ { components << compact_transform_component_record(component) }
+		mut result := {'kind':json2.Any('transform'), 'text':json2.Any(value.to_string()!), 'components':json2.Any(components)}
+		if property := value.associated_property { result['associated_property'] = property }
+		return json2.Any(result)
+	}
+	mut kind := 'style'
 	if source := value.source_value_ {
 		if source is css.ImageStyleValue || source is css.ImageSetStyleValue
 			|| source is css.LinearGradientStyleValue || source is css.RadialGradientStyleValue
@@ -115,6 +254,7 @@ fn compact_typed_map_values(mut property_map css.StylePropertyMapReadOnly, decla
 
 fn (mut binding CompactElementQueryBinding) typed_style_map_query(key string, source string) !string {
 	request := compact_decode_query[CompactTypedMapRequest](source)!
+	if request.op == 'numericMethod' { return compact_numeric_method(request) }
 	if request.op in ['parse', 'parseAll', 'numeric'] {
 		if request.op == 'numeric' {
 			return json2.encode(compact_numeric_style_record(css.CSSNumericValue.parse(request.text)!))
@@ -153,13 +293,19 @@ fn (mut binding CompactElementQueryBinding) typed_style_map_query(key string, so
 		}
 		match request.op {
 			'set' { if values.len == 0 { return error('TypeError: Missing value') }; property_map.set(request.name.clone(), values)! }
-			'append' { if values.len == 0 { return error('TypeError: Missing value') }; property_map.append(request.name.clone(), values)! }
+			'append' { property_map.append(request.name.clone(), values)! }
 			'delete' { property_map.delete_(request.name)! }
 			else { property_map.clear()! }
 		}
 		mut runtime := unsafe { &browserjs.Runtime(binding.runtime) }
 		runtime.mark_document_state_dirty()
 		runtime.mark_document_replay_effects()
+		// StylePropertyMap methods have no [CEReactions]; their style attribute
+		// changes use the backup element queue, which runs before script resumes.
+		if element != unsafe { nil } {
+			mut reaction_document := unsafe { &dom.Document(element.document()) }
+			reaction_document.invoke_custom_element_reactions()
+		}
 	} else {
 		mut property_map := if request.computed {
 			css.StylePropertyMapReadOnly.create_computed_style(dom.AbstractElement.new(element, none))
