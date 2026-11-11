@@ -8816,8 +8816,21 @@ pub fn (mut d Document) open_document() !&Document {
 	}
 	if d.parser != unsafe { nil } { d.parser.abort() }
 	d.reset_html_parser_stream()
-	// 11. Replace all with null (clear document).
+	// 9. Erase listeners and handlers on the document and its shadow-including descendants.
 	mut document_node := unsafe { &Node(&d) }
+	document_node.visit_shadow_including_inclusive_descendants(fn (node &Node) TraversalDecision {
+		target := unsafe { &EventTarget(node) }
+		target.erase_all_event_listeners_and_handlers()
+		return .@continue
+	})
+	// 10. Erase the relevant global object's listeners when this is its associated document.
+	if window := d.get_window() {
+		if voidptr(window.associated_document_) == voidptr(&d) {
+			target := unsafe { &EventTarget(window) }
+			target.erase_all_event_listeners_and_handlers()
+		}
+	}
+	// 11. Replace all with null (clear document).
 	document_node.replace_all(none)
 
 	// Reset editing state
