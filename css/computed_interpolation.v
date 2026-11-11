@@ -14564,7 +14564,13 @@ fn (s &StyleComputer) compute_style_impl_with_animated_custom_property_recompute
 	// Special path for elements representing a pseudo-element in an element's
 	// internal user-agent shadow tree.
 	if raw_pseudo_element := abstract_element.element().associated_shadow_host_pseudo_element() {
-		if raw_pseudo_element >= 0 && raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
+		// These pseudos match their own rules and inherit highlights from the
+		// internal element instead of using its host's backing-pseudo style.
+		computes_own_pseudo := if pseudo := abstract_element.pseudo_element() {
+			pseudo in [.first_letter, .selection]
+		} else { false }
+		if !computes_own_pseudo && raw_pseudo_element >= 0
+			&& raw_pseudo_element < int(PseudoElement.known_pseudo_element_count) {
 			element := abstract_element.element()
 			root := element.as_node().root()
 			host_element := root.parent_or_shadow_host_element() or { return none }
