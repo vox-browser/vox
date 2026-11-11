@@ -81,18 +81,13 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 				// replaces coefficient 0 and both inputs must be finite.
 				lf_value := lf[c].samples[y * lf[c].width + x]
 				if !math.is_finite(lf_value) { return error('Nonfinite JPEG XL LF coefficient') }
-				for k in 0 .. 64 {
-					value := dequantized[c][k]
-					if !math.is_finite(value) { return error('Nonfinite JPEG XL HF coefficient') }
-					dct_input[k] = value
-				}
+				block_coefficients := dequantized[c][..64]
+				if !all_finite(block_coefficients) { return error('Nonfinite JPEG XL HF coefficient') }
+				unsafe { vmemcpy(dct_input.data, block_coefficients.data, 64 * int(sizeof(f32))) }
 				dct_input[0] = lf_value
 				inverse_dct_plane_into(8, 8, dct_input, mut dct_output, mut dct_vector)!
 				stride := lf[c].width * 8
-				for iy in 0 .. 8 {
-					destination := (y * 8 + iy) * stride + x * 8
-					for ix in 0 .. 8 { samples[c][destination + ix] = dct_output[iy * 8 + ix] }
-				}
+				copy_float_rect(mut samples[c], y * 8 * stride + x * 8, stride, dct_output, 0, 8, 8, 8)!
 				continue
 			}
 			mut low := []f32{len: dims[0] * dims[1]}
@@ -101,10 +96,8 @@ pub fn render_hf_group(maps HfGroupMaps, params HfGroupParameters, context Block
 			}
 			plane := inverse_hf_transform(block.transform, low, dequantized[c])!
 			stride := lf[c].width * 8
-			for iy in 0 .. plane.height {
-				destination := (y * 8 + iy) * stride + x * 8
-				for ix in 0 .. plane.width { samples[c][destination + ix] = plane.samples[iy * plane.width + ix] }
-			}
+			copy_float_rect(mut samples[c], y * 8 * stride + x * 8, stride, plane.samples, 0, plane.width, plane.width,
+				plane.height)!
 		}
 	}
 	for c in 0 .. 3 { output[c] = FloatPlane{ width: lf[c].width * 8, height: lf[c].height * 8, samples: samples[c] } }

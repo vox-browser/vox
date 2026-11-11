@@ -191,11 +191,8 @@ pub fn decode_vardct_frame_with_refs(file FileHeader, frame FrameHeader, storage
 				color_correlation: context.color_correlation, biases: file.transform.opsin.quant_biases })!
 		r := frame.block_group_rect(group)!
 		for c in 0 .. 3 {
-			for y in 0 .. pixels[c].height {
-				for x in 0 .. pixels[c].width {
-					samples[c][(int(r.y * 8 >> vs[c]) + y) * (w >> hs[c]) + int(r.x * 8 >> hs[c]) + x] = pixels[c].samples[y * pixels[c].width + x]
-				}
-			}
+			copy_float_rect(mut samples[c], int(r.y * 8 >> vs[c]) * (w >> hs[c]) + int(r.x * 8 >> hs[c]), w >> hs[c],
+				pixels[c].samples, 0, pixels[c].width, pixels[c].width, pixels[c].height)!
 		}
 	}
 	if combined { finish_modular_section(mut sections[0], 0, false)! }

@@ -46,3 +46,23 @@ fn all_finite(values []f32) bool {
 	}
 	return finite
 }
+
+// Copies a width x height rectangle of samples from src, whose rows start
+// src_stride apart from src_start, into dst at dst_start with rows dst_stride
+// apart. Both rectangles must lie inside their arrays.
+@[direct_array_access]
+fn copy_float_rect(mut dst []f32, dst_start int, dst_stride int, src []f32, src_start int, src_stride int, width int, height int) ! {
+	if width < 0 || height < 0 { return error('Invalid JPEG XL plane copy') }
+	if width == 0 || height == 0 { return }
+	if dst_start < 0 || src_start < 0 || dst_stride < width || src_stride < width
+		|| i64(dst_start) + i64(height - 1) * dst_stride + width > dst.len
+		|| i64(src_start) + i64(height - 1) * src_stride + width > src.len {
+		return error('Invalid JPEG XL plane copy')
+	}
+	for y in 0 .. height {
+		unsafe {
+			vmemcpy(&f32(dst.data) + dst_start + y * dst_stride, &f32(src.data) + src_start + y * src_stride,
+				width * int(sizeof(f32)))
+		}
+	}
+}
