@@ -22,6 +22,15 @@ fn test_stylesheet_bom_overrides_transport_and_environment_encoding() {
 		assert sheet.rules.rules.len == 1
 		declaration := sheet.rules.rules[0].style() or { panic('style rule') }
 		assert declaration.custom_property('--image') != none
+		// A redirect changes the resource base, while CSSOM keeps the original
+		// URL and the response bytes still need BOM decoding before parsing.
+		response_url := 'https://cdn.encoding.test/assets/${big_endian}.css'
+		redirected := install_link_style_sheet_with_base(unsafe { &dom.HTMLLinkElement(link) },
+			bytes.bytestr(), url, false, response_url)
+		assert redirected.rules.rules.len == 1
+		assert redirected.href()? == url
+		assert redirected.base_url_for_bindings()? == response_url
+		assert !redirected.base.origin_clean
 		document.finalize()
 	}
 	assert css_decode_bytes(none, 'windows-1252', [u8(0xef), 0xbb, 0xbf, 0xc3, 0xa9])! == 'é'
