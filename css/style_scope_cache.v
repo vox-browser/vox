@@ -886,6 +886,9 @@ fn style_scope_resolve_keyframe_set_from_rule(rule &CSSRule) &KeyFrameSet {
 				} else {
 					typed
 				}
+				if first.is_css_wide_keyword() {
+					continue
+				}
 				if first is EasingStyleValue || first is KeywordStyleValue {
 					resolved_keyframe.easing = ResolvedKeyframeEasing(EasingFunction.from_css_style_value(first))
 				} else {
