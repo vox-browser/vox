@@ -17,6 +17,7 @@ import time
 // Diagnostic JSON lines for completed transfers: new connections, handshake
 // and first-byte times, and wall-clock start/header/finish timestamps.
 const curl_transfer_log_path = os.getenv('VOX_CURL_TRANSFER_LOG')
+const disable_curl_pipewait = os.getenv('VOX_DISABLE_CURL_PIPEWAIT') != ''
 
 @[heap]
 pub struct CurlRequest {
@@ -170,6 +171,12 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 			proxy.trim_space().str), C.CURLE_OK)
 	}
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_CONNECTTIMEOUT, 90), C.CURLE_OK)
+	// Requests started together (a page's first API calls) would each open and
+	// handshake a connection. Wait for one that is still connecting and
+	// multiplex on it, as Chromium waits for an in-progress HTTP/2 session.
+	if !disable_curl_pipewait {
+		check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_PIPEWAIT, 1), C.CURLE_OK)
+	}
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_CUSTOMREQUEST, request.method.str), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_FOLLOWLOCATION, 0), C.CURLE_OK)
 	if request.method in ['POST', 'PUT', 'PATCH', 'DELETE'] {
