@@ -254,10 +254,7 @@ fn stable_scroll_node_id_for(node_id u64, kind CompositorScrollNodeKind, pseudo_
 pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayList) AsyncScrollingState {
 	metadata := display_list.metadata or { AsyncScrollingMetadata{} }
 	mut scroll_nodes := []AsyncScrollNode{}
-	mut parent_indices := []int{}
 	mut hit_targets := []WheelHitTestTarget{}
-	mut target_indices := []int{}
-	mut target_document_ids := []u64{}
 	mut main_thread_regions := []MainThreadWheelEventRegion{}
 	mut blocking_regions := []BlockingWheelEventRegion{}
 	mut scrollbars := []ViewportScrollbar{}
@@ -265,8 +262,12 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 	for entry in display_list.commands {
 		match entry {
 			CompositorScrollNodeCommand {
+				parent_node_id := if entry.parent_scroll_node_index != 0 {
+					?AsyncScrollNodeId(scroll_node_id_for(entry.document_id, entry.parent_scroll_node_index))
+				} else { ?AsyncScrollNodeId(none) }
 				scroll_nodes << AsyncScrollNode{
 					node_id: scroll_node_id_for(entry.document_id, entry.scroll_node_index)
+					parent_node_id: parent_node_id
 					stable_node_id: stable_scroll_node_id_for(entry.scrollable_node_id, entry.scroll_node_kind, entry.pseudo_element_type)
 					scrollport_rect: entry.scrollport_rect
 					min_scroll_offset: entry.min_scroll_offset
@@ -277,16 +278,17 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 					snaps_scroll_position_horizontally: entry.snaps_scroll_position_horizontally
 					snaps_scroll_position_vertically: entry.snaps_scroll_position_vertically
 				}
-				parent_indices << entry.parent_scroll_node_index
 			}
 			CompositorWheelHitTestTargetCommand {
+				target_node_id := if entry.target_scroll_node_index != 0 {
+					?AsyncScrollNodeId(scroll_node_id_for(entry.document_id, entry.target_scroll_node_index))
+				} else { ?AsyncScrollNodeId(none) }
 				hit_targets << WheelHitTestTarget{
+					target_node_id: target_node_id
 					context: entry.context
 					rect: entry.rect
 					corner_radii: entry.corner_radii
 				}
-				target_indices << entry.target_scroll_node_index
-				target_document_ids << entry.document_id
 			}
 			CompositorMainThreadWheelEventRegionCommand {
 				main_thread_regions << MainThreadWheelEventRegion{entry.context, entry.rect}
@@ -312,20 +314,6 @@ pub fn async_scrolling_state_from_display_list(display_list CompositorDisplayLis
 					vertical: entry.vertical
 				}
 			}
-		}
-	}
-	for index, parent_index in parent_indices {
-		if parent_index != 0 {
-			mut node := scroll_nodes[index]
-			node.parent_node_id = scroll_node_id_for(node.node_id.document_id, parent_index)
-			scroll_nodes[index] = node
-		}
-	}
-	for index, target_index in target_indices {
-		if target_index != 0 {
-			mut target := hit_targets[index]
-			target.target_node_id = scroll_node_id_for(target_document_ids[index], target_index)
-			hit_targets[index] = target
 		}
 	}
 	return AsyncScrollingState{
