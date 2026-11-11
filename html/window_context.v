@@ -2060,7 +2060,7 @@ pub fn (mut window WindowModel) delete_named_property(name string) bool {
 }
 
 pub fn (window &WindowModel) named_child(name string) ?&BrowsingContextModel {
-	for child in window.browsing_context_.children() {
+	for child in window.document_tree_child_browsing_contexts() {
 		if child.target_name() == name {
 			return child
 		}
