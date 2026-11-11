@@ -2856,9 +2856,12 @@ fn initialize_document_script_runtime(document &dom.Document, current_url string
 	// scripts before its first layout, so establish that context here as well.
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if mutable_document.get_browsing_context() == none {
+		// Contexts and navigables outlive the document arena entered here.
+		persistent := platform.enter_persistent()
 		mutable_document.set_browsing_context(&dom.BrowsingContext{
 			active_document_: document
 		})
+		platform.leave_persistent(persistent)
 	}
 	ensure_compact_browser_navigable(document) or { return false }
 	if !compact_document_can_run_script(document) { return false }
@@ -3710,6 +3713,9 @@ fn mouse_cursor_for_resize_handle(cursor ?painting.ResizeCursor) sapp.MouseCurso
 }
 
 fn ensure_compact_browser_navigable(document &dom.Document) ?&html.NavigableModel {
+	// The navigable and its model are reused by later navigations.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	mut mutable_document := unsafe { &dom.Document(document) }
 	if mutable_document.navigable() == none {
 		mutable_document.set_cached_navigable(&dom.Navigable{

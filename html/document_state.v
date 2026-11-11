@@ -298,6 +298,23 @@ pub mut:
 	original_source_browsing_context voidptr
 }
 
+// Copies for entries that join a navigable's session history while a
+// document arena is entered. Callers enter persistent storage first. The URL
+// record is re-derived from its serialization on demand.
+fn persistent_session_history_url(url dom.URL) dom.URL {
+	return dom.URL{
+		value: url.value.clone()
+	}
+}
+
+fn persistent_serialization_record(record SerializationRecord) SerializationRecord {
+	return SerializationRecord{
+		type_:                record.type_
+		data:                 record.data.clone()
+		shared_array_buffers: record.shared_array_buffers.clone()
+	}
+}
+
 pub fn (entry &SessionHistoryEntry) clone() &SessionHistoryEntry {
 	document_state := entry.document_state or {
 		panic('SessionHistoryEntry.clone requires a document state')
