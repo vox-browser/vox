@@ -159,12 +159,10 @@ fn test_sign_folds_any_numeric_leaf() {
 	assert calc_value('calc(sign(1em + 1px) * 1px)', PropertyID.width)? == 'calc(1px * sign(1em + 1px))'
 }
 
-fn test_mod_rem_and_log_require_the_same_argument_type() {
-	// MathFunctions.json gives mod(), rem(), and log() the `same` parameter-validation rule:
-	// their arguments must have the exact same type, percent hint included. min()/max()/
-	// clamp()/round() use `consistent` instead, which does unify a percentage with a length.
-	assert calc_value('mod(1em, 3%)', PropertyID.width) == none
-	assert calc_value('rem(50%, 2em)', PropertyID.width) == none
+fn test_mod_and_rem_accept_consistent_length_percentage_types() {
+	// mod()/rem() now use the same consistent-type rule as min()/round().
+	assert calc_value('mod(1em, 3%)', PropertyID.width)? == 'mod(1em, 3%)'
+	assert calc_value('rem(50%, 2em)', PropertyID.width)? == 'rem(50%, 2em)'
 	assert calc_value('mod(10%, 3%)', PropertyID.width)? == 'mod(10%, 3%)'
 	assert calc_value('mod(1em, 3px)', PropertyID.width)? == 'mod(1em, 3px)'
 	assert calc_value('min(1em, 50%)', PropertyID.width)? == 'min(1em, 50%)'

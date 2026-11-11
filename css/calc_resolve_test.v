@@ -94,10 +94,16 @@ fn test_resolve_stepped_functions() {
 	assert approx(resolved_px('round(down, 4.6px, 1px)', empty)?, 4)
 	assert approx(resolved_px('round(up, 4.2px, 1px)', empty)?, 5)
 	assert approx(resolved_px('round(to-zero, -4.6px, 1px)', empty)?, -4)
-	// mod()'s parameter-validation rule is `same`, not `consistent`: a percentage argument
-	// does not unify with a length one, so the function is rejected while parsing.
-	assert parse_calc_style_value('mod(10px, 3%)') == none
-	assert parse_calc_style_value('rem(10px, 3%)') == none
+	// Resolve mixed arguments in the property's length-percentage context.
+	basis := CalculationResolutionContext{
+		percentage_basis: CalculationPercentageBasis(Length.make_px(200))
+	}
+	for text in ['mod(10px, 3%)', 'rem(10px, 3%)'] {
+		value := parse_css_value_logic(.width, text)?
+		assert value is CalculatedStyleValue
+		calculated := value as CalculatedStyleValue
+		assert approx(calculated.resolve_length(basis)?.absolute_length_to_px_without_rounding(), 4)
+	}
 	// Arguments that share a type are still accepted when they are not canonical.
 	assert parse_calc_style_value('mod(5em, 3em)') != none
 	assert parse_calc_style_value('rem(10%, 3%)') != none
