@@ -256,6 +256,20 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 		end, none)
 }
 
+fn removed_frames_overlap_group_being_read(run FrameRun, cursor_frame int, first_removed int, removed_count int) bool {
+	assert run.frames.len > 0
+	frame_index := if cursor_frame < run.frames.len { cursor_frame } else { run.frames.len - 1 }
+	mut group_start := frame_index
+	for group_start > 0 && !run.frames[group_start].is_keyframe {
+		group_start--
+	}
+	mut group_end := frame_index + 1
+	for group_end < run.frames.len && !run.frames[group_end].is_keyframe {
+		group_end++
+	}
+	return first_removed < group_end && first_removed + removed_count > group_start
+}
+
 fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, first_frame int, minimum_count int) int {
 	total_bytes_before := demuxer.total_bytes_
 	mut run := demuxer.runs_[run_index]
@@ -271,6 +285,12 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 	if first_frame + count < run.frames.len {
 		configuration_before_remaining = codec_configuration_after_frame_prefix(run,
 			first_frame + count)
+	}
+	// A replacement GOP can land in another run. Resolve the next read by
+	// presentation time instead of keeping an index into the surviving frames.
+	if demuxer.current_run_ == run_index
+		&& removed_frames_overlap_group_being_read(run, demuxer.current_frame_, first_frame, count) {
+		demuxer.needs_reanchoring_ = true
 	}
 	demuxer.total_bytes_ -= bytes
 	run.frames.delete_many(first_frame, count)
