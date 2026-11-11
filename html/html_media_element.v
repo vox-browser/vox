@@ -2318,12 +2318,19 @@ pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
 	element.queue_a_media_element_task(fn [element_pointer] () {
 		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.dispatch_time_update_event()
+	})
+	// A load started by timeupdate or pause cancels the remaining media tasks.
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		if media.has_ended_playback() && media.direction_of_playback() == .forwards && !media.paused_ {
 			media.set_paused(true)
-			media.fire_event('pause')
 			promises := media.take_pending_play_promises()
+			media.fire_event('pause')
 			media.reject_pending_play_promises_with_abort_error(promises, 'Media playback has ended')
 		}
+	})
+	element.queue_a_media_element_task(fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
 		media.fire_event('ended')
 	})
 }
