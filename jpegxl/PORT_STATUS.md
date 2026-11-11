@@ -747,3 +747,46 @@ Speed: hardware `fmaf`, padded and row-vectorized EPF, and removing bounds
 checks from kernels indexed only by validated geometry cut a 2268x1512 VarDCT
 decode from 28.07 to 7.97 billion retired instructions. The Rust crate needed
 about 1.37 billion, so the V decoder is still roughly 5x slower on photos.
+
+## Performance (2026-11-11)
+
+`tools/jpegxl_bench.v` decodes files repeatedly and prints minimum/median wall
+time, MP/s and an output hash prefix, so changes can be checked for
+byte-identical pixels:
+
+```sh
+v -prod -b c -cc clang -memory-limit 10G -o /tmp/jpegxl_bench tools/jpegxl_bench.v
+/tmp/jpegxl_bench -n 9            # default benchmark files
+/tmp/jpegxl_bench --paint a.jxl   # explicit files, premultiplied output
+```
+
+Wall time is noisy on a loaded host; compare retired instructions
+(`/usr/bin/time -l`) for small changes. Per-decode instructions, before the
+optimization rounds and now, with identical output hashes:
+
+| File | Size | Before | Now |
+| --- | --- | ---: | ---: |
+| `bench/progressive_ac.jxl` (VarDCT) | 2268x1512 | 7.93 G | 2.52 G |
+| `bench/green_queen_vardct_e3.jxl` | 438x589 | 0.70 G | 0.28 G |
+| `bench/green_queen_modular_e3.jxl` | 438x589 | 1.16 G | 0.57 G |
+| `native-corpus/issue648_palette0.jxl` (modular) | 1623x1080 | 4.73 G | 2.30 G |
+
+The removed Rust crate needed about 1.37 G for the VarDCT photo. Single-thread
+wall time for the six default files fell from 1366 to 682 ms (sum of minimums,
+load average 50-100); the photo takes 241 ms against about 84 ms for libjxl
+0.11.1 on one thread.
+
+Main changes: inverse DCT kernels run across all rows or columns of a block
+at once (the C compiler vectorizes over lanes; the 32-point kernel uses a fixed
+stride of 32 so its accesses need no alias checks); fused EPF row loops with
+rolling pass-1 SAD differences and bit-mask selects instead of V
+if-expressions, which block vectorization; branch-free HF dequantization with
+per-group table validation; row copies for block and group stitching; a
+vectorized exponent-bit `all_finite`; modular trees pruned per channel; and
+direct indexing in squeeze, RCT and other loops whose indices validated
+geometry bounds. Every change keeps the source's operation order, so pixels
+stay bit-identical to the native decoder.
+
+Remaining hot spots: EPF (about 18% of the VarDCT photo), ANS/HybridUint symbol
+decoding and its Result plumbing, the weighted predictor in modular images,
+and XYB to sRGB output conversion.
