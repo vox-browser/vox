@@ -1,5 +1,12 @@
 # Brave rendering fixtures
 
+Many fixtures below were first matched through the Skia text bridge and the
+Graphite/Dawn GPU helpers. Vox no longer builds or loads either; the native
+library checks named in older entries (`tools/test_skia_*.py`,
+`tools/test_graphite_*.py`, `native_direct_image_pixels_test.mm`,
+`test_chromium_image_decode_cache.py`, `test_chromium_screen_blend.py`) were
+removed with them. The fixtures and references remain browser regressions.
+
 `pikabu-direct-composited-image` and `pikabu-hoisted-image-clip` keep authored
 overflow on the final compositor quad. Commit `81c3204c9` removes a synthetic
 first-stage clip, resolving 1,097 differences in each unchanged reference.

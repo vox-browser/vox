@@ -17,13 +17,17 @@ v -enable-globals .
 On macOS the native dependencies come from Homebrew:
 
 ```sh
-brew install pkgconf harfbuzz icu4c@78 openssl startergo/angle/angle
+brew install pkgconf harfbuzz icu4c@78 openssl startergo/angle/angle ffmpeg libavif curl
 ```
 
 HarfBuzz brings FreeType and graphite2. The Unicode bridges bind ICU 78's
 versioned API, so they need the `icu4c@78` keg rather than the current `icu4c`.
 OpenSSL (Web Crypto) and ANGLE (WebGL) supply headers at build time and are
-loaded on demand at run time. Linux setup is in [docs/LINUX.md](docs/LINUX.md).
+loaded on demand at run time. The production build adds media: FFmpeg plays
+audio and video (loaded on demand, so `v .` builds without it), libavif
+decodes AVIF images through a small helper, and Homebrew's curl replaces the
+system copy when present. Vox uses no vcpkg or Skia. Linux setup is in
+[docs/LINUX.md](docs/LINUX.md).
 
 HTML/CSS - pure V, rendering via the V graphics module (DirectX 11, Metal, OpenGL, FreeType/stb_truetype).
 
