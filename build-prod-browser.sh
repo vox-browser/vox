@@ -187,6 +187,13 @@ extra_ldflags="-Wl,-dead_strip,-dead_strip_dylibs"
 upstream_dir=${LADYBIRD_SOURCE_DIR:-"$repo_dir/../3rd/ladybird"}
 vcpkg_triplet=${LADYBIRD_VCPKG_TRIPLET:-$default_vcpkg_triplet}
 skia_root="$upstream_dir/Build/release/vcpkg_installed/$vcpkg_triplet"
+# V sources link Homebrew's FreeType and ICU 78 by default. While this script
+# still links the vcpkg Skia/FFmpeg/AVIF bridges, select vcpkg's copies instead
+# so a bundle never loads two FreeTypes or two ICUs.
+vcpkg_define=""
+if [ -d "$skia_root/lib" ]; then
+    vcpkg_define="-d vox_vcpkg"
+fi
 # The browser exports the planar converter from media/yuv_bridge.v. Its pure V
 # implementation preserves the previous decoder's integer color quantization.
 extra_cflags="$extra_cflags -DLADYBIRD_V_HAS_V_YUV"
@@ -296,7 +303,7 @@ fi
 # V drivers without manifest defaults need the backend passed explicitly.
 v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
 case "$v_backend" in c|fastc) ;; *) echo "Unsupported browser backend: $v_backend" >&2; exit 2 ;; esac
-set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf \
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf $vcpkg_define \
     -d vox_production -d vox_ui2 -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|$ui2_modules|@vmodules|@vlib"
 # Verify the staged compiler's actual library too. Legacy builds are explicit;
 # unsupported default compilers must not silently produce a Skia-default app.
@@ -380,7 +387,7 @@ fi
 # Keep the filter worker's entry point independent of browser/UI initialization.
 # It uses the same engine, snapshot resource and private transport as self-exec.
 helper_tmp="$compile_dir/VoxAdblockWorker"
-set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf -d vox_filter_worker_minimal_links \
+set -- -b "$v_backend" -cc clang -memory-limit 10G -exclude "$zoneinfo_exclude" -enable-globals -d vox_sparse_ttf $vcpkg_define -d vox_filter_worker_minimal_links \
     -path "$repo_dir|$prealloc_modules|$font_modules|$http_modules|@vmodules|@vlib"
 helper_cflags=-O2
 if [ "$gc_mode" = prealloc ]; then

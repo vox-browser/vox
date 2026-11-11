@@ -21,11 +21,15 @@ $if macos {
 		} $else {
 			#flag /opt/homebrew/opt/harfbuzz/lib/libharfbuzz.a
 			// The archive's FreeType backend only needs its symbols bound: shaping
-			// uses OpenType/CoreText font functions. Bind them to the FreeType that
-			// Skia already maps, rather than loading Homebrew's FreeType with its
-			// libpng and Brotli into every launch.
-			#flag @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.dylib
-			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+			// uses OpenType/CoreText font functions. Bind them to Homebrew's
+			// FreeType, or with `-d vox_vcpkg` to the one the vcpkg Skia bridge
+			// already maps, rather than loading a second FreeType.
+			$if vox_vcpkg ? {
+				#flag @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib/libfreetype.dylib
+				#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
+			} $else {
+				#flag /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib
+			}
 			#flag /opt/homebrew/opt/graphite2/lib/libgraphite2.3.dylib
 		}
 	} $else {

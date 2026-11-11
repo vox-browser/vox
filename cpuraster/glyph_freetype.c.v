@@ -4,8 +4,18 @@ $if linux || cpuraster_freetype ? {
 	$if linux {
 		#pkgconfig freetype2
 	} $else {
-		// Test-only FreeType backend on macOS, using the oracle's exact FT.
-		$if arm64 {
+		// Test-only FreeType backend on macOS: Homebrew's FreeType
+		// (`brew install freetype`), or with `-d vox_vcpkg` the Skia oracle's
+		// exact vcpkg FreeType.
+		$if !vox_vcpkg ? {
+			$if arm64 {
+				#flag -I/opt/homebrew/opt/freetype/include/freetype2
+				#flag -L/opt/homebrew/opt/freetype/lib
+			} $else {
+				#flag -I/usr/local/opt/freetype/include/freetype2
+				#flag -L/usr/local/opt/freetype/lib
+			}
+		} $else $if arm64 {
 			#flag -I @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/include
 			#flag -L @DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
 			#flag -Wl,-rpath,@DIR/../../3rd/ladybird/Build/release/vcpkg_installed/arm64-osx-dynamic/lib
