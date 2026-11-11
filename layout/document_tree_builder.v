@@ -1296,7 +1296,7 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	}
 	mut list_item_marker := ?&Node(none)
 	if box_node.is_list_item_box() {
-		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
+		if marker := build_list_item_marker(document, element, computed, .marker, mut builder_state) {
 			list_item_marker = marker
 			mut list_item := unsafe { &ListItemBox(box_node) }
 			list_item.set_marker(marker)
@@ -2617,7 +2617,7 @@ fn build_generated_pseudo_element(document &dom.Document, element &dom.Element, 
 			generated_style)
 	}
 	if node.is_list_item_box() {
-		if marker := build_list_item_marker(document, element, computed, mut builder_state) {
+		if marker := build_list_item_marker(document, element, computed, layout_pseudo, mut builder_state) {
 			mut list_item := unsafe { &ListItemBox(node) }
 			list_item.set_marker(marker)
 			attach_list_item_marker(mut node, marker, document, computed)
@@ -2638,10 +2638,13 @@ fn build_backdrop_pseudo_element(document &dom.Document, element &dom.Element, m
 	return node
 }
 
-fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, mut builder_state TreeBuilderState) ?&Node {
-	marker_computed := css.computed_properties_for_pseudo_element(element, .marker) or {
+fn build_list_item_marker(document &dom.Document, element &dom.Element, list_item_computed &css.ComputedProperties, originating_pseudo css.PseudoElement, mut builder_state TreeBuilderState) ?&Node {
+	marker_style := css.computed_properties_for_pseudo_element(element, .marker) or {
 		list_item_computed.clone_for_anonymous_block()
 	}
+	// A marker of ::before or ::after belongs to that pseudo-element. Keep
+	// its style separate from the originating element's own ::marker.
+	marker_computed := if originating_pseudo == .marker { marker_style } else { marker_style.clone_for_nested_marker() }
 	if marker_computed.display().is_none() {
 		return none
 	}
@@ -2662,7 +2665,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 		mutable_marker_computed.set_content(content)
 		marker_box := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 		mut marker := unsafe { &Node(marker_box) }
-		marker.set_generated_for(.marker, element)
+		marker.set_generated_for(originating_pseudo, element)
 		if styled := marker.as_node_with_style() {
 			mut mutable_styled := unsafe { &NodeWithStyle(styled) }
 			mutable_styled.set_content(content)
@@ -2674,7 +2677,7 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 			} else {
 				unsafe { &Node(TextNode.new_generated(document, item.value)) }
 			}
-			child.set_generated_for(.marker, element)
+			child.set_generated_for(originating_pseudo, element)
 			marker.append_child(child)
 		}
 		marker.set_children_are_inline(content.items.len > 0)
@@ -2693,19 +2696,19 @@ fn build_list_item_marker(document &dom.Document, element &dom.Element, list_ite
 	}
 	marker := ListItemMarkerBox.new(document, list_style_type, list_item_computed.list_style_position(), element, marker_computed)
 	mut marker_node := unsafe { &Node(marker) }
-	marker_node.set_generated_for(.marker, element)
+	marker_node.set_generated_for(originating_pseudo, element)
 	marker_node.set_children_are_inline(true)
 	if has_list_style_image {
 		image_value := list_style_image or { return marker_node }
 		if item := css.content_item_for_abstract_image(image_value, document.device_pixels_per_css_pixel()) {
 			inline_image_style := marker_computed.clone_for_anonymous_with_display(css.Display.from_short(.inline_))
 			mut image := unsafe { &Node(ImageBox.new_generated_for_content_item(document, inline_image_style, item)) }
-			image.set_generated_for(.marker, element)
+			image.set_generated_for(originating_pseudo, element)
 			marker_node.append_child(image)
 		}
 	} else {
 		mut text_node := unsafe { &Node(TextNode.new_generated(document, '')) }
-		text_node.set_generated_for(.marker, element)
+		text_node.set_generated_for(originating_pseudo, element)
 		marker_node.append_child(text_node)
 	}
 	return marker_node
