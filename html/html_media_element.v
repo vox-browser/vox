@@ -206,7 +206,8 @@ mut:
 	source_candidate_types_     []string
 	network_state_              MediaNetworkState
 	ready_state_                MediaReadyState
-	first_data_load_event_since_load_start_ bool
+	// The initial resource selection can run before load_element().
+	first_data_load_event_since_load_start_ bool = true
 	seeking_                    bool
 	current_playback_position_  f64
 	official_playback_position_ f64
@@ -478,14 +479,27 @@ fn (element &HTMLMediaElement) invalidate_media_state_style(names []string) {
 }
 
 pub fn (mut element HTMLMediaElement) removed_from(old_parent ?&dom.Node, old_root &dom.Node) {
-	if html_element := element.associated_element_ {
-		mut dom_element := unsafe { &dom.Element(html_element) }
-		dom_element.removed_from(old_parent, old_root)
-		if dom_element.as_node().in_a_document_tree() {
-			return
-		}
+	html_element := element.associated_element_ or {
+		// Standalone media models have no DOM connection to recheck or owning
+		// document to retain across the checkpoint.
+		element.pause_element()
+		return
 	}
-	element.pause_element()
+	mut dom_element := unsafe { &dom.Element(html_element) }
+	dom_element.removed_from(old_parent, old_root)
+	document := dom_element.document()
+	// Await a stable state so moving a playing element (or its ancestor) within
+	// the document does not interrupt playback between removal and reinsertion.
+	element_pointer := voidptr(&element)
+	queue_a_microtask(document, fn [element_pointer] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if html_element := media.associated_element_ {
+			if unsafe { &dom.Element(html_element) }.as_node().in_a_document_tree() {
+				return
+			}
+		}
+		media.pause_element()
+	})
 }
 
 pub fn (mut element HTMLMediaElement) adopted_from(old_document &dom.Document) {
@@ -1051,9 +1065,9 @@ pub fn (element &HTMLMediaElement) can_play_type(type_ string) CanPlayTypeResult
 		return .empty
 	}
 	supported := if parts[0] == 'video' {
-		parts[1] in ['webm', 'mp4', 'mpeg', 'ogg']
+		parts[1] in ['webm', 'mp4', 'mpeg', 'ogg', 'quicktime']
 	} else if parts[0] == 'audio' {
-		parts[1] in ['flac', 'mp3', 'mpeg', 'ogg', 'wav', 'webm']
+		parts[1] in ['aac', 'flac', 'mp3', 'mpeg', 'ogg', 'wav', 'webm', 'mp4', 'x-m4a']
 	} else {
 		false
 	}
@@ -1077,8 +1091,7 @@ pub fn (mut element HTMLMediaElement) load_element() ! {
 }
 
 fn (mut element HTMLMediaElement) load_element_for_current_load() ! {
-	// HTMLMediaElement::load_element() rearms the first-data notification even
-	// when this load later has no resource or fails playback-rate validation.
+	// A new load resets the per-resource loadeddata event guard.
 	element.first_data_load_event_since_load_start_ = true
 	// Upstream load step 5 cancels only this element's outstanding media tasks.
 	element.remove_queued_media_element_tasks()
@@ -1565,9 +1578,8 @@ pub fn (mut element HTMLMediaElement) set_ready_state(state MediaReadyState) {
 		})
 		return
 	}
-	// Source's first-data branch requires a nonempty network state and the
-	// exact metadata-to-data transition. Consume the flag when queuing, so
-	// buffering oscillations cannot queue another event during this load.
+	// Queue loadeddata on the first metadata-to-data transition even if the
+	// element received media data without previously invoking load().
 	if element.network_state_ != .empty && old_state == .have_metadata
 		&& int(state) >= int(MediaReadyState.have_current_data) {
 		if element.first_data_load_event_since_load_start_ {
@@ -2520,7 +2532,11 @@ pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
 pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingStatus) {
 	match status {
 		.complete {
+			generation := element.fetch_generation_
 			element.fire_event('progress')
+			// A progress listener can start a new load synchronously. Do not
+			// finish that replacement load or emit the old load's suspend event.
+			if generation != element.fetch_generation_ { return }
 			element.network_state_ = .idle
 			element.fire_event('suspend')
 			element.update_ready_state()

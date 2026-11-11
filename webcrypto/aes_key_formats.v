@@ -28,7 +28,7 @@ fn generate_source_aes_key(params AesKeyGenParams, extractable bool, usages []Ke
 	return CryptoKey.create(.secret, extractable, AesKeyAlgorithm{
 		name:   params.name
 		length: params.length
-	}, usages, material)
+	}, normalize_key_usages(usages), material)
 }
 
 fn import_aes_key(name string, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {

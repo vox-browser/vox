@@ -537,11 +537,16 @@ fn device_borders_with_edge_style(borders DeviceBordersData, edge BorderEdge,
 fn proportional_device_border_band(borders DeviceBordersData,
 	proportion f64) DeviceBordersData {
 	return DeviceBordersData{
-		top: DeviceBorderData{ ...borders.top, width: max_int(1, int(f64(borders.top.width) * proportion)) }
-		right: DeviceBorderData{ ...borders.right, width: max_int(1, int(f64(borders.right.width) * proportion)) }
-		bottom: DeviceBorderData{ ...borders.bottom, width: max_int(1, int(f64(borders.bottom.width) * proportion)) }
-		left: DeviceBorderData{ ...borders.left, width: max_int(1, int(f64(borders.left.width) * proportion)) }
+		top: DeviceBorderData{ ...borders.top, width: proportional_device_border_width(borders.top.width, proportion) }
+		right: DeviceBorderData{ ...borders.right, width: proportional_device_border_width(borders.right.width, proportion) }
+		bottom: DeviceBorderData{ ...borders.bottom, width: proportional_device_border_width(borders.bottom.width, proportion) }
+		left: DeviceBorderData{ ...borders.left, width: proportional_device_border_width(borders.left.width, proportion) }
 	}
+}
+
+fn proportional_device_border_width(width int, proportion f64) int {
+	// Splitting a double/groove/ridge border must not create absent edges.
+	return if width > 0 { max_int(1, int(f64(width) * proportion)) } else { 0 }
 }
 
 fn border_path_point(x int, y int) Point {

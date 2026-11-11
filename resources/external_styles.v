@@ -135,6 +135,7 @@ fn complete_browser_link_stylesheet(link &dom.Element, resource PreloadedResourc
 		resource.error == '', html.LinkResourceResponse{
 			content_type: content_type
 			body:         resource.body.bytes()
+			original_url: dom.URL{ value: resource.url }
 			url:          dom.URL{ value: address }
 			// The browser adapter does not establish a CORS response. Opaque
 			// sheets may style the page, but their rules must remain private.

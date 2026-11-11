@@ -7,6 +7,7 @@
 // milliseconds, matching the Unix millisecond timestamps used by the V port.
 module http
 
+import cachepolicy
 import time
 
 pub enum CacheLifetimeStatus {
@@ -91,18 +92,32 @@ fn is_heuristically_cacheable_status(status_code u32) bool {
 
 pub fn vary_header_names(headers &HeaderList) []string {
 	value := headers.get('Vary') or { return []string{} }
-	return get_decode_and_split_header_value(value).map(it.trim('\t '))
+	mut names := []string{}
+	for field in value.split(',') {
+		name := cache_ascii_lowercase(field.trim('\t '))
+		if name != '' && name !in names {
+			names << name
+			// Every caller rejects this over-limit result. Stop before further
+			// untrusted names turn deduplication into unbounded quadratic work.
+			if names.len > 32 { return names }
+		}
+	}
+	names.sort()
+	return names
 }
 
-pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
-	if status_code < 200 || status_code == 206 {
+pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool {
+	headers := remove_connection_specific_fields(received_headers)
+	if status_code < 200 || status_code in [u32(206), 304] {
 		return false
 	}
-	if vary_header_names(headers).any(it == '*') {
+	names := vary_header_names(headers)
+	if names.len > 32 || names.any(it in ['*', 'cookie']) {
 		return false
 	}
 	cache_control := headers.get('Cache-Control')
 	if value := cache_control {
+		if cachepolicy.has_unterminated_quoted_string(value) { return false }
 		if contains_cache_control_directive(value, 'must-understand') {
 			if !is_heuristically_cacheable_status(status_code) && status_code != 304 {
 				return false
@@ -129,9 +144,18 @@ pub fn is_header_exempted_from_cache_storage(name string) bool {
 		'x-ladybird-request-time-offset']
 }
 
+pub fn remove_connection_specific_fields(headers &HeaderList) &HeaderList {
+	fields := cachepolicy.storage_headers(headers.headers().map(cachepolicy.Header{
+		name: it.name, value: it.value
+	}))
+	mut result := HeaderList.create()
+	for field in fields { result.append(Header{ name: field.name, value: field.value }) }
+	return result
+}
+
 pub fn store_header_and_trailer_fields(headers &HeaderList) &HeaderList {
 	mut stored := HeaderList.create()
-	for header in headers.headers() {
+	for header in remove_connection_specific_fields(headers).headers() {
 		if !is_header_exempted_from_cache_storage(header.name) {
 			stored.append(header)
 		}
@@ -139,41 +163,66 @@ pub fn store_header_and_trailer_fields(headers &HeaderList) &HeaderList {
 	return stored
 }
 
-pub fn normalize_request_vary_header_values(name string, request_headers &HeaderList) string {
-	if cache_ascii_lowercase(name) in ['accept', 'accept-encoding', 'accept-language'] {
-		mut values := []string{}
-		for header in request_headers.headers() {
-			if cache_ascii_lowercase(header.name) != cache_ascii_lowercase(name) {
-				continue
-			}
-			lowercase_value := cache_ascii_lowercase(header.value)
-			if !lowercase_value.contains(',') {
-				values << lowercase_value
-				continue
-			}
-			for field in lowercase_value.split(',') {
-				values << normalize_header_value(field)
-			}
-		}
-		values.sort()
-		return values.join('\n')
-	}
-	mut result := ''
-	for header in request_headers.headers() {
-		if cache_ascii_lowercase(header.name) == cache_ascii_lowercase(name) {
-			result += header.value + '\n'
+fn lowercase_outside_quoted_strings(value string) string {
+	mut bytes := value.bytes()
+	mut quoted := false
+	mut escaped := false
+	for index, byte in bytes {
+		if escaped {
+			escaped = false
+		} else if quoted && byte == `\\` {
+			escaped = true
+		} else if byte == `"` {
+			quoted = !quoted
+		} else if !quoted && byte >= `A` && byte <= `Z` {
+			bytes[index] = byte + 0x20
 		}
 	}
-	return result
+	return bytes.bytestr()
 }
 
-pub fn create_vary_key(request_headers &HeaderList, response_headers &HeaderList) string {
-	mut values := []string{}
-	for name in vary_header_names(response_headers) {
-		assert name != '*'
-		values << normalize_request_vary_header_values(name, request_headers)
+fn normalized_request_vary_values(name string, request_headers &HeaderList) ?[]string {
+	combined := request_headers.get(name) or { return none }
+	if cache_ascii_lowercase(name) !in ['accept', 'accept-encoding', 'accept-language'] {
+		return [combined]
 	}
-	return values.join('\0')
+	mut values := []string{}
+	for header in request_headers.headers() {
+		if !equals_ignoring_ascii_case(header.name, name) { continue }
+		for field in get_decode_and_split_header_value(header.value) {
+			if field != '' { values << lowercase_outside_quoted_strings(field) }
+		}
+	}
+	values.sort()
+	return values
+}
+
+pub fn normalize_request_vary_header_values(name string, request_headers &HeaderList) string {
+	values := normalized_request_vary_values(name, request_headers) or { return '' }
+	return values.join('\n')
+}
+
+// Length framing distinguishes fields, repeated values, and absent fields
+// from present-but-empty fields. Only the in-memory cache uses these keys.
+pub fn create_vary_key(request_headers &HeaderList, response_headers &HeaderList) ?string {
+	names := vary_header_names(response_headers)
+	if names.len > 32 || names.any(it in ['*', 'cookie']) { return none }
+	mut key := ''
+	for name in names {
+		key += '${name.len}:${name}'
+		if values := normalized_request_vary_values(name, request_headers) {
+			key += '${values.len + 1}:'
+			for value in values { key += '${value.len}:${value}' }
+		} else {
+			key += '0:'
+		}
+	}
+	return key
+}
+
+pub fn has_preconditions(headers &HeaderList) bool {
+	return ['If-Match', 'If-None-Match', 'If-Modified-Since', 'If-Unmodified-Since',
+		'If-Range'].any(headers.contains(it))
 }
 
 fn parse_http_date(value ?string) ?i64 {

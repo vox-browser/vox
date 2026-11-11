@@ -13,6 +13,49 @@ fn rsa_allowed_usages(name string, private_key bool) []KeyUsage {
 	return if private_key { [KeyUsage.sign] } else { [KeyUsage.verify] }
 }
 
+// WebCrypto's RSA generation parameters are validated before passing them to
+// OpenSSL. In particular the public exponent must be an odd integer >= 3 and
+// strictly less than 2^modulusLength - 1 (the final value has no room for the
+// generated RSA modulus). publicExponent is an unsigned big-endian byte array.
+fn validate_rsa_generation_parameters(modulus_length u32, public_exponent []u8) ! {
+	if modulus_length < 4 {
+		return error('OperationError: Invalid RSA key generation parameters')
+	}
+	mut first := 0
+	for first < public_exponent.len && public_exponent[first] == 0 {
+		first++
+	}
+	if first == public_exponent.len {
+		return error('OperationError: Invalid RSA key generation parameters')
+	}
+	exponent := public_exponent[first..]
+	if exponent[exponent.len - 1] & 1 == 0
+		|| (exponent.len == 1 && exponent[0] < 3) {
+		return error('OperationError: Invalid RSA key generation parameters')
+	}
+	// Length of the exponent's shortest unsigned representation in bits.
+	mut leading_bits := u32(0)
+	mut value := exponent[0]
+	for value > 0 {
+		leading_bits++
+		value >>= 1
+	}
+	bits := u64(exponent.len - 1) * 8 + u64(leading_bits)
+	if bits > u64(modulus_length) {
+		return error('OperationError: Invalid RSA key generation parameters')
+	}
+	// The only n-bit exponent equal to 2^n - 1 has all n bits set.
+	if bits == u64(modulus_length) {
+		mut all_ones := exponent[0] == u8((u16(1) << leading_bits) - 1)
+		for byte in exponent[1..] {
+			if byte != 0xff { all_ones = false; break }
+		}
+		if all_ones {
+			return error('OperationError: Invalid RSA key generation parameters')
+		}
+	}
+}
+
 fn generate_rsa_key(params RsaHashedKeyGenParams, extractable bool, usages []KeyUsage) !GeneratedKey {
 	mut allowed := rsa_allowed_usages(params.name, false)
 	allowed << rsa_allowed_usages(params.name, true)
@@ -21,6 +64,7 @@ fn generate_rsa_key(params RsaHashedKeyGenParams, extractable bool, usages []Key
 			return error("SyntaxError: Invalid key usage '${key_usage_string(usage)}'")
 		}
 	}
+	validate_rsa_generation_parameters(params.modulus_length, params.public_exponent)!
 	handle := native_rsa_generate(params.modulus_length, params.public_exponent) or {
 		if params.name == 'RSA-OAEP' {
 			return error('OperationError: Failed generating RSA key pair')

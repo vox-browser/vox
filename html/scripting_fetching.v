@@ -415,7 +415,11 @@ pub fn get_descendant_script_fetch_options(original_options ScriptFetchOptions, 
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#resolving-a-module-integrity-metadata
 pub fn resolve_a_module_integrity_metadata(url dom.URL, settings_object &EnvironmentSettingsObject) string {
-	if settings_object.universal_global_scope_ == unsafe { nil } {
+	// Only Window globals can acquire an import map. Worklets and workers
+	// retain the initial empty map without requiring the scope mixin.
+	if settings_object.global_object_ == unsafe { nil }
+		|| settings_object.global_object_.data.kind != .window
+		|| settings_object.universal_global_scope_ == unsafe { nil } {
 		return ''
 	}
 	for entry in settings_object.universal_global_scope_.import_map().integrity() {

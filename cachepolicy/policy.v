@@ -144,6 +144,38 @@ fn control_directives(headers []Header) []Directive {
 	return directives(header_value(headers, 'Cache-Control') or { '' })
 }
 
+pub fn has_unterminated_quoted_string(value string) bool {
+	mut quoted := false
+	mut escaped := false
+	for byte in value.bytes() {
+		if escaped {
+			escaped = false
+		} else if quoted && byte == `\\` {
+			escaped = true
+		} else if byte == `"` {
+			quoted = !quoted
+		}
+	}
+	return quoted
+}
+
+// Connection options name hop-by-hop fields, even when they would otherwise
+// be cache metadata. Remove them before both policy evaluation and storage.
+pub fn storage_headers(headers []Header) []Header {
+	mut excluded := ['connection', 'keep-alive', 'proxy-connection', 'te',
+		'transfer-encoding', 'upgrade', 'x-ladybird-enable-disk-cache',
+		'x-ladybird-disk-cache-status', 'x-ladybird-request-time-offset']
+	for header in headers {
+		if header.name.to_lower() == 'connection' {
+			for option in header.value.split(',') {
+				name := option.trim('\t ').to_lower()
+				if name != '' && name !in excluded { excluded << name }
+			}
+		}
+	}
+	return headers.filter(it.name.to_lower() !in excluded)
+}
+
 fn contains_directive(values []Directive, name string) bool {
 	return values.any(it.name == name)
 }
@@ -187,7 +219,9 @@ fn saturating_add(first i64, second i64) i64 {
 }
 
 pub fn forbids_storage(headers []Header) bool {
-	return contains_directive(control_directives(headers), 'no-store')
+	fields := storage_headers(headers)
+	return has_unterminated_quoted_string(header_value(fields, 'Cache-Control') or { '' })
+		|| contains_directive(control_directives(fields), 'no-store')
 }
 
 fn heuristic_status(status u32) bool {
@@ -247,13 +281,18 @@ fn freshness_lifetime(response Response, timing Timing, values []Directive, stor
 // intentionally conservative because its persistent keys do not contain a
 // network partition or arbitrary request-header variants. Both disk adapters
 // use this same profile; the memory cache supplies its full partition/Vary key.
-pub fn evaluate(request Request, response Response, options ReuseOptions, now i64) Decision {
+pub fn evaluate(request Request, received_response Response, options ReuseOptions, now i64) Decision {
+	response := Response{ ...received_response, headers: storage_headers(received_response.headers) }
 	request_control := control_directives(request.headers)
 	response_control := control_directives(response.headers)
 	if request.method !in ['GET', 'HEAD'] || request.mode in [.no_store, .reload]
+		|| request.headers.any(it.name.to_lower() in ['if-match', 'if-none-match',
+			'if-modified-since', 'if-unmodified-since', 'if-range'])
 		|| contains_directive(request_control, 'no-store') || has_header(request.headers, 'Range')
 		|| contains_directive(response_control, 'no-store') || response.status < 200
-		|| response.status == 206 || '*' in vary_names(response.headers) {
+		|| response.status in [u32(206), 304] || '*' in vary_names(response.headers)
+		|| 'cookie' in vary_names(response.headers)
+		|| has_unterminated_quoted_string(header_value(response.headers, 'Cache-Control') or { '' }) {
 		return Decision{}
 	}
 	if request.mode == .no_cache || contains_directive(request_control, 'no-cache')

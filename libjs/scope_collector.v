@@ -349,6 +349,11 @@ fn (mut sc ScopeCollector) close_scope() {
 			if contains_await {
 				sc.records[parent_index].contains_await_expression = true
 			}
+		} else if sc.records[index].is_arrow_function
+			&& sc.records[index].contains_access_to_arguments_object_in_non_strict_mode {
+			// Arrow functions do not own an arguments object. Propagate access
+			// through the arrow scope even if it declares formal parameters.
+			sc.records[parent_index].contains_access_to_arguments_object_in_non_strict_mode = true
 		}
 	}
 

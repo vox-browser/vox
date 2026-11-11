@@ -815,7 +815,8 @@ pub fn (record &URL) with_path(input string) URL {
 pub fn (record &URL) with_query(input ?string) URL {
 	mut result := parser_copy_url(record)
 	if value := input {
-		result.query = percent_encode(value, if result.is_special() {
+		query_input := parser_processed_override_input(value).string()
+		result.query = percent_encode(query_input, if result.is_special() {
 			PercentEncodeSet.special_query
 		} else {
 			PercentEncodeSet.query

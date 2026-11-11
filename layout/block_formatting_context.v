@@ -1336,8 +1336,9 @@ fn border_box_left_of_box_avoiding_floats(computed &css.ComputedProperties, box_
 // the floats in its band, reduced by negative margins, and the box is moved to
 // the next float band until it fits without overlapping a float. Replaced
 // boxes keep the width already resolved in normal flow. A table wrapper's own
-// width is auto; its used width is the table's, which is sized again against
-// the space beside the floats. Auto margins of both are resolved in that space.
+// width is auto; its used width is the table's. Auto-width tables are sized
+// again against the float gap; specified widths keep the containing-block
+// basis. Auto margins of both are resolved in the space beside the floats.
 fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut state LayoutState, box &Node, mut box_state UsedValues, block_container &NodeWithStyle, container_width CSSPixels, computed &css.ComputedProperties, width_is_resolved bool) {
 	container_state := box_state.containing_block_used_values() or { return }
 	container_root_offset := container_state.cumulative_offset()
@@ -1394,8 +1395,19 @@ fn (bfc &BlockFormattingContext) place_box_avoiding_float_intrusions(mut state L
 				box_state.margin_left = specified_margin_left
 				box_state.margin_right = specified_margin_right
 				if box.is_table_wrapper() {
-					box_state.set_content_width(compute_table_wrapper_content_width(mut state,
-						box, mut box_state, remaining))
+					// Only an auto-width table shrinks to fit the float gap. A specified
+					// width keeps the size resolved against the containing block, so a
+					// table that cannot fit is moved below the floats.
+					for child in box.children() {
+						if !child.display().is_table_inside() {
+							continue
+						}
+						if child.computed_values().size_value(.width).is_auto() {
+							box_state.set_content_width(compute_table_wrapper_content_width(mut state,
+								box, mut box_state, remaining))
+						}
+						break
+					}
 				}
 				resolve_auto_margins(computed, mut box_state, remaining.to_double(),
 					box_state.content_width().to_double())

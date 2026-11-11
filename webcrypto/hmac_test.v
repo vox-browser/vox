@@ -39,7 +39,7 @@ fn test_hmac_source_fractional_generation_import_and_class_metadata() {
 		key := generated.key or { panic('key') }
 		assert (key.algorithm as HmacKeyAlgorithm).length == length
 		assert key.handle().len == int(length / 8)
-		assert key.usages == [KeyUsage.sign, .sign]
+		assert key.usages == [KeyUsage.sign]
 		assert (hmac.get_key_length(HmacImportParams{ hash: hash })!.value or { panic('length') }) == length
 	}
 	for length in [u32(7), 9, 65536, 65545] {
@@ -71,7 +71,7 @@ fn test_hmac_source_fractional_generation_import_and_class_metadata() {
 		], false, [.sign]) {
 			assert false
 		} else {
-			assert err.msg() == 'DataError: Invalid data size'
+			assert err.msg() == if length == 0 { 'DataError: Invalid key length' } else { 'DataError: Invalid data size' }
 		}
 	}
 }
@@ -134,7 +134,7 @@ fn test_hmac_source_jwk_algorithm_use_and_export() {
 		kty:     'oct'
 		k:       'q80'
 		alg:     'HS256'
-		use:     'sign'
+		use:     'sig'
 		key_ops: [
 			'sign',
 			'verify',
@@ -156,7 +156,7 @@ fn test_hmac_source_jwk_algorithm_use_and_export() {
 	} else {
 		assert err.msg() == "DataError: JWK has no 'k' field"
 	}
-	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, use: 'sig' }, 'HMAC', true, [.sign], 'SHA-256') {
+	if _ := subtle.import_jwk(JsonWebKey{ ...jwk, use: 'sign' }, 'HMAC', true, [.sign], 'SHA-256') {
 		assert false
 	} else {
 		assert err.msg() == 'DataError: Invalid use in JsonWebKey'

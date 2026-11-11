@@ -26,6 +26,9 @@ pub:
 	status       u16 = 200
 	content_type string
 	body         []u8
+	// Keep the first request URL for CSSOM href, separate from the final
+	// response URL used to resolve relative stylesheet resources.
+	original_url ?dom.URL
 	url          ?dom.URL
 	origin_clean bool = true
 }
@@ -711,7 +714,10 @@ pub fn (mut link HTMLLinkElementModel) process_linked_resource(success bool, url
 	if link.has_relation('icon') {
 		link.process_icon_resource(success, url, response.body)
 	} else if link.has_relation('stylesheet') {
-		link.process_stylesheet_resource(success, response)
+		link.process_stylesheet_resource(success, LinkResourceResponse{
+			...response
+			original_url: url
+		})
 	}
 }
 
@@ -747,11 +753,15 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 	if success {
 		link.loaded_style_sheet_ = response.body.bytestr()
 		if element := link.element_ {
-			location := response.url or {
-				dom.dom_url_parse(link.href_, link.base_url_, 'utf-8') or { link.base_url_ }
+			location := response.original_url or {
+				response.url or {
+					dom.dom_url_parse(link.href_, link.base_url_, 'utf-8') or { link.base_url_ }
+				}
 			}
-			mut sheet := css.install_link_style_sheet(element, response.body.bytestr(),
-				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_)
+			resource_url := response.url or { location }
+			mut sheet := css.install_link_style_sheet_with_base(element, response.body.bytestr(),
+				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_,
+				resource_url.serialize())
 			sheet.base.origin_clean = response.origin_clean
 			mut dom_link := unsafe { &dom.HTMLLinkElement(element) }
 			dom_link.linked_style_sheet_from_resource_ = true
