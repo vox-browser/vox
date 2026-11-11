@@ -466,6 +466,14 @@ fn lerp_y(top u32, bottom u32, ty i16) u32 {
 	return u32(blend >> 8)
 }
 
+// The byte offset of pixel (x, y) clamped into the image.
+@[inline]
+fn (s &ImageShader) clamped_offset(x int, y int) int {
+	cx := if x < 0 { 0 } else if x > s.width - 1 { s.width - 1 } else { x }
+	cy := if y < 0 { 0 } else if y > s.height - 1 { s.height - 1 } else { y }
+	return (cy * s.stride + cx) * 4
+}
+
 // The lowp bilerp_clamp_8888 stage: 16.16 sample coordinates, the four
 // clamped pixels and fixed-point lerps.
 fn (s &ImageShader) lowp_bilerp(x f32, y f32) [4]u32 {
@@ -477,15 +485,10 @@ fn (s &ImageShader) lowp_bilerp(x f32, y f32) [4]u32 {
 	sy := int(qy >> 16)
 	tx := i16(qx ^ 0x8000)
 	ty := i16(qy ^ 0x8000)
-	pixel := fn [s] (x int, y int) int {
-		cx := if x < 0 { 0 } else if x > s.width - 1 { s.width - 1 } else { x }
-		cy := if y < 0 { 0 } else if y > s.height - 1 { s.height - 1 } else { y }
-		return (cy * s.stride + cx) * 4
-	}
-	l0 := pixel(sx, sy)
-	r0 := pixel(sx + 1, sy)
-	l1 := pixel(sx, sy + 1)
-	r1 := pixel(sx + 1, sy + 1)
+	l0 := s.clamped_offset(sx, sy)
+	r0 := s.clamped_offset(sx + 1, sy)
+	l1 := s.clamped_offset(sx, sy + 1)
+	r1 := s.clamped_offset(sx + 1, sy + 1)
 	mut c := [u32(0), 0, 0, 0]!
 	for i in 0 .. 4 {
 		top := lerp_x(u32(s.pixels[l0 + i]), u32(s.pixels[r0 + i]), tx)
