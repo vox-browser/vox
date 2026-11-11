@@ -482,6 +482,7 @@ struct DocumentStyleSource {
 	cache_key string
 	css_text  string
 	location  string
+	response_url string
 	media     string
 	title     string
 	alternate bool
@@ -850,11 +851,13 @@ pub fn sync_document_style_elements(document &dom.Document) {
 			continue
 		}
 		href := element.get_attribute_value('href')
-		css_text, resolved_url := read_link_stylesheet(element, href, base_url) or { continue }
+		location := resolve_stylesheet_url(href, base_url) or { continue }
+		css_text, response_url := read_link_stylesheet(element, href, base_url) or { continue }
 		link_sources << DocumentStyleSource{
-			cache_key: 'link:${element.as_node().unique_id()}:${resolved_url}:${css_text}'
+			cache_key: 'link:${element.as_node().unique_id()}:${location}:${response_url}:${css_text}'
 			css_text:  css_text
-			location:  resolved_url
+			location:  location
+			response_url: response_url
 			media:     element.get_attribute_value('media')
 			title:     element.get_attribute_value('title')
 			alternate: 'alternate' in relations
@@ -879,8 +882,8 @@ pub fn sync_document_style_elements(document &dom.Document) {
 		}
 		mut parsed := []&CSSStyleSheet{cap: link_sources.len}
 		for source in link_sources {
-			sheet := install_link_style_sheet(unsafe { &dom.HTMLLinkElement(source.owner) },
-				source.css_text, source.location, source.alternate)
+			sheet := install_link_style_sheet_with_base(unsafe { &dom.HTMLLinkElement(source.owner) },
+				source.css_text, source.location, source.alternate, source.response_url)
 			parsed << sheet
 		}
 		unsafe {

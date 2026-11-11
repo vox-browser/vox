@@ -43,6 +43,52 @@ fn remote_link_test_append(mut parent dom.Node, document &dom.Document, name str
 	return element
 }
 
+fn test_remote_link_cache_preserves_request_location_and_redirect_base() {
+	for same_origin in [false, true] {
+		mut document := dom.Document.create(dom.URL{value: 'https://redirect-cache.test/page.html'})
+		defer { document.finalize() }
+		document.set_origin(document.url.origin())
+		mut document_node := document.as_node()
+		root := remote_link_test_append(mut document_node, document, 'html', map[string]string{})!
+		mut root_node := root.as_node()
+		mut link := remote_link_test_append(mut root_node, document, 'link', {
+			'rel': 'stylesheet'
+			'href': '/first.css'
+		})!
+		response_url := if same_origin { 'https://redirect-cache.test/assets/final.css' } else { 'https://cdn.redirect-cache.test/assets/final.css' }
+		// Keep the response bytes encoded so this path also exercises the cache's
+		// BOM decoder before it parses the redirected sheet.
+		mut bytes := [u8(0xff), 0xfe]
+		for byte in 'html { --image: url(image.png) }'.bytes() {
+			bytes << byte
+			bytes << u8(0)
+		}
+		for reference in ['/first.css', '/second.css'] {
+			request_url := 'https://redirect-cache.test${reference}'
+			set_remote_link_style_sheet_response(request_url, ImportedStyleSheetSource{
+				css_text: bytes.bytestr()
+				response_url: response_url
+				content_type: 'text/css; charset=windows-1252'
+			})
+			// Both requests redirect to identical bytes at the same response URL.
+			// Changing href must still refresh the CSSOM location.
+			link.set_attribute_value('href', reference)
+			sync_document_style_elements(document)
+			sheet := style_sheet_for_owner_node(document, link) or { panic('missing cached sheet') }
+			assert sheet.href()? == request_url
+			assert sheet.base_url_for_bindings()? == response_url
+			assert sheet.base.origin_clean == same_origin
+			assert sheet.rules.rules.len == 1
+			declaration := sheet.rules.rules[0].style() or { panic('missing decoded style rule') }
+			assert declaration.custom_property('--image') != none
+			assert css_author_style_sheets_for(document).link_sheets.len == 1
+			sync_document_style_elements(document)
+			unchanged := style_sheet_for_owner_node(document, link) or { panic('missing unchanged sheet') }
+			assert voidptr(unchanged) == voidptr(sheet)
+		}
+	}
+}
+
 // A script-inserted remote link, such as 4chan's catalog theme, uses the text
 // the browser fetched for its resolved URL. A parsed link that the browser
 // inlined as the <style> after it is not installed a second time.
