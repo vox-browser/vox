@@ -996,6 +996,8 @@ pub mut:
 	associated_element   &Element = unsafe { nil }
 	associated_attribute string
 	token_set            []string
+mut:
+	updating_attribute   bool
 }
 
 pub fn DOMTokenList.create(associated_element &Element, associated_attribute string) &DOMTokenList {
@@ -1025,6 +1027,7 @@ pub fn (mut d DOMTokenList) visit_edges(mut visitor CellVisitor) {
 
 // https://dom.spec.whatwg.org/#ref-for-domtokenlist
 pub fn (mut d DOMTokenList) associated_attribute_changed(value string) {
+	if d.updating_attribute { return }
 	// 1. If localName is set's attribute name, namespace is null, and value is null, then empty token set.
 	// 2. Otherwise, if localName is set's attribute name and namespace is null, then set set's token set to value, parsed.
 	// AD-HOC: The caller is responsible for checking the name and namespace.
@@ -1246,6 +1249,8 @@ pub fn (mut d DOMTokenList) run_update_steps() {
 	}
 	// 2. Set an attribute value given set's element, set's attribute name, and the result of running the ordered set serializer for set's token set.
 	mut element := unsafe { &Element(d.associated_element) }
+	d.updating_attribute = true
+	defer { d.updating_attribute = false }
 	element.set_attribute_value(d.associated_attribute, d.serialize_ordered_set())
 }
 
