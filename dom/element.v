@@ -6164,14 +6164,16 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	if local_name == 'id' {
+		old_id := e.id_
 		if value_or_empty.len == 0 {
 			e.id_ = none
 		} else {
 			e.id_ = value_or_empty
 		}
-		if e.is_connected() {
+		// Reassigning the same ID moves no document or SVG resource index entry.
+		if e.id_ != old_id && e.is_connected() {
 			mut doc := unsafe { &Document(e.document()) }
-			doc.element_id_changed(&e, old_value)
+			doc.element_id_changed(&e, old_id)
 		}
 	} else if local_name == 'name' {
 		if value_or_empty.len == 0 {
