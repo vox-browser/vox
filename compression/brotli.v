@@ -3,23 +3,18 @@ module compression
 
 import x.compress.brotli
 
-struct BrotliLeadingStream {
-	data     []u8
-	consumed int
-}
-
 // Decodes the Brotli stream at the start of data, like a streaming decoder
 // that stops at the stream's last meta-block. vlib's V decoder rejects bytes
 // after the stream, so locate its end by decoding prefixes: shorter prefixes
 // are truncated and longer ones carry trailing data.
-fn brotli_decode_leading_stream(data []u8) !BrotliLeadingStream {
+fn brotli_decode_leading_stream(data []u8) !LeadingStream {
 	mut message := ''
 	whole := brotli.decompress(data) or {
 		message = err.msg()
 		[]u8{}
 	}
 	if message == '' {
-		return BrotliLeadingStream{whole, data.len}
+		return LeadingStream{whole, data.len}
 	}
 	if !message.contains('trailing data') {
 		return error(message)
@@ -34,7 +29,7 @@ fn brotli_decode_leading_stream(data []u8) !BrotliLeadingStream {
 			[]u8{}
 		}
 		if message == '' {
-			return BrotliLeadingStream{decoded, middle}
+			return LeadingStream{decoded, middle}
 		}
 		if message.contains('trailing data') {
 			high = middle - 1

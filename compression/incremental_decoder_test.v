@@ -1,5 +1,7 @@
 module compression
 
+import compress.deflate
+
 fn incremental_hello(format CompressionFormat) []u8 {
 	return match format {
 		.brotli {
@@ -108,5 +110,49 @@ fn test_brotli_leading_stream_reports_its_length() {
 		assert false
 	} else {
 		assert !brotli_error_is_truncation(err)
+	}
+}
+
+// Real Huffman-coded streams fed one byte at a time: prefixes that end inside a
+// code, a header or a trailer wait for more input instead of failing.
+fn test_incremental_zlib_family_decoders_complete_from_single_bytes() {
+	input := []u8{len: 20000, init: u8((index * 13 + index / 97) % 61 + 32)}
+	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+		encoded := match format {
+			.deflate { deflate.compress_zlib(input)! }
+			.gzip { deflate.compress_gzip(input)! }
+			else { deflate.compress_raw(input)! }
+		}
+		mut decoder := IncrementalDecompressor.create(format)!
+		defer { decoder.close() }
+		mut actual := []u8{}
+		for i, byte in encoded {
+			part := decoder.push([byte], false)
+			assert part.error_message == '', '${format} ${i}'
+			assert part.complete == (i == encoded.len - 1) || part.complete == false
+			actual << part.bytes
+		}
+		finished := decoder.push([], true)
+		assert finished.error_message == '', '${format}'
+		actual << finished.bytes
+		assert actual == input, '${format}'
+	}
+}
+
+fn test_leading_zlib_family_streams_report_their_length() {
+	for format in [CompressionFormat.deflate, .deflate_raw, .gzip] {
+		mut bytes := incremental_hello(format)
+		stream_length := bytes.len
+		bytes << [u8(0x1f), 0x8b, 9]
+		stream := decode_leading_stream(format, bytes)!
+		assert stream.data.bytestr() == 'hello'
+		assert stream.consumed == stream_length
+	}
+	mut corrupt := incremental_hello(.gzip)
+	corrupt[corrupt.len - 8] ^= 1
+	if _ := decode_leading_stream(.gzip, corrupt) {
+		assert false
+	} else {
+		assert err.msg().contains('crc32 mismatch')
 	}
 }
