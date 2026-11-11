@@ -1512,8 +1512,21 @@ pub fn (mut element HTMLMediaElement) restart_fetch_at_offset(offset u64) ! {
 	if element.current_src_ == '' {
 		return
 	}
-	response := hook(dom.URL{ value: element.current_src_ }, offset)!
+	// This generation identifies the selected resource; range fetches do not
+	// advance it. A synchronous host callback may replace the resource.
+	generation := element.fetch_generation_
+	response := hook(dom.URL{ value: element.current_src_ }, offset) or {
+		if generation != element.fetch_generation_ { return }
+		if element.ready_state_ != .have_nothing {
+			element.queue_interrupted_fetch_steps()
+		}
+		return err
+	}
+	if generation != element.fetch_generation_ { return }
 	if failure := element.verify_response_or_get_failure_reason(response, false) {
+		if element.ready_state_ != .have_nothing {
+			element.queue_interrupted_fetch_steps()
+		}
 		return error(failure)
 	}
 	element.last_fetch_offset_ = offset
@@ -2568,6 +2581,16 @@ pub fn (mut element HTMLMediaElement) set_up_playback_manager() {
 	element.update_playback_rate()
 }
 
+fn (element &HTMLMediaElement) queue_interrupted_fetch_steps() {
+	resource_generation := element.fetch_generation_
+	element_pointer := voidptr(element)
+	element.queue_a_media_element_task(fn [element_pointer, resource_generation] () {
+		mut media := unsafe { &HTMLMediaElement(element_pointer) }
+		if media.fetch_generation_ != resource_generation || media.error_ != none { return }
+		media.process_media_data(.interrupted)
+	})
+}
+
 pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingStatus) {
 	match status {
 		.complete {
@@ -2584,6 +2607,7 @@ pub fn (mut element HTMLMediaElement) process_media_data(status MediaFetchingSta
 			element_pointer := voidptr(&element)
 			element.queue_a_media_element_task(fn [element_pointer] () {
 				mut element := unsafe { &HTMLMediaElement(element_pointer) }
+				if element.error_ != none { return }
 				element.network_state_ = .loading
 			})
 			now_ms := time.sys_mono_now() / 1_000_000
