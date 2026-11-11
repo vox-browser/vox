@@ -1114,6 +1114,14 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 		}
 		request.referrer = fetch.Referrer{ sentinel: .no_referrer }
 	}
+	// Re-fetch an entry with the origin that created it, rather than the page
+	// asking to traverse or reload it. This also preserves a resubmitted POST's
+	// Origin header. Opaque initiators retain the ordinary fetch behavior.
+	if initiator_origin := state.initiator_origin {
+		if !initiator_origin.is_opaque() {
+			request.origin = fetch.RequestOrigin{ is_client: false, origin: initiator_origin }
+		}
+	}
 	match state.resource {
 		POSTResource {
 			post := state.resource as POSTResource
