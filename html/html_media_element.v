@@ -251,7 +251,6 @@ mut:
 	video_frame_source_         ?&painting.VideoFrameSource
 	accepts_byte_ranges_        bool
 	last_fetch_offset_          u64
-	loop_was_specified_at_end_  bool
 	running_time_update_event_  bool
 	last_time_update_event_time_ ?i64
 	last_known_current_playback_position_ ?f64
@@ -440,6 +439,13 @@ fn html_media_element_resource_attribute_changed(element &dom.Element) {
 	// resource selection which already belongs to this actual owner can resume.
 	if model_pointer == unsafe { nil } { return }
 	mut media := unsafe { &HTMLMediaElement(model_pointer) }
+	// Raw DOM loop mutations use the same owner callback as preload/autoplay.
+	// Only a changed loop state updates ended synchronously.
+	current_loop := media.loop()
+	if media.loop_ != current_loop {
+		media.loop_ = current_loop
+		media.update_ended_attribute()
+	}
 	media.resource_attribute_changed()
 }
 
@@ -960,6 +966,7 @@ pub fn (mut element HTMLMediaElement) set_loop(value bool) {
 			dom_element.remove_attribute_ns(none, 'loop')
 		}
 	}
+	element.update_ended_attribute()
 }
 
 pub fn (element &HTMLMediaElement) autoplay() bool {
@@ -1961,7 +1968,8 @@ pub fn (mut element HTMLMediaElement) play_element() {
 	if element.waiting_for_an_implementation_defined_event_to_fetch_the_resource_ {
 		element.continue_fetching_the_resource_after_an_implementation_defined_event() or {}
 	}
-	if element.has_ended_playback() && element.direction_of_playback() == .forwards {
+	// Replay from the beginning even if loop was added after playback ended.
+	if element.has_ended_playback_internal(true) && element.direction_of_playback() == .forwards {
 		element.seek_element(0, .accurate)
 	}
 	if element.paused_ {
@@ -2250,6 +2258,10 @@ pub fn (element &HTMLMediaElement) direction_of_playback() MediaPlaybackDirectio
 }
 
 pub fn (element &HTMLMediaElement) has_ended_playback() bool {
+	return element.has_ended_playback_internal(false)
+}
+
+fn (element &HTMLMediaElement) has_ended_playback_internal(ignore_loop_attribute bool) bool {
 	if int(element.ready_state_) < int(MediaReadyState.have_metadata) {
 		return false
 	}
@@ -2261,7 +2273,8 @@ pub fn (element &HTMLMediaElement) has_ended_playback() bool {
 	} else {
 		element.current_playback_position_ == element.duration_
 	}
-	if reached_end && element.direction_of_playback() == .forwards && !element.loop_was_specified_at_end_ {
+	if reached_end && element.direction_of_playback() == .forwards
+		&& (ignore_loop_attribute || !element.loop()) {
 		return true
 	}
 	return element.current_playback_position_ == 0 && element.direction_of_playback() == .backwards
@@ -2286,9 +2299,8 @@ pub fn (mut element HTMLMediaElement) update_ended_attribute() {
 }
 
 pub fn (mut element HTMLMediaElement) reached_end_of_media_playback() {
-	element.loop_was_specified_at_end_ = element.loop()
 	element.upon_has_ended_playback_possibly_changed()
-	if element.loop_was_specified_at_end_ {
+	if element.loop() {
 		if !element.paused_ {
 			element.seek_element(0, .accurate)
 		}
