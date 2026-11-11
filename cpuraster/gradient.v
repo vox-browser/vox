@@ -674,7 +674,7 @@ fn gradient_fill(colors [][4]f32, positions []f32) GradientFill {
 }
 
 // The fill stage's gap index for t.
-@[direct_array_access]
+@[direct_array_access; inline]
 fn (f &GradientFill) index(t f32) int {
 	return match f.kind {
 		.two_stop {
@@ -704,6 +704,7 @@ fn (f &GradientFill) index(t f32) int {
 
 // One matrix stage: appendMatrix() selects translate, scale-translate or
 // 2x3 by type; highp fuses the multiply-adds, lowp does not.
+@[inline]
 fn apply_matrix(m SkAffine, x f32, y f32, fused bool) (f32, f32) {
 	mask := m.type_mask()
 	if mask == 0 {
@@ -778,6 +779,7 @@ fn lowp_fmax(a f32, b f32) f32 {
 }
 
 // The geometry stages: t for (x, y), and whether a conical mask keeps it.
+@[inline]
 fn (g &GradientShader) geometry_t(x f32, y f32, highp bool) (f32, bool) {
 	match g.geometry {
 		.linear {
@@ -849,6 +851,7 @@ fn (g &GradientShader) geometry_t(x f32, y f32, highp bool) (f32, bool) {
 
 // The coordinate pipeline up to the fill stage: seed_shader's pixel
 // center, the matrices, the geometry and clamp_x_1.
+@[inline]
 fn (g &GradientShader) gradient_t(px int, py int, highp bool) (f32, bool) {
 	sx := f32(px) + f32(0.5)
 	sy := f32(py) + f32(0.5)
@@ -885,7 +888,7 @@ fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 }
 
 // shade_lowp: round_F_to_U16() of the unfused fill, then lowp premul.
-@[direct_array_access]
+@[direct_array_access; inline]
 fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 	t, _ := g.gradient_t(px, py, false)
 	idx := g.fill.index(t)
@@ -907,6 +910,7 @@ fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 
 // cast<U16>(float) on arm64: fcvtzu saturates and maps NaN to 0, then the
 // 16-bit narrowing keeps the low bits.
+@[inline]
 fn f32_to_u16(v f32) u32 {
 	if v != v || v <= 0 {
 		return 0

@@ -380,6 +380,11 @@ enum CoverageKind {
 @[direct_array_access]
 fn (mut b PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
 	offset := b.offset(x, y)
+	if kind == .none && b.lowp && b.shaded && !b.imaged && !b.scaled && !b.tinted
+		&& b.mode == .src_over {
+		b.blit_lowp_shaded_over(x, y, count, offset)
+		return
+	}
 	for i in 0 .. count {
 		o := offset + i * 4
 		if b.lowp {
@@ -591,6 +596,31 @@ fn lowp_light(mode BlendMode, s u32, d u32, sa u32, da u32) u32 {
 // a + div255(da * inv(a)).
 fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
+}
+
+// blit_lowp() for a full-coverage source-over gradient span, with the
+// stage selection made once for the span: shade, clamp_01, srcover and
+// store_8888.
+@[direct_array_access]
+fn (mut b PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset int) {
+	shader := b.shader
+	for i in 0 .. count {
+		src := shader.shade_lowp(x + i, y)
+		r := lowp_min(src[0], 255)
+		g := lowp_min(src[1], 255)
+		bl := lowp_min(src[2], 255)
+		a := lowp_min(src[3], 255)
+		o := offset + i * 4
+		inv_a := lowp_inv(a)
+		nr := u16w(r + lowp_div255(u16w(u32(b.pixels[o]) * inv_a)))
+		ng := u16w(g + lowp_div255(u16w(u32(b.pixels[o + 1]) * inv_a)))
+		nb := u16w(bl + lowp_div255(u16w(u32(b.pixels[o + 2]) * inv_a)))
+		na := u16w(a + lowp_div255(u16w(u32(b.pixels[o + 3]) * inv_a)))
+		b.pixels[o] = u8(lowp_min(nr, 255))
+		b.pixels[o + 1] = u8(lowp_min(ng, 255))
+		b.pixels[o + 2] = u8(lowp_min(nb, 255))
+		b.pixels[o + 3] = u8(lowp_min(na, 255))
+	}
 }
 
 @[direct_array_access]
