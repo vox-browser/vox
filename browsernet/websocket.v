@@ -357,12 +357,18 @@ struct WebSocketFrame {
 // Parses one server frame from the start of `buffer`. Returns none when the
 // frame is incomplete, or an error for a protocol violation.
 fn websocket_parse_frame(buffer []u8) !(WebSocketFrame, int) {
+	return websocket_parse_frame_with_message_size(buffer, 0)
+}
+
+// Check the whole message's declared size before copying a fragment's payload.
+fn websocket_parse_frame_with_message_size(buffer []u8, message_size int) !(WebSocketFrame, int) {
 	if buffer.len < 2 { return error('incomplete') }
 	fin := buffer[0] & 0x80 != 0
 	if buffer[0] & 0x70 != 0 { return error('protocol: reserved bits set') }
 	opcode := buffer[0] & 0x0f
 	if buffer[1] & 0x80 != 0 { return error('protocol: masked server frame') }
-	mut length := u64(buffer[1] & 0x7f)
+	length_bits := buffer[1] & 0x7f
+	mut length := u64(length_bits)
 	mut offset := 2
 	if length == 126 {
 		if buffer.len < 4 { return error('incomplete') }
@@ -370,12 +376,22 @@ fn websocket_parse_frame(buffer []u8) !(WebSocketFrame, int) {
 		offset = 4
 	} else if length == 127 {
 		if buffer.len < 10 { return error('incomplete') }
+		if buffer[2] & 0x80 != 0 { return error('protocol: invalid frame length') }
 		length = 0
 		for index in 2 .. 10 { length = length << 8 | u64(buffer[index]) }
 		offset = 10
 	}
+	if (length_bits == 126 && length < 126) || (length_bits == 127 && length < 65536) {
+		return error('protocol: non-minimal frame length')
+	}
 	if opcode >= 8 && (!fin || length > 125) { return error('protocol: invalid control frame') }
-	if length > u64(websocket_max_message) { return error('protocol: message too large') }
+	if length > u64(websocket_max_message) {
+		return error_with_code('protocol: message too large', 1009)
+	}
+	// Control frames may arrive between fragments and do not add to the message.
+	if opcode < 8 && u64(message_size) + length > u64(websocket_max_message) {
+		return error_with_code('protocol: message too large', 1009)
+	}
 	end := offset + int(length)
 	if buffer.len < end { return error('incomplete') }
 	return WebSocketFrame{ fin: fin, opcode: opcode, payload: buffer[offset..end].clone() }, end
@@ -435,9 +451,10 @@ fn (mut connection WebSocketConnection) exchange(mut stream WebSocketStream, ini
 	for {
 		// Parse everything already received before waiting again.
 		for {
-			frame, used := websocket_parse_frame(buffer) or {
+			frame, used := websocket_parse_frame_with_message_size(buffer, message.len) or {
 				if err.msg() == 'incomplete' { break }
-				stream.write_all(websocket_frame(8, websocket_close_payload(1002, ''))) or {}
+				code := if err.code() == 1009 { u16(1009) } else { u16(1002) }
+				stream.write_all(websocket_frame(8, websocket_close_payload(code, ''))) or {}
 				connection.fail()
 				return
 			}
@@ -457,10 +474,6 @@ fn (mut connection WebSocketConnection) exchange(mut stream WebSocketStream, ini
 							return
 						}
 						message << frame.payload
-					}
-					if message.len > websocket_max_message {
-						connection.fail()
-						return
 					}
 					if frame.fin {
 						if !close_sent {
