@@ -74,6 +74,13 @@ def encoded_instructions(log):
     return int(values[0])
 
 
+def frame_median_ms(summary):
+    # measure_precise_scroll.py times completed frames from preparation to
+    # publication, and older bundles' frames by their updateLayer call.
+    key = 'preparation_to_publication_us' if 'preparation_to_publication_us' in summary else 'update_layer_us'
+    return summary[key]['median'] / 1000
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
@@ -308,7 +315,7 @@ def main():
                     scroll_interval_p95_ms=stats([r['scroll_interval_us']['p95']/1000 for r in scrolls]),
                     scroll_interval_max_ms=stats([r['scroll_interval_us']['max']/1000 for r in scrolls]),
                     over_budget_fraction=stats([r['fraction_over_budget'] for r in scrolls]),
-                    update_layer_median_ms=stats([r['update_layer_us']['median']/1000 for r in scrolls]))
+                    frame_median_ms=stats([frame_median_ms(r) for r in scrolls]))
                 if loads:
                     summary['statistics'][label].update(
                         navigation_to_native_submission_ms=stats([r['native_submission_ms'][
