@@ -38,7 +38,7 @@ fn test_argon2_source_validation_order_and_non_byte_aligned_length() {
 	if _ := Argon2.create().derive_bits(Argon2Params{ ...params, version: u8(18), parallelism: 0 }, key, 31) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Length must be equal or greater than 32'
+		assert err.msg() == 'OperationError: Length must be equal or greater than 32 and a multiple of 8'
 	}
 	if _ := Argon2.create().derive_bits(Argon2Params{ ...params, version: u8(18), parallelism: 0 }, key, 32) {
 		assert false
@@ -62,7 +62,14 @@ fn test_argon2_source_validation_order_and_non_byte_aligned_length() {
 	} else {
 		assert err.msg() == 'OperationError: Invalid passes'
 	}
-	assert Argon2.create().derive_bits(params, key, 32)! == Argon2.create().derive_bits(params, key, 33)!
+	assert Argon2.create().derive_bits(params, key, 32)!.len == 4
+	for length in [u32(33), 39] {
+		if _ := Argon2.create().derive_bits(params, key, length) {
+			assert false
+		} else {
+			assert err.msg() == 'OperationError: Length must be equal or greater than 32 and a multiple of 8'
+		}
+	}
 	assert Argon2.create().derive_bits(Argon2Params{ ...params, version: u8(19), parallelism: 256, memory: 2048 }, key, 32)!.len == 4
 	if _ := Argon2.create().derive_bits(Argon2Params{ ...params, nonce: [] }, key, 32) {
 		assert false

@@ -1610,6 +1610,7 @@ fn (controls &MediaControls) timeline_range() ?MediaControlsTimelineRange {
 }
 
 pub fn (mut controls MediaControls) update_timeline() {
+	if !controls.timeline_is_shown() { return }
 	range_ := controls.timeline_range()
 	if controls.scrubbing_timeline == .no {
 		progress := if value := range_ {
@@ -1673,8 +1674,21 @@ fn (controls &MediaControls) relevant_window() ?&WindowModel {
 	return unsafe { &WindowModel(global) }
 }
 
+fn (controls &MediaControls) timeline_is_shown() bool {
+	if html_element := controls.media.associated_element_ {
+		element := unsafe { &dom.Element(html_element) }
+		if element.is_html_element() && element.local_name() == 'video' {
+			return controls.visible && (element.has_attribute('controls')
+				|| element.as_node().is_scripting_disabled())
+		}
+	}
+	if controls.media.video_element_model_ != none { return controls.visible }
+	return true
+}
+
 fn (mut controls MediaControls) request_timeline_update() {
-	if controls.destroyed_ || controls.request_animation_frame_id_ != 0 || !controls.media.potentially_playing() { return }
+	if controls.destroyed_ || controls.request_animation_frame_id_ != 0
+		|| !controls.media.potentially_playing() || !controls.timeline_is_shown() { return }
 	mut window := controls.relevant_window() or { return }
 	controls.animation_frame_window_ = window
 	controls_pointer := voidptr(&controls)
@@ -1689,6 +1703,7 @@ fn (mut controls MediaControls) request_timeline_update() {
 }
 
 pub fn (mut controls MediaControls) update_timestamp() {
+	if !controls.timeline_is_shown() { return }
 	time := if controls.scrubbing_timeline == .no { controls.media.current_time() } else { f64(controls.last_timestamp_time_) }
 	controls.set_timestamp(time, controls.media.duration())
 }
@@ -1805,6 +1820,7 @@ pub fn (controls &MediaControls) should_show_placeholder() bool {
 
 pub fn (mut controls MediaControls) show_controls() {
 	if controls.destroyed_ { return }
+	was_visible := controls.visible
 	if mut bar := controls.dom_.control_bar {
 		mut classes := bar.class_list()
 		classes.add(['visible']) or { panic(err) }
@@ -1821,6 +1837,11 @@ pub fn (mut controls MediaControls) show_controls() {
 		}
 	}
 	controls.visible = true
+	if !was_visible {
+		controls.update_timeline()
+		controls.update_timestamp()
+		controls.request_timeline_update()
+	}
 }
 
 pub fn (mut controls MediaControls) hide_controls() {

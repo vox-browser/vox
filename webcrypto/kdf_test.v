@@ -39,7 +39,12 @@ fn test_native_pbkdf2_source_vectors_with_nul_and_multiblock_output() {
 fn test_kdf_source_validation_order_zero_absent_and_provider_failure() {
 	key := CryptoKey.create(.secret, false, KeyAlgorithm{ name: 'HKDF' }, [], [])
 	hkdf := HkdfParams{ hash: 'bad' }
-	assert HKDF.create().derive_bits(hkdf, key, 0)!.len == 0
+	if _ := HKDF.create().derive_bits(hkdf, key, 0) {
+		assert false
+	} else {
+		assert err.msg() == "NotSupportedError: Invalid hash function 'bad'"
+	}
+	assert HKDF.create().derive_bits(HkdfParams{ hash: 'SHA-256' }, key, 0)!.len == 0
 	if _ := HKDF.create().derive_bits(hkdf, key, none) {
 		assert false
 	} else {
@@ -58,7 +63,7 @@ fn test_kdf_source_validation_order_zero_absent_and_provider_failure() {
 	if _ := HKDF.create().derive_bits(HkdfParams{ hash: 'SHA-1' }, key, 255 * 20 * 8 + 8) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Failed to derive key'
+		assert err.msg() == 'OperationError: Length is too large for the hash function'
 	}
 	pbkdf := Pbkdf2Params{ hash: 'bad' }
 	if _ := PBKDF2.create().derive_bits(pbkdf, key, none) {

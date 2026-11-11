@@ -88,6 +88,12 @@ pub fn (handler &EventHandler) last_wheel_event() ?WheelEventData {
 }
 
 pub fn (mut handler EventHandler) dispatch_wheel_event(target InputTarget, visual_viewport_position PixelPoint, screen_position PixelPoint, button u32, buttons u32, modifiers u32, wheel_delta_x f64, wheel_delta_y f64, is_cancelable bool) EventResult {
+	return handler.dispatch_wheel_event_with_precision(target, visual_viewport_position,
+		screen_position, button, buttons, modifiers, wheel_delta_x, wheel_delta_y, .discrete,
+		is_cancelable)
+}
+
+pub fn (mut handler EventHandler) dispatch_wheel_event_with_precision(target InputTarget, visual_viewport_position PixelPoint, screen_position PixelPoint, button u32, buttons u32, modifiers u32, wheel_delta_x f64, wheel_delta_y f64, precision compositor.WheelDeltaPrecision, is_cancelable bool) EventResult {
 	if !handler.active_document || !handler.paint_root_available || target.id == '' {
 		return .dropped
 	}
@@ -135,10 +141,11 @@ pub fn (mut handler EventHandler) dispatch_wheel_event(target InputTarget, visua
 		} else {
 			coordinates = handler.coordinates_for_node(hit_node)
 		}
-		wheel := dom.WheelEvent.create_from_platform_event(node_view(node), 'wheel',
+		wheel := dom.WheelEvent.create_from_platform_event_with_precision(node_view(node), 'wheel',
 			pixel_point(screen_position), pixel_point(coordinates.page),
 			pixel_point(coordinates.client), pixel_point(coordinates.offset),
-			wheel_delta_x, wheel_delta_y, i16(button), u16(buttons), modifiers)
+			wheel_delta_x, wheel_delta_y, precision == .precise, i16(button), u16(buttons),
+			modifiers)
 		mut event := unsafe { &dom.Event(wheel) }
 		event.set_cancelable(is_cancelable)
 		return if dom.event_target_dispatch_event(unsafe { &dom.EventTarget(node) }, event) {
@@ -156,11 +163,11 @@ pub fn (mut handler EventHandler) dispatch_wheel_event(target InputTarget, visua
 
 pub fn (mut handler EventHandler) dispatch_synthetic_pinch_wheel_event(target ?InputTarget, visual_viewport_position PixelPoint, screen_position PixelPoint, modifiers u32, wheel_delta_y f64) EventResult {
 	value := target or { return .dropped }
-	return handler.dispatch_wheel_event(value, visual_viewport_position, screen_position, 0, 0,
-		modifiers | dom.modifier_ctrl, 0, wheel_delta_y, true)
+	return handler.dispatch_wheel_event_with_precision(value, visual_viewport_position,
+		screen_position, 0, 0, modifiers | dom.modifier_ctrl, 0, wheel_delta_y, .precise, true)
 }
 
-pub fn (mut handler EventHandler) handle_mousewheel_with_parameters(target ?InputTarget, visual_viewport_position PixelPoint, screen_position PixelPoint, button u32, buttons u32, modifiers u32, wheel_delta_x f64, wheel_delta_y f64, _ compositor.WheelDeltaPrecision, _ compositor.ScrollGesturePhase, async_scroll_performed_default_action bool) EventResult {
+pub fn (mut handler EventHandler) handle_mousewheel_with_parameters(target ?InputTarget, visual_viewport_position PixelPoint, screen_position PixelPoint, button u32, buttons u32, modifiers u32, wheel_delta_x f64, wheel_delta_y f64, precision compositor.WheelDeltaPrecision, _ compositor.ScrollGesturePhase, async_scroll_performed_default_action bool) EventResult {
 	handler.record_last_known_mouse_position(visual_viewport_position, screen_position, buttons,
 		modifiers)
 	if handler.should_ignore_device_input_event() || !handler.paint_root_available {
@@ -173,8 +180,9 @@ pub fn (mut handler EventHandler) handle_mousewheel_with_parameters(target ?Inpu
 	if modifiers & dom.modifier_shift != 0 {
 		delta_x, delta_y = delta_y, delta_x
 	}
-	dispatch_result := handler.dispatch_wheel_event(value, visual_viewport_position, screen_position,
-		button, buttons, modifiers, delta_x, delta_y, !async_scroll_performed_default_action)
+	dispatch_result := handler.dispatch_wheel_event_with_precision(value,
+		visual_viewport_position, screen_position, button, buttons, modifiers, delta_x, delta_y,
+		precision, !async_scroll_performed_default_action)
 	if dispatch_result == .cancelled {
 		return if async_scroll_performed_default_action { .handled } else { .cancelled }
 	}

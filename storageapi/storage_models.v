@@ -343,13 +343,9 @@ pub fn (shelf &StorageShelf) storage_usage() u64 {
 }
 
 pub fn (shelf &StorageShelf) storage_quota() u64 {
-	mut quota := u64(0)
-	for _, bottle in shelf.default_bucket().bottle_map() {
-		if bottle_quota := bottle.quota() {
-			quota += bottle_quota
-		}
-	}
-	return quota
+	// Bottle limits only cover local/session storage, not the shelf's other
+	// storage endpoints. Keep this estimate independent of device free space.
+	return u64(10) * 1024 * 1024 * 1024
 }
 
 pub fn obtain_a_local_storage_shelf(environment StorageEnvironment, host ?&StorageHost) ?&StorageShelf {

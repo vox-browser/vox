@@ -5362,7 +5362,10 @@ pub mut:
 	// Navigation
 	navigation_id          ?string
 	about_base_url         ?URL
+	base_url_override       ?URL
 	is_initial_about_blank bool
+	iframe_load_in_progress bool
+	mute_iframe_load       bool
 	opener_policy          OpenerPolicy
 
 	// Browsing context
@@ -6271,19 +6274,10 @@ pub fn (mut d Document) set_url(url URL) {
 
 // fallback_base_url - https://html.spec.whatwg.org/multipage/urls-and-fetching.html#fallback-base-url
 pub fn (d &Document) fallback_base_url() URL {
-	// 1. If document is an iframe srcdoc document, return about base URL.
-	if url_matches_about_srcdoc(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
+	// about:blank and about:srcdoc inherit the supplied about base URL.
+	if url_matches_about_srcdoc(d.url) || url_matches_about_blank(d.url) {
+		if about_base := d.about_base_url { return about_base }
 	}
-	// 2. If document's URL matches about:blank and about base URL is non-null, return it.
-	if url_matches_about_blank(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
-	}
-	// 3. Return document's URL.
 	return d.url
 }
 
@@ -6291,7 +6285,9 @@ pub fn (d &Document) fallback_base_url() URL {
 pub fn (d &Document) base_url() URL {
 	// 1. If there is no base element with href, return fallback base URL.
 	base_element := d.first_base_element_with_href_in_tree_order() or {
-		return d.fallback_base_url()
+		// A cloned Document keeps the source document's effective base even
+		// when it has no base element of its own.
+		return d.base_url_override or { d.fallback_base_url() }
 	}
 	// 2. Return the frozen base URL of the first base element with href.
 	if base_element.frozen_base_url_initialized_ {
@@ -8298,10 +8294,11 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			return .@continue
 		})
 
-		// Transfer NodeIterators rooted at `node` from old_document to this document.
+		// Transfer NodeIterators rooted anywhere in the adopted subtree, including
+		// shadow trees, so removal and finalization use their root's new document.
 		mut node_iterators_to_transfer := []&NodeIterator{}
 		for node_iterator in old_document.node_iterators {
-			if voidptr(node_iterator.root) == voidptr(node) {
+			if node_iterator.root.is_shadow_including_inclusive_descendant_of(node) {
 				node_iterators_to_transfer << node_iterator
 			}
 		}
@@ -8840,6 +8837,11 @@ pub fn (mut d Document) open_document() !&Document {
 
 	// 13. Set is_initial_about_blank to false.
 	d.is_initial_about_blank = false
+
+	// 14. A stream opened while the iframe is firing load must not cause
+	// a second load event. A later document.open() outside that dispatch
+	// unmutes its next load again.
+	d.mute_iframe_load = d.iframe_load_in_progress
 
 	// 15. Set to no-quirks mode.
 	d.set_quirks_mode(.no)
@@ -12825,6 +12827,18 @@ pub fn (mut d Document) set_is_initial_about_blank(b bool) {
 	d.is_initial_about_blank = b
 }
 
+pub fn (d &Document) is_iframe_load_in_progress() bool {
+	return d.iframe_load_in_progress
+}
+
+pub fn (mut d Document) set_iframe_load_in_progress(value bool) {
+	d.iframe_load_in_progress = value
+}
+
+pub fn (d &Document) should_mute_iframe_load() bool {
+	return d.mute_iframe_load
+}
+
 // --- about_base_url ---
 pub fn (d &Document) get_about_base_url() ?URL {
 	return d.about_base_url
@@ -12832,6 +12846,18 @@ pub fn (d &Document) get_about_base_url() ?URL {
 
 pub fn (mut d Document) set_about_base_url(url ?URL) {
 	d.about_base_url = url
+}
+
+pub fn (d &Document) get_the_base_url() URL {
+	return d.base_url()
+}
+
+pub fn (mut d Document) set_base_url_override(url ?URL) {
+	if d.base_url_override == url { return }
+	old_document_url := d.url
+	old_base_url := d.base_url()
+	d.base_url_override = url
+	d.respond_to_base_url_changes(old_document_url, old_base_url)
 }
 
 // --- source ---

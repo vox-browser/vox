@@ -37,7 +37,8 @@ fn (mut queue MutationObserverDeliveryQueue) ensure_microtask() {
 pub fn (mut queue MutationObserverDeliveryQueue) notify() {
 	if queue.retired { return }
 	queue.microtask_queued = false
-	pending := queue.pending.clone()
+	mut pending := queue.pending.clone()
+	pending.sort(a.creation_index_ < b.creation_index_)
 	queue.pending.clear()
 	for observer in pending { notify_one_mutation_observer(observer) }
 }

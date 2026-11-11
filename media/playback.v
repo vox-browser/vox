@@ -100,8 +100,9 @@ fn browser_native_media_type(type_ string) html.CanPlayTypeResult {
 		}
 		return .empty
 	}
-	if essence !in ['video/mp4', 'video/quicktime', 'audio/mp4', 'audio/aac', 'audio/mpeg', 'audio/mp3',
-		'audio/wav', 'audio/x-wav', 'audio/flac', 'application/vnd.apple.mpegurl',
+	if essence !in ['video/mp4', 'video/quicktime', 'audio/mp4', 'audio/x-m4a', 'audio/aac',
+		'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-wav', 'audio/flac',
+		'application/vnd.apple.mpegurl',
 		'application/x-mpegurl', 'audio/mpegurl', 'audio/x-mpegurl'] {
 		return .empty
 	}

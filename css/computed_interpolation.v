@@ -9816,6 +9816,9 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 		if old_is_collapse != new_is_collapse {
 			invalidation.ensure_at_least(.relayout)
 		}
+		// Visibility also controls whether the box owns a backdrop filter. Keep
+		// retained effect values in sync when this changes without a relayout.
+		invalidation.ensure_accumulated_visual_contexts_at_least(.update_values)
 		// Of course, we still have to repaint on any visibility change.
 		invalidation.ensure_at_least(.repaint)
 	} else if property_affects_layout(property_id) {

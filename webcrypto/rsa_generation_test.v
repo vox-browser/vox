@@ -59,12 +59,12 @@ fn test_rsa_generation_rejects_source_usages_before_native_parameters() {
 	if _ := RSAOAEP.create().generate_key(params, true, [.decrypt]) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Failed generating RSA key pair'
+		assert err.msg() == 'OperationError: Invalid RSA key generation parameters'
 	}
 	if _ := RSAPSS.create().generate_key(params, true, [.sign]) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Failed to generate RSA key pair'
+		assert err.msg() == 'OperationError: Invalid RSA key generation parameters'
 	}
 	if _ := RSASSAPKCS1.create().generate_key(params, true, [.decrypt]) {
 		assert false

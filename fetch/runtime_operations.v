@@ -50,6 +50,9 @@ pub fn (mut controller FetchController) set_pending_request(request ?&Request) {
 // FetchController.cpp: retain the actual Requests::Request stop boundary.
 pub fn (mut controller FetchController) set_pending_network_request(request ?RequestServerRequest) {
 	controller.pending_network_request_ = request
+	// Host callbacks may return a handle after cancellation, including while
+	// stopping another handle reenters this setter. Do not revive the fetch.
+	if controller.state_ != .ongoing { controller.stop_request() }
 }
 
 pub fn (controller &FetchController) timing_info() ?&FetchTimingInfo {
@@ -297,6 +300,9 @@ pub fn (mut record FetchRecord) set_fetch_controller(controller ?&FetchControlle
 pub fn (mut pending PendingResponse) run_callback() {
 	response := pending.response_ or { return }
 	callback := pending.callback_ or { return }
+	// Transfer the one-shot callback to its queued task. The pending response
+	// may outlive that task while its body is still streaming.
+	pending.callback_ = none
 	pending_pointer := unsafe { &PendingResponse(pending) }
 	deferred_invoke_for_request(pending_pointer.request, fn [pending_pointer, response, callback] () {
 		callback(response)
@@ -458,68 +464,122 @@ pub fn determine_the_http_cache_partition(request &Request) ?NetworkPartitionKey
 }
 
 pub fn select_response_from_cache(request &Request) ?&Response {
-	if !fetch_http_memory_cache_enabled {
-		return none
-	}
-	if request.cache_mode in [.no_store, .reload, .no_cache] || !http.is_cacheable_request(request.method, request.header_list) {
+	if !fetch_http_memory_cache_enabled { return none }
+	if request.cache_mode in [.no_store, .reload, .no_cache]
+		|| !http.is_cacheable_request(request.method, request.header_list)
+		|| http.has_preconditions(request.header_list) {
 		return none
 	}
 	key := fetch_cache_partition_key(request) or { return none }
-	entries := fetch_http_memory_cache_complete[key] or { return none }
+	mut entries := fetch_http_memory_cache_complete[key] or { return none }
+	mut selected := -1
+	for index, entry in entries {
+		vary_key := http.create_vary_key(request.header_list, entry.response_headers) or { continue }
+		if vary_key != entry.vary_key { continue }
+		if selected < 0 || entry.response_time > entries[selected].response_time
+			|| (entry.response_time == entries[selected].response_time
+				&& entry.response_token > entries[selected].response_token) {
+			selected = index
+		}
+	}
+	if selected < 0 { return none }
+	entry := entries[selected]
+	now := time.now().unix_milli()
+	decision := cachepolicy.evaluate(request.cache_policy_request(), cachepolicy.Response{
+		status: entry.status_code
+		headers: cache_policy_headers(entry.response_headers)
+		timing: cachepolicy.Timing{request_time: entry.request_time, response_time: entry.response_time}
+	}, cachepolicy.ReuseOptions{}, now)
+	// The newest matching response wins even when it needs revalidation.
+	// Falling back to an older fresh match could revive superseded content.
+	if !decision.can_reuse() { return none }
+	entries[selected].last_access_time = now
+	fetch_http_memory_cache_complete[key] = entries
+	mut response := Response.create()
+	response.url_list = [request.current_url()]
+	response.method = request.method
+	response.status = entry.status_code
+	response.status_message = entry.reason_phrase
+	response.header_list = cached_response_header_list(entry.response_headers, decision)
+	response.set_javascript_bytecode_cache(entry.javascript_bytecode_cache)
+	response.set_javascript_bytecode_cache_vary_key(entry.javascript_bytecode_cache_vary_key)
+	response.set_javascript_bytecode_cache_memory_cache_request_headers(entry.request_headers)
+	response.set_body_bytes(entry.response_body.clone())
+	return response
+}
+
+fn unmatched_cache_entries(entries []FetchMemoryCacheEntry, request_headers &http.HeaderList) []FetchMemoryCacheEntry {
+	mut retained := []FetchMemoryCacheEntry{}
 	for entry in entries {
-		if http.create_vary_key(request.header_list, entry.response_headers) != entry.vary_key {
+		if vary_key := http.create_vary_key(request_headers, entry.response_headers) {
+			if vary_key == entry.vary_key { continue }
+		} else {
 			continue
 		}
-		decision := cachepolicy.evaluate(request.cache_policy_request(), cachepolicy.Response{
-			status: entry.status_code
-			headers: cache_policy_headers(entry.response_headers)
-			timing: cachepolicy.Timing{request_time: entry.request_time, response_time: entry.response_time}
-		}, cachepolicy.ReuseOptions{}, time.now().unix_milli())
-		if !decision.can_reuse() { continue }
-		mut response := Response.create()
-		response.url_list = [request.current_url()]
-		response.method = request.method
-		response.status = entry.status_code
-		response.status_message = entry.reason_phrase
-		response.header_list = cached_response_header_list(entry.response_headers, decision)
-		response.set_javascript_bytecode_cache(entry.javascript_bytecode_cache)
-		response.set_javascript_bytecode_cache_vary_key(entry.javascript_bytecode_cache_vary_key)
-		response.set_javascript_bytecode_cache_memory_cache_request_headers(entry.request_headers)
-		response.set_body_bytes(entry.response_body.clone())
-		return response
+		retained << entry
 	}
-	return none
+	return retained
+}
+
+fn retire_matching_cached_responses(key string, request_headers &http.HeaderList) {
+	if entries := fetch_http_memory_cache_complete[key] {
+		retained := unmatched_cache_entries(entries, request_headers)
+		if retained.len == 0 { fetch_http_memory_cache_complete.delete(key) }
+		else { fetch_http_memory_cache_complete[key] = retained }
+	}
+	// Older streams must not republish a representation after a non-storable
+	// replacement has retired it. Their tokens no longer name pending entries.
+	if entries := fetch_http_memory_cache_pending[key] {
+		retained := unmatched_cache_entries(entries, request_headers)
+		if retained.len == 0 { fetch_http_memory_cache_pending.delete(key) }
+		else { fetch_http_memory_cache_pending[key] = retained }
+	}
+}
+
+fn invalidate_response_in_cache(request &Request) {
+	partition := determine_the_http_cache_partition(request) or { return }
+	for method in ['GET', 'HEAD'] {
+		key := fetch_memory_cache_key(partition, request.current_url(), method)
+		fetch_http_memory_cache_complete.delete(key)
+		// A completion of an invalidated producer must not publish its bytes.
+		fetch_http_memory_cache_pending.delete(key)
+	}
 }
 
 pub fn store_response_in_cache(request &Request, mut response Response) {
-	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store {
-		return
-	}
+	if !fetch_http_memory_cache_enabled || request.cache_mode == .no_store { return }
 	mut internal := response.cache_storage_response()
-	if internal.cache_storage_retired_ || internal.cache_entry_token_ != 0 {
-		return
-	}
-	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(internal.status, internal.header_list) {
+	if internal.cache_storage_retired_ || internal.cache_entry_token_ != 0 { return }
+	if !http.is_cacheable_request(request.method, request.header_list) || internal.status == 304 {
 		return
 	}
 	key := fetch_cache_partition_key(request) or { return }
-	if fetch_http_memory_cache_next_response_token == u64(0xffffffffffffffff) {
+	headers := http.remove_connection_specific_fields(internal.header_list)
+	vary_key := http.create_vary_key(request.header_list, headers) or {
+		retire_matching_cached_responses(key, request.header_list)
 		return
 	}
+	if !http.is_cacheable_response(internal.status, headers) {
+		retire_matching_cached_responses(key, request.header_list)
+		return
+	}
+	if fetch_http_memory_cache_next_response_token == u64(0xffffffffffffffff) { return }
 	internal.cache_entry_token_ = fetch_http_memory_cache_next_response_token
 	internal.cache_entry_key_ = key
 	fetch_http_memory_cache_next_response_token++
 	internal.set_javascript_bytecode_cache_memory_cache_request_headers(request.header_list)
 	mut entries := fetch_http_memory_cache_pending[key] or { []FetchMemoryCacheEntry{} }
+	now := time.now().unix_milli()
 	entries << FetchMemoryCacheEntry{
 		response_token: internal.cache_entry_token_
-		vary_key: http.create_vary_key(request.header_list, internal.header_list)
+		vary_key: vary_key
 		status_code: internal.status
 		reason_phrase: internal.status_message
 		request_headers: http.store_header_and_trailer_fields(request.header_list)
-		response_headers: http.store_header_and_trailer_fields(internal.header_list)
+		response_headers: http.store_header_and_trailer_fields(headers)
 		request_time: request.request_time
-		response_time: time.now().unix_milli()
+		response_time: now
+		last_access_time: now
 		javascript_bytecode_cache: internal.javascript_bytecode_cache()
 		javascript_bytecode_cache_vary_key: internal.javascript_bytecode_cache_vary_key()
 	}
@@ -596,18 +656,39 @@ fn finalize_response_body_in_cache(request &Request, response &Response, respons
 		|| internal.cache_storage_retired_ {
 		return
 	}
-	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(internal.status, internal.header_list) {
+	if !http.is_cacheable_request(request.method, request.header_list) || !http.is_cacheable_response(entry.status_code, entry.response_headers) {
 		return
 	}
 	entry.response_body = response_body.clone()
 	mut complete_entries := fetch_http_memory_cache_complete[key] or {
 		[]FetchMemoryCacheEntry{}
 	}
+	// Response bodies can finish out of order. A long-running older producer
+	// must not replace a newer response that has already completed.
+	for existing in complete_entries {
+		if existing.vary_key == entry.vary_key
+			&& (existing.response_time > entry.response_time
+				|| (existing.response_time == entry.response_time
+					&& existing.response_token > entry.response_token)) {
+			return
+		}
+	}
 	// A refreshed representation replaces its old variant. Appending it would
 	// let a later default request keep selecting the pre-reload response and
 	// retain every expired generation indefinitely.
 	complete_entries = complete_entries.filter(it.vary_key != entry.vary_key)
 	complete_entries << entry
+	// Bound variants per URL. Preserve the newly received entry and evict the
+	// least recently used older selections first.
+	for complete_entries.len > 16 {
+		mut oldest := 0
+		for index := 1; index < complete_entries.len - 1; index++ {
+			if complete_entries[index].last_access_time < complete_entries[oldest].last_access_time {
+				oldest = index
+			}
+		}
+		complete_entries.delete(oldest)
+	}
 	fetch_http_memory_cache_complete[key] = complete_entries
 }
 

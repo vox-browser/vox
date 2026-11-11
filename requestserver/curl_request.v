@@ -61,6 +61,26 @@ pub fn (mut connection CurlConnection) start_fetch(params &fetch.FetchParams, in
 	defer { platform.leave_persistent(entry) }
 	mut request := unsafe { &fetch.Request(input) }
 	pending := fetch.PendingResponse.create(mut request, none)
+	// Validate at the boundary that grants network access, including callers
+	// that construct a Fetch request without going through Request's bindings.
+	if !http.is_method(request.method) || http.is_forbidden_method(request.method) {
+		mut output := unsafe { pending }
+		output.resolve(fetch.Response.network_error('Invalid or forbidden request method'))
+		return pending
+	}
+	for header in request.header_list.headers() {
+		if !http.is_header_name(header.name) || !http.is_header_value(header.value) {
+			mut output := unsafe { pending }
+			output.resolve(fetch.Response.network_error('Invalid request header'))
+			return pending
+		}
+	}
+	if request.current_url().scheme() !in ['http', 'https']
+		|| fetch.block_bad_port(request) == .blocked {
+		mut output := unsafe { pending }
+		output.resolve(fetch.Response.network_error('Unsupported URL scheme or blocked port'))
+		return pending
+	}
 	if filtered_response := request.apply_adblock() {
 		mut output := unsafe { pending }
 		output.resolve(filtered_response)
@@ -120,7 +140,13 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_PRIVATE, native), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_NOSIGNAL, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_ACCEPT_ENCODING, c''), C.CURLE_OK)
-	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, request.current_url().serialize().str), C.CURLE_OK)
+	// Fetch authorizes credentials explicitly. curl must not synthesize an
+	// Authorization header from the URL regardless of the credentials mode.
+	transport_url := request.current_url().with_username('').with_password('')
+	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_URL, transport_url.serialize().str), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_DISALLOW_USERNAME_IN_URL, 1), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_REDIR_PROTOCOLS, i64(C.CURLPROTO_HTTP | C.CURLPROTO_HTTPS)), C.CURLE_OK)
 	// Match document navigation's process-local trust configuration. libcurl's
 	// API does not read the curl command-line tool's CA environment variables.
 	// Keep its certificate and hostname verification enabled.
@@ -160,6 +186,8 @@ fn (mut connection CurlConnection) start_transfer(params &fetch.FetchParams, req
 	if native.headers_ != unsafe { nil } {
 		check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HTTPHEADER, native.headers_), C.CURLE_OK)
 	}
+	// A proxy's CONNECT response describes the tunnel, not the origin.
+	check_curl_result(C.vox_curl_setopt_long(native.easy_, C.CURLOPT_SUPPRESS_CONNECT_HEADERS, 1), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_HEADERFUNCTION, curl_header_received), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_pointer(native.easy_, C.CURLOPT_HEADERDATA, native), C.CURLE_OK)
 	check_curl_result(C.vox_curl_setopt_write(native.easy_, C.CURLOPT_WRITEFUNCTION, curl_data_received), C.CURLE_OK)
@@ -221,6 +249,7 @@ fn curl_header_received(buffer voidptr, size uint, count uint, owner voidptr) ui
 				return length
 			}
 		}
+		return length
 	}
 	if line.trim_space() == '' && C.vox_curl_status(request.easy_) >= 200 {
 		if !request.transfer_headers_to_client_if_needed() { return 0 }
