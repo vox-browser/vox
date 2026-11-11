@@ -209,15 +209,10 @@ fn (s &StyleComputer) refresh_font_inputs(abstract_element dom.AbstractElement) 
 	}
 	computed.cached_first_available_computed_font_ = computed.first_available_computed_font(s.font_computer())
 	computed.computed_values_line_height_ = computed.line_height()
-	if abstract_element.pseudo_element() == none && abstract_element.element().is_html_element()
-		&& abstract_element.element().local_name().to_lower() == 'html' {
-		if root := abstract_element.document().document_element() {
-			if voidptr(root) == voidptr(abstract_element.element()) {
-				mut mutable_s := unsafe { &StyleComputer(s) }
-				mutable_s.root_element_font_metrics = s.calculate_root_element_font_metrics(computed)
-				mutable_s.root_element_font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
-			}
-		}
+	if abstract_element.pseudo_element() == none && abstract_element.element().is_document_element() {
+		mut mutable_s := unsafe { &StyleComputer(s) }
+		mutable_s.root_element_font_metrics = s.calculate_root_element_font_metrics(computed)
+		mutable_s.root_element_font_metrics_depend_on_viewport_metrics = computed.font_metrics_depend_on_viewport_metrics()
 	}
 	computed.root_font_size_px_ = s.root_element_font_metrics.font_size.to_double()
 	computed.root_line_height_px_ = s.root_element_font_metrics.line_height.to_double()
