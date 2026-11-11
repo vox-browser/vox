@@ -68,10 +68,11 @@ pub fn (mut state WeightedPredictorState) restore_rows(rows WeightedPredictorRow
 	copy(mut state.predictor_errors[..state.width + 1], rows.predictor_errors)
 }
 
-// floor(log2(value)), and 0 for values 0 and 1.
+// floor(log2(value)), and 0 for values 0 and 1. leading_zeros_64 compiles to
+// one instruction, unlike the table-based len_64.
 @[inline]
 fn predictor_floor_log2(value u64) int {
-	return if value > 1 { bits.len_64(value) - 1 } else { 0 }
+	return if value > 1 { 63 - bits.leading_zeros_64(value) } else { 0 }
 }
 
 // floor(2^24 / (index + 1)) for the indices below 64 that the predictor uses.

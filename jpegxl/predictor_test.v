@@ -1,6 +1,7 @@
 module jpegxl
 
 import encoding.hex
+import math.bits
 
 fn predictor_test_values(text string) []i32 {
 	return text.split(',').map(it.i32())
@@ -146,4 +147,17 @@ fn test_predictor_signed_rounding_ties_and_bounds() {
 	other.restore_rows(state.save_rows()) or { rejected = true }
 	assert rejected
 	assert predictor_test_rows(other.save_rows()) == before
+}
+
+// The weighted predictor's floor(log2) agrees with the table-based bit length
+// at every power-of-two boundary, and is 0 for 0 and 1.
+fn test_predictor_floor_log2_matches_bit_length() {
+	assert predictor_floor_log2(0) == 0 && predictor_floor_log2(1) == 0
+	for shift in 1 .. 64 {
+		power := u64(1) << shift
+		for value in [power - 1, power, power + 1] {
+			if value > 1 { assert predictor_floor_log2(value) == bits.len_64(value) - 1 }
+		}
+	}
+	assert predictor_floor_log2(max_u64) == 63
 }
