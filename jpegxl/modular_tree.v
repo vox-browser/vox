@@ -87,23 +87,23 @@ pub fn (mut reader BitReader) read_modular_tree(size_limit int) !ModularTree {
 		// Retain the source's inclusive limit: limit + 1 nodes can finish a tree.
 		if nodes.len > size_limit { return error('JPEG XL modular tree exceeds size limit') }
 		pending--
-		property_code := symbols.read_unsigned(tree_histograms, 1, mut reader)!
+		property_code := symbols.read_unsigned(&tree_histograms, 1, mut reader)!
 		if property_code > 0 {
 			property := property_code - 1
 			if property > 255 { return error('Invalid JPEG XL modular tree property') }
 			if property > max_property { max_property = property }
-			threshold := symbols.read_signed(tree_histograms, 0, mut reader)!
+			threshold := symbols.read_signed(&tree_histograms, 0, mut reader)!
 			left := u32(nodes.len + pending + 1)
 			nodes << ModularTreeNode{ property: u8(property), threshold: threshold, left: left, right: left + 1 }
 			pending += 2
 		} else {
-			predictor := predictor_from_id(symbols.read_unsigned(tree_histograms, 2, mut reader)!)!
-			offset := symbols.read_signed(tree_histograms, 3, mut reader)!
-			multiplier_log := symbols.read_unsigned(tree_histograms, 4, mut reader)!
+			predictor := predictor_from_id(symbols.read_unsigned(&tree_histograms, 2, mut reader)!)!
+			offset := symbols.read_signed(&tree_histograms, 3, mut reader)!
+			multiplier_log := symbols.read_unsigned(&tree_histograms, 4, mut reader)!
 			if multiplier_log >= 31 {
 				return error('JPEG XL tree multiplier exponent is too large')
 			}
-			multiplier_bits := symbols.read_unsigned(tree_histograms, 5, mut reader)!
+			multiplier_bits := symbols.read_unsigned(&tree_histograms, 5, mut reader)!
 			multiplier := (u64(multiplier_bits) + 1) << multiplier_log
 			if multiplier > u64(0xffffffff) { return error('JPEG XL tree multiplier is too large') }
 			nodes << ModularTreeNode{ is_leaf: true, predictor: predictor, offset: offset, multiplier: u32(multiplier), context: leaf_id }
@@ -128,3 +128,46 @@ pub fn (tree ModularTree) walk(properties []i32) !ModularTreeNode {
 	}
 	return error('Empty or cyclic JPEG XL modular tree')
 }
+
+// Follows splits on the properties below `count`, whose values are `fixed`,
+// from `start` to the first leaf or other split. The tree must have passed
+// validate_modular_tree, which bounds every path.
+@[direct_array_access]
+fn modular_tree_resolve(nodes []ModularTreeNode, start int, fixed [3]i32, count int) int {
+	mut index := start
+	for _ in 0 .. nodes.len {
+		node := nodes[index]
+		if node.is_leaf || int(node.property) >= count { break }
+		index = int(if fixed[int(node.property)] > node.threshold { node.left } else { node.right })
+	}
+	return index
+}
+
+// Writes into `out` the tree reachable from the root of a validated tree, with
+// every split on a property below `count` (at most 3: channel, stream and row)
+// resolved by its `fixed` value. Any pixel whose first `count` properties have
+// those values reaches the same leaf in both trees. Returns false, leaving the
+// caller to use the original tree, if the copy would be larger than it.
+@[direct_array_access]
+fn prune_modular_tree_into(nodes []ModularTreeNode, fixed [3]i32, count int, mut out []ModularTreeNode, mut sources []int) bool {
+	out.clear()
+	sources.clear()
+	if nodes.len == 0 { return false }
+	root := modular_tree_resolve(nodes, 0, fixed, count)
+	out << nodes[root]
+	sources << root
+	for i := 0; i < out.len; i++ {
+		node := nodes[sources[i]]
+		if node.is_leaf { continue }
+		if out.len + 2 > nodes.len { return false }
+		left := modular_tree_resolve(nodes, int(node.left), fixed, count)
+		right := modular_tree_resolve(nodes, int(node.right), fixed, count)
+		out[i] = ModularTreeNode{ ...node, left: u32(out.len), right: u32(out.len + 1) }
+		out << nodes[left]
+		sources << left
+		out << nodes[right]
+		sources << right
+	}
+	return true
+}
+

@@ -54,6 +54,7 @@ mut:
 	pending_margin_follows_block_level_box bool
 	intrinsic_width_only bool
 	intrinsic_completed_width CSSPixels
+	first_line_style_source ?&Node
 }
 
 pub fn LineBuilder.new(mut layout_state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, available_width AvailableSize, direction css.Direction, writing_mode css.WritingMode) &LineBuilder {
@@ -225,14 +226,22 @@ fn (mut builder LineBuilder) append_block_level_box(box &Box, block_bottom CSSPi
 // LineBuilder::did_introduce_clearance(). A forced break with `clear` grows
 // the preceding line through the clearance edge and starts the new line there.
 fn (mut builder LineBuilder) did_introduce_clearance(clearance CSSPixels) {
-	if clearance.raw_value() <= builder.current_block_offset.raw_value() {
-		return
-	}
 	line_count := builder.containing_block_used_values.line_boxes.len
-	if line_count > 1 {
-		builder.containing_block_used_values.line_boxes[line_count - 2].bottom_ = clearance
+	// Moving around a full-width float can leave empty lines between the
+	// clearing break and the current line. Grow the line the break ended,
+	// retaining its block start and paint baseline.
+	for index := line_count - 2; index >= 0; index-- {
+		mut line := &builder.containing_block_used_values.line_boxes[index]
+		if line.is_empty() {
+			continue
+		}
+		if clearance.raw_value() > line.bottom_.raw_value() {
+			line.block_length_ = line.block_length_.plus(clearance.minus(line.bottom_))
+			line.bottom_ = clearance
+		}
+		break
 	}
-	builder.current_block_offset = clearance
+	builder.current_block_offset = css_pixels_max(builder.current_block_offset, clearance)
 	builder.recalculate_available_space()
 }
 
@@ -428,6 +437,15 @@ pub fn (mut builder LineBuilder) current_line_has_no_space_left_by_floats() bool
 }
 
 pub fn (mut builder LineBuilder) append_text_item(item &InlineLevelItem, content_height CSSPixels) {
+	defer {
+		if source := item.style_source {
+			mut line := builder.ensure_last_line_box()
+			if line.fragments_.len > 0 {
+				last := line.fragments_.len - 1
+				line.fragments_[last] = LineBoxFragment{ ...line.fragments_[last], style_source_: source }
+			}
+		}
+	}
 	text_node := (item.node or { return }).as_text_node() or { return }
 	glyph_run := item.glyph_run or { return }
 	if item.length_in_node == 0 && text_node.Node.is_generated_for_pseudo_element() {
@@ -641,7 +659,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		return
 	}
 	mut line_box := builder.ensure_last_line_box()
-	computed := builder.containing_block.computed_values()
+	computed := builder.current_line_style_source().computed_values()
 	current_line_height := css_pixels_max(builder.max_height_on_current_line,
 		computed.line_height())
 	mut start_inline_offset := builder.current_line_inline_offset
@@ -696,7 +714,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 
 	container_font_size := computed.font_size()
 	container_font_metrics :=
-		line_relative_font_metrics_for_node(unsafe { &Node(builder.containing_block) },builder.writing_mode)
+		line_relative_font_metrics_for_node(builder.current_line_style_source(),builder.writing_mode)
 	// Quirks documents omit the block's zero-width inline strut. Actual
 	// text and atomic inline boxes still supply their own line metrics.
 	// https://quirks.spec.whatwg.org/#the-blocks-ignore-line-height-quirk
@@ -722,18 +740,18 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}
 	for index in 0 .. line_box.fragments_.len {
 		mut fragment := &line_box.fragments_[index]
-		fragment_computed := fragment.layout_node_.computed_values()
+		fragment_computed := fragment.style_source().computed_values()
 		uses_container_alignment := builder.fragment_uses_container_alignment(fragment)
 		mut fragment_baseline := CSSPixels.new(0)
 		// The fragment's own box keeps its primary-font baseline; a fallback face
 		// with line-height: normal can raise the line's baseline above it.
 		mut used_font_baseline := CSSPixels.new(0)
 		if fragment.layout_node_.is_text_node() {
-			primary_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
+			primary_metrics := line_relative_font_metrics_for_node(fragment.style_source(),builder.writing_mode)
 			fragment_baseline = font_baseline_for_line_height(primary_metrics, fragment_computed.line_height())
 			if primary_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
 				if run := fragment.glyph_run() {
-					used := layout_inline_font_metrics(fragment.layout_node_, run.font())
+					used := layout_inline_font_metrics(fragment.style_source(), run.font())
 					used_font_baseline = CSSPixels.nearest_value_for(f64(used.ascent)).plus(inline_half_leading(CSSPixels.nearest_value_for(f64(used.line_gap)), used))
 				}
 			}
@@ -832,7 +850,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		alphabetic_baseline :=
 			builder.current_block_offset.plus(line_box_baseline).minus(fragment.baseline()).plus(effective_box_top_offset)
 		mut fragment_block_offset := alphabetic_baseline
-		fragment_computed := fragment.layout_node_.computed_values()
+		fragment_computed := fragment.style_source().computed_values()
 		alignment_style_source := fragment_alignment_style_source(fragment)
 		aligned_subtree := builder.line_relative_aligned_subtree_root(alignment_style_source)
 		mut alignment := if uses_container_alignment {
@@ -929,7 +947,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 				bottom_of_inline_box = fragment.block_offset().plus(if builder.writing_mode == .horizontal_tb { fragment_box_state.content_height() } else { fragment_box_state.content_width() }).plus(effective_box_bottom_offset)
 			}
 		} else {
-			font_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
+			font_metrics := line_relative_font_metrics_for_node(fragment.style_source(),builder.writing_mode)
 			typographic_height := CSSPixels.nearest_value_for(f64(font_metrics.ascent + font_metrics.descent))
 			leading := fragment_computed.line_height().minus(typographic_height)
 			half_leading := inline_half_leading(leading, font_metrics)
@@ -945,7 +963,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 			// either side, so a taller fallback face grows the line.
 			if font_metrics.floor_inline_leading && fragment_computed.line_height_is_normal() {
 				if run := fragment.glyph_run() {
-					used := layout_inline_font_metrics(fragment.layout_node_, run.font())
+					used := layout_inline_font_metrics(fragment.style_source(), run.font())
 					used_half_gap := inline_half_leading(CSSPixels.nearest_value_for(f64(used.line_gap)), used)
 					used_end_gap := CSSPixels.nearest_value_for(f64(used.line_gap)).minus(used_half_gap)
 					baseline := fragment.block_offset().plus(fragment.baseline())
@@ -954,6 +972,13 @@ pub fn (mut builder LineBuilder) update_last_line() {
 					bottom_of_inline_box = css_pixels_max(bottom_of_inline_box,
 						baseline.plus(CSSPixels.nearest_value_for(f64(used.descent))).plus(used_end_gap))
 				}
+			}
+			if builder.first_line_style_source != none && !fragment_computed.line_height_is_normal() {
+				// The text's inline box has its declared line height. Summing
+				// separately rounded ascents/descents from the two font cascades
+				// can otherwise add a layout unit to that height.
+				top_of_inline_box = fragment.block_offset()
+				bottom_of_inline_box = top_of_inline_box.plus(fragment_computed.line_height())
 			}
 		}
 		if !uses_container_alignment {
@@ -986,7 +1011,7 @@ pub fn (mut builder LineBuilder) update_last_line() {
 		// the selected font's normal metrics afterwards, matching upstream's
 		// physical font-box geometry in every writing mode.
 		if fragment.layout_node_.is_text_node() {
-			font_metrics := line_relative_font_metrics_for_node(fragment.layout_node_,builder.writing_mode)
+			font_metrics := line_relative_font_metrics_for_node(fragment.style_source(),builder.writing_mode)
 			font_box_height := normal_line_height_for_font_metrics(font_metrics)
 			font_baseline := font_baseline_for_line_height(font_metrics, font_box_height)
 			fragment.set_block_offset(fragment.block_offset().plus(fragment.baseline()).minus(font_baseline))
@@ -1060,6 +1085,8 @@ pub fn (mut builder LineBuilder) update_last_line() {
 	}).plus(normal_subtree_shift)
 	line_box.font_box_baseline_ = builder.current_block_offset.plus(line_box.baseline_)
 	builder.should_advance_to_last_line_box_block_end = should_align_strut_to_line_box_baseline
+		|| (builder.first_line_style_source != none
+			&& builder.containing_block_used_values.line_boxes.len == 1)
 }
 
 pub fn (mut builder LineBuilder) remove_last_line_if_empty() {

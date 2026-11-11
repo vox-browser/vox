@@ -18,10 +18,6 @@ fn test_jpegxl_sniffing_uses_codestream_and_container_signatures() {
 }
 
 fn test_jpegxl_model_decode_keeps_exact_alpha_orientation_and_top_down_rows() {
-	$if macos {
-		assert C.vox_jpegxl_available() != 0
-	}
-	if C.vox_jpegxl_available() == 0 { return }
 	bitmap := browser_decode_raster_image_bytes(jpegxl_test_bytes('rgba.jxl'))!
 	assert bitmap.width == 3 && bitmap.height == 2 && bitmap.pitch == 12
 	assert bitmap.native_rows_are_top_down
@@ -61,7 +57,6 @@ fn test_jpegxl_paint_cache_preserves_decoder_premultiplication_before_quantizing
 }
 
 fn test_jpegxl_incomplete_and_unsupported_streams_fail_without_bitmap_data() {
-	if C.vox_jpegxl_available() == 0 { return }
 	for bytes in [jpegxl_test_bytes('animated.jxl'), jpegxl_test_bytes('wide-gamut.jxl'),
 		jpegxl_test_bytes('rgba.jxl')[..5], [u8(0xff), 0x0a]] {
 		_ := browser_decode_raster_image_bytes(bytes) or { continue }

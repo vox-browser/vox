@@ -2484,6 +2484,13 @@ fn (mut parser RuleSelectorParser) convert_to_style_declaration_with_values(decl
 	params := parser.parsing_params()
 	for index, declaration in declarations {
 		if is_a_custom_property_name_string(declaration.name) {
+			// Parsing preserves an earlier important declaration; equal priority
+			// still uses the last value. CSSOM setters replace unconditionally.
+			if previous := result.custom_properties[declaration.name] {
+				if previous.important == .yes && declaration.important != .yes {
+					continue
+				}
+			}
 			value_text := if original := declaration.original_value_text {
 				if parser.raw_rules_transient { original.clone() } else { original }
 			} else {
@@ -3184,7 +3191,7 @@ fn parser_strip_important(mut declaration Declaration) {
 		return
 	}
 	mut bang_index := -1
-	for i := important_index - 1; i > 0; i-- {
+	for i := important_index - 1; i >= 0; i-- {
 		value := declaration.value[i]
 		if value.is_delim(u32(`!`)) {
 			bang_index = i
@@ -4769,6 +4776,13 @@ fn computed_custom_property_tokens_for_substitution(abstract_element dom.Abstrac
 		}
 		if local_resolution.kind == .invalid {
 			return arbitrary_substitution_guaranteed_invalid_value()
+		}
+	}
+	if registered := abstract_element.document().get_registered_custom_property(custom_property_name) {
+		if registered.syntax.contains('<url>') || registered.syntax.contains('<image>') {
+			value := compute_value_of_custom_property_with_guarded_contexts(abstract_element, custom_property_name, mut guarded_contexts)
+			if typed := typed_style_value_logic_from_dom(value) { return typed.tokenize() }
+			return parse_component_values_for_value_logic(value.css_text)
 		}
 	}
 	computed := resolve_computed_custom_property_value(abstract_element, custom_property_name,

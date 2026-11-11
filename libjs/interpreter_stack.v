@@ -6,6 +6,8 @@ module libjs
 // the bytes upstream would have consumed, so exhaustion behaves the same.
 
 pub const interpreter_stack_size = uint(8 * 1024 * 1024)
+// Ladybird 82ba30cd14b4: an argument occupies at least one Value in a frame.
+pub const maximum_argument_count = u64(interpreter_stack_size) / u64(sizeof(Value))
 
 pub struct InterpreterStack {
 mut:

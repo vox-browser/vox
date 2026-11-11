@@ -97,19 +97,7 @@ pub fn (plan ModularTransformPlan) reconstruct(coded []ModularChannel, storage M
 				if first.width != second.width || first.width != third.width || first.height != second.height || first.height != third.height {
 					return error('Incompatible JPEG XL RCT buffers')
 				}
-				for x in 0 .. first.samples.len {
-					if storage == .signed16 {
-						out := rct_sample16(step.rct_type, i16(first.samples[x]), i16(second.samples[x]), i16(third.samples[x]))
-						first.samples[x] = out[0]
-						second.samples[x] = out[1]
-						third.samples[x] = out[2]
-					} else {
-						out := rct_sample32(step.rct_type, first.samples[x], second.samples[x], third.samples[x])
-						first.samples[x] = out[0]
-						second.samples[x] = out[1]
-						third.samples[x] = out[2]
-					}
-				}
+				inverse_rct_samples(step.rct_type, mut first.samples, mut second.samples, mut third.samples, storage)!
 				buffers[step.outputs[0]] = first
 				buffers[step.outputs[1]] = second
 				buffers[step.outputs[2]] = third
@@ -152,4 +140,25 @@ pub fn (plan ModularTransformPlan) reconstruct(coded []ModularChannel, storage M
 	mut result := []ModularChannel{cap: plan.outputs.len}
 	for id in plan.outputs { result << take_modular_buffer(mut buffers, id) }
 	return result
+}
+
+// Applies the inverse RCT `kind` to three equally long sample arrays in place.
+@[direct_array_access]
+fn inverse_rct_samples(kind u32, mut first []i32, mut second []i32, mut third []i32, storage ModularStorage) ! {
+	if second.len != first.len || third.len != first.len { return error('Incompatible JPEG XL RCT buffers') }
+	if storage == .signed16 {
+		for x in 0 .. first.len {
+			out := rct_sample16(kind, i16(first[x]), i16(second[x]), i16(third[x]))
+			first[x] = out[0]
+			second[x] = out[1]
+			third[x] = out[2]
+		}
+	} else {
+		for x in 0 .. first.len {
+			out := rct_sample32(kind, first[x], second[x], third[x])
+			first[x] = out[0]
+			second[x] = out[1]
+			third[x] = out[2]
+		}
+	}
 }

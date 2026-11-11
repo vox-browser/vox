@@ -2,21 +2,21 @@ module html
 
 import css
 import dom
-import skia
+import cpuraster
 import svg
 import url
 
-fn (context &OffscreenCanvasRenderingContext2D) canvas_skia_filters() []skia.Filter {
-	mut filters := []skia.Filter{}
+fn (context &OffscreenCanvasRenderingContext2D) canvas_filter_specs() []cpuraster.CanvasFilterSpec {
+	mut filters := []cpuraster.CanvasFilterSpec{}
 	for function in context.drawing_state.filter_functions {
 		if function.kind == .svg_reference {
 			document := context.font_resolution_document() or { continue }
 			if graph := canvas_svg_filter_graph(document, function.reference,
 				f64(context.canvas_.width()), f64(context.canvas_.height())) {
-				filters << skia.Filter{ kind: 3, graph: graph }
+				filters << cpuraster.CanvasFilterSpec{ kind: 3, graph: graph }
 			}
 		} else {
-			filters << canvas_skia_filter(function)
+			filters << canvas_filter_spec(function)
 		}
 	}
 	return filters
@@ -57,7 +57,7 @@ fn canvas_svg_filter_model(element &dom.Element) ?svg.Element {
 	return svg.Element{ tag: element.local_name(), attributes: attributes, children: children }
 }
 
-fn canvas_svg_filter_graph(document &dom.Document, reference string, width f64, height f64) ?skia.SvgFilterGraph {
+fn canvas_svg_filter_graph(document &dom.Document, reference string, width f64, height f64) ?cpuraster.SvgFilterGraph {
 	mut resource_url := document.encoding_parse_url(reference)?
 	fragment := resource_url.fragment()?
 	if fragment.len == 0 { return none }
@@ -67,20 +67,20 @@ fn canvas_svg_filter_graph(document &dom.Document, reference string, width f64, 
 	if !element.is_svg_element() || element.local_name() != 'filter' { return none }
 	model := canvas_svg_filter_model(element)?
 	graph := model.gfx_filter()
-	mut nodes := []skia.SvgFilterNode{}
+	mut nodes := []cpuraster.SvgFilterNode{}
 	for node in graph.nodes {
 		kind := match node.kind {
-			'blur' { skia.SvgFilterNodeKind.blur }
-			'erode' { skia.SvgFilterNodeKind.erode }
-			'dilate' { skia.SvgFilterNodeKind.dilate }
-			'merge' { skia.SvgFilterNodeKind.merge }
-			'offset' { skia.SvgFilterNodeKind.offset }
-			'color-matrix' { skia.SvgFilterNodeKind.color_matrix }
+			'blur' { cpuraster.SvgFilterNodeKind.blur }
+			'erode' { cpuraster.SvgFilterNodeKind.erode }
+			'dilate' { cpuraster.SvgFilterNodeKind.dilate }
+			'merge' { cpuraster.SvgFilterNodeKind.merge }
+			'offset' { cpuraster.SvgFilterNodeKind.offset }
+			'color-matrix' { cpuraster.SvgFilterNodeKind.color_matrix }
 			'color-space-conversion' {
 				if (node.string_parameters['destination'] or { '' }) == 'linear-rgb' {
-					skia.SvgFilterNodeKind.to_linear_rgb
+					cpuraster.SvgFilterNodeKind.to_linear_rgb
 				} else {
-					skia.SvgFilterNodeKind.to_srgb
+					cpuraster.SvgFilterNodeKind.to_srgb
 				}
 			}
 			else { return none }
@@ -90,7 +90,7 @@ fn canvas_svg_filter_graph(document &dom.Document, reference string, width f64, 
 			if node.matrix.len != 20 { return none }
 			for i, value in node.matrix { matrix[i] = f32(value) }
 		}
-		nodes << skia.SvgFilterNode{
+		nodes << cpuraster.SvgFilterNode{
 			kind:   kind
 			inputs: node.input_ids.clone()
 			x:      f32(if kind == .offset {
@@ -121,7 +121,7 @@ fn canvas_svg_filter_graph(document &dom.Document, reference string, width f64, 
 			value.resolve_relative_to(if i % 2 == 0 { width } else { height })
 		})
 	}
-	return skia.SvgFilterGraph{
+	return cpuraster.SvgFilterGraph{
 		nodes:            nodes
 		root:             graph.root_id or { -1 }
 		region:           region

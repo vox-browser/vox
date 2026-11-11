@@ -129,12 +129,12 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 			wholly_in_unreachable_horizontal_axis := if overflow_directions.horizontal_axis_is_positive {
 				child_rect.right().raw_value() < padding_box.left().raw_value()
 			} else {
-				child_rect.left().raw_value() > padding_box.right().raw_value()
+				child_rect.left().raw_value() >= content_box.right().raw_value()
 			}
 			wholly_in_unreachable_vertical_axis := if overflow_directions.vertical_axis_is_positive {
 				child_rect.bottom().raw_value() < padding_box.top().raw_value()
 			} else {
-				child_rect.top().raw_value() > padding_box.bottom().raw_value()
+				child_rect.top().raw_value() >= content_box.bottom().raw_value()
 			}
 			// Alignment bounds use the normal-flow margin box, before relative
 			// positioning, and remain relevant outside the reachable scroll area.
@@ -160,8 +160,10 @@ fn measure_scrollable_overflow(mut state LayoutState, box &Node, contained_boxes
 					}
 				}
 			}
-			// An unreachable box in one axis can still enlarge the other axis.
-			// Zero area in one dimension likewise preserves the other extent.
+   // A box wholly past the scroll origin in either axis is outside the
+   // reachable overflow region. Its unshifted normal-flow alignment bounds
+   // above still participate; its positioned border and descendants do not.
+   if box.is_scroll_container() && (wholly_in_unreachable_horizontal_axis || wholly_in_unreachable_vertical_axis) { continue }
 			if !overflow_rect_is_empty(child_rect) {
 				if !wholly_in_unreachable_horizontal_axis { scrollable_overflow_rect = overflow_rect_united_horizontally(scrollable_overflow_rect,child_rect) }
 				if !wholly_in_unreachable_vertical_axis { scrollable_overflow_rect = overflow_rect_united_vertically(scrollable_overflow_rect,child_rect) }

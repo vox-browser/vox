@@ -18,10 +18,41 @@ struct TableCellPlacement {
 	column_span int = 1
 }
 
+// The grid columns that a table-column box, or a table-column-group box
+// without table-column children, corresponds to.
 struct TableColumnDefinition {
-	node  &Node = unsafe { nil }
+	// The table-column box, or the table-column-group box that stands for the
+	// columns it spans itself.
+	node &Node = unsafe { nil }
+	// The table-column-group box of the columns, if any.
+	group &Node = unsafe { nil }
 	index int
 	span  int = 1
+}
+
+fn (definition TableColumnDefinition) is_group_without_columns() bool {
+	return definition.group != unsafe { nil } && voidptr(definition.group) == voidptr(definition.node)
+}
+
+// The box whose style gives the width specified for the columns of a
+// definition, which also makes them constrained and gives them a percentage
+// contribution. https://www.w3.org/TR/css-tables-3/#min-content-width-of-a-column-based-on-cells-of-span-up-to-1
+// the width specified for the column:
+// - the outer min-content width of its corresponding table-column, if any (and not auto)
+// - the outer min-content width of its corresponding table-column-group, if any
+// - or 0, if there is none
+fn (definition TableColumnDefinition) sizing_node() &Node {
+	if definition.group != unsafe { nil } && (definition.is_group_without_columns()
+		|| definition.node.computed_values().size_value(.width).is_auto()) {
+		return definition.group
+	}
+	return definition.node
+}
+
+// The grid columns covered by a definition, clamped to the grid.
+fn (definition TableColumnDefinition) column_end(column_count int) int {
+	end := definition.index + definition.span
+	return if end < column_count { end } else { column_count }
 }
 
 struct TableRowGroupInfo {
@@ -296,21 +327,23 @@ fn resolved_collapsed_table_cell_border(table &Node, rows []&Node, placements_by
 	column_edge_participates := side == .left || side == .right || (side == .top && placement.row == 0) || (side == .bottom && placement.row + placement.row_span == rows.len)
 	if column_edge_participates {
 		if definition := column_definitions_by_index[column_index] {
-			winner = winning_table_border(winner, table_border_candidate(definition.node, side, .column, none, definition.index))
-			if parent := definition.node.parent() {
-				if parent.display().is_table_column_group() {
-					winner = winning_table_border(winner, table_border_candidate(parent, side, .column_group, none, definition.index))
-				}
+			// A column group without columns stands for its columns, but its
+			// borders remain those of a column group.
+			if !definition.is_group_without_columns() {
+				winner = winning_table_border(winner, table_border_candidate(definition.node, side, .column, none, definition.index))
+			}
+			if definition.group != unsafe { nil } {
+				winner = winning_table_border(winner, table_border_candidate(definition.group, side, .column_group, none, definition.index))
 			}
 		}
 	}
 	if side == .left && placement.column > 0 {
 		if definition := column_definitions_by_index[placement.column - 1] {
-			winner = winning_table_border(winner, table_border_candidate(definition.node, .right, .column, none, definition.index))
+			winner = winning_table_border(winner, table_border_candidate(definition.node, .right, table_column_definition_border_kind(definition), none, definition.index))
 		}
 	} else if side == .right && placement.column + placement.column_span < column_count {
 		if definition := column_definitions_by_index[placement.column + placement.column_span] {
-			winner = winning_table_border(winner, table_border_candidate(definition.node, .left, .column, none, definition.index))
+			winner = winning_table_border(winner, table_border_candidate(definition.node, .left, table_column_definition_border_kind(definition), none, definition.index))
 		}
 	}
 
@@ -532,13 +565,29 @@ fn collect_typed_table_columns(table &Node) []TableColumnDefinition {
 		if !child.display().is_table_column_group() {
 			continue
 		}
+		mut has_columns := false
 		for column in child.children() {
 			if !column.display().is_table_column() {
 				continue
 			}
+			has_columns = true
 			span := table_span(column, 'span')
 			columns << TableColumnDefinition{
 				node: column
+				group: child
+				index: index
+				span: span
+			}
+			index += span
+		}
+		// A table-column-group box without table-column children stands for
+		// the columns it spans itself, as the HTML table forming algorithm forms
+		// them: https://html.spec.whatwg.org/multipage/tables.html#forming-a-table
+		if !has_columns {
+			span := table_span(child, 'span')
+			columns << TableColumnDefinition{
+				node: child
+				group: child
 				index: index
 				span: span
 			}
@@ -592,9 +641,12 @@ fn table_column_definition_is_collapsed(definition TableColumnDefinition) bool {
 	if definition.node.computed_values().visibility() == .collapse {
 		return true
 	}
-	parent := definition.node.parent() or { return false }
-	return parent.display().is_table_column_group()
-		&& parent.computed_values().visibility() == .collapse
+	return definition.group != unsafe { nil }
+		&& definition.group.computed_values().visibility() == .collapse
+}
+
+fn table_column_definition_border_kind(definition TableColumnDefinition) painting.ConflictingElementKind {
+	return if definition.is_group_without_columns() { .column_group } else { .column }
 }
 
 fn table_visible_column_count(collapsed_columns []bool, column_count int) int {
@@ -605,6 +657,26 @@ fn table_visible_column_count(collapsed_columns []bool, column_count int) int {
 		}
 	}
 	return count
+}
+
+fn table_visible_row_count(row_is_collapsed []bool) int {
+	mut count := 0
+	for collapsed in row_is_collapsed {
+		if !collapsed {
+			count++
+		}
+	}
+	return count
+}
+
+// https://drafts.csswg.org/css-tables-3/#computing-undistributable-space
+// The block-axis spacing around and between the visible rows, or zero for a
+// table without visible rows.
+fn table_undistributable_block_spacing(spacing CSSPixels, visible_row_count int) CSSPixels {
+	if visible_row_count == 0 {
+		return CSSPixels.new(0)
+	}
+	return spacing.scaled(f64(visible_row_count + 1))
 }
 
 fn table_visible_columns_in_range(collapsed_columns []bool, start int, end int) int {
@@ -736,6 +808,10 @@ fn position_table_column_boxes(mut state LayoutState, table &Node, table_state &
 			}
 			has_child_columns = true
 			column_index += table_span(column, 'span')
+		}
+		if !has_child_columns {
+			// A column group without columns covers the columns it spans itself.
+			column_index += table_span(child, 'span')
 		}
 		group_end := column_index
 		group_x, group_width := table_column_box_geometry(table, table_state.content_width(),
@@ -908,10 +984,7 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 	mut percentage_offsets := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
 	mut has_originating_cells := []bool{len: column_count}
 	for definition in column_definitions {
-		if definition.index >= column_count {
-			continue
-		}
-		computed := definition.node.computed_values()
+		computed := definition.sizing_node().computed_values()
 		width_percentage := if computed.size_value(.width).is_percentage() {
 			computed.size_value(.width).percentage().value()
 		} else {
@@ -922,8 +995,10 @@ fn compute_table_column_intrinsic_percentages(column_count int, column_definitio
 		} else {
 			math.inf(1)
 		}
-		has_intrinsic_percentage[definition.index] = computed.size_value(.width).is_percentage() || computed.size_value(.max_width).is_percentage()
-		intrinsic_percentages[definition.index] = math.min(width_percentage, max_width_percentage)
+		for column in definition.index .. definition.column_end(column_count) {
+			has_intrinsic_percentage[column] = computed.size_value(.width).is_percentage() || computed.size_value(.max_width).is_percentage()
+			intrinsic_percentages[column] = math.min(width_percentage, max_width_percentage)
+		}
 	}
 	for placement_index, placement in placements {
 		if placement.column < column_count {
@@ -1825,35 +1900,37 @@ fn calculate_table_grid_intrinsic_widths(mut state LayoutState, table &Node, per
 	mut max_widths := []CSSPixels{len: column_count, init: CSSPixels.new(0)}
 	mut constrained_columns := []bool{len: column_count}
 	for definition in column_definitions {
-		definition_computed := definition.node.computed_values()
+		// The width specified for a column is its table-column's when that is
+		// not auto, and otherwise its table-column-group's. The same box makes
+		// every column the definition stands for constrained.
+		sizing_node := definition.sizing_node()
+		definition_computed := sizing_node.computed_values()
 		// Percentages on columns are intrinsic-percentage contributions. They
 		// resolve against the assignable table width during distribution, not
 		// against the table's containing block while measuring outer sizes.
 		definition_min_width := if definition_computed.size_value(.min_width).is_length() {
-			definition_computed.size_value(.min_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+			definition_computed.size_value(.min_width).to_px(layout_length_resolution_context(sizing_node), percentage_basis)
 		} else {
 			CSSPixels.new(0)
 		}
 		definition_width := if definition_computed.size_value(.width).is_length() {
-			definition_computed.size_value(.width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+			definition_computed.size_value(.width).to_px(layout_length_resolution_context(sizing_node), percentage_basis)
 		} else {
 			CSSPixels.new(0)
 		}
 		definition_max_width := if definition_computed.size_value(.max_width).is_length() {
-			definition_computed.size_value(.max_width).to_px(layout_length_resolution_context(definition.node), percentage_basis)
+			definition_computed.size_value(.max_width).to_px(layout_length_resolution_context(sizing_node), percentage_basis)
 		} else {
 			CSSPixels.max()
 		}
 		definition_min_size := css_pixels_max(definition_min_width, definition_width)
 		definition_max_size := css_pixels_max(definition_min_width, css_pixels_min(definition_max_width, definition_width))
-		for column in definition.index .. definition.index + definition.span {
-			if column < min_widths.len {
-				min_widths[column] = css_pixels_max(min_widths[column], definition_min_size)
-				max_widths[column] = css_pixels_max(max_widths[column], definition_max_size)
+		for column in definition.index .. definition.column_end(column_count) {
+			min_widths[column] = css_pixels_max(min_widths[column], definition_min_size)
+			max_widths[column] = css_pixels_max(max_widths[column], definition_max_size)
+			if definition_computed.size_value(.width).is_length() {
+				constrained_columns[column] = true
 			}
-		}
-		if definition.index < constrained_columns.len && definition_computed.size_value(.width).is_length() {
-			constrained_columns[definition.index] = true
 		}
 	}
 	for placement in placements {
@@ -1981,6 +2058,7 @@ fn calculate_table_grid_intrinsic_width(mut state LayoutState, table &Node, perc
 }
 
 fn compute_table_wrapper_content_width(mut state LayoutState, wrapper &Node, mut wrapper_state UsedValues, containing_width CSSPixels) CSSPixels {
+ if vertical := layout_vertical_table_wrapper(mut state,wrapper,mut wrapper_state) { return vertical.automatic_content_width }
 	wrapper_timing_start := time.sys_mono_now()
 	defer {
 		if os.getenv('LADYBIRD_DEBUG_TIMING') != '' {
@@ -2230,6 +2308,13 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	}
 	if removed_column_width.raw_value() > 0 {
 		table_state.set_content_width(table_state.content_width().minus(removed_column_width))
+		// The wrapper's content inline size is the table box's border box
+		// inline size, which no longer includes the collapsed columns. The
+		// wrapper's margins keep the space they were resolved against.
+		if wrapper_values := table_state.containing_block_used_values() {
+			mut wrapper_state := unsafe { &UsedValues(wrapper_values) }
+			wrapper_state.set_content_width(table_state.border_box_width())
+		}
 	}
 	column_offsets := table_column_offsets(column_widths, horizontal_spacing, intrinsic_widths.collapsed_columns)
 	row_is_collapsed := rows.map(table_row_is_collapsed(it))
@@ -2369,6 +2454,12 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	for height in row_heights {
 		table_grid_height = table_grid_height.plus(height)
 	}
+	// The height of a table is the sum of the row heights plus any cell
+	// spacing or borders. A specified or stretched table height includes the
+	// undistributable block spacing, so reserve it before the remaining height
+	// becomes a minimum for the rows.
+	visible_row_count := table_visible_row_count(row_is_collapsed)
+	row_spacing := table_undistributable_block_spacing(vertical_spacing, visible_row_count)
 	table_height := computed.size_value(.height)
 	if !table_height.is_auto() {
 		mut percentage_basis := CSSPixels.new(0)
@@ -2378,7 +2469,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			}
 		}
 		if specified_height := resolve_layout_content_size(table, table_height, percentage_basis, table_state, false) {
-			table_grid_height = css_pixels_max(table_grid_height, specified_height)
+			table_grid_height = css_pixels_max(table_grid_height, specified_height.minus(row_spacing))
 		}
 	}
 	if available_space.height.is_definite() {
@@ -2387,8 +2478,11 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 			CSSPixels.new(0))
 		required_grid_height := css_pixels_max(required_outer_height.minus(table_state.margin_box_top()).minus(table_state.margin_box_bottom()),
 			CSSPixels.new(0))
-		table_grid_height = css_pixels_max(table_grid_height, required_grid_height)
+		table_grid_height = css_pixels_max(table_grid_height, required_grid_height.minus(row_spacing))
 	}
+	// Percentage row and cell heights resolve against the whole table grid,
+	// spacing included.
+	table_percentage_basis := table_grid_height.plus(row_spacing)
 	mut reference_heights := row_heights.clone()
 	for index, row in rows {
 		if row_is_collapsed[index] {
@@ -2397,7 +2491,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		}
 		row_height := row.computed_values().size_value(.height)
 		if row_height.is_percentage() || (row_height.is_calculated() && row_height.contains_percentage()) {
-			if specified_height := resolve_layout_size(row, row_height, table_grid_height) {
+			if specified_height := resolve_layout_size(row, row_height, table_percentage_basis) {
 				reference_heights[index] = css_pixels_max(reference_heights[index], specified_height)
 			}
 		}
@@ -2407,7 +2501,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 		if !cell_height.is_percentage() && !(cell_height.is_calculated() && cell_height.contains_percentage()) {
 			continue
 		}
-		if specified_height := resolve_layout_size(placement.cell, cell_height, table_grid_height) {
+		if specified_height := resolve_layout_size(placement.cell, cell_height, table_percentage_basis) {
 			styled := placement.cell.as_node_with_style() or { continue }
 			mut cell_state := state.get_mutable(styled)
 			collapsed := computed.border_collapse() == .collapse
@@ -2452,15 +2546,14 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 	grow_table_rows_to_baseline_aligned_cells(mut reference_heights, row_baselines,
 		row_has_baseline, row_max_cell_descent, row_is_collapsed)
 	mut sum_reference_height := CSSPixels.new(0)
-	mut visible_row_count := 0
-	for index, height in reference_heights {
+	for height in reference_heights {
 		sum_reference_height = sum_reference_height.plus(height)
-		if !row_is_collapsed[index] {
-			visible_row_count++
-		}
 	}
-	if sum_reference_height.raw_value() > 0 {
-		if table_grid_height.raw_value() <= sum_reference_height.raw_value() {
+	// Rows whose reference heights are all zero still receive the specified
+	// table height; only a grid without visible rows has nothing to distribute.
+	if visible_row_count > 0 {
+		if table_grid_height.raw_value() <= sum_reference_height.raw_value()
+			&& sum_reference_height.raw_value() != 0 {
 			for index in 0 .. row_heights.len {
 				if row_is_collapsed[index] {
 					row_heights[index] = CSSPixels.new(0)
@@ -2469,7 +2562,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 				weight := reference_heights[index].to_double() / sum_reference_height.to_double()
 				row_heights[index] = CSSPixels.nearest_value_for(table_grid_height.to_double() * weight)
 			}
-		} else if table_grid_height.raw_value() > sum_reference_height.raw_value() {
+		} else {
 			mut auto_row_count := 0
 			for index, row in rows {
 				if row.computed_values().size_value(.height).is_auto()
@@ -2488,7 +2581,7 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 						row_heights[index] = row_heights[index].plus(increment)
 					}
 				}
-			} else if visible_row_count > 0 {
+			} else {
 				increment := table_grid_height.minus(sum_reference_height).divided_by(CSSPixels.new(visible_row_count)).to_css_pixels()
 				for index in 0 .. row_heights.len {
 					if row_is_collapsed[index] {
@@ -2498,12 +2591,10 @@ fn run_table_formatting_context(mut state LayoutState, table &Node, mut table_st
 					row_heights[index] = reference_heights[index].plus(increment)
 				}
 			}
-		} else {
-			row_heights = reference_heights.clone()
 		}
 		// CSS Tables calls this the undistributable space. It is based on the
 		// number of visible rows, not on the number of tracks in the grid.
-		table_grid_height = table_grid_height.plus(vertical_spacing.scaled(f64(visible_row_count + 1)))
+		table_grid_height = table_grid_height.plus(row_spacing)
 	}
 
 	mut row_offsets := []CSSPixels{len: rows.len}

@@ -10,6 +10,7 @@ import dom
 import editing
 import loader
 import math
+import platform
 
 pub enum PendingDialog {
 	none
@@ -264,7 +265,7 @@ fn page_media_element_audio_state_changed_callback(target voidptr, document &dom
 	mut state := model.media_elements[id] or { MediaElementState{} }
 	state.document_id = document.unique_id()
 	state.playing_audio = playing
-	model.media_elements[id] = state
+	model.store_media_element(id, state)
 }
 
 fn page_did_change_audio_play_state_callback(target voidptr, playing bool) {
@@ -288,7 +289,9 @@ fn page_register_actual_media_element_callback(target voidptr, document &dom.Doc
 	mut state := model.media_elements[id] or { MediaElementState{} }
 	state.document_id = document.unique_id()
 	model.register_media_element(id, state)
+	persistent := platform.enter_persistent()
 	model.media_element_callbacks_[id] = callbacks
+	platform.leave_persistent(persistent)
 }
 
 fn page_unregister_actual_media_element_callback(target voidptr, media_id dom.UniqueNodeID) {
@@ -863,10 +866,10 @@ fn (p &Page) active_document_url() string {
 
 pub fn (mut p Page) traverse_the_history_by_delta(delta int) {
 	p.history_delta_ += delta
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'history-delta'
 		text: delta.str()
-	}
+	})
 }
 
 pub fn (p &Page) device_to_css_point(point PixelPoint) PixelPoint {
@@ -922,10 +925,10 @@ pub fn (p &Page) rounded_device_rect(rect PixelRect) PixelRect {
 pub fn (mut p Page) set_window_rect(position PixelPoint, size PixelSize) {
 	p.window_position_ = position
 	p.window_size_ = size
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'window-rect'
 		text: '${position.x},${position.y},${size.width},${size.height}'
-	}
+	})
 }
 
 pub fn (mut p Page) request_dialog(kind PendingDialog, message string, default_value string) bool {
@@ -937,10 +940,10 @@ pub fn (mut p Page) request_dialog(kind PendingDialog, message string, default_v
 	if message != '' {
 		p.pending_dialog_text_ = message
 	}
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'dialog:${kind}'
 		text: message
-	}
+	})
 	return true
 }
 
@@ -964,9 +967,9 @@ pub fn (mut p Page) close_dialog(accepted bool, response ?string) bool {
 		}
 		else {}
 	}
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'dialog-closed'
-	}
+	})
 	p.on_pending_dialog_closed()
 	return true
 }
@@ -985,10 +988,10 @@ pub fn (mut p Page) request_non_blocking_dialog(kind PendingNonBlockingDialog, t
 	}
 	p.pending_non_blocking_dialog_ = kind
 	p.pending_non_blocking_target_ = target
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'picker:${kind}'
 		text: target
-	}
+	})
 	return true
 }
 
@@ -1005,11 +1008,13 @@ pub fn (mut p Page) close_non_blocking_dialog(kind PendingNonBlockingDialog) ?st
 pub fn (mut p Page) request_clipboard_entries() u64 {
 	id := p.next_clipboard_request_id
 	p.next_clipboard_request_id++
+	persistent := platform.enter_persistent()
 	p.pending_clipboard_requests[id] = true
-	p.client_events << ClientEvent{
+	platform.leave_persistent(persistent)
+	p.queue_client_event(ClientEvent{
 		name: 'clipboard-request'
 		text: id.str()
-	}
+	})
 	return id
 }
 
@@ -1017,17 +1022,52 @@ pub fn (mut p Page) retrieved_clipboard_entries(id u64) bool {
 	if id !in p.pending_clipboard_requests {
 		return false
 	}
+	persistent := platform.enter_persistent()
 	p.pending_clipboard_requests.delete(id)
+	platform.leave_persistent(persistent)
 	return true
 }
 
-pub fn (mut p Page) register_media_element(id u64, state MediaElementState) {
+// The Page outlives the documents whose callbacks update it, and those
+// callbacks run with the document's native storage entered. Grow the Page's
+// registries and event log only in persistent storage, copying caller
+// strings; otherwise retiring a document leaves them in its released arena.
+const max_page_client_events = 4096
+
+fn (mut p Page) queue_client_event(event ClientEvent) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	// Only tests read this log. Keep it bounded in a long browsing session.
+	if p.client_events.len >= max_page_client_events {
+		p.client_events.delete_many(0, max_page_client_events / 2)
+	}
+	p.client_events << ClientEvent{
+		name: event.name.clone()
+		text: event.text.clone()
+	}
+}
+
+fn (mut p Page) store_media_element(id u64, state MediaElementState) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	p.media_elements[id] = state
 }
 
+fn (mut p Page) store_canvas_element(id u64, state CanvasElementState) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	p.canvas_elements_[id] = state
+}
+
+pub fn (mut p Page) register_media_element(id u64, state MediaElementState) {
+	p.store_media_element(id, state)
+}
+
 pub fn (mut p Page) unregister_media_element(id u64) {
+	persistent := platform.enter_persistent()
 	p.media_elements.delete(id)
 	p.media_element_callbacks_.delete(id)
+	platform.leave_persistent(persistent)
 	if current := p.media_context_element_ {
 		if current == id {
 			p.media_context_element_ = none
@@ -1088,7 +1128,7 @@ pub fn (mut p Page) toggle_media_property(property string) bool {
 		'fullscreen' { state.fullscreen = !state.fullscreen }
 		else { return false }
 	}
-	p.media_elements[id] = state
+	p.store_media_element(id, state)
 	return true
 }
 
@@ -1105,7 +1145,7 @@ pub fn (mut p Page) set_page_mute_state(mute_state MuteState) {
 	for id in p.media_elements.keys() {
 		mut state := p.media_elements[id] or { continue }
 		state.page_mute_change_count++
-		p.media_elements[id] = state
+		p.store_media_element(id, state)
 		if callbacks := p.media_element_callbacks_[id] {
 			if callbacks.mute_state_changed != unsafe { nil } {
 				callbacks.mute_state_changed(callbacks.target)
@@ -1152,9 +1192,9 @@ pub fn (mut p Page) invalidate_user_style() {
 		mutable_document.bump_style_environment_version()
 		mutable_document.set_needs_full_style_update(true)
 	}
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'invalidate-style'
-	}
+	})
 }
 
 pub fn (mut p Page) invalidate_style_for_preference_change() {
@@ -1164,9 +1204,9 @@ pub fn (mut p Page) invalidate_style_for_preference_change() {
 		mutable_document.set_needs_media_query_evaluation()
 		mutable_document.set_needs_full_style_update(true)
 	}
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'invalidate-preference-style'
-	}
+	})
 }
 
 pub fn (p &Page) user_style() ?string {
@@ -1336,18 +1376,18 @@ pub fn (mut p Page) process_pending_fullscreen_operations() {
 		mut promise := op.promise
 		if op.kind == .enter && op.initial_error == '' && !p.viewport_fullscreen_ {
 			if !p.fullscreen_ipc_sent_ {
-				p.client_events << ClientEvent{
+				p.queue_client_event(ClientEvent{
 					name: 'request-fullscreen-window'
-				}
+				})
 				p.fullscreen_ipc_sent_ = true
 			}
 			break
 		}
 		if op.kind == .exit && op.resize && p.viewport_fullscreen_ {
 			if !p.fullscreen_ipc_sent_ {
-				p.client_events << ClientEvent{
+				p.queue_client_event(ClientEvent{
 					name: 'request-exit-fullscreen'
-				}
+				})
 				p.fullscreen_ipc_sent_ = true
 			}
 			break
@@ -1365,17 +1405,17 @@ pub fn (mut p Page) process_pending_fullscreen_operations() {
 			} else {
 				p.fullscreen_elements_[op.document_id] = op.element_id
 				promise.state = .fulfilled
-				p.client_events << ClientEvent{
+				p.queue_client_event(ClientEvent{
 					name: 'fullscreenchange'
 					text: op.element_id
-				}
+				})
 			}
 		} else {
 			if op.document_id in p.fullscreen_elements_ {
-				p.client_events << ClientEvent{
+				p.queue_client_event(ClientEvent{
 					name: 'fullscreenchange'
 					text: p.fullscreen_elements_[op.document_id]
-				}
+				})
 				p.fullscreen_elements_.delete(op.document_id)
 			}
 			promise.state = .fulfilled

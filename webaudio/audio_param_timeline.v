@@ -69,6 +69,8 @@ fn (cache ParameterizationCache) contains(time f64) bool {
 pub struct AudioParamTimeline {
 	default_value_ f32
 mut:
+	current_value_     f32
+	fallback_value_    f32
 	automation_events_ []AudioParamAutomationEvent
 	next_event_id_     u64
 }
@@ -76,11 +78,22 @@ mut:
 pub fn AudioParamTimeline.create(default_value f32) &AudioParamTimeline {
 	return &AudioParamTimeline{
 		default_value_: default_value
+		current_value_: default_value
+		fallback_value_: default_value
 	}
 }
 
 pub fn (timeline &AudioParamTimeline) default_value() f32 {
 	return timeline.default_value_
+}
+
+pub fn (timeline &AudioParamTimeline) current_value() f32 {
+	return timeline.current_value_
+}
+
+pub fn (mut timeline AudioParamTimeline) set_current_value(value f32) {
+	timeline.current_value_ = value
+	timeline.fallback_value_ = value
 }
 
 pub fn (timeline &AudioParamTimeline) has_events() bool {
@@ -169,7 +182,7 @@ fn (timeline &AudioParamTimeline) event_value_at_time(event_index int, time f64)
 		&& timeline.automation_events_[first_event_index].kind == .set_target {
 		first_event_index--
 	}
-	mut value := timeline.default_value_
+	mut value := timeline.fallback_value_
 	for current_index := first_event_index; current_index <= event_index; current_index++ {
 		event := timeline.automation_events_[current_index]
 		evaluation_time := if current_index == event_index {
@@ -191,7 +204,7 @@ fn (timeline &AudioParamTimeline) parameterization_cache_for_time(time f64) Para
 			} else {
 				timeline.automation_events_[0].time
 			}
-			starting_value: timeline.default_value_
+			starting_value: timeline.fallback_value_
 		}
 	}
 
@@ -263,12 +276,15 @@ pub fn (timeline &AudioParamTimeline) value_at_time(time f64) f32 {
 	return timeline.value_at_time_locked(time, time)
 }
 
-pub fn (timeline &AudioParamTimeline) sample(start_time f64, sample_period f64,
+pub fn (mut timeline AudioParamTimeline) sample(start_time f64, sample_period f64,
 	mut output []f32) {
 	for frame in 0 .. output.len {
 		frame_time := start_time + f64(frame) * sample_period
 		output[frame] = timeline.value_at_time_locked(frame_time + sample_period / 2, frame_time)
 	}
+	// The intrinsic value exposed to the control side is the first value of
+	// this quantum, before any connected audio signal is mixed into it.
+	if output.len > 0 { timeline.current_value_ = output[0] }
 }
 
 fn (timeline &AudioParamTimeline) ramp_start_for_insertion_index(event_index int,
@@ -389,6 +405,9 @@ pub fn (mut timeline AudioParamTimeline) cancel_scheduled_values(cancel_time f64
 	if first_event_to_remove < timeline.automation_events_.len {
 		timeline.automation_events_.delete_many(first_event_to_remove, timeline.automation_events_.len - first_event_to_remove)
 	}
+	if timeline.automation_events_.len == 0 {
+		timeline.fallback_value_ = timeline.current_value_
+	}
 }
 
 pub fn (mut timeline AudioParamTimeline) cancel_and_hold_at_time(cancel_time f64) {
@@ -414,7 +433,7 @@ pub fn (mut timeline AudioParamTimeline) cancel_and_hold_at_time(cancel_time f64
 				hold_value = if event_index >= 2 {
 					timeline.event_value_at_time(event_index - 2, cancel_time)
 				} else {
-					timeline.default_value_
+					timeline.fallback_value_
 				}
 			} else if cancel_time <= active.time + active.duration {
 				hold_value = value_to_hold

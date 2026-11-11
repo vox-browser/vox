@@ -40,6 +40,13 @@ fn resolve_calc_node(node CalcNode, calculation_context CalculationContext, ctx 
 		CalcAnchorSize {
 			return resolve_calc_anchor_size(node, calculation_context, ctx)
 		}
+		CalcSizeKeyword {
+			size := ctx.calc_size_px or { return none }
+			return CalcResult{
+				value: size
+				type_: NumericType.with_type(.length, 1)
+			}
+		}
 		CalcChannel {
 			for channel in ctx.relative_color_channels {
 				if channel.name == node.name {

@@ -87,7 +87,14 @@ pub fn (mut value CSSUnparsedValue) set_value_of_new_indexed_property(n u32, new
 	value.tokens << unparsed_segment_from_indexed_value(new_value)!
 }
 
-fn (value &CSSUnparsedValue) contains_unparsed_value(needle &CSSUnparsedValue) bool {
+fn (value &CSSUnparsedValue) contains_unparsed_value(needle &CSSUnparsedValue, mut visited map[voidptr]bool) bool {
+	// A fallback can contain a cycle without containing the value being
+	// serialized. Scan each identity once, including shared fallback graphs.
+	identity := voidptr(value)
+	if identity in visited {
+		return false
+	}
+	visited[identity] = true
 	for unparsed_segment in value.tokens {
 		match unparsed_segment {
 			CSSVariableReferenceValue {
@@ -96,10 +103,10 @@ fn (value &CSSUnparsedValue) contains_unparsed_value(needle &CSSUnparsedValue) b
 					continue
 				}
 				fallback_value := fallback or { continue }
-				if fallback_value == needle {
+				if voidptr(fallback_value) == voidptr(needle) {
 					return true
 				}
-				if fallback_value.contains_unparsed_value(needle) {
+				if fallback_value.contains_unparsed_value(needle, mut visited) {
 					return true
 				}
 			}
@@ -114,7 +121,8 @@ pub fn (value &CSSUnparsedValue) to_string() !string {
 	// AD-HOC: It's possible for one of the m_tokens to contain this in its fallback slot, or a similar situation with
 	//         more levels of nesting. To avoid crashing, do a scan for that first and return the empty string.
 	// Spec issue: https://github.com/w3c/css-houdini-drafts/issues/1158
-	if value.contains_unparsed_value(value) {
+	mut visited := map[voidptr]bool{}
+	if value.contains_unparsed_value(value, mut visited) {
 		return ''
 	}
 

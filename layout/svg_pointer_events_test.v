@@ -3,7 +3,7 @@ module layout
 import dom
 import html
 import painting
-import skia
+import cpuraster
 
 fn test_svg_pointer_geometry_matches_cssom_at_native_layout_scales() {
 	for scale in [f64(1), 2] {
@@ -92,7 +92,7 @@ fn test_svg_text_pointer_regions_cover_unpainted_character_cells() {
 	for row in 1 .. 10 {
 		for column in 1 .. 10 {
 			point := painting.Point{cells.x + cells.width * f64(column) / 10, cells.y + cells.height * f64(row) / 10}
-			if !skia.path_hit_test(skia.PathHitTest{
+			if !cpuraster.packed_path_hit_test(cpuraster.PackedPathHitTest{
 				path:  box.svg_data.hit_test.path
 				x:     f32(point.x)
 				y:     f32(point.y)

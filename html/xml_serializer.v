@@ -77,6 +77,30 @@ pub fn (s &XMLSerializer) serialize_to_string(root &dom.Node) !string {
 // https://w3c.github.io/DOM-Parsing/#dfn-add
 fn xml_add_prefix_to_namespace_prefix_map(mut prefix_map map[string][]OptName, prefix OptName, namespace_value OptName) {
 	key := ns_map_key(namespace_value)
+	// A local declaration or element prefix can shadow an inherited binding.
+	// Remove that prefix from the other namespaces before it can be reused for
+	// an attribute or descendant. Replace candidate arrays so the caller's
+	// inherited map remains unchanged when this map is a local clone.
+	for existing_key in prefix_map.keys() {
+		if existing_key == key {
+			continue
+		}
+		candidates := prefix_map[existing_key]
+		if prefix !in candidates {
+			continue
+		}
+		mut remaining := []OptName{cap: candidates.len}
+		for candidate in candidates {
+			if candidate != prefix {
+				remaining << candidate
+			}
+		}
+		if remaining.len == 0 {
+			prefix_map.delete(existing_key)
+		} else {
+			prefix_map[existing_key] = remaining
+		}
+	}
 	// 1-2. Retrieve the candidates list; if null, create a new list with prefix as its only item.
 	if key in prefix_map {
 		// 3. Otherwise, append prefix to the end of candidates list.
@@ -105,12 +129,29 @@ fn xml_retrieve_a_preferred_prefix_string(preferred_prefix OptName, prefix_map m
 	return none_name
 }
 
+fn xml_prefix_is_bound_in_prefix_map(prefix OptName, prefix_map map[string][]OptName) bool {
+	for _, prefixes in prefix_map {
+		if prefix in prefixes {
+			return true
+		}
+	}
+	return false
+}
+
 // https://w3c.github.io/DOM-Parsing/#dfn-generating-a-prefix
 fn xml_generate_a_prefix(mut prefix_map map[string][]OptName, new_namespace OptName, mut counter PrefixIndexCounter) string {
-	// 1. Let generated prefix be "ns" concatenated with the current prefix index.
-	generated_prefix := 'ns${counter.value}'
-	// 2. Increment prefix index.
-	counter.value++
+	mut generated_prefix := ''
+	// AD-HOC: Skip prefixes already bound in scope, including an attribute's
+	// preserved prefix. See https://github.com/w3c/DOM-Parsing/issues/44.
+	for {
+		// 1. Let generated prefix be "ns" concatenated with the current prefix index.
+		generated_prefix = 'ns${counter.value}'
+		// 2. Increment prefix index.
+		counter.value++
+		if !xml_prefix_is_bound_in_prefix_map(some_name(generated_prefix), prefix_map) {
+			break
+		}
+	}
 	// 3. Add the generated prefix to map given new namespace.
 	xml_add_prefix_to_namespace_prefix_map(mut prefix_map, some_name(generated_prefix),
 		new_namespace)
@@ -167,7 +208,7 @@ fn serialize_node_to_xml_string_impl(root &dom.Node, namespace_value OptName, pr
 			return xml_serialize_comment(character_data_string(root), require_well_formed)
 		}
 		.cdata_section_node {
-			// NOTE: CDATASection is handled before Text; treating it as text serializes incorrectly.
+			// Run the XML serialization algorithm for a CDATASection node.
 			return xml_serialize_cdata_section(character_data_string(root), require_well_formed)
 		}
 		.text_node {
@@ -268,6 +309,11 @@ fn xml_serialize_an_attribute_value(attribute_value OptName, require_well_formed
 	final_attribute_value = final_attribute_value.replace('"', '&quot;')
 	final_attribute_value = final_attribute_value.replace('<', '&lt;')
 	final_attribute_value = final_attribute_value.replace('>', '&gt;')
+	// XML parsers normalize literal attribute whitespace; character references
+	// preserve the original value when the serialized markup is parsed again.
+	final_attribute_value = final_attribute_value.replace('\t', '&#9;')
+	final_attribute_value = final_attribute_value.replace('\n', '&#xA;')
+	final_attribute_value = final_attribute_value.replace('\r', '&#xD;')
 	return final_attribute_value
 }
 
@@ -277,7 +323,7 @@ struct LocalNameSetEntry {
 }
 
 // https://w3c.github.io/DOM-Parsing/#dfn-xml-serialization-of-the-attributes
-fn xml_serialize_element_attributes(element &dom.Element, mut prefix_map map[string][]OptName, mut counter PrefixIndexCounter, local_prefixes_map map[string]string, ignore_namespace_definition_attribute bool, require_well_formed RequireWellFormed) !string {
+fn xml_serialize_element_attributes(element &dom.Element, mut prefix_map map[string][]OptName, mut counter PrefixIndexCounter, mut local_prefixes_map map[string]string, ignore_namespace_definition_attribute bool, require_well_formed RequireWellFormed) !string {
 	// 1. Let result be the empty string.
 	mut result := ''
 	// 2. Let localname set be a new empty namespace localname set.
@@ -325,19 +371,15 @@ fn xml_serialize_element_attributes(element &dom.Element, mut prefix_map map[str
 				// - attr's prefix is not null and either
 				if attribute_prefix.present {
 					// - localName is not a key in the local prefixes map, or
-					if attribute_local_name !in local_prefixes_map {
-						continue
-					}
 					// - the local prefixes map value for localName does not match attr's value;
-					if local_prefixes_map[attribute_local_name] != attribute.value() {
+					is_not_local_prefix_definition := attribute_local_name !in local_prefixes_map
+						|| local_prefixes_map[attribute_local_name] != attribute.value()
+					// and furthermore the same declaration was defined on an ancestor.
+					if is_not_local_prefix_definition
+						&& xml_prefix_is_in_prefix_map(attribute_local_name, prefix_map,
+							attribute_value_name) {
 						continue
 					}
-				}
-				// and furthermore localName is found in map given attr's value.
-				if xml_prefix_is_in_prefix_map(attribute_local_name, prefix_map,
-					attribute_value_name)
-				{
-					continue
 				}
 				// 2. Well-formed: attr's value cannot be the XMLNS namespace.
 				if require_well_formed == .yes
@@ -352,12 +394,24 @@ fn xml_serialize_element_attributes(element &dom.Element, mut prefix_map map[str
 				if attribute_prefix == some_name('xmlns') {
 					candidate_prefix = some_name('xmlns')
 				}
-			} else {
-				// 3. Otherwise (not the XMLNS namespace):
-				// 1. Let candidate prefix be a generated prefix for attribute namespace.
-				candidate_prefix = some_name(xml_generate_a_prefix(mut prefix_map,
-					attribute_namespace, mut counter))
-				// 2. Append ' xmlns:<candidate prefix>="<serialized namespace>"' to result.
+			} else if !candidate_prefix.present {
+				// 3. Otherwise, if the attribute namespace has no preferred prefix:
+				// 1. Keep the attribute's own prefix if it is not already declared.
+				// AD-HOC: A binding anywhere in scope also prevents reuse, so an
+				// attribute cannot redefine the element's or an ancestor's prefix.
+				if attribute_prefix.present && attribute_prefix.value !in local_prefixes_map
+					&& !xml_prefix_is_bound_in_prefix_map(attribute_prefix, prefix_map) {
+					candidate_prefix = attribute_prefix
+				} else {
+					// 2. Otherwise generate an unused prefix.
+					candidate_prefix = some_name(xml_generate_a_prefix(mut prefix_map,
+						attribute_namespace, mut counter))
+				}
+				// 3-5. Record the new binding in both maps for later attributes.
+				xml_add_prefix_to_namespace_prefix_map(mut prefix_map, candidate_prefix,
+					attribute_namespace)
+				local_prefixes_map[candidate_prefix.value] = attribute_namespace.value
+				// 6. Append ' xmlns:<candidate prefix>="<serialized namespace>"' to result.
 				result += ' xmlns:'
 				result += candidate_prefix.value
 				result += '="'
@@ -522,7 +576,7 @@ fn xml_serialize_element(element &dom.Element, namespace_value OptName, prefix_m
 	}
 	// 13. Append the serialization of element's attributes.
 	markup += xml_serialize_element_attributes(element, mut local_map, mut counter,
-		local_prefixes_map, ignore_namespace_definition_attribute, require_well_formed)!
+		mut local_prefixes_map, ignore_namespace_definition_attribute, require_well_formed)!
 	as_node := element.as_node()
 	has_children := as_node.has_children()
 	// 14. HTML-namespace void element with no children: append " /" and skip end tag.
@@ -714,6 +768,12 @@ fn xml_serialize_document_fragment(document_fragment &dom.Node, namespace_value 
 	return markup
 }
 
+// https://w3c.github.io/DOM-Parsing/#dfn-serialization-of-the-id
+fn xml_serialize_doctype_id(id string) string {
+	quote := if id.contains('"') { "'" } else { '"' }
+	return '${quote}${id}${quote}'
+}
+
 // https://w3c.github.io/DOM-Parsing/#xml-serializing-a-documenttype-node
 fn xml_serialize_document_type(name string, public_id string, system_id string, require_well_formed RequireWellFormed) !string {
 	if require_well_formed == .yes {
@@ -730,21 +790,17 @@ fn xml_serialize_document_type(name string, public_id string, system_id string, 
 	// 3-6. "<!DOCTYPE <name>".
 	mut markup := '<!DOCTYPE '
 	markup += name
-	// 7. If publicId is not empty, append ' PUBLIC "<publicId>"'.
+	// 7. If publicId is not empty, append PUBLIC and the serialization of the ID.
 	if public_id.len != 0 {
-		markup += ' PUBLIC "'
-		markup += public_id
-		markup += '"'
+		markup += ' PUBLIC ${xml_serialize_doctype_id(public_id)}'
 	}
 	// 8. If systemId is not empty and publicId is empty, append " SYSTEM".
 	if system_id.len != 0 && public_id.len == 0 {
 		markup += ' SYSTEM'
 	}
-	// 9. If systemId is not empty, append ' "<systemId>"'.
+	// 9. If systemId is not empty, append a space and the serialization of the ID.
 	if system_id.len != 0 {
-		markup += ' "'
-		markup += system_id
-		markup += '"'
+		markup += ' ${xml_serialize_doctype_id(system_id)}'
 	}
 	// 10-11. Append ">" and return.
 	markup += '>'
@@ -773,8 +829,7 @@ fn xml_serialize_processing_instruction(target string, data string, require_well
 	return '<?${target} ${data}?>'
 }
 
-// CDATA nodes are a DOM extension to the standard node-type dispatch used by
-// this serializer.
+// https://w3c.github.io/DOM-Parsing/#xml-serializing-a-cdatasection-node
 fn xml_serialize_cdata_section(data string, require_well_formed RequireWellFormed) !string {
 	if require_well_formed == .yes {
 		if !is_valid_xml_string(data) {

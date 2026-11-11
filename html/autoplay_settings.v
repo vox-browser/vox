@@ -6,6 +6,7 @@
 module html
 
 import dom
+import platform
 
 __global html_autoplay_settings &AutoplaySettings
 
@@ -47,7 +48,11 @@ mut:
 
 pub fn AutoplaySettings.the() &AutoplaySettings {
 	if html_autoplay_settings == unsafe { nil } {
+		// The first media query usually runs inside a document arena; the
+		// process-wide settings must not live there.
+		persistent := platform.enter_persistent()
 		html_autoplay_settings = &AutoplaySettings{}
+		platform.leave_persistent(persistent)
 	}
 	return html_autoplay_settings
 }
@@ -77,6 +82,8 @@ pub fn (settings &AutoplaySettings) decision_for_origin(document &dom.Document, 
 }
 
 pub fn (mut settings AutoplaySettings) set_policy(policy AutoplayPolicy, allowlist []string) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	settings.policy_ = policy
 	settings.allowlist_.clear()
 	for entry in allowlist {

@@ -64,7 +64,7 @@ fn test_vardct_extra_channel_validation_preserves_old_opaque_contract_and_cursor
 		if _ := decode_vardct_frame_with_lf(bad,frame,.signed16,none,mut sections) { assert false }
 		assert sections[0].position == 0
 	}
-	for invalid in [FrameHeader{ ...frame, extra_upsampling: []u32{} },FrameHeader{ ...frame, extra_upsampling: [u32(2)] },
+	for invalid in [FrameHeader{ ...frame, extra_upsampling: []u32{} },FrameHeader{ ...frame, extra_upsampling: [u32(3)] },
 		FrameHeader{ ...frame, upsampling: 2 },FrameHeader{ ...frame, width: 65536, height: 65536 }] {
 		if _ := decode_vardct_frame_with_lf(file,invalid,.signed16,none,mut sections) { assert false }
 		assert sections[0].position == 0

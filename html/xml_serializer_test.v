@@ -1,6 +1,7 @@
 module html
 
 import dom
+import namespace_
 
 const xs_html_ns = 'http://www.w3.org/1999/xhtml'
 
@@ -98,5 +99,236 @@ fn test_xml_well_formed_character_and_name_productions() {
 	}
 	if _ := xml_serialize_cdata_section('bad\vdata', .yes) {
 		assert false, 'expected invalid XML character in CDATA to be rejected'
+	}
+}
+
+// Ladybird's November 1, 2026 XMLSerializer fixes. Exercise the public
+// serializer and parse representative results to check namespace/value identity.
+fn xml_serializer_parse(source string) !&dom.Document {
+	mut document := dom.Document.create(dom.url_about_blank())
+	document.set_document_type(.xml)
+	parse_xml_document_source(document, source)!
+	return document
+}
+
+fn test_xml_serializer_keeps_local_namespace_declarations() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns('urn:a', 'p:root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	root.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'value')!
+	markup := serialize(root.as_node())
+	assert markup == '<p:root xmlns:p="urn:a" p:attr="value"/>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_root := parsed.document_element()?
+	assert parsed_root.namespace_uri()? == 'urn:a'
+	assert parsed_root.get_attribute_ns('urn:a', 'attr')? == 'value'
+}
+
+fn test_xml_serializer_omits_redundant_ancestor_namespace_declaration() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	child.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'value')!
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node())!
+	assert serialize(root_node) == '<root xmlns:p="urn:a"><child p:attr="value"/></root>'
+}
+
+fn test_xml_serializer_preserves_xml_space_without_rebinding_xml_namespace() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(namespace_.svg, 'svg')!
+	root.set_attribute_ns_for_bindings(namespace_.xml, 'xml:space', 'preserve')!
+	markup := serialize(root.as_node())
+	assert markup == '<svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve"/>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	assert parsed.document_element()?.get_attribute_ns(namespace_.xml, 'space')? == 'preserve'
+}
+
+fn test_xml_serializer_preserves_a_free_attribute_prefix_and_reuses_it() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings('urn:a', 'free:first', '1')!
+	root.set_attribute_ns_for_bindings('urn:a', 'second', '2')!
+	assert serialize(root.as_node()) == '<root xmlns:free="urn:a" free:first="1" free:second="2"/>'
+}
+
+fn test_xml_serializer_uses_the_nearest_declared_prefix_for_attributes_and_end_tags() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p1', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p2', 'urn:a')!
+	child.set_attribute_ns_for_bindings('urn:a', 'attr', 'value')!
+	mut grandchild := document.create_element_ns('urn:a', 'grandchild')!
+	mut grandchild_node := grandchild.as_node()
+	grandchild_node.append_child(document.create_text_node('text').as_node())!
+	mut child_node := child.as_node()
+	child_node.append_child(grandchild_node)!
+	mut root_node := root.as_node()
+	root_node.append_child(child_node)!
+	assert serialize(root_node) == '<root xmlns:p1="urn:a"><child xmlns:p2="urn:a" p2:attr="value"><p2:grandchild>text</p2:grandchild></child></root>'
+}
+
+fn test_xml_serializer_does_not_rebind_the_elements_prefix_for_an_attribute() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns('urn:a', 'p:root')!
+	root.set_attribute_ns_for_bindings('urn:b', 'p:attr', 'value')!
+	markup := serialize(root.as_node())
+	assert markup == '<p:root xmlns:p="urn:a" xmlns:ns1="urn:b" ns1:attr="value"/>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_root := parsed.document_element()?
+	assert parsed_root.namespace_uri()? == 'urn:a'
+	assert parsed_root.get_attribute_ns('urn:b', 'attr')? == 'value'
+}
+
+fn test_xml_serializer_generated_prefix_skips_a_preserved_attribute_prefix() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings('urn:a', 'ns1:a', '1')!
+	root.set_attribute_ns_for_bindings('urn:b', 'b', '2')!
+	assert serialize(root.as_node()) == '<root xmlns:ns1="urn:a" ns1:a="1" xmlns:ns2="urn:b" ns2:b="2"/>'
+}
+
+fn test_xml_serializer_generated_prefix_skips_explicit_local_declarations() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:ns1', 'urn:a')!
+	root.set_attribute_ns_for_bindings('urn:b', 'attr', 'value')!
+	assert serialize(root.as_node()) == '<root xmlns:ns1="urn:a" xmlns:ns2="urn:b" ns2:attr="value"/>'
+}
+
+fn test_xml_serializer_does_not_rebind_an_ancestor_prefix_for_a_child_attribute() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut parent := document.create_element_ns(none, 'parent')!
+	parent.set_attribute_ns_for_bindings('urn:a', 'p:x', '1')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings('urn:b', 'p:y', '2')!
+	child.set_attribute_ns_for_bindings('urn:a', 'c', '3')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node())!
+	markup := serialize(parent_node)
+	assert markup == '<parent xmlns:p="urn:a" p:x="1"><child xmlns:ns1="urn:b" ns1:y="2" p:c="3"/></parent>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?.as_element()?
+	assert parsed_child.get_attribute_ns('urn:b', 'y')? == '2'
+	assert parsed_child.get_attribute_ns('urn:a', 'c')? == '3'
+}
+
+fn test_xml_serializer_element_prefix_rebinding_preserves_attribute_namespaces_and_sibling_scope() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut parent := document.create_element_ns('urn:a', 'p:parent')!
+	mut child := document.create_element_ns('urn:b', 'p:child')!
+	child.set_attribute_ns_for_bindings('urn:a', 'attr', 'child')!
+	mut sibling := document.create_element_ns(none, 'sibling')!
+	sibling.set_attribute_ns_for_bindings('urn:a', 'attr', 'sibling')!
+	mut parent_node := parent.as_node()
+	parent_node.append_child(child.as_node())!
+	parent_node.append_child(sibling.as_node())!
+	markup := serialize(parent_node)
+	assert markup == '<p:parent xmlns:p="urn:a"><p:child xmlns:p="urn:b" xmlns:ns1="urn:a" ns1:attr="child"/><sibling p:attr="sibling"/></p:parent>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?
+	assert parsed_child.as_element()?.namespace_uri()? == 'urn:b'
+	assert parsed_child.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'child'
+	assert parsed_child.as_element()?.get_attribute_ns('urn:b', 'attr') == none
+	assert parsed_child.next_sibling()?.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'sibling'
+}
+
+fn test_xml_serializer_explicit_prefix_rebinding_can_restore_an_ancestor_binding() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:b')!
+	child.set_attribute_ns_for_bindings('urn:a', 'attr', 'child')!
+	mut grandchild := document.create_element_ns(none, 'grandchild')!
+	grandchild.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	grandchild.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'restored')!
+	grandchild.set_attribute_ns_for_bindings('urn:b', 'other', 'other namespace')!
+	mut child_node := child.as_node()
+	child_node.append_child(grandchild.as_node())!
+	mut root_node := root.as_node()
+	root_node.append_child(child_node)!
+	markup := serialize(root_node)
+	assert markup == '<root xmlns:p="urn:a"><child xmlns:p="urn:b" xmlns:ns1="urn:a" ns1:attr="child"><grandchild xmlns:p="urn:a" p:attr="restored" xmlns:ns2="urn:b" ns2:other="other namespace"/></child></root>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?
+	assert parsed_child.as_element()?.get_attribute_ns('urn:a', 'attr')? == 'child'
+	parsed_grandchild := parsed_child.first_child()?.as_element()?
+	assert parsed_grandchild.get_attribute_ns(namespace_.xmlns, 'p')? == 'urn:a'
+	assert parsed_grandchild.get_attribute_ns('urn:a', 'attr')? == 'restored'
+	assert parsed_grandchild.get_attribute_ns('urn:b', 'other')? == 'other namespace'
+}
+
+fn test_xml_serializer_prefix_rebinding_keeps_other_prefixes_for_the_namespace() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:q', 'urn:a')!
+	root.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:a')!
+	mut child := document.create_element_ns(none, 'child')!
+	child.set_attribute_ns_for_bindings(namespace_.xmlns, 'xmlns:p', 'urn:b')!
+	child.set_attribute_ns_for_bindings('urn:a', 'p:attr', 'value')!
+	mut root_node := root.as_node()
+	root_node.append_child(child.as_node())!
+	markup := serialize(root_node)
+	assert markup == '<root xmlns:q="urn:a" xmlns:p="urn:a"><child xmlns:p="urn:b" q:attr="value"/></root>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	parsed_child := parsed.document_element()?.as_node().first_child()?.as_element()?
+	assert parsed_child.get_attribute_ns('urn:a', 'attr')? == 'value'
+	assert parsed_child.get_attribute_ns('urn:b', 'attr') == none
+}
+
+fn test_xml_serializer_attribute_whitespace_survives_a_round_trip() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	mut root := document.create_element_ns(none, 'root')!
+	value := 'A\tB\nC\rD "<&> é'
+	root.set_attribute_value('value', value)
+	markup := serialize(root.as_node())
+	assert markup == '<root value="A&#9;B&#xA;C&#xD;D &quot;&lt;&amp;&gt; é"/>'
+	mut parsed := xml_serializer_parse(markup)!
+	defer { parsed.finalize() }
+	assert parsed.document_element()?.get_attribute('value')? == value
+}
+
+fn test_xml_serializer_quotes_doctype_ids_with_the_appropriate_delimiter() {
+	mut document := dom.Document.create(dom.url_about_blank())
+	defer { document.finalize() }
+	implementation := document.implementation()
+	assert serialize(implementation.create_document_type('html', '', 's')!.as_node()) == '<!DOCTYPE html SYSTEM "s">'
+	assert serialize(implementation.create_document_type('html', 'p', 's')!.as_node()) == '<!DOCTYPE html PUBLIC "p" "s">'
+	assert serialize(implementation.create_document_type('html', "p'", "s'")!.as_node()) == '<!DOCTYPE html PUBLIC "p\'" "s\'">'
+	assert serialize(implementation.create_document_type('html', 'p"', 's"')!.as_node()) == '<!DOCTYPE html PUBLIC \'p"\' \'s"\'>'
+
+	// A system identifier containing a quotation mark remains parseable and
+	// retains literal ampersands: doctype IDs do not use attribute escaping.
+	doctype := implementation.create_document_type('root', '', 'a"&b')!
+	markup := serialize_node_to_xml_string(doctype.as_node(), .yes)!
+	mut parsed := xml_serializer_parse('${markup}<root/>')!
+	defer { parsed.finalize() }
+	assert parsed.doctype()?.system_id() == 'a"&b'
+	if _ := xml_serialize_document_type('root', '', 'both"\'quotes', .yes) {
+		assert false, 'well-formed system IDs cannot contain both quote delimiters'
 	}
 }

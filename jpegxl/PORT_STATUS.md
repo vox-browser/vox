@@ -1,9 +1,9 @@
 # JPEG XL V decoder port
 
-The browser still uses `native_jpegxl_rust/` and `tools/test_jpegxl.py` still
-builds that helper. This package decodes complete modular streams, grouped raw
-frames and bounded lossless/opaque VarDCT subsets to final RGBA. It does not replace
-the production decoder or remove that final Rust dependency yet.
+The browser decodes JPEG XL with this package (`images/jpegxl.v`); the Rust
+helper `native_jpegxl_rust/`, its native bridge and `tools/test_jpegxl.py` were
+removed on 2026-11-10. See [Production decoder](#production-decoder-2026-11-10)
+for the supported subset, parity evidence and the remaining speed gap.
 
 The reference is the installed, lockfile-pinned `jxl` 0.7.0 crate, checksum
 `6513ef8722db71eea2b3806ea71b8d9b39481f214af295788d7ceb4d3395eb9e`.
@@ -538,12 +538,255 @@ and current compiler. This completes the ten-slice checkpoint and resets
 cadence to 0/10 at `16b9843ac`.
 See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
 
-Non-visible preview dependencies, wider reference composition, extra channels/
-alpha in VarDCT, non-XYB modular rendering beyond the existing lossless path,
-whole-frame chroma sampling, feature streams, large entropy maps and production
+Two more slices share modular state with VarDCT and add `decode_rgba` for the
+existing lossless, opaque modular XYB and VarDCT paths, including one unscaled
+8-bit VarDCT alpha channel. Twenty independent native records compare all
+1,800,640 straight/paint RGBA bytes and 225,080 raw alpha bytes exactly. Global
+and grouped alpha, nonzero HF, multiple LF owners, associated alpha and rotated
+output execute. The unified entry point also preserves 62 opaque references,
+26 grouped-lossless records, six preview files and 498 small-image records.
+
+The count is now 282,801 source records and eighty-six test files. Focused
+checks pass default/no-GC/optimized modes with actual test/guard exits zero;
+all 382 final selected inputs remain unchanged. An interrupted raw optimized
+check has no pass credit and was rerun successfully. Cadence is 2/10 after the
+full eighty-four-file checkpoint; no full eighty-six-file run is claimed.
+See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
+
+One further slice extends `decode_rgba` to modular XYB with one unscaled 8-bit
+alpha channel. Twenty new native files compare all 1,800,640 straight/paint
+RGBA bytes exactly, including eight grouped files, four multiple-LF-group
+files, associated alpha and orientation. The opaque renderer retains its
+contract. The count is 282,821 source records and eighty-seven test files.
+Final focused default/no-GC/optimized checks pass all four selected files,
+with actual test/guard exits zero and 404 unchanged inputs. Two failed test
+assertions were corrected without changing native gold. Cadence is 3/10;
+no full eighty-seven-file run is claimed.
+See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).
+
+One additional slice preserves one unscaled 8-bit alpha channel across LF
+reference decoding. Twenty native progressive files compare all 1,800,640
+straight/paint RGBA bytes exactly. LF storage saves only restored source-color
+planes before conversion/premultiplication; the visible frame owns its alpha.
+The count is 282,841 source records and eighty-eight test files. Three focused
+files pass default/no-GC/optimized checks, with actual exits zero and 426
+unchanged inputs. Cadence is 4/10, with no full eighty-eight-file run claimed.
+See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).
+
+Another slice expands one 8-bit alpha channel independently from color through
+1x/2x/4x/8x sampling for VarDCT and modular XYB. Seventy-two native records
+compare all 4,817,664 straight/paint RGBA bytes exactly across nine factor
+pairs, associated alpha and orientation. Existing LF alpha retains unit
+sampling. The count is 282,913 source records and eighty-nine test files.
+Five focused files pass default/no-GC/optimized checks, with actual exits zero
+and 501 unchanged inputs. Cadence is 5/10; no full eighty-nine-file run is claimed.
+See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
+
+One further slice stitches subsampled component planes and expands chroma
+before restoration. Twenty JPEG-recompressed native records compare all
+1,660,864 straight/paint RGBA bytes exactly across 4:4:4, 4:2:2, 4:4:0 and
+4:2:0, including tiny/odd dimensions and multiple LF groups. Subsampled LF
+references and adaptive smoothing remain unsupported. The count is 282,933
+source records and ninety test files. Four focused files pass default/no-GC/
+optimized checks with actual exits zero and 524 unchanged inputs. Cadence is
+6/10; no full ninety-file run is claimed.
+See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).
+
+One further slice adds original-profile modular RGB/gray restoration and
+image/alpha upsampling to the unified output owner. The file is now parsed
+once through an explicit decode mode; older opaque/lossless APIs retain their
+contracts. Another 128 native files compare all 8,564,736 straight/paint RGBA
+bytes exactly across filters, upsampling, associated alpha and orientation.
+The count is 283,061 source records and ninety-one test files. Three focused
+files pass default/no-GC/optimized checks with actual exits zero and 655
+unchanged inputs, preserving all prior unified-image references. Cadence is
+7/10; no full ninety-one-file run is claimed.
+See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).
+
+Another slice translates noise LUT parsing and deterministic Xorshift128+
+state. Another 1,162 independent records compare 8,192 LUT float words,
+truncations/consumption, both seed constructors and 12,288 random u64 words
+exactly. The count is 284,223 source records and ninety-two test files. The
+focused noise file passes default/no-GC/optimized checks with actual exits zero
+and 659 unchanged inputs. This does not enable noise-bearing frames: convolution,
+color application and whole-file integration remain. Cadence is 8/10; no full
+ninety-two-file run is claimed.
+See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).
+
+A further slice translates noise color application with explicit LUT precision.
+Another 768 native stage records compare all 73,728 float words exactly;
+256 exactly representable LUT cases also check the full-precision option.
+Separate B-channel expressions preserve source rounding instead of C's fused
+contraction. Two failed attempts retain no whole-run pass credit; gold remains
+unchanged. The count is 284,991 source records and ninety-three test files.
+Two focused files pass default/no-GC/optimized checks with actual exits zero
+and 662 unchanged inputs. Field construction, convolution and whole-file noise
+integration remain. Cadence is 9/10; no full ninety-three-file run is claimed.
+See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
+
+The next slice constructs and convolves noise fields and applies them after
+image upsampling but before color conversion. Twenty-eight native files compare
+all 2,477,600 straight/paint RGBA bytes exactly: seven zero-LUT controls retain
+base pixels and all 21 nonzero-LUT images change. Alpha, orientation, permuted
+TOCs, multiple LF owners and 1x/2x/4x/8x image sampling execute. Output fixes the
+verified BF16 reference profile across hosts; other original SIMD profiles may
+differ. Noisy LF/modular/non-XYB output remains unsupported.
+
+The count is 285,019 source records and ninety-four test files. Focused checks
+pass both GC modes and optimized builds with actual exits zero and 693 unchanged
+final inputs. Default coverage composes three retained passes with the corrected
+noise file; the original zero-shape failure has no whole-batch pass credit.
+The full ninety-four-file corpus now passes both GC modes with actual tests,
+inner guards, drivers and outer guards exiting zero. All 701 selected input
+hashes/change times and the compiler remain unchanged. This completes the ten
+slices after the eighty-four-file checkpoint and resets cadence to 0/10.
+See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
+
+Patch dictionaries, blending and clipped row application are now translated in
+three further slices. The 678 dictionary records compare metadata, accepted
+consumption and ordered row IDs; 1,024 blending records compare 32,640 float
+words, and 514 whole applications compare 3,121,152 words. Full rows and
+irregular chunks agree exactly in both implementations. Checked V APIs bound
+allocations and finite row inputs; source panic/allocation-limit parity is not
+claimed. The package has 287,235 source records and ninety-seven test files.
+All three new files pass default/no-GC/optimized checks with actual test/guard
+exits zero and 710 unchanged inputs. Cadence is 3/10 after the completed
+ninety-four-file checkpoint; no full ninety-seven-file run is claimed.
+Encoded patch frames still need reference ownership and pipeline integration.
+See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).
+
+The spline entropy reader now translates starting points, adjustment, second
+differences and four 32-term DCTs, including final entropy-state validation.
+Its 3,044 native records include 536 accepted cases with exact metadata,
+consumption, point words and coefficients. Truncations, count/coordinate/delta
+limits and signed integer extremes execute. The focused file passes default,
+no-GC and optimized checks with actual exits zero and 713 unchanged inputs;
+an initial declaration-only compile failure has no execution credit. The count
+is 290,279 records and ninety-eight files, cadence 4/10 after the full
+ninety-four-file checkpoint. No full ninety-eight-file run is claimed.
+Spline dequantization, subdivision, rendering and frame integration remain.
+See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).
+
+Spline dequantization now reconstructs control points, scales/correlates the
+four DCTs, estimates area and checks adjacent coincidence. The 896 native
+records include 244 successful calls comparing 33,664 float words, exact U64
+area and coincidence results. Source release integer/cast behavior is explicit;
+nonfinite context is rejected before coordinate conversion. Both spline files
+pass default/no-GC/optimized checks with actual exits zero and 716 unchanged
+inputs. The package has 291,175 records and ninety-nine test files, cadence
+5/10 after the full ninety-four-file checkpoint; no full ninety-nine-file run
+is claimed. Curve subdivision, caching, rasterization and frame integration
+remain. See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).
+
+Spline cosine and Gaussian error-function approximations now preserve the
+native scalar/unfused and NEON/fused arithmetic profiles. Direct original
+calls compare 14,361 distinct inputs, including 135 profile disagreements,
+DCT arguments, boundary neighbors and signed zero/subnormal cases. The focused
+file passes default/no-GC/optimized checks with actual exits zero and 719
+unchanged inputs. JPEG XL totals 305,536 records and one hundred files,
+cadence 6/10 after the full ninety-four-file checkpoint. No full hundred-file
+run is claimed. Curve generation, caching, Gaussian splats and complete
+feature/reference frames remain.
+See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
+
+Spline curves and draw caches now translate subdivision, unit spacing,
+continuous DCT evaluation and bounded row membership. The 256 native records
+include 234 accepted caches, 3,341 segments and 57,792 ordered in-bounds indices;
+all float fields match with NaN payloads explicitly normalized. Coincidence
+and area failures agree. The source's unused offscreen index tail is omitted.
+The three-file focused selection passes default/no-GC/optimized checks with
+actual exits zero and 723 unchanged inputs. The count is 305,792 records and
+101 files, cadence 7/10 after the full ninety-four-file checkpoint; no full
+101-file run is claimed. Gaussian drawing and complete feature/reference
+frames remain. See [the spline-cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).
+
+Gaussian spline drawing now compares 512 native records: 468 successful
+float images, 2,227,200 exact words and 618,988 changed words. Full rows and
+irregular chunks agree in both implementations; positive/negative sigma and
+signed-zero backgrounds execute. All 340 nonempty images change; 128 empty
+cache controls remain unchanged. The operation fixes the verified fused
+profile, without whole-row scalar/SSE or all-host equivalence claims. Three
+focused files pass default/no-GC/optimized checks with actual exits zero and
+726 unchanged inputs. The package has 306,304 records and 102 files, cadence
+8/10 after the full ninety-four-file checkpoint; no full 102-file run is
+claimed. Feature streams and complete frames remain.
+See [the Gaussian-row report](../docs/translation-audit/JPEGXL_V_SPLINE_RASTER.md).
+
+Non-visible preview dependencies, wider reference composition, wider or dimension-shifted
+extra channels, resampled LF alpha, LF original-profile modular rendering,
+wider chroma combinations, feature streams, large entropy maps and production
 integration remain.
 
 The V package is not connected to the production image path until
 it can preserve that path's supported static 8-bit sRGB/gray behavior, limits
 and rejection rules. The Rust decoder and its build/test dependencies must then
 be removed together.
+
+## Production decoder (2026-11-10)
+
+`decode_rgba` replaces the Rust helper for the same static 8-bit sRGB/gray
+subset: VarDCT and modular (XYB and original-profile) frames, LF frames,
+alpha, upsampling, chroma subsampling, noise, splines and patches, including
+libjxl's patch reference-only frames with alpha. Animations, non-sRGB
+profiles, non-8-bit output and multi-frame layered composition are rejected.
+
+Additions in this round: spline LFGlobal state and drawing; reference-only
+patch frames and patch application (color and alpha); noise in modular XYB
+frames; whole-channel integer conversion for images above 1 Mi samples; and
+ignoring trailing bits in modular sections as the source does.
+
+Parity: `native_corpus_test.v` (WPT and jxl crate files), `patch_frame_test.v`
+(44 libjxl 0.11.1 text images, 12 with alpha) and `spline_frame_test.v` (42
+files) compare exact straight and paint RGBA8 hashes recorded from the pinned
+native decoder. Across 278 decodes of WPT, jxl crate and generated files, all
+196 that the native decoder accepted match byte for byte and the other 80 are
+rejected by both; only the layered `spline_on_first_frame.jxl` remains
+unsupported. The full 106-file package passes with default GC and `-gc none`.
+
+Speed: hardware `fmaf`, padded and row-vectorized EPF, and removing bounds
+checks from kernels indexed only by validated geometry cut a 2268x1512 VarDCT
+decode from 28.07 to 7.97 billion retired instructions. The Rust crate needed
+about 1.37 billion, so the V decoder is still roughly 5x slower on photos.
+
+## Performance (2026-11-11)
+
+`tools/jpegxl_bench.v` decodes files repeatedly and prints minimum/median wall
+time, MP/s and an output hash prefix, so changes can be checked for
+byte-identical pixels:
+
+```sh
+v -prod -b c -cc clang -memory-limit 10G -o /tmp/jpegxl_bench tools/jpegxl_bench.v
+/tmp/jpegxl_bench -n 9            # default benchmark files
+/tmp/jpegxl_bench --paint a.jxl   # explicit files, premultiplied output
+```
+
+Wall time is noisy on a loaded host; compare retired instructions
+(`/usr/bin/time -l`) for small changes. Per-decode instructions, before the
+optimization rounds and now, with identical output hashes:
+
+| File | Size | Before | Now |
+| --- | --- | ---: | ---: |
+| `bench/progressive_ac.jxl` (VarDCT) | 2268x1512 | 7.93 G | 2.52 G |
+| `bench/green_queen_vardct_e3.jxl` | 438x589 | 0.70 G | 0.28 G |
+| `bench/green_queen_modular_e3.jxl` | 438x589 | 1.16 G | 0.57 G |
+| `native-corpus/issue648_palette0.jxl` (modular) | 1623x1080 | 4.73 G | 2.30 G |
+
+The removed Rust crate needed about 1.37 G for the VarDCT photo. Single-thread
+wall time for the six default files fell from 1366 to 682 ms (sum of minimums,
+load average 50-100); the photo takes 241 ms against about 84 ms for libjxl
+0.11.1 on one thread.
+
+Main changes: inverse DCT kernels run across all rows or columns of a block
+at once (the C compiler vectorizes over lanes; the 32-point kernel uses a fixed
+stride of 32 so its accesses need no alias checks); fused EPF row loops with
+rolling pass-1 SAD differences and bit-mask selects instead of V
+if-expressions, which block vectorization; branch-free HF dequantization with
+per-group table validation; row copies for block and group stitching; a
+vectorized exponent-bit `all_finite`; modular trees pruned per channel; and
+direct indexing in squeeze, RCT and other loops whose indices validated
+geometry bounds. Every change keeps the source's operation order, so pixels
+stay bit-identical to the native decoder.
+
+Remaining hot spots: EPF (about 18% of the VarDCT photo), ANS/HybridUint symbol
+decoding and its Result plumbing, the weighted predictor in modular images,
+and XYB to sRGB output conversion.

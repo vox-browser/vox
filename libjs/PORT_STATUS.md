@@ -2,6 +2,17 @@
 
 Audited: 2026-10-02.
 
+## November 1 upstream correctness ports — 2026-11-10
+
+Five commits from Ladybird's November 1 landing set are translated here:
+array iterator indices retain their Number value beyond `INT32_MAX`;
+typed-array find visits indices lazily; `reduceRight` and `lastIndexOf` retain
+unsigned indices; copying a typed array checks the target element-size limit;
+and the canonical string key `4294967295` is an integer index. The separate
+4-GiB buffer and `size_t` representation migration is deferred, so existing
+allocation limits and storage representations remain in effect. The browser
+still defaults to JavaScriptCore. See the [complete audit and validation](../docs/upstream-sync/2026-11-01.md).
+
 The frontend baseline comes from `medvednikov/libjs_v` commit
 `9824cc3fad0910215f0f4de43fb108bb7575f6c7` (2026-02-24). The upstream reference is
 `~/code/3rd/ladybird/Libraries/LibJS` at
@@ -1528,6 +1539,13 @@ fixtures above validate that older dependency's paths, not full 9.1.0 parity.
 `--upstream`, `--build-dir` and `--dependency-prefix` select source/generated-header
 and fmt locations. Checked-in fixtures keep ordinary V builds independent of the
 native oracle. Regeneration is byte-exact.
+
+The ten Rust-based regex oracle drivers named in the following paragraphs
+(`tools/libjs_regex_*_corpus.py`) were retired when Rust was removed from the
+repository; see [the reference-corpus guide](../tools/REFERENCE_CORPORA.md).
+Their checked-in fixtures are frozen independent records, verified by
+`tools/check_translation_corpora.v --suite regex`. The regeneration commands
+below record how the fixtures were produced and can no longer be run.
 
 LibRegex core helpers additionally match 36,166 native Rust cases exactly in
 both GC modes (`0586dcb0`). The fixture covers quantifiers, builtin-class

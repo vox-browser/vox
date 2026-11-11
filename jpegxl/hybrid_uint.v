@@ -41,6 +41,13 @@ pub fn (config HybridUint) read(symbol u32, mut b BitReader) !u32 {
 	if config.split_exponent > 31 || config.msb_in_token + config.lsb_in_token > config.split_exponent {
 		return error('Invalid JPEG XL hybrid configuration')
 	}
+	return config.read_valid(symbol, mut b)
+}
+
+// read for a configuration with split_exponent <= 31 and
+// msb_in_token + lsb_in_token <= split_exponent; nbits stays below 32.
+@[inline]
+fn (config HybridUint) read_valid(symbol u32, mut b BitReader) u32 {
 	split := u32(1) << config.split_exponent
 	if symbol < split { return symbol }
 	in_token := config.msb_in_token + config.lsb_in_token
@@ -48,7 +55,7 @@ pub fn (config HybridUint) read(symbol u32, mut b BitReader) !u32 {
 	low := symbol & ((u32(1) << config.lsb_in_token) - 1)
 	without_low := symbol >> config.lsb_in_token
 	hi := (without_low & ((u32(1) << config.msb_in_token) - 1)) | (u32(1) << config.msb_in_token)
-	bits := u32(b.read_optimistic(int(nbits))!)
+	bits := u32(b.read_bits_optimistic(int(nbits)))
 	return (((hi << nbits) | bits) << config.lsb_in_token) | low
 }
 

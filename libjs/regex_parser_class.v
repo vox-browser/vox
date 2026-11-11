@@ -171,7 +171,11 @@ fn (mut p RegexSyntaxParser) set_char_escape() !u32 {
 	if character == `0` && !regex_decimal_digit(p.peek()) { return 0 }
 	if character == `x` { return p.hex_escape(2) }
 	if character == `u` { return p.unicode_character_escape() }
-	if regex_syntax_character(character) || character == `/` || character == `-` {
+	if character == `c` && regex_ascii_alpha(p.peek()) {
+		return u32(p.take('unexpected end of pattern')!) & 31
+	}
+	if regex_syntax_character(character) || character == `/`
+		|| regex_class_set_reserved_punctuator(character) {
 		return u32(character)
 	}
 	return error("invalid escape '\\${character}'")
@@ -213,27 +217,8 @@ fn (mut p RegexSyntaxParser) class_string() !RegexClassSetOperand {
 			current << character
 			continue
 		}
-		esc := p.take('lone trailing backslash')!
-		mut point := u32(0)
-		if simple := regex_simple_escape(esc) {
-			point = simple
-		} else if esc == `b` {
-			point = 8
-		} else if esc == `0` {
-			point = 0
-		} else if esc == `x` {
-			point = p.hex_escape(2)!
-		} else if esc == `u` {
-			point = p.unicode_character_escape()!
-		} else if esc == `c` {
-			ctrl := p.take('unexpected end of pattern')!
-			if !regex_ascii_alpha(ctrl) { return error("invalid escape '\\${ctrl}'") }
-			point = u32(ctrl) & 31
-		} else if regex_syntax_character(esc) || esc == `-` {
-			point = u32(esc)
-		} else {
-			return error("invalid escape '\\${esc}'")
-		}
+		// A ClassString consists of ClassSetCharacters and shares their escapes.
+		point := p.set_char_escape()!
 		if !regex_unicode_scalar(point) { return error('invalid Unicode escape') }
 		current << rune(point)
 	}

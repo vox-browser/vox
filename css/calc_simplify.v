@@ -49,7 +49,7 @@ fn simplify_calc(node CalcNode, calculation_context CalculationContext) CalcNode
 		CalcNumeric {
 			return canonicalize_calc_leaf(node)
 		}
-		CalcTreeCounting, CalcChannel {
+		CalcTreeCounting, CalcChannel, CalcSizeKeyword {
 			return node
 		}
 		CalcAnchor, CalcAnchorSize {
@@ -121,6 +121,13 @@ fn simplify_calc_with_resolution(node CalcNode, calculation_context CalculationC
 				if channel.name == node.name {
 					return calc_canonical_leaf(.number, channel.value)
 				}
+			}
+			return node
+		}
+		// https://drafts.csswg.org/css-values-5/#resolving-calc-size
+		CalcSizeKeyword {
+			if size := context.calc_size_px {
+				return calc_canonical_leaf(.length, size)
 			}
 			return node
 		}

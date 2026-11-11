@@ -345,7 +345,12 @@ fn auto_repeat_template_rest(node &Node, list css.GridTrackSizeList, basis CSSPi
 // number of times that does not overflow the content box once the template's
 // other definite tracks and the gaps are accounted for; otherwise once.
 fn auto_repeat_count(node &Node, repeat css.GridRepeat, template css.GridTrackSizeList, basis CSSPixels, gap CSSPixels, available_is_definite bool, horizontal bool) int {
+ if resolved := repeat.repeat_count_ { if !repeat.is_fixed() { return int(css.int_from_style_value(resolved)) } }
 	repeat_basis,repeat_definite,minimum_only := grid_repeat_axis_constraint(node,horizontal,basis,available_is_definite)
+ return auto_repeat_count_for_constraint(node,repeat,template,repeat_basis,gap,repeat_definite,minimum_only,horizontal)
+}
+
+fn auto_repeat_count_for_constraint(node &Node,repeat css.GridRepeat,template css.GridTrackSizeList,repeat_basis CSSPixels,gap CSSPixels,repeat_definite bool,minimum_only bool,horizontal bool) int {
 	list := repeat.grid_track_size_list()
 	mut repeated_tracks_size := CSSPixels.new(0)
 	mut repeated_track_count := 0
@@ -1279,16 +1284,9 @@ fn collect_grid_track_sizing_placements(mut state LayoutState, _ &Node, placemen
 		if styled := item.as_node_with_style() {
 			mut item_state := state.get_mutable(styled)
 			resolve_box_model_edges(styled.computed_values(), mut item_state, CSSPixels.new(0).to_double())
-			edge_start = edge_start.plus(if columns {
-				item_state.margin_box_left()
-			} else {
-				item_state.margin_box_top()
-			})
-			edge_end = edge_end.plus(if columns {
-				item_state.margin_box_right()
-			} else {
-				item_state.margin_box_bottom()
-			})
+			reversed := grid_axis_reversed(item,columns)
+			edge_start = edge_start.plus(if columns { if reversed { item_state.margin_box_right() } else { item_state.margin_box_left() } } else { if reversed { item_state.margin_box_bottom() } else { item_state.margin_box_top() } })
+			edge_end = edge_end.plus(if columns { if reversed { item_state.margin_box_left() } else { item_state.margin_box_right() } } else { if reversed { item_state.margin_box_top() } else { item_state.margin_box_bottom() } })
 		}
 		gap_property := grid_axis_gap(item, columns)
 		computed_gap := if item.computed_values().gap_value(gap_property).is_normal {
@@ -1439,10 +1437,11 @@ fn resolved_subgrid_tracks(data GridSubgridAxisData,values &UsedValues,horizonta
  // Provisional rows still need descendants to establish their intrinsic size.
  if !data.resolved { return data.tracks.clone() }
  mut result := []GridTrack{cap:data.tracks.len}
+ reversed := grid_axis_reversed(unsafe { &Node(values.node_) },horizontal)
  for index,track in data.tracks {
   mut size := track.base_size
-  if index==0 { size=size.minus(if horizontal { values.margin_box_left() } else { values.margin_box_top() }) }
-  if index==data.tracks.len-1 { size=size.minus(if horizontal { values.margin_box_right() } else { values.margin_box_bottom() }) }
+  if index==0 { size=size.minus(if horizontal { if reversed { values.margin_box_right() } else { values.margin_box_left() } } else { if reversed { values.margin_box_bottom() } else { values.margin_box_top() } }) }
+  if index==data.tracks.len-1 { size=size.minus(if horizontal { if reversed { values.margin_box_left() } else { values.margin_box_right() } } else { if reversed { values.margin_box_top() } else { values.margin_box_bottom() } }) }
   size=css_pixels_max(size,CSSPixels.new(0))
   result << GridTrack{base_size:size,growth_limit:size,has_growth_limit:true,fixed_max:true,fixed_max_size:size,collapsed:track.collapsed}
  }
@@ -2183,6 +2182,9 @@ fn grid_track_base_size_sum(tracks []GridTrack, gap CSSPixels) CSSPixels {
 // definite grid-container maximum, LibWeb restores the pre-maximization bases
 // and repeats using that maximum as the available grid space.
 fn maximize_grid_tracks(mut tracks []GridTrack, available_size AvailableSize, gap CSSPixels, maximum_size ?CSSPixels) {
+	// A track frozen while distributing one item's intrinsic contribution
+	// can still grow toward its completed growth limit during maximization.
+	for index in 0..tracks.len { tracks[index].base_size_frozen=false }
 	mut saved_base_sizes := []CSSPixels{cap: tracks.len}
 	for track in tracks {
 		saved_base_sizes << track.base_size
@@ -2321,7 +2323,7 @@ fn grid_flex_fraction_for_range(tracks []GridTrack, start int, span int, space_t
 
 fn grid_item_preferred_block_size_behaves_as_auto(item &Node, item_state &UsedValues, available_height_is_definite bool) bool {
 	preferred := item.computed_values().size_value(.height)
-	if preferred.is_auto() {
+	if preferred.is_auto() || preferred.is_stretch() {
 		if box := item.as_box() {
 			if _ := box.preferred_aspect_ratio() {
 				return !item_state.has_definite_width()
@@ -2379,7 +2381,9 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	preferred := item.computed_values().size_value(.height)
 	preferred_behaves_as_auto := grid_item_preferred_block_size_behaves_as_auto(item, item_state, available_height_is_definite)
 	mut inner := CSSPixels.new(0)
-	if preferred_behaves_as_auto || (constraint == .max_content && preferred.is_fit_content()) {
+	if height := grid_orthogonal_baseline_intrinsic_height(mut state,item,item_state) {
+		inner=height
+	} else if preferred_behaves_as_auto || (constraint == .max_content && preferred.is_fit_content()) {
 		inner = if constraint == .min_content {
 			calculate_min_content_height(mut state, box, item_state.content_width())
 		} else {
@@ -2414,13 +2418,13 @@ fn grid_item_outer_block_content_contribution(mut state LayoutState, item &Node,
 	}
 	mut contribution := inner.plus(edges)
 	maximum := item.computed_values().size_value(.max_height)
-	if !maximum.is_none() && !(maximum.contains_percentage() && (!available_height_is_definite || !item.is_replaced_box())) {
+	if !maximum.is_none() && !maximum.is_stretch() && !(maximum.contains_percentage() && (!available_height_is_definite || !item.is_replaced_box())) {
 		if maximum_size := resolve_layout_content_size(item, maximum, percentage_basis,item_state,false) {
 			contribution = css_pixels_min(contribution, maximum_size.plus(edges))
 		}
 	}
 	minimum := item.computed_values().size_value(.min_height)
-	if !minimum.is_auto() && !(minimum.contains_percentage() && !available_height_is_definite) {
+	if !minimum.is_auto() && !minimum.is_stretch() && !(minimum.contains_percentage() && !available_height_is_definite) {
 		if minimum_size := resolve_layout_content_size(item,minimum,percentage_basis,item_state,false) { contribution=css_pixels_max(contribution,minimum_size.plus(edges)) }
 	}
 	return contribution
@@ -2565,7 +2569,9 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 	// measurement applies it twice, and cyclic percentage minimums can then grow
 	// an intrinsic track from the grid container's already-resolved width.
 	mut inner := CSSPixels.new(0)
-	if constraint == .min_content && preferred_behaves_as_auto
+	if width := grid_orthogonal_baseline_intrinsic_width(mut state,item) {
+		inner=width
+	} else if constraint == .min_content && preferred_behaves_as_auto
 		&& flex_item_is_scroll_container(item) {
 		// Scroll containers contribute no content to a column min-content size.
 	} else if preferred_behaves_as_auto {
@@ -2592,9 +2598,12 @@ fn grid_intrinsic_outer_width_contribution(mut state LayoutState, item &Node, co
 			}
 	}
 
-	// A cyclic percentage maximum behaves as none for an intrinsic contribution.
+	// A replaced box's cyclic percentage max-width resolves against zero for
+	// its min-content contribution. Resolve the inner size before adding the
+	// margins, borders and padding; max-content and non-replaced boxes still
+	// treat a cyclic percentage maximum as none.
 	maximum := item.computed_values().size_value(.max_width)
-	if !maximum.contains_percentage() && !should_treat_max_width_as_none(state, item,
+	if !should_treat_max_width_as_none(state, item,
 		if constraint == .min_content { AvailableSize.make_min_content() } else { AvailableSize.make_max_content() }) {
 		if maximum_size := resolve_layout_content_size(item, maximum, CSSPixels.new(0),
 			item_state, true) {
@@ -2623,7 +2632,7 @@ fn measure_grid_intrinsic_width(mut state LayoutState, container &Node,
 	if container.has_size_containment() {
 		return container.explicit_intrinsic_inner_width() or { CSSPixels.new(0) }
 	}
-	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1' && !(container.display().is_grid_lanes_inside() && !grid_lanes_axis_is_horizontal(container))
+	width_only := os.getenv('VOX_DISABLE_GRID_WIDTH_ONLY') != '1' && !(container.display().is_grid_lanes_inside() && !grid_lanes_axis_is_horizontal(container)) && !grid_has_orthogonal_children(container)
 	if width_only && os.getenv('VOX_GRID_WIDTH_ONLY_DIAGNOSTICS') == '1' {
 		eprintln('Vox grid intrinsic width: columns only')
 	}
@@ -2664,13 +2673,13 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	} else {
 		?CSSPixels(none)
 	}
-	template_columns := grid_axis_template(container, true)
-	template_rows := grid_axis_template(container, false)
+	raw_template_columns := grid_axis_template(container,true)
+	raw_template_rows := grid_axis_template(container,false)
 	container_styled := container.as_node_with_style() or { panic('grid container has no style') }
 	inherited_columns := state.subgrid_axis_data(container_styled, true)
 	inherited_rows := state.subgrid_axis_data(container_styled, false)
-	subgridded_columns := template_columns.is_subgrid() && inherited_columns != none
-	subgridded_rows := template_rows.is_subgrid() && inherited_rows != none
+	subgridded_columns := raw_template_columns.is_subgrid() && inherited_columns != none
+	subgridded_rows := raw_template_rows.is_subgrid() && inherited_rows != none
 	// Subgridded axes use their parent's gutter. Standalone axes resolve each
 	// percentage gutter against the available size in its own dimension.
 	column_gap := if data := inherited_columns {
@@ -2690,6 +2699,8 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 	} else {
 		CSSPixels.new(0)
 	}
+ template_columns := grid_template_with_used_repeat_counts(state,container,raw_template_columns,container_width,column_gap,!width_is_intrinsic,true)
+ template_rows := grid_template_with_used_repeat_counts(state,container,raw_template_rows,row_basis,row_gap,container_state.has_definite_height(),false)
 	areas := grid_physical_areas(container)
 	column_lines := if data := inherited_columns {
 		if subgridded_columns {
@@ -2758,6 +2769,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			placement_result.implicit_columns_before, required_columns)
 	}
 	initialize_grid_item_percentage_bases(mut state,container,placements,columns,row_basis,column_gap,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,required_rows)
+	if grid_has_orthogonal_items(container,placements) {
+		initial_rows := resolve_grid_axis_tracks_in_state(mut state,container,false,row_basis,row_gap,container_state.has_definite_height(),placement_result.implicit_rows_before,if required_rows>0 { required_rows } else { 1 })
+		initialize_orthogonal_grid_inline_sizes(mut state,container,placements,initial_rows,row_gap)
+	}
 	column_sizing_placements = grid_lanes_sizing_placements(container,column_sizing_placements,columns.len,true)
 	collapse_empty_auto_fit_tracks(mut columns, placements, true)
 	baseline_column_shims := grid_vertical_baseline_column_shims(mut state,container,container_state,placements,columns)
@@ -2988,7 +3003,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 		}
 	}
 	row_sizing_placements = grid_lanes_sizing_placements(container,row_sizing_placements,rows.len,false)
-	baseline_row_shims := grid_row_baseline_shims(state,container,placements,rows)
+	baseline_row_shims := grid_row_baseline_shims(mut state,container,placements,rows)
 	mut maximum_row_span := 1
 	for placement in row_sizing_placements {
 		if placement.row_span > maximum_row_span {
@@ -3131,7 +3146,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			item_state := state.get(styled)
 			contribution := grid_item_outer_block_content_contribution(mut state, placement.item,
 				item_state, .max_content, container_state.has_definite_height(), row_basis,
-				grid_track_range_size(rows, placement.row, placement.row_span, row_gap)).plus(placement.sizing_extra(false))
+				grid_track_range_size(rows, placement.row, placement.row_span, row_gap)).plus(placement.sizing_extra(false)).plus(baseline_row_shims[voidptr(placement.item)])
 			candidate := grid_flex_fraction_for_range(rows, placement.row, placement.row_span, contribution, row_gap)
 			if candidate.compare(flex_fraction) > 0 {
 				flex_fraction = candidate
@@ -3173,7 +3188,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
  mut orthogonal_columns_changed := false
  if orthogonal_column_tracks.len > 0 && !subgridded_columns {
   mut updated_columns := orthogonal_column_tracks.clone()
-  if update_orthogonal_grid_column_contributions(mut state,container,mut updated_columns,rows,placements,effective_row_gap,column_gap,available_space.width) {
+  if update_orthogonal_grid_column_contributions(mut state,container,mut updated_columns,rows,placements,effective_row_gap,column_gap,available_space.width,baseline_column_shims) {
    orthogonal_columns_changed = true
    columns = updated_columns.clone()
    mut total := column_gap.scaled(f64(grid_gutter_count(columns,0,columns.len-1)))
@@ -3295,6 +3310,12 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
    final_item_width=clamp_layout_content_size(placement.item,css_pixels_min(area_width.minus(edges),natural),area_width,item_state,true)
   }
 		mut forced_item_height := ?CSSPixels(none)
+  if orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container) && grid_is_vertical(placement.item)
+   && placement.item.computed_values().size_value(.height).is_auto() {
+   // The second sizing pass resolved this orthogonal inline size. Relayout
+   // its contents even when block self-alignment is start instead of stretch.
+   forced_item_height=item_state.content_height()
+  }
 		if (block_alignment == .stretch || (block_alignment == .normal
 			&& !placement.item.is_replaced_box()))
 			&& placement.item.computed_values().size_value(.height).is_auto() && !top_margin_auto
@@ -3321,13 +3342,14 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 			// basis changes. Reuse that geometry when nothing depends on the new
 			// definite height, just as flex stretching does.
 			if clamped_height == item_state.content_height() && final_item_width == item_state.content_width()
+    && !(orthogonal_columns_changed && grid_is_vertical(placement.item)!=grid_is_vertical(container))
 				&& !subgridded_columns && !subgridded_rows
 				&& !placement.item.is_replaced_box() && !node_uses_button_layout(placement.item)
 				&& (item_state.has_definite_height()
 					|| !flex_subtree_depends_on_definite_height(mut state, placement.item)) {
 				item_state.set_has_definite_height(true)
 			} else {
-				item_state = layout_independent_child(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
+				item_state = layout_independent_child_with_resolved_height(mut state, placement.item, mut container_state, area_width, if container_state.has_definite_height() {
 					container_state.content_height()
 				} else {
 					none
@@ -3416,7 +3438,7 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
   if grid_lanes_axis_is_horizontal(container) { automatic_height = extent }
   else if width_is_intrinsic { intrinsic_container_width = extent;container_state.set_content_width(extent) }
  }
-	align_grid_baseline_subjects(mut state,container,placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
+	align_grid_baseline_subjects(mut state,container,column_sizing_placements,row_sizing_placements,container_width,grid_alignment_height or { automatic_height },columns,rows,effective_column_gap,effective_row_gap,column_leading_space,row_leading_space)
 	publish_grid_content_baselines(mut state,container,mut container_state,placements)
 
  // Every abspos descendant whose containing block is this grid resolves
@@ -3441,6 +3463,10 @@ fn run_uncached_grid_formatting_context_internal(mut state LayoutState, containe
 }
 
 fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,definite bool) (CSSPixels,bool,bool) {
+ return grid_repeat_axis_constraint_with_adjustment(node,horizontal,basis,definite,none)
+}
+
+fn grid_repeat_axis_constraint_with_adjustment(node &Node,horizontal bool,basis CSSPixels,definite bool,used_adjustment ?CSSPixels) (CSSPixels,bool,bool) {
  if definite { return basis,true,false }
  style := node.computed_values()
  minimum := style.size_value(if horizontal { .min_width } else { .min_height })
@@ -3456,10 +3482,12 @@ fn grid_repeat_axis_constraint(node &Node,horizontal bool,basis CSSPixels,defini
   else { max_bound=resolve_layout_size(node,maximum,basis) }
  }
  edges := style.resolved_box_model_edges(basis.to_double())
- adjustment := if style.box_sizing() == .border_box {
-  if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
-  else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) }
- } else { CSSPixels.new(0) }
+ adjustment := used_adjustment or {
+  if style.box_sizing() == .border_box {
+   if horizontal { edges.padding_left.plus(edges.padding_right).plus(edges.border_left).plus(edges.border_right) }
+   else { edges.padding_top.plus(edges.padding_bottom).plus(edges.border_top).plus(edges.border_bottom) }
+  } else { CSSPixels.new(0) }
+ }
  if max_value := max_bound {
   lower := min_bound or { CSSPixels.new(0) }
   return css_pixels_max(CSSPixels.new(0),css_pixels_max(lower,max_value).minus(adjustment)),true,false

@@ -1,4 +1,5 @@
 # Pinned LibRegex 963d46a829f3e1b79f44dba9d02afb70654300fa; complete parser AST/error oracle.
+# Nine v-mode escape expectations updated for 7d40499c017a529103126f4d006fd4bd2abc8e89; inputs unchanged.
 # mode (0 legacy, 1 u, 2 v), UTF-8 source hex, canonical AST or original error
 0		=0::D(A())
 0	61	=0::D(A(T(L97;-)))
@@ -2607,7 +2608,7 @@
 2	283f3c6e3e5c783431295c6b3c6e3e61	=1:n@1:D(A(T(G1:nD(A(T(L65;-)));-),T(Yn;-),T(L97;-)))
 2	283f3a5c3430307c5b2d615d29	!invalid backreference \400
 2	5c3430307c5b265d	!invalid backreference \400
-2	5b5c665c215d	!invalid escape '\!'
+2	5b5c665c215d	=0::D(A(T(C0U(L12,L33);-)))
 2	283f3a5c627c5b5c642d615d29	!invalid character class
 2	5c427c5c6e	=0::D(A(T(E3;-))|A(T(L10;-)))
 2	5c667c5b28295d2f	!invalid character class
@@ -2642,7 +2643,7 @@
 2	5b5c642d615d7c5c6330	!invalid character class
 2	285b612d2d625d295c635a	=1::D(A(T(G1:-D(A(T(C0S(L97,L98);-)));-),T(L26;-)))
 2	285c2d295b28295d2f	!invalid escape '\-'
-2	5b5c635a5b21215d5d	!invalid escape '\c'
+2	5b5c635a5b21215d5d	!invalid character class
 2	283f3c6e3e5c303737295c6b3c6e3e5c21	!invalid escape '\0'
 2	5c217c5b612d2d625d	!invalid escape '\!'
 2	5b5b5c642d615d5b612d2d625d5d	!invalid character class
@@ -2677,7 +2678,7 @@
 2	5b2d615d7c5b5e5d	!invalid character class
 2	283f3c6e3e5c295c6b3c6e3e5c76	!unexpected end of pattern
 2	5c3939397c5b5d	!invalid backreference \999
-2	5b5b612626625d5c215d	!invalid escape '\!'
+2	5b5b612626625d5c215d	=0::D(A(T(C0U(C0I(L97,L98),L33);-)))
 2	285e295c	!lone trailing backslash
 2	285c72295b5c642d615d	!invalid character class
 2	283f3a5c717c5b28295d2f29	!invalid escape '\q'
@@ -2698,7 +2699,7 @@
 2	285b2d615d295c333737	!invalid character class
 2	5b612d5d7c5b28295d2f	!invalid character class
 2	283f3c6e3e5c2d295c6b3c6e3e5b612d7a5d	!invalid escape '\-'
-2	5b5c635a5b5d5d	!invalid escape '\c'
+2	5b5c635a5b5d5d	=0::D(A(T(C0U(L26,C0U());-)))
 2	283f3a5c777c5c6429	=0::D(A(T(ND(A(T(B2;-))|A(T(B0;-)));-)))
 2	5b2e5c3430305d	!invalid escape '\4'
 2	5b5c575b5d	!unexpected end of pattern
@@ -2748,7 +2749,7 @@
 2	5c3337377c5c66	!invalid backreference \377
 2	5c3037377c5c64	!invalid escape '\0'
 2	283f3c6e3e5c42295c6b3c6e3e5c21	!invalid escape '\!'
-2	5b5c635a5e5d	!invalid escape '\c'
+2	5b5c635a5e5d	=0::D(A(T(C0U(L26,L94);-)))
 2	5c63307c5c62	!invalid escape '\c'
 2	285c7530303431295c	!lone trailing backslash
 2	283f3a5b5c642d615d7c5c6229	!invalid character class
@@ -2807,7 +2808,7 @@
 2	283f3a5b5c717b61627c637d5d7c5c5329	=0::D(A(T(ND(A(T(C0U(C0U(Q97:98,Q99));-))|A(T(B5;-)));-)))
 2	283f3c6e3e5c76295c6b3c6e3e5c72	=1:n@1:D(A(T(G1:nD(A(T(L11;-)));-),T(Yn;-),T(L13;-)))
 2	283f3c6e3e5b5d295c6b3c6e3e5c30	=1:n@1:D(A(T(G1:nD(A(T(C0U();-)));-),T(Yn;-),T(L0;-)))
-2	5b5c635a5c575d	!invalid escape '\c'
+2	5b5c635a5c575d	=0::D(A(T(C0U(L26,B3);-)))
 2	285c73295b21215d	!invalid character class
 2	5b5b28295d2f5c305d	!invalid character class
 2	5c747c5b612d2d625d	=0::D(A(T(L9;-))|A(T(C0S(L97,L98);-)))
@@ -2844,7 +2845,7 @@
 2	283f3c6e3e5c62295c6b3c6e3e61	=1:n@1:D(A(T(G1:nD(A(T(E2;-)));-),T(Yn;-),T(L97;-)))
 2	283f3c6e3e5b612d2d625d295c6b3c6e3e5b5d	=1:n@1:D(A(T(G1:nD(A(T(C0S(L97,L98);-)));-),T(Yn;-),T(C0U();-)))
 2	283f3c6e3e5b5d295c6b3c6e3e5b	!invalid character class
-2	5b5b612d7a5d5c635a5d	!invalid escape '\c'
+2	5b5b612d7a5d5c635a5d	=0::D(A(T(C0U(C0U(R97:122),L26);-)))
 2	283f3c6e3e5c77295c6b3c6e3e5c44	=1:n@1:D(A(T(G1:nD(A(T(B2;-)));-),T(Yn;-),T(B1;-)))
 2	5b5b2d615d5b5e5d5d	!invalid character class
 2	617c5c74	=0::D(A(T(L97;-))|A(T(L9;-)))
@@ -2961,7 +2962,7 @@
 2	285c74295b5c707b4c65747465727d5d	=1::D(A(T(G1:-D(A(T(L9;-)));-),T(C0U(P0[Letter=-]);-)))
 2	5c635a7c5c76	=0::D(A(T(L26;-))|A(T(L11;-)))
 2	283f3c6e3e5c393939295c6b3c6e3e5b612d2d625d	!invalid backreference \999
-2	5b5c215c215d	!invalid escape '\!'
+2	5b5c215c215d	=0::D(A(T(C0U(L33,L33);-)))
 2	5b5c3939395c535d	!invalid escape '\9'
 2	285b295c6e	!invalid character class
 2	283f3a5c3037377c5b5c707b4c65747465727d5d29	!invalid escape '\0'
@@ -3000,7 +3001,7 @@
 2	283f3c6e3e5c57295c6b3c6e3e5c53	=1:n@1:D(A(T(G1:nD(A(T(B3;-)));-),T(Yn;-),T(B5;-)))
 2	5b7c61	!invalid character class
 2	5b5e5b5c642d615d5d	!invalid character class
-2	5b5c445c215d	!invalid escape '\!'
+2	5b5c445c215d	=0::D(A(T(C0U(B1,L33);-)))
 2	283f3c6e3e5c6330295c6b3c6e3e5c757b31463630307d	!invalid escape '\c'
 2	5c2d7c5c393939	!invalid escape '\-'
 2	282e295c62	=1::D(A(T(G1:-D(A(T(.;-)));-),T(E2;-)))

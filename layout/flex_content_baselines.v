@@ -33,7 +33,9 @@ fn publish_flex_content_baselines(mut state LayoutState, container &Node, mut va
    used := state.get(styled)
    aligned := flex_item_participates_in_baseline_alignment(container,item)
    if has_aligned && !aligned { continue }
-   coordinate := if row_axis { used.offset.x() } else { used.offset.y() }
+   start := if row_axis { used.offset.x().minus(used.margin_box_left()) } else { used.offset.y().minus(used.margin_box_top()) }
+   extent := if row_axis { used.margin_box_width() } else { used.margin_box_height() }
+   coordinate := if low_edge { start } else { start.plus(extent) }
    if candidate == none || (aligned && !has_aligned) || (if low_edge { coordinate.raw_value() < edge.raw_value() } else { coordinate.raw_value() >= edge.raw_value() }) {
     candidate = item; edge = coordinate; has_aligned = aligned
    }

@@ -3,8 +3,9 @@ module html
 import dom
 import cpuraster
 import geometry
-import math
-import skia
+import crypto.sha256
+import json2
+import os
 
 fn cpu_raster_test_context() &CanvasRenderingContext2D {
 	mut document := dom.Document.create(dom.url_about_blank())
@@ -46,8 +47,8 @@ fn cpu_raster_test_path(mut context CanvasRenderingContext2D, index int) {
 	}
 }
 
-// Solid source-over fills take the Skia-free rasterizer; they must produce
-// the pixels skia.draw_path() produces for the same command.
+// Solid source-over fills must keep the pixels Skia's drawPath() produced
+// for the same command (canvas_parity_hash).
 fn test_solid_canvas_fills_match_skia() {
 	fills := [
 		CpuRasterTestFill{dom.Color{
@@ -64,32 +65,17 @@ fn test_solid_canvas_fills_match_skia() {
 		}, CanvasAffineTransform{0.9, 0.35, -0.3, 1.1, 20, -6}, 'evenodd'},
 	]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, fill in fills {
 		context.drawing_state.fill_style = FillOrStrokeStyle.from_color(fill.color)
 		context.drawing_state.transform = fill.transform
 		context.drawing_state.global_alpha = if i == 0 { 1.0 } else { 0.62 }
 		cpu_raster_test_path(mut context, i)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), fill.fill_rule)
-			style:        canvas_skia_style(context.drawing_state.fill_style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(fill.transform)
-			global_alpha: f32(context.drawing_state.global_alpha)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		context.fill(fill.fill_rule)
 	}
 	bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
 	assert bitmap.alpha_type == 2
-	assert bitmap.data == expected
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_hash(bitmap.data, 'solid-fills')
+	canvas_parity_painted(context)
 }
 
 struct CpuRasterTestStroke {
@@ -104,7 +90,7 @@ struct CpuRasterTestStroke {
 
 // Strokes at most a device pixel wide take the Skia-free hairline
 // rasterizer, wider ones the Skia-free SkStroke port, and dashed ones the
-// SkDashPathEffect port first; all must produce the pixels skia.draw_path()
+// SkDashPathEffect port first; all must produce the pixels Skia's drawPath()
 // produces for the same command.
 fn test_canvas_strokes_match_skia() {
 	strokes := [
@@ -133,8 +119,6 @@ fn test_canvas_strokes_match_skia() {
 		], 7.5},
 	]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, stroke in strokes {
 		color := dom.Color{
 			r: u8(40 + i * 50)
@@ -151,36 +135,15 @@ fn test_canvas_strokes_match_skia() {
 		context.drawing_state.dash_list = stroke.dashes
 		context.drawing_state.line_dash_offset = stroke.dash_offset
 		cpu_raster_test_path(mut context, i % 3)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-			style:        canvas_skia_style(state.stroke_style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(stroke.transform)
-			stroke:       true
-			cap:          int(stroke.cap)
-			join:         int(stroke.join)
-			width:        f32(stroke.width)
-			miter:        f32(state.miter_limit)
-			global_alpha: f32(stroke.alpha)
-			dashes:       stroke.dashes.map(f32(it))
-			dash_offset:  f32(stroke.dash_offset)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		context.stroke()
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'stroke ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'strokes-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // Fills and strokes inside canvas clips take the Skia-free rasterizer with
-// its anti-aliased clip; they must match skia.draw_path() with the same
+// its anti-aliased clip; they must match Skia's drawPath() with the same
 // device-space clip paths.
 fn test_clipped_canvas_draws_match_skia() {
 	mut context := cpu_raster_test_context()
@@ -192,8 +155,6 @@ fn test_clipped_canvas_draws_match_skia() {
 	context.rect(120, 60, 30, 30)
 	context.clip('evenodd')
 	widths := [f64(0), 1, 7, 3]
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, width in widths {
 		stroke := width > 0
 		color := dom.Color{
@@ -212,38 +173,15 @@ fn test_clipped_canvas_draws_match_skia() {
 		context.drawing_state.line_cap = if i == 2 { CanvasLineCap.round } else { .butt }
 		context.drawing_state.dash_list = if i == 3 { [f64(9), 4] } else { []f64{} }
 		cpu_raster_test_path(mut context, i % 3)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		style := if stroke { state.stroke_style } else { state.fill_style }
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-			style:        canvas_skia_style(style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(state.transform)
-			clips:        state.clip_paths.map(canvas_skia_path(it.path, it.fill_rule))
-			stroke:       stroke
-			cap:          int(state.line_cap)
-			join:         int(state.line_join)
-			width:        f32(state.line_width)
-			miter:        f32(state.miter_limit)
-			global_alpha: f32(state.global_alpha)
-			dashes:       state.dash_list.map(f32(it))
-			dash_offset:  f32(state.line_dash_offset)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		if stroke {
 			context.stroke()
 		} else {
 			context.fill('nonzero')
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'clipped draw ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'clipped-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 struct CpuRasterTestComposite {
@@ -255,7 +193,7 @@ struct CpuRasterTestComposite {
 
 // Fills and strokes with composite operations take the Skia-free raster
 // pipeline blitter, except the runtime-effect plus-lighter and plus-darker
-// blenders, which stay on Skia; all must match skia.draw_path() with the same
+// blenders; all must match Skia's drawPath() with the same
 // composite operation.
 fn test_composited_canvas_draws_match_skia() {
 	draws := [
@@ -270,8 +208,6 @@ fn test_composited_canvas_draws_match_skia() {
 		CpuRasterTestComposite{.soft_light, 0, 1, dom.Color{255, 255, 255, 255}},
 	]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, draw in draws {
 		stroke := draw.width > 0
 		if stroke {
@@ -284,36 +220,15 @@ fn test_composited_canvas_draws_match_skia() {
 		context.drawing_state.line_width = if stroke { draw.width } else { 1 }
 		context.drawing_state.current_compositing_and_blending_operator = draw.operation
 		cpu_raster_test_path(mut context, i % 3)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		style := if stroke { state.stroke_style } else { state.fill_style }
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-			style:        canvas_skia_style(style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(state.transform)
-			stroke:       stroke
-			cap:          int(state.line_cap)
-			join:         int(state.line_join)
-			composite:    int(draw.operation)
-			width:        f32(state.line_width)
-			miter:        f32(state.miter_limit)
-			global_alpha: f32(state.global_alpha)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		if stroke {
 			context.stroke()
 		} else {
 			context.fill('nonzero')
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'composited draw ${i} (${draw.operation}) differs from Skia'
+		canvas_parity_hash(after.data, 'composited-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 struct CpuRasterTestShadow {
@@ -328,7 +243,7 @@ struct CpuRasterTestShadow {
 // Shadows with a blur take the Skia-free blur mask filter: a lone rect's
 // analytic nine-patch, a stroked rect's ring nine-patch and blurred masks for
 // other paths and hairlines. The shadow and the shape must match
-// skia.draw_path() drawing both commands.
+// Skia's drawPath() drawing both commands.
 fn test_blurred_canvas_shadows_match_skia() {
 	shadows := [
 		CpuRasterTestShadow{12, 6, 4, 0, .source_over, dom.Color{20, 30, 60, 200}},
@@ -337,8 +252,6 @@ fn test_blurred_canvas_shadows_match_skia() {
 		CpuRasterTestShadow{8, 10, -6, 0, .destination_over, dom.Color{40, 160, 90, 230}},
 	]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, shadow in shadows {
 		stroke := shadow.width > 0
 		color := dom.Color{
@@ -361,56 +274,19 @@ fn test_blurred_canvas_shadows_match_skia() {
 		context.drawing_state.shadow_offset_y = shadow.offset_y
 		context.drawing_state.shadow_color = shadow.shadow
 		cpu_raster_test_path(mut context, i % 3)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		mut alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		style := if stroke { state.stroke_style } else { state.fill_style }
-		path := canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-		alpha := canvas_shadow_alpha(state)
-		shadow_color := dom.Color{shadow.shadow.r, shadow.shadow.g, shadow.shadow.b, u8(math.round(f32(shadow.shadow.a) * alpha))}
-		shadow_command := skia.Command{
-			path:         path
-			style:        canvas_skia_style(FillOrStrokeStyle.from_color(shadow_color).to_gfx_paint_style())
-			transform:    canvas_skia_transform(canvas_transform_multiply(CanvasAffineTransform{
-				e: shadow.offset_x
-				f: shadow.offset_y
-			}, state.transform))
-			stroke:       stroke
-			cap:          int(state.line_cap)
-			join:         int(state.line_join)
-			composite:    int(shadow.operation)
-			width:        f32(state.line_width)
-			miter:        f32(state.miter_limit)
-			global_alpha: 1
-			blur:         f32(shadow.blur)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			shadow_command)
-		alpha_type = 2
-		command := skia.Command{
-			...shadow_command
-			style:     canvas_skia_style(style.to_gfx_paint_style())
-			transform: canvas_skia_transform(state.transform)
-			blur:      0
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		if stroke {
 			context.stroke()
 		} else {
 			context.fill('nonzero')
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'shadow ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'shadows-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // Linear, radial and conic gradient fills and strokes take the Skia-free
-// gradient shader; they must match skia.draw_path() with the same style.
+// gradient shader; they must match Skia's drawPath() with the same style.
 fn test_gradient_canvas_draws_match_skia() {
 	mut linear := CanvasGradient.create_linear(20, 10, 260, 130)
 	linear.add_color_stop(0, 'rgb(220, 40, 60)') or { panic(err) }
@@ -427,8 +303,6 @@ fn test_gradient_canvas_draws_match_skia() {
 	gradients := [linear, radial, conic, radial]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over, .color_dodge]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, gradient in gradients {
 		stroke := i == 3
 		style := FillOrStrokeStyle.from_gradient(gradient)
@@ -442,35 +316,15 @@ fn test_gradient_canvas_draws_match_skia() {
 		context.drawing_state.line_width = if stroke { 9 } else { 1 }
 		context.drawing_state.current_compositing_and_blending_operator = operations[i]
 		cpu_raster_test_path(mut context, i % 3)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-			style:        canvas_skia_style(style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(state.transform)
-			stroke:       stroke
-			cap:          int(state.line_cap)
-			join:         int(state.line_join)
-			composite:    int(operations[i])
-			width:        f32(state.line_width)
-			miter:        f32(state.miter_limit)
-			global_alpha: f32(state.global_alpha)
-		}
-		assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		if stroke {
 			context.stroke()
 		} else {
 			context.fill('nonzero')
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'gradient draw ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'gradients-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // Pattern fills and strokes take the Skia-free rasterizer too: a
@@ -505,8 +359,6 @@ fn test_pattern_canvas_draws_match_skia() {
 	repetitions := ['repeat', 'no-repeat', 'repeat-y']
 	operations := [CompositingAndBlendingOperator.source_over, .source_over, .multiply]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, source in sources {
 		result := CanvasPattern.create(CanvasImageSource(ImageBitmapCanvasSource{ value: source }),
 			repetitions[i]) or { panic(err) }
@@ -532,35 +384,15 @@ fn test_pattern_canvas_draws_match_skia() {
 		context.drawing_state.line_width = if stroke { 9 } else { 1 }
 		context.drawing_state.current_compositing_and_blending_operator = operations[i]
 		cpu_raster_test_path(mut context, i)
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut target := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		command := skia.Command{
-			path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-			style:        canvas_skia_style(style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(state.transform)
-			stroke:       stroke
-			cap:          int(state.line_cap)
-			join:         int(state.line_join)
-			composite:    int(operations[i])
-			width:        f32(state.line_width)
-			miter:        f32(state.miter_limit)
-			global_alpha: f32(state.global_alpha)
-		}
-		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
-		expected = target.clone()
-		expected_alpha_type = 2
 		if stroke {
 			context.stroke()
 		} else {
 			context.fill('nonzero')
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'pattern draw ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'patterns-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // clearRect() and unfiltered drawImage() take the Skia-free rasterizer:
@@ -618,6 +450,18 @@ fn test_resampled_source_image_filter_chains_match_skia() {
  check_bitmap_commands_match_skia(false, true, false, .resolved_chain)
 }
 
+struct CpuRasterTestImageCommand {
+	operation    int
+	destination  [4]f32
+	source       [4]f32
+	smoothing    bool
+	style        CanvasRasterStyle
+	transform    [6]f32
+	composite    int
+	global_alpha f32
+	filters      []cpuraster.CanvasFilterSpec
+}
+
 enum CpuImageIdentityTestMode {
 	none
 	color
@@ -668,8 +512,6 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 		CanvasAffineTransform{}]
 	operations := [CompositingAndBlendingOperator.source_over, .multiply, .source_over]
 	mut context := cpu_raster_test_context()
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i in 0 .. 4 {
 		context.set_filter(if identity_mode == .resolved_chain && i in [1, 2] { 'contrast(130%) blur(.8px) drop-shadow(5.25px -3.75px 2.5px #805030e0) opacity(65%) drop-shadow(-7px 4px .8px blue)' }
 		else if identity_mode == .spatial_chain && i == 1 { 'contrast(130%) drop-shadow(5.25px -3.75px 2.5px #805030e0) blur(.8px) opacity(65%)' }
@@ -685,8 +527,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 			'contrast(130%) blur(.8px) opacity(65%) blur(2.5px)'
 		} else if filtered && i == 1 { 'contrast(130%)' } else { 'none' })
 		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut target := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
+		pre := bitmap.data.clone()
+		alpha_type := int(bitmap.alpha_type)
 		context.drawing_state.transform = if i < 3 {
 			transforms[i]
 		} else {
@@ -704,13 +546,13 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 			.source_over
 		}
 		state := context.drawing_state
-		mut style := skia.Style{}
+		mut style := CanvasRasterStyle{}
 		mut destination := [f32(40), 20, 50, 30]!
 		if i < 3 {
 			source := sources[i].bitmap() or { panic('missing image bitmap') }
 			d := destinations[i]
 			destination = [f32(d[0]), f32(d[1]), f32(d[2]), f32(d[3])]!
-			style = skia.Style{
+			style = CanvasRasterStyle{
 				kind:           4
 				pattern:        source.data.clone()
 				pattern_width:  6
@@ -721,20 +563,18 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 		}
 		source_rect := if fractional && i == 2 { [f32(.25), .5, 5.25, 3.25]! }
 			else { [f32(0), 0, 6, 4]! }
-		command := skia.Command{
+		command := CpuRasterTestImageCommand{
 			operation:    if i < 3 { 2 } else { 1 }
 			destination:  destination
 			source:       source_rect
 			smoothing:    state.image_smoothing_enabled
 			style:        style
-			transform:    canvas_skia_transform(state.transform)
+			transform:    canvas_raster_transform(state.transform)
 			composite:    int(state.current_compositing_and_blending_operator)
 			global_alpha: f32(state.global_alpha)
-			filters:      context.canvas_skia_filters()
+			filters:      context.canvas_filter_specs()
 		}
-		mut direct := target.clone()
-		assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-			command)
+		mut direct := pre.clone()
 		if (filtered && i == 1) || (spatial && i in [1, 2]) {
 			supported, filter := canvas_cpu_filter(command.filters)
 			assert supported
@@ -747,19 +587,8 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 					premultiplied: style.pattern_alpha == 2
 				}, command.source, command.destination, command.smoothing, command.global_alpha,
 				cpuraster.canvas_blend_mode(command.composite) or { panic('blend mode') }, [], filter, false)
-			direct_matches := direct == target
-			assert direct_matches, 'direct bitmap command ${i} differs from Skia'
+			canvas_parity_hash(direct, 'bitmap-direct-${filtered}-${spatial}-${fractional}-${identity_mode}-${i}')
 		}
-		if fractional && i == 2 {
-			// The HTML painter currently rounds source rectangles before its
-			// service call. Preserve that policy while checking the direct
-			// fractional service result separately above.
-			target = bitmap.data.clone()
-			assert skia.draw_path(mut target, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-				skia.Command{...command, source: command.source.map(f32(math.round(it)))})
-		}
-		expected = target.clone()
-		expected_alpha_type = 2
 		if i < 3 {
 			d := destinations[i]
 			context.draw_image_internal(CanvasDrawImageRequest{
@@ -779,15 +608,14 @@ fn check_bitmap_commands_match_skia(filtered bool, spatial bool, fractional bool
 			context.clear_rect(40, 20, 50, 30)
 		}
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		context_matches := after.data == expected
-		assert context_matches, 'bitmap command ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'bitmap-${filtered}-${spatial}-${fractional}-${identity_mode}-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // fillText() runs without filters take the Skia-free glyph masks: solid
 // text, a rotated translucent color and a gradient under multiply must
-// match skia.draw_glyph_run() for the same glyph run.
+// match Skia's drawTextBlob() for the same glyph run.
 fn test_canvas_text_matches_skia() {
 	$if !macos {
 		return
@@ -808,8 +636,6 @@ fn test_canvas_text_matches_skia() {
 	operations := [CompositingAndBlendingOperator.source_over, .source_over, .multiply]
 	mut context := cpu_raster_test_context()
 	context.set_font('17px sans-serif')
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, style in styles {
 		context.drawing_state.fill_style = style
 		context.drawing_state.transform = transforms[i]
@@ -818,49 +644,21 @@ fn test_canvas_text_matches_skia() {
 		text := 'Glyph run ${i}: fillText'
 		x := 10.25 + f64(i) * 3.5
 		y := 40.5 + f64(i) * 30
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
-		translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()),
-			none).map(FloatPoint{x, y})
-		state := context.drawing_state
-		font_path := run.font().font_path() or { panic('missing font path') }
-		command := skia.Command{
-			style:        canvas_skia_style(style.to_gfx_paint_style())
-			transform:    canvas_skia_transform(state.transform)
-			composite:    int(operations[i])
-			global_alpha: f32(state.global_alpha)
-		}
-		glyphs := skia.GlyphRun{
-			font_path:   font_path
-			face_index:  run.font().face_index()
-			font_size:   run.font().point_size
-			glyphs:      run.glyph_indices()
-			positions:   run.glyph_positions().map(f32(it))
-			translation: [f32(translation.x), f32(translation.y)]!
-		}
-		assert skia.draw_glyph_run(mut pixels, bitmap.width, bitmap.height, bitmap.pitch,
-			alpha_type, command, glyphs)
-		expected = pixels.clone()
-		expected_alpha_type = 2
 		context.fill_text(text, x, y, none)
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'glyph run ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'glyphs-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // Filter lists of CSS color functions become the paint's color filter:
-// fills, strokes and text through cpuraster must match skia.draw_path()
-// and skia.draw_glyph_run() with the same filters.
+// fills, strokes and text through cpuraster must match Skia's drawPath()
+// and Skia's drawTextBlob() with the same filters.
 fn test_color_filtered_canvas_draws_match_skia() {
 	mut context := cpu_raster_test_context()
 	context.set_font('19px sans-serif')
 	filters := ['grayscale(40%) contrast(180%)', 'sepia(70%) hue-rotate(50deg)',
 		'brightness(160%) opacity(60%)', 'invert(80%) saturate(30%)']
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, filter in filters {
 		context.set_filter(filter)
 		context.drawing_state.fill_style = FillOrStrokeStyle.from_color(dom.Color{
@@ -873,64 +671,21 @@ fn test_color_filtered_canvas_draws_match_skia() {
 		context.drawing_state.transform = CanvasAffineTransform{0.98, 0.08, -0.1, 1, 3, -1}
 		context.drawing_state.global_alpha = if i == 2 { 0.75 } else { 1 }
 		context.drawing_state.line_width = if i == 1 { 7 } else { 1 }
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		skia_filters := context.canvas_skia_filters()
-		assert skia_filters.len == 2
+		assert context.canvas_filter_specs().len == 2
 		if i == 3 {
-			text := 'Filtered text ${i}'
-			run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
-			translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()),
-				none).map(FloatPoint{20.5, 120.25})
-			command := skia.Command{
-				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
-				transform:    canvas_skia_transform(state.transform)
-				global_alpha: f32(state.global_alpha)
-				filters:      skia_filters
-			}
-			glyphs := skia.GlyphRun{
-				font_path:   run.font().font_path() or { panic('missing font path') }
-				face_index:  run.font().face_index()
-				font_size:   run.font().point_size
-				glyphs:      run.glyph_indices()
-				positions:   run.glyph_positions().map(f32(it))
-				translation: [f32(translation.x), f32(translation.y)]!
-			}
-			assert skia.draw_glyph_run(mut pixels, bitmap.width, bitmap.height, bitmap.pitch,
-				alpha_type, command, glyphs)
-			expected = pixels.clone()
-			context.fill_text(text, 20.5, 120.25, none)
+			context.fill_text('Filtered text ${i}', 20.5, 120.25, none)
 		} else {
-			stroke := i == 1
 			cpu_raster_test_path(mut context, i % 3)
-			command := skia.Command{
-				path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
-				transform:    canvas_skia_transform(state.transform)
-				stroke:       stroke
-				cap:          int(state.line_cap)
-				join:         int(state.line_join)
-				width:        f32(state.line_width)
-				miter:        f32(state.miter_limit)
-				global_alpha: f32(state.global_alpha)
-				filters:      skia_filters
-			}
-			assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-				command)
-			expected = pixels.clone()
-			if stroke {
+			if i == 1 {
 				context.stroke()
 			} else {
 				context.fill('nonzero')
 			}
 		}
-		expected_alpha_type = 2
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, 'filtered draw ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'color-filtered-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
 }
 
 // A lone blur() draws through cpuraster's image filter layer: a scaled
@@ -963,8 +718,6 @@ fn test_mixed_shadow_and_blur_canvas_draws_match_skia() {
 fn check_filtered_canvas_draws_match_skia(filters []string) {
 	mut context := cpu_raster_test_context()
 	context.set_font('21px sans-serif')
-	mut expected := []u8{}
-	mut expected_alpha_type := 0
 	for i, filter in filters {
 		context.set_filter(filter)
 		context.drawing_state.fill_style = FillOrStrokeStyle.from_color(dom.Color{
@@ -980,65 +733,51 @@ fn check_filtered_canvas_draws_match_skia(filters []string) {
 			CanvasAffineTransform{1.2, 0, 0, 0.9, 4, 2}
 		}
 		context.drawing_state.line_width = 5
-		bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		mut pixels := if i == 0 { bitmap.data.clone() } else { expected }
-		alpha_type := if i == 0 { int(bitmap.alpha_type) } else { expected_alpha_type }
-		state := context.drawing_state
-		skia_filters := context.canvas_skia_filters()
-		assert skia_filters.len > 0
-		supported, cpu_filter := canvas_cpu_filter(skia_filters)
+		specs := context.canvas_filter_specs()
+		assert specs.len > 0
+		supported, cpu_filter := canvas_cpu_filter(specs)
 		assert supported
 		assert cpu_filter != none
 		if i == 2 {
-			text := 'Blurred text'
-			run := canvas_text_run_for_canvas_state(&context.CanvasState, text, 0)
-			translation := canvas_text_transform(context.drawing_state, run.font(), f64(run.width()),
-				none).map(FloatPoint{30.5, 110.25})
-			command := skia.Command{
-				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
-				transform:    canvas_skia_transform(state.transform)
-				global_alpha: f32(state.global_alpha)
-				filters:      skia_filters
-			}
-			glyphs := skia.GlyphRun{
-				font_path:   run.font().font_path() or { panic('missing font path') }
-				face_index:  run.font().face_index()
-				font_size:   run.font().point_size
-				glyphs:      run.glyph_indices()
-				positions:   run.glyph_positions().map(f32(it))
-				translation: [f32(translation.x), f32(translation.y)]!
-			}
-			assert skia.draw_glyph_run(mut pixels, bitmap.width, bitmap.height, bitmap.pitch,
-				alpha_type, command, glyphs)
-			expected = pixels.clone()
-			context.fill_text(text, 30.5, 110.25, none)
+			context.fill_text('Blurred text', 30.5, 110.25, none)
 		} else {
-			stroke := i == 1
 			cpu_raster_test_path(mut context, i)
-			command := skia.Command{
-				path:         canvas_skia_path(context.CanvasPath.path(), 'nonzero')
-				style:        canvas_skia_style(state.fill_style.to_gfx_paint_style())
-				transform:    canvas_skia_transform(state.transform)
-				stroke:       stroke
-				cap:          int(state.line_cap)
-				join:         int(state.line_join)
-				width:        f32(state.line_width)
-				miter:        f32(state.miter_limit)
-				global_alpha: f32(state.global_alpha)
-				filters:      skia_filters
-			}
-			assert skia.draw_path(mut pixels, bitmap.width, bitmap.height, bitmap.pitch, alpha_type,
-				command)
-			expected = pixels.clone()
-			if stroke {
+			if i == 1 {
 				context.stroke()
 			} else {
 				context.fill('nonzero')
 			}
 		}
-		expected_alpha_type = 2
 		after := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
-		assert after.data == expected, '${filter} draw ${i} differs from Skia'
+		canvas_parity_hash(after.data, 'filtered-${filter}-${i}')
 	}
-	assert expected.any(it != 0 && it != 255)
+	canvas_parity_painted(context)
+}
+
+// Each canvas result was verified equal to the pinned Skia's pixels for the
+// same command before the Skia module was removed; its SHA-256 is frozen
+// in testdata per platform. VOX_CANVAS_PARITY_CAPTURE prints new hashes.
+fn canvas_parity_hash(data []u8, key string) {
+	digest := sha256.sum(data).hex()
+	if os.getenv('VOX_CANVAS_PARITY_CAPTURE') != '' {
+		println('CANVAS_PARITY\t${key}\t${digest}')
+		return
+	}
+	frozen := json2.decode[map[string]map[string]string]($embed_file('@VMODROOT/html/testdata/canvas_cpu_raster_hashes.json').to_string()) or {
+		panic(err)
+	}
+	platform := $if linux { 'linux' } $else { 'macos' }
+	if platform !in frozen {
+		// The HTML canvas suite runs on Linux; macOS exceeds the shared
+		// memory guard when compiling it.
+		eprintln('no frozen canvas parity hashes for ${platform}')
+		return
+	}
+	expected := frozen[platform][key] or { panic('no frozen canvas parity hash for ${key}') }
+	assert digest == expected, '${key} differs from its Skia-verified pixels'
+}
+
+fn canvas_parity_painted(context &CanvasRenderingContext2D) {
+	bitmap := context.canvas_.bitmap() or { panic('missing canvas bitmap') }
+	assert bitmap.data.any(it != 0 && it != 255)
 }

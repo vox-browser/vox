@@ -840,6 +840,8 @@ pub fn (mut media_list MediaList) set_media_text(text string) {
 		media_list.media =
 			media_query_entries_from_queries(parse_css_media_query_list_value_logic(text))
 	}
+	// New entries carry no match state; the media evaluation memo must expire.
+	invalidate_media_evaluation_candidates()
 	media_list.invalidate_associated_style_sheet(.media_list_set_media_text, previous_sheet_effects)
 }
 
@@ -874,6 +876,8 @@ pub fn (mut media_list MediaList) append_medium(medium string) {
 
 	// 4. Append m to the collection of media queries.
 	media_list.media << parsed
+	// New entries carry no match state; the media evaluation memo must expire.
+	invalidate_media_evaluation_candidates()
 	media_list.invalidate_associated_style_sheet(.media_list_append_medium, previous_sheet_effects)
 }
 
@@ -902,6 +906,8 @@ pub fn (mut media_list MediaList) delete_medium(medium string) ! {
 	}
 
 	media_list.media = kept
+	// New entries carry no match state; the media evaluation memo must expire.
+	invalidate_media_evaluation_candidates()
 	media_list.invalidate_associated_style_sheet(.media_list_delete_medium, previous_sheet_effects)
 }
 

@@ -123,7 +123,7 @@ fn test_audio_param_validates_and_clamps_automation_times() {
 	mut gain := GainNode.create(mut context.base, GainOptions{}) or { panic(err) }
 	context.base.set_current_time(5)
 	gain.gain.set_value_at_time(0.25, 1) or { panic(err) }
-	assert gain.gain.value() == 0.25
+	assert gain.gain.intrinsic_value_at_time(5) == 0.25
 
 	gain.gain.exponential_ramp_to_value_at_time(0, 6) or {
 		assert err.msg().contains('must not be zero')

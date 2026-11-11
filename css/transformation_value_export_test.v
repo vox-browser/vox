@@ -59,11 +59,61 @@ fn test_transformation_export_matches_every_transform_function_and_individual_pr
 	}
 }
 
+// V compiles each test file on its own, so this file keeps its own copy of
+// the calculation fixture from calculated_value_export_test.v.
+fn transformation_export_numeric(kind CalcNumericKind, number f64, unit string) CalcNode {
+	return CalcNode(CalcNumeric{kind: kind, value: number, unit: unit.clone(), type_: calc_numeric_kind_type(kind)})
+}
+
+fn transformation_export_calculated_fixture() CalculatedStyleValue {
+	root := CalcNode(CalcSum{children: [
+		transformation_export_numeric(.length, 13, 'px'),
+		CalcNode(CalcNegate{children: [CalcNode(CalcProduct{children: [
+			transformation_export_numeric(.number, 2, ''),
+			CalcNode(CalcFunction{name: 'round'.clone(), strategy: 'down'.clone(), children: [
+				transformation_export_numeric(.length, 5, 'em'), transformation_export_numeric(.length, 2, 'px')]}),
+			CalcNode(CalcInvert{children: [transformation_export_numeric(.number, 4, '')]}),
+		]})]}),
+	]})
+	return CalculatedStyleValue{
+		serialization: root.serialize_top()
+		numeric_type_: calculated_numeric_type_storage(NumericType.with_type(.length, 1))
+		calculation_context: CalculationContext{
+			percentages_resolve_as: .length
+			resolve_numbers_as_integers: true
+			accepted_type_ranges: {.length: AcceptedTypeRange{min: -12.5, max: 2048},
+				.percentage: AcceptedTypeRange{min: 0, max: 100}}
+		}
+		node: [root]
+	}
+}
+
+fn transformation_export_assert_calculation_owned(node CalcNode, owner &platform.RetainedArena) {
+	match node {
+		CalcNumeric {
+			$if prealloc { if node.unit.len > 0 { assert owner.arena.contains(node.unit.str) } }
+		}
+		CalcSum, CalcProduct, CalcNegate, CalcInvert {
+			$if prealloc { assert owner.arena.contains(node.children.data) }
+			for child in node.children { transformation_export_assert_calculation_owned(child, owner) }
+		}
+		CalcFunction {
+			$if prealloc {
+				assert owner.arena.contains(node.children.data)
+				if node.name.len > 0 { assert owner.arena.contains(node.name.str) }
+				if node.strategy.len > 0 { assert owner.arena.contains(node.strategy.str) }
+			}
+			for child in node.children { transformation_export_assert_calculation_owned(child, owner) }
+		}
+		else { assert false, 'unsupported test tree' }
+	}
+}
+
 fn transformation_export_fixture() TransformationStyleValue {
 	return TransformationStyleValue.create(.transform, .translate3d, [
 		StyleValue(LengthStyleValue.create(Length.new(1.25, .em))),
 		StyleValue(PercentageStyleValue.create(Percentage.new(25))),
-		StyleValue(calculated_export_fixture()),
+		StyleValue(transformation_export_calculated_fixture()),
 	])
 }
 
@@ -90,7 +140,7 @@ fn test_transformation_export_detaches_arguments_and_calculations_from_retired_w
 	$if prealloc { assert owner.arena.contains(actual.values_.data) }
 	owned_calculated := actual.values_[2] as CalculatedStyleValue
 	assert owned_calculated.calculation_context == (expected.values_[2] as CalculatedStyleValue).calculation_context
-	calculated_export_assert_owned(owned_calculated.node[0], owner)
+	transformation_export_assert_calculation_owned(owned_calculated.node[0], owner)
 	entered.finish()
 	owner.release()
 }
@@ -132,7 +182,13 @@ fn test_transformation_export_rejects_dependent_or_unsupported_arguments_before_
 		assert (actual == none) == (expected == none)
 		if a := actual {
 			b := expected or { panic('reference') }
-			assert !property_value_can_export(b)
+			// An unresolved var() value is published as retained text; invalid
+			// transform functions never reach publication.
+			if b is UnresolvedStyleValue {
+				assert property_value_can_export(b) == !disable_retained_text_value_export, source
+			} else {
+				assert !property_value_can_export(b), source
+			}
 			assert a.serialize(.normal) == b.serialize(.normal)
 		}
 	}

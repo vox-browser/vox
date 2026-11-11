@@ -170,6 +170,11 @@ fn (mut demuxer TrackBufferDemuxer) update_read_blocked(value TrackBufferReadBlo
 	}
 }
 
+fn buffered_coded_frame_bytes(frame DemuxedCodedFrame) int {
+	configuration_bytes := if configuration := frame.new_codec_configuration { configuration.len } else { 0 }
+	return frame.data.len + configuration_bytes
+}
+
 pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCodedFrame) {
 	mut frame := input_frame
 	if configuration := frame.new_codec_configuration {
@@ -184,7 +189,7 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCoded
 			if run.frames[frame_index].timestamp != frame.timestamp {
 				continue
 			}
-			demuxer.total_bytes_ -= run.frames[frame_index].data.len
+			demuxer.total_bytes_ -= buffered_coded_frame_bytes(run.frames[frame_index])
 			run.frames.delete(frame_index)
 			if run.frames.len == 0 {
 				demuxer.runs_.delete(run_index)
@@ -210,12 +215,12 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCoded
 	if run_to_continue < 0 && !frame.is_keyframe {
 		return
 	}
-	demuxer.total_bytes_ += frame.data.len
 	demuxer.last_appended_decode_timestamp_ = frame.decoding_timestamp()
 	if frame.duration > demuxer.maximum_frame_duration_ {
 		demuxer.maximum_frame_duration_ = frame.duration
 	}
 	if run_to_continue >= 0 {
+		demuxer.total_bytes_ += buffered_coded_frame_bytes(frame)
 		demuxer.runs_[run_to_continue].frames << frame
 		demuxer.runs_[run_to_continue].recalculate_bounds()
 		demuxer.dispatch_scan_state_change()
@@ -226,6 +231,7 @@ pub fn (mut demuxer TrackBufferDemuxer) add_coded_frame(input_frame DemuxedCoded
 			frame.new_codec_configuration = configuration.clone()
 		}
 	}
+	demuxer.total_bytes_ += buffered_coded_frame_bytes(frame)
 	mut run := FrameRun{
 		frames: [frame]
 	}
@@ -251,6 +257,7 @@ pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_ra
 }
 
 fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, first_frame int, minimum_count int) int {
+	total_bytes_before := demuxer.total_bytes_
 	mut run := demuxer.runs_[run_index]
 	mut count := minimum_count
 	for first_frame + count < run.frames.len && !run.frames[first_frame + count].is_keyframe {
@@ -258,7 +265,7 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 	}
 	mut bytes := 0
 	for frame in run.frames[first_frame..first_frame + count] {
-		bytes += frame.data.len
+		bytes += buffered_coded_frame_bytes(frame)
 	}
 	mut configuration_before_remaining := ?[]u8(none)
 	if first_frame + count < run.frames.len {
@@ -289,6 +296,7 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 		if tail.frames[0].new_codec_configuration == none {
 			if configuration := configuration_before_remaining {
 				tail.frames[0].new_codec_configuration = configuration.clone()
+				demuxer.total_bytes_ += configuration.len
 			}
 		}
 		run.frames = run.frames[..first_frame].clone()
@@ -311,13 +319,16 @@ fn (mut demuxer TrackBufferDemuxer) erase_frames_and_dependants(run_index int, f
 		if first_frame == 0 && run.frames[0].new_codec_configuration == none {
 			if configuration := configuration_before_remaining {
 				run.frames[0].new_codec_configuration = configuration.clone()
+				demuxer.total_bytes_ += configuration.len
 			}
 		}
 		run.recalculate_bounds()
 		demuxer.runs_[run_index] = run
 	}
 	demuxer.recalculate_maximum_frame_duration()
-	return bytes
+	// A surviving run head may now own a cloned configuration. Report only
+	// bytes actually freed, so eviction cannot spend that retained memory twice.
+	return if total_bytes_before > demuxer.total_bytes_ { total_bytes_before - demuxer.total_bytes_ } else { 0 }
 }
 
 pub fn (mut demuxer TrackBufferDemuxer) remove_coded_frames_and_dependants_in_range_returning_timestamp(start f64, end f64, last_decode_timestamp ?f64) ?f64 {
@@ -438,7 +449,7 @@ pub fn (mut demuxer TrackBufferDemuxer) take_latest_frame() RemovedCodedFrame {
 	frame_index := demuxer.runs_[run_index].frames.len - 1
 	frame := demuxer.runs_[run_index].frames[frame_index]
 	removed := RemovedCodedFrame{
-		byte_size: frame.data.len
+		byte_size: buffered_coded_frame_bytes(frame)
 		decode_timestamp: frame.decoding_timestamp()
 	}
 	demuxer.erase_frames_and_dependants(run_index, frame_index, 1)

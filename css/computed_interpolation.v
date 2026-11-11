@@ -1657,6 +1657,8 @@ pub enum WithAnimationsApplied as u8 {
 
 @[heap]
 pub struct ComputedProperties {
+mut:
+	highlight_originating_color_ ?Color
 pub mut:
 	property_store_                          &ComputedPropertyStore = unsafe { nil }
 	property_important_                      [computed_property_flag_byte_count]u8
@@ -1938,6 +1940,9 @@ pub fn (mut c ComputedProperties) take_properties_for_table_wrapper() &ComputedP
 		Display.from_short(.flow_root)
 	}
 	mut wrapper := c.clone_for_anonymous_with_display(wrapper_display)
+	// The wrapper is the positioned box, so its static position must keep
+	// the table's original block- or inline-level display.
+	wrapper.set_display_before_box_type_transformation(c.display_before_box_type_transformation())
 	for property_id in [PropertyID.position, .position_anchor, .top, .right, .bottom, .left, .float_,
 		.clear, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start,
 		.align_self, .justify_self, .baseline_source, .order, .margin_top, .margin_right, .margin_bottom,
@@ -6561,6 +6566,13 @@ pub fn interpolate_property(element &dom.Element, property_id PropertyID, a_from
 		last := style_value_logic_from_dom(property_id,to) or { return none }
 		if clip_path_reference_box(first) != clip_path_reference_box(last) { return interpolate_discrete(from,to,delta,allow_discrete) }
 	}
+	// https://drafts.csswg.org/css-values-5/#interpolate-calc-size
+	if property_accepts_calc_size(property_id)
+		&& animation_type_from_longhand_property(property_id) == .by_computed_value {
+		if value := interpolate_calc_size_values(element, property_id, from, to, delta) {
+			return value
+		}
+	}
 	calculation_context := InterpolationCalculationContext.for_property(property_id)
 
 	match animation_type_from_longhand_property(property_id) {
@@ -7197,6 +7209,10 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 				if from_shape is BasicShapePath && to_shape is BasicShapeCommands { from_shape=BasicShape(shape_commands_from_svg_path(from_shape) or { return none }) }
 				mut interpolated_shape := ?BasicShape(none)
 				match from_shape {
+					BasicShapePath {
+						if to_shape !is BasicShapePath { return none }
+						interpolated_shape = BasicShape(interpolate_basic_shape_path(from_shape, to_shape, delta) or { return none })
+					}
 					BasicShapeCommands {
 						if to_shape !is BasicShapeCommands { return none }
 						interpolated_shape = BasicShape(interpolate_shape_commands(basic_shape_context,from_shape,to_shape,delta) or { return none })
@@ -7572,6 +7588,15 @@ fn interpolate_style_value_impl(calculation_context InterpolationCalculationCont
 }
 
 pub fn interpolate_style_value(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64, allow_discrete AllowDiscrete) ?StyleValue {
+	if calculation_context.property == .shape_outside {
+		first := shape_outside_without_default_box(from)
+		last := shape_outside_without_default_box(to)
+		if shape_outside_reference_box(first) != shape_outside_reference_box(last) {
+			return interpolate_discrete_style_value(first, last, delta, allow_discrete)
+		}
+		if value := interpolate_style_value_impl(calculation_context, first, last, delta, allow_discrete) { return value }
+		return interpolate_discrete_style_value(first, last, delta, allow_discrete)
+	}
 	if result := interpolate_style_value_impl(calculation_context, from, to, delta, allow_discrete) {
 		return result
 	}
@@ -8041,8 +8066,6 @@ fn interpolation_decompose_matrix(matrix FloatMatrix4x4) ?InterpolationDecompose
 	if basis[1].x > basis[0].y {
 		rotation[2] = -rotation[2]
 	}
-	// Browser coordinates are left-handed because positive Y points down.
-	rotation[2] = -rotation[2]
 
 	return InterpolationDecomposedMatrix{
 		translation: translation
@@ -8069,30 +8092,34 @@ fn interpolation_recompose_matrix(values InterpolationDecomposedMatrix) FloatMat
 	y := values.rotation[1]
 	z := values.rotation[2]
 	w := values.rotation[3]
+	// The rotation matrix is indexed by row and then column, the inverse of
+	// how decomposition reads the rotation out of the matrix columns.
 	mut rotation := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 	rotation[0][0] = 1 - 2 * (y * y + z * z)
-	rotation[1][0] = 2 * (x * y - z * w)
-	rotation[2][0] = 2 * (x * z + y * w)
-	rotation[0][1] = 2 * (x * y + z * w)
+	rotation[0][1] = 2 * (x * y - z * w)
+	rotation[0][2] = 2 * (x * z + y * w)
+	rotation[1][0] = 2 * (x * y + z * w)
 	rotation[1][1] = 1 - 2 * (x * x + z * z)
-	rotation[2][1] = 2 * (y * z - x * w)
-	rotation[0][2] = 2 * (x * z - y * w)
-	rotation[1][2] = 2 * (y * z + x * w)
+	rotation[1][2] = 2 * (y * z - x * w)
+	rotation[2][0] = 2 * (x * z - y * w)
+	rotation[2][1] = 2 * (y * z + x * w)
 	rotation[2][2] = 1 - 2 * (x * x + y * y)
 	mut recomposed := cssom_multiply_transform_matrices(interpolation_float_matrix_from_rows(rows), interpolation_float_matrix_from_rows(rotation))
 
+	// As in the specification's pseudo-code, one temporary matrix carries the
+	// skews, and each step only clears the entry the previous step set.
+	mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 	if values.skew.z != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
 		skew[1][2] = values.skew.z
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
 	if values.skew.y != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[1][2] = 0
 		skew[0][2] = values.skew.y
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
 	if values.skew.x != 0 {
-		mut skew := interpolation_float_matrix_rows(FloatMatrix4x4.identity())
+		skew[0][2] = 0
 		skew[0][1] = values.skew.x
 		recomposed = cssom_multiply_transform_matrices(recomposed, interpolation_float_matrix_from_rows(skew))
 	}
@@ -8212,7 +8239,21 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 			StyleValue(AngleStyleValue.create(Angle.make_degrees(angle))),
 		])
 	}
-	quaternion := interpolation_slerp(interpolation_axis_angle_to_quaternion(from_axis, from_angle), interpolation_axis_angle_to_quaternion(to_axis, to_angle), delta)
+	mut from_quaternion := interpolation_axis_angle_to_quaternion(from_axis, from_angle)
+	to_quaternion := interpolation_axis_angle_to_quaternion(to_axis, to_angle)
+	// A quaternion and its negation are the same rotation. A negative dot
+	// product would slerp the long way around, so negate one input to take
+	// the shortest path, as other engines do.
+	mut product := 0.0
+	for index in 0 .. 4 {
+		product += from_quaternion[index] * to_quaternion[index]
+	}
+	if product < 0 {
+		for index in 0 .. 4 {
+			from_quaternion[index] = -from_quaternion[index]
+		}
+	}
+	quaternion := interpolation_slerp(from_quaternion, to_quaternion, delta)
 	sin_half_angle := math.sqrt(math.max(0.0, 1.0 - quaternion[3] * quaternion[3]))
 	mut axis := FloatVector3{
 		x: quaternion[0]
@@ -8223,6 +8264,11 @@ fn interpolation_rotation_transform(from TransformationStyleValue, to Transforma
 		axis.x /= sin_half_angle
 		axis.y /= sin_half_angle
 		axis.z /= sin_half_angle
+	} else {
+		// The rotation angle is zero, so the axis is arbitrary.
+		axis = FloatVector3{
+			z: 1
+		}
 	}
 	angle := 2.0 * math.acos(clamp_f64(quaternion[3], -1, 1)) * 180.0 / math.pi
 	_ = allow_discrete
@@ -8338,8 +8384,11 @@ fn interpolate_filter_function(calculation_context InterpolationCalculationConte
 			}
 		}
 		FilterOperationColor {
-			if to is FilterOperationColor {
-				operation := if delta >= 0.5 { to.operation } else { from.operation }
+			// Different color filter functions, such as brightness() and
+			// contrast(), do not interpolate. The caller then makes the whole
+			// list discrete, as upstream does.
+			if to is FilterOperationColor && to.operation == from.operation {
+				operation := from.operation
 				mut filter_context := calculation_context
 				filter_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
 				filter_context.accepted_type_ranges[.number] = AcceptedTypeRange{
@@ -8443,6 +8492,12 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 		color_context = color_resolution_context_for_layout_node(layout_node)
 	}
 
+	mut blur_context := calculation_context
+	blur_context.accepted_type_ranges = calculation_context.accepted_type_ranges.clone()
+	blur_context.accepted_type_ranges[.length] = AcceptedTypeRange{
+		min: 0
+		max: math.max_f64
+	}
 	mut result := []StyleValue{cap: from_shadows.len}
 	for i in 0 .. from_shadows.len {
 		from_shadow := from_shadows[i]
@@ -8453,7 +8508,8 @@ pub fn interpolate_box_shadow(element &dom.Element, calculation_context Interpol
 
 		offset_x := interpolate_style_value(calculation_context, from_shadow.offset_x(), to_shadow.offset_x(), delta, allow_discrete) or { return none }
 		offset_y := interpolate_style_value(calculation_context, from_shadow.offset_y(), to_shadow.offset_y(), delta, allow_discrete) or { return none }
-		blur_radius := interpolate_style_value(calculation_context, from_shadow.blur_radius(), to_shadow.blur_radius(), delta, allow_discrete) or { return none }
+		// A blur radius is never negative, even when extrapolating.
+		blur_radius := interpolate_style_value(blur_context, from_shadow.blur_radius(), to_shadow.blur_radius(), delta, allow_discrete) or { return none }
 		spread_distance := interpolate_style_value(calculation_context, from_shadow.spread_distance(), to_shadow.spread_distance(), delta, allow_discrete) or {
 			return none
 		}
@@ -8523,6 +8579,23 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 		mut to_transform := to_transformations[i]
 		from_function := from_transform.transform_function()
 		to_function := to_transform.transform_function()
+		if from_function == .perspective && to_function == .perspective {
+			if perspective := interpolate_perspective_functions(from_transform, to_transform, delta) {
+				result << StyleValue(perspective)
+				continue
+			}
+		}
+		// https://drafts.csswg.org/css-transforms-2/#interpolation-of-transform-functions
+		// matrix() and matrix3d() get converted into 4x4 matrices first and
+		// interpolated as matrices. A pair of the same matrix function is a
+		// pair like any other, so the functions after it still pair up.
+		if from_function == to_function && from_function in [.matrix, .matrix3d] {
+			matrix := interpolate_transform_matrix_pair(from_transform, to_transform, delta) or {
+				return interpolate_discrete(from, to, delta, allow_discrete)
+			}
+			result << StyleValue(matrix)
+			continue
+		}
 		if from_function in [.matrix, .matrix3d, .perspective]
 			|| to_function in [.matrix, .matrix3d, .perspective] {
 			matrix_result := interpolate_transform_matrix_suffix(from_transformations, to_transformations, i, result, delta) or {
@@ -8531,7 +8604,15 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 			return dom_style_value_from_value_logic(matrix_result)
 		}
 
-		if interpolation_is_2d_transform(from_function) && interpolation_is_2d_transform(to_function) {
+		// https://drafts.csswg.org/css-transforms-1/#interpolation-of-transform-functions
+		// Two transform functions with the same name and the same number of
+		// arguments are interpolated numerically without a former conversion,
+		// and the result keeps their type.
+		same_function := from_function == to_function
+			&& from_transform.values().len == to_transform.values().len
+		if same_function {
+			// Both already share their function and argument count.
+		} else if interpolation_is_2d_transform(from_function) && interpolation_is_2d_transform(to_function) {
 			from_transform = interpolation_convert_to_2d_primitive(from_transform)
 			to_transform = interpolation_convert_to_2d_primitive(to_transform)
 		} else if interpolation_is_3d_transform(from_function) || interpolation_is_3d_transform(to_function) {
@@ -8571,10 +8652,11 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 			continue
 		}
 
+		is_translation := function in [.translate, .translate3d, .translate_x, .translate_y, .translate_z]
 		mut values := []StyleValue{cap: from_values.len}
 		mut interpolation_failed := false
 		for value_index in 0 .. from_values.len {
-			value := interpolate_style_value(calculation_context, from_values[value_index], to_values[value_index], delta, .no) or {
+			value := interpolate_transform_argument(calculation_context, is_translation, from_values[value_index], to_values[value_index], delta) or {
 				interpolation_failed = true
 				break
 			}
@@ -8590,6 +8672,81 @@ pub fn interpolate_transform(element &dom.Element, calculation_context Interpola
 	}
 
 	return dom_style_value_from_value_logic(StyleValue(StyleValueList.create(result, .space, .yes)))
+}
+
+// https://drafts.csswg.org/css-values-4/#combine-mixed
+// A mix of a percentage and a dimension computes to a percentage when the
+// dimension component is zero, so translate(0px) to translate(50%) passes
+// through translate(25%) rather than calc(25% + 0px).
+fn interpolate_translation_argument(calculation_context InterpolationCalculationContext, from StyleValue, to StyleValue, delta f64) ?StyleValue {
+	if from is LengthStyleValue && to is PercentageStyleValue {
+		if from.length().raw_value() * (1 - delta) == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(to.raw_value() * delta)))
+		}
+	}
+	if from is PercentageStyleValue && to is LengthStyleValue {
+		if to.length().raw_value() * delta == 0 {
+			return StyleValue(PercentageStyleValue.create(Percentage.new(from.raw_value() * (1 - delta))))
+		}
+	}
+	return interpolate_style_value(calculation_context, from, to, delta, .no)
+}
+
+fn interpolate_transform_argument(calculation_context InterpolationCalculationContext, is_translation bool, from StyleValue, to StyleValue, delta f64) ?StyleValue {
+	if is_translation {
+		return interpolate_translation_argument(calculation_context, from, to, delta)
+	}
+	return interpolate_style_value(calculation_context, from, to, delta, .no)
+}
+
+// The depth of perspective() as the negated m34 of its matrix: zero for
+// perspective(none), and depths below 1px count as 1px.
+fn perspective_reciprocal_depth(transform TransformationStyleValue) ?f64 {
+	values := transform.values()
+	if values.len != 1 {
+		return none
+	}
+	argument := values[0]
+	if style_value_is_keyword_none(argument) {
+		return 0
+	}
+	if argument is LengthStyleValue && argument.length().is_absolute() {
+		return 1 / math.max(argument.length().absolute_length_to_px_without_rounding(), 1)
+	}
+	return none
+}
+
+// https://drafts.csswg.org/css-transforms-2/#interpolation-of-transform-functions
+// perspective() interpolates as a matrix, whose only varying component is
+// the negated reciprocal of the depth. Interpolating that reciprocal gives the
+// same result without decomposing two matrices; a depth that is not positive
+// has no perspective effect, which perspective(none) expresses.
+fn interpolate_perspective_functions(from TransformationStyleValue, to TransformationStyleValue, delta f64) ?TransformationStyleValue {
+	from_reciprocal := perspective_reciprocal_depth(from) or { return none }
+	to_reciprocal := perspective_reciprocal_depth(to) or { return none }
+	reciprocal := interpolate_raw(from_reciprocal, to_reciprocal, delta, none)
+	argument := if reciprocal <= 0 {
+		StyleValue(KeywordStyleValue.create(.none_))
+	} else {
+		StyleValue(LengthStyleValue.create(Length.make_px(1 / reciprocal)))
+	}
+	return TransformationStyleValue.create(.transform, .perspective, [argument])
+}
+
+// Interpolates a matrix() or matrix3d() pair as matrices. Two matrix()
+// functions stay two-dimensional.
+fn interpolate_transform_matrix_pair(from TransformationStyleValue, to TransformationStyleValue, delta f64) ?TransformationStyleValue {
+	from_matrix := from.to_matrix(none) or { return none }
+	to_matrix := to.to_matrix(none) or { return none }
+	matrix := interpolate_matrices(from_matrix, to_matrix, delta) or { return none }
+	if from.transform_function() == .matrix && to.transform_function() == .matrix {
+		mut values := []StyleValue{cap: 6}
+		for entry in [matrix.at(0, 0), matrix.at(1, 0), matrix.at(0, 1), matrix.at(1, 1), matrix.at(0, 3), matrix.at(1, 3)] {
+			values << StyleValue(NumberStyleValue.create(entry))
+		}
+		return TransformationStyleValue.create(.transform, .matrix, values)
+	}
+	return TransformationStyleValue.create(.transform, .matrix3d, matrix_to_style_value_vector(matrix))
 }
 
 fn interpolation_transform_list(value StyleValue) ?[]TransformationStyleValue {
@@ -8792,20 +8949,12 @@ fn filter_style_value_add_optional_lengths(a ?StyleValue, b ?StyleValue) ?StyleV
 	return StyleValue(LengthStyleValue.create(Length.make_px(a_value + b_value)))
 }
 
-fn filter_style_value_saturating_channel_add(a u8, b u8) u8 {
-	sum := int(a) + int(b)
-	if sum > 255 {
-		return 255
-	}
-	return u8(sum)
-}
-
 fn filter_style_value_accumulate_colors(underlying ?StyleValue, animated ?StyleValue) ?StyleValue {
 	underlying_value := underlying or { return animated }
-	animated_value := animated or { return animated }
-	underlying_color := underlying_value.to_color(ColorResolutionContext{}) or { return animated }
-	animated_color := animated_value.to_color(ColorResolutionContext{}) or { return animated }
-	return StyleValue(ColorStyleValue.create_from_color(Color.rgba(filter_style_value_saturating_channel_add(underlying_color.red(), animated_color.red()), filter_style_value_saturating_channel_add(underlying_color.green(), animated_color.green()), filter_style_value_saturating_channel_add(underlying_color.blue(), animated_color.blue()), filter_style_value_saturating_channel_add(underlying_color.alpha(), animated_color.alpha())), .legacy, none))
+	animated_value := animated or { return underlying }
+	// Keep out-of-gamut endpoints until the sampled color is interpolated.
+	// Adding quantized channels here both clamps too early and ignores alpha.
+	return composite_colors(underlying_value, animated_value, ColorResolutionContext{}) or { return animated }
 }
 
 fn filter_style_value_accumulate_filter(underlying FilterStyleValue, animated FilterStyleValue) ?FilterStyleValue {
@@ -8915,6 +9064,23 @@ pub fn composite_value(property_id PropertyID, underlying_value &dom.StyleValue,
 	}
 	underlying := style_value_logic_from_dom(property_id, underlying_value) or { return none }
 	animated := style_value_logic_from_dom(property_id, animated_value) or { return none }
+	if property_id == .transform {
+		result := composite_transform_lists(underlying, animated, composite_operation) or {
+			return none
+		}
+		return dom_style_value_from_value_logic(result)
+	}
+	if property_id in [.box_shadow, .text_shadow] {
+		result := composite_shadow_lists(property_id, underlying, animated, composite_operation) or {
+			return none
+		}
+		return dom_style_value_from_value_logic(result)
+	}
+	if property_accepts_calc_size(property_id) {
+		if result := composite_calc_size_values(property_id, underlying, animated) {
+			return dom_style_value_from_value_logic(result)
+		}
+	}
 	if property_id == .font_size_adjust {
 		if result := composite_font_size_adjust_metric(underlying,animated,composite_operation) {
 			return dom_style_value_from_value_logic(result)
@@ -9103,6 +9269,9 @@ fn composite_basic_shape_ellipse(property_id PropertyID, underlying BasicShapeEl
 fn composite_style_value(property_id PropertyID, underlying StyleValue, animated StyleValue, operation CompositeOperation) ?StyleValue {
 	if operation == .replace {
 		return none
+	}
+	if underlying.type_() == .color && animated.type_() == .color {
+		return composite_colors(underlying, animated, ColorResolutionContext{})
 	}
 	if underlying.type_() != animated.type_() || underlying.is_calculated() || animated.is_calculated() {
 		return composite_mixed_style_value(property_id, underlying, animated)
@@ -9620,6 +9789,14 @@ pub fn compute_property_invalidation(property_id PropertyID, old_value ?&dom.Sty
 
 	if property_id in [.container_name, .container_type] {
 		invalidation.recompute_descendant_styles = true
+	}
+	// overflow:clip expands the existing visual clip by these margins. Layout
+	// alone does not refresh the accumulated visual-context values.
+	if property_id in [.overflow_clip_margin_top, .overflow_clip_margin_right,
+		.overflow_clip_margin_bottom, .overflow_clip_margin_left,
+		.overflow_clip_margin_block_start, .overflow_clip_margin_block_end,
+		.overflow_clip_margin_inline_start, .overflow_clip_margin_inline_end] {
+		invalidation.ensure_accumulated_visual_contexts_at_least(.update_values)
 	}
 	if property_affects_hit_testing(property_id) {
 		invalidation.affects_hit_testing = true
@@ -11616,7 +11793,9 @@ fn (s &StyleComputer) compute_animated_custom_property_value(abstract_element do
 	computation_context := s.get_computation_context_for_property(.width, computed_properties,
 		abstract_element)
 	colors := ColorResolutionContext.for_computed_properties(computed_properties, abstract_element.document())
-	return dom_style_value_from_value_logic(compute_registered_typed_value(typed_value, computation_context, colors))
+	base := value.base_url or { abstract_element.document().base_url().to_string() }
+	with_urls := resolve_registered_property_urls(typed_value, base)
+	return dom_style_value_from_value_logic(compute_registered_typed_value(with_urls, computation_context, colors))
 }
 
 fn interpolate_animated_custom_property(document &dom.Document, name string, from &dom.StyleValue, to &dom.StyleValue, delta f64) &dom.StyleValue {
@@ -11657,18 +11836,8 @@ fn composite_animated_custom_property(underlying &dom.StyleValue, animated &dom.
 	return dom_style_value_from_value_logic(composited)
 }
 
-// Accumulation repeats the final keyframe once per completed iteration. Binary
-// doubling bounds the work even for very large iteration counts.
 fn accumulate_custom_property_iterations(value &dom.StyleValue, final_value &dom.StyleValue, count f64) &dom.StyleValue {
- mut remaining := u64(math.min(math.floor(count),9007199254740991.0))
- mut result := unsafe { value }
- mut increment := unsafe { final_value }
- for remaining > 0 {
-  if remaining & 1 != 0 { result = composite_animated_custom_property(result,increment,.accumulate) or { return result } }
-  remaining >>= 1
-  if remaining > 0 { increment = composite_animated_custom_property(increment,increment,.accumulate) or { return result } }
- }
- return result
+	return accumulate_animation_iterations(none, value, final_value, count)
 }
 
 pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractElement, animation voidptr, mut computed_properties ComputedProperties) {
@@ -11678,6 +11847,11 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 	effect := unsafe { &KeyframeEffect(animation) }
 	output_progress := effect.output_progress or { return }
 	key_frame_set := effect.key_frame_set or { return }
+	// The element's interpolate-size governs keyword size interpolation.
+	previous_interpolation_style := enter_calc_size_interpolation_style(&computed_properties)
+	defer {
+		leave_calc_size_interpolation_style(previous_interpolation_style)
+	}
 	if key_frame_set.keyframes_by_key.len < 2 {
 		return
 	}
@@ -11727,6 +11901,11 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 
 	start_values := s.compute_keyframe_values(abstract_element, start_keyframe, computed_properties)
 	end_values := s.compute_keyframe_values(abstract_element, end_keyframe, computed_properties)
+	mut final_values := map[PropertyID]&dom.StyleValue{}
+	if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
+		final_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
+		final_values = s.compute_keyframe_values(abstract_element, final_keyframe, computed_properties)
+	}
 	s.clear_computation_context_caches()
 	for property_id, initial_start in start_values {
 		mut start := unsafe { initial_start }
@@ -11747,6 +11926,10 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		}
 		if composited := composite_value(property_id, underlying, end, end_operation) {
 			end = composited
+		}
+		if final_value := final_values[property_id] {
+			start = accumulate_animation_iterations(property_id, start, final_value, effect.current_iteration)
+			end = accumulate_animation_iterations(property_id, end, final_value, effect.current_iteration)
 		}
 		if interpolated := interpolate_property(abstract_element.element(), property_id, start, end, interval_progress, .yes) {
 			installed := samples.adopt(interpolated)
@@ -11803,18 +11986,18 @@ pub fn (s &StyleComputer) collect_animation_into(abstract_element dom.AbstractEl
 		// Applying add again would count that underlying value twice.
 		start_operation := if name in start_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { start_keyframe.composite or { effect.composite } }
 		end_operation := if name in end_keyframe.use_initial_custom_properties { CompositeOperation.replace } else { end_keyframe.composite or { effect.composite } }
-		if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
-			last_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
-			last_specified := last_keyframe.custom_properties[name] or { base_underlying }
-			last := s.compute_animated_custom_property_value(abstract_element,computed_properties,name,last_specified)
-			start = accumulate_custom_property_iterations(start,last,effect.current_iteration)
-			end = accumulate_custom_property_iterations(end,last,effect.current_iteration)
-		}
 		if composited := composite_animated_custom_property(underlying, start, start_operation) {
 			start = composited
 		}
 		if composited := composite_animated_custom_property(underlying, end, end_operation) {
 			end = composited
+		}
+		if effect.iteration_composite_accumulate && effect.current_iteration > 0 {
+			last_keyframe := key_frame_set.keyframes_by_key[keys.last()] or { end_keyframe }
+			last_specified := last_keyframe.custom_properties[name] or { base_underlying }
+			last := s.compute_animated_custom_property_value(abstract_element, computed_properties, name, last_specified)
+			start = accumulate_custom_property_iterations(start, last, effect.current_iteration)
+			end = accumulate_custom_property_iterations(end, last, effect.current_iteration)
 		}
 		interpolated := interpolate_animated_custom_property(abstract_element.document(), name,
 			start, end, interval_progress)
@@ -12122,6 +12305,7 @@ pub fn (s &StyleComputer) compute_properties(abstract_element dom.AbstractElemen
 		record_diagnostic_instruction_scope(15, loop_scope_start)
 	}
 
+	s.compute_highlight_inherited_values(mut properties, cascaded_properties, abstract_element)
 	// The root element establishes the root font metrics used by rem/rlh for every
 	// subsequently computed descendant. This is the mutable update performed by
 	// StyleComputer::compute_properties() after its longhand computation loop.
@@ -12618,14 +12802,17 @@ struct ComputedCustomPropertyValue {
 	kind           ComputedCustomPropertyValueKind
 	existing_value &dom.StyleValue = unsafe { nil }
 	tokens         []ComponentValue
+	base_url       ?string
 }
 
 fn (value ComputedCustomPropertyValue) materialize() &dom.StyleValue {
 	return match value.kind {
 		.existing { value.existing_value }
 		.substituted {
-			dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(
+			mut result := dom_style_value_from_value_logic(StyleValue(UnresolvedStyleValue.create_with_presence(
 				value.tokens, SubstitutionFunctionsPresence{}, none)))
+			result.base_url = value.base_url
+			result
 		}
 		.guaranteed_invalid {
 			dom_style_value_from_value_logic(StyleValue(GuaranteedInvalidStyleValue.create()))
@@ -12691,12 +12878,19 @@ fn resolve_computed_custom_property_value(abstract_element dom.AbstractElement, 
 	if contains_guaranteed_invalid_value(result) {
 		return ComputedCustomPropertyValue{kind: .guaranteed_invalid}
 	}
-	return ComputedCustomPropertyValue{kind: .substituted, tokens: result}
+	return ComputedCustomPropertyValue{kind: .substituted, tokens: result, base_url:value.base_url}
 }
 
 fn compute_value_of_custom_property_with_guarded_contexts(abstract_element dom.AbstractElement, custom_property string, mut guarded_contexts GuardedSubstitutionContexts) &dom.StyleValue {
-	return resolve_computed_custom_property_value(abstract_element, custom_property,
+	value := resolve_computed_custom_property_value(abstract_element, custom_property,
 		mut guarded_contexts).materialize()
+	registration := abstract_element.document().get_registered_custom_property(custom_property) or { return value }
+	syntax := style_query_registration_syntax(registration) or { return value }
+	if syntax.type() == .universal { return value }
+	mut typed := typed_style_value_logic_from_dom(value) or { return value }
+	if typed is UnresolvedStyleValue { typed = parse_with_a_syntax(typed.tokenize(), syntax) }
+	base := value.base_url or { abstract_element.document().base_url().to_string() }
+	return dom_style_value_from_value_logic(resolve_registered_property_urls(typed, base))
 }
 
 pub fn StyleComputer.compute_value_of_custom_property(abstract_element dom.AbstractElement, custom_property string) &dom.StyleValue {
@@ -12765,6 +12959,8 @@ fn compute_value_of_property_from_source(property_id PropertyID, specified_value
 	}
 
 	return match property_id {
+		.shape_outside { dom_style_value_from_value_logic(shape_outside_without_default_box(typed_absolutized_value)) }
+		.text_emphasis_style { compute_text_emphasis_style(absolutized_value, property_source.get(.writing_mode)) }
 		.animation_range_start, .animation_range_end { compute_animation_range_endpoint(absolutized_value, property_id == .animation_range_start) }
 		.animation_name {
 			StyleComputer.compute_animation_name(absolutized_value)

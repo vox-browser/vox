@@ -3020,15 +3020,60 @@ pub fn (mut node AccessibilityTreeNode) append_child(child &AccessibilityTreeNod
 	node.children_ << child
 }
 
+struct AccessibilitySerializationFrame {
+	node &AccessibilityTreeNode
+mut:
+	opened bool
+	next_child int
+	wrote_child bool
+}
+
 pub fn (node &AccessibilityTreeNode) serialize_tree_as_json(mut object strings.Builder, document &Document) {
+	mut stack := [AccessibilitySerializationFrame{node: node}]
+	for stack.len > 0 {
+		index := stack.len - 1
+		current := stack[index].node
+		if !stack[index].opened {
+			if !current.serialize_node_header_as_json(mut object, document) {
+				stack.delete(index)
+				continue
+			}
+			if current.children_.len == 0 {
+				object.write_string('}')
+				stack.delete(index)
+				continue
+			}
+			object.write_string(',"children":[')
+			stack[index].opened = true
+		}
+		mut descended := false
+		for stack[index].next_child < current.children_.len {
+			child := current.children_[stack[index].next_child]
+			stack[index].next_child++
+			if child_value := child.value() {
+				if child_value.is_uninteresting_whitespace_node() { continue }
+			}
+			if stack[index].wrote_child { object.write_string(',') }
+			stack[index].wrote_child = true
+			stack << AccessibilitySerializationFrame{node: child}
+			descended = true
+			break
+		}
+		if descended { continue }
+		object.write_string(']}')
+		stack.delete(index)
+	}
+}
+
+fn (node &AccessibilityTreeNode) serialize_node_header_as_json(mut object strings.Builder, document &Document) bool {
 	value := node.value() or {
 		object.write_string('{}')
-		return
+		return false
 	}
 	if value.is_element() {
 		element := value.as_element() or {
 			object.write_string('{}')
-			return
+			return false
 		}
 		object.write_string('{"type":"element"')
 		name := element.accessible_name(document, .no) or { '' }
@@ -3044,24 +3089,7 @@ pub fn (node &AccessibilityTreeNode) serialize_tree_as_json(mut object strings.B
 		object.write_string('{"type":"node"')
 	}
 	object.write_string(',"id":${value.unique_id().value()}')
-	if node.children_.len > 0 {
-		object.write_string(',"children":[')
-		mut wrote_child := false
-		for child in node.children_ {
-			if child_value := child.value() {
-				if child_value.is_uninteresting_whitespace_node() {
-					continue
-				}
-			}
-			if wrote_child {
-				object.write_string(',')
-			}
-			child.serialize_tree_as_json(mut object, document)
-			wrote_child = true
-		}
-		object.write_string(']')
-	}
-	object.write_string('}')
+	return true
 }
 
 pub fn (mut node AccessibilityTreeNode) visit_edges(mut visitor CellVisitor) {

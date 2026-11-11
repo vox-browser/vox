@@ -1,0 +1,26 @@
+{
+  "format": "vox-wpt-expectation-errata-v1",
+  "status": "proposed; not accepted upstream",
+  "ladybird_revision": "2919bf87a5e5dfc49a210a70bda079afa411c6c5",
+  "evidence": [
+    "https://drafts.csswg.org/web-animations-2/#iteration-composition",
+    "https://drafts.csswg.org/css-values-4/#combine-mixed",
+    "https://github.com/WebKit/WebKit/blob/c0462225cee0519a9a1dd0c406448a56456ad523/Source/WebCore/platform/Length.cpp#L299-L315"
+  ],
+  "corrections": [
+    {
+      "case": "css/css-properties-values-api/animation/custom-property-animation-length-percentage-comma-list",
+      "source_sha256": "131c9d18310a97eef03ffa1a9005a40ce2ece984ef97ae8a4798003a033b1fb3",
+      "original_assertion": "  expected: \"250%, calc(25% + 50px)\"",
+      "corrected_assertion": "  expected: \"250%, calc(25% + 250px)\"",
+      "reason": "At iteration index 2, add the final 100px value twice to both endpoints of the second component: 50% + 200px and 300px. Their midpoint is 25% + 250px."
+    },
+    {
+      "case": "css/css-properties-values-api/animation/custom-property-animation-length-percentage-space-list",
+      "source_sha256": "186ae000ef9613f2e6d97233cbce4fd2d1f4620fda0858d9e283a8afc89fc29e",
+      "original_assertion": "  expected: \"250% calc(25% + 50px)\"",
+      "corrected_assertion": "  expected: \"250% calc(25% + 250px)\"",
+      "reason": "At iteration index 2, add the final 100px value twice to both endpoints of the second component: 50% + 200px and 300px. Their midpoint is 25% + 250px."
+    }
+  ]
+}

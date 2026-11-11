@@ -103,7 +103,6 @@ pub mut:
 	graph           &AudioGraphState
 	timeline        &AudioParamTimeline
 	render_param_   &RenderAudioParam
-	current_value   f32
 	automation_rate AutomationRate
 }
 
@@ -119,7 +118,6 @@ pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_v
 		default_value: default_value
 		min_value: min_value
 		max_value: max_value
-		current_value: default_value
 		automation_rate: rate
 		fixed_rate: fixed
 		graph: graph
@@ -129,11 +127,7 @@ pub fn new_audio_param(id u64, context_id u64, graph &AudioGraphState, default_v
 }
 
 pub fn (parameter AudioParam) value() f32 {
-	value := if parameter.timeline.has_events() {
-		parameter.timeline.value_at_time(parameter.graph.current_time)
-	} else {
-		parameter.current_value
-	}
+	value := parameter.timeline.current_value()
 	if value < parameter.min_value {
 		return parameter.min_value
 	}
@@ -144,7 +138,7 @@ pub fn (parameter AudioParam) value() f32 {
 }
 
 pub fn (mut parameter AudioParam) set_value(value f32) ! {
-	parameter.current_value = value
+	parameter.timeline.set_current_value(value)
 	parameter.map_insert_result(parameter.timeline.set_value_at_time(value, parameter.graph.current_time))!
 }
 
@@ -205,7 +199,7 @@ pub fn (mut parameter AudioParam) linear_ramp_to_value_at_time(value f32, end_ti
 	}
 	current_time := parameter.graph.current_time
 	clamped_time := if end_time < current_time { current_time } else { end_time }
-	parameter.map_insert_result(parameter.timeline.linear_ramp_to_value_at_time(value, clamped_time, current_time, parameter.current_value))!
+	parameter.map_insert_result(parameter.timeline.linear_ramp_to_value_at_time(value, clamped_time, current_time, parameter.timeline.current_value()))!
 	return &parameter
 }
 
@@ -219,7 +213,7 @@ pub fn (mut parameter AudioParam) exponential_ramp_to_value_at_time(value f32,
 	}
 	current_time := parameter.graph.current_time
 	clamped_time := if end_time < current_time { current_time } else { end_time }
-	parameter.map_insert_result(parameter.timeline.exponential_ramp_to_value_at_time(value, clamped_time, current_time, parameter.current_value))!
+	parameter.map_insert_result(parameter.timeline.exponential_ramp_to_value_at_time(value, clamped_time, current_time, parameter.timeline.current_value()))!
 	return &parameter
 }
 

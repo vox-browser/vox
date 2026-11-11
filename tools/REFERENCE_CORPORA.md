@@ -2,8 +2,8 @@
 
 `check_translation_corpora.v` runs V tests against independently generated,
 checked-in reference records. It never writes expected results. The regex
-runtime, YUV conversion and GB18030 generator no longer need a Rust compiler.
-JPEG XL still uses its Rust decoder and test tool pending a complete V port.
+runtime, YUV conversion, GB18030 generator and JPEG XL decoder no longer need a
+Rust compiler; no Rust remains in the build.
 
 Run from the canonical checkout, with current V:
 
@@ -50,7 +50,7 @@ The checker was compiled, its complete dry-run path and invalid-suite failure
 were checked, and its `replacement` suite actually executed successfully under
 the guard. These driver checks do not claim that every selected suite was run
 through the driver; individual module checks are recorded with their changes.
-The `jpegxl` suite now selects seventy-four test files covering primitives,
+The `jpegxl` suite selects every package test (106 files on 2026-11-10), covering primitives,
 containers, Huffman/ANS, context maps, LZ77, checkpoints, file/frame/modular
 headers, permutations, section tables, predictors, reversible color transforms
 and modular decision trees, pixel properties/channel reconstruction, palettes
@@ -141,3 +141,143 @@ drivers and outer guards exiting zero and 358 unchanged selected inputs. The
 ten-slice checkpoint resets cadence to 0/10 at `16b9843ac`.
 See [the modular-output report](../docs/translation-audit/JPEGXL_V_MODULAR_OUTPUT.md).
 Production JPEG XL and its native developer tool still require Rust.
+
+VarDCT alpha adds twenty independent native files, bringing JPEG XL to 282,801
+source records and 86 test files. Shared modular state preserves alpha through
+LF/HF sections; unified `decode_rgba` output compares 1,800,640 straight/paint
+RGBA bytes exactly, including associated alpha and orientation. It also
+preserves 62 opaque references, 26 grouped-lossless records, six preview files
+and 498 small-image records. Final focused default/no-GC/optimized checks pass
+with actual test/guard exits zero and 382 unchanged inputs. The interrupted
+raw optimized check has no pass credit; a fresh check passes. Cadence is 2/10
+after the 84-file checkpoint, with no full 86-file run claimed. Production and
+its native developer tool still require Rust.
+See [the alpha report](../docs/translation-audit/JPEGXL_V_VARDCT_ALPHA.md).
+
+Modular XYB alpha adds twenty native records and 1,800,640 exact straight/paint
+RGBA bytes, bringing JPEG XL to 282,821 records and 87 test files. The final
+four-file selection passes default/no-GC/optimized checks, with actual
+exits zero and 404 unchanged inputs. Test authoring failures retain no
+whole-run pass credit; native gold remains unchanged. Cadence is 3/10, with
+no full 87-file run claimed. Production and its native tool still use Rust.
+See [the modular-alpha report](../docs/translation-audit/JPEGXL_V_MODULAR_ALPHA.md).
+
+LF alpha adds twenty progressive native records and 1,800,640 exact
+straight/paint RGBA bytes: 282,841 records and 88 JPEG XL test files total.
+The three-file focused selection passes default/no-GC/optimized checks with
+actual exits zero and 426 unchanged inputs. Cadence is 4/10; no full 88-file
+run is claimed. Production and its native developer tool still require Rust.
+See [the LF-alpha report](../docs/translation-audit/JPEGXL_V_LF_ALPHA.md).
+
+Alpha upsampling adds 72 native records and 4,817,664 exact straight/paint
+RGBA bytes: 282,913 records and 89 JPEG XL test files total. The five-file
+selection passes default/no-GC/optimized checks with actual exits zero and
+501 unchanged inputs. Cadence is 5/10; no full 89-file run is claimed.
+Production and its native developer tool still use Rust.
+See [the alpha-upsampling report](../docs/translation-audit/JPEGXL_V_ALPHA_UPSAMPLING.md).
+
+Subsampled YCbCr assembly adds twenty native JPEG-recompressed records and
+1,660,864 exact straight/paint RGBA bytes: 282,933 records and 90 test files
+total. Four focused files pass default/no-GC/optimized checks with actual
+exits zero and 524 unchanged inputs. Cadence is 6/10; no full 90-file run is
+claimed. Production and its native developer tool still use Rust.
+See [the chroma-frame report](../docs/translation-audit/JPEGXL_V_CHROMA_FRAMES.md).
+
+Original-profile modular RGB/gray output adds 128 native records and 8,564,736
+exact straight/paint RGBA bytes: 283,061 records and 91 JPEG XL test files
+total. Three focused files pass default/no-GC/optimized checks with actual
+exits zero and 655 unchanged inputs, retaining prior unified output references.
+Cadence is 7/10; no full 91-file run is claimed. Production and its native
+developer tool still use Rust.
+See [the modular RGB report](../docs/translation-audit/JPEGXL_V_MODULAR_RGB.md).
+
+Noise LUT/random-state translation adds 1,162 original source records:
+284,223 records and 92 JPEG XL test files total. All 8,192 LUT float words and
+12,288 RNG u64 words compare exactly, alongside truncation/consumption checks.
+The focused file passes default/no-GC/optimized checks with actual exits zero
+and 659 unchanged inputs. Cadence is 8/10; no full 92-file run is claimed.
+Checked-in verification uses V alone; whole-file noise and production/native
+developer-tool replacement remain unfinished.
+See [the noise-state report](../docs/translation-audit/JPEGXL_V_NOISE_STATE.md).
+
+Noise color application adds 768 original stage records and 73,728 exact float
+words: 284,991 records and 93 JPEG XL test files total. Two focused files pass
+default/no-GC/optimized checks with actual exits zero and 662 unchanged inputs.
+Two failed attempts expose C contraction; final source keeps the unfused B
+operation, with native gold unchanged. Cadence is 9/10; no full 93-file run is
+claimed. Whole-file noise and production/native developer-tool replacement
+remain unfinished.
+See [the noise-application report](../docs/translation-audit/JPEGXL_V_NOISE_APPLICATION.md).
+
+Complete VarDCT noise adds 28 native files and 2,477,600 exact straight/paint
+RGBA bytes: 285,019 records and 94 JPEG XL test files total. The original parser
+verifies independently rewritten headers/TOCs; zero controls retain base pixels
+and every nonzero-LUT file changes its native image. Focused default/no-GC/
+optimized checks pass with actual exits zero and 693 unchanged final inputs;
+the original failed default batch retains no whole-run credit. This reaches
+10/10 after the 84-file checkpoint. Full 94-file checks now pass both GC modes,
+with actual tests/inner guards/drivers/outer guards exiting zero and all 701
+selected input hashes/change times unchanged. Cadence resets to 0/10.
+Production and its native tool still use Rust.
+See [the whole-noise report](../docs/translation-audit/JPEGXL_V_NOISE_FRAMES.md).
+
+
+Patch dictionaries, blending and row application add 2,216 frozen native
+records, bringing JPEG XL to 287,235 records and 97 test files. All three new
+files pass default/no-GC/optimized checks with unavailable Rust compiler paths,
+actual test/guard exits zero and 710 unchanged selected inputs. Native metadata,
+32,640 blend float words and 3,121,152 application words compare exactly,
+including full/irregular chunk equality. Cadence is 3/10 after the full 94-file
+checkpoint; a full 97-file run has not been performed. Encoded patch frames
+and production/native developer-tool replacement remain unfinished.
+See [the patch report](../docs/translation-audit/JPEGXL_V_PATCHES.md).
+
+
+The spline entropy corpus adds 3,044 native records (536 accepted), bringing
+JPEG XL to 290,279 records and 98 test files. The focused file passes default,
+no-GC and optimized checks with unavailable Rust compiler paths, actual exits
+zero and 713 unchanged inputs. The initial compile-only failure has no execution
+credit. Cadence is 4/10 after the full 94-file checkpoint; no full 98-file run is
+claimed. Spline rendering, frame integration and production/native tool
+replacement remain.
+See [the spline-stream report](../docs/translation-audit/JPEGXL_V_SPLINE_STREAMS.md).
+
+
+Spline dequantization adds 896 native records, including 244 successful calls
+comparing 33,664 float words plus exact U64 area/coincidence results. Both
+spline files pass default/no-GC/optimized checks with unavailable Rust compiler
+paths, actual exits zero and 716 unchanged inputs. JPEG XL totals 291,175
+records and 99 test files, cadence 5/10 after the full 94-file checkpoint;
+no full 99-file run is claimed. Spline rasterization, frame integration and
+production/native tool replacement remain.
+See [the dequantization report](../docs/translation-audit/JPEGXL_V_SPLINE_DEQUANT.md).
+
+
+Spline cosine/error-function arithmetic adds 14,361 distinct native inputs,
+including 135 scalar/NEON rounding differences. The focused file passes
+default/no-GC/optimized checks with unavailable Rust compiler paths, actual
+exits zero and 719 unchanged selected inputs. JPEG XL totals 305,536 records
+and 100 test files, cadence 6/10 after the full 94-file checkpoint; no full
+100-file run is claimed. Curve/raster work, frame integration and production/
+native tool replacement remain.
+See [the spline-math report](../docs/translation-audit/JPEGXL_V_SPLINE_MATH.md).
+
+
+Spline subdivision/DCT/cache construction adds 256 native records, including
+234 accepted caches with 3,341 segments and 57,792 ordered in-bounds row
+entries. NaN payloads normalize explicitly. Three focused files pass default,
+no-GC and optimized checks with unavailable Rust compiler paths, actual exits
+zero and 723 unchanged inputs. JPEG XL has 305,792 records and 101 test files,
+cadence 7/10 after the full 94-file checkpoint; no full 101-file run is claimed.
+Gaussian drawing, frame integration and production/native tool replacement
+remain. See [the cache report](../docs/translation-audit/JPEGXL_V_SPLINE_CACHE.md).
+
+
+Gaussian spline drawing adds 512 native records, including 468 successful
+raw float images and 2,227,200 exact words. Full/chunked equality, negative
+sigma, signed zero and unchanged empty-cache controls execute. Three focused
+files pass default/no-GC/optimized checks with unavailable Rust compiler paths,
+actual exits zero and 726 unchanged inputs. JPEG XL totals 306,304 records and
+102 test files, cadence 8/10 after the full 94-file checkpoint; no full 102-file
+run is claimed. Complete feature frames and production/native tool replacement
+remain. See [the Gaussian report](../docs/translation-audit/JPEGXL_V_SPLINE_RASTER.md).

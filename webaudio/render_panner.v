@@ -97,37 +97,30 @@ pub:
 
 // https://webaudio.github.io/web-audio-api/#Spatialization-distance-effects
 fn compute_distance_gain(distance f64, config PannerRenderConfig) f64 {
-	minimum_distance := if config.ref_distance < config.max_distance {
-		config.ref_distance
-	} else {
-		config.max_distance
-	}
-	maximum_distance := if config.ref_distance > config.max_distance {
-		config.ref_distance
-	} else {
-		config.max_distance
-	}
-	clamped_distance := panner_clamp(distance, minimum_distance, maximum_distance)
 	match config.distance_model {
 		.linear {
+			minimum_distance := math.min(config.ref_distance, config.max_distance)
+			maximum_distance := math.max(config.ref_distance, config.max_distance)
 			rolloff_factor := panner_clamp(config.rolloff_factor, 0, 1)
-			if config.ref_distance == config.max_distance {
+			if minimum_distance == maximum_distance {
 				return 1.0 - rolloff_factor
 			}
-			return 1.0 - rolloff_factor * (clamped_distance - config.ref_distance) / (config.max_distance - config.ref_distance)
+			distance_ := panner_clamp(distance, minimum_distance, maximum_distance)
+			return 1.0 - rolloff_factor * (distance_ - minimum_distance) / (maximum_distance - minimum_distance)
 		}
 		.inverse {
-			denominator := config.ref_distance + config.rolloff_factor * (clamped_distance - config.ref_distance)
-			if denominator == 0 {
-				return 1
+			if config.ref_distance == 0 {
+				return 0
 			}
-			return config.ref_distance / denominator
+			distance_ := math.max(distance, config.ref_distance)
+			return config.ref_distance / (config.ref_distance + config.rolloff_factor * (distance_ - config.ref_distance))
 		}
 		.exponential {
 			if config.ref_distance == 0 {
-				return 1
+				return 0
 			}
-			return math.pow(clamped_distance / config.ref_distance, -config.rolloff_factor)
+			distance_ := math.max(distance, config.ref_distance)
+			return math.pow(distance_ / config.ref_distance, -config.rolloff_factor)
 		}
 	}
 }
@@ -195,6 +188,9 @@ pub fn PannerRenderNode.create(node_id u64, quantum_size int, params PannerRende
 	for parameter in params.as_array() {
 		render_node.add_param(parameter)
 	}
+	for parameter in listener_params.as_array() {
+		render_node.add_param(parameter)
+	}
 	mut panner := &PannerRenderNode{
 		render_node_: render_node
 		params_: params
@@ -249,7 +245,9 @@ pub fn (mut panner PannerRenderNode) handle_message(message NodeMessage) {
 }
 
 pub fn (mut panner PannerRenderNode) for_each_param(callback RenderAudioParamCallback) {
-	for parameter in panner.params_.as_array() {
+	mut parameters := panner.params_.as_array()
+	parameters << panner.listener_params_.as_array()
+	for parameter in parameters {
 		mut mutable_parameter := unsafe { &RenderAudioParam(parameter) }
 		callback(mut mutable_parameter)
 	}
@@ -262,15 +260,17 @@ pub fn (mut panner PannerRenderNode) process(mut graph RenderGraph,
 	input := render_node.pull_input(mut graph, context, 0)
 	mut output := unsafe { &AudioBus(render_node.output(0)) }
 	output.set_channel_count(2)
-	if input.is_silent() {
-		output.zero()
-		return
-	}
+	// Source and listener automation must update their shared intrinsic values
+	// even when no audible samples need spatialization.
 	mut parameters := panner.params_.as_array()
 	parameters << panner.listener_params_.as_array()
 	for index, parameter in parameters {
 		mut mutable_parameter := unsafe { &RenderAudioParam(parameter) }
 		mutable_parameter.compute(mut graph, context, mut panner.param_values_[index])
+	}
+	if input.is_silent() {
+		output.zero()
+		return
 	}
 	mut output_left := []f32{len: context.quantum_size}
 	mut output_right := []f32{len: context.quantum_size}

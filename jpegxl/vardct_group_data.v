@@ -18,6 +18,7 @@ pub fn (frame FrameHeader) vardct_lf_group_for_group(group u64) !u64 {
 		+ u64(r.x / frame.group_dimension())
 }
 
+@[direct_array_access]
 fn crop_float_plane(input FloatPlane, x int, y int, width int, height int) !FloatPlane {
 	input.validate()!
 	if x < 0 || y < 0 || width < 0 || height < 0 || x > input.width || y > input.height

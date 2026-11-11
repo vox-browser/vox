@@ -402,7 +402,18 @@ pub fn (settings &EnvironmentSettingsObject) fetch_request_client_csp_global() &
 		column_number:column
 		policy_list: fetch_csp_policy_list(settings.policy_container().csp_list)
 		dispatch_violation_event: fn [global_object, is_window, loop] (event &csp.SecurityPolicyViolationEvent) {
-			queue_a_task(.unspecified, loop, none, fn [global_object, is_window, event] () {
+			// Tie the report to the window's document: the event lives in that
+			// document's arena, so the task must be discarded with the document.
+			mut report_document := ?&dom.Document(none)
+			if is_window && global_object != unsafe { nil } {
+				reporting_window := unsafe { &dom.Window(global_object) }
+				if document := reporting_window.associated_document() {
+					// Compact documents without a fully active navigable keep
+					// their reports runnable.
+					if document.is_fully_active() { report_document = document }
+				}
+			}
+			queue_a_task(.unspecified, loop, report_document, fn [global_object, is_window, event] () {
 				// Violation.cpp:301–305 selects the actual global at execution,
 				// then reads a Window's current associated Document.
 				mut target := unsafe { global_object }

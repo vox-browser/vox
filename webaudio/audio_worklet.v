@@ -27,7 +27,9 @@ pub:
 	processor_options    map[string]string
 }
 
-pub type AudioWorkletProcessCallback = fn (inputs [][][]f32, mut outputs [][][]f32, parameters map[string][]f32) !bool
+pub type AudioWorkletParameters = map[string][]f32
+
+pub type AudioWorkletProcessCallback = fn (inputs [][][]f32, mut outputs [][][]f32, parameters AudioWorkletParameters) !bool
 
 pub type AudioWorkletProcessorFactory = fn (AudioWorkletProcessorOptions, &AudioWorkletGlobalScope) !&AudioWorkletProcessor
 

@@ -348,10 +348,6 @@ pub fn (mut r Range) decrease_end_offset(count int) {
 	r.end_offset_ -= count
 }
 
-pub fn (r &ShadowRoot) node_name() string {
-	return '#shadow-root'
-}
-
 pub fn (r &ShadowRoot) is_shadow_root() bool {
 	return true
 }

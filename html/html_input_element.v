@@ -641,7 +641,7 @@ pub fn (mut model HTMLInputElementModel) set_value(value string) ! {
 	model.text_control.set_relevant_value(model.value_)
 	if old != model.value_ && model.selection_or_range_applies() {
 		length := u32(form_string_to_utf16(model.value_).len)
-		model.text_control.set_the_selection_range(length, length, .none, .dom)
+		model.text_control.set_the_selection_range(length, length, .none, .value_change)
 	}
 	model.update_validity()
 	model.update_shadow_tree()

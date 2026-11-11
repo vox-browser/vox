@@ -99,7 +99,7 @@ fn test_delete_errors_keep_the_original_throw_and_restore_execution_state() {
 	assert execute_delete_source(mut vm, 'host.answer;')!.number == 42
 }
 
-fn test_delete_computed_key_coercion_precedes_nullish_to_object() {
+fn test_delete_rejects_nullish_bases_before_computed_key_coercion() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)
 	mut host := delete_test_host(mut vm)
@@ -115,7 +115,18 @@ fn test_delete_computed_key_coercion_precedes_nullish_to_object() {
 	global.create_data_property(mut vm, PropertyName.from_str('key'), Value.from_object(key)) or {
 		panic(err)
 	}
-	if _ := execute_delete_source(mut vm, 'delete null[key];') {
+	for base in ['null', 'undefined'] {
+		for prefix in ['', '"use strict"; '] {
+			if _ := execute_delete_source(mut vm, '${prefix}delete ${base}[key];') {
+				assert false
+			} else {
+				assert thrown_value(err).as_object().error_kind()? == .type_error
+			}
+			assert host.get(mut vm, PropertyName.from_str('answer'))!.number == 42
+		}
+	}
+	// A valid base still converts the key and preserves its original exception.
+	if _ := execute_delete_source(mut vm, 'delete host[key];') {
 		assert false
 	} else {
 		assert thrown_value(err).as_i32() == 23

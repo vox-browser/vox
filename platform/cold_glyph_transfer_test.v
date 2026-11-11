@@ -6,7 +6,8 @@ import math
 import os
 import time
 
-// Original canonical producer bodies; only their names are changed.
+// Canonical producer ownership reference, with the HarfBuzz y-axis conversion
+// corrected alongside the current producer (Ladybird 3c3783ccd1f0).
 // Baseline Git revision: 77e2a22e276ea51477663a5f9fa22b1b38743556.
 fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text string, font &Font, text_type GlyphRunTextType) ?ShapedText {
 	mut face := unsafe { nil }
@@ -82,7 +83,7 @@ fn cold_legacy_hb(initial_x f32, letter_spacing f32, word_spacing f32, text stri
 			glyph_index:          int(info.codepoint)
 			position:             GlyphPosition{
 				x: point_x + f32(position.x_offset) / font.shaping_resolution()
-				y: f32(position.y_offset) / font.shaping_resolution()
+				y: f32(-i64(position.y_offset)) / font.shaping_resolution()
 			}
 			advance:              advance
 			offset_x:             f32(position.x_offset) / font.shaping_resolution()

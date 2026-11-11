@@ -18,17 +18,10 @@ fn (found TypedArrayFoundValue) index_to_value() Value {
 
 fn typed_array_find_via_predicate(mut vm VM, array &TypedArray, length u32, direction TypedArrayFindDirection, this_arg Value, prototype_name string) !TypedArrayFoundValue {
 	predicate := typed_array_callback_from_args(mut vm, prototype_name)!
-	mut indices := []u32{cap: int(length)}
-	if direction == .ascending {
-		for i := u32(0); i < length; i++ {
-			indices << i
-		}
-	} else {
-		for i := length; i > 0; i-- {
-			indices << i - 1
-		}
-	}
-	for k in indices {
+	// Visit the snapshot range lazily: an early match must not allocate an
+	// index list proportional to the view's length.
+	for visited := u32(0); visited < length; visited++ {
+		k := if direction == .ascending { visited } else { length - 1 - visited }
 		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		result := call(mut vm, Value.from_object(predicate), this_arg, [value, Value.from_f64(f64(k)),
 			Value.from_object(array.object)])!

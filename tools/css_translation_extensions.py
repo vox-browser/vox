@@ -1,6 +1,16 @@
 """Compatibility properties not yet present in the LibWeb source snapshot."""
 
 PROPERTIES = {
+    'line-break': {
+        'style-group': 'InheritedTextValues', 'animation-type': 'discrete', 'inherited': True,
+        'initial': 'auto', 'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'loose', 'normal', 'strict', 'anywhere'],
+    },
+    'interpolate-size': {
+        'style-group': 'InheritedUIValues', 'affects-layout': False, 'animation-type': 'none',
+        'inherited': True, 'initial': 'numeric-only', 'requires-computation': 'never',
+        'valid-identifiers': ['numeric-only', 'allow-keywords'],
+    },
     'grid-lanes-pack': {
         'initial':'normal','animation-type':'discrete','requires-computation':'never',
         'valid-identifiers':['normal','dense'],
@@ -124,6 +134,43 @@ PROPERTIES = {
         }
         for name in ['weight', 'style', 'small-caps', 'position']
     },
+    'text-align-last': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'start', 'end', 'left', 'right', 'center', 'justify',
+                              'match-parent'],
+    },
+    'field-sizing': {
+        'style-group': 'BoxValues', 'animation-type': 'discrete', 'inherited': False,
+        'initial': 'fixed', 'requires-computation': 'never',
+        'valid-identifiers': ['fixed', 'content'],
+    },
+    'hyphenate-character': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never', 'valid-types': ['string'],
+        'valid-identifiers': ['auto'],
+    },
+    'hyphenate-limit-chars': {
+        'animation-type': 'by-computed-value', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'cascaded-value', 'max-values': 3,
+        'valid-types': ['integer'], 'valid-identifiers': ['auto'],
+    },
+    'hyphenate-limit-lines': {
+        'animation-type': 'by-computed-value', 'inherited': True, 'initial': 'no-limit',
+        'requires-computation': 'cascaded-value',
+        'valid-types': ['integer [0,∞]'], 'valid-identifiers': ['no-limit'],
+    },
+    'text-emphasis-position': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'auto',
+        'requires-computation': 'never',
+        'valid-identifiers': ['auto', 'over', 'under', 'left', 'right'],
+    },
+    'text-emphasis-style': {
+        'animation-type': 'discrete', 'inherited': True, 'initial': 'none',
+        'requires-computation': 'cascaded-value', 'valid-types': ['string'],
+        'valid-identifiers': ['none', 'filled', 'open', 'dot', 'circle', 'double-circle',
+                              'triangle', 'sesame'],
+    },
     'hyphens': {
         'style-group': 'InheritedTextValues',
         'animation-type': 'discrete',
@@ -148,7 +195,7 @@ PROPERTIES = {
     },
 }
 
-KEYWORDS = ['dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y']
+KEYWORDS = ['loose', 'any', 'numeric-only', 'allow-keywords', 'dense', 'grid-lanes', 'inline-grid-lanes', 'fill-reverse', 'track-reverse', 'chain', 'first', 'mixed', 'sideways', 'manual', 'oblique-only', 'cap', 'ex', 'trim-start', 'trim-end', 'trim-both', 'flow-start', 'flow-end', 'flip-x', 'flip-y', 'no-limit', 'over', 'filled', 'open', 'dot', 'double-circle', 'triangle', 'sesame']
 
 
 def extend_properties(properties):

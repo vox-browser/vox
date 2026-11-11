@@ -840,7 +840,17 @@ pub fn (mut scope WindowOrWorkerGlobalScopeMixin) add_resource_timing_entry(entr
 	}
 	if !scope.resource_timing_full_pending_ {
 		scope.resource_timing_full_pending_ = true
-		queue_a_task(.performance_timeline, scope.responsible_event_loop(), none, fn [mut scope] () {
+		// Associate the task with the window's document, as the observer task
+		// does, so it is discarded with a destroyed document instead of running
+		// on a global scope whose document storage has been released.
+		// Only a fully active document is attached, so compact documents
+		// without a fully active navigable still drain the secondary buffer.
+		mut document := ?&dom.Document(none)
+		if window := scope.associated_window_ {
+			active := window.associated_document()
+			if active.is_fully_active() { document = active }
+		}
+		queue_a_task(.performance_timeline, scope.responsible_event_loop(), document, fn [mut scope] () {
 			scope.fire_resource_timing_buffer_full_event()
 		})
 	}

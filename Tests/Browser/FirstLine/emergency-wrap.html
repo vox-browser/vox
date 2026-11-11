@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>First-line styles survive emergency wrapping</title>
+<link rel="match" href="emergency-wrap-ref.html">
+<link rel="help" href="https://drafts.csswg.org/css-pseudo-4/#first-line-pseudo">
+<link rel="help" href="https://drafts.csswg.org/css-text-3/#overflow-wrap-property">
+<meta name="assert" content="First-line font and color apply to the first grapheme when a word wraps; later graphemes use the ordinary style.">
+<style>
+  body { margin: 10px; }
+  main { display: flex; align-items: flex-start; gap: 24px; }
+  .test { flex: none; width: 1ch; font: 20px/1 monospace; color: blue; }
+  .test::first-line { font-size: 40px; color: red; }
+  .anywhere { overflow-wrap: anywhere; }
+  .break-word { overflow-wrap: break-word; }
+  .break-all { word-break: break-all; }
+  .combining { overflow-wrap: anywhere; }
+  .combining::first-line { letter-spacing: 2px; }
+</style>
+<main><div class="test anywhere">XXXX</div><div class="test break-word">XXXX</div><div class="test break-all">XXXX</div><div class="test combining">ÁBCD</div></main>

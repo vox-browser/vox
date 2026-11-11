@@ -97,33 +97,15 @@ fn fused_f32_exact(a f32, b f32, c f32) f32 {
 	return math.f32_from_bits(sign | (u32(exponent + 127) << 23) | (u32(rounded) & 0x7fffff))
 }
 
+fn C.fmaf(a f32, b f32, c f32) f32
+
+// One correctly rounded binary32 multiply-add (IEEE 754 fusedMultiplyAdd).
+// libm's fmaf is exact on every target and compiles to a single instruction
+// where the CPU has FMA. NaN results are canonicalized, matching the source
+// comparison data; fused_f32_exact remains the portable limb oracle.
+@[inline]
 fn fused_f32(a f32, b f32, c f32) f32 {
-	ab := math.f32_bits(a)
-	bb := math.f32_bits(b)
-	cb := math.f32_bits(c)
-	if (ab & 0x7fffffff) > 0x7f800000 || (bb & 0x7fffffff) > 0x7f800000 || (cb & 0x7fffffff) > 0x7f800000 {
-		return math.f32_from_bits(0x7fc00000)
-	}
-	if ab & 0x7fffffff == 0x7f800000 || bb & 0x7fffffff == 0x7f800000 {
-		sign := (ab ^ bb) & 0x80000000
-		if ab & 0x7fffffff == 0 || bb & 0x7fffffff == 0 || (cb & 0x7fffffff == 0x7f800000 && cb & 0x80000000 != sign) {
-			return math.f32_from_bits(0x7fc00000)
-		}
-		return math.f32_from_bits(sign | 0x7f800000)
-	}
-	if cb & 0x7fffffff == 0x7f800000 { return c }
-	product := f64(a) * f64(b)
-	wide := product + f64(c)
-	bits := math.f64_bits(wide) & 0x7fffffffffffffff
-	exponent := int(bits >> 52) - 1023
-	// Binary64 has enough precision except when its rounded result lands
-	// exactly on a binary32 midpoint. Recompute those cases with exact limbs.
-	if exponent >= -150 && exponent <= 127 {
-		shift := if exponent < -126 { -97 - exponent } else { 29 }
-		mantissa := (bits & 0xfffffffffffff) | (u64(1) << 52)
-		if mantissa & ((u64(1) << shift) - 1) == u64(1) << (shift - 1) {
-			return fused_f32_exact(a, b, c)
-		}
-	}
-	return f32(wide)
+	result := C.fmaf(a, b, c)
+	if math.is_nan(result) { return math.f32_from_bits(0x7fc00000) }
+	return result
 }

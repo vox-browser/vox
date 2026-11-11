@@ -11,7 +11,7 @@ import math
 // gradient fill stage and premul, in lowp (unfused float math, rounded to
 // 16-bit lanes) or highp (NEON, fused mad) like the rest of the pipeline.
 
-// A Canvas2D gradient in skia.Style's encoding: kind 1 linear, 2 radial and
+// A Canvas2D gradient in the canvas style encoding: kind 1 linear, 2 radial and
 // 3 conic; stops are offset, red, green, blue and alpha.
 pub struct CanvasGradient {
 pub:
@@ -674,6 +674,7 @@ fn gradient_fill(colors [][4]f32, positions []f32) GradientFill {
 }
 
 // The fill stage's gap index for t.
+@[direct_array_access; inline]
 fn (f &GradientFill) index(t f32) int {
 	return match f.kind {
 		.two_stop {
@@ -703,6 +704,7 @@ fn (f &GradientFill) index(t f32) int {
 
 // One matrix stage: appendMatrix() selects translate, scale-translate or
 // 2x3 by type; highp fuses the multiply-adds, lowp does not.
+@[inline]
 fn apply_matrix(m SkAffine, x f32, y f32, fused bool) (f32, f32) {
 	mask := m.type_mask()
 	if mask == 0 {
@@ -777,6 +779,7 @@ fn lowp_fmax(a f32, b f32) f32 {
 }
 
 // The geometry stages: t for (x, y), and whether a conical mask keeps it.
+@[inline]
 fn (g &GradientShader) geometry_t(x f32, y f32, highp bool) (f32, bool) {
 	match g.geometry {
 		.linear {
@@ -848,6 +851,7 @@ fn (g &GradientShader) geometry_t(x f32, y f32, highp bool) (f32, bool) {
 
 // The coordinate pipeline up to the fill stage: seed_shader's pixel
 // center, the matrices, the geometry and clamp_x_1.
+@[inline]
 fn (g &GradientShader) gradient_t(px int, py int, highp bool) (f32, bool) {
 	sx := f32(px) + f32(0.5)
 	sy := f32(py) + f32(0.5)
@@ -864,6 +868,7 @@ fn (g &GradientShader) gradient_t(px int, py int, highp bool) (f32, bool) {
 
 // shade_highp: the premultiplied float color at pixel (px, py), with the
 // conical mask applied after premul.
+@[direct_array_access]
 fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 	t, keep := g.gradient_t(px, py, true)
 	idx := g.fill.index(t)
@@ -883,6 +888,7 @@ fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 }
 
 // shade_lowp: round_F_to_U16() of the unfused fill, then lowp premul.
+@[direct_array_access; inline]
 fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 	t, _ := g.gradient_t(px, py, false)
 	idx := g.fill.index(t)
@@ -902,8 +908,69 @@ fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 	return c
 }
 
+// shade_lowp() for count <= 64 pixels of a linear gradient from (x, y),
+// four lanes per pixel into colors: the same stages, with the matrix type
+// selected once and the coordinates computed before the fill.
+@[direct_array_access]
+fn (g &GradientShader) shade_lowp_linear_span(x int, y int, count int, mut colors [256]u32) {
+	m := g.matrix
+	mask := m.type_mask()
+	sy := f32(y) + f32(0.5)
+	mut ts := [64]f32{}
+	if mask == 0 {
+		for i in 0 .. count {
+			ts[i] = f32(x + i) + f32(0.5)
+		}
+	} else if mask == affine_translate_mask {
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			ts[i] = sx + m.tx
+		}
+	} else if mask & affine_affine_mask == 0 {
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			xs := sx * m.sx
+			ts[i] = m.tx + xs
+		}
+	} else {
+		yk := sy * m.kx
+		inner_x := m.tx + yk
+		for i in 0 .. count {
+			sx := f32(x + i) + f32(0.5)
+			xs := sx * m.sx
+			ts[i] = inner_x + xs
+		}
+	}
+	if g.clamp {
+		for i in 0 .. count {
+			ts[i] = lowp_fmin(lowp_fmax(0, ts[i]), 1)
+		}
+	}
+	for i in 0 .. count {
+		t := ts[i]
+		idx := g.fill.index(t)
+		mut c := [4]u32{}
+		for k in 0 .. 4 {
+			scaled := t * g.fill.factors[k][idx]
+			v := g.fill.biases[k][idx] + scaled
+			clamped := if k == 3 { v } else { lowp_fmin(lowp_fmax(0, v), 1) }
+			times := clamped * f32(255)
+			c[k] = f32_to_u16(times + f32(0.5))
+		}
+		if g.premul {
+			for k in 0 .. 3 {
+				c[k] = lowp_div255(u16w(c[k] * c[3]))
+			}
+		}
+		for k in 0 .. 4 {
+			colors[i * 4 + k] = c[k]
+		}
+	}
+}
+
 // cast<U16>(float) on arm64: fcvtzu saturates and maps NaN to 0, then the
 // 16-bit narrowing keeps the low bits.
+@[inline]
 fn f32_to_u16(v f32) u32 {
 	if v != v || v <= 0 {
 		return 0

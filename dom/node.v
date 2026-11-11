@@ -111,6 +111,7 @@ pub enum SetNeedsLayoutTreeUpdateReason {
 	shadow_root_set_inner_html
 	style_change
 	svg_resource_element_removed
+	table_cell_span_attribute
 }
 
 pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUpdateReason) string {
@@ -135,6 +136,7 @@ pub fn set_needs_layout_tree_update_reason_to_string(reason SetNeedsLayoutTreeUp
 		.shadow_root_set_inner_html { 'ShadowRootSetInnerHTML' }
 		.style_change { 'StyleChange' }
 		.svg_resource_element_removed { 'SVGResourceElementRemoved' }
+		.table_cell_span_attribute { 'TableCellSpanAttribute' }
 	}
 }
 
@@ -3311,9 +3313,9 @@ pub fn (n &Node) get_parent(event &Event) ?&EventTarget {
 }
 
 pub fn (mut n Node) set_needs_layout_tree_update(value bool, reason SetNeedsLayoutTreeUpdateReason) {
-	if value && reason in [.node_insert_before, .node_remove, .node_set_text_content] {
+	if value {
 		if owner := n.first_letter_owner_for_layout_subtree_from(&n) {
-			if owner.as_node() != &n {
+			if voidptr(owner.as_node()) != voidptr(&n) {
 				mut owner_node := unsafe { &Node(owner.as_node()) }
 				owner_node.set_needs_layout_tree_update(true, reason)
 			}
@@ -4300,14 +4302,9 @@ pub fn (n &Node) is_default_namespace(namespace_ ?string) bool {
 
 pub fn (n &Node) is_inert() bool {
 	if element := n.as_element() {
-		if element.has_attribute('inert') || (element.is_html_element() && unsafe { &HTMLElement(element) }.inert()) {
-			return true
-		}
+		if element.has_attribute('inert') { return true }
 	}
-	if enclosing := n.enclosing_html_element() {
-		return enclosing.inert() || enclosing.has_attribute('inert')
-	}
-	return false
+	return nearest_html_element_is_inert(n)
 }
 
 // https://dom.spec.whatwg.org/#in-a-document-tree
@@ -4994,8 +4991,12 @@ pub fn (n &Node) has_inclusive_ancestor_with_display_none_ignoring_animations() 
 					return true
 				}
 			}
+			ancestor = if parent := element.element_to_inherit_style_from(none) {
+				parent.as_node()
+			} else { none }
+		} else {
+			ancestor = current.parent_or_shadow_host()
 		}
-		ancestor = current.parent_or_shadow_host()
 	}
 	return false
 }

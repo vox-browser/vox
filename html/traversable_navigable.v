@@ -128,7 +128,9 @@ fn TraversableNavigable.new() &TraversableNavigable {
 		traversal_queue_: &SessionHistoryTraversalQueue{}
 		storage_shed_: &TraversableStorageShed{}
 	}
+	persistent := platform.enter_persistent()
 	html_user_agent_top_level_traversables << traversable
+	platform.leave_persistent(persistent)
 	return traversable
 }
 
@@ -1323,7 +1325,12 @@ pub fn (mut traversable TraversableNavigable) destroy_top_level_traversable() {
 		}
 	}
 	traversable.active_document_ = none
-	html_user_agent_top_level_traversables = html_user_agent_top_level_traversables.filter(voidptr(it) != voidptr(&traversable))
+	for index, candidate in html_user_agent_top_level_traversables {
+		if voidptr(candidate) == voidptr(&traversable) {
+			html_user_agent_top_level_traversables.delete(index)
+			break
+		}
+	}
 }
 
 pub fn (traversable &TraversableNavigable) has_been_destroyed() bool {

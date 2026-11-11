@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Explicit first-line fonts and breaks</title>
+<style>
+  body { margin: 10px; }
+  main { display: flex; align-items: flex-start; gap: 24px; }
+  .test { flex: none; width: 1ch; font: 20px/1 monospace; color: blue; }
+  .first { font-size: 40px; color: red; }
+  .combining { letter-spacing: 2px; }
+</style>
+<main><div class="test"><span class="first">X</span><br>X<br>X<br>X</div><div class="test"><span class="first">X</span><br>X<br>X<br>X</div><div class="test"><span class="first">X</span><br>X<br>X<br>X</div><div class="test"><span class="first combining">Á</span><br>B<br>C<br>D</div></main>

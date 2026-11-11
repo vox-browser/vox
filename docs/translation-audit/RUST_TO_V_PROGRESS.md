@@ -551,3 +551,244 @@ VarDCT extra channels/alpha, whole-frame chroma sampling, feature streams,
 wider reference composition, non-visible preview dependencies, larger entropy
 maps and production integration remain. Removing all Rust dependencies remains
 unfinished.
+
+## VarDCT JPEG XL alpha on 2026-11-09
+
+Two further V slices share modular state with VarDCT and add a unified RGBA
+entry point, including one unscaled 8-bit alpha channel. Twenty independent
+native records compare 1,800,640 straight/paint RGBA bytes exactly, including
+global/grouped alpha, multiple LF owners, nonzero HF, associated alpha and
+orientation. The package has 282,801 source records and 86 test files; reusing
+older references adds no records.
+
+Final focused default/no-GC/optimized checks pass with actual test/guard exits
+zero and 382 unchanged inputs. An interrupted raw optimized check has no pass
+credit and was rerun successfully. Cadence is 2/10 after the full 84-file
+checkpoint; no full 86-file run is claimed.
+[The alpha report](JPEGXL_V_VARDCT_ALPHA.md) records provenance, failed attempts,
+limits and executed results. Wider/resampled alpha, LF alpha dependencies,
+modular XYB alpha, whole-frame chroma sampling, feature streams, composition,
+larger entropy maps and production integration remain. Production JPEG XL and
+its Cargo/native developer tool still use Rust; removing all Rust is unfinished.
+
+## Modular XYB JPEG XL alpha on 2026-11-09
+
+One further slice adds modular XYB alpha to the unified V output path. Twenty
+new native files compare 1,800,640 straight/paint RGBA bytes exactly, including
+grouped data, associated alpha and orientation. The package has 282,821 source
+records and 87 test files. Four focused files pass default/no-GC/optimized
+checks with actual exits zero and 404 unchanged inputs. Two test authoring
+failures have no whole-run pass credit; native gold remains unchanged.
+Cadence is 3/10 after the 84-file checkpoint; no full 87-file run is claimed.
+[The modular-alpha report](JPEGXL_V_MODULAR_ALPHA.md) records source/tool pins,
+geometry verification, failures and checks. LF alpha dependencies, resampling,
+chroma sampling, feature streams, composition and production/tool integration
+remain. Production JPEG XL and its native developer tool still require Rust.
+
+## JPEG XL LF alpha on 2026-11-09
+
+One additional slice decodes alpha-bearing progressive LF references without
+premultiplying the saved source colors. Twenty new native files compare
+1,800,640 straight/paint RGBA bytes exactly, bringing JPEG XL to 282,841 source
+records and 88 test files. Three focused files pass default/no-GC/optimized
+checks with actual exits zero and 426 unchanged inputs. Cadence is 4/10 after
+the 84-file checkpoint; no full 88-file run is claimed.
+[The LF-alpha report](JPEGXL_V_LF_ALPHA.md) records source/tool pins, reference
+ownership and checks. Resampling, chroma sampling, feature streams, composition,
+larger entropy maps and production/tool integration remain; production JPEG XL
+and its native developer tool still use Rust.
+
+## JPEG XL alpha upsampling on 2026-11-09
+
+Another V slice normalizes and upsamples 8-bit alpha independently of color,
+covering all nine supported factor pairs in VarDCT and modular XYB. Seventy-two
+new native records compare 4,817,664 straight/paint RGBA bytes exactly. The
+package has 282,913 source records and 89 test files. Five focused files pass
+default/no-GC/optimized checks with actual exits zero and 501 unchanged inputs.
+Cadence is 5/10 after the 84-file checkpoint; no full 89-file run is claimed.
+[The alpha-upsampling report](JPEGXL_V_ALPHA_UPSAMPLING.md) records pins and
+checks. Resampled LF alpha, wider extra channels, chroma sampling, feature
+streams, composition and production/tool integration remain. Production JPEG XL
+and its native developer tool still require Rust.
+
+## JPEG XL subsampled YCbCr frames on 2026-11-09
+
+A further slice preserves component dimensions while stitching LF/HF planes
+and expands chroma before restoration. Twenty native JPEG-recompressed files
+compare 1,660,864 straight/paint RGBA bytes exactly across four sampling modes.
+The package has 282,933 source records and 90 test files. Four focused files
+pass default/no-GC/optimized checks with actual exits zero and 524 unchanged
+inputs. Cadence is 6/10 after the 84-file checkpoint; no full 90-file run is
+claimed. [The chroma-frame report](JPEGXL_V_CHROMA_FRAMES.md) records pins,
+limits and checks. Wider chroma combinations, original-profile modular
+rendering, extra-channel combinations, feature streams, frame composition and
+production/tool integration remain. Production JPEG XL and its native developer
+tool still require Rust.
+
+## JPEG XL original-profile modular RGB/gray on 2026-11-09
+
+Another slice adds filtered and upsampled original-profile modular RGB/gray
+output, sharing one parsed file owner with VarDCT and XYB. Another 128 native
+files compare 8,564,736 straight/paint RGBA bytes exactly, bringing JPEG XL to
+283,061 records and 91 test files. Three focused files pass default/no-GC/
+optimized checks with actual exits zero and 655 unchanged inputs. Older
+unified-image references remain exact. Cadence is 7/10 after the 84-file
+checkpoint; no full 91-file run is claimed.
+[The modular RGB report](JPEGXL_V_MODULAR_RGB.md) records source/tool pins,
+limits and checks. Feature streams, frame composition, wider extra-channel/LF
+combinations, larger entropy maps and production/tool integration remain.
+Production JPEG XL and its native developer tool still require Rust.
+
+## JPEG XL noise state on 2026-11-09
+
+Another slice translates noise LUT parsing and deterministic random state.
+A temporary caller of the cached original crate supplies 1,162 new records,
+comparing 8,192 LUT float words and 12,288 RNG u64 words exactly, plus truncation
+and bit consumption. The package has 284,223 records and 92 test files. The
+focused file passes default/no-GC/optimized checks with actual exits zero and
+659 unchanged inputs. Cadence is 8/10 after the 84-file checkpoint; no full
+92-file run is claimed. [The noise-state report](JPEGXL_V_NOISE_STATE.md)
+records source/artifact pins and checks. Noise rendering, patches/splines,
+composition and production/tool integration remain. Production JPEG XL and
+its native developer tool still require Rust.
+
+## JPEG XL noise color application on 2026-11-09
+
+Another slice applies noise to source-space color with explicit LUT precision.
+The original ARM64 stage supplies 768 records and 73,728 exact float words;
+256 exactly representable LUT cases also check full-precision lookup. The
+package has 284,991 records and 93 test files. Two focused files pass default/
+no-GC/optimized checks with actual exits zero and 662 unchanged inputs. Failed
+contraction attempts retain no whole-run pass credit; final source preserves
+unfused B rounding without changing gold. Cadence is 9/10 after the 84-file
+checkpoint; no full 93-file run is claimed.
+[The noise-application report](JPEGXL_V_NOISE_APPLICATION.md) records pins,
+precision limits and checks. Fields/convolution, whole-file noise, patches/
+splines, composition and production/tool integration remain. Production JPEG XL
+and its native developer tool still require Rust.
+
+## Complete JPEG XL VarDCT noise on 2026-11-09
+
+The next slice constructs seeded random fields, convolves them and applies
+noise before color conversion. Twenty-eight native files compare 2,477,600
+straight/paint RGBA bytes exactly, including controls, alpha, orientation,
+permuted TOCs, multiple LF owners and image upsampling. The package has 285,019
+records and 94 test files. Whole output fixes the verified BF16 reference
+profile; native scalar/AVX full-table output may differ. Noisy LF/modular/non-XYB
+frames remain unsupported.
+
+Focused checks pass both GC modes and optimized builds with actual exits zero
+and 693 unchanged final inputs. Default coverage combines three retained passes
+with the corrected noise file; the original failed batch retains no whole-run
+credit. Full 94-file corpus checks now pass both GC modes with actual tests,
+inner guards, drivers and outer guards exiting zero, and all 701 selected input
+hashes/change times unchanged. The ten-slice checkpoint completes; cadence
+resets to 0/10.
+[The whole-noise report](JPEGXL_V_NOISE_FRAMES.md) records source/tool pins,
+independent header verification, failures and checks. Patches/splines, reference
+composition, wider channels/LF combinations and production/tool integration
+remain. Production JPEG XL and its native developer tool still require Rust.
+
+
+## JPEG XL patch primitives and rows on 2026-11-09
+
+Three separately committed slices translate patch dictionaries and ordered row
+lookup, color/extra-channel blending, and clipped row application. They add
+2,216 native records: 287,235 records and 97 test files total. Dictionaries,
+32,640 blend float words and 3,121,152 application float words match exactly;
+full rows and irregular chunks agree in both implementations. All three new
+files pass default/no-GC/optimized checks with actual test/guard exits zero
+and 710 unchanged selected inputs. Cadence is 3/10 after the full 94-file
+checkpoint; no full 97-file run is claimed.
+[The patch report](JPEGXL_V_PATCHES.md) records pins, checked API limits and
+verification. Encoded patch frames, stored references/composition, splines,
+wider channel/LF combinations and production/tool integration remain.
+Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL quantized spline streams on 2026-11-09
+
+The spline entropy reader adds 3,044 native records, including 536 accepted
+states with exact consumption, metadata, point words and DCT coefficients.
+Default/no-GC/optimized checks pass with actual exits zero and 713 unchanged
+inputs. The initial declaration-only compile failure receives no execution
+credit. The package has 290,279 records and 98 files, cadence 4/10 after the
+full 94-file checkpoint; no full 98-file run is claimed.
+[The spline-stream report](JPEGXL_V_SPLINE_STREAMS.md) records pins and limits.
+Dequantization, subdivision/rendering, feature/reference frame integration and
+production/developer-tool replacement remain. Production JPEG XL and its
+native developer test still require Rust.
+
+
+## JPEG XL spline dequantization on 2026-11-09
+
+Control reconstruction, DCT scaling/correlation, area estimation and adjacent
+coincidence add 896 native records. The 244 successful cases compare 33,664
+float words and exact area/coincidence results; range and distance failures
+match. Both spline files pass default/no-GC/optimized checks with actual exits
+zero and 716 unchanged inputs. The package has 291,175 records and 99 files,
+cadence 5/10 after the full 94-file checkpoint; no full 99-file run is claimed.
+[The dequantization report](JPEGXL_V_SPLINE_DEQUANT.md) records source/fixture
+pins and checked API limits. Subdivision, caching/rasterization, feature and
+reference frames, and production/developer-tool replacement remain.
+Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL spline arithmetic on 2026-11-09
+
+Cosine and Gaussian error-function approximations add 14,361 distinct native
+input records. Explicit scalar/NEON calls exercise 135 differing rounding
+results. The focused file passes default/no-GC/optimized checks with actual
+exits zero and 719 unchanged inputs. JPEG XL has 305,536 records and 100 files,
+cadence 6/10 after the full 94-file checkpoint; no full 100-file run is claimed.
+[The spline-math report](JPEGXL_V_SPLINE_MATH.md) records source/fixture pins,
+profiles and finite-domain coverage. Curve generation, caching/rasterization,
+feature/reference frames and production/developer-tool replacement remain.
+Production JPEG XL and its native developer test still require Rust.
+
+
+## JPEG XL spline curve/cache continuation on 2026-11-09
+
+Subdivision, unit spacing, continuous DCTs and row caches add 256 native
+records. The 234 accepted caches compare 3,341 segments and 57,792 ordered
+in-bounds indices; NaN payloads normalize explicitly. Three focused files pass
+default/no-GC/optimized checks with actual exits zero and 723 unchanged inputs.
+JPEG XL has 305,792 records and 101 files, cadence 7/10 after the full 94-file
+checkpoint; no full 101-file run is claimed.
+[The cache report](JPEGXL_V_SPLINE_CACHE.md) records limits and pins. Gaussian
+pixel drawing, complete feature/reference frames and production/developer-tool
+replacement remain. Production JPEG XL and its native developer test still
+require Rust.
+
+
+## JPEG XL Gaussian spline rows on 2026-11-09
+
+Gaussian drawing adds 512 native records, with 468 successful raw float images
+comparing 2,227,200 words. Both implementations preserve full/chunked equality,
+negative sigma and signed zero; 340 nonempty images change and 128 empty-cache
+controls do not. Three focused files pass default/no-GC/optimized checks with
+actual exits zero and 726 unchanged inputs. JPEG XL has 306,304 records and
+102 files, cadence 8/10 after the full 94-file checkpoint; no full 102-file run
+is claimed. [The Gaussian report](JPEGXL_V_SPLINE_RASTER.md) records pins and
+the fixed fused profile. Feature streams, complete frames, reference ownership
+and production/developer-tool replacement remain. Production JPEG XL and its
+native developer test still require Rust.
+
+
+## Rust removed from the build on 2026-11-10
+
+The browser now decodes JPEG XL with the V `jpegxl` package inside a thread
+scratch scope. `native_jpegxl_rust/`, `native/include/native_jpegxl.h`,
+`tools/test_jpegxl.py`, `tools/native_jpegxl_test.cpp`, the Cargo steps in both
+build scripts and the CI Rust toolchain setup are removed. The repository has
+no Rust sources or Cargo manifests left.
+
+Before the switch, this round added spline frames, patch reference frames
+(with alpha), modular XYB noise, large modular channels and trailing-bit
+tolerance. A survey of 278 decodes (WPT, jxl crate tests and libjxl 0.11.1
+text images) matches the native output byte for byte for all 196 decodes the
+native decoder accepted; only one layered multi-frame file is unsupported.
+`images/jpegxl_test.v` passes with the production compiler in its default mode
+and with `-prealloc -gc none`. The V decoder remains about 5x slower than the
+Rust crate on a 2268x1512 photo (7.97 vs 1.37 billion instructions).
+See [the JPEG XL status](../../jpegxl/PORT_STATUS.md#production-decoder-2026-11-10).

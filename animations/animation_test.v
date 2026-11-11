@@ -60,7 +60,7 @@ fn test_animation_current_time_at_and_binding_helpers() {
 	mut animation := Animation.create(none, timeline)
 	animation.start_time_ = TimeValue.milliseconds(25)
 	animation.playback_rate_ = 2
-	assert animation.current_time_at(TimeValue.milliseconds(100))!.value == 150
+	assert (animation.current_time_at(TimeValue.milliseconds(100)) or { panic('missing current time') }).value == 150
 	numberish := animation.current_time_for_bindings().value or {
 		assert false
 		return
@@ -70,7 +70,7 @@ fn test_animation_current_time_at_and_binding_helpers() {
 	assert animation.ready_for_bindings().result().object_data == voidptr(animation)
 
 	animation.hold_time_ = TimeValue.milliseconds(40)
-	assert animation.current_time_at(none)!.value == 40
+	assert (animation.current_time_at(none) or { panic('missing held current time') }).value == 40
 	assert animation.play_state_at(TimeValue.milliseconds(0)) == .finished
 }
 

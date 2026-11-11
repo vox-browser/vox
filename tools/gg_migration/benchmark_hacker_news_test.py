@@ -31,6 +31,12 @@ VOX_GG text device_clip=1 drawn=1
             'text device_clip=1': {'drawn': 2, 'declined': 1},
             'shape fill=1 msaa=0': {'drawn': 1, 'declined': 0}})
 
+    def test_frame_statistic_reads_either_scroll_frame_endpoint(self):
+        completed = {'preparation_to_publication_us': {'median': 2500}}
+        legacy = {'update_layer_us': {'median': 1500}}
+        self.assertEqual(benchmark.frame_median_ms(completed), 2.5)
+        self.assertEqual(benchmark.frame_median_ms(legacy), 1.5)
+
     def test_instruction_statistics_preserve_raw_large_integer_counts(self):
         values = [2**60+11, 2**60+1, 2**60+7]
         result = benchmark.stats(values)
