@@ -425,10 +425,11 @@ fn epf_planes(input []FloatPlane, parameters EpfParameters, sigma EpfSigma, orig
 				src := unsafe { &f32(padded[c].data) + row_base }
 				inp := unsafe { &f32(input[c].samples.data) + row_start }
 				out := unsafe { &f32(output[c].data) + row_start }
-				up := unsafe { src + offset_deltas[0] }
-				lt := unsafe { src + offset_deltas[1] }
-				rt := unsafe { src + offset_deltas[2] }
-				dn := unsafe { src + offset_deltas[3] }
+				// FastC types `pointer + fixed_array[i]` as the pointee; cast the offsets.
+				up := unsafe { src + int(offset_deltas[0]) }
+				lt := unsafe { src + int(offset_deltas[1]) }
+				rt := unsafe { src + int(offset_deltas[2]) }
+				dn := unsafe { src + int(offset_deltas[3]) }
 				if pass == 2 {
 					// Offset order with the weight as the first factor.
 					for x in 0 .. width {
