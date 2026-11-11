@@ -1106,6 +1106,7 @@ fn create_navigation_fetch_request(entry &SessionHistoryEntry, navigable &Naviga
 	}
 	if navigable.is_top_level_traversable() {
 		request.top_level_navigation_initiator_origin = state.initiator_origin
+		request.user_agent_initiated = state.user_agent_initiated
 	}
 	if request.client == none {
 		request.origin = fetch.RequestOrigin{
