@@ -36,10 +36,16 @@ pub:
 // tile, faces Skia cannot open, color glyphs too wide for SkGlyph, and
 // non-finite glyph positions.
 pub fn fill_canvas_glyphs(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
-	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy())
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy(), unsafe { nil })
 }
 
-fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool) bool {
+// fill_canvas_glyphs() with the canvas's glyph cache, which keeps the run's
+// typeface facts and glyph masks for later draws.
+pub fn fill_canvas_glyphs_cached(mut cache GlyphCache, mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter) bool {
+	return fill_canvas_glyphs_surface(mut pixels, width, height, pitch, alpha_type, run, transform, color, style, global_alpha, mode, clips, filter_in, canvas_rgba_uses_legacy(), &cache)
+}
+
+fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int, alpha_type int, run CanvasGlyphRun, transform [6]f32, color u32, style ?CanvasPaintStyle, global_alpha f32, mode BlendMode, clips []Path, filter_in ?CanvasFilter, legacy bool, cache &GlyphCache) bool {
 	if run.glyphs.len == 0 {
 		return true
 	}
@@ -61,19 +67,22 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		// SkTypeface_Mac::MakeFromStream() only opens the first face.
 		if run.face_index != 0 { return false }
 	}
-	face := $if linux || cpuraster_freetype ? {
-		open_freetype_face(run.font_path, run.face_index) or { return false }
-	} $else {
-		open_glyph_face(run.font_path) or { return false }
+	// The face opens when a draw first needs it; the cache's facts and
+	// masks usually leave it closed.
+	face_key := glyph_face_key(run.font_path, run.face_index)
+	mut lazy := LazyGlyphFace{
+		path:  run.font_path
+		index: run.face_index
 	}
 	defer {
-		face.release()
+		lazy.release()
 	}
+	mut info := glyph_face_info(cache, face_key, mut lazy) or { return false }
 	if layer_filter := plan.layer {
 		// The blob's conservative bounds at its origin are the layer
 		// content; fonts without typeface bounds would need the glyphs'
 		// tight bounds.
-		font_bounds := face.font_bounds(run.font_size) or { return false }
+		font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size) or { return false }
 		if !is_finite_f32(run.translation[0]) || !is_finite_f32(run.translation[1]) {
 			return false
 		}
@@ -88,16 +97,19 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		content := Rect{blob.left + run.translation[0], blob.top + run.translation[1], blob.right +
 			run.translation[0], blob.bottom + run.translation[1]}
 		return draw_filter_layer(mut pixels, width, height, pitch, alpha_type, transform, clips,
-			content, layer_filter, mode, fn [run, color, style, global_alpha] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
+			content, layer_filter, mode, fn [run, color, style, global_alpha, cache] (mut layer []u8, w int, h int, t [6]f32, layer_clips []Path) bool {
 				return fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, run, t, color, style, global_alpha,
-					.src_over, layer_clips, none, true)
+					.src_over, layer_clips, none, true, cache)
 			})
 	}
 	ctm := canvas_affine(transform)
 	origin := Point{run.translation[0], run.translation[1]}
 	position_matrix := pre_translate(ctm, origin.x, origin.y)
-	routes := glyph_routes(face, run.glyphs, glyphs_draw_as_paths(run.font_size, position_matrix)) or {
-		return false
+	routes := if glyphs_draw_as_paths(run.font_size, position_matrix) {
+		path_face := lazy.get() or { return false }
+		glyph_routes(path_face, run.glyphs, true) or { return false }
+	} else {
+		[]GlyphRoute{len: run.glyphs.len}
 	}
 	paint_color, _ := canvas_paint_source(color, style, 0)
 	alpha := canvas_paint_alpha(paint_color, global_alpha)
@@ -105,24 +117,33 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	shader := canvas_paint_shader(style, matrix)
 	// The mask strike: A8 with the paint's mask gamma, or ARGB for a color
 	// typeface, whose glyphs CoreText draws in the paint's opaque color.
-	mut strike := new_glyph_strike(face, run.font_size, position_matrix, paint_luminance(paint_color,
-		alpha, shader, filter)) or { GlyphStrike{} }
+	luminance := paint_luminance(paint_color, alpha, shader, filter)
+	// CoreText's strike font is made with the first glyph the cache lacks.
+	mut strike := $if linux || cpuraster_freetype ? {
+		strike_face := lazy.get() or { return false }
+		new_glyph_strike(strike_face, run.font_size, position_matrix, luminance) or { GlyphStrike{} }
+	} $else {
+		glyph_strike_template(run.font_size, position_matrix, luminance) or { GlyphStrike{} }
+	}
 	strike.snap_y = run.baseline_snap && sk_relax(position_matrix.ky) == 0
 	strike.snap_x = run.baseline_snap && !strike.snap_y && sk_relax(position_matrix.sx) == 0
 	strike.smoothing = run.smoothing
+	mut smooth_luminance := -1
 	$if macos && !cpuraster_freetype ? {
 		behavior := int(C.cpuraster_ct_smoothing_behavior())
 		if run.smoothing != 2 && (run.smoothing == 1 || behavior != 0) {
-			luminance := paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
-			strike.table = smooth_mask_gamma_tables[luminance]
+			smooth_luminance = paint_mask_luminance(paint_color, alpha, shader, filter, behavior)
+			strike.table = smooth_mask_gamma_tables[smooth_luminance]
 		}
 	}
 	defer {
 		strike.release()
 	}
-	if face.color_glyphs {
+	if info.color_glyphs {
 		strike.color = true
 		strike.foreground = paint_color & 0xffffff
+		// Color strikes check and draw their glyphs with the font itself.
+		strike.ensure_font(mut lazy)
 	}
 	$if linux || cpuraster_freetype ? {
 		strike.foreground = (u32(paint_alpha_byte(alpha)) << 24) | (paint_color & 0xffffff)
@@ -135,7 +156,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 		tx: position_matrix.tx + if strike.snap_x { f32(0.5) } else { glyph_subpixel_round }
 		ty: position_matrix.ty + if strike.snap_y { f32(0.5) } else { glyph_subpixel_round }
 	}
-	if face.color_glyphs && strike.font != unsafe { nil } {
+	if info.color_glyphs && strike.font != unsafe { nil } {
 		// Color glyphs too wide for SkGlyph go to a bitmap fallback that is
 		// not ported.
 		for i, id in run.glyphs {
@@ -169,7 +190,7 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	// conservative bounds: the glyph positions expanded by the typeface's
 	// bounds at the font size. Empty typeface bounds take the glyphs' own
 	// bounds instead, which cannot reject a glyph that would touch the clip.
-	if font_bounds := face.font_bounds(run.font_size) {
+	if font_bounds := glyph_face_bounds(mut info, mut lazy, run.font_size) {
 		mut bounds := glyph_positions_bounds(run.positions[..run.glyphs.len * 2])
 		bounds = Rect{bounds.left + font_bounds.left, bounds.top + font_bounds.top, bounds.right +
 			font_bounds.right, bounds.bottom + font_bounds.bottom}
@@ -190,10 +211,13 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 	fill_glyph_outlines(mut pixels, pitch, run, routes, ctm, &rc, paint_color, shader, alpha, mode,
 		filter, legacy)
 	$if linux || cpuraster_freetype ? {
-		fill_freetype_drawables(mut pixels, pitch, run, routes, face, ctm, &rc,
-			paint_color, alpha, mode, filter, legacy)
+		if routes.any(it.kind == .drawable) {
+			drawable_face := lazy.get() or { return true }
+			fill_freetype_drawables(mut pixels, pitch, run, routes, drawable_face, ctm, &rc,
+				paint_color, alpha, mode, filter, legacy)
+		}
 	}
-	if strike.font == unsafe { nil } {
+	if strike.font == unsafe { nil } && !strike.deferred {
 		// A singular matrix zeroes fTransform: every mask is empty.
 		return true
 	}
@@ -205,6 +229,11 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			alpha, mode, filter, legacy)
 		return true
 	}
+	mut entry := glyph_cache_strike(cache, glyph_strike_key(face_key, run.font_size, position_matrix,
+		&strike, smooth_luminance, luminance))
+	if entry.empty {
+		return true
+	}
 	blitter := canvas_draw_blitter_for_surface(mut pixels, pitch, paint_color, shader, alpha, mode, Rect{},
 		filter, legacy) or { Blitter(NullBlitter{}) }
 	mut wrapped, clip_bounds := clip_wrapper(&rc, blitter)
@@ -213,11 +242,11 @@ fn fill_canvas_glyphs_surface(mut pixels []u8, width int, height int, pitch int,
 			continue
 		}
 		mapped := map_point_affine(rounding, Point{run.positions[i * 2], run.positions[i * 2 + 1]})
-		glyph := strike.glyph(id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
+		glyph := entry.glyph(mut strike, mut lazy, id, if strike.snap_x { 0 } else { packed_subpixel(mapped.x) }, if strike.snap_y {
 			0
 		} else {
 			packed_subpixel(mapped.y)
-		})
+		}) or { return true }
 		if glyph.width == 0 || glyph.height == 0 || glyph.width >= glyph_max_width {
 			// Empty glyphs are dropped; A8 images too wide for SkGlyph are
 			// rejected to a fallback that only draws color glyphs.
@@ -874,10 +903,13 @@ struct StrikeGlyph {
 // CoreText's font at the text size, fTransform (MatrixToCGAffineTransform()
 // of the remaining matrix) and the rec's pre-blend table.
 struct GlyphStrike {
-	font       voidptr
 	transform  [6]f64
 	invertible bool
+	// The CoreText font's size when it is made on first need.
+	text_size f64
 mut:
+	font     voidptr
+	deferred bool
 	table     []u8
 	smoothing int = 2
 	// An ARGB32 strike of a color typeface, and its foreground color.
@@ -892,19 +924,41 @@ fn new_glyph_strike(face GlyphFace, size f32, device SkAffine, luminance int) ?G
 	$if linux || cpuraster_freetype ? {
 		return new_freetype_strike(face, size, device, luminance)
 	}
+	mut strike := glyph_strike_template(size, device, luminance)?
+	strike.font = face.exact_copy(strike.text_size)?
+	strike.deferred = false
+	return strike
+}
+
+// A CoreText strike whose font is made by ensure_font().
+fn glyph_strike_template(size f32, device SkAffine, luminance int) ?GlyphStrike {
 	m := glyph_strike_matrices(size, device)
 	if !m.invertible {
 		// A singular matrix zeroes fTransform: every glyph is empty.
 		return none
 	}
 	r := m.remaining
-	font := face.exact_copy(f64(m.text_size)) or { return none }
 	return GlyphStrike{
-		font:       font
 		transform:  [f64(r.sx), -f64(r.ky), -f64(r.kx), f64(r.sy), f64(r.tx), f64(r.ty)]!
 		invertible: m.invertible
+		text_size:  f64(m.text_size)
 		table:      mask_gamma_tables[luminance]
+		deferred:   true
 	}
+}
+
+// Makes a deferred strike's font from the face; false when there is none.
+fn (mut s GlyphStrike) ensure_font(mut lazy LazyGlyphFace) bool {
+	if s.font != unsafe { nil } {
+		return true
+	}
+	if !s.deferred {
+		return false
+	}
+	s.deferred = false
+	face := lazy.get() or { return false }
+	s.font = face.exact_copy(s.text_size) or { return false }
+	return true
 }
 
 fn (mut s GlyphStrike) release() {

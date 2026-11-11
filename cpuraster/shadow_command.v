@@ -175,7 +175,7 @@ fn rasterize_general_shadow(width int, height int, command ShadowCommand, clips 
 			fill_canvas_glyphs_surface(mut layer, w, h, w * 4, 2, CanvasGlyphRun{
 				...run
 				baseline_snap: true
-			}, lt, 0xff000000, none, 1, .src_over, layer_clips, none, true)
+			}, lt, 0xff000000, none, 1, .src_over, layer_clips, none, true, unsafe { nil })
 			return true
 		}
 		if !fill_canvas_path(mut layer, w, h, w * 4, 2, outer.path(), lt, 0xff000000, none,
