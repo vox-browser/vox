@@ -6509,6 +6509,11 @@ pub fn (mut d Document) update_readiness(readiness_value DocumentReadyState) {
 		else {}
 	}
 
+	// SVG use forward references must exist before DOMContentLoaded, and
+	// resources discovered by their clones must still be able to delay load.
+	if readiness_value == .interactive {
+		d.refresh_svg_use_shadow_trees()
+	}
 	d.notify_each_document_observer_readiness()
 
 	// Fire a readystatechange event at the document.
@@ -9156,8 +9161,6 @@ pub fn (mut d Document) completely_finish_loading() {
 	// 1. Assert: document's browsing context is non-null.
 	// 2. The completely loaded time was recorded above even when activation was
 	// deferred.
-	d.refresh_svg_use_shadow_trees()
-
 	// NOTE: Start the active refresh timer if set.
 	if d.active_refresh_timer != unsafe { nil } {
 		d.active_refresh_timer.start()

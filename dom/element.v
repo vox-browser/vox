@@ -7481,7 +7481,7 @@ pub fn (mut e Element) svg_element_changed(svg_element &Element) {
 		return
 	}
 	to_clone := e.svg_use_referenced_element() or { return }
-	if to_clone == svg_element || to_clone.as_node().is_ancestor_of(svg_element.as_node()) {
+	if voidptr(to_clone) == voidptr(svg_element) || to_clone.as_node().is_ancestor_of(svg_element.as_node()) {
 		e.svg_use_clone_element_tree_as_our_shadow_tree(to_clone)
 	}
 }
@@ -7503,8 +7503,8 @@ pub fn (mut e Element) svg_element_removed(svg_element &Element) {
 }
 
 pub fn (mut e Element) update_use_elements_that_reference_this() {
-	if !e.is_svg_element() || e.local_name() == 'use' || e.id() == none || !e.is_connected()
-		|| !e.document().is_completely_loaded() || e.as_node().root().as_shadow_root() != none {
+	if !e.is_svg_element() || e.local_name() == 'use' || !e.is_connected()
+		|| e.document().readiness() == .loading || e.as_node().root().as_shadow_root() != none {
 		return
 	}
 	document_root := unsafe { &Node(e.document()) }
