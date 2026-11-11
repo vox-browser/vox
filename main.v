@@ -7628,14 +7628,17 @@ fn (mut app BrowserApp) draw() {
 			app.portable_shadow_image_index = 0
 			$if macos {
 				if app.ctx.native_rendering {
-					// Deferred layer pictures publish after the scroll raster ring
-					// stores the frame; keep leaf rasters immediate while the
-					// content qualifies for viewport scroll reuse.
-					enabled := replay_attempt == 0 && app.document != unsafe { nil }
+					// Speculative root pictures publish after the scroll raster ring
+					// stores the frame, so while the content qualifies for viewport
+					// scroll reuse only compositor layers, which publish within the
+					// command replay, may supply deferred leaf rasters (mode 2).
+					chromium := replay_attempt == 0 && app.document != unsafe { nil }
 						&& app.document.font_rendering_policy() == .chromium
-						&& !app.scroll_raster_content_eligible
+					enabled := chromium && !app.scroll_raster_content_eligible
+					layers_only := chromium && app.scroll_raster_content_eligible
+						&& !disable_reused_frame_layer_deferral
 					app.scroll_raster_frame_deferred = enabled
-					C.native_begin_deferred_layer_frame(i32(enabled))
+					C.native_begin_deferred_layer_frame(i32(if enabled { 1 } else if layers_only { 2 } else { 0 }))
 				}
 			}
 			mut scroll_damage := ScrollRasterDamage{}

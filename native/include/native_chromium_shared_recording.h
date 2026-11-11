@@ -67,6 +67,10 @@ int s_shared_viewport_width = 0, s_shared_viewport_height = 0;
 bool s_deferred_layer_frame_enabled = false;
 bool s_deferred_layer_frame_failed = false;
 bool s_deferred_layer_frame_open = false;
+// Mode 2: a frame that stores its pixels for scroll reuse after the command
+// loop. Only compositor-layer pictures, which publish inside that loop, may
+// supply deferred leaves; speculative root pictures publish after the store.
+bool s_deferred_layer_frame_layers_only = false;
 bool s_gradient_text_deferral_abandoned = false;
 uint64_t s_gradient_text_deferral_epoch = 0;
 unsigned s_gradient_text_inputs_pending = 0;
@@ -76,6 +80,7 @@ std::unordered_map<CGContextRef, bool> s_mapped_opacity_destinations;
 extern "C" void ladybird_v_skia_begin_deferred_layer_frame(int enabled)
 {
     s_deferred_layer_frame_enabled = enabled && !std::getenv("VOX_DISABLE_DEFERRED_LAYERS");
+    s_deferred_layer_frame_layers_only = enabled == 2;
     s_deferred_layer_frame_failed = false;
     s_deferred_layer_frame_open = true;
     if (++s_gradient_text_deferral_epoch == 0) ++s_gradient_text_deferral_epoch;
@@ -91,6 +96,7 @@ extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
     int result = !s_deferred_layer_frame_failed;
     s_deferred_layer_frame_open = false;
     s_deferred_layer_frame_enabled = false;
+    s_deferred_layer_frame_layers_only = false;
     s_speculative_layer_enabled = false;
     s_deferred_layer_destinations.clear();
     s_mapped_opacity_destinations.clear();
@@ -100,6 +106,7 @@ extern "C" int ladybird_v_skia_finish_deferred_layer_frame()
 uint64_t begin_deferred_gradient_text_input()
 {
     if (!s_deferred_layer_frame_open || s_gradient_text_deferral_abandoned
+        || s_deferred_layer_frame_layers_only
         || !std::getenv("VOX_DEFER_GRADIENT_TEXT_INPUTS")) return 0;
     ++s_gradient_text_inputs_pending;
     return s_gradient_text_deferral_epoch;
@@ -151,6 +158,8 @@ bool shared_recording_defers_leaf_raster(CGContextRef destination, SkRect const&
         || s_shared_root_recording->destination != destination
         || s_shared_root_recording->replay_bounds.empty()
         || !s_shared_root_recording->blocked_bounds.empty()
+        || (s_deferred_layer_frame_layers_only && (s_shared_root_recording->speculative
+            || s_shared_root_recording->checks_prefix))
         || !s_deferred_layer_destinations.count(destination)) return false;
     auto& group = *s_shared_root_recording;
     auto bounds = SkRect::MakeXYWH(group.origin_x,
@@ -984,6 +993,7 @@ extern "C" void ladybird_v_skia_set_layer_shared_recording(int enabled)
             ctm.a, ctm.b, ctm.c, ctm.d, ctm.tx, ctm.ty, speculative_picture_context_eligible(context), speculative_picture_time());
     }
     if (!enabled && speculative_picture_enabled() && s_deferred_layer_frame_enabled
+        && !s_deferred_layer_frame_layers_only
         && (!s_raster_layer_is_root || (!s_shared_root_enabled && root_speculative_picture_enabled()))
         && !s_direct_image_layer
         && s_raster_layer_width > 0 && s_raster_layer_height > 0) {
