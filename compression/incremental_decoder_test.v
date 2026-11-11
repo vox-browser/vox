@@ -70,3 +70,43 @@ fn test_incremental_decoder_requires_end_marker_and_checks_corruption() {
 	mut decoder := IncrementalDecompressor.create(.gzip)!
 	assert decoder.push([u8(0), 1, 2, 3], false).error_message == 'TypeError: Invalid compressed input'
 }
+
+fn test_incremental_brotli_decoder_completes_from_small_chunks() {
+	input := []u8{len: 70000, init: u8((index * 7) % 253)}
+	mut encoder := CompressionStream.construct_impl(.brotli)!
+	mut writable := encoder.writable()
+	writable.write(input)!
+	writable.close()!
+	mut readable := encoder.readable()
+	encoded := readable.read_all()
+	mut decoder := IncrementalDecompressor.create(.brotli)!
+	defer { decoder.close() }
+	mut actual := []u8{}
+	mut offset := 0
+	for offset < encoded.len {
+		end := if offset + 7 < encoded.len { offset + 7 } else { encoded.len }
+		part := decoder.push(encoded[offset..end], false)
+		assert part.error_message == ''
+		actual << part.bytes
+		offset = end
+	}
+	finished := decoder.push([], true)
+	assert finished.error_message == '' && finished.complete
+	actual << finished.bytes
+	assert actual == input
+}
+
+fn test_brotli_leading_stream_reports_its_length() {
+	mut bytes := incremental_hello(.brotli)
+	stream_length := bytes.len
+	bytes << [u8(1), 2, 3]
+	stream := brotli_decode_leading_stream(bytes)!
+	assert stream.data.bytestr() == 'hello'
+	assert stream.consumed == stream_length
+	// WBITS bits 1, 000, 001 then a set reserved bit: an invalid large-window marker.
+	if _ := brotli_decode_leading_stream([u8(0x91)]) {
+		assert false
+	} else {
+		assert !brotli_error_is_truncation(err)
+	}
+}

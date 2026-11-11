@@ -1,28 +1,11 @@
 module compression
 
 #flag -lz
-$if windows {
-	#flag -lbrotlidec
-	#flag -lbrotlienc
-} $else {
-	#pkgconfig libbrotlidec libbrotlienc
-}
 #include "@VMODROOT/compression/native_decoder.h"
 
 fn C.vox_decompression_create(i32) voidptr
 fn C.vox_decompression_destroy(voidptr)
 fn C.vox_decompression_step(voidptr, &u8, uint, &uint, &u8, uint, &uint) i32
-fn C.vox_brotli_encoded_bound(uint) uint
-fn C.vox_brotli_encode(&u8, uint, &u8, &uint) i32
-
-fn encode_brotli(input []u8) ![]u8 {
-	mut capacity := C.vox_brotli_encoded_bound(uint(input.len))
-	mut output := []u8{len: int(capacity)}
-	if C.vox_brotli_encode(input.data, uint(input.len), output.data, &capacity) == 0 {
-		return error('TypeError: Unable to compress Brotli input')
-	}
-	return output[..int(capacity)]
-}
 
 pub struct DecompressionOutput {
 pub:
@@ -36,15 +19,22 @@ pub:
 @[heap]
 pub struct IncrementalDecompressor {
 mut:
+	format CompressionFormat
 	context voidptr
+	// Brotli input buffered for the whole-stream V decoder, and its length at
+	// the last decoding attempt.
+	brotli_input []u8
+	brotli_attempted int
+	closed bool
 	complete bool
 	failed bool
 }
 
 pub fn IncrementalDecompressor.create(format CompressionFormat) !&IncrementalDecompressor {
+	if format == .brotli { return &IncrementalDecompressor{format: format} }
 	context := C.vox_decompression_create(i32(format))
 	if context == unsafe { nil } { return error('TypeError: Unable to create decompressor') }
-	return &IncrementalDecompressor{context: context}
+	return &IncrementalDecompressor{format: format, context: context}
 }
 
 pub fn (mut decoder IncrementalDecompressor) close() {
@@ -52,6 +42,31 @@ pub fn (mut decoder IncrementalDecompressor) close() {
 		C.vox_decompression_destroy(decoder.context)
 		decoder.context = unsafe { nil }
 	}
+	decoder.brotli_input = []u8{}
+	decoder.closed = true
+}
+
+// Decodes buffered Brotli input once the stream is complete. Re-decoding is
+// linear in the buffered size, so wait for 25% growth between attempts unless
+// the input is finished; the total work stays linear in the stream size.
+fn (mut decoder IncrementalDecompressor) push_brotli(input []u8, finish bool) ([]u8, string) {
+	decoder.brotli_input << input
+	buffered := decoder.brotli_input.len
+	if buffered == 0 || (!finish && decoder.brotli_attempted > 0
+		&& buffered - decoder.brotli_attempted < decoder.brotli_attempted / 4) {
+		return []u8{}, ''
+	}
+	decoder.brotli_attempted = buffered
+	stream := brotli_decode_leading_stream(decoder.brotli_input) or {
+		if brotli_error_is_truncation(err) { return []u8{}, '' }
+		return []u8{}, 'TypeError: Invalid compressed input'
+	}
+	decoder.complete = true
+	decoder.brotli_input = []u8{}
+	if stream.consumed != buffered {
+		return stream.data, 'TypeError: Extra input after the compressed stream'
+	}
+	return stream.data, ''
 }
 
 pub fn (mut decoder IncrementalDecompressor) push(input []u8, finish bool) DecompressionOutput {
@@ -59,8 +74,10 @@ pub fn (mut decoder IncrementalDecompressor) push(input []u8, finish bool) Decom
 	mut failure := ''
 	if decoder.failed || (decoder.complete && input.len > 0) {
 		failure = 'TypeError: Extra input after the compressed stream'
-	} else if !decoder.complete && decoder.context == unsafe { nil } {
+	} else if !decoder.complete && decoder.closed {
 		failure = 'TypeError: Decompression stream is closed'
+	} else if !decoder.complete && decoder.format == .brotli {
+		output, failure = decoder.push_brotli(input, finish)
 	} else if !decoder.complete {
 		mut offset := 0
 		for {

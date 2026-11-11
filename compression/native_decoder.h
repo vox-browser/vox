@@ -3,30 +3,18 @@
 #define VOX_COMPRESSION_NATIVE_DECODER_H
 #include <stdlib.h>
 #include <zlib.h>
-#include <brotli/decode.h>
-#include <brotli/encode.h>
 
-static size_t vox_brotli_encoded_bound(size_t length) {
-    return BrotliEncoderMaxCompressedSize(length);
-}
-
-static int vox_brotli_encode(const unsigned char *input, size_t length,
-        unsigned char *output, size_t *capacity) {
-    return BrotliEncoderCompress(5, 22, BROTLI_MODE_GENERIC, length, input, capacity, output);
-}
-
+// Brotli is decoded and encoded in V (compression/brotli.v); this context only
+// streams the zlib-family formats.
 typedef struct {
     z_stream z;
-    BrotliDecoderState *br;
 } VoxDecompressionContext;
 
+// format: 1 deflate, 2 deflate-raw, 3 gzip.
 static void *vox_decompression_create(int format) {
     VoxDecompressionContext *s = calloc(1, sizeof(*s));
     if (!s) return NULL;
-    if (format == 0) {
-        s->br = BrotliDecoderCreateInstance(NULL, NULL, NULL);
-        if (!s->br) { free(s); return NULL; }
-    } else if (inflateInit2(&s->z, format == 1 ? 15 : format == 2 ? -15 : 31) != Z_OK) {
+    if (inflateInit2(&s->z, format == 1 ? 15 : format == 2 ? -15 : 31) != Z_OK) {
         free(s);
         return NULL;
     }
@@ -36,8 +24,7 @@ static void *vox_decompression_create(int format) {
 static void vox_decompression_destroy(void *context) {
     VoxDecompressionContext *s = context;
     if (!s) return;
-    if (s->br) BrotliDecoderDestroyInstance(s->br);
-    else inflateEnd(&s->z);
+    inflateEnd(&s->z);
     free(s);
 }
 
@@ -47,18 +34,6 @@ static int vox_decompression_step(void *context, const unsigned char *input,
         size_t length, size_t *consumed, unsigned char *output,
         size_t capacity, size_t *produced) {
     VoxDecompressionContext *s = context;
-    if (s->br) {
-        size_t in = length, out = capacity;
-        const unsigned char *next_in = input;
-        unsigned char *next_out = output;
-        BrotliDecoderResult result = BrotliDecoderDecompressStream(s->br, &in,
-            &next_in, &out, &next_out, NULL);
-        *consumed = length - in;
-        *produced = capacity - out;
-        if (result == BROTLI_DECODER_RESULT_SUCCESS) return 1;
-        if (result == BROTLI_DECODER_RESULT_ERROR) return -1;
-        return result == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT ? 2 : 0;
-    }
     s->z.next_in = (Bytef *)input;
     s->z.avail_in = (uInt)length;
     s->z.next_out = output;
