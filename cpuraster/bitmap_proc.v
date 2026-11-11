@@ -302,26 +302,29 @@ fn unpack_filter(packed u32) (int, int, u32) {
 }
 
 // filter_and_scale_by_alpha() on NEON: per byte, the four weights as 16-bit
-// products, then the alpha scale.
+// products, then the alpha scale. The weights sum to 256, so no byte's sum
+// exceeds 255 * 256 and none of NEON's 16-bit lanes wraps: two bytes share
+// each 32-bit word here, as in Skia's portable Filter_32_alpha().
 @[inline]
 fn filter_and_scale_by_alpha(x u32, y u32, a00 u32, a01 u32, a10 u32, a11 u32, scale u32) u32 {
-	mut out := u32(0)
-	for c in 0 .. 4 {
-		shift := u32(8 * c)
-		p00 := (a00 >> shift) & 0xff
-		p01 := (a01 >> shift) & 0xff
-		p10 := (a10 >> shift) & 0xff
-		p11 := (a11 >> shift) & 0xff
-		mut t := (p01 * (16 - y)) * x
-		t = (t + (p11 * y) * x) & 0xffff
-		t = (t + (p00 * (16 - y)) * (16 - x)) & 0xffff
-		t = (t + (p10 * y) * (16 - x)) & 0xffff
-		if scale < 256 {
-			t = ((t >> 8) * scale) & 0xffff
-		}
-		out |= ((t >> 8) & 0xff) << shift
+	mask := u32(0x00ff00ff)
+	w00 := (16 - y) * (16 - x)
+	w01 := (16 - y) * x
+	w10 := y * (16 - x)
+	w11 := y * x
+	mut lo := (a00 & mask) * w00
+	lo += (a01 & mask) * w01
+	lo += (a10 & mask) * w10
+	lo += (a11 & mask) * w11
+	mut hi := ((a00 >> 8) & mask) * w00
+	hi += ((a01 >> 8) & mask) * w01
+	hi += ((a10 >> 8) & mask) * w10
+	hi += ((a11 >> 8) & mask) * w11
+	if scale < 256 {
+		lo = ((lo >> 8) & mask) * scale
+		hi = ((hi >> 8) & mask) * scale
 	}
-	return out
+	return ((lo >> 8) & mask) | (hi & ~mask)
 }
 
 // filter_32_alpha() for the one-pixel-wide shader proc.
