@@ -12,8 +12,12 @@ const load_frame_throttle_diagnostics = os.getenv('VOX_LOAD_RENDER_THROTTLE_DIAG
 // its cost for scripts and network callbacks, as Chromium stops starting main
 // frames faster than a busy main thread can service them.
 const load_frame_throttle_min_cost_ns = 20 * time.millisecond
-const load_frame_throttle_cost_ratio = 3
-const load_frame_throttle_max_gap_ns = 500 * time.millisecond
+// VOX_LOAD_RENDER_THROTTLE_RATIO and VOX_LOAD_RENDER_THROTTLE_MAX_GAP_MS
+// override the defaults for measurements.
+const load_frame_throttle_cost_ratio = i64(os.getenv_opt('VOX_LOAD_RENDER_THROTTLE_RATIO') or { '3' }.int())
+const load_frame_throttle_max_gap_ns = i64(os.getenv_opt('VOX_LOAD_RENDER_THROTTLE_MAX_GAP_MS') or {
+	'500'
+}.int()) * time.millisecond
 // Only the loading phase after a document's first paint, without recent input:
 // scrolling, typing and animation keep their normal frame cadence.
 const load_frame_throttle_window_ns = 10 * time.second
