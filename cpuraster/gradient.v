@@ -674,6 +674,7 @@ fn gradient_fill(colors [][4]f32, positions []f32) GradientFill {
 }
 
 // The fill stage's gap index for t.
+@[direct_array_access]
 fn (f &GradientFill) index(t f32) int {
 	return match f.kind {
 		.two_stop {
@@ -864,6 +865,7 @@ fn (g &GradientShader) gradient_t(px int, py int, highp bool) (f32, bool) {
 
 // shade_highp: the premultiplied float color at pixel (px, py), with the
 // conical mask applied after premul.
+@[direct_array_access]
 fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 	t, keep := g.gradient_t(px, py, true)
 	idx := g.fill.index(t)
@@ -883,6 +885,7 @@ fn (g &GradientShader) shade_highp(px int, py int) [4]f32 {
 }
 
 // shade_lowp: round_F_to_U16() of the unfused fill, then lowp premul.
+@[direct_array_access]
 fn (g &GradientShader) shade_lowp(px int, py int) [4]u32 {
 	t, _ := g.gradient_t(px, py, false)
 	idx := g.fill.index(t)

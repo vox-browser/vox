@@ -10,6 +10,13 @@ fn load32(pixels []u8, offset int) u32 {
 	return u32(pixels[offset]) | (u32(pixels[offset + 1]) << 8) | (u32(pixels[offset + 2]) << 16) | (u32(pixels[offset + 3]) << 24)
 }
 
+// load32() for the sampling loops, whose tile procs have already pinned
+// every coordinate inside the image.
+@[direct_array_access; inline]
+fn load32_unchecked(pixels []u8, offset int) u32 {
+	return u32(pixels[offset]) | (u32(pixels[offset + 1]) << 8) | (u32(pixels[offset + 2]) << 16) | (u32(pixels[offset + 3]) << 24)
+}
+
 @[inline]
 fn store32(mut pixels []u8, offset int, value u32) {
 	pixels[offset] = u8(value)

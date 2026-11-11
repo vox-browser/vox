@@ -377,6 +377,7 @@ enum CoverageKind {
 }
 
 // blit runs the pipeline over count pixels from (x, y).
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
 	offset := b.offset(x, y)
 	for i in 0 .. count {
@@ -393,12 +394,18 @@ fn (mut b PipelineBlitter) blit_h(x int, y int, width int) {
 	b.blit_rect(x, y, width, 1)
 }
 
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit_rect(x int, y int, width int, height int) {
 	for row in 0 .. height {
 		offset := b.offset(x, y + row)
 		if b.memset {
+			color := b.memset_color
 			for i in 0 .. width {
-				store32(mut b.pixels, offset + i * 4, b.memset_color)
+				o := offset + i * 4
+				b.pixels[o] = u8(color)
+				b.pixels[o + 1] = u8(color >> 8)
+				b.pixels[o + 2] = u8(color >> 16)
+				b.pixels[o + 3] = u8(color >> 24)
 			}
 		} else {
 			b.blit(x, y + row, width, .none, 0)
@@ -504,6 +511,7 @@ fn lowp_lerp(from u32, to u32, t u32) u32 {
 
 // The per-channel lowp blend modes, s and d being one channel of the source
 // and destination.
+@[inline]
 fn lowp_channel(mode BlendMode, s u32, d u32, sa u32, da u32) u32 {
 	return match mode {
 		.src_atop {
@@ -585,6 +593,7 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
 }
 
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01: min(v, 255).
 	mut src := if b.imaged {
@@ -625,7 +634,14 @@ fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, c
 	dg := u32(b.pixels[o + 1])
 	db := u32(b.pixels[o + 2])
 	da := u32(b.pixels[o + 3])
-	if b.mode != .src {
+	if b.mode == .src_over {
+		// lowp_channel(.src_over) for all four channels, alpha included.
+		inv_a := lowp_inv(a)
+		r = u16w(r + lowp_div255(u16w(dr * inv_a)))
+		g = u16w(g + lowp_div255(u16w(dg * inv_a)))
+		bl = u16w(bl + lowp_div255(u16w(db * inv_a)))
+		a = u16w(a + lowp_div255(u16w(da * inv_a)))
+	} else if b.mode != .src {
 		nr := lowp_channel(b.mode, r, dr, a, da)
 		ng := lowp_channel(b.mode, g, dg, a, da)
 		nb := lowp_channel(b.mode, bl, db, a, da)

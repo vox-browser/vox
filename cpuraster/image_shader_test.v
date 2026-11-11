@@ -237,3 +237,25 @@ fn test_uninstallable_patterns_decline() {
 		}, 1, .src_over, 0, [], none)
 	assert px == before
 }
+
+// blit_row_s32a_opaque() writes opaque sources and skips transparent black
+// ones; both shortcuts equal SkPMSrcOver's per-byte blend for every
+// destination byte.
+fn test_blit_row_s32a_opaque_shortcuts_match_the_blend() {
+	sources := [u32(0), 0xff000000, 0xff123456, 0xffffffff, 0xff00ff80, 0x80402010, 0x01010101]
+	for source in sources {
+		mut pixels := []u8{len: 256 * 4}
+		mut expected := []u8{len: 256 * 4}
+		for d in 0 .. 256 {
+			for c in 0 .. 4 {
+				dc := u32((d + c * 67) % 256)
+				pixels[d * 4 + c] = u8(dc)
+				sc := (source >> (8 * u32(c))) & 0xff
+				v := sc + mul_div255_round(255 - (source >> 24), dc)
+				expected[d * 4 + c] = u8(if v > 255 { u32(255) } else { v })
+			}
+		}
+		blit_row_s32a_opaque(mut pixels, 0, []u32{len: 256, init: source}, 256)
+		assert pixels == expected, 'source ${source:08x}'
+	}
+}

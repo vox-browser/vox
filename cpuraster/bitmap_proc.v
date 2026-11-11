@@ -238,7 +238,7 @@ fn (mut s BitmapProcState) setup_for_translate() bool {
 
 @[inline]
 fn (s &BitmapProcState) pixel(x int, y int) u32 {
-	return load32(s.pixels, y * s.row_bytes + x * 4)
+	return load32_unchecked(s.pixels, y * s.row_bytes + x * 4)
 }
 
 // sk_int_mod(): 0 .. n - 1 for any x.
@@ -303,6 +303,7 @@ fn unpack_filter(packed u32) (int, int, u32) {
 
 // filter_and_scale_by_alpha() on NEON: per byte, the four weights as 16-bit
 // products, then the alpha scale.
+@[inline]
 fn filter_and_scale_by_alpha(x u32, y u32, a00 u32, a01 u32, a10 u32, a11 u32, scale u32) u32 {
 	mut out := u32(0)
 	for c in 0 .. 4 {
@@ -378,6 +379,7 @@ fn (s &BitmapProcState) shade_span(x int, y int, mut colors []u32, count int) {
 }
 
 // Clamp_S32_opaque_D32_nofilter_DX_shaderproc.
+@[direct_array_access]
 fn (s &BitmapProcState) clamp_opaque_nofilter(x int, y int, mut colors []u32, count int) {
 	max_x := s.width - 1
 	mut fx, fy, _ := s.map(x, y)
@@ -424,6 +426,7 @@ fn (s &BitmapProcState) constant_x(x int, y int, mut colors []u32, count int) {
 }
 
 // Clamp_ and Repeat_S32_D32_nofilter_trans_shaderproc.
+@[direct_array_access]
 fn (s &BitmapProcState) trans_shader(x int, y int, mut colors []u32, count int) {
 	ix := int(s.filter_one_x) + x
 	iy0 := int(s.filter_one_y) + y
@@ -447,6 +450,7 @@ fn (s &BitmapProcState) trans_shader(x int, y int, mut colors []u32, count int) 
 
 // The matrix proc and sample proc for n pixels from (x, y), written to
 // colors[at..].
+@[direct_array_access]
 fn (s &BitmapProcState) sample_chunk(x int, y int, mut colors []u32, at int, n int) {
 	max_x := s.width - 1
 	max_y := s.height - 1
@@ -516,12 +520,13 @@ fn can_truncate_to_fixed_for_decal(fx i32, dx i32, count int, max int) bool {
 }
 
 // nofilter_scale (with clamp's decal_nofilter_scale fast path), then
-// S32_alpha_D32_nofilter_DX.
+// S32_alpha_D32_nofilter_DX. shade_span() passes at most 254 pixels.
+@[direct_array_access]
 fn (s &BitmapProcState) nofilter_scale(x int, y int, mut colors []u32, at int, n int) {
 	max_x := s.width - 1
 	mut fx, fy, _ := s.map(x, y)
 	row := int(s.tile_fixed(fixed3232_to_fixed(fy), s.height - 1))
-	mut xs := []u16{len: n}
+	mut xs := [254]u16{}
 	if max_x != 0 {
 		dx := s.inv_sx
 		mut decal := false
@@ -567,6 +572,7 @@ fn (s &BitmapProcState) nofilter_scale(x int, y int, mut colors []u32, at int, n
 }
 
 // filter_scale (with clamp's decal fast path), then S32_alpha_D32_filter_DX.
+@[direct_array_access]
 fn (s &BitmapProcState) filter_scale(x int, y int, mut colors []u32, at int, n int) {
 	max_x := s.width - 1
 	dx := s.inv_sx
@@ -620,11 +626,23 @@ fn blit_row_s32a(mut pixels []u8, offset int, span []u32, count int, alpha u32) 
 }
 
 // SkPMSrcOver_neon: per byte, src + SkMulDiv255Round(255 - src alpha, dst)
-// saturated.
+// saturated. An opaque source replaces the destination and a transparent
+// black one leaves it, exactly as the general blend does.
+@[direct_array_access]
 fn blit_row_s32a_opaque(mut pixels []u8, offset int, span []u32, count int) {
 	for i in 0 .. count {
 		o := offset + i * 4
 		s := span[i]
+		if s >= 0xff000000 {
+			pixels[o] = u8(s)
+			pixels[o + 1] = u8(s >> 8)
+			pixels[o + 2] = u8(s >> 16)
+			pixels[o + 3] = u8(s >> 24)
+			continue
+		}
+		if s == 0 {
+			continue
+		}
 		inv_a := 255 - (s >> 24)
 		for c in 0 .. 4 {
 			sc := (s >> (8 * u32(c))) & 0xff
@@ -636,6 +654,7 @@ fn blit_row_s32a_opaque(mut pixels []u8, offset int, span []u32, count int) {
 
 // blit_row_s32a_blend() on NEON: an odd first pixel with the exact
 // SkAlphaMulInv256(), then pairs with its 16-bit approximation.
+@[direct_array_access]
 fn blit_row_s32a_blend(mut pixels []u8, offset int, span []u32, count int, alpha u32) {
 	alpha256 := alpha + 1
 	mut i := 0
@@ -653,7 +672,7 @@ fn blit_row_s32a_blend(mut pixels []u8, offset int, span []u32, count int, alpha
 	}
 }
 
-@[inline]
+@[direct_array_access; inline]
 fn blend_scaled_pixel(mut pixels []u8, o int, s u32, src_scale u32, dst_scale u32) {
 	for c in 0 .. 4 {
 		sc := ((s >> (8 * u32(c))) & 0xff) * src_scale
