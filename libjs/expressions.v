@@ -147,7 +147,7 @@ fn (mut p Parser) continue_parse_expression(lhs_start Position, expression_ Expr
 	mut expression := expression_
 	mut lhs_is_parenthesized := p.last_primary_was_parenthesized
 	p.last_primary_was_parenthesized = false
-	for p.match_secondary_expression(&forbidden) {
+	for !p.recursion_limit_reached && p.match_secondary_expression(&forbidden) {
 		new_precedence := operator_precedence(p.current_token_type())
 		if new_precedence < min_precedence {
 			break
