@@ -1390,6 +1390,9 @@ pub fn (mut model HTMLInputElementModel) run_input_activation_behavior(event &do
 			if !input_element(&model).is_connected() {
 				return
 			}
+			if model.type_state_ == .radio_button && model.before_activation_checked_ {
+				return
+			}
 			model.fire_event('input')
 			model.fire_event('change')
 		}

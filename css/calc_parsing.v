@@ -337,25 +337,24 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 	mut strategy := 'nearest'
 	mut numeric_lists := argument_lists.clone()
 
-	// An optional leading <rounding-strategy> keyword.
-	if argument_lists.len == 3 {
+	// The strategy is optional whether the rounding interval is explicit or
+	// defaults to 1, so round(up, A) is valid alongside round(A).
+	if argument_lists.len >= 2 {
 		first := argument_lists[0]
 		mut probe := ComponentValueStream.new(first)
 		probe.consume_whitespace()
 		if keyword_token := probe.consume() {
 			probe.consume_whitespace()
 			if keyword_token.is(.ident) && !probe.has_more_tokens() {
-				strategy = calc_rounding_strategy_from_string(keyword_token.token().ident()) or {
-					return none
+				if parsed_strategy := calc_rounding_strategy_from_string(keyword_token.token().ident()) {
+					strategy = parsed_strategy
+					numeric_lists = argument_lists[1..].clone()
 				}
-				numeric_lists = argument_lists[1..].clone()
-			} else {
-				return none
 			}
 		}
 	}
 
-	if numeric_lists.len != 2 {
+	if numeric_lists.len < 1 || numeric_lists.len > 2 {
 		return none
 	}
 	mut call_arguments := []CalcNode{}
@@ -363,6 +362,15 @@ fn (mut parser Parser) parse_round_function(values []ComponentValue, allow_tree_
 		mut stream := ComponentValueStream.new(argument)
 		call_arguments << (parser.parse_a_calculation(mut stream, allow_tree_counting_functions) or {
 			return none
+		})
+	}
+	if call_arguments.len == 1 {
+		// Add the default interval before the common type check, preserving
+		// percentage hints in dimension-canceling calculations.
+		call_arguments << CalcNode(CalcNumeric{
+			kind: .number
+			value: 1.0
+			type_: NumericType.new()
 		})
 	}
 	return build_calc_function('round', call_arguments, strategy)
@@ -538,10 +546,10 @@ fn build_calc_function(name string, arguments []CalcNode, strategy string) ?Calc
 // Upstream's math-function parser is generated from MathFunctions.json, where each function
 // carries a `parameter-validation` rule. `consistent` unifies the argument types through
 // consistent_type(), while `same` requires every argument to have the exact same type -
-// including its percent hint. mod(), rem(), and log() use `same`, so `mod(2em, 50%)` is
-// invalid for a <length-percentage> property even though `min(2em, 50%)` is not.
+// including its percent hint. Only log() uses `same`; mod()/rem() accept
+// consistent types, including mixed lengths and percentages in that context.
 fn calc_function_requires_same_parameter_types(name string) bool {
-	return name in ['log', 'mod', 'rem']
+	return name == 'log'
 }
 
 fn (mut parser Parser) parse_calc_arguments(values []ComponentValue, allow_tree_counting_functions bool) ?[]CalcNode {

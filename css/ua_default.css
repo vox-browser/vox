@@ -383,6 +383,11 @@ rt {
     outline: auto;
 }
 
+/* Match other browser engines: root and body are not given the UA focus ring. */
+html:focus-visible, body:focus-visible {
+    outline-style: none;
+}
+
 mark {
     background: Mark;
     color: MarkText;

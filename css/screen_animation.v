@@ -2158,6 +2158,7 @@ fn materialize_pending_css_animation_event(pending &dom.PendingAnimationEvent) &
 		elapsed_time: pending.event_elapsed_time
 		pseudo_element: pending.event_pseudo_element
 	}).base_event()
+	event.set_is_trusted(true)
 	event.set_time_stamp(pending.event_time_stamp)
 	event.interface_ = .animation_event
 	event.css_event_members_ = &dom.CSSEventMembers{

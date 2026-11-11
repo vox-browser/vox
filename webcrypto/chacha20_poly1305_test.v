@@ -145,7 +145,7 @@ fn test_chacha_source_formats_generation_and_jwk_error_order() {
 	generated_key := generated.key or { panic('key') }
 	assert generated_key.handle().len == 32
 	assert generated_key.extractable
-	assert generated_key.usages == duplicated
+	assert generated_key.usages == [KeyUsage.encrypt]
 	assert algorithm.generate_key(AlgorithmParams{}, false, [])!.key?.usages.len == 0
 	if _ := algorithm.generate_key(AlgorithmParams{}, false, [.sign]) {
 		assert false
@@ -156,7 +156,7 @@ fn test_chacha_source_formats_generation_and_jwk_error_order() {
 	exported := JsonWebKey.parse(algorithm.export_key(.jwk, generated_key)!)!
 	assert exported.kty? == 'oct'
 	assert exported.alg? == 'C20P'
-	assert exported.key_ops? == ['encrypt', 'encrypt']
+	assert exported.key_ops? == ['encrypt']
 	assert exported.ext? == true
 	assert exported.use == none
 	assert algorithm.export_key(.raw_secret, generated_key)! == generated_key.handle()

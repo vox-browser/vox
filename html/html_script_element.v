@@ -8,6 +8,7 @@
 module html
 
 import dom
+import mimesniff
 
 pub enum ScriptElementType {
 	null_
@@ -86,12 +87,6 @@ pub fn HTMLScriptElementModel.create(base_url dom.URL) &HTMLScriptElementModel {
 
 pub fn html_script_element_supports(type_ string) bool {
 	return type_ in ['classic', 'module', 'importmap']
-}
-
-fn is_javascript_mime_type(type_ string) bool {
-	essence := ascii_lowercase_string(type_.split(';')[0].trim_space())
-	return essence in ['', 'text/javascript', 'application/javascript', 'application/ecmascript',
-		'text/ecmascript', 'text/jscript', 'text/livescript', 'application/x-javascript']
 }
 
 fn (mut script HTMLScriptElementModel) fire_event(name string) {
@@ -270,13 +265,16 @@ pub fn (script &HTMLScriptElementModel) script_type() ScriptElementType {
 
 fn (script &HTMLScriptElementModel) determine_type() ScriptElementType {
 	type_value := if value := script.type_attribute_ {
-		value.trim_space()
+		if value == '' { 'text/javascript' } else { value }
 	} else if language := script.language_attribute_ {
 		if language == '' { 'text/javascript' } else { 'text/${language}' }
 	} else {
 		'text/javascript'
 	}
-	if is_javascript_mime_type(type_value) {
+	// Whitespace is stripped only for the type attribute's classic MIME check.
+	// In particular, it remains significant for module and import-map scripts.
+	if mimesniff.is_javascript_mime_type_essence_match(type_value)
+		|| mimesniff.is_javascript_mime_type_essence_match((script.type_attribute_ or { '' }).trim('\t\n\f\r ')) {
 		return .classic
 	}
 	return match ascii_lowercase_string(type_value) {

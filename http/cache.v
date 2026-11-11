@@ -7,7 +7,7 @@
 // milliseconds, matching the Unix millisecond timestamps used by the V port.
 module http
 
-import strconv
+import cachepolicy
 import time
 
 pub enum CacheLifetimeStatus {
@@ -50,13 +50,28 @@ pub fn contains_cache_control_directive(cache_control string, directive string) 
 	return extract_cache_control_directive(cache_control, directive) != none
 }
 
+// RFC 9111 delta-seconds is one or more ASCII digits. Saturate overflows at
+// 2^31 seconds, as permitted by the specification, before converting to ms.
+fn parse_cache_delta_seconds(value string) ?i64 {
+	if value.len == 0 { return none }
+	maximum_seconds := u64(2_147_483_648)
+	mut seconds := u64(0)
+	for byte in value.bytes() {
+		if byte < `0` || byte > `9` { return none }
+		if seconds < maximum_seconds {
+			next := seconds * 10 + u64(byte - `0`)
+			seconds = if next > maximum_seconds { maximum_seconds } else { next }
+		}
+	}
+	return i64(seconds) * 1000
+}
+
 pub fn extract_cache_control_duration_directive(cache_control string, directive string, valueless_fallback ?i64) ?i64 {
 	value := extract_cache_control_directive(cache_control, directive) or { return none }
 	if value.len == 0 {
 		return valueless_fallback
 	}
-	seconds := strconv.parse_int(value, 10, 64) or { return none }
-	return seconds * 1000
+	return parse_cache_delta_seconds(value)
 }
 
 pub fn is_cacheable_request(method string, request_headers &HeaderList) bool {
@@ -77,18 +92,32 @@ fn is_heuristically_cacheable_status(status_code u32) bool {
 
 pub fn vary_header_names(headers &HeaderList) []string {
 	value := headers.get('Vary') or { return []string{} }
-	return get_decode_and_split_header_value(value).map(it.trim('\t '))
+	mut names := []string{}
+	for field in value.split(',') {
+		name := cache_ascii_lowercase(field.trim('\t '))
+		if name != '' && name !in names {
+			names << name
+			// Every caller rejects this over-limit result. Stop before further
+			// untrusted names turn deduplication into unbounded quadratic work.
+			if names.len > 32 { return names }
+		}
+	}
+	names.sort()
+	return names
 }
 
-pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
-	if status_code < 200 || status_code == 206 {
+pub fn is_cacheable_response(status_code u32, received_headers &HeaderList) bool {
+	headers := remove_connection_specific_fields(received_headers)
+	if status_code < 200 || status_code in [u32(206), 304] {
 		return false
 	}
-	if vary_header_names(headers).any(it == '*') {
+	names := vary_header_names(headers)
+	if names.len > 32 || names.any(it in ['*', 'cookie']) {
 		return false
 	}
 	cache_control := headers.get('Cache-Control')
 	if value := cache_control {
+		if cachepolicy.has_unterminated_quoted_string(value) { return false }
 		if contains_cache_control_directive(value, 'must-understand') {
 			if !is_heuristically_cacheable_status(status_code) && status_code != 304 {
 				return false
@@ -104,7 +133,7 @@ pub fn is_cacheable_response(status_code u32, headers &HeaderList) bool {
 	if value := cache_control {
 		has_public = contains_cache_control_directive(value, 'public')
 		has_private = contains_cache_control_directive(value, 'private')
-		has_max_age = contains_cache_control_directive(value, 'max-age')
+		has_max_age = extract_cache_control_duration_directive(value, 'max-age', none) != none
 	}
 	return has_public || has_private || has_expires || has_max_age || is_heuristically_cacheable_status(status_code)
 }
@@ -115,9 +144,18 @@ pub fn is_header_exempted_from_cache_storage(name string) bool {
 		'x-ladybird-request-time-offset']
 }
 
+pub fn remove_connection_specific_fields(headers &HeaderList) &HeaderList {
+	fields := cachepolicy.storage_headers(headers.headers().map(cachepolicy.Header{
+		name: it.name, value: it.value
+	}))
+	mut result := HeaderList.create()
+	for field in fields { result.append(Header{ name: field.name, value: field.value }) }
+	return result
+}
+
 pub fn store_header_and_trailer_fields(headers &HeaderList) &HeaderList {
 	mut stored := HeaderList.create()
-	for header in headers.headers() {
+	for header in remove_connection_specific_fields(headers).headers() {
 		if !is_header_exempted_from_cache_storage(header.name) {
 			stored.append(header)
 		}
@@ -125,41 +163,66 @@ pub fn store_header_and_trailer_fields(headers &HeaderList) &HeaderList {
 	return stored
 }
 
-pub fn normalize_request_vary_header_values(name string, request_headers &HeaderList) string {
-	if cache_ascii_lowercase(name) in ['accept', 'accept-encoding', 'accept-language'] {
-		mut values := []string{}
-		for header in request_headers.headers() {
-			if cache_ascii_lowercase(header.name) != cache_ascii_lowercase(name) {
-				continue
-			}
-			lowercase_value := cache_ascii_lowercase(header.value)
-			if !lowercase_value.contains(',') {
-				values << lowercase_value
-				continue
-			}
-			for field in lowercase_value.split(',') {
-				values << normalize_header_value(field)
-			}
-		}
-		values.sort()
-		return values.join('\n')
-	}
-	mut result := ''
-	for header in request_headers.headers() {
-		if cache_ascii_lowercase(header.name) == cache_ascii_lowercase(name) {
-			result += header.value + '\n'
+fn lowercase_outside_quoted_strings(value string) string {
+	mut bytes := value.bytes()
+	mut quoted := false
+	mut escaped := false
+	for index, byte in bytes {
+		if escaped {
+			escaped = false
+		} else if quoted && byte == `\\` {
+			escaped = true
+		} else if byte == `"` {
+			quoted = !quoted
+		} else if !quoted && byte >= `A` && byte <= `Z` {
+			bytes[index] = byte + 0x20
 		}
 	}
-	return result
+	return bytes.bytestr()
 }
 
-pub fn create_vary_key(request_headers &HeaderList, response_headers &HeaderList) string {
-	mut values := []string{}
-	for name in vary_header_names(response_headers) {
-		assert name != '*'
-		values << normalize_request_vary_header_values(name, request_headers)
+fn normalized_request_vary_values(name string, request_headers &HeaderList) ?[]string {
+	combined := request_headers.get(name) or { return none }
+	if cache_ascii_lowercase(name) !in ['accept', 'accept-encoding', 'accept-language'] {
+		return [combined]
 	}
-	return values.join('\0')
+	mut values := []string{}
+	for header in request_headers.headers() {
+		if !equals_ignoring_ascii_case(header.name, name) { continue }
+		for field in get_decode_and_split_header_value(header.value) {
+			if field != '' { values << lowercase_outside_quoted_strings(field) }
+		}
+	}
+	values.sort()
+	return values
+}
+
+pub fn normalize_request_vary_header_values(name string, request_headers &HeaderList) string {
+	values := normalized_request_vary_values(name, request_headers) or { return '' }
+	return values.join('\n')
+}
+
+// Length framing distinguishes fields, repeated values, and absent fields
+// from present-but-empty fields. Only the in-memory cache uses these keys.
+pub fn create_vary_key(request_headers &HeaderList, response_headers &HeaderList) ?string {
+	names := vary_header_names(response_headers)
+	if names.len > 32 || names.any(it in ['*', 'cookie']) { return none }
+	mut key := ''
+	for name in names {
+		key += '${name.len}:${name}'
+		if values := normalized_request_vary_values(name, request_headers) {
+			key += '${values.len + 1}:'
+			for value in values { key += '${value.len}:${value}' }
+		} else {
+			key += '0:'
+		}
+	}
+	return key
+}
+
+pub fn has_preconditions(headers &HeaderList) bool {
+	return ['If-Match', 'If-None-Match', 'If-Modified-Since', 'If-Unmodified-Since',
+		'If-Range'].any(headers.contains(it))
 }
 
 fn parse_http_date(value ?string) ?i64 {
@@ -174,7 +237,10 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 			return max_age
 		}
 	}
-	if expires := parse_http_date(headers.get('Expires')) {
+	if expires_header := headers.get('Expires') {
+		// An invalid Expires value means already expired, not permission to
+		// fall through to a Last-Modified freshness heuristic.
+		expires := parse_http_date(expires_header) or { return 0 }
 		date := parse_http_date(headers.get('Date')) or { time.now().unix_milli() }
 		return expires - date
 	}
@@ -198,8 +264,8 @@ pub fn calculate_freshness_lifetime(status_code u32, headers &HeaderList) i64 {
 pub fn calculate_age(headers &HeaderList, request_time i64, response_time i64) i64 {
 	mut age_value := i64(0)
 	if age := headers.get('Age') {
-		if seconds := strconv.parse_int(age, 10, 64) {
-			age_value = seconds * 1000
+		if milliseconds := parse_cache_delta_seconds(age) {
+			age_value = milliseconds
 		}
 	}
 	now := time.now().unix_milli()

@@ -5374,7 +5374,10 @@ pub mut:
 	// Navigation
 	navigation_id          ?string
 	about_base_url         ?URL
+	base_url_override       ?URL
 	is_initial_about_blank bool
+	iframe_load_in_progress bool
+	mute_iframe_load       bool
 	opener_policy          OpenerPolicy
 
 	// Browsing context
@@ -6284,19 +6287,10 @@ pub fn (mut d Document) set_url(url URL) {
 
 // fallback_base_url - https://html.spec.whatwg.org/multipage/urls-and-fetching.html#fallback-base-url
 pub fn (d &Document) fallback_base_url() URL {
-	// 1. If document is an iframe srcdoc document, return about base URL.
-	if url_matches_about_srcdoc(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
+	// about:blank and about:srcdoc inherit the supplied about base URL.
+	if url_matches_about_srcdoc(d.url) || url_matches_about_blank(d.url) {
+		if about_base := d.about_base_url { return about_base }
 	}
-	// 2. If document's URL matches about:blank and about base URL is non-null, return it.
-	if url_matches_about_blank(d.url) {
-		if about_base := d.about_base_url {
-			return about_base
-		}
-	}
-	// 3. Return document's URL.
 	return d.url
 }
 
@@ -6304,7 +6298,9 @@ pub fn (d &Document) fallback_base_url() URL {
 pub fn (d &Document) base_url() URL {
 	// 1. If there is no base element with href, return fallback base URL.
 	base_element := d.first_base_element_with_href_in_tree_order() or {
-		return d.fallback_base_url()
+		// A cloned Document keeps the source document's effective base even
+		// when it has no base element of its own.
+		return d.base_url_override or { d.fallback_base_url() }
 	}
 	// 2. Return the frozen base URL of the first base element with href.
 	if base_element.frozen_base_url_initialized_ {
@@ -8311,10 +8307,11 @@ pub fn (mut d Document) adopt_node(node &Node) {
 			return .@continue
 		})
 
-		// Transfer NodeIterators rooted at `node` from old_document to this document.
+		// Transfer NodeIterators rooted anywhere in the adopted subtree, including
+		// shadow trees, so removal and finalization use their root's new document.
 		mut node_iterators_to_transfer := []&NodeIterator{}
 		for node_iterator in old_document.node_iterators {
-			if voidptr(node_iterator.root) == voidptr(node) {
+			if node_iterator.root.is_shadow_including_inclusive_descendant_of(node) {
 				node_iterators_to_transfer << node_iterator
 			}
 		}
@@ -8854,6 +8851,11 @@ pub fn (mut d Document) open_document() !&Document {
 	// 13. Set is_initial_about_blank to false.
 	d.is_initial_about_blank = false
 
+	// 14. A stream opened while the iframe is firing load must not cause
+	// a second load event. A later document.open() outside that dispatch
+	// unmutes its next load again.
+	d.mute_iframe_load = d.iframe_load_in_progress
+
 	// 15. Set to no-quirks mode.
 	d.set_quirks_mode(.no)
 
@@ -9084,16 +9086,18 @@ pub fn (d &Document) anything_is_delaying_the_load_event() bool {
 		return true
 	}
 
-	// Only the predicate result escapes this query. The descendant list and
-	// traversal callback are temporary, even when a parser polls it every frame.
+	// Each container checks its own document's descendants. Walking descendant
+	// navigables here repeats that work exponentially and crosses lazy frames.
 	mut scratch := platform.begin_thread_scratch('load event delay traversal')
-	navigables := d.descendant_navigables()
+	navigables := dom_all_navigables.clone()
 	scratch.leave()
 	defer { scratch.finish() }
 	// Embedder delay hooks run outside the workspace so their retained updates
 	// keep the caller's allocation owner.
 	for navigable in navigables {
+		if navigable.has_been_destroyed_ { continue }
 		container := navigable.container() or { continue }
+		if voidptr(container.document()) != voidptr(d) || !container.is_connected() { continue }
 		if container.currently_delays_the_load_event() {
 			return true
 		}
@@ -11226,9 +11230,9 @@ pub fn (mut d Document) element_id_changed(element &Element, old_id ?string) {
 		fae.element_id_changed()
 	}
 	// Update potentially named elements list
-	if element.id() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.get_name() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 	// Update element-by-id map
@@ -11245,7 +11249,7 @@ pub fn (mut d Document) element_with_id_was_added(element &Element) {
 	for fae in d.form_associated_elements_with_form_attribute {
 		fae.element_with_id_was_added_or_removed()
 	}
-	if is_potentially_named_element_by_id(element) {
+	if is_potentially_named_element_by_id(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 	if id := element.id() {
@@ -11268,15 +11272,15 @@ pub fn (mut d Document) element_with_id_was_removed(element &Element) {
 }
 
 pub fn (mut d Document) element_name_changed(element &Element) {
-	if element.get_name() != none {
+	if should_be_in_potentially_named_elements(element) {
 		d.insert_in_potentially_named_elements(element)
-	} else if element.id() == none {
+	} else {
 		d.remove_from_potentially_named_elements(element)
 	}
 }
 
 pub fn (mut d Document) element_with_name_was_added(element &Element) {
-	if is_potentially_named_element(element) {
+	if is_potentially_named_element(element) && element.as_node().root().is_document() {
 		d.insert_in_potentially_named_elements(element)
 	}
 }
@@ -11448,6 +11452,12 @@ pub fn is_potentially_named_element_by_id(element &Element) bool {
 	return element.is_html_element() && element.local_name() in ['img', 'object']
 }
 
+fn should_be_in_potentially_named_elements(element &Element) bool {
+	return ((element.get_name() != none && is_potentially_named_element(element))
+		|| (element.id() != none && is_potentially_named_element_by_id(element)))
+		&& element.as_node().root().is_document()
+}
+
 pub fn insert_in_tree_order(mut elements []&Element, element &Element) {
 	for existing in elements {
 		if existing == element {
@@ -11511,16 +11521,7 @@ pub fn (d &Document) supported_property_names() []string {
 			continue
 		}
 		local_name := element.local_name()
-		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
-			'embed',
-			'object',
-		] || is_exposed(element)) {
-			if name := element.get_name() {
-				if name != '' && name !in names {
-					names << name
-				}
-			}
-		}
+		// When one element contributes both, its id precedes its name.
 		if local_name == 'object' && is_exposed(element) {
 			if id := element.id() {
 				if id != '' && id !in names {
@@ -11532,6 +11533,16 @@ pub fn (d &Document) supported_property_names() []string {
 			if id := element.id() {
 				if id != '' && id !in names {
 					names << id
+				}
+			}
+		}
+		if local_name in ['embed', 'form', 'iframe', 'img', 'object'] && (local_name !in [
+			'embed',
+			'object',
+		] || is_exposed(element)) {
+			if name := element.get_name() {
+				if name != '' && name !in names {
+					names << name
 				}
 			}
 		}
@@ -12869,6 +12880,18 @@ pub fn (mut d Document) set_is_initial_about_blank(b bool) {
 	d.is_initial_about_blank = b
 }
 
+pub fn (d &Document) is_iframe_load_in_progress() bool {
+	return d.iframe_load_in_progress
+}
+
+pub fn (mut d Document) set_iframe_load_in_progress(value bool) {
+	d.iframe_load_in_progress = value
+}
+
+pub fn (d &Document) should_mute_iframe_load() bool {
+	return d.mute_iframe_load
+}
+
 // --- about_base_url ---
 pub fn (d &Document) get_about_base_url() ?URL {
 	return d.about_base_url
@@ -12876,6 +12899,18 @@ pub fn (d &Document) get_about_base_url() ?URL {
 
 pub fn (mut d Document) set_about_base_url(url ?URL) {
 	d.about_base_url = url
+}
+
+pub fn (d &Document) get_the_base_url() URL {
+	return d.base_url()
+}
+
+pub fn (mut d Document) set_base_url_override(url ?URL) {
+	if d.base_url_override == url { return }
+	old_document_url := d.url
+	old_base_url := d.base_url()
+	d.base_url_override = url
+	d.respond_to_base_url_changes(old_document_url, old_base_url)
 }
 
 // --- source ---

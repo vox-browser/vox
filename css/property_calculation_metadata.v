@@ -4230,6 +4230,8 @@ pub fn property_initial_value_string(property_id PropertyID) string {
 
 fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 	return match property_id {
+		.math_depth { AnimationType.by_computed_value }
+		.math_shift, .math_style, .resize, .scroll_behavior { AnimationType.discrete }
 		.line_break { AnimationType.discrete }
 		.grid_lanes_direction, .grid_lanes_pack { AnimationType.discrete }
 		.fit_tolerance { AnimationType.by_computed_value }
@@ -4294,7 +4296,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 		.webkit_font_smoothing, .align_content, .align_items, .align_self, .anchor_name, .anchor_scope, .appearance, .background_attachment, .background_blend_mode, .background_image, .background_repeat, .border_block_end_style, .border_block_start_style, .border_bottom_style, .border_collapse, .border_image_repeat, .border_image_source, .border_inline_end_style, .border_inline_start_style, .border_left_style, .border_right_style, .border_top_style, .box_sizing, .caption_side, .clear, .clip_rule, .color_interpolation, .color_interpolation_filters, .color_scheme, .column_span, .content, .cursor, .dominant_baseline, .empty_cells, .fill_rule, .flex_direction, .flex_wrap, .float_, .font_family, .font_feature_settings, .font_kerning, .font_language_override, .font_optical_sizing, .font_variant_alternates, .font_variant_caps, .font_variant_east_asian, .font_variant_emoji, .font_variant_ligatures, .font_variant_numeric, .font_variant_position, .grid_auto_flow, .grid_column_end, .grid_column_start, .grid_row_end, .grid_row_start, .grid_template_areas, .image_rendering, .isolation, .justify_content, .justify_items, .justify_self, .list_style_image, .list_style_position, .list_style_type, .mask_clip, .mask_composite, .mask_image, .mask_mode, .mask_origin, .mask_repeat, .mask_type, .mix_blend_mode, .object_fit, .overflow_block, .overflow_inline, .overflow_wrap, .overflow_x, .overflow_y, .paint_order, .pointer_events, .position, .position_anchor, .position_area, .position_try_fallbacks, .position_try_order, .position_visibility, .quotes, .scrollbar_gutter, .shape_rendering, .stroke_linecap, .stroke_linejoin, .table_layout, .text_align, .text_anchor, .text_decoration_line, .text_decoration_style, .text_justify, .text_overflow, .text_rendering, .text_transform, .text_underline_position, .text_wrap_mode, .text_wrap_style, .touch_action, .transform_box, .transform_style, .user_select, .vector_effect, .view_transition_name, .white_space_collapse, .white_space_trim, .word_break {
 			AnimationType.discrete
 		}
-		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .contain, .container_name, .container_type, .direction, .math_depth, .math_shift, .math_style, .resize, .scroll_behavior, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode {
+		.animation_composition, .animation_delay, .animation_direction, .animation_duration, .animation_fill_mode, .animation_iteration_count, .animation_name, .animation_play_state, .animation_timeline, .animation_timing_function, .contain, .container_name, .container_type, .direction, .scroll_timeline_axis, .scroll_timeline_name, .timeline_scope, .transition_behavior, .transition_delay, .transition_duration, .transition_property, .transition_timing_function, .unicode_bidi, .view_timeline_axis, .view_timeline_inset, .view_timeline_name, .will_change, .writing_mode {
 			AnimationType.none_
 		}
 		.backdrop_filter, .box_shadow, .content_visibility, .display, .filter, .font_style, .font_variation_settings, .grid_template_columns, .grid_template_rows, .rotate, .scale, .stroke_dasharray, .text_shadow, .transform, .translate, .visibility {
@@ -4311,6 +4313,7 @@ fn animation_type_from_longhand_property(property_id PropertyID) AnimationType {
 
 pub fn is_animatable_property(property_id PropertyID) bool {
 	return match property_id {
+		.math_depth, .math_shift, .math_style, .resize, .scroll_behavior { true }
 		.line_break { true }
 		.text_emphasis_style { true }
 		.text_emphasis_position { true }

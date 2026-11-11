@@ -442,12 +442,28 @@ pub fn is_collapsed_line_break(node &dom.Node) bool {
 	}
 
 	// that begins a line box which has nothing else in it, and therefore has zero height.
-	// AD-HOC: We check this on the DOM level by seeing if the next node is neither a non-empty text node nor a <br>.
-	next_sibling := node.next_sibling() or { return true }
-	if next_sibling.is_text() {
-		return editing_text_data(next_sibling) == ''
+	// The line can continue after inline ancestors, up to the block or editing host.
+	mut block := block_node_of_node(node)
+	if editing_host := node.editing_host() {
+		if current_block := block {
+			if current_block.is_inclusive_ancestor_of(editing_host) { block = editing_host }
+		} else {
+			block = editing_host
+		}
 	}
-	return !next_sibling.is_html_br_element()
+	mut following := node.next_in_pre_order(block)
+	for {
+		current := following or { break }
+		following = current.next_in_pre_order(block)
+		if current.is_text() {
+			if is_whitespace_node(current) { continue }
+			return false
+		}
+		if !current.is_element() { continue }
+		if !is_inline_node(current) { return true }
+		if editing_ignores_content(current) { return false }
+	}
+	return true
 }
 
 // https://w3c.github.io/editing/docs/execCommand/#collapsed-whitespace-node
@@ -1299,7 +1315,8 @@ pub fn next_equivalent_point(boundary_point dom.BoundaryPoint) ?dom.BoundaryPoin
 	// 5. If node has a child with index offset, and that child's length is not zero, and that child is an inline node,
 	//    return (that child, 0).
 	if child_at_offset := node.child_at_index(boundary_point.offset) {
-		if child_at_offset.length() != 0 && is_inline_node(child_at_offset) {
+		if child_at_offset.length() != 0 && is_inline_node(child_at_offset)
+			&& !child_at_offset.is_html_select_element() {
 			return editing_boundary(child_at_offset, 0)
 		}
 	}
@@ -1328,7 +1345,8 @@ pub fn previous_equivalent_point(boundary_point dom.BoundaryPoint) ?dom.Boundary
 	// 3. If node has a child with index offset − 1, and that child's length is not zero, and that child is an inline
 	//    node, return (that child, that child's length).
 	if child_at_offset := node.child_at_index(boundary_point.offset - 1) {
-		if child_at_offset.length() != 0 && is_inline_node(child_at_offset) {
+		if child_at_offset.length() != 0 && is_inline_node(child_at_offset)
+			&& !child_at_offset.is_html_select_element() {
 			return editing_boundary(child_at_offset, child_at_offset.length())
 		}
 	}

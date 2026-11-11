@@ -19,7 +19,7 @@ fn test_apply_algorithm_rejects_unknown() {
 	assert is_supported_hash_function('sha384')
 	assert is_supported_hash_function('sha512')
 	assert !is_supported_hash_function('sha1')
-	assert !is_supported_hash_function('SHA256')
+	assert is_supported_hash_function('SHA256')
 	if _ := apply_algorithm_to_bytes('md5', 'abc'.bytes()) {
 		assert false, 'md5 must not be supported'
 	}
@@ -89,6 +89,9 @@ fn test_do_bytes_match_metadata_list() {
 
 	// A correct hash matches.
 	assert do_bytes_match_metadata_list(bytes, 'sha256-${correct256}')! == true
+	// Algorithm names are case-insensitive; URL-safe unpadded digests match too.
+	url_safe := correct256.trim_right('=').replace('+', '-').replace('/', '_')
+	assert do_bytes_match_metadata_list(bytes, 'SHA256-${url_safe}')! == true
 	// A wrong hash does not.
 	assert do_bytes_match_metadata_list(bytes, 'sha256-AAAA')! == false
 	// Empty metadata list always matches.

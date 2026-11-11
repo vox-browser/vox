@@ -423,7 +423,8 @@ fn (mut stream ReadableStream) close_internal() {
 pub fn (mut stream ReadableStream) close() {
 	if stream.byte_stream_ && !isnil(stream.byte_controller_) {
 		mut controller := stream.byte_controller_
-		readable_byte_stream_controller_close(mut controller) or {}
+		// A partial BYOB element errors the stream. Do not continue closing it.
+		readable_byte_stream_controller_close(mut controller) or { return }
 		if controller.pending_pull_intos_.len > 0 {
 			readable_byte_stream_controller_respond(mut controller, 0) or {}
 		}

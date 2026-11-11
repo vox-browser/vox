@@ -101,7 +101,7 @@ fn test_mldsa_generation_and_source_errors_and_jwk_conditions() {
 	if _ := subtle.sign(Ed448Params{ name: fixture.name, context: []u8{len: 256} }, private_key, []) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Failed to sign message'
+		assert err.msg() == 'OperationError: Context is too long'
 	}
 	if _ := subtle.import_key(.raw_seed, [], fixture.name, true, [.verify], '') {
 		assert false

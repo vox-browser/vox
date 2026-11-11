@@ -50,8 +50,10 @@ fn svg_length_context_from_element(element Element) SvgLengthResolutionContext {
 	viewport_width := viewport_size.width
 	viewport_height := viewport_size.height
 	font_size := parse_length(element.attributes['font-size'] or { '' }) or { 16 }
+	writing_mode := (element.attributes['writing-mode'] or { 'horizontal-tb' }).trim_space().to_lower()
 	return SvgLengthResolutionContext{
 		has_associated_element: true
+		subject_inline_axis_is_horizontal: writing_mode !in ['vertical-rl', 'vertical-lr', 'sideways-rl', 'sideways-lr', 'tb', 'tb-rl']
 		viewport_width: viewport_width
 		viewport_height: viewport_height
 		container_width: parse_length(element.attributes['_container_width'] or { '' }) or { viewport_width }
@@ -268,8 +270,12 @@ fn (length &SvgLength) resolve_length_unit(value f64, unit LengthUnit) !f64 {
 		.cqmax { math.max(context.container_width, context.container_height) / 100.0 }
 		.vw, .svw, .lvw, .dvw { context.viewport_width / 100.0 }
 		.vh, .svh, .lvh, .dvh { context.viewport_height / 100.0 }
-		.vi, .svi, .lvi, .dvi { context.viewport_width / 100.0 }
-		.vb, .svb, .lvb, .dvb { context.viewport_height / 100.0 }
+		.vi, .svi, .lvi, .dvi {
+			if context.subject_inline_axis_is_horizontal { context.viewport_width / 100.0 } else { context.viewport_height / 100.0 }
+		}
+		.vb, .svb, .lvb, .dvb {
+			if context.subject_inline_axis_is_horizontal { context.viewport_height / 100.0 } else { context.viewport_width / 100.0 }
+		}
 		.vmin, .svmin, .lvmin, .dvmin {
 			math.min(context.viewport_width, context.viewport_height) / 100.0
 		}

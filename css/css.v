@@ -2353,7 +2353,8 @@ pub fn (l Length) to_px_without_rounding(context LengthResolutionContext) f64 {
 	}
 	if l.is_viewport_relative() {
 		context.record_viewport_relative_length_resolution()
-		return l.viewport_relative_length_to_px_without_rounding(context.viewport_rect)
+		return ratio_between_viewport_relative_unit_and_px_with_axis(l.unit_, context.viewport_rect,
+			context.subject_inline_axis_is_horizontal) * l.value_
 	}
 	if l.is_container_relative() {
 		return l.container_relative_length_to_px_without_rounding(context)
@@ -2430,6 +2431,10 @@ pub fn ratio_between_font_relative_unit_and_px(unit LengthUnit, font_metrics Len
 }
 
 pub fn ratio_between_viewport_relative_unit_and_px(unit LengthUnit, viewport_rect CSSPixelRect) f64 {
+	return ratio_between_viewport_relative_unit_and_px_with_axis(unit, viewport_rect, true)
+}
+
+fn ratio_between_viewport_relative_unit_and_px_with_axis(unit LengthUnit, viewport_rect CSSPixelRect, inline_axis_horizontal bool) f64 {
 	width := viewport_rect.width_value()
 	height := viewport_rect.height_value()
 	return match unit {
@@ -2440,12 +2445,10 @@ pub fn ratio_between_viewport_relative_unit_and_px(unit LengthUnit, viewport_rec
 			height / 100.0
 		}
 		.vi, .svi, .lvi, .dvi {
-			// FIXME: Select the width or height based on which is the inline axis.
-			width / 100.0
+			if inline_axis_horizontal { width / 100.0 } else { height / 100.0 }
 		}
 		.vb, .svb, .lvb, .dvb {
-			// FIXME: Select the width or height based on which is the block axis.
-			height / 100.0
+			if inline_axis_horizontal { height / 100.0 } else { width / 100.0 }
 		}
 		.vmin, .svmin, .lvmin, .dvmin {
 			math.min(width, height) / 100.0

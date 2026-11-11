@@ -51,7 +51,11 @@ fn compact_queue_container_load(document &dom.Document) {
 	container := navigable.container() or { return }
 	element := container.as_element() or { return }
 	if !element.is_html_element() || element.local_name() != 'iframe' { return }
-	html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), element.document(), fn [element] () {
+	html.queue_a_task(.dom_manipulation, html.main_thread_event_loop(), element.document(), fn [document, element] () {
+		if document.should_mute_iframe_load() { return }
+		mut child_document := unsafe { &dom.Document(document) }
+		child_document.set_iframe_load_in_progress(true)
+		defer { child_document.set_iframe_load_in_progress(false) }
 		element.as_node().dispatch_event(dom.Event.create('load', dom.EventInit{}))
 	})
 }

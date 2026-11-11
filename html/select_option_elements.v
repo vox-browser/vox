@@ -141,7 +141,7 @@ pub fn html_option_element_attribute_changed(option &dom.HTMLOptionElement, name
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-value
 pub fn html_option_element_value(option &dom.HTMLOptionElement) string {
-	return option_dom_element(option).get_attribute('value') or { html_option_element_text(option) }
+	return option_dom_element(option).get_attribute_ns(none, 'value') or { html_option_element_text(option) }
 }
 
 pub fn set_html_option_element_value(option &dom.HTMLOptionElement, value string) {
@@ -181,7 +181,7 @@ pub fn set_html_option_element_text(option &dom.HTMLOptionElement, text string) 
 
 // https://html.spec.whatwg.org/multipage/form-elements.html#dom-option-label
 pub fn html_option_element_label(option &dom.HTMLOptionElement) string {
-	return option_dom_element(option).get_attribute('label') or { html_option_element_text(option) }
+	return option_dom_element(option).get_attribute_ns(none, 'label') or { html_option_element_text(option) }
 }
 
 pub fn set_html_option_element_label(option &dom.HTMLOptionElement, label string) {
@@ -273,8 +273,16 @@ pub fn html_option_element_disabled(option &dom.HTMLOptionElement) bool {
 	if element.has_attribute('disabled') {
 		return true
 	}
-	parent := option_node(option).parent_element() or { return false }
-	return parent.local_name() == 'optgroup' && parent.has_attribute('disabled')
+	mut ancestor := option_node(option).parent_element()
+	for ancestor != none {
+		current := ancestor or { break }
+		if current.is_html_element() {
+			if current.local_name() in ['select', 'hr', 'datalist', 'option'] { return false }
+			if current.local_name() == 'optgroup' { return current.has_attribute('disabled') }
+		}
+		ancestor = current.as_node().parent_element()
+	}
+	return false
 }
 
 pub fn html_option_element_ask_for_a_reset(option &dom.HTMLOptionElement) {

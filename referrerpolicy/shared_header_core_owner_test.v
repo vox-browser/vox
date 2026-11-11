@@ -38,8 +38,8 @@ fn test_source_header_core_reads_the_live_actual_response_list_without_a_copy() 
 	response.header_list.append(http.Header{'Referrer-Policy', 'ORIGIN'})
 	response.header_list.append(http.Header{'Referrer-Policy', 'no-referrer, strict-origin'})
 	response.header_list.append(http.Header{'Referrer-Policy', '\tunsafe-url\t'})
-	assert referrercore.parse_a_referrer_policy_from_header_list(list) == .origin
-	assert parse_a_referrer_policy_from_a_referrer_policy_header(response) == .origin
+	assert referrercore.parse_a_referrer_policy_from_header_list(list) == .unsafe_url
+	assert parse_a_referrer_policy_from_a_referrer_policy_header(response) == .unsafe_url
 	response.header_list.append(http.Header{'Referrer-Policy', 'SAME-ORIGIN'})
 	assert referrercore.parse_a_referrer_policy_from_header_list(list) == .same_origin
 	assert parse_a_referrer_policy_from_a_referrer_policy_header(response) == .same_origin

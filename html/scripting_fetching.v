@@ -415,7 +415,11 @@ pub fn get_descendant_script_fetch_options(original_options ScriptFetchOptions, 
 
 // https://html.spec.whatwg.org/multipage/webappapis.html#resolving-a-module-integrity-metadata
 pub fn resolve_a_module_integrity_metadata(url dom.URL, settings_object &EnvironmentSettingsObject) string {
-	if settings_object.universal_global_scope_ == unsafe { nil } {
+	// Only Window globals can acquire an import map. Worklets and workers
+	// retain the initial empty map without requiring the scope mixin.
+	if settings_object.global_object_ == unsafe { nil }
+		|| settings_object.global_object_.data.kind != .window
+		|| settings_object.universal_global_scope_ == unsafe { nil } {
 		return ''
 	}
 	for entry in settings_object.universal_global_scope_.import_map().integrity() {
@@ -500,7 +504,7 @@ pub fn fetch_classic_script(element &HTMLScriptElementModel, url dom.URL, settin
 		return
 	}
 	response_url := unsafe_response.url() or { url }
-	muted_errors := if unsafe_response.is_cors_cross_origin() {
+	muted_errors := if response.is_cors_cross_origin() {
 		MutedErrors.yes
 	} else {
 		MutedErrors.no
@@ -599,7 +603,7 @@ pub fn fetch_a_classic_worker_imported_script(url dom.URL, settings_object &Envi
 	}
 	source_text := decode_script_body(body, 'utf-8')!
 	response_url := unsafe_response.url() or { url }
-	return ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if unsafe_response.is_cors_cross_origin() {
+	return ClassicScript.create(response_url.serialize(), source_text, settings_object.realm(), response_url, 1, if response.is_cors_cross_origin() {
 		.yes
 	} else {
 		.no

@@ -354,6 +354,9 @@ pub fn (mut model HTMLSelectElementModel) show_picker() ! {
 	if !window.has_transient_activation() {
 		return error('NotAllowedError: too long since user activation to show picker')
 	}
+	if !element.meets_focusable_area_rendering_requirements() {
+		return error('NotSupportedError: element is not being rendered')
+	}
 	model.show_the_picker_if_applicable()
 }
 

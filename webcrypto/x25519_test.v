@@ -32,7 +32,7 @@ fn test_x25519_rfc7748_vectors_and_bit_length_rules_through_subtle_dispatch() {
 	if _ := subtle.derive_bits(params, alice, 257) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Secret is too short'
+		assert err.msg() == 'OperationError: Length is too large'
 	}
 	derived := subtle.derive_key(params, alice, 'AES-GCM', 128, true, [.encrypt])!
 	assert derived.handle().hex() == x25519_shared[..32]

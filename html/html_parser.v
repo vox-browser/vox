@@ -907,6 +907,10 @@ fn (mut state HTMLParserEndState) complete() {
 		if parser != none {
 			mutable_document.detach_parser()
 		}
+		// Readiness can release the container's load guard. Keep the child
+		// delayed until its load handlers have started any new resources.
+		mut load_event_delayer := dom.DocumentLoadEventDelayer.new(mut mutable_document)
+		defer { load_event_delayer.finish() }
 		mutable_document.set_ready_for_post_load_tasks(true)
 		if host := document.navigable() {
 			if navigable := navigable_model_for_host(host) {

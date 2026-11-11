@@ -42,7 +42,7 @@ fn test_aes_source_raw_jwk_generation_and_algorithm_class_metadata() {
 				duplicated)!
 			assert generated.handle().len == int(bits / 8)
 			assert generated.algorithm_name() == name
-			assert generated.usages == duplicated
+			assert generated.usages == usages
 			assert generated.extractable
 			assert aes_key_length(AesKeyGenParams{ length: bits })! == u32(bits)
 		}

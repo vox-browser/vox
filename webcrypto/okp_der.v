@@ -130,6 +130,9 @@ fn parse_okp_der(name string, bytes []u8, private_key bool) ![]u8 {
 		mut curve := OkpDerReader{ bytes: info.material }
 		result := curve.read(false)!
 		curve.exact()!
+		if name == 'Ed25519' && result.len != 32 {
+			return error('DataError: Invalid Ed25519 private key')
+		}
 		return result
 	}
 	return info.material.clone()

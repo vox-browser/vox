@@ -39,6 +39,8 @@ fn native_ec_public(curve string, d []u8) !EcPublicKeyHandle {
 }
 
 fn native_ec_valid(curve string, point EcPublicKeyHandle, d ?[]u8) !bool {
+	size := ec_scalar_size(curve)
+	if size == 0 || point.x.len != size || point.y.len != size { return false }
 	private_bytes := d or { []u8{} }
 	result := C.vox_ec_valid(curve.str, point.x.data, uint(point.x.len), point.y.data, uint(point.y.len), private_bytes.data, uint(private_bytes.len), int(d != none))
 	if result < 0 { return error('DataError: Failed to verify key') }
@@ -77,7 +79,11 @@ fn native_ec_verify(curve string, point EcPublicKeyHandle, signature []u8, diges
 }
 
 fn native_ec_coordinate(curve string, d []u8, point EcPublicKeyHandle) !EcPublicKeyHandle {
-	mut x := []u8{len: ec_scalar_size(curve)}
+	size := ec_scalar_size(curve)
+	if size == 0 || point.x.len != size || point.y.len != size {
+		return error('OperationError: Failed to compute secret: Invalid point size for curve')
+	}
+	mut x := []u8{len: size}
 	mut y := []u8{len: x.len}
 	failure := C.vox_ec_coordinate(curve.str, d.data, uint(d.len), point.x.data, uint(point.x.len), point.y.data, uint(point.y.len), x.data, y.data, uint(x.len))
 	if failure != unsafe { nil } {

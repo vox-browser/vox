@@ -196,7 +196,7 @@ fn test_ec_jwk_metadata_and_native_key_validation_rejections() {
 	if _ := ECDSA.create().import_key(EcKeyImportParams{ named_curve: 'bad' }, .raw, [], true, [.sign]) {
 		assert false
 	} else {
-		assert err.msg() == 'DataError: Invalid algorithm'
+		assert err.msg() == "NotSupportedError: Unsupported named curve 'bad'"
 	}
 	if _ := ECDH.create().import_key(params, .raw, [], true, [.derive_bits]) {
 		assert false

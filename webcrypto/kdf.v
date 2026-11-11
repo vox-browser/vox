@@ -5,10 +5,20 @@ module webcrypto
 fn hkdf_derive_bits(params HkdfParams, key &CryptoKey, length ?u32) ![]u8 {
 	bits := length or { return error('OperationError: Length must be specified and divisible by 8') }
 	if bits % 8 != 0 { return error('OperationError: Length must be specified and divisible by 8') }
-	if bits == 0 { return []u8{} }
-	if params.hash !in ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'] {
-		return error("NotSupportedError: Invalid hash function '${params.hash}'")
+	// HKDF-Expand has a hard limit of 255 hash output blocks (RFC 5869).
+	// Validate the hash and requested size before returning an empty result or
+	// passing an oversized allocation to the native derivation function.
+	hash_length_bits := match params.hash {
+		'SHA-1' { u32(160) }
+		'SHA-256' { u32(256) }
+		'SHA-384' { u32(384) }
+		'SHA-512' { u32(512) }
+		else { return error("NotSupportedError: Invalid hash function '${params.hash}'") }
 	}
+	if bits > u32(255) * hash_length_bits {
+		return error('OperationError: Length is too large for the hash function')
+	}
+	if bits == 0 { return []u8{} }
 	return native_kdf_derive(false, params.hash, key.handle_, params.salt, params.info, 0, int(bits / 8))
 }
 

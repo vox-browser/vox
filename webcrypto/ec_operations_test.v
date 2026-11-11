@@ -140,7 +140,7 @@ fn test_ecdh_matches_upstream_coordinate_and_truncates_nullable_bits() {
 	if _ := SubtleCrypto.create().derive_bits(params256, private256, 257) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Secret is too short'
+		assert err.msg() == 'OperationError: Length is too large'
 	}
 	derived256 := SubtleCrypto.create().derive_key(params256, private256, 'AES-GCM', 128, false, [.encrypt])!
 	assert derived256.handle() == secret256[..16]
@@ -162,7 +162,7 @@ fn test_ecdh_matches_upstream_coordinate_and_truncates_nullable_bits() {
 	if _ := SubtleCrypto.create().derive_bits(params384, private384, 385) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Secret is too short'
+		assert err.msg() == 'OperationError: Length is too large'
 	}
 	derived384 := SubtleCrypto.create().derive_key(params384, private384, 'AES-GCM', 128, false, [.encrypt])!
 	assert derived384.handle() == secret384[..16]
@@ -184,7 +184,7 @@ fn test_ecdh_matches_upstream_coordinate_and_truncates_nullable_bits() {
 	if _ := SubtleCrypto.create().derive_bits(params521, private521, 529) {
 		assert false
 	} else {
-		assert err.msg() == 'OperationError: Secret is too short'
+		assert err.msg() == 'OperationError: Length is too large'
 	}
 	derived521 := SubtleCrypto.create().derive_key(params521, private521, 'AES-GCM', 128, false, [.encrypt])!
 	assert derived521.handle() == secret521[..16]
@@ -211,6 +211,13 @@ fn test_ecdh_rejects_source_public_and_curve_mismatches() {
 	}
 	invalid := CryptoKey.create_with_internal_handle(.public_key, true, a.public_key.algorithm, [], EcPublicKeyHandle{ x: [u8(0)], y: [u8(0)] })
 	if _ := ECDH.create().derive_bits(EcdhKeyDeriveParams{ name: 'ECDH', public_key: invalid }, a.private_key, none) {
+		assert false
+	} else {
+		assert err.msg() == 'OperationError: Failed to compute secret: Invalid point size for curve'
+	}
+	// Correct-width coordinates still reach and exercise native point validation.
+	off_curve := CryptoKey.create_with_internal_handle(.public_key, true, a.public_key.algorithm, [], EcPublicKeyHandle{ x: []u8{len: 32}, y: []u8{len: 32} })
+	if _ := ECDH.create().derive_bits(EcdhKeyDeriveParams{ name: 'ECDH', public_key: off_curve }, a.private_key, none) {
 		assert false
 	} else {
 		assert err.msg().starts_with('OperationError: Failed to compute secret: EC_POINT_set_affine_coordinates')

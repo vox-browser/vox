@@ -35,6 +35,10 @@ pub const mutation_type_attributes = 'attributes'
 pub const mutation_type_character_data = 'characterData'
 pub const mutation_type_child_list = 'childList'
 
+// Delivery queues are agent-owned. A shared monotonic creation index preserves
+// the relative creation order within each queue, including across documents.
+__global mutation_observer_creation_index u64
+
 pub fn mutation_type_to_string(type_ MutationType) string {
 	return match type_ {
 		.attributes { mutation_type_attributes }
@@ -127,8 +131,10 @@ pub fn (mut record MutationRecord) visit_edges(mut visitor CellVisitor) {
 
 // https://dom.spec.whatwg.org/#dom-mutationobserver-mutationobserver
 pub fn MutationObserver.construct_impl(callback ?&CallbackType) !&MutationObserver {
-	// The new MutationObserver(callback) constructor steps are to set this's callback to callback.
+	creation_index := mutation_observer_creation_index
+	mutation_observer_creation_index++
 	return &MutationObserver{
+		creation_index_: creation_index
 		callback_: callback
 	}
 }
@@ -186,9 +192,11 @@ pub fn (mut observer MutationObserver) observe(target &Node, mut options Mutatio
 		return error('TypeError: characterData must be true if characterDataOldValue is true.')
 	}
 
-	// 7. For each registered of target's registered observer list, if registered's observer is this:
+	// An explicit observe() must not reuse a transient registration left by
+	// removing the target from an observed subtree.
 	for registered_observer in target.registered_observers() {
-		if voidptr(registered_observer.observer_) == voidptr(&observer) {
+		if !registered_observer.is_transient()
+			&& voidptr(registered_observer.observer_) == voidptr(&observer) {
 			observer.remove_transient_registered_observers(registered_observer)
 			// 2. Set registered's options to options.
 			mut mutable_registered_observer := unsafe { &RegisteredObserver(registered_observer) }
@@ -215,6 +223,7 @@ pub fn (mut observer MutationObserver) disconnect() {
 		}
 	}
 	observer.remove_transient_registered_observers(none)
+	observer.node_list_.clear()
 	// 2. Empty this's record queue.
 	observer.record_queue.clear()
 }
@@ -820,7 +829,7 @@ pub fn (slot &HTMLSlotElement) manually_assigned_nodes() []&Node {
 }
 
 pub fn (mut slot HTMLSlotElement) remove_manually_assigned_node(node &Node) {
-	slot.manually_assigned_nodes_ = slot.manually_assigned_nodes_.filter(it != node)
+	slot.manually_assigned_nodes_ = slot.manually_assigned_nodes_.filter(voidptr(it) != voidptr(node))
 }
 
 pub fn (mut slot HTMLSlotElement) set_manually_assigned_nodes(nodes []&Node) {
@@ -866,6 +875,8 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 
 	// 2. Let nodesSet be a new ordered set.
 	mut nodes_set := []&Node{}
+	slot_root := html_slot_element_as_node(&slot).root()
+	mut roots_of_previous_slots := []&Node{}
 
 	// 3. For each node of nodes:
 	for node in nodes {
@@ -877,6 +888,11 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 		if previous_slot := node.manual_slot_assignment() {
 			mut mutable_previous_slot := unsafe { &HTMLSlotElement(previous_slot) }
 			mutable_previous_slot.remove_manually_assigned_node(node)
+			previous_root := html_slot_element_as_node(previous_slot).root()
+			if voidptr(previous_root) != voidptr(slot_root)
+				&& !roots_of_previous_slots.any(voidptr(it) == voidptr(previous_root)) {
+				roots_of_previous_slots << previous_root
+			}
 		}
 
 		// 2. Set node's manual slot assignment to this.
@@ -884,7 +900,7 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 		mutable_node.set_manual_slot_assignment(&slot)
 
 		// 3. Append node to nodesSet.
-		if node !in nodes_set {
+		if !nodes_set.any(voidptr(it) == voidptr(node)) {
 			nodes_set << node
 		}
 	}
@@ -893,7 +909,11 @@ pub fn (mut slot HTMLSlotElement) assign(nodes []&Node) {
 	slot.manually_assigned_nodes_ = nodes_set
 
 	// 5. Run assign slottables for a tree for this's root.
-	assign_slottables_for_a_tree(html_slot_element_as_node(&slot).root())
+	assign_slottables_for_a_tree(slot_root)
+	// A slot in another tree must also lose the node and signal slotchange.
+	for previous_root in roots_of_previous_slots {
+		assign_slottables_for_a_tree(previous_root)
+	}
 }
 
 pub fn (node &Node) slottable_name() string {
@@ -1183,9 +1203,11 @@ pub fn (mut document Document) notify_mutation_observers() {
 	// 1. Set the surrounding agent's mutation observer microtask queued to false.
 	document.mutation_observer_microtask_queued = false
 
-	// 2. Let notifySet be a clone of the surrounding agent's pending mutation observers.
+	// 2. Notify pending observers in creation order, independent of which
+	// observed subtree happened to mutate first.
 	// 3. Empty the surrounding agent's pending mutation observers.
-	notify_set := document.pending_mutation_observers.clone()
+	mut notify_set := document.pending_mutation_observers.clone()
+	notify_set.sort(a.creation_index_ < b.creation_index_)
 	document.pending_mutation_observers.clear()
 
 	// 4. Let signalSet be a clone of the surrounding agent's signal slots.
@@ -3521,7 +3543,7 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 	if document.document_ready_to_run_scripts() {
 		encoding := html_parser_run_text_document(document, navigation_params.response_body, type_, url)
 		document.set_encoding(encoding)
-		append_title_to_document_head(document, document.url_string()) or {}
+		// Keep document text limited to the response body, without a filename title.
 	} else {
 		document_pointer := voidptr(document)
 		data := navigation_params.response_body.clone()
@@ -3529,7 +3551,6 @@ fn load_text_document(navigation_params &NavigationParams, type_ mimesniff.MimeT
 			mut document := unsafe { &Document(document_pointer) }
 			encoding := html_parser_run_text_document(document, data, type_, url)
 			document.set_encoding(encoding)
-			append_title_to_document_head(document, document.url_string()) or {}
 		})
 	}
 
@@ -4613,4 +4634,65 @@ fn (mut observer MutationObserver) remove_transient_registered_observers(source 
 		if has_transient { retained << node }
 	}
 	observer.transient_nodes_ = retained
+}
+
+fn (mut document Document) add_pending_mutation_observer(observer &MutationObserver) {
+	for pending in document.pending_mutation_observers {
+		if voidptr(pending) == voidptr(observer) { return }
+	}
+	document.pending_mutation_observers << observer
+}
+
+// https://dom.spec.whatwg.org/#add-transient-registered-observers
+fn (mut node Node) add_transient_registered_observers(parent &Node) []&MutationObserverDeliveryQueue {
+	mut delivery_queues := []&MutationObserverDeliveryQueue{}
+	for ancestor := ?&Node(parent); ancestor != none; {
+		inclusive_ancestor := ancestor or { break }
+		for registered in inclusive_ancestor.registered_observers() {
+			if !registered.options().subtree { continue }
+			// Nested removals retain the original registration as their source.
+			source := registered.source() or { registered }
+			mut already_registered := false
+			for existing in node.registered_observers() {
+				if existing.is_transient() && voidptr(existing.source_) == voidptr(source) {
+					already_registered = true
+					break
+				}
+			}
+			if already_registered { continue }
+			mut observer := unsafe { &MutationObserver(registered.observer()) }
+			transient := TransientRegisteredObserver.create(observer, source.options(), source)
+			node.add_registered_observer(unsafe { &RegisteredObserver(transient) })
+			observer.add_transient_registered_node(&node)
+			// Even without a childList record, notification must remove the
+			// temporary registration at the next microtask checkpoint.
+			if queue := observer.delivery_queue_ {
+				mut owned_queue := unsafe { &MutationObserverDeliveryQueue(queue) }
+				owned_queue.add_pending(observer)
+				mut present := false
+				for existing in delivery_queues {
+					if voidptr(existing) == voidptr(queue) { present = true; break }
+				}
+				if !present { delivery_queues << queue }
+			} else {
+				mut document := unsafe { &Document(node.document()) }
+				if document != unsafe { nil } { document.add_pending_mutation_observer(observer) }
+			}
+		}
+		ancestor = inclusive_ancestor.parent()
+	}
+	return delivery_queues
+}
+
+fn finish_transient_observer_notifications(queues []&MutationObserverDeliveryQueue, document &Document) {
+	// Queue after all records for the mutation, since a host may service its
+	// JavaScript job queue while enqueueing. Preserve the DOM-only fallback.
+	for queue in queues {
+		mut owned_queue := unsafe { &MutationObserverDeliveryQueue(queue) }
+		if owned_queue.pending.len > 0 { owned_queue.ensure_microtask() }
+	}
+	if document != unsafe { nil } && document.pending_mutation_observers.len > 0 {
+		mut mutable_document := unsafe { &Document(document) }
+		queue_mutation_observer_microtask(mut mutable_document)
+	}
 }

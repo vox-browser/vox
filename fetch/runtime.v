@@ -31,6 +31,7 @@ struct FetchMemoryCacheEntry {
 	request_time     i64
 	response_time    i64
 mut:
+	last_access_time                   i64
 	response_body                      []u8
 	javascript_bytecode_cache          ?[]u8
 	javascript_bytecode_cache_vary_key ?u64
@@ -153,6 +154,10 @@ pub fn (mut controller FetchController) set_report_timing_steps(callback ReportT
 	controller.report_timing_steps_ = callback
 }
 
+pub fn (controller &FetchController) has_report_timing_steps() bool {
+	return controller.report_timing_steps_ != none
+}
+
 pub fn (mut controller FetchController) set_next_manual_redirect_steps(callback ManualRedirectSteps) {
 	controller.next_manual_redirect_steps_ = callback
 }
@@ -188,6 +193,7 @@ pub fn (controller &FetchController) extract_full_timing_info() &FetchTimingInfo
 pub fn (mut controller FetchController) abort(reason ?string) {
 	controller.state_ = .aborted
 	controller.serialized_abort_reason_ = reason or { 'AbortError' }
+	controller.stop_request()
 }
 
 pub fn (controller &FetchController) serialized_abort_reason() ?string {
@@ -204,6 +210,7 @@ pub fn (controller &FetchController) deserialize_a_serialized_abort_reason() str
 
 pub fn (mut controller FetchController) terminate() {
 	controller.state_ = .terminated
+	controller.stop_request()
 }
 
 pub fn (mut controller FetchController) stop_fetch() {
@@ -224,13 +231,13 @@ pub fn (mut controller FetchController) stop_fetch() {
 }
 
 pub fn (mut controller FetchController) stop_request() {
-	assert controller.state_ == .stopped
-	if request := controller.pending_network_request_ {
-		if stop := request.stop { stop() }
-		controller.pending_network_request_ = none
-	}
+	assert controller.state_ != .ongoing
 	controller.pending_request_stopped_ = true
 	controller.pending_request_ = none
+	if request := controller.pending_network_request_ {
+		controller.pending_network_request_ = none
+		if stop := request.stop { stop() }
+	}
 }
 
 pub fn (mut controller FetchController) next_fetch_task_id() u64 {
@@ -1350,6 +1357,10 @@ fn finish_http_network_or_cache_fetch(params &FetchParams, http_request &Request
 			}
 		}
 		controller.set_pending_request(none)
+		if forward_response.status >= 200 && forward_response.status <= 399
+			&& http_request.method !in ['GET', 'HEAD', 'OPTIONS', 'TRACE'] {
+			invalidate_response_in_cache(http_request)
+		}
 		store_response_in_cache(http_request, mut forward_response)
 		finalize_response_in_cache(http_request, forward_response)
 	}
@@ -1792,7 +1803,8 @@ pub fn clear_http_memory_cache() {
 fn update_javascript_bytecode_cache_entries(entries []FetchMemoryCacheEntry, request_headers &http.HeaderList, vary_key u64, javascript_bytecode_cache []u8) []FetchMemoryCacheEntry {
 	mut updated := entries.clone()
 	for mut entry in updated {
-		if http.create_vary_key(request_headers, entry.response_headers) != entry.vary_key {
+		request_vary_key := http.create_vary_key(request_headers, entry.response_headers) or { continue }
+		if request_vary_key != entry.vary_key {
 			continue
 		}
 		entry.javascript_bytecode_cache = javascript_bytecode_cache.clone()

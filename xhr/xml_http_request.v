@@ -132,6 +132,8 @@ pub mut:
 	fetch_controller_ &fetch.FetchController = fetch.FetchController.create()
 	fetch_request_ ?&fetch.Request
 	fetch_response_ ?&fetch.Response
+	async_request_ ?&fetch.Request
+	async_send_start_time_ i64
 	timeout_timer_ ?&platform.Timer
 }
 
@@ -268,6 +270,7 @@ pub fn (mut request XMLHttpRequest) open(method string, input_url string, async 
 		return error('InvalidAccessError: Synchronous XMLHttpRequests in a Window context do not support timeout or a non-empty responseType')
 	}
 	request.fetch_controller_.terminate()
+	request.async_request_ = none
 	request.fetch_request_ = none
 	request.fetch_response_ = none
 	request.send_flag = false
@@ -554,6 +557,7 @@ pub fn (mut request XMLHttpRequest) complete_response() ! {
 
 pub fn (mut request XMLHttpRequest) handle_response_end_of_body() ! {
 	request.stop_timeout_timer()
+	request.async_request_ = none
 	request.handle_errors()!
 	if request.response_.network_error != none || request.response_.aborted || request.timed_out {
 		return
@@ -604,6 +608,7 @@ pub fn (mut request XMLHttpRequest) timeout_request() ! {
 
 fn (mut request XMLHttpRequest) request_error_steps(event string, exception_message string) ! {
 	request.stop_timeout_timer()
+	request.async_request_ = none
 	request.state = .done
 	request.send_flag = false
 	request.update_activity_root()
@@ -629,6 +634,7 @@ fn (mut request XMLHttpRequest) request_error_steps(event string, exception_mess
 
 pub fn (mut request XMLHttpRequest) abort() {
 	request.stop_timeout_timer()
+	request.async_request_ = none
 	request.fetch_controller_.abort(none)
 	if (request.state == .opened && request.send_flag)
 		|| request.state in [.headers_received, .loading] {
@@ -659,6 +665,9 @@ pub fn (mut request XMLHttpRequest) set_timeout(timeout u32) ! {
 		return error('InvalidAccessError: timeout is not supported in synchronous window XHR')
 	}
 	request.timeout_ms = timeout
+	if request.send_flag && !request.synchronous {
+		request.restart_timeout_timer()
+	}
 }
 
 pub fn (mut request XMLHttpRequest) set_with_credentials(value bool) ! {

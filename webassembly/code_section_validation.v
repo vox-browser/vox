@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: BSD-2-Clause
 module webassembly
 
+const binary_max_function_locals = u64(50000)
+
 // AbstractMachine/Validator.cpp::validate(CodeSection), through expression
 // validation and the function-result check. Native compiled call-record sizing
 // and callee inlining remain with the untranslated instruction compiler.
@@ -15,6 +17,13 @@ fn (validator &BinaryInstructionValidator) validate_code_section(mut functions [
 			return error('CompileError: invalid FunctionIndex')
 		}
 		type_ := validator.context.functions[function_index]
+		// Count all runs and parameters before expanding locals. Recompute in
+		// u64 so directly constructed function bodies cannot wrap the cached sum.
+		mut local_count := u64(type_.parameters.len)
+		for local in function.locals { local_count += u64(local.count) }
+		if local_count > binary_max_function_locals {
+			return error('CompileError: too many locals')
+		}
 		mut function_validator := &BinaryInstructionValidator{ context: validator.context }
 		function_validator.context.locals = type_.parameters.clone()
 		function_validator.context.current_function_parameter_count = type_.parameters.len

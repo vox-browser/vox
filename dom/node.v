@@ -576,6 +576,7 @@ pub mut:
 @[heap]
 pub struct MutationObserver {
 pub mut:
+	creation_index_ u64
 	callback_    ?&CallbackType
 	delivery_queue_ ?&MutationObserverDeliveryQueue
 	transient_nodes_ []&Node
@@ -1233,7 +1234,7 @@ pub fn (n &Node) has_event_listener(type_ string) bool {
 
 // https://dom.spec.whatwg.org/#dom-node-baseuri
 pub fn (n &Node) base_uri() string {
-	// Return this's node document's document base URL, serialized.
+	// The cloned document's base override takes precedence over the fallback.
 	doc := n.document()
 	if doc == unsafe { nil } {
 		return ''
@@ -2737,19 +2738,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		}
 		return .@continue
 	})
-	// For each inclusive ancestor of parent, copy subtree observers into transient observers on the removed node.
-	for ancestor := ?&Node(parent); ancestor != none;  {
-		inclusive_ancestor := ancestor or { break }
-		for registered in inclusive_ancestor.registered_observers() {
-			if registered.options().subtree {
-				transient_observer := TransientRegisteredObserver.create(registered.observer(), registered.options(), registered)
-				n.add_registered_observer(unsafe { &RegisteredObserver(transient_observer) })
-				mut observer := unsafe { &MutationObserver(registered.observer()) }
-				observer.add_transient_registered_node(&n)
-			}
-		}
-		ancestor = inclusive_ancestor.parent()
-	}
+	transient_delivery_queues := n.add_transient_registered_observers(parent)
 	if !suppress_observers {
 		mut removed := []&Node{}
 		removed << &n
@@ -2763,6 +2752,7 @@ pub fn (mut n Node) remove(suppress_observers bool) {
 		mut mutable_doc := unsafe { &Document(doc) }
 		mutable_doc.bump_dom_tree_version()
 	}
+	finish_transient_observer_notifications(transient_delivery_queues, doc)
 }
 
 // https://dom.spec.whatwg.org/#concept-node-replace
@@ -2776,6 +2766,10 @@ pub fn (mut n Node) replace_child(node &Node, child &Node) !&Node {
 	}
 	previous_sibling := child.previous_sibling() or { unsafe { nil } }
 	mut removed_nodes := []&Node{}
+	// Adoption removes node from its old parent before child is removed,
+	// preserving mutation record order even when node and child are the same.
+	mut document := n.document()
+	document.adopt_node(node)
 	if child.parent() != none {
 		removed_nodes << child
 		mut mutable_child := unsafe { &Node(child) }
@@ -2834,7 +2828,7 @@ pub fn (n &Node) clone_node_with_registry(document ?&Document, subtree bool, par
 				copy_shadow_root.set_keep_custom_element_registry_null(shadow_root.keep_custom_element_registry_null())
 				copy_shadow_root_node := unsafe { &Node(copy_shadow_root) }
 				for child in shadow_root_as_node(shadow_root).children {
-					child.clone_node_with_registry(doc, subtree, copy_shadow_root_node, unsafe { nil })!
+					child.clone_node_with_registry(doc, true, copy_shadow_root_node, unsafe { nil })!
 				}
 			}
 		}
@@ -2904,6 +2898,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 			assign_slottables(slot)
 		}
 	}
+	transient_delivery_queues := n.add_transient_registered_observers(old_parent)
 	if child_node := child {
 		for _, live_range in dom_live_ranges {
 			mut range := unsafe { &Range(live_range) }
@@ -2959,6 +2954,7 @@ pub fn (mut n Node) move_node(mut new_parent Node, child ?&Node) ! {
 		mut mutable_doc := unsafe { &Document(doc) }
 		mutable_doc.bump_dom_tree_version()
 	}
+	finish_transient_observer_notifications(transient_delivery_queues, doc)
 }
 
 // https://dom.spec.whatwg.org/#clone-a-single-node
@@ -3013,6 +3009,8 @@ pub fn (n &Node) clone_single_node_with_registry(document &Document, fallback_re
 		document_copy.set_document_type(source_document.document_type())
 		document_copy.set_quirks_mode(source_document.mode())
 		document_copy.set_allow_declarative_shadow_roots(source_document.allow_declarative_shadow_roots())
+		// DOM clone records the source's effective base before cloning children.
+		document_copy.set_base_url_override(source_document.get_the_base_url())
 		if custom_element_registry_is_scoped(source_document.custom_element_registry()) {
 			document_copy.set_custom_element_registry(source_document.custom_element_registry())
 		}
@@ -3112,7 +3110,10 @@ pub fn (mut n Node) recompute_editable_subtree_flag() bool {
 	} else if element := n.as_element() {
 		if element.is_html_element() {
 			state := html_content_editable_state(element)
-			if state == 'true' || state == 'plaintext-only' {
+			if element.local_name() in ['select', 'optgroup', 'option'] {
+				// Editing may remove the control, but must not edit its contents.
+				new_value = false
+			} else if state == 'true' || state == 'plaintext-only' {
 				new_value = true
 			} else if state == 'false' {
 				new_value = false
@@ -3193,7 +3194,7 @@ pub fn (n &Node) is_editable() bool {
 // https://html.spec.whatwg.org/multipage/interaction.html#editing-host
 pub fn (n &Node) is_editing_host() bool {
 	element := n.as_element() or { return false }
-	if !element.is_html_element() {
+	if !element.is_html_element() || element.local_name() in ['select', 'optgroup', 'option'] {
 		return false
 	}
 	state := html_content_editable_state(element)
@@ -3645,8 +3646,16 @@ pub fn (n &Node) flat_tree_parent() ?&Node {
 			return html_slot_element_as_node(slot)
 		}
 	}
-	// Otherwise, this is the parent or shadow host.
-	return n.parent_or_shadow_host()
+	// A shadow root is not part of the flat tree: its children have the host
+	// as their parent, including when finding a common click-event target.
+	parent := n.parent_or_shadow_host() or { return none }
+	if shadow_root := parent.as_shadow_root() {
+		if host := shadow_root.host() {
+			return host.as_node()
+		}
+		return none
+	}
+	return parent
 }
 
 pub fn (n &Node) flat_tree_parent_element() ?&Element {
@@ -4555,7 +4564,7 @@ pub fn (mut n Node) queue_mutation_record(type_ MutationType, attribute_name ?st
 			for existing in delivery_queues { if voidptr(existing) == voidptr(queue) { present = true; break } }
 			if !present { delivery_queues << queue }
 		} else if document != unsafe { nil } {
-			document.pending_mutation_observers << observer
+			document.add_pending_mutation_observer(observer)
 		}
 	}
 	// Schedule only after every interested observer has its record. Native host
@@ -4660,6 +4669,11 @@ pub fn install_element_cloning_steps(steps ElementCloningSteps) {
 }
 
 pub fn (n &Node) cloned(copy &Node, subtree bool) ! {
+	if n.is_document() && copy.is_document() {
+		original := unsafe { &Document(n) }
+		mut cloned_document := unsafe { &Document(copy) }
+		cloned_document.set_about_base_url(original.get_about_base_url())
+	}
 	if element := n.as_element() {
 		if element.is_html_element() && element.local_name() == 'template' {
 			html_template_element_cloned(unsafe { &HTMLTemplateElement(element) }, copy, subtree)!

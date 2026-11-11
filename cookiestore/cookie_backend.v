@@ -112,6 +112,14 @@ fn path_matches(request_path string, cookie_path string) bool {
 		|| (request_path.len > cookie_path.len && request_path[cookie_path.len] == `/`)
 }
 
+fn same_expiry(first ?f64, second ?f64) bool {
+	if first_value := first {
+		if second_value := second { return first_value == second_value }
+		return false
+	}
+	return second == none
+}
+
 // PageClient::page_did_request_all_cookies_cookiestore. The UI process does
 // this filtering in Ladybird; keeping it behind this type preserves that
 // renderer/embedder boundary.
@@ -168,7 +176,8 @@ fn (mut backend CookieStoreBackend) store(record &url.URL, cookie Cookie) {
 	mut existing_index := -1
 	for index, existing in backend.cookies_ {
 		if existing.name == stored.name && existing.domain == stored.domain
-			&& existing.path == stored.path && existing.partitioned == stored.partitioned {
+			&& existing.host_only == stored.host_only && existing.path == stored.path
+			&& existing.partitioned == stored.partitioned {
 			existing_index = index
 			break
 		}
@@ -185,14 +194,21 @@ fn (mut backend CookieStoreBackend) store(record &url.URL, cookie Cookie) {
 			return
 		}
 	}
+	mut cookie_changed := true
 	if existing_index >= 0 {
-		stored.creation_index = backend.cookies_[existing_index].creation_index
+		existing := backend.cookies_[existing_index]
+		cookie_changed = existing.value != stored.value || existing.same_site != stored.same_site
+			|| !same_expiry(existing.expires, stored.expires) || existing.secure != stored.secure
+			|| existing.http_only != stored.http_only
+		stored.creation_index = existing.creation_index
 		backend.cookies_[existing_index] = stored
 	} else {
 		stored.creation_index = backend.next_creation
 		backend.next_creation++
 		backend.cookies_ << stored
 	}
+	// Replacing a cookie with the same value and attributes is not a change.
+	if !cookie_changed { return }
 	backend.mutations_ << CookieMutation{
 		cookie: stored
 	}

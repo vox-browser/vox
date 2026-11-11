@@ -2,6 +2,7 @@
 module xhr
 
 import dom
+import infra
 
 pub fn (mut request XMLHttpRequest) send_document(document &dom.Document) ! {
 	if request.state != .opened || request.send_flag {
@@ -10,5 +11,5 @@ pub fn (mut request XMLHttpRequest) send_document(document &dom.Document) ! {
 	if request.request_method in ['GET', 'HEAD'] { request.send()!; return }
 	serialized := document.as_node().serialize_fragment(.no, .inner)!
 	content_type := if document.is_html_document() { 'text/html;charset=UTF-8' } else { 'application/xml;charset=UTF-8' }
-	request.send_bytes(serialized.bytes(), content_type, true, true)!
+	request.send_bytes(infra.convert_to_scalar_value_string(serialized).bytes(), content_type, true, true)!
 }

@@ -79,6 +79,40 @@ pub fn default_user_agent() string {
 	return 'Mozilla/5.0 (${ua_platform_string()}) ${browser_name}/${browser_version} ${compatibility_token}'
 }
 
+// navigator.platform uses kernel machine names rather than the browser's
+// human-readable architecture labels used by cpu_string().
+fn navigator_platform_machine() string {
+	$if amd64 {
+		return 'x86_64'
+	} $else $if arm64 {
+		return 'aarch64'
+	} $else $if i386 {
+		return 'i686'
+	} $else $if rv64 {
+		return 'riscv64'
+	} $else $if ppc64le {
+		return 'ppc64le'
+	} $else $if ppc64 {
+		return 'ppc64'
+	} $else $if ppc {
+		return 'ppc'
+	} $else {
+		return cpu_string()
+	}
+}
+
+// navigator.platform follows the platform tokens exposed by other browsers,
+// rather than the host's literal uname spelling on macOS and Windows.
 pub fn default_platform() string {
-	return '${os_string()} ${cpu_string()}'
+	$if macos {
+		return 'MacIntel'
+	} $else $if ios {
+		return 'iPhone'
+	} $else $if windows {
+		return 'Win32'
+	} $else $if android {
+		return 'Linux ${navigator_platform_machine()}'
+	} $else {
+		return '${os_string()} ${navigator_platform_machine()}'
+	}
 }

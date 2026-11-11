@@ -239,6 +239,11 @@ fn parse_ec_jwk(params EcKeyImportParams, jwk JsonWebKey, extractable bool, usag
 }
 
 fn import_ec_key(params EcKeyImportParams, format KeyFormat, material []u8, extractable bool, usages []KeyUsage) !&CryptoKey {
+	// Invalid named curves are a NotSupportedError regardless of key format,
+	// usages, or whether the supplied key data is well-formed.
+	if ec_scalar_size(params.named_curve) == 0 {
+		return error("NotSupportedError: Unsupported named curve '${params.named_curve}'")
+	}
 	mut private_key := format == .pkcs8
 	mut handle := CryptoKeyInternalHandle(ByteBufferKeyHandle{})
 	if format == .jwk {

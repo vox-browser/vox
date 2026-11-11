@@ -78,6 +78,11 @@ fn native_rsa_oaep(key &CryptoKey, input []u8, label []u8, decrypt bool) ![]u8 {
 }
 
 fn native_rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
+	// OpenSSL accepts a signed 32-bit salt length and assigns special meanings
+	// to negative values. Never let an unsigned WebCrypto length wrap into one.
+	if pss && salt > u32(0x7fffffff) {
+		return error('OperationError: Failed to sign message')
+	}
 	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
 	mut signature := []u8{len: int(parts[0].length)}
@@ -89,6 +94,7 @@ fn native_rsa_sign(key &CryptoKey, message []u8, pss bool, salt u32) ![]u8 {
 }
 
 fn native_rsa_verify(key &CryptoKey, signature []u8, message []u8, pss bool, salt u32) !bool {
+	if pss && salt > u32(0x7fffffff) { return false }
 	parts := rsa_parts_from_handle(key.internal_handle_)
 	hash := rsa_operation_hash(key)!
 	result := C.vox_rsa_verify(parts.data, hash.str, int(pss), salt, signature.data, uint(signature.len), message.data, uint(message.len))

@@ -58,6 +58,7 @@ mut:
 	event_type_           string
 	data_                 string
 	pending_input_        string
+	is_start_of_stream_   bool = true
 	with_credentials_     bool
 	ready_state_          EventSourceReadyState = .connecting
 	fetch_hook_           ?EventSourceFetchHook
@@ -176,6 +177,12 @@ pub fn (mut source EventSource) announce_the_connection() {
 	if source.ready_state_ == .closed {
 		return
 	}
+	// Parser buffers belong to one response stream. In particular, a partial
+	// line or CR from a failed connection must not precede the next stream's BOM.
+	source.pending_input_ = ''
+	source.data_ = ''
+	source.event_type_ = ''
+	source.is_start_of_stream_ = true
 	source.ready_state_ = .open
 	open_event := dom.Event.create('open', dom.EventInit{})
 	unsafe { &dom.EventTarget(source) }.dispatch_event(open_event)
@@ -212,7 +219,14 @@ pub fn (mut source EventSource) fail_the_connection() {
 	unsafe { &dom.EventTarget(source) }.dispatch_event(error_event)
 }
 
-fn (mut source EventSource) process_line(line string) {
+fn (mut source EventSource) process_line(input string) {
+	mut line := input
+	if source.is_start_of_stream_ {
+		source.is_start_of_stream_ = false
+		// Partial lines have already been joined, so a BOM split across feed()
+		// chunks is removed here too. Later U+FEFF characters are stream data.
+		if line.starts_with('\ufeff') { line = line['\ufeff'.len..] }
+	}
 	if line == '' {
 		source.dispatch_the_event()
 		return

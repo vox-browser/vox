@@ -28,7 +28,7 @@ fn generate_chacha_key(extractable bool, usages []KeyUsage) !GeneratedKey {
 	chacha_validate_usages(usages)!
 	return GeneratedKey{
 		key: CryptoKey.create(.secret, extractable, KeyAlgorithm{ name: 'ChaCha20-Poly1305' },
-			usages, rand.bytes(32)!)
+			normalize_key_usages(usages), rand.bytes(32)!)
 	}
 }
 
