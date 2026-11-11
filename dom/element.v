@@ -7122,10 +7122,9 @@ pub fn (mut e Element) follow_the_hyperlink(hyperlink_suffix ?string, user_invol
 		url = dom_url_parse(url_string + suffix, url_record, 'UTF-8') or { return }
 	}
 
-	// 11. Let referrerPolicy be the current state of subject's referrerpolicy content attribute.
-	referrer_policy := e.get_attribute_value('referrerpolicy')
-
-	// FIXME: 12. If subject's link types includes the noreferrer keyword, then set referrerPolicy to "no-referrer".
+	// 11-12. The noreferrer link type overrides the referrerpolicy attribute.
+	link_types := split_on_ascii_whitespace(to_ascii_lowercase(e.get_attribute_value('rel')))
+	referrer_policy := if 'noreferrer' in link_types { 'no-referrer' } else { e.get_attribute_value('referrerpolicy') }
 
 	// 13. Navigate targetNavigable to urlString using subject's node document, with referrerPolicy set to referrerPolicy
 	//     and userInvolvement set to userInvolvement.
