@@ -1,6 +1,7 @@
 #define LADYBIRD_V_HAS_SKIA_TEXT 1
 #include "native/include/native_png_color_darwin.h"
 #include <assert.h>
+#include <zlib.h>
 #include <stdio.h>
 
 // This seam checks metadata routing, immutable source rows and cache ownership.
@@ -19,7 +20,19 @@ int ladybird_v_skia_convert_icc_rgba(const void *bytes, size_t length,
     return 1;
 }
 
+// Vox registers vlib's V inflater; this standalone test uses zlib instead.
+static uint8_t *zlib_inflate_profile(const uint8_t *input, size_t length, size_t limit,
+    size_t *output_length)
+{
+    uLongf size = (uLongf)limit;
+    uint8_t *output = malloc(limit);
+    if (!output || uncompress(output, &size, input, (uLong)length) != Z_OK) { free(output); return NULL; }
+    *output_length = size;
+    return output;
+}
+
 int main(int argc, char **argv) {
+    native_png_icc_set_inflater(zlib_inflate_profile);
     @autoreleasepool {
         if (argc == 4 && !strcmp(argv[1], "--extract")) {
             NSData *png = [NSData dataWithContentsOfFile:[NSString stringWithUTF8String:argv[2]]];

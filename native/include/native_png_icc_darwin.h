@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <limits.h>
-#include <zlib.h>
+#include <stdlib.h>
 #include "native_image_color_profile.h"
 #include "../../platform/native_state.h"
 
@@ -17,6 +17,14 @@ static uint32_t native_png_icc_u32(const uint8_t *p)
 {
     return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3];
 }
+
+// Inflates a zlib stream of at most `limit` decoded bytes into malloc'd
+// storage the caller frees, or returns NULL. Vox links no zlib: the browser
+// registers vlib's V inflater at startup (images/png_icc.v).
+typedef uint8_t *(*VoxPngIccInflate)(const uint8_t *input, size_t length, size_t limit,
+    size_t *output_length);
+VOX_NATIVE_STATE VoxPngIccInflate native_png_icc_inflate;
+static void native_png_icc_set_inflater(VoxPngIccInflate inflate) { native_png_icc_inflate = inflate; }
 
 static NSData *native_png_icc_data(const uint8_t *bytes, size_t length)
 {
@@ -43,29 +51,16 @@ static NSData *native_png_icc_data(const uint8_t *bytes, size_t length)
     }
     if (!compressed) return nil;
     const size_t maximum_size = 16 * 1024 * 1024;
-    NSMutableData *output = [NSMutableData dataWithLength:4096];
-    z_stream stream = { 0 };
-    stream.next_in = (Bytef *)compressed;
-    stream.avail_in = compressed_length;
-    if (inflateInit(&stream) != Z_OK) return nil;
-    int status = Z_OK;
-    while (status == Z_OK) {
-        if (stream.total_out == output.length) {
-            if (output.length == maximum_size) { status = Z_MEM_ERROR; break; }
-            output.length = MIN(output.length * 2, maximum_size);
-        }
-        stream.next_out = (Bytef *)output.mutableBytes + stream.total_out;
-        stream.avail_out = (uInt)(output.length - stream.total_out);
-        status = inflate(&stream, Z_NO_FLUSH);
+    if (!native_png_icc_inflate) return nil;
+    size_t decoded_length = 0;
+    uint8_t *icc = native_png_icc_inflate(compressed, compressed_length, maximum_size, &decoded_length);
+    if (!icc) return nil;
+    uint32_t declared_size = decoded_length < 128 ? 0 : native_png_icc_u32(icc);
+    if (declared_size < 128 || declared_size > decoded_length || memcmp(icc + 36, "acsp", 4)) {
+        free(icc);
+        return nil;
     }
-    size_t decoded_length = stream.total_out;
-    inflateEnd(&stream);
-    if (status != Z_STREAM_END || decoded_length < 128) return nil;
-    const uint8_t *icc = output.bytes;
-    uint32_t declared_size = native_png_icc_u32(icc);
-    if (declared_size < 128 || declared_size > decoded_length || memcmp(icc + 36, "acsp", 4)) return nil;
-    output.length = declared_size;
-    return output;
+    return [NSData dataWithBytesNoCopy:icc length:declared_size freeWhenDone:YES];
 }
 
 static int native_png_has_icc_profile(const uint8_t *bytes, size_t length)
