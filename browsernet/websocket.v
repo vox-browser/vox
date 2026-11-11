@@ -3,6 +3,7 @@ module browsernet
 import browsercookies
 import crypto.sha1
 import encoding.base64
+import encoding.utf8
 import net
 import net.http
 import net.ssl
@@ -493,6 +494,14 @@ fn (mut connection WebSocketConnection) exchange(mut stream WebSocketStream, ini
 					if frame.payload.len >= 2 {
 						code = u16(frame.payload[0]) << 8 | u16(frame.payload[1])
 						reason = frame.payload[2..].bytestr()
+						// RFC 6455 requires UTF-8, which excludes surrogate code points.
+						if !utf8.validate_str(reason) {
+							if !close_sent {
+								stream.write_all(websocket_frame(8, websocket_close_payload(1007, ''))) or {}
+							}
+							connection.fail()
+							return
+						}
 					}
 					if !close_sent {
 						echo := if frame.payload.len >= 2 { frame.payload[..2].clone() } else { []u8{} }
