@@ -8,6 +8,7 @@ struct ContourResult { std::vector<uint8_t> pixels; unsigned deferred; bool comp
 // compositor-layer pictures may supply deferred leaves.
 static int s_test_frame_mode=1;
 static bool s_test_speculative_group=false;
+static float s_test_shadow_blur=6;
 static ContourResult scene(int scale, float scroll, int mode, bool enabled,
     bool registered=true, bool fractional=false, bool blocked=false,
     bool fail=false, bool root=false, bool edge=false, float extra_scroll=0)
@@ -38,11 +39,12 @@ static ContourResult scene(int scale, float scroll, int mode, bool enabled,
     if(enabled)unsetenv("VOX_DISABLE_CONTOURED_LEAF_DEFER");
     else setenv("VOX_DISABLE_CONTOURED_LEAF_DEFER","1",1);
     assert(ladybird_v_skia_draw_contoured_box(context,target,shape,mode==2?target:nullptr,
-        affine,0,0,extra_scroll,w,h,23,81,143,173,mode,mode==1?2:mode==2?6:0,0));
+        affine,0,0,extra_scroll,w,h,23,81,143,173,mode,mode==1?2:mode==2?s_test_shadow_blur:0,0));
     assert(!s_has_rounded_rect_underlay && !s_has_contoured_box_reference);
     auto* group=s_shared_root_recording.get();assert(group);
     unsigned omitted=group->deferred_leaves;
-    bool eligible=enabled&&registered&&!fractional&&!blocked&&!root&&!edge
+    bool eligible=enabled&&registered&&!fractional&&!blocked&&!root
+        &&(!edge||mode==2)
         &&!(s_test_frame_mode==2&&s_test_speculative_group);
     assert((omitted!=0)==eligible);
     s_test_fail_deferred_layer=fail;
@@ -66,7 +68,8 @@ int main()
             bool registered=guard!=0,fractional=guard==1,blocked=guard==2,root=guard==3,edge=guard==4;
             auto before=scene(scale,scroll,mode,false,registered,fractional,blocked,false,root,edge);
             auto after=scene(scale,scroll,mode,true,registered,fractional,blocked,false,root,edge);
-            assert(before.pixels==after.pixels && !after.deferred);++cases;
+            // A shadow overflowing the layer box publishes its recorded blur.
+            assert(before.pixels==after.pixels && (after.deferred!=0)==(edge&&mode==2));++cases;
         }
         auto failed=scene(scale,scroll,mode,true,true,false,false,true);
         assert(failed.deferred && !failed.completed);++cases;
@@ -81,6 +84,18 @@ int main()
     // Mode 2 defers leaves into compositor-layer pictures exactly like mode 1,
     // but never into speculative pictures, which publish after the frame's
     // scroll-reuse pixels are stored, nor into deferred gradient-text inputs.
+    // A wide blur's fallback bitmap margin (2 x blur + 2) exceeds its picture's
+    // three-sigma extent; the mask blur paints nothing between the two, so the
+    // shadow still defers into the layer with identical pixels.
+    // At the layer's edge the blur overflows the layer box; the picture
+    // publishes that recorded overflow, so the shadow still defers exactly.
+    s_test_shadow_blur=24;
+    for(int scale:{1,2})for(float scroll:{0.f,17.5f})for(bool edge:{false,true}){
+        auto control=scene(scale,scroll,2,false,true,false,false,false,false,edge);
+        auto deferred=scene(scale,scroll,2,true,true,false,false,false,false,edge);
+        assert(control.pixels==deferred.pixels && deferred.deferred && deferred.completed);++cases;
+    }
+    s_test_shadow_blur=6;
     s_test_frame_mode=2;
     for(int scale:{1,2})for(int mode:{0,1,2}){
         auto control=scene(scale,17.5f,mode,false);

@@ -137,8 +137,15 @@ extern "C" int ladybird_v_skia_draw_contoured_box(CGContextRef destination,
         // shared guard also protects clips, blocked content and publication
         // bounds; failed publication requests an ordinary frame replay.
         auto* disabled=std::getenv("VOX_DISABLE_CONTOURED_LEAF_DEFER");
+        // A shadow's mask blur paints nothing beyond its three-sigma extent,
+        // which is exactly what the picture records and publishes. The wider
+        // fallback margin only sizes the immediate bitmap and must not keep a
+        // blurred leaf out of its layer, including when it overflows the box.
+        auto* wide=std::getenv("VOX_DEFER_CONTOURED_SHADOWS_BY_FALLBACK_MARGIN");
+        auto deferred_ink=mode==2 && !(wide && *wide) ? matrix.mapRect(recording_bounds)
+            : matrix.mapRect(bounds).makeOutset(2,2);
         bool deferred=!(disabled && *disabled)
-            && shared_recording_defers_leaf_raster(destination,matrix.mapRect(bounds).makeOutset(2,2));
+            && shared_recording_defers_leaf_raster(destination,deferred_ink);
         auto* diagnostics=std::getenv("VOX_CONTOURED_LEAF_DIAGNOSTICS");
         if (diagnostics && *diagnostics)
             std::fprintf(stderr,"VOX_CONTOURED_LEAF mode=%d deferred=%d\n",mode,int(deferred));
