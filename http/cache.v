@@ -332,11 +332,13 @@ pub fn cache_lifetime_status(request_headers &HeaderList, response_headers &Head
 	response_control := response_cache_control or {
 		return revalidation_status(response_headers, .must_revalidate)
 	}
-	if calculate_stale_while_revalidate_lifetime(response_headers, freshness_lifetime) > current_age {
-		return revalidation_status(response_headers, .stale_while_revalidate)
-	}
+	// A stale response that requires validation cannot be served while a
+	// background revalidation runs, even if it also has stale-while-revalidate.
 	if contains_cache_control_directive(response_control, 'must-revalidate') {
 		return revalidation_status(response_headers, .must_revalidate)
+	}
+	if calculate_stale_while_revalidate_lifetime(response_headers, freshness_lifetime) > current_age {
+		return revalidation_status(response_headers, .stale_while_revalidate)
 	}
 	return .expired
 }
