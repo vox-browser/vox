@@ -35,7 +35,6 @@ static void vox_adblock_set_enabled(int enabled) {
 #include <CoreFoundation/CoreFoundation.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #endif
-#include <zlib.h>
 #include <limits.h>
 static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t length) {
 #ifdef __APPLE__
@@ -54,22 +53,5 @@ static JSStringRef vox_adblock_utf8_string(const unsigned char *bytes, size_t le
     (void)bytes; (void)length;
     return NULL;
 #endif
-}
-static int vox_adblock_gunzip(const unsigned char *input, size_t input_size,
-        unsigned char *output, size_t output_size) {
-    if (input_size > UINT_MAX || output_size > UINT_MAX) return Z_MEM_ERROR;
-    z_stream stream = {0};
-    unsigned char empty_output;
-    stream.next_in = (Bytef *)input;
-    stream.avail_in = (uInt)input_size;
-    stream.next_out = output_size ? output : &empty_output;
-    stream.avail_out = output_size ? (uInt)output_size : 1;
-    int status = inflateInit2(&stream, MAX_WBITS + 16);
-    if (status != Z_OK) return status;
-    status = inflate(&stream, Z_FINISH);
-    int valid = status == Z_STREAM_END && stream.total_in == input_size &&
-        stream.total_out == output_size;
-    inflateEnd(&stream);
-    return valid ? Z_OK : (status == Z_STREAM_END ? Z_DATA_ERROR : status);
 }
 #endif

@@ -112,7 +112,7 @@ test('native metadata owns its text, restores fresh graphs and rejects malformed
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-adblock-metadata-test-'));
     const binary = path.join(directory, 'metadata-test');
     try {
-        execFileSync('cc', ['-O2', '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation', '-lz',
+        execFileSync('cc', ['-O2', '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation',
             fileURLToPath(new URL('./snapshot_metadata_native_test.c', import.meta.url)), '-o', binary], { stdio: 'pipe' });
         assert.match(execFileSync(binary, { encoding: 'utf8' }), /PASS native snapshot metadata/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
@@ -122,7 +122,7 @@ test('native snapshot bytes retain ownership and native checksums match the unch
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'vox-adblock-snapshot-test-'));
     const binary = path.join(directory, 'snapshot-test');
     try {
-        execFileSync('cc', ['-O2', '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation', '-lz',
+        execFileSync('cc', ['-O2', '-framework', 'JavaScriptCore', '-framework', 'CoreFoundation',
             fileURLToPath(new URL('./snapshot_native_test.c', import.meta.url)), '-o', binary], { stdio: 'pipe' });
         assert.match(execFileSync(binary, { encoding: 'utf8' }), /PASS native snapshot/);
     } finally { fs.rmSync(directory, { recursive: true, force: true }); }
