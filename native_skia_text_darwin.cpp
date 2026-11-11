@@ -112,9 +112,13 @@ class SharedPicturePixelsScope {
     std::vector<Input> inputs_;
     bool enabled_;
     bool typefaces_enabled_ = false;
+    bool images_enabled_ = true;
 public:
     static thread_local SharedPicturePixelsScope* active;
-    explicit SharedPicturePixelsScope(bool enabled = true) : previous_(active), enabled_(false) {
+    // `typefaces_only`: lease embedded fonts by token by default, leaving image
+    // encoding unchanged (VOX_DISABLE_SHARED_LAYER_TYPEFACES opts out).
+    explicit SharedPicturePixelsScope(bool enabled = true, bool typefaces_only = false)
+        : previous_(active), enabled_(false), images_enabled_(!typefaces_only) {
         if (enabled && !std::getenv("VOX_DISABLE_SHARED_PICTURE_PIXELS")) {
             void* library = dlopen("@rpath/libVoxGraphiteDawn.dylib", RTLD_LAZY | RTLD_LOCAL);
             auto supports = library ? reinterpret_cast<int(*)()>(
@@ -122,8 +126,9 @@ public:
             enabled_ = supports && supports();
             auto supports_typefaces = library ? reinterpret_cast<int(*)()>(
                 dlsym(library, "vox_graphite_picture_supports_shared_typefaces")) : nullptr;
-            typefaces_enabled_ = enabled_ && std::getenv("VOX_SHARED_PICTURE_TYPEFACES")
-                && supports_typefaces && supports_typefaces();
+            bool requested = typefaces_only ? !std::getenv("VOX_DISABLE_SHARED_LAYER_TYPEFACES")
+                : std::getenv("VOX_SHARED_PICTURE_TYPEFACES") != nullptr;
+            typefaces_enabled_ = enabled_ && requested && supports_typefaces && supports_typefaces();
             if (library) dlclose(library);
         }
         active = this;
@@ -135,7 +140,8 @@ public:
         for (auto token : tokens_) s_shared_picture_pixels.retire(token);
     }
     sk_sp<SkData> encode(sk_sp<SkData> bytes, bool typeface = false) {
-        if (!enabled_ || !bytes || (typeface ? !typefaces_enabled_ : bytes->size() < 64 * 1024)) return bytes;
+        if (!enabled_ || !bytes || (typeface ? !typefaces_enabled_
+                : (!images_enabled_ || bytes->size() < 64 * 1024))) return bytes;
         for (auto const& input : inputs_)
             if (input.typeface == typeface && input.size == bytes->size()
                 && (input.bytes == bytes->data() || !std::memcmp(input.bytes, bytes->data(), input.size)))

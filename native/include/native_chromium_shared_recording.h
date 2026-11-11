@@ -735,6 +735,11 @@ void finish_shared_recording()
         if (draw_retained_layer_tiles(*group, picture.get(), pixels, width, height, left, top)) {
             // Retained transparent ink joins the same backdrop/publication path.
         } else {
+            // Lease each embedded font by token for this publication instead of
+            // copying multi-megabyte font files into every layer picture and
+            // comparing them again while decoding each frame.
+            SharedPicturePixelsScope shared_typefaces(true, true);
+            procs.fTypefaceProc = serialize_shared_picture_typeface;
             bytes = picture->serialize(&procs);
             if (!bytes || bytes->size() > 64 * 1024 * 1024) return;
             // Shared image/typeface tokens denote immutable owned resources;

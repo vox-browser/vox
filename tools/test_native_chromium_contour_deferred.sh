@@ -11,7 +11,7 @@ skia_root="$upstream_dir/Build/release/vcpkg_installed/${LADYBIRD_VCPKG_TRIPLET:
 output_dir=${NATIVE_SKIA_TEST_OUTPUT_DIR:-"$repo_dir/Build/native-chromium-contour-deferred"}
 graphite_dir=${NATIVE_GRAPHITE_DAWN_DIR:-"$repo_dir/Build/v/Vox.app/Contents/MacOS"}
 mkdir -p "$output_dir"
-for test_name in native_chromium_contour_deferred_test native_chromium_corner_shape_paint_test; do
+for test_name in native_chromium_contour_deferred_test native_chromium_corner_shape_paint_test native_shared_layer_typeface_test; do
     clang++ -std=c++20 -O2 -fno-rtti -x objective-c++ \
         -I"$skia_root/include/skia" -I"$skia_root/include" \
         "$repo_dir/tools/$test_name.cpp" -L"$skia_root/lib" -lskia \
