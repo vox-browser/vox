@@ -66,6 +66,8 @@ pub mut:
 	resource                 DocumentResource = EmptyDocumentResource{}
 	reload_pending           bool
 	ever_populated           bool
+	// Whether the user agent supplied the URL when this history entry was created.
+	user_agent_initiated     bool
 	navigable_target_name    string
 }
 
@@ -90,6 +92,7 @@ pub fn (state &DocumentState) clone() &DocumentState {
 		resource: state.resource
 		reload_pending: state.reload_pending
 		ever_populated: state.ever_populated
+		user_agent_initiated: state.user_agent_initiated
 		navigable_target_name: state.navigable_target_name
 	}
 }

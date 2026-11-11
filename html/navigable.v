@@ -1495,6 +1495,7 @@ fn (mut model NavigableModel) begin_navigation(params NavigableNavigateParams) {
 	mut state := &DocumentState{
 		origin: params.url.origin()
 		initiator_origin: initiator_origin
+		user_agent_initiated: params.source_document == unsafe { nil }
 		request_referrer_policy: params.referrer_policy
 		resource: params.document_resource
 		ever_populated: false
@@ -1841,9 +1842,16 @@ fn (mut model NavigableModel) navigate_to_a_javascript_url(url dom.URL, history_
 		model.set_ongoing_navigation(NavigableOngoingNavigation{})
 		return
 	}
+	mut user_agent_initiated := false
+	if old_entry := model.active_session_history_entry_ {
+		if old_state := old_entry.document_state {
+			user_agent_initiated = old_state.user_agent_initiated
+		}
+	}
 	state := &DocumentState{
 		document: document
 		document_id_: document.unique_id()
+		user_agent_initiated: user_agent_initiated
 		origin: initiator_origin
 		ever_populated: true
 		navigable_target_name: model.target_name()
