@@ -511,9 +511,12 @@ fn (mut connection WebSocketConnection) exchange(mut stream WebSocketStream, ini
 					return
 				}
 				9 {
-					stream.write_all(websocket_frame(10, frame.payload)) or {
-						connection.fail()
-						return
+					// Stop answering pings once our closing handshake has started.
+					if !close_sent {
+						stream.write_all(websocket_frame(10, frame.payload)) or {
+							connection.fail()
+							return
+						}
 					}
 				}
 				10 {}
