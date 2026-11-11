@@ -712,7 +712,7 @@ pub fn set_sec_fetch_user_header(mut request Request) {
 }
 
 pub fn append_fetch_metadata_headers_for_request(mut request Request) {
-	if securecontexts.is_url_potentially_trustworthy(request.url()) != .potentially_trustworthy {
+	if securecontexts.is_url_potentially_trustworthy(request.current_url()) != .potentially_trustworthy {
 		return
 	}
 	set_sec_fetch_dest_header(mut request)
