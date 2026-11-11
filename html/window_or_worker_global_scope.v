@@ -69,6 +69,7 @@ mut:
 	// Time left until the timer is due when its document was frozen; none
 	// while its clock runs.
 	frozen_remaining_ms ?f64
+	firing_queued       bool
 }
 
 pub struct PerformanceEntry {
@@ -472,12 +473,23 @@ fn (mut scope WindowOrWorkerGlobalScopeMixin) run_timer_initialization_steps(han
 			owner.remove_timer(id)
 		}
 	}
-	completion := fn [owner_handle, task_steps, nesting_level] () {
-		owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
+	completion := fn [owner_handle, task_steps, nesting_level, id] () {
+		mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
+		mut timer := owner.active_timers_[id] or { return }
+		// A repeating platform clock may fire while its previous task is still
+		// queued, or deliver a firing posted before the timer was restarted.
+		if timer.firing_queued || (timer.repeat && owner.timer_now_ms() < timer.due_time_ms) {
+			return
+		}
+		timer.firing_queued = true
+		owner.active_timers_[id] = timer
 		mut document := ?&dom.Document(none)
 		if window := owner.associated_window_ { document = window.associated_document() }
-		mut queued_task := Task.create(.timer_task, document, fn [owner_handle, task_steps] () {
-			owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
+		mut queued_task := Task.create(.timer_task, document, fn [owner_handle, task_steps, id] () {
+			mut owner := unsafe { &WindowOrWorkerGlobalScopeMixin(owner_handle) }
+			mut timer := owner.active_timers_[id] or { return }
+			timer.firing_queued = false
+			owner.active_timers_[id] = timer
 			if mut realm := owner.error_reporting_realm_ {
 				mut context := TemporaryExecutionContext.create(mut realm, .yes)
 				defer { context.close() }
