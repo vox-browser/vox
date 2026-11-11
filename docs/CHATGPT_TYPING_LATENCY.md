@@ -55,20 +55,54 @@ switches (`VOX_REUSE_DAWN_REGION_RECORDER`, `VOX_REUSE_DAWN_REGION_TARGET`,
 `VOX_SHARED_PICTURE_TYPEFACES`) were inconclusive on this workload (two pairs,
 one better, one equal).
 
+## Text-control relayout (`96c727d87`)
+
+Layout invalidations now record where they originate. When every origin
+since the previous pass lies inside textarea/text-input editors (no tree
+rebuild; same viewport, fonts, style environment and replaced natural sizes),
+the pass restores the previous geometry and repeats only each control's last
+committed inner layout. It is kept only if the control's automatic block size
+(and inline size when not already definite) and baselines are unchanged;
+otherwise the complete pass runs. The first character of an empty editor, a
+taller fallback-font glyph, a new line in a growing textarea and any change
+outside the control all take the complete pass.
+`VOX_DISABLE_TEXT_CONTROL_RELAYOUT=1` disables it,
+`VOX_TEXT_CONTROL_RELAYOUT_DIAGNOSTICS=1` reports each decision and
+`VOX_VERIFY_TEXT_CONTROL_RELAYOUT=1` compares every accepted pass with a
+complete one.
+
+Live ChatGPT on a private `-prod` single-unit bundle, same binary, three
+alternating pairs (kill switch on → off):
+
+| Pair | Instructions/key | keyDown handled (median) | `present` median |
+| --- | --- | --- | --- |
+| 1 | 469.9 M → 311.6 M | 47.4 → 13.7 ms | 99.7 → 69.7 ms |
+| 2 | 473.2 M → 320.2 M | 36.6 → 11.2 ms | 89.5 → 62.8 ms |
+| 3 | 467.2 M → 319.0 M | 41.0 → 9.4 ms | 92.6 → 57.0 ms |
+
+Host load averages were 42–58. With verification enabled, 42 of 45 keystroke
+passes took the fast path and all matched the complete pass with zero
+geometry mismatches; three fell back on unrelated DOM changes.
+`browserapp/text_control_relayout_test.v` (4 cases) and
+`browserapp/keyboard_input_test.v` (12 cases) pass with the default
+collector; the new tests also pass under the verifier with zero mismatches.
+Under `-prealloc -gc none` the new test file crashes in an ordinary complete
+pass (`Document.cursor_position` during grid intrinsic sizing) with the
+feature disabled as well; that fixture problem predates this change.
+Layout-module `_test.v` files currently exhaust the 10 GiB compiler limit
+even at an unmodified checkout, so the focused tests live in `browserapp/`.
+
 ## Remaining work
 
-- **Text controls as relayout boundaries.** The large saving needs the
-  retained block and grid-measurement caches to treat a textarea/text input as
-  an opaque input: collect its style but not its UA shadow subtree, re-lay out
-  only its inside on reuse, and accept the reuse only when the control's
-  clamped automatic height and its baseline (empty versus non-empty) match the
-  snapshot. Ancestor intrinsic-size caches must be kept or revalidated the same
-  way. The fixed footer and its `container-type: inline-size` grid stay
-  uncached, but their children could then be reused.
-- **Effect-layer and corner-shape rasterization** without per-frame surface
-  creation, font-byte serialization and synchronous readback.
+- **Frame drawing** is now the largest per-keystroke cost: the composer's
+  corner-shape box and CSS effect layer re-record a picture every frame,
+  serialize it with embedded font bytes, create a new IOSurface/Metal texture
+  and wait for a synchronous GPU readback.
 - **Cosmetic-filter refresh per script commit.** The light-DOM id/class token
   stamp is scoped to GitHub; other sites re-survey on any attribute change and
   query the filter worker every commit even when the tokens are unchanged.
+- The fast path covers text controls only. Other edits still lay out every
+  uncached ancestor; a general size-unchanged relayout boundary in the
+  retained block/grid caches would extend it.
 - Vox ignores `field-sizing` in layout; textarea growth here comes from its
   content-derived automatic height, not from the property.
