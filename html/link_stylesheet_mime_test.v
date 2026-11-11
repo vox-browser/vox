@@ -96,6 +96,12 @@ fn test_dom_stylesheet_type_changes_remove_and_refetch_without_reloading_support
 fn test_unsupported_type_cancels_pending_stylesheet_load_state() {
 	mut document, mut element, mut model := stylesheet_mime_test_document()!
 	defer { document.finalize() }
+	// Exercise the parser's head phase, before a body allows rendering.
+	document.set_content_type('text/html')
+	body := document.body() or { panic('missing body') }
+	mut body_node := unsafe { &dom.Element(body) }.as_node()
+	body_node.remove(false)
+	assert document.allows_adding_render_blocking_elements()
 	model.set_fetch_hook(none)
 	model.set_external_stylesheet_fetcher(true)
 	model.set_parser_state(true, true)

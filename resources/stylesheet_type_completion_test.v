@@ -10,8 +10,15 @@ import html
 fn stylesheet_type_completion_document() !(&dom.Document, &dom.Element) {
 	mut document := dom.Document.create(dom.URL{ value: 'https://stylesheet-type.test/' })
 	document.set_document_type(.html)
+	document.set_content_type('text/html')
 	document.set_origin(document.url.origin())
 	document.populate_with_html_head_and_body()!
+	// Keep the document in the parser's head phase so the stylesheet blocks
+	// rendering as well as scripts and document load completion.
+	body := document.body() or { return error('missing body') }
+	mut body_node := unsafe { &dom.Element(body) }.as_node()
+	body_node.remove(false)
+	assert document.allows_adding_render_blocking_elements()
 	_ = html.WindowModel.create_top_level(document, none, '')!
 	mut link := document.create_element('link')!
 	link.set_attribute_value('rel', 'stylesheet')
