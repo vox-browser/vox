@@ -113,8 +113,8 @@ fn copy_rows(destination voidptr, destination_stride int, source voidptr, source
 	}
 	for y in 0 .. height {
 		unsafe {
-			vmemcpy(voidptr(usize(destination) + usize(y * destination_stride * 4)), voidptr(usize(source) +
-				usize(y * source_stride * 4)), width * 4)
+			vmemcpy(&u8(destination) + y * destination_stride * 4, &u8(source) + y * source_stride * 4,
+				width * 4)
 		}
 	}
 }
