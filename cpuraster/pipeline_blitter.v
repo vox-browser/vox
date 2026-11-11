@@ -377,8 +377,14 @@ enum CoverageKind {
 }
 
 // blit runs the pipeline over count pixels from (x, y).
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit(x int, y int, count int, kind CoverageKind, coverage u8) {
 	offset := b.offset(x, y)
+	if kind == .none && b.lowp && b.shaded && !b.imaged && !b.scaled && !b.tinted
+		&& b.mode == .src_over {
+		b.blit_lowp_shaded_over(x, y, count, offset)
+		return
+	}
 	for i in 0 .. count {
 		o := offset + i * 4
 		if b.lowp {
@@ -393,12 +399,18 @@ fn (mut b PipelineBlitter) blit_h(x int, y int, width int) {
 	b.blit_rect(x, y, width, 1)
 }
 
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit_rect(x int, y int, width int, height int) {
 	for row in 0 .. height {
 		offset := b.offset(x, y + row)
 		if b.memset {
+			color := b.memset_color
 			for i in 0 .. width {
-				store32(mut b.pixels, offset + i * 4, b.memset_color)
+				o := offset + i * 4
+				b.pixels[o] = u8(color)
+				b.pixels[o + 1] = u8(color >> 8)
+				b.pixels[o + 2] = u8(color >> 16)
+				b.pixels[o + 3] = u8(color >> 24)
 			}
 		} else {
 			b.blit(x, y + row, width, .none, 0)
@@ -504,6 +516,7 @@ fn lowp_lerp(from u32, to u32, t u32) u32 {
 
 // The per-channel lowp blend modes, s and d being one channel of the source
 // and destination.
+@[inline]
 fn lowp_channel(mode BlendMode, s u32, d u32, sa u32, da u32) u32 {
 	return match mode {
 		.src_atop {
@@ -585,6 +598,51 @@ fn lowp_alpha_is_srcover(mode BlendMode) bool {
 	return mode in [.darken, .lighten, .difference, .exclusion, .hard_light, .overlay]
 }
 
+// blit_lowp() for a full-coverage source-over gradient span, with the
+// stage selection made once for the span: shade, clamp_01, srcover and
+// store_8888.
+@[direct_array_access]
+fn (mut b PipelineBlitter) blit_lowp_shaded_over(x int, y int, count int, offset int) {
+	shader := b.shader
+	if shader.geometry == .linear {
+		mut colors := [256]u32{}
+		mut done := 0
+		for done < count {
+			n := if count - done < 64 { count - done } else { 64 }
+			shader.shade_lowp_linear_span(x + done, y, n, mut colors)
+			for i in 0 .. n {
+				b.blend_lowp_over(offset + (done + i) * 4, colors[i * 4], colors[i * 4 + 1],
+					colors[i * 4 + 2], colors[i * 4 + 3])
+			}
+			done += n
+		}
+		return
+	}
+	for i in 0 .. count {
+		src := shader.shade_lowp(x + i, y)
+		b.blend_lowp_over(offset + i * 4, src[0], src[1], src[2], src[3])
+	}
+}
+
+// clamp_01, srcover and store_8888 of one lowp color at offset o.
+@[direct_array_access; inline]
+fn (mut b PipelineBlitter) blend_lowp_over(o int, sr u32, sg u32, sb u32, sa u32) {
+	r := lowp_min(sr, 255)
+	g := lowp_min(sg, 255)
+	bl := lowp_min(sb, 255)
+	a := lowp_min(sa, 255)
+	inv_a := lowp_inv(a)
+	nr := u16w(r + lowp_div255(u16w(u32(b.pixels[o]) * inv_a)))
+	ng := u16w(g + lowp_div255(u16w(u32(b.pixels[o + 1]) * inv_a)))
+	nb := u16w(bl + lowp_div255(u16w(u32(b.pixels[o + 2]) * inv_a)))
+	na := u16w(a + lowp_div255(u16w(u32(b.pixels[o + 3]) * inv_a)))
+	b.pixels[o] = u8(lowp_min(nr, 255))
+	b.pixels[o + 1] = u8(lowp_min(ng, 255))
+	b.pixels[o + 2] = u8(lowp_min(nb, 255))
+	b.pixels[o + 3] = u8(lowp_min(na, 255))
+}
+
+@[direct_array_access]
 fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, coverage u8) {
 	// The color or shader, scale_1_float, and clamp_01: min(v, 255).
 	mut src := if b.imaged {
@@ -625,7 +683,14 @@ fn (mut b PipelineBlitter) blit_lowp(px int, py int, o int, kind CoverageKind, c
 	dg := u32(b.pixels[o + 1])
 	db := u32(b.pixels[o + 2])
 	da := u32(b.pixels[o + 3])
-	if b.mode != .src {
+	if b.mode == .src_over {
+		// lowp_channel(.src_over) for all four channels, alpha included.
+		inv_a := lowp_inv(a)
+		r = u16w(r + lowp_div255(u16w(dr * inv_a)))
+		g = u16w(g + lowp_div255(u16w(dg * inv_a)))
+		bl = u16w(bl + lowp_div255(u16w(db * inv_a)))
+		a = u16w(a + lowp_div255(u16w(da * inv_a)))
+	} else if b.mode != .src {
 		nr := lowp_channel(b.mode, r, dr, a, da)
 		ng := lowp_channel(b.mode, g, dg, a, da)
 		nb := lowp_channel(b.mode, bl, db, a, da)

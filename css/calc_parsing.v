@@ -25,6 +25,7 @@ type CalcNode = CalcNumeric
 	| CalcAnchorSize
 	| CalcTreeCounting
 	| CalcChannel
+	| CalcSizeKeyword
 
 // The kind of a numeric leaf, mirroring the C++ NumericValue variant.
 enum CalcNumericKind {
@@ -98,6 +99,11 @@ struct CalcTreeCounting {
 struct CalcChannel {
 	name string
 }
+
+// The size keyword of a calc-size() calculation: a <length> standing for the
+// resolved basis, supplied at used-value time.
+// https://drafts.csswg.org/css-values-5/#valdef-calc-size-size
+struct CalcSizeKeyword {}
 
 // anchor() is a non-math calculation leaf whose length is supplied by layout
 // after the anchor box and the inset axis are known.
@@ -248,7 +254,16 @@ fn calc_type_matches(numeric_type NumericType, kind CalcMatchKind, percentages_r
 // Try to parse a calc that resolves to the given kind. Consumes from `tokens` only on success.
 fn (mut parser Parser) parse_calculated_value_of_kind(mut tokens ComponentValueStream, kind CalcMatchKind) ?StyleValue {
 	mut transaction := tokens.clone()
-	context := parser.calculation_context()
+	mut context := parser.calculation_context()
+	if !calc_kind_allows_percentages(kind, context.percentages_resolve_as) {
+		// Percentages here resolve against nothing. Any percentage invalidates
+		// the calculation, even one that cancels out (calc(10% * 1deg / 1%)),
+		// so check the source before parsing simplifies it away.
+		if tokens.index < tokens.values.len && component_value_contains_percentage(tokens.values[tokens.index]) {
+			return none
+		}
+		context.percentages_resolve_as = none
+	}
 	value := parser.parse_calculated_value_with_context(mut transaction, context, parser.context_allows_tree_counting_functions()) or { return none }
 	if value is CalculatedStyleValue {
 		numeric_type := value.numeric_type() or { return none }
@@ -258,6 +273,34 @@ fn (mut parser Parser) parse_calculated_value_of_kind(mut tokens ComponentValueS
 		}
 	}
 	return none
+}
+
+// A calculation for a dimension without a <percentage> alternative, such as
+// the <angle> of rotate(), takes percentages only where the context resolves
+// them against that dimension. Elsewhere a percentage has nothing to resolve
+// against, so atan2(90px, 100%) is invalid there even though its arguments
+// have a consistent type.
+fn calc_kind_allows_percentages(kind CalcMatchKind, percentages_resolve_as ?ValueType) bool {
+	dimension := match kind {
+		.angle { ValueType.angle }
+		.time { ValueType.time }
+		.frequency { ValueType.frequency }
+		.resolution { ValueType.resolution }
+		.flex { ValueType.flex }
+		else { return true }
+	}
+	resolves_as := percentages_resolve_as or { return false }
+	return resolves_as == dimension
+}
+
+fn component_value_contains_percentage(component_value ComponentValue) bool {
+	if component_value.is_function() {
+		return component_value.function().value.any(component_value_contains_percentage(it))
+	}
+	if component_value.is_block() {
+		return component_value.block().value.any(component_value_contains_percentage(it))
+	}
+	return component_value.is_token() && component_value.token().type_ == .percentage
 }
 
 fn (mut parser Parser) parse_calc_function_node(function Function, allow_tree_counting_functions bool) ?CalcNode {
@@ -612,6 +655,9 @@ fn (mut parser Parser) convert_calc_leaf(component_value ComponentValue, allow_t
 		return parser.parse_calc_function_node(component_value.function(), allow_tree_counting_functions)
 	}
 	if component_value.is(.ident) {
+		if parser.allow_calc_size_keyword && equals_ignoring_ascii_case(component_value.token().ident(), 'size') {
+			return CalcNode(CalcSizeKeyword{})
+		}
 		if parser.relative_color_channels.len > 0 {
 			name := to_ascii_lowercase(component_value.token().ident())
 			if name in parser.relative_color_channels {
@@ -694,7 +740,7 @@ fn apply_calculation_context_to_calc_node(node CalcNode, context CalculationCont
 			}
 			return node
 		}
-		CalcTreeCounting, CalcChannel {
+		CalcTreeCounting, CalcChannel, CalcSizeKeyword {
 			return node
 		}
 		CalcAnchor, CalcAnchorSize {
@@ -785,7 +831,7 @@ fn (node CalcNode) numeric_type() ?NumericType {
 		CalcTreeCounting, CalcChannel {
 			return NumericType.new()
 		}
-		CalcAnchor, CalcAnchorSize {
+		CalcAnchor, CalcAnchorSize, CalcSizeKeyword {
 			return NumericType.with_type(.length, 1)
 		}
 		CalcSum {
@@ -864,8 +910,12 @@ fn calc_function_numeric_type(name string, children []CalcNode) ?NumericType {
 		}
 		'atan2' {
 			// consistent <number>|<dimension>|<percentage> in, <angle> out.
-			calc_consistent_children_type(children) or { return none }
-			return NumericType.with_type(.angle, 1)
+			// The arguments' percent hint carries over, so atan2(90px, 100%)
+			// matches <angle> only where percentages resolve against lengths.
+			consistent := calc_consistent_children_type(children) or { return none }
+			mut result := NumericType.with_type(.angle, 1)
+			result.percent_hint = consistent.percent_hint
+			return result
 		}
 		'pow', 'sqrt', 'exp', 'log' {
 			// <number> in, <number> out.
@@ -932,6 +982,9 @@ fn serialize_a_calculation_tree(node CalcNode, emit_outer_parentheses bool) stri
 		}
 		CalcChannel {
 			return node.name
+		}
+		CalcSizeKeyword {
+			return 'size'
 		}
 		CalcAnchor {
 			return node.style_value.serialize(.normal)

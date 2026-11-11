@@ -48,7 +48,9 @@ pub fn regex_first_filter_matches(program RegexProgram, input RegexInput, pos ui
 pub fn regex_next_candidate_start(program RegexProgram, input RegexInput, hints RegexPatternHints, start uint) ?uint {
 	mut pos := start
 	for pos <= input.len() {
-		if program.unicode && !hints.can_match_empty && pos > 0 && pos < input.len()
+		// Ladybird aa125429b608: even an empty match must start at a
+		// code-point boundary in Unicode mode.
+		if program.unicode && pos > 0 && pos < input.len()
 			&& is_utf16_low_surrogate(input.code_unit(pos))
 			&& is_utf16_high_surrogate(input.code_unit(pos - 1)) {
 			pos++

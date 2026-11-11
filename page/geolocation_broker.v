@@ -6,6 +6,7 @@
 module page
 
 import geolocation
+import platform
 
 pub type GeolocationPositionResult = geolocation.CoordinatesData
 	| geolocation.GeolocationPositionErrorCode
@@ -20,10 +21,13 @@ pub enum GeolocationRequestType {
 pub fn (mut p Page) request_geolocation_position(callback GeolocationPositionCallback, type_ GeolocationRequestType) u64 {
 	request_id := p.next_geolocation_request_id
 	p.next_geolocation_request_id++
+	// The Page outlives the requesting document's arena.
+	persistent := platform.enter_persistent()
 	p.pending_geolocation_requests[request_id] = PendingGeolocationRequest{
 		callback: callback
 		type_: type_
 	}
+	platform.leave_persistent(persistent)
 
 	if type_ == .watch {
 		p.client_.page_did_start_geolocation_position_watch(request_id)

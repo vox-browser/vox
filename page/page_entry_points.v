@@ -6,6 +6,7 @@
 module page
 
 import dom
+import platform
 import painting
 
 pub enum PageDragEventType {
@@ -166,7 +167,7 @@ pub fn (mut p Page) handle_keyup(key int, modifiers u32, code_point u32, repeat 
 }
 
 pub fn (mut p Page) handle_sdl_input_events() {
-	p.client_events << ClientEvent{ name: 'poll-sdl-input-events' }
+	p.queue_client_event(ClientEvent{ name: 'poll-sdl-input-events' })
 }
 
 pub fn (p &Page) top_level_browsing_context() string {
@@ -250,7 +251,7 @@ pub fn (mut p Page) accept_dialog(on_closed fn ()) {
 pub fn (mut p Page) on_pending_dialog_closed() {
 	p.pending_dialog_ = .none
 	p.pending_dialog_text_ = none
-	p.client_events << ClientEvent{ name: 'pending-dialog-closed' }
+	p.queue_client_event(ClientEvent{ name: 'pending-dialog-closed' })
 	if on_closed := p.on_pending_dialog_closed_ {
 		p.on_pending_dialog_closed_ = none
 		on_closed()
@@ -268,7 +269,7 @@ pub fn (mut p Page) color_picker_update(value ?string, final bool) {
 		return
 	}
 	if final { p.close_non_blocking_dialog(.color_picker) }
-	if actual := value { p.client_events << ClientEvent{ name: 'color-picker-update', text: actual } }
+	if actual := value { p.queue_client_event(ClientEvent{ name: 'color-picker-update', text: actual }) }
 }
 
 pub fn (mut p Page) did_request_file_picker(target string, filter string, multiple bool) {
@@ -281,7 +282,7 @@ pub fn (mut p Page) file_picker_closed(files []SelectedFile) {
 	if p.close_non_blocking_dialog(.file_picker) == none {
 		return
 	}
-	p.client_events << ClientEvent{ name: 'file-picker-closed', text: files.len.str() }
+	p.queue_client_event(ClientEvent{ name: 'file-picker-closed', text: files.len.str() })
 }
 
 pub fn (mut p Page) did_request_select_dropdown(target string, position PixelPoint,
@@ -295,10 +296,10 @@ pub fn (mut p Page) select_dropdown_closed(selected ?u32) {
 	if p.close_non_blocking_dialog(.select) == none {
 		return
 	}
-	p.client_events << ClientEvent{
+	p.queue_client_event(ClientEvent{
 		name: 'select-dropdown-closed'
 		text: if value := selected { value.str() } else { '' }
-	}
+	})
 }
 
 pub fn (p &Page) for_each_media_element(callback fn (u64, MediaElementState)) {
@@ -308,22 +309,24 @@ pub fn (p &Page) for_each_media_element(callback fn (u64, MediaElementState)) {
 }
 
 pub fn (mut p Page) update_all_media_element_video_sinks() {
-	p.client_events << ClientEvent{ name: 'update-media-video-sinks', text: p.media_elements.len.str() }
+	p.queue_client_event(ClientEvent{ name: 'update-media-video-sinks', text: p.media_elements.len.str() })
 	if p.media_elements.len > 0 {
 		p.client_.request_frame()
 	}
 }
 
 pub fn (mut p Page) register_canvas_element(id u64) {
-	if id !in p.canvas_elements_ { p.canvas_elements_[id] = CanvasElementState{} }
+	if id !in p.canvas_elements_ { p.store_canvas_element(id, CanvasElementState{}) }
 }
 
 pub fn (mut p Page) register_canvas_element_with_state(id u64, state CanvasElementState) {
-	p.canvas_elements_[id] = state
+	p.store_canvas_element(id, state)
 }
 
 pub fn (mut p Page) unregister_canvas_element(id u64) {
+	persistent := platform.enter_persistent()
 	p.canvas_elements_.delete(id)
+	platform.leave_persistent(persistent)
 }
 
 pub fn (p &Page) for_each_canvas_element(callback fn (u64)) {
@@ -338,7 +341,7 @@ pub fn (p &Page) canvas_element_state(id u64) ?CanvasElementState {
 }
 
 pub fn (mut p Page) present_all_canvas_element_surfaces() {
-	p.client_events << ClientEvent{ name: 'present-canvas-surfaces', text: p.canvas_elements_.len.str() }
+	p.queue_client_event(ClientEvent{ name: 'present-canvas-surfaces', text: p.canvas_elements_.len.str() })
 }
 
 pub fn (mut p Page) did_request_media_context_menu(id u64, position PixelPoint, target string,

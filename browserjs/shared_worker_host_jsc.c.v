@@ -114,11 +114,15 @@ fn (mut host SharedWorkerHost) construct(args []voidptr) ! {
 		name: runtime.binding_dom_string(args[4])!
 		type_: if runtime.binding_dom_string(args[5])! == 'module' { .module_ } else { .classic }
 	}
+	// A remote worker is shared by every connecting document and outlives
+	// the one whose script (and document arena) created it.
+	record_storage := platform.enter_persistent()
 	key := json2.encode([host.settings.origin().serialize(), url.serialize(), options.name])
 	mut remote := remote_shared_workers_[key] or {
-		&RemoteSharedWorker{key: key, options: options, secure: host.settings.is_secure_context()}
+		&RemoteSharedWorker{key: key, options: html.WorkerOptions{...options, name: options.name.clone()}, secure: host.settings.is_secure_context()}
 	}
-	if remote.closed { remote = &RemoteSharedWorker{key: key, options: options, secure: host.settings.is_secure_context()} }
+	if remote.closed { remote = &RemoteSharedWorker{key: key, options: html.WorkerOptions{...options, name: options.name.clone()}, secure: host.settings.is_secure_context()} }
+	platform.leave_persistent(record_storage)
 	if remote.secure != host.settings.is_secure_context() {
 		return webidl.throw_value(webidl.dom_exception_value(webidl.DOMException.create('SecurityError', 'SharedWorker secure context mismatch')))
 	}
@@ -144,7 +148,9 @@ fn (mut host SharedWorkerHost) construct(args []voidptr) ! {
 		host.queue_failure(connection)
 		return
 	}
+	owner_storage := platform.enter_persistent()
 	remote.owners << connection
+	platform.leave_persistent(owner_storage)
 	if remote.options.type_ != options.type_ || remote.options.credentials != options.credentials {
 		host.queue_failure(connection)
 		return
@@ -155,7 +161,9 @@ fn (mut host SharedWorkerHost) construct(args []voidptr) ! {
 		mut process := WorkerProcess.spawn(host.executable) or { remote.finish(true); return }
 		process.queue(u32(WorkerAgentFrameKind.start), startup) or { process.close(); remote.finish(true); return }
 		remote.process = process
+		registry_storage := platform.enter_persistent()
 		remote_shared_workers_[key] = remote
+		platform.leave_persistent(registry_storage)
 	}
 	inside := runtime.javascript_message_port(channel.port2())!
 	message := host.transfer.serialize_for_worker(C.vox_jsc_JSValueMakeNull(runtime.context), [inside], ports)!

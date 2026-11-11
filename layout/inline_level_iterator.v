@@ -22,6 +22,7 @@ pub struct InlineLevelItem {
 pub:
 	type_                     InlineLevelItemType
 	node                      ?&Node
+	style_source              ?&Node
 	glyph_run                 ?&platform.GlyphRun
 	offset_in_node            int
 	length_in_node            int
@@ -88,6 +89,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 	prefix := InlineLevelItem{
 		type_: .text
 		node: node
+		style_source: item.style_source
 		glyph_run: prefix_run
 		offset_in_node: item.offset_in_node
 		length_in_node: split - item.offset_in_node
@@ -102,6 +104,7 @@ fn overflow_split_items(item &InlineLevelItem, node &Node, split int,
 	remainder := InlineLevelItem{
 		type_: .text
 		node: node
+		style_source: item.style_source
 		glyph_run: remainder_run
 		offset_in_node: split
 		length_in_node: item.offset_in_node + item.length_in_node - split
@@ -225,8 +228,9 @@ fn (item &InlineLevelItem) split_for_overflow_break(maximum_width CSSPixels, tak
 		return none
 	}
 
-	letter_spacing := f32(resolved_text_spacing_for_shaping(node, .letter_spacing))
-	word_spacing := f32(resolved_text_spacing_for_shaping(node, .word_spacing))
+	style_source := inline_item_style_source(item)
+	letter_spacing := f32(resolved_text_spacing_for_shaping(style_source, .letter_spacing))
+	word_spacing := f32(resolved_text_spacing_for_shaping(style_source, .word_spacing))
 	leading_width := css_pixels_sum3(item.margin_start, item.border_start, item.padding_start)
 	mut split := -1
 	for boundary in boundaries {
@@ -322,6 +326,7 @@ mut:
 	next_item_index                int
 	accumulated_width_for_tabs     CSSPixels
 	previous_chunk_can_break_after bool
+	first_line_items              ?&FirstLineItems
 }
 
 pub fn InlineLevelIterator.new(mut state LayoutState, containing_block &BlockContainer, containing_block_used_values &UsedValues, layout_mode LayoutMode, available_space AvailableSpace, parent_block_context ?&BlockFormattingContext) &InlineLevelIterator {
@@ -413,6 +418,7 @@ fn (mut iterator InlineLevelIterator) generate_all_items() {
 }
 
 pub fn (mut iterator InlineLevelIterator) next() ?InlineLevelItem {
+	iterator.finish_first_line_before_next_item()
 	if iterator.next_item_index >= iterator.items.len {
 		return none
 	}
@@ -659,6 +665,9 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		if context.should_respect_linebreaks && chunk.has_breaking_newline {
 			return InlineLevelItem{
 				type_: .forced_break
+				node: current
+				offset_in_node: chunk.start
+				length_in_node: chunk.length
 			}
 		}
 		computed := text_node.Node.computed_values()
@@ -1010,6 +1019,10 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	} else {
 		width = resolve_layout_content_size(unsafe { &Node(box) }, preferred_width, iterator.available_space.width.to_px_or_zero(), state, true) or { CSSPixels.new(0) }
 	}
+	if size_has_keyword_calc_size(preferred_width) {
+		width = resolve_calc_size_for_box(computed, state, preferred_width, true, width,
+			if iterator.available_space.width.is_definite() { ?CSSPixels(iterator.available_space.width.to_px_or_zero()) } else { ?CSSPixels(none) })
+	}
 	// A percentage maximum is cyclic while measuring an atomic inline's
 	// intrinsic contribution. Keep its initial 'none' value in that pass;
 	// resolving it against the placeholder zero erases the containing flex
@@ -1022,6 +1035,7 @@ fn (mut iterator InlineLevelIterator) dimension_box_on_line(box &Box) {
 	} else {
 		width = clamp_layout_content_size(box_node, width, iterator.available_space.width.to_px_or_zero(), state, true)
 	}
+	width = apply_intrinsic_width_limits(mut iterator.state, box_node, state, width, iterator.available_space.width)
 	state.set_content_width(width)
 
 	preferred_height := computed.size_value(.height)

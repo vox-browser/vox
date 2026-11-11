@@ -20,7 +20,7 @@ pub fn SymbolReader.new(hist Histograms, mut reader BitReader, image_width ?u32)
 	}
 }
 
-fn (mut symbols SymbolReader) token(hist Histograms, cluster int, mut reader BitReader) !u32 {
+fn (mut symbols SymbolReader) token(hist &Histograms, cluster int, mut reader BitReader) !u32 {
 	codes := hist.codes
 	return match codes {
 		AnsCodes { symbols.ans.read(codes, cluster, mut reader)! }
@@ -28,20 +28,20 @@ fn (mut symbols SymbolReader) token(hist Histograms, cluster int, mut reader Bit
 	}
 }
 
-pub fn (mut symbols SymbolReader) read_unsigned(hist Histograms, context int, mut reader BitReader) !u32 {
+pub fn (mut symbols SymbolReader) read_unsigned(hist &Histograms, context int, mut reader BitReader) !u32 {
 	cluster := hist.map_context_to_cluster(context)!
 	return symbols.read_unsigned_clustered(hist, cluster, mut reader)
 }
 
-pub fn (mut symbols SymbolReader) read_signed(hist Histograms, context int, mut reader BitReader) !i32 {
+pub fn (mut symbols SymbolReader) read_signed(hist &Histograms, context int, mut reader BitReader) !i32 {
 	return unpack_signed(symbols.read_unsigned(hist, context, mut reader)!)
 }
 
-pub fn (mut symbols SymbolReader) read_signed_clustered(hist Histograms, cluster int, mut reader BitReader) !i32 {
+pub fn (mut symbols SymbolReader) read_signed_clustered(hist &Histograms, cluster int, mut reader BitReader) !i32 {
 	return unpack_signed(symbols.read_unsigned_clustered(hist, cluster, mut reader)!)
 }
 
-pub fn (mut symbols SymbolReader) read_unsigned_clustered(hist Histograms, cluster int, mut reader BitReader) !u32 {
+pub fn (mut symbols SymbolReader) read_unsigned_clustered(hist &Histograms, cluster int, mut reader BitReader) !u32 {
 	if cluster < 0 || cluster >= hist.uint_configs.len {
 		return error('Invalid JPEG XL entropy cluster')
 	}

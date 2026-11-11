@@ -51,7 +51,7 @@ fn grid_vertical_baseline_column_shims(mut state LayoutState, container &Node, c
   mut initial := measure.get_mutable(styled)
   initial.set_containing_block_used_values(parent)
   resolve_box_model_edges(computed,mut initial,parent.content_width().to_double())
-  width := resolve_layout_content_size(item,computed.size_value(.width),parent.content_width(),initial,true) or { calculate_max_content_width(mut measure,box) }
+  width := resolve_layout_content_size(item,computed.size_value(.width),parent.content_width(),initial,true) or { grid_orthogonal_baseline_intrinsic_width(mut measure,item) or { calculate_max_content_width(mut measure,box) } }
   height := if parent.has_definite_height() { ?CSSPixels(parent.content_height()) } else { ?CSSPixels(none) }
   mut values := layout_independent_child(mut measure,item,mut parent,parent.content_width(),height,width,none)
   values.margin_left = css_px(computed.length_percentage_to_px(.margin_left,parent.content_width().to_double()) or { 0.0 })
@@ -78,7 +78,7 @@ fn grid_vertical_baseline_column_shims(mut state LayoutState, container &Node, c
 
 // Row sizing follows the first width-constrained child layout, so its line
 // baselines already include wrapping in the resolved column area.
-fn grid_row_baseline_shims(state &LayoutState,container &Node,placements []GridItemPlacement,tracks []GridTrack) map[voidptr]CSSPixels {
+fn grid_row_baseline_shims(mut state LayoutState,container &Node,placements []GridItemPlacement,tracks []GridTrack) map[voidptr]CSSPixels {
  mut result := map[voidptr]CSSPixels{}
  mut subjects := []GridBaselineSizeSubject{}
  mut ascents := map[int]CSSPixels{}
@@ -99,8 +99,13 @@ fn grid_row_baseline_shims(state &LayoutState,container &Node,placements []GridI
   from_end := logical_end != grid_axis_reversed(container,false)
   track := placement.row+if logical_end { placement.row_span-1 } else { 0 }
   group := track*2+if from_end { 1 } else { 0 }
-  baseline := grid_alignment_baseline_from_low(state,container,item,false,if last { .last } else { .first },reversed)
-  extent := values.margin_box_height()
+  mut baseline := grid_alignment_baseline_from_low(state,container,item,false,if last { .last } else { .first },reversed)
+  mut extent := values.margin_box_height()
+  if height := grid_orthogonal_baseline_intrinsic_height(mut state,item,values) {
+   border_extent := height.plus(values.border_box_top()).plus(values.border_box_bottom())
+   extent=border_extent.plus(values.margin_top).plus(values.margin_bottom)
+   baseline=values.margin_top.plus(if resolve_dominant_baseline_metric(container.computed_values())==.central { border_extent.divided_by_float(2) } else { border_extent })
+  }
   ascents[group]=css_pixels_max(ascents[group],baseline)
   descents[group]=css_pixels_max(descents[group],extent.minus(baseline))
   subjects << GridBaselineSizeSubject{item:item,group:group,from_end:from_end,baseline:baseline,extent:extent}
@@ -109,4 +114,28 @@ fn grid_row_baseline_shims(state &LayoutState,container &Node,placements []GridI
   result[voidptr(subject.item)] = if subject.from_end { descents[subject.group].minus(subject.extent.minus(subject.baseline)) } else { ascents[subject.group].minus(subject.baseline) }
  }
  return result
+}
+
+// An orthogonal subject's automatic inline size depends on the row being
+// sized. Use its min-content inline contribution for that cyclic baseline
+// measurement; the final definite area supplies its used inline size later.
+fn grid_orthogonal_baseline_intrinsic_height(mut state LayoutState,item &Node,values &UsedValues) ?CSSPixels {
+ if !grid_is_vertical(item) || !item.computed_values().size_value(.height).is_auto() || item.is_replaced_box() { return none }
+ parent := item.parent() or { return none }
+ if !parent.display().is_grid_inside() || !grid_alignment_text(parent,item,false).ends_with('baseline') { return none }
+ box := item.as_box() or { return none }
+ if box.has_preferred_aspect_ratio() { return none }
+ return calculate_min_content_height(mut state,box,values.content_width())
+}
+
+// A first-baseline subject synthesized at inline-start must not use an
+// unconstrained inline size to determine an opposed block-start baseline.
+fn grid_orthogonal_baseline_intrinsic_width(mut state LayoutState,item &Node) ?CSSPixels {
+ if grid_is_vertical(item) || !item.computed_values().size_value(.width).is_auto() || item.is_replaced_box() { return none }
+ parent := item.parent() or { return none }
+ if !parent.display().is_grid_inside() || !grid_is_vertical(parent) || !grid_axis_reversed(parent,true)
+  || !grid_alignment_text(parent,item,true).ends_with('baseline') || grid_alignment_text(parent,item,true).starts_with('last') { return none }
+ box := item.as_box() or { return none }
+ if box.has_preferred_aspect_ratio() { return none }
+ return calculate_min_content_width(mut state,box)
 }

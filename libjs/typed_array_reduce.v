@@ -41,24 +41,26 @@ pub fn typed_array_prototype_reduce_right(mut vm VM, prototypes PrimitiveObjectP
 	if length == 0 && vm.argument_count() <= 1 {
 		return vm.throw_error_type(.type_error, .reduce_no_initial)
 	}
-	// Keep the pinned implementation's i32 traversal index.
-	mut k := i32(length) - 1
+	// The exclusive end represents the exhausted range without a signed -1
+	// sentinel, including views longer than INT32_MAX.
+	mut end := length
 	mut accumulator := js_undefined()
 	if vm.argument_count() > 1 {
 		accumulator = initial_value
 	} else {
-		accumulator = array.object.get(mut vm, PropertyName.from_number(u32(k)))!
-		k--
+		end--
+		accumulator = array.object.get(mut vm, PropertyName.from_number(end))!
 	}
-	for k >= 0 {
-		value := array.object.get(mut vm, PropertyName.from_number(u32(k)))!
+	for end > 0 {
+		end--
+		k := end
+		value := array.object.get(mut vm, PropertyName.from_number(k))!
 		accumulator = call(mut vm, Value.from_object(callback), js_undefined(), [
 			accumulator,
 			value,
-			Value.from_i32(k),
+			Value.from_f64(f64(k)),
 			Value.from_object(array.object),
 		])!
-		k--
 	}
 	return accumulator
 }

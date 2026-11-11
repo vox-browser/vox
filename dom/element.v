@@ -2522,7 +2522,8 @@ pub fn (e &Element) client_width() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
+	// INTEROP: The result is rounded to the nearest integer rather than truncated, as browsers do.
+	return int(math.round((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-clientheight
@@ -2536,7 +2537,8 @@ pub fn (e &Element) client_height() int {
 	if !client_size_has_committed_box(layout) {
 		return 0
 	}
-	return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
+	// INTEROP: The result is rounded to the nearest integer rather than truncated, as browsers do.
+	return int(math.round((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale()))
 }
 
 // https://drafts.csswg.org/cssom-view/#dom-element-currentcsszoom
@@ -2849,6 +2851,20 @@ pub fn (mut e Element) run_attribute_change_steps(local_name string, old_value ?
 		}
 	}
 	if !option_string_equal(old_value, value) {
+		if namespace_ == none && e.is_html_element() && e.local_name() in ['td', 'th']
+			&& local_name in ['colspan', 'rowspan'] {
+			mut ancestor := e.as_node().parent()
+			for ancestor != none {
+				mut node := ancestor or { break }
+				if table := node.as_element() {
+					if table.is_html_element() && table.local_name() == 'table' {
+						node.set_needs_layout_tree_update(true, .table_cell_span_attribute)
+						break
+					}
+				}
+				ancestor = node.parent()
+			}
+		}
 		e.invalidate_style_after_attribute_change(local_name, old_value, value)
 	}
 }
@@ -3673,8 +3689,26 @@ pub fn (e &Element) get_bounding_client_rect() Rect {
 	return bounding_rect_from_client_rects(e.get_client_rects())
 }
 
+// https://drafts.csswg.org/css-tables-3/#table-wrapper-box
+// The box that CSSOM View geometry describes. For a table, this is the table
+// wrapper box, which is the principal box and contains the caption boxes.
+pub fn (e &Element) principal_layout_node() ?&LayoutNode {
+	layout := e.as_node().layout_node() or { return none }
+	if !layout.display_.is_table_inside() {
+		return layout
+	}
+	if parent := layout.parent() {
+		if parent.is_table_wrapper() {
+			return parent
+		}
+	}
+	return layout
+}
+
 fn compute_client_rects_assuming_layout_clean(e &Element) []CSSPixelRect_ {
-	layout := e.as_node().layout_node() or { return [] }
+	// INTEROP: For a table, the spec lists the table box and its caption boxes
+	// separately. Chrome reports the table wrapper box, which is their union.
+	layout := e.principal_layout_node() or { return [] }
 	if !layout.has_geometry_ {
 		return []
 	}
@@ -4072,7 +4106,7 @@ pub fn (mut e Element) scroll_width() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale())
+			return int(math.round((layout.content_width_ + layout.box_model().padding_left + layout.box_model().padding_right) / e.document().layout_coordinate_scale()))
 		}
 	}
 	return 0
@@ -4091,7 +4125,7 @@ pub fn (mut e Element) scroll_height() int {
 	}
 	if layout := e.as_node().layout_node() {
 		if layout.has_geometry_ {
-			return int((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale())
+			return int(math.round((layout.content_height_ + layout.box_model().padding_top + layout.box_model().padding_bottom) / e.document().layout_coordinate_scale()))
 		}
 	}
 	return 0
@@ -4772,27 +4806,70 @@ pub fn (mut e Element) set_popover_target_element(value ?&Element) {
 
 
 
-pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
-	element.set_inert(is_inert)
-	element_node := unsafe { &Node(&element) }
-	element_node.visit_subtree(fn [is_inert] (node &Node) TraversalDecision {
-		descendant := node.as_element() or { return .@continue }
-		if !descendant.is_html_element() {
-			return .@continue
+// Inertness crosses a shadow root through its host.
+fn nearest_html_element_is_inert(start ?&Node) bool {
+	mut current := start
+	for current != none {
+		node := current or { break }
+		if element := node.as_element() {
+			if element.is_html_element() {
+				return unsafe { &HTMLElement(element) }.inert() || element.has_attribute('inert')
+			}
 		}
-		mut html_descendant := unsafe { &HTMLElement(descendant) }
-		if descendant.has_attribute('inert') {
-			return .skip_children_and_continue
-		}
-		html_descendant.set_inert(is_inert)
-		return .@continue
-	})
+		current = node.parent_or_shadow_host()
+	}
+	return false
 }
 
+fn repaint_after_inertness_change(node &Node) {
+	mut mutable_node := unsafe { &Node(node) }
+	if mut layout_node := node.unsafe_layout_node() {
+		layout_node.is_editable_or_editing_host_ = !node.is_inert() && node.is_editable_or_editing_host()
+		if layout_node.is_editing_host_ != node.is_editing_host() {
+			layout_node.is_editing_host_ = node.is_editing_host()
+			mutable_node.set_needs_layout_update(.editable_state_change)
+		}
+	}
+	mutable_node.set_needs_repaint(.paint_commands_and_hit_test_list)
+}
 
+pub fn (mut element HTMLElement) set_subtree_inertness(is_inert bool) {
+	element_node := unsafe { &Node(&element) }
+	states := previous_read_write_states(element_node)
+	if element.inert() != is_inert {
+		element.set_inert(is_inert)
+		repaint_after_inertness_change(element_node)
+		// Attribute-change steps run after the new inert attribute is visible,
+		// so the root snapshot can already contain its new :read-write state.
+		// Use the stored inertness transition to notify its selector dependents.
+		mut root_element := unsafe { &Element(&element) }
+		root_element.invalidate_read_write_selector_dependencies()
+	}
+	element_node.visit_shadow_including_descendants(fn [is_inert] (node &Node) TraversalDecision {
+		if descendant := node.as_element() {
+			if descendant.is_html_element() {
+				if descendant.has_attribute('inert') {
+					return .skip_children_and_continue
+				}
+				mut html_descendant := unsafe { &HTMLElement(descendant) }
+				if html_descendant.inert() == is_inert { return .@continue }
+				html_descendant.set_inert(is_inert)
+			}
+		}
+		repaint_after_inertness_change(node)
+		return .@continue
+	})
+	invalidate_previous_read_write_states(states)
+}
 
-
-
+fn (mut element Element) update_inherited_inertness() {
+	if !element.is_html_element() || element.has_attribute('inert') { return }
+	inert := nearest_html_element_is_inert(element.as_node().parent_or_shadow_host())
+	mut html_element := unsafe { &HTMLElement(&element) }
+	if html_element.inert() != inert {
+		html_element.set_subtree_inertness(inert)
+	}
+}
 
 
 pub fn (element &HTMLElement) popover() ?string {
@@ -5368,7 +5445,10 @@ pub fn (e &Element) matches_placeholder_shown_pseudo_class() bool {
 
 pub fn (e &Element) matches_link_pseudo_class() bool {
 	name := e.local_name()
-	return ((e.is_html_element() && (name == 'a' || name == 'area')) || (e.is_svg_element() && name == 'a')) && e.has_attribute('href')
+	is_mathml_anchor := name == 'a'
+		&& (e.namespace_uri() or { '' }) == 'http://www.w3.org/1998/Math/MathML'
+	return ((e.is_html_element() && (name == 'a' || name == 'area'))
+		|| (e.is_svg_element() && name == 'a') || is_mathml_anchor) && e.has_attribute('href')
 }
 
 // https://drafts.csswg.org/selectors/#visited-pseudo
@@ -6001,6 +6081,13 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 		}
 		return
 	}
+	// Select control dimensions and internal children depend on these HTML
+	// attributes even when recomputing CSS produces an identical style.
+	if e.is_html_element() && e.local_name() == 'select' && local_name in ['size', 'multiple']
+		&& !option_string_equal(old_value, value) {
+		mut node := e.as_node()
+		node.set_needs_layout_tree_update(true, .style_change)
+	}
 
 	value_or_empty := value or { '' }
 	if local_name == 'nonce' && (e.is_html_element() || e.is_svg_element()) {
@@ -6027,7 +6114,8 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 
 	if local_name == 'inert' && e.is_html_element() {
 		mut html_element := unsafe { &HTMLElement(&e) }
-		html_element.set_subtree_inertness(value != none)
+		html_element.set_subtree_inertness(value != none
+			|| nearest_html_element_is_inert(e.as_node().parent_or_shadow_host()))
 	}
 	if local_name == 'contenteditable' && e.is_html_element() {
 		states := if !option_string_equal(old_value, value) {
@@ -6205,6 +6293,12 @@ pub fn (mut e Element) attribute_changed(local_name string, old_value ?string, v
 	}
 
 	if e.is_svg_element() {
+		if local_name == 'pathLength'
+			&& e.local_name() in ['circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect']
+			&& !option_string_equal(old_value, value) {
+			mut node := unsafe { &Node(e.as_node()) }
+			node.set_needs_layout_update(.style_change)
+		}
 		if e.local_name() == 'use' && local_name in ['href', 'xlink:href'] {
 			e.svg_use_process_the_url()
 		}
@@ -6585,6 +6679,9 @@ pub fn (mut e Element) inserted() {
 	if e.as_node().is_html_title_element() && e.is_connected() {
 		e.report_title_change_to_page()
 	}
+	if nearest_html_element_is_inert(e.as_node().parent_or_shadow_host()) {
+		e.update_inherited_inertness()
+	}
 	if mut inline_style := e.inline_style_ {
 		if inline_style.awaits_content_security_policy_check && e.is_connected() {
 			inline_style.awaits_content_security_policy_check = false
@@ -6642,8 +6739,8 @@ pub fn (mut e Element) inserted() {
 	if e.is_svg_element() {
 		e.update_use_elements_that_reference_this()
 		e.note_svg_paint_resource_description_may_have_changed()
-		if e.local_name() == 'use' && e.document().is_completely_loaded() {
-			e.svg_use_process_the_url()
+		if e.local_name() == 'use' {
+			e.svg_use_inserted()
 		}
 	}
 
@@ -6669,6 +6766,11 @@ pub fn (mut e Element) removed_from(old_parent ?&Node, old_root &Node) {
 pub fn (mut e Element) removed_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node, old_root &Node) {
 	if e.as_node().is_html_title_element() && old_root.is_document() {
 		e.report_title_change_to_page()
+	}
+	// Descendants remain parented inside the detached subtree; an explicit
+	// inert ancestor there must continue to govern them.
+	if nearest_html_element_is_inert(old_ancestor) {
+		e.update_inherited_inertness()
 	}
 	mut node := unsafe { &Node(e.as_node()) }
 	node.in_editable_subtree_ = false
@@ -6746,6 +6848,7 @@ pub fn (mut e Element) moved_from(old_parent ?&Node) {
 }
 
 pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot, old_ancestor ?&Node) {
+	e.update_inherited_inertness()
 	mut node := unsafe { &Node(e.as_node()) }
 	node.recompute_editable_subtree_flag()
 	// Language is inherited through the parent/host chain but cached on every
@@ -6794,17 +6897,24 @@ pub fn (mut e Element) moved_from_with_context(is_subtree_root NodeIsSubtreeRoot
 	node.run_moved_from_lifecycle_hook(is_subtree_root, old_ancestor)
 }
 
-// SVGUseElement::adopted_from(). URL parsing is document-relative, so an
-// adopted use element must resolve and clone its target from its new owner
-// document. The V implementation observes referenced elements by walking the
-// live document instead of retaining a document-specific observer/registry.
+// SVGUseElement::adopted_from(). Drop the old document's clone during adoption;
+// inserted() resolves the reference again after the use element connects.
+// Building a clone here would add new nodes to the ongoing adopting traversal.
+// The V implementation walks the live document rather than keeping an observer.
 pub fn (mut e Element) adopted_from(_ &Document) {
 	if e.is_html_element() && e.local_name() == 'img' {
 		mut image := unsafe { &HTMLImageElement(&e) }
 		image.is_image_document_image_ = false
 	}
 	if e.is_svg_element() && e.local_name() == 'use' {
-		e.svg_use_process_the_url()
+		e.svg_use_clone_element_tree_as_our_shadow_tree(none)
+		if reference := e.svg_use_reference_url() {
+			if !e.svg_use_reference_is_same_document(reference) {
+				// The embedder supplies fetched resources synchronously. It can
+				// prepare the new document's resource without populating our tree.
+				_ = e.document().svg_use_resource_document(reference)
+			}
+		}
 	}
 
 	// HTMLStyleElement::adopted_from() and SVGStyleElement::adopted_from().
@@ -7257,6 +7367,23 @@ fn (e &Element) svg_use_referenced_element() ?&Element {
 	return e.document().get_element_by_id(url_percent_decode(fragment))
 }
 
+fn (mut e Element) svg_use_inserted() {
+	// Nested use instances are initialized by the cloning pass, after their
+	// shadow-tree base is established. Ordinary insertion must leave them alone.
+	if shadow := e.as_node().root().as_shadow_root() {
+		if shadow.is_user_agent_internal() {
+			return
+		}
+	}
+	if !e.is_connected() {
+		return
+	}
+	// Detached uses miss target changes observed by the document walk. Resolve
+	// again on every connection, clearing a retained clone if its target is gone.
+	// This includes an author's shadow tree and a cached external reference.
+	e.svg_use_process_the_url()
+}
+
 fn svg_use_target_has_cycle(target &Element, mut visiting map[i64]bool) bool {
 	key := target.as_node().unique_id().value()
 	if visiting[key] {
@@ -7323,19 +7450,17 @@ fn (mut e Element) svg_use_clone_element_tree_as_our_shadow_tree(target ?&Elemen
 		}
 	}
 	shadow_node.append_child(clone_node) or {}
-	// Initial loading has not run inserted()'s document-complete branch yet.
-	// Nested instances need their adopted shadow-tree base before first layout.
-	if !e.document().is_completely_loaded() {
-		clone_node.for_each_in_subtree(fn (node &Node) TraversalDecision {
-			if element := node.as_element() {
-				if element.is_svg_element() && element.local_name() == 'use' {
-					mut nested := unsafe { &Element(element) }
-					nested.svg_use_process_the_url()
-				}
+	// inserted() leaves UA shadow-tree clones alone. Initialize their nested
+	// instances here, once they have the adopted shadow-tree reference base.
+	clone_node.for_each_in_inclusive_subtree(fn (node &Node) TraversalDecision {
+		if element := node.as_element() {
+			if element.is_svg_element() && element.local_name() == 'use' {
+				mut nested := unsafe { &Element(element) }
+				nested.svg_use_process_the_url()
 			}
-			return .@continue
-		})
-	}
+		}
+		return .@continue
+	})
 }
 
 fn (mut e Element) svg_use_process_the_url() {

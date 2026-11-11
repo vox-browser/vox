@@ -243,46 +243,6 @@ fn ascii_line_boundaries(text string) []int {
 	return boundaries
 }
 
-fn segmenter_code_point_at_utf16(units []u16, index int) u32 {
-	first := units[index]
-	if first >= 0xd800 && first <= 0xdbff && index + 1 < units.len {
-		second := units[index + 1]
-		if second >= 0xdc00 && second <= 0xdfff {
-			return 0x10000 + ((u32(first) - 0xd800) << 10) + (u32(second) - 0xdc00)
-		}
-	}
-	return u32(first)
-}
-
-fn segmenter_is_cjk_code_point(code_point u32) bool {
-	return (code_point >= 0x2e80 && code_point <= 0x9fff)
-		|| (code_point >= 0xac00 && code_point <= 0xd7af)
-		|| (code_point >= 0xf900 && code_point <= 0xfaff)
-}
-
-fn segmenter_line_boundaries(text string) []int {
-	units := utf16_code_units_from_string(text)
-	mut boundaries := [0]
-	mut index := 0
-	for index < units.len {
-		code_point := segmenter_code_point_at_utf16(units, index)
-		step := if code_point > 0xffff { 2 } else { 1 }
-		next := index + step
-		if code_point in [u32(0x09), 0x0a, 0x0b, 0x0c, 0x0d, 0x20, u32(`-`), 0x200b] {
-			boundaries << next
-		}
-		if next < units.len && segmenter_is_cjk_code_point(code_point)
-			&& segmenter_is_cjk_code_point(segmenter_code_point_at_utf16(units, next)) {
-			boundaries << next
-		}
-		index = next
-	}
-	if boundaries.last() != units.len {
-		boundaries << units.len
-	}
-	return boundaries
-}
-
 pub fn (segmenter &Segmenter) boundaries() []int {
 	return match segmenter.granularity {
 		.grapheme { segmenter_grapheme_boundaries(segmenter.segmented_text) }
@@ -291,7 +251,7 @@ pub fn (segmenter &Segmenter) boundaries() []int {
 			if segmenter.ascii_line_fast_path {
 				ascii_line_boundaries(segmenter.segmented_text)
 			} else {
-				segmenter_line_boundaries(segmenter.segmented_text)
+				segmenter_line_boundaries(segmenter.segmented_text, segmenter.line_break_mode)
 			}
 		}
 	}

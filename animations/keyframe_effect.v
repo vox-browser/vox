@@ -370,6 +370,8 @@ fn process_keyframes(input []BaseKeyframe) ![]BaseKeyframe {
 				continue
 			}
 			property_id := animation_property_id(name) or { continue }
+			// Properties that are not animatable are ignored, as in @keyframes rules.
+			if !css.is_animatable_property(property_id) { continue }
 			value := css.parse_css_value(css.ParsingParams{}, text, property_id) or { continue }
 			unsafe {
 				keyframe.parsed_properties[property_id] = value

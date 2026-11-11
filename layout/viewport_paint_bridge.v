@@ -841,11 +841,14 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 		own_state = tree.append(compatibility_clip_visual_data(box, *clip, BoxRadii{}), own_state)
 	}
 	mut enters_3d_sorting_plane := false
+	mut establishes_sorting_context := false
 	mut needs_synthetic_3d_plane := false
 	if box.layout_handle != unsafe { nil } {
 		node := unsafe { &Node(box.layout_handle) }
 		enters_3d_sorting_plane = node.participates_in_a_3d_rendering_context()
 			|| node.establishes_or_extends_a_3d_rendering_context()
+		establishes_sorting_context = node.establishes_or_extends_a_3d_rendering_context()
+			&& !node.participates_in_a_3d_rendering_context()
 		needs_synthetic_3d_plane = node.establishes_or_extends_a_3d_rendering_context()
 			&& !box.uses_own_paint_transform_4x4
 			&& affine_is_compact_identity(box.own_paint_transform)
@@ -899,14 +902,16 @@ fn assign_compatibility_visual_contexts_with_coordinate_root(mut box BlockBox, v
 			matrix: compatibility_painting_affine(box.own_paint_transform)
 			matrix_4x4: box.own_paint_transform_4x4
 			uses_matrix_4x4: box.uses_own_paint_transform_4x4
+			establishes_sorting_context: establishes_sorting_context
 			resets_backface_culling: enters_3d_sorting_plane
 		}, own_state)
 		box.own_transform_visual_context_idx = own_state
 	} else if needs_synthetic_3d_plane {
-		// Preserve-3d establishes a sorting plane even when the element has no
-		// transform. Keep that plane explicit so it can escape an ancestor's
-		// hidden back face, matching VisualContext::build_box_contexts().
+		// Preserve-3d needs an explicit plane even without a transform. A new
+		// context keeps the cull state of the plane it is flattened into;
+		// a participant only resets to that context's inherited state.
 		own_state = tree.append(painting.TransformVisualData{
+			establishes_sorting_context: establishes_sorting_context
 			resets_backface_culling: true
 		}, own_state)
 	}
@@ -1880,6 +1885,7 @@ mut:
 	transform       [6]f64 = [f64(1), 0, 0, 1, 0, 0]!
 	matrix_4x4      css.FloatMatrix4x4
 	backface_culled bool
+	backface_culled_outside_sorting_context bool
 	has_clip        bool
 	clip            LayoutRect
 	clips           []PaintClip
@@ -2025,8 +2031,10 @@ fn apply_compatibility_visual_context_node(tree &painting.AccumulatedVisualConte
 			around_origin := affine_around_origin(matrix, node.data.origin.x, node.data.origin.y)
 			flattened.transform = multiply_affine(flattened.transform, around_origin)
 			flattened.matrix_4x4 = flattened.matrix_4x4.multiply(node.data.matrix_including_origin_4x4())
-			if node.data.resets_backface_culling {
-				flattened.backface_culled = false
+			if node.data.establishes_sorting_context {
+				flattened.backface_culled_outside_sorting_context = flattened.backface_culled
+			} else if node.data.resets_backface_culling {
+				flattened.backface_culled = flattened.backface_culled_outside_sorting_context
 			}
 		}
 		painting.PerspectiveVisualData {

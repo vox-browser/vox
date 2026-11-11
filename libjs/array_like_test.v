@@ -98,9 +98,12 @@ fn test_array_like_checks_each_element_before_reading_the_next_index() {
 	object.define_direct_property(PropertyName.from_str('length'), Value.from_i32(-1), 7)
 	assert create_list_from_array_like(mut vm, Value.from_object(object), unsafe { nil })!.len == 0
 	object.define_direct_property(PropertyName.from_str('length'), Value.from_f64(2147483648.0), 7)
+	object.define_native_accessor(mut vm, vm.realm(), PropertyName.from_number(0), fn (mut vm VM) !Value {
+		return throw_completion(Value.from_i32(77))
+	}, unsafe { nil }, 0, none)
 	if _ := create_list_from_array_like(mut vm, Value.from_object(object), unsafe { nil }) {
 		assert false
 	} else {
-		assert thrown_value(err).as_object().error_kind()? == .range_error
+		assert thrown_value(err).as_i32() == 77
 	}
 }

@@ -1776,3 +1776,41 @@ changes: since `3fa67a181` its stub fixture lacks `__elementContent`.
 The production build tooling also needed `a15e9f5c5`: the shared compiler
 now defaults to the fastc backend and current vlib already passes the
 request to `HttpProxy.ssl_dial`, which broke HTTP module preparation.
+
+## 2026-11-09: what remains of the first-scroll hitch is relayout
+
+A replay of the thread whose end-of-body scripts (`reddit.en.js`, `_chat`,
+`spoiler-text`, `onetrust`) arrive 2 s late reproduces scrolling through the
+load phase deterministically. With precise 120 Hz input from 0.2 s after the
+title appears, every run hitches at the same points (private build containing
+`6236058f7`, `7dc0a0b67`, `69fff090c`; three runs per arm):
+
+| When | Gap | Main thread |
+| --- | ---: | --- |
+| ~0.6–0.8 s | 145–305 ms | first content: full style, layout and paint |
+| ~2.6 s | 62–126 ms | relayout after `reddit.en.js` mutates the DOM |
+| ~4.6 s | 70–123 ms | relayout after the next scripts |
+| ~7 s (when reached) | ~150 ms | DOMContentLoaded listeners and their forced layout |
+
+Stack samples attribute almost all of them to layout forced synchronously by
+the wheel handler (`BrowserApp.handle_wheel_input` hit-testing a dirty
+document); the rendering update would otherwise do the same layout in the
+same frame. `VOX_DOCUMENT_LAYOUT_DIAGNOSTICS=1` (now also listing what dirtied
+the tree, `14cd46eef`) shows ten layouts during load. Each rebuilds the whole
+layout tree, because a parser append or a script insertion under `body`
+marks it dirty, and costs 42–76 ms: formatting about 40%, the renderer paint
+tree about 25%, tree construction about 20% (retained flow subtrees already
+reuse much of it) and DOM geometry attachment about 10%. The retained
+paint-box caches miss because they are keyed by layout-node identity.
+
+`69fff090c` lets DOMContentLoaded listeners run before the parser-end
+readiness check instead of after a forced layout. It preserves load-event
+semantics but measured neutral: the rendering update performs the same layout
+when the readiness check no longer does (ten layouts in both arms, and
+`VOX_EAGER_PARSER_END_LAYOUT=1` shows no timing difference).
+
+Removing these hitches needs either incremental layout (rebuilding and laying
+out only dirty subtrees, so per-node layout and paint caches survive) or a
+policy that scrolls the retained display list while a wheel gesture is active
+and defers relayout until it pauses, as compositor scrolling does in Chromium.
+The second makes newly loaded content appear only when scrolling stops.

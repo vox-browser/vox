@@ -15,17 +15,17 @@ fn test_entropy_checkpoints_and_replay_match_pinned_source() {
 		width := if fields[2] == '0' { ?u32(none) } else { ?u32(u32(fields[2].u64())) }
 		mut reader := SymbolReader.new(hist, mut input, width)!
 		mut warm := []string{}
-		for i in 0 .. 4 { warm << reader.read_unsigned(hist, i % contexts, mut input)!.str() }
+		for i in 0 .. 4 { warm << reader.read_unsigned(&hist, i % contexts, mut input)!.str() }
 		checkpoint := reader.checkpoint(16)!
 		cursor := input
 		mut first := []u32{}
-		for i in 0 .. 8 { first << reader.read_unsigned(hist, i % contexts, mut input)! }
+		for i in 0 .. 8 { first << reader.read_unsigned(&hist, i % contexts, mut input)! }
 		position := input.position
 		reader.restore(checkpoint)!
 		input = cursor
 		mut replay := []string{}
 		for i in 0 .. 8 {
-			value := reader.read_unsigned(hist, i % contexts, mut input)!
+			value := reader.read_unsigned(&hist, i % contexts, mut input)!
 			assert value == first[i], 'Checkpoint case ${count}'
 			replay << value.str()
 		}

@@ -6,6 +6,27 @@ mut:
 	events []string
 }
 
+fn test_typed_array_copy_checks_target_element_size_limit_before_allocating() {
+	mut vm := VM.create()
+	create_simple_execution_context(mut vm)
+	parent := Object.create(vm.realm(), none)
+	length := u32(0x10000000)
+	owner := OwnedPrimitiveBackingStore.create_uninitialized(uint(length))!
+	mut buffer := ArrayBufferObject.create_with_data_block(vm.realm(),
+		DataBlock.from_owned_store(owner, false), parent)
+	defer { buffer.detach_buffer() }
+	source := TypedArray.create(vm.realm(), .uint8, length, buffer, parent)
+	mut target := TypedArray.create(vm.realm(), .float64, 0, buffer, parent)
+	if _ := initialize_typed_array_from_typed_array(mut vm, mut target, source) {
+		assert false, 'copying must enforce the same limit as typed-array allocation'
+	} else {
+		assert thrown_value(err).as_object().error_kind()? == .range_error
+		assert thrown_value(err).as_object().error_message()?.str() == 'Invalid typed array length'
+	}
+	assert voidptr(target.viewed_buffer) == voidptr(buffer)
+	assert target.array_length.length() == 0 && !buffer.is_detached()
+}
+
 fn test_typed_array_allocation_replaces_storage_resets_offsets_and_enforces_element_size_limit() {
 	mut vm := VM.create()
 	create_simple_execution_context(mut vm)

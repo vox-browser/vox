@@ -5,6 +5,18 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb`
 Translation workspace: `~/code/vox2`
 Audited: 2026-09-30
 
+## November 1 upstream correctness ports — 2026-11-10
+
+The [November 1 audit](docs/upstream-sync/2026-11-01.md) reviews all 149
+Ladybird commits landed that UTC day and selects 18 changes for Vox's existing
+V owners. The LibWeb ports correct XML namespace/value serialization,
+ShadowRoot naming, SVG use adoption, DOMException reports, table wrapper
+positioning and CSSOM geometry, replaced-grid intrinsic sizing, out-of-flow
+intrinsic-cache invalidation, and nested 3D backface culling. Focused tests
+accompany each slice. The audit records validation, the existing layout-build
+blocker, and the remaining coordinated subsystem work; the dated inventory
+totals below are unchanged.
+
 ## XML parser migration — 2026-11-09
 
 XML syntax parsing now uses V's `encoding.xml`. The pure input adapter in

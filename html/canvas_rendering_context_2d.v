@@ -10,6 +10,7 @@ module html
 
 import dom
 import encoding.base64
+import platform
 import webgl
 
 const maximum_canvas_area = u64(16384 * 16384)
@@ -103,13 +104,36 @@ fn ensure_html_canvas_element_state(element &dom.HTMLCanvasElement) !&HTMLCanvas
 		return state
 	}
 	width, height := html_canvas_element_dimensions(element)
+	// The state belongs to the canvas: allocate it with the element's
+	// document, and drop the process-wide map entry when that storage is
+	// released, so neither the map nor a reused address can reach it later.
+	node := unsafe { &dom.Element(element) }
+	mut storage := node.document().native_storage()
+	mut allocations := platform.RetainedArenaScope{}
+	if storage != unsafe { nil } { allocations = storage.enter_nested() }
+	defer { allocations.finish() }
 	surface := OffscreenCanvas.create(width, height)!
 	state := &HTMLCanvasElementState{
 		element: element
 		surface: surface
 	}
-	html_canvas_element_states[key] = state
+	register_html_canvas_element_state(key, state, storage)
 	return state
+}
+
+fn register_html_canvas_element_state(key u64, state &HTMLCanvasElementState, storage &platform.RetainedArena) {
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	html_canvas_element_states[key] = state
+	if storage == unsafe { nil } { return }
+	mut owner := unsafe { &platform.RetainedArena(storage) }
+	owner.add_cleanup(fn [key, state] () {
+		current := html_canvas_element_states[key] or { return }
+		if voidptr(current) != voidptr(state) { return }
+		removal := platform.enter_persistent()
+		html_canvas_element_states.delete(key)
+		platform.leave_persistent(removal)
+	})
 }
 
 pub fn html_canvas_element_set_width(mut element dom.HTMLCanvasElement, value u32) ! {

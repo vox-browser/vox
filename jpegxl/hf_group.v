@@ -115,6 +115,9 @@ pub fn decode_hf_group(maps HfGroupMaps, params HfGroupParameters, block_context
 	for input in inputs {
 		if input.pass < 0 || input.pass >= global.passes.len { return error('Invalid JPEG XL HF input pass') }
 	}
+	// Each coefficient order is validated once, when a block first uses it;
+	// the buffers' signed16 range was checked above and is preserved.
+	mut checked_orders := [][]bool{len: global.passes.len, init: []bool{len: coefficient_order_count * 3}}
 	mut states := []HfGroupReaderState{cap: inputs.len}
 	for i in 0 .. inputs.len {
 		set := int(inputs[i].reader.read(ceil_log2(int(global.histogram_sets)))!)
@@ -142,14 +145,14 @@ pub fn decode_hf_group(maps HfGroupMaps, params HfGroupParameters, block_context
 			pass := global.passes[pass_index]
 			context_offset := states[i].histogram_set * block_context.num_ac_contexts()
 			shift := if pass_index < params.frame_passes.shifts.len { params.frame_passes.shifts[pass_index] } else { u32(0) }
-			for c in [1, 0, 2] {
+			for c in [1, 0, 2]! {
 				x := block.x >> params.horizontal_shift[c]
 				y := block.y >> params.vertical_shift[c]
 				if (x << params.horizontal_shift[c]) != block.x || (y << params.vertical_shift[c]) != block.y { continue }
 				prediction := states[i].nonzeros[c].predict_nonzeros(x, y)!
 				context := block_context.block_context(int(maps.lf_contexts[p]), u32(maps.raw_quant[p]), block.transform.shape_id(), c)!
 				nonzero_context := context_offset + block_context.nonzero_context(prediction, context)!
-				nonzeros := states[i].symbols.read_unsigned(pass.histograms, nonzero_context, mut inputs[i].reader)!
+				nonzeros := states[i].symbols.read_unsigned(&pass.histograms, nonzero_context, mut inputs[i].reader)!
 				if nonzeros > u32(count - dims[0] * dims[1]) { return error('Invalid JPEG XL HF nonzero count') }
 				states[i].nonzeros[c].record_block(x, y, block.transform, nonzeros)!
 				channel_params := HfChannelParameters{
@@ -162,8 +165,14 @@ pub fn decode_hf_group(maps HfGroupMaps, params HfGroupParameters, block_context
 				// This bounded view borrows one stable component allocation. Neither
 				// the group nor the channel decoder resizes that allocation.
 				mut channel := unsafe { coefficients[c][block.offset..block.offset + count] }
-				decode_hf_channel(channel_params, pass.coefficient_orders[block.transform.shape_id() * 3 + c], pass.histograms,
-					mut inputs[i].reader, mut states[i].symbols, mut channel)!
+				order_index := block.transform.shape_id() * 3 + c
+				order := pass.coefficient_orders[order_index]
+				if !checked_orders[pass_index][order_index] {
+					validate_hf_coefficient_order(order, count)!
+					checked_orders[pass_index][order_index] = true
+				}
+				decode_hf_coefficients(channel_params, order, pass.histograms, mut inputs[i].reader,
+					mut states[i].symbols, mut channel)!
 			}
 		}
 	}

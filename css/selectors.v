@@ -113,6 +113,7 @@ pub enum PseudoClass {
 	autofill
 	state
 	heading
+	current_
 }
 
 pub struct PseudoClassBitmap {
@@ -165,6 +166,11 @@ pub enum PseudoElement {
 	highlight
 	color_swatch
 	webkit_color_swatch_wrapper
+	target_text
+	spelling_error
+	grammar_error
+	search_text
+	cue
 	known_pseudo_element_count
 	unknown_webkit
 	// V uses a sentinel where C++'s pseudo_element_from_string() returns Optional{}.
@@ -255,6 +261,7 @@ pub fn selector_pseudo_class_name(pseudo_class PseudoClass) string {
 		.autofill { 'autofill' }
 		.state { 'state' }
 		.heading { 'heading' }
+		.current_ { 'current' }
 	}
 }
 
@@ -326,6 +333,7 @@ pub fn pseudo_class_from_string(name string) PseudoClass {
 		'autofill', '-webkit-autofill' { .autofill }
 		'state' { .state }
 		'heading' { .heading }
+		'current' { .current_ }
 		else { .invalid }
 	}
 }
@@ -355,6 +363,11 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 		.highlight { 'highlight' }
 		.color_swatch { 'color-swatch' }
 		.webkit_color_swatch_wrapper { '-webkit-color-swatch-wrapper' }
+		.target_text { 'target-text' }
+		.spelling_error { 'spelling-error' }
+		.grammar_error { 'grammar-error' }
+		.search_text { 'search-text' }
+		.cue { 'cue' }
 		.known_pseudo_element_count, .unknown { '' }
 		.unknown_webkit { '-webkit-unknown' }
 	}
@@ -362,6 +375,11 @@ pub fn pseudo_element_name(pseudo_element PseudoElement) string {
 
 pub fn pseudo_element_from_string(name string) PseudoElement {
 	return match name.to_lower() {
+		'target-text' { .target_text }
+		'spelling-error' { .spelling_error }
+		'grammar-error' { .grammar_error }
+		'search-text' { .search_text }
+		'cue' { .cue }
 		'highlight' { .highlight }
 		'color-swatch' { .color_swatch }
 		'-webkit-color-swatch-wrapper' { .webkit_color_swatch_wrapper }
@@ -2951,13 +2969,8 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 						return true
 					}
 				}
-				.tag_name {
+				.tag_name, .universal {
 					if simple_selector.qualified_name().name.name.len == 0 || simple_index != 0 {
-						return true
-					}
-				}
-				.universal {
-					if simple_selector.qualified_name().name.name.len == 0 {
 						return true
 					}
 				}
@@ -2967,7 +2980,9 @@ fn parsed_selector_has_invalid_simple_selectors(text string, compound_selectors 
 					}
 				}
 				.pseudo_element {
-     if simple_selector.pseudo_element().type_ == .highlight && simple_index != compound_selector.simple_selectors.len-1 { return true }
+					pseudo := simple_selector.pseudo_element().type_
+					if pseudo in [.selection, .highlight, .target_text, .spelling_error, .grammar_error, .search_text]
+						&& !highlight_selector_suffix_is_valid(pseudo, compound_selector.simple_selectors[simple_index + 1..]) { return true }
 					pseudo_element_count++
 					if pseudo_element_count == 1 {
 						first_pseudo_element = simple_selector.pseudo_element().type_

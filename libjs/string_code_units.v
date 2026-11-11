@@ -27,9 +27,8 @@ pub fn string_constructor_from_char_code(mut vm VM) !Value {
 	return Value.from_string(vm.create_string(Utf16String{ data: units }))
 }
 
-// Runtime/StringConstructor.cpp::from_code_point. Preserve the pinned body's
-// ToInt32 before the range check, including wrapping integral values wider than
-// 32 bits; this source behavior is not a standards-conformance claim.
+// Runtime/StringConstructor.cpp::from_code_point; Ladybird 5fcf92b88b0c.
+// Validate the Number before narrowing, so values outside Unicode cannot wrap.
 pub fn string_constructor_from_code_point(mut vm VM) !Value {
 	mut units := []u16{cap: int(vm.argument_count())}
 	for index in 0 .. vm.argument_count() {
@@ -37,7 +36,7 @@ pub fn string_constructor_from_code_point(mut vm VM) !Value {
 		if !number.is_integral_number() {
 			return vm.throw_error_type(.range_error, .invalid_code_point, number.str())
 		}
-		code_point := number.to_i32(mut vm)!
+		code_point := number.number
 		if code_point < 0 || code_point > 0x10ffff {
 			return vm.throw_error_type(.range_error, .invalid_code_point, number.str())
 		}

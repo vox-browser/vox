@@ -38,6 +38,11 @@ fn (mut app BrowserApp) commit_preloaded_page(loaded LoadedPage, add_history boo
 }
 
 fn (mut app BrowserApp) retain_navigation_resource(resource_url string, resource PreloadedResource) {
+	// The shell's cache outlives every document; some callers poll inside a
+	// document arena. Keep its buckets and keys in persistent storage. Bodies
+	// come from fetch workers, whose arenas are retained for the process.
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
 	if resource_url !in app.resource_cache && app.resource_cache.len >= max_cached_resources {
 		for key, _ in app.resource_cache {
 			app.resource_cache.delete(key)

@@ -81,12 +81,14 @@ pub fn (mut gain_node GainRenderNode) process(mut graph RenderGraph,
 	input := render_node.pull_input(mut graph, context, 0)
 	mut output := unsafe { &AudioBus(render_node.output(0)) }
 	output.set_channel_count(input.channel_count())
+	// Automation still advances while the audio input is silent, including
+	// the intrinsic value exposed to the control side and retained on cancellation.
+	mut gain := unsafe { &RenderAudioParam(gain_node.gain_) }
+	gain.compute(mut graph, context, mut gain_node.gain_values_)
 	if input.is_silent() {
 		output.zero()
 		return
 	}
-	mut gain := unsafe { &RenderAudioParam(gain_node.gain_) }
-	gain.compute(mut graph, context, mut gain_node.gain_values_)
 	for channel in 0 .. input.channel_count() {
 		input_samples := input.channel(channel)
 		mut output_samples := []f32{len: context.quantum_size}

@@ -11,7 +11,15 @@
 // Protocol: the controller writes VOX_JS_DRIVER_DIR/req-N (first line: command
 // name, remainder: payload) and the driver answers with res-N, a JSON object
 // {"id", "t" (seconds since process start), "result"}.
+//
+// `typelat` (payload: interval in ms, newline, text) sends one key per
+// interval and reports, per key, the synchronous keyDown handling time and the
+// delay until the page view's layer next publishes new contents
+// (tools/measure_chatgpt_typing.py). Publication is not physical scanout.
 #import <Cocoa/Cocoa.h>
+#import <QuartzCore/QuartzCore.h>
+#include <math.h>
+#include <objc/runtime.h>
 #include <JavaScriptCore/JavaScript.h>
 #include <JavaScriptCore/JSStringRefCF.h>
 #include <crt_externs.h>
@@ -165,6 +173,67 @@ static void send_key(NSString *characters)
     [input_view keyUp:up];
 }
 
+// Count page-view layer publications by wrapping its updateLayer.
+static NSView *page_view;
+static IMP original_update;
+static double last_publication;
+static unsigned long publication_count;
+
+static void published(id self, SEL selector)
+{
+    // Keep the previous contents alive while comparing identities.
+    __attribute__((objc_precise_lifetime)) id previous = ((NSView *)self).layer.contents;
+    ((void (*)(id, SEL))original_update)(self, selector);
+    if (previous != ((NSView *)self).layer.contents) {
+        last_publication = now_seconds();
+        publication_count++;
+    }
+}
+
+static BOOL hook_page_view(void)
+{
+    if (original_update) return YES;
+    for (NSWindow *window in NSApp.windows) {
+        page_view = find_view(window.contentView, @"MyView2");
+        if (page_view) break;
+    }
+    if (!page_view) return NO;
+    Method method = class_getInstanceMethod(object_getClass(page_view), @selector(updateLayer));
+    if (method) original_update = method_setImplementation(method, (IMP)published);
+    return original_update != NULL;
+}
+
+static void respond(NSString *identifier, id result, double time);
+
+static void type_with_latency(NSString *identifier, NSString *text, NSUInteger index, double interval,
+    NSMutableArray *rows)
+{
+    if (index >= text.length) {
+        respond(identifier, @{ @"rows" : rows }, now_seconds());
+        return;
+    }
+    unsigned long before = publication_count;
+    double sent = now_seconds();
+    send_key([text substringWithRange:NSMakeRange(index, 1)]);
+    NSMutableDictionary *row = [@{ @"send" : @(sent), @"handled" : @(now_seconds() - sent) } mutableCopy];
+    [rows addObject:row];
+    __block int polls = 0;
+    __block void (^wait)(void);
+    wait = ^{
+        if (publication_count != before) {
+            row[@"present"] = @(last_publication - sent);
+        } else if (++polls < 3000) {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_MSEC), dispatch_get_main_queue(), wait);
+            return;
+        }
+        double delay = fmax(sent + interval - now_seconds(), 0);
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay * NSEC_PER_SEC)), dispatch_get_main_queue(),
+            ^{ type_with_latency(identifier, text, index + 1, interval, rows); });
+        wait = nil;
+    };
+    dispatch_async(dispatch_get_main_queue(), wait);
+}
+
 static NSDictionary *usage(void)
 {
     struct rusage_info_v4 info;
@@ -240,6 +309,16 @@ static void execute(NSString *identifier, NSString *command, NSString *payload)
             });
         }
         if (!length) respond(identifier, @{ @"typed" : @0 }, time);
+    } else if ([command isEqualToString:@"typelat"]) {
+        NSRange newline = [payload rangeOfString:@"\n"];
+        if (newline.location == NSNotFound || !hook_page_view()) {
+            respond(identifier, @{ @"error" : @"typelat needs a page view and an interval line" }, time);
+            return;
+        }
+        type_with_latency(identifier, [payload substringFromIndex:newline.location + 1], 0,
+            [[payload substringToIndex:newline.location] doubleValue] / 1000.0, [NSMutableArray array]);
+    } else if ([command isEqualToString:@"pid"]) {
+        respond(identifier, @{ @"pid" : @(getpid()) }, time);
     } else if ([command isEqualToString:@"usage"]) {
         respond(identifier, usage(), time);
     } else if ([command isEqualToString:@"quit"]) {

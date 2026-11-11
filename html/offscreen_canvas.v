@@ -216,6 +216,8 @@ pub:
 mut:
 	width_  u32
 	height_ u32
+	// fillText()'s glyph masks, made on the first glyph run.
+	glyph_cache &cpuraster.GlyphCache = unsafe { nil }
 }
 
 fn offscreen_canvas_state_reset(target voidptr) {

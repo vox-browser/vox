@@ -85,16 +85,25 @@ fn (mut vm VM) execute_instruction(instruction Instruction, executable &Executab
 		.put_property {
 			// SlowPaths.cpp::asm_slow_path_put_by_value and PropertyAccess.h's
 			// PutKind::Normal: coerce the retained key after evaluating the RHS.
-			key := right.to_property_key(mut vm)!
-			if instruction.strict && left.is_nullish() {
-				return vm.throw_error_type(.type_error, .reference_nullish_set_property, key.str(),
-					left.str())
+			// Ladybird 74a0613d1d79: ToObject rejects a nullish base before
+			// ToPropertyKey can execute user code.
+			if left.is_nullish() {
+				name := if right.is_string() { right.as_string().str() } else { right.str() }
+				if instruction.strict {
+					return vm.throw_error_type(.type_error, .reference_nullish_set_property, name,
+						left.str())
+				}
+				return vm.throw_error_type(.type_error, .to_object_null_or_undefined_with_property,
+					name, left.str())
 			}
+			key := right.to_property_key(mut vm)!
 			Reference.for_value(left, key, none, instruction.strict).put_value(mut vm, source)!
 		}
 		.delete_property {
-			// SlowPaths.cpp::asm_slow_path_delete_by_value: ToPropertyKey precedes
-			// Reference::delete_ and its ToObject, including nullish bases.
+			// ToObject precedes ToPropertyKey for DeleteByValue as well.
+			if left.is_nullish() {
+				return vm.throw_error_type(.type_error, .to_object_null_or_undefined)
+			}
 			key := right.to_property_key(mut vm)!
 			result =
 				Value.from_bool(Reference.for_value(left, key, none, instruction.strict).delete_(mut vm)!)

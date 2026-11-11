@@ -115,7 +115,9 @@ fn data_view_byte_length_getter(mut vm VM) !Value {
 	view := this_data_view(mut vm)!
 	record := make_data_view_with_buffer_witness_record(view, .seq_cst)
 	if is_view_out_of_bounds(record) {
-		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'DataView')
+		// Ladybird e37ee2ef848f: out-of-bounds views expose +0, including
+		// views of detached buffers. Numeric access still throws below.
+		return Value.from_i32(0)
 	}
 	return Value.from_f64(f64(get_view_byte_length(record)))
 }
@@ -124,7 +126,7 @@ fn data_view_byte_offset_getter(mut vm VM) !Value {
 	view := this_data_view(mut vm)!
 	record := make_data_view_with_buffer_witness_record(view, .seq_cst)
 	if is_view_out_of_bounds(record) {
-		return vm.throw_error_type(.type_error, .buffer_out_of_bounds, 'DataView')
+		return Value.from_i32(0)
 	}
 	return Value.from_f64(f64(view.byte_offset()))
 }

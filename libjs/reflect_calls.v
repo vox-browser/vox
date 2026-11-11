@@ -9,7 +9,7 @@ pub fn reflect_apply(mut vm VM) !Value {
 	if !target.is_function() {
 		return vm.throw_error_type(.type_error, .not_a_function, target.str())
 	}
-	call_arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
+	call_arguments := create_argument_list_from_array_like(mut vm, arguments_list)!
 	return call(mut vm, target, this_argument, call_arguments)
 }
 
@@ -27,6 +27,6 @@ pub fn reflect_construct(mut vm VM) !Value {
 	} else if !new_target.is_constructor() {
 		return vm.throw_error_type(.type_error, .not_a_constructor, new_target.str())
 	}
-	call_arguments := create_list_from_array_like(mut vm, arguments_list, unsafe { nil })!
+	call_arguments := create_argument_list_from_array_like(mut vm, arguments_list)!
 	return Value.from_object(construct(mut vm, target, call_arguments, new_target.as_object())!)
 }

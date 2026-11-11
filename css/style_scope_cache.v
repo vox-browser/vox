@@ -402,6 +402,9 @@ fn (caches &RuleCaches) has_candidate_rule_for_pseudo_element(abstract_element d
 // This is the same coarse candidate filtering used before selector matching;
 // it can produce false positives, but never skips a potentially matching rule.
 pub fn (scope &StyleScope) has_candidate_rule_for_pseudo_element(abstract_element dom.AbstractElement, pseudo_element PseudoElement) bool {
+	// A part's rules can live in an outer scope. Local buckets cannot prove
+	// that its pseudo-element has no matching rules there.
+	if abstract_element.element().has_part_names() { return true }
 	scope.build_rule_cache_if_needed()
 	for caches in [scope.author_rule_cache, scope.user_rule_cache, scope.user_agent_rule_cache]! {
 		if value := caches {
@@ -756,6 +759,9 @@ fn style_scope_cache_style_rule(raw_context voidptr, rule &CSSRule) {
 				}
 			}
 		}
+		// ::part() can be followed by the pseudo-element actually being
+		// styled. Candidate lookup must index that target, not ::part itself.
+		pseudo_element = if target := selector.target_pseudo_element() { target.type_ } else { none }
 		matching_rule.pseudo_element = pseudo_element
 
 		for pseudo_class in style_scope_pseudo_classes_with_rule_cache() {
@@ -1951,6 +1957,10 @@ fn style_scope_pseudo_element_from_dom(pseudo_element dom.PseudoElement) PseudoE
 		.highlight { .highlight }
 		.color_swatch { .color_swatch }
 		.webkit_color_swatch_wrapper { .webkit_color_swatch_wrapper }
+		.target_text { .target_text }
+		.spelling_error { .spelling_error }
+		.grammar_error { .grammar_error }
+		.search_text { .search_text }
 		.known_pseudo_element_count { .known_pseudo_element_count }
 		.unknown_webkit { .unknown_webkit }
 	}

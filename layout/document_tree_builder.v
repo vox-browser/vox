@@ -1201,8 +1201,11 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 	// Collect generated ::before content, DOM children, then generated ::after
 	// content in tree order.
 	mut children := []&Node{}
-	if before := build_generated_pseudo_element(document, element, .before, .before, mut builder_state) {
-		children << before
+	generated_content_allowed := control_allows_generated_content(box_node, element)
+	if generated_content_allowed {
+		if before := build_generated_pseudo_element(document, element, .before, .before, mut builder_state) {
+			children << before
+		}
 	}
 	child_snapshot := layout_tree_children_for_element(element)
 	defer { child_snapshot.storage.finish() }
@@ -1296,8 +1299,10 @@ fn build_layout_box_for_element_with_svg_resource_kind(document &dom.Document, e
 			list_item.set_marker(marker)
 		}
 	}
-	if after := build_generated_pseudo_element(document, element, .after, .after, mut builder_state) {
-		children << after
+	if generated_content_allowed {
+		if after := build_generated_pseudo_element(document, element, .after, .after, mut builder_state) {
+			children << after
+		}
 	}
 	if box_node.is_inline_node() && !computed.display().is_contents() {
 		mut kept := []&Node{cap: children.len}
@@ -1464,14 +1469,19 @@ fn build_details_internal_layout_children(document &dom.Document, element &dom.E
 	slot_element := document.create_element_ns('http://www.w3.org/1999/xhtml', 'slot') or {
 		return children
 	}
-	slot_style := computed_style_with_overrides(host_computed, {
-		css.PropertyID.display:            'block'
-		css.PropertyID.content_visibility: if element.has_attribute('open') {
-			'visible'
-		} else {
-			'hidden'
+	mut computer := unsafe { &css.StyleComputer(style_computer) }
+	details_style := computer.compute_style_with_seeded_ancestors(dom.AbstractElement.new(element, .details_content))
+	mut slot_style := details_style.clone_for_anonymous_block()
+	// This wrapper represents a real pseudo-element, so keep its authored
+	// non-inherited properties as well as the inherited anonymous-box values.
+	for index in 0 .. css.number_of_longhand_properties {
+		property := unsafe { css.PropertyID(int(css.first_longhand_property_id()) + index) }
+		if value := details_style.property(property, .yes) {
+			slot_style.set_property_without_modifying_flags(property, value)
 		}
-	})
+	}
+	slot_style.set_property_without_modifying_flags(.display, &dom.StyleValue{css_text:'block'})
+	slot_style.set_property_without_modifying_flags(.content_visibility, &dom.StyleValue{css_text:if element.has_attribute('open') { 'visible' } else { 'hidden' }})
 	mut slot := unsafe {
 		&Node(BlockContainer.new(document, slot_element.as_node(), slot_style))
 	}

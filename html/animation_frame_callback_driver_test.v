@@ -104,3 +104,48 @@ fn test_reentered_animation_frame_keeps_the_outer_batch_and_new_registrations() 
 	assert log.times == [f64(1), 2, 3, 4]
 	assert !driver.has_callbacks()
 }
+
+@[heap]
+struct FrameCancellationIds {
+mut:
+	outer u32
+	nested u32
+}
+
+fn test_animation_frame_callback_can_cancel_a_later_callback() {
+	mut driver := &AnimationFrameCallbackDriver{}
+	mut log := &FrameLog{}
+	mut ids := &FrameCancellationIds{}
+	first := driver.add(fn [mut driver, mut log, ids] (now f64) {
+		log.times << now
+		assert driver.has_pending_callback(ids.outer)
+		assert driver.remove(ids.outer)
+		assert !driver.has_pending_callback(ids.outer)
+	})
+	ids.outer = driver.add(fn [mut log] (_ f64) { log.times << 99 })
+	driver.run(1)
+	assert log.times == [f64(1)]
+	assert !driver.has_pending_callback(first)
+	assert !driver.remove(ids.outer)
+}
+
+fn test_nested_animation_frame_can_cancel_both_waiting_batches() {
+	mut driver := &AnimationFrameCallbackDriver{}
+	mut ids := &FrameCancellationIds{}
+	mut log := &FrameLog{}
+	driver.add(fn [mut driver, mut ids, mut log] (_ f64) {
+		driver.add(fn [mut driver, ids, mut log] (_ f64) {
+			assert driver.has_pending_callback(ids.outer)
+			assert driver.has_pending_callback(ids.nested)
+			assert driver.remove(ids.outer)
+			assert driver.remove(ids.nested)
+			log.times << 2
+		})
+		ids.nested = driver.add(fn [mut log] (_ f64) { log.times << 98 })
+		driver.run(2)
+	})
+	ids.outer = driver.add(fn [mut log] (_ f64) { log.times << 99 })
+	driver.run(1)
+	assert log.times == [f64(2)]
+	assert driver.nested_batches_.len == 0
+}

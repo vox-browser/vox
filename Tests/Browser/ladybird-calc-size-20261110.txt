@@ -1,0 +1,32 @@
+# Ladybird 2919bf87a5e5dfc49a210a70bda079afa411c6c5
+# Imported calc-size() and interpolate-size WPT pages
+css/css-values/calc-size/animation/calc-size-height-interpolation
+css/css-values/calc-size/animation/calc-size-interpolation-expansion
+css/css-values/calc-size/animation/calc-size-width-interpolation
+css/css-values/calc-size/animation/interpolate-size-height-composition
+css/css-values/calc-size/animation/interpolate-size-height-interpolation
+css/css-values/calc-size/animation/interpolate-size-interpolation
+css/css-values/calc-size/animation/interpolate-size-logical-properties-interpolation
+css/css-values/calc-size/animation/interpolate-size-max-height-composition
+css/css-values/calc-size/animation/interpolate-size-max-width-composition
+css/css-values/calc-size/animation/interpolate-size-max-width-interpolation
+css/css-values/calc-size/animation/interpolate-size-min-height-composition
+css/css-values/calc-size/animation/interpolate-size-min-height-interpolation
+css/css-values/calc-size/animation/interpolate-size-min-width-composition
+css/css-values/calc-size/animation/interpolate-size-which-value
+css/css-values/calc-size/animation/interpolate-size-width-composition
+css/css-values/calc-size/animation/interpolate-size-width-interpolation
+css/css-values/calc-size/calc-size-flex-basis-on-column
+css/css-values/calc-size/calc-size-flex-basis-on-row
+css/css-values/calc-size/calc-size-height
+css/css-values/calc-size/calc-size-height-box-sizing
+css/css-values/calc-size/calc-size-list-box
+css/css-values/calc-size/calc-size-out-of-flow
+css/css-values/calc-size/calc-size-parsing
+css/css-values/calc-size/calc-size-replaced-element
+css/css-values/calc-size/calc-size-table
+css/css-values/calc-size/calc-size-typed-om
+css/css-values/calc-size/calc-size-width
+css/css-values/calc-size/calc-size-width-box-sizing
+css/css-values/calc-size/interpolate-size-computed
+css/css-values/calc-size/interpolate-size-parsing

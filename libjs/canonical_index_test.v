@@ -7,7 +7,11 @@ fn test_canonical_numeric_index_string_keeps_optimized_indices_and_roundtrip_tag
 			assert result.is_index() && result.as_index() == index
 		}
 	}
-	for text in ['-0', '-1', '1.5', '0.5', '-0.5', 'Infinity', '-Infinity', 'NaN', '4294967295',
+	last_index_key := PropertyName.from_str('4294967295')
+	last_index := canonical_numeric_index_string(last_index_key, .detect_numeric_roundtrip)
+	assert last_index.is_index() && last_index.as_index() == 4294967295
+	assert canonical_numeric_index_string(last_index_key, .ignore_numeric_roundtrip).is_undefined()
+	for text in ['-0', '-1', '1.5', '0.5', '-0.5', 'Infinity', '-Infinity', 'NaN',
 		'4294967296', '1e+21', '1e-7', '0.000001'] {
 		key := PropertyName.from_str(text)
 		result := canonical_numeric_index_string(key, .detect_numeric_roundtrip)

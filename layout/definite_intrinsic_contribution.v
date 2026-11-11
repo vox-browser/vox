@@ -10,7 +10,7 @@ fn definite_preferred_intrinsic_width(node &Node, values &UsedValues, containing
 	preferred := node.computed_values().size_value(.width)
 	// Percentages are cyclic here, even when a copied ancestor happens to have
 	// definite geometry. Intrinsic keywords still need content measurement.
-	if preferred.contains_percentage() { return none }
+	if preferred.contains_percentage() || preferred.is_stretch() { return none }
 	return resolve_layout_content_size(node, preferred, containing_width, values, true)
 }
 

@@ -803,6 +803,11 @@ pub fn (u &UsedValues) static_position() css.CSSPixelPoint {
 	return position.aligned_position_for_box_with_size(css.CSSPixelSize.new(u.margin_box_width(), u.margin_box_height()))
 }
 
+pub fn (u &UsedValues) static_position_rect() ?StaticPositionRect {
+	rare := u.rare_ or { return none }
+	return rare.static_position_rect_
+}
+
 // SVGGraphicsPaintable::ComputedTransforms and the path materialized by
 // SVGFormattingContext. Painting consumes the same state instead of reparsing
 // geometry independently.

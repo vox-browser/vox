@@ -314,7 +314,7 @@ fn margins_collapse_through(box &NodeWithStyle, state &LayoutState) bool {
 // parent's content height.
 fn (mut bfc BlockFormattingContext) compute_auto_height_for_block_level_element(mut state LayoutState, box &NodeWithStyle) CSSPixels {
 	box_node := unsafe { &Node(box) }
-	if box_node.has_size_containment() {
+	if box_node.has_size_containment_in_axis(false) {
 		return box_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 	}
 	box_state := state.get(box)
@@ -857,7 +857,7 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 			bfc.margin_state.unregister_block_container_y_position_update()
 		}
 	}
-	if definite_content_height == none && box_as_node.has_size_containment() {
+	if definite_content_height == none && box_as_node.has_size_containment_in_axis(false) {
 		intrinsic_height := box_as_node.explicit_intrinsic_inner_height() or { CSSPixels.new(0) }
 		content_height_from_children = intrinsic_height.to_double()
 	}
@@ -871,6 +871,16 @@ fn (mut bfc BlockFormattingContext) layout_block_level_box(mut state LayoutState
 		content_height_from_children
 	} else {
 		definite_content_height or { content_height_from_children }
+	}
+	// NB: A calc-size() with an auto basis resolves against the block size
+	//     auto gives the box.
+	if definite_content_height == none {
+		height_size := computed.size_value(.height)
+		if (height_size.is_auto() || height_size.is_length_percentage())
+			&& size_resolves_calc_size_when_auto(height_size) {
+			height = resolve_calc_size_for_box(computed, box_state, height_size, false, css_px(height),
+				if basis := height_resolution_basis { ?CSSPixels(css_px(basis)) } else { ?CSSPixels(none) }).to_double()
+		}
 	}
 	if minimum := html_quirk_min_height {
 		height = if content_height_from_children > minimum {
@@ -1010,11 +1020,12 @@ fn layout_list_item_marker(mut state LayoutState, list_item &ListItemBox, mut li
 	} else if marker.chromium_symbol_marker() {
 		// ListMarker::InlineMarginsForOutside(): offset plus 7px padding
 		// and the symbol rectangle's additional 1px inline inset.
-		left_boundary.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
+		left_boundary.minus(list_item_state.border_box_left())
+			.minus(CSSPixels.new(marker.chromium_symbol_ascent() * 2 / 3 + 8))
 	} else if direction == .ltr {
-		left_boundary.minus(marker_state.content_width())
+		left_boundary.minus(list_item_state.border_box_left()).minus(marker_state.content_width())
 	} else {
-		content_width_before_marker.minus(right_intrusion)
+		content_width_before_marker.plus(list_item_state.border_box_right()).minus(right_intrusion)
 	}
 	offset_x := if marker.document().font_rendering_policy() == .chromium {
 		marker_offset_x
@@ -1176,7 +1187,7 @@ fn (mut bfc BlockFormattingContext) introduce_clearance(clear css.Clear, directi
 	}
 	current_y := css_px(bfc.y_offset_of_current_block_container)
 	hypothetical_y := if chromium {
-		current_y.plus(css_px(bfc.margin_state.current_collapsed_margin()))
+		current_y.plus(css_px(bfc.margin_state.pending_margin_for_next_box()))
 	} else {
 		current_y
 	}
@@ -1464,12 +1475,21 @@ fn (mut bfc BlockFormattingContext) layout_floating_box(mut state LayoutState, b
 			forced_width = calculate_fit_content_width(mut state, box_as_box, AvailableSize.make_definite(container_width))
 		}
 	}
+	// NB: A calc-size() with a keyword basis resolves against the width that
+	//     keyword (or shrink-to-fit for auto) gives the float.
+	if width := forced_width {
+		float_width := styled.computed_values().size_value(.width)
+		if !box.is_replaced_box() && size_has_keyword_calc_size(float_width) {
+			forced_width = resolve_calc_size_for_box(styled.computed_values(), initial_state, float_width, true, width, container_width)
+		}
+	}
 	// CSS 2.1 §10.3.5 applies max-width and then min-width to the
 	// shrink-to-fit result (and to a specified float width). Replaced floats
 	// already apply these constraints as part of compute_replaced_size().
 	if width := forced_width {
 		if !box.is_replaced_box() {
-			forced_width = clamp_layout_content_size(box, width, container_width, initial_state, true)
+			forced_width = apply_intrinsic_width_limits(mut state, box, initial_state,
+				clamp_layout_content_size(box, width, container_width, initial_state, true), AvailableSize.make_definite(container_width))
 		}
 	}
 	mut box_state := layout_independent_child(mut state, box, mut container_state, container_width, container_height, forced_width, forced_height)

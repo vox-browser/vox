@@ -18,7 +18,8 @@ class RendererBuildTests(unittest.TestCase):
             self.assertEqual(data['default'],'gg')
             self.assertTrue(data['gg_adapters'])
             self.assertFalse(data['skia_free'])
-            self.assertIn('canvas',data['skia_required_for'])
+            self.assertIn('recording and picture playback',data['skia_required_for'])
+            self.assertNotIn('canvas',data['skia_required_for'])
 
     def test_default_requires_the_gg_module(self):
         with patch('renderer_build.has_gg_canvas', return_value=False):

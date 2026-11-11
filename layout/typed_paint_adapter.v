@@ -10,7 +10,7 @@ import math
 import os
 import painting
 import platform
-import skia
+import cpuraster
 import svg
 import time
 
@@ -3860,7 +3860,7 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			pointer_events: computed.pointer_events()
 			has_fill: computed.fill() != none
 			has_stroke: computed.stroke() != none
-			path: skia.Path{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
+			path: cpuraster.PackedPath{segments: projection.packed_segments, even_odd: svg_fill_even_odd}
 			bounding_box: if node.is_svg_text_box() {
 				svg_text_bounding_box_for_hit_testing(node, state)
 			} else { none }
@@ -3913,6 +3913,15 @@ fn uncached_block_box_from_typed_layout_shallow(node &Node, state &LayoutState, 
 			node.document().font_rendering_policy() == .chromium)
 		svg_stroke_dasharray = resolved_svg_stroke_dasharray(computed, percentage_basis)
 		svg_stroke_dashoffset = computed.stroke_dashoffset().to_px(computed.length_resolution_context(), css.CSSPixels.nearest_value_for(percentage_basis)).to_double()
+		if node.is_svg_geometry_box() {
+			if source := node.dom_node() {
+				if geometry_element := source.as_element() {
+					model := svg_element_model(geometry_element)
+					svg_stroke_dasharray, svg_stroke_dashoffset = model.calibrated_stroke_dashes(path,
+						svg_stroke_dasharray, svg_stroke_dashoffset)
+				}
+			}
+		}
 		svg_non_scaling_stroke = computed.vector_effect() == .non_scaling_stroke
 		svg_stroke_first = svg_mask_stroke_precedes_fill(computed.paint_order())
 		svg_stroke_linecap = match computed.stroke_linecap() {

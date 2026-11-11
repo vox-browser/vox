@@ -3029,8 +3029,9 @@ fn test_collapsed_table_row_group_spans_its_positioned_rows() {
 	assert collapsed_group.content_height().to_double() == 0
 	assert visible_group.offset.y().to_double() == 5
 	assert used_for_id(result, 'visible').offset.y().to_double() == 5
-	assert used_for_id(result, 'visible').content_height().to_double() == 160
-	assert table.content_height().to_double() == 170
+	// The specified height includes the spacing around the only visible row.
+	assert used_for_id(result, 'visible').content_height().to_double() == 150
+	assert table.content_height().to_double() == 160
 }
 
 fn test_table_auto_row_height_distribution_truncates_fractional_increment() {
@@ -3249,7 +3250,9 @@ fn test_empty_table_row_is_retained_when_the_grid_has_no_columns() {
 	result := run_document_layout(document, 800, 600) or { panic('layout failed') }
 	row := used_for_id(result, 'row')
 	assert row.content_width().to_double() == 0
-	assert row.content_height().to_double() == 0
+	// A row without cells still receives the specified table height, less the
+	// table's padding, borders and the spacing around the row.
+	assert row.content_height().to_double() == 74
 	assert row.offset.x().to_double() == 2
 	assert row.offset.y().to_double() == 2
 }
