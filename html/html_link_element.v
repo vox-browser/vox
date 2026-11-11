@@ -516,11 +516,11 @@ pub fn (mut link HTMLLinkElementModel) default_fetch_and_process_linked_resource
 		// Browser adapters with asynchronous stylesheet transport complete the
 		// same model later; absence of a synchronous hook is not a failure.
 		if link.external_stylesheet_fetcher_ && request.kind == .stylesheet { return }
-		link.process_linked_resource(false, request.url, LinkResourceResponse{})
+		link.process_linked_resource(false, request.url, LinkResourceResponse{ origin_clean: false })
 		return
 	}
 	response := fetch_resource(request.url, request.kind, request.crossorigin) or {
-		link.process_linked_resource(false, request.url, LinkResourceResponse{})
+		link.process_linked_resource(false, request.url, LinkResourceResponse{ origin_clean: false })
 		return
 	}
 	success := response.status >= 200 && response.status < 300
@@ -810,7 +810,14 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 			return
 		}
 	}
-	mut success := request_succeeded && link.supports_style_sheet_type()
+	// An ineligible link cancels its load; it must not regain an empty sheet
+	// when an older asynchronous request completes after a type change.
+	if !link.supports_style_sheet_type() {
+		link.clear_loaded_style_sheet()
+		link.cancel_pending_stylesheet_load()
+		return
+	}
+	mut success := request_succeeded
 	mut assume_css_in_quirks_mode := false
 	if document := link.resource_document() {
 		if resource_url := response.url {
@@ -826,8 +833,14 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 		}
 	}
 	link.clear_loaded_style_sheet()
-	if success {
-		link.loaded_style_sheet_ = response.body.bytestr()
+	// Failed connected links still expose an empty sheet, with the response's
+	// origin-clean state. A removed link must not regain a sheet on completion.
+	connected := if element := link.element_ {
+		link_dom_element(element).as_node().is_browsing_context_connected()
+	} else { link.connected_ }
+	if success || connected {
+		css_text := if success { response.body.bytestr() } else { '' }
+		link.loaded_style_sheet_ = css_text
 		if element := link.element_ {
 			location := response.original_url or {
 				response.url or {
@@ -835,7 +848,7 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 				}
 			}
 			resource_url := response.url or { location }
-			mut sheet := css.install_link_style_sheet_with_base(element, response.body.bytestr(),
+			mut sheet := css.install_link_style_sheet_with_base(element, css_text,
 				location.serialize(), link.has_relation('alternate') && !link.explicitly_enabled_,
 				resource_url.serialize())
 			sheet.base.origin_clean = response.origin_clean
@@ -845,6 +858,8 @@ pub fn (mut link HTMLLinkElementModel) process_stylesheet_resource(request_succe
 				sheet.set_disabled(false)
 			}
 		}
+	}
+	if success {
 		link.stylesheet_failed_ = false
 		link.fire_event('load')
 	} else {
