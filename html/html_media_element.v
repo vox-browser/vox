@@ -2510,7 +2510,10 @@ pub fn (mut element HTMLMediaElement) on_metadata_parsed(duration f64) {
 	}
 	element.current_playback_position_ = 0
 	element.set_official_playback_position(0)
-	element.set_duration(duration)
+	// A local MediaSource owns its duration; demuxer metadata must not replace it.
+	if element.attached_media_source_ == unsafe { nil } {
+		element.set_duration(duration)
+	}
 	element.set_ready_state(.have_metadata)
 	if element.default_playback_start_ > 0 {
 		element.seek_element(element.default_playback_start_, .accurate)

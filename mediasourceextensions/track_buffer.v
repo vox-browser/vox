@@ -143,12 +143,21 @@ pub fn (demuxer &TrackBufferDemuxer) duration_of_track(_ WebMTrackInfo) f64 {
 	return 0
 }
 
+pub fn (demuxer &TrackBufferDemuxer) highest_end_time() f64 {
+	mut highest := f64(0)
+	for run in demuxer.runs_ {
+		if run.presentation_end > highest { highest = run.presentation_end }
+	}
+	return highest
+}
+
 pub fn (demuxer &TrackBufferDemuxer) total_duration() f64 {
-	return 0
+	return demuxer.highest_end_time()
 }
 
 fn (mut demuxer TrackBufferDemuxer) dispatch_scan_state_change() {
 	demuxer.scan_state_ = TrackBufferScanState{
+		duration: demuxer.highest_end_time()
 		tracks: [TrackBufferTrackScanState{
 			track: demuxer.track
 			buffered_ranges: demuxer.buffered_time_ranges()

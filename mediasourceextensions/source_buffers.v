@@ -455,13 +455,21 @@ fn (mut buffer SourceBuffer) finish_buffer_append() {
 }
 
 fn (mut buffer SourceBuffer) update_ready_state_and_duration_after_coded_frame_processing() {
-	media_source := buffer.media_source_ or { return }
+	mut media_source := buffer.media_source_ or { return }
 	mut media_element := media_source.media_element_assigned_to() or { return }
 	mut ranges := []html.MediaBufferedRange{}
 	for range_ in buffer.processor_.buffered_time_ranges() {
 		ranges << html.MediaBufferedRange{ start: range_.start, end: range_.end }
 	}
 	media_element.media_source_update_buffered_ranges(ranges)
+	group_end_timestamp := buffer.processor_.group_end_timestamp()
+	if group_end_timestamp > media_source.duration() {
+		media_source.run_duration_change_algorithm(group_end_timestamp)
+	}
+}
+
+pub fn (buffer &SourceBuffer) highest_end_time() f64 {
+	return buffer.processor_.highest_end_time()
 }
 
 pub fn (mut buffer SourceBuffer) set_reached_end_of_stream() {

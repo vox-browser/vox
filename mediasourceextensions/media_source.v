@@ -220,9 +220,16 @@ pub fn (mut source MediaSource) run_end_of_stream_algorithm(error_ ?EndOfStreamE
 			buffer.set_reached_end_of_stream()
 		}
 	}
-	// Duration adjustment and media-element error signaling depend on coded
-	// track buffers and are translated with the demuxing path.
-	_ = error_
+	if error_ == none {
+		mut highest_end_time := f64(0)
+		for index in 0 .. source.source_buffers_.length() {
+			buffer := source.source_buffers_.item(index) or { continue }
+			end := buffer.highest_end_time()
+			if end > highest_end_time { highest_end_time = end }
+		}
+		source.run_duration_change_algorithm(highest_end_time)
+	}
+	// FIXME: Signal completion and decode/network errors to the media element.
 }
 
 pub fn (source &MediaSource) queue_a_media_source_task(task fn ()) {
