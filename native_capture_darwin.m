@@ -5799,6 +5799,7 @@ static void native_prepare_image_cpu_fallback(CGContextRef context) {
 
 #include "native/include/native_rounded_image_clip.h"
 #include "native/include/native_rounded_image_pixels.h"
+#include "native/include/native_sampled_png_darwin.h"
 
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,

@@ -6755,6 +6755,12 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					app.set_chromium_image_resource_identity(image_data.image_url)
+					if app.draw_sampled_png(command,image,image_data.image_url,draw_rect,source_rect,clip_data,matrix,
+						page_x,page_y,scroll_y,result.bitmap.scaling == .nearest_neighbor) {
+						clear_chromium_image_resource_identity()
+						C.native_end_clip()
+						return
+					}
 					C.native_draw_image_part_transformed_clipped(image, f32(draw_rect.x), f32(draw_rect.y), f32(draw_rect.width), f32(draw_rect.height), source_rect[0], source_rect[1], source_rect[2], source_rect[3], clip_data[0], clip_data[1], clip_data[2], clip_data[3], f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.width), f32(app.ctx.height), f32(command.opacity), if result.bitmap.scaling == .nearest_neighbor {
 						1
 					} else {
@@ -6891,6 +6897,14 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 						C.native_add_corner_rounded_clip(f32(clip.x), f32(clip.y), f32(clip.width), f32(clip.height), f32(radii.top_left.horizontal), f32(radii.top_left.vertical), f32(radii.top_right.horizontal), f32(radii.top_right.vertical), f32(radii.bottom_right.horizontal), f32(radii.bottom_right.vertical), f32(radii.bottom_left.horizontal), f32(radii.bottom_left.vertical), f32(matrix[0]), f32(matrix[1]), f32(matrix[2]), f32(matrix[3]), f32(matrix[4]), f32(matrix[5]), page_x, page_y, f32(scroll_y), f32(app.ctx.height))
 					}
 					// Live frames, not posters, bypass the image decode-cache resize.
+					if poster_url := layout.video_poster_resource_url(app.document, command) {
+						if app.draw_sampled_png(command, video_image, poster_url, destination,
+							[f32(0), 0, f32(bitmap.width), f32(bitmap.height)]!, clip_data, matrix,
+							page_x, page_y, scroll_y, scaling == .nearest_neighbor) {
+							C.native_end_clip()
+							return
+						}
+					}
 					C.native_set_video_frame_image(i32(command.video_frame_source != none))
 					if gpu_video_upload_keys_enabled {
 						C.native_set_video_frame_resource(video_resource.source, video_resource.revision, video_resource.generation)
