@@ -56,7 +56,7 @@ static VoxPlatformFunctionRegistry *vox_platform_function_registry(void *source)
         "set=WeakMap.prototype.set,get=WeakMap.prototype.get,has=WeakMap.prototype.has,apply=Reflect.apply;return["
         "(value,text)=>{if(!apply(has,sources,[value]))apply(set,sources,[value,text]);},"
         "value=>apply(get,sources,[value]),"
-        "(value,original)=>apply(set,originals,[value,original]),"
+        "(value,original,error)=>apply(set,originals,[value,[original,error]]),"
         "value=>apply(get,originals,[value])];})()");
     JSValueRef exception = NULL;
     JSValueRef values = JSEvaluateScript(context, source_text, NULL, NULL, 1, &exception);
@@ -116,10 +116,26 @@ static JSValueRef vox_platform_function_to_string(JSContextRef context,
     if (exception && *exception) return JSValueMakeUndefined(context);
     if (source && JSValueIsString(context, source)) return source;
     value = (JSValueRef)function;
-    JSValueRef original = JSObjectCallAsFunction(context, registry->original, NULL,
+    JSValueRef intrinsics = JSObjectCallAsFunction(context, registry->original, NULL,
         1, &value, exception);
-    if ((exception && *exception) || !original || !JSValueIsObject(context, original))
+    if ((exception && *exception) || !intrinsics || !JSValueIsObject(context, intrinsics))
         return JSValueMakeUndefined(context);
+    JSValueRef original = JSObjectGetPropertyAtIndex(context, (JSObjectRef)intrinsics, 0, exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    if (!JSObjectIsFunction(context, receiver)) {
+        // Perform the non-callable rejection at this native boundary. Calling
+        // the original formatter to reject it adds a second native frame.
+        JSValueRef constructor = JSObjectGetPropertyAtIndex(context, (JSObjectRef)intrinsics, 1, exception);
+        if (exception && *exception) return JSValueMakeUndefined(context);
+        JSStringRef message = JSStringCreateWithUTF8CString("Type error");
+        JSValueRef argument = JSValueMakeString(context, message);
+        JSStringRelease(message);
+        JSValueRef thrown = NULL;
+        JSObjectRef error = JSObjectCallAsConstructor(context, (JSObjectRef)constructor,
+            1, &argument, &thrown);
+        if (exception) *exception = thrown ? thrown : error;
+        return JSValueMakeUndefined(context);
+    }
     return JSObjectCallAsFunction(context, (JSObjectRef)original, receiver,
         0, NULL, exception);
 }
@@ -144,13 +160,17 @@ static bool vox_install_platform_function_source(void *opaque_context,
     JSValueRef original = JSObjectGetProperty(context, (JSObjectRef)prototype, key, &exception);
     JSStringRelease(key);
     if (exception) goto failed;
+    key = JSStringCreateWithUTF8CString("TypeError");
+    JSValueRef error = JSObjectGetProperty(context, global, key, &exception);
+    JSStringRelease(key);
+    if (exception) goto failed;
     JSValueRef argument = (JSValueRef)registry->add;
     JSObjectCallAsFunction(context, (JSObjectRef)opaque_factory, global, 1, &argument, &exception);
     if (exception) goto failed;
     key = JSStringCreateWithUTF8CString("toString");
     JSObjectRef formatter = JSObjectMakeFunctionWithCallback(context, key, vox_platform_function_to_string);
-    JSValueRef pair[2] = {(JSValueRef)formatter, original};
-    JSObjectCallAsFunction(context, registry->register_formatter, NULL, 2, pair, &exception);
+    JSValueRef pair[3] = {(JSValueRef)formatter, original, error};
+    JSObjectCallAsFunction(context, registry->register_formatter, NULL, 3, pair, &exception);
     if (!exception) JSObjectSetProperty(context, (JSObjectRef)prototype, key,
         formatter, kJSPropertyAttributeDontEnum, &exception);
     JSStringRelease(key);

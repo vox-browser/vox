@@ -93,7 +93,7 @@ fn test_platform_function_source_is_native_on_error_and_ignores_name_getters() {
  const platform=document.getElementsByClassName,original=String(platform);
  Object.defineProperty(platform,"name",{get(){throw Error("author name getter")},configurable:true});
  let nativeStack=false;
- try{Function.prototype.toString.call({})}catch(error){nativeStack=error instanceof TypeError&&!error.stack.split("\n").some(line=>line==="@"||line==="toString@");}
+ try{Function.prototype.toString.call({})}catch(error){nativeStack=error instanceof TypeError&&error.stack.split("\n").filter(line=>line==="toString@[native code]").length===1&&!error.stack.split("\n").some(line=>line==="@"||line==="toString@");}
  globalThis.nativeSourceBoundary=String(platform)===original&&nativeStack;
  '], runtime, mut messages)
 	assert messages == []string{}, messages.join('\n')
