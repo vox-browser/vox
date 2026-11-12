@@ -142,12 +142,18 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 	if samples == 4 {
 		target.draw_msaa_trigger()
 	}
+	draw_shape_descriptor(mut target, shape, int(width), int(height)) or { return 0 }
+	target.read_pixels(pixels, int(pitch)) or { return 0 }
+	return 1
+}
+
+fn draw_shape_descriptor(mut target canvas.GpuSurface, shape &C.VoxGraphiteShape, width int, height int) ! {
 	target.set_matrix(canvas.Matrix.values(shape.matrix))
 	// Rectangles clipped out without antialiasing, in local coordinates.
 	for i in 0 .. int(shape.clip_out_count) {
 		c := unsafe { &shape.clip_outs[4 * i] }
 		rect := unsafe { canvas.Rect.ltrb(c[0], c[1], c[2], c[3]) }
-		target.clip_rect(rect, .difference, false) or { return 0 }
+		target.clip_rect(rect, .difference, false)!
 	}
 	anti_alias := shape.anti_alias != 0
 	// The backend draws the underlay first only for rrects and rings; the
@@ -158,7 +164,7 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 				shape.underlay_float_color)
 			anti_alias: anti_alias
 		}
-		target.draw_rrect(rounded_rect(shape.underlay_rect), underlay) or { return 0 }
+		target.draw_rrect(rounded_rect(shape.underlay_rect), underlay)!
 	}
 	stroke := shape.fill == 0
 	paint := canvas.Paint{
@@ -169,17 +175,17 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		stroke_width: if stroke && shape.thickness > 0 { shape.thickness } else { 0 }
 	}
 	if shape.fill in [11, 12, 13] {
-		draw_contoured_shape(mut target, shape, paint, int(width), int(height)) or { return 0 }
+		draw_contoured_shape(mut target, shape, paint, width, height)!
 	} else if shape.fill == 10 {
-		mask := rounded_shadow_mask(shape, int(width), int(height)) or { return 0 }
-		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
+		mask := rounded_shadow_mask(shape, width, height)!
+		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
 		target.set_matrix(canvas.Matrix.identity())
-		target.draw_alpha_mask(mask, int(width), int(height), paint) or { return 0 }
+		target.draw_alpha_mask(mask, width, height, paint)!
 	} else if shape.fill == 9 {
 		// An unblurred outer shadow is the source rounded rectangle with its
 		// content rounded rectangle clipped out, both with analytic coverage.
-		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
-		target.draw_rrect(rounded_rect(shape.rect), paint) or { return 0 }
+		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true)!
+		target.draw_rrect(rounded_rect(shape.rect), paint)!
 	} else if shape.fill >= 2 {
 		background := if shape.has_underlay != 0 {
 			?canvas.Paint(canvas.Paint{
@@ -190,15 +196,37 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		} else {
 			none
 		}
-		draw_border(mut target, rounded_rect(shape.rect), paint, int(shape.fill), shape.border_widths,
-			background) or {
-			$if ggshape_debug ? {
-				eprintln('ggshape: ${err}')
-			}
-			return 0
-		}
+		draw_border(mut target, rounded_rect(shape.rect), paint, int(shape.fill), shape.border_widths, background)!
 	} else {
-		target.draw_rrect(rounded_rect(shape.rect), paint) or { return 0 }
+		target.draw_rrect(rounded_rect(shape.rect), paint)!
+	}
+}
+
+// draw_shapes resolves a bounded sequence once, preserving sample ownership
+// between adjacent shadows, backgrounds and borders. Failure leaves pixels intact.
+pub fn draw_shapes(pixels &u8, width i32, height i32, pitch i32, backdrop i32, shapes &C.VoxGraphiteShape, count i32) i32 {
+	if pixels == unsafe { nil } || shapes == unsafe { nil } || count <= 0 || count > 32 || width <= 0 || height <= 0 || pitch < width * 4 || C.pthread_main_np() == 0 {
+		return 0
+	}
+	mut samples := 1
+	for i in 0 .. int(count) {
+		shape := unsafe { &shapes[i] }
+		if !supported(shape) { return 0 }
+		if shape.force_msaa != 0 { samples = 4 }
+	}
+	mut ctx := context() or { return 0 }
+	mut target := ctx.new_surface(width: int(width), height: int(height), sample_count: samples) or { return 0 }
+	defer { target.free() }
+	if backdrop != 0 {
+		target.write_pixels(pixels, int(pitch)) or { return 0 }
+	} else {
+		target.clear(canvas.Color4f{})
+	}
+	if samples == 4 { target.draw_msaa_trigger() }
+	for i in 0 .. int(count) {
+		target.save()
+		draw_shape_descriptor(mut target, unsafe { &shapes[i] }, int(width), int(height)) or { return 0 }
+		target.restore()
 	}
 	target.read_pixels(pixels, int(pitch)) or { return 0 }
 	return 1

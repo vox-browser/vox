@@ -7793,6 +7793,10 @@ fn (mut app BrowserApp) draw() {
 					}
 				}
 				if !gpu_leaf && command.kind == 'paint_outer_box_shadow' {
+					$if macos {
+						shared_svg_end = app.draw_contoured_group(command_index, page_y)
+						if shared_svg_end > command_index { continue }
+					}
 					outer_end := app.draw_chromium_outer_decorations(command_index, page_y, window.height, mut culling)
 					if outer_end > command_index {
 						shared_svg_end = outer_end

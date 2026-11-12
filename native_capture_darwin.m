@@ -1169,6 +1169,42 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     return drawn;
 }
 
+// Shared paint descriptors; native code only transfers pixels and coordinates.
+int native_draw_document_shape_group(VoxGraphiteShape* shapes, int count, float* matrix,
+    float canvas_width,float canvas_height,float page_x,float page_y,float scroll_y) {
+    if(!shapes||!matrix||count<=0||count>32||[[NSGraphicsContext currentContext] CGContext]!=native_font_compositing_context)return 0;
+    float left=INFINITY,top=INFINITY,right=-INFINITY,bottom=-INFINITY;
+    for(int j=0;j<count;++j) {
+        VoxGraphiteShape* shape=&shapes[j];
+        float pad=(shape->fill==0||shape->fill==12)?fmaxf(shape->thickness,0)*.5f:
+            ((shape->fill==10||shape->fill==13)?fmaxf(shape->thickness,0)*1.5f:0);
+        for(int i=0;i<4;++i) {
+            float x=shape->rect[0]+((i&1)?shape->rect[2]+pad:-pad);
+            float y=shape->rect[1]+((i&2)?shape->rect[3]+pad:-pad);
+            float dx=matrix[0]*x+matrix[2]*y+matrix[4],dy=matrix[1]*x+matrix[3]*y+matrix[5];
+            left=fminf(left,dx);top=fminf(top,dy);right=fmaxf(right,dx);bottom=fmaxf(bottom,dy);
+        }
+    }
+    int32_t geometry[7];float scale;
+    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    if(prepared==2)return 1;
+    if(prepared!=1)return 0;
+    int w=geometry[2],h=geometry[3],backdrop=geometry[4];
+    uint8_t* pixels=calloc((size_t)w*h*4,1);
+    if(!pixels)return 0;
+    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {free(pixels);return 0;}
+    VoxGraphiteShape copy[32];memcpy(copy,shapes,count*sizeof(*shapes));
+    float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
+    float cropped[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
+        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
+    for(int j=0;j<count;++j)memcpy(copy[j].matrix,cropped,sizeof(cropped));
+    extern int vox_draw_document_shape_group_pixels(uint8_t*,int,int,int,int,int,int,VoxGraphiteShape*,int);
+    int drawn=vox_draw_document_shape_group_pixels(pixels,w,h,w*4,backdrop,
+        (int)lround((geometry[0]-page_x)*scale),(int)lround((geometry[1]-page_y+scroll_y)*scale),copy,count);
+    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);return drawn;
+}
+
 static int native_try_v_rounded_rect(float x, float y, float width, float height,
     const float* radii, const float* matrix, float canvas_width, float canvas_height,
     gg__Color color, int fill, float thickness, int anti_alias,
