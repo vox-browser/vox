@@ -302,6 +302,8 @@ fn draw_descriptor(mut target canvas.GpuSurface, path &C.VoxGraphitePath, parent
 // The flags of vox_graphite_draw_svg_image_pixels().
 const svg_backdrop = 1
 const svg_force_msaa = 2
+// Scalar document batches clip their conservative viewport without edge AA.
+const svg_hard_viewport = 4
 
 // draw_svg_image implements vox_graphite_draw_svg_image_pixels() like the
 // backend's draw_svg_image_pixels(): the descriptors drawn after the SVG
@@ -351,7 +353,7 @@ fn draw_svg_image_pixels(pixels &u8, width i32, height i32, pitch i32, flags i32
 	parent_matrix := canvas.Matrix.values(parent_values)
 	target.set_matrix(parent_matrix)
 	v := unsafe { [viewport[0], viewport[1], viewport[2], viewport[3]] }
-	target.clip_rect(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), .intersect, true) or { return 0 }
+	target.clip_rect(canvas.Rect.xywh(v[0], v[1], v[2], v[3]), .intersect, flags & svg_hard_viewport == 0) or { return 0 }
 	layered := rounded_clip != unsafe { nil }
 	if layered {
 		mut values := [12]f32{}

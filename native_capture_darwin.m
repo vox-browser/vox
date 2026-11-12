@@ -1737,7 +1737,35 @@ int native_draw_svg_path_batch(const VoxGraphitePath *paths, int count,
     const float *outer, float x, float y, float width, float height,
     float page_x, float page_y, float scroll_y, float canvas_width, float canvas_height,
     const float *rounded_clip) {
-    return 0;
+    if (!paths || count <= 0 || count > 65536 || !outer || width <= 0 || height <= 0 ||
+        [[NSGraphicsContext currentContext] CGContext] != native_font_compositing_context) return 0;
+    float matrix[6] = {outer[0],outer[1],outer[2],outer[3],
+        page_x+outer[4],page_y-scroll_y+outer[5]};
+    float left=INFINITY,top=INFINITY,right=-INFINITY,bottom=-INFINITY;
+    for(int i=0;i<4;++i) {
+        float px=x+((i&1)?width:0),py=y+((i&2)?height:0);
+        float dx=matrix[0]*px+matrix[2]*py+matrix[4],dy=matrix[1]*px+matrix[3]*py+matrix[5];
+        left=fminf(left,dx);top=fminf(top,dy);right=fmaxf(right,dx);bottom=fmaxf(bottom,dy);
+    }
+    int32_t geometry[7];float scale;
+    int prepared=native_text_raster_begin(left,top,right,bottom,canvas_width,canvas_height,16,geometry,&scale);
+    if(prepared==2)return 1;
+    if(prepared!=1)return 0;
+    int w=geometry[2],h=geometry[3],backdrop=geometry[4];
+    uint8_t* pixels=calloc((size_t)w*h*4,1);
+    if(!pixels)return 0;
+    if(backdrop&&!native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale)) {
+        free(pixels);return 0;
+    }
+    float sx=(float)w/geometry[5],sy=(float)h/geometry[6];
+    const float parent[9]={matrix[0]*sx,matrix[2]*sx,(matrix[4]-geometry[0])*sx,
+        matrix[1]*sy,matrix[3]*sy,(matrix[5]-geometry[1])*sy,0,0,1};
+    const float viewport[4]={x,y,width,height};
+    extern int vox_draw_document_svg_pixels(uint8_t*,int,int,int,int,VoxGraphitePath*,int,float*,float*,float*);
+    int drawn=vox_draw_document_svg_pixels(pixels,w,h,w*4,backdrop,(VoxGraphitePath*)paths,count,(float*)parent,(float*)viewport,(float*)rounded_clip);
+    if(drawn)drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
+        geometry[5],geometry[6],canvas_height,backdrop);
+    free(pixels);return drawn;
 }
 
 int native_draw_svg_cover_pattern(const VoxGraphitePath *paths, int count,

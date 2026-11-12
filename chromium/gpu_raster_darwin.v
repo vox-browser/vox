@@ -192,6 +192,21 @@ fn draw_document_path_pixels(pixels &u8, width i32, height i32, pitch i32, backd
 	return result
 }
 
+// Adjacent SVG paints keep their samples until the shared resolve. The native
+// boundary supplies only destination pixels and retained descriptors.
+@[export: 'vox_draw_document_svg_pixels']
+fn draw_document_svg_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	paths &C.VoxGraphitePath, count i32, parent &f32, viewport &f32, rounded_clip &f32) i32 {
+	swap_document_raster_channels(pixels, width, height, pitch)
+	result := ggshape.draw_svg_image(pixels, width, height, pitch, (if backdrop != 0 {
+		i32(1)
+	} else {
+		i32(0)
+	}) | 2 | 4, paths, count, parent, viewport, rounded_clip)
+	swap_document_raster_channels(pixels, width, height, pitch)
+	return result
+}
+
 @[export: 'vox_draw_document_shape_group_pixels']
 fn draw_document_shape_group_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32, first_x i32, first_y i32, shapes &C.VoxGraphiteShape, count i32) i32 {
 	swap_document_raster_channels(pixels, width, height, pitch)
