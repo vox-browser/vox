@@ -32,7 +32,6 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      V_REVISION: 27c8699f26ef90d06449f866aeca145acf7e8289
       RUSTUP_TOOLCHAIN: stable
       JOBS: '2'
     steps:
@@ -93,17 +92,14 @@ jobs:
           sudo mkswap "$RUNNER_TEMP/vox.swap"
           sudo swapon "$RUNNER_TEMP/vox.swap"
 
-      - name: Build pinned V and fetch UI2
+      - name: Build V and fetch UI2
+        # Unpinned shallow clone plus plain make, exactly like the master
+        # scaffolding job: pinned source builds no longer bootstrap on
+        # current runners (missing fd_poll.h, then an unresolved string
+        # helper in the v1-to-v2 step at the old pin).
         timeout-minutes: 25
         run: |
-          git init "$RUNNER_TEMP/v"
-          git -C "$RUNNER_TEMP/v" remote add origin https://github.com/vlang/v.git
-          git -C "$RUNNER_TEMP/v" fetch --depth 1 origin "$V_REVISION"
-          git -C "$RUNNER_TEMP/v" checkout --detach FETCH_HEAD
-          # No VFLAGS here: extra V flags break the v1-to-v2 bootstrap at
-          # this pin (unresolved string helper at link time). The memory
-          # guard on this step still bounds the build RSS; -memory-limit
-          # stays on every V invocation that compiles or tests Vox itself.
+          git clone --depth 1 https://github.com/vlang/v.git "$RUNNER_TEMP/v"
           python3 tools/run_memory_bounded.py \
             --lock "$RUNNER_TEMP/vox-v-build.lock" \
             --report "$RUNNER_TEMP/vox-v-build.json" --timeout 1200 -- \
