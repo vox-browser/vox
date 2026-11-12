@@ -6,6 +6,10 @@ https://vox-browser.org
 
 <img width="2078" height="1628" alt="image" src="https://github.com/user-attachments/assets/ed3d6776-78dd-4903-b716-a95cd5845cab" />
 
+WebGL shader validation needs glslang (`brew install glslang` on macOS,
+`glslang-dev` on Linux, or `mingw-w64-x86_64-glslang` on Windows). See
+[shader validation and backend equivalence tests](docs/SHADER_VALIDATION.md).
+
 Vox compiles in 2 seconds on M5 Max with `v .`!
 
 With the native dependencies installed, use a current V compiler:
