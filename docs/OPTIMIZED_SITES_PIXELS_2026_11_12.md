@@ -636,3 +636,48 @@ these findings do not yet justify an engine change or establish a GitHub fix.
 Two standalone layout-probe compilations hit the 12 GiB memory guard; the
 selected root-harness probe compiles and runs successfully within its guards.
 All raw attempts, successful captures and failed compilations are retained.
+
+## Production confirmation after PNG and text-mask corrections
+
+Production executable
+`081a75f66fbda26d5df97732bce84bfdb4664ea73257ee19ec3f9f381b474829`
+(receipt `20261112-202158-a889a56c`, C backend, literal `-prod`, single C unit)
+contains `7defc6a8c` and `6520e253a`. Exact compiled source hashes match the
+profile parser, GPU conversion, CPU image sampler, native image boundary,
+prepared GG shader inputs and retained text-mask implementation. This
+supersedes the pending-production qualification for those two fixes above.
+
+| Catalog workload | Differing pixels, each of two fresh production captures |
+| --- | ---: |
+| Hacker News, original six-response archive, scale 2 | **0** |
+| Lobsters, registered guest archive, scale 1 | **0** |
+| Wikipedia portal archive, scripts disabled, scale 1 | **0** |
+| vlang.io archive, scripts disabled, scale 1 | **3,250** |
+| GitHub archived hydrated DOM, all 33 row identities preserved | **38,404** |
+| CNN registered archive | **175,866** |
+
+HN retains all 30 story identities. Its PNGs match the unchanged Brave reference
+from the initial audit. CNN's two native PNGs now match each other exactly;
+this does not clear its cross-browser failure or the earlier source/replay
+mismatch. Concurrent changes are included in this production build, so the CNN
+change is not attributed to either rendering correction. Reddit remains
+unverified because its historical fixture is missing; no workload was
+substituted. These checks establish frozen-viewport results, not live-site,
+whole-document or interactive parity.
+
+The legacy-gamma and rounded PNG diagnostics, first-use image/poster mip,
+image-resource/compositor reuse and all three ordinary gradient controls remain
+exact twice. Text-mask diagnostics retain 7,725 and 3,752 differences; the scope
+control retains 2,939 and the compositor-gradient control retains one. Their
+nonzero results remain failures with the original references and tolerance.
+
+All 36 saved captures have normal browser/3 GiB guard exits, completed document
+readiness and unchanged executable, native-library, fixture and reference
+identities. A separate verifier rechecks every saved PNG, feature witness and
+exit receipt and exits zero. FuseCode interrupted delivery of the original
+capture driver's final CLI exit, so that outer exit is recorded as unknown;
+it is not inferred from the completed observations. Earlier interrupted and
+preflight-failed attempts remain alongside the completed results locally under
+`docs/performance/vlang-gradients-20261112/`. Completed job directories, generated
+C, diagnostic executables and guard files are removed from `Build/` after their
+evidence is retained. **The all-site zero-error gate remains open.**
