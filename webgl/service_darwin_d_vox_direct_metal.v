@@ -16,6 +16,7 @@ mut:
     next_id u32 = 16
     objects map[u32]&MetalServiceObject
     buffers map[u32]u32
+    fences map[voidptr]&MetalServiceFence
     vertex_arrays map[u32]&MetalServiceVertexArray
     vertex_array u32
     current_program u32
@@ -181,7 +182,9 @@ fn (mut context MetalServiceContext) collect_buffers() {
     for name, mut object in context.objects {
         if object.kind != 0 || !object.deleted || object.gpu_buffer == unsafe { nil } { continue }
         mut referenced := context.buffers.values().contains(name)
-        for _, vao in context.vertex_arrays {
+        for _, fence in context.fences { unsafe { free(fence) } }
+    unsafe { context.fences.free() }
+    for _, vao in context.vertex_arrays {
             if vao.element_buffer == name || vao.attributes.any(it.buffer == name) { referenced = true }
         }
         if !referenced { object.gpu_buffer.close(); unsafe { free(object.gpu_buffer) }; object.gpu_buffer = unsafe { nil } }
@@ -275,30 +278,29 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
 
 @[export: 'vox_gl_fence_sync']
 fn metal_service_vox_gl_fence_sync(a0 u32, a1 u32) voidptr {
-    metal_service_unsupported('vox_gl_fence_sync')
-    return unsafe { nil }
+    return metal_service_fence(a0,a1)
 }
 
 @[export: 'vox_gl_client_wait_sync']
 fn metal_service_vox_gl_client_wait_sync(a0 voidptr, a1 u32, a2 u64) u32 {
-    metal_service_unsupported('vox_gl_client_wait_sync')
-    return 0
+    return metal_service_client_wait(a0,a1)
 }
 
 @[export: 'vox_gl_wait_sync']
 fn metal_service_vox_gl_wait_sync(a0 voidptr, a1 u32, a2 u64) {
-    metal_service_unsupported('vox_gl_wait_sync')
+    metal_service_wait(a0,a1,a2)
 }
 
 @[export: 'vox_gl_delete_sync']
 fn metal_service_vox_gl_delete_sync(a0 voidptr) {
-    metal_service_unsupported('vox_gl_delete_sync')
+    mut context:=metal_service_current()
+    if context==unsafe { nil } || a0==unsafe { nil } { return }
+    if mut fence:=context.fences[a0] { fence.deleted=true } else { metal_service_error(invalid_value) }
 }
 
 @[export: 'vox_gl_get_sync_parameter']
 fn metal_service_vox_gl_get_sync_parameter(a0 voidptr, a1 u32) i32 {
-    metal_service_unsupported('vox_gl_get_sync_parameter')
-    return 0
+    return metal_service_sync_parameter(a0,a1)
 }
 
 @[export: 'vox_gl_get_error']
