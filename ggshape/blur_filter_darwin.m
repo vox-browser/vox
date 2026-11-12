@@ -4,6 +4,9 @@
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 #include <stdint.h>
+// Cocoa imports type-generic macros before V's C math declarations.
+#undef remainder
+#undef fma
 #if __has_feature(objc_arc)
 #define VOX_SHADOW_RELEASE(value) ((void)0)
 #else

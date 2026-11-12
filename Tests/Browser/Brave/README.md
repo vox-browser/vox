@@ -1132,6 +1132,14 @@ the original stops and use the same Skia path as linear gradients.
 The adjacent `diagnostic/css-radial-rounded-border.html` and its unchanged Brave
 PNG keep an outer rounded-border case open: eight pixels differ by one level.
 
+`diagnostic/rotated-ellipse-shadow` retains a rotated, clipped orbit over layered
+CSS gradients. Two fresh Brave 157.1.99.56 captures agree exactly at 1024×768,
+scale 1. The bounded GPU ellipse blur reduces its difference from 26,238 to
+1,901 pixels; it remains a diagnostic with an unchanged exact reference.
+`ggshape/rotated_shadow_darwin_test.v` executes equivalent rotated and
+axis-aligned ellipse draws and requires exact RGBA equality, visible blur and
+an empty clipped interior. Sheared and anisotropic kernels retain the fallback.
+
 CSS blur uses Skia's premultiplied sRGB image-filter path in the Chromium
 profile. A supported single gradient retains its drawing commands through
 the filter input instead of quantizing to a bitmap before blur.

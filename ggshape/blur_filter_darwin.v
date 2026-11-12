@@ -112,22 +112,67 @@ fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	return true
 }
 
+fn ellipse_shadow(shape &C.VoxGraphiteShape) bool {
+	for value in shape.rect {
+		if math.is_nan(f64(value)) || math.is_inf(f64(value), 0) { return false }
+	}
+	if shape.rect[2] <= 0 || shape.rect[3] <= 0 { return false }
+	for i in 0 .. 4 {
+		if math.abs(shape.rect[4 + 2*i] - shape.rect[2] * f32(.5)) > f32(.00001)
+			|| math.abs(shape.rect[5 + 2*i] - shape.rect[3] * f32(.5)) > f32(.00001) {
+			return false
+		}
+	}
+	return true
+}
+
+// An isotropic blur rotates with its source. Shear and unequal scales require
+// a different kernel and retain the existing fallback.
+fn shadow_filter_scale(shape &C.VoxGraphiteShape) ?f32 {
+	if affine_shadow_supported(shape) { return shape.matrix[0] }
+	if !ellipse_shadow(shape) { return none }
+	m := shape.matrix
+	for value in m {
+		if math.is_nan(f64(value)) || math.is_inf(f64(value), 0) { return none }
+	}
+	if m[6] != 0 || m[7] != 0 || m[8] != 1 { return none }
+	first := m[0]*m[0] + m[3]*m[3]
+	second := m[1]*m[1] + m[4]*m[4]
+	if first <= 0 || math.abs(first-second) > first * f32(.00001)
+		|| math.abs(m[0]*m[1] + m[3]*m[4]) > first * f32(.00001) { return none }
+	scale := f32(math.sqrt(f64(first)))
+	sigma := shape.thickness * f32(.5) * scale
+	if math.is_nan(f64(sigma)) || math.is_inf(f64(sigma), 0)
+		|| sigma < 1 || sigma > 135 { return none }
+	return scale
+}
+
 fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
-	if !affine_shadow_supported(shape) { return error('Unsupported blurred shadow') }
-	if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
-	if !capsule_shadow_supported(shape) { return error('Unsupported blurred shadow geometry') }
+	if affine_shadow_supported(shape) {
+		if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
+	}
+	if !capsule_shadow_supported(shape) && !ellipse_shadow(shape) {
+		return error('Unsupported blurred shadow geometry')
+	}
 	return shadow_filter_mask(shape, width, height, none, canvas.Point{})
 }
 
 fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source_path ?canvas.Path, source_offset canvas.Point) ![]u8 {
-	if !affine_shadow_supported(shape) { return error('Unsupported shadow filter transform') }
+	scale_factor := shadow_filter_scale(shape) or { return error('Unsupported shadow filter transform') }
 	m := shape.matrix
-	sigma := shape.thickness * f32(0.5) * m[0]
-	left := f32(math.floor(f64(shape.rect[0] * m[0] + m[2])))
-	top := f32(math.floor(f64(shape.rect[1] * m[4] + m[5])))
-	right := f32(math.ceil(f64((shape.rect[0] + shape.rect[2]) * m[0] + m[2])))
-	bottom := f32(math.ceil(f64((shape.rect[1] + shape.rect[3]) * m[4] + m[5])))
+	sigma := shape.thickness * f32(0.5) * scale_factor
+	mut x0, mut y0 := f32(math.inf(1)), f32(math.inf(1))
+	mut x1, mut y1 := f32(math.inf(-1)), f32(math.inf(-1))
+	for i in 0 .. 4 {
+		x := shape.rect[0] + if i & 1 != 0 { shape.rect[2] } else { f32(0) }
+		y := shape.rect[1] + if i & 2 != 0 { shape.rect[3] } else { f32(0) }
+		dx, dy := x*m[0] + y*m[1] + m[2], x*m[3] + y*m[4] + m[5]
+		x0, y0 = math.min(x0,dx), math.min(y0,dy)
+		x1, y1 = math.max(x1,dx), math.max(y1,dy)
+	}
+	left, top := f32(math.floor(f64(x0))), f32(math.floor(f64(y0)))
+	right, bottom := f32(math.ceil(f64(x1))), f32(math.ceil(f64(y1)))
 	original := ShadowBounds{left, top, right, bottom}
 	source_width := int(right - left)
 	source_height := int(bottom - top)
@@ -141,8 +186,8 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source.clear(canvas.Color4f{})
 	mut source_matrix := [9]f32{}
 	for i in 0 .. 9 { source_matrix[i] = m[i] }
-	source_matrix[2] += source_offset.x * m[0] - left
-	source_matrix[5] += source_offset.y * m[4] - top
+	source_matrix[2] += source_offset.x * m[0] + source_offset.y * m[1] - left
+	source_matrix[5] += source_offset.x * m[3] + source_offset.y * m[4] - top
 	source.set_matrix(canvas.Matrix.values(source_matrix))
 	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: shape.anti_alias != 0 }
 	if path := source_path {
