@@ -12,7 +12,9 @@ typedef struct VoxPlatformFunctionRegistry {
     JSGlobalContextRef context;
     JSValueRef operations;
     JSObjectRef add;
-    JSObjectRef has;
+    JSObjectRef lookup;
+    JSObjectRef register_formatter;
+    JSObjectRef original;
     struct VoxPlatformFunctionRegistry *next;
 } VoxPlatformFunctionRegistry;
 
@@ -36,60 +38,124 @@ static void vox_platform_function_registry_make_key(void) {
         vox_platform_function_registry_destroy) == 0;
 }
 
-static bool vox_platform_function_registry(void *source, void **operations) {
+static VoxPlatformFunctionRegistry *vox_platform_function_registry(void *source) {
     pthread_once(&vox_platform_function_key_once, vox_platform_function_registry_make_key);
-    if (!vox_platform_function_key_ready) return false;
+    if (!vox_platform_function_key_ready) return NULL;
     JSContextGroupRef group = JSContextGetGroup((JSContextRef)source);
     VoxPlatformFunctionRegistry *head = pthread_getspecific(vox_platform_function_key);
     for (VoxPlatformFunctionRegistry *item = head; item; item = item->next) {
         if (item->group != group) continue;
-        operations[0] = (void *)item->add;
-        operations[1] = (void *)item->has;
-        return true;
+        return item;
     }
     // A dedicated, DOM-free realm owns the registry. Using a document's realm
     // here would keep its global object alive for the lifetime of the agent.
     JSGlobalContextRef context = JSGlobalContextCreateInGroup(group, NULL);
-    if (!context) return false;
+    if (!context) return NULL;
     JSStringRef source_text = JSStringCreateWithUTF8CString(
-        "(()=>{'use strict';const values=new WeakSet(),add=WeakSet.prototype.add,"
-        "has=WeakSet.prototype.has,apply=Reflect.apply;return["
-        "value=>apply(add,values,[value]),value=>apply(has,values,[value])];})()");
+        "(()=>{'use strict';const sources=new WeakMap(),originals=new WeakMap(),"
+        "set=WeakMap.prototype.set,get=WeakMap.prototype.get,has=WeakMap.prototype.has,apply=Reflect.apply;return["
+        "(value,text)=>{if(!apply(has,sources,[value]))apply(set,sources,[value,text]);},"
+        "value=>apply(get,sources,[value]),"
+        "(value,original)=>apply(set,originals,[value,original]),"
+        "value=>apply(get,originals,[value])];})()");
     JSValueRef exception = NULL;
     JSValueRef values = JSEvaluateScript(context, source_text, NULL, NULL, 1, &exception);
     JSStringRelease(source_text);
     if (exception || !values || !JSValueIsObject(context, values)) {
         JSGlobalContextRelease(context);
-        return false;
+        return NULL;
     }
     JSValueProtect(context, values);
     JSObjectRef array = JSValueToObject(context, values, &exception);
     JSValueRef add = JSObjectGetPropertyAtIndex(context, array, 0, &exception);
-    JSValueRef has = JSObjectGetPropertyAtIndex(context, array, 1, &exception);
-    if (exception || !JSValueIsObject(context, add) || !JSValueIsObject(context, has)) {
+    JSValueRef lookup = JSObjectGetPropertyAtIndex(context, array, 1, &exception);
+    JSValueRef register_formatter = JSObjectGetPropertyAtIndex(context, array, 2, &exception);
+    JSValueRef original = JSObjectGetPropertyAtIndex(context, array, 3, &exception);
+    if (exception || !JSValueIsObject(context, add) || !JSValueIsObject(context, lookup) || !JSValueIsObject(context, register_formatter) || !JSValueIsObject(context, original)) {
         JSValueUnprotect(context, values);
         JSGlobalContextRelease(context);
-        return false;
+        return NULL;
     }
     VoxPlatformFunctionRegistry *registry = calloc(1, sizeof(*registry));
     if (!registry) {
         JSValueUnprotect(context, values);
         JSGlobalContextRelease(context);
-        return false;
+        return NULL;
     }
     registry->group = group;
     registry->context = context;
     registry->operations = values;
     registry->add = JSValueToObject(context, add, NULL);
-    registry->has = JSValueToObject(context, has, NULL);
+    registry->lookup = JSValueToObject(context, lookup, NULL);
+    registry->register_formatter = JSValueToObject(context, register_formatter, NULL);
+    registry->original = JSValueToObject(context, original, NULL);
     registry->next = head;
     if (pthread_setspecific(vox_platform_function_key, registry)) {
         JSValueUnprotect(context, values);
         JSGlobalContextRelease(context);
         free(registry);
-        return false;
+        return NULL;
     }
-    operations[0] = (void *)registry->add;
-    operations[1] = (void *)registry->has;
-    return true;
+    return registry;
+}
+
+
+// The callback has no Runtime record: retained formatters continue to work
+// after their originating document closes. Both maps have weak keys, so the
+// agent does not keep discarded documents alive merely for source formatting.
+static JSValueRef vox_platform_function_to_string(JSContextRef context,
+    JSObjectRef function, JSObjectRef receiver, size_t count,
+    const JSValueRef arguments[], JSValueRef *exception)
+{
+    (void)count; (void)arguments;
+    VoxPlatformFunctionRegistry *registry = vox_platform_function_registry((void *)context);
+    if (!registry) return JSValueMakeUndefined(context);
+    JSValueRef value = (JSValueRef)receiver;
+    JSValueRef source = JSObjectCallAsFunction(context, registry->lookup, NULL,
+        1, &value, exception);
+    if (exception && *exception) return JSValueMakeUndefined(context);
+    if (source && JSValueIsString(context, source)) return source;
+    value = (JSValueRef)function;
+    JSValueRef original = JSObjectCallAsFunction(context, registry->original, NULL,
+        1, &value, exception);
+    if ((exception && *exception) || !original || !JSValueIsObject(context, original))
+        return JSValueMakeUndefined(context);
+    return JSObjectCallAsFunction(context, (JSObjectRef)original, receiver,
+        0, NULL, exception);
+}
+
+static bool vox_install_platform_function_source(void *opaque_context,
+    void *opaque_factory, void **opaque_exception)
+{
+    JSContextRef context = (JSContextRef)opaque_context;
+    VoxPlatformFunctionRegistry *registry = vox_platform_function_registry(opaque_context);
+    if (!registry) return false;
+    JSValueRef exception = NULL;
+    JSObjectRef global = JSContextGetGlobalObject(context);
+    JSStringRef key = JSStringCreateWithUTF8CString("Function");
+    JSValueRef constructor = JSObjectGetProperty(context, global, key, &exception);
+    JSStringRelease(key);
+    if (exception) goto failed;
+    key = JSStringCreateWithUTF8CString("prototype");
+    JSValueRef prototype = JSObjectGetProperty(context, (JSObjectRef)constructor, key, &exception);
+    JSStringRelease(key);
+    if (exception) goto failed;
+    key = JSStringCreateWithUTF8CString("toString");
+    JSValueRef original = JSObjectGetProperty(context, (JSObjectRef)prototype, key, &exception);
+    JSStringRelease(key);
+    if (exception) goto failed;
+    JSValueRef argument = (JSValueRef)registry->add;
+    JSObjectCallAsFunction(context, (JSObjectRef)opaque_factory, global, 1, &argument, &exception);
+    if (exception) goto failed;
+    key = JSStringCreateWithUTF8CString("toString");
+    JSObjectRef formatter = JSObjectMakeFunctionWithCallback(context, key, vox_platform_function_to_string);
+    JSValueRef pair[2] = {(JSValueRef)formatter, original};
+    JSObjectCallAsFunction(context, registry->register_formatter, NULL, 2, pair, &exception);
+    if (!exception) JSObjectSetProperty(context, (JSObjectRef)prototype, key,
+        formatter, kJSPropertyAttributeDontEnum, &exception);
+    JSStringRelease(key);
+    if (!exception) return true;
+failed:
+    if (opaque_exception) *opaque_exception = (void *)exception;
+    return false;
 }

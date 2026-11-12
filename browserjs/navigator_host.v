@@ -11,8 +11,12 @@ pub struct NavigatorHost {
 	settings  &html.EnvironmentSettingsObject
 	navigator &html.Navigator
 mut:
-	runtime &Runtime = unsafe { nil }
-	closed  bool
+	runtime          &Runtime = unsafe { nil }
+	closed           bool
+	wrapper          voidptr
+	frozen_languages voidptr
+	cached_languages []string
+	freeze           voidptr
 }
 
 pub fn NavigatorHost.create(document &dom.Document) !&NavigatorHost {

@@ -36,11 +36,12 @@ fn test_bridge_platform_functions_print_as_native_code() {
 }
 
 fn test_platform_function_source_is_preserved_across_same_origin_realms() {
-	$if !darwin { return }
+	$if !darwin {
+		return
+	}
 	owner := page.Page.create(1)!
-	address := dom.URL{value: 'https://native-source.test/'}
-	mut document := parse_browser_navigation_document_for_page_with_response_time(
-		'<!doctype html><body><iframe id="frame"></iframe></body>', address, none, none,
+	address := dom.URL{ value: 'https://native-source.test/' }
+	mut document := parse_browser_navigation_document_for_page_with_response_time('<!doctype html><body><iframe id="frame"></iframe></body>', address, none, none,
 		unsafe { &dom.Page(owner) }, time.sys_mono_now())
 	mut runtime := browserjs.Runtime.create()
 	defer {
@@ -75,4 +76,26 @@ fn test_platform_function_source_is_preserved_across_same_origin_realms() {
 	host.poll(mut messages)
 	assert host.children[0].closed
 	assert runtime.evaluate_host(r'/\[native code\]/.test(retainedChildSource.call(retainedPlatformMethod))')! == 'true'
+}
+
+fn test_platform_function_source_is_native_on_error_and_ignores_name_getters() {
+	$if !darwin {
+		return
+	}
+	mut document := html.parse_document('<!doctype html><body></body>')
+	mut runtime := browserjs.Runtime.create()
+	defer {
+		runtime.close()
+		document.finalize()
+	}
+	mut messages := []string{}
+	run_document_javascript(document, 'https://native-source.test/', [r'
+ const platform=document.getElementsByClassName,original=String(platform);
+ Object.defineProperty(platform,"name",{get(){throw Error("author name getter")},configurable:true});
+ let nativeStack=false;
+ try{Function.prototype.toString.call({})}catch(error){nativeStack=error instanceof TypeError&&!error.stack.split("\n").some(line=>line==="@"||line==="toString@");}
+ globalThis.nativeSourceBoundary=String(platform)===original&&nativeStack;
+ '], runtime, mut messages)
+	assert messages == []string{}, messages.join('\n')
+	assert runtime.evaluate_host('nativeSourceBoundary')! == 'true'
 }

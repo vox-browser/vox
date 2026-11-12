@@ -85,6 +85,7 @@ mut:
 	value_call_intrinsic_     voidptr
 	promise_observe_intrinsic_ voidptr
 	value_error_intrinsic_     voidptr
+	value_error_constructors_ voidptr
 	value_same_intrinsic_      voidptr
 	value_number_intrinsic_    voidptr
 	value_bigint_int64_intrinsic_ voidptr
