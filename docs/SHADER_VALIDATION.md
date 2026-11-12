@@ -35,3 +35,30 @@ porting the full shader corpus to V. Their historical results remain in the
 [local PR evidence](performance/pr63-shader-equivalence-20261112.json).
 These focused checks do not establish complete WebGL conformance or whole-site
 equivalence.
+
+## Direct V-to-Metal replacement in progress
+
+`webgl/shader` is a dependency-free V source generator. The first slice lowers
+ESSL 100/300 scalar/vector/matrix spellings, attributes, varyings, fragment
+outputs, vertex/instance IDs and entry points directly to MSL. Its linker checks
+varying names/types and matching ESSL versions. It generates the vertex Y and
+depth conversions used by the Metal backend. Comments and numeric/operator
+tokens are handled by a bounded lexer.
+
+This is an experimental compiler slice, **not the production replacement yet**.
+Unsupported declarations and preprocessor directives fail with an error. It
+still needs preprocessing, semantic validation, uniforms and their layouts,
+textures, explicit interface locations, transform feedback, and the remaining
+ESSL expressions/builtins and control flow. General expression syntax and type
+checking currently depend on compiling the emitted MSL with Metal; successful
+translation alone does not establish ESSL validity. The production service still
+uses glslang and SPIRV-Cross until those paths and the existing WebGL corpus are
+ported. Neither dependency has been removed.
+
+Validation for this slice: both test files pass with the C backend in default GC
+and `-gc none`. The macOS test compiles the V-generated vertex and fragment
+sources with Metal, links a render pipeline, draws a full-target triangle, and
+checks all sixteen RGBA pixels exactly. It also verifies that neither glslang
+nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
+submits generated MSL to Metal; all translation is V. Run under the memory guard
+with `VJOBS=1 v -b c -memory-limit 10G test webgl/shader` (and `-gc none`).
