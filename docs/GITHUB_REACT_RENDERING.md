@@ -86,3 +86,69 @@ sh tools/run_v_tool.sh run_memory_bounded \
     --expected-brave PATH_TO_ORIGINAL_WINDOWED_BRAVE_PNG \
     --output Build/github-react-UNIQUE --repeat 7 --settle-seconds 1
 ```
+
+## November 13 continuation
+
+The metadata change is present in completed executable
+`081a75f66fbda26d5df97732bce84bfdb4664ea73257ee19ec3f9f381b474829`.
+A retained diagnostic pair records **3,563.503333 ms / 36,773,272,120
+instructions for Vox**, versus **2,252.528 ms / 20,793,591,610 for Brave**.
+The full React text audit passes; both unchanged PNG checks fail. This is
+one exploratory pair, with the endpoint differences documented above, and
+does not establish parity or a metadata optimization gain.
+
+Eight subsequent native controls use completed executable
+`86516f7f2eb9c44f78173c2a4f7acd12834c9d31bb24aa1a7954ec0dca640234`.
+Every complete text audit passes. Host load varies from 36 to 53, elapsed
+times range from 6.0 to 8.75 seconds, and the file-table origin alternates
+between x=32 and x=33. Neither metadata reuse nor a shorter load-render gap
+earns performance credit. Disabling throttling increases observed work from
+37–39 billion to 60–61 billion instructions without a latency benefit;
+the throttle policy remains unchanged. A separate small table fixture stays
+at x=33 through 32 text/attribute relayouts and block/flex switches, so no
+speculative table correction was applied.
+
+Separate diagnostics identify 18,419 `matches()` calls and 18,595 descendant
+queries for React partial selectors. `d496fdafa` returns native selector
+match booleans without JSON serialization. Pending facade mutations still
+use the original transport, native custom-element reactions settle before
+the read, and foreign owners retain their existing route. Selector argument
+copies live in scratch storage; parsed selector sources use document storage.
+Three focused cases pass with default GC and no GC, including the rollback
+route, primitive argument branding, syntax errors, Unicode, adoption, queued
+reactions, scratch callers and separate runtime owners.
+
+`2a4d3edfa` returns `null` directly for absent `querySelector()` results.
+Positive results keep the original element-state synchronization. It retains
+selector validation, scope, fragment and foreign-document behavior and the
+same mutation/reaction ordering. Its two focused cases pass in default GC
+and no GC, with diagnostic path confirmation and rollback executions under
+the 3 GiB guard. Compiles peak at 6.61 GB under the 12 GiB guard. An earlier
+attempt rejected a changing UI2 adapter; that failure is retained. The
+comparison tool's `--matches-control`
+and `--first-control` switches retain the original transports independently;
+the browser switches are `VOX_RETAIN_COMPACT_MATCHES_QUERY=1` and
+`VOX_RETAIN_COMPACT_FIRST_QUERY=1`.
+
+Production validation remains pending. The old coordinator used a compiler
+whose runtime did not match; its idle process was retired after confirming
+it had no compiler/guard child, and the supported upgrade worker uses the
+matching compiler. Build `20261113-002650-16f47fd6` parsed the exact selector
+and metadata sources but rejected a concurrently changed
+`tools/ui2/gg_document_image.v` during frozen-input verification. The prior
+bundle was preserved. Its successor, `20261113-003619-9c655d8b`, parsed both
+committed selector slices and reached sealed single-unit C compilation.
+A four-minute guarded wait for a published matching bundle exited 2 without
+launching a page check. No unverified executable supplies optimization credit,
+and no cumulative instruction saving or broad-check checkpoint is claimed.
+The next gates are a diagnostic confirming both native paths on the full
+GitHub replay, matched unprofiled controls with unchanged pixels, the bridge's
+required SVG mutation captures, and seven complete alternating Vox/Brave pairs.
+
+Continuation logs, counters, audits, PNGs, source-digest proofs, failed attempts
+and actual guard exits are retained locally in
+`~/Library/Caches/Vox/benchmarks/github-react-rendering-20261113/evidence.tar.gz`.
+Its manifest is `docs/performance/github-react-rendering-20261113.json` (ignored).
+The archive contains measurement evidence; browser bundles, generated compiler
+outputs and the Python environment are excluded. The shared production build
+is left running and no duplicate manual build was requested.
