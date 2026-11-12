@@ -11,9 +11,9 @@ fn document_shadow_rect(x f64, y f64, width f64, height f64, radii layout.BoxRad
 		f32(radii.bottom_right.y), f32(radii.bottom_left.x), f32(radii.bottom_left.y)]!
 }
 
-fn (mut app BrowserApp) draw_chromium_unblurred_outer_shadow(command layout.PaintCommand,
+fn (mut app BrowserApp) draw_chromium_outer_shadow(command layout.PaintCommand,
 	page_x f32, page_y f32, scroll_y f64) bool {
-	if command.kind != 'paint_outer_box_shadow' || command.blur > 0 { return false }
+	if command.kind != 'paint_outer_box_shadow' { return false }
 	box := command.box_shadow()
 	fill := app.paint_colors.color(command.color, command.opacity)
 	color := chromium_retained_paint_color(command) or {
@@ -23,7 +23,8 @@ fn (mut app BrowserApp) draw_chromium_unblurred_outer_shadow(command layout.Pain
 		rect:            document_shadow_rect(command.x, command.y, command.width, command.height, command.corner_radii)
 		underlay_rect:   document_shadow_rect(box.content_rect.x, box.content_rect.y,
 			box.content_rect.width, box.content_rect.height, box.content_radii)
-		fill:            9
+		fill:            if command.blur > 0 { 10 } else { 9 }
+		thickness:       f32(command.blur)
 		anti_alias:      1
 		has_float_color: 1
 		float_color:     color

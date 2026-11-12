@@ -75,7 +75,7 @@ fn context() !&canvas.GpuContext {
 // 2..5) and equal sides (mode 8).
 fn supported(shape &C.VoxGraphiteShape) bool {
 	kind_ok := match shape.fill {
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9 { true }
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 { true }
 		else { false }
 	}
 	return kind_ok && (shape.clip_out_count == 0 || shape.clip_outs != unsafe { nil })
@@ -109,6 +109,7 @@ pub fn draw(pixels &u8, width i32, height i32, pitch i32, has_background i32, sh
 	result := draw_shape_pixels(pixels, width, height, pitch, has_background, shape)
 	if diagnostics && shape != unsafe { nil } {
 		eprintln('VOX_GG shape fill=${shape.fill} msaa=${shape.force_msaa} drawn=${result}')
+		eprintln('VOX_GG geometry rect=${shape.rect} matrix=${shape.matrix} widths=${shape.border_widths} rgba=${shape.red},${shape.green},${shape.blue},${shape.alpha} float=${shape.float_color} underlay=${shape.has_underlay} underlay_rect=${shape.underlay_rect} underlay_color=${shape.underlay_float_color}')
 	}
 	return result
 }
@@ -164,7 +165,12 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 		style:        if stroke { .stroke } else { .fill }
 		stroke_width: if stroke && shape.thickness > 0 { shape.thickness } else { 0 }
 	}
-	if shape.fill == 9 {
+	if shape.fill == 10 {
+		mask := capsule_shadow_mask(shape, int(width), int(height)) or { return 0 }
+		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
+		target.set_matrix(canvas.Matrix.identity())
+		target.draw_alpha_mask(mask, int(width), int(height), paint) or { return 0 }
+	} else if shape.fill == 9 {
 		// An unblurred outer shadow is the source rounded rectangle with its
 		// content rounded rectangle clipped out, both with analytic coverage.
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }

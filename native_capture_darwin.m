@@ -1136,7 +1136,7 @@ static int native_try_v_document_shape(VoxGraphiteShape shape, const float* matr
     float x=shape.rect[0], y=shape.rect[1], width=shape.rect[2], height=shape.rect[3];
     int fill=shape.fill; float thickness=shape.thickness;
     float left = INFINITY, top = INFINITY, right = -INFINITY, bottom = -INFINITY;
-    float pad = fill == 0 ? fmaxf(thickness, 0) * .5f : 0;
+    float pad = fill == 0 ? fmaxf(thickness, 0) * .5f : (fill == 10 ? fmaxf(thickness, 0) * 1.5f : 0);
     for (int i = 0; i < 4; ++i) {
         float px = x + ((i & 1) ? width + pad : -pad);
         float py = y + ((i & 2) ? height + pad : -pad);

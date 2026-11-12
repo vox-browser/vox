@@ -1,0 +1,193 @@
+module ggshape
+
+import gg.canvas
+import math
+
+#include "@DIR/blur_filter_darwin.m"
+
+fn C.vox_shadow_filter_pass(&u8, i32, i32, &u8, i32, i32, &f32, &f32, i32, i32) i32
+fn C.expf(f32) f32
+
+struct ShadowMask {
+	pixels []u8
+	width  int
+	height int
+}
+
+struct ShadowBounds {
+	left   f32
+	top    f32
+	right  f32
+	bottom f32
+}
+
+fn shadow_mask_pass(source ShadowMask, width int, height int, mapping [4]f32,
+	pairs [56]f32, count int, direction int) !ShadowMask {
+	if width <= 0 || height <= 0 || width > 16384 || height > 16384
+		|| width * height > 16 * 1024 * 1024 {
+		return error('Shadow filter exceeds bounded surface size')
+	}
+	mut output := []u8{len: width * height}
+	if C.vox_shadow_filter_pass(source.pixels.data, i32(source.width), i32(source.height),
+		output.data, i32(width), i32(height), &mapping[0], &pairs[0], i32(count), i32(direction)) == 0 {
+		return error('Shadow filter GPU pass failed')
+	}
+	return ShadowMask{output, width, height}
+}
+
+// ShaderBlurAlgorithm's normalized Gaussian, packed into bilinear tap pairs.
+// Preserve f32 arithmetic and the center/negative/positive tap ordering.
+fn shadow_linear_kernel(sigma f32) ([56]f32, int) {
+	radius := int(math.ceil(f64(f32(3) * sigma)))
+	mut full := []f32{len: radius * 2 + 1}
+	denominator := f32(1) / (f32(2) * sigma * sigma)
+	mut total := f32(0)
+	for i in 0 .. full.len {
+		x := f32(i - radius)
+		full[i] = C.expf(-(x * x * denominator))
+		total += full[i]
+	}
+	scale := f32(1) / total
+	for mut value in full { value *= scale }
+	mut result := [56]f32{}
+	half_size := radius + 1
+	half_radius := half_size / 2
+	mut low := half_radius - 1
+	mut index := radius
+	if radius % 2 != 0 {
+		weight := full[index] * f32(0.5) + full[index + 1]
+		offset := full[index + 1] / weight
+		result[half_radius * 2] = offset
+		result[half_radius * 2 + 1] = weight
+		result[low * 2] = -offset
+		result[low * 2 + 1] = weight
+		index++
+		low--
+	} else {
+		result[half_radius * 2 + 1] = full[index]
+	}
+	index++
+	for high in half_radius + 1 .. half_size {
+		weight := full[index] + full[index + 1]
+		offset := full[index + 1] / weight + f32(index - radius)
+		result[high * 2] = offset
+		result[high * 2 + 1] = weight
+		result[low * 2] = -offset
+		result[low * 2 + 1] = weight
+		index += 2
+		low--
+	}
+	for i in half_size .. 28 { result[i * 2] = result[(half_size - 1) * 2] }
+	for count in [4, 8, 12, 16, 20, 28] {
+		if count >= half_size { return result, count }
+	}
+	return result, 28
+}
+
+// Capsule corners cannot be nine-patched. Graphite uses its general A8
+// image-filter path for them; other rounded shadows retain their existing path.
+fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
+	m := shape.matrix
+	for value in m {
+		if math.is_nan(f64(value)) || math.is_inf(f64(value), 0) { return false }
+	}
+	for value in shape.rect {
+		if math.is_nan(f64(value)) || math.is_inf(f64(value), 0) { return false }
+	}
+	if m[0] <= 0 || m[4] <= 0 || m[1] != 0 || m[3] != 0
+		|| m[6] != 0 || m[7] != 0 || m[8] != 1
+		|| math.abs(m[0] - m[4]) > f32(0.00001) {
+		return false
+	}
+	if shape.rect[2] <= shape.rect[3] || shape.rect[3] <= 0 { return false }
+	for i in 4 .. 12 {
+		if math.abs(shape.rect[i] - shape.rect[3] * f32(0.5)) > f32(0.00001) { return false }
+	}
+	sigma := shape.thickness * f32(0.5) * m[0]
+	return sigma >= 1 && sigma <= 135
+}
+
+fn capsule_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
+	if !capsule_shadow_supported(shape) { return error('Unsupported blurred shadow') }
+	m := shape.matrix
+	sigma := shape.thickness * f32(0.5) * m[0]
+	left := f32(math.floor(f64(shape.rect[0] * m[0] + m[2])))
+	top := f32(math.floor(f64(shape.rect[1] * m[4] + m[5])))
+	right := f32(math.ceil(f64((shape.rect[0] + shape.rect[2]) * m[0] + m[2])))
+	bottom := f32(math.ceil(f64((shape.rect[1] + shape.rect[3]) * m[4] + m[5])))
+	original := ShadowBounds{left, top, right, bottom}
+	source_width := int(right - left)
+	source_height := int(bottom - top)
+	if source_width <= 0 || source_height <= 0 || source_width > 16384 || source_height > 16384
+		|| source_width * source_height > 16 * 1024 * 1024 {
+		return error('Shadow source exceeds bounded surface size')
+	}
+	mut ctx := context()!
+	mut source := ctx.new_surface(width: source_width, height: source_height)!
+	defer { source.free() }
+	source.clear(canvas.Color4f{})
+	mut source_matrix := [9]f32{}
+	for i in 0 .. 9 { source_matrix[i] = m[i] }
+	source_matrix[2] -= left
+	source_matrix[5] -= top
+	source.set_matrix(canvas.Matrix.values(source_matrix))
+	source.draw_rrect(rounded_rect(shape.rect), canvas.Paint{
+		color:      canvas.Color4f{1, 1, 1, 1}
+		anti_alias: true
+	})!
+	mut rgba := []u8{len: source_width * source_height * 4}
+	source.read_pixels(rgba.data, source_width * 4)!
+	mut alpha := []u8{len: source_width * source_height}
+	for i in 0 .. alpha.len { alpha[i] = rgba[i * 4 + 3] }
+	mut image := ShadowMask{alpha, source_width, source_height}
+	mut bounds := original
+	mut pixels := original
+	mut steps := 0
+	mut power := f32(1)
+	scale := if sigma > 4 { f32(4) / sigma } else { f32(1) }
+	for power < f32(1) / scale {
+		power *= 2
+		steps++
+	}
+	if steps > 0 {
+		last_scale := scale * (power * f32(0.5))
+		if last_scale >= (if steps == 1 { f32(0.999) } else { f32(0.9) }) { steps-- }
+	}
+	for steps > 0 {
+		sx := if steps > 1 {
+			f32(0.5)
+		} else {
+			(original.right - original.left) * scale / (bounds.right - bounds.left)
+		}
+		sy := if steps > 1 {
+			f32(0.5)
+		} else {
+			(original.bottom - original.top) * scale / (bounds.bottom - bounds.top)
+		}
+		cx := f32(0.5) * bounds.left + f32(0.5) * bounds.right
+		cy := f32(0.5) * bounds.top + f32(0.5) * bounds.bottom
+		next := ShadowBounds{(bounds.left - cx) * sx, (bounds.top - cy) * sy, (bounds.right - cx) * sx, (bounds.bottom - cy) * sy}
+		pixel_bounds := ShadowBounds{f32(math.floor(f64(next.left))), f32(math.floor(f64(next.top))), f32(math.ceil(f64(next.right))), f32(math.ceil(f64(next.bottom)))}
+		image = shadow_mask_pass(image, int(pixel_bounds.right - pixel_bounds.left),
+			int(pixel_bounds.bottom - pixel_bounds.top), [f32(1) / sx, f32(1) / sy,
+				pixel_bounds.left / sx + cx - pixels.left, pixel_bounds.top / sy + cy - pixels.top]!, [56]f32{}, 0, 0)!
+		bounds = next
+		pixels = pixel_bounds
+		steps--
+	}
+	low_sigma := f32(math.min(f64(sigma * (bounds.right - bounds.left) / (original.right - original.left)), 4))
+	pairs, count := shadow_linear_kernel(low_sigma)
+	radius := f32(math.ceil(f64(f32(3) * low_sigma)))
+	blur_width := image.width + int(radius) * 2
+	blur_height := image.height + int(radius) * 2
+	image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, -radius, -radius]!, pairs, count, 0)!
+	image = shadow_mask_pass(image, blur_width, blur_height, [f32(1), 1, 0, 0]!, pairs, count, 1)!
+	pixels = ShadowBounds{pixels.left - radius, pixels.top - radius, pixels.right + radius, pixels.bottom + radius}
+	sx := (bounds.right - bounds.left) / (original.right - original.left)
+	sy := (bounds.bottom - bounds.top) / (original.bottom - original.top)
+	// Resolve back to an A8 image before the paint color is applied. Fusing
+	// upscale and color multiplication skips this required quantization.
+	resolved := shadow_mask_pass(image, width, height, [sx, sy,
+		bounds.left - original.left * sx - pixels.left, bounds.top - original.top * sy - pixels.top]!, [56]f32{}, 0, 0)!
+	return resolved.pixels
+}
