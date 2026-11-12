@@ -10,7 +10,7 @@ $if macos {
     #include "@DIR/native_egl.h"
 } $else {
     #pkgconfig egl glesv2 gl glslang
-    #flag linux -lglslang-default-resource-limits -lstdc++ -lm
+    #flag linux -lglslang-default-resource-limits -lstdc++ -lm -ldl
     #include "@DIR/native_egl.h"
 }
 #flag darwin -Wl,-rpath,/opt/homebrew/lib

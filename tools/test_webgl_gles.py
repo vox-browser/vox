@@ -69,7 +69,7 @@ def main():
             source = 'native_gles_host_linux_test.c' if fixture != 'headless' else 'native_gles_linux_test.c'
             command = [os.environ.get('CC', 'clang'), '-std=c11', '-Werror', '-Wno-unused-function',
                        *options, str(ROOT / 'tools' / source), '-o', str(binary),
-                       *flags, '-lglslang-default-resource-limits', '-lstdc++', '-lm']
+                       *flags, '-lglslang-default-resource-limits', '-lstdc++', '-lm', '-ldl']
             runtime = [str(binary)]
             runtime_environment = dict(environment)
             if fixture != 'headless':

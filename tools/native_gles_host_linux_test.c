@@ -1,6 +1,7 @@
 /* A real GLX window remains usable across surfaceless WebGL service calls. */
 #include <assert.h>
 #include <stdio.h>
+#include <GL/glx.h>
 #include "../webgl/native_egl.h"
 static Display *display;
 static GLXContext host;

@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../platform/native_state.h"
-#include <GL/glx.h>
+#include <dlfcn.h>
 
 typedef struct {
     EGLDisplay display; EGLContext context;
@@ -22,12 +22,34 @@ VOX_NATIVE_STATE __thread VoxGLESState *vox_gles_current;
 /* WebGL and the portable GLX window share a thread, not GL state. Rebind the
  * selected GLES context for each service call and restore the caller on exit.
  * Headless callers keep their GLES context current between calls. */
-typedef struct { Display *display; GLXContext context; GLXDrawable draw,read; } VoxGLESCall;
+/* Sokol declares its own GLX types. Keep the window ABI opaque here rather
+ * than including glx.h into its generated C translation unit. libGL is linked
+ * by the service, so POSIX dlsym resolves the standard GLX dispatch functions. */
+typedef struct {
+    int initialized;
+    void *(*context)(void), *(*display)(void);
+    unsigned long (*drawable)(void), (*read_drawable)(void);
+    int (*make_current)(void*,unsigned long,unsigned long,void*);
+} VoxGLESGLX;
+VOX_NATIVE_STATE __thread VoxGLESGLX vox_gles_glx;
+static void vox_gles_prepare_glx(void) {
+    if(vox_gles_glx.initialized)return;
+    vox_gles_glx.initialized=1;
+    vox_gles_glx.context=(void*(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentContext");
+    vox_gles_glx.display=(void*(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentDisplay");
+    vox_gles_glx.drawable=(unsigned long(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentDrawable");
+    vox_gles_glx.read_drawable=(unsigned long(*)(void))dlsym(RTLD_DEFAULT,"glXGetCurrentReadDrawable");
+    vox_gles_glx.make_current=(int(*)(void*,unsigned long,unsigned long,void*))dlsym(RTLD_DEFAULT,"glXMakeContextCurrent");
+}
+typedef struct { void *display,*context; unsigned long draw,read; } VoxGLESCall;
 static VoxGLESCall vox_gles_begin_call(void) {
-    VoxGLESCall call={0};call.context=glXGetCurrentContext();
+    vox_gles_prepare_glx();
+    VoxGLESCall call={0};
+    if(vox_gles_glx.context && vox_gles_glx.display && vox_gles_glx.drawable && vox_gles_glx.read_drawable && vox_gles_glx.make_current)
+        call.context=vox_gles_glx.context();
     if(call.context) {
-        call.display=glXGetCurrentDisplay();call.draw=glXGetCurrentDrawable();call.read=glXGetCurrentReadDrawable();
-        glXMakeContextCurrent(call.display,None,None,NULL);
+        call.display=vox_gles_glx.display();call.draw=vox_gles_glx.drawable();call.read=vox_gles_glx.read_drawable();
+        vox_gles_glx.make_current(call.display,0,0,NULL);
     }
     if(vox_gles_current && eglGetCurrentContext()!=vox_gles_current->context)
         eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
@@ -37,7 +59,7 @@ static void vox_gles_end_call(VoxGLESCall *call) {
     if(!call->context)return;
     EGLDisplay display=eglGetCurrentDisplay();
     if(display!=EGL_NO_DISPLAY)eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
-    glXMakeContextCurrent(call->display,call->draw,call->read,call->context);
+    vox_gles_glx.make_current(call->display,call->draw,call->read,call->context);
 }
 #define VOX_GLES_CALL VoxGLESCall vox_gles_call __attribute__((cleanup(vox_gles_end_call)))=vox_gles_begin_call()
 static void vox_gles_queue(GLenum error) {
