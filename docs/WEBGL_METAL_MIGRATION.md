@@ -141,6 +141,14 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+Framebuffer blits now copy color through Metal and preserve depth/stencil
+aspects through checked transfers. Four public-context cases pass in both GC
+modes, covering multisample resolve, MRT, depth/stencil preservation, scaled
+copies, scissor and rejection paths. Multisample draw destinations and changed
+resolve bounds are rejected according to the [GLES 3 blit contract](https://github.com/KhronosGroup/OpenGL-Refpages/blob/main/es3.0/glBlitFramebuffer.xml).
+The separate per-sample transfer experiment was tested and removed because that
+operation is outside this WebGL contract; its evidence remains local.
+
 WebGL texture bindings, pixel uploads/subimages, immutable storage, layer
 selection, copies and mip generation now use the V service. Sampling assembles
 complete GPU mip/cube/array images, validates sampler types and feedback, and

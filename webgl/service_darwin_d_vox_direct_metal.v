@@ -961,7 +961,8 @@ fn metal_service_vox_gl_read_buffer(a0 u32) {
 
 @[export: 'vox_gl_blit_framebuffer']
 fn metal_service_vox_gl_blit_framebuffer(a0 i32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32, a8 u32, a9 u32) {
-    metal_service_unsupported('vox_gl_blit_framebuffer')
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } { context.blit_framebuffer(int(a0),int(a1),int(a2),int(a3),int(a4),int(a5),int(a6),int(a7),a8,a9) }
 }
 
 @[export: 'vox_gl_renderbuffer_storage_multisample']

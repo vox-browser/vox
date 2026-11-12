@@ -33,6 +33,7 @@ mut:
 struct MetalServiceRenderImage {
     gpu &metal.Texture2D
     layout MetalServicePixelLayout
+    internal u32
     width int
     height int
     layer int
@@ -52,6 +53,8 @@ mut:
     samples int = 1
     has_depth bool
     has_stencil bool
+    depth_format u32
+    stencil_format u32
     custom bool
 }
 
@@ -95,12 +98,12 @@ fn (context &MetalServiceContext) attachment_image(attachment MetalServiceAttach
     if attachment.kind==2 {
         rbo:=object.rbo
         if rbo==unsafe { nil } || rbo.gpu==unsafe { nil } { return error('Renderbuffer is not allocated') }
-        return MetalServiceRenderImage{gpu:rbo.gpu,width:rbo.width,height:rbo.height,layout:rbo.layout,samples:if rbo.samples>0 { rbo.samples } else { 1 },object:attachment.object}
+        return MetalServiceRenderImage{gpu:rbo.gpu,width:rbo.width,height:rbo.height,layout:rbo.layout,internal:rbo.internal,samples:if rbo.samples>0 { rbo.samples } else { 1 },object:attachment.object}
     }
     if object.texture==unsafe { nil } { return error('Texture has no images') }
     image:=object.texture.images[metal_service_image_key(attachment.target,attachment.level)] or { return error('Texture image is not defined') }
     if image.gpu==unsafe { nil } || attachment.layer<0 || attachment.layer>=image.depth { return error('Texture layer is outside image') }
-    return MetalServiceRenderImage{gpu:image.gpu,width:image.width,height:image.height,layout:image.layout,layer:attachment.layer,object:attachment.object}
+    return MetalServiceRenderImage{gpu:image.gpu,width:image.width,height:image.height,layout:image.layout,internal:image.internal,layer:attachment.layer,object:attachment.object}
 }
 
 fn (mut context MetalServiceContext) framebuffer_status(target u32) u32 {
@@ -201,7 +204,7 @@ fn (mut context MetalServiceContext) renderbuffer_storage(target u32,samples int
 fn (mut context MetalServiceContext) framebuffer_view(target u32) !MetalServiceFramebufferView {
     if context.framebuffer_status(target)!=0x8cd5 { metal_service_error(invalid_framebuffer_operation);return error('Framebuffer is incomplete') }
     if context.framebuffer_name(target)==1 {
-        return MetalServiceFramebufferView{width:context.width,height:context.height,depth:context.depth,has_depth:context.has_depth,has_stencil:context.has_stencil}
+        return MetalServiceFramebufferView{width:context.width,height:context.height,depth:context.depth,has_depth:context.has_depth,has_stencil:context.has_stencil,depth_format:if context.has_stencil { u32(0x88f0) } else { u32(0x81a6) },stencil_format:if context.has_depth { u32(0x88f0) } else { u32(0x8d48) }}
     }
     fbo:=context.bound_framebuffer(target)!
     mut result:=MetalServiceFramebufferView{custom:true}
@@ -220,7 +223,7 @@ fn (mut context MetalServiceContext) framebuffer_view(target u32) !MetalServiceF
             image:=context.attachment_image(attachment)!
             view:=image.gpu.attachment(0,image.layer)!
             result.owned<<view
-            if point==depth_attachment { depth_view=view;result.has_depth=true } else { stencil_view=view;result.has_stencil=true }
+            if point==depth_attachment { depth_view=view;result.has_depth=true;result.depth_format=metal_service_attachment_format(image) } else { stencil_view=view;result.has_stencil=true;result.stencil_format=metal_service_attachment_format(image) }
             if result.width==0 { result.width=image.width;result.height=image.height;result.samples=image.samples }
         }
     }
@@ -345,5 +348,14 @@ fn (mut context MetalServiceContext) detach_deleted_attachment(name u32,kind int
             for point in points { object.fbo.attachments.delete(point) }
             unsafe { points.free() }
         }
+    }
+}
+
+fn metal_service_attachment_format(image MetalServiceRenderImage) u32 {
+    return match image.internal {
+        0x1908 { u32(0x8058) } 0x1907 { u32(0x8051) }
+        0x1902 { if image.layout.format==.depth16 { u32(0x81a5) } else { u32(0x81a6) } }
+        0x84f9 { u32(0x88f0) }
+        else { image.internal }
     }
 }

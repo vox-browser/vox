@@ -39,6 +39,8 @@ pub fn Texture2D.create(owner &DrawingBuffer, width int, height int) !&Texture2D
 	return &Texture2D{handle: handle, owner: owner, width: width, height: height}
 }
 
+pub fn (texture &Texture2D) pixel_format() TextureFormat { return texture.format }
+
 pub fn (texture &Texture2D) texture_kind() TextureKind { return texture.kind }
 
 pub fn (texture &Texture2D) pixel_size() int { return texture.format.pixel_size() }
