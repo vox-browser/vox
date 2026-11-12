@@ -558,7 +558,9 @@ pub fn (mut line LineBox) add_fragment_with_trailing_whitespace(layout_node &Nod
 					// HarfBuzz face behind the same CSS Font object. Glyph IDs from
 					// different faces cannot share one retained replay run.
 					if voidptr(last_run.font()) == voidptr(run.font())
-						&& last_run.face() == run.face() {
+						&& last_run.face() == run.face()
+						&& (line.direction_ != .rtl || run.font().font_rendering_policy != .chromium
+							|| last_run.text_type() == run.text_type()) {
 						last.length_in_code_units_ += length
 						previous_width := last.inline_length_
 						last.append_glyph_run(run, content_width)

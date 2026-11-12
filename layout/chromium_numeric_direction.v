@@ -1,25 +1,15 @@
 module layout
 
-import dom
 
-// Arabic-script decimal numbers have even bidi levels and retain their logical
-// digit order. HarfBuzz's Arabic script guess otherwise shapes a weak-only run
-// right-to-left when this approximate iterator finds no strong text in it.
-fn chromium_arabic_number_chunk(text string) bool {
+// Weak Arabic-script numbers need their resolved paragraph levels, including
+// the separators and surrounding neutrals, before shaping/font fragmentation.
+fn chromium_text_has_arabic_number(text string) bool {
 	if text.is_ascii() { return false }
-	mut has_digit := false
 	for r in text.runes() {
 		cp := u32(r)
-		if cp in u32(0x0660) .. u32(0x066a) || cp in u32(0x06f0) .. u32(0x06fa) { has_digit = true }
-		match dom.unicode_bidirectional_class(cp) {
-			.european_number, .arabic_number, .common_number_separator,
-			.european_number_separator, .european_number_terminator,
-			.white_space_neutral, .dir_non_spacing_mark {
-			}
-			else { return false }
-		}
+		if cp in u32(0x0660) .. u32(0x066a) || cp in u32(0x06f0) .. u32(0x06fa) { return true }
 	}
-	return has_digit
+	return false
 }
 
 fn chromium_numeric_direction_is_not_overridden(text_node &TextNode) bool {

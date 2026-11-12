@@ -665,10 +665,6 @@ fn (mut iterator InlineLevelIterator) generate_next_item() ?InlineLevelItem {
 		context.next_chunk_index++
 		is_last_chunk := context.next_chunk_index >= context.chunks.len
 		mut text_type := chunk.text_type
-		if text_type == .context_dependent && text_node.Node.document().font_rendering_policy() == .chromium
-			&& chromium_arabic_number_chunk(chunk.view) && chromium_numeric_direction_is_not_overridden(text_node) {
-			text_type = .ltr
-		}
 		if text_type in [.ltr, .rtl] {
 			context.last_known_direction = text_type
 		}
@@ -903,6 +899,13 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 	white_space_collapse := computed.white_space_collapse()
 	should_wrap_lines := computed.text_wrap_mode() == .wrap
 	should_respect_linebreaks := white_space_collapse in [.preserve, .preserve_breaks, .break_spaces]
+	direction_mode := if iterator.is_unidirectional_left_to_right {
+		TextDirectionMode.unidirectional_left_to_right
+	} else if text_node.Node.document().font_rendering_policy() == .chromium
+		&& chromium_text_has_arabic_number(text_node.text_for_rendering())
+		&& chromium_numeric_direction_is_not_overridden(text_node) {
+		TextDirectionMode.resolved_arabic_numbers
+	} else { TextDirectionMode.per_code_point }
 	mut chunks := []TextNodeChunk{}
 	mut cached_chunks_valid := false
 	font_generation := css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
@@ -911,7 +914,8 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		// backing array avoids copying it for each intrinsic-sizing pass. A font
 		// load replaces the cascade, so chunks retaining the previous platform
 		// fonts must be shaped again.
-		if text_node.cached_font_environment_generation_ == font_generation {
+		if text_node.cached_font_environment_generation_ == font_generation
+			&& text_node.cached_inline_direction_mode_ == direction_mode {
 		chunks = unsafe { cached }
 		cached_chunks_valid = true
 		}
@@ -921,13 +925,10 @@ fn (mut iterator InlineLevelIterator) enter_text_node(text_node &TextNode) {
 		mut retained := if use_document { platform.enter_retained_allocations() } else { platform.RetainedAllocationScope{} }
 		persistent := platform.enter_persistent_if(!use_document)
 		chunks = retained_text_node_chunks(text_node, should_wrap_lines, should_respect_linebreaks,
-			if iterator.is_unidirectional_left_to_right {
-				TextDirectionMode.unidirectional_left_to_right
-			} else {
-				TextDirectionMode.per_code_point
-			})
+			direction_mode)
 		mut mutable_text_node := unsafe { &TextNode(text_node) }
 		mutable_text_node.cached_inline_chunks_ = chunks
+		mutable_text_node.cached_inline_direction_mode_ = direction_mode
 		mutable_text_node.cached_font_environment_generation_ = css.css_style_computer_for(text_node.Node.document()).font_computer().environment_generation()
 		mutable_text_node.cached_intrinsic_text_shapes_.clear()
 		platform.leave_persistent(persistent)

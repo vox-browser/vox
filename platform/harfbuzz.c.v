@@ -905,7 +905,9 @@ fn shape_text_with_harfbuzz(initial_x f32, letter_spacing f32, word_spacing f32,
 	}
 	if is_ascii {
 		C.hb_buffer_set_script(buffer, C.hb_script_from_string(c'Latn', 4))
-		C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)
+		C.hb_buffer_set_direction(buffer, if font.font_rendering_policy == .chromium && text_type == .rtl {
+			harfbuzz_direction_rtl
+		} else { harfbuzz_direction_ltr })
 	} else {
 		if text_type == .ltr {
 			C.hb_buffer_set_direction(buffer, harfbuzz_direction_ltr)

@@ -56,3 +56,19 @@ fn test_chromium_rtl_keeps_adjacent_ltr_spans_in_logical_order() {
 	assert positions.len == 2
 	assert positions[0] < positions[1]
 }
+
+fn test_chromium_rtl_direction_attribute_orders_number_and_nested_word() {
+	mut document := html.parse_document($embed_file('@VMODROOT/Tests/Browser/Brave/input/persian-numeric-direction.html').to_string())
+	defer { document.finalize() }
+	document.set_font_rendering_policy(.chromium)
+	_ = layout.layout_document_typed_in_viewport(document, 800, 600)
+	commands := layout.display_list_commands(document.record_display_list() or { panic('display list') })
+	mut positions := []f64{}
+	for command in commands {
+		if command.kind == 'draw_text' && command.text.trim_space() != '' {
+			if command.y < 45 { positions << command.x }
+		}
+	}
+	assert positions.len >= 2
+	assert positions[0] > positions.last()
+}

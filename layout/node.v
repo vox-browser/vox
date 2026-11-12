@@ -2207,6 +2207,7 @@ pub mut:
 	produces_line_box_fragment_when_empty_ bool
 	retains_empty_generated_fragment_ bool
 	cached_inline_chunks_         ?[]TextNodeChunk
+	cached_inline_direction_mode_ TextDirectionMode
 	cached_font_environment_generation_ u64
 	cached_inline_font_owner_ ?&css.FontCascadeList
 	cached_inline_font_style_ voidptr
