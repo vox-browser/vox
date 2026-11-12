@@ -4,7 +4,7 @@
 #include <mach-o/dyld.h>
 #include <stdio.h>
 #include <string.h>
-int vox_direct_metal_probe(char const* vertex, char const* fragment) {
+int vox_direct_metal_uniform_probe(char const* vertex, char const* fragment, void const* vertex_bytes, uint64_t vertex_length, void const* fragment_bytes, uint64_t fragment_length) {
     @autoreleasepool {
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
         if (!device) return 0;
@@ -31,6 +31,8 @@ int vox_direct_metal_probe(char const* vertex, char const* fragment) {
         id<MTLCommandBuffer> command = [queue commandBuffer];
         id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
         [encoder setRenderPipelineState:pipeline];
+        if (vertex_length) [encoder setVertexBytes:vertex_bytes length:vertex_length atIndex:0];
+        if (fragment_length) [encoder setFragmentBytes:fragment_bytes length:fragment_length atIndex:0];
         [encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
         [encoder endEncoding];
         [command commit]; [command waitUntilCompleted];
@@ -44,4 +46,8 @@ int vox_direct_metal_probe(char const* vertex, char const* fragment) {
         }
         return 1;
     }
+}
+
+int vox_direct_metal_probe(char const* vertex, char const* fragment) {
+    return vox_direct_metal_uniform_probe(vertex, fragment, NULL, 0, NULL, 0);
 }

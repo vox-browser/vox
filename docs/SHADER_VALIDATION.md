@@ -54,18 +54,30 @@ source, nesting, token and operation limits. Conditions short-circuit inactive
 operands. Token pasting and stringification are rejected. Extension and line
 directives, line-number builtins, ternary conditions and complete ESSL
 preprocessor conformance remain pending. The compiler also still needs semantic
-validation, uniforms and their layouts, textures, explicit interface locations, transform feedback, and the remaining
+validation, textures, explicit interface locations, transform feedback, and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
 checking currently depend on compiling the emitted MSL with Metal; successful
 translation alone does not establish ESSL validity. The production service still
 uses glslang and SPIRV-Cross until those paths and the existing WebGL corpus are
 ported. Neither dependency has been removed.
 
-Validation for this slice: all three test files pass with the C backend in
+Plain scalar, vector, square/non-square matrix and literal-length array uniforms
+now have V-generated std140 offsets, matrix/array strides and storage type
+reflection. Each stage uses buffer slot zero; generated MSL decodes individual
+32-bit scalars and copies them into shader state. This preserves packed vec3
+plus scalar fields, 32-bit boolean storage, and padded matrix/array elements
+without depending on Metal structure packing. Shared stage uniforms must have
+matching types and array shapes. Struct uniforms, uniform blocks, constant
+expression array lengths, active-uniform analysis and uniform write restrictions
+remain pending. Declared uniforms are currently reflected, including unused ones.
+
+Validation for this slice: all four test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
-sources (including macro/conditional variants) with Metal, links a render
+sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
-checks all sixteen RGBA pixels exactly. It also verifies that neither glslang
+checks all sixteen RGBA pixels exactly. The uniform case binds both stage
+buffers, poisons padding bytes, checks scalar/vector/matrix/array/boolean decoding,
+and changes a consumed boolean to prove that the buffer influences the pixels. It also verifies that neither glslang
 nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
 submits generated MSL to Metal; all translation is V. Run under the memory guard
 with `VJOBS=1 v -b c -memory-limit 10G test webgl/shader` (and `-gc none`).

@@ -17,9 +17,9 @@ fn test_direct_metal_pair_and_stage_linking() {
 }
 
 fn test_direct_metal_rejects_unsupported_source_without_a_fallback() {
-	for source in ['void main(){} /*', 'void main(){}\x00', 'uniform vec4 color;void main(){}',
+	for source in ['void main(){} /*', 'void main(){}\x00', 'uniform sampler2D color;void main(){}',
 		'#version 410\nvoid main(){}', '#include <bad>\nvoid main(){}', 'void main(){}void main(){}',
-		'void main(){gl_FragColor=vec4(1.0);}', 'attribute vec2 a[2];void main(){}'] {
+		'void main(){gl_FragColor=vec4(1.0);}', 'attribute vec2 a[2];void main(){}', 'attribute void a;void main(){}', 'attribute uvec2 a;void main(){}'] {
 		translate(source, .vertex) or { continue }
 		assert false, source
 	}

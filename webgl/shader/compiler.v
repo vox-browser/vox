@@ -17,10 +17,12 @@ pub:
 
 pub struct Translation {
 pub:
-	source  string
-	inputs  []Interface
-	outputs []Interface
-	version int
+	source              string
+	inputs              []Interface
+	outputs             []Interface
+	uniforms            []Uniform
+	uniform_buffer_size int
+	version             int
 }
 
 // The first direct-MSL slice deliberately rejects features it cannot lower.
@@ -31,6 +33,8 @@ pub fn translate(source string, stage Stage) !Translation {
 	mut body := []string{}
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
+	mut uniforms := []Uniform{}
+	mut uniform_size := 0
 	mut at := 0
 	mut depth := 0
 	mut main_count := 0
@@ -41,8 +45,19 @@ pub fn translate(source string, stage Stage) !Translation {
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
 		}
-		if token in ['uniform', 'struct', 'layout', 'invariant', 'sampler2D', 'samplerCube'] {
+		if token in ['struct', 'layout', 'invariant', 'sampler2D', 'samplerCube'] {
 			return error('Unsupported direct Metal declaration: ${token}')
+		}
+		if token == 'uniform' {
+			if depth != 0 { return error('Uniforms require global scope') }
+			declaration := uniform_declarations(tokens,at,uniform_size,version)!
+			for field in declaration.fields {
+				if uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate uniform: ${field.name}') }
+				uniforms << field
+			}
+			uniform_size = declaration.size
+			at = declaration.end
+			continue
 		}
 		if depth == 0 && token == 'precision' {
 			if at + 3 >= tokens.len || tokens[at + 1] !in ['lowp', 'mediump', 'highp'] || tokens[at + 3] != ';' {
@@ -69,12 +84,13 @@ pub fn translate(source string, stage Stage) !Translation {
 			if at + 2 >= tokens.len { return error('Incomplete interface declaration') }
 			typ := tokens[at]
 			metal_type(typ)!
+			if typ == 'void' || (version == 100 && (typ == 'uint' || typ.starts_with('uvec') || typ.contains('x'))) { return error('Invalid interface type for ESSL version') }
 			name := tokens[at + 1]
 			if !identifier(name) || name.starts_with('gl_') || tokens[at + 2] != ';' {
 				return error('Unsupported interface declaration')
 			}
 			is_input := token == 'attribute' || token == 'in' || (token == 'varying' && stage == .fragment)
-			if inputs.any(it.name == name) || outputs.any(it.name == name) {
+			if inputs.any(it.name == name) || outputs.any(it.name == name) || uniforms.any(it.name == name) {
 				return error('Duplicate interface: ${name}')
 			}
 			item := Interface{ name: name, typ: typ, storage: if is_input { 'in' } else { 'out' }, location: if is_input {
@@ -97,10 +113,11 @@ pub fn translate(source string, stage Stage) !Translation {
 			depth--
 			if depth < 0 { return error('Unbalanced braces') }
 		}
-		if token in ['double', 'uint', 'while', 'do', 'switch', 'discard', 'gl_FragData', 'gl_FragDepth',
+		if token in ['double', 'while', 'do', 'switch', 'discard', 'gl_FragData', 'gl_FragDepth',
 			'gl_FragDepthEXT'] || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')
 		}
+		if version == 100 && (token == 'uint' || token.starts_with('uvec')) { return error('Unsigned types require ESSL 300') }
 		if token.starts_with('gl_') && token !in ['gl_Position', 'gl_PointSize', 'gl_FragColor',
 			'gl_VertexID', 'gl_InstanceID'] {
 			return error('Unsupported builtin: ${token}')
@@ -131,6 +148,7 @@ pub fn translate(source string, stage Stage) !Translation {
 	for item in outputs {
 		lines << '${metal_type(item.typ)!} ${item.name} = ${metal_type(item.typ)!}(0);'
 	}
+	lines << uniform_members(uniforms)!
 	lines << body.join(' ')
 	lines << '};'
 	lines << 'struct VoxInput {'
@@ -160,12 +178,14 @@ pub fn translate(source string, stage Stage) !Translation {
 	lines << '};'
 	qualifier := if stage == .vertex { 'vertex' } else { 'fragment' }
 	mut args := []string{}
+	if uniforms.len > 0 { args << 'constant uchar* _vox_uniform_bytes [[buffer(0)]]' }
 	if inputs.len > 0 { args << 'VoxInput input [[stage_in]]' }
 	if stage == .vertex {
 		args << 'uint vertex_id [[vertex_id]]'
 		args << 'uint instance_id [[instance_id]]'
 	}
 	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { VoxState state;'
+	lines << uniform_loads(uniforms)!
 	for item in inputs { lines << 'state.${item.name} = input.${item.name};' }
 	if stage == .vertex {
 		lines << 'state.gl_VertexID = int(vertex_id); state.gl_InstanceID = int(instance_id);'
@@ -178,12 +198,17 @@ pub fn translate(source string, stage Stage) !Translation {
 	}
 	for item in outputs { lines << 'result.${item.name} = state.${item.name};' }
 	lines << 'return result; }'
-	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version }
+	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: uniforms, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {
 	if vertex.version != fragment.version {
 		return error('Vertex and fragment ESSL versions differ')
+	}
+	for field in fragment.uniforms {
+		for other in vertex.uniforms {
+			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length) { return error('Uniform mismatch: ${field.name}') }
+		}
 	}
 	for input in fragment.inputs {
 		matches := vertex.outputs.filter(it.name == input.name)
@@ -194,10 +219,11 @@ pub fn link(vertex Translation, fragment Translation) ! {
 }
 
 fn metal_type(typ string) !string {
-	if typ in ['void', 'float', 'int', 'bool'] { return typ }
+	if typ in ['void', 'float', 'int', 'uint', 'bool'] { return typ }
 	for prefix, replacement in {
 		'vec':  'float'
 		'ivec': 'int'
+		'uvec': 'uint'
 		'bvec': 'bool'
 	} {
 		if typ.len == prefix.len + 1 && typ.starts_with(prefix) && typ[typ.len - 1] >= `2` && typ[typ.len - 1] <= `4` {
@@ -205,6 +231,7 @@ fn metal_type(typ string) !string {
 		}
 	}
 	if typ in ['mat2', 'mat3', 'mat4'] { return 'float' + typ[3..] + 'x' + typ[3..] }
+	if typ.len == 6 && typ.starts_with('mat') && typ[4] == `x` && typ[3] >= `2` && typ[3] <= `4` && typ[5] >= `2` && typ[5] <= `4` { return 'float'+typ[3..] }
 	return error('Unsupported shader type: ${typ}')
 }
 
