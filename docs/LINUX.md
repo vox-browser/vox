@@ -286,3 +286,33 @@ byte expectations: `[241,128,35,36]` versus `[248,131,36,35]`, and red 128 versu
 124. Linux selects the non-legacy RGBA pipeline while those assertions pin the
 legacy output. The newly added unrounded-alpha case passed. These failures
 remain open; do not describe the full Linux suite as passing.
+
+### Completed compiler and window follow-up (2026-11-12)
+
+The bounded build failure above is resolved. Its root cause was stale function
+locals in V's late-match transform: the compiler inferred an unrelated owner
+record for an interpolated UI2 string and generated an enormous object formatter.
+The setup now caches a checked C compiler with each late-match function's scope
+isolated. It builds from the selected V sources without editing the V checkout,
+raising either memory limit, or disabling generic checks. Upstream compilers
+that already contain the fix bypass this compatibility bootstrap.
+
+The Debian 13 ARM64 VM built the full browser with this compiler. The final
+window-fix build exited 0 with a sampled aggregate peak RSS of 6,339,305,472 bytes
+under the 12 GiB guard and V's 10 GiB limit. Fresh processes passed headless
+JavaScript/DOM/wheel checks, local HTML, HTTP redirects, trusted HTTPS and
+certificate rejection, and an 800×600 rendered screenshot.
+
+The Xvfb lifecycle check then passed native address entry, resize/redraw at
+960×720, independent process-tab startup, tab switching, retained paint, child
+retirement and normal native close with complete process-group retirement.
+The browser test and guard exited 0, peaking at 804,208,640 bytes under 3 GiB.
+The full native-window test file also passed strict C callback/pointer checks
+and execution. Sokol events now copy their 32-bit fields into GG's V event
+layout on Linux; X11 titles are set only after window creation.
+
+The six shadow tests also pass after independently verifying and pinning the
+intentional native/non-native RGBA byte differences. Earlier failed attempts
+above remain diagnostic history; the current Linux build and lifecycle checks
+are no longer blocked by those failures. These are functional port checks,
+not Brave pixel parity or a performance acceptance cohort.

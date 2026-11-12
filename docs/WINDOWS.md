@@ -44,7 +44,8 @@ pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
   mingw-w64-x86_64-python mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-openssl \
-  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
+  mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
+  mingw-w64-x86_64-glslang
 ```
 
 Provide a Windows `JavaScriptCore.dll` and its runtime dependencies. The
@@ -259,3 +260,60 @@ launch with the update dialog timed out after 600 seconds (guest exit 124,
 peak committed memory 1,000,751,104 bytes). Keep both results when assessing the
 port. The host VM guard subsequently reached its 3,600-second limit and stopped
 QEMU (exit -9); this also prevents treating the whole VM run as acceptance.
+
+### Shutdown fix and repeated VM checks (2026-11-12)
+
+The close hang was traced to libcurl cleanup in a pthread TLS destructor on
+Windows. A resolver join there ran under the Windows loader lock and blocked
+JavaScriptCore thread initialization. Windows now creates and releases its
+curl multi handle on the requesting thread; Unix retains per-worker reuse.
+The native regression fixture checks failed initialization and completed
+transfer cleanup on the caller's thread. It passes on macOS and Windows.
+
+A fresh full browser executable with SHA-256
+`fcd41ff121cb11c8302c90865186480322f43cb7b02e5b51baa758cad126d088`
+passed `--headless-smoke` (exit 0, peak job committed memory 418,938,880 bytes).
+A separate private-profile window rendered the JavaScript fixture, accepted
+native mouse input to display “Click passed”, and closed normally (browser and
+guest guard exit 0, peak 768,286,720 bytes). Both used a 3 GiB guest limit. The
+cross-build passed its 12 GiB host guard, peaking at 6,892,617,728 bytes.
+
+The runtime at `C:\vox-fixed-runtime` includes glslang and SPIRV-Tools plus their
+matching MinGW runtime DLLs. The earlier missing-DLL/entry-point launches and
+pre-fix timeout above remain failed attempts; they are not passing shutdown
+checks. These results cover this executable's headless, click and close paths,
+not cross-browser pixel equivalence or every Windows interaction.
+
+### Native input, resize and file URL check (2026-11-12)
+
+The next full C-backend executable includes the Sokol event adapter and the
+shared file URL decoder. In the same Windows 11 VM, a fresh private-profile
+process passed rendered-pixel checks, native mouse input and JavaScript mutation,
+resize/redraw at 960×720, and Ctrl+L / Enter navigation to a `file:///C:/…` URL
+containing an escaped space, query and fragment. Normal window close returned
+browser exit 0; the guest guard also exited 0 without a timeout, at a peak
+743,100,416 bytes under its 3 GiB limit. The full cross-build completed with
+host guard exit 0, peaking at 8,046,133,248 bytes. Its SHA-256 was
+`b6ca164391b6ad11918f495fb05359339f875cfba019fe1498aecc6ac6995047`,
+verified on both host and guest. The VM then shut down normally; its host
+guard exited 0 after 11,997.79 seconds, with a sampled aggregate peak RSS of
+11,255,578,624 bytes under 12 GiB.
+
+The interactive check is reproducible with `tools/test_windows_browser.c`:
+
+```sh
+x86_64-w64-mingw32-gcc -std=c11 -Wall -Wextra -Werror -municode \
+  tools/test_windows_browser.c -o test-windows-browser.exe -luser32 -lgdi32
+runtime-guard.exe 600000 3072 browser.out browser.err \
+  test-windows-browser.exe C:/path/to/vox2.exe C:/private/windows-fixtures
+```
+
+Run it on the interactive desktop with an empty `VOX_PROFILE_DIR`, matching
+runtime DLLs on `PATH`, and update checking disabled in that private profile.
+The driver raises its browser window before reading desktop pixels, and emits
+physical scan codes for shortcuts, matching Sokol's Win32 input boundary.
+Earlier driver attempts failed because the window was obscured or keyboard
+scan codes were absent; these attempts remain local evidence. The earlier
+900-second browser timeout is also retained and is not a passing close check.
+These smoke checks validate this build's window lifecycle and navigation; they
+do not establish Windows pixel equivalence with Brave.

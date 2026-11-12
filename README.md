@@ -28,7 +28,7 @@ Install Apple's command line tools (`xcode-select --install`) and
 
 ```sh
 brew install python pkgconf freetype graphite2 harfbuzz icu4c@78 openssl \
-    startergo/angle/angle ffmpeg libavif curl
+    startergo/angle/angle ffmpeg libavif curl glslang
 eval "$(python3 tools/dev_build_env.py)"
 v .
 ./vox2 https://example.com
@@ -52,7 +52,7 @@ sudo apt-get install build-essential clang pkg-config python3 git ca-certificate
     libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
     libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
-    libpng-dev libjpeg-dev fonts-liberation2 fonts-dejavu-core
+    libpng-dev libjpeg-dev glslang-dev fonts-liberation2 fonts-dejavu-core
 eval "$(python3 tools/dev_build_env.py)"
 v .
 Build/linux/vox https://example.com
@@ -71,7 +71,8 @@ compiler tools on `PATH`. Install:
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
     mingw-w64-x86_64-python mingw-w64-x86_64-icu \
     mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
-    mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
+    mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
+    mingw-w64-x86_64-glslang
 ```
 
 Supply a Windows x86-64 `JavaScriptCore.dll` and its matching WebKit DLLs;
@@ -94,8 +95,8 @@ current runtime limitations.
 
 For a quick engine check, run the resulting executable with `--headless-smoke`.
 The latest [Linux VM checks](docs/LINUX.md#vm-follow-up-2026-11-12) and
-[Windows VM checks](docs/WINDOWS.md#vm-follow-up-2026-11-12) record the remaining
-Linux compiler-memory and Windows shutdown failures.
+[Windows VM checks](docs/WINDOWS.md#vm-follow-up-2026-11-12) record the verified
+builds, runtime checks and earlier failed attempts.
 Repository contributors run builds and tests through
 `python3 tools/run_memory_bounded.py --lock Build/JOB.lock --report Build/JOB.json -- v .`.
 
