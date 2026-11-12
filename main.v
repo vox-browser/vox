@@ -3,6 +3,7 @@ module main
 import color
 import adblock
 import browsernet
+import browsercookies
 import browsersettings
 import browserjs
 import browserhistory
@@ -8433,6 +8434,10 @@ fn run_browser(arguments []string) {
 	_ = platform.initialize_browser_heap_policy()
 	browsersettings.initialize(browsersettings.default_path()) or {
 		eprintln('Vox: could not load settings: ${err.msg()}')
+		exit(1)
+	}
+	browsercookies.initialize(os.join_path(os.dir(browsersettings.default_path()), 'cookies.json')) or {
+		eprintln('Vox: could not load cookies: ${err.msg()}')
 		exit(1)
 	}
 	link_translated_modules()
