@@ -9,7 +9,7 @@
     <key>CFBundleExecutable</key>
     <string>Vox</string>
     <key>CFBundleIdentifier</key>
-    <string>org.ladybirdbrowser.vox</string>
+    <string>org.vox_browser.vox</string>
     <key>CFBundleIconFile</key>
     <string>Vox.icns</string>
     <key>CFBundleInfoDictionaryVersion</key>
