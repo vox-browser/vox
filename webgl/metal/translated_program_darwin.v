@@ -20,8 +20,11 @@ pub fn ShaderProgram.from_translation(owner &DrawingBuffer, vertex shader.Transl
  defer { if !transferred { C.vox_metal_translation_destroy(translated) } }
  for stage,translation in [vertex,fragment] {
   if translation.uniform_buffer_size > 0 {
-   field := C.VoxMetalShaderResource{name:c'_vox_plain_uniforms',kind:1,stage:u32(stage),binding:0,byte_size:u64(translation.uniform_buffer_size)}
+   field := C.VoxMetalShaderResource{name:if stage==0 {c'_webgl_native_vertex_uniforms'} else {c'_webgl_native_fragment_uniforms'},kind:1,stage:u32(stage),binding:0,byte_size:u64(translation.uniform_buffer_size)}
    append_translated_resource(translated,field)!
+  }
+  for block in translation.uniform_blocks {
+   append_translated_resource(translated,C.VoxMetalShaderResource{name:block.name.str,kind:1,stage:u32(stage),binding:block.binding,byte_size:u64(block.byte_size)})!
   }
   for field in translation.uniforms {
    append_translated_resource(translated,C.VoxMetalShaderResource{name:field.name.str,kind:100,stage:u32(stage),binding:field.binding,offset:u32(field.offset),array_stride:u32(field.array_stride),matrix_stride:u32(field.matrix_stride),base_type:field.scalar_type,semantic_type:field.semantic_type,rows:u32(field.rows),columns:u32(field.columns),array_length:u32(field.array_length),byte_size:u64(field.byte_size)})!

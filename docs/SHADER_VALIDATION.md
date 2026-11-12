@@ -67,7 +67,7 @@ reflection. Each stage uses buffer slot zero; generated MSL decodes individual
 32-bit scalars and copies them into shader state. This preserves packed vec3
 plus scalar fields, 32-bit boolean storage, and padded matrix/array elements
 without depending on Metal structure packing. Shared stage uniforms must have
-matching types and array shapes. Uniform blocks, constant
+matching types and array shapes. Constant
 expression array lengths, active-uniform analysis and uniform write restrictions
 remain pending. Declared uniforms are currently reflected, including unused ones.
 
@@ -121,7 +121,7 @@ attribute reconstruction with the regular vertex variant. This is code generatio
 only: production integration, varying selection/packing, interface arrays and
 selection/packing beyond these raw capture records remains pending.
 
-Validation for this slice: all ten shader test files pass with the C backend in
+Validation for this slice: all eleven shader test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -179,3 +179,11 @@ bitwise/modulo/unsigned/control-flow restrictions before MSL lowering. Builtin
 resource-limit constants and invariant vertex position are lowered explicitly.
 These checks cover the shared corpus; they do not establish complete Appendix A
 index/mutation validation or general ESSL type equivalence with Metal.
+
+Anonymous `layout(std140)` uniform blocks now have independent V-generated
+bindings and layouts. Nested structures and arrays retain block ownership in
+leaf reflection. The integrated Metal program path supports both internal block
+writes and external, aligned buffer ranges through the existing draw API.
+Cross-stage block signatures are checked; named block instances and alternative
+layout qualifiers remain pending. Plain uniforms keep their private block names
+so WebGL block queries can distinguish them from author blocks.

@@ -26,6 +26,7 @@ pub:
 	outputs             []Interface
 	uniforms            []Uniform
 	uniform_roots       []Uniform
+	uniform_blocks      []UniformBlock
 	textures            []TextureResource
 	uniform_buffer_size int
 	version             int
@@ -56,6 +57,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	mut structure_order := []ShaderStruct{}
 	mut textures := []TextureResource{}
 	mut uniform_size := 0
+	mut uniform_blocks := []UniformBlock{}
 	mut at := 0
 	mut depth := 0
 	mut main_count := 0
@@ -63,6 +65,19 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	version := processed.version
 	for at < tokens.len {
 		mut explicit_location := -1
+        if tokens[at] == 'layout' && at+2 < tokens.len && tokens[at+2] == 'std140' {
+            if depth != 0 || version != 300 {return error('Uniform blocks require global ESSL300 declarations')}
+            if uniform_blocks.len >= 12 {return error('Uniform block binding limit exceeded')}
+            declaration:=uniform_block_declaration(tokens,at,structures,u32(uniform_blocks.len+1))!
+            if uniform_blocks.any(it.name==declaration.block.name) {return error('Duplicate uniform block')}
+            for field in declaration.fields {
+                if uniforms.any(it.name==field.name) || inputs.any(it.name==field.name) || outputs.any(it.name==field.name) || textures.any(it.name==field.name) {return error('Duplicate uniform block member')}
+                uniforms << field
+            }
+            uniform_blocks << declaration.block
+            at=declaration.end
+            continue
+        }
 		if tokens[at] == 'layout' {
 			if depth != 0 || version != 300 { return error('Interface layout locations require global ESSL 300 declarations') }
 			qualifier := location_qualifier(tokens,at)!
@@ -240,7 +255,8 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	lines << '};'
 	qualifier := if stage == .vertex { 'vertex' } else { 'fragment' }
 	mut args := texture_arguments(textures)
-	if uniforms.len > 0 { args << 'constant uchar* _vox_uniform_bytes [[buffer(0)]]' }
+	if uniform_size > 0 { args << 'constant uchar* _vox_uniform_bytes [[buffer(0)]]' }
+	for block in uniform_blocks { args << 'constant uchar* _vox_uniform_block${block.binding} [[buffer(${block.binding})]]' }
 	if inputs.len > 0 { args << 'VoxInput input [[stage_in]]' }
 	if stage == .vertex {
 		args << 'uint vertex_id [[vertex_id]]'
@@ -270,7 +286,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		initialization << vertex_input_loads(inputs)!
 		capture = feedback_translation(capture_prefix,args,initialization,outputs)!
 	}
-	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
+	return Translation{ feedback_source:capture.source,feedback_fields:capture.fields,feedback_stride:capture.stride,source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, uniform_blocks:uniform_blocks,textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {
@@ -281,9 +297,16 @@ pub fn link(vertex Translation, fragment Translation) ! {
 		if vertex.uniform_roots.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
 		for other in vertex.textures { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
 	}
+    for block in fragment.uniform_blocks {
+        for other in vertex.uniform_blocks {
+            if block.name==other.name && block.signature!=other.signature {return error('Uniform block mismatch: ${block.name}')}
+        }
+    }
 	for field in fragment.uniform_roots {
+        if field.binding != 0 {continue}
 		if vertex.textures.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
 		for other in vertex.uniform_roots {
+            if other.binding != 0 {continue}
 			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length || field.signature != other.signature) { return error('Uniform mismatch: ${field.name}') }
 		}
 	}

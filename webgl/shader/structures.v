@@ -70,7 +70,7 @@ fn flatten_uniforms(roots []Uniform, structures map[string]ShaderStruct, nesting
    prefix := root.name+if root.is_array {'[${element}]'} else {''}
    mut children := []Uniform{}
    for field in definition.fields {
-    children << Uniform{...field,name:prefix+'.'+field.name,offset:root.offset+element*root.array_stride+field.offset}
+    children << Uniform{...field,name:prefix+'.'+field.name,offset:root.offset+element*root.array_stride+field.offset,binding:root.binding}
    }
    leaves << flatten_uniforms(children,structures,nesting+1)!
    if leaves.len > 4096 { return error('Uniform reflection field limit exceeded') }

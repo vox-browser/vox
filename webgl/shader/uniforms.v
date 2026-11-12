@@ -96,12 +96,13 @@ fn uniform_loads(fields []Uniform) ![]string {
   if field.is_array { result << 'for (uint _vox_element=0; _vox_element<${field.array_length}; ++_vox_element) {' }
   element_offset := if field.is_array {' + _vox_element * ${field.array_stride}'} else {''}
   destination := 'state.${field.name}'+if field.is_array {'[_vox_element]'} else {''}
+  buffer_name := if field.binding==0 {'_vox_uniform_bytes'} else {'_vox_uniform_block${field.binding}'}
   storage := match field.scalar_type {7 {'int'} 8 {'uint'} else {'float'}}
   for column in 0..field.columns {
    mut scalars := []string{}
    for row in 0..field.rows {
     offset := field.offset+column*field.matrix_stride+row*4
-    load := '(*reinterpret_cast<constant ${storage}*>(_vox_uniform_bytes + ${offset}${element_offset}))'
+    load := '(*reinterpret_cast<constant ${storage}*>(${buffer_name} + ${offset}${element_offset}))'
     scalars << if field.semantic_type == 2 {'(${load} != 0u)'} else {load}
    }
    value_type := if field.columns > 1 {'float${field.rows}'} else {metal_type(field.typ)!}

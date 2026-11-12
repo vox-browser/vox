@@ -38,3 +38,27 @@ fn test_translated_v_program_captures_vertices_through_existing_engine_api() {
   assert unsafe { *(&f32(&capture.bytes[offset+40])) }==4
  }
 }
+
+fn test_translated_v_program_supports_external_uniform_block_ranges() {
+ mut target:=DrawingBuffer.create(4,4)!
+ defer { target.close() }
+ vertex:=shader.translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ fragment:=shader.translate('#version 300 es\nprecision highp float;layout(std140) uniform Tint{vec4 tint;};out vec4 color;void main(){color=tint;}',.fragment)!
+ mut program:=ShaderProgram.from_translation(target,vertex,fragment)!
+ defer {program.close()}
+ resource:=(program.resources()!).filter(it.kind==1)[0]
+ assert resource.name=='Tint' && resource.binding==1
+ mut buffer:=GPUBuffer.create(target,272)!
+ defer {buffer.close()}
+ values:=[f32(1),0,0,1]
+ bytes:=unsafe{(&u8(values.data)).vbytes(16)}
+ buffer.write(256,bytes)!
+ options:=DrawOptions{uniform_blocks:[UniformBlockBinding{stage:.fragment,binding:1,buffer:buffer,offset:256,length:16}]}
+ target.draw_with_options(program,[],.triangles,0,3,1,options)!
+ pixels:=target.read_pixels()!
+ for i:=0;i<pixels.len;i+=4 {assert pixels[i..i+4]==[u8(255),0,0,255]}
+ program.uniform_block_bytes(.fragment,1,0,bytes)!
+ target.draw(program,[],.triangles,0,3,1)!
+ internal:=target.read_pixels()!
+ assert internal==pixels
+}
