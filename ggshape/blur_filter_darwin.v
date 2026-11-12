@@ -84,8 +84,8 @@ fn shadow_linear_kernel(sigma f32) ([56]f32, int) {
 	return result, 28
 }
 
-// Capsule corners cannot be nine-patched. Graphite uses its general A8
-// image-filter path for them; other rounded shadows retain their existing path.
+// Bounded A8 image filtering requires a positive, uniform axis-aligned scale.
+// Round rectangles use a nine-patch; capsule corners use the general mask.
 fn affine_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	m := shape.matrix
 	for value in m {
@@ -112,8 +112,10 @@ fn capsule_shadow_supported(shape &C.VoxGraphiteShape) bool {
 	return true
 }
 
-fn capsule_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
-	if !capsule_shadow_supported(shape) { return error('Unsupported blurred shadow') }
+fn rounded_shadow_mask(shape &C.VoxGraphiteShape, width int, height int) ![]u8 {
+	if !affine_shadow_supported(shape) { return error('Unsupported blurred shadow') }
+	if patch := rounded_shadow_nine_patch(shape, width, height) { return patch }
+	if !capsule_shadow_supported(shape) { return error('Unsupported blurred shadow geometry') }
 	return shadow_filter_mask(shape, width, height, none, canvas.Point{})
 }
 
@@ -142,7 +144,7 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	source_matrix[2] += source_offset.x * m[0] - left
 	source_matrix[5] += source_offset.y * m[4] - top
 	source.set_matrix(canvas.Matrix.values(source_matrix))
-	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: true }
+	white := canvas.Paint{ color: canvas.Color4f{1, 1, 1, 1}, anti_alias: shape.anti_alias != 0 }
 	if path := source_path {
 		source.draw_path(path, white)!
 	} else {
@@ -203,4 +205,61 @@ fn shadow_filter_mask(shape &C.VoxGraphiteShape, width int, height int,
 	resolved := shadow_mask_pass(image, width, height, [sx, sy,
 		bounds.left - original.left * sx - pixels.left, bounds.top - original.top * sy - pixels.top]!, [56]f32{}, 0, 0)!
 	return resolved.pixels
+}
+
+// Graphite AnalyticBlurMask::MakeRRect: blur a small rounded rectangle, then
+// sample its nine-patch with nearest filtering. Keep the A8 sample intact until
+// draw_alpha_mask multiplies it by the floating-point paint color.
+fn rounded_shadow_nine_patch(shape &C.VoxGraphiteShape, width int, height int) ?[]u8 {
+	m := shape.matrix
+	sigma := shape.thickness * f32(.5) * m[0]
+	radius := shape.rect[4] * m[0]
+	if radius <= 0 { return none }
+	for i in 5 .. 12 { if shape.rect[i] * m[0] != radius { return none } }
+	blur_radius := f32(3) * f32(math.ceil(f64(sigma - f32(1) / 6)))
+	corner := f32(math.ceil(f64(radius)))
+	if shape.rect[2] * m[0] <= 2 * (corner + blur_radius)
+		|| shape.rect[3] * m[0] <= 2 * (corner + blur_radius) {
+		return none
+	}
+	size := 2 * blur_radius + 2 * corner + 1
+	dimension := int(size + 2 * blur_radius)
+	if dimension <= 0 || dimension > 4096 { return none }
+	patch_shape := C.VoxGraphiteShape{
+		matrix:    [f32(1), 0, 0, 0, 1, 0, 0, 0, 1]!
+		rect:      [blur_radius, blur_radius, size, size, corner, corner, corner, corner, corner,
+			corner, corner, corner]!
+		thickness: sigma * 2
+	}
+	patch := shadow_filter_mask(&patch_shape, dimension, dimension, none, canvas.Point{}) or { return none }
+	left := shape.rect[0] * m[0] + m[2] - blur_radius
+	top := shape.rect[1] * m[4] + m[5] - blur_radius
+	center_x := (shape.rect[2] * m[0] + 2 * blur_radius) * f32(.5)
+	center_y := (shape.rect[3] * m[4] + 2 * blur_radius) * f32(.5)
+	edge := 2 * blur_radius + radius + f32(.5)
+	mut output := []u8{len: width * height}
+	for y in 0 .. height {
+		dy := f32(y) + f32(.5) - top - center_y
+		py := f32(math.max(0, f64(math.abs(dy) - (center_y - edge)))) * (if dy < 0 {
+			f32(-1)
+		} else if dy > 0 {
+			f32(1)
+		} else {
+			f32(0)
+		}) + edge
+		iy := int(contour_clamp(f32(math.floor(f64(py / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
+		for x in 0 .. width {
+			dx := f32(x) + f32(.5) - left - center_x
+			px := f32(math.max(0, f64(math.abs(dx) - (center_x - edge)))) * (if dx < 0 {
+				f32(-1)
+			} else if dx > 0 {
+				f32(1)
+			} else {
+				f32(0)
+			}) + edge
+			ix := int(contour_clamp(f32(math.floor(f64(px / (2 * edge) * f32(dimension)))), 0, f32(dimension - 1)))
+			output[y * width + x] = patch[iy * dimension + ix]
+		}
+	}
+	return output
 }

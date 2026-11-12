@@ -171,7 +171,7 @@ fn draw_shape_pixels(pixels &u8, width i32, height i32, pitch i32, has_backgroun
 	if shape.fill in [11, 12, 13] {
 		draw_contoured_shape(mut target, shape, paint, int(width), int(height)) or { return 0 }
 	} else if shape.fill == 10 {
-		mask := capsule_shadow_mask(shape, int(width), int(height)) or { return 0 }
+		mask := rounded_shadow_mask(shape, int(width), int(height)) or { return 0 }
 		target.clip_rrect(rounded_rect(shape.underlay_rect), .difference, true) or { return 0 }
 		target.set_matrix(canvas.Matrix.identity())
 		target.draw_alpha_mask(mask, int(width), int(height), paint) or { return 0 }
