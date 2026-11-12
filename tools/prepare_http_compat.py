@@ -294,12 +294,21 @@ def compiler_vlib(compiler, work):
     # running Mach-O image from another invocation.
     with tempfile.TemporaryDirectory(prefix="compiler-root-", dir=work) as temporary:
         probe = Path(temporary) / "compiler_root.v"
-        probe.write_text("module main\nfn main() { println(@VEXEROOT) }\n")
+        probe.write_text("module main\nimport os\nfn main() {\n"
+                         " executable := os.args[0]\n"
+                         " if executable.trim_space() == '' || executable.to_lower_ascii() == '' { exit(2) }\n"
+                         " println(@VEXEROOT)\n}\n")
         # This introspection probe needs the checked frontend's @VEXEROOT;
         # its location inside the checkout must not inherit v.mod's FastC
         # application backend. The browser keeps its selected backend.
+        environment = os.environ.copy()
+        environment['V_MACOS_V3_NO_FALLBACK'] = '1'
         result = subprocess.run([compiler, "-b", "c", "-memory-limit", "10G", "run", str(probe)],
-                                capture_output=True, text=True, check=True)
+                                capture_output=True, text=True, env=environment)
+        if result.returncode:
+            raise RuntimeError("V compiler/runtime probe failed for " + str(compiler)
+                               + ". Set V_BIN to a compiler with its matching vlib.\n"
+                               + result.stderr[-4000:])
     return (Path(result.stdout.strip()).resolve() / "vlib").resolve()
 
 
