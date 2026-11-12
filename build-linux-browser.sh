@@ -10,9 +10,11 @@ if [ "$#" -ne 0 ]; then
     exit 2
 fi
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+# V owns the build helpers; the shell only bootstraps compiler discovery.
+v_tool() { sh "$repo_dir/tools/run_v_tool.sh" "$@"; }
 # Match the supervisor's protocol; stale workers hand off before compiling.
-if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v8 ]; then
-    python3 "$repo_dir/tools/rebuild_browser.py" --upgrade-worker
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v9-vtools ]; then
+    v_tool rebuild_browser --upgrade-worker
     exit 75
 fi
 v_compiler=${V_BIN:-}
@@ -35,7 +37,7 @@ esac
 if [ "${VOX_BUILD_SUPERVISED:-0}" != 1 ]; then
     V_BIN=$v_compiler
     export V_BIN
-    exec python3 "$repo_dir/tools/rebuild_browser.py" --build
+    exec sh "$repo_dir/tools/run_v_tool.sh" rebuild_browser --build
 fi
 build_dir=${VOX_BUILD_OUTPUT_DIR:-"$repo_dir/Build/linux"}
 cache_dir="$repo_dir/Build/linux"
@@ -49,9 +51,9 @@ esac
 # historical environment variable also controls fallback on Linux.
 V_MACOS_V3_NO_FALLBACK=1
 export V_MACOS_V3_NO_FALLBACK
-v_backend=${VOX_BUILD_BACKEND:-$(python3 "$repo_dir/tools/browser_backend.py" "$repo_dir")}
+v_backend=${VOX_BUILD_BACKEND:-$(v_tool browser_backend "$repo_dir")}
 if [ "$v_backend" = c ]; then
-    v_compiler=$(python3 "$repo_dir/tools/prepare_v_match_scope.py" "$v_compiler")
+    v_compiler=$(v_tool prepare_v_match_scope "$v_compiler")
 fi
 
 export PKG_CONFIG_PATH="$repo_dir/Build/deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
@@ -65,19 +67,19 @@ mkdir -p "$build_dir"
 # JPEG XL is decoded by the V jpegxl module; drop the former Rust helper.
 rm -f "$build_dir/libVoxJPEGXL.so"
 if pkg-config --exists libavif; then
-    python3 "$repo_dir/tools/build_native_avif.py" --output "$build_dir/libVoxAVIF.so"
+    v_tool build_native_avif --output "$build_dir/libVoxAVIF.so"
 else
     rm -f "$build_dir/libVoxAVIF.so"
 fi
-python3 "$repo_dir/tools/build_linux_native.py"
-http_modules=$(python3 "$repo_dir/tools/prepare_http_compat.py" "$v_compiler")
-ui2_modules=$(python3 "$repo_dir/tools/prepare_ui2.py" "$v_compiler")
-linux_modules=$(python3 "$repo_dir/tools/prepare_linux_modules.py" "$v_compiler")
+v_tool build_linux_native
+http_modules=$(v_tool prepare_http_compat "$v_compiler")
+ui2_modules=$(sh "$repo_dir/tools/run_v_tool.sh" prepare_ui2 "$v_compiler")
+linux_modules=$(v_tool prepare_linux_modules "$v_compiler")
 module_paths="$repo_dir|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 if [ "$gc_mode" = prealloc ]; then
     # Use the production bounded realloc and persistent closure metadata;
     # allocator flags alone do not provide those ownership guarantees.
-    prealloc_modules=$(python3 "$repo_dir/tools/prepare_prealloc_runtime.py" "$v_compiler" "$cache_dir/prealloc-runtime")
+    prealloc_modules=$(v_tool prepare_prealloc_runtime "$v_compiler" "$cache_dir/prealloc-runtime")
     v_compiler="$prealloc_modules/compiler/v"
     module_paths="$repo_dir|$prealloc_modules|$ui2_modules|$linux_modules|$http_modules|@vmodules|@vlib"
 fi

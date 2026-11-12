@@ -1,0 +1,108 @@
+{
+  "prepare_gg_shadow": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tmode           f32\n",
+      "new": "\tmask_color     Color4f = Color4f{1, 1, 1, 1}\n"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "a.mode == b.mode",
+      "new": "a.mask_color == b.mask_color"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << u.mode\n\tout << 0\n\tout << 0\n\tout << 0",
+      "new": "\tout << u.mask_color.r\n\tout << u.mask_color.g\n\tout << u.mask_color.b\n\tout << u.mask_color.a"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\ttexture_height int\n}",
+      "new": "\ttexture_height int\n\tmask_color Color4f = Color4f{1, 1, 1, 1}\n}"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!",
+      "new": "\t\t\tinv_dimensions: [f32(1) / f32(layer.texture_width), f32(1) / f32(layer.texture_height)]!\n\t\t\tmask_color: layer.mask_color"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float mode_6;\n// @@ vertex_image",
+      "new": "float4 maskColor_6;\n// @@ vertex_image"
+    }
+  ],
+  "prepare_gg_image": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\timage gfx.Image\n}",
+      "new": "\timage gfx.Image\n\tdocument_linear_filter bool\n}"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "a.image.id == b.image.id",
+      "new": "a.image.id == b.image.id && a.document_linear_filter == b.document_linear_filter"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\ttexture_height int\n",
+      "new": "\ttexture_height int\n\tdocument_scale [2]f32 = [f32(1),1]!\n\tdocument_linear_filter bool\n"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tupper2x2:       [f32(1), 0, 0, 1]!",
+      "new": "\t\t\tupper2x2:       [layer.document_scale[0],f32(0),0,layer.document_scale[1]]!"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\timage: layer.image\n",
+      "new": "\t\t\timage: layer.image\n\t\t\tdocument_linear_filter: layer.document_linear_filter\n"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "bindings.fs.samplers[0] = ctx.layer_sampler()",
+      "new": "bindings.fs.samplers[0] = if draw.texture.document_linear_filter { document_image_sampler() } else { ctx.layer_sampler() }"
+    }
+  ],
+  "prepare_gg_gamma": [
+    {
+      "file": "gpu_layer.v",
+      "old": "\tmask_color Color4f = Color4f{1, 1, 1, 1}\n",
+      "new": "\tmask_color Color4f = Color4f{1, 1, 1, 1}\n\tcolor_transform DocumentImageColorTransform\n"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tmask_color     Color4f = Color4f{1, 1, 1, 1}\n",
+      "new": "\tmask_color     Color4f = Color4f{1, 1, 1, 1}\n\tcolor_transform DocumentImageColorTransform\n"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "const image_uniform_size = 48",
+      "new": "const image_uniform_size = 112"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "a.mask_color == b.mask_color",
+      "new": "a.mask_color == b.mask_color && a.color_transform == b.color_transform"
+    },
+    {
+      "file": "gpu_layer.v",
+      "old": "\tout << u.mask_color.a\n",
+      "new": "\tout << u.mask_color.a\n\tout << u.color_transform.gamma\n\tout << 0\n\tout << 0\n\tout << 0\n\tfor column in 0 .. 3 {\n\t\tfor row in 0 .. 3 { out << u.color_transform.gamut[column * 3 + row] }\n\t\tout << 0\n\t}\n"
+    },
+    {
+      "file": "gpu_surface.v",
+      "old": "\t\t\tmask_color: layer.mask_color",
+      "new": "\t\t\tmask_color: layer.mask_color\n\t\t\tcolor_transform: layer.color_transform"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float4 maskColor_6;\n",
+      "new": "float4 maskColor_6;\nfloat4 gammaParameters_7;\nfloat4 gamutColumn0_8;\nfloat4 gamutColumn1_8;\nfloat4 gamutColumn2_8;\n"
+    },
+    {
+      "file": "shaders/paint_snippets.metal",
+      "old": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\n",
+      "new": "float4 _10_mask = sample(_globals.image_4, _in.CoordNormalize_3_Var);\nfloat _11_gamma = _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gammaParameters_7.x;\nif (_11_gamma > 0.0f) {\n    float3 _12_rgb = _10_mask.xyz / max(_10_mask.w, 0.0001f);\n    float3 _13_linear = powr(max(_12_rgb, 0.0f), float3(_11_gamma));\n    _13_linear = float3x3(_globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn0_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn1_8.xyz,\n                         _globals._anonInterface0->combinedUniformData[_globals.uniformSsboIndex].gamutColumn2_8.xyz) * _13_linear;\n    float3 _14_abs = abs(_13_linear);\n    float3 _15_encoded = select(powr(as_type<float>(0x3f919280u) * _14_abs, float3(as_type<float>(0x3ed55555u))) + as_type<float>(0xbd612800u),\n                               as_type<float>(0x414eb852u) * _14_abs, _14_abs < as_type<float>(0x3b4d2e31u));\n    _10_mask = float4(clamp(sign(_13_linear) * _15_encoded * _10_mask.w, 0.0f, _10_mask.w), _10_mask.w);\n}\n"
+    }
+  ]
+}

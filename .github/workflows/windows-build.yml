@@ -11,7 +11,9 @@ on:
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_windows_browser.py
+      - tools/build_windows_browser.vsh
+      - tools/buildtools/**
+      - tools/run_v_tool.sh
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
@@ -20,7 +22,9 @@ on:
     paths:
       - build_browser.vsh
       - .github/workflows/windows-build.yml
-      - tools/build_windows_browser.py
+      - tools/build_windows_browser.vsh
+      - tools/buildtools/**
+      - tools/run_v_tool.sh
       - libregex/**
       - packaging/version.txt
       - browserupdate/**
@@ -40,9 +44,6 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Syntax-check the Windows build driver
-        run: python3 -m py_compile tools/build_windows_browser.py
-
       - name: Install V from source (for x.imp)
         timeout-minutes: 20
         run: |
@@ -50,6 +51,9 @@ jobs:
           git clone --depth 1 https://github.com/vlang/v.git "$RUNNER_TEMP/v"
           make -C "$RUNNER_TEMP/v" -j2
           "$RUNNER_TEMP/v/v" version
+
+      - name: Check the V Windows build driver
+        run: '"$RUNNER_TEMP/v/v" -b c -memory-limit 10G run tools/build_windows_browser.vsh --help'
 
       - name: Show x.imp build flows
         run: '"$RUNNER_TEMP/v/v" run build_browser.vsh --help'
