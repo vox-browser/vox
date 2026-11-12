@@ -106,11 +106,11 @@ fn decode_browser_navigation_response(body string, content_type string) (string,
 }
 
 fn loaded_browser_navigation_input(loaded LoadedPage) (string, ?string) {
-	if loaded.javascript_url_source != none { return loaded.markup, 'UTF-8' }
+	if loaded.javascript_url_source != none { return loaded.markup, ?string('UTF-8') }
 	if loaded.url.starts_with('http://') || loaded.url.starts_with('https://') {
 		markup, encoding_name := decode_browser_navigation_response(loaded.markup,
 			loaded.content_type)
-		return markup, encoding_name
+		return markup, ?string(encoding_name)
 	}
 	return loaded.markup, none
 }

@@ -37,3 +37,23 @@ fn test_navigation_text_keeps_only_owned_output_after_utf16_decoder_work() {
 	assert encoding_name.to_lower() == 'utf-8'
 	$if prealloc { assert after - before < markup.len + 4096 }
 }
+
+// Keep the optional encoding wrapped across the tuple return. FastC otherwise
+// exposes string bytes as an option, which crashes HTTP resource preloading.
+fn test_navigation_input_keeps_the_optional_response_encoding() {
+    for url in ['http://example.test/', 'https://example.test/'] {
+        markup, charset := loaded_browser_navigation_input(LoadedPage{
+            url: url
+            markup: '<p>decoded</p>'
+            content_type: 'text/html; charset=utf-8'
+        })
+        assert markup == '<p>decoded</p>'
+        assert charset or { panic('missing HTTP encoding') } == 'UTF-8'
+    }
+    markup, charset := loaded_browser_navigation_input(LoadedPage{
+        url: 'file:///input.html'
+        markup: '<p>local</p>'
+    })
+    assert markup == '<p>local</p>'
+    assert charset == none
+}
