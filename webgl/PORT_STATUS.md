@@ -5,6 +5,13 @@ Upstream reference: `~/code/3rd/ladybird/Libraries/LibWeb/WebGL`
 Reference audit: 2026-09-12
 Latest native focused verification: 2026-10-05
 
+Direct Metal migration started on 2026-11-12 in the independent `webgl.metal`
+package. Its device/queue/private drawing-buffer, GPU clear and bounded pixel
+transfer slice passes native ARC/MRC/sanitizer checks and three V cases per GC
+mode without ANGLE dependencies. Browser dispatch and shaders are not migrated;
+the production WebGL implementation still uses ANGLE. See the
+[migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
+
 The [native getParameter string-cache correction](../docs/translation-audit/WEBGL_PARAMETER_STRING_CACHE.md)
 (`b1b05829`) connects the Source per-GL-enum cache to the actual direct-driver
 path. Standard strings and unmasked aliases share owned entries; warm reads
