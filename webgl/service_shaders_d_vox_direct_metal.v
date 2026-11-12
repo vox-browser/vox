@@ -72,6 +72,13 @@ fn (mut context MetalServiceContext) program_parameter(name u32,pname u32) i32 {
         0x8b82 { i32(program.linked) }
         0x8b83 { i32(program.validated) }
         0x8b84 { if program.log.len>0 { i32(program.log.len+1) } else { i32(0) } }
+        0x8c7f { i32(program.linked_feedback_mode) }
+        0x8c83 { i32(program.linked_feedback.len) }
+        0x8c76 {
+            mut longest:=0
+            for value in program.linked_feedback { if value.name.len+1>longest { longest=value.name.len+1 } }
+            i32(longest)
+        }
         0x8b85 { i32(program.attached.len) }
         0x8b86 { if program.linked { i32(program.uniforms.len) } else { i32(0) } }
         0x8b89 { if program.linked { i32(program.attributes.len) } else { i32(0) } }

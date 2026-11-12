@@ -14,6 +14,7 @@ fn (mut context MetalServiceContext) bind_indexed_buffer(target u32,index u32,na
     if index>=limit { metal_service_error(invalid_value);return }
     alignment:=if target==uniform_buffer { i64(256) } else { i64(4) }
     if name!=0 && range && (offset<0 || length<=0 || offset%alignment!=0 || (target==transform_feedback_buffer && length%4!=0)) { metal_service_error(invalid_value);return }
+    if target==transform_feedback_buffer && context.feedback().active { metal_service_error(invalid_operation);return }
     if name!=0 {
         mut object:=context.objects[name] or { metal_service_error(invalid_operation);return }
         if object.kind!=0 || object.deleted { metal_service_error(invalid_operation);return }
@@ -22,6 +23,7 @@ fn (mut context MetalServiceContext) bind_indexed_buffer(target u32,index u32,na
     context.buffers[target]=name
     key:=(u64(target)<<32)|index
     context.indexed_buffers[key]=MetalServiceBufferRange{buffer:name,offset:if name!=0 && range { int(offset) } else { 0 },length:if name!=0 && range { int(length) } else { 0 }}
+    if target==transform_feedback_buffer { context.feedback().bindings[int(index)]=context.indexed_buffers[key] }
     context.collect_buffers()
 }
 

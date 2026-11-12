@@ -72,6 +72,8 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     if indexed && (offset<0 || offset%i64(index_width)!=0) { metal_service_error(invalid_operation); return }
     object:=context.objects[context.current_program] or { metal_service_error(invalid_operation); return }
     if !object.linked || object.program==unsafe { nil } { metal_service_error(invalid_operation); return }
+    feedback:=context.feedback()
+    if feedback.active && !feedback.paused && (indexed || mode!=feedback.mode || context.current_program!=feedback.program) { metal_service_error(invalid_operation);return }
     mut framebuffer_view:=context.framebuffer_view(framebuffer) or { context.last_failure=err.msg();return }
     defer { framebuffer_view.close() }
     mut vao:=context.vao()
@@ -161,6 +163,7 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     defer { unsafe { blocks.free() } }
     mut textures:=context.texture_bindings(object) or { context.last_failure=err.msg();return }
     defer { textures.close() }
+    context.capture_feedback(object,streams,mode,first,count,instances,metal.DrawOptions{textures:textures.bindings,uniform_blocks:blocks}) or { context.last_failure=err.msg();if context.error_==0 { metal_service_error(invalid_operation) };return }
     mut visibility:=context.visibility_buffer() or { context.last_failure=err.msg();metal_service_error(out_of_memory);return }
     defer { if visibility!=unsafe { nil } { visibility.close();unsafe { free(visibility) } } }
     context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{visibility:visibility,textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode,framebuffer_view.has_depth,framebuffer_view.has_stencil)}) or {

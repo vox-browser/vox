@@ -241,8 +241,13 @@ array and matrix offsets; no host-side shader simulation is used. Native
 capture tests pass with ARC, MRC and ASan/UBSan, alongside the other six native
 fixtures. The V capture case passes with default GC and `-gc none`, preserving
 nonzero vertex IDs, instance order, matrices and unmodified clip coordinates.
-Connecting this resource operation to the WebGL transform-feedback lifecycle
-is the next slice.
+The WebGL service now connects this capture to per-object indexed bindings,
+interleaved/separate packing, range checks, pause/resume, program ownership,
+rasterizer discard and completed primitive queries. The existing two native
+transform-feedback cases, a new matrix/instance packing case and the context
+lifetime regression all pass in both GC modes. This completes implementation
+of the previously unsupported service entry points; conformance and browser
+integration remain separate gates.
 
 ## Next implementation slices
 
@@ -254,14 +259,12 @@ RGBA8 readback. Line loops and triangle fans expand to equivalent index lists.
 Unsupported entry points explicitly report `INVALID_OPERATION`; there is no
 ANGLE fallback. This is an incomplete backend behind a compile-time flag.
 
-1. Connect texture/sampler and user-framebuffer ownership, uploads and draws.
-   Extend the resource backend beyond base-level RGBA8 2D textures.
-2. Complete uniform blocks, shader type/reflection edge cases, packed vertex
-   formats and overlapping strides; cache render pipelines.
-3. Add queries, synchronization, transform feedback, multisampling, multiple
-   draw buffers and remaining WebGL2 operations.
-4. Resolve browser-suite compilation/runtime blockers and extend conformance.
-5. Run typed/public WebGL regression suites and matched browser/site checks.
+1. Complete shader type/reflection edge cases, packed vertex formats and
+   overlapping strides; verify format conversion and renderability.
+2. Run all native and public WebGL regressions against both services, preserving
+   the Source wrapper's retained-object behavior.
+3. Resolve browser-suite compilation/runtime blockers and extend conformance.
+4. Run matched browser/site checks.
    Switch the macOS default only after the replacement covers those contracts;
    then remove ANGLE loading, dependencies and obsolete service code.
 

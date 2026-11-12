@@ -30,6 +30,8 @@ mut:
     default_read_buffer u32 = 0x405
     current_program u32
     active_queries map[u32]u32
+    feedbacks map[u32]&MetalServiceFeedback
+    current_feedback u32
     current_attributes [16]MetalServiceCurrentAttribute
     version int
     target &metal.DrawingBuffer
@@ -87,6 +89,10 @@ mut:
     uniforms []MetalServiceActiveInfo
     locations []MetalServiceUniformLocation
     blocks []MetalServiceUniformBlock
+    feedback_names []string
+    feedback_mode u32 = 0x8c8c
+    linked_feedback []MetalServiceFeedbackVarying
+    linked_feedback_mode u32 = 0x8c8c
 }
 
 struct MetalServiceActiveInfo {
@@ -123,6 +129,7 @@ fn (context &MetalServiceContext) object(name u32,kind int) !&MetalServiceObject
 fn (mut context MetalServiceContext) collect_programs() {
     for name,mut object in context.objects {
         if object.kind != 10 || !object.deleted || object.retired || name==context.current_program { continue }
+        if context.feedback_program_active(name) { continue }
         object.retired = true
         object.attached.clear()
         if object.program != unsafe { nil } { object.program.close(); unsafe { free(object.program) }; object.program = unsafe { nil } }
@@ -207,6 +214,7 @@ fn (mut context MetalServiceContext) collect_buffers() {
         mut referenced := false
         for _,binding in context.buffers { if binding==name { referenced=true } }
         for _,binding in context.indexed_buffers { if binding.buffer==name { referenced=true } }
+        for _,feedback in context.feedbacks { if feedback.bindings.any(it.buffer==name) { referenced=true } }
         for _, vao in context.vertex_arrays {
             if vao.element_buffer == name || vao.attributes.any(it.buffer == name) { referenced = true }
         }
@@ -310,11 +318,14 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
         if object.rbo!=unsafe { nil } { if object.rbo.gpu!=unsafe { nil } { object.rbo.gpu.close();unsafe { free(object.rbo.gpu) } };unsafe { free(object.rbo) } }
         if object.texture!=unsafe { nil } { object.texture.close();unsafe { free(object.texture) } }
         if object.sampling!=unsafe { nil } { unsafe { object.sampling.parameters.free();free(object.sampling) } }
+        unsafe { object.feedback_names.free() }
+        for value in object.linked_feedback { unsafe { value.name.free();value.field.free() } };unsafe { object.linked_feedback.free() }
         unsafe { object.source.free(); object.compiled_source.free(); object.log.free(); object.attached.free(); object.bindings.free(); object.clear_reflection(); object.attributes.free(); object.uniforms.free(); object.blocks.free(); object.locations.free(); free(object) }
     }
     for _,mut texture in context.black_textures { texture.close();unsafe { free(texture) } }
     for _,fence in context.fences { unsafe { free(fence) } }
     unsafe { context.black_textures.free();context.fences.free();context.indexed_buffers.free();context.textures.free() }
+    for _,feedback in context.feedbacks { unsafe { free(feedback) } };unsafe { context.feedbacks.free() }
     for _, vao in context.vertex_arrays { unsafe { free(vao) } }
     for _, values in context.parameters { unsafe { values.free() } }
     unsafe { context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.active_queries.free();context.parameters.free(); context.enabled.free() }
@@ -465,11 +476,14 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
     if context == unsafe { nil } || a1 == 0 { return }
     mut object := context.objects[a1] or { return }
     if object.kind != int(a0) || object.deleted { return }
+    if a0==8 && context.feedbacks[a1]!=unsafe { nil } && context.feedbacks[a1].active { metal_service_error(invalid_operation);return }
     object.deleted = true
     if a0 in [i32(2),3] { context.detach_deleted_attachment(a1,int(a0)) }
     if a0 == 0 {
         for target,name in context.buffers { if name == a1 { context.buffers[target] = 0 } }
         for key,binding in context.indexed_buffers { if binding.buffer==a1 { context.indexed_buffers.delete(key) } }
+        mut feedback:=context.feedback()
+        for mut binding in feedback.bindings { if binding.buffer==a1 { binding=MetalServiceBufferRange{} } }
         mut vao := context.vao()
         if vao.element_buffer == a1 { vao.element_buffer = 0 }
         for mut attribute in vao.attributes { if attribute.buffer == a1 { attribute.buffer = 0 } }
@@ -484,6 +498,9 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
         for target,name in context.active_queries { if name==a1 { context.active_queries.delete(target) } }
     } else if a0==5 {
         for index,name in context.samplers { if name==a1 { context.samplers[index]=0 } }
+    } else if a0==8 {
+        if context.current_feedback==a1 { context.bind_feedback(transform_feedback,0) }
+        if feedback:=context.feedbacks[a1] { context.feedbacks.delete(a1);unsafe { free(feedback) } };context.collect_buffers()
     } else if a0 in [6,7] {
         if context.vertex_array==a1 { context.vertex_array=0 }
         if vao:=context.vertex_arrays[a1] { context.vertex_arrays.delete(a1); unsafe { free(vao) } }
@@ -592,32 +609,32 @@ fn metal_service_vox_gl_vertex_attrib_offset(a0 u32) i64 {
 
 @[export: 'vox_gl_bind_transform_feedback']
 fn metal_service_vox_gl_bind_transform_feedback(a0 u32, a1 u32) {
-    metal_service_unsupported('vox_gl_bind_transform_feedback')
+    metal_service_current().bind_feedback(a0,a1)
 }
 
 @[export: 'vox_gl_begin_transform_feedback']
 fn metal_service_vox_gl_begin_transform_feedback(a0 u32) {
-    metal_service_unsupported('vox_gl_begin_transform_feedback')
+    metal_service_current().begin_feedback(a0)
 }
 
 @[export: 'vox_gl_end_transform_feedback']
 fn metal_service_vox_gl_end_transform_feedback() {
-    metal_service_unsupported('vox_gl_end_transform_feedback')
+    metal_service_current().feedback_command(0)
 }
 
 @[export: 'vox_gl_pause_transform_feedback']
 fn metal_service_vox_gl_pause_transform_feedback() {
-    metal_service_unsupported('vox_gl_pause_transform_feedback')
+    metal_service_current().feedback_command(1)
 }
 
 @[export: 'vox_gl_resume_transform_feedback']
 fn metal_service_vox_gl_resume_transform_feedback() {
-    metal_service_unsupported('vox_gl_resume_transform_feedback')
+    metal_service_current().feedback_command(2)
 }
 
 @[export: 'vox_gl_transform_feedback_varyings']
 fn metal_service_vox_gl_transform_feedback_varyings(a0 u32, a1 i32, a2 voidptr, a3 u32) {
-    metal_service_unsupported('vox_gl_transform_feedback_varyings')
+    metal_service_feedback_varyings(a0,a1,a2,a3)
 }
 
 @[export: 'vox_gl_bind_buffer_base']
@@ -1445,6 +1462,7 @@ fn metal_service_vox_gl_link_program(a0 u32) {
     mut context:=metal_service_current()
     if context==unsafe { nil } { return }
     mut program:=context.object(a0,10) or { return }
+    if context.feedback_program_active(a0) { metal_service_error(invalid_operation);return }
     program.linked=false; program.validated=false
     unsafe { program.log.free() }; program.log=''
     mut vertex:=''; mut fragment:=''
@@ -1456,6 +1474,7 @@ fn metal_service_vox_gl_link_program(a0 u32) {
     }
     if vertex.len==0 || fragment.len==0 { program.log='Both vertex and fragment shaders are required'.clone(); return }
     mut compiled:=metal.ShaderProgram.compile_with_bindings(context.target,vertex,fragment,context.version,program.bindings) or { program.log=err.msg().clone(); return }
+    program.link_feedback(compiled) or { compiled.close();unsafe { free(compiled) };program.log=err.msg().clone();return }
     program.reflect_program(compiled) or { compiled.close(); unsafe { free(compiled) }; program.log=err.msg().clone(); return }
     if program.program!=unsafe { nil } { program.program.close(); unsafe { free(program.program) } }
     program.program=compiled; program.linked=true
@@ -1465,6 +1484,8 @@ fn metal_service_vox_gl_link_program(a0 u32) {
 fn metal_service_vox_gl_use_program(a0 u32) {
     mut context:=metal_service_current()
     if context==unsafe { nil } { return }
+    feedback:=context.feedback()
+    if feedback.active && !feedback.paused { metal_service_error(invalid_operation);return }
     if a0!=0 { context.linked_program(a0) or { return } }
     context.current_program=a0
     context.collect_programs()
