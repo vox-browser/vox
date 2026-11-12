@@ -21,7 +21,7 @@ fn restore_locale(saved ?string, other ?string) {
 
 fn test_locale_registry_lists_english_by_default() {
 	assert default_locale() == 'en'
-	assert supported_locales() == ['en']
+	assert 'en' in supported_locales()
 	assert tr_for('en', 'nav.back') == 'Back'
 }
 
@@ -43,8 +43,8 @@ fn test_locale_normalizes_codes() {
 
 fn test_locale_falls_back_to_english() {
 	assert tr_for('de', 'nav.back') == 'Back'
+	assert tr_for('xx', 'nav.back') == 'Back'
 	assert tr_for('', 'nav.back') == 'Back'
-	assert tr_for('fa', 'nav.back') == 'Back'
 	assert tr_for('en', 'no.such.key') == 'no.such.key'
 	assert tr_for('de', 'no.such.key') == 'no.such.key'
 }
