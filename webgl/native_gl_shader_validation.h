@@ -110,6 +110,33 @@ static void vox_essl_prepare(void)
 }
 #endif
 
+/* glslang does not advertise EXT_draw_buffers, but parses its ESSL100
+ * builtins. The Metal backend implements that extension. Treat its known
+ * requirement as enable for this validator; every other requirement remains
+ * subject to normal ESSL validation. Preserve source length and line numbers. */
+static void vox_essl_enable_draw_buffers(char* source)
+{
+    for(char* line=source;line && *line;) {
+        char* next=strchr(line,'\n');
+        char* cursor=line;
+        while(*cursor==' ' || *cursor=='\t') ++cursor;
+        if(*cursor=='#') {
+            ++cursor;while(*cursor==' ' || *cursor=='\t') ++cursor;
+            if(!strncmp(cursor,"extension",9) && (cursor[9]==' ' || cursor[9]=='\t')) {
+                cursor+=9;while(*cursor==' ' || *cursor=='\t') ++cursor;
+                if(!strncmp(cursor,"GL_EXT_draw_buffers",19)) {
+                    cursor+=19;while(*cursor==' ' || *cursor=='\t') ++cursor;
+                    if(*cursor==':') {
+                        ++cursor;while(*cursor==' ' || *cursor=='\t') ++cursor;
+                        if(!strncmp(cursor,"require",7) && (!cursor[7] || cursor[7]=='\r' || cursor[7]=='\n' || cursor[7]==' ' || cursor[7]=='\t')) memcpy(cursor,"enable ",7);
+                    }
+                }
+            }
+        }
+        line=next?next+1:NULL;
+    }
+}
+
 static int vox_essl_validate_preprocessed(char const* source, int length, int fragment, int version,
                              glslang_resource_t const* driver_resources,
                              char* log, size_t log_capacity, char** preprocessed)
@@ -123,6 +150,7 @@ static int vox_essl_validate_preprocessed(char const* source, int length, int fr
     if (!terminated) return 0;
     memcpy(terminated, source, (size_t)length);
     terminated[length] = 0;
+    if(version==100) vox_essl_enable_draw_buffers(terminated);
     glslang_resource_t resources = driver_resources ? *driver_resources : *glslang_default_resource();
     if (version == 100) {
         /* WebGL1 requires the statically bounded Appendix A loop/index subset. */
