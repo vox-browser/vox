@@ -481,6 +481,8 @@ mut:
 	// widget presses run through Page::EventHandler in event_fn and must not also
 	// enter the browser's compact DOM-click fallback.
 	suppress_next_click_for_chrome bool
+	suppress_next_key_for_chrome bool
+	suppress_next_character_for_chrome bool
 	restore_tab_path string
 	platform_pointer_buttons u32
 	pending_tab_link ?string
@@ -6717,6 +6719,10 @@ fn (mut app BrowserApp) draw_command(source_command &layout.PaintCommand, page_x
 				|| clip.height <= 0 {
 				return
 			}
+			if app.ctx.native_rendering && destination.width == image.width
+				&& destination.height == image.height && result.clip_radii != painting.CornerRadii{} {
+				if shader_image := app.rounded_jpeg_paint_image(image_data.image_url, image) { image = shader_image }
+			}
 			if paint_command_image_allows_force_dark(*command, f64(destination.width),
 				f64(destination.height), image) {
 				if bitmap := replay_bitmap {
@@ -8219,6 +8225,10 @@ fn (mut app BrowserApp) handle_event(event &gg.Event) {
 }
 
 fn (mut app BrowserApp) handle_character(code u32) {
+	if app.suppress_next_character_for_chrome {
+		app.suppress_next_character_for_chrome = false
+		return
+	}
 	if code < 32 || code == 127 {
 		return
 	}
@@ -8254,6 +8264,10 @@ fn (mut app BrowserApp) handle_character(code u32) {
 }
 
 fn (mut app BrowserApp) handle_key(key gg.KeyCode, modifier gg.Modifier) {
+	if app.suppress_next_key_for_chrome {
+		app.suppress_next_key_for_chrome = false
+		return
+	}
 	if app.handle_browser_popup_key(key.str()) { return }
 	if is_browser_settings_shortcut(key, modifier) {
 		show_browser_settings()
