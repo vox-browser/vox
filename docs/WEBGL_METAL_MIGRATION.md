@@ -259,6 +259,15 @@ negative buffer-size validation order and ignore unpack spans for null image
 allocations. These results do not establish untested GLES edge cases or
 browser/site equivalence.
 
+Packed 2:10:10:10, normalized 32-bit integer and overlapping vertex streams
+now expand to checked, tightly packed GPU inputs in V. The focused GPU cases
+pass in both GC modes. The installed ANGLE reference agrees on unsigned packed,
+signed normalized, normalized i32 and overlapping floats; it produces alpha
+255 for the signed **unnormalized** negative two-bit alpha case where Metal
+produces 0. The new Metal test keeps the GLES 3.0.6 section 2.9.2 signed-field
+semantics; this is a retained reference discrepancy, not a full pixel-parity
+claim. The failing reference receipts remain in local migration evidence.
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting

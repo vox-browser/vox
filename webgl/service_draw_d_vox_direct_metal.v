@@ -142,12 +142,18 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
             if attribute.enabled {
                 source:=context.objects[attribute.buffer] or { metal_service_error(invalid_operation); return }
                 if source.gpu_buffer==unsafe { nil } { metal_service_error(invalid_operation); return }
-                format:=metal_service_vertex_format(attribute.type_) or { context.last_failure=err.msg();metal_service_error(invalid_operation);return }
                 scalar:=metal_service_vertex_scalar_size(attribute.type_)
-                stride:=if attribute.stride==0 { attribute.size*scalar } else { attribute.stride }
+                packed:=attribute.type_ in [u32(0x8d9f),0x8368]
+                element_size:=if packed { 4 } else { attribute.size*scalar }
+                stride:=if attribute.stride==0 { element_size } else { attribute.stride }
                 last:=if attribute.divisor>0 { u64(if instances>0 { instances-1 } else { 0 })/attribute.divisor } else { maximum }
-                if attribute.offset<0 || attribute.offset>source.gpu_buffer.size() || (count>0 && instances>0 && (last*u64(stride)+u64(attribute.size*scalar)>u64(source.gpu_buffer.size()-int(attribute.offset)))) { metal_service_error(invalid_operation);return }
-                if stride<attribute.size*scalar { context.last_failure='Overlapping vertex strides are not implemented';metal_service_error(invalid_operation);return }
+                if attribute.offset<0 || attribute.offset>source.gpu_buffer.size() || (count>0 && instances>0 && (last*u64(stride)+u64(element_size)>u64(source.gpu_buffer.size()-int(attribute.offset)))) { metal_service_error(invalid_operation);return }
+                if packed || stride<element_size || (attribute.normalized && attribute.type_ in [gl_int,unsigned_int]) {
+                    if count==0 || instances==0 { continue }
+                    stream:=context.materialize_vertex(attribute,source.gpu_buffer,last,int(location),stride,element_size) or { context.last_failure=err.msg();metal_service_error(invalid_operation);return }
+                    allocated<<stream.buffer;streams<<stream;continue
+                }
+                format:=metal_service_vertex_format(attribute.type_) or { context.last_failure=err.msg();metal_service_error(invalid_operation);return }
                 streams<<metal.VertexStream{buffer:source.gpu_buffer,location:int(location),components:attribute.size,offset:int(attribute.offset),stride:stride,divisor:int(attribute.divisor),format:format,normalized:attribute.normalized,integer:attribute.integer}
             } else {
                 current:=context.current_attributes[int(location)]
