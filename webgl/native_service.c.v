@@ -6,7 +6,8 @@ $if macos {
     #include "@DIR/native_metal_boundary.h"
 } $else $if windows {
     #flag @DIR/../Build/deps/windows/native/webgl.a
-    #pkgconfig angleproject
+    #pkgconfig vox-mesa-egl
+    #flag windows -lglslang-default-resource-limits -lstdc++
     #include "@DIR/native_egl.h"
 } $else {
     #pkgconfig egl glesv2 gl glslang

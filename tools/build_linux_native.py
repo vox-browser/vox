@@ -20,7 +20,7 @@ def main():
     version = subprocess.check_output(compiler + ["--version"])
     groups = []
     if args.os == 'windows':
-        groups.append(('webgl', ['native_windows'], ['angleproject']))
+        groups.append(('webgl', ['native_windows'], ['vox-mesa-egl', 'icu-uc']))
     for package, names, dependencies in groups:
         flags = shlex.split(subprocess.check_output(
             ["pkg-config", "--cflags", *dependencies], text=True)) if dependencies else []

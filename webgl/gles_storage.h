@@ -1,5 +1,5 @@
-#ifndef VOX_GLES_STORAGE_LINUX_H
-#define VOX_GLES_STORAGE_LINUX_H
+#ifndef VOX_GLES_STORAGE_H
+#define VOX_GLES_STORAGE_H
 /* Sized GLES storage accepted by this boundary must have a defined initializer. */
 static int vox_gles_storage_format(GLenum internal,GLenum *format,GLenum *type) {
     *type=GL_UNSIGNED_BYTE;
@@ -103,7 +103,7 @@ static void vox_gles_tex_storage(GLenum target,int levels,GLenum internal,int wi
     for(int level=0;level<levels;level++) {
         int faces=target==GL_TEXTURE_CUBE_MAP?6:1;
         for(int face=0;face<faces;face++) {
-            GLenum image=faces==6?GL_TEXTURE_CUBE_MAP_POSITIVE_X+face:target;
+            GLenum image=faces==6?(GLenum)(GL_TEXTURE_CUBE_MAP_POSITIVE_X+face):target;
             if(compressed)vox_gles_zero_compressed(image,level,internal,width,height,depth,volume);
             else vox_gles_zero_texture(image,level,width,height,depth,format,type,volume);
         }

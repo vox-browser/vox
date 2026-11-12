@@ -52,10 +52,10 @@ def main():
         parser.error('Run on Linux with a GLES3 driver (Mesa software rendering is supported)')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    inputs = [Path(__file__).resolve(), ROOT / 'tools/native_gles_linux_test.c', ROOT / 'tools/native_gles_host_linux_test.c',
+    inputs = [Path(__file__).resolve(), ROOT / 'tools/native_gles_test.c', ROOT / 'tools/native_gles_host_linux_test.c',
               ROOT / 'tools/run_memory_bounded.py', ROOT / 'tools/native_gles_glx.lsan-suppressions', ROOT / 'platform/native_state.h',
               ROOT / 'webgl/native_egl.h', ROOT / 'webgl/native_gl_shader_validation.h',
-              ROOT / 'webgl/essl_desktop_translation.h', *sorted((ROOT / 'webgl').glob('gles_*_linux.h'))]
+              ROOT / 'webgl/essl_desktop_translation.h', *sorted((ROOT / 'webgl').glob('gles_*.h'))]
     pins = {str(p): digest(p) for p in inputs}
     flags = shlex.split(subprocess.check_output(['pkg-config', '--cflags', '--libs', 'egl', 'glesv2', 'gl', 'x11', 'glslang'], text=True))
     report = dict(pins=pins, jobs=[], passed=False)
@@ -66,7 +66,7 @@ def main():
         for fixture in ('headless', 'host-only', 'host'):
             label = mode + '-' + fixture
             binary = output / label
-            source = 'native_gles_host_linux_test.c' if fixture != 'headless' else 'native_gles_linux_test.c'
+            source = 'native_gles_host_linux_test.c' if fixture != 'headless' else 'native_gles_test.c'
             command = [os.environ.get('CC', 'clang'), '-std=c11', '-Werror', '-Wno-unused-function',
                        *options, str(ROOT / 'tools' / source), '-o', str(binary),
                        *flags, '-lglslang-default-resource-limits', '-lstdc++', '-lm', '-ldl']

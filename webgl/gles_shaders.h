@@ -1,5 +1,5 @@
-#ifndef VOX_GLES_SHADERS_LINUX_H
-#define VOX_GLES_SHADERS_LINUX_H
+#ifndef VOX_GLES_SHADERS_H
+#define VOX_GLES_SHADERS_H
 #include <stdbool.h>
 #include "essl_desktop_translation.h"
 /* Validate WebGL's ESSL version/loop subset, then compile the unchanged ESSL

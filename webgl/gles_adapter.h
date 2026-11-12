@@ -1,7 +1,7 @@
-/* Native GLES boundary for Linux. No ANGLE headers or entry points.
+/* Native GLES boundary for Linux and Windows. No ANGLE headers or entry points.
  * Every CPU transfer/query is checked before the driver can touch its pointer. */
-#ifndef VOX_GLES_ADAPTER_LINUX_H
-#define VOX_GLES_ADAPTER_LINUX_H
+#ifndef VOX_GLES_ADAPTER_H
+#define VOX_GLES_ADAPTER_H
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -9,7 +9,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../platform/native_state.h"
+#ifdef __linux__
 #include <dlfcn.h>
+#endif
 
 typedef struct {
     EGLDisplay display; EGLContext context;
@@ -25,6 +27,7 @@ VOX_NATIVE_STATE __thread VoxGLESState *vox_gles_current;
 /* Sokol declares its own GLX types. Keep the window ABI opaque here rather
  * than including glx.h into its generated C translation unit. libGL is linked
  * by the service, so POSIX dlsym resolves the standard GLX dispatch functions. */
+#ifdef __linux__
 typedef struct {
     int initialized;
     void *(*context)(void), *(*display)(void);
@@ -64,6 +67,15 @@ static void vox_gles_end_call(VoxGLESCall *call) {
     vox_gles_glx.make_current(call->display,call->draw,call->read,call->context);
 }
 #define VOX_GLES_CALL VoxGLESCall vox_gles_call __attribute__((cleanup(vox_gles_end_call)))=vox_gles_begin_call()
+#else
+/* The Windows host uses D3D11, which has independent context state. Rebind
+ * the selected GLES context if a host operation released it. */
+static void vox_gles_begin_call(void) {
+    if(vox_gles_current && eglGetCurrentContext()!=vox_gles_current->context)
+        eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
+}
+#define VOX_GLES_CALL vox_gles_begin_call()
+#endif
 static void vox_gles_queue(GLenum error) {
     if (!vox_gles_current || error == GL_NO_ERROR) return;
     for (unsigned i=0;i<vox_gles_current->error_count;i++)
@@ -279,15 +291,15 @@ static void vox_gles_buffer_data(GLenum target,GLsizeiptr size,const void *data,
     const unsigned char zero[16384]={0};
     for(GLsizeiptr at=0;at<size;) {GLsizeiptr count=size-at;if(count>(GLsizeiptr)sizeof(zero))count=sizeof(zero);glBufferSubData(target,at,count,zero);at+=count;}
 }
-#include "gles_storage_linux.h"
-#include "gles_draw_linux.h"
+#include "gles_storage.h"
+#include "gles_draw.h"
 #define glDrawArrays vox_gles_draw_arrays
 #define glDrawArraysInstanced vox_gles_draw_arrays_instanced
 #define glDrawElements vox_gles_draw_elements
 #define glDrawElementsInstanced vox_gles_draw_elements_instanced
 #define glDrawRangeElements vox_gles_draw_range_elements
 #define glBindBuffer vox_gles_bind_buffer
-#include "gles_shaders_linux.h"
+#include "gles_shaders.h"
 #define glCompileShader vox_gles_compile_shader
 #define glTexStorage2D vox_gles_tex_storage2d
 #define glTexStorage3D vox_gles_tex_storage3d

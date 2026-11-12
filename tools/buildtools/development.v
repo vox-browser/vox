@@ -57,6 +57,7 @@ fn build_windows(a Args) ! {
 		os.unsetenv('PKG_CONFIG_PATH')
 	}
 	os.setenv('V_MACOS_V3_NO_FALLBACK', '1', true)
+	windows_mesa_environment(real(a.get('--deps-root', join(root_dir(), 'Build/deps/windows'))))!
 	prepare_windows_jsc(arguments([real(a.required('--javascriptcore-dll')!)], []string{})!)!
 	build_linux_native('windows')!
 	selected := compiler()
@@ -83,6 +84,9 @@ fn development_command(a Args) ! {
 	if !os.is_file(selected) { return error('V compiler does not exist: ${selected}') }
 	if os.user_os() == 'linux' { selected = prepare_match(selected)! }
 	if os.user_os() == 'macos' { build_harfbuzz()! }
+	if os.user_os() == 'windows' {
+		windows_mesa_environment(join(root_dir(), 'Build/deps/windows'))!
+	}
 	if os.user_os() in ['linux', 'windows'] { build_linux_native(os.user_os())! }
 	if os.user_os() == 'windows' {
 		prepare_windows_jsc(arguments([real(a.required('--javascriptcore-dll')!)], []string{})!)!
@@ -100,9 +104,12 @@ fn development_command(a Args) ! {
 		flags << ['-gc', 'none', '-d', 'ui2_custom_rendering', '-d', 'sokol_d3d11', '-prod',
 			'-no-prod-options']
 	}
-	values := {
+	mut values := {
 		'V_BIN':  selected
 		'VFLAGS': shell_join(flags)
+	}
+	if os.user_os() == 'windows' {
+		values['PKG_CONFIG_PATH'] = os.getenv('PKG_CONFIG_PATH')
 	}
 	if a.get('--shell', if os.user_os() == 'windows' { 'powershell' } else { 'sh' }) == 'powershell' {
 		for key, value in values { println("\$env:${key} = '" + value.replace("'", "''") + "'") }

@@ -326,3 +326,17 @@ fn test_build_lock_is_not_inherited_by_executed_children() ! {
 		next.release()
 	}
 }
+
+fn test_windows_mesa_rejects_corrupt_cached_archives() ! {
+    root := temporary(os.temp_dir(), 'vox-mesa-checksum-')!
+    defer { remove(root) or {} }
+    mkdir(join(root, 'mesa'))!
+    mesa_version := load(join(root_dir(), 'tools/windows_mesa.json'))!['version']!.str()
+    for kind in ['devel-mingw', 'release-mingw'] {
+        os.write_file(join(root, 'mesa', 'mesa3d-${mesa_version}-${kind}.7z'), 'corrupt dependency')!
+    }
+    mut failure := ''
+    prepare_windows_mesa(root) or { failure = err.msg() }
+    assert failure.starts_with('Mesa archive checksum mismatch:')
+    assert !os.exists(join(root, 'mesa/lib/pkgconfig/vox-mesa-egl.pc'))
+}

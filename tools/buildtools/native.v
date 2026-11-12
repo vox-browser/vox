@@ -222,7 +222,7 @@ fn build_linux_native(target_os string) ! {
 	if target_os != 'windows' { return }
 	cxx := shell_split(os.getenv_opt('CXX') or { 'c++' })!
 	version := capture([...cxx, '--version'])!
-	flags := shell_split(capture(['pkg-config', '--cflags', 'angleproject'])!)!
+	flags := shell_split(capture(['pkg-config', '--cflags', 'vox-mesa-egl', 'icu-uc'])!)!
 	source := join(root_dir(), 'webgl/native_windows.c')
 	mut bytes := version + json.encode(flags) + read(@FILE)! + read(source)!
 	for path in (listing(join(root_dir(), 'webgl'))!).filter(it.ends_with('.h')) {

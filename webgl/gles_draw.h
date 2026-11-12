@@ -1,5 +1,5 @@
-#ifndef VOX_GLES_DRAW_LINUX_H
-#define VOX_GLES_DRAW_LINUX_H
+#ifndef VOX_GLES_DRAW_H
+#define VOX_GLES_DRAW_H
 /* Robust GLES returns safe values for out-of-range fetches. WebGL additionally
  * requires INVALID_OPERATION; validate active vertex/index streams before draw. */
 static int vox_gles_vertex_bytes(GLenum type,GLint count) {

@@ -1,4 +1,9 @@
-/* Execute the actual Linux service on distribution EGL/GLES, with CPU canaries. */
+/* Execute the shared native Mesa service on Linux or Windows, with CPU canaries. */
+#ifdef _WIN32
+#define VOX_EGL_IMPLEMENTATION 1
+#include <windows.h>
+#include <tlhelp32.h>
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -139,6 +144,17 @@ int main(void) {
         assert(vox_egl_make_current(other));assert(vox_gl_get_error()==GL_INVALID_OPERATION);vox_egl_destroy(other);assert(vox_egl_make_current(context));
         vox_egl_destroy(context);
     }
+#ifdef _WIN32
+    HANDLE modules=CreateToolhelp32Snapshot(TH32CS_SNAPMODULE,GetCurrentProcessId());
+    assert(modules!=INVALID_HANDLE_VALUE);
+    MODULEENTRY32 module={0};module.dwSize=sizeof(module);int mesa=0;
+    assert(Module32First(modules,&module));
+    do {
+        assert(!strstr(module.szModule,"ANGLE") && !strstr(module.szModule,"angle"));
+        if(!lstrcmpiA(module.szModule,"libgallium_wgl.dll"))mesa=1;
+    } while(Module32Next(modules,&module));
+    CloseHandle(modules);assert(mesa);
+#else
     FILE *maps=fopen("/proc/self/maps","r");assert(maps);
     char line[4096];int mesa=0;
     while(fgets(line,sizeof(line),maps)) {
@@ -146,5 +162,6 @@ int main(void) {
         if(strstr(line,"libEGL_mesa"))mesa=1;
     }
     fclose(maps);assert(mesa);
-    puts("Native Linux GLES context, shader, initialization and bounded transfer checks passed");
+#endif
+    puts("Native Mesa GLES context, shader, initialization and bounded transfer checks passed");
 }

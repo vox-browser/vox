@@ -102,6 +102,11 @@ fn dispatch(name string, args []string) !int {
 			prepare_windows_jsc(arguments(args, []string{})!)!
 			return 0
 		}
+		'prepare_windows_mesa' {
+			a := arguments(args, []string{})!
+			println(prepare_windows_mesa(real(a.get('--deps-root', join(root_dir(), 'Build/deps/windows'))))!)
+			return 0
+		}
 		'build_windows_browser' {
 			build_windows(arguments(args, ['--console'])!)!
 			return 0

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <windows.h>
+#include <tlhelp32.h>
 
 static DWORD browser_pid;
 static HWND browser_window;
@@ -112,10 +113,76 @@ static int enter_address(wchar_t const *address) {
   return key(VK_RETURN, 0) && key(VK_RETURN, KEYEVENTF_KEYUP);
 }
 
+/* Locate the document below the shared chrome, then compare every canvas
+ * pixel. Capturing the desktop also exercises the final D3D11 presentation. */
+static int webgl_pixels(void) {
+  RECT rect;
+  if (!GetClientRect(browser_window, &rect) || rect.right < 128 || rect.bottom < 64)
+    return 0;
+  POINT origin = {0, 0};
+  if (!ClientToScreen(browser_window, &origin)) return 0;
+  HDC screen = GetDC(NULL), memory = CreateCompatibleDC(screen);
+  BITMAPINFO info = {0};
+  info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+  info.bmiHeader.biWidth = rect.right;
+  info.bmiHeader.biHeight = -rect.bottom;
+  info.bmiHeader.biPlanes = 1;
+  info.bmiHeader.biBitCount = 32;
+  info.bmiHeader.biCompression = BI_RGB;
+  unsigned char *pixels = NULL;
+  HBITMAP bitmap = CreateDIBSection(screen, &info, DIB_RGB_COLORS,
+                                  (void **)&pixels, NULL, 0);
+  if (!memory || !bitmap) {
+    if (memory) DeleteDC(memory);
+    if (bitmap) DeleteObject(bitmap);
+    ReleaseDC(NULL, screen);
+    return 0;
+  }
+  HGDIOBJ old = SelectObject(memory, bitmap);
+  int captured = BitBlt(memory, 0, 0, rect.right, rect.bottom, screen,
+                       origin.x, origin.y, SRCCOPY);
+  GdiFlush();
+  int matched = 0;
+  for (int top = 0; captured && !matched && top + 64 <= rect.bottom; ++top) {
+    matched = 1;
+    for (int y = 0; matched && y < 64; ++y) {
+      for (int x = 0; x < 128; ++x) {
+        unsigned char *p = pixels + ((size_t)(top + y) * rect.right + x) * 4;
+        unsigned red = x < 64 ? (y < 32 ? 255 : 0) : (y < 32 ? 0 : 255);
+        unsigned green = x < 64 ? 0 : 255;
+        unsigned blue = x < 64 && y >= 32 ? 255 : 0;
+        if (p[2] != red || p[1] != green || p[0] != blue) {
+          matched = 0;
+          break;
+        }
+      }
+    }
+  }
+  SelectObject(memory, old);
+  DeleteObject(bitmap);
+  DeleteDC(memory);
+  ReleaseDC(NULL, screen);
+  return matched;
+}
+
+static int browser_uses_mesa(void) {
+  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, browser_pid);
+  if (snapshot == INVALID_HANDLE_VALUE) return 0;
+  MODULEENTRY32W module = {0};
+  module.dwSize = sizeof(module);
+  int mesa = 0, angle = 0;
+  if (Module32FirstW(snapshot, &module)) do {
+    if (!lstrcmpiW(module.szModule, L"libgallium_wgl.dll")) mesa = 1;
+    if (wcsstr(module.szModule, L"ANGLE") || wcsstr(module.szModule, L"angle")) angle = 1;
+  } while (Module32NextW(snapshot, &module));
+  CloseHandle(snapshot);
+  return mesa && !angle;
+}
+
 int wmain(int argc, wchar_t **argv) {
-  if (argc != 3) {
+  if (argc != 3 && argc != 4) {
     fwprintf(stderr,
-             L"usage: test_windows_browser.exe BROWSER PRIVATE_FIXTURE_DIR\n");
+             L"usage: test_windows_browser.exe BROWSER PRIVATE_FIXTURE_DIR [WEBGL_FIXTURE]\n");
     return 2;
   }
   SetProcessDPIAware();
@@ -211,6 +278,29 @@ int wmain(int argc, wchar_t **argv) {
   puts("PASS: Ctrl+L / Enter file URL with an escaped space, query and "
        "fragment");
   fflush(stdout);
+
+  if (argc == 4) {
+    phase = "WebGL";
+    /* Navigate the unchanged shared fixture only after startup/input checks. */
+    wchar_t fixture[32768];
+    if (!GetFullPathNameW(argv[3], 32768, fixture, NULL)) goto finished;
+    n = swprintf(address, 32768, L"file:///");
+    for (wchar_t const *p = fixture; *p && n < 32760; ++p) {
+      if (*p == L' ') {
+        address[n++] = L'%'; address[n++] = L'2'; address[n++] = L'0';
+      } else address[n++] = *p == L'\\' ? L'/' : *p;
+    }
+    address[n] = 0;
+    if (n >= 32760 || !enter_address(address) ||
+        !wait_title(browser.hProcess, L"WebGL GPU smoke PASS") ||
+        !activate_browser()) goto finished;
+    ULONGLONG deadline = GetTickCount64() + 30000;
+    int pixels = 0;
+    while (GetTickCount64() < deadline && !(pixels = webgl_pixels())) Sleep(100);
+    if (!pixels || !browser_uses_mesa()) goto finished;
+    puts("PASS: Mesa WebGL1/WebGL2 shader readback and 8192 displayed canvas pixels");
+    fflush(stdout);
+  }
 
   phase = "close";
   if (!PostMessageW(browser_window, WM_CLOSE, 0, 0) ||
