@@ -144,3 +144,9 @@ pub fn (mut s GpuSurface) draw_document_float_rgba(pixels []f32, width int, heig
 		layer_image: LayerImage{ image: image, texture_width: width, texture_height: height }
 	})!
 }
+
+// Document tiles share multisampling with clips that need the path renderer.
+pub fn document_image_clip_requires_msaa(rect Rect, radii [4]Point) bool {
+	return can_apply_analytic_clip(rrect_shape(RRect.rect_radii(rect, radii)),
+		Transform.new(Matrix.identity())).is_empty()
+}
