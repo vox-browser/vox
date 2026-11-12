@@ -115,3 +115,23 @@ fn test_deferred_mutation_records_own_metadata_outside_native_request_scratch() 
 	observer.disconnect()
 	queue.retire()
 }
+
+fn test_pending_mutation_observers_sort_by_creation_index() {
+	first := MutationObserver.construct_impl(none)!
+	second := MutationObserver.construct_impl(none)!
+	third := MutationObserver.construct_impl(none)!
+	assert first.creation_index_ < second.creation_index_
+	assert second.creation_index_ < third.creation_index_
+	mut pending := [third, first, second]
+	sort_pending_mutation_observers(mut pending)
+	assert voidptr(pending[0]) == voidptr(first)
+	assert voidptr(pending[1]) == voidptr(second)
+	assert voidptr(pending[2]) == voidptr(third)
+	mut already_sorted := [first, second]
+	sort_pending_mutation_observers(mut already_sorted)
+	assert voidptr(already_sorted[0]) == voidptr(first)
+	assert voidptr(already_sorted[1]) == voidptr(second)
+	mut single := [first]
+	sort_pending_mutation_observers(mut single)
+	assert voidptr(single[0]) == voidptr(first)
+}
