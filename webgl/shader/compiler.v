@@ -116,6 +116,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			mut type_at := at+1
 			if type_at < tokens.len && tokens[type_at] in ['lowp','mediump','highp'] { type_at++ }
 			if type_at < tokens.len && (tokens[type_at].contains('sampler')) {
+                if version==100 && tokens[type_at] !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
 				declaration := texture_declarations(tokens,type_at,textures.len)!
 				for field in declaration.fields {
 					if textures.any(it.name == field.name) || uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate sampler: ${field.name}') }
@@ -191,7 +192,10 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 			depth--
 			if depth < 0 { return error('Unbalanced braces') }
 		}
-		if token in ['sampler2D','samplerCube'] { body << sampler_type(token)!; at++; continue }
+		if token in ['sampler2D','samplerCube','sampler3D','sampler2DArray','isampler2D','usampler2D'] {
+            if version==100 && token !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
+            body << sampler_type(token)!; at++;continue
+        }
 		if token in ['double', 'while', 'do', 'switch', 'discard', 'gl_FragData', 'gl_FragDepth',
 			'gl_FragDepthEXT'] || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')
@@ -211,7 +215,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		if version == 100 && token in ['gl_VertexID', 'gl_InstanceID'] {
 			return error('Vertex IDs require ESSL 300')
 		}
-		body << if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
+		body << if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if token in ['equal','notEqual','lessThan','lessThanEqual','greaterThan','greaterThanEqual','not'] && at+1 < tokens.len && tokens[at+1]=='(' {'_vox_'+token} else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
 		at++
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
@@ -235,7 +239,8 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	}
 	for field in textures { lines << '${sampler_type(field.typ)!} ${field.name};' }
 	if textures.len > 0 { lines << texture_constructor(textures)! }
-	lines << texture_methods(stage,version)
+	lines << texture_methods(stage,version,tokens)
+	lines << comparison_methods(tokens)
 	lines << uniform_members(uniforms)!
 	lines << body.join(' ')
 	lines << '};'

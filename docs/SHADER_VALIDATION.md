@@ -93,8 +93,12 @@ fragment implicit sampling preserves derivatives, and fragment bias calls use
 Metal bias sampling. Legacy fragment explicit LOD
 and its enabling extension remain pending. Call names are rewritten only at calls/function
 declarations, preserving legal sampler variables named `texture`/`textureLod`
-and user overloads of legacy functions. Sampler arrays, integer/depth/3D/array
-textures, extension spellings and full opaque-type validation remain pending.
+and user overloads of legacy functions. Sampler arrays, depth-comparison textures, extension spellings and full
+opaque-type validation remain pending. ESSL300 3D/array and signed/unsigned 2D
+samplers now carry dimension, array and scalar metadata into the Metal runtime.
+Texture, LOD, gradient, size and fetch helpers are generated for these types;
+vector comparison helpers preserve integer comparisons. End-to-end storage tests
+check distinct volume/array layers and signed/unsigned values near 32-bit limits.
 
 ESSL300 vertex input and fragment output `layout(location=...)` qualifiers now
 run through the V compiler, including macro-expanded integer arithmetic. The

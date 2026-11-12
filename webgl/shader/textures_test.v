@@ -33,3 +33,11 @@ fn test_sampler_binding_limit_rejects_seventeenth_resource() {
  }
  assert false
 }
+
+fn test_essl300_volume_array_and_integer_sampler_reflection() {
+ result:=translate('#version 300 es\nuniform sampler3D volume;uniform sampler2DArray layers;uniform isampler2D signedImage;uniform usampler2D unsignedImage;void main(){gl_Position=vec4(1.0);}',.vertex)!
+ assert result.textures.map(it.image_dimension)==[2,1,1,1]
+ assert result.textures.map(it.image_arrayed)==[false,true,false,false]
+ assert result.textures.map(it.image_scalar_type)==[u32(13),13,7,8]
+ assert result.textures.map(it.binding)==[0,1,2,3]
+}

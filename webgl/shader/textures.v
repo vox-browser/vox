@@ -12,6 +12,7 @@ pub:
  sampler_binding int
  kind int = 7
  image_dimension int
+ image_arrayed bool
  image_scalar_type u32 = 13
 }
 
@@ -24,6 +25,10 @@ fn sampler_type(typ string) !string {
  return match typ {
   'sampler2D' {'_vox_Sampler2D'}
   'samplerCube' {'_vox_SamplerCube'}
+  'sampler3D' {'_vox_Sampler3D'}
+  'sampler2DArray' {'_vox_Sampler2DArray'}
+  'isampler2D' {'_vox_ISampler2D'}
+  'usampler2D' {'_vox_USampler2D'}
   else {return error('Unsupported sampler type: ${typ}')}
  }
 }
@@ -39,7 +44,7 @@ fn texture_declarations(tokens []string, type_at int, base int) !TextureDeclarat
   at++
   if at >= tokens.len || tokens[at] !in [',',';'] { return error('Unsupported sampler declarator (arrays are pending)') }
   if base+fields.len >= 16 { return error('Sampler binding limit exceeded') }
-  fields << TextureResource{name:name,typ:typ,binding:base+fields.len,sampler_binding:base+fields.len,image_dimension:if typ == 'sampler2D' {1} else {3}}
+  fields << TextureResource{name:name,typ:typ,binding:base+fields.len,sampler_binding:base+fields.len,image_dimension:if typ == 'samplerCube' {3} else if typ == 'sampler3D' {2} else {1},image_arrayed:typ=='sampler2DArray',image_scalar_type:if typ=='isampler2D' {u32(7)} else if typ=='usampler2D' {u32(8)} else {u32(13)}}
   if tokens[at] == ';' { return TextureDeclarations{fields:fields,end:at+1} }
   at++
  }
@@ -50,10 +55,14 @@ fn texture_types() []string {
  return [
   'struct _vox_Sampler2D { texture2d<float> image; sampler sampling; };',
   'struct _vox_SamplerCube { texturecube<float> image; sampler sampling; };',
+  'struct _vox_Sampler3D { texture3d<float> image; sampler sampling; };',
+  'struct _vox_Sampler2DArray { texture2d_array<float> image; sampler sampling; };',
+  'struct _vox_ISampler2D { texture2d<int> image; sampler sampling; };',
+  'struct _vox_USampler2D { texture2d<uint> image; sampler sampling; };',
  ]
 }
 
-fn texture_methods(stage Stage, version int) []string {
+fn texture_methods(stage Stage, version int, used_types []string) []string {
  mut methods := []string{}
  for typ in ['sampler2D','samplerCube'] {
   cube := typ == 'samplerCube'
@@ -89,6 +98,7 @@ fn texture_methods(stage Stage, version int) []string {
  if version == 300 {
   methods << 'float4 _vox_texelFetch(_vox_Sampler2D s, int2 p, int l) { return s.image.read(uint2(p),uint(l)); }'
  }
+ if version==300 {methods << extended_texture_methods(stage,used_types)}
  return methods
 }
 
@@ -113,7 +123,7 @@ fn texture_constructor(fields []TextureResource) !string {
 fn texture_arguments(fields []TextureResource) []string {
  mut args := []string{}
  for field in fields {
-  typ := if field.typ == 'sampler2D' {'texture2d<float>'} else {'texturecube<float>'}
+  typ := metal_texture_type(field.typ)
   args << '${typ} _vox_image${field.binding} [[texture(${field.binding})]]'
   args << 'sampler _vox_sampling${field.binding} [[sampler(${field.sampler_binding})]]'
  }
@@ -125,4 +135,41 @@ fn texture_state(fields []TextureResource) !string {
  mut args := []string{}
  for field in fields { args << '${sampler_type(field.typ)!}{_vox_image${field.binding},_vox_sampling${field.binding}}' }
  return 'VoxState state(${args.join(', ')});'
+}
+
+fn metal_texture_type(typ string) string {
+ return match typ {
+  'sampler2D' {'texture2d<float>'}
+  'samplerCube' {'texturecube<float>'}
+  'sampler3D' {'texture3d<float>'}
+  'sampler2DArray' {'texture2d_array<float>'}
+  'isampler2D' {'texture2d<int>'}
+  else {'texture2d<uint>'}
+ }
+}
+
+fn extended_texture_methods(stage Stage, used_types []string) []string {
+ mut methods := ['uint _vox_array_layer(float layer, uint count) { return uint(clamp(int(floor(layer+0.5)),0,int(count)-1)); }']
+ implicit := if stage==.vertex {', level(0.0)'} else {''}
+ for typ in ['sampler3D','sampler2DArray','isampler2D','usampler2D'] {
+  if typ !in used_types {continue}
+  wrapper:=sampler_type(typ) or {continue}
+  arrayed:=wrapper=='_vox_Sampler2DArray'
+  volume:=wrapper=='_vox_Sampler3D'
+  coordinate:=if volume || arrayed {'float3'} else {'float2'}
+  dimension:=if volume || arrayed {'int3'} else {'int2'}
+  result:=if wrapper=='_vox_ISampler2D' {'int4'} else if wrapper=='_vox_USampler2D' {'uint4'} else {'float4'}
+  sample_coordinates:=if arrayed {'p.xy, _vox_array_layer(p.z,s.image.get_array_size())'} else {'p'}
+  methods << '${result} _vox_texture(${wrapper} s, ${coordinate} p) { return s.image.sample(s.sampling,${sample_coordinates}${implicit}); }'
+  methods << '${result} _vox_textureLod(${wrapper} s, ${coordinate} p, float l) { return s.image.sample(s.sampling,${sample_coordinates},level(l)); }'
+  if stage==.fragment {methods << '${result} _vox_texture(${wrapper} s, ${coordinate} p, float b) { return s.image.sample(s.sampling,${sample_coordinates},bias(b)); }'}
+  gradient_coordinate:=if volume {'float3'} else {'float2'}
+  gradient:=if volume {'gradient3d'} else {'gradient2d'}
+  methods << '${result} _vox_textureGrad(${wrapper} s, ${coordinate} p, ${gradient_coordinate} dx, ${gradient_coordinate} dy) {return s.image.sample(s.sampling,${sample_coordinates},${gradient}(dx,dy));}'
+  size_tail:=if volume {',s.image.get_depth(uint(l))'} else if arrayed {',s.image.get_array_size()'} else {''}
+  methods << '${dimension} _vox_textureSize(${wrapper} s, int l) {return ${dimension}(s.image.get_width(uint(l)),s.image.get_height(uint(l))${size_tail});}'
+  fetch_coordinates:=if volume {'uint3(p)'} else if arrayed {'uint2(p.xy),uint(p.z)'} else {'uint2(p)'}
+  methods << '${result} _vox_texelFetch(${wrapper} s, ${dimension} p, int l) {return s.image.read(${fetch_coordinates},uint(l));}'
+ }
+ return methods
 }
