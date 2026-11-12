@@ -18,9 +18,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     compiler = shlex.split(os.environ.get("CXX", "c++"))
     version = subprocess.check_output(compiler + ["--version"])
-    groups = [
-        ("platform", ["unicode_case_mapping"], ["icu-uc", "icu-i18n"]),
-    ]
+    groups = []
     if args.os == 'windows':
         groups.append(('webgl', ['native_windows'], ['angleproject']))
     for package, names, dependencies in groups:

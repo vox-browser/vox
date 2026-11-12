@@ -55,7 +55,7 @@ if [ "$v_backend" = c ]; then
 fi
 
 export PKG_CONFIG_PATH="$repo_dir/Build/deps/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig freetype2 harfbuzz icu-uc icu-i18n egl glesv2; do
+for dependency in javascriptcoregtk-4.1 glib-2.0 fontconfig freetype2 harfbuzz egl glesv2; do
     if ! pkg-config --exists "$dependency"; then
         echo "Missing dependency: $dependency. See docs/LINUX.md." >&2
         exit 1
