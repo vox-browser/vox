@@ -20,12 +20,14 @@
 #include <string.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#ifdef _WIN32
 #include <EGL/eglext_angle.h>
+#endif
 #define GL_GLEXT_PROTOTYPES 1
 #include <GLES3/gl3.h>
 #include <GLES2/gl2ext.h>
 #ifdef __linux__
-#include "angle_procedures_linux.h"
+#include "gles_adapter_linux.h"
 #else
 #include <GLES2/gl2ext_angle.h>
 #endif
@@ -34,6 +36,9 @@ typedef struct {
     EGLDisplay display;
     EGLContext context;
     int version;
+#ifdef __linux__
+    VoxGLESState state;
+#endif
     GLuint framebuffer;
     GLuint color_buffer;
     GLuint depth_buffer;
@@ -42,27 +47,29 @@ typedef struct {
 VOX_EGL_LINKAGE void* vox_egl_create(int version)
 {
 #ifdef __linux__
-    // Keep ANGLE's WebGL compatibility and robust-buffer contract. An ordinary
-    // Mesa installation reports WebGL unavailable instead of invoking missing
-    // extensions or substituting unbounded GLES functions.
-    if (!vox_angle_procedures_available()) return NULL;
-#endif
-    EGLAttrib display_attributes[] = {
-        EGL_PLATFORM_ANGLE_TYPE_ANGLE,
-#if defined(_WIN32)
-        EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
+    if (version!=2 && version!=3) return NULL;
+    EGLDisplay display=eglGetPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA,EGL_DEFAULT_DISPLAY,NULL);
 #else
-        EGL_PLATFORM_ANGLE_TYPE_OPENGL_ANGLE,
-        EGL_PLATFORM_ANGLE_NATIVE_PLATFORM_TYPE_ANGLE, EGL_PLATFORM_SURFACELESS_MESA,
+    EGLAttrib display_attributes[] = { EGL_PLATFORM_ANGLE_TYPE_ANGLE,
+        EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE, EGL_NONE };
+    EGLDisplay display=eglGetPlatformDisplay(EGL_PLATFORM_ANGLE_ANGLE,EGL_DEFAULT_DISPLAY,display_attributes);
 #endif
-        EGL_NONE,
-    };
-    EGLDisplay display = eglGetPlatformDisplay(EGL_PLATFORM_ANGLE_ANGLE, EGL_DEFAULT_DISPLAY, display_attributes);
     EGLint major, minor;
-    if (display == EGL_NO_DISPLAY || !eglInitialize(display, &major, &minor))
+    if (display == EGL_NO_DISPLAY || !eglInitialize(display, &major, &minor)) {
+#ifdef __linux__
+        display=eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        if(display==EGL_NO_DISPLAY || !eglInitialize(display,&major,&minor)) return NULL;
+#else
         return NULL;
+#endif
+    }
     EGLint config_attributes[] = {
-        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+        EGL_SURFACE_TYPE, EGL_PBUFFER_BIT, EGL_RENDERABLE_TYPE,
+#ifdef __linux__
+        EGL_OPENGL_ES3_BIT,
+#else
+        EGL_OPENGL_ES2_BIT,
+#endif
         EGL_RED_SIZE, 8, EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8, EGL_ALPHA_SIZE, 8,
         EGL_DEPTH_SIZE, 24, EGL_STENCIL_SIZE, 8, EGL_NONE,
     };
@@ -70,11 +77,18 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
     EGLint count;
     if (!eglChooseConfig(display, config_attributes, &config, 1, &count) || count == 0)
         return NULL;
+    if (!eglBindAPI(EGL_OPENGL_ES_API)) return NULL;
     EGLint context_attributes[] = {
+#ifdef __linux__
+        /* GLES3 supplies the WebGL1 extension commands without vendor dispatch. */
+        EGL_CONTEXT_CLIENT_VERSION, 3,
+        EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT, EGL_TRUE,
+#else
         EGL_CONTEXT_CLIENT_VERSION, version,
         EGL_CONTEXT_WEBGL_COMPATIBILITY_ANGLE, EGL_TRUE,
         EGL_ROBUST_RESOURCE_INITIALIZATION_ANGLE, EGL_TRUE,
         EGL_CONTEXT_OPENGL_BACKWARDS_COMPATIBLE_ANGLE, EGL_FALSE,
+#endif
         EGL_NONE,
     };
     EGLContext context = eglCreateContext(display, config, EGL_NO_CONTEXT, context_attributes);
@@ -93,13 +107,22 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
     result->display = display;
     result->context = context;
     result->version = version;
+#ifdef __linux__
+    result->state.webgl_version=version;
+    vox_gles_current=&result->state;
+    if (version==3) glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+#endif
     return result;
 }
 
 VOX_EGL_LINKAGE int vox_egl_make_current(void* handle)
 {
     VoxEGLContext* context = handle;
-    return context && eglMakeCurrent(context->display, EGL_NO_SURFACE, EGL_NO_SURFACE, context->context);
+    if (!context || !eglMakeCurrent(context->display,EGL_NO_SURFACE,EGL_NO_SURFACE,context->context)) return 0;
+#ifdef __linux__
+    vox_gles_current=&context->state;
+#endif
+    return 1;
 }
 
 VOX_EGL_LINKAGE void vox_egl_destroy(void* handle)
@@ -107,8 +130,16 @@ VOX_EGL_LINKAGE void vox_egl_destroy(void* handle)
     VoxEGLContext* context = handle;
     if (!context)
         return;
-    eglMakeCurrent(context->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
+    if (eglGetCurrentContext()==context->context) {
+        eglMakeCurrent(context->display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
+#ifdef __linux__
+        vox_gles_current=NULL;
+#endif
+    }
     eglDestroyContext(context->display, context->context);
+#ifdef __linux__
+    free(context->state.extensions);
+#endif
     free(context);
 }
 
@@ -168,7 +199,7 @@ VOX_EGL_LINKAGE int vox_egl_allocate_surface(void* handle, int width, int height
         glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &original_pixel_unpack_buffer);
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     }
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2DRobustANGLE(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0, NULL);
     if (context->version == 3)
         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, original_pixel_unpack_buffer);
     glViewport(0, 0, width, height);
@@ -303,6 +334,9 @@ VOX_EGL_LINKAGE void vox_gl_buffer_sub_data(unsigned target, long long offset, l
 VOX_EGL_LINKAGE void vox_gl_copy_buffer_sub_data(unsigned read_target, unsigned write_target, long long read_offset, long long write_offset, long long size) { glCopyBufferSubData(read_target, write_target, (GLintptr)read_offset, (GLintptr)write_offset, (GLsizeiptr)size); }
 /* Services/Compositor/HostWebGLContext.cpp::read_buffer_sub_data. */
 VOX_EGL_LINKAGE int vox_gl_read_buffer_sub_data(unsigned target, long long offset, long long size, void* data) {
+#ifdef __linux__
+    if (size<0 || offset<0 || (size && !data)) {vox_gles_error(GL_INVALID_VALUE);return 0;}
+#endif
     if (size == 0) return 1;
     void* mapped = glMapBufferRange(target, (GLintptr)offset, (GLsizeiptr)size, GL_MAP_READ_BIT);
     if (!mapped) return 0;
@@ -368,6 +402,10 @@ VOX_EGL_LINKAGE int vox_gl_renderbuffer_parameter(unsigned target, unsigned pnam
 // WebGL2RenderingContextOverloads::read_pixels numeric offset variant.
 VOX_EGL_LINKAGE void vox_gl_read_pixels_to_buffer(int x, int y, int width, int height, unsigned format, unsigned type, int64_t offset)
 {
+#ifdef __linux__
+    GLint buffer=0;glGetIntegerv(GL_PIXEL_PACK_BUFFER_BINDING,&buffer);
+    if (!buffer) { vox_gles_error(GL_INVALID_OPERATION);return; }
+#endif
     glReadPixels(x,y,width,height,format,type,(void*)(intptr_t)offset);
 }
 VOX_EGL_LINKAGE int vox_gl_read_pixels(int x, int y, int width, int height, unsigned format, unsigned type, int capacity, void* data)
