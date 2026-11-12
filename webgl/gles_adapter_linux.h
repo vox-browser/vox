@@ -9,14 +9,36 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../platform/native_state.h"
+#include <GL/glx.h>
 
 typedef struct {
+    EGLDisplay display; EGLContext context;
     GLenum errors[8]; unsigned error_count;
     int webgl_version;
     void (GL_APIENTRYP texture_level_parameter)(GLenum,GLint,GLenum,GLint*);
     char *extensions;
 } VoxGLESState;
 VOX_NATIVE_STATE __thread VoxGLESState *vox_gles_current;
+/* WebGL and the portable GLX window share a thread, not GL state. Rebind the
+ * selected GLES context for each service call and restore the caller on exit.
+ * Headless callers keep their GLES context current between calls. */
+typedef struct { Display *display; GLXContext context; GLXDrawable draw,read; } VoxGLESCall;
+static VoxGLESCall vox_gles_begin_call(void) {
+    VoxGLESCall call={0};call.context=glXGetCurrentContext();
+    if(call.context) {
+        call.display=glXGetCurrentDisplay();call.draw=glXGetCurrentDrawable();call.read=glXGetCurrentReadDrawable();
+        glXMakeContextCurrent(call.display,None,None,NULL);
+        if(vox_gles_current)eglMakeCurrent(vox_gles_current->display,EGL_NO_SURFACE,EGL_NO_SURFACE,vox_gles_current->context);
+    }
+    return call;
+}
+static void vox_gles_end_call(VoxGLESCall *call) {
+    if(!call->context)return;
+    EGLDisplay display=eglGetCurrentDisplay();
+    if(display!=EGL_NO_DISPLAY)eglMakeCurrent(display,EGL_NO_SURFACE,EGL_NO_SURFACE,EGL_NO_CONTEXT);
+    glXMakeContextCurrent(call->display,call->draw,call->read,call->context);
+}
+#define VOX_GLES_CALL VoxGLESCall vox_gles_call __attribute__((cleanup(vox_gles_end_call)))=vox_gles_begin_call()
 static void vox_gles_queue(GLenum error) {
     if (!vox_gles_current || error == GL_NO_ERROR) return;
     for (unsigned i=0;i<vox_gles_current->error_count;i++)

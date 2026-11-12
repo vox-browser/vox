@@ -9,7 +9,7 @@ $if macos {
     #pkgconfig angleproject
     #include "@DIR/native_egl.h"
 } $else {
-    #pkgconfig egl glesv2 glslang
+    #pkgconfig egl glesv2 gl glslang
     #flag linux -lglslang-default-resource-limits -lstdc++ -lm
     #include "@DIR/native_egl.h"
 }

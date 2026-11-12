@@ -1,0 +1,4 @@
+# Mesa 25.0.7 GLX visual/config cache, reproduced without any WebGL calls:
+# 108124 bytes / 481 allocations from glXChooseVisual through libGLX_mesa.
+# Keep WebGL/adapter/driver-EGL allocations and other libraries observable.
+leak:libGLX_mesa.so
