@@ -228,6 +228,13 @@ pass the existing query suite and the focused visibility case with default GC
 and `-gc none` under the memory guard. Transform-feedback primitive queries
 share this lifecycle; their capture path is still pending.
 
+S3TC compressed image/subimage entry points now decode BC1, BC2 and BC3 in V
+and upload initialized RGBA8 Metal storage. They retain logical compressed
+formats, enforce block alignment/byte counts and PBO bounds, and support 2D,
+cube faces, array layers and immutable mip storage. Compressed textures remain
+non-renderable. Two existing GPU sampling cases and two new format/validation
+cases pass with default GC and `-gc none`; there is no ANGLE fallback.
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting

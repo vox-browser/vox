@@ -138,6 +138,7 @@ fn (mut context MetalServiceContext) sub_texture_image(target u32,level int,x in
     mut texture:=context.texture_object(target) or { return }
     if level<0 || level>14 || x<0 || y<0 || z<0 || width<0 || height<0 || depth<0 { metal_service_error(invalid_value);return }
     mut image:=texture.images[metal_service_image_key(target,level)] or { metal_service_error(invalid_operation);return }
+    if metal_service_s3tc(image.internal) { metal_service_error(invalid_operation);return }
     if x>image.width || width>image.width-x || y>image.height || height>image.height-y || z>image.depth || depth>image.depth-z { metal_service_error(invalid_value);return }
     bytes:=context.unpack_pixels(image.layout,width,height,depth,format,type_,capacity,data,false) or { context.last_failure=err.msg();return }
     defer { unsafe { bytes.free() } }
@@ -153,7 +154,8 @@ fn (mut context MetalServiceContext) texture_storage(target u32,levels int,inter
     mut largest:=if width>height { width } else { height }
     if target==texture_3d && depth>largest { largest=depth }
     if largest>>(levels-1)==0 { metal_service_error(invalid_operation);return }
-    layout:=metal_service_layout(internal) or { metal_service_error(invalid_enum);return }
+    if metal_service_s3tc(internal) && (target==texture_3d || width%4!=0 || height%4!=0) { metal_service_error(invalid_operation);return }
+    layout:=if metal_service_s3tc(internal) { MetalServicePixelLayout{format:.rgba8,components:4} } else { metal_service_layout(internal) or { metal_service_error(invalid_enum);return } }
     if internal in [rgba,rgb,alpha,luminance,luminance_alpha,red,rg,depth_component,u32(0x84f9)] { metal_service_error(invalid_enum);return }
     mut texture:=context.texture_object(target) or { return }
     if texture.immutable { metal_service_error(invalid_operation);return }

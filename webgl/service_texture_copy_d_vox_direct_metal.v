@@ -8,6 +8,7 @@ fn (mut context MetalServiceContext) copy_texture(target u32,level int,internal 
     mut texture:=context.texture_object(target) or { return }
     layout:=if define { metal_service_layout(internal) or { metal_service_error(invalid_enum);return } } else {
         image:=texture.images[metal_service_image_key(target,level)] or { metal_service_error(invalid_operation);return }
+        if metal_service_s3tc(image.internal) { metal_service_error(invalid_operation);return }
         image.layout
     }
     if layout.integer || layout.format in [.depth16,.depth32,.depth_stencil,.stencil8] { metal_service_error(invalid_operation);return }
@@ -37,7 +38,7 @@ fn (mut context MetalServiceContext) generate_mipmap(target u32) {
     if !context.valid_texture_target(target) { metal_service_error(invalid_enum);return }
     mut texture:=context.texture_object(target) or { return }
     base:=texture.images[u32(texture.base_level)] or { metal_service_error(invalid_operation);return }
-    if base.gpu==unsafe { nil } || base.layout.integer || base.layout.format in [.depth16,.depth32,.depth_stencil,.stencil8] { metal_service_error(invalid_operation);return }
+    if metal_service_s3tc(base.internal) || base.gpu==unsafe { nil } || base.layout.integer || base.layout.format in [.depth16,.depth32,.depth_stencil,.stencil8] { metal_service_error(invalid_operation);return }
     if context.version==2 && ((base.width&(base.width-1))!=0 || (base.height&(base.height-1))!=0) { metal_service_error(invalid_operation);return }
     mut levels:=1;mut extent:=if base.width>base.height { base.width } else { base.height }
     if target==texture_3d && base.depth>extent { extent=base.depth }

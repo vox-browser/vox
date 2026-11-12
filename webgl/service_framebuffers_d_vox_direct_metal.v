@@ -102,6 +102,7 @@ fn (context &MetalServiceContext) attachment_image(attachment MetalServiceAttach
     }
     if object.texture==unsafe { nil } { return error('Texture has no images') }
     image:=object.texture.images[metal_service_image_key(attachment.target,attachment.level)] or { return error('Texture image is not defined') }
+    if metal_service_s3tc(image.internal) { return error('Compressed textures are not framebuffer renderable') }
     if image.gpu==unsafe { nil } || attachment.layer<0 || attachment.layer>=image.depth { return error('Texture layer is outside image') }
     return MetalServiceRenderImage{gpu:image.gpu,width:image.width,height:image.height,layout:image.layout,internal:image.internal,layer:attachment.layer,object:attachment.object}
 }

@@ -373,7 +373,7 @@ fn metal_service_vox_gl_string(a0 u32) &char {
         0x1f01 { return 'Vox direct Metal'.str }
         0x1f02 { return if metal_service_current().version==3 { 'OpenGL ES 3.0 Vox direct Metal experimental'.str } else { 'OpenGL ES 2.0 Vox direct Metal experimental'.str } }
         0x8b8c { return if metal_service_current().version==3 { 'OpenGL ES GLSL ES 3.00'.str } else { 'OpenGL ES GLSL ES 1.00'.str } }
-        0x1f03 { return 'GL_EXT_texture_filter_anisotropic'.str }
+        0x1f03 { return 'GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5'.str }
         0x93a8 { return ''.str }
         else { metal_service_error(invalid_enum); return unsafe { nil } }
     }
@@ -381,7 +381,7 @@ fn metal_service_vox_gl_string(a0 u32) &char {
 
 @[export: 'vox_gl_request_extension']
 fn metal_service_vox_gl_request_extension(a0 &char) {
-    // No optional extension is advertised by the incomplete service yet.
+    // Advertised extensions need no device-side enable operation.
     _ = a0
 }
 
@@ -868,22 +868,22 @@ fn metal_service_vox_gl_tex_image2d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i
 
 @[export: 'vox_gl_compressed_tex_image2d']
 fn metal_service_vox_gl_compressed_tex_image2d(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32, a5 i32, a6 i32, a7 voidptr) {
-    metal_service_unsupported('vox_gl_compressed_tex_image2d')
+    metal_service_current().compressed_texture(a0,int(a1),a2,0,0,0,int(a3),int(a4),1,int(a5),int(a6),a7,true)
 }
 
 @[export: 'vox_gl_compressed_tex_sub_image2d']
 fn metal_service_vox_gl_compressed_tex_sub_image2d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 u32, a7 i32, a8 voidptr) {
-    metal_service_unsupported('vox_gl_compressed_tex_sub_image2d')
+    metal_service_current().compressed_texture(a0,int(a1),a6,int(a2),int(a3),0,int(a4),int(a5),1,0,int(a7),a8,false)
 }
 
 @[export: 'vox_gl_compressed_tex_image3d']
 fn metal_service_vox_gl_compressed_tex_image3d(a0 u32, a1 i32, a2 u32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32, a8 voidptr) {
-    metal_service_unsupported('vox_gl_compressed_tex_image3d')
+    metal_service_current().compressed_texture(a0,int(a1),a2,0,0,0,int(a3),int(a4),int(a5),int(a6),int(a7),a8,true)
 }
 
 @[export: 'vox_gl_compressed_tex_sub_image3d']
 fn metal_service_vox_gl_compressed_tex_sub_image3d(a0 u32, a1 i32, a2 i32, a3 i32, a4 i32, a5 i32, a6 i32, a7 i32, a8 u32, a9 i32, a10 voidptr) {
-    metal_service_unsupported('vox_gl_compressed_tex_sub_image3d')
+    metal_service_current().compressed_texture(a0,int(a1),a8,int(a2),int(a3),int(a4),int(a5),int(a6),int(a7),0,int(a9),a10,false)
 }
 
 @[export: 'vox_gl_tex_sub_image2d']
