@@ -1,0 +1,72 @@
+# Vox system packaging (scaffolding).
+#
+# nFPM builds the .deb and .rpm from the prebuilt portable Linux tree (the
+# supervised-build Build/linux/vox plus its bundled *.so libraries), so both
+# packages ship exactly the binary the tarball release publishes.
+# App id: org.vox_browser.vox (the hyphen in vox-browser.org maps to an
+# underscore, keeping a valid reverse-DNS id). See packaging/deb-rpm/README.md.
+name: vox
+arch: amd64
+platform: linux
+version: ${VOX_VERSION}
+release: "1"
+maintainer: vox-browser <https://github.com/vox-browser/vox/issues>
+description: |
+  Vox is a browser engine written 100% in V, with its interface in UI2.
+  It targets fast startup, low memory use, and exact web rendering.
+  This package tracks Vox Linux releases published on GitHub Releases.
+vendor: vox-browser
+homepage: https://vox-browser.org
+license: GPL-2.0-or-later
+depends:
+  - libjavascriptcoregtk-4.1-0
+  - libglib2.0-0t64
+  - libharfbuzz0b
+  - libicu74
+  - libwoff1
+  - libbrotli1
+  - libcurl4t64
+  - libssl3t64
+  - libegl1
+  - libgles2
+  - libgl1
+  - libxi6
+  - libxcursor1
+  - libxrandr2
+  - libx11-6
+  - libasound2t64
+  - libgc1
+  - libfreetype6
+  - libfontconfig1
+  - libwebp7
+  - libjpeg8
+  - fonts-liberation2
+overrides:
+  rpm:
+    depends:
+      - javascriptcoregtk4.1
+      - glib2
+      - harfbuzz
+      - icu
+      - woff2
+      - brotli
+      - libcurl
+      - openssl-libs
+      - libglvnd-egl
+      - libglvnd-gles
+      - libglvnd-glx
+      - libXi
+      - libXcursor
+      - libXrandr
+      - libX11
+      - alsa-lib
+      - gc
+      - freetype
+      - fontconfig
+      - libwebp
+      - libjpeg-turbo
+      - liberation-fonts
+contents:
+  - src: release-staging/deb-rpm-prime
+    dst: /
+    type: tree

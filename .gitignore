@@ -40,6 +40,13 @@
 # Temporary and local files to ignore
 **/__pycache__/
 
+# Local Linux package build inputs and outputs
+/release-staging/
+deb-root/
+rpm-root/
+*.deb
+*.rpm
+
 # Captured response bodies (binary)
 Tests/Browser/Brave/archives/*/archive/bodies/
 Tests/Browser/Brave/archives/*/capture-watchdog/archive/bodies/
