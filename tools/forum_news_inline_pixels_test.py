@@ -16,6 +16,9 @@ class ForumNewsInlinePixelsTests(unittest.TestCase):
     def test_rounded_avatar_image_clip_matches_brave_coverage(self):
         self.compare_fixture('avatar-rounded-clip')
 
+    def test_colored_avatar_clips_keep_coverage_until_the_final_color_store(self):
+        self.compare_fixture('avatar-colored-clip')
+
     def test_document_glyphs_preserve_fractional_author_color(self):
         self.compare_fixture('glyph-fractional-color', width=160, height=80)
 

@@ -5700,6 +5700,7 @@ static void native_prepare_image_cpu_fallback(CGContextRef context) {
 }
 
 #include "native/include/native_rounded_image_clip.h"
+#include "native/include/native_rounded_image_pixels.h"
 
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
@@ -5715,6 +5716,10 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		|| clip_width <= 0 || clip_height <= 0) {
 		return;
 	}
+	if (native_try_v_rounded_image(context, image, destination_x, destination_y,
+		destination_width, destination_height, source_x, source_y, source_width, source_height,
+		clip_x, clip_y, clip_width, clip_height, transform_a, transform_b, transform_c, transform_d,
+		transform_e, transform_f, canvas_width, canvas_height, opacity, clip_radii, image_flags)) return;
 	CGImageRef image_copy = native_copy_cg_image(image);
 	if (image_copy == NULL) {
 		return;
