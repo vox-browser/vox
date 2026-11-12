@@ -2639,3 +2639,39 @@ executable runs all 15 source-image test functions with Skia unavailable to
 pkg-config; direct libraries are FreeType, libm and libc. Full-browser integration still uses installed Skia. See the
 [native cases, guarded comparisons and component
 proof](https://github.com/vox-browser/vox-tests/blob/7550a2aa6ea614dd9d9d21dcf7146e30f194f499/evidence/gg-migration/identity-prefix-image-blurs-20261110.json).
+
+
+## Retained document text after removing Skia (2026-11-12)
+
+The native macOS painter now transports tightly bounded RGBA rasters from V
+`cpuraster` for retained glyphs. Registered CoreText faces preserve collection
+indices, variation coordinates and strike advances. Cached and uncached retained
+runs use the same coverage pipeline. Variable-font skip-ink uses the canonical
+64px outline and ignores pathless spaces without discarding the other glyphs.
+V `gg.canvas` draws eligible rounded shapes and solid SVG paths; shape replay
+preserves the raster grid and each tile's multisampling selection. Outer shadows
+keep unrounded author alpha. The developer executable does not link Skia.
+
+The unchanged `glyph-document-origin` Brave fixture is pixel-exact. Focused glyph,
+font-advance, variable-outline, shadow-alpha and geometry checks pass on macOS,
+including glyph-cache checks with `-prealloc -gc none`. The non-scaling stroke
+checks pin 42 outputs recorded from the prior Graphite library
+(SHA-256 `59b9b9a5d65da5d69b196474afc5eb48c9e71e21f3fddfc04b986aa9d2a47c54`);
+these tests require no Skia library at runtime.
+
+The frozen ChatGPT homepage remains **short of pixel parity**. At 1024×768 CSS
+pixels and scale 2, the unchanged archive
+`Tests/Browser/Brave/archives/chatgpt-home-20261104-v2` has 3,145,728 pixels.
+The C developer build reduced differences from 435,025 (13.8291%) to 45,495
+(1.4462%); 1,095 differ by more than three channel levels, with maximum error 59.
+The remaining differences are predominantly faint shadows and geometry edges.
+The reference PNG was not modified (SHA-256
+`6e81a153394cf640168483ae1979025df0271c4886a6f44e83792d548106028e`).
+The final fresh-process capture exited 0 under the 3 GiB guard with unchanged
+executable identity `82b536155fc6c379e3ee01b0a3ba9ea072b6e909b7a746153c0a6b559ddd4db0`.
+This is rendering evidence, not a performance comparison or a production-bundle
+acceptance result. The commit requests the managed production rebuild.
+
+A separate direct live-site capture exited 0 but remained blank and `loading`
+with no editor. It does not validate the live ChatGPT experience. Full-page exact
+parity and live-site readiness remain open.

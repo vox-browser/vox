@@ -262,3 +262,27 @@ return errors, including signature contexts an older provider cannot honor.
 Linux rendering is not pixel-equivalent to the macOS screenshot suite, and
 JavaScriptCoreGTK can differ in version from Apple's JavaScriptCore. Translated
 code alone does not establish complete Ladybird or LibJS parity.
+
+
+## VM follow-up (2026-11-12)
+
+The existing Debian 13 ARM64 VM received the documented native dependencies.
+The FreeType raster fixture compiled with current V's C backend and passed when
+executed under the 3 GiB runtime guard (exit 0, sampled peak RSS 4,136,960 bytes).
+This exercises native masks, including transformed glyph runs, without Skia.
+
+The full browser did not build within the required budget. Repeated C-backend
+attempts with serial generation, bounded workers and split C were stopped by
+the 12 GiB aggregate RSS guard. Investigation identified V's generic-instance
+checker, which forks the compiler's parsed state. A standalone check including
+library instances also reached V's explicit 10 GiB compiler limit; its recorded
+peak was 10,626,682,880 bytes. V's separate-process checking mode did not get the
+combined build under the guard either. No memory limit was raised and no
+compiler checks were disabled for a successful-build claim. Browser startup,
+Xvfb rendering and keyboard navigation remain unverified for this revision.
+
+The focused outer-shadow suite ran but failed two existing platform-dependent
+byte expectations: `[241,128,35,36]` versus `[248,131,36,35]`, and red 128 versus
+124. Linux selects the non-legacy RGBA pipeline while those assertions pin the
+legacy output. The newly added unrounded-alpha case passed. These failures
+remain open; do not describe the full Linux suite as passing.

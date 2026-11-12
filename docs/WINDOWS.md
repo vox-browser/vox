@@ -1,7 +1,7 @@
 # Windows build and runtime
 
 Vox can be compiled for Windows x86-64 with current V and MinGW-w64. The build
-uses the shared V/UI2 chrome, GG/Sokol window host, Skia raster services,
+uses the shared V/UI2 chrome, GG/Sokol window host, V raster services,
 HarfBuzz, ICU, ANGLE, OpenSSL, libcurl and JavaScriptCore's C API. The Windows
 window host uses Direct3D 11, with WARP software rendering when hardware device
 creation fails. The fallback lives in Vox's graphics adapter; the shared V and
@@ -16,11 +16,21 @@ remains in `packaging/version.txt`.
 
 ## Checkout limitation
 
-The repository still has 46 `pixel_tests/` fixture paths containing `:` or `?`,
-which Windows cannot check out. This compilation change does not rename those
-fixtures. Cross-compiling the canonical checkout from macOS or Linux avoids
-that filesystem restriction; a complete native Windows checkout remains
-blocked until the fixture paths are made portable.
+Some archived `pixel_tests/` fixture paths contain `:` or `?`, which Windows
+cannot check out. Use a sparse checkout for a native build:
+
+```sh
+git clone --no-checkout https://github.com/vox-browser/vox.git vox
+cd vox
+git sparse-checkout init --no-cone
+git sparse-checkout set '/*' '!/pixel_tests/'
+git checkout master
+```
+
+The excluded directory holds visual-test archives, not production source.
+Cross-compilation from the canonical macOS or Linux checkout also avoids this
+filesystem restriction. The [README](../README.md#building) shows native dependency
+installation and the one-time environment setup followed by `v .`.
 
 ## Dependencies and native build
 
@@ -31,7 +41,7 @@ In an MSYS2 MinGW64 shell, the native packages are:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-  mingw-w64-x86_64-python mingw-w64-x86_64-skia mingw-w64-x86_64-icu \
+  mingw-w64-x86_64-python mingw-w64-x86_64-icu \
   mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
   mingw-w64-x86_64-openssl \
   mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl
@@ -95,7 +105,7 @@ native bridges and UI2, then runs the equivalent of:
 
 ```sh
 ui2_modules=$(python3 tools/prepare_ui2.py)
-v -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
+v -b c -memory-limit 10G -prod -no-prod-options -enable-globals -gc none \
   -os windows -arch amd64 -cc x86_64-w64-mingw32-gcc \
   -d ui2_custom_rendering -d sokol_d3d11 \
   -path "$PWD|$ui2_modules|@vmodules|@vlib" -o /tmp/Vox.exe .
@@ -228,3 +238,24 @@ runtime failures. The [Windows desktop capture](windows/windows-vm-click-2026110
 shows the normal browser window after the click. These are functional smoke
 checks of the pinned build; the platform limitations listed above still apply.
 The VM shut down cleanly after the checks; the tested runtime remains installed.
+
+
+## VM follow-up (2026-11-12)
+
+A fresh C-backend cross-build without Skia was launched in the existing Windows
+11 x86-64 QEMU VM. Its executable SHA-256 was
+`2047393cf0d542e44bc22f9f75ad76e4193ee1800303aa507f6f4a3801d7358e`.
+A fresh `--headless-smoke` process passed DOM mutation, JavaScript click,
+wheel routing and ordinary-element wheel listeners: browser/guest guard exit 0,
+peak job committed memory 410,357,760 bytes under the 3 GiB limit.
+
+A normal launch of `Tests/Browser/Windows/smoke.html` in a private profile rendered
+the fixture, displayed “JavaScript passed” and changed to “Click passed” after
+native mouse input. Its private APPDATA contained only the update-check opt-out
+so a machine-level update dialog would not obscure this check. Closing the
+window then stopped responding; cleanup forcibly terminated its verified
+process (PID 6672). This does **not** establish clean window shutdown. The earlier
+launch with the update dialog timed out after 600 seconds (guest exit 124,
+peak committed memory 1,000,751,104 bytes). Keep both results when assessing the
+port. The host VM guard subsequently reached its 3,600-second limit and stopped
+QEMU (exit -9); this also prevents treating the whole VM run as acceptance.
