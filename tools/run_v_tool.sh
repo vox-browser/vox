@@ -17,4 +17,8 @@ export V_MACOS_V3_NO_FALLBACK VFLAGS
 # Keep bootstrap output ephemeral and away from the source checkout.
 tool_output_dir=$(mktemp -d "${TMPDIR:-/tmp}/vox-build-tool.XXXXXX")
 trap 'rm -rf "$tool_output_dir"' EXIT
-"$v_tool_compiler" -b c -memory-limit 10G -o "$tool_output_dir/$tool" run "$repo_dir/tools/$tool.vsh" "$@"
+# A browser compiler's manifest destination must not receive the bootstrap
+# tool's own parsed sources. The manifest driver sets these explicitly for
+# the compiler it supervises; other tools must leave sealed receipts alone.
+env -u V_MACOS_V3_SOURCE_MANIFEST -u V_MACOS_V3_C_ERROR_DIR \
+    "$v_tool_compiler" -b c -memory-limit 10G -o "$tool_output_dir/$tool" run "$repo_dir/tools/$tool.vsh" "$@"
