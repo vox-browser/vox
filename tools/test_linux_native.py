@@ -34,6 +34,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gc", choices=["boehm", "none", "prealloc"], default="boehm",
                         help="prealloc exercises scoped arena ownership without a collector")
+    parser.add_argument("--prepared-modules", help="Existing V -path for a read-only source mount; skip module staging")
     parser.add_argument("cases", nargs="*", default=CASES)
     args = parser.parse_args()
     repo = Path(__file__).resolve().parent.parent
@@ -52,38 +53,46 @@ def main():
     bypass = "127.0.0.1,localhost,::1," + environment.get("NO_PROXY", environment.get("no_proxy", ""))
     environment.update(NO_PROXY=bypass, no_proxy=bypass)
     environment["PKG_CONFIG_PATH"] = str(repo / "Build/deps/lib/pkgconfig") + ":" + environment.get("PKG_CONFIG_PATH", "")
-    # Stage against this compiler; another host's symlinks may not be accessible.
-    http_modules = subprocess.check_output(
-        [sys.executable, str(repo / "tools/prepare_http_compat.py"), compiler],
-        cwd=repo, env=environment, text=True).strip()
-    # Application tests compile all of module main, including browser chrome.
-    # Use the production UI2 adapter only for those cases so engine-only tests
-    # retain their existing dependency set.
-    ui2_modules = None
-    if any(re.search(r"(?m)^\s*module\s+main\s*$", (repo / case).read_text())
-           for case in args.cases):
-        ui2_modules = subprocess.check_output(
-            [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
+    if args.prepared_modules:
+        if args.gc == "prealloc":
+            parser.error("prealloc needs its own staged runtime; omit --prepared-modules")
+        paths = args.prepared_modules
+        for item in paths.split("|"):
+            if not item.startswith("@") and not Path(item).is_dir():
+                parser.error("Missing prepared module directory: " + item)
+    else:
+        # Stage against this compiler; another host's symlinks may not be accessible.
+        http_modules = subprocess.check_output(
+            [sys.executable, str(repo / "tools/prepare_http_compat.py"), compiler],
             cwd=repo, env=environment, text=True).strip()
-    # UI2 and Linux share the module tree. UI2 links GG's compiler sources, so
-    # apply Linux's native callback adapters afterwards, as production does.
-    linux_modules = subprocess.check_output(
-        [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
-        cwd=repo, env=environment, text=True).strip()
-    module_paths = [str(repo), linux_modules, http_modules]
-    if ui2_modules:
-        # Select the current UI2 checkout before other shared module caches.
-        module_paths.insert(1, ui2_modules)
-    if args.gc == "prealloc":
-        # Match the production allocator, including bounded realloc and the
-        # persistent closure directory. Flags alone leave global runtime
-        # metadata inside whichever document arena first grows it.
-        prealloc_modules = subprocess.check_output(
-            [sys.executable, str(repo / "tools/prepare_prealloc_runtime.py"), compiler],
+        # Application tests compile all of module main, including browser chrome.
+        # Use the production UI2 adapter only for those cases so engine-only tests
+        # retain their existing dependency set.
+        ui2_modules = None
+        if any(re.search(r"(?m)^\s*module\s+main\s*$", (repo / case).read_text())
+               for case in args.cases):
+            ui2_modules = subprocess.check_output(
+                [sys.executable, str(repo / "tools/prepare_ui2.py"), compiler],
+                cwd=repo, env=environment, text=True).strip()
+        # UI2 and Linux share the module tree. UI2 links GG's compiler sources, so
+        # apply Linux's native callback adapters afterwards, as production does.
+        linux_modules = subprocess.check_output(
+            [sys.executable, str(repo / "tools/prepare_linux_modules.py"), compiler],
             cwd=repo, env=environment, text=True).strip()
-        compiler = str(Path(prealloc_modules) / "compiler/v")
-        module_paths.insert(1, prealloc_modules)
-    paths = "|".join([*module_paths, "@vmodules", "@vlib"])
+        module_paths = [str(repo), linux_modules, http_modules]
+        if ui2_modules:
+            # Select the current UI2 checkout before other shared module caches.
+            module_paths.insert(1, ui2_modules)
+        if args.gc == "prealloc":
+            # Match the production allocator, including bounded realloc and the
+            # persistent closure directory. Flags alone leave global runtime
+            # metadata inside whichever document arena first grows it.
+            prealloc_modules = subprocess.check_output(
+                [sys.executable, str(repo / "tools/prepare_prealloc_runtime.py"), compiler],
+                cwd=repo, env=environment, text=True).strip()
+            compiler = str(Path(prealloc_modules) / "compiler/v")
+            module_paths.insert(1, prealloc_modules)
+        paths = "|".join([*module_paths, "@vmodules", "@vlib"])
     output_root = repo / "Build/linux/tests" / args.gc
     output_root.mkdir(parents=True, exist_ok=True)
     output = Path(tempfile.mkdtemp(prefix="run-", dir=output_root))
