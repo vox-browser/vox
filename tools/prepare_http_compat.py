@@ -300,7 +300,7 @@ def compiler_vlib(compiler, work):
         # application backend. The browser keeps its selected backend.
         result = subprocess.run([compiler, "-b", "c", "-memory-limit", "10G", "run", str(probe)],
                                 capture_output=True, text=True, check=True)
-    return Path(result.stdout.strip()).resolve() / "vlib"
+    return (Path(result.stdout.strip()).resolve() / "vlib").resolve()
 
 
 def staged_modules(work, vlib):
@@ -325,7 +325,8 @@ def main():
     repo = Path(__file__).resolve().parent.parent
     compiler = sys.argv[1] if len(sys.argv) > 1 else os.environ.get(
         "V_BIN", shutil.which("v") or str(Path.home() / "code/v/v"))
-    work = repo / "Build/v/httpcompat"
+    platform = "linux" if sys.platform.startswith("linux") else "windows" if os.name == "nt" else "v"
+    work = repo / "Build" / platform / "httpcompat"
     work.mkdir(parents=True, exist_ok=True)
     vlib = compiler_vlib(compiler, work)
     original = vlib / "net/http"

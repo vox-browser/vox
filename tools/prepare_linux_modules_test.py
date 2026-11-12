@@ -34,6 +34,17 @@ const another_c_string = c'#canvas'
             self.assertEqual((source / 'sapp_structs.c.v').read_text(), original)
             self.assertEqual(patch_module('gg', original), original)
 
+    def test_staging_removes_stale_dangling_links(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source, target = Path(directory) / 'source', Path(directory) / 'target'
+            source.mkdir()
+            target.mkdir()
+            (source / 'module.v').write_text('module sample\n')
+            (target / 'old_test.v').symlink_to('/missing/compiler/old_test.v')
+            stage_module(source, target, 'sample')
+            self.assertFalse((target / 'old_test.v').is_symlink())
+            self.assertEqual((target / 'module.v').read_text(), 'module sample\n')
+
     @staticmethod
     def fontstash_source():
         return '''module gg

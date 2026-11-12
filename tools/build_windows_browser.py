@@ -57,7 +57,7 @@ def main():
         environment['VTMP'] = scratch
         # Production embedding is required when the executable leaves this
         # checkout. Keep the C optimization level unchanged for this build path.
-        flags = ['-prod', '-no-prod-options']
+        flags = ['-b', 'c', '-prod', '-no-prod-options']
         if args.console:
             flags += ['-subsystem', 'console']
         run([compiler, '-memory-limit', '10G', *flags, '-enable-globals', '-gc', 'none',

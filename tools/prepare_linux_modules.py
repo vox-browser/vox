@@ -134,7 +134,7 @@ def stage_module(source, target, package):
         write_if_changed(destination, Path(__file__).with_name('linux_fontstash_callbacks.h').read_text())
     if target.exists():
         for path in sorted(target.rglob("*"), reverse=True):
-            if path.is_dir() and not path.is_symlink():
+            if not path.is_symlink() and path.is_dir():
                 if not any(path.iterdir()):
                     path.rmdir()
             elif path.relative_to(target) not in expected:

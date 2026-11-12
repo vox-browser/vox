@@ -20,7 +20,7 @@ def link_to(path, source):
             return
         path.unlink()
     elif path.is_dir():
-        shutil.rmtree(path)
+        raise RuntimeError('Refusing to replace a directory with a module link: ' + str(path))
     elif path.exists():
         path.unlink()
     path.symlink_to(source, target_is_directory=source.is_dir())
@@ -113,11 +113,12 @@ def main():
     compiler_name = args.compiler or os.environ.get(
         'V_BIN', shutil.which('v') or str(Path.home() / 'code/v/v'))
     compiler = Path(compiler_name).resolve()
-    prepare_gg_gradient(target, compiler.parent / 'vlib')
+    vlib = (compiler.parent / 'vlib').resolve()
+    prepare_gg_gradient(target, vlib)
     if sys.platform == 'darwin':
         from prepare_gg_metal import prepare_sokol_metal
-        prepare_sokol_metal(target, compiler.parent / 'vlib')
-        macos_source = compiler.parent / 'vlib/macos'
+        prepare_sokol_metal(target, vlib)
+        macos_source = vlib / 'macos'
         if not (macos_source / 'objc_bridge.h').is_file():
             raise SystemExit('UI2 requires a current V checkout with vlib/macos.')
         macos = target / 'macos'
