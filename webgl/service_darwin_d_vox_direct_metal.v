@@ -1,5 +1,6 @@
-// Direct Metal WebGL service for macOS. V owns validation and resource lifetime;
-// native code encodes GPU operations. No ANGLE or OpenGL driver is used.
+// Experimental direct Metal service. Enabled only with -d vox_direct_metal.
+// Unsupported service calls report INVALID_OPERATION and are counted; they never
+// delegate to ANGLE. The default stays unchanged until the conformance gate passes.
 module webgl
 
 import webgl.metal
@@ -481,11 +482,7 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
     if context == unsafe { nil } || a1 == 0 { return }
     mut object := context.objects[a1] or { return }
     if object.kind != int(a0) || object.deleted { return }
-    if a0==8 {
-        if feedback := context.feedbacks[a1] {
-            if feedback.active { metal_service_error(invalid_operation);return }
-        }
-    }
+    if a0==8 && context.feedbacks[a1]!=unsafe { nil } && context.feedbacks[a1].active { metal_service_error(invalid_operation);return }
     object.deleted = true
     if a0 in [i32(2),3] { context.detach_deleted_attachment(a1,int(a0)) }
     if a0 == 0 {

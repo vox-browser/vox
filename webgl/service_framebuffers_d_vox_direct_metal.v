@@ -114,16 +114,16 @@ fn (mut context MetalServiceContext) framebuffer_status(target u32) u32 {
     if name==0 { return 0x8219 }
     fbo:=context.bound_framebuffer(target) or { return 0x8cd7 }
     if fbo.attachments.len==0 { return 0x8cd7 }
-    mut width:=0;mut height:=0;mut sample_count:=-1
+    mut width:=0;mut height:=0;mut samples:=-1
     for point,attachment in fbo.attachments {
         image:=context.attachment_image(attachment) or { return 0x8cd6 }
         if image.width<1 || image.height<1 { return 0x8cd6 }
         if point>=color_attachment0 && point<color_attachment0+8 && image.layout.format in [.depth16,.depth32,.depth_stencil,.stencil8] { return 0x8cd6 }
         if point==depth_attachment && image.layout.format !in [.depth16,.depth32,.depth_stencil] { return 0x8cd6 }
         if point==stencil_attachment && image.layout.format !in [.stencil8,.depth_stencil] { return 0x8cd6 }
-        if width==0 { width=image.width;height=image.height;sample_count=image.samples }
+        if width==0 { width=image.width;height=image.height;samples=image.samples }
         if width!=image.width || height!=image.height { return 0x8cd9 }
-        if sample_count!=image.samples { return 0x8d56 }
+        if samples!=image.samples { return 0x8d56 }
     }
     return 0x8cd5
 }
