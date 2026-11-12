@@ -79,9 +79,11 @@ fn compact_matrix_from_record(record json2.Any) !&geometry.DOMMatrix {
 		return error('TypeError: Invalid matrix')
 	}
 	if is_2d := object['is2D'] {
-		if is_2d is bool && is_2d {
-			return geometry.DOMMatrix.construct([values[0], values[1], values[4], values[5],
-				values[12], values[13]])!
+		if is_2d is bool {
+			if is_2d {
+				return geometry.DOMMatrix.construct([values[0], values[1], values[4], values[5],
+					values[12], values[13]])!
+			}
 		}
 	}
 	return geometry.DOMMatrix.construct(values)!
