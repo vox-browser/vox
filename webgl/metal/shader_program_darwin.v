@@ -94,8 +94,11 @@ pub fn (program &ShaderProgram) resources() ![]ShaderResource {
 }
 
 pub fn (mut program ShaderProgram) close() {
-	for mut uniform in program.uniforms { uniform.buffer.close() }
-	program.uniforms.clear()
+	for mut uniform in program.uniforms {
+		uniform.buffer.close()
+		unsafe { free(uniform.buffer) }
+	}
+	unsafe { program.uniforms.free() }
 	C.vox_metal_program_destroy(program.handle)
 	program.handle = unsafe { nil }
 }

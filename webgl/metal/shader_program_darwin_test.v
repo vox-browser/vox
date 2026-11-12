@@ -52,3 +52,19 @@ fn test_metal_shader_link_preserves_essl_errors_and_versions() {
 		assert rejected
 	}
 }
+
+fn test_metal_program_close_releases_uniform_owners_and_is_idempotent() {
+    mut target:=DrawingBuffer.create(1,1)!
+    defer { target.close() }
+    for _ in 0..8 {
+        mut program:=ShaderProgram.compile(target,
+            'uniform vec4 position;void main(){gl_Position=position;}',
+            'precision mediump float;uniform vec4 color;void main(){gl_FragColor=color;}',2)!
+        assert program.uniforms.len==2
+        program.close()
+        assert program.uniforms.len==0 && program.uniforms.cap==0
+        program.close()
+        program.source(.vertex) or { continue }
+        assert false,'Closed Metal program retained its functions'
+    }
+}
