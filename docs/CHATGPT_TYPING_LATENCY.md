@@ -138,7 +138,7 @@ fixed-composer fixture's final frame is byte-identical across the new path,
 the control and complete repaints. On a quiet host a keystroke now takes
 about 5–7 ms to handle and 20–22 ms to the next frame publication.
 
-## Remaining work
+## Remaining work at `b141997df`
 
 A 10 s main-thread sample now spends about half its time idle. The rest:
 
@@ -154,3 +154,71 @@ A 10 s main-thread sample now spends about half its time idle. The rest:
   session poll, which locks and rewrites `state.json` on every frame.
 - Vox ignores `field-sizing` in layout; textarea growth here comes from its
   content-derived automatic height, not from the property.
+
+## Refresh and tab polling follow-up (2026-11-12)
+
+`8fe74d4b7` extends the light-DOM ID/class survey stamp to ChatGPT. The
+browser also retains the bundled filter CSS beside that survey, keyed by URL
+and enabled state, avoiding token serialization merely to look up unchanged
+CSS. Procedural filters still execute against the live DOM. The cookie survey
+retains scalar document/attribute/element stamps; a negative survey without
+candidate banners or dialogs ignores text-only edits. Candidate containers
+also observe character-data and tree versions, so late consent text and
+buttons remain detectable. Banner style replacement and policy toggles still
+invalidate the survey. Cached strings have their own reusable arena, released
+with the existing tab token cache.
+
+Controls: `VOX_DISABLE_CHATGPT_COSMETIC_TOKEN_REUSE=1`,
+`VOX_DISABLE_COOKIE_SURVEY_REUSE=1`, and the existing
+`VOX_DISABLE_ADBLOCK_TOKEN_REUSE=1` / `VOX_DISABLE_DOCUMENT_FILTER_MEMO=1`.
+
+`e76cbf2da` adopts layout already flushed by a script's geometry query when
+style and geometry are current. Live cosmetic actions still run and any
+resulting invalidation is committed. Initial layout, missing paint state,
+zoom changes and pending autofocus retain the shell relayout boundary.
+Focused controls receive the same native editing-owner/shadow preparation
+before layout and caret recording as a full shell pass. The existing
+`VOX_DISABLE_JAVASCRIPT_PAINT_SYNC=1` restores the full shell path.
+
+`2766bb04c` skips unchanged tab-session polling within the existing 100 ms
+housekeeping interval. Local title, URL, favicon, ready and loading changes
+publish immediately; directory-watcher notifications bypass the interval.
+Crash cleanup and platforms without a watcher retain the timer fallback.
+Before this change, saves already depended on changed JSON; the remaining
+per-frame work was locking, reading, decoding, liveness checks and encoding.
+
+Focused checks pass: all 11 tab-session test files with default GC and no GC,
+the final three cadence cases with strict current V, 13 existing cookie-banner
+cases and five existing token-cache cases. Four new refresh cases pass with
+default GC, all cache controls disabled, preallocation/no GC, and poisoned
+arenas. The final preallocated checks include the single-pass cookie matcher.
+Two new script-commit cases pass with default GC, the full-shell control,
+preallocation/no GC and poisoned arenas, comparing exact display lists after
+focus and after cosmetic mutations. Five existing frame-task cases also pass
+during the iteration. Earlier shortcuts omitted the focused caret; the
+full-shell control passed, and the final editing-owner preparation resolves
+that exact difference. An intermediate build was blocked by another session's
+immutable `PipelineBlitter.lowp` assignment, subsequently corrected there.
+The existing pooled-frame tests pass in both ARC and MRC modes, including
+retained pixels, clearing, spare buffers, readiness and growth.
+
+Browser-module checks use current V with `-new-compiler -b c -cc clang
+-cflags -O0 -memory-limit 10G -enable-globals -d vox_ui2 -d vox_sparse_ttf`,
+the production compatibility module paths and zoneinfo exclusion. Compilation
+uses the 12 GiB guard and separate executions use its 3 GiB runtime budget.
+Initial cadence clock-fixture failures, cancelled compiler retry runs, a
+rejected unsupported compiler flag and a missing UI2 module-path attempt
+receive no passing credit.
+
+The renderer changed since the measurements above: `07c029b15` removed the
+Skia/Graphite bridges, and current frame publication already uses pooled
+bitmap providers. The former GPU-picture/readback attribution therefore
+needs a fresh profile. The baseline production executable
+`445cf7ad12b2490b936e162d5bf2e96951853221ba482b1f778a0c55cec0ee27`
+passes a fresh guarded headless startup, but predates these follow-ups. The
+first automatic rebuild failed its input seal when another session changed
+`native_capture_darwin.m`; later requests remain managed by the shared worker.
+No live typing latency or instruction savings are claimed, and the measured
+broad-verification savings counter is unchanged. Running-animation style work
+and paint-tree projection remain open for attribution on a current production
+bundle.
