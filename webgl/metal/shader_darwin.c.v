@@ -4,15 +4,11 @@ $if arm64 {
 	#flag -I/opt/homebrew/opt/glslang/include
 	#flag -I/opt/homebrew/opt/spirv-cross/include/spirv_cross
 	#flag -L/opt/homebrew/opt/spirv-cross/lib
-	#flag /opt/homebrew/opt/glslang/lib/libglslang.dylib
-	#flag /opt/homebrew/opt/glslang/lib/libglslang-default-resource-limits.dylib
 	#flag -Wl,-rpath,/opt/homebrew/opt/glslang/lib
 } $else {
 	#flag -I/usr/local/opt/glslang/include
 	#flag -I/usr/local/opt/spirv-cross/include/spirv_cross
 	#flag -L/usr/local/opt/spirv-cross/lib
-	#flag /usr/local/opt/glslang/lib/libglslang.dylib
-	#flag /usr/local/opt/glslang/lib/libglslang-default-resource-limits.dylib
 	#flag -Wl,-rpath,/usr/local/opt/glslang/lib
 }
 #flag -lspirv-cross-c -lspirv-cross-msl -lspirv-cross-cpp -lspirv-cross-hlsl -lspirv-cross-reflect -lspirv-cross-glsl -lspirv-cross-core -lc++

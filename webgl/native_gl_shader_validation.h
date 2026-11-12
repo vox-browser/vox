@@ -13,14 +13,27 @@
 /* Keep the ESSL compiler out of ordinary page startup. The bundle dependency
  * scanner recognizes these @rpath names and carries their dylib closure. */
 #define VOX_ESSL_FUNCTIONS(X) \
+     X(glslang_default_resource) \
     X(glslang_initialize_process) \
+    X(glslang_program_SPIRV_generate) \
+    X(glslang_program_SPIRV_get_messages) \
+    X(glslang_program_SPIRV_get_ptr) \
+    X(glslang_program_SPIRV_get_size) \
+    X(glslang_program_add_shader) \
+    X(glslang_program_create) \
+    X(glslang_program_delete) \
+    X(glslang_program_get_info_log) \
+    X(glslang_program_link) \
+    X(glslang_program_map_io) \
     X(glslang_shader_create) \
-    X(glslang_shader_preprocess) \
-    X(glslang_shader_parse) \
-    X(glslang_shader_get_preprocessed_code) \
-    X(glslang_shader_get_info_log) \
     X(glslang_shader_delete) \
-    X(glslang_default_resource)
+    X(glslang_shader_get_info_log) \
+    X(glslang_shader_get_preprocessed_code) \
+    X(glslang_shader_parse) \
+    X(glslang_shader_preprocess) \
+    X(glslang_shader_set_default_uniform_block_name) \
+    X(glslang_shader_set_default_uniform_block_set_and_binding) \
+    X(glslang_shader_set_options) 
 typedef struct {
 #define VOX_ESSL_FIELD(name) __typeof__(&name) name;
     VOX_ESSL_FUNCTIONS(VOX_ESSL_FIELD)
@@ -44,14 +57,27 @@ static int vox_essl_load(void)
     return 1;
 }
 #undef VOX_ESSL_FUNCTIONS
-#define glslang_initialize_process vox_essl_api.glslang_initialize_process
-#define glslang_shader_create vox_essl_api.glslang_shader_create
-#define glslang_shader_preprocess vox_essl_api.glslang_shader_preprocess
-#define glslang_shader_parse vox_essl_api.glslang_shader_parse
-#define glslang_shader_get_preprocessed_code vox_essl_api.glslang_shader_get_preprocessed_code
-#define glslang_shader_get_info_log vox_essl_api.glslang_shader_get_info_log
-#define glslang_shader_delete vox_essl_api.glslang_shader_delete
 #define glslang_default_resource vox_essl_api.glslang_default_resource
+#define glslang_initialize_process vox_essl_api.glslang_initialize_process
+#define glslang_program_SPIRV_generate vox_essl_api.glslang_program_SPIRV_generate
+#define glslang_program_SPIRV_get_messages vox_essl_api.glslang_program_SPIRV_get_messages
+#define glslang_program_SPIRV_get_ptr vox_essl_api.glslang_program_SPIRV_get_ptr
+#define glslang_program_SPIRV_get_size vox_essl_api.glslang_program_SPIRV_get_size
+#define glslang_program_add_shader vox_essl_api.glslang_program_add_shader
+#define glslang_program_create vox_essl_api.glslang_program_create
+#define glslang_program_delete vox_essl_api.glslang_program_delete
+#define glslang_program_get_info_log vox_essl_api.glslang_program_get_info_log
+#define glslang_program_link vox_essl_api.glslang_program_link
+#define glslang_program_map_io vox_essl_api.glslang_program_map_io
+#define glslang_shader_create vox_essl_api.glslang_shader_create
+#define glslang_shader_delete vox_essl_api.glslang_shader_delete
+#define glslang_shader_get_info_log vox_essl_api.glslang_shader_get_info_log
+#define glslang_shader_get_preprocessed_code vox_essl_api.glslang_shader_get_preprocessed_code
+#define glslang_shader_parse vox_essl_api.glslang_shader_parse
+#define glslang_shader_preprocess vox_essl_api.glslang_shader_preprocess
+#define glslang_shader_set_default_uniform_block_name vox_essl_api.glslang_shader_set_default_uniform_block_name
+#define glslang_shader_set_default_uniform_block_set_and_binding vox_essl_api.glslang_shader_set_default_uniform_block_set_and_binding
+#define glslang_shader_set_options vox_essl_api.glslang_shader_set_options
 #endif
 
 VOX_NATIVE_STATE int vox_essl_initialized;

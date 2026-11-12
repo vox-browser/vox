@@ -35,12 +35,10 @@ def main():
     cross = Path(subprocess.check_output(['brew', '--prefix', 'spirv-cross'], text=True).strip())
     shader_flags = ['-I' + str(glslang / 'include'), '-I' + str(cross / 'include/spirv_cross'),
                     '-L' + str(cross / 'lib'), '-Wl,-rpath,' + str(glslang / 'lib'),
-                    str(glslang / 'lib/libglslang.dylib'),
-                    str(glslang / 'lib/libglslang-default-resource-limits.dylib'),
                     *['-lspirv-cross-' + name for name in ['c', 'msl', 'cpp', 'hlsl', 'reflect', 'glsl', 'core']], '-lc++']
     pins = {str(path): digest(path) for path in inputs}
     report = dict(pins=pins, jobs=[], passed=False)
-    for suite in ['drawing_buffer', 'shader_program', 'render', 'texture', 'render_state', 'vertex', 'feedback', 'uniform_struct']:
+    for suite in ['drawing_buffer', 'shader_program', 'render', 'texture', 'render_state', 'vertex', 'feedback', 'uniform_struct', 'shader_loading']:
         for mode, flags in [('arc', ['-fobjc-arc', '-O2']),
                             ('mrc', ['-fno-objc-arc', '-O2']),
                             ('sanitized', ['-fobjc-arc', '-O1', '-g', '-fsanitize=address,undefined'])]:
