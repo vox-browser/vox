@@ -443,3 +443,43 @@ remaining panel differences follow its rotated orbit decoration. Further shadow
 and image corrections, CNN, GitHub and the unavailable Reddit workload remain
 open. Raw diagnostics and production receipts are retained locally under
 `docs/performance/vlang-gradients-20261112/`.
+
+
+## Rotated and short rounded shadow corrections
+
+`9ac4bf9ab` keeps rotated elliptical shadows on a bounded V/GPU image-filter
+path, rather than falling back to CoreGraphics. Uniform rotations use the
+transformed source bounds and the corresponding isotropic kernel; shear and
+unequal scales keep their fallback. The new focused test executes both a
+rotated ellipse and its equivalent axis-aligned geometry and requires exact
+RGBA equality, visible outer blur and an empty clipped interior. Existing
+unblurred-shadow and six nine-patch reference hashes also pass. A standalone
+native include correction avoids Cocoa math macros colliding with V's C
+prototypes; the initial compiler failure and successful rerun are retained.
+
+Production executable
+`a484d15d68d391366a0b66099091630984da22ab7ef835d66f4aaed870abc9e8`
+(receipt `20261112-140916-7a45d7d6`, source hashes matched to the committed
+feature) reduces vlang.io to **9,054 differing pixels in both fresh captures**.
+The diagnostic rotated-orbit reference improves from 26,238 to 1,901, in both
+captures; its two independent Brave captures agree exactly. It remains a
+known failing diagnostic, never a relaxed acceptance reference.
+
+`7c97385d9` also filters axis-aligned rounded shadows when the short dimension
+cannot hold a nine-patch. The focused GPU test exercises short and asymmetric
+corners, visible blur, the clipped interior and a pixel beyond the finite
+filter bounds. Its first assertion incorrectly expected a pixel inside the
+blur extent to be empty; the retained failing run is followed by a corrected
+geometric assertion and passing runtime check.
+
+Production executable
+`2f6e12170d69a41b13c09970556d3c3fda455b72a72872e021ba8fb7090f6d3e`
+(receipt `20261112-141300-a1768de5`, matching feature inputs) reduces the same
+vlang.io archive to **6,738 differing pixels in both fresh captures**. For both
+shadow corrections, the three gradient controls, Wikipedia and Lobsters remain
+exact in two fresh production captures each. Content, readiness, viewport,
+reference and executable identity checks pass. Compilation uses the 12 GiB
+guard; focused runtime checks use 3 GiB. The remaining image, text-mask and
+shadow differences keep vlang.io and the all-site gate open. Raw attempts,
+commands and receipts remain local under
+`docs/performance/vlang-gradients-20261112/`.
