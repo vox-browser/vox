@@ -23,6 +23,9 @@ fn (app &BrowserApp) update_window_title() {
 	// Sokol's X11 title setter requires a live Display and Window. Documents
 	// are also installed before window creation and in non-windowed modes.
 	if app.ctx == unsafe { nil } || app.document == unsafe { nil } || !app.is_active_browser_tab() { return }
+	$if !macos {
+		if !sapp.isvalid() { return }
+	}
 	$if linux { initialize_linux_window_identity() }
 	title := document_title(app.document)
 	gg.set_window_title(browser_window_title(title))
@@ -33,6 +36,11 @@ fn (app &BrowserApp) update_window_title() {
 // never uses. Retain its input/frame behavior and initialize only their shared
 // context state before handing control to the browser's own window callback.
 fn configure_native_browser_context(mut context gg.Context) {
+	// Sokol's C event layout is narrower than GG's V event on current V.
+	// Convert it before GG reads dimensions on every platform.
+	$if !macos {
+		context.window.event_userdata_cb = dispatch_native_browser_event
+	}
 	$if macos {
 		// Runs before the window exists; AppKit reads this when indexing it.
 		browserwindow.register_window_tab_indexing_default()
@@ -97,6 +105,11 @@ fn dispatch_native_browser_event(event_pointer &sapp.Event, user_data voidptr) {
 		framebuffer_height: event_pointer.framebuffer_height
 	}
 	if event.typ != .resized {
+		C.gg__gg_event_fn(&event, user_data)
+		return
+	}
+	$if !macos {
+		// The portable renderer owns a normal GG font atlas and resize path.
 		C.gg__gg_event_fn(&event, user_data)
 		return
 	}
