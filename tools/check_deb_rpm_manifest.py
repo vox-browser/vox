@@ -43,22 +43,40 @@ def main():
     if 'overrides:' not in text or 'rpm:' not in text:
         print('error: nfpm.yaml must carry per-packager rpm overrides')
         failures += 1
+    if 'libicu74' not in text:
+        print('error: nfpm.yaml DEB depends must keep libicu74 (Ubuntu 24.04 ABI)')
+        failures += 1
+    rpm_section = text.split('rpm:', 1)[1] if 'rpm:' in text else ''
+    if '\n      - icu\n' in rpm_section or '\n      - icu\r\n' in rpm_section:
+        print('error: nfpm.yaml rpm depends must not use system icu; the RPM vendors ICU 74 under /usr/lib/vox')
+        failures += 1
 
     try:
         wrapper = (repo / WRAPPER).read_text(encoding='utf-8')
     except OSError as err:
         return fail(f'cannot read {WRAPPER}: {err}')
-    for needle in ('LD_LIBRARY_PATH="/usr/lib/vox', 'exec /usr/lib/vox/vox "$@"'):
+    for needle in ('../lib/vox', 'readlink -f', 'LD_LIBRARY_PATH="$libdir',
+                     'exec "$libdir/vox" "$@"'):
         if needle not in wrapper:
             print(f'error: wrapper must contain {needle!r}')
+            failures += 1
+    for absolute in ('LD_LIBRARY_PATH="/usr/lib/vox', 'exec /usr/lib/vox/vox'):
+        if absolute in wrapper:
+            print(f'error: wrapper must not hard-code host path {absolute!r}; resolve relative to $0')
             failures += 1
 
     try:
         desktop = (repo / DESKTOP).read_text(encoding='utf-8')
     except OSError as err:
         return fail(f'cannot read {DESKTOP}: {err}')
-    if 'Exec=vox' not in desktop or f'Icon={APP_ID}' not in desktop:
-        print('error: desktop entry must Exec vox with the app-id icon')
+    if 'Exec=vox %u' not in desktop:
+        print('error: desktop entry must use single-URL Exec=vox %u (the parser rejects a second source)')
+        failures += 1
+    if 'Exec=vox %U' in desktop:
+        print('error: desktop entry must not use %U; parse_launch_options supports only one source')
+        failures += 1
+    if f'Icon={APP_ID}' not in desktop:
+        print('error: desktop entry must carry the app-id icon')
         failures += 1
     if 'MimeType=' not in desktop or 'x-scheme-handler/https' not in desktop:
         print('error: desktop entry must handle http/https links')
@@ -77,7 +95,8 @@ def main():
                    'usr/lib/vox', 'usr/bin/vox',
                    f'{APP_ID}.png',
                    'dpkg-deb', 'rpm2cpio',
-                   '--headless-smoke', 'SHA256SUMS', 'gh release create'):
+                   '--headless-smoke', 'SHA256SUMS', 'gh release create',
+                   '--latest=false', 'libicuuc.so.74'):
         if needle not in workflow:
             print(f'error: {WORKFLOW} never mentions {needle!r}')
             failures += 1

@@ -145,6 +145,18 @@ jobs:
             release-staging/deb-rpm-prime/usr/share/applications/
           cp packaging/Vox.png \
             release-staging/deb-rpm-prime/usr/share/icons/hicolor/256x256/apps/org.vox_browser.vox.png
+          # Vendor the ICU 74 runtime for the RPM: this binary is built on
+          # Ubuntu 24.04 (libicuuc.so.74), while Fedora ships a newer SONAME
+          # (e.g. 77.x). The wrapper puts /usr/lib/vox on LD_LIBRARY_PATH,
+          # so these copies satisfy the RPM payload on Fedora without a
+          # system icu dependency (see nfpm.yaml).
+          icu_libs="$(ldconfig -p | awk '/libicu(uc|i18n|data)\.so\.74/ {print $NF}' | sort -u)"
+          test -n "$icu_libs"
+          # shellcheck disable=SC2086
+          cp -L $icu_libs release-staging/deb-rpm-prime/usr/lib/vox/
+          ls release-staging/deb-rpm-prime/usr/lib/vox/libicu*.so.74
+          LD_LIBRARY_PATH=release-staging/deb-rpm-prime/usr/lib/vox \
+            ldd release-staging/deb-rpm-prime/usr/lib/vox/vox | grep -i icu
           find release-staging/deb-rpm-prime -printf '%M %p\n'
 
       - name: Build the DEB and RPM
@@ -163,13 +175,20 @@ jobs:
           dpkg-deb --contents vox_*.deb
           dpkg-deb -x vox_*.deb deb-root
           test -x deb-root/usr/bin/vox
+          # The wrapper resolves ../lib/vox relative to itself, so this
+          # executes deb-root/usr/lib/vox/vox with deb-root's libraries,
+          # not any /usr/lib/vox installed on the host.
           ./deb-root/usr/bin/vox --headless-smoke
+          # The RPM payload must carry its ICU 74 runtime (Fedora system icu
+          # is a newer SONAME).
+          test -n "$(find deb-root/usr/lib/vox -maxdepth 1 -name 'libicuuc.so.74')"
           rm -rf deb-root
           rm -rf rpm-root
           mkdir rpm-root
           (cd rpm-root && rpm2cpio ../vox-*.rpm | cpio -idm)
           test -x rpm-root/usr/bin/vox
           ./rpm-root/usr/bin/vox --headless-smoke
+          test -n "$(find rpm-root/usr/lib/vox -maxdepth 1 -name 'libicuuc.so.74')"
           rm -rf rpm-root
 
       - name: Checksums
@@ -189,8 +208,14 @@ jobs:
           case "${GITHUB_REF_NAME}" in
             *-rc*|*-beta*) flags="--prerelease" ;;
           esac
+          # These v* Linux releases must not become the repository's latest
+          # release: the macOS publisher reads the latest tag and its
+          # next_version parser accepts only bare numeric versions
+          # (e.g. 0.1.1, not v0.1.4). Keep --latest=false until that
+          # consumer supports the v prefix (see tools/release_macos.py).
           # shellcheck disable=SC2086
           gh release create "${GITHUB_REF_NAME}" \
             --title "Vox $version (Linux deb/rpm)" \
+            --latest=false \
             --generate-notes $flags \
             vox_*.deb vox-*.rpm SHA256SUMS

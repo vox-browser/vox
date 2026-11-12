@@ -9,10 +9,16 @@ This directory holds the Linux system-package scaffolding:
   (the hyphen in `vox-browser.org` maps to an underscore, keeping a valid
   reverse-DNS id).
 - `vox-wrapper.sh` — installed as `/usr/bin/vox`. The real browser and its
-  bundled native libraries live together in `/usr/lib/vox` (the same
-  relative layout as the portable tarball); the wrapper keeps that
-  co-location for `$ORIGIN` lookup, exports it for loader paths that need
-  it, and execs the real binary.
+  bundled native libraries live together in `../lib/vox` relative to the
+  wrapper (the same relative layout as the portable tarball); the wrapper
+  resolves that directory from its own path (via `readlink -f` when
+  available), exports it for loader paths that need it, and execs the real
+  binary. Relocatable resolution lets the same file work installed as
+  `/usr/bin/vox` and when smoke-testing an extracted package tree
+  (`./deb-root/usr/bin/vox` runs `deb-root/usr/lib/vox/vox`, not the host's).
+- `org.vox_browser.vox.desktop` — the desktop entry installed to
+  `/usr/share/applications`. It uses `Exec=vox %u` (single URL) because
+  `parse_launch_options` in `main.v` accepts only one launch source.
 - `org.vox_browser.vox.desktop` — the desktop entry installed to
   `/usr/share/applications`.
 - `README.md` — this file.
@@ -24,9 +30,12 @@ The icon ships from the shared `packaging/Vox.png`; CI installs it as
 
 What works today: `release-deb-rpm.yml` CI validates the scaffolding with
 `tools/check_deb_rpm_manifest.py`, builds Vox with the pinned Linux
-toolchain, packs the `.deb` and `.rpm` with nFPM, smoke-tests both payloads
-(`--headless-smoke` on the extracted trees), and publishes both packages to
-GitHub Releases on `v*` tags.
+toolchain, packs the `.deb` and `.rpm` with nFPM, vendors the Ubuntu 24.04
+ICU 74 runtime into the payload for Fedora portability (the RPM does not
+depend on system `icu`), smoke-tests both extracted payloads
+(`--headless-smoke` via the relocatable wrapper), and publishes both
+packages to GitHub Releases on `v*` tags with `--latest=false` so the
+macOS publisher's bare-version parser keeps working.
 
 What is still needed before repository submission:
 

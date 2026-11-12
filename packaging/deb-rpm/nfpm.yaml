@@ -3,6 +3,12 @@
 # nFPM builds the .deb and .rpm from the prebuilt portable Linux tree (the
 # supervised-build Build/linux/vox plus its bundled *.so libraries), so both
 # packages ship exactly the binary the tarball release publishes.
+# The RPM reuses the Ubuntu 24.04 build, so it vendors the ICU 74 runtime
+# (libicuuc.so.74, libicui18n.so.74, libicudata.so.74) under /usr/lib/vox:
+# Fedora's system `icu` is a newer ABI (e.g. 77.x) and would not satisfy the
+# binary's NEEDED entries. The wrapper puts /usr/lib/vox on LD_LIBRARY_PATH,
+# so the vendored libraries win. The RPM therefore must not depend on system
+# `icu`; the DEB keeps its `libicu74` dependency for the native distro.
 # App id: org.vox_browser.vox (the hyphen in vox-browser.org maps to an
 # underscore, keeping a valid reverse-DNS id). See packaging/deb-rpm/README.md.
 name: vox
@@ -43,11 +49,13 @@ depends:
   - fonts-liberation2
 overrides:
   rpm:
+    # No `icu` here: the RPM vendors ICU 74 under /usr/lib/vox (see above).
+    # Fedora's system icu is a newer SONAME and would not satisfy this
+    # Ubuntu-built binary.
     depends:
       - javascriptcoregtk4.1
       - glib2
       - harfbuzz
-      - icu
       - woff2
       - brotli
       - libcurl
