@@ -1327,8 +1327,10 @@ VOX_EGL_LINKAGE int vox_gl_parameter_shape(unsigned pname, int version) {
         return version == 3 ? 41 : 0;
     case GL_MAX_TEXTURE_LOD_BIAS:
         return version == 3 ? 21 : 0;
-    case GL_TRANSFORM_FEEDBACK_ACTIVE:
-    case GL_TRANSFORM_FEEDBACK_PAUSED:
+    // Apple's core headers name these TRANSFORM_FEEDBACK_BUFFER_ACTIVE/PAUSED.
+    // Use the shared enum values for both desktop GL and GLES headers.
+    case 0x8E24: // TRANSFORM_FEEDBACK_ACTIVE
+    case 0x8E23: // TRANSFORM_FEEDBACK_PAUSED
     case GL_RASTERIZER_DISCARD:
         return version == 3 ? 31 : 0;
     default: return 0;
