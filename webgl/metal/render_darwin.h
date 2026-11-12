@@ -94,7 +94,8 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         color.sourceAlphaBlendFactor = vox_metal_blend_factor(state->source_alpha);
         color.destinationAlphaBlendFactor = vox_metal_blend_factor(state->destination_alpha);
         }
-        if (depth) { descriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float_Stencil8; descriptor.stencilAttachmentPixelFormat = MTLPixelFormatDepth32Float_Stencil8; }
+        if (depth && depth->has_depth) descriptor.depthAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->texture pixelFormat];
+        if (depth && depth->has_stencil) descriptor.stencilAttachmentPixelFormat=[(__bridge id<MTLTexture>)depth->stencil pixelFormat];
         NSError* error = nil;
         id<MTLRenderPipelineState> pipeline = [device newRenderPipelineStateWithDescriptor:descriptor error:&error];
         vox_metal_drop_owned(descriptor);
@@ -108,12 +109,7 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
             pass.colorAttachments[c].loadAction=MTLLoadActionLoad;pass.colorAttachments[c].storeAction=MTLStoreActionStore;
         }
         if(visibility) pass.visibilityResultBuffer=(__bridge id<MTLBuffer>)visibility->buffer;
-        if (depth) {
-            pass.depthAttachment.texture = (__bridge id<MTLTexture>)depth->texture;
-            pass.depthAttachment.loadAction = MTLLoadActionLoad; pass.depthAttachment.storeAction = MTLStoreActionStore;
-            pass.stencilAttachment.texture = (__bridge id<MTLTexture>)depth->texture;
-            pass.stencilAttachment.loadAction = MTLLoadActionLoad; pass.stencilAttachment.storeAction = MTLStoreActionStore;
-        }
+        if(depth) vox_metal_depth_stencil_pass(pass,depth,0,1,0);
         id<MTLCommandBuffer> command = [(__bridge id<MTLCommandQueue>)target->queue commandBuffer];
         id<MTLRenderCommandEncoder> encoder = [command renderCommandEncoderWithDescriptor:pass];
         if (!command || !encoder) { vox_metal_drop_owned(pipeline); return 0; }
@@ -129,9 +125,9 @@ static int vox_metal_draw_configured(void* target_handle, void* program_handle,
         [encoder setDepthBias:state->depth_bias slopeScale:state->depth_slope clamp:0];
         if (depth) {
             MTLDepthStencilDescriptor* descriptor = [[MTLDepthStencilDescriptor alloc] init];
-            descriptor.depthCompareFunction = state->depth_test ? (MTLCompareFunction)state->depth_compare : MTLCompareFunctionAlways;
-            descriptor.depthWriteEnabled = state->depth_test && state->depth_write;
-            if (state->stencil_test) {
+            descriptor.depthCompareFunction = depth->has_depth && state->depth_test ? (MTLCompareFunction)state->depth_compare : MTLCompareFunctionAlways;
+            descriptor.depthWriteEnabled = depth->has_depth && state->depth_test && state->depth_write;
+            if (depth->has_stencil && state->stencil_test) {
                 MTLStencilDescriptor* front = vox_metal_stencil_descriptor(&state->front);
                 MTLStencilDescriptor* back = vox_metal_stencil_descriptor(&state->back);
                 descriptor.frontFaceStencil = front; descriptor.backFaceStencil = back;

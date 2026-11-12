@@ -77,6 +77,8 @@ pub fn (texture &Texture2D) attachment(level int,slice int) !&Texture2D {
 }
 
 pub fn (mut texture Texture2D) generate_mipmaps() ! {
+    if texture.handle==unsafe { nil } { return error('Metal texture is closed') }
+    if texture.levels==1 { return }
     if texture.format !in [.rgba8,.r8,.rg8,.srgba8,.r8_snorm,.rg8_snorm,.rgba8_snorm,.r16f,.rg16f,.rgba16f,.r32f,.rg32f,.rgba32f,.rgb10a2,.rg11b10f] { return error('Metal texture format cannot generate filtered mipmaps') }
     if texture.samples!=1 || C.vox_metal_texture_mipmaps(texture.handle)!=1 { return error('Metal mipmap generation failed') }
 }
@@ -89,4 +91,18 @@ pub fn (mut destination Texture2D) copy_from(source &Texture2D,source_level int,
     if source.owner.handle!=destination.owner.handle || source.format!=destination.format || source.handle==destination.handle { return error('Incompatible Metal texture copy') }
     if size==0 { return }
     if C.vox_metal_texture_copy(destination.handle,u32(destination_level),u32(destination_slice),u32(x),u32(y),u32(z),source.handle,u32(source_level),u32(source_slice),u32(region.x),u32(region.y),u32(region.z),u32(region.width),u32(region.height),u32(region.depth))!=1 { return error('Metal texture copy failed') }
+}
+
+pub fn (target &DrawingBuffer) color_attachment() !&Texture2D {
+    if target.handle==unsafe { nil } { return error('Metal drawing buffer is closed') }
+    handle:=C.vox_metal_texture_wrap_buffer(target.handle)
+    if handle==unsafe { nil } { return error('Metal drawing-buffer attachment allocation failed') }
+    return &Texture2D{handle:handle,owner:target,width:target.width,height:target.height}
+}
+
+pub fn (source &Texture2D) resolved_copy() !&Texture2D {
+    if source.samples==1 { return error('Resolve requires a multisample texture') }
+    mut result:=Texture2D.create_storage(source.owner,TextureStorageOptions{width:source.width,height:source.height,format:source.format})!
+    if C.vox_metal_texture_resolve(source.handle,result.handle)!=1 { result.close();unsafe { free(result) };return error('Metal multisample resolve failed') }
+    return result
 }

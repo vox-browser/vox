@@ -462,6 +462,7 @@ fn metal_service_vox_gl_delete_object(a0 i32, a1 u32) {
     mut object := context.objects[a1] or { return }
     if object.kind != int(a0) || object.deleted { return }
     object.deleted = true
+    if a0 in [i32(2),3] { context.detach_deleted_attachment(a1,int(a0)) }
     if a0 == 0 {
         for target,name in context.buffers { if name == a1 { context.buffers[target] = 0 } }
         for key,binding in context.indexed_buffers { if binding.buffer==a1 { context.indexed_buffers.delete(key) } }

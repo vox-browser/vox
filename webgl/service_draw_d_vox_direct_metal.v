@@ -31,7 +31,7 @@ fn (context &MetalServiceContext) stencil_face(back_face bool) metal.StencilFace
     }
 }
 
-fn (context &MetalServiceContext) render_state(mode u32) metal.RenderState {
+fn (context &MetalServiceContext) render_state(mode u32,has_depth bool,has_stencil bool) metal.RenderState {
     p:=context.parameters
     discard:=context.enabled[0x8c89] || (mode>=4 && context.enabled[cull_face] && u32(p[cull_face_mode][0])==front_and_back)
     scissor:=if discard { ?metal.ScissorRect(metal.ScissorRect{}) } else if context.scissor_enabled { ?metal.ScissorRect(context.scissor) } else { ?metal.ScissorRect(none) }
@@ -49,10 +49,10 @@ fn (context &MetalServiceContext) render_state(mode u32) metal.RenderState {
         blend_color:[f32(p[blend_color][0]),f32(p[blend_color][1]),f32(p[blend_color][2]),f32(p[blend_color][3])]!
         cull:if !context.enabled[cull_face] { .none } else if u32(p[cull_face_mode][0])==front { .front } else { .back }
         front_ccw:u32(p[front_face][0])==ccw
-        depth_test:context.has_depth && context.enabled[depth_test]
+        depth_test:has_depth && context.enabled[depth_test]
         depth_write:context.depth_mask
         depth_compare:metal_service_compare(p[depth_func][0])
-        stencil_test:context.has_stencil && context.enabled[stencil_test]
+        stencil_test:has_stencil && context.enabled[stencil_test]
         front_stencil:context.stencil_face(false)
         back_stencil:context.stencil_face(true)
         depth_bias:if context.enabled[polygon_offset_fill] { f32(p[polygon_offset_units][0]) } else { f32(0) }
@@ -161,7 +161,7 @@ fn (mut context MetalServiceContext) draw(mode u32,first int,count int,instances
     defer { unsafe { blocks.free() } }
     mut textures:=context.texture_bindings(object) or { context.last_failure=err.msg();return }
     defer { textures.close() }
-    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode)}) or {
+    context.target.draw_with_options(object.program,streams,primitive,draw_first,draw_count,instances,metal.DrawOptions{textures:textures.bindings,color_target:framebuffer_view.primary,color_targets:framebuffer_view.colors,colors_configured:framebuffer_view.custom,uniform_blocks:blocks,indices:indices,depth_stencil:framebuffer_view.depth,state:context.render_state(mode,framebuffer_view.has_depth,framebuffer_view.has_stencil)}) or {
         context.last_failure=err.msg();metal_service_error(invalid_operation);return
     }
     context.invalidate_draw_textures()

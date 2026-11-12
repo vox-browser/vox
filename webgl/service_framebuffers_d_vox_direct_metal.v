@@ -36,7 +36,7 @@ struct MetalServiceRenderImage {
     width int
     height int
     layer int
-    samples int
+    samples int = 1
     object u32
 }
 
@@ -214,8 +214,26 @@ fn (mut context MetalServiceContext) framebuffer_view(target u32) !MetalServiceF
         result.colors<<metal.ColorTargetBinding{index:index,texture:view}
         if result.primary==unsafe { nil } { result.primary=view;result.width=image.width;result.height=image.height;result.samples=image.samples }
     }
-    // Depth/stencil attachment integration is supplied by the shared resource
-    // adapter; a framebuffer without colors still needs its declared extent.
+    mut depth_view:=unsafe { &metal.Texture2D(nil) };mut stencil_view:=unsafe { &metal.Texture2D(nil) }
+    for point in [depth_attachment,stencil_attachment] {
+        if attachment:=fbo.attachments[point] {
+            image:=context.attachment_image(attachment)!
+            view:=image.gpu.attachment(0,image.layer)!
+            result.owned<<view
+            if point==depth_attachment { depth_view=view;result.has_depth=true } else { stencil_view=view;result.has_stencil=true }
+            if result.width==0 { result.width=image.width;result.height=image.height;result.samples=image.samples }
+        }
+    }
+    if depth_view!=unsafe { nil } || stencil_view!=unsafe { nil } {
+        result.depth=metal.DepthStencil.from_attachments(context.target,depth_view,stencil_view)!
+        result.depth_owned=true
+    }
+    if result.primary==unsafe { nil } {
+        if result.width==0 { for _,attachment in fbo.attachments { image:=context.attachment_image(attachment)!;result.width=image.width;result.height=image.height;result.samples=image.samples;break } }
+        carrier:=metal.Texture2D.create_storage(context.target,metal.TextureStorageOptions{width:result.width,height:result.height,samples:result.samples})!
+        result.owned<<carrier;result.primary=carrier
+        result.colors<<metal.ColorTargetBinding{index:0,texture:carrier}
+    }
     return result
 }
 
@@ -315,4 +333,17 @@ fn (mut context MetalServiceContext) read_color_data(format u32,type_ u32) !([]u
         }
     }
     return result,image.width,image.height,16
+}
+
+fn (mut context MetalServiceContext) detach_deleted_attachment(name u32,kind int) {
+    for framebuffer_name in [context.draw_framebuffer,context.read_framebuffer] {
+        if framebuffer_name<16 { continue }
+        if mut object:=context.objects[framebuffer_name] {
+            if object.fbo==unsafe { nil } { continue }
+            mut points:=[]u32{}
+            for point,attachment in object.fbo.attachments { if attachment.object==name && attachment.kind==kind { points<<point } }
+            for point in points { object.fbo.attachments.delete(point) }
+            unsafe { points.free() }
+        }
+    }
 }

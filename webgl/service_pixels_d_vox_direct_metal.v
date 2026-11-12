@@ -143,6 +143,17 @@ fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayou
     for layer in 0..depth { for y in 0..height { for x in 0..width {
         input:=int(start+u64(layer)*image_stride+u64(y)*row_stride+u64(x)*pixel_size)
         destination:=((layer*height+y)*width+x)*native_size
+        if layout.format==.depth_stencil {
+            if type_==unsigned_int_24_8 {
+                bits:=u32(source[input])|(u32(source[input+1])<<8)|(u32(source[input+2])<<16)|(u32(source[input+3])<<24)
+                metal_service_put_scalar(mut result,destination,4,math.f32_bits(f32(bits>>8)/16777215))
+                metal_service_put_scalar(mut result,destination+4,4,bits&255)
+            } else {
+                for j in 0..4 { result[destination+j]=source[input+j] }
+                result[destination+4]=source[input+4]
+            }
+            continue
+        }
         if packed32 && layout.packed==type_ { for j in 0..4 { result[destination+j]=source[input+j] };continue }
         mut values:=[f64(0),0,0,1]!
         if packed16 {
@@ -154,7 +165,7 @@ fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayou
             input_scalar:=metal_service_vertex_scalar_size(type_)
             for component in 0..int(components) {
                 mut value:=metal_service_read_scalar(source,input+component*input_scalar,type_)
-                if !layout.integer && !layout.floating && type_ in [unsigned_byte,unsigned_short,unsigned_int] { value/=if type_==unsigned_byte { f64(255) } else if type_==unsigned_short { f64(65535) } else { f64(4294967295) } }
+                if !layout.integer && (!layout.floating || layout.format in [.depth16,.depth32]) && type_ in [unsigned_byte,unsigned_short,unsigned_int] { value/=if type_==unsigned_byte { f64(255) } else if type_==unsigned_short { f64(65535) } else { f64(4294967295) } }
                 if !layout.integer && layout.signed && type_ in [gl_byte,gl_short,gl_int] { value/=if type_==gl_byte { f64(127) } else if type_==gl_short { f64(32767) } else { f64(2147483647) };if value < -1 { value = -1 } }
                 values[component]=value
             }

@@ -89,3 +89,43 @@ fn test_metal_depth_storage_initialization_and_real_sample_count_allocations() {
         texture.close()
     }
 }
+
+fn test_metal_combined_depth_stencil_transfers_preserve_each_aspect() {
+    mut target:=DrawingBuffer.create(2,2)!
+    defer { target.close() }
+    mut texture:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2,format:.depth_stencil})!
+    defer { texture.close() }
+    region:=TextureRegion{width:2,height:2}
+    assert (texture.read_region(0,0,region)!)==[]u8{len:32}
+    values:=[u32(0x3f000000),17,0x3f800000,255,0x00000000,0,0x3e800000,37]
+    bytes:=unsafe { (&u8(values.data)).vbytes(32) }
+    texture.write_region(0,0,region,bytes)!
+    assert (texture.read_region(0,0,region)!)==bytes
+}
+
+fn test_metal_multisample_color_depth_and_stencil_resolve_completed_gpu_results() {
+    mut target:=DrawingBuffer.create(2,2)!
+    defer { target.close() }
+    mut samples:=1
+    for count in target.sample_counts() { if count>1 { samples=count;break } }
+    assert samples>1
+    mut color:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2,samples:samples})!
+    defer { color.close() }
+    mut depth_texture:=Texture2D.create_storage(target,TextureStorageOptions{width:2,height:2,samples:samples,format:.depth_stencil})!
+    defer { depth_texture.close() }
+    mut depth:=DepthStencil.from_attachments(target,depth_texture,depth_texture)!
+    defer { depth.close() }
+    mut program:=ShaderProgram.compile(target,'#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0,1);}',
+        '#version 300 es\nprecision highp float;out vec4 color;void main(){color=vec4(1,0.5,0,1);}',3)!
+    defer { program.close() }
+    target.draw_with_options(program,[],.triangles,0,3,1,DrawOptions{color_target:color,depth_stencil:depth,state:RenderState{depth_test:true,depth_compare:.always,stencil_test:true,
+        front_stencil:StencilFace{pass:.replace,reference:37},back_stencil:StencilFace{pass:.replace,reference:37}}})!
+    mut resolved_color:=color.resolved_copy()!
+    defer { resolved_color.close() }
+    expected:=[u8(255),128,0,255,255,128,0,255,255,128,0,255,255,128,0,255]
+    assert (resolved_color.read_pixels()!)==expected
+    mut resolved_depth:=depth_texture.resolved_copy()!
+    defer { resolved_depth.close() }
+    bytes:=resolved_depth.read_region(0,0,TextureRegion{width:2,height:2})!
+    for offset:=0;offset<bytes.len;offset+=8 { assert bytes[offset..offset+8]==[u8(0),0,0,63,37,0,0,0] }
+}
