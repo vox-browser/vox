@@ -390,7 +390,7 @@ fn metal_service_vox_gl_string(a0 u32) &char {
         0x1f01 { return 'Vox direct Metal'.str }
         0x1f02 { return if metal_service_current().version==3 { 'OpenGL ES 3.0 Vox direct Metal experimental'.str } else { 'OpenGL ES 2.0 Vox direct Metal experimental'.str } }
         0x8b8c { return if metal_service_current().version==3 { 'OpenGL ES GLSL ES 3.00'.str } else { 'OpenGL ES GLSL ES 1.00'.str } }
-        0x1f03 { return 'GL_OES_vertex_array_object GL_ANGLE_instanced_arrays GL_EXT_blend_minmax GL_OES_element_index_uint GL_OES_standard_derivatives GL_EXT_draw_buffers GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5'.str }
+        0x1f03 { return if metal_service_current().target.supports_float_filtering() { 'GL_OES_vertex_array_object GL_ANGLE_instanced_arrays GL_EXT_blend_minmax GL_OES_element_index_uint GL_OES_standard_derivatives GL_EXT_draw_buffers GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 GL_OES_texture_float_linear'.str } else { 'GL_OES_vertex_array_object GL_ANGLE_instanced_arrays GL_EXT_blend_minmax GL_OES_element_index_uint GL_OES_standard_derivatives GL_EXT_draw_buffers GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5'.str } }
         0x93a8 { return ''.str }
         else { metal_service_error(invalid_enum); return unsafe { nil } }
     }
