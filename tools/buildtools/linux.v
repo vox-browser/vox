@@ -56,7 +56,10 @@ fn patch_linux_module(package string, source string) !string {
 		has_recorder := recorder.any(text.contains('fn ' + it + '('))
 		if has_recorder { text = condition_helpers(text, recorder, 'gg_record ? || test')! }
 		mut lines := []string{}
-		for line in text.split('\n') {
+		// Materialize the split: current V3's streaming split loop references
+		// string__split_next, which is absent from the matching builtin API.
+		source_lines := text.split('\n')
+		for line in source_lines {
 			if line.starts_with('const err_multiwindow_render_') && !line.starts_with('const err_multiwindow_render_device_lost ') {
 				lines << '\$if gg_multiwindow ? || test {\n\t' + line + '\n}'
 			} else if line.starts_with('const recorder_settings = ') || line.starts_with('const gg_record_stdout_prefix = ') || (has_recorder && line.starts_with('import ')) {
