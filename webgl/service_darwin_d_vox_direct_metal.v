@@ -204,13 +204,10 @@ fn (mut context MetalServiceContext) bound_buffer(target u32) !&MetalServiceObje
 fn (mut context MetalServiceContext) collect_buffers() {
     for name, mut object in context.objects {
         if object.kind != 0 || !object.deleted || object.gpu_buffer == unsafe { nil } { continue }
-        mut referenced := context.buffers.values().contains(name)
+        mut referenced := false
+        for _,binding in context.buffers { if binding==name { referenced=true } }
         for _,binding in context.indexed_buffers { if binding.buffer==name { referenced=true } }
-        for _,mut texture in context.black_textures { texture.close();unsafe { free(texture) } }
-    unsafe { context.black_textures.free() }
-    for _, fence in context.fences { unsafe { free(fence) } }
-    unsafe { context.fences.free(); context.indexed_buffers.free();context.textures.free() }
-    for _, vao in context.vertex_arrays {
+        for _, vao in context.vertex_arrays {
             if vao.element_buffer == name || vao.attributes.any(it.buffer == name) { referenced = true }
         }
         if !referenced { object.gpu_buffer.close(); unsafe { free(object.gpu_buffer) }; object.gpu_buffer = unsafe { nil } }
@@ -315,6 +312,9 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
         if object.sampling!=unsafe { nil } { unsafe { object.sampling.parameters.free();free(object.sampling) } }
         unsafe { object.source.free(); object.compiled_source.free(); object.log.free(); object.attached.free(); object.bindings.free(); object.clear_reflection(); object.attributes.free(); object.uniforms.free(); object.blocks.free(); object.locations.free(); free(object) }
     }
+    for _,mut texture in context.black_textures { texture.close();unsafe { free(texture) } }
+    for _,fence in context.fences { unsafe { free(fence) } }
+    unsafe { context.black_textures.free();context.fences.free();context.indexed_buffers.free();context.textures.free() }
     for _, vao in context.vertex_arrays { unsafe { free(vao) } }
     for _, values in context.parameters { unsafe { values.free() } }
     unsafe { context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.active_queries.free();context.parameters.free(); context.enabled.free() }
