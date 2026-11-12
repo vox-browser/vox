@@ -444,7 +444,11 @@ fn layout_inside_independent_formatting_context_with_mode(mut state LayoutState,
 		if reused := reuse_committed_subtree_layout(mut state, box, mut box_state, available_space) {
 			return reused
 		}
+		// The index is shared by all contexts in this pass. Its first allocation
+		// and later growth must outlive each context's geometry workspace.
+		mut retained := retain_geometry_allocations()
 		state.subtree_layout_decisions_[u64(voidptr(box))] = .fresh
+		retained.finish()
 	}
 	relayout_before := if records_relayout_root { &UsedValues{...layout_record_snapshot(box_state)} } else { unsafe { &UsedValues(nil) } }
 	mut result := layout_inside_independent_formatting_context_without_containment_override(mut state, box, mut box_state, layout_mode, available_space)
