@@ -129,5 +129,5 @@ for(const [name,value] of Object.entries({
  cloneNode(deep){return __queryElements(__compactNodeState(this).bridgeKey,"cloneNode",deep?"deep":"shallow");},
  hasChildNodes(){__compactNodeState(this);return this.firstChild!==null;}
 }))if(!Object.prototype.hasOwnProperty.call(Node.prototype,name))Object.defineProperty(Node.prototype,name,{value,writable:true,enumerable:true,configurable:true});
-' + compact_child_node_bootstrap() + compact_fragment_elements_bootstrap() + compact_create_comment_bootstrap() + compact_parent_node_bootstrap() + compact_shadow_root_bootstrap() + compact_selector_matches_bootstrap()
+' + compact_child_node_bootstrap() + compact_fragment_elements_bootstrap() + compact_create_comment_bootstrap() + compact_parent_node_bootstrap() + compact_shadow_root_bootstrap() + compact_selector_matches_bootstrap() + compact_selector_first_bootstrap()
 }

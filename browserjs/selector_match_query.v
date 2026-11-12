@@ -13,10 +13,20 @@ pub type SelectorMatchQuery = fn (key string, selector string) !SelectorMatchRep
 // Keys and selectors are borrowed only for the synchronous callback. An
 // unhandled owner asks the facade to use the ordinary DOM query transport.
 pub fn (mut runtime Runtime) install_selector_match_query(callback SelectorMatchQuery) ! {
+	runtime.install_selector_boolean_query('__ladybirdSelectorMatches', callback)!
+}
+
+// A false reply completes querySelector with null. A positive or unhandled
+// reply lets the facade obtain the element and synchronize its full state.
+pub fn (mut runtime Runtime) install_selector_first_query(callback SelectorMatchQuery) ! {
+	runtime.install_selector_boolean_query('__ladybirdSelectorFirst', callback)!
+}
+
+fn (mut runtime Runtime) install_selector_boolean_query(name string, callback SelectorMatchQuery) ! {
 	runtime.require_javascript_value_context()!
 	$if darwin || linux || windows {
 		owner := &runtime
-		runtime.define_value_host_function('__ladybirdSelectorMatches', fn [owner, callback] (_ voidptr, args []voidptr) !voidptr {
+		runtime.define_value_host_function(name, fn [owner, callback] (_ voidptr, args []voidptr) !voidptr {
 			if args.len != 2 || !C.JSValueIsString(owner.context, args[0])
 				|| !C.JSValueIsString(owner.context, args[1]) {
 				return C.vox_jsc_JSValueMakeUndefined(owner.context)
