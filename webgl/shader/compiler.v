@@ -21,6 +21,7 @@ pub:
 	inputs              []Interface
 	outputs             []Interface
 	uniforms            []Uniform
+	uniform_roots       []Uniform
 	textures            []TextureResource
 	uniform_buffer_size int
 	version             int
@@ -35,6 +36,8 @@ pub fn translate(source string, stage Stage) !Translation {
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
 	mut uniforms := []Uniform{}
+	mut structures := map[string]ShaderStruct{}
+	mut structure_order := []ShaderStruct{}
 	mut textures := []TextureResource{}
 	mut uniform_size := 0
 	mut at := 0
@@ -47,8 +50,16 @@ pub fn translate(source string, stage Stage) !Translation {
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
 		}
-		if token in ['struct', 'layout', 'invariant'] {
+		if token in ['layout', 'invariant'] {
 			return error('Unsupported direct Metal declaration: ${token}')
+		}
+		if token == 'struct' {
+			if depth != 0 { return error('Structure definitions require global scope in this slice') }
+			declaration := structure_declaration(tokens,at,structures,version)!
+			structures[declaration.definition.name] = declaration.definition
+			structure_order << declaration.definition
+			at = declaration.end
+			continue
 		}
 		if token == 'uniform' {
 			if depth != 0 { return error('Uniforms require global scope') }
@@ -63,7 +74,7 @@ pub fn translate(source string, stage Stage) !Translation {
 				at = declaration.end
 				continue
 			}
-			declaration := uniform_declarations(tokens,at,uniform_size,version)!
+			declaration := uniform_declarations(tokens,at,uniform_size,version,structures)!
 			for field in declaration.fields {
 				if textures.any(it.name == field.name) || uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate uniform: ${field.name}') }
 				uniforms << field
@@ -145,13 +156,14 @@ pub fn translate(source string, stage Stage) !Translation {
 		if version == 100 && token in ['gl_VertexID', 'gl_InstanceID'] {
 			return error('Vertex IDs require ESSL 300')
 		}
-		body << if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
+		body << if token in structures && (at == 0 || tokens[at-1] != '.') { '_vox_Struct_'+token } else if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
 		at++
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
 	if !precision { return error('Fragment shader requires a default float precision') }
 	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
 	lines << texture_types()
+	lines << structure_source(structure_order)!
 	lines << 'struct VoxState {'
 	if stage == .vertex {
 		lines << 'float4 gl_Position = float4(0.0); float gl_PointSize = 1.0; int gl_VertexID = 0; int gl_InstanceID = 0;'
@@ -204,7 +216,8 @@ pub fn translate(source string, stage Stage) !Translation {
 		args << 'uint instance_id [[instance_id]]'
 	}
 	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { ${texture_state(textures)!}'
-	lines << uniform_loads(uniforms)!
+	reflected_uniforms := flatten_uniforms(uniforms,structures,0)!
+	lines << uniform_loads(reflected_uniforms)!
 	for item in inputs { lines << 'state.${item.name} = input.${item.name};' }
 	if stage == .vertex {
 		lines << 'state.gl_VertexID = int(vertex_id); state.gl_InstanceID = int(instance_id);'
@@ -217,7 +230,7 @@ pub fn translate(source string, stage Stage) !Translation {
 	}
 	for item in outputs { lines << 'result.${item.name} = state.${item.name};' }
 	lines << 'return result; }'
-	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
+	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: reflected_uniforms, uniform_roots: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {
@@ -225,13 +238,13 @@ pub fn link(vertex Translation, fragment Translation) ! {
 		return error('Vertex and fragment ESSL versions differ')
 	}
 	for field in fragment.textures {
-		if vertex.uniforms.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
+		if vertex.uniform_roots.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
 		for other in vertex.textures { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
 	}
-	for field in fragment.uniforms {
+	for field in fragment.uniform_roots {
 		if vertex.textures.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
-		for other in vertex.uniforms {
-			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length) { return error('Uniform mismatch: ${field.name}') }
+		for other in vertex.uniform_roots {
+			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length || field.signature != other.signature) { return error('Uniform mismatch: ${field.name}') }
 		}
 	}
 	for input in fragment.inputs {

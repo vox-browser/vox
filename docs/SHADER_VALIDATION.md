@@ -67,9 +67,22 @@ reflection. Each stage uses buffer slot zero; generated MSL decodes individual
 32-bit scalars and copies them into shader state. This preserves packed vec3
 plus scalar fields, 32-bit boolean storage, and padded matrix/array elements
 without depending on Metal structure packing. Shared stage uniforms must have
-matching types and array shapes. Struct uniforms, uniform blocks, constant
+matching types and array shapes. Uniform blocks, constant
 expression array lengths, active-uniform analysis and uniform write restrictions
 remain pending. Declared uniforms are currently reflected, including unused ones.
+
+Named structure uniforms now support nested structures, arrays of structures,
+and scalar/vector/matrix array members. V calculates std140 structure padding
+and exposes leaf paths such as `lights[1].shade.tint`, retaining array and matrix
+strides on leaf arrays. Generated MSL structures use private type names and
+ordinary value layouts; raw-buffer loads use V's reflected offsets rather than
+MSL structure packing. The linker compares recursive member names, types and
+array shapes across stages, even when both stages use the same structure name.
+Definitions must be named, global and precede their uses; recursive, forward,
+empty and inline instance definitions are rejected. Nesting is limited to 16,
+reflection to 4096 leaves and each plain uniform buffer to 64 KiB. Structure
+constructors, struct interfaces and general local structure declarations remain
+pending.
 
 Combined float `sampler2D` and `samplerCube` uniforms now lower directly to
 separate Metal texture and sampler bindings, with dimension/type metadata. They
@@ -83,7 +96,7 @@ declarations, preserving legal sampler variables named `texture`/`textureLod`
 and user overloads of legacy functions. Sampler arrays, integer/depth/3D/array
 textures, extension spellings and full opaque-type validation remain pending.
 
-Validation for this slice: all five test files pass with the C backend in
+Validation for this slice: all six test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
@@ -92,7 +105,9 @@ cube texels, reject a changed source color, verify an explicit mip level and its
 size, and exercise projected/bias/gradient/fetch, macro, user-overload and vertex
 sampling paths. ESSL100 fragment MSL is paired with procedural ESSL300 vertex
 MSL only at the native test endpoint (ESSL linking still rejects mixed versions).
-The uniform case binds both stage
+Nested structure tests also verify packed vec3/scalar fields, booleans, matrix
+columns and arrays of structures/matrices against poisoned buffer padding.
+The plain uniform case binds both stage
 buffers, poisons padding bytes, checks scalar/vector/matrix/array/boolean decoding,
 and changes a consumed boolean to prove that the buffer influences the pixels.
 It also verifies that neither glslang

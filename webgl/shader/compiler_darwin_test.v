@@ -85,3 +85,36 @@ fn test_legacy_sampler_names_overloads_macros_and_vertex_sampling_on_metal() {
   assert C.vox_direct_metal_texture_probe(position.source.str,legacy_fragment.source.str,1,0xff0000ff)==1
  }
 }
+
+fn test_nested_struct_uniforms_use_reflected_bytes_on_the_gpu() {
+ vertex := translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ fragment := translate('#version 300 es\nprecision highp float;struct Shade{vec3 tint;float strength;bool enabled;};struct Light{Shade shade;mat2 basis;};uniform Light lights[2];out vec4 color;void main(){color=lights[0].shade.enabled && !lights[1].shade.enabled && lights[0].basis[0].y==2.0 && lights[1].basis[1].y==8.0 ? vec4(lights[0].shade.tint*lights[0].shade.strength+lights[1].shade.tint,1.0) : vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ link(vertex,fragment)!
+ assert fragment.uniform_buffer_size == 128
+ mut words := []u32{len:32,init:0xffffffff}
+ for i,value in [f32(1),0,0,1] { words[i]=math.f32_bits(value) }
+ words[4]=1
+ words[8]=math.f32_bits(f32(1)); words[9]=math.f32_bits(f32(2))
+ words[12]=math.f32_bits(f32(3)); words[13]=math.f32_bits(f32(4))
+ for i in 16..20 { words[i]=0 }
+ words[20]=0
+ words[24]=math.f32_bits(f32(5)); words[25]=math.f32_bits(f32(6))
+ words[28]=math.f32_bits(f32(7)); words[29]=math.f32_bits(f32(8))
+ assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,unsafe{nil},0,words.data,128)==1
+ words[4]=0
+ assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,unsafe{nil},0,words.data,128)==0
+}
+
+fn test_nested_structure_and_matrix_arrays_decode_on_the_gpu() {
+ vertex := translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ fragment := translate('#version 300 es\nprecision highp float;struct matrix{vec2 values[2];};struct Box{matrix layers[2];mat2 transforms[2];};uniform Box cluster;out vec4 color;void main(){color=cluster.layers[1].values[1].y==6.0 && cluster.transforms[1][1].x==7.0 ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ link(vertex,fragment)!
+ assert fragment.uniform_buffer_size == 128
+ assert fragment.uniforms.map(it.offset)==[0,32,64]
+ mut words := []u32{len:32,init:0xffffffff}
+ words[13]=math.f32_bits(f32(6))
+ words[28]=math.f32_bits(f32(7))
+ assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,unsafe{nil},0,words.data,128)==1
+ words[28]=math.f32_bits(f32(8))
+ assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,unsafe{nil},0,words.data,128)==0
+}
