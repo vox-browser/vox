@@ -807,7 +807,7 @@ fn initial_document(argument string) (string, string, string) {
 	mut file_name := argument
 	is_file_url := file_name.starts_with('file://')
 	if is_file_url {
-		file_name = url.percent_decode(file_name['file://'.len..]).bytestr()
+		file_name = browser_local_file_path(file_name) or { return argument, '', argument }
 	}
 	if !is_file_url && !os.is_file(file_name) {
 		if workspace_path := bundled_workspace_relative_file_path(file_name, os.executable()) {
@@ -1039,7 +1039,7 @@ fn fetch_page_with_scope(address string, base string, scope &browsernet.RequestS
 		}
 	}
 	if resolved.starts_with('file://') {
-		file_name := url.percent_decode(resolved['file://'.len..]).bytestr()
+		file_name := browser_local_file_path(resolved) or { return error('Malformed file URL') }
 		markup := read_local_file(file_name)!
 		return LoadedPage{
 			url: resolved
@@ -1142,7 +1142,7 @@ fn fetch_browser_resource_with_scope(reference string, base string, source_url s
 	scope.check()!
 	resolved := resolve_document_reference(reference, base)
 	if resolved.starts_with('file://') {
-		path := url.percent_decode(resolved['file://'.len..]).bytestr()
+		path := browser_local_file_path(resolved) or { return error('Malformed file URL') }
 		return PreloadedResource{url: resolved, body: read_local_file(path)!, source_url: source_url, final_url: resolved, request_type: request_type}
 	}
 	owner_url := if source_url == '' { resolved } else { source_url }
@@ -1522,7 +1522,7 @@ $if test {
 
 fn decode_local_video_frame(resolved_url string, seconds f64) ?&dom.Bitmap_ {
 	path := if resolved_url.starts_with('file://') {
-		url.percent_decode(resolved_url['file://'.len..]).bytestr()
+		browser_local_file_path(resolved_url) or { return none }
 	} else if !resolved_url.contains('://') {
 		resolved_url
 	} else {
@@ -5077,7 +5077,7 @@ fn (app &BrowserApp) background_image_bytes(image_url string) ![]u8 {
 		return url.percent_decode(payload)
 	}
 	if image_url.starts_with('file://') {
-		path := url.percent_decode(image_url['file://'.len..]).bytestr()
+		path := browser_local_file_path(image_url) or { return error('Malformed file URL') }
 		return os.read_bytes(path)
 	}
 	if image_url.starts_with('http://') || image_url.starts_with('https://') {
@@ -5174,7 +5174,7 @@ fn browser_local_file_path(serialized_url string) ?string {
 	if parsed.scheme != 'file' {
 		return none
 	}
-	return url.percent_decode(parsed.serialize_path()).bytestr()
+	return parsed.to_file_path()
 }
 
 fn (mut app BrowserApp) request_background_resource(image_url string) {
