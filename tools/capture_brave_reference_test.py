@@ -163,6 +163,19 @@ class BraveReferenceTests(unittest.TestCase):
         self.assertTrue(arguments['returnByValue'])
         self.assertEqual(arguments['expression'].count('requestAnimationFrame'), 2)
 
+    def test_script_disabled_scroll_does_not_wait_for_disabled_animation_callbacks(self):
+        cdp = Mock()
+        cdp.call.return_value = dict(result=dict(value=dict(x=-50, y=800)))
+        self.assertEqual(scroll_viewport(cdp, 800, -50, script_execution_disabled=True),
+                         dict(x=-50, y=800))
+        arguments = cdp.call.call_args.args[1]
+        self.assertNotIn('requestAnimationFrame', arguments['expression'])
+        self.assertNotIn('awaitPromise', arguments)
+        self.assertIn('behavior:"instant"', arguments['expression'])
+        cdp.call.return_value = dict(result=dict(value=dict(x=0, y=300)))
+        with self.assertRaisesRegex(RuntimeError, 'could not reach scroll'):
+            scroll_viewport(cdp, 800, script_execution_disabled=True)
+
     def test_scrolled_reference_rejects_a_clamped_or_horizontal_scroll(self):
         for position in [dict(x=0, y=300), dict(x=1, y=800)]:
             cdp = Mock()
