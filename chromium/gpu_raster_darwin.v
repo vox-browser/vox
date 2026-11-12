@@ -69,6 +69,9 @@ fn draw_document_shape_tiles(pixels &u8, width i32, height i32, pitch i32, backd
 			mut draw := *shape
 			draw.matrix[2] += f32(x0 - ox)
 			draw.matrix[5] += f32(y0 - oy)
+			if grid.origin_x != 0 || grid.origin_y != 0 {
+				draw = ggshape.localize_rounded_shape(draw, -(draw.matrix[2] + f32(ox)) / draw.matrix[0], -(draw.matrix[5] + f32(oy)) / draw.matrix[4])
+			}
 			draw.force_msaa = i32(i32(row * grid.columns + col) in grid.cells)
 			if ggshape.draw(tile.data, i32(grid.width), i32(grid.height), i32(grid.width * 4), backdrop, &draw) == 0 {
 				return 0

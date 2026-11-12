@@ -6,6 +6,7 @@ $if !macos {
 }
 
 import gg.canvas
+import math
 import os
 import platform
 
@@ -507,4 +508,28 @@ fn max3(a f32, b f32, c f32) f32 {
 // midpoint is SkRect::centerX()/centerY() (sk_float_midpoint).
 fn midpoint(a f32, b f32) f32 {
 	return f32(0.5 * (f64(a) + f64(b)))
+}
+
+// Chromium records ordinary rounded shapes in their compositor layer's local
+// coordinates. Leaving a large page offset in a conic changes tessellation
+// rounding even when the final matrix cancels it. Preserve the same device
+// geometry while moving integral axis-aligned translations into that origin.
+pub fn localize_rounded_shape(shape C.VoxGraphiteShape, origin_x f32, origin_y f32) C.VoxGraphiteShape {
+	m := shape.matrix
+	if shape.fill < 0 || shape.fill > 8 || shape.clip_out_count != 0 || m[0] <= 0 || m[0] != m[4] || m[1] != 0 || m[3] != 0 || m[6] != 0 || m[7] != 0 || m[8] != 1
+		|| math.is_nan(f64(origin_x)) || math.is_nan(f64(origin_y))
+		|| math.abs(origin_x) > 16777216 || math.abs(origin_y) > 16777216
+		|| origin_x != f32(int(origin_x)) || origin_y != f32(int(origin_y)) {
+		return shape
+	}
+	mut result := shape
+	result.rect[0] -= origin_x
+	result.rect[1] -= origin_y
+	if result.has_underlay != 0 {
+		result.underlay_rect[0] -= origin_x
+		result.underlay_rect[1] -= origin_y
+	}
+	result.matrix[2] += m[0] * origin_x
+	result.matrix[5] += m[4] * origin_y
+	return result
 }
