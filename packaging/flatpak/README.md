@@ -15,11 +15,11 @@ What works today: `flatpak.yml` CI validates the metainfo with
 What is still needed before a Flathub submission:
 
 1. **A full local `flatpak-builder` run.** The manifest mirrors the Linux CI
-   toolchain (pinned V, UI2 at HEAD, repo Skia/native scripts), but the V
-   bootstrap, the Skia download inside `build_linux_skia.py`, and the
-   multi-hour build have not run inside a sandbox yet. Flathub's buildbot
-   has no network access, so any download the scripts perform must become
-   vendored manifest sources first.
+   toolchain (pinned V, UI2 at HEAD, repo native scripts), but the V
+   bootstrap, the native-dependency build inside `build_linux_native.py`,
+   and the multi-hour build have not run inside a sandbox yet. Flathub's
+   buildbot has no network access, so any download the scripts perform
+   must become vendored manifest sources first.
 2. **Sandbox testing.** The `finish-args` cover display, audio, GPU,
    network and downloads. File pickers, notifications, and multi-process
    behavior need a real session before submission.
