@@ -65,7 +65,9 @@ fn prepare_gg_gradient(modules string, vlib string) ! {
 					continue
 				}
 				name := directive.all_after('#include "@DIR/').trim_right('"')
-				if !name.contains('darwin') && name != 'path_math.h' { continue }
+				// A .m include selects Objective-C for the generated program.
+				// Keep portable C helpers in C on Windows and Linux.
+				if !name.contains('darwin') { continue }
 				wrapper := 'vox_' + name.all_before_last('.') + '.m'
 				header := real(join(source, 'canvas', name))
 				if !os.is_file(header) { return error('Missing GG native helper: ${header}') }
