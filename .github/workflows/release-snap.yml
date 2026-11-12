@@ -107,23 +107,11 @@ jobs:
           printf 'V_BIN=%s/v\nUI2_SOURCE_DIR=%s\n' \
             "$RUNNER_TEMP/v" "$RUNNER_TEMP/ui2" >> "$GITHUB_ENV"
 
-      - name: Cache pinned Skia
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: Build/deps
-          key: linux-skia-ubuntu24-${{ runner.arch }}-${{ hashFiles('tools/build_linux_skia.py') }}
-
-      - name: Build Skia
-        timeout-minutes: 45
-        run: |
-          python3 tools/run_memory_bounded.py \
-            --lock "$RUNNER_TEMP/vox-skia-build.lock" \
-            --report "$RUNNER_TEMP/vox-skia-build.json" --timeout 2400 -- \
-            python3 tools/build_linux_skia.py
-
       - name: Build Vox
         timeout-minutes: 90
         run: |
+          # Native dependencies build inside build-linux-browser.sh via
+          # tools/build_linux_native.py; there is no separate Skia step.
           # build-prod-browser.sh runs --headless-smoke before publishing
           # Build/linux/vox, so a green build already passed the smoke gate.
           sh build-prod-browser.sh
