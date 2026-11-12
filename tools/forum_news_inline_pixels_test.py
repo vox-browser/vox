@@ -13,6 +13,9 @@ from forum_news_pixels import REPO, VOX, executable_identity, guarded, write_jso
 @unittest.skipUnless(sys.platform == 'darwin', 'The reference uses native macOS fonts')
 class ForumNewsInlinePixelsTests(unittest.TestCase):
 
+    def test_rounded_avatar_image_clip_matches_brave_coverage(self):
+        self.compare_fixture('avatar-rounded-clip')
+
     def test_document_glyphs_preserve_fractional_author_color(self):
         self.compare_fixture('glyph-fractional-color', width=160, height=80)
 

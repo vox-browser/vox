@@ -5685,6 +5685,8 @@ static void native_prepare_image_cpu_fallback(CGContextRef context) {
     (void)context;
 }
 
+#include "native/include/native_rounded_image_clip.h"
+
 static void native_draw_image_part_in_context(CGContextRef context, gg__Image *image,
 	float destination_x, float destination_y, float destination_width,
 	float destination_height, float source_x, float source_y, float source_width,
@@ -5718,7 +5720,10 @@ static void native_draw_image_part_in_context(CGContextRef context, gg__Image *i
 		canvas_height - page_y + scroll_y - transform_f);
 	CGContextSaveGState(context);
 	CGContextConcatCTM(context, to_canvas);
-	if (clip_radii) {
+	if (clip_radii && vox_apply_rounded_image_clip(context,
+		CGRectMake(clip_x, clip_y, clip_width, clip_height), clip_radii)) {
+		// V coverage is installed; keep the existing image sampling below.
+	} else if (clip_radii) {
 		CGPathRef path = native_create_corner_rounded_rect_path(clip_x, clip_y, clip_width, clip_height,
 			clip_radii[0], clip_radii[1], clip_radii[2], clip_radii[3],
 			clip_radii[4], clip_radii[5], clip_radii[6], clip_radii[7]);
