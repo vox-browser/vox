@@ -50,3 +50,38 @@ fn test_std140_uniforms_render_exact_pixels_with_both_stages_bound() {
  words[4]=0
  assert C.vox_direct_metal_uniform_probe(vertex.source.str,fragment.source.str,transform.data,64,words.data,144)==0
 }
+
+fn C.vox_direct_metal_texture_probe(&char, &char, int, u32) int
+
+fn test_direct_metal_texture_calls_read_supplied_texels_and_mip_levels() {
+ vertex_source := '#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}'
+ vertex := translate(vertex_source,.vertex)!
+ for expression in ['texture(texture,vec2(0.25))', 'texture(texture,vec2(0.25),0.0)', 'textureProj(texture,vec3(0.5,0.5,2.0))', 'textureProj(texture,vec4(0.5,0.5,0.0,2.0))', 'textureLod(texture,vec2(0.25),0.0)', 'textureGrad(texture,vec2(0.25),vec2(0.0),vec2(0.0))', 'texelFetch(texture,ivec2(0),0)'] {
+  fragment := translate('#version 300 es\nprecision highp float;uniform sampler2D texture;out vec4 color;void main(){color='+expression+';}',.fragment)!
+  link(vertex,fragment)!
+  assert C.vox_direct_metal_texture_probe(vertex.source.str,fragment.source.str,1,0xff0000ff)==1,expression
+  assert C.vox_direct_metal_texture_probe(vertex.source.str,fragment.source.str,1,0xff00ff00)==0,expression
+ }
+ mip := translate('#version 300 es\nprecision highp float;uniform sampler2D textureLod;out vec4 color;void main(){color=textureSize(textureLod,1).x==1 && textureLod(textureLod,vec2(0.25),1.0).g==1.0 ? vec4(1.0,0.0,0.0,1.0) : vec4(0.0,1.0,0.0,1.0);}',.fragment)!
+ assert C.vox_direct_metal_texture_probe(vertex.source.str,mip.source.str,1,0xff0000ff)==1
+ cube := translate('#version 300 es\nprecision highp float;uniform samplerCube sky;out vec4 color;void main(){color=texture(sky,vec3(1.0,0.0,0.0));}',.fragment)!
+ assert C.vox_direct_metal_texture_probe(vertex.source.str,cube.source.str,2,0xff0000ff)==1
+ assert C.vox_direct_metal_texture_probe(vertex.source.str,cube.source.str,2,0xff00ff00)==0
+}
+
+fn test_legacy_sampler_names_overloads_macros_and_vertex_sampling_on_metal() {
+ modern := translate('#version 300 es\nuniform sampler2D image;out vec4 value;void main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);value=textureLod(image,vec2(0.25),0.0);}',.vertex)!
+ fragment := translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_texture_probe(modern.source.str,fragment.source.str,1,0xff0000ff)==1
+ // ESSL100 lacks vertex IDs. Pair its generated fragment MSL with the
+ // existing procedural ES300 vertex MSL for this native rendering check.
+ position := translate('#version 300 es\nvoid main(){gl_Position=vec4(gl_VertexID==1?3.0:-1.0,gl_VertexID==2?3.0:-1.0,0.0,1.0);}',.vertex)!
+ for name in ['texture','texture2D','textureProj','textureLod'] {
+  named := translate('precision mediump float;uniform sampler2D '+name+';void main(){gl_FragColor=texture2D('+name+',vec2(0.25));}',.fragment)!
+  assert C.vox_direct_metal_texture_probe(position.source.str,named.source.str,1,0xff0000ff)==1,name
+ }
+ for expression in ['texture2D(texture,vec2(0.25))', 'texture2DProj(texture,vec3(0.5,0.5,2.0))', 'texture2D(texture,vec2(0.25))*texture2D(1.0)'] {
+  legacy_fragment := translate('precision mediump float;uniform sampler2D texture;float texture2D(float x){return x;}\n#define SAMPLE(s,p) '+expression+'\nvoid main(){gl_FragColor=SAMPLE(texture,vec2(0.25));}',.fragment)!
+  assert C.vox_direct_metal_texture_probe(position.source.str,legacy_fragment.source.str,1,0xff0000ff)==1
+ }
+}

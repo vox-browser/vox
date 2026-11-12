@@ -54,7 +54,7 @@ source, nesting, token and operation limits. Conditions short-circuit inactive
 operands. Token pasting and stringification are rejected. Extension and line
 directives, line-number builtins, ternary conditions and complete ESSL
 preprocessor conformance remain pending. The compiler also still needs semantic
-validation, textures, explicit interface locations, transform feedback, and the remaining
+validation, explicit interface locations, transform feedback, and the remaining
 ESSL expressions/builtins and control flow. General expression syntax and type
 checking currently depend on compiling the emitted MSL with Metal; successful
 translation alone does not establish ESSL validity. The production service still
@@ -71,13 +71,31 @@ matching types and array shapes. Struct uniforms, uniform blocks, constant
 expression array lengths, active-uniform analysis and uniform write restrictions
 remain pending. Declared uniforms are currently reflected, including unused ones.
 
-Validation for this slice: all four test files pass with the C backend in
+Combined float `sampler2D` and `samplerCube` uniforms now lower directly to
+separate Metal texture and sampler bindings, with dimension/type metadata. They
+consume no plain-uniform buffer space. V generates ESSL100 texture2D/Cube and
+projected calls, plus ESSL300 texture, textureLod, textureGrad, textureSize,
+texelFetch (2D) and projected forms. Vertex implicit sampling uses level zero;
+fragment implicit sampling preserves derivatives, and fragment bias calls use
+Metal bias sampling. Legacy fragment explicit LOD
+and its enabling extension remain pending. Call names are rewritten only at calls/function
+declarations, preserving legal sampler variables named `texture`/`textureLod`
+and user overloads of legacy functions. Sampler arrays, integer/depth/3D/array
+textures, extension spellings and full opaque-type validation remain pending.
+
+Validation for this slice: all five test files pass with the C backend in
 default GC and `-gc none`. The macOS test compiles the V-generated vertex and fragment
 sources (including macro/conditional and uniform variants) with Metal, links a render
 pipeline, draws a full-target triangle, and
-checks all sixteen RGBA pixels exactly. The uniform case binds both stage
+checks all sixteen RGBA pixels exactly. Texture checks sample supplied 2D and
+cube texels, reject a changed source color, verify an explicit mip level and its
+size, and exercise projected/bias/gradient/fetch, macro, user-overload and vertex
+sampling paths. ESSL100 fragment MSL is paired with procedural ESSL300 vertex
+MSL only at the native test endpoint (ESSL linking still rejects mixed versions).
+The uniform case binds both stage
 buffers, poisons padding bytes, checks scalar/vector/matrix/array/boolean decoding,
-and changes a consumed boolean to prove that the buffer influences the pixels. It also verifies that neither glslang
+and changes a consumed boolean to prove that the buffer influences the pixels.
+It also verifies that neither glslang
 nor SPIRV-Cross is loaded in the test process. The Objective-C test endpoint only
 submits generated MSL to Metal; all translation is V. Run under the memory guard
 with `VJOBS=1 v -b c -memory-limit 10G test webgl/shader` (and `-gc none`).

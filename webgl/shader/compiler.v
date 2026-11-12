@@ -21,6 +21,7 @@ pub:
 	inputs              []Interface
 	outputs             []Interface
 	uniforms            []Uniform
+	textures            []TextureResource
 	uniform_buffer_size int
 	version             int
 }
@@ -34,6 +35,7 @@ pub fn translate(source string, stage Stage) !Translation {
 	mut inputs := []Interface{}
 	mut outputs := []Interface{}
 	mut uniforms := []Uniform{}
+	mut textures := []TextureResource{}
 	mut uniform_size := 0
 	mut at := 0
 	mut depth := 0
@@ -45,14 +47,25 @@ pub fn translate(source string, stage Stage) !Translation {
 		if token == '#' {
 			return error('Preprocessor directives are not supported by the direct Metal slice yet')
 		}
-		if token in ['struct', 'layout', 'invariant', 'sampler2D', 'samplerCube'] {
+		if token in ['struct', 'layout', 'invariant'] {
 			return error('Unsupported direct Metal declaration: ${token}')
 		}
 		if token == 'uniform' {
 			if depth != 0 { return error('Uniforms require global scope') }
+			mut type_at := at+1
+			if type_at < tokens.len && tokens[type_at] in ['lowp','mediump','highp'] { type_at++ }
+			if type_at < tokens.len && (tokens[type_at].contains('sampler')) {
+				declaration := texture_declarations(tokens,type_at,textures.len)!
+				for field in declaration.fields {
+					if textures.any(it.name == field.name) || uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate sampler: ${field.name}') }
+					textures << field
+				}
+				at = declaration.end
+				continue
+			}
 			declaration := uniform_declarations(tokens,at,uniform_size,version)!
 			for field in declaration.fields {
-				if uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate uniform: ${field.name}') }
+				if textures.any(it.name == field.name) || uniforms.any(it.name == field.name) || inputs.any(it.name == field.name) || outputs.any(it.name == field.name) { return error('Duplicate uniform: ${field.name}') }
 				uniforms << field
 			}
 			uniform_size = declaration.size
@@ -90,7 +103,7 @@ pub fn translate(source string, stage Stage) !Translation {
 				return error('Unsupported interface declaration')
 			}
 			is_input := token == 'attribute' || token == 'in' || (token == 'varying' && stage == .fragment)
-			if inputs.any(it.name == name) || outputs.any(it.name == name) || uniforms.any(it.name == name) {
+			if inputs.any(it.name == name) || outputs.any(it.name == name) || uniforms.any(it.name == name) || textures.any(it.name == name) {
 				return error('Duplicate interface: ${name}')
 			}
 			item := Interface{ name: name, typ: typ, storage: if is_input { 'in' } else { 'out' }, location: if is_input {
@@ -113,6 +126,7 @@ pub fn translate(source string, stage Stage) !Translation {
 			depth--
 			if depth < 0 { return error('Unbalanced braces') }
 		}
+		if token in ['sampler2D','samplerCube'] { body << sampler_type(token)!; at++; continue }
 		if token in ['double', 'while', 'do', 'switch', 'discard', 'gl_FragData', 'gl_FragDepth',
 			'gl_FragDepthEXT'] || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')
@@ -131,12 +145,14 @@ pub fn translate(source string, stage Stage) !Translation {
 		if version == 100 && token in ['gl_VertexID', 'gl_InstanceID'] {
 			return error('Vertex IDs require ESSL 300')
 		}
-		body << if token == 'main' { 'run' } else { lower_token(token) }
+		body << if texture_call(token,version) && at+1 < tokens.len && tokens[at+1] == '(' { '_vox_'+token } else if token == 'main' { 'run' } else { lower_token(token) }
 		at++
 	}
 	if depth != 0 || main_count != 1 { return error('Shader must define exactly one void main()') }
 	if !precision { return error('Fragment shader requires a default float precision') }
-	mut lines := ['#include <metal_stdlib>', 'using namespace metal;', 'struct VoxState {']
+	mut lines := ['#include <metal_stdlib>', 'using namespace metal;']
+	lines << texture_types()
+	lines << 'struct VoxState {'
 	if stage == .vertex {
 		lines << 'float4 gl_Position = float4(0.0); float gl_PointSize = 1.0; int gl_VertexID = 0; int gl_InstanceID = 0;'
 	} else if version == 100 {
@@ -148,6 +164,9 @@ pub fn translate(source string, stage Stage) !Translation {
 	for item in outputs {
 		lines << '${metal_type(item.typ)!} ${item.name} = ${metal_type(item.typ)!}(0);'
 	}
+	for field in textures { lines << '${sampler_type(field.typ)!} ${field.name};' }
+	if textures.len > 0 { lines << texture_constructor(textures)! }
+	lines << texture_methods(stage,version)
 	lines << uniform_members(uniforms)!
 	lines << body.join(' ')
 	lines << '};'
@@ -177,14 +196,14 @@ pub fn translate(source string, stage Stage) !Translation {
 	}
 	lines << '};'
 	qualifier := if stage == .vertex { 'vertex' } else { 'fragment' }
-	mut args := []string{}
+	mut args := texture_arguments(textures)
 	if uniforms.len > 0 { args << 'constant uchar* _vox_uniform_bytes [[buffer(0)]]' }
 	if inputs.len > 0 { args << 'VoxInput input [[stage_in]]' }
 	if stage == .vertex {
 		args << 'uint vertex_id [[vertex_id]]'
 		args << 'uint instance_id [[instance_id]]'
 	}
-	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { VoxState state;'
+	lines << '${qualifier} VoxOutput vox_main(${args.join(', ')}) { ${texture_state(textures)!}'
 	lines << uniform_loads(uniforms)!
 	for item in inputs { lines << 'state.${item.name} = input.${item.name};' }
 	if stage == .vertex {
@@ -198,14 +217,19 @@ pub fn translate(source string, stage Stage) !Translation {
 	}
 	for item in outputs { lines << 'result.${item.name} = state.${item.name};' }
 	lines << 'return result; }'
-	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: uniforms, uniform_buffer_size: (uniform_size+15)/16*16 }
+	return Translation{ source: lines.join('\n'), inputs: inputs, outputs: outputs, version: version, uniforms: uniforms, textures: textures, uniform_buffer_size: (uniform_size+15)/16*16 }
 }
 
 pub fn link(vertex Translation, fragment Translation) ! {
 	if vertex.version != fragment.version {
 		return error('Vertex and fragment ESSL versions differ')
 	}
+	for field in fragment.textures {
+		if vertex.uniforms.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
+		for other in vertex.textures { if field.name == other.name && field.typ != other.typ { return error('Sampler mismatch: ${field.name}') } }
+	}
 	for field in fragment.uniforms {
+		if vertex.textures.any(it.name == field.name) { return error('Uniform/sampler mismatch: ${field.name}') }
 		for other in vertex.uniforms {
 			if field.name == other.name && (field.typ != other.typ || field.is_array != other.is_array || field.array_length != other.array_length) { return error('Uniform mismatch: ${field.name}') }
 		}
