@@ -91,6 +91,9 @@ def prepare_gg_gradient(modules, vlib):
         from prepare_gg_shadow import prepare as prepare_shadow
         prepare_shadow(canvas)
 
+        document_image = Path(__file__).parent / 'ui2/gg_document_image.v'
+        write_if_changed(canvas / 'vox_document_image.v', document_image.read_text())
+
 
 def prepare_ui2_source(source, target):
     """Link the installed UI2 checkout directly, without pinning or copying it."""

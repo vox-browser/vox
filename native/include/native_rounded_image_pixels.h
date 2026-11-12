@@ -4,7 +4,8 @@
 #include <math.h>
 #include <stdlib.h>
 extern int32_t vox_document_rounded_image_pixels(uint8_t *, int32_t, int32_t, int32_t,
-    uint8_t *, int32_t, int32_t, int32_t, float, float, float);
+    uint8_t *, int32_t, int32_t, int32_t, int32_t, float, float, float);
+extern int32_t vox_document_image_sample_count(int32_t,int32_t,int32_t,int32_t);
 
 // Use the ordinary document raster boundary for a small, unscaled image.
 // V owns color/coverage composition; unsupported sampling and geometry retain
@@ -32,13 +33,16 @@ static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
         canvas_width,canvas_height,16,geometry,&scale);
     if (prepared == 2) return 1;
     if (prepared != 1 || scale != 1 || !geometry[4]) return 0;
+    int samples=vox_document_image_sample_count((int32_t)(left-page_x),
+        (int32_t)(top-page_y+scroll_y),image->width,image->height);
+    if (!samples) return 0;
     int w=geometry[2], h=geometry[3];
     if (w<=0 || h<=0 || w>64 || h>64) return 0;
     uint8_t *pixels=malloc((size_t)w*h*4);
     if (!pixels) return 0;
     int drawn=native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale);
     if (drawn) drawn=vox_document_rounded_image_pixels(pixels,w,h,w*4,image->data,
-        image->width,image->height,image->nr_channels == VOX_FLOAT_RGBA_CHANNEL_MARKER,left-geometry[0],top-geometry[1],radii[0]);
+        image->width,image->height,image->nr_channels == VOX_FLOAT_RGBA_CHANNEL_MARKER,samples,left-geometry[0],top-geometry[1],radii[0]);
     if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,1);
     free(pixels);
@@ -46,13 +50,14 @@ static int native_try_v_rounded_image(CGContextRef context, gg__Image *image,
 }
 
 #ifdef VOX_TEST_ROUNDED_IMAGE_PIXELS
-static int vox_test_small_rounded_image_pixels(uint8_t *pixels, const void *source, int opaque, int float_source, int page_offset) {
+static int vox_test_small_rounded_image_pixels(uint8_t *pixels, const void *source, int opaque, int float_source, int page_offset, int background) {
     CGColorSpaceRef space=CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
     CGContextRef context=CGBitmapContextCreate(pixels,16,16+page_offset,8,64,space,
         kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);
     if (!context) return 0;
-    CGContextSetRGBFillColor(context,1,1,1,1);
+    double gray=(double)background/255.0;
+    CGContextSetRGBFillColor(context,gray,gray,gray,1);
     CGContextFillRect(context,CGRectMake(0,0,16,16+page_offset));
     CGContextRef previous=native_font_compositing_context;
     int previous_depth=native_font_compositing_transparency_depth;
