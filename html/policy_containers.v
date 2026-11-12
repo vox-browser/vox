@@ -45,11 +45,11 @@ pub type SerializedPolicyContainer = dom.SerializedPolicyContainer
 pub type PolicyContainer = dom.PolicyContainer
 
 pub fn create_a_policy_container_from_serialized_policy_container(serialized SerializedPolicyContainer) PolicyContainer {
-	mut csp_list := []SerializedCSPPolicy{cap: serialized.csp_list.len}
+	mut csp_list := []dom.SerializedCSPPolicy{cap: serialized.csp_list.len}
 	for policy in serialized.csp_list {
 		csp_list << policy.clone()
 	}
-	return PolicyContainer{
+	return dom.PolicyContainer{
 		csp_list: csp_list
 		embedder_policy: serialized.embedder_policy
 		referrer_policy: serialized.referrer_policy
@@ -65,14 +65,14 @@ $if test {
 		} else {
 			.report
 		})
-		mut directives := []SerializedCSPDirective{}
+		mut directives := []dom.SerializedCSPDirective{}
 		for directive in parsed.directives() {
-			directives << SerializedCSPDirective{
+			directives << dom.SerializedCSPDirective{
 				name: directive.name()
 				value: directive.value()
 			}
 		}
-		return SerializedCSPPolicy{
+		return dom.SerializedCSPPolicy{
 			directives: directives
 			disposition: disposition
 			source: .header
@@ -83,16 +83,16 @@ $if test {
 }
 
 fn source_serialized_csp_policy_for_dom(policy contentsecuritypolicy.SerializedPolicy) SerializedCSPPolicy {
-	mut directives := []SerializedCSPDirective{cap: policy.directives.len}
+	mut directives := []dom.SerializedCSPDirective{cap: policy.directives.len}
 	for directive in policy.directives {
-		directives << SerializedCSPDirective{
+		directives << dom.SerializedCSPDirective{
 			name: directive.name
 			value: directive.value.clone()
 		}
 	}
 	// This is the explicit serialized DOM/native PolicyList representation
 	// boundary; copy Policy::serialize fields and the actual typed Origin.
-	return SerializedCSPPolicy{
+	return dom.SerializedCSPPolicy{
 		directives: directives
 		disposition: if policy.disposition == .enforce { .enforce } else { .report }
 		source: if policy.source == .header { .header } else { .meta }
@@ -104,7 +104,7 @@ fn source_serialized_csp_policy_for_dom(policy contentsecuritypolicy.SerializedP
 pub fn create_a_policy_container_from_fetch_response(response &fetch.Response) &PolicyContainer {
 	// PolicyContainers.cpp:38–75. Preserve Source's blob/environment,
 	// embedder-policy and integrity-policy FIXMEs; all actual defaults remain.
-	mut result := &PolicyContainer{}
+	mut result := &dom.PolicyContainer{}
 	policies := contentsecuritypolicy.parse_a_responses_content_security_policies(fetch.csp_response(response))
 	for policy in policies.serialize() or { panic(err) } {
 		result.csp_list << source_serialized_csp_policy_for_dom(policy)

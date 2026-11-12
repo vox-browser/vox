@@ -307,10 +307,10 @@ fn environment_referrer_policy(value u8) !ReferrerPolicy {
 
 fn (mut decoder EnvironmentSettingsDecoder) read_policy_container() !SerializedPolicyContainer {
 	policy_count := int(decoder.read_u32()!)
-	mut csp_list := []SerializedCSPPolicy{cap: policy_count}
+	mut csp_list := []dom.SerializedCSPPolicy{cap: policy_count}
 	for _ in 0 .. policy_count {
 		directive_count := int(decoder.read_u32()!)
-		mut directives := []SerializedCSPDirective{cap: directive_count}
+		mut directives := []dom.SerializedCSPDirective{cap: directive_count}
 		for _ in 0 .. directive_count {
 			name := decoder.read_string()!
 			value_count := int(decoder.read_u32()!)
@@ -318,12 +318,12 @@ fn (mut decoder EnvironmentSettingsDecoder) read_policy_container() !SerializedP
 			for _ in 0 .. value_count {
 				values << decoder.read_string()!
 			}
-			directives << SerializedCSPDirective{
+			directives << dom.SerializedCSPDirective{
 				name:  name
 				value: values
 			}
 		}
-		csp_list << SerializedCSPPolicy{
+		csp_list << dom.SerializedCSPPolicy{
 			directives:               directives
 			disposition:              environment_csp_disposition(decoder.read_u8()!)!
 			source:                   environment_csp_source(decoder.read_u8()!)!
@@ -331,13 +331,13 @@ fn (mut decoder EnvironmentSettingsDecoder) read_policy_container() !SerializedP
 			pre_parsed_policy_string: decoder.read_string()!
 		}
 	}
-	embedder_policy := EmbedderPolicy{
+	embedder_policy := dom.EmbedderPolicy{
 		value:                          environment_embedder_policy_value(decoder.read_u8()!)!
 		report_only_value:              environment_embedder_policy_value(decoder.read_u8()!)!
 		reporting_endpoint:             decoder.read_string()!
 		report_only_reporting_endpoint: decoder.read_string()!
 	}
-	return SerializedPolicyContainer{
+	return dom.SerializedPolicyContainer{
 		csp_list:        csp_list
 		embedder_policy: embedder_policy
 		referrer_policy: environment_referrer_policy(decoder.read_u8()!)!

@@ -34,7 +34,7 @@ pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnap
 		return SourceSnapshotParams{
 			has_transient_activation: true
 			allows_downloading: true
-			source_policy_container: PolicyContainer{}
+			source_policy_container: dom.PolicyContainer{}
 		}
 	}
 	flags := SandboxingFlagSet{
@@ -45,7 +45,7 @@ pub fn snapshot_source_snapshot_params(source_document &dom.Document) SourceSnap
 		return SourceSnapshotParams{
 			sandboxing_flags: flags
 			allows_downloading: !flags.contains(.sandboxed_downloads)
-			source_policy_container: PolicyContainer{}
+			source_policy_container: dom.PolicyContainer{}
 		}
 	}
 	settings := unsafe { &EnvironmentSettingsObject(settings_pointer) }

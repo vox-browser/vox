@@ -900,7 +900,7 @@ fn determine_navigation_params_policy_container(response_url dom.URL, history_po
 		if container := parent_policy_container {
 			return cloned_policy_container(container)
 		}
-		return &PolicyContainer{}
+		return &dom.PolicyContainer{}
 	}
 	if fetch.is_local_url(response_url) {
 		if container := initiator_policy_container {
@@ -910,7 +910,7 @@ fn determine_navigation_params_policy_container(response_url dom.URL, history_po
 	if container := response_policy_container {
 		return cloned_policy_container(container)
 	}
-	return &PolicyContainer{}
+	return &dom.PolicyContainer{}
 }
 
 // https://html.spec.whatwg.org/multipage/browsers.html#obtain-coop

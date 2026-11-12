@@ -3,11 +3,11 @@ module html
 import dom
 
 fn environment_test_policy_container() SerializedPolicyContainer {
-	return SerializedPolicyContainer{
+	return dom.SerializedPolicyContainer{
 		csp_list:        [
-			SerializedCSPPolicy{
+			dom.SerializedCSPPolicy{
 				directives:               [
-					SerializedCSPDirective{
+					dom.SerializedCSPDirective{
 						name:  'script-src'
 						value: ["'self'", 'https:']
 					},
@@ -20,7 +20,7 @@ fn environment_test_policy_container() SerializedPolicyContainer {
 				pre_parsed_policy_string: "script-src 'self' https:"
 			},
 		]
-		embedder_policy: EmbedderPolicy{
+		embedder_policy: dom.EmbedderPolicy{
 			value:                          .require_corp
 			report_only_value:              .credentialless
 			reporting_endpoint:             'default'
