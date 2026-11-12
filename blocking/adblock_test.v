@@ -14,20 +14,20 @@ fn test_theverge_cosmetics_hide_ad_containers_at_user_origin_and_update_live_tok
 	install_browser_adblock_styles(document, '')!
 	advert := document.get_element_by_id('advert') or { panic('missing advert') }
 	computed := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(advert, none))
-	assert computed.property(.display, .no)!.css_text == 'none'
+	assert (computed.property(.display, .no) or { panic('missing value') }).css_text == 'none'
 	news := document.get_element_by_id('news') or { panic('missing news') }
 	news_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(news, none))
-	assert news_style.property(.color, .no)!.css_text == 'rgb(0, 128, 0)'
+	assert (news_style.property(.color, .no) or { panic('missing value') }).css_text == 'rgb(0, 128, 0)'
 	mut late := document.get_element_by_id('late') or { panic('missing late ad') }
 	late.set_attribute_value('class', 'ad_banner')
 	install_browser_adblock_styles(document, '')!
 	late_style := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(late, none))
-	assert late_style.property(.display, .no)!.css_text == 'none'
+	assert (late_style.property(.display, .no) or { panic('missing value') }).css_text == 'none'
 	adblock.set_enabled(false)
 	defer { adblock.set_enabled(true) }
 	install_browser_adblock_styles(document, '')!
 	visible := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(advert, none))
-	assert visible.property(.display, .no)!.css_text == 'block'
+	assert (visible.property(.display, .no) or { panic('missing value') }).css_text == 'block'
 }
 
 fn test_theverge_scriptlets_run_against_the_native_page_storage() {
@@ -63,6 +63,6 @@ fn test_upstream_procedural_filters_apply_and_remove_live_native_nodes() {
 	assert document.get_element_by_id('remove') == none
 	paid := document.get_element_by_id('paid') or { panic('missing paid story') }
 	computed := css.StyleComputer.new(document).compute_style(dom.AbstractElement.new(paid, none))
-	assert computed.property(.display, .no)!.css_text == 'none'
+	assert (computed.property(.display, .no) or { panic('missing value') }).css_text == 'none'
 	assert document.get_element_by_id('news') != none
 }
