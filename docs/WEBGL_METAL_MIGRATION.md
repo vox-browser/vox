@@ -166,3 +166,41 @@ Concurrent document-renderer changes are included in this production build;
 these differences are not isolated Metal effects or backend-equivalence credit.
 The all-site equality gate remains open. These are frozen viewport checks, not
 live-site, interaction, Retina-wide, scrolling or instruction-performance claims.
+
+## Final committed-source production check
+
+The completed production executable
+`303a768fe0f94a3b22c129a1cc3f471e0c7dad8c932527fed35d79831efe5511`
+(receipt `20261112-154007-d64f9163`, requested head `f0dd5a1fd`) contains all
+final WebGL fixes. All 92 WebGL inputs present in its parsed/native source
+manifest match the current implementation hashes. It uses the C backend,
+literal V `-prod`, one C unit and the prepared preallocated runtime.
+The headless smoke and two new WebGL1/WebGL2 shader/readback/presentation
+trials pass with normal exits and no ANGLE/EGL/GLES library loaded.
+
+All 314 native/Source tests pass in C and FastC, and all 151 public binding
+tests pass in FastC, each in default GC and no-GC mode. The final native
+compiler-compatibility executable also compiles and runs through the production
+C frontend. No guard was bypassed: the `153721-4412c760` production attempt
+rejected a concurrent PNG-header change; the managed retry above succeeded.
+An earlier successful but unpublished build was superseded while a bundle
+reader lease was held. Both attempts remain in local evidence.
+
+Two fresh captures per available catalog site under this final executable give:
+
+| Site | Differing RGBA pixels against unchanged Brave reference, each capture |
+| --- | ---: |
+| Hacker News | 0 / 3,145,728 |
+| Lobsters | 0 / 786,432 |
+| Wikipedia | 0 / 786,432 |
+| CNN | 175,866 / 786,432 |
+| vlang.io | 4,144 / 786,432 |
+| GitHub /vlang/v | 38,404 / 786,432 |
+| Old Reddit | Unverified: historical account-bearing fixture absent |
+
+The same fixture/script/viewport/scale/settle policies and document audits above
+pass. HN, Lobsters and Wikipedia remain identical to their ANGLE-era Vox images.
+CNN, vlang.io and GitHub differ from those older Vox images at 1,861, 2,143 and
+419 pixels. Concurrent PNG sampling changes improve vlang.io and GitHub against
+the retained Brave references; they do not supply isolated Metal credit.
+No all-site equality or live-site/performance acceptance is claimed.
