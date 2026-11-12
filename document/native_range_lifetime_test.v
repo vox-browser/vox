@@ -31,3 +31,58 @@ fn test_live_range_identity_survives_its_creation_document_storage() {
 	source.finalize()
 	destination.finalize()
 }
+
+fn test_borrowed_document_ranges_retire_with_the_final_payload_reader() {
+	$if !prealloc {
+		return
+	}
+	mut owner := dom.Document.create(dom.URL{ value: 'https://range-owner.test/' })
+	owner.enable_native_storage()
+	mut borrowed := dom.Document.create(dom.URL{ value: 'https://range-owner.test/inert' })
+	borrowed.borrow_native_storage(owner)
+	mut allocations := owner.enter_native_storage()
+	text := borrowed.create_text_node('borrowed payload')
+	allocations.finish()
+	mut range := dom.Range.create_from_boundary_points(text.as_node(), 0, text.as_node(), 8)
+	mut storage := owner.native_storage()
+	storage.retain()
+	owner.release_native_storage()
+	assert dom.Range.live_ranges().any(voidptr(it) == voidptr(range))
+	assert text.data() == 'borrowed payload'
+	storage.release()
+	assert !dom.Range.live_ranges().any(voidptr(it) == voidptr(range))
+	assert storage.arena.usage().capacity == 0
+	// Retiring another document scans the registry without touching freed nodes.
+	mut next := dom.Document.create(dom.URL{ value: 'https://range-next.test/' })
+	next.enable_native_storage()
+	next.release_native_storage()
+	range.finalize()
+	borrowed.release_native_storage()
+	borrowed.finalize()
+	owner.finalize()
+	next.finalize()
+}
+
+fn test_adopted_range_keeps_receiving_mutations_after_its_original_owner_retires() {
+	$if !prealloc {
+		return
+	}
+	mut source := dom.Document.create(dom.URL{ value: 'https://range-source.test/' })
+	mut destination := dom.Document.create(dom.URL{ value: 'https://range-destination.test/' })
+	source.enable_native_storage()
+	destination.enable_native_storage()
+	mut allocations := source.enter_native_storage()
+	mut text := source.create_text_node('abc')
+	allocations.finish()
+	mut range := dom.Range.create_from_boundary_points(text.as_node(), 0, text.as_node(), 3)
+	destination.adopt_node(text.as_node())
+	source.release_native_storage()
+	assert dom.Range.live_ranges().any(voidptr(it) == voidptr(range))
+	text.replace_data(0, 0, '!')!
+	assert range.end_offset() == 4
+	destination.release_native_storage()
+	assert !dom.Range.live_ranges().any(voidptr(it) == voidptr(range))
+	range.finalize()
+	source.finalize()
+	destination.finalize()
+}
