@@ -3,15 +3,21 @@
 module webgl
 
 $if macos {
-	#pkgconfig --cflags egl glesv2
+    $if vox_direct_metal ? {
+        #include "@DIR/native_metal_boundary.h"
+    } $else {
+        #pkgconfig --cflags egl glesv2
+        #include "@DIR/native_egl.h"
+    }
 } $else $if windows {
-	#flag @DIR/../Build/deps/windows/native/webgl.a
-	#pkgconfig angleproject
+    #flag @DIR/../Build/deps/windows/native/webgl.a
+    #pkgconfig angleproject
+    #include "@DIR/native_egl.h"
 } $else {
-	#pkgconfig egl glesv2
+    #pkgconfig egl glesv2
+    #include "@DIR/native_egl.h"
 }
 #flag darwin -Wl,-rpath,/opt/homebrew/lib
-#include "@DIR/native_egl.h"
 
 fn C.vox_egl_create(int) voidptr
 fn C.vox_egl_make_current(voidptr) int

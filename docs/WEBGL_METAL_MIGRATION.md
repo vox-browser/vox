@@ -2,8 +2,9 @@
 
 The target is a macOS WebGL implementation that submits directly to Metal,
 without ANGLE or desktop OpenGL. The migration starts with an independently
-usable V resource backend in `webgl.metal`; it is not yet a replacement for
-`WebGLRenderingContext` and is not selected by the browser.
+usable V resource backend in `webgl.metal`. An experimental V service now
+connects part of `WebGLRenderingContext` through `-d vox_direct_metal` on macOS.
+The production browser still selects ANGLE until the replacement is complete.
 
 ## Completed: drawing-buffer resources
 
@@ -140,6 +141,24 @@ and structured-uniform reflection still require browser conformance coverage.
 
 ## Validation
 
+The experimental service passes 15 focused WebGL cases in each of default GC
+and `-gc none`: six new context/buffer/draw/readback cases and the existing shader
+(3), uniform (1), base-draw (2), integer-attribute (1), viewport/scissor (2) cases.
+They compile with current V's C backend and run under the 3 GiB memory guard.
+The new cases assert that no EGL/GLES/ANGLE library is loaded. Signed native
+buffers use V `i32`; public `[]int` inputs are packed at the native boundary.
+
+Five public JavaScript binding files also pass against the existing ANGLE
+backend with single-unit FastC. Compile audits covered 107 WebGL and 92 public
+binding files. These are separate results: the combined public runtime crashes
+in the retained-query test, and the C backend's browser-binding compilation
+hits the 12 GiB guard. FastC's multi-unit build also duplicates native dispatch
+state; the focused passing runs used `VJOBS=1`. Neither compile audits nor these
+focused results establish complete browser or optimized-site equivalence.
+
+The [local migration evidence](performance/metal-webgl-migration-20261112.json)
+retains commands, hashes, guard exits and failed diagnostics.
+
 On 2026-11-12, native GPU tests passed with ARC, manual reference counting and
 address/undefined-behavior sanitizers. They cover zero initialization, exact
 clears, asymmetric row uploads/readbacks, destination guards, short transfers,
@@ -156,13 +175,21 @@ retains commands, input hashes, actual exits and the initial fixture correction.
 
 ## Next implementation slices
 
-1. Define V backend dispatch/capability records and connect these resources to
-   the existing canvas owner and painting-surface lifecycle.
-2. Add initialized buffers/textures and framebuffer/depth/stencil ownership.
-3. Connect compiled Metal functions/reflection to vertex layouts, uniform
-   bindings and cached Metal render pipelines.
-4. Implement indexed/instanced drawing, raster/blend/depth/stencil state,
-   queries, synchronization and WebGL2 resource operations.
+The experimental V service now owns context/resource records, the painting
+surface, errors and state queries, initialized buffers, shader/program lifetime
+and reflection, typed uniforms, vertex arrays and attributes. It submits array,
+indexed and instanced draws with raster/blend/depth/stencil state and packed
+RGBA8 readback. Line loops and triangle fans expand to equivalent index lists.
+Unsupported entry points explicitly report `INVALID_OPERATION`; there is no
+ANGLE fallback. This is an incomplete backend behind a compile-time flag.
+
+1. Connect texture/sampler and user-framebuffer ownership, uploads and draws.
+   Extend the resource backend beyond base-level RGBA8 2D textures.
+2. Complete uniform blocks, shader type/reflection edge cases, packed vertex
+   formats and overlapping strides; cache render pipelines.
+3. Add queries, synchronization, transform feedback, multisampling, multiple
+   draw buffers and remaining WebGL2 operations.
+4. Resolve browser-suite compilation/runtime blockers and extend conformance.
 5. Run typed/public WebGL regression suites and matched browser/site checks.
    Switch the macOS default only after the replacement covers those contracts;
    then remove ANGLE loading, dependencies and obsolete service code.

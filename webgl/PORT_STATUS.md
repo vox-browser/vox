@@ -11,7 +11,8 @@ transfer slice passes native ARC/MRC/sanitizer checks and three V cases per GC
 mode without ANGLE dependencies. ESSL 1.00/3.00 shader pairs now validate/link,
 lower through SPIR-V/MSL, and compile as actual Metal functions; resource names
 and uniform/matrix layouts have focused coverage in both GC modes. Browser
-dispatch is not migrated. Initialized GPU buffers, bounded vertex streams,
+dispatch has an experimental partial V service behind `-d vox_direct_metal`.
+Initialized GPU buffers, bounded vertex streams,
 float/matrix uniforms and array/instanced draws now have exact Metal pixel
 coverage, including asymmetric GL row orientation. Base-level RGBA8 textures,
 nearest/linear samplers, wrapping and offscreen color targets have exact-pixel
@@ -22,7 +23,11 @@ the standalone suite passes six native fixtures in three ownership/sanitizer
 modes and 27 V cases in both GC modes. Explicit attribute locations, matrix columns
 and inactive resource reflection are covered. Typed uniforms, packed readback, padded arrays
 and external uniform-buffer ranges are included;
-the production WebGL implementation still uses ANGLE. See the
+the production WebGL implementation still uses ANGLE. The experimental service
+passes 15 focused cases in both GC modes through the actual WebGL context,
+including drawing, typed attributes/uniforms and packed readback, without ANGLE.
+It still rejects unsupported texture/framebuffer and WebGL2 service calls;
+complete browser and site equivalence has not been established. See the
 [migration status and next slices](../docs/WEBGL_METAL_MIGRATION.md).
 
 The [native getParameter string-cache correction](../docs/translation-audit/WEBGL_PARAMETER_STRING_CACHE.md)
