@@ -1,6 +1,7 @@
 module main
 
 import dom
+import adblock
 import os
 import platform
 
@@ -24,6 +25,12 @@ mut:
 	valid bool
 	tokens []string
 	storage &platform.Arena = unsafe { nil }
+	css_valid bool
+	css_enabled bool
+	css_url string
+	css_source string
+	css_storage &platform.Arena = unsafe { nil }
+	cookie_survey BrowserCookieSurveyCache
 }
 
 fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string {
@@ -45,6 +52,7 @@ fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string 
 	// A separate reusable arena bounds this browser-owned payload even while
 	// surveys run inside disposable frame/document storage. The maps and split
 	// tokens still use browser_adblock_tokens' temporary survey workspace.
+	cache.css_valid = false
 	$if prealloc {
 		if cache.storage == unsafe { nil } {
 			persistent := platform.enter_persistent()
@@ -69,10 +77,48 @@ fn (mut cache BrowserAdblockTokenCache) survey(document &dom.Document) []string 
 	return cache.tokens
 }
 
+// The bundled filter set is immutable. Keep its CSS alongside the exact token
+// survey so an unchanged document need not serialize every token just to hit
+// the filter bridge's string-keyed memo. Procedural actions still run live.
+fn (mut cache BrowserAdblockTokenCache) document_css(document &dom.Document) !string {
+	tokens := cache.survey(document)
+	address := document.url.serialize()
+	enabled := adblock.is_enabled()
+	memo := os.getenv('VOX_DISABLE_DOCUMENT_FILTER_MEMO') != '1' && !disable_adblock_token_reuse
+	if memo && cache.css_valid && cache.css_enabled == enabled && cache.css_url == address {
+		return cache.css_source
+	}
+	source := adblock.document_css(address, tokens)!
+	if cache.css_storage == unsafe { nil } {
+		persistent := platform.enter_persistent()
+		cache.css_storage = platform.new_arena('adblock CSS cache')
+		platform.leave_persistent(persistent)
+	}
+	cache.css_valid = false
+	cache.css_url = ''
+	cache.css_source = ''
+	cache.css_storage.reset()
+	entry := cache.css_storage.enter()
+	cache.css_url = address.clone()
+	cache.css_source = source.clone()
+	cache.css_storage.leave(entry)
+	cache.css_enabled = enabled
+	cache.css_valid = memo
+	return cache.css_source
+}
+
 fn (mut cache BrowserAdblockTokenCache) release() {
 	cache.tokens = []string{}
 	cache.document = unsafe { nil }
 	cache.valid = false
+	cache.css_valid = false
+	cache.css_url = ''
+	cache.css_source = ''
+	cache.cookie_survey = BrowserCookieSurveyCache{}
+	if cache.css_storage != unsafe { nil } {
+		cache.css_storage.release()
+		cache.css_storage = unsafe { nil }
+	}
 	if cache.storage != unsafe { nil } {
 		cache.storage.release()
 		cache.storage = unsafe { nil }
