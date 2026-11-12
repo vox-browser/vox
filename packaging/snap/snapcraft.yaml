@@ -1,0 +1,32 @@
+# Vox Snap packaging (scaffolding).
+#
+# Built from the prebuilt portable Linux tree (the same staging the
+# tarball release uses) so the Snap ships the exact supervised-build
+# binary and its bundled native libraries. Local/manual builds follow
+# packaging/snap/README.md: stage the tree, copy this file plus the
+# desktop entry and icon into snap/, then run snapcraft pack.
+name: vox
+title: Vox
+summary: A new browser engine written 100% in V + UI2
+description: |
+  Vox is a browser engine written 100% in V, with its interface in UI2.
+  It targets fast startup, low memory use, and exact web rendering.
+  This Snap tracks Vox Linux releases published on GitHub Releases.
+base: core24
+version-script: python3 -c "print(open('packaging/version.txt', encoding='utf-8-sig').read().strip())"
+confinement: classic
+grade: stable
+
+architectures:
+  - build-on: [amd64]
+    build-for: [amd64]
+
+apps:
+  vox:
+    command: bin/vox
+    common-id: org.vox_browser.vox
+
+parts:
+  vox:
+    plugin: dump
+    source: release-staging/snap-prime
