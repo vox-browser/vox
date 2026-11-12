@@ -61,6 +61,7 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 	mut uniform_blocks := []UniformBlock{}
 	mut at := 0
 	mut depth := 0
+	mut array_constructor_ends := map[int]bool{}
 	mut main_count := 0
 	mut precision := stage == .vertex
 	version := processed.version
@@ -197,6 +198,39 @@ pub fn translate_with_bindings(source string, stage Stage, bindings map[string]i
 		if token in ['sampler2D','samplerCube','sampler3D','sampler2DArray','isampler2D','usampler2D'] {
             if version==100 && token !in ['sampler2D','samplerCube'] {return error('Sampler type requires ESSL300')}
             body << sampler_type(token)!; at++;continue
+        }
+        if at in array_constructor_ends {
+            body << '}'
+            at++
+            continue
+        }
+        local_type := if token in structures {'_vox_Struct_'+token} else {metal_type(token) or {''}}
+        if depth > 0 && local_type != '' && local_type != 'void' {
+            if at+4 < tokens.len && identifier(tokens[at+1]) && tokens[at+2]=='[' && tokens[at+4]==']' {
+                count:=pp_integer(tokens[at+3])!
+                if count<1 || count>4096 {return error('Local array length out of range')}
+                body << 'array<${local_type}, ${count}> ${tokens[at+1]}'
+                at+=5
+                continue
+            }
+            if at+4 < tokens.len && tokens[at+1]=='[' && tokens[at+3]==']' && tokens[at+4]=='(' {
+                if version!=300 {return error('Array constructors require ESSL300')}
+                count:=pp_integer(tokens[at+2])!
+                if count<1 || count>4096 {return error('Array constructor length out of range')}
+                mut end:=at+5
+                mut nested:=1
+                for end<tokens.len {
+                    if tokens[end]=='(' {nested++}
+                    if tokens[end]==')' {nested--}
+                    if nested==0 {break}
+                    end++
+                }
+                if end>=tokens.len {return error('Unterminated array constructor')}
+                array_constructor_ends[end]=true
+                body << 'array<${local_type}, ${count}>{'
+                at+=5
+                continue
+            }
         }
 		if token in ['double', 'while', 'do', 'switch'] || token.starts_with('sampler') {
 			return error('Unsupported direct Metal token: ${token}')

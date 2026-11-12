@@ -205,3 +205,9 @@ fn test_legacy_texture_lod_extension_enables_fragment_lod_and_gradient_sampling(
   assert C.vox_direct_metal_texture_probe(vertex.source.str,enabled.source.str,1,0xff0000ff)==1,expression
  }
 }
+
+fn test_local_array_constructor_reaches_exact_gpu_pixels() {
+ vertex:=translate('#version 300 es\nout vec4 value;void main(){vec2 positions[3]=vec2[3](vec2(-1,-1),vec2(3,-1),vec2(-1,3));gl_Position=vec4(positions[gl_VertexID],0,1);value=vec4(1,0,0,1);}',.vertex)!
+ fragment:=translate('#version 300 es\nprecision highp float;in vec4 value;out vec4 color;void main(){color=value;}',.fragment)!
+ assert C.vox_direct_metal_probe(vertex.source.str,fragment.source.str)==1
+}
