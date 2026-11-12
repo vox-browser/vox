@@ -249,6 +249,16 @@ lifetime regression all pass in both GC modes. This completes implementation
 of the previously unsupported service entry points; conformance and browser
 integration remain separate gates.
 
+The complete WebGL package now compiles as one C-backend test executable and
+passes **303 test functions from 171 files** with default GC and `-gc none`.
+The pinned local receipt is `metal-webgl-broad-errors-20261112` in the migration
+evidence. This includes the existing native/Source contracts and the new Metal
+service cases. Corrections exposed supported VAO/instancing/draw-buffer,
+minmax and derivative extensions, retain distinct driver error flags, preserve
+negative buffer-size validation order and ignore unpack spans for null image
+allocations. These results do not establish untested GLES edge cases or
+browser/site equivalence.
+
 ## Next implementation slices
 
 The experimental V service now owns context/resource records, the painting

@@ -44,8 +44,10 @@ mut:
     has_depth bool
     has_stencil bool
     error_ u32
+    pending_errors []u32
     parameters map[u32][]f64
     enabled map[u32]bool
+    extensions map[string]bool
     clear_color [4]f32
     clear_depth f32 = 1
     clear_stencil u32
@@ -228,7 +230,9 @@ fn metal_service_current() &MetalServiceContext {
 
 fn metal_service_error(code u32) {
     mut context := metal_service_current()
-    if context != unsafe { nil } && context.error_ == 0 { context.error_ = code }
+    if context==unsafe { nil } || code==0 { return }
+    if context.error_==0 { context.error_=code }
+    else if code!=context.error_ && code !in context.pending_errors { context.pending_errors<<code }
 }
 
 fn metal_service_unsupported(name string) {
@@ -328,7 +332,7 @@ fn metal_service_vox_egl_destroy(a0 voidptr) {
     for _,feedback in context.feedbacks { unsafe { free(feedback) } };unsafe { context.feedbacks.free() }
     for _, vao in context.vertex_arrays { unsafe { free(vao) } }
     for _, values in context.parameters { unsafe { values.free() } }
-    unsafe { context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.active_queries.free();context.parameters.free(); context.enabled.free() }
+    unsafe { context.pending_errors.free();context.extensions.free();context.objects.free(); context.buffers.free(); context.vertex_arrays.free(); context.active_queries.free();context.parameters.free(); context.enabled.free() }
     context.target.close()
     unsafe { free(context.target); context.unsupported.free(); context.last_failure.free(); free(context) }
 }
@@ -365,7 +369,8 @@ fn metal_service_vox_gl_get_error() u32 {
     mut context := metal_service_current()
     if context == unsafe { nil } { return 0 }
     result := context.error_
-    context.error_ = 0
+    context.error_=0
+    if context.pending_errors.len>0 { context.error_=context.pending_errors[0];context.pending_errors.delete(0) }
     return result
 }
 
@@ -384,7 +389,7 @@ fn metal_service_vox_gl_string(a0 u32) &char {
         0x1f01 { return 'Vox direct Metal'.str }
         0x1f02 { return if metal_service_current().version==3 { 'OpenGL ES 3.0 Vox direct Metal experimental'.str } else { 'OpenGL ES 2.0 Vox direct Metal experimental'.str } }
         0x8b8c { return if metal_service_current().version==3 { 'OpenGL ES GLSL ES 3.00'.str } else { 'OpenGL ES GLSL ES 1.00'.str } }
-        0x1f03 { return 'GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5'.str }
+        0x1f03 { return 'GL_OES_vertex_array_object GL_ANGLE_instanced_arrays GL_EXT_blend_minmax GL_OES_element_index_uint GL_OES_standard_derivatives GL_EXT_draw_buffers GL_EXT_texture_filter_anisotropic GL_EXT_texture_compression_dxt1 GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5'.str }
         0x93a8 { return ''.str }
         else { metal_service_error(invalid_enum); return unsafe { nil } }
     }
@@ -392,8 +397,8 @@ fn metal_service_vox_gl_string(a0 u32) &char {
 
 @[export: 'vox_gl_request_extension']
 fn metal_service_vox_gl_request_extension(a0 &char) {
-    // Advertised extensions need no device-side enable operation.
-    _ = a0
+    mut context:=metal_service_current()
+    if context!=unsafe { nil } && a0!=unsafe { nil } { context.extensions[unsafe { cstring_to_vstring(a0).clone() }]=true }
 }
 
 @[export: 'vox_egl_free_surface']
@@ -671,8 +676,8 @@ fn metal_service_vox_gl_bind_buffer(a0 u32, a1 u32) {
 fn metal_service_vox_gl_buffer_data(a0 u32, a1 i64, a2 voidptr, a3 u32) {
     mut context := metal_service_current()
     if context == unsafe { nil } { return }
-    mut object := context.bound_buffer(a0) or { return }
     if a1 < 0 || u64(a1) > u64(max_int) { metal_service_error(invalid_value); return }
+    mut object := context.bound_buffer(a0) or { return }
     valid_usage := a3 in [u32(0x88e0),0x88e4,0x88e8] || (context.version == 3 && a3 in [u32(0x88e1),0x88e2,0x88e5,0x88e6,0x88e9,0x88ea])
     if !valid_usage { metal_service_error(invalid_enum); return }
     mut buffer := metal.GPUBuffer.create(context.target,int(a1)) or { metal_service_error(out_of_memory); return }
@@ -686,6 +691,7 @@ fn metal_service_vox_gl_buffer_data(a0 u32, a1 i64, a2 voidptr, a3 u32) {
 fn metal_service_vox_gl_buffer_sub_data(a0 u32, a1 i64, a2 i64, a3 voidptr) {
     mut context := metal_service_current()
     if context == unsafe { nil } { return }
+    if a1<0 || a2<0 { metal_service_error(invalid_value);return }
     mut object := context.bound_buffer(a0) or { return }
     if a1 < 0 || a2 < 0 || a1 > object.gpu_buffer.size() || a2 > i64(object.gpu_buffer.size()) - a1 || (a2 > 0 && a3 == unsafe { nil }) { metal_service_error(invalid_value); return }
     object.gpu_buffer.write(int(a1),unsafe { (&u8(a3)).vbytes(int(a2)) }) or { metal_service_error(invalid_operation) }
@@ -1165,7 +1171,7 @@ fn metal_service_vox_gl_blend_equation_separate(a0 u32, a1 u32) {
     mut context := metal_service_current()
     if context == unsafe { nil } { return }
     for value in [a0,a1] {
-        if value !in [func_add,func_subtract,func_reverse_subtract] && !(context.version==3 && value in [u32(0x8007),0x8008]) { metal_service_error(invalid_enum); return }
+        if value !in [func_add,func_subtract,func_reverse_subtract] && !((context.version==3 || context.extensions['GL_EXT_blend_minmax']) && value in [u32(0x8007),0x8008]) { metal_service_error(invalid_enum); return }
     }
     context.set_parameter(blend_equation_rgb,[f64(a0)]); context.set_parameter(blend_equation_alpha,[f64(a1)])
 }

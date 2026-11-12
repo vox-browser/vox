@@ -101,6 +101,11 @@ fn (mut context MetalServiceContext) unpack_pixels(layout MetalServicePixelLayou
     if int(components)!=layout.components && format !in [alpha,luminance,luminance_alpha] { metal_service_error(invalid_operation);return error('Pixel components do not match storage') }
     if layout.integer && type_ !in [gl_byte,unsigned_byte,gl_short,unsigned_short,gl_int,unsigned_int,unsigned_int_2_10_10_10_rev] { metal_service_error(invalid_operation);return error('Integer texture requires integer pixels') }
     if layout.packed!=0 && layout.packed!=type_ && !(layout.packed in [u32(0x8033),0x8034,0x8363] && type_==unsigned_byte) && !(layout.packed==unsigned_int_24_8 && type_==float_32_unsigned_int_24_8_rev) { metal_service_error(invalid_operation);return error('Packed texture type mismatch') }
+    // A null image allocation has no source span: GLES ignores pixel-unpack
+    // row/skip state while still validating the image format and type above.
+    if allow_null && data==unsafe { nil } && context.buffer_binding(pixel_unpack_buffer)==0 {
+        return []u8{len:width*height*depth*layout.format.pixel_size()}
+    }
     alignment:=u64(context.parameters[unpack_alignment][0])
     row_length:=u64(context.parameters[unpack_row_length][0])
     skip_rows:=u64(context.parameters[unpack_skip_rows][0]);skip_pixels:=u64(context.parameters[unpack_skip_pixels][0])
