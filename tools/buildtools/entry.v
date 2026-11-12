@@ -95,7 +95,7 @@ fn dispatch(name string, args []string) !int {
 		'v_match_scope_cc' { return match_cc(args) }
 		'prune_build' {
 			a := arguments(args, ['--dry-run', '--verbose'])!
-			prune_build(root_dir(), a.get('--idle-hours', '12').f64(), a.has('--dry-run'))!
+			prune_build(root_dir(), a.get('--idle-hours', '12').f64(), a.has('--dry-run'), a.has('--verbose'))!
 			return 0
 		}
 		'prepare_windows_jsc' {

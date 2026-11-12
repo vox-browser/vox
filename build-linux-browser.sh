@@ -13,7 +13,7 @@ repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 # V owns the build helpers; the shell only bootstraps compiler discovery.
 v_tool() { sh "$repo_dir/tools/run_v_tool.sh" "$@"; }
 # Match the supervisor's protocol; stale workers hand off before compiling.
-if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v9-vtools ]; then
+if [ "${VOX_BUILD_SUPERVISED:-0}" = 1 ] && [ "${VOX_BUILD_COMPILE_PROTOCOL:-}" != bundle-lease-v10-vtools ]; then
     v_tool rebuild_browser --upgrade-worker
     exit 75
 fi

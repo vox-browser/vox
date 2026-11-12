@@ -273,3 +273,56 @@ fn test_managed_hooks_upgrade_without_replacing_custom_hooks() ! {
 	assert rejected
 	assert read(join(root, '.git/hooks/post-commit'))! == '#!/bin/sh\necho custom\n'
 }
+
+fn test_pruning_preserves_published_and_newest_payloads_and_retention() ! {
+	root := temporary(os.temp_dir(), 'vox-prune-test-')!
+	defer { remove(root) or {} }
+	build := join(root, 'Build')
+	state := join(build, 'production-build')
+	for i in 100 .. 123 {
+		receipt := join(state, 'receipts', i.str())
+		write_changed(join(receipt, 'result.json'), i.str())!
+		write_changed(join(receipt, 'generated/source.c'), 'generated fixture')!
+	}
+	write_changed(join(state, 'latest.json'), '101')!
+	prune_receipts(build, false)!
+	assert !exists(join(state, 'receipts/100'))
+	assert exists(join(state, 'receipts/101/generated/source.c'))
+	assert !exists(join(state, 'receipts/102'))
+	assert exists(join(state, 'receipts/103/result.json'))
+	assert !exists(join(state, 'receipts/103/generated'))
+	assert exists(join(state, 'receipts/122/generated/source.c'))
+}
+
+fn test_pruning_does_not_follow_symlinks() ! {
+	root := temporary(os.temp_dir(), 'vox-prune-link-test-')!
+	defer { remove(root) or {} }
+	write_changed(join(root, 'keep/input'), 'preserved')!
+	link_to(join(root, 'discard'), join(root, 'keep'))!
+	retire(join(root, 'discard'), false)!
+	assert read(join(root, 'keep/input'))! == 'preserved'
+	assert !exists(join(root, 'discard'))
+}
+
+fn test_build_lock_is_not_inherited_by_executed_children() ! {
+	$if !windows {
+		root := temporary(os.temp_dir(), 'vox-lock-inheritance-test-')!
+		defer { remove(root) or {} }
+		path := join(root, 'build.lock')
+		mut held := acquire(path, true)!
+		mut child := os.new_process('/bin/sh')
+		child.set_args(['-c', 'echo ready >"$1"; exec sleep 5', 'sh', join(root, 'ready')])
+		child.run()
+		defer {
+			child.signal_kill()
+			child.wait()
+			child.close()
+		}
+		for !exists(join(root, 'ready')) { if !child.is_alive() { panic('Child did not start') } }
+		// Model abrupt parent exit: close without explicitly unlocking the OFD.
+		held.file.close()
+		held.held = false
+		mut next := acquire(path, true)!
+		next.release()
+	}
+}

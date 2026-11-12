@@ -5,7 +5,7 @@ import time
 import rand
 import json2 as json
 
-const build_protocol = 'bundle-lease-v9-vtools'
+const build_protocol = 'bundle-lease-v10-vtools'
 
 fn validate_repository(root string) ! {
 	if !os.is_dir(join(root, '.git')) || !trimmed_eq(git(root, 'branch', '--show-current')!, 'master') {
@@ -388,6 +388,6 @@ fn rebuild_command(args []string) !int {
 		else {}
 	}
 	code := build_pending(root, a.has('--build'))!
-	prune_build(root, 12, false) or { eprintln('Build/ pruning skipped: ${err}') }
+	prune_build(root, 12, false, false) or { eprintln('Build/ pruning skipped: ${err}') }
 	return code
 }
