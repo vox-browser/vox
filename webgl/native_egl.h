@@ -111,6 +111,9 @@ VOX_EGL_LINKAGE void* vox_egl_create(int version)
     result->state.webgl_version=version;
     vox_gles_current=&result->state;
     if (version==3) glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+    GLint gl_major=0,gl_minor=0;glGetIntegerv(GL_MAJOR_VERSION,&gl_major);glGetIntegerv(GL_MINOR_VERSION,&gl_minor);
+    if(gl_major>3 || (gl_major==3 && gl_minor>=1))
+        result->state.texture_level_parameter=(void (GL_APIENTRYP)(GLenum,GLint,GLenum,GLint*))eglGetProcAddress("glGetTexLevelParameteriv");
 #endif
     return result;
 }

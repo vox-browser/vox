@@ -82,6 +82,8 @@ static void immutable_and_renderbuffer_initialization(void) {
         assert(vox_gl_read_pixels(0,0,size,size,GL_RGBA,GL_UNSIGNED_BYTE,sizeof(pixels),pixels)==size*size*4);
         for(int i=0;i<size*size*4;i++)assert(pixels[i]==0);
     }
+    vox_gl_tex_sub_image2d(GL_TEXTURE_2D,0,0,0,5,5,GL_RGBA,GL_UNSIGNED_BYTE,0,NULL);
+    assert(vox_gl_get_error()==GL_INVALID_VALUE);
     GLuint array=vox_gl_gen_object(3);vox_gl_bind_texture(GL_TEXTURE_2D_ARRAY,array);
     vox_gl_tex_storage3d(GL_TEXTURE_2D_ARRAY,2,GL_RGBA8,2,2,3);
     vox_gl_framebuffer_texture_layer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,array,1,2);

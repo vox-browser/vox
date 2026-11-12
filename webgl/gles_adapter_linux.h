@@ -13,6 +13,7 @@
 typedef struct {
     GLenum errors[8]; unsigned error_count;
     int webgl_version;
+    void (GL_APIENTRYP texture_level_parameter)(GLenum,GLint,GLenum,GLint*);
     char *extensions;
 } VoxGLESState;
 VOX_NATIVE_STATE __thread VoxGLESState *vox_gles_current;
@@ -190,7 +191,26 @@ static void vox_gles_tex_image2d(GLenum target,GLint level,GLint internal,GLsize
     vox_gles_collect_errors();glTexImage2D(target,level,internal,width,height,border,format,type,data);
     if(!vox_gles_collect_errors() && !data && !pbo)vox_gles_zero_texture(target,level,width,height,1,format,type,0);
 }
+/* On GLES3.1+ query real storage before checking client capacity, preserving
+ * INVALID_VALUE for out-of-level uploads even when the client is also short. */
+static int vox_gles_sub_image_bounds(GLenum target,int level,int x,int y,int z,int width,int height,int depth,int volume) {
+    if(level<0 || x<0 || y<0 || z<0 || width<0 || height<0 || depth<0) {vox_gles_error(GL_INVALID_VALUE);return 0;}
+    if(!vox_gles_current || !vox_gles_current->texture_level_parameter)return 1;
+    if(volume ? target!=GL_TEXTURE_3D && target!=GL_TEXTURE_2D_ARRAY :
+       target!=GL_TEXTURE_2D && (target<GL_TEXTURE_CUBE_MAP_POSITIVE_X || target>GL_TEXTURE_CUBE_MAP_NEGATIVE_Z)) {
+        vox_gles_error(GL_INVALID_ENUM);return 0;
+    }
+    GLint w=0,h=0,d=1;vox_gles_collect_errors();
+    vox_gles_current->texture_level_parameter(target,level,0x1000,&w);
+    vox_gles_current->texture_level_parameter(target,level,0x1001,&h);
+    if(volume)vox_gles_current->texture_level_parameter(target,level,0x8071,&d);
+    if(vox_gles_collect_errors())return 0;
+    if(w<=0 || h<=0 || d<=0)return 1;
+    if(x>w || width>w-x || y>h || height>h-y || z>d || depth>d-z) {vox_gles_error(GL_INVALID_VALUE);return 0;}
+    return 1;
+}
 static void vox_gles_tex_sub_image2d(GLenum target,GLint level,GLint x,GLint y,GLsizei width,GLsizei height,GLenum format,GLenum type,GLsizei capacity,const void *data) {
+    if(!vox_gles_sub_image_bounds(target,level,x,y,0,width,height,1,0))return;
     uint64_t span;if(!vox_gles_pixel_span(width,height,1,format,type,0,0,&span) || !vox_gles_transfer_fits(capacity,data,span,0))return;
     glTexSubImage2D(target,level,x,y,width,height,format,type,data);
 }
@@ -202,6 +222,7 @@ static void vox_gles_tex_image3d(GLenum target,GLint level,GLint internal,GLsize
     if(!vox_gles_collect_errors() && !data && !pbo)vox_gles_zero_texture(target,level,width,height,depth,format,type,1);
 }
 static void vox_gles_tex_sub_image3d(GLenum target,GLint level,GLint x,GLint y,GLint z,GLsizei width,GLsizei height,GLsizei depth,GLenum format,GLenum type,GLsizei capacity,const void *data) {
+    if(!vox_gles_sub_image_bounds(target,level,x,y,z,width,height,depth,1))return;
     uint64_t span;if(!vox_gles_pixel_span(width,height,depth,format,type,0,1,&span) || !vox_gles_transfer_fits(capacity,data,span,0))return;
     glTexSubImage3D(target,level,x,y,z,width,height,depth,format,type,data);
 }
