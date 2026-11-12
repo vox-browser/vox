@@ -207,3 +207,39 @@ image decoding/sampling needs a separate check from clip coverage. Maximum
 remaining channel error is 13. Other catalog sites have not been reaccepted.
 Local commands, images, comparisons, build/source identity checks and guard
 receipts are retained under `docs/performance/lobsters-avatar-20261112/`.
+
+## JPEG corrective slice: acceptance still pending
+
+Commit `429e05476` adds a full-range JPEG conversion for unscaled rounded
+images, with bilinear chroma sampling. The native decoder returns exactly the
+384 archived Y/Cb/Cr bytes in the focused fixture. The converter matches the
+immutable Brave photo interior in normal, production, and preallocated builds.
+The application-level helper test also matches that interior exactly.
+
+Whole-browser checks caught a regression before acceptance: executable
+`57542962a91d72773b716394aa806df273c63c0583f1b9c9b6aa6c1cf621a91e`
+(receipt `20261112-093011-42ded915`) differed at **1,807 Lobsters pixels** in
+both fresh launches. Retained bitmap wrappers can share ID zero, so using that
+ID as the variant key allowed later PNG draws to reuse a cached photograph.
+Commit `cfc0d1afe` keys variants by their source-byte digest and rejects non-JPEG
+bytes before cache lookup. Its focused application test checks JPEG reuse and
+PNG rejection, and passes through the browser's V/C test harness under the
+12 GiB guard. The focused production-mode converter test passes under 3 GiB.
+
+The reduced JPEG browser fixture still differed at 156 pixels in two fresh
+captures of both the first JPEG bundle and later executable
+`9c7c1c7f4e70b786ee89ccdcb2faa6ebe350cd2803833401a19651bdebe46ef2`
+(receipt `20261112-094105-7c7ea90f`). Those receipts contain the earlier cache
+implementation. A diagnostic PNG containing the independently converted JPEG
+pixels has zero interior differences and 18 boundary differences in both
+native captures. These diagnostics do not accept the JPEG rendering path or
+replace the unchanged whole-page reference.
+
+Production validation of `cfc0d1afe` remains pending. The managed worker rejected
+`20261112-094842-68dcb35e` after `webgl/native_egl.h` changed during compilation;
+subsequent managed attempts are retained by the worker. No build-input or memory
+guard was bypassed. The JPEG and all-site parity work remain open; the last
+accepted pre-JPEG Lobsters measurement is still the 303 differing pixels above.
+Local logs, images, failed attempts, debugger diagnostics, exact commands and
+guard reports are retained in `docs/performance/lobsters-jpeg-20261112/`.
+Debugger runs are diagnostic only, including one timeout.
