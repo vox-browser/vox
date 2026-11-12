@@ -6,6 +6,30 @@ import html
 import layout
 import os
 import stbi
+import crypto.sha256
+import platform
+
+fn test_color_converted_png_cache_outlives_the_temporary_decode_scope() {
+	$if macos {
+		mut document := html.parse_document('<!doctype html>')
+		defer { document.finalize() }
+		document.set_font_rendering_policy(.chromium)
+		mut app := BrowserApp{ document: document, ctx: gg.new_context(native_rendering: true) }
+		path := os.join_path(@VMODROOT, 'Tests/Browser/Brave/resources/vlang-mastodon.png')
+		bytes := os.read_bytes(path) or { panic(err) }
+		decoded := stbi.load_from_memory(bytes.data, bytes.len, desired_channels: 4) or { panic(err) }
+		defer { decoded.free() }
+		image := &gg.Image{ width: decoded.width, height: decoded.height, nr_channels: 6, data: decoded.data, ok: true }
+		cached := app.sampled_png_decode(path, image, 24, 24) or { panic('color upload') }
+		assert cached.image.width == 33 && cached.image.height == 33
+		mut scratch := platform.begin_thread_scratch('cache ownership regression')
+		_ = []u8{len: 1024 * 1024, init: 197}
+		scratch.finish()
+		pixels := unsafe { (&u8(cached.image.data)).vbytes(33 * 33 * 4) }
+		assert sha256.hexhash(pixels.bytestr()) == '209d3dc79e56a9ffe9be9e9559c5b1e43621b284c979893723f00aee7b0c2e4b'
+		assert (app.sampled_png_decode(path, image, 24, 24) or { panic('reuse') }).image.id == cached.image.id
+	}
+}
 
 fn test_poster_resource_lookup_rejects_retained_pixels_after_a_poster_change() {
 	$if macos {
@@ -42,14 +66,14 @@ fn test_png_decode_history_keeps_resource_and_compositor_scope_identity() {
 		defer { set_chromium_image_decode_scope(previous) }
 		set_chromium_image_decode_scope(0)
 		first := app.sampled_png_decode(path, image, 60, 60) or { panic('first decode') }
-		assert first.width == 63 && first.height == 63
-		assert (app.sampled_png_decode(path, image, 32, 32) or { panic('reuse') }).id == first.id
+		assert first.image.width == 63 && first.image.height == 63
+		assert (app.sampled_png_decode(path, image, 32, 32) or { panic('reuse') }).image.id == first.image.id
 		other := os.join_path(@VMODROOT, 'Tests/Browser/Brave/resources/image-decode-separate.png')
 		separate := app.sampled_png_decode(other, image, 32, 32) or { panic('separate resource') }
-		assert separate.width == 32 && separate.id != first.id
+		assert separate.image.width == 32 && separate.image.id != first.image.id
 		set_chromium_image_decode_scope(1)
 		layer := app.sampled_png_decode(path, image, 32, 32) or { panic('separate compositor') }
-		assert layer.width == 32 && layer.id != first.id
+		assert layer.image.width == 32 && layer.image.id != first.image.id
 		assert !png_sampling_bytes_supported(bytes[..32])
 		// Color-managed and animated inputs must retain the existing renderer.
 		for kind in ['iCCP', 'gAMA', 'cHRM', 'cICP', 'acTL'] {

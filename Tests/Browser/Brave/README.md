@@ -1255,3 +1255,12 @@ at 600×160, scale 1, with scripts disabled. The V/GPU clip correction reduces
 the diagnostic from 2,143 differing pixels to zero in two fresh captures;
 the focused GPU test also requires exact logo pixels and preserves pixels
 outside a rectangular crop. This diagnostic does not establish full-site parity.
+
+`diagnostic/legacy-gamma-scaled-png.html` retains the source PNG's `gAMA` and
+canonical sRGB `cHRM` metadata while drawing at 24px and 20px. Two fresh Brave
+157.1.99.56 captures agree exactly at 600×300, scale 1, with scripts disabled.
+The focused GPU test requires exact pixels at both sizes, including mipmap
+generation after the upload's color conversion. A separate conversion gold
+matches an independently pinned previous-renderer readback, preserves alpha
+and leaves its input unchanged. The cache test runs with poisoned scratch
+memory to verify that temporary decode storage cannot escape into the upload.

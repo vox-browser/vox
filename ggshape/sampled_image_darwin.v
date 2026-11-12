@@ -9,13 +9,13 @@ pub fn draw_sampled_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop 
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int) i32 {
 	return draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop, source,
 		source_width, source_height, x, y, destination_width, destination_height, samples,
-		natural_width, natural_height, [12]f32{})
+		natural_width, natural_height, [12]f32{}, false)
 }
 
 pub fn draw_sampled_rgba_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
-	clip [12]f32) i32 {
+	clip [12]f32, gpu_mips bool) i32 {
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| int(width) * int(height) > 4 * 1024 * 1024 || pitch < width * 4 || samples !in [
 		1,
@@ -35,7 +35,12 @@ pub fn draw_sampled_rgba_clipped(pixels &u8, width i32, height i32, pitch i32, b
 	mut levels := [source]
 	if destination_width < source_width && destination_height < source_height
 		&& extent_x >= source_width && extent_y >= source_height {
-		chain := imageraster.mip_chain(imageraster.Image{ width: source_width, height: source_height, pixels: source }) or { return 0 }
+		image := imageraster.Image{ width: source_width, height: source_height, pixels: source }
+		chain := if gpu_mips {
+			gpu_image_mip_chain(image) or { return 0 }
+		} else {
+			imageraster.mip_chain(image) or { return 0 }
+		}
 		levels = chain.map(it.pixels)
 	}
 	mut ctx := context() or { return 0 }

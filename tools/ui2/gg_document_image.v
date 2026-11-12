@@ -3,6 +3,14 @@ module canvas
 import sokol.gfx
 import math
 
+// Power transfer followed by a column-major linear-light gamut transform.
+// Zero gamma retains the ordinary image shader.
+pub struct DocumentImageColorTransform {
+pub:
+	gamma f32
+	gamut [9]f32
+}
+
 struct DocumentImageSampler {
 mut:
 	sampler gfx.Sampler
@@ -28,6 +36,13 @@ fn document_image_sampler() gfx.Sampler {
 // shader performs the final bilinear sample and destination blend once.
 pub fn (mut s GpuSurface) draw_document_scaled_rgba(levels [][]u8, width int, height int,
 	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32) ! {
+	s.draw_document_color_rgba(levels, width, height, natural_width, natural_height,
+		x, y, destination_width, destination_height, DocumentImageColorTransform{})!
+}
+
+pub fn (mut s GpuSurface) draw_document_color_rgba(levels [][]u8, width int, height int,
+	natural_width int, natural_height int, x f32, y f32, destination_width f32, destination_height f32,
+	color_transform DocumentImageColorTransform) ! {
 	if width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| width * height > 4 * 1024 * 1024 || levels.len == 0 || levels.len > 13
 		|| natural_width <= 0 || natural_height <= 0 || destination_width <= 0 || destination_height <= 0 {
@@ -68,6 +83,7 @@ pub fn (mut s GpuSurface) draw_document_scaled_rgba(levels [][]u8, width int, he
 			texture_height:         height
 			document_scale:         [sample_x, sample_y]!
 			document_linear_filter: true
+			color_transform:        color_transform
 		}
 	})!
 }

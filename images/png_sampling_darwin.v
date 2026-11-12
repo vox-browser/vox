@@ -8,7 +8,12 @@ import layout
 import painting
 import platform
 
-fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32) i32
+fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32) i32
+
+struct SampledPNGUpload {
+	image    &gg.Image
+	gpu_mips bool
+}
 
 struct PngDecodeScope {
 mut:
@@ -17,40 +22,39 @@ mut:
 
 const png_decode_scope = &PngDecodeScope{}
 
-// Other PNG color spaces and animations retain their existing decoder and
-// renderer. This path consumes only complete, untagged static RGBA pixels.
+// Unsupported color spaces and animations retain the existing decoder.
 fn png_sampling_bytes_supported(bytes []u8) bool {
-	if bytes.len < 33 || bytes[..8] != [u8(137), 80, 78, 71, 13, 10, 26, 10] { return false }
-	mut at := 8
-	for at + 12 <= bytes.len {
-		size := (u32(bytes[at]) << 24) | (u32(bytes[at + 1]) << 16) | (u32(bytes[at + 2]) << 8) | u32(bytes[at + 3])
-		if u64(at) + u64(size) + 12 > u64(bytes.len) { return false }
-		kind := bytes[at + 4..at + 8].bytestr()
-		if kind in ['acTL', 'iCCP', 'gAMA', 'cHRM', 'cICP'] { return false }
-		if kind == 'IDAT' { return true }
-		at += int(size) + 12
-	}
-	return false
+	_ := imageraster.png_sampling_profile(bytes) or { return false }
+	return true
 }
 
-fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f64, height f64) ?&gg.Image {
+fn (mut app BrowserApp) sampled_png_decode(url string, image &gg.Image, width f64, height f64) ?SampledPNGUpload {
 	if image.path != '' || image.nr_channels != 6 || image.data == unsafe { nil } { return none }
 	dw, dh := imageraster.decode_size(image.width, image.height, width, height) or { return none }
 	bytes := app.background_image_bytes(url) or { return none }
-	if !png_sampling_bytes_supported(bytes) { return none }
+	profile := imageraster.png_sampling_profile(bytes) or { return none }
 	key := '\x00sampled-png:${u64(voidptr(app.document))}:${app.navigation_generation}:${png_decode_scope.scope}:${url}:${sha256.hexhash(bytes.bytestr())}'
 	if id := app.background_image_ids[key] {
 		previous := app.ctx.get_cached_image_by_idx(id)
-		if previous.ok && previous.width >= dw && previous.height >= dh { return previous }
+		if previous.ok && previous.width >= dw && previous.height >= dh {
+			return SampledPNGUpload{ image: previous, gpu_mips: profile.gamma > 0 }
+		}
 	}
-	persistent := platform.enter_persistent()
-	defer { platform.leave_persistent(persistent) }
+	mut scratch := platform.begin_thread_scratch('PNG upload resize and color conversion')
+	defer { scratch.finish() }
 	data := imageraster.decode_rgba(unsafe { (&u8(image.data)).vbytes(image.width * image.height * 4) },
 		image.width, image.height, dw, dh) or { return none }
-	mut result := gg.Image{ width: data.width, height: data.height, nr_channels: 5, ok: true, data: data.pixels.data }
+	persistent := platform.enter_persistent()
+	defer { platform.leave_persistent(persistent) }
+	retained := if profile.gamma > 0 {
+		ggshape.convert_image_color(data, profile) or { return none }
+	} else {
+		data.pixels.clone()
+	}
+	mut result := gg.Image{ width: data.width, height: data.height, nr_channels: 5, ok: true, data: retained.data }
 	result.id = app.ctx.cache_image(result)
 	app.background_image_ids[key.clone()] = result.id
-	return app.ctx.get_cached_image_by_idx(result.id)
+	return SampledPNGUpload{ image: app.ctx.get_cached_image_by_idx(result.id), gpu_mips: profile.gamma > 0 }
 }
 
 fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg.Image, url string,
@@ -62,12 +66,13 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 		|| source != [f32(0), 0, f32(image.width), f32(image.height)]! {
 		return false
 	}
-	decoded := app.sampled_png_decode(url, image, f64(destination.width),
+	upload := app.sampled_png_decode(url, image, f64(destination.width),
 		f64(destination.height)) or { return false }
+	decoded := upload.image
 	mut translated_clip := clip
 	translated_clip[0] += f32(matrix[4])
 	translated_clip[1] += f32(matrix[5])
-	return C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height),
+	return C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height), i32(upload.gpu_mips),
 		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]),
 		f32(destination.width), f32(destination.height), &translated_clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
@@ -75,7 +80,7 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 
 @[export:'vox_document_sampled_png_pixels']
 fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
-	first_x i32, first_y i32, source &u8, source_width i32, source_height i32, natural_width i32, natural_height i32,
+	first_x i32, first_y i32, source &u8, source_width i32, source_height i32, natural_width i32, natural_height i32, gpu_mips i32,
 	x f32, y f32, destination_width f32, destination_height f32, clip &f32) i32 {
 	if source == unsafe { nil } || source_width <= 0 || source_height <= 0
 		|| source_width > 4096 || source_height > 4096
@@ -90,7 +95,7 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	swap_document_raster_channels(pixels, width, height, pitch)
 	result := ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
 		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)
+		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping, gpu_mips != 0)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

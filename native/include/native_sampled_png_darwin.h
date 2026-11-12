@@ -1,8 +1,8 @@
 #pragma once
 extern int32_t vox_document_sampled_png_pixels(uint8_t*,int32_t,int32_t,int32_t,int32_t,
-    int32_t,int32_t,uint8_t*,int32_t,int32_t,int32_t,int32_t,float,float,float,float,float*);
+    int32_t,int32_t,uint8_t*,int32_t,int32_t,int32_t,int32_t,int32_t,float,float,float,float,float*);
 
-int native_draw_sampled_png(const uint8_t *source,int source_width,int source_height,int natural_width,int natural_height,
+int native_draw_sampled_png(const uint8_t *source,int source_width,int source_height,int natural_width,int natural_height,int gpu_mips,
     float x,float y,float width,float height,const float *clip,float page_x,float page_y,float scroll_y,
     float canvas_width,float canvas_height) {
     CGContextRef context=[[NSGraphicsContext currentContext] CGContext];
@@ -27,7 +27,7 @@ int native_draw_sampled_png(const uint8_t *source,int source_width,int source_he
     int drawn=native_text_raster_read_backdrop(pixels,geometry[0],geometry[1],w,h,scale);
     if (drawn) drawn=vox_document_sampled_png_pixels(pixels,w,h,w*4,1,
         (int32_t)(geometry[0]-page_x),(int32_t)(geometry[1]-page_y+scroll_y),
-        (uint8_t*)source,source_width,source_height,natural_width,natural_height,left-geometry[0],top-geometry[1],width,height,local_clip);
+        (uint8_t*)source,source_width,source_height,natural_width,natural_height,gpu_mips,left-geometry[0],top-geometry[1],width,height,local_clip);
     if (drawn) drawn=native_text_raster_finish(pixels,geometry[0],geometry[1],w,h,
         geometry[5],geometry[6],canvas_height,1);
     free(pixels);return drawn;
