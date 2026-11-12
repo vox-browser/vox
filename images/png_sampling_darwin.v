@@ -8,7 +8,7 @@ import layout
 import painting
 import platform
 
-fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, f32, f32, f32, f32, f32, f32, f32, f32, f32) i32
+fn C.native_draw_sampled_png(&u8, i32, i32, i32, i32, f32, f32, f32, f32, &f32, f32, f32, f32, f32, f32) i32
 
 struct PngDecodeScope {
 mut:
@@ -59,22 +59,24 @@ fn (mut app BrowserApp) draw_sampled_png(command &layout.PaintCommand, image &gg
 	if app.document == unsafe { nil } || app.document.font_rendering_policy() != .chromium
 		|| command.apply_force_dark_to_image || nearest || command.opacity != 1
 		|| matrix[0] != 1 || matrix[1] != 0 || matrix[2] != 0 || matrix[3] != 1
-		|| source != [f32(0), 0, f32(image.width), f32(image.height)]!
-		|| clip[4..12].any(it != 0) {
+		|| source != [f32(0), 0, f32(image.width), f32(image.height)]! {
 		return false
 	}
 	decoded := app.sampled_png_decode(url, image, f64(destination.width),
 		f64(destination.height)) or { return false }
+	mut translated_clip := clip
+	translated_clip[0] += f32(matrix[4])
+	translated_clip[1] += f32(matrix[5])
 	return C.native_draw_sampled_png(decoded.data, i32(decoded.width), i32(decoded.height), i32(image.width), i32(image.height),
 		f32(destination.x) + f32(matrix[4]), f32(destination.y) + f32(matrix[5]),
-		f32(destination.width), f32(destination.height), page_x, page_y, f32(scroll_y),
+		f32(destination.width), f32(destination.height), &translated_clip[0], page_x, page_y, f32(scroll_y),
 		f32(app.ctx.width), f32(app.ctx.height)) != 0
 }
 
 @[export:'vox_document_sampled_png_pixels']
 fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	first_x i32, first_y i32, source &u8, source_width i32, source_height i32, natural_width i32, natural_height i32,
-	x f32, y f32, destination_width f32, destination_height f32) i32 {
+	x f32, y f32, destination_width f32, destination_height f32, clip &f32) i32 {
 	if source == unsafe { nil } || source_width <= 0 || source_height <= 0
 		|| source_width > 4096 || source_height > 4096
 		|| int(source_width) * int(source_height) > 4 * 1024 * 1024 {
@@ -82,10 +84,13 @@ fn document_sampled_png_pixels(pixels &u8, width i32, height i32, pitch i32, bac
 	}
 	samples := document_image_sample_count(int(first_x), int(first_y), int(width), int(height))
 	if samples == 0 { return 0 }
+	if clip == unsafe { nil } { return 0 }
+	mut clipping := [12]f32{}
+	unsafe { vmemcpy(&clipping[0], clip, 12 * int(sizeof(f32))) }
 	swap_document_raster_channels(pixels, width, height, pitch)
-	result := ggshape.draw_sampled_rgba(pixels, width, height, pitch, backdrop,
+	result := ggshape.draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop,
 		unsafe { source.vbytes(int(source_width) * int(source_height) * 4) }, source_width, source_height,
-		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height))
+		x, y, destination_width, destination_height, int(samples), int(natural_width), int(natural_height), clipping)
 	swap_document_raster_channels(pixels, width, height, pitch)
 	return result
 }

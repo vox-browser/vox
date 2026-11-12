@@ -7,6 +7,15 @@ import math
 pub fn draw_sampled_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
 	source []u8, source_width int, source_height int, x f32, y f32,
 	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int) i32 {
+	return draw_sampled_rgba_clipped(pixels, width, height, pitch, backdrop, source,
+		source_width, source_height, x, y, destination_width, destination_height, samples,
+		natural_width, natural_height, [12]f32{})
+}
+
+pub fn draw_sampled_rgba_clipped(pixels &u8, width i32, height i32, pitch i32, backdrop i32,
+	source []u8, source_width int, source_height int, x f32, y f32,
+	destination_width f32, destination_height f32, samples int, natural_width int, natural_height int,
+	clip [12]f32) i32 {
 	if pixels == unsafe { nil } || width <= 0 || height <= 0 || width > 4096 || height > 4096
 		|| int(width) * int(height) > 4 * 1024 * 1024 || pitch < width * 4 || samples !in [
 		1,
@@ -36,6 +45,18 @@ pub fn draw_sampled_rgba(pixels &u8, width i32, height i32, pitch i32, backdrop 
 		surface.write_pixels(pixels, pitch) or { return 0 }
 	} else {
 		surface.clear(canvas.Color4f{})
+	}
+	for value in clip { if !math.is_finite(value) { return 0 } }
+	if clip[4..12].any(it < 0) { return 0 }
+	if clip[2] > 0 && clip[3] > 0 {
+		if samples == 4 { surface.draw_msaa_trigger() }
+		rect := canvas.Rect.xywh(clip[0], clip[1], clip[2], clip[3])
+		surface.clip_rrect(canvas.RRect.rect_radii(rect, [
+			canvas.Point{clip[4], clip[5]},
+			canvas.Point{clip[6], clip[7]},
+			canvas.Point{clip[8], clip[9]},
+			canvas.Point{clip[10], clip[11]},
+		]!), .intersect, true) or { return 0 }
 	}
 	surface.draw_document_scaled_rgba(levels, source_width, source_height, natural_width, natural_height, x, y,
 		destination_width, destination_height) or { return 0 }

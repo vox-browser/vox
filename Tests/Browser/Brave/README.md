@@ -1247,3 +1247,11 @@ CSS `clip` edges in CSS-coordinate layout. At 800×600 CSS pixels and scale 2,
 the device-clip source browser matches Brave at zero pixels. The
 [device-clip receipt](../../../docs/parity/chatgpt-retina-device-clips-20261103.json)
 retains the unchanged reference, control failure, native identities and checks.
+
+`diagnostic/rounded-scaled-png.html` isolates scaled PNGs inside rounded
+overflow clips, including vlang.io's fractional Patreon rectangle. The plain
+scaled image is a control. Two fresh Brave 157.1.99.56 captures agree exactly
+at 600×160, scale 1, with scripts disabled. The V/GPU clip correction reduces
+the diagnostic from 2,143 differing pixels to zero in two fresh captures;
+the focused GPU test also requires exact logo pixels and preserves pixels
+outside a rectangular crop. This diagnostic does not establish full-site parity.

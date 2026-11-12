@@ -44,3 +44,42 @@ fn test_downsampled_png_matches_the_unchanged_brave_logo_pixels() {
 		assert differing == 0, 'samples=${samples} channels=${differing}'
 	}
 }
+
+fn test_scaled_png_shader_applies_the_rounded_overflow_clip_in_the_same_draw() {
+	bytes := $embed_file('@VMODROOT/Tests/Browser/Brave/resources/image-decode-cold.png').to_bytes()
+	image := stbi.load_from_memory(bytes.data, bytes.len, desired_channels: 4) or { panic('${err}') }
+	defer { image.free() }
+	decoded := imageraster.decode_rgba(unsafe { image.data.vbytes(image.width * image.height * 4) },
+		image.width, image.height, 63, 63) or { panic('decode') }
+	ref := $embed_file('@VMODROOT/Tests/Browser/Brave/diagnostic/rounded-scaled-png.png').to_bytes()
+	expected := stbi.load_from_memory(ref.data, ref.len, desired_channels: 4) or { panic('${err}') }
+	defer { expected.free() }
+	mut pixels := []u8{len: 80 * 80 * 4}
+	for i in 0 .. 80 * 80 {
+		pixels[i * 4], pixels[i * 4 + 1], pixels[i * 4 + 2], pixels[i * 4 + 3] = 15, 11, 9, 255
+	}
+	assert draw_sampled_rgba_clipped(pixels.data, 80, 80, 320, 1, decoded.pixels, 63, 63,
+		10, 10, 60, 60, 1, 500, 500, [f32(10), 10, 60, 60, 8, 8, 8, 8, 8, 8, 8, 8]!) == 1
+	mut differing := 0
+	for y in 0 .. 60 {
+		for x in 0 .. 60 {
+			i, j := ((y + 10) * 80 + x + 10) * 4, ((y + 18) * expected.width + x + 24) * 4
+			if pixels[i..i + 4] != unsafe { [expected.data[j + 2], expected.data[j + 1],
+				expected.data[j], expected.data[j + 3]] } {
+				differing++
+			}
+		}
+	}
+	assert differing == 0, 'rounded scaled pixels=${differing}'
+	before_crop := pixels.clone()
+	assert draw_sampled_rgba_clipped(pixels.data, 80, 80, 320, 1, decoded.pixels, 63, 63,
+		10, 10, 60, 60, 1, 500, 500, [f32(20), 20, 40, 40, 0, 0, 0, 0, 0, 0, 0, 0]!) == 1
+	// Pixels outside the rectangular crop are unchanged by the second draw.
+	for y in 0 .. 80 {
+		for x in 0 .. 80 {
+			if x >= 20 && x < 60 && y >= 20 && y < 60 { continue }
+			i := (y * 80 + x) * 4
+			assert pixels[i..i + 4] == before_crop[i..i + 4]
+		}
+	}
+}
