@@ -27,7 +27,7 @@ __global (
 )
 
 pub fn supported_locales() []string {
-	return ['en']
+	return ['en', 'fa']
 }
 
 pub fn default_locale() string {
@@ -199,7 +199,10 @@ $if windows {
 
 // locale_table serves the string table for a supported locale. Unknown
 // locales fall back to English; add one arm per locale file.
-fn locale_table(_locale string) map[string]string {
+fn locale_table(locale string) map[string]string {
+	if locale == 'fa' {
+		return fa_chrome_strings
+	}
 	return en_chrome_strings
 }
 
@@ -234,6 +237,9 @@ pub fn trf_for(locale string, key string, args map[string]string) string {
 // format_digits renders display-only digits for a locale. The default is the
 // identity; locales with non-Latin digits override it in their locale file.
 pub fn format_digits(locale string, input string) string {
+	if locale == 'fa' {
+		return fa_digits(input)
+	}
 	return input
 }
 
