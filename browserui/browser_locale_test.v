@@ -29,7 +29,7 @@ fn test_locale_tables_cover_every_chrome_key() {
 	for key, en in en_chrome_strings {
 		assert en != '', 'empty en string for ${key}'
 	}
-	assert en_chrome_strings.len == 68
+	assert en_chrome_strings.len == 71
 }
 
 fn test_locale_normalizes_codes() {
@@ -127,6 +127,7 @@ fn test_window_controls_text() {
 	defer { restore_locale(old_vox, old_lang) }
 	assert window_button_text('close') == 'close window'
 	assert window_button_text('minimize') == 'minimize window'
+	assert tr('window.close') == 'close window'
 	assert close_tab_text('example.com') == 'Close example.com'
 	assert tab_color_text('red') == 'Red'
 	assert tab_color_text('none') == 'tab.color.none'
