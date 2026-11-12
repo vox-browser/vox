@@ -27,15 +27,15 @@ Install Apple's command line tools (`xcode-select --install`) and
 [Homebrew](https://brew.sh/), then:
 
 ```sh
-brew install python pkgconf freetype graphite2 harfbuzz icu4c@78 openssl \
+brew install python pkgconf freetype graphite2 harfbuzz openssl \
     startergo/angle/angle ffmpeg libavif curl glslang
 eval "$(python3 tools/dev_build_env.py)"
 v .
 ./vox2 https://example.com
 ```
 
-FreeType and HarfBuzz remain native dependencies. ICU must be `icu4c@78`:
-Vox's Unicode bindings use its versioned symbols. FFmpeg, libavif and curl
+FreeType and HarfBuzz remain native dependencies. Unicode processing uses
+V code with bundled Unicode 17 data; ICU is not required. FFmpeg, libavif and curl
 supply media, AVIF and HTTP support. To produce the signed application bundle:
 
 ```sh
@@ -48,7 +48,7 @@ open Build/v/Vox.app
 ```sh
 sudo apt-get update
 sudo apt-get install build-essential clang pkg-config python3 git ca-certificates \
-    libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev libicu-dev \
+    libjavascriptcoregtk-4.1-dev libglib2.0-dev libharfbuzz-dev \
     libcurl4-openssl-dev libssl-dev libegl1-mesa-dev libgles2-mesa-dev \
     libgl1-mesa-dev libxi-dev libxcursor-dev libxrandr-dev libx11-dev \
     libasound2-dev libgc-dev libfreetype-dev libfontconfig-dev libwebp-dev \
@@ -69,7 +69,7 @@ compiler tools on `PATH`. Install:
 
 ```sh
 pacman -S --needed mingw-w64-x86_64-toolchain mingw-w64-x86_64-pkgconf \
-    mingw-w64-x86_64-python mingw-w64-x86_64-icu \
+    mingw-w64-x86_64-python \
     mingw-w64-x86_64-harfbuzz mingw-w64-x86_64-freetype \
     mingw-w64-x86_64-openssl mingw-w64-x86_64-angleproject mingw-w64-x86_64-curl \
     mingw-w64-x86_64-glslang
